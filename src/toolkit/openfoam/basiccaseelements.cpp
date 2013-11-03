@@ -20,11 +20,15 @@
 
 #include "basiccaseelements.h"
 
+#include "boost/assign.hpp"
+
 using namespace std;
+using namespace boost::assign;
 
 namespace insight
 {
-  
+
+
 FVNumerics::FVNumerics(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "FVNumerics")
 {
@@ -94,6 +98,8 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol)
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c)
 : FVNumerics(c)
 {
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0) ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
 }
  
 void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -205,6 +211,8 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c)
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(0.0) ) );
+  c.addField("omega", 	FieldInfo(scalarField, 	FieldDimension(0, 0, -1), 	list_of(0.0) ) );
 }
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const

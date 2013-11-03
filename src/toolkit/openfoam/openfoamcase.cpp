@@ -86,7 +86,10 @@ OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& nam
 {
 }
 
-  
+const FieldDimension dimKinPressure = FieldDimension(0, 2, -2, 0, 0, 0, 0);
+const FieldDimension dimKinEnergy = FieldDimension(0, 2, -2, 0, 0, 0, 0);
+const FieldDimension dimVelocity = FieldDimension(0, 1, -1, 0, 0, 0, 0);
+
 void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
 {
   OFdicts dictionaries_;
@@ -140,6 +143,11 @@ OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 
 OpenFOAMCase::~OpenFOAMCase()
 {
+}
+
+void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
+{
+  fields_[name]=field;
 }
 
 void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict)

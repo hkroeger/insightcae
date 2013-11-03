@@ -26,19 +26,23 @@
 namespace insight 
 {
 
+
 /**
- Manages basic settings in controlDict, fvSchemes, fvSolution
+ Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
  */
 class FVNumerics
 : public OpenFOAMCaseElement
 {
+  
 public:
   FVNumerics(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
+
 
 class simpleFoamNumerics
 : public FVNumerics
@@ -48,12 +52,14 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
 class transportModel
 : public OpenFOAMCaseElement
 {
 public:
   transportModel(OpenFOAMCase& c);
 };
+
 
 class singlePhaseTransportProperties
 : public transportModel
@@ -62,6 +68,7 @@ public:
   singlePhaseTransportProperties(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
 
 class turbulenceModel
 : public OpenFOAMCaseElement

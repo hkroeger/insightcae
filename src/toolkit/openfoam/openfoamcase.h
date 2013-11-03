@@ -53,7 +53,8 @@ public:
   virtual const boost::filesystem::path& bashrc() const;
   //virtual int executeCommand(const std::vector<std::string>& args) const;
 };
-  
+
+
 class OpenFOAMCaseElement
 : public CaseElement
 {
@@ -67,16 +68,36 @@ public:
 };
 
 
+enum FieldType
+{
+  scalarField,
+  vectorField,
+  symmTensorField
+};
+
+typedef boost::tuple<int, int, int, int, int, int, int> FieldDimension;
+extern const FieldDimension dimKinPressure;
+extern const FieldDimension dimKinEnergy;
+extern const FieldDimension dimVelocity;
+
+typedef std::vector<double> FieldValue;
+typedef boost::tuple<FieldType, FieldDimension, FieldValue> FieldInfo;
+
+typedef std::map<std::string, FieldInfo> FieldList;
+
 class OpenFOAMCase 
 : public Case
 {
 protected:
   const OFEnvironment& env_;
+  FieldList fields_;
   
 public:
     OpenFOAMCase(const OFEnvironment& env);
     OpenFOAMCase(const OpenFOAMCase& other);
     virtual ~OpenFOAMCase();
+    
+    void addField(const std::string& name, const FieldInfo& field);
 
     void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict);
     void addRemainingBCs(OFDictData::dict& boundaryDict);

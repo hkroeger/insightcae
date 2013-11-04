@@ -5,8 +5,11 @@ find_package(Boost COMPONENTS filesystem REQUIRED)
 
 file(GLOB_RECURSE toolkit_SOURCES "*.cpp")
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
-include_directories(${CMAKE_SOURCE_DIR})
+
+#include_directories(${CMAKE_SOURCE_DIR})
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+include_directories(${toolkit_SOURCE_DIR})
+
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${Boost_LIBRARIES} armadillo dl)

@@ -21,8 +21,12 @@
 #include "boost/assign.hpp"
 #include "openfoam/openfoamcase.h"
 #include "base/exception.h"
+#include "boost/lexical_cast.hpp"
 
 using namespace std;
+using namespace boost;
+using namespace boost::filesystem;
+using namespace insight::OFDictData;
 
 
 namespace insight
@@ -86,13 +90,31 @@ OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& nam
 {
 }
 
-const FieldDimension dimKinPressure = FieldDimension(0, 2, -2, 0, 0, 0, 0);
-const FieldDimension dimKinEnergy = FieldDimension(0, 2, -2, 0, 0, 0, 0);
-const FieldDimension dimVelocity = FieldDimension(0, 1, -1, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimKinPressure = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimKinEnergy = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimVelocity = OFDictData::dimension(0, 1, -1, 0, 0, 0, 0);
 
 void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
 {
+  boost::filesystem::path basepath(location);
+
   OFdicts dictionaries_;
+  
+  BOOST_FOREACH( const FieldList::value_type& i, fields_)
+  {
+    OFDictData::dict& field = dictionaries_.addDictionaryIfNonexistent("0/"+i.first);
+    std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
+    field["dimensions"] = OFDictData::data( dimss.str() );
+    std::string vstr="";
+    const FieldValue& val = boost::fusion::get<2>(i.second);
+    BOOST_FOREACH( const double& v, val)
+    {
+      vstr+=" "+lexical_cast<std::string>(v);
+    }
+    if (val.size()>1) vstr  = " ("+vstr+" )";
+    field["internalField"] = OFDictData::data( "uniform"+vstr );
+    field["boundaryField"] = OFDictData::dict();
+  }
   
   for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
        i!=elements_.end(); i++)
@@ -104,29 +126,28 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
 	 }
        }
        
-   boost::filesystem::path basepath(location);
-   for (OFdicts::const_iterator i=dictionaries_.begin();
-	i!=dictionaries_.end(); i++)
+  for (OFdicts::const_iterator i=dictionaries_.begin();
+      i!=dictionaries_.end(); i++)
+      {
+	
+	// write to console for debug
+	cout << endl
+	      << i->first << endl 
+	      << "=================" << endl;
+	writeOpenFOAMDict(cout, *i->second, boost::filesystem::basename(i->first));
+	
+	// then write to file
+	boost::filesystem::path dictpath = basepath / i->first;
+	if (!exists(dictpath.parent_path())) 
 	{
-	  
-	  // write to console for debug
-	  cout << endl
-		<< i->first << endl 
-		<< "=================" << endl;
-	  writeOpenFOAMDict(cout, *i->second, boost::filesystem::basename(i->first));
-	  
-	  // then write to file
-	  boost::filesystem::path dictpath = basepath / i->first;
-	  if (!exists(dictpath.parent_path())) 
-	  {
-	    boost::filesystem::create_directories(dictpath.parent_path());
-	  }
-	  
-	  {
-	    std::ofstream f(dictpath.c_str());
-	    writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
-	  }
+	  boost::filesystem::create_directories(dictpath.parent_path());
 	}
+	
+	{
+	  std::ofstream f(dictpath.c_str());
+	  writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
+	}
+      }
 }
 
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)

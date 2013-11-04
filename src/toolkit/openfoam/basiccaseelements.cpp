@@ -21,9 +21,12 @@
 #include "basiccaseelements.h"
 
 #include "boost/assign.hpp"
+#include "boost/lexical_cast.hpp"
 
 using namespace std;
+using namespace boost;
 using namespace boost::assign;
+using namespace boost::fusion;
 
 namespace insight
 {
@@ -145,6 +148,9 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["equations"]=eqnRelax;
   }
 
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+  
   // ============ setup fvSchemes ================================
   
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
@@ -200,7 +206,7 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
 {
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
   transportProperties["transportModel"]="Newtonian";
-  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimensionSet(0, 2, -1), OFDictData::data(1e-6));
+  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), OFDictData::data(1e-6));
 }
 
 turbulenceModel::turbulenceModel(OpenFOAMCase& c)
@@ -212,7 +218,7 @@ kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {
   c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(0.0) ) );
-  c.addField("omega", 	FieldInfo(scalarField, 	FieldDimension(0, 0, -1), 	list_of(0.0) ) );
+  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(0.0) ) );
 }
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
@@ -240,15 +246,19 @@ void BoundaryCondition::addOptionsToBoundaryDict(OFDictData::dict& bndDict) cons
   bndDict["startFace"]=startFace_;
 }
 
-void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries, const std::string& fieldName) const
+void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& fieldDict=dictionaries.addDictionaryIfNonexistent("0/"+fieldName);
-  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& fieldDict=dictionaries.addDictionaryIfNonexistent("0/"+field.first);
+    OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
+    OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
+  }
 }
 
 void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  //addIntoFieldDictionaries(dictionaries);
+  addIntoFieldDictionaries(dictionaries);
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
   
@@ -279,13 +289,104 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   bl.push_back( bndsubd );
 }
 
+SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)
+: BoundaryCondition(c, patchName, boundaryDict),
+  className_(className)
+{
+}
+
+void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    BC["type"]=OFDictData::data(className_);
+  }
+}
+
+SuctionInletBC::SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, double pressure)
+: BoundaryCondition(c, patchName, boundaryDict),
+  pressure_(pressure)
+{
+}
+
+void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("pressureInletOutletVelocity");
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("totalPressure");
+      BC["p0"]=OFDictData::data("uniform "+lexical_cast<std::string>(pressure_));
+      BC["U"]=OFDictData::data("U");
+      BC["phi"]=OFDictData::data("phi");
+      BC["rho"]=OFDictData::data("none");
+      BC["psi"]=OFDictData::data("none");
+      BC["gamma"]=OFDictData::data(1.0);
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(pressure_));
+    }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else
+    {
+      throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+    }
+  }
+}
+
+
 WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : BoundaryCondition(c, patchName, boundaryDict)
 {
 }
 
-void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries, const std::string& fieldName) const
+void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform 1e-10");
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform 1e-10");
+    }
+    else
+    {
+      throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+    }
+  }
 }
 
 void WallBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const

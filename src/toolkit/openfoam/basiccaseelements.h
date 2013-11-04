@@ -99,11 +99,32 @@ protected:
   
 public:
   BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict);
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries, const std::string& fieldName) const =0;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const =0;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+class SimpleBC
+: public BoundaryCondition
+{
+protected:
+  std::string className_;
+  
+public:
+  SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+class SuctionInletBC
+: public BoundaryCondition
+{
+  double pressure_;
+public:
+  SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, double pressure=0.0);
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
 
 class WallBC
 : public BoundaryCondition
@@ -111,7 +132,7 @@ class WallBC
   
 public:
   WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict);
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries, const std::string& fieldName) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
 };
 

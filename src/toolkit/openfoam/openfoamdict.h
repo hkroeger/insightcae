@@ -85,7 +85,8 @@ namespace OFDictData
   
   const char SPACE[]=" ";
   
-std::vector<int> dimensionSet(int d0=0, int d1=0, int d2=0, int d3=0, int d4=0, int d5=0, int d6=0);
+typedef std::vector<int> dimensionSet;
+dimensionSet dimension(int d0=0, int d1=0, int d2=0, int d3=0, int d4=0, int d5=0, int d6=0);
   
 struct dict;
 struct list;
@@ -199,6 +200,7 @@ struct dict
 
 };
 
+std::ostream& operator<<(std::ostream& os, const dimensionSet& d);
 std::ostream& operator<<(std::ostream& os, const dimensionedData& d);
 std::ostream& operator<<(std::ostream& os, const dict& d);
 std::ostream& operator<<(std::ostream& os, const list& l);

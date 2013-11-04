@@ -112,7 +112,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dict& d)
 namespace OFDictData
 {
 
-std::vector<int> dimensionSet(int d0, int d1, int d2, int d3, int d4, int d5, int d6)
+std::vector<int> dimension(int d0, int d1, int d2, int d3, int d4, int d5, int d6)
 {
   std::vector<int> d(7);
   d[0]=d0;
@@ -161,11 +161,20 @@ list& dict::addListIfNonexistent(const std::string& key)
   return this->lookup<list>(key);
 }
 
+std::ostream& operator<<(std::ostream& os, const dimensionSet& d)
+{
+  os << "[ ";
+  for (size_t i=0; i<7; i++) 
+    os << d[i] << " ";
+  os << "]";
+  return os;
+}
+
 std::ostream& operator<<(std::ostream& os, const dimensionedData& d)
 {
-  os << boost::fusion::get<0>(d) << " [ ";
-  for (size_t i=0; i<7; i++) os << boost::fusion::get<1>(d)[i] << " ";
-  os << "] " << boost::fusion::get<2>(d);
+  os << boost::fusion::get<0>(d) << " " 
+     << boost::fusion::get<1>(d) << " " 
+     << boost::fusion::get<2>(d);
   return os;
 }
 

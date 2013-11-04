@@ -75,13 +75,13 @@ enum FieldType
   symmTensorField
 };
 
-typedef boost::tuple<int, int, int, int, int, int, int> FieldDimension;
-extern const FieldDimension dimKinPressure;
-extern const FieldDimension dimKinEnergy;
-extern const FieldDimension dimVelocity;
+
+extern const OFDictData::dimensionSet dimKinPressure;
+extern const OFDictData::dimensionSet dimKinEnergy;
+extern const OFDictData::dimensionSet dimVelocity;
 
 typedef std::vector<double> FieldValue;
-typedef boost::tuple<FieldType, FieldDimension, FieldValue> FieldInfo;
+typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue> FieldInfo;
 
 typedef std::map<std::string, FieldInfo> FieldList;
 
@@ -110,6 +110,11 @@ public:
       const std::string& cmd,
       std::vector<std::string> argv = std::vector<std::string>()
     ) const;
+    
+    const FieldList& fields() const
+    {
+      return fields_;
+    }
     
 };
 

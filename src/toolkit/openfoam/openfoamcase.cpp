@@ -129,13 +129,13 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
   for (OFdicts::const_iterator i=dictionaries_.begin();
       i!=dictionaries_.end(); i++)
       {
-	
+	/*
 	// write to console for debug
 	cout << endl
 	      << i->first << endl 
 	      << "=================" << endl;
 	writeOpenFOAMDict(cout, *i->second, boost::filesystem::basename(i->first));
-	
+	*/
 	// then write to file
 	boost::filesystem::path dictpath = basepath / i->first;
 	if (!exists(dictpath.parent_path())) 

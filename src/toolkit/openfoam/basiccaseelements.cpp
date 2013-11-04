@@ -269,6 +269,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::list& bl=
     *boost::get<OFDictData::list>( &boundaryDict.begin()->second );
   
+  std::cout<<"Configuring "<<patchName_<<std::endl;
   // search, if patchname is already present; replace, if yes
   for(OFDictData::list::iterator i=bl.begin(); i!=bl.end(); i++)
   {

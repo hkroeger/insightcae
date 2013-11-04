@@ -73,7 +73,8 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     //in.close();
-    
+
+    //OFDictData::dict d; 
     cout << parseOpenFOAMDict<OpenFOAMBoundaryDictParser<std::string::iterator> >(contents.begin(), contents.end(), d) << endl;
     
     // remove "FoamFile" entry, if present
@@ -82,16 +83,28 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     {
       d.erase(i);
     }
-    
+   /* 
+    OFDictData::list bl;
     for(OFDictData::dict::const_iterator i=d.begin();
 	i!=d.end(); i++)
 	{
-	  std::cout << i->first << std::endl;
+	  //std::cout << i->first << std::endl;
+	  bl.push_back( OFDictData::data(i->first) );
+	  bl.push_back( i->second );
 	}
+    d2[""]=bl;
+    */
 }
 
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dict& d)
 {
+  typedef std::map<int, std::string> Ordering;
+  Ordering ord;
+  BOOST_FOREACH( const OFDictData::dict::value_type& i, d )
+  {
+    ord[d.subDict(i.first).getInt("startFace")] = i.first;
+  }
+  
     out<<"FoamFile"<<endl
        <<"{"<<endl
        <<" version     2.0;"<<endl
@@ -103,9 +116,14 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dict& d)
     out << d.size() << endl
 	<< "(" << endl;
 	
-    for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
-      out<< i->first << " " << i->second << ";\n";
-      
+    //for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
+    BOOST_FOREACH( const Ordering::value_type& i, ord )
+    {
+      std::cout<<i.first<<" = "<<i.second<<std::endl;
+      const OFDictData::dict& di = d.subDict(i.second);
+      out<< i.second << " " << di << ";\n";
+    }
+    
     out << ")" << endl;
 }
 

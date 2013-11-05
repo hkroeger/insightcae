@@ -165,7 +165,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  if (OFversion()<=160) suf=" grad(U)"; else suf=" cellLimited leastSquares 1";
+  if (OFversion()<=160) suf=" cellLimited leastSquares 1"; else suf=" grad(U)";
   div["default"]=pref+"Gauss upwind";
   div["div(phi,U)"]=pref+"Gauss linearUpwindV"+suf;
   if (OFversion()>=210)
@@ -285,9 +285,29 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
     }
   }
   
-  // not found, append
-  bl.push_back( OFDictData::data(patchName_) );
-  bl.push_back( bndsubd );
+  // not found, insert
+  OFDictData::list::iterator j = bl.end();
+  for(OFDictData::list::iterator i=bl.begin(); i!=bl.end(); i++)
+  {
+    if (OFDictData::dict *d = boost::get<OFDictData::dict>(&(*i)))
+    {
+      if (d->getInt("startFace") > bndsubd.getInt("startFace") ) 
+      {
+	std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
+	j=i-1;
+	break;
+      }
+      // patch with 0 faces has to be inserted before the face with the same start address but nonzero size
+      if ( (d->getInt("startFace") == bndsubd.getInt("startFace") ) && (bndsubd.getInt("nFaces") == 0) )
+      {
+	std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
+	j=i-1;
+	break;
+      }
+    }
+  }
+  j = bl.insert( j, OFDictData::data(patchName_) );
+  bl.insert( j+1, bndsubd );
 }
 
 SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)

@@ -20,6 +20,7 @@
 
 #include "basiccaseelements.h"
 
+#include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
 
@@ -262,6 +263,8 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
   
+  // contents is created as list of string / subdict pairs
+  // patches have to appear ordered by "startFace"!
   OFDictData::dict& boundaryDict=dictionaries.addDictionaryIfNonexistent("constant/polyMesh/boundary");
   if (boundaryDict.size()==0)
     boundaryDict.addListIfNonexistent("");
@@ -269,13 +272,13 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::list& bl=
     *boost::get<OFDictData::list>( &boundaryDict.begin()->second );
   
-  std::cout<<"Configuring "<<patchName_<<std::endl;
+  //std::cout<<"Configuring "<<patchName_<<std::endl;
   // search, if patchname is already present; replace, if yes
   for(OFDictData::list::iterator i=bl.begin(); i!=bl.end(); i++)
   {
     if (std::string *name = boost::get<std::string>(&(*i)))
     {
-      cout<<"found "<<*name<<endl;
+      //cout<<"found "<<*name<<endl;
       if ( *name == patchName_ )
       {
 	i++;
@@ -285,7 +288,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
     }
   }
   
-  // not found, insert
+  // not found, insert (at the right location)
   OFDictData::list::iterator j = bl.end();
   for(OFDictData::list::iterator i=bl.begin(); i!=bl.end(); i++)
   {
@@ -293,14 +296,14 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
     {
       if (d->getInt("startFace") > bndsubd.getInt("startFace") ) 
       {
-	std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
+	//std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
 	j=i-1;
 	break;
       }
       // patch with 0 faces has to be inserted before the face with the same start address but nonzero size
       if ( (d->getInt("startFace") == bndsubd.getInt("startFace") ) && (bndsubd.getInt("nFaces") == 0) )
       {
-	std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
+	//std::cout << "Inserting before " << *boost::get<std::string>(&(*(i-1))) << std::endl;
 	j=i-1;
 	break;
       }
@@ -308,6 +311,10 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   }
   j = bl.insert( j, OFDictData::data(patchName_) );
   bl.insert( j+1, bndsubd );
+  
+  OFDictData::dict::iterator oe=boundaryDict.begin();
+  std::swap( boundaryDict[lexical_cast<std::string>(bl.size()/2)], oe->second );
+  boundaryDict.erase(oe);
 }
 
 SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)

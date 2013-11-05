@@ -126,6 +126,7 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+
 class WallBC
 : public BoundaryCondition
 {

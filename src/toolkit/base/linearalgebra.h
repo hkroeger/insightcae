@@ -30,6 +30,8 @@ arma::mat vec3(double x, double y, double z);
 arma::mat vec2(double x, double y);
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 
+std::string toStr(const arma::mat& v3);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

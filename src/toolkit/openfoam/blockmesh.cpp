@@ -895,6 +895,11 @@ blockMesh::blockMesh(OpenFOAMCase& c)
 {
 }
 
+void blockMesh::setScaleFactor(double sf)
+{
+  scaleFactor_=sf;
+}
+
 void blockMesh::setDefaultPatch(const std::string& name, std::string type)
 {
   defaultPatchName_=name;

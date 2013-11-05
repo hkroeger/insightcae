@@ -21,6 +21,7 @@
 #ifndef INSIGHT_BASICCASEELEMENTS_H
 #define INSIGHT_BASICCASEELEMENTS_H
 
+#include "base/linearalgebra.h"
 #include "openfoam/openfoamcase.h"
 
 namespace insight 
@@ -130,9 +131,11 @@ public:
 class WallBC
 : public BoundaryCondition
 {
+protected:
+  arma::mat wallVelocity_;
   
 public:
-  WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict);
+  WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity=vec3(0,0,0));
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
 };

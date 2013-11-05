@@ -379,8 +379,9 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 }
 
 
-WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
-: BoundaryCondition(c, patchName, boundaryDict)
+WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity)
+: BoundaryCondition(c, patchName, boundaryDict),
+  wallVelocity_(wallVelocity)
 {
 }
 
@@ -394,7 +395,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+      BC["value"]=OFDictData::data("uniform ("+toStr(wallVelocity_)+")");
     }
     else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
     {

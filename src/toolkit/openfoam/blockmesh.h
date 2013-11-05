@@ -438,6 +438,7 @@ protected:
 public:
   blockMesh(OpenFOAMCase& c);
   
+  void setScaleFactor(double sf);
   void setDefaultPatch(const std::string& name, std::string type="patch");
   
   inline void addPoint(const Point& p) 

@@ -19,8 +19,10 @@
  */
 
 #include "linearalgebra.h"
+#include "boost/lexical_cast.hpp"
 
 using namespace arma;
+using namespace boost;
 
 namespace insight
 {
@@ -51,6 +53,14 @@ mat rotMatrix( double theta, mat u )
       << ux*uy*(1-c)+uz*s << uy*uy+(1-uy*uy)*c << uy*uz*(1-c)-ux*s << endr
       << ux*uz*(1-c)-uy*s << uy*uz*(1-c)+ux*s << uz*uz+(1-uz*uz)*c << endr;
     return m;
+}
+
+std::string toStr(const arma::mat& v3)
+{
+  std::string s="";
+  for (int i=0; i<3; i++)
+    s+=" "+lexical_cast<std::string>(v3(i));
+  return s+" ";
 }
 
 }

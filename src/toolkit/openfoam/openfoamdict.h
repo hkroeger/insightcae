@@ -307,11 +307,11 @@ struct OpenFOAMBoundaryDictParser
 
 	//BOOST_SPIRIT_DEBUG_NODE(rquery);
 	//BOOST_SPIRIT_DEBUG_NODE(rpair);
-	      
+	/*      
 	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
 	BOOST_SPIRIT_DEBUG_NODE(rstring);
 	BOOST_SPIRIT_DEBUG_NODE(rraw);
-	
+	*/
 	//BOOST_SPIRIT_DEBUG_NODE(rentry);
 	//BOOST_SPIRIT_DEBUG_NODE(rsubdict);
 	//BOOST_SPIRIT_DEBUG_NODE(rlist);

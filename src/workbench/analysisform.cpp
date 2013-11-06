@@ -22,7 +22,17 @@
 #include "ui_analysisform.h"
 #include "parameterwrapper.h"
 
+int metaid=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 
+
+AnalysisWorker::AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis)
+: analysis_(analysis)
+{}
+
+void AnalysisWorker::doWork(const insight::ParameterSet& p, insight::ProgressDisplayer* pd)
+{
+  emit resultReady( (*analysis_)(p, pd) );
+}
 
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent)
@@ -39,8 +49,10 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   QWidget* iw=new QWidget(this);
   ui->setupUi(iw);
   setWidget(iw);
+  progdisp_=new GraphProgressDisplayer(ui->runTab);
+  
   this->setWindowTitle(analysis_->getName().c_str());
-  connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(runAnalysis()));
+  connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
   
   addWrapperToWidget(parameters_, ui->inputContents, this);
       
@@ -48,12 +60,25 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
 AnalysisForm::~AnalysisForm()
 {
-    delete ui;
+  workerThread_.quit();
+  workerThread_.wait();
+  delete ui;
 }
 
-void AnalysisForm::runAnalysis()
+void AnalysisForm::onRunAnalysis()
 {
   emit apply();
-  (*analysis_)(parameters_);
+  
+  AnalysisWorker *worker = new AnalysisWorker(analysis_);
+  worker->moveToThread(&workerThread_);
+  connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
+  connect(this, SIGNAL(runAnalysis(const insight::ParameterSet&, insight::ProgressDisplayer*)), 
+	  worker, SLOT(doWork(const insight::ParameterSet&, insight::ProgressDisplayer*)));
+  //connect(worker, SIGNAL(resultReady(const insight::ParameterSet& p)), this, SLOT(handleResults(const insight::ParameterSet& p)));
+  workerThread_.start();
+
+  ui->tabWidget->setCurrentWidget(ui->runTab);
+  //(*analysis_)(parameters_, progdisp_);
+  emit runAnalysis(parameters_, progdisp_);
 }
 

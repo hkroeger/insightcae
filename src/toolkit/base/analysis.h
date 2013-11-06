@@ -25,6 +25,12 @@
 #include "base/factory.h"
 
 namespace insight {
+  
+class ProgressDisplayer
+{
+public:
+  virtual void update() =0;
+};
 
 class Analysis
 {
@@ -48,7 +54,7 @@ public:
   virtual ParameterSet defaultParameters() const =0;
   virtual bool checkParameters(const ParameterSet& p);
   
-  virtual ParameterSet operator()(const ParameterSet& p) =0;
+  virtual ParameterSet operator()(const ParameterSet& p, ProgressDisplayer* displayer=NULL) =0;
   
 
 };

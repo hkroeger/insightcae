@@ -14,7 +14,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="inputTab">
       <attribute name="title">
@@ -22,23 +22,35 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <widget class="QScrollArea" name="scrollArea">
-         <property name="widgetResizable">
-          <bool>true</bool>
+        <widget class="QSplitter" name="splitter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
-         <widget class="QWidget" name="inputContents">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>685</width>
-            <height>383</height>
-           </rect>
+         <widget class="QScrollArea" name="scrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
+          <widget class="QWidget" name="inputContents">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>70</width>
+             <height>402</height>
+            </rect>
+           </property>
+          </widget>
          </widget>
+         <widget class="QWidget" name="widget" native="true"/>
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QWidget" name="runTab">
+      <attribute name="title">
+       <string>Run</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_4"/>
      </widget>
      <widget class="QWidget" name="outputTab">
       <attribute name="title">
@@ -55,8 +67,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>685</width>
-            <height>383</height>
+            <width>729</width>
+            <height>402</height>
            </rect>
           </property>
          </widget>

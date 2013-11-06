@@ -53,6 +53,8 @@ public:
     { return parameters_; }
     
     virtual void createOnDisk(const boost::filesystem::path& location) =0;
+    
+//    virtual void run() =0;
 };
 
 }

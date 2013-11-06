@@ -9,7 +9,7 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})
 link_directories(${toolkit_BIN_DIR})
 
-set(workbench_SRCS parameterwrapper.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
+set(workbench_SRCS graphprogressdisplayer.cpp parameterwrapper.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui)
 QT4_WRAP_UI(workbench_FORMS_HEADERS ${workbench_FORMS})
 qt4_automoc(${workbench_SRCS})

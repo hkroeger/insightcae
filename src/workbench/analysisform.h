@@ -24,13 +24,34 @@
 #include "base/analysis.h"
 
 #include <QMdiSubWindow>
+#include <QThread>
+#include <QMetaType>
 
 #include "boost/shared_ptr.hpp"
+
+#include "graphprogressdisplayer.h"
 
 namespace Ui
 {
 class AnalysisForm;
 }
+
+Q_DECLARE_METATYPE(insight::ParameterSet);
+
+class AnalysisWorker
+: public QObject
+{
+  Q_OBJECT
+  QThread workerThread_;
+  
+  boost::shared_ptr<insight::Analysis> analysis_;
+public:
+  AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis);
+public slots:
+  void doWork(const insight::ParameterSet& p, insight::ProgressDisplayer* pd=NULL);
+signals:
+  void resultReady(const insight::ParameterSet&);
+};
 
 class AnalysisForm
 : public QMdiSubWindow
@@ -40,16 +61,19 @@ class AnalysisForm
 protected:
   insight::ParameterSet parameters_;
   boost::shared_ptr<insight::Analysis> analysis_;
+  GraphProgressDisplayer *progdisp_;
+  QThread workerThread_;
   
 public:
     AnalysisForm(QWidget* parent, const std::string& analysisName);
     ~AnalysisForm();
     
 private slots:
-  void runAnalysis();
+  void onRunAnalysis();
   
 signals:
   void apply();
+  void runAnalysis(const insight::ParameterSet& p, insight::ProgressDisplayer*);
   
 private:
     Ui::AnalysisForm* ui;

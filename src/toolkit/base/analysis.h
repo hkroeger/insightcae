@@ -24,12 +24,16 @@
 #include "base/parameterset.h"
 #include "base/factory.h"
 
-namespace insight {
+namespace insight
+{
+
+typedef std::map<std::string, double> ProgressVariableList;
+typedef std::pair<double, ProgressVariableList> ProgressState;  
   
 class ProgressDisplayer
 {
 public:
-  virtual void update() =0;
+  virtual void update(const ProgressState& pi) =0;
 };
 
 class Analysis

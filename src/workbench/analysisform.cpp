@@ -93,6 +93,7 @@ void AnalysisForm::onKillAnalysis()
   if (workerThread_.isRunning())
   {
     workerThread_.terminate();
+    workerThread_.wait();
   }
 }
 

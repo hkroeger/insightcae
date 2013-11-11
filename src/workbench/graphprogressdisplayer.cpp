@@ -20,21 +20,95 @@
 
 #include "graphprogressdisplayer.h"
 
-#include <QCoreApplication>
+#include "boost/foreach.hpp"
 
-void GraphProgressDisplayer::update()
+#include <QCoreApplication>
+#include <QTimer>
+
+#include "qwt/qwt_scale_engine.h"
+#include "qwt/qwt_plot_grid.h"
+#include "qwt/qwt_legend.h"
+
+using namespace insight;
+
+void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 {
-  setText("updated!");
+  mutex_.lock();
+  
+  double iter=pi.first;
+  const ProgressVariableList& pvl=pi.second;
+  
+  BOOST_FOREACH( const ProgressVariableList::value_type& i, pvl)
+  {
+    const std::string& name = i.first;
+    
+    std::vector<double>& x = progressX_[name];
+    std::vector<double>& y = progressY_[name];
+
+    x.push_back(iter); if (x.size() > maxCnt_) x.erase(x.begin());
+    y.push_back(i.second); if (y.size() > maxCnt_) y.erase(y.begin());    
+  }
+  
+  needsRedraw_=true;
+  
+  mutex_.unlock();
 }
 
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
-: QLabel(parent)
+: QwtPlot(parent),
+  maxCnt_(1000),
+  needsRedraw_(true)
 {
-
+  setTitle("Progress Plot");
+  insertLegend( new QwtLegend() );
+  setCanvasBackground( Qt::white );
+  
+  setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
+  
+  QwtPlotGrid *grid = new QwtPlotGrid();
+  grid->attach(this);
+  
+  QTimer *timer=new QTimer;
+  connect(timer, SIGNAL(timeout()), this, SLOT(checkForUpdate()));
+  timer->setInterval(500);
+  timer->start();
 }
 
 GraphProgressDisplayer::~GraphProgressDisplayer()
 {
-
 }
+
+void GraphProgressDisplayer::checkForUpdate()
+{
+  mutex_.lock();
+  
+  if (needsRedraw_)
+  {
+    needsRedraw_=false;
+    BOOST_FOREACH( const ArrayList::value_type& i, progressX_ )
+    {
+      const std::string& name=i.first;
+      
+      if (curve_.find(name) == curve_.end())
+      {
+	QwtPlotCurve *crv=new QwtPlotCurve();
+	crv->setTitle(name.c_str());
+	crv->setPen(QPen(QColor(
+	  double(qrand())*255.0/double(RAND_MAX), 
+	  double(qrand())*255.0/double(RAND_MAX), 
+	  double(qrand())*255.0/double(RAND_MAX)
+			       ), 2.0));
+	crv->attach(this);
+	curve_[name]=crv;
+      }
+
+      curve_[name]->setSamples(&progressX_[name][0], &progressY_[name][0], progressY_[name].size());
+    }
+
+    this->replot();
+  }
+  
+  mutex_.unlock();
+}
+
 

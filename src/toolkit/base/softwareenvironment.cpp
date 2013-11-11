@@ -22,8 +22,6 @@
 
 #include <iostream>
 
-#include "pstreams/pstream.h"
-
 using namespace std;
 
 namespace insight
@@ -52,17 +50,8 @@ int SoftwareEnvironment::executeCommand
 ) const
 {
   redi::ipstream p_in;
-  if (argv.size()>0)
-  {
-    argv.insert(argv.begin(), cmd);
-    p_in.open(cmd, argv);
-  }
-  else
-  {
-    p_in.open(cmd);
-  }
   
-  cout<<"Executing "<<p_in.command()<<endl;
+  forkCommand(p_in, cmd, argv);
   
   std::string line;
   while (std::getline(p_in, line))
@@ -75,12 +64,24 @@ int SoftwareEnvironment::executeCommand
   return p_in.rdbuf()->status();
 }
 
-int SoftwareEnvironment::forkCommand
+void SoftwareEnvironment::forkCommand
 (
+  redi::ipstream& p_in,
   const std::string& cmd, 
   std::vector<std::string> argv
 ) const
 {
+  if (argv.size()>0)
+  {
+    argv.insert(argv.begin(), cmd);
+    p_in.open(cmd, argv);
+  }
+  else
+  {
+    p_in.open(cmd);
+  }
+  
+  cout<<"Executing "<<p_in.command()<<endl;
 }
 
 }

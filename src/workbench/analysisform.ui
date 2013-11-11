@@ -14,7 +14,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="inputTab">
       <attribute name="title">
@@ -50,7 +50,7 @@
       <attribute name="title">
        <string>Run</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_4"/>
+      <layout class="QVBoxLayout" name="runTabLayout"/>
      </widget>
      <widget class="QWidget" name="outputTab">
       <attribute name="title">
@@ -67,8 +67,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>729</width>
-            <height>402</height>
+            <width>86</width>
+            <height>16</height>
            </rect>
           </property>
          </widget>
@@ -83,7 +83,14 @@
      <item>
       <widget class="QPushButton" name="runBtn">
        <property name="text">
-        <string>Run...</string>
+        <string>Run</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="killBtn">
+       <property name="text">
+        <string>Kill</string>
        </property>
       </widget>
      </item>

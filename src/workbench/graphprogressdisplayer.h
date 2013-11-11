@@ -23,18 +23,40 @@
 
 #include <base/analysis.h>
 
+#include <map>
+#include <vector>
+
 #include <QWidget>
 #include <QLabel>
+#include <QMutex>
+
+#include <qwt/qwt.h>
+#include <qwt/qwt_plot.h>
+#include <qwt/qwt_plot_curve.h>
 
 class GraphProgressDisplayer 
-: public insight::ProgressDisplayer,
-  public QLabel
+: public QwtPlot,
+  public insight::ProgressDisplayer
 {
-
+  Q_OBJECT
+  
+protected:
+  int maxCnt_;
+  typedef std::map<std::string, std::vector<double> > ArrayList;
+  ArrayList progressX_;
+  ArrayList progressY_;
+  std::map<std::string, QwtPlotCurve*> curve_;
+  bool needsRedraw_;
+  QMutex mutex_;
+  
 public:
-    virtual void update();
     GraphProgressDisplayer(QWidget* parent=NULL);
     virtual ~GraphProgressDisplayer();
+
+    virtual void update(const insight::ProgressState& pi);
+    
+public slots:
+  void checkForUpdate();
 };
 
 #endif // GRAPHPROGRESSDISPLAYER_H

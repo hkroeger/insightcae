@@ -24,6 +24,8 @@
 #include <vector>
 #include <string>
 
+#include "pstreams/pstream.h"
+
 namespace insight
 {
 
@@ -44,8 +46,9 @@ public:
       std::vector<std::string>* output = NULL
     ) const;
     
-    virtual int forkCommand
+    virtual void forkCommand
     (
+      redi::ipstream& p_in,      
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>()
     ) const;

@@ -29,6 +29,8 @@
 
 
 namespace insight {
+
+class ProgressDisplayer;
   
 struct OFdicts
 : public boost::ptr_map<std::string, OFDictData::dict> 
@@ -76,6 +78,22 @@ enum FieldType
 };
 
 
+class SolverOutputAnalyzer
+{
+  
+protected:
+  ProgressDisplayer& pdisp_;
+  
+  double curTime_;
+  std::map<std::string, double> curProgVars_;
+  
+public:
+  SolverOutputAnalyzer(ProgressDisplayer& pdisp);
+  
+  void update(const std::string& line);
+};
+
+
 extern const OFDictData::dimensionSet dimKinPressure;
 extern const OFDictData::dimensionSet dimKinEnergy;
 extern const OFDictData::dimensionSet dimVelocity;
@@ -111,11 +129,17 @@ public:
       std::vector<std::string> argv = std::vector<std::string>()
     ) const;
     
+    int runSolver
+    (
+      const boost::filesystem::path& location, 
+      SolverOutputAnalyzer& analyzer,
+      std::string solverName
+    );
+    
     const FieldList& fields() const
     {
       return fields_;
-    }
-    
+    }  
 };
 
 }

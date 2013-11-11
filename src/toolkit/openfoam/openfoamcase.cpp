@@ -21,7 +21,10 @@
 #include "boost/assign.hpp"
 #include "openfoam/openfoamcase.h"
 #include "base/exception.h"
+#include <base/analysis.h>
+
 #include "boost/lexical_cast.hpp"
+#include "boost/regex.hpp"
 
 using namespace std;
 using namespace boost;
@@ -89,6 +92,42 @@ OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& nam
 : CaseElement(c, name)
 {
 }
+
+SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
+: pdisp_(pdisp),
+  curTime_(nan("NAN"))
+{
+}
+
+void SolverOutputAnalyzer::update(const string& line)
+{
+  boost::regex time_pattern("^Time = (.+)$");
+  boost::regex solver_pattern("^(.+): +Solving for (.+), Initial residual = (.+), Final residual = (.+), No Iterations (.+)$");
+  boost::regex cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$");
+
+  boost::smatch match;
+  if ( boost::regex_search( line, match, time_pattern, boost::match_default ) )
+  {
+    if (curTime_ == curTime_)
+    {
+      pdisp_.update( ProgressState(curTime_, curProgVars_));
+    }
+    curTime_=lexical_cast<double>(match[1]);
+  } 
+  else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
+  {
+    curProgVars_[match[2]] = lexical_cast<double>(match[3]);
+  }
+  else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
+  {
+    /*
+    curProgVars_["local cont. err"] = lexical_cast<double>(match[1]);
+    curProgVars_["global cont. err"] = lexical_cast<double>(match[2]);
+    curProgVars_["cumul cont. err"] = lexical_cast<double>(match[3]);
+    */
+  }
+}
+
 
 const OFDictData::dimensionSet dimKinPressure = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimKinEnergy = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
@@ -196,7 +235,32 @@ int OpenFOAMCase::executeCommand
   {
     shellcmd+=" \""+arg+"\"";
   }
-  env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
+  return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
 }
+
+int OpenFOAMCase::runSolver
+(
+  const boost::filesystem::path& location, 
+  SolverOutputAnalyzer& analyzer,
+  std::string solverName
+)
+{
+  std::string shellcmd;
+  shellcmd = "source "+env_.bashrc().string()+";cd \""+location.string()+"\";"+solverName;
+
+  redi::ipstream p_in;
+  env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
+
+  std::string line;
+  while (std::getline(p_in, line))
+  {
+    cout<<">> "<<line<<endl;
+    analyzer.update(line);
+  }
+  p_in.close();
+
+  return p_in.rdbuf()->status();
+}
+
 
 }

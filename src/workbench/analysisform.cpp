@@ -49,10 +49,13 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   QWidget* iw=new QWidget(this);
   ui->setupUi(iw);
   setWidget(iw);
+  
   progdisp_=new GraphProgressDisplayer(ui->runTab);
+  ui->runTabLayout->addWidget(progdisp_);
   
   this->setWindowTitle(analysis_->getName().c_str());
   connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
+  connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
   
   addWrapperToWidget(parameters_, ui->inputContents, this);
       
@@ -67,18 +70,29 @@ AnalysisForm::~AnalysisForm()
 
 void AnalysisForm::onRunAnalysis()
 {
-  emit apply();
-  
-  AnalysisWorker *worker = new AnalysisWorker(analysis_);
-  worker->moveToThread(&workerThread_);
-  connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
-  connect(this, SIGNAL(runAnalysis(const insight::ParameterSet&, insight::ProgressDisplayer*)), 
-	  worker, SLOT(doWork(const insight::ParameterSet&, insight::ProgressDisplayer*)));
-  //connect(worker, SIGNAL(resultReady(const insight::ParameterSet& p)), this, SLOT(handleResults(const insight::ParameterSet& p)));
-  workerThread_.start();
+  if (!workerThread_.isRunning())
+  {
+    emit apply();
+    
+    AnalysisWorker *worker = new AnalysisWorker(analysis_);
+    worker->moveToThread(&workerThread_);
+    connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
+    connect(this, SIGNAL(runAnalysis(const insight::ParameterSet&, insight::ProgressDisplayer*)), 
+	    worker, SLOT(doWork(const insight::ParameterSet&, insight::ProgressDisplayer*)));
+    //connect(worker, SIGNAL(resultReady(const insight::ParameterSet& p)), this, SLOT(handleResults(const insight::ParameterSet& p)));
+    workerThread_.start();
 
-  ui->tabWidget->setCurrentWidget(ui->runTab);
-  //(*analysis_)(parameters_, progdisp_);
-  emit runAnalysis(parameters_, progdisp_);
+    ui->tabWidget->setCurrentWidget(ui->runTab);
+    //(*analysis_)(parameters_, progdisp_);
+    emit runAnalysis(parameters_, progdisp_);
+  }
+}
+
+void AnalysisForm::onKillAnalysis()
+{
+  if (workerThread_.isRunning())
+  {
+    workerThread_.terminate();
+  }
 }
 

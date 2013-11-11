@@ -70,6 +70,7 @@ public:
     
 private slots:
   void onRunAnalysis();
+  void onKillAnalysis();
   
 signals:
   void apply();

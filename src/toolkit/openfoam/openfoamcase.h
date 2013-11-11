@@ -133,7 +133,8 @@ public:
     (
       const boost::filesystem::path& location, 
       SolverOutputAnalyzer& analyzer,
-      std::string solverName
+      std::string solverName,
+      bool *stopFlag = NULL
     );
     
     const FieldList& fields() const

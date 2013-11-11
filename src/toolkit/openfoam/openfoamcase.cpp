@@ -242,9 +242,12 @@ int OpenFOAMCase::runSolver
 (
   const boost::filesystem::path& location, 
   SolverOutputAnalyzer& analyzer,
-  std::string solverName
+  std::string solverName,
+  bool *stopFlag
 )
 {
+  if (stopFlag) *stopFlag=false;
+  
   std::string shellcmd;
   shellcmd = "source "+env_.bashrc().string()+";cd \""+location.string()+"\";"+solverName;
 
@@ -256,6 +259,8 @@ int OpenFOAMCase::runSolver
   {
     cout<<">> "<<line<<endl;
     analyzer.update(line);
+    
+    if (stopFlag) { if (*stopFlag) break; }
   }
   p_in.close();
 

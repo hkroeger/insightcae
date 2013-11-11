@@ -56,9 +56,11 @@ public:
   inline const std::string& getDescription() const { return description_; }
 
   virtual ParameterSet defaultParameters() const =0;
+  
   virtual bool checkParameters(const ParameterSet& p);
   
   virtual ParameterSet operator()(const ParameterSet& p, ProgressDisplayer* displayer=NULL) =0;
+  virtual void cancel() =0;
   
 
 };

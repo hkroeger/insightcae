@@ -215,6 +215,20 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c)
 {
 }
 
+laminar_RASModel::laminar_RASModel(OpenFOAMCase& c)
+: turbulenceModel(c)
+{
+}
+  
+void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  RASProperties["RASModel"]="laminar";
+  RASProperties["turbulence"]="true";
+  RASProperties["printCoeffs"]="true";
+  RASProperties.addSubDictIfNonexistent("laminarCoeffs");
+}
+
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {

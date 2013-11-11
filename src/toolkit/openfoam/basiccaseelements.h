@@ -79,6 +79,15 @@ public:
 };
 
 
+class laminar_RASModel
+: public turbulenceModel
+{
+public:
+  laminar_RASModel(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+};
+
+
 class kOmegaSST_RASModel
 : public turbulenceModel
 {

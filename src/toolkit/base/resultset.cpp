@@ -70,12 +70,14 @@ void ScalarResult::writeLatexCode(ostream& f) const
 
 ResultSet::ResultSet
 (
+  const ParameterSet& p,
   const std::string& title,
   const std::string& subtitle,
   std::string* date,
   std::string* author
 )
-: title_(title),
+: p_(p),
+  title_(title),
   subtitle_(subtitle)
 {
   if (date) 
@@ -108,6 +110,12 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   "\\date{"<<date_<<"}\n"
   "\\author{"<<author_<<"}\n"
   "\\maketitle\n"
+  "\\section{Input Parameters}\n";
+  //"\\begin{enumerate}\n"
+  f<<p_.latexRepresentation();
+  
+  f<<
+  //"\\end{enumerate}\n"
   "\\section{Numerical Result Summary}\n"
   "\\begin{tabular}{lcl}\n"
   "Description of Quantity & Short Name & Value \\\\\n"

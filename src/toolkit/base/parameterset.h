@@ -110,6 +110,8 @@ public:
     const ParameterSet& getSubset(const std::string& name) const;
     inline const ParameterSet& operator[](const std::string& name) const { return getSubset(name); }
     
+    virtual std::string latexRepresentation() const;
+
     virtual ParameterSet* clone() const;
 
 };
@@ -131,6 +133,8 @@ public:
   
   inline ParameterSet& operator()() { return *value_; }
   inline const ParameterSet& operator()() const { return *value_; }
+  
+  virtual std::string latexRepresentation() const;
   
   virtual Parameter* clone () const;
 

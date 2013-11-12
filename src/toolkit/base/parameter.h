@@ -29,6 +29,7 @@
 #include "boost/variant.hpp"
 #include <boost/noncopyable.hpp>
 #include <boost/concept_check.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace insight {
   
@@ -44,6 +45,8 @@ public:
   
   inline const std::string& description() const
   { return description_; }
+  
+  virtual std::string latexRepresentation() const =0;
   
   virtual Parameter* clone() const =0;
 };
@@ -68,7 +71,12 @@ public:
   
   inline T& operator()() { return value_; }
   inline const T& operator()() const { return value_; }
-  
+
+  virtual std::string latexRepresentation() const
+  {
+    return boost::lexical_cast<std::string>(value_);
+  }
+
   virtual Parameter* clone() const
   {
     return new SimpleParameter<T>(value_, description_);
@@ -87,6 +95,7 @@ class DirectoryParameter
 {
 public:
   DirectoryParameter(boost::filesystem::path defaultValue, const std::string& description);
+  virtual std::string latexRepresentation() const;
   virtual Parameter* clone() const;
 };
 
@@ -105,6 +114,8 @@ public:
   virtual ~SelectionParameter();
   
   virtual const ItemList& items() const;
+
+  virtual std::string latexRepresentation() const;
   
   virtual Parameter* clone() const;
 };

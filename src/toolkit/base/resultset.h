@@ -21,6 +21,8 @@
 #ifndef INSIGHT_RESULTSET_H
 #define INSIGHT_RESULTSET_H
 
+#include "base/parameterset.h"
+
 #include <string>
 
 #include "boost/ptr_container/ptr_map.hpp"
@@ -84,11 +86,13 @@ class ResultSet
 : public boost::ptr_map<std::string, ResultElement>
 {
 protected:
+  ParameterSet p_;
   std::string title_, subtitle_, date_, author_;
   
 public:
   ResultSet
   (
+    const ParameterSet& p,
     const std::string& title,
     const std::string& subtitle,
     std::string *author = NULL,

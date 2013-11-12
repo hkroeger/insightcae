@@ -19,6 +19,7 @@
 
 
 #include "parameterset.h"
+#include "base/latextools.h"
 #include "boost/foreach.hpp"
 
 namespace insight
@@ -51,6 +52,25 @@ const ParameterSet& ParameterSet::getSubset(const std::string& name) const
   return this->get<SubsetParameter>(name)();
 }
 
+std::string ParameterSet::latexRepresentation() const
+{
+  std::string result= 
+  "\\begin{enumerate}\n";
+  for(const_iterator i=begin(); i!=end(); i++)
+  {
+    result+=
+    "\\item "
+      +cleanSymbols(i->second->description())
+      +"\\\\\n"
+      +"{\\bf "+i->first+"} = "
+      +i->second->latexRepresentation()
+      +"\n";
+  }
+  result+="\\end{enumerate}\n";
+ 
+  return result;
+}
+
 ParameterSet* ParameterSet::clone() const
 {
   ParameterSet *np=new ParameterSet;
@@ -68,6 +88,12 @@ SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::st
   value_(defaultValue.clone())
 {
 }
+
+std::string SubsetParameter::latexRepresentation() const
+{
+  return value_->latexRepresentation();
+}
+
 
 Parameter* SubsetParameter::clone() const
 {

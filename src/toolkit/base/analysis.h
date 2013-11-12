@@ -23,6 +23,7 @@
 
 #include "base/parameterset.h"
 #include "base/factory.h"
+#include "base/resultset.h"
 
 namespace insight
 {
@@ -59,7 +60,7 @@ public:
   
   virtual bool checkParameters(const ParameterSet& p);
   
-  virtual ParameterSet operator()(const ParameterSet& p, ProgressDisplayer* displayer=NULL) =0;
+  virtual ResultSetPtr operator()(const ParameterSet& p, ProgressDisplayer* displayer=NULL) =0;
   virtual void cancel() =0;
   
 

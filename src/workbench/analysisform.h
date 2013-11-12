@@ -45,12 +45,15 @@ class AnalysisWorker
   QThread workerThread_;
   
   boost::shared_ptr<insight::Analysis> analysis_;
+  
 public:
   AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis);
+  
 public slots:
   void doWork(const insight::ParameterSet& p, insight::ProgressDisplayer* pd=NULL);
+  
 signals:
-  void resultReady(const insight::ParameterSet&);
+  void resultReady(insight::ResultSetPtr);
 };
 
 class AnalysisForm
@@ -65,19 +68,20 @@ protected:
   QThread workerThread_;
   
 public:
-    AnalysisForm(QWidget* parent, const std::string& analysisName);
-    ~AnalysisForm();
+  AnalysisForm(QWidget* parent, const std::string& analysisName);
+  ~AnalysisForm();
     
 private slots:
   void onRunAnalysis();
   void onKillAnalysis();
-  
+  void onResultReady(insight::ResultSetPtr);
+
 signals:
   void apply();
   void runAnalysis(const insight::ParameterSet& p, insight::ProgressDisplayer*);
   
 private:
-    Ui::AnalysisForm* ui;
+  Ui::AnalysisForm* ui;
 
 };
 

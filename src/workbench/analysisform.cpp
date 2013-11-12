@@ -22,7 +22,10 @@
 #include "ui_analysisform.h"
 #include "parameterwrapper.h"
 
-int metaid=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
+#include <QMessageBox>
+
+int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
+int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
 
 
 AnalysisWorker::AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis)
@@ -74,12 +77,14 @@ void AnalysisForm::onRunAnalysis()
   {
     emit apply();
     
+    progdisp_->reset();
+    
     AnalysisWorker *worker = new AnalysisWorker(analysis_);
     worker->moveToThread(&workerThread_);
     connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
     connect(this, SIGNAL(runAnalysis(const insight::ParameterSet&, insight::ProgressDisplayer*)), 
 	    worker, SLOT(doWork(const insight::ParameterSet&, insight::ProgressDisplayer*)));
-    //connect(worker, SIGNAL(resultReady(const insight::ParameterSet& p)), this, SLOT(handleResults(const insight::ParameterSet& p)));
+    connect(worker, SIGNAL(resultReady(insight::ResultSetPtr)), this, SLOT(onResultReady(insight::ResultSetPtr)));
     workerThread_.start();
 
     ui->tabWidget->setCurrentWidget(ui->runTab);
@@ -97,4 +102,11 @@ void AnalysisForm::onKillAnalysis()
     workerThread_.wait();
   }
 }
+
+void AnalysisForm::onResultReady(insight::ResultSetPtr results)
+{
+  QMessageBox::information(this, "Finished!", "The analysis has finished");
+  results->writeLatexFile("report.tex");
+}
+
 

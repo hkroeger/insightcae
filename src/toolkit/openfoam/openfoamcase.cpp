@@ -226,7 +226,8 @@ int OpenFOAMCase::executeCommand
 (
   const boost::filesystem::path& location, 
   const std::string& cmd,
-  std::vector<std::string> argv
+  std::vector<std::string> argv,
+  std::vector<std::string>* output
 ) const
 {
   std::string shellcmd;
@@ -235,7 +236,7 @@ int OpenFOAMCase::executeCommand
   {
     shellcmd+=" \""+arg+"\"";
   }
-  return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
+  return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd), output );
 }
 
 int OpenFOAMCase::runSolver

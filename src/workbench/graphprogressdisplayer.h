@@ -53,6 +53,7 @@ public:
     GraphProgressDisplayer(QWidget* parent=NULL);
     virtual ~GraphProgressDisplayer();
 
+    virtual void reset();
     virtual void update(const insight::ProgressState& pi);
     
 public slots:

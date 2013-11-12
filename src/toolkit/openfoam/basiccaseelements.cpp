@@ -397,6 +397,7 @@ WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::
 : BoundaryCondition(c, patchName, boundaryDict),
   wallVelocity_(wallVelocity)
 {
+  type_="wall";
 }
 
 void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const

@@ -31,6 +31,21 @@
 
 using namespace insight;
 
+void GraphProgressDisplayer::reset()
+{
+  typedef std::map<std::string, QwtPlotCurve*> CurveList;
+  BOOST_FOREACH( CurveList::value_type& i, curve_)
+  {
+    delete i.second;
+  }
+  curve_.clear();
+  progressX_.clear();
+  progressY_.clear();
+  needsRedraw_=true;
+  this->replot();
+}
+
+
 void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 {
   mutex_.lock();

@@ -81,6 +81,11 @@ std::string DoubleRangeParameter::latexRepresentation() const
   return std::string();
 }
 
+DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
+{
+  return new DoubleParameter(*i, "realized from range iterator");
+}
+
 Parameter* DoubleRangeParameter::clone() const
 {
   return new DoubleRangeParameter(values_, description_);

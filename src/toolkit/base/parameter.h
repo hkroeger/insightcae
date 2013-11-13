@@ -145,6 +145,8 @@ public:
 
   virtual std::string latexRepresentation() const;
   
+  DoubleParameter* toDoubleParameter(RangeList::const_iterator i) const;
+  
   virtual Parameter* clone() const;
 };
 

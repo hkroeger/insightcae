@@ -110,6 +110,11 @@ public:
     const ParameterSet& getSubset(const std::string& name) const;
     inline const ParameterSet& operator[](const std::string& name) const { return getSubset(name); }
     
+    inline void replace(const std::string& key, Parameter* newp)
+    {
+      boost::ptr_map<std::string, Parameter>::replace(this->find(key), newp);
+    }
+    
     virtual std::string latexRepresentation() const;
 
     virtual ParameterSet* clone() const;

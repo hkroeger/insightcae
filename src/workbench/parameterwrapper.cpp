@@ -29,6 +29,7 @@
 #include <QDoubleValidator>
 #include <QGroupBox>
 #include <QFileDialog>
+#include <QInputDialog>
 
 #include "boost/foreach.hpp"
 
@@ -42,6 +43,10 @@ void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *s
 	if ( insight::DirectoryParameter* p = dynamic_cast<insight::DirectoryParameter*>(i->second) )
 	{
 	  wrapper=new DirectoryParameterWrapper(widget, i->first.c_str(), *p);
+	}
+	else if ( insight::DoubleRangeParameter* p = dynamic_cast<insight::DoubleRangeParameter*>(i->second) )
+	{
+	  wrapper=new DoubleRangeParameterWrapper(widget, i->first.c_str(), *p);
 	}
 	else if ( insight::PathParameter* p = dynamic_cast<insight::PathParameter*>(i->second) )
 	{
@@ -252,4 +257,84 @@ SubsetParameterWrapper::SubsetParameterWrapper(QWidget* parent, const QString& n
 void SubsetParameterWrapper::onApply()
 {
   emit(apply());
+}
+
+DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(QWidget* parent, const QString& name, insight::DoubleRangeParameter& p)
+: ParameterWrapper(parent, name),
+  p_(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  
+  lBox_=new QListWidget(this);
+  rebuildList();
+  layout->addWidget(lBox_);
+  
+  this->setLayout(layout);
+  
+  QVBoxLayout *sublayout=new QVBoxLayout(this);
+  layout->addLayout(sublayout);
+  
+  QPushButton *addbtn=new QPushButton("Add...", this);
+  sublayout->addWidget(addbtn);
+  connect(addbtn, SIGNAL(clicked()), this, SLOT(onAddSingle()));
+  QPushButton *addrangebtn=new QPushButton("Add Range...", this);
+  sublayout->addWidget(addrangebtn);
+  connect(addrangebtn, SIGNAL(clicked()), this, SLOT(onAddRange()));
+  QPushButton *clearbtn=new QPushButton("Clear", this);
+  sublayout->addWidget(clearbtn);
+  connect(clearbtn, SIGNAL(clicked()), this, SLOT(onClear()));
+}
+
+void DoubleRangeParameterWrapper::rebuildList()
+{
+  int crow=lBox_->currentRow();
+  lBox_->clear();
+  for (insight::DoubleRangeParameter::RangeList::const_iterator i=p_.values().begin(); i!=p_.values().end(); i++)
+  {
+    lBox_->addItem( QString::number(*i) );
+  }
+  lBox_->setCurrentRow(crow);
+}
+
+void DoubleRangeParameterWrapper::onAddSingle()
+{
+  bool ok;
+  double v=QInputDialog::getDouble(this, "Add Range", "Please specify value:", 0., -2147483647,  2147483647, 9, &ok);
+  if (ok)
+  {
+    p_.insertValue(v);
+    rebuildList();
+  }
+}
+
+void DoubleRangeParameterWrapper::onAddRange()
+{
+  QString res=QInputDialog::getText(this, "Add Range", "Please specify range begin, range end and number of values, separated by spaces:");
+  if (!res.isEmpty())
+  {
+    QStringList il=res.split(" ", QString::SkipEmptyParts);
+    double x0=il[0].toDouble();
+    double x1=il[1].toDouble();
+    int num=il[2].toInt();
+    for (int i=0; i<num; i++)
+    {
+      double x=x0+(x1-x0)*double(i)/double(num-1);
+      p_.insertValue(x);
+    }
+    rebuildList();
+  }
+}
+
+void DoubleRangeParameterWrapper::onClear()
+{
+  p_.values().clear();
+  rebuildList();
+}
+
+void DoubleRangeParameterWrapper::onApply()
+{
+  //p_() = (cb_->checkState() == Qt::Checked);
 }

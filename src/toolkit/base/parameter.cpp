@@ -56,4 +56,34 @@ Parameter* SelectionParameter::clone() const
   return new SelectionParameter(value_, items_, description_);
 }
 
+
+DoubleRangeParameter::DoubleRangeParameter(const RangeList& value, const std::string& description)
+: Parameter(description),
+  values_(value)
+{
+}
+
+
+DoubleRangeParameter::DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description)
+: Parameter(description)
+{
+  for(int i=0; i<defaultNum; i++)
+  {
+    insertValue( defaultFrom + (defaultTo-defaultFrom)*double(i)/double(defaultNum-1) );
+  }
+}
+
+DoubleRangeParameter::~DoubleRangeParameter()
+{}
+
+std::string DoubleRangeParameter::latexRepresentation() const
+{
+  return std::string();
+}
+
+Parameter* DoubleRangeParameter::clone() const
+{
+  return new DoubleRangeParameter(values_, description_);
+}
+
 }

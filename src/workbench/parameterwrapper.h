@@ -26,6 +26,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QPushButton>
+#include <QListWidget>
 
 #include "base/parameter.h"
 #include "base/parameterset.h"
@@ -149,6 +150,31 @@ public:
   
 public slots:
   virtual void onApply();
+  
+signals:
+  void apply();
+};
+
+class DoubleRangeParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+  
+protected:
+  insight::DoubleRangeParameter& p_;
+  
+  QListWidget* lBox_;
+  
+  void rebuildList();
+
+public:
+  DoubleRangeParameterWrapper(QWidget* parent, const QString& name, insight::DoubleRangeParameter& p);
+  
+public slots:
+  virtual void onApply();
+  void onAddSingle();
+  void onAddRange();
+  void onClear();
   
 signals:
   void apply();

@@ -25,6 +25,8 @@
 #include <vector>
 #include <string>
 #include <typeinfo>
+#include <set>
+
 #include "boost/filesystem.hpp"
 #include "boost/variant.hpp"
 #include <boost/noncopyable.hpp>
@@ -114,6 +116,32 @@ public:
   virtual ~SelectionParameter();
   
   virtual const ItemList& items() const;
+
+  virtual std::string latexRepresentation() const;
+  
+  virtual Parameter* clone() const;
+};
+
+class DoubleRangeParameter
+: public Parameter
+{
+public:
+  typedef std::set<double> RangeList;
+  
+protected:
+  RangeList values_;
+  
+public:
+  DoubleRangeParameter(const RangeList& value, const std::string& description);
+  DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description);
+  virtual ~DoubleRangeParameter();
+  
+  inline void insertValue(double v) { values_.insert(v); }
+  inline RangeList::iterator operator()() { return values_.begin(); }
+  inline RangeList::const_iterator operator()() const { return values_.begin(); }
+  
+  inline RangeList& values() { return values_; }
+  inline const RangeList& values() const { return values_; }
 
   virtual std::string latexRepresentation() const;
   

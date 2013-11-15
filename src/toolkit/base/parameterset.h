@@ -28,9 +28,11 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
+#include "boost/algorithm/string.hpp"
 
 #include <map>
 #include <vector>
+#include <iostream>
 
 namespace insight {
   
@@ -52,38 +54,66 @@ public:
     template<class T>
     T& get(const std::string& name)
     {
-      iterator i = find(name);
-      if (i==end())
+      using namespace boost;
+      using namespace boost::algorithm;
+      
+      if (boost::contains(name, "/"))
       {
-	throw Exception("Parameter "+name+" not found in parameterset");
+	std::string prefix = copy_range<std::string>( *make_split_iterator(name, first_finder("/")) );
+	std::string remain=name;
+	erase_head(remain, prefix.size()+1);
+	std::cout<<prefix<<" >> "<<remain<<std::endl;
+	return this->getSubset(prefix).get<T>(remain);
       }
       else
       {
-	typedef T PT;
-	PT* const pt=static_cast<PT* const>(i->second);
-	if (!pt)
-	  throw Exception("Parameter "+name+" not of requested type!");
+	iterator i = find(name);
+	if (i==end())
+	{
+	  throw Exception("Parameter "+name+" not found in parameterset");
+	}
 	else
-	  return (*pt);
+	{
+	  typedef T PT;
+	  PT* const pt=static_cast<PT* const>(i->second);
+	  if (!pt)
+	    throw Exception("Parameter "+name+" not of requested type!");
+	  else
+	    return (*pt);
+	}
       }
     }
     
     template<class T>
     const T& get(const std::string& name) const
     {
-      const_iterator i = find(name);
-      if (i==end())
+      using namespace boost;
+      using namespace boost::algorithm;
+      
+      if (boost::contains(name, "/"))
       {
-	throw Exception("Parameter "+name+" not found in parameterset");
+	std::string prefix = copy_range<std::string>( *make_split_iterator(name, first_finder("/")) );
+	std::string remain=name;
+	erase_head(remain, prefix.size()+1);
+	std::cout<<prefix<<" >> "<<remain<<std::endl;
+	return this->getSubset(prefix).get<T>(remain);
       }
       else
       {
-	typedef T PT;
-	const PT* const pt=static_cast<const PT* const>(i->second);
-	if (!pt)
-	  throw Exception("Parameter "+name+" not of requested type!");
+	const_iterator i = find(name);
+	if (i==end())
+	{
+	  throw Exception("Parameter "+name+" not found in parameterset");
+	}
 	else
-	  return (*pt);
+	{
+	  typedef T PT;
+	  const PT* const pt=static_cast<const PT* const>(i->second);
+	  if (!pt)
+	    throw Exception("Parameter "+name+" not of requested type!");
+	  else
+	    return (*pt);
+	}
       }
      }
      
@@ -112,7 +142,21 @@ public:
     
     inline void replace(const std::string& key, Parameter* newp)
     {
-      boost::ptr_map<std::string, Parameter>::replace(this->find(key), newp);
+      using namespace boost;
+      using namespace boost::algorithm;
+      
+      if (boost::contains(key, "/"))
+      {
+	std::string prefix = copy_range<std::string>( *make_split_iterator(key, first_finder("/")) );
+	std::string remain = key;
+	erase_head(remain, prefix.size()+1);
+	std::cout<<prefix<<" >> "<<remain<<std::endl;
+	return this->getSubset(prefix).replace(remain, newp);
+      }
+      else
+      {
+	boost::ptr_map<std::string, Parameter>::replace(this->find(key), newp);
+      }
     }
     
     virtual std::string latexRepresentation() const;
@@ -120,6 +164,8 @@ public:
     virtual ParameterSet* clone() const;
 
 };
+
+typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 
 #define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
 #define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);

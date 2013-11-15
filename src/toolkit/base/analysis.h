@@ -66,6 +66,21 @@ public:
 
 };
 
+class AnalysisThread
+: boost::noncopyable
+{
+protected:
+  boost::shared_ptr<Analysis> analysis_;
+  const ParameterSet& p_;
+  ProgressDisplayer* displayer_;
+  ResultSetPtr result_;
+
+public:
+  AnalysisThread(boost::shared_ptr<Analysis> analysis, const ParameterSet& p, ProgressDisplayer* displayer=NULL);
+  
+  void operator()();
+  inline void cancel() { analysis_->cancel(); }
+};
 
 class AnalysisLibraryLoader
 {

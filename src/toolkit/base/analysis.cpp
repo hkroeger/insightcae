@@ -59,6 +59,15 @@ bool Analysis::checkParameters(const ParameterSet& p)
 
 defineFactoryTable(Analysis, NoParameters);
 
+AnalysisThread::AnalysisThread(boost::shared_ptr<Analysis> analysis, const ParameterSet& p, ProgressDisplayer* displayer)
+: analysis_(analysis), p_(p), displayer_(displayer)
+{}
+
+void AnalysisThread::operator()()
+{
+  result_=(*analysis_)(p_, displayer_);
+}
+
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {

@@ -44,12 +44,18 @@ ParameterSet::~ParameterSet()
 
 ParameterSet& ParameterSet::getSubset(const std::string& name) 
 { 
-  return this->get<SubsetParameter>(name)();
+  if (name==".")
+    return *this;
+  else
+    return this->get<SubsetParameter>(name)();
 }
 
 const ParameterSet& ParameterSet::getSubset(const std::string& name) const
 {
-  return this->get<SubsetParameter>(name)();
+  if (name==".")
+    return *this;
+  else
+    return this->get<SubsetParameter>(name)();
 }
 
 std::string ParameterSet::latexRepresentation() const

@@ -120,7 +120,11 @@ public:
     void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict);
     void addRemainingBCs(OFDictData::dict& boundaryDict);
     inline int OFversion() const { return env_.version(); }
-    virtual void createOnDisk(const boost::filesystem::path& location);
+    
+    boost::shared_ptr<OFdicts> createDictionaries() const;
+    
+    virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
+    virtual void createOnDisk(const boost::filesystem::path& location );
     
     int executeCommand
     (

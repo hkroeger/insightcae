@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(toolkit)
-find_package(Boost COMPONENTS filesystem regex date_time REQUIRED)
+find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
 file(GLOB_RECURSE toolkit_SOURCES "*.cpp")
 file(GLOB_RECURSE toolkit_HEADERS "*.h")

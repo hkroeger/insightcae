@@ -33,6 +33,7 @@ namespace insight
 {
   
 class ResultElement
+: boost::noncopyable
 {
 protected:
   std::string shortDescription_;
@@ -49,15 +50,29 @@ public:
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f) const;
+  
+  virtual ResultElement* clone() const =0;
 };
 
-/*
+inline ResultElement* new_clone(const ResultElement& e)
+{
+  return e.clone();
+}
+
+
+
 class Image
 : public ResultElement
 {
 protected:
+  boost::filesystem::path imagePath_;
+public:
+  Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f) const;
+  virtual ResultElement* clone() const;
 };
-*/
+
 
 template<class T>
 class NumericalResult
@@ -71,6 +86,8 @@ public:
   : ResultElement(shortDesc, longDesc, unit),
     value_(value)
   {}
+  
+  inline const T& value() const { return value_; }
 };
 
 class ScalarResult
@@ -79,6 +96,34 @@ class ScalarResult
 public:
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
   virtual void writeLatexCode(std::ostream& f) const;
+  virtual ResultElement* clone() const;
+};
+
+
+class TabularResult
+: public ResultElement
+{
+public:
+  typedef std::vector<std::vector<double> > Table;
+  
+protected:
+  std::vector<std::string> headings_;
+  Table rows_;
+  
+public:
+  TabularResult
+  (
+   const std::vector<std::string>& headings, 
+   const Table& rows, 
+   const std::string& shortDesc, 
+   const std::string& longDesc,
+   const std::string& unit
+  );
+  
+  virtual void writeGnuplotData(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f) const;
+  
+  virtual ResultElement* clone() const;
 };
 
 
@@ -98,7 +143,13 @@ public:
     std::string *author = NULL,
     std::string *date = NULL
   );
+  
+  ResultSet(const ResultSet& other);
+
   virtual ~ResultSet();
+  
+  void transfer(const ResultSet& other);
+  inline const ParameterSet& parameters() const { return p_; }
   
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
 };

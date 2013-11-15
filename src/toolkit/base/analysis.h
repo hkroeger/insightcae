@@ -25,6 +25,10 @@
 #include "base/factory.h"
 #include "base/resultset.h"
 
+#include <queue>
+
+#include "boost/thread.hpp"
+
 namespace insight
 {
 
@@ -66,20 +70,44 @@ public:
 
 };
 
-class AnalysisThread
+typedef boost::tuple<std::string, ParameterSetPtr, ResultSetPtr> AnalysisInstance;
+
+// Queue class that has thread synchronisation
+class SynchronisedAnalysisQueue
+{
+  
+private:
+    std::queue<AnalysisInstance> m_queue; // Use STL queue to store data
+    boost::mutex m_mutex; // The mutex to synchronise on
+    boost::condition_variable m_cond; // The condition to wait for
+    std::vector<AnalysisInstance> processed_;
+
+public:
+    // Add data to the queue and notify others
+    void enqueue(const AnalysisInstance& data);
+    // Get data from the queue. Wait for data if not available
+    AnalysisInstance dequeue();
+    
+    inline void clear() { m_queue=std::queue<AnalysisInstance>(); processed_.clear(); }
+    inline bool isEmpty() { return m_queue.size()==0; }
+    
+    inline const std::vector<AnalysisInstance>& processed() const { return processed_; }
+};
+
+
+class AnalysisWorkerThread
 : boost::noncopyable
 {
 protected:
-  boost::shared_ptr<Analysis> analysis_;
-  const ParameterSet& p_;
+  Analysis& analysis_;
   ProgressDisplayer* displayer_;
-  ResultSetPtr result_;
+  SynchronisedAnalysisQueue* queue_;
 
 public:
-  AnalysisThread(boost::shared_ptr<Analysis> analysis, const ParameterSet& p, ProgressDisplayer* displayer=NULL);
+  AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Analysis& analysis, ProgressDisplayer* displayer=NULL);
   
   void operator()();
-  inline void cancel() { analysis_->cancel(); }
+  inline void cancel() { analysis_.cancel(); }
 };
 
 class AnalysisLibraryLoader

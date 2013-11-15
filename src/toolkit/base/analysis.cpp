@@ -26,8 +26,10 @@
 #include <dlfcn.h>
 
 #include "boost/filesystem.hpp"
+#include "boost/thread.hpp"
 
 using namespace std;
+using namespace boost;
 using namespace boost::filesystem;
 
 namespace insight
@@ -59,15 +61,53 @@ bool Analysis::checkParameters(const ParameterSet& p)
 
 defineFactoryTable(Analysis, NoParameters);
 
-AnalysisThread::AnalysisThread(boost::shared_ptr<Analysis> analysis, const ParameterSet& p, ProgressDisplayer* displayer)
-: analysis_(analysis), p_(p), displayer_(displayer)
+AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Analysis& analysis, ProgressDisplayer* displayer)
+: queue_(queue), analysis_(analysis), displayer_(displayer)
 {}
 
-void AnalysisThread::operator()()
+void AnalysisWorkerThread::operator()()
 {
-  result_=(*analysis_)(p_, displayer_);
+  while (!queue_->isEmpty())
+  {
+    AnalysisInstance ai=queue_->dequeue();
+    
+    // run analysis and transfer results into given ResultSet object
+    get<2>(ai)->transfer( *analysis_(*get<1>(ai), displayer_) );
+    
+    // Make sure we can be interrupted
+    boost::this_thread::interruption_point();
+  }
 }
 
+// Add data to the queue and notify others
+void SynchronisedAnalysisQueue::enqueue(const AnalysisInstance& data)
+{
+  // Acquire lock on the queue
+  boost::unique_lock<boost::mutex> lock(m_mutex);
+  // Add the data to the queue
+  m_queue.push(data);
+  // Notify others that data is ready
+  m_cond.notify_one();
+} // Lock is automatically released here
+
+// Get data from the queue. Wait for data if not available
+AnalysisInstance SynchronisedAnalysisQueue::dequeue()
+{
+  // Acquire lock on the queue
+  boost::unique_lock<boost::mutex> lock(m_mutex);
+
+  // When there is no data, wait till someone fills it.
+  // Lock is automatically released in the wait and obtained
+  // again after the wait
+  while (m_queue.size()==0) m_cond.wait(lock);
+
+  // Retrieve the data from the queue
+  AnalysisInstance result=m_queue.front();
+  processed_.push_back(result);
+  m_queue.pop();
+  return result;
+} // Lock is automatically released here
+    
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {

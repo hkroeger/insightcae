@@ -53,7 +53,28 @@ void ResultElement::writeLatexCode(ostream& f) const
 {
 }
 
+Image::Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
+: ResultElement(shortDesc, longDesc, ""),
+  imagePath_(value)
+{
+}
 
+void Image::writeLatexHeaderCode(std::ostream& f) const
+{
+  f<<"\\usepackage{graphicx}\n";
+}
+
+void Image::writeLatexCode(std::ostream& f) const
+{
+  f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << imagePath_.c_str() << "}\n";
+}
+
+ResultElement* Image::clone() const
+{
+  return new Image(imagePath_, shortDescription_, longDescription_);
+}
+  
+  
 ScalarResult::ScalarResult(const double& value, const string& shortDesc, const string& longDesc, const string& unit)
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
@@ -62,10 +83,82 @@ void ScalarResult::writeLatexCode(ostream& f) const
 {
   f.setf(ios::fixed,ios::floatfield);
   f.precision(3);
-  f << value_;
+  f << value_ << unit_;
+}
+
+ResultElement* ScalarResult::clone() const
+{
+  return new ScalarResult(value_, shortDescription_, longDescription_, unit_);
+}
+
+TabularResult::TabularResult
+(
+  const std::vector<std::string>& headings, 
+  const Table& rows,
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  const std::string& unit
+)
+: ResultElement(shortDesc, longDesc, unit),
+  headings_(headings),
+  rows_(rows)
+{
+}
+
+void TabularResult::writeGnuplotData(std::ostream& f) const
+{
+  f<<"#";
+  BOOST_FOREACH(const std::string& head, headings_)
+  {
+     f<<" \""<<head<<"\"";
+  }
+  f<<std::endl;
+
+  BOOST_FOREACH(const std::vector<double>& row, rows_)
+  {
+    BOOST_FOREACH(double v, row)
+    {
+      f<<" "<<v;
+    }
+    f<<std::endl;
+  }
+
+}
+
+ResultElement* TabularResult::clone() const
+{
+  return new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_);
 }
 
 
+void TabularResult::writeLatexCode(std::ostream& f) const
+{
+  f<<
+  "\\begin{tabular}{";
+  BOOST_FOREACH(const std::string& h, headings_)
+  {
+    f<<"c";
+  }
+  f<<"}\n";
+  for (std::vector<std::string>::const_iterator i=headings_.begin(); i!=headings_.end(); i++)
+  {
+    if (i!=headings_.begin()) f<<" & ";
+    f<<*i;
+  }
+  f<<
+  "\\\\\n"
+  "\\hline\n";
+  for (TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++)
+  {
+    if (i!=rows_.begin()) f<<"\\\\\n";
+    for (std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++)
+    {
+      if (j!=i->begin()) f<<" & ";
+      f<<*j;
+    }
+  }
+  f<<"\\end{tabular}\n";
+}
 
 
 ResultSet::ResultSet
@@ -99,11 +192,38 @@ ResultSet::ResultSet
 ResultSet::~ResultSet()
 {}
 
+ResultSet::ResultSet(const ResultSet& other)
+: ptr_map< std::string, ResultElement>(other),
+  p_(other.p_),
+  title_(other.title_),
+  subtitle_(other.subtitle_),
+  author_(other.author_),
+  date_(other.date_)
+{
+}
+
+
+void ResultSet::transfer(const ResultSet& other)
+{
+  ptr_map< std::string, ResultElement>::operator=(other);
+  p_=other.p_;
+  title_=other.title_;
+  subtitle_=other.subtitle_;
+  author_=other.author_;
+  date_=other.date_;
+}
+
+
 void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
 {
   std::ofstream f(file.c_str());
   f<<
-  "\\documentclass[a4paper,10pt]{scrartcl}\n"
+  "\\documentclass[a4paper,10pt]{scrartcl}\n";
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    i->second->writeLatexHeaderCode(f);
+  }    
+  f<<
   "\\begin{document}\n"
   "\\title{"<<title_<<"}\n"
   "\\subtitle{"<<subtitle_<<"}\n"
@@ -116,18 +236,21 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   
   f<<
   //"\\end{enumerate}\n"
-  "\\section{Numerical Result Summary}\n"
+  "\\section{Numerical Result Summary}\n";
+  /*
   "\\begin{tabular}{lcl}\n"
   "Description of Quantity & Short Name & Value \\\\\n"
   "\\hline\n";
+  */
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
-    f << i->second->shortDescription() <<" & " << i->first << " & ";
+    f << "\\paragraph{" << i->first << "}\n";
+    f << i->second->shortDescription() << " \\\\ ";
     i->second->writeLatexCode(f);
-    f << i->second->unit() << "\\\\" <<endl;
+    f << endl;
   }
   f<<
-  "\\end{tabular}\n"
+  //"\\end{tabular}\n"
   "\\end{document}\n";
 }
 

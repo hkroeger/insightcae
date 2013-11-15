@@ -106,7 +106,7 @@ void AnalysisForm::onKillAnalysis()
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
   QMessageBox::information(this, "Finished!", "The analysis has finished");
-  results->writeLatexFile("report.tex");
+  results->writeLatexFile( "report.tex" );
 }
 
 

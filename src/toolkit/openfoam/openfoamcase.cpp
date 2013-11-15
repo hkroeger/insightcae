@@ -133,15 +133,13 @@ const OFDictData::dimensionSet dimKinPressure = OFDictData::dimension(0, 2, -2, 
 const OFDictData::dimensionSet dimKinEnergy = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimVelocity = OFDictData::dimension(0, 1, -1, 0, 0, 0, 0);
 
-void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
+boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
-  boost::filesystem::path basepath(location);
-
-  OFdicts dictionaries_;
+  boost::shared_ptr<OFdicts> dictionaries(new OFdicts);
   
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
-    OFDictData::dict& field = dictionaries_.addDictionaryIfNonexistent("0/"+i.first);
+    OFDictData::dict& field = dictionaries->addDictionaryIfNonexistent("0/"+i.first);
     std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
     field["dimensions"] = OFDictData::data( dimss.str() );
     std::string vstr="";
@@ -161,12 +159,27 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
 	 const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
 	 if (e)
 	 {
-	   e->addIntoDictionaries(dictionaries_);
+	   e->addIntoDictionaries(*dictionaries);
 	 }
-       }
+       }  
        
-  for (OFdicts::const_iterator i=dictionaries_.begin();
-      i!=dictionaries_.end(); i++)
+  return dictionaries;
+}
+
+
+void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
+{
+  boost::shared_ptr<OFdicts> dictionaries=createDictionaries();
+  createOnDisk(location, dictionaries);
+}
+
+
+void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries)
+{
+  boost::filesystem::path basepath(location);
+
+  for (OFdicts::const_iterator i=dictionaries->begin();
+      i!=dictionaries->end(); i++)
       {
 	/*
 	// write to console for debug
@@ -261,6 +274,7 @@ int OpenFOAMCase::runSolver
     cout<<">> "<<line<<endl;
     analyzer.update(line);
     
+    boost::this_thread::interruption_point();
     if (stopFlag) { if (*stopFlag) break; }
   }
   p_in.close();

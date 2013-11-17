@@ -64,6 +64,7 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
     y.push_back(i.second); if (y.size() > maxCnt_) y.erase(y.begin());    
   }
   
+  setAxisAutoScale(QwtPlot::yLeft);
   needsRedraw_=true;
   
   mutex_.unlock();
@@ -71,7 +72,7 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
 
 GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
 : QwtPlot(parent),
-  maxCnt_(1000),
+  maxCnt_(500),
   needsRedraw_(true)
 {
   setTitle("Progress Plot");

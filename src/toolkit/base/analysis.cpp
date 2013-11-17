@@ -27,6 +27,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/thread.hpp"
+#include "boost/foreach.hpp"
 
 using namespace std;
 using namespace boost;
@@ -61,6 +62,29 @@ bool Analysis::checkParameters(const ParameterSet& p)
 
 defineFactoryTable(Analysis, NoParameters);
 
+class CollectingProgressDisplayer
+: public ProgressDisplayer
+{
+  std::string id_;
+  ProgressDisplayer* receiver_;
+public:
+  CollectingProgressDisplayer(const std::string& id, ProgressDisplayer* receiver)
+  : id_(id), receiver_(receiver)
+  {}
+  
+  virtual void update(const ProgressState& pi)
+  {
+    double maxv=-1e10;
+    BOOST_FOREACH( const ProgressVariableList::value_type v, pi.second)
+    {
+      if (v.second > maxv) maxv=v.second;
+    } 
+    ProgressVariableList pvl;
+    pvl[id_]=maxv;
+    receiver_->update(ProgressState(pi.first, pvl));
+  }
+};
+
 AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Analysis& analysis, ProgressDisplayer* displayer)
 : queue_(queue), analysis_(analysis), displayer_(displayer)
 {}
@@ -72,7 +96,8 @@ void AnalysisWorkerThread::operator()()
     AnalysisInstance ai=queue_->dequeue();
     
     // run analysis and transfer results into given ResultSet object
-    get<2>(ai)->transfer( *analysis_(*get<1>(ai), displayer_) );
+    CollectingProgressDisplayer pd(get<0>(ai), displayer_);
+    get<2>(ai)->transfer( *analysis_(*get<1>(ai), &pd) );
     
     // Make sure we can be interrupted
     boost::this_thread::interruption_point();

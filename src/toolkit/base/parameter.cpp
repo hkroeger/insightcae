@@ -2,6 +2,8 @@
 #include "parameter.h"
 #include "base/latextools.h"
 
+using namespace rapidxml;
+
 namespace insight 
 {
 
@@ -13,6 +15,13 @@ Parameter::Parameter(const std::string& description)
 Parameter::~Parameter()
 {
 }
+
+void Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  xml_node<>* child = doc.allocate_node(node_element, name.c_str());
+  node.append_node(child);
+}
+
 
 DirectoryParameter::DirectoryParameter(boost::filesystem::path defaultValue, const std::string& description)
 : PathParameter(defaultValue, description)

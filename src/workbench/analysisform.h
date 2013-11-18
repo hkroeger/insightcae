@@ -72,6 +72,8 @@ public:
   ~AnalysisForm();
     
 private slots:
+  void onSaveParameters();
+  void onLoadParameters();
   void onRunAnalysis();
   void onKillAnalysis();
   void onResultReady(insight::ResultSetPtr);

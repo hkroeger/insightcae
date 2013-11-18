@@ -33,6 +33,8 @@
 #include <boost/concept_check.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "rapidxml/rapidxml.hpp"
+
 namespace insight {
   
 class Parameter
@@ -50,6 +52,8 @@ public:
   
   virtual std::string latexRepresentation() const =0;
   
+  virtual void appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+
   virtual Parameter* clone() const =0;
 };
 

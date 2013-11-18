@@ -30,6 +30,8 @@
 #include "boost/fusion/tuple.hpp"
 #include "boost/algorithm/string.hpp"
 
+#include "rapidxml/rapidxml.hpp"
+
 #include <map>
 #include <vector>
 #include <iostream>
@@ -162,6 +164,8 @@ public:
     virtual std::string latexRepresentation() const;
 
     virtual ParameterSet* clone() const;
+
+    virtual void saveToFile(const boost::filesystem::path& file) const;
 
 };
 

@@ -231,17 +231,11 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   "\\author{"<<author_<<"}\n"
   "\\maketitle\n"
   "\\section{Input Parameters}\n";
-  //"\\begin{enumerate}\n"
+  
   f<<p_.latexRepresentation();
   
   f<<
-  //"\\end{enumerate}\n"
   "\\section{Numerical Result Summary}\n";
-  /*
-  "\\begin{tabular}{lcl}\n"
-  "Description of Quantity & Short Name & Value \\\\\n"
-  "\\hline\n";
-  */
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
     f << "\\paragraph{" << i->first << "}\n";
@@ -250,7 +244,6 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
     f << endl;
   }
   f<<
-  //"\\end{tabular}\n"
   "\\end{document}\n";
 }
 

@@ -21,6 +21,11 @@
 #include "parameterset.h"
 #include "base/latextools.h"
 #include "boost/foreach.hpp"
+#include "rapidxml/rapidxml_print.hpp"
+
+#include <fstream>
+
+using namespace rapidxml;
 
 namespace insight
 {
@@ -86,6 +91,29 @@ ParameterSet* ParameterSet::clone() const
     np->insert(key, i->second->clone());
   }
   return np;
+}
+
+
+void ParameterSet::saveToFile(const boost::filesystem::path& file) const
+{
+  xml_document<> doc;
+  
+  // xml declaration
+  xml_node<>* decl = doc.allocate_node(node_declaration);
+  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+  doc.append_node(decl);
+
+  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+  doc.append_node(rootnode);
+  
+  for( const_iterator i=begin(); i!= end(); i++)
+  {
+    i->second->appendToNode(i->first, doc, *rootnode);
+  }
+  
+  std::ofstream f(file.c_str());
+  f << doc << std::endl;
 }
 
 

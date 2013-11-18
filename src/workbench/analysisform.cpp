@@ -23,6 +23,7 @@
 #include "parameterwrapper.h"
 
 #include <QMessageBox>
+#include <QFileDialog>
 
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
@@ -59,7 +60,10 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   this->setWindowTitle(analysis_->getName().c_str());
   connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
   connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
-  
+
+  connect(ui->saveParamBtn, SIGNAL(clicked()), this, SLOT(onSaveParameters()));
+  connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
+
   addWrapperToWidget(parameters_, ui->inputContents, this);
       
 }
@@ -69,6 +73,19 @@ AnalysisForm::~AnalysisForm()
   workerThread_.quit();
   workerThread_.wait();
   delete ui;
+}
+
+void AnalysisForm::onSaveParameters()
+{
+  QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "*.xml");
+  if (!fn.isEmpty())
+  {
+    parameters_.saveToFile(fn.toStdString());
+  }
+}
+
+void AnalysisForm::onLoadParameters()
+{
 }
 
 void AnalysisForm::onRunAnalysis()

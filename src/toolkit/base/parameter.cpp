@@ -1,6 +1,7 @@
 
 #include "parameter.h"
 #include "base/latextools.h"
+#include "base/exception.h"
 
 using namespace rapidxml;
 
@@ -16,12 +17,24 @@ Parameter::~Parameter()
 {
 }
 
-void Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
-{
-  xml_node<>* child = doc.allocate_node(node_element, name.c_str());
-  node.append_node(child);
-}
+char DoubleName[] = "double";
+char IntName[] = "int";
+char BoolName[] = "bool";
+char StringName[] = "string";
+char PathName[] = "path";
 
+rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& type, const std::string& name)
+{
+  for (xml_node<> *child = father.first_node(type.c_str()); child; child = child->next_sibling(type.c_str()))
+  {
+    if (child->first_attribute("name")->value() == name)
+    {
+      return child;
+    }
+  }
+  
+  throw insight::Exception("No xml node found with type="+type+" and name="+name);
+}
 
 DirectoryParameter::DirectoryParameter(boost::filesystem::path defaultValue, const std::string& description)
 : PathParameter(defaultValue, description)
@@ -40,8 +53,32 @@ Parameter* DirectoryParameter::clone() const
   return new DirectoryParameter(value_, description_);
 }
 
+void DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = doc.allocate_node(node_element, "directory");
+    node.append_node(child);
+    child->append_attribute(doc.allocate_attribute
+    (
+      "name", 
+      doc.allocate_string(name.c_str()))
+    );
+    child->append_attribute(doc.allocate_attribute
+    (
+      "value", 
+      doc.allocate_string(value_.c_str())
+    ));
+}
+
+void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, "directory", name);
+  value_=boost::filesystem::path(child->first_attribute("value")->value());
+}
+
 SelectionParameter::SelectionParameter(int defaultValue, const SelectionParameter::ItemList& items, const std::string& description)
-: SimpleParameter< int >(defaultValue, description),
+: SimpleParameter< int , IntName>(defaultValue, description),
   items_(items)
 {
 }
@@ -63,6 +100,30 @@ std::string SelectionParameter::latexRepresentation() const
 Parameter* SelectionParameter::clone() const
 {
   return new SelectionParameter(value_, items_, description_);
+}
+
+void SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = doc.allocate_node(node_element, "selection");
+    node.append_node(child);
+    child->append_attribute(doc.allocate_attribute
+    (
+      "name", 
+      doc.allocate_string(name.c_str()))
+    );
+    child->append_attribute(doc.allocate_attribute
+    (
+      "value", 
+      doc.allocate_string(boost::lexical_cast<std::string>(value_).c_str())
+    ));
+}
+
+void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, "selection", name);
+  value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
 }
 
 
@@ -87,7 +148,13 @@ DoubleRangeParameter::~DoubleRangeParameter()
 
 std::string DoubleRangeParameter::latexRepresentation() const
 {
-  return std::string();
+  std::ostringstream oss;
+  oss << *values_.begin();
+  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+  {
+    oss<<"; "<<*i;
+  }
+  return oss.str();
 }
 
 DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
@@ -98,6 +165,46 @@ DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterat
 Parameter* DoubleRangeParameter::clone() const
 {
   return new DoubleRangeParameter(values_, description_);
+}
+
+void DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = doc.allocate_node(node_element, "doubleRange");
+    
+    node.append_node(child);
+    
+    child->append_attribute(doc.allocate_attribute
+    (
+      "name", 
+      doc.allocate_string(name.c_str()))
+    );
+    
+    std::ostringstream oss;
+    oss << *values_.begin();
+    for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+    {
+      oss<<" "<<*i;
+    }
+    child->append_attribute(doc.allocate_attribute
+    (
+      "values", 
+      doc.allocate_string(oss.str().c_str())
+    ));
+}
+
+void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, "doubleRange", name);
+  std::istringstream iss(child->first_attribute("values")->value());
+  while (!iss.eof())
+  {
+    double v;
+    iss >> v;
+    if (iss.fail()) break;
+    values_.insert(v);
+  }
 }
 
 }

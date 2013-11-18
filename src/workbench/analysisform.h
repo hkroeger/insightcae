@@ -80,6 +80,7 @@ private slots:
 
 signals:
   void apply();
+  void update();
   void runAnalysis(const insight::ParameterSet& p, insight::ProgressDisplayer*);
   
 private:

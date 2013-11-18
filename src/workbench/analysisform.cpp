@@ -77,6 +77,8 @@ AnalysisForm::~AnalysisForm()
 
 void AnalysisForm::onSaveParameters()
 {
+  emit apply();
+
   QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "*.xml");
   if (!fn.isEmpty())
   {
@@ -86,6 +88,12 @@ void AnalysisForm::onSaveParameters()
 
 void AnalysisForm::onLoadParameters()
 {
+  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "*.xml");
+  if (!fn.isEmpty())
+  {
+    parameters_.readFromFile(fn.toStdString());
+    emit update();
+  }
 }
 
 void AnalysisForm::onRunAnalysis()

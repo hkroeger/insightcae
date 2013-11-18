@@ -125,20 +125,20 @@ public:
       return (i!=end());
     }
 
-    inline int& getInt(const std::string& name) { return this->get<SimpleParameter<int> >(name)(); }
-    inline double& getDouble(const std::string& name) { return this->get<SimpleParameter<double> >(name)(); }
-    inline bool& getBool(const std::string& name) { return this->get<SimpleParameter<bool> >(name)(); }
-    inline std::string& getString(const std::string& name) { return this->get<SimpleParameter<std::string> >(name)(); }
+    inline int& getInt(const std::string& name) { return this->get<IntParameter>(name)(); }
+    inline double& getDouble(const std::string& name) { return this->get<DoubleParameter>(name)(); }
+    inline bool& getBool(const std::string& name) { return this->get<BoolParameter>(name)(); }
+    inline std::string& getString(const std::string& name) { return this->get<StringParameter>(name)(); }
     inline boost::filesystem::path& getPath(const std::string& name) 
-    { return this->get<SimpleParameter<boost::filesystem::path> >(name)(); }
+    { return this->get<PathParameter>(name)(); }
     ParameterSet& getSubset(const std::string& name);
 
-    inline const int& getInt(const std::string& name) const { return this->get<SimpleParameter<int> >(name)(); }
-    inline const double& getDouble(const std::string& name) const { return this->get<SimpleParameter<double> >(name)(); }
-    inline const bool& getBool(const std::string& name) const { return this->get<SimpleParameter<bool> >(name)(); }
-    inline const std::string& getString(const std::string& name) const { return this->get<SimpleParameter<std::string> >(name)(); }
+    inline const int& getInt(const std::string& name) const { return this->get<IntParameter>(name)(); }
+    inline const double& getDouble(const std::string& name) const { return this->get<DoubleParameter>(name)(); }
+    inline const bool& getBool(const std::string& name) const { return this->get<BoolParameter>(name)(); }
+    inline const std::string& getString(const std::string& name) const { return this->get<StringParameter>(name)(); }
     inline const boost::filesystem::path& getPath(const std::string& name) const
-    { return this->get<SimpleParameter<boost::filesystem::path> >(name)(); }
+    { return this->get<PathParameter>(name)(); }
     const ParameterSet& getSubset(const std::string& name) const;
     inline const ParameterSet& operator[](const std::string& name) const { return getSubset(name); }
     
@@ -165,7 +165,11 @@ public:
 
     virtual ParameterSet* clone() const;
 
+    virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+    virtual void readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+    
     virtual void saveToFile(const boost::filesystem::path& file) const;
+    virtual void readFromFile(const boost::filesystem::path& file);
 
 };
 
@@ -193,6 +197,8 @@ public:
   
   virtual Parameter* clone () const;
 
+  virtual void appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
 };
 
 

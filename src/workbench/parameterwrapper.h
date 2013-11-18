@@ -43,6 +43,7 @@ public:
     
 public slots:
     virtual void onApply() =0;
+    virtual void onUpdate() =0;
 };
 
 class IntParameterWrapper
@@ -57,6 +58,7 @@ public:
 
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
 };
 
 class DoubleParameterWrapper
@@ -70,6 +72,7 @@ public:
   DoubleParameterWrapper(QWidget* parent, const QString& name, insight::DoubleParameter& p);
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
 };
 
 class BoolParameterWrapper
@@ -83,6 +86,7 @@ public:
   BoolParameterWrapper(QWidget* parent, const QString& name, insight::BoolParameter& p);
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
 };
 
 class PathParameterWrapper
@@ -102,6 +106,7 @@ public:
   
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
   
 protected slots:
   virtual void openSelectionDialog();
@@ -135,6 +140,7 @@ public:
   SelectionParameterWrapper(QWidget* parent, const QString& name, insight::SelectionParameter& p);
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
 };
 
 class SubsetParameterWrapper
@@ -150,9 +156,11 @@ public:
   
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
   
 signals:
   void apply();
+  void update();
 };
 
 class DoubleRangeParameterWrapper
@@ -172,6 +180,7 @@ public:
   
 public slots:
   virtual void onApply();
+  virtual void onUpdate();
   void onAddSingle();
   void onAddRange();
   void onClear();

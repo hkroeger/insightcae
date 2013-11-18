@@ -77,7 +77,11 @@ void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *s
 	  throw insight::Exception("Don't know how to handle parameter "+i->first);
 	}
 	vlayout->addWidget(wrapper);
-	if (superform) QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
+	if (superform) 
+	{
+	  QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
+	  QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
+	}
       }
 }
 
@@ -113,6 +117,11 @@ void IntParameterWrapper::onApply()
   p_()=le_->text().toInt();
 }
 
+void IntParameterWrapper::onUpdate()
+{
+  le_->setText(QString::number(p_()));
+}
+
 DoubleParameterWrapper::DoubleParameterWrapper(QWidget* parent, const QString& name, insight::DoubleParameter& p)
 : ParameterWrapper(parent, name),
   p_(p)
@@ -133,6 +142,12 @@ void DoubleParameterWrapper::onApply()
 {
   p_()=le_->text().toDouble();
 }
+
+void DoubleParameterWrapper::onUpdate()
+{
+  le_->setText(QString::number(p_()));
+}
+
 
 BoolParameterWrapper::BoolParameterWrapper(QWidget* parent, const QString& name, insight::BoolParameter& p)
 : ParameterWrapper(parent, name),
@@ -156,6 +171,15 @@ void BoolParameterWrapper::onApply()
 {
   p_() = (cb_->checkState() == Qt::Checked);
 }
+
+void BoolParameterWrapper::onUpdate()
+{
+  if (p_())
+    cb_->setCheckState(Qt::Checked);
+  else
+    cb_->setCheckState(Qt::Unchecked);
+}
+
 
 PathParameterWrapper::PathParameterWrapper(QWidget* parent, const QString& name, insight::PathParameter& p)
 : ParameterWrapper(parent, name),
@@ -190,6 +214,11 @@ void PathParameterWrapper::updateTooltip()
 void PathParameterWrapper::onApply()
 {
   p_()=le_->text().toStdString();
+}
+
+void PathParameterWrapper::onUpdate()
+{
+  le_->setText(p_().c_str());
 }
 
 void PathParameterWrapper::openSelectionDialog()
@@ -239,8 +268,14 @@ SelectionParameterWrapper::SelectionParameterWrapper(QWidget* parent, const QStr
 
 void SelectionParameterWrapper::onApply()
 {
-  //p_() = (cb_->checkState() == Qt::Checked);
+  p_()=selBox_->currentIndex();
 }
+
+void SelectionParameterWrapper::onUpdate()
+{
+  selBox_->setCurrentIndex(p_());
+}
+
 
 SubsetParameterWrapper::SubsetParameterWrapper(QWidget* parent, const QString& name, insight::SubsetParameter& p)
 : ParameterWrapper(parent, name),
@@ -257,6 +292,11 @@ SubsetParameterWrapper::SubsetParameterWrapper(QWidget* parent, const QString& n
 void SubsetParameterWrapper::onApply()
 {
   emit(apply());
+}
+
+void SubsetParameterWrapper::onUpdate()
+{
+  emit(update());
 }
 
 DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(QWidget* parent, const QString& name, insight::DoubleRangeParameter& p)
@@ -336,5 +376,9 @@ void DoubleRangeParameterWrapper::onClear()
 
 void DoubleRangeParameterWrapper::onApply()
 {
-  //p_() = (cb_->checkState() == Qt::Checked);
+}
+
+void DoubleRangeParameterWrapper::onUpdate()
+{
+  rebuildList();
 }

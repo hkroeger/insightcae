@@ -95,6 +95,21 @@ ParameterSet* ParameterSet::clone() const
   return np;
 }
 
+void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  for( const_iterator i=begin(); i!= end(); i++)
+  {
+    i->second->appendToNode(i->first, doc, node);
+  }
+}
+
+void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  for( iterator i=begin(); i!= end(); i++)
+  {
+    i->second->readFromNode(i->first, doc, node);
+  }
+}
 
 void ParameterSet::saveToFile(const boost::filesystem::path& file) const
 {
@@ -109,13 +124,28 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file) const
   xml_node<> *rootnode = doc.allocate_node(node_element, "root");
   doc.append_node(rootnode);
   
-  for( const_iterator i=begin(); i!= end(); i++)
-  {
-    i->second->appendToNode(i->first, doc, *rootnode);
-  }
+  appendToNode(doc, *rootnode);
   
   std::ofstream f(file.c_str());
   f << doc << std::endl;
+}
+
+void ParameterSet::readFromFile(const boost::filesystem::path& file)
+{
+  std::ifstream in(file.c_str());
+  std::string contents;
+  in.seekg(0, std::ios::end);
+  contents.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents[0], contents.size());
+  in.close();
+
+  xml_document<> doc;
+  doc.parse<0>(&contents[0]);
+  
+  xml_node<> *rootnode = doc.first_node("root");
+  
+  readFromNode(doc, *rootnode);
 }
 
 
@@ -134,6 +164,27 @@ std::string SubsetParameter::latexRepresentation() const
 Parameter* SubsetParameter::clone() const
 {
   return new SubsetParameter(*value_, description_);
+}
+
+void SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  std::cout<<"appending subset "<<name<<std::endl;
+  using namespace rapidxml;
+  xml_node<>* child = doc.allocate_node(node_element, "subset");
+  node.append_node(child);
+  child->append_attribute(doc.allocate_attribute
+  (
+    "name", 
+    doc.allocate_string(name.c_str()))
+  );
+  value_->appendToNode(doc, *child);
+}
+
+void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, "subset", name);
+  value_->readFromNode(doc, *child);
 }
 
 }

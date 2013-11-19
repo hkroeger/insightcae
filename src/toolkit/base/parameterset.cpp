@@ -142,6 +142,7 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
   {
     std::ofstream f(file.c_str());
     f << doc << std::endl;
+    f << std::flush;
     f.close();
   }
 }
@@ -199,24 +200,19 @@ Parameter* SubsetParameter::clone() const
   return new SubsetParameter(*value_, description_);
 }
 
-void SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
 {
   std::cout<<"appending subset "<<name<<std::endl;
   using namespace rapidxml;
-  xml_node<>* child = doc.allocate_node(node_element, "subset");
-  node.append_node(child);
-  child->append_attribute(doc.allocate_attribute
-  (
-    "name", 
-    doc.allocate_string(name.c_str()))
-  );
+  xml_node<>* child = Parameter::appendToNode(name, doc, node);
   value_->appendToNode(doc, *child);
+  return child;
 }
 
 void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
 {
   using namespace rapidxml;
-  xml_node<>* child = findNode(node, "subset", name);
+  xml_node<>* child = findNode(node, name);
   value_->readFromNode(doc, *child);
 }
 

@@ -33,49 +33,19 @@
 
 #include "boost/foreach.hpp"
 
+using namespace boost;
 
 void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *superform)
 {
   QVBoxLayout *vlayout=new QVBoxLayout(widget);
   for(insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++)
       {
-	ParameterWrapper *wrapper;
-	if ( insight::DirectoryParameter* p = dynamic_cast<insight::DirectoryParameter*>(i->second) )
-	{
-	  wrapper=new DirectoryParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::DoubleRangeParameter* p = dynamic_cast<insight::DoubleRangeParameter*>(i->second) )
-	{
-	  wrapper=new DoubleRangeParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::PathParameter* p = dynamic_cast<insight::PathParameter*>(i->second) )
-	{
-	  wrapper=new PathParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::SelectionParameter* p = dynamic_cast<insight::SelectionParameter*>(i->second) )
-	{
-	  wrapper=new SelectionParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::IntParameter* p = dynamic_cast<insight::IntParameter*>(i->second) )
-	{
-	  wrapper=new IntParameterWrapper(widget, i->first.c_str(), *p);
-	} 
-	else if ( insight::DoubleParameter* p = dynamic_cast<insight::DoubleParameter*>(i->second) )
-	{
-	  wrapper=new DoubleParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::BoolParameter* p = dynamic_cast<insight::BoolParameter*>(i->second) )
-	{
-	  wrapper=new BoolParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else if ( insight::SubsetParameter* p = dynamic_cast<insight::SubsetParameter*>(i->second) )
-	{
-	  wrapper=new SubsetParameterWrapper(widget, i->first.c_str(), *p);
-	}
-	else 
-	{
-	  throw insight::Exception("Don't know how to handle parameter "+i->first);
-	}
+	ParameterWrapper *wrapper = 
+	  ParameterWrapper::lookup
+	  (
+	    i->second->type(),
+	    ParameterWrapper::ConstrP(widget, i->first.c_str(), *i->second)
+	  );
 	vlayout->addWidget(wrapper);
 	if (superform) 
 	{
@@ -85,9 +55,13 @@ void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *s
       }
 }
 
-ParameterWrapper::ParameterWrapper(QWidget* parent, const QString& name)
-: QWidget(parent),
-  name_(name)
+defineType(ParameterWrapper);
+defineFactoryTable(ParameterWrapper, ParameterWrapper::ConstrP);
+
+ParameterWrapper::ParameterWrapper(const ConstrP& p)
+: QWidget(get<0>(p)),
+  name_(get<1>(p)),
+  p_(get<2>(p))
 {
 }
 
@@ -96,101 +70,107 @@ ParameterWrapper::~ParameterWrapper()
 
 }
 
-IntParameterWrapper::IntParameterWrapper(QWidget* parent, const QString& name, insight::IntParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+defineType(IntParameterWrapper);
+addToFactoryTable(ParameterWrapper, IntParameterWrapper, ParameterWrapper::ConstrP);
+
+IntParameterWrapper::IntParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   le_=new QLineEdit(this);
-  le_->setText(QString::number(p_()));
+  le_->setText(QString::number(param()()));
   le_->setValidator(new QIntValidator());
-  le_->setToolTip(QString(p_.description().c_str()));
+  le_->setToolTip(QString(param().description().c_str()));
   layout->addWidget(le_);
   this->setLayout(layout);
 }
 
 void IntParameterWrapper::onApply()
 {
-  p_()=le_->text().toInt();
+  param()()=le_->text().toInt();
 }
 
 void IntParameterWrapper::onUpdate()
 {
-  le_->setText(QString::number(p_()));
+  le_->setText(QString::number(param()()));
 }
 
-DoubleParameterWrapper::DoubleParameterWrapper(QWidget* parent, const QString& name, insight::DoubleParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+defineType(DoubleParameterWrapper);
+addToFactoryTable(ParameterWrapper, DoubleParameterWrapper, ParameterWrapper::ConstrP);
+
+DoubleParameterWrapper::DoubleParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   le_=new QLineEdit(this);
-  le_->setText(QString::number(p_()));
+  le_->setText(QString::number(param()()));
   le_->setValidator(new QDoubleValidator());
-  le_->setToolTip(QString(p_.description().c_str()));
+  le_->setToolTip(QString(param().description().c_str()));
   layout->addWidget(le_);
   this->setLayout(layout);
 }
 
 void DoubleParameterWrapper::onApply()
 {
-  p_()=le_->text().toDouble();
+  param()()=le_->text().toDouble();
 }
 
 void DoubleParameterWrapper::onUpdate()
 {
-  le_->setText(QString::number(p_()));
+  le_->setText(QString::number(param()()));
 }
 
+defineType(BoolParameterWrapper);
+addToFactoryTable(ParameterWrapper, BoolParameterWrapper, ParameterWrapper::ConstrP);
 
-BoolParameterWrapper::BoolParameterWrapper(QWidget* parent, const QString& name, insight::BoolParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+BoolParameterWrapper::BoolParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   cb_=new QCheckBox(this);
-  if (p_())
+  if (param()())
     cb_->setCheckState(Qt::Checked);
   else
     cb_->setCheckState(Qt::Unchecked);
-  cb_->setToolTip(QString(p_.description().c_str()));
+  cb_->setToolTip(QString(param().description().c_str()));
   layout->addWidget(cb_);
   this->setLayout(layout);
 }
 
 void BoolParameterWrapper::onApply()
 {
-  p_() = (cb_->checkState() == Qt::Checked);
+  param()() = (cb_->checkState() == Qt::Checked);
 }
 
 void BoolParameterWrapper::onUpdate()
 {
-  if (p_())
+  if (param()())
     cb_->setCheckState(Qt::Checked);
   else
     cb_->setCheckState(Qt::Unchecked);
 }
 
+defineType(PathParameterWrapper);
+addToFactoryTable(ParameterWrapper, PathParameterWrapper, ParameterWrapper::ConstrP);
 
-PathParameterWrapper::PathParameterWrapper(QWidget* parent, const QString& name, insight::PathParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+PathParameterWrapper::PathParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   le_=new QLineEdit(this);
-  le_->setText(p_().c_str());
+  le_->setText(param()().c_str());
   layout->addWidget(le_);
   dlgBtn_=new QPushButton("...", this);
   layout->addWidget(dlgBtn_);
@@ -205,7 +185,7 @@ void PathParameterWrapper::updateTooltip()
 {
   le_->setToolTip
   (
-    QString(p_.description().c_str())
+    QString(param().description().c_str())
     +"\n"+
     "(Evaluates to \""+boost::filesystem::absolute(le_->text().toStdString()).c_str()+"\")"
   );
@@ -213,12 +193,12 @@ void PathParameterWrapper::updateTooltip()
 
 void PathParameterWrapper::onApply()
 {
-  p_()=le_->text().toStdString();
+  param()()=le_->text().toStdString();
 }
 
 void PathParameterWrapper::onUpdate()
 {
-  le_->setText(p_().c_str());
+  le_->setText(param()().c_str());
 }
 
 void PathParameterWrapper::openSelectionDialog()
@@ -235,8 +215,11 @@ void PathParameterWrapper::onDataEntered()
   updateTooltip();
 }
 
-DirectoryParameterWrapper::DirectoryParameterWrapper(QWidget* parent, const QString& name, insight::PathParameter& p)
-: PathParameterWrapper(parent, name, p)
+defineType(DirectoryParameterWrapper);
+addToFactoryTable(ParameterWrapper, DirectoryParameterWrapper, ParameterWrapper::ConstrP);
+
+DirectoryParameterWrapper::DirectoryParameterWrapper(const ConstrP& p)
+: PathParameterWrapper(p)
 {
 }
 
@@ -248,17 +231,19 @@ void DirectoryParameterWrapper::openSelectionDialog()
   if (!fn.isEmpty())
     le_->setText(fn);
 }
-  
-SelectionParameterWrapper::SelectionParameterWrapper(QWidget* parent, const QString& name, insight::SelectionParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+
+defineType(SelectionParameterWrapper);
+addToFactoryTable(ParameterWrapper, SelectionParameterWrapper, ParameterWrapper::ConstrP);
+
+SelectionParameterWrapper::SelectionParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   selBox_=new QComboBox(this);
-  BOOST_FOREACH( const std::string& s, p_.items() )
+  BOOST_FOREACH( const std::string& s, param().items() )
   {
     selBox_->addItem(s.c_str());
   }
@@ -268,23 +253,25 @@ SelectionParameterWrapper::SelectionParameterWrapper(QWidget* parent, const QStr
 
 void SelectionParameterWrapper::onApply()
 {
-  p_()=selBox_->currentIndex();
+  param()()=selBox_->currentIndex();
 }
 
 void SelectionParameterWrapper::onUpdate()
 {
-  selBox_->setCurrentIndex(p_());
+  selBox_->setCurrentIndex(param()());
 }
 
+defineType(SubsetParameterWrapper);
+addToFactoryTable(ParameterWrapper, SubsetParameterWrapper, ParameterWrapper::ConstrP);
 
-SubsetParameterWrapper::SubsetParameterWrapper(QWidget* parent, const QString& name, insight::SubsetParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+
+SubsetParameterWrapper::SubsetParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QGroupBox *nameLabel = new QGroupBox(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  addWrapperToWidget(p_(), nameLabel, this);
+  addWrapperToWidget(param()(), nameLabel, this);
   layout->addWidget(nameLabel);
   this->setLayout(layout);
 }
@@ -299,9 +286,11 @@ void SubsetParameterWrapper::onUpdate()
   emit(update());
 }
 
-DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(QWidget* parent, const QString& name, insight::DoubleRangeParameter& p)
-: ParameterWrapper(parent, name),
-  p_(p)
+defineType(DoubleRangeParameterWrapper);
+addToFactoryTable(ParameterWrapper, DoubleRangeParameterWrapper, ParameterWrapper::ConstrP);
+
+DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
 {
   QHBoxLayout *layout=new QHBoxLayout(this);
   QLabel *nameLabel = new QLabel(name_, this);
@@ -332,7 +321,7 @@ void DoubleRangeParameterWrapper::rebuildList()
 {
   int crow=lBox_->currentRow();
   lBox_->clear();
-  for (insight::DoubleRangeParameter::RangeList::const_iterator i=p_.values().begin(); i!=p_.values().end(); i++)
+  for (insight::DoubleRangeParameter::RangeList::const_iterator i=param().values().begin(); i!=param().values().end(); i++)
   {
     lBox_->addItem( QString::number(*i) );
   }
@@ -345,7 +334,7 @@ void DoubleRangeParameterWrapper::onAddSingle()
   double v=QInputDialog::getDouble(this, "Add Range", "Please specify value:", 0., -2147483647,  2147483647, 9, &ok);
   if (ok)
   {
-    p_.insertValue(v);
+    param().insertValue(v);
     rebuildList();
   }
 }
@@ -362,7 +351,7 @@ void DoubleRangeParameterWrapper::onAddRange()
     for (int i=0; i<num; i++)
     {
       double x=x0+(x1-x0)*double(i)/double(num-1);
-      p_.insertValue(x);
+      param().insertValue(x);
     }
     rebuildList();
   }
@@ -370,7 +359,7 @@ void DoubleRangeParameterWrapper::onAddRange()
 
 void DoubleRangeParameterWrapper::onClear()
 {
-  p_.values().clear();
+  param().values().clear();
   rebuildList();
 }
 

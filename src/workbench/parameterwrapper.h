@@ -28,18 +28,31 @@
 #include <QPushButton>
 #include <QListWidget>
 
+#include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
+
+#include "boost/tuple/tuple.hpp"
+#include "boost/fusion/tuple.hpp"
 
 class ParameterWrapper 
 : public QWidget
 {
   Q_OBJECT
+  
+public:
+  typedef boost::tuple<QWidget *, const QString&, insight::Parameter&> ConstrP;
+  
+  declareFactoryTable(ParameterWrapper, ParameterWrapper::ConstrP);  
+
 protected:
   QString name_;
+  insight::Parameter& p_;
+  
 public:
-    ParameterWrapper(QWidget *parent, const QString& name);
-    virtual ~ParameterWrapper();
+  declareType("ParameterWrapper");
+  ParameterWrapper(const ConstrP& p);
+  virtual ~ParameterWrapper();
     
 public slots:
     virtual void onApply() =0;
@@ -51,11 +64,13 @@ class IntParameterWrapper
 {
   Q_OBJECT
 protected:
-  insight::IntParameter& p_;
   QLineEdit *le_;
 public:
-  IntParameterWrapper(QWidget* parent, const QString& name, insight::IntParameter& p);
-
+  declareType(insight::IntParameter::typeName_());
+  
+  IntParameterWrapper(const ConstrP& p);
+  inline insight::IntParameter& param() { return dynamic_cast<insight::IntParameter&>(p_); }
+  
 public slots:
   virtual void onApply();
   virtual void onUpdate();
@@ -66,10 +81,11 @@ class DoubleParameterWrapper
 {
   Q_OBJECT
 protected:
-  insight::DoubleParameter& p_;
   QLineEdit *le_;
 public:
-  DoubleParameterWrapper(QWidget* parent, const QString& name, insight::DoubleParameter& p);
+  declareType(insight::DoubleParameter::typeName_());
+  DoubleParameterWrapper(const ConstrP& p);
+  inline insight::DoubleParameter& param() { return dynamic_cast<insight::DoubleParameter&>(p_); }
 public slots:
   virtual void onApply();
   virtual void onUpdate();
@@ -80,10 +96,13 @@ class BoolParameterWrapper
 {
   Q_OBJECT
 protected:
-  insight::BoolParameter& p_;
   QCheckBox *cb_;
+
 public:
-  BoolParameterWrapper(QWidget* parent, const QString& name, insight::BoolParameter& p);
+  declareType(insight::BoolParameter::typeName_());
+  BoolParameterWrapper(const ConstrP& p);
+  inline insight::BoolParameter& param() { return dynamic_cast<insight::BoolParameter&>(p_); }
+
 public slots:
   virtual void onApply();
   virtual void onUpdate();
@@ -95,15 +114,16 @@ class PathParameterWrapper
   Q_OBJECT
   
 protected:
-  insight::PathParameter& p_;
   QLineEdit *le_;
   QPushButton *dlgBtn_;
   
   virtual void updateTooltip();
   
 public:
-  PathParameterWrapper(QWidget* parent, const QString& name, insight::PathParameter& p);
-  
+  declareType(insight::PathParameter::typeName_());
+  PathParameterWrapper(const ConstrP& p);
+  inline insight::PathParameter& param() { return dynamic_cast<insight::PathParameter&>(p_); }
+
 public slots:
   virtual void onApply();
   virtual void onUpdate();
@@ -118,7 +138,9 @@ class DirectoryParameterWrapper
 {
   Q_OBJECT
 public:
-  DirectoryParameterWrapper(QWidget* parent, const QString& name, insight::PathParameter& p);
+  declareType(insight::DirectoryParameter::typeName_());
+  DirectoryParameterWrapper(const ConstrP& p);
+  inline insight::DirectoryParameter& param() { return dynamic_cast<insight::DirectoryParameter&>(p_); }
 
 protected slots:
   virtual void openSelectionDialog();
@@ -132,12 +154,13 @@ class SelectionParameterWrapper
   Q_OBJECT
   
 protected:
-  insight::SelectionParameter& p_;
   
   QComboBox* selBox_;
 
 public:
-  SelectionParameterWrapper(QWidget* parent, const QString& name, insight::SelectionParameter& p);
+  declareType(insight::SelectionParameter::typeName_());
+  SelectionParameterWrapper(const ConstrP& p);
+  inline insight::SelectionParameter& param() { return dynamic_cast<insight::SelectionParameter&>(p_); }
 public slots:
   virtual void onApply();
   virtual void onUpdate();
@@ -148,11 +171,10 @@ class SubsetParameterWrapper
 {
   Q_OBJECT
   
-protected:
-  insight::SubsetParameter& p_;
-
 public:
-  SubsetParameterWrapper(QWidget* parent, const QString& name, insight::SubsetParameter& p);
+  declareType(insight::SubsetParameter::typeName_());
+  SubsetParameterWrapper(const ConstrP& p);
+  inline insight::SubsetParameter& param() { return dynamic_cast<insight::SubsetParameter&>(p_); }
   
 public slots:
   virtual void onApply();
@@ -169,14 +191,14 @@ class DoubleRangeParameterWrapper
   Q_OBJECT
   
 protected:
-  insight::DoubleRangeParameter& p_;
-  
   QListWidget* lBox_;
   
   void rebuildList();
 
 public:
-  DoubleRangeParameterWrapper(QWidget* parent, const QString& name, insight::DoubleRangeParameter& p);
+  declareType(insight::DoubleRangeParameter::typeName_());
+  DoubleRangeParameterWrapper(const ConstrP& p);
+  inline insight::DoubleRangeParameter& param() { return dynamic_cast<insight::DoubleRangeParameter&>(p_); }
   
 public slots:
   virtual void onApply();

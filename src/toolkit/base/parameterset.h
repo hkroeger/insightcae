@@ -168,8 +168,8 @@ public:
     virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
     virtual void readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
     
-    virtual void saveToFile(const boost::filesystem::path& file) const;
-    virtual void readFromFile(const boost::filesystem::path& file);
+    virtual void saveToFile(const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
+    virtual std::string readFromFile(const boost::filesystem::path& file);
 
 };
 
@@ -188,8 +188,12 @@ protected:
   boost::shared_ptr<ParameterSet> value_;
   
 public:
+  declareType("subset");
+  
+  SubsetParameter(const std::string& description);
   SubsetParameter(const ParameterSet& defaultValue, const std::string& description);
   
+  inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
   inline ParameterSet& operator()() { return *value_; }
   inline const ParameterSet& operator()() const { return *value_; }
   

@@ -35,6 +35,9 @@ using namespace boost::filesystem;
 
 namespace insight
 {
+  
+defineType(Analysis);
+
 /*  
 Analysis::Analysis()
 {

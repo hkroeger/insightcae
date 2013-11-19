@@ -49,21 +49,38 @@ public:
   }
 };
 
+#define declareType(typenameStr) \
+ static const char *typeName_() { return typenameStr; }; \
+ static const std::string typeName; \
+ virtual const std::string& type() const { return typeName; } 
+ 
+#define defineType(T) \
+ const std::string T::typeName( T::typeName_() )
+
 #define declareFactoryTable(baseT, paramS) \
- typedef boost::ptr_map<std::string, Factory<baseT, paramS> > FactoryTable; \
- static FactoryTable factories_;
+ typedef boost::ptr_map<std::string, insight::Factory<baseT, paramS> > FactoryTable; \
+ static FactoryTable factories_; \
+ static baseT* lookup(const std::string& key, const paramS& cp) \
 
 #define defineFactoryTable(baseT, paramS) \
- boost::ptr_map<std::string, Factory<baseT, paramS> > baseT::factories_;
+ boost::ptr_map<std::string, insight::Factory<baseT, paramS> > baseT::factories_; \
+ baseT* baseT::lookup(const std::string& key, const paramS& cp) \
+ { \
+   baseT::FactoryTable::const_iterator i = baseT::factories_.find(key); \
+  if (i==baseT::factories_.end()) \
+    throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
+  return (*i->second)( cp ); \
+ }
 
-#define addToFactoryTable(entry, baseT, specT, paramS) \
+
+#define addToFactoryTable(baseT, specT, paramS) \
 struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
-    std::string key(entry); \
+    std::string key(specT::typeName); \
     std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl; \
-    baseT::factories_.insert(key, new SpecFactory<baseT, specT, paramS>() ); \
+    baseT::factories_.insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
   }\
 } v_add##specT##To##baseT##FactoryTable;
 

@@ -8,6 +8,9 @@ using namespace rapidxml;
 namespace insight 
 {
 
+defineType(Parameter);
+defineFactoryTable(Parameter, std::string);
+
 Parameter::Parameter(const std::string& description)
 : description_(description)
 {
@@ -23,6 +26,12 @@ char BoolName[] = "bool";
 char StringName[] = "string";
 char PathName[] = "path";
 
+template<> defineType(DoubleParameter);
+template<> defineType(IntParameter);
+template<> defineType(BoolParameter);
+template<> defineType(StringParameter);
+template<> defineType(PathParameter);
+
 rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& type, const std::string& name)
 {
   for (xml_node<> *child = father.first_node(type.c_str()); child; child = child->next_sibling(type.c_str()))
@@ -36,8 +45,15 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
   throw insight::Exception("No xml node found with type="+type+" and name="+name);
 }
 
-DirectoryParameter::DirectoryParameter(boost::filesystem::path defaultValue, const std::string& description)
-: PathParameter(defaultValue, description)
+defineType(DirectoryParameter);
+addToFactoryTable(Parameter, DirectoryParameter, std::string);
+
+DirectoryParameter::DirectoryParameter(const std::string& description)
+: PathParameter(".", description)
+{}
+
+DirectoryParameter::DirectoryParameter(boost::filesystem::path value, const std::string& description)
+: PathParameter(value, description)
 {}
 
 std::string DirectoryParameter::latexRepresentation() const
@@ -77,8 +93,16 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
   value_=boost::filesystem::path(child->first_attribute("value")->value());
 }
 
-SelectionParameter::SelectionParameter(int defaultValue, const SelectionParameter::ItemList& items, const std::string& description)
-: SimpleParameter< int , IntName>(defaultValue, description),
+defineType(SelectionParameter);
+addToFactoryTable(Parameter, SelectionParameter, std::string);
+
+SelectionParameter::SelectionParameter( const std::string& description)
+: SimpleParameter< int , IntName>(-1, description)
+{
+}
+
+SelectionParameter::SelectionParameter(int value, const SelectionParameter::ItemList& items, const std::string& description)
+: SimpleParameter< int , IntName>(value, description),
   items_(items)
 {
 }
@@ -126,6 +150,13 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
   value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
 }
 
+defineType(DoubleRangeParameter);
+addToFactoryTable(Parameter, DoubleRangeParameter, std::string);
+
+DoubleRangeParameter::DoubleRangeParameter(const std::string& description)
+: Parameter(description)
+{
+}
 
 DoubleRangeParameter::DoubleRangeParameter(const RangeList& value, const std::string& description)
 : Parameter(description),

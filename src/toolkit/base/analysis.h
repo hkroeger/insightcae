@@ -52,6 +52,8 @@ protected:
   std::string description_;
 
 public:
+  declareType("Analysis");
+  
   //Analysis();
   Analysis(const NoParameters&);
   Analysis(const std::string& name, const std::string& description);

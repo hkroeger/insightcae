@@ -111,8 +111,10 @@ void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
   }
 }
 
-void ParameterSet::saveToFile(const boost::filesystem::path& file) const
+void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
+  std::cout<<"Writing parameterset to file "<<file<<std::endl;
+  
   xml_document<> doc;
   
   // xml declaration
@@ -124,13 +126,27 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file) const
   xml_node<> *rootnode = doc.allocate_node(node_element, "root");
   doc.append_node(rootnode);
   
+  if (analysisName != "")
+  {
+    xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
+    rootnode->append_node(analysisnamenode);
+    analysisnamenode->append_attribute(doc.allocate_attribute
+    (
+      "name", 
+      doc.allocate_string(analysisName.c_str())
+    ));
+  }
+
   appendToNode(doc, *rootnode);
   
-  std::ofstream f(file.c_str());
-  f << doc << std::endl;
+  {
+    std::ofstream f(file.c_str());
+    f << doc << std::endl;
+    f.close();
+  }
 }
 
-void ParameterSet::readFromFile(const boost::filesystem::path& file)
+std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 {
   std::ifstream in(file.c_str());
   std::string contents;
@@ -145,9 +161,26 @@ void ParameterSet::readFromFile(const boost::filesystem::path& file)
   
   xml_node<> *rootnode = doc.first_node("root");
   
+  std::string analysisName;
+  xml_node<> *analysisnamenode = rootnode->first_node("analysis");
+  if (analysisnamenode)
+  {
+    analysisName = analysisnamenode->first_attribute("name")->value();
+  }
+  
   readFromNode(doc, *rootnode);
+  
+  return analysisName;
 }
 
+defineType(SubsetParameter);
+addToFactoryTable(Parameter, SubsetParameter, std::string);
+
+
+SubsetParameter::SubsetParameter(const std::string& description)
+: Parameter(description)
+{
+}
 
 SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::string& description)
 : Parameter(description),

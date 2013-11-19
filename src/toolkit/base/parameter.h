@@ -21,6 +21,8 @@
 #ifndef INSIGHT_PARAMETER_H
 #define INSIGHT_PARAMETER_H
 
+#include "factory.h"
+
 #include <string>
 #include <vector>
 #include <string>
@@ -40,10 +42,16 @@ namespace insight {
 class Parameter
 : boost::noncopyable
 {
+  
+public:
+  declareFactoryTable(Parameter, std::string);  
+
 protected:
   std::string description_;
   
 public:
+  declareType("Parameter");
+  
   Parameter(const std::string& description);
   virtual ~Parameter();
   
@@ -69,9 +77,15 @@ protected:
   T value_;
   
 public:
-  SimpleParameter(T defaultValue, const std::string& description)
+  declareType(N);
+
+  SimpleParameter(const std::string& description)
+  : Parameter(description)
+  {}
+
+  SimpleParameter(T value, const std::string& description)
   : Parameter(description),
-    value_(defaultValue)
+    value_(value)
   {}
   
   virtual ~SimpleParameter()
@@ -132,7 +146,10 @@ class DirectoryParameter
 : public PathParameter
 {
 public:
-  DirectoryParameter(boost::filesystem::path defaultValue, const std::string& description);
+  declareType("directory");
+  
+  DirectoryParameter(const std::string& description);
+  DirectoryParameter(boost::filesystem::path value, const std::string& description);
   virtual std::string latexRepresentation() const;
   virtual Parameter* clone() const;
   virtual void appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
@@ -150,9 +167,13 @@ protected:
   ItemList items_;
   
 public:
-  SelectionParameter(int defaultValue, const ItemList& items, const std::string& description);
+  declareType("selection");
+  
+  SelectionParameter(const std::string& description);
+  SelectionParameter(int value, const ItemList& items, const std::string& description);
   virtual ~SelectionParameter();
   
+  inline ItemList& items() { return items_; };
   virtual const ItemList& items() const;
 
   virtual std::string latexRepresentation() const;
@@ -173,6 +194,9 @@ protected:
   RangeList values_;
   
 public:
+  declareType("doubleRange");
+  
+  DoubleRangeParameter(const std::string& description);
   DoubleRangeParameter(const RangeList& value, const std::string& description);
   DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description);
   virtual ~DoubleRangeParameter();
@@ -194,12 +218,8 @@ public:
   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
 };
 
-}
-
-namespace boost
-{
   
-inline insight::Parameter* new_clone(const insight::Parameter& p)
+inline Parameter* new_clone(const Parameter& p)
 {
   return p.clone();
 }

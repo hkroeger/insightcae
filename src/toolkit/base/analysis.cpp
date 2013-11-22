@@ -44,14 +44,53 @@ Analysis::Analysis()
 }
 */
 
+boost::filesystem::path Analysis::setupExecutionEnvironment()
+{
+  if (executionPath_()=="")
+  {
+    executionPath_() = boost::filesystem::unique_path();
+  }
+  if (!exists(executionPath_()))
+    create_directories(executionPath_());
+  return executionPath_();
+}
+
+void Analysis::setExecutionPath(boost::filesystem::path& exePath)
+{
+  executionPath_()=exePath;
+}
+
+void Analysis::setParameters(const ParameterSet& p)
+{
+  parameters_.reset(p.clone());
+}
+
+path Analysis::executionPath() const
+{
+  if (executionPath_()=="")
+    throw insight::Exception("Temporary analysis storage requested but not yet created!");
+  return executionPath_();
+}
+
+
 Analysis::Analysis(const std::string& name, const std::string& description)
 : name_(name),
-  description_(description)
+  description_(description),
+  executionPath_("Directory to store data files during analysis.\nLeave empty for temporary storage.")
 {
 }
 
 Analysis::Analysis(const NoParameters&)
+: executionPath_("Directory to store data files during analysis.\nLeave empty for temporary storage.")
 {
+}
+
+void Analysis::setDefaults()
+{
+  std::string name(type());
+  replace_all(name, " ", "_");
+  replace_all(name, "/", "-");
+  executionPath_()=path(".")/name;
 }
 
 Analysis::~Analysis()
@@ -62,6 +101,14 @@ bool Analysis::checkParameters(const ParameterSet& p)
 {
   return true;
 }
+
+Analysis* Analysis::clone() const
+{
+  Analysis *newa=this->lookup(this->type(), NoParameters());
+  newa->setParameters(*parameters_);
+  return newa;
+}
+
 
 defineFactoryTable(Analysis, NoParameters);
 
@@ -88,8 +135,8 @@ public:
   }
 };
 
-AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Analysis& analysis, ProgressDisplayer* displayer)
-: queue_(queue), analysis_(analysis), displayer_(displayer)
+AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer)
+: queue_(queue), displayer_(displayer)
 {}
 
 void AnalysisWorkerThread::operator()()
@@ -99,8 +146,8 @@ void AnalysisWorkerThread::operator()()
     AnalysisInstance ai=queue_->dequeue();
     
     // run analysis and transfer results into given ResultSet object
-    CollectingProgressDisplayer pd(get<0>(ai), displayer_);
-    get<2>(ai)->transfer( *analysis_(*get<1>(ai), &pd) );
+    CollectingProgressDisplayer pd(boost::get<0>(ai), displayer_);
+    boost::get<2>(ai)->transfer( *(*boost::get<1>(ai))(&pd) );
     
     // Make sure we can be interrupted
     boost::this_thread::interruption_point();
@@ -135,6 +182,15 @@ AnalysisInstance SynchronisedAnalysisQueue::dequeue()
   m_queue.pop();
   return result;
 } // Lock is automatically released here
+
+void SynchronisedAnalysisQueue::cancelAll()
+{
+  while (!isEmpty())
+  {
+    boost::get<1>(dequeue())->cancel();
+  }
+}
+
     
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()

@@ -57,7 +57,8 @@ public:
   
   inline const std::string& description() const
   { return description_; }
-  
+  inline std::string& description() { return description_; }
+
   virtual std::string latexRepresentation() const =0;
   
   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;

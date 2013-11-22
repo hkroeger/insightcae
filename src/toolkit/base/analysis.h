@@ -50,6 +50,10 @@ public:
 protected:
   std::string name_;
   std::string description_;
+  DirectoryParameter executionPath_;
+  ParameterSetPtr parameters_;
+  
+  virtual boost::filesystem::path setupExecutionEnvironment();
 
 public:
   declareType("Analysis");
@@ -59,20 +63,33 @@ public:
   Analysis(const std::string& name, const std::string& description);
   virtual ~Analysis();
   
+  void setDefaults();
+  virtual void setExecutionPath(boost::filesystem::path& exePath);
+  virtual void setParameters(const ParameterSet& p);
+  virtual boost::filesystem::path executionPath() const;
+  
+  inline DirectoryParameter& executionPathParameter() { return executionPath_; }
+  
   inline const std::string& getName() const { return name_; }
   inline const std::string& getDescription() const { return description_; }
+  inline std::string& description() { return description_; }
+  
+  inline const ParameterSet& p() const { return *parameters_; }
 
   virtual ParameterSet defaultParameters() const =0;
   
   virtual bool checkParameters(const ParameterSet& p);
   
-  virtual ResultSetPtr operator()(const ParameterSet& p, ProgressDisplayer* displayer=NULL) =0;
+  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL) =0;
   virtual void cancel() =0;
   
+  virtual Analysis* clone() const;
 
 };
 
-typedef boost::tuple<std::string, ParameterSetPtr, ResultSetPtr> AnalysisInstance;
+typedef boost::shared_ptr<Analysis> AnalysisPtr;
+
+typedef boost::tuple<std::string, AnalysisPtr, ResultSetPtr> AnalysisInstance;
 
 // Queue class that has thread synchronisation
 class SynchronisedAnalysisQueue
@@ -93,6 +110,8 @@ public:
     inline void clear() { m_queue=std::queue<AnalysisInstance>(); processed_.clear(); }
     inline bool isEmpty() { return m_queue.size()==0; }
     
+    void cancelAll();
+    
     inline const std::vector<AnalysisInstance>& processed() const { return processed_; }
 };
 
@@ -101,15 +120,14 @@ class AnalysisWorkerThread
 : boost::noncopyable
 {
 protected:
-  Analysis& analysis_;
   ProgressDisplayer* displayer_;
   SynchronisedAnalysisQueue* queue_;
 
 public:
-  AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Analysis& analysis, ProgressDisplayer* displayer=NULL);
+  AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=NULL);
   
   void operator()();
-  inline void cancel() { analysis_.cancel(); }
+  void cancel(); // { analysis_.cancel(); }
 };
 
 class AnalysisLibraryLoader

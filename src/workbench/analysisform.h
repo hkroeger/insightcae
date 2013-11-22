@@ -50,7 +50,7 @@ public:
   AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis);
   
 public slots:
-  void doWork(const insight::ParameterSet& p, insight::ProgressDisplayer* pd=NULL);
+  void doWork(insight::ProgressDisplayer* pd=NULL);
   
 signals:
   void resultReady(insight::ResultSetPtr);
@@ -81,7 +81,7 @@ private slots:
 signals:
   void apply();
   void update();
-  void runAnalysis(const insight::ParameterSet& p, insight::ProgressDisplayer*);
+  void runAnalysis(insight::ProgressDisplayer*);
   
 private:
   Ui::AnalysisForm* ui;

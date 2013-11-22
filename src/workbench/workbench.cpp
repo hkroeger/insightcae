@@ -24,6 +24,8 @@ bool WorkbenchApplication::notify(QObject *rec, QEvent *ev)
   }
   catch (insight::Exception e)
   {
+    std::cout << e << std::endl;
+    
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Critical);
     msgBox.setText(QString(e.c_str()));

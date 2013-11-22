@@ -171,9 +171,14 @@ DoubleRangeParameter::DoubleRangeParameter(const RangeList& value, const std::st
 DoubleRangeParameter::DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description)
 : Parameter(description)
 {
-  for(int i=0; i<defaultNum; i++)
+  if (defaultNum==1)
+    insertValue(defaultFrom);
+  else
   {
-    insertValue( defaultFrom + (defaultTo-defaultFrom)*double(i)/double(defaultNum-1) );
+    for(int i=0; i<defaultNum; i++)
+    {
+      insertValue( defaultFrom + (defaultTo-defaultFrom)*double(i)/double(defaultNum-1) );
+    }
   }
 }
 

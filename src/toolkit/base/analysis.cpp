@@ -105,7 +105,8 @@ bool Analysis::checkParameters(const ParameterSet& p)
 Analysis* Analysis::clone() const
 {
   Analysis *newa=this->lookup(this->type(), NoParameters());
-  newa->setParameters(*parameters_);
+  if (parameters_.get())
+    newa->setParameters(*parameters_);
   return newa;
 }
 

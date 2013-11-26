@@ -24,6 +24,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QLabel>
+#include <QTableWidget>
 
 #include "base/factory.h"
 #include "base/resultset.h"
@@ -58,6 +59,30 @@ public:
   declareType(insight::ScalarResult::typeName_());
   ScalarResultWrapper(const ConstrP& p);
   inline insight::ScalarResult& res() { return dynamic_cast<insight::ScalarResult&>(p_); }
+};
+
+class ImageWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QLabel *le_;
+public:
+  declareType(insight::Image::typeName_());
+  ImageWrapper(const ConstrP& p);
+  inline insight::Image& res() { return dynamic_cast<insight::Image&>(p_); }
+};
+
+class TabularResultWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QTableWidget *le_;
+public:
+  declareType(insight::TabularResult::typeName_());
+  TabularResultWrapper(const ConstrP& p);
+  inline insight::TabularResult& res() { return dynamic_cast<insight::TabularResult&>(p_); }
 };
 
 void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform=NULL);

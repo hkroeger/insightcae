@@ -63,6 +63,62 @@ ScalarResultWrapper::ScalarResultWrapper(const ConstrP& p)
   this->setLayout(layout);
 }
 
+defineType(ImageWrapper);
+addToFactoryTable(ResultElementWrapper, ImageWrapper, ResultElementWrapper::ConstrP);
+
+ImageWrapper::ImageWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  
+  QPixmap image(res().imagePath().c_str());
+  le_=new QLabel(this);
+  le_->setPixmap(image);
+  le_->setToolTip(QString(res().shortDescription().c_str()));
+  layout->addWidget(le_);
+  this->setLayout(layout);
+}
+
+
+defineType(TabularResultWrapper);
+addToFactoryTable(ResultElementWrapper, TabularResultWrapper, ResultElementWrapper::ConstrP);
+
+TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  
+  le_=new QTableWidget(this);
+  
+  QStringList headers;
+  BOOST_FOREACH(const std::string& h, res().headings() )
+  {
+    headers << QString(h.c_str());
+  }
+  le_->setHorizontalHeaderLabels( headers );
+  
+  for (size_t i=0; i<res().rows().size(); i++)
+  {
+    const std::vector<double>& row=res().rows()[i];
+    for (size_t j=0; j<row.size(); j++)
+    {
+      le_->setItem(i, j, new QTableWidgetItem( QString::number(row[j]) ));
+    }
+  }
+  
+  le_->setToolTip(QString(res().shortDescription().c_str()));
+  layout->addWidget(le_);
+  
+  this->setLayout(layout);
+}
+
+
 void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform)
 {
   QVBoxLayout *vlayout=new QVBoxLayout(widget);

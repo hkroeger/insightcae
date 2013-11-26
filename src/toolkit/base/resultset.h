@@ -76,7 +76,10 @@ public:
   declareType("Image");
   Image(const ResultElementConstrP& par);
   Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
+  
+  inline const boost::filesystem::path& imagePath() const { return imagePath_; }
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
+  
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f) const;
   virtual ResultElement* clone() const;
@@ -142,6 +145,9 @@ public:
    const std::string& longDesc,
    const std::string& unit
   );
+  
+  inline const std::vector<std::string>& headings() const { return headings_; }
+  inline const Table& rows() const { return rows_; }
   
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   

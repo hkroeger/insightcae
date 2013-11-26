@@ -35,13 +35,19 @@ namespace insight
 class ResultElement
 : boost::noncopyable
 {
+public:
+  typedef boost::tuple<const std::string&, const std::string&, const std::string&> ResultElementConstrP;
+  declareFactoryTable(ResultElement, ResultElementConstrP); 
+  
 protected:
   std::string shortDescription_;
   std::string longDescription_;
   std::string unit_;
   
 public:
-  ResultElement(const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
+  declareType("ResultElement");
+  
+  ResultElement(const ResultElementConstrP& par);
   virtual ~ResultElement();
   
   inline const std::string& shortDescription() const { return shortDescription_; }
@@ -67,7 +73,10 @@ class Image
 protected:
   boost::filesystem::path imagePath_;
 public:
+  declareType("Image");
+  Image(const ResultElementConstrP& par);
   Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
+  inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f) const;
   virtual ResultElement* clone() const;
@@ -82,10 +91,17 @@ protected:
   T value_;
   
 public:
+  
+  NumericalResult(const ResultElementConstrP& par)
+  : ResultElement(par)
+  {}
+
   NumericalResult(const T& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit)
-  : ResultElement(shortDesc, longDesc, unit),
+  : ResultElement(ResultElementConstrP(shortDesc, longDesc, unit)),
     value_(value)
   {}
+  
+  inline void setValue(const T& value) { value_=value; }
   
   inline const T& value() const { return value_; }
 };
@@ -94,6 +110,9 @@ class ScalarResult
 : public NumericalResult<double>
 {
 public:
+  declareType("ScalarResult");
+  
+  ScalarResult(const ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
   virtual void writeLatexCode(std::ostream& f) const;
   virtual ResultElement* clone() const;
@@ -111,6 +130,10 @@ protected:
   Table rows_;
   
 public:
+  declareType("TabularResult");
+  
+  TabularResult(const ResultElementConstrP& par);
+  
   TabularResult
   (
    const std::vector<std::string>& headings, 
@@ -119,6 +142,8 @@ public:
    const std::string& longDesc,
    const std::string& unit
   );
+  
+  inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   
   virtual void writeGnuplotData(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f) const;

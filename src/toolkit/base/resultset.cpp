@@ -35,10 +35,13 @@ using namespace boost;
 namespace insight
 {
 
-ResultElement::ResultElement(const string& shortDesc, const string& longDesc, const string& unit)
-: shortDescription_(shortDesc),
-  longDescription_(longDesc),
-  unit_(unit)
+defineType(ResultElement);
+defineFactoryTable(ResultElement, ResultElement::ResultElementConstrP);
+
+ResultElement::ResultElement(const ResultElement::ResultElementConstrP& par)
+: shortDescription_(boost::get<0>(par)),
+  longDescription_(boost::get<1>(par)),
+  unit_(boost::get<2>(par))
 {}
 
 ResultElement::~ResultElement()
@@ -53,8 +56,17 @@ void ResultElement::writeLatexCode(ostream& f) const
 {
 }
 
+defineType(Image);
+addToFactoryTable(ResultElement, Image, ResultElement::ResultElementConstrP);
+
+
+Image::Image(const ResultElementConstrP& par)
+: ResultElement(par)
+{
+}
+
 Image::Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
-: ResultElement(shortDesc, longDesc, ""),
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
   imagePath_(value)
 {
 }
@@ -74,7 +86,16 @@ ResultElement* Image::clone() const
   return new Image(imagePath_, shortDescription_, longDescription_);
 }
   
-  
+
+defineType(ScalarResult);
+addToFactoryTable(ResultElement, ScalarResult, ResultElement::ResultElementConstrP);
+
+
+ScalarResult::ScalarResult(const ResultElementConstrP& par)
+: NumericalResult< double >(par)
+{
+}
+
 ScalarResult::ScalarResult(const double& value, const string& shortDesc, const string& longDesc, const string& unit)
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
@@ -91,6 +112,16 @@ ResultElement* ScalarResult::clone() const
   return new ScalarResult(value_, shortDescription_, longDescription_, unit_);
 }
 
+
+defineType(TabularResult);
+addToFactoryTable(ResultElement, TabularResult, ResultElement::ResultElementConstrP);
+
+
+TabularResult::TabularResult(const ResultElementConstrP& par)
+: ResultElement(par)
+{
+}
+
 TabularResult::TabularResult
 (
   const std::vector<std::string>& headings, 
@@ -99,10 +130,9 @@ TabularResult::TabularResult
   const std::string& longDesc,
   const std::string& unit
 )
-: ResultElement(shortDesc, longDesc, unit),
-  headings_(headings),
-  rows_(rows)
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
 {
+  setTableData(headings, rows);
 }
 
 void TabularResult::writeGnuplotData(std::ostream& f) const

@@ -22,6 +22,7 @@
 #define ANALYSISFORM_H
 
 #include "base/analysis.h"
+#include "base/resultset.h"
 
 #include <QMdiSubWindow>
 #include <QThread>
@@ -64,6 +65,7 @@ class AnalysisForm
 protected:
   insight::ParameterSet parameters_;
   boost::shared_ptr<insight::Analysis> analysis_;
+  insight::ResultSetPtr results_;
   GraphProgressDisplayer *progdisp_;
   QThread workerThread_;
   

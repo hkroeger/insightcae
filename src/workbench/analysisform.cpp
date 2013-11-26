@@ -18,9 +18,12 @@
  *
  */
 
+#include "base/resultset.h"
+
 #include "analysisform.h"
 #include "ui_analysisform.h"
 #include "parameterwrapper.h"
+#include "resultelementwrapper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -138,6 +141,11 @@ void AnalysisForm::onKillAnalysis()
 
 void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
+  results_=results;
+  
+  qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
+  addWrapperToWidget(*results_, ui->outputContents, this);
+
   QMessageBox::information(this, "Finished!", "The analysis has finished");
   results->writeLatexFile( analysis_->executionPath()/"report.tex" );
 }

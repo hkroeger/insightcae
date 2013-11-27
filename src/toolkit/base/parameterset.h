@@ -52,6 +52,8 @@ public:
     ParameterSet();
     ParameterSet(const EntryList& entries);
     virtual ~ParameterSet();
+
+    void extend(const EntryList& entries);
     
     template<class T>
     T& get(const std::string& name)
@@ -177,6 +179,7 @@ typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 
 #define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
 #define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
+#define PSSTR(p, subdict, key) std::string key = p[subdict].getString(#key);
 #define PSBOOL(p, subdict, key) bool key = p[subdict].getBool(#key);
 #define PSPATH(p, subdict, key) boost::filesystem::path key = p[subdict].getPath(#key);
 

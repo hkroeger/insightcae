@@ -91,6 +91,21 @@ public slots:
   virtual void onUpdate();
 };
 
+class StringParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+protected:
+  QLineEdit *le_;
+public:
+  declareType(insight::StringParameter::typeName_());
+  StringParameterWrapper(const ConstrP& p);
+  inline insight::StringParameter& param() { return dynamic_cast<insight::StringParameter&>(p_); }
+public slots:
+  virtual void onApply();
+  virtual void onUpdate();
+};
+
 class BoolParameterWrapper
 : public ParameterWrapper
 {

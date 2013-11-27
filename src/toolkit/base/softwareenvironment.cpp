@@ -22,12 +22,16 @@
 
 #include <iostream>
 
+#include "boost/foreach.hpp"
+#include "boost/algorithm/string.hpp"
+
 using namespace std;
 
 namespace insight
 {
 
 SoftwareEnvironment::SoftwareEnvironment()
+: executionMachine_("")
 {
 
 }
@@ -71,14 +75,36 @@ void SoftwareEnvironment::forkCommand
   std::vector<std::string> argv
 ) const
 {
-  if (argv.size()>0)
+  
+  argv.insert(argv.begin(), cmd);
+  
+  if (executionMachine_=="")
   {
-    argv.insert(argv.begin(), cmd);
-    p_in.open(cmd, argv);
+    argv.insert(argv.begin(), "-c");
+    argv.insert(argv.begin(), "bash");
+  }
+  else if (boost::starts_with(executionMachine_, "qrsh:"))
+  {
+    argv.insert(argv.begin(), "qrsh");
   }
   else
   {
-    p_in.open(cmd);
+    argv.insert(argv.begin(), executionMachine_);
+    argv.insert(argv.begin(), "ssh");
+  }
+  
+  cout<<"argv=( ";
+  int k=0;
+  BOOST_FOREACH(const std::string& a, argv) cout<<(++k)<<":"<<a<<" ";
+  cout<<")"<<endl;
+  
+  if (argv.size()>1)
+  {
+    p_in.open(argv[0], argv);
+  }
+  else
+  {
+    p_in.open(argv[0]);
   }
   
   cout<<"Executing "<<p_in.command()<<endl;

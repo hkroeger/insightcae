@@ -38,15 +38,20 @@ ParameterSet::ParameterSet()
 
 ParameterSet::ParameterSet(const EntryList& entries)
 {
+  extend(entries);
+}
+
+ParameterSet::~ParameterSet()
+{
+}
+
+void ParameterSet::extend(const EntryList& entries)
+{
   BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
   {
     std::string key(boost::get<0>(i));
     insert(key, boost::get<1>(i));
   }
-}
-
-ParameterSet::~ParameterSet()
-{
 }
 
 ParameterSet& ParameterSet::getSubset(const std::string& name) 

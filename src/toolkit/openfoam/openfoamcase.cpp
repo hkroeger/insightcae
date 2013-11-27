@@ -244,12 +244,13 @@ int OpenFOAMCase::executeCommand
 ) const
 {
   std::string shellcmd;
-  shellcmd = "source "+env_.bashrc().string()+";cd \""+location.string()+"\";"+cmd;
+  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+cmd;
   BOOST_FOREACH(std::string& arg, argv)
   {
     shellcmd+=" \""+arg+"\"";
   }
-  return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd), output );
+  //return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd), output );
+  return env_.executeCommand( shellcmd, std::vector<std::string>(), output );
 }
 
 int OpenFOAMCase::runSolver
@@ -263,10 +264,11 @@ int OpenFOAMCase::runSolver
   if (stopFlag) *stopFlag=false;
   
   std::string shellcmd;
-  shellcmd = "source "+env_.bashrc().string()+";cd \""+location.string()+"\";"+solverName;
+  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+solverName;
 
   redi::ipstream p_in;
-  env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
+  //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
+  env_.forkCommand( p_in, shellcmd );
 
   std::string line;
   while (std::getline(p_in, line))

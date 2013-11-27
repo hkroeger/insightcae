@@ -126,6 +126,33 @@ void DoubleParameterWrapper::onUpdate()
   le_->setText(QString::number(param()()));
 }
 
+defineType(StringParameterWrapper);
+addToFactoryTable(ParameterWrapper, StringParameterWrapper, ParameterWrapper::ConstrP);
+
+StringParameterWrapper::StringParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  le_=new QLineEdit(this);
+  le_->setToolTip(QString(param().description().c_str()));
+  layout->addWidget(le_);
+  this->setLayout(layout);
+  onUpdate();
+}
+
+void StringParameterWrapper::onApply()
+{
+  param()()=le_->text().toStdString();
+}
+
+void StringParameterWrapper::onUpdate()
+{
+  le_->setText(param()().c_str());
+}
+
 defineType(BoolParameterWrapper);
 addToFactoryTable(ParameterWrapper, BoolParameterWrapper, ParameterWrapper::ConstrP);
 

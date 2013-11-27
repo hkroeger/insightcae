@@ -31,11 +31,16 @@ namespace insight
 
 class SoftwareEnvironment
 {
+  
+  std::string executionMachine_;
 
 public:
     SoftwareEnvironment();
     SoftwareEnvironment(const SoftwareEnvironment& other);
     virtual ~SoftwareEnvironment();
+    
+    inline void setExecutionMachine(const std::string& executionMachine) { executionMachine_=executionMachine; }
+    inline const std::string& executionMachine() const { return executionMachine_; }
     
     virtual int version() const =0;
     

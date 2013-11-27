@@ -68,6 +68,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   connect(ui->saveParamBtn, SIGNAL(clicked()), this, SLOT(onSaveParameters()));
   connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
 
+  connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
+
   DirectoryParameterWrapper *dp = 
      new DirectoryParameterWrapper( ParameterWrapper::ConstrP(this, "execution directory", analysis_->executionPathParameter() ) );
   ui->verticalLayout_4->addWidget(dp);
@@ -146,8 +148,24 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
   addWrapperToWidget(*results_, ui->outputContents, this);
 
+  ui->tabWidget->setCurrentWidget(ui->outputTab);
+
   QMessageBox::information(this, "Finished!", "The analysis has finished");
-  results->writeLatexFile( analysis_->executionPath()/"report.tex" );
+}
+
+void AnalysisForm::onCreateReport()
+{
+  if (!results_.get())
+  {
+    QMessageBox::critical(this, "Error", "No results present!");
+    return;
+  }
+  
+  boost::filesystem::path outpath=analysis_->executionPath()/"report.tex";
+  results_->writeLatexFile( outpath );
+
+  QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
+
 }
 
 

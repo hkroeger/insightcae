@@ -35,8 +35,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>143</width>
-             <height>387</height>
+             <width>449</width>
+             <height>402</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -83,6 +83,19 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
+        <widget class="QWidget" name="widget_3" native="true">
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QPushButton" name="createReportBtn">
+            <property name="text">
+             <string>Create Report...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QScrollArea" name="scrollArea_2">
          <property name="widgetResizable">
           <bool>true</bool>
@@ -92,8 +105,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>738</width>
-            <height>402</height>
+            <width>737</width>
+            <height>366</height>
            </rect>
           </property>
          </widget>

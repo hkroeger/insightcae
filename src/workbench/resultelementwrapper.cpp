@@ -75,9 +75,11 @@ ImageWrapper::ImageWrapper(const ConstrP& p)
   layout->addWidget(nameLabel);
   
   QPixmap image(res().imagePath().c_str());
-  // scale 300dpi => 70dpi
+  
+  // scale 300dpi (print) => 70dpi (screen)
   double w0=image.size().width();
   image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
+  
   le_=new QLabel(this);
   le_->setPixmap(image);
   le_->setScaledContents(true);

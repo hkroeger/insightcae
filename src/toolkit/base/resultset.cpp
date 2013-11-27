@@ -78,7 +78,7 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
 
 void Image::writeLatexCode(std::ostream& f) const
 {
-  f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << imagePath_.c_str() << "}\n";
+  f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << boost::filesystem::basename(imagePath_).c_str() << "}\n";
 }
 
 ResultElement* Image::clone() const

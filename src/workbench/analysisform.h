@@ -79,6 +79,7 @@ private slots:
   void onRunAnalysis();
   void onKillAnalysis();
   void onResultReady(insight::ResultSetPtr);
+  void onCreateReport();
 
 signals:
   void apply();

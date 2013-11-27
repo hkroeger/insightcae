@@ -75,8 +75,13 @@ ImageWrapper::ImageWrapper(const ConstrP& p)
   layout->addWidget(nameLabel);
   
   QPixmap image(res().imagePath().c_str());
+  // scale 300dpi => 70dpi
+  double w0=image.size().width();
+  image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
   le_=new QLabel(this);
   le_->setPixmap(image);
+  le_->setScaledContents(true);
+  
   le_->setToolTip(QString(res().shortDescription().c_str()));
   layout->addWidget(le_);
   this->setLayout(layout);
@@ -94,7 +99,7 @@ TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  le_=new QTableWidget(this);
+  le_=new QTableWidget(res().rows().size(), res().headings().size(), this);
   
   QStringList headers;
   BOOST_FOREACH(const std::string& h, res().headings() )

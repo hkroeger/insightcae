@@ -1,4 +1,0 @@
-#!/bin/bash
-EXE=`basename $0`
-export PYTHONPATH=$PYTHON_PATH:${0%$EXE}
-python $*

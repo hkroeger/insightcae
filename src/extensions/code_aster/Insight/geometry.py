@@ -1,5 +1,4 @@
- 
-#!/usr/bin/python
+ #!/usr/bin/python
 
 import math, os, sys, subprocess
 import numpy as np
@@ -47,6 +46,12 @@ def loadBREP(filename):
   ok =  BRepTools().Read(shape, filename, builder);
   if not ok: raise Exception("Could not load file "+filename)
   return shape
+
+def loadSTEP(filename):
+  stepReader=STEPControl_Reader()
+  stepReader.ReadFile(filename);
+  stepReader.TransferRoots();
+  return stepReader.OneShape()
 
 class equalComp(object):
   def __init__(self, comp, val, deviation=SMALL):
@@ -97,8 +102,35 @@ class normCircAligned(object):
       else:
 	raise Exception("undefined sense: "+self.sense+"!")
 	return False
-     
+
+	
+class vecRadialAligned(object):
+  def __init__(self, center, axis, 
+	       deviation=SMALL):
+    self.center=center
+    self.deviation=deviation
+    self.axis=axis/npla.norm(axis)
     
+  def fulfilled(self, d):
+    vec=d[0]
+    loc=d[1]
+    dr=loc-self.center
+    dr-=self.axis*np.dot(dr, self.axis)
+    dr/=npla.norm(dr)
+    du=np.cross(self.axis, dr)
+    p=np.dot(du, vec)
+    if not self.sense:
+      return abs(abs(p)-1.)<self.deviation
+    else:
+      if self.sense=='right':
+	return abs(p-1.)<self.deviation
+      elif self.sense=='left':
+	return abs(p+1.)<self.deviation
+      else:
+	raise Exception("undefined sense: "+self.sense+"!")
+	return False
+     
+   
 
 class vecAligned(object):
   def __init__(self, vec, sense=True, deviation=SMALL):
@@ -126,7 +158,10 @@ class SolidBody(object):
   def __init__(self, brepfilename):
     self.filename=brepfilename
     self.name=os.path.splitext(os.path.basename(self.filename))[0]
-    self.shape=loadBREP(self.filename)
+    if (brepfilename.endswith('.brep')):
+      self.shape=loadBREP(self.filename)
+    elif (brepfilename.endswith('.stp') or brepfilename.endswith('.step')):
+      self.shape=loadSTEP(self.filename)
     
     # Generate entity numbering like in gmsh
     self.fmap=TopTools_IndexedMapOfShape()
@@ -249,6 +284,7 @@ class SolidBody(object):
 			   filter_outside=None, 
 			   filter_inside=None,
 			   filter_center=None,
+			   filter_axis=None,
 			   deviation=SMALL):
     faces=set()
     for fi in range(1, self.fmap.Extent()+1):
@@ -262,7 +298,10 @@ class SolidBody(object):
 	
 	ok=True
 	if not filter_d is None:
-	  if not abs(icyl.Radius()-0.5*filter_d) < deviation: ok=False	    
+	  if not abs(icyl.Radius()-0.5*filter_d) < deviation: ok=False	
+	  
+	if (not filter_axis is None):
+	  if not filter_axis.fulfilled( (toArray(iax.Direction()),toArray(icyl.Location())) ): ok=False
 
 	if (not filter_outside is None) or (not filter_inside is None):
 	  prop=BRepGProp_Face(face)

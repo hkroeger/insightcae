@@ -562,3 +562,49 @@ self.maxLength,
 self.secondOrderLinear
 ))
     f.close()
+
+
+class GmshBoltMesh(object):
+  
+  def __init__(self):
+    self.bolts=[]
+  
+  def addBolt(self, p0, p1, name):
+    self.bolts.append((p0, p1, name))
+    
+  def doMeshing(self, inputfilename="bolts.geo", force=False):
+    if os.path.exists(os.path.splitext(inputfilename)[0]+".med") and not force: return
+    self.writeInput(inputfilename)
+    if (subprocess.call(['gmsh', '-3', inputfilename])!=0):
+     raise Exception("gmsh failed!") 
+   
+  def writeInput(self, inputfilename="bolts.geo"):
+    f=open(inputfilename, "w")
+    
+    vi=1
+    li=1
+    for p0,p1,name in self.bolts:
+      iv0=vi+1
+      iv1=vi+2
+      f.write("""\
+Point(%d) = {%g, %g, %g, 999};
+Point(%d) = {%g, %g, %g, 999};
+Line(%d) = {%d, %d};
+Physical Point("%s")={%d};
+Physical Point("%s")={%d};
+Physical Line("%s")={%d};
+"""%(
+  iv0, p0[0], p0[1], p0[2],
+  iv1, p1[0], p1[1], p1[2],
+  li, iv0, iv1,
+  name+"h", iv0,
+  name+"n", iv1,
+  name, li
+  ))
+      vi+=2
+      li+=1
+      
+    f.write("""\
+Mesh.Format=33; /* 1=msh, 2=unv, 10=automatic, 19=vrml, 27=stl, 30=mesh, 31=bdf, 32=cgns, 33=med, 40=ply2 */
+""")
+    f.close()

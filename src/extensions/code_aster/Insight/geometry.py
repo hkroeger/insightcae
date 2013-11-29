@@ -15,11 +15,18 @@ from OCC.gp import gp, gp_Pnt, gp_Ax1, gp_Dir, gp_Trsf, gp_Circ, gp_Pln, gp_Ax2,
     gp_Vec, gp_XYZ
 from OCC.BRepGProp import BRepGProp, BRepGProp_Face, BRepGProp_VolumeProperties, BRepGProp_SurfaceProperties
 from OCC.GProp import GProp_GProps
+from OCC.STEPControl import STEPControl_Reader
 
 SMALL=1e-6
 
 def toArray(pnt):
   return np.array([pnt.X(), pnt.Y(), pnt.Z()])
+  
+def toList(tul):
+  return [i for i,v in tul]
+
+def toSet(tul):
+  return set(toList(tul))
 
 def faceCoG(face):
   props = GProp_GProps()
@@ -290,7 +297,6 @@ class SolidBody(object):
     for fi in range(1, self.fmap.Extent()+1):
       face=TopoDS.face(self.fmap(fi))
       adapt=GeomAdaptor_Surface(BRep_Tool.Surface(face))
-      print fi, adapt.GetType()
       if adapt.GetType()==GeomAbs.GeomAbs_Cylinder:
 	icyl=adapt.Cylinder()
 	iax=icyl.Axis()
@@ -333,6 +339,14 @@ class SolidBody(object):
 	  faces.add(fi)
 	  
     return faces
+    
+  def faceClasses(self):
+    classes={}
+    for fi in range(1, self.fmap.Extent()+1):
+      face=TopoDS.face(self.fmap(fi))
+      adapt=GeomAdaptor_Surface(BRep_Tool.Surface(face))
+      classes[fi]=adapt.GetType()
+    return classes
 
 
   def findPlanarFaces(self, filter_direction=None, filter_area=None, deviation=SMALL):
@@ -352,6 +366,34 @@ class SolidBody(object):
 	ok=True
 	if not filter_direction is None:
 	  if not filter_direction.fulfilled( (toArray(vec), toArray(pnt)) ): ok=False
+
+	if not filter_area is None:
+	  ar=faceArea(face)
+	  #print "%d: plane"%fi, ", area=", ar
+	  if not abs(ar-filter_area) < deviation: ok=False
+	    
+	if ok:
+	  faces.add(fi)
+	  
+    return faces
+
+  def findBSplineFaces(self, filter_area=None, deviation=SMALL):
+    faces=set()
+    for fi in range(1, self.fmap.Extent()+1):
+      face=TopoDS.face(self.fmap(fi))
+      adapt=GeomAdaptor_Surface(BRep_Tool.Surface(face))
+      if adapt.GetType()==GeomAbs.GeomAbs_BSplineSurface:
+	#prop=BRepGProp_Face(face)
+	#u1,u2,v1,v2=prop.Bounds()
+	#u = (u1+u2)/2;
+	#v = (v1+v2)/2;
+	#vec=gp_Vec()
+	#pnt=gp_Pnt()
+	#prop.Normal(u,v,pnt,vec)
+	
+	ok=True
+	#if not filter_direction is None:
+	#  if not filter_direction.fulfilled( (toArray(vec), toArray(pnt)) ): ok=False
 
 	if not filter_area is None:
 	  ar=faceArea(face)
@@ -461,6 +503,7 @@ class GmshCase(object):
     self.inputfilename=self.part.name+".geo"
     self.minLength=Lmin
     self.maxLength=Lmax
+    self.secondOrderLinear=0
     self.options=[]
     
   def doMeshing(self, force=False):
@@ -502,7 +545,7 @@ Physical Volume("%s") = {1};
 Mesh.CharacteristicLengthMin = %g;
 Mesh.CharacteristicLengthMax = %g;
 Mesh.ElementOrder=2;
-Mesh.SecondOrderLinear=0;
+Mesh.SecondOrderLinear=%d;
 Mesh.Smoothing = 10;
 Mesh.SmoothNormals = 1;
 Mesh.Explode = 1;
@@ -515,6 +558,7 @@ self.part.filename,
 "\n".join(["Physical Surface(\"%s\") = {%s};"%(fn, ",".join([str(i) for i in fs])) for fn, fs in self.part.namedFaces.items()]),
 self.volname,
 self.minLength,
-self.maxLength
+self.maxLength,
+self.secondOrderLinear
 ))
     f.close()

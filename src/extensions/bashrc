@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRPATH=${SOURCE[0]}
+SCRPATH=${BASH_SOURCE[0]}
 EXTDIR=$(cd `dirname $SCRPATH`; pwd)
 
 export PYTHONPATH=$PYTHONPATH:$EXTDIR/code_aster

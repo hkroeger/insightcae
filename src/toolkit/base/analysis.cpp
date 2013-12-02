@@ -224,7 +224,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	      void *handle = dlopen(location.c_str(), RTLD_NOW);
 	      if (!handle)
 	      {
-		throw insight::Exception(std::string("Could not load module library: ")+dlerror());
+		std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
 	      }
 	    }
 	    

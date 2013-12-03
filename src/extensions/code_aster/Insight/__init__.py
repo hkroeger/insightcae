@@ -13,6 +13,28 @@ def getCommDir():
   pat="^F comm (.+)/([^/]+).comm"
   d=re.search(pat, filter(re.compile(pat).search, lines)[0]).group(1)
   return d
+  
+def readMeshes(nMeshes):
+  from Cata.cata import *
+  from Accas import _F
+  # read and assemble nMeshes mesh files (names are given in astk)
+  m=[None]*nMeshes
+  mesh=None
+  for i in range(0,nMeshes):
+    if i>0: 
+      addmesh=LIRE_MAILLAGE(UNITE=20+i, FORMAT='MED');
+      m[i]=ASSE_MAILLAGE(
+	    MAILLAGE_1=m[i-1],
+	    MAILLAGE_2=addmesh,
+	    OPERATION='SUPERPOSE');
+      DETRUIRE(
+	  CONCEPT=( _F(NOM=(m[i-1], addmesh) ) ), 
+	  INFO=1
+	  );
+    else:
+      m[i]=LIRE_MAILLAGE(UNITE=20+i, FORMAT='MED');
+
+  return m[nMeshes-1]
 
 class Transformation(object):
   def __init__(self):
@@ -54,6 +76,7 @@ class PressureField(object):
       Interpolate pressure at location x in FEM model
       """
       return self.pinterp(x[0], x[1], x[2])
+      
 
 class CFDFEMPair(object):
     def __init__(self, cfdname, femname, trafo):

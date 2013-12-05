@@ -16,7 +16,7 @@ from OCC.gp import gp, gp_Pnt, gp_Ax1, gp_Dir, gp_Trsf, gp_Circ, gp_Pln, gp_Ax2,
 from OCC.BRepGProp import BRepGProp, BRepGProp_Face, BRepGProp_VolumeProperties, BRepGProp_SurfaceProperties
 from OCC.GProp import GProp_GProps
 from OCC.STEPControl import STEPControl_Reader
-
+from OCC.BRepBuilderAPI import BRepBuilderAPI_Transform
 SMALL=1e-6
 
 def toArray(pnt):
@@ -162,13 +162,19 @@ class AND(object):
 
 class SolidBody(object):
   
-  def __init__(self, brepfilename):
+  def __init__(self, brepfilename, transform=None):
     self.filename=brepfilename
     self.name=os.path.splitext(os.path.basename(self.filename))[0]
     if (brepfilename.endswith('.brep')):
       self.shape=loadBREP(self.filename)
     elif (brepfilename.endswith('.stp') or brepfilename.endswith('.step')):
       self.shape=loadSTEP(self.filename)
+      
+    if not transform is None:
+      trsf,newname=transform
+      self.shape=BRepBuilderAPI_Transform(self.shape, trsf).Shape()
+      self.filename=newname
+      BRepTools().Write(self.shape, self.filename)
     
     # Generate entity numbering like in gmsh
     self.fmap=TopTools_IndexedMapOfShape()
@@ -504,12 +510,13 @@ class GmshCase(object):
     self.minLength=Lmin
     self.maxLength=Lmax
     self.secondOrderLinear=0
+    self.elementOrder=2
     self.options=[]
     
   def doMeshing(self, force=False):
     if os.path.exists(os.path.splitext(self.inputfilename)[0]+".med") and not force: return
     self.writeInput()
-    if (subprocess.call(['gmsh', '-3', '-optimize_netgen', self.inputfilename])!=0):
+    if (subprocess.call(['gmsh', '-3', '-optimize_netgen', '-v', '2', self.inputfilename])!=0):
      raise Exception("gmsh failed!")
     
   def setEdgeLen(self, en, L):
@@ -531,6 +538,7 @@ Geometry.AutoCoherence = 0;
 Geometry.OCCSewFaces = 0;
 Geometry.Tolerance = 1e-10;
 //Mesh.LcIntegrationPrecision = 1e-12;
+//Mesh.HighOrderOptimize = 5;
 
 Merge "%s";
 
@@ -544,7 +552,7 @@ Physical Volume("%s") = {1};
 //Mesh.Algorithm3D = 4; /* 1=Delaunay, 4=Frontal, 5=Frontal Delaunay, 6=Frontal Hex, 7=MMG3D, 9=R-tree */
 Mesh.CharacteristicLengthMin = %g;
 Mesh.CharacteristicLengthMax = %g;
-Mesh.ElementOrder=2;
+Mesh.ElementOrder=%d;
 Mesh.SecondOrderLinear=%d;
 Mesh.Smoothing = 10;
 Mesh.SmoothNormals = 1;
@@ -559,6 +567,7 @@ self.part.filename,
 self.volname,
 self.minLength,
 self.maxLength,
+self.elementOrder,
 self.secondOrderLinear
 ))
     f.close()
@@ -575,7 +584,7 @@ class GmshBoltMesh(object):
   def doMeshing(self, inputfilename="bolts.geo", force=False):
     if os.path.exists(os.path.splitext(inputfilename)[0]+".med") and not force: return
     self.writeInput(inputfilename)
-    if (subprocess.call(['gmsh', '-3', inputfilename])!=0):
+    if (subprocess.call(['gmsh', '-3', '-v', '2', inputfilename])!=0):
      raise Exception("gmsh failed!") 
    
   def writeInput(self, inputfilename="bolts.geo"):

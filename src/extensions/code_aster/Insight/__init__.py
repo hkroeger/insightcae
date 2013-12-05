@@ -36,6 +36,24 @@ def readMeshes(nMeshes):
 
   return m[nMeshes-1]
 
+#def area():
+  #from Cata.cata import *
+  #from Accas import _F
+
+  #elastic=DEFI_MATERIAU(ELAS=_F(E=200000.0, RHO=1, NU=0.0,),);
+
+  #Mat=AFFE_MATERIAU(MAILLAGE=MeshLin, AFFE=_F(TOUT='OUI', MATER=elastic,),);
+
+  #Cara=AFFE_CARA_ELEM(MODELE=dkt,
+		      #COQUE=_F(GROUP_MA='PLATE_T1',EPAIS=1.0,),);
+
+  #tab_post=POST_ELEM(MASS_INER=_F(GROUP_MA='PLATE_T1'),
+		    #MODELE=dkt,
+		    #CHAM_MATER=Mat,
+		    #CARA_ELEM=Cara,
+		    #TITRE='tit_von_post_elem',);
+  #IMPR_TABLE(TABLE=tab_post,);
+
 class Transformation(object):
   def __init__(self):
     self.Ri=0.5*1784.0

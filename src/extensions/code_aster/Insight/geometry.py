@@ -516,7 +516,9 @@ class GmshCase(object):
   def doMeshing(self, force=False):
     if os.path.exists(os.path.splitext(self.inputfilename)[0]+".med") and not force: return
     self.writeInput()
-    if (subprocess.call(['gmsh', '-3', '-optimize_netgen', '-v', '2', self.inputfilename])!=0):
+    if (subprocess.call(['gmsh', '-3', 
+			 #'-optimize_netgen', 
+			 '-v', '2', self.inputfilename])!=0):
      raise Exception("gmsh failed!")
     
   def setEdgeLen(self, en, L):

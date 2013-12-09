@@ -64,6 +64,7 @@ def area(group_ma_name):
 
 
 class PressureField(object):
+
   def __init__(self, csvfilename, 
 	       delimiter=";", 
 	       lengthscale=1.0,
@@ -73,7 +74,7 @@ class PressureField(object):
       self.pts=data[:,0:3]*lengthscale
       self.p=data[:,3]*pressurescale
       self.pinterp=spi.NearestNDInterpolator(self.pts, self.p)
-        
+
   def __call__(self, x):
       """
       Interpolate pressure at location x in FEM model

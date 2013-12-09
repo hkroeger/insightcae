@@ -43,6 +43,11 @@ Analysis::Analysis()
 {
 }
 */
+void Analysis::extendSharedSearchPath(const std::string& name)
+{
+  sharedSearchPath_.push_back(path(name));
+}
+
 
 boost::filesystem::path Analysis::setupExecutionEnvironment()
 {
@@ -100,6 +105,24 @@ Analysis::~Analysis()
 bool Analysis::checkParameters(const ParameterSet& p)
 {
   return true;
+}
+
+boost::filesystem::path Analysis::getSharedFilePath(const boost::filesystem::path& file)
+{
+  path userSharedDir( path(getenv("HOME"))/".insight"/"share" );
+  path globalSharedDir( path("/usr")/"share"/"insight" );
+  
+  BOOST_REVERSE_FOREACH( const path& p, sharedSearchPath_)
+  {
+    if (exists(userSharedDir/p/file)) 
+      return userSharedDir/p/file;
+    else if (exists(globalSharedDir/p/file)) 
+      return globalSharedDir/p/file;
+  }
+  
+  // nothing found
+  throw insight::Exception(std::string("Requested shared file ")+file.c_str()+" not found either in global nor user shared directories");
+  return path();
 }
 
 Analysis* Analysis::clone() const

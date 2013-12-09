@@ -17,4 +17,6 @@ qt4_automoc(${workbench_SRCS})
 
 add_executable(workbench ${workbench_SRCS} ${workbench_FORMS_HEADERS})
 target_link_libraries(workbench ${Boost_LIBRARIES} toolkit ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QWT_LIBRARY} ${QWT_LIBRARIES})
+
 install(TARGETS workbench RUNTIME DESTINATION bin)
+#install(FILES ${toolkit_HEADERS} DESTINATION include)

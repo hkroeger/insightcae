@@ -47,11 +47,16 @@ class Analysis
 public:
   declareFactoryTable(Analysis, NoParameters);
   
+  typedef std::vector<boost::filesystem::path> PathList;
+  
 protected:
   std::string name_;
   std::string description_;
   DirectoryParameter executionPath_;
   ParameterSetPtr parameters_;
+  
+  PathList sharedSearchPath_;
+  void extendSharedSearchPath(const std::string& name);
   
   virtual boost::filesystem::path setupExecutionEnvironment();
 
@@ -82,6 +87,8 @@ public:
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL) =0;
   virtual void cancel() =0;
+  
+  virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
   
   virtual Analysis* clone() const;
 

@@ -15,7 +15,7 @@ def getCommDir():
   return d
   
 def readMeshes(nMeshes):
-  from Cata.cata import *
+  from Cata.cata import LIRE_MAILLAGE, ASSE_MAILLAGE, DETRUIRE
   from Accas import _F
   # read and assemble nMeshes mesh files (names are given in astk)
   m=[None]*nMeshes
@@ -55,10 +55,26 @@ def readMeshes(nMeshes):
   #IMPR_TABLE(TABLE=tab_post,);
 
 class Transformation(object):
-  def __init__(self):
-    self.Ri=0.5*1784.0
-    self.phi_ofs=math.pi
-    self.b=100.0
+  
+  def checkValidity(self):
+    pass
+    #p=np.array([1,2,3])
+    #np.linalg.norm(p - self.
+  
+  def locationFEMtoCFD(self, pFEM):
+    x,y,z=pFEM
+    return np.array([x ,y, z])
+
+  def displacementFEMtoCFD(self, pCFD, u):
+    x,y,z=pCFD
+    return np.array([x, y, z])
+  
+  
+class BearingCFDTransformation(Transformation):
+  def __init__(self, Ri, b, phi_ofs=0.0):
+    self.Ri=Ri
+    self.phi_ofs=phi_ofs
+    self.b=b
     
   def locationFEMtoCFD(self, pFEM):
     x,y,z=pFEM
@@ -66,15 +82,14 @@ class Transformation(object):
     phi=math.atan2(x, -y)+self.phi_ofs
     if phi>math.pi: phi-=2.*math.pi
     if phi<-math.pi: phi+=2.*math.pi
-    return [phi*self.Ri, -(R-self.Ri), z]
-    #return [R*sin(phi), -R*cos(phi), z]
+    return np.array([phi*self.Ri, -(R-self.Ri), z])
 
   def displacementFEMtoCFD(self, pCFD, u):
     x,y,z=pCFD
     phi=x/self.Ri
-    ca=cos(-phi+self.phi_ofs)
-    sa=sin(-phi+self.phi_ofs)
-    return [ca*u[0]-sa*u[1], sa*u[0]+ca*u[1], u[2]] # rotation by phi around -z
+    ca=math.cos(-phi+self.phi_ofs)
+    sa=math.sin(-phi+self.phi_ofs)
+    return np.array([ca*u[0]-sa*u[1], sa*u[0]+ca*u[1], u[2]]) # rotation by phi around -z
 
 
 class PressureField(object):
@@ -83,7 +98,6 @@ class PressureField(object):
 	       lengthscale=1.0,
 	       pressurescale=1e-6 # Pa => MPa
 	       ):
-      print csvfilename
       data=np.loadtxt(csvfilename, delimiter=delimiter)
       self.pts=data[:,0:3]*lengthscale
       self.p=data[:,3]*pressurescale

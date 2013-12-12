@@ -40,7 +40,20 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+/**
+ Manages basic settings in faSchemes, faSolution
+ */
+class FaNumerics
+: public OpenFOAMCaseElement
+{
+  
+public:
+  FaNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
+
+OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
 
@@ -53,6 +66,13 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class FSIDisplacementExtrapolationNumerics
+: public FaNumerics
+{
+public:
+  FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class transportModel
 : public OpenFOAMCaseElement
@@ -97,7 +117,10 @@ public:
 };
 
 
-
+/*
+ * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
+ * needs to know proper BC's for all fields on the given patch
+ */
 class BoundaryCondition
 : public OpenFOAMCaseElement
 {
@@ -136,15 +159,50 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class MeshMotionBC
+{
+public:
+  MeshMotionBC();
+  virtual ~MeshMotionBC();
+  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) =0;
+  virtual MeshMotionBC* clone() const =0;
+};
+
+class NoMeshMotion
+: public MeshMotionBC
+{
+public:
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC);
+  virtual MeshMotionBC* clone() const;
+};
+
+extern NoMeshMotion noMeshMotion;
+
+class CAFSIBC
+: public MeshMotionBC
+{
+public:
+  CAFSIBC();
+  virtual ~CAFSIBC();
+
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC);
+  virtual MeshMotionBC* clone() const;
+};
 
 class WallBC
 : public BoundaryCondition
 {
 protected:
   arma::mat wallVelocity_;
+  boost::shared_ptr<MeshMotionBC> meshmotion_;
   
 public:
-  WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity=vec3(0,0,0));
+  WallBC
+  (
+    OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity=vec3(0,0,0), 
+    const MeshMotionBC& meshmotion = noMeshMotion
+  );
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
 };

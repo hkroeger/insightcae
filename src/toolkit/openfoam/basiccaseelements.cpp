@@ -71,6 +71,38 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
 }
 
+FaNumerics::FaNumerics(OpenFOAMCase& c)
+: OpenFOAMCaseElement(c, "FaNumerics")
+{
+}
+
+void FaNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  // setup structure of dictionaries
+  OFDictData::dict& faSolution=dictionaries.addDictionaryIfNonexistent("system/faSolution");
+  faSolution.addSubDictIfNonexistent("solvers");
+  faSolution.addSubDictIfNonexistent("relaxationFactors");
+  
+  OFDictData::dict& faSchemes=dictionaries.addDictionaryIfNonexistent("system/faSchemes");
+  faSchemes.addSubDictIfNonexistent("ddtSchemes");
+  faSchemes.addSubDictIfNonexistent("gradSchemes");
+  faSchemes.addSubDictIfNonexistent("divSchemes");
+  faSchemes.addSubDictIfNonexistent("laplacianSchemes");
+  faSchemes.addSubDictIfNonexistent("interpolationSchemes");
+  faSchemes.addSubDictIfNonexistent("snGradSchemes");
+  faSchemes.addSubDictIfNonexistent("fluxRequired");
+}
+
+OFDictData::dict stdSymmSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  d["solver"]="PBiCG";
+  d["smoother"]="DILU";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  return d;
+}
+
 OFDictData::dict GAMGSolverSetup(double tol, double reltol)
 {
   OFDictData::dict d;
@@ -190,6 +222,45 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   fluxRequired["p"]="";
+}
+
+FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
+: FaNumerics(c)
+{
+  c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0) ) );
+}
+ 
+void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FaNumerics::addIntoDictionaries(dictionaries);
+    
+  // ============ setup faSolution ================================
+  
+  OFDictData::dict& faSolution=dictionaries.lookupDict("system/faSolution");
+  
+  OFDictData::dict& solvers=faSolution.subDict("solvers");
+  solvers["displacement"]=stdSymmSolverSetup(1e-7, 0.01);
+
+
+  // ============ setup faSchemes ================================
+  
+  OFDictData::dict& faSchemes=dictionaries.lookupDict("system/faSchemes");
+  
+  OFDictData::dict& grad=faSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  
+  OFDictData::dict& div=faSchemes.subDict("divSchemes");
+  div["default"]="Gauss linear";
+
+  OFDictData::dict& laplacian=faSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=faSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=faSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
 }
 
 
@@ -392,10 +463,56 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+MeshMotionBC::MeshMotionBC()
+{
+}
 
-WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity)
+MeshMotionBC::~MeshMotionBC()
+{
+}
+
+bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
+{
+    if ( (fieldname=="displacement") && (get<0>(fieldinfo)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform (0 0 0)");
+      return true;
+    }
+    else 
+      return false;
+}
+
+MeshMotionBC* NoMeshMotion::clone() const
+{
+  return new NoMeshMotion(*this);
+}
+
+NoMeshMotion noMeshMotion;
+
+CAFSIBC::CAFSIBC()
+{
+}
+
+CAFSIBC::~CAFSIBC()
+{
+}
+
+MeshMotionBC* CAFSIBC::clone() const
+{
+  return new CAFSIBC(*this);
+}
+
+bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
+{
+  return false;
+}
+
+
+WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity, const MeshMotionBC& meshmotion)
 : BoundaryCondition(c, patchName, boundaryDict),
-  wallVelocity_(wallVelocity)
+  wallVelocity_(wallVelocity),
+  meshmotion_(meshmotion.clone())
 {
   type_="wall";
 }
@@ -406,7 +523,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC = dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
@@ -428,7 +545,8 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else
     {
-      throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+      if (!meshmotion_->addIntoFieldDictionary(field.first, field.second, BC))
+	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
 }

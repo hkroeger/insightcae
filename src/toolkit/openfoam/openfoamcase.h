@@ -77,6 +77,13 @@ enum FieldType
   symmTensorField
 };
 
+enum FieldGeoType
+{
+  volField,
+  pointField,
+  tetField
+};
+
 
 class SolverOutputAnalyzer
 {
@@ -97,6 +104,7 @@ public:
 extern const OFDictData::dimensionSet dimKinPressure;
 extern const OFDictData::dimensionSet dimKinEnergy;
 extern const OFDictData::dimensionSet dimVelocity;
+extern const OFDictData::dimensionSet dimLength;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue> FieldInfo;

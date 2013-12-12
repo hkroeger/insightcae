@@ -132,16 +132,20 @@ void SolverOutputAnalyzer::update(const string& line)
 const OFDictData::dimensionSet dimKinPressure = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimKinEnergy = OFDictData::dimension(0, 2, -2, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimVelocity = OFDictData::dimension(0, 1, -1, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimLength = OFDictData::dimension(0, 1, 0, 0, 0, 0, 0);
 
 boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
   boost::shared_ptr<OFdicts> dictionaries(new OFdicts);
   
+  // create field dictionaries first
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
     OFDictData::dict& field = dictionaries->addDictionaryIfNonexistent("0/"+i.first);
+    
     std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
     field["dimensions"] = OFDictData::data( dimss.str() );
+    
     std::string vstr="";
     const FieldValue& val = boost::fusion::get<2>(i.second);
     BOOST_FOREACH( const double& v, val)
@@ -149,6 +153,7 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
       vstr+=" "+lexical_cast<std::string>(v);
     }
     if (val.size()>1) vstr  = " ("+vstr+" )";
+    
     field["internalField"] = OFDictData::data( "uniform"+vstr );
     field["boundaryField"] = OFDictData::dict();
   }

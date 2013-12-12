@@ -1,0 +1,281 @@
+import os,sys,math
+from Insight.Aster import *
+
+steps=5
+F_radial=54061.0
+F_axial=53000.0
+alpha=11e-6
+
+
+DEBUT(PAR_LOT='NON');
+
+basedir=getCommDir();
+
+mesh=readMeshes(3)
+
+#create a node group for every face group
+DEFI_GROUP(reuse =mesh,
+           MAILLAGE=mesh,
+           CREA_GROUP_NO=(_F(TOUT_GROUP_MA='OUI'))
+           );
+
+omesh=mesh
+mesh=CREA_MAILLAGE(MAILLAGE=omesh,
+		  CREA_POI1=_F(
+		    GROUP_NO='2lat',
+		    NOM_GROUP_MA='SPRING'
+		    )
+		  );
+DETRUIRE(CONCEPT=( _F(NOM=(omesh) ) ), INFO=1);
+	  
+bolts=[
+  BoltedJoint('s%d'%i, 8.0, 20000.0, '2h%d'%i, 's%dh'%i, '1n%d'%i, 's%dn'%i)
+   for i in range(0, 1)
+  ]
+
+loadr2=DEFI_FONCTION(NOM_PARA='INST',
+                        VALE=(
+                                0,          0,
+                                steps,    0,
+                                2*steps,    1
+                              ),
+                    INTERPOL='LIN',
+                    PROL_DROITE='CONSTANT',
+                    PROL_GAUCHE='CONSTANT');
+
+
+
+FEMLin=AFFE_MODELE(MAILLAGE=mesh,
+                   AFFE=tuple([
+			 _F(GROUP_MA=('v_1', 'v_2'),# '1out', '2in'),
+                            PHENOMENE='MECANIQUE',
+                            MODELISATION='3D',),
+			 _F(
+			     GROUP_MA=('SPRING'),
+			     PHENOMENE='MECANIQUE',
+			     MODELISATION='DIS_T'
+			    )
+                        ]+[b.MODELE() for b in bolts]),
+                   PARTITION=_F(PARALLELISME='GROUP_ELEM')
+                   #PARTITION=_F(PARALLELISME='CENTRALISE')
+                    );
+
+                               
+
+
+cara=AFFE_CARA_ELEM(MODELE=FEMLin,
+		INFO=1,
+		DISCRET=(
+		  _F(
+		    CARA='K_T_D_N',
+		    GROUP_MA='SPRING',
+		    VALE=(1e-6, 1e-6, 1e-6)
+		    )
+		   ),
+		POUTRE=tuple([b.CARA_ELEM() for b in bolts])
+	    );
+	      
+steel=DEFI_MATERIAU(ELAS=_F(E=210000,
+                            NU=0.3,
+                            ALPHA=alpha,
+                            RHO=7.82e-9
+                            )
+                    );
+
+epoxy=DEFI_MATERIAU(ELAS=_F(E=2500,
+                            NU=0.3,
+                            ALPHA=11e-6,
+                            RHO=7.82e-9
+                            )
+                    );
+
+# Re-orientation du maillage de peau
+MODI_MAILLAGE(reuse =mesh,
+		MAILLAGE=mesh,
+		ORIE_PEAU_3D=(_F(GROUP_MA=('1axc', '2axc'))),
+		);
+
+		
+
+contact = DEFI_CONTACT(MODELE      = FEMLin,
+
+			FORMULATION='CONTINUE',
+			ALGO_RESO_GEOM='NEWTON',
+			ALGO_RESO_CONT='NEWTON',
+			LISSAGE='OUI',
+			VERI_NORM='OUI',
+			
+			FROTTEMENT='SANS',
+
+                        ZONE = ( 
+			   _F(
+                             GROUP_MA_ESCL='2axc',
+                             GROUP_MA_MAIT='1axc',
+
+                             ##TOLE_PROJ_EXT=-1
+                             #TYPE_APPA='FIXE',   #!!
+                             #DIRE_APPA=(-math.cos(alpha),math.sin(alpha),0),
+                             ##DIRE_APPA=(-1,0,0),
+                             
+                             #GLISSIERE='OUI'
+			     #COULOMB=0.1
+                             )
+			   ),
+                      );
+                      
+extload=AFFE_CHAR_MECA(MODELE=FEMLin,
+		      FORCE_NODALE=_F(
+			GROUP_NO='2lat',
+			FZ=100
+		      )
+		      );
+		      
+restrain=AFFE_CHAR_MECA(MODELE=FEMLin,
+
+		      DDL_IMPO=(
+				_F(GROUP_NO=('1lat'),
+				  DX=0.0,
+				  DY=0.0,
+				  DZ=0.0
+				  ),
+				  _F(GROUP_NO='2lat',
+				  DX=0.0, DY=0.0
+				  )
+			),
+		      LIAISON_RBE3=tuple(
+			    [b.LIAISON_RBE3_HEAD() for b in bolts]
+			    +
+			    [b.LIAISON_RBE3_NUT() for b in bolts]
+			    )
+
+		      );
+
+                             
+def runmodel(TIM0, TIM1):
+
+    LIST_IC1=DEFI_LIST_REEL(DEBUT=TIM0, INTERVALLE=_F(JUSQU_A=TIM1, PAS=1));
+
+    LIST_IN1=DEFI_LIST_INST(DEFI_LIST=_F(LIST_INST=LIST_IC1),
+			    ECHEC = _F(ACTION='ARRET')
+			    );
+
+    # set temperature in beam nodes
+    tempfld=CREA_CHAMP(TYPE_CHAM='NOEU_TEMP_F',
+                      OPERATION='AFFE',
+                      MODELE=FEMLin,
+                      AFFE=tuple([b.CREA_CHAMP_Temp() for b in bolts])
+                      );
+
+    tempresu=CREA_RESU(OPERATION='AFFE',
+                     TYPE_RESU='EVOL_THER',
+                     NOM_CHAM='TEMP',
+                     AFFE=_F(CHAM_GD=tempfld,
+                             LIST_INST=LIST_IC1,
+                             NUME_FIN=20,),);
+
+    mat=AFFE_MATERIAU(MAILLAGE=mesh,
+		  AFFE=(
+			_F(
+			    GROUP_MA=('v_1', 'v_2'),
+			    MATER=steel
+			  ),
+			_F(
+			    GROUP_MA=tuple([b.label for b in bolts]),
+			    MATER=steel
+			  )
+			),
+                      AFFE_VARC=(
+                                 _F(
+                                   GROUP_MA=tuple([b.label for b in bolts]),
+                                   NOM_VARC='TEMP',
+                                   EVOL=tempresu,
+                                   VALE_REF=0
+                                  )
+                                )
+                            );
+                            
+    sol=STAT_NON_LINE(MODELE=FEMLin,
+                        CHAM_MATER=mat,
+                        EXCIT=(
+                                _F(CHARGE=restrain),
+                                _F(CHARGE=extload, FONC_MULT=loadr2)
+                              ),
+			CARA_ELEM=cara,
+                        CONTACT=contact,
+                        COMP_ELAS=_F(RELATION='ELAS',
+                                     TOUT='OUI',),
+                        #COMP_INCR=_F(RELATION='ELAS',
+                        #             DEFORMATION='GROT_GDEP',
+                        #             TOUT='OUI',),
+                        INCREMENT=_F(LIST_INST=LIST_IN1,),
+                        NEWTON=_F(PREDICTION='ELASTIQUE',
+				   #MATRICE='ELASTIQUE',
+				   REAC_ITER=1,
+                                  ),
+			CONVERGENCE=_F(
+					ARRET='NON', 
+					ITER_GLOB_MAXI=15,
+					),
+                        SOLVEUR=_F(METHODE='MUMPS', 
+				   MATR_DISTRIBUEE='OUI',
+				   SYME='OUI'),
+                        #SOLVEUR=_F(METHODE='MULT_FRONT', 
+			#	   SYME='OUI'),
+			#SOLVEUR=_F(METHODE='GCPC', PRE_COND='LDLT_SP', SYME='OUI'),
+			);
+
+
+    sol=CALC_CHAMP(reuse =sol,
+                    RESULTAT=sol,
+                    CRITERES=('SIEQ_ELNO'),
+                    CONTRAINTE=('SIEF_ELNO'),
+                    #DEFORMATION=('EPSI_ELNO'),
+                    VARI_INTERNE=('VARC_ELGA'),
+                    FORCE=('FORC_NODA', 'REAC_NODA')
+                    );
+                    
+    DETRUIRE(CONCEPT=(_F(NOM=(LIST_IN1,LIST_IC1, tempfld, tempresu, mat))), INFO=1);
+
+    return sol
+    
+
+#run once   
+sol=runmodel(0, steps)
+
+#correct bolts
+for bolt in bolts: bolt.correctPrestrain(sol, steps)
+DETRUIRE(CONCEPT=(_F(NOM=sol)), INFO=1);
+
+#run second time
+sol=runmodel(0, 2*steps)
+
+#evaluate
+import csv
+csvf=csv.writer(open(os.path.join(basedir, "screws.csv"), 'w'), delimiter=' ')
+for i,bolt in enumerate(bolts):
+  res=bolt.evaluate(sol, steps, 2*steps)
+  print i, res
+  csvf.writerow([i]+list(res))
+
+ff=POST_RELEVE_T(ACTION=(_F(OPERATION='EXTRACTION',
+                                INTITULE='clampfor',
+                                RESULTAT=sol,
+                                NOM_CHAM='FORC_NODA',
+                                INST=(2*steps),
+                                GROUP_NO=('1lat'),
+                                RESULTANTE=('DX', 'DY', 'DZ'),
+                                #TOUT_CMP='OUI'
+                            ),
+                         ),);
+print "1lat", ff.EXTR_TABLE()
+DETRUIRE(CONCEPT=( _F(NOM=(ff) ) ), INFO=1);
+
+
+IMPR_RESU(FORMAT='MED',
+          UNITE=80,
+          RESU=_F(MAILLAGE=mesh,
+                  RESULTAT=sol
+        ),);
+
+   
+FIN();

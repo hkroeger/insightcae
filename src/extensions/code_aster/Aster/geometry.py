@@ -355,7 +355,11 @@ class SolidBody(object):
     return classes
 
 
-  def findPlanarFaces(self, filter_direction=None, filter_area=None, deviation=SMALL):
+  def findPlanarFaces(self, 
+		      filter_direction=None, 
+		      filter_cog=None, 
+		      filter_area=None, 
+		      deviation=SMALL):
     faces=set()
     for fi in range(1, self.fmap.Extent()+1):
       face=TopoDS.face(self.fmap(fi))
@@ -372,6 +376,9 @@ class SolidBody(object):
 	ok=True
 	if not filter_direction is None:
 	  if not filter_direction.fulfilled( (toArray(vec), toArray(pnt)) ): ok=False
+
+	if not filter_cog is None:
+	  if not filter_cog.fulfilled( (toArray(pnt),) ): ok=False
 
 	if not filter_area is None:
 	  ar=faceArea(face)
@@ -451,8 +458,21 @@ class SolidBody(object):
   def faceCoG(self, fi):
     return faceCoG(TopoDS.face(self.fmap(fi)))
     
+  def faceCoGCyl(self, fi, ez, er, p0=np.array([0,0,0])):
+    cog=faceCoG(TopoDS.face(self.fmap(fi)))
+    et=np.cross(ez, er)
+    vr=cog-np.dot(cog-p0, ez)*ez
+    x=np.dot(vr, er)
+    y=np.dot(vr, et)
+    z=np.dot(cog-p0, ez)
+    phi=math.atan2(y, x)
+    return np.array([np.linalg.norm(vr), phi, z])
+
   def facesCoG(self, faces):
     return {fi: self.faceCoG(fi) for fi in faces}
+
+  def facesCoGCyl(self, faces, ez, er, p0=np.array([0,0,0])):
+    return {fi: self.faceCoGCyl(fi, ez, er, p0) for fi in faces}
 
   def cylFaceRadius(self, fi):
     return cylFaceRadius(TopoDS.face(self.fmap(fi)))

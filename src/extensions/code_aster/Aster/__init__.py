@@ -39,24 +39,43 @@ def readMeshes(nMeshes):
 
 
 
-def area(group_ma_name):
-  pass
-  #from Cata.cata import *
-  #from Accas import _F
+def area(mesh, group_ma_name):
+  from Cata.cata import *
+  from Accas import _F
+  
+  tmpmesh=CREA_MAILLAGE(MAILLAGE=mesh,
+			MODI_MAILLE=_F(GROUP_MA=group_ma_name,
+                                    OPTION='TRIA6_7',
+                                    #PREF_NOEUD='NT'
+                                    )
+                       );
+  
+  dummod=AFFE_MODELE(MAILLAGE=tmpmesh,
+		    VERIF='MAILLE',
+		    AFFE=(_F(GROUP_MA=(group_ma_name),# '1out', '2in'),
+			     PHENOMENE='MECANIQUE',
+			     MODELISATION='COQUE_3D'),
+			  ),
+		      );
+		      
+  dummat=DEFI_MATERIAU(ELAS=_F(E=210000.0, RHO=1, NU=0.0,),);
 
-  #elastic=DEFI_MATERIAU(ELAS=_F(E=200000.0, RHO=1, NU=0.0,),);
+  dmatass=AFFE_MATERIAU(MAILLAGE=tmpmesh, AFFE=_F(GROUP_MA=group_ma_name, MATER=dummat,),);
 
-  #Mat=AFFE_MATERIAU(MAILLAGE=MeshLin, AFFE=_F(TOUT='OUI', MATER=elastic,),);
+  tmpcara=AFFE_CARA_ELEM(MODELE=dummod,
+		      COQUE=_F(GROUP_MA=group_ma_name, EPAIS=1.0,),);
 
-  #Cara=AFFE_CARA_ELEM(MODELE=dkt,
-		      #COQUE=_F(GROUP_MA='PLATE_T1',EPAIS=1.0,),);
-
-  #tab_post=POST_ELEM(MASS_INER=_F(GROUP_MA='PLATE_T1'),
-		    #MODELE=dkt,
-		    #CHAM_MATER=Mat,
-		    #CARA_ELEM=Cara,
-		    #TITRE='tit_von_post_elem',);
+  tmptab=POST_ELEM(MASS_INER=_F(GROUP_MA=group_ma_name),
+		    CARA_ELEM=tmpcara,
+		    TITRE='tit_von_post_elem',
+		    MODELE=dummod,
+		    CHAM_MATER=dmatass,
+		    );
   #IMPR_TABLE(TABLE=tab_post,);
+  print tmptab.EXTR_TABLE()
+  A = tmptab['MASSE',1]
+  DETRUIRE(CONCEPT=(_F(NOM=(tmpmesh, dummod,dummat,dmatass,tmpcara,tmptab))), INFO=1);
+  return A
 
 
 

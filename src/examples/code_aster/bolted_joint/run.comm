@@ -97,32 +97,37 @@ MODI_MAILLAGE(reuse =mesh,
 
 		
 
+#contact = DEFI_CONTACT(MODELE      = FEMLin,
+			#FORMULATION='CONTINUE',
+			#ALGO_RESO_GEOM='NEWTON',
+			#ALGO_RESO_CONT='NEWTON',
+			#LISSAGE='OUI',
+			#VERI_NORM='OUI',
+			#FROTTEMENT='SANS',
+                        #ZONE = ( 
+			   #_F(
+                             #GROUP_MA_ESCL='2axc',
+                             #GROUP_MA_MAIT='1axc',
+                             #)
+			   #),
+                      #);
+                      
 contact = DEFI_CONTACT(MODELE      = FEMLin,
-
-			FORMULATION='CONTINUE',
-			ALGO_RESO_GEOM='NEWTON',
-			ALGO_RESO_CONT='NEWTON',
+			FORMULATION='DISCRETE',
 			LISSAGE='OUI',
-			VERI_NORM='OUI',
-			
 			FROTTEMENT='SANS',
-
+			RESI_ABSO=0.0001,
+			RECH_LINEAIRE='ADMISSIBLE',
+			PRE_COND='DIRICHLET',
                         ZONE = ( 
 			   _F(
                              GROUP_MA_ESCL='2axc',
                              GROUP_MA_MAIT='1axc',
-
-                             ##TOLE_PROJ_EXT=-1
-                             #TYPE_APPA='FIXE',   #!!
-                             #DIRE_APPA=(-math.cos(alpha),math.sin(alpha),0),
-                             ##DIRE_APPA=(-1,0,0),
-                             
-                             #GLISSIERE='OUI'
-			     #COULOMB=0.1
+                             ALGO_CONT='GCP',
                              )
 			   ),
                       );
-                      
+
 extload=AFFE_CHAR_MECA(MODELE=FEMLin,
 		      FORCE_NODALE=_F(
 			GROUP_NO='2lat',
@@ -208,6 +213,7 @@ def runmodel(TIM0, TIM1):
                         #             DEFORMATION='GROT_GDEP',
                         #             TOUT='OUI',),
                         INCREMENT=_F(LIST_INST=LIST_IN1,),
+                        #METHODE='NEWTON_KRYLOV',
                         NEWTON=_F(PREDICTION='ELASTIQUE',
 				   #MATRICE='ELASTIQUE',
 				   REAC_ITER=1,
@@ -216,12 +222,15 @@ def runmodel(TIM0, TIM1):
 					ARRET='NON', 
 					ITER_GLOB_MAXI=15,
 					),
-                        SOLVEUR=_F(METHODE='MUMPS', 
-				   MATR_DISTRIBUEE='OUI',
-				   SYME='OUI'),
+                        #SOLVEUR=_F(METHODE='MUMPS', 
+			#	   MATR_DISTRIBUEE='OUI',
+			#	   SYME='OUI'),
                         #SOLVEUR=_F(METHODE='MULT_FRONT', 
 			#	   SYME='OUI'),
-			#SOLVEUR=_F(METHODE='GCPC', PRE_COND='LDLT_SP', SYME='OUI'),
+			SOLVEUR=_F(METHODE='GCPC', PRE_COND='LDLT_SP'),
+			#SOLVEUR=_F(METHODE='GCPC', PRE_COND='LDLT_INC', RENUM='SANS'),
+			#SOLVEUR=_F(METHODE='PETSC', ALGORITHME='CR'),
+			#SOLVEUR=_F(METHODE='PETSC', ALGORITHME='CR', PRE_COND='LDLT_INC', RENUM='SANS'),
 			);
 
 

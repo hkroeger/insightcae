@@ -93,6 +93,18 @@ void FaNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   faSchemes.addSubDictIfNonexistent("fluxRequired");
 }
 
+tetFemNumerics::tetFemNumerics(OpenFOAMCase& c)
+: OpenFOAMCaseElement(c, "tetFemNumerics")
+{
+}
+
+void tetFemNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  // setup structure of dictionaries
+  OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
+  tetFemSolution.addSubDictIfNonexistent("solvers");
+}
+
 OFDictData::dict stdSymmSolverSetup(double tol, double reltol)
 {
   OFDictData::dict d;
@@ -227,7 +239,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
 : FaNumerics(c)
 {
-  c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0) ) );
+  //c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0) ) );
 }
  
 void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -280,6 +292,64 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
   transportProperties["transportModel"]="Newtonian";
   transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), OFDictData::data(1e-6));
 }
+
+dynamicMesh::dynamicMesh(OpenFOAMCase& c)
+: OpenFOAMCaseElement(c, "dynamicMesh")
+{
+}
+
+velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
+: dynamicMesh(c),
+  tetFemNumerics_(c)
+{
+  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+}
+
+void velocityTetFEMMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  tetFemNumerics_.addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
+  OFDictData::dict& solvers = tetFemSolution.subDict("solvers");
+  solvers["motionU"]=stdSymmSolverSetup();
+  
+  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+  dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
+  dynamicMeshDict["solver"]=OFDictData::data("laplaceFaceDecomposition");
+  if (dynamicMesh::OFversion()<=160)
+  {
+    dynamicMeshDict["diffusivity"]=OFDictData::data("uniform");
+    dynamicMeshDict["frozenDiffusion"]=OFDictData::data(false);
+    dynamicMeshDict["twoDMotion"]=OFDictData::data(false);
+  }
+  else
+  {
+    throw insight::Exception("No tetFEMMotionsolver available for OF>1.6 ext");
+  }
+}
+
+displacementFvMotionSolver::displacementFvMotionSolver(OpenFOAMCase& c)
+: dynamicMesh(c)
+{
+}
+
+void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& dynamicMeshDict=dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+  dynamicMeshDict["dynamicFvMesh"]=OFDictData::data("dynamicMotionSolverFvMesh");
+  dynamicMeshDict["solver"]=OFDictData::data("displacementLaplacian");
+  if (OFversion()<220)
+  {
+    dynamicMeshDict["diffusivity"]=OFDictData::data("uniform");
+  }
+  else
+  {
+    OFDictData::dict sd;
+    sd["diffusivity"]=OFDictData::data("uniform");
+    dynamicMeshDict["displacementLaplacianCoeffs"]=sd;
+  }
+}
+
 
 turbulenceModel::turbulenceModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "turbulenceModel")
@@ -415,7 +485,10 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
-    BC["type"]=OFDictData::data(className_);
+    if ( (className_=="cyclic") && ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+    else
+      BC["type"]=OFDictData::data(className_);
   }
 }
 
@@ -458,7 +531,8 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else
     {
-      throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+      if (!noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC))
+	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
 }
@@ -473,7 +547,12 @@ MeshMotionBC::~MeshMotionBC()
 
 bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
 {
-    if ( (fieldname=="displacement") && (get<0>(fieldinfo)==vectorField) )
+    if 
+    ( 
+      ((fieldname=="displacement")||(fieldname == "motionU"))
+      && 
+      (get<0>(fieldinfo)==vectorField) 
+    )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform (0 0 0)");
@@ -490,7 +569,18 @@ MeshMotionBC* NoMeshMotion::clone() const
 
 NoMeshMotion noMeshMotion;
 
-CAFSIBC::CAFSIBC()
+CAFSIBC::CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, double relax)
+: FEMScratchDir_(FEMScratchDir),
+  clipPressure_(clipPressure)
+{
+  relax_[0.0]=relax;
+}
+
+
+CAFSIBC::CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, const RelaxProfile& relax)
+: FEMScratchDir_(FEMScratchDir),
+  clipPressure_(clipPressure),
+  relax_(relax)
 {
 }
 
@@ -505,6 +595,32 @@ MeshMotionBC* CAFSIBC::clone() const
 
 bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
 {
+  if (fieldname == "motionU")
+  {
+    BC["prescribeMotionVelocity"] = OFDictData::data(true);
+  }
+  if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
+  {
+    BC["type"]= OFDictData::data("FEMDisplacement");
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+FEMScratchDir_.c_str()+"\"");
+    BC["lengthScale"]= OFDictData::data(1.0);
+    BC["transform"]=  OFDictData::data("((0 0 0) (0 (0 0 0)))");
+    BC["pressureScale"]=  OFDictData::data(1.0);
+    BC["minPressure"]=  OFDictData::data(clipPressure_);
+    BC["nSmoothIter"]=  OFDictData::data(4);
+    BC["wallCollisionCheck"]=  OFDictData::data(true);
+    BC["value"]=OFDictData::data("uniform (0 0 0)");
+    OFDictData::list relaxProfile;
+    BOOST_FOREACH(const RelaxProfile::value_type& rp, relax_)
+    {
+      OFDictData::list cp;
+      cp.push_back(rp.first);
+      cp.push_back(rp.second);
+      relaxProfile.push_back(cp);
+    }
+    BC["relax"]=  relaxProfile;
+    return true;
+  }
   return false;
 }
 

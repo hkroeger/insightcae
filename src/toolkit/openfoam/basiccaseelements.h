@@ -24,6 +24,8 @@
 #include "base/linearalgebra.h"
 #include "openfoam/openfoamcase.h"
 
+#include <map>
+
 namespace insight 
 {
 
@@ -52,6 +54,17 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+/**
+ Manages basic settings in tetFemSolution
+ */
+class tetFemNumerics
+: public OpenFOAMCaseElement
+{
+  
+public:
+  tetFemNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
@@ -74,6 +87,7 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
 class transportModel
 : public OpenFOAMCaseElement
 {
@@ -90,6 +104,29 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class dynamicMesh
+: public OpenFOAMCaseElement
+{
+public:
+  dynamicMesh(OpenFOAMCase& c);
+};
+
+class velocityTetFEMMotionSolver
+: public dynamicMesh
+{
+  tetFemNumerics tetFemNumerics_;
+public:
+  velocityTetFEMMotionSolver(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+class displacementFvMotionSolver
+: public dynamicMesh
+{
+public:
+  displacementFvMotionSolver(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class turbulenceModel
 : public OpenFOAMCaseElement
@@ -183,7 +220,16 @@ class CAFSIBC
 : public MeshMotionBC
 {
 public:
-  CAFSIBC();
+  typedef std::map<double, double> RelaxProfile;
+  
+protected:
+  boost::filesystem::path FEMScratchDir_;
+  double clipPressure_;
+  RelaxProfile relax_;
+  
+public:
+  CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, double relax=0.1);
+  CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, const RelaxProfile& relax);
   virtual ~CAFSIBC();
 
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC);

@@ -163,7 +163,7 @@ struct dict
     return this->lookup<dict>(key);
   }
 
-  inline list& getlist(const std::string& key)
+  inline list& getList(const std::string& key)
   {
     return this->lookup<list>(key);
   }

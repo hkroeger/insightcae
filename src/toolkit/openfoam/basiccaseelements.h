@@ -79,6 +79,14 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class simpleDyMFoamNumerics
+: public simpleFoamNumerics
+{
+public:
+  simpleDyMFoamNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 class FSIDisplacementExtrapolationNumerics
 : public FaNumerics
 {

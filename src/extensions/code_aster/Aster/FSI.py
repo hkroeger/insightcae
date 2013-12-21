@@ -23,6 +23,7 @@ class Transformation(object):
 
   
 class BearingCFDTransformation(Transformation):
+  
   def __init__(self, Ri, phi_ofs=0.0):
     self.Ri=Ri
     self.phi_ofs=phi_ofs
@@ -43,25 +44,113 @@ class BearingCFDTransformation(Transformation):
     return np.array([ca*u[0]-sa*u[1], sa*u[0]+ca*u[1], u[2]]) # rotation by phi around -z
 
 
+class GetOutOfLoop( Exception ):
+    pass
+
+  
+def save_remove(fn):
+  # otherwise remove will be called twice in parallel runs!
+  if os.path.exists(fn): 
+    try:
+      os.remove(fn)
+    except:
+      print "Failed to remove", fn
+
+
 class ScratchDirComm(object):
   def __init__(self, basepath):
     self.scratchdir=os.path.join(basepath, "scratch")
     print "Using scratchdir: ", self.scratchdir, ", waiting for directory to occur."
+
     # wait for scratchdir to occur
     while not os.path.exists(self.scratchdir):    
 	time.sleep(0.5)
+
+    self.stopfn=os.path.join(self.scratchdir, "STOP")
 	
+  def waitForCFDResults(self, pairs):
+    # wait for all signal files to occur
+    present=[False]*len(pairs)
+    while False in present:
+	if os.path.exists(self.stopfn): 
+	    save_remove(self.stopfn)
+	    raise GetOutOfLoop()
+
+	time.sleep(0.5)
+	
+	for i,p in enumerate(pairs):
+	    startfn=os.path.join(self.scratchdir, "complete.%s"%p.cfdname)
+	    if os.path.exists(startfn): 
+		present[i]=True;
+
+  def releaseFEMResults(self, pairs):
+    for p in pairs:
+      save_remove(os.path.join(self.scratchdir, "complete.%s"%p.cfdname))
+      time.sleep(0.5)
+
+
+
 class CFDFEMPair(object):
-    def __init__(self, scratchdircomm, pairinfo):
+  
+    allpairs={}
+    pf={}
+    
+    def __init__(self, scratchdircomm, model, label, pairinfo):
+	from Cata.cata import FORMULE
+	from Accas import _F
+	
         cfdname, femname, trafo = pairinfo
+        self.label=label
+        CFDFEMPair.allpairs[self.label]=self # register for later use in FORMULE
         self.cfdname=cfdname
         self.femname=femname
         self.trafo=trafo
         self.scratchdircomm=scratchdircomm
         self.debug=True
-        self.pts=np.loadtxt(os.path.join(self.scratchdircomm.scratchdir, "locations."+self.cfdname), delimiter=";")
-        #self.tree=Invdisttree(self.pts)
         
+        pf=CFDFEMPair.pf
+	pf[self.label]=FORMULE(
+			NOM_PARA=("X", "Y", "Z"),
+			VALE="ppf([X, Y, Z], '"+self.label+"')"
+			)
+        
+    def pressureRB(self):
+	from Accas import _F
+	return _F(
+		    GROUP_MA=self.femname,
+		    PRES=self.pf[self.label]
+		  );
+      
+    def reread(self):
+	pass
+        
+    def __call__(self, x):
+	"""
+	Return pressure at location x
+	Here, a fixed pressure of 1 MPa is returned for debug purposes
+	"""
+        #p=self.trafo.locationFEMtoCFD(x)
+        return 1.0
+    
+    def writeDisplacements(self, sol, instant):
+      pass
+
+
+
+
+def ppf(x, label):
+  #print label, x
+  return CFDFEMPair.allpairs[label](x)
+
+
+
+class IpolCFDFEMPair(CFDFEMPair):
+
+    def __init__(self, scratchdircomm, model, label, pairinfo):
+      super(IpolCFDFEMPair, self).__init__(scratchdircomm, model, label, pairinfo)
+      self.pts=np.loadtxt(os.path.join(self.scratchdircomm.scratchdir, "locations."+self.cfdname), delimiter=";")
+      #self.tree=Invdisttree(self.pts)
+
     def reread(self):
         cfd_p=np.loadtxt(os.path.join(self.scratchdircomm.scratchdir, "pressure_values."+self.cfdname), delimiter=";")
         #self.tree.setData(cfd_p)
@@ -71,12 +160,10 @@ class CFDFEMPair(object):
 	"""
 	Interpolate pressure at location x in FEM model
 	"""
-        #r=self.tree(self.trafo.locationFEMtoCFD(x))
         p=self.trafo.locationFEMtoCFD(x)
         r=self.pinterp(p[0], p[1], p[2])
-        #print r
         return r
-    
+
     def writeDisplacements(self, sol, instant):
 	from Cata.cata import POST_RELEVE_T, DETRUIRE
 	from Accas import _F
@@ -124,80 +211,28 @@ class CFDFEMPair(object):
         os.fsync(f.fileno())
         f.close()
         
-	DETRUIRE(
-         CONCEPT=( _F(NOM=(utab) ) ), 
-         INFO=1
-         );
+	DETRUIRE(CONCEPT=( _F(NOM=(utab) ) ), INFO=1);
 
 
-def save_remove(fn):
-  # otherwise remove will be called twice in parallel runs!
-  if os.path.exists(fn): 
-    try:
-      os.remove(fn)
-    except:
-      print "Failed to remove", fn
-
-class CFDFEMPairs(object):
-  def __init__(self, scratchdircomm, pairinfos, model, globalname):
-    self.scratchdircomm=scratchdircomm
-    
-    from Cata.cata import FORMULE, AFFE_CHAR_MECA_F
-    from Accas import _F
-    
-    self.pairs=[CFDFEMPair(scratchdircomm, pi) for pi in pairinfos]
-    
-    self.pf=[None]*len(self.pairs)
-    for i,p in enumerate(self.pairs):
-      p.reread()
-      self.pf[i]=FORMULE(NOM_PARA=("X", "Y", "Z"), VALE="%s.pairs[%d]([X, Y, Z])"%(globalname, i))
-      
-    self.pres=AFFE_CHAR_MECA_F(MODELE=model,
-                          PRES_REP=tuple([
-                          _F(
-                            GROUP_MA=p.femname,
-                            PRES=self.pf[i]
-                          ) for i,p in enumerate(self.pairs)
-                          ])
-                         );
-
-
-  def run(self, runfunc, finalinstant):
-    
-    class GetOutOfLoop( Exception ):
-	pass
-
-    stopfn=os.path.join(self.scratchdircomm.scratchdir, "STOP")
+def FSILoop(scratchdircomm, pairs, runfunc):
 
     sol=None
 
     try:
       while True:
 
-	# wait for all signal files to occur
-	present=[False]*len(self.pairs)
-	while False in present:
-	    if os.path.exists(stopfn): 
-		save_remove(stopfn)
-		raise GetOutOfLoop()
-
-	    time.sleep(0.5)
-	    
-	    for i,p in enumerate(self.pairs):
-		startfn=os.path.join(self.scratchdircomm.scratchdir, "complete.%s"%p.cfdname)
-		if os.path.exists(startfn): 
-		    present[i]=True;
-		    p.reread()
+	# wait for and read CFD results (pressure fields)
+	scratchdircomm.waitForCFDResults(pairs)
+	for p in pairs: p.reread()
 	
-	# do FEM and write results
-	sol=runfunc(sol, self.pres)
-	for p in self.pairs: 
-	  p.writeDisplacements(sol, finalinstant)
+	# do FEM
+	sol, finalinstant=runfunc(sol, pairs)
+	
+	# write FEM results (displacement fields)
+	for p in pairs: p.writeDisplacements(sol, finalinstant)
 
-	# remove all signal files
-	for i,p in enumerate(self.pairs):
-	    save_remove(os.path.join(self.scratchdircomm.scratchdir, "complete.%s"%p.cfdname))
-	    time.sleep(0.5)
+	# remove all signal files, release CFD simulation
+	scratchdircomm.releaseFEMResults(pairs)
 
     except GetOutOfLoop:
       pass    

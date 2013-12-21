@@ -236,6 +236,28 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
+simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c)
+: simpleFoamNumerics(c)
+{}
+ 
+void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  simpleFoamNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="simpleDyMFoam";
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  SIMPLE["startTime"]=OFDictData::data( 100.0 );
+  SIMPLE["timeInterval"]=OFDictData::data( 50.0 );
+  
+}
+
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
 : FaNumerics(c)
 {

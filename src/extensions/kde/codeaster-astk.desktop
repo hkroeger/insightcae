@@ -6,7 +6,7 @@ MimeType=application/codeaster-astk;
 Actions=openastk;
 
 [Desktop Action openastk]
-Exec=astk "%f"
+Exec=konsole --hold -e /bin/bash -lc "astk '%f'"
 Icon=utilities-terminal
 Name=Open with ASTK
 Name[de]=Mit ASTK öffnen

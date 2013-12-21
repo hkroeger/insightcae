@@ -4,10 +4,9 @@ X-KDE-ServiceTypes=KonqPopupMenu/Plugin
 X-KDE-Submenu=Insight
 MimeType=application/codeaster-export;
 Actions=runcaexport;
-Terminal=true
 
 [Desktop Action runcaexport]
-Exec=as_run "%f"
+Exec=konsole --hold -e /bin/bash -lc "as_run '%f'"
 Icon=utilities-terminal
 Name=Run Code_Aster case
 Name[de]=Mit Code_Aster ausführen

@@ -34,6 +34,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/concept_check.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
 #include "rapidxml/rapidxml.hpp"
 
@@ -122,6 +123,7 @@ public:
     using namespace rapidxml;
     xml_node<>* child = findNode(node, name);
     value_=boost::lexical_cast<T>(child->first_attribute("value")->value());
+    std::cout<<"name="<<name<<", value="<<value_<<std::endl;
   }
   
 };
@@ -214,7 +216,38 @@ public:
   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
 };
 
+
+class ArrayParameter
+: public Parameter
+{
+protected:
+  boost::shared_ptr<Parameter> defaultValue_;
+  boost::ptr_vector<Parameter> value_;
   
+public:
+  declareType("array");
+  
+  ArrayParameter(const std::string& description);
+  ArrayParameter(const Parameter& defaultValue, int size, const std::string& description);
+  
+  //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
+  inline void setDefaultValue(const Parameter& defP) { defaultValue_.reset(defP.clone()); }
+  inline void eraseValue(int i) { value_.erase(value_.begin()+i); }
+  inline void appendValue(const Parameter& np) { value_.push_back(np.clone()); }
+  inline void appendEmpty() { value_.push_back(defaultValue_->clone()); }
+  inline Parameter& operator[](int i) { return value_[i]; }
+  inline const Parameter& operator[](int i) const { return value_[i]; }
+  inline int size() const { return value_.size(); }
+  
+  virtual std::string latexRepresentation() const;
+  
+  virtual Parameter* clone () const;
+
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+};
+
+
 inline Parameter* new_clone(const Parameter& p)
 {
   return p.clone();

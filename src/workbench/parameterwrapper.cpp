@@ -313,6 +313,88 @@ void SubsetParameterWrapper::onUpdate()
   emit(update());
 }
 
+defineType(ArrayParameterWrapper);
+addToFactoryTable(ParameterWrapper, ArrayParameterWrapper, ParameterWrapper::ConstrP);
+
+void ArrayParameterWrapper::addWrapper()
+{
+  int i=entrywrappers_.size();
+  
+  insight::Parameter& pp=param()[i];
+  
+  QWidget *cont=new QWidget(group_);
+  QHBoxLayout *innerlayout=new QHBoxLayout(cont);
+  ParameterWrapper *wrapper = 
+    ParameterWrapper::lookup
+    (
+      pp.type(),
+      ParameterWrapper::ConstrP(cont, "["+QString::number(i)+"]", pp)
+    );
+  innerlayout->addWidget(wrapper);
+  QPushButton *rmbtn=new QPushButton("-", cont);
+  map_->setMapping(rmbtn, i);
+  connect(rmbtn, SIGNAL(clicked()), map_, SLOT(map()));
+  innerlayout->addWidget(rmbtn);
+  vlayout_->addWidget(cont);
+  entrywrappers_.push_back(cont);
+  QObject::connect(this, SIGNAL(apply()), wrapper, SLOT(onApply()));
+  QObject::connect(this, SIGNAL(update()), wrapper, SLOT(onUpdate()));  
+}
+
+void ArrayParameterWrapper::rebuildWrappers()
+{
+  entrywrappers_.clear();
+  for(int i=0; i<param().size(); i++) addWrapper();
+}
+
+ArrayParameterWrapper::ArrayParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p),
+  map_(new QSignalMapper(this))
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  group_ = new QGroupBox(name_, this);
+  QFont f=group_->font(); f.setBold(true); group_->setFont(f);
+  
+  vlayout_=new QVBoxLayout(group_);
+  QPushButton *addbtn=new QPushButton("+ Add new", group_);
+  connect(addbtn, SIGNAL(clicked()), this, SLOT(onAppendEmpty()));
+  vlayout_->addWidget(addbtn);
+  
+  connect(map_, SIGNAL(mapped(int)), this, SLOT(onRemove(int)));
+
+  rebuildWrappers();
+      
+  layout->addWidget(group_);
+  this->setLayout(layout);
+}
+
+void ArrayParameterWrapper::onRemove(int i)
+{
+  emit(apply());
+  entrywrappers_.erase(entrywrappers_.begin()+i);
+  param().eraseValue(i);
+  rebuildWrappers();
+}
+
+void ArrayParameterWrapper::onAppendEmpty()
+{
+  emit(apply());
+  param().appendEmpty();
+  rebuildWrappers();
+}
+
+void ArrayParameterWrapper::onApply()
+{
+  emit(apply());
+}
+
+void ArrayParameterWrapper::onUpdate()
+{
+  entrywrappers_.clear();
+  rebuildWrappers();
+  //emit(update());
+}
+
 defineType(DoubleRangeParameterWrapper);
 addToFactoryTable(ParameterWrapper, DoubleRangeParameterWrapper, ParameterWrapper::ConstrP);
 

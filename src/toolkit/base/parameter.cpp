@@ -3,6 +3,9 @@
 #include "base/latextools.h"
 #include "base/exception.h"
 
+#include <iostream>
+
+using namespace std;
 using namespace rapidxml;
 
 namespace insight 
@@ -44,6 +47,12 @@ template<> defineType(IntParameter);
 template<> defineType(BoolParameter);
 template<> defineType(StringParameter);
 template<> defineType(PathParameter);
+
+addToFactoryTable(Parameter, DoubleParameter, std::string);
+addToFactoryTable(Parameter, IntParameter, std::string);
+addToFactoryTable(Parameter, BoolParameter, std::string);
+addToFactoryTable(Parameter, StringParameter, std::string);
+addToFactoryTable(Parameter, PathParameter, std::string);
 
 rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& name)
 {
@@ -238,5 +247,75 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
     values_.insert(v);
   }
 }
+
+defineType(ArrayParameter);
+addToFactoryTable(Parameter, ArrayParameter, std::string);
+
+ArrayParameter::ArrayParameter(const std::string& description)
+: Parameter(description)
+{
+}
+
+ArrayParameter::ArrayParameter(const Parameter& defaultValue, int size, const std::string& description)
+: Parameter(description),
+  defaultValue_(defaultValue.clone())
+{
+  for (int i=0; i<size; i++) appendEmpty();
+}
+  
+  
+std::string ArrayParameter::latexRepresentation() const
+{
+  return std::string();
+}
+  
+Parameter* ArrayParameter::clone () const
+{
+  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_);
+  for (int i=0; i<size(); i++)
+    np->appendValue(value_[i]);
+  return np;
+}
+
+rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  cout<<"appending array "<<name<<endl;
+  using namespace rapidxml;
+  xml_node<>* child = Parameter::appendToNode(name, doc, node);
+  defaultValue_->appendToNode("default", doc, *child);
+  for (int i=0; i<size(); i++)
+  {
+    value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child);
+  }
+  return child;
+}
+
+void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  value_.clear();
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, name);
+  for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
+  {
+    std::string name(e->first_attribute("name")->value());
+    if (name=="default")
+    {
+      cout<<"reading default value"<<endl;
+      defaultValue_.reset(Parameter::lookup(e->name(), ""));
+      defaultValue_->readFromNode( name, doc, *child );
+    }
+    else
+    {
+      int i=boost::lexical_cast<int>(name);
+      cout<<"Reading element i="<<i<<endl;
+      if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
+      cout<<"now at size="<<size()<<endl;
+      Parameter* curp = Parameter::lookup(e->name(), "");
+      curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child );
+      value_.replace(i, curp);
+    }
+  }
+}
+  
 
 }

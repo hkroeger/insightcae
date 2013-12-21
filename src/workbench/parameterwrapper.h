@@ -27,6 +27,9 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QListWidget>
+#include <QGroupBox>
+#include <QVBoxLayout>
+#include <QSignalMapper>
 
 #include "base/factory.h"
 #include "base/parameter.h"
@@ -190,6 +193,38 @@ public:
   declareType(insight::SubsetParameter::typeName_());
   SubsetParameterWrapper(const ConstrP& p);
   inline insight::SubsetParameter& param() { return dynamic_cast<insight::SubsetParameter&>(p_); }
+  
+public slots:
+  virtual void onApply();
+  virtual void onUpdate();
+  
+signals:
+  void apply();
+  void update();
+};
+
+class ArrayParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+  
+protected:
+  boost::ptr_vector<QWidget> entrywrappers_;
+  QVBoxLayout *vlayout_;
+  QGroupBox *group_;
+  QSignalMapper *map_;
+  
+  void addWrapper();
+  void rebuildWrappers();
+  
+public:
+  declareType(insight::ArrayParameter::typeName_());
+  ArrayParameterWrapper(const ConstrP& p);
+  inline insight::ArrayParameter& param() { return dynamic_cast<insight::ArrayParameter&>(p_); }
+  
+protected slots:
+  void onRemove(int i);
+  void onAppendEmpty();
   
 public slots:
   virtual void onApply();

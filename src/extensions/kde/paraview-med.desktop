@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+#MimeType=application/pv-med;application/x-hdf;
+MimeType=application/pv-med;
+Actions=openinparaview;
+
+[Desktop Action openinparaview]
+Exec=paraview --data="%f"
+Icon=utilities-terminal
+Name=Open MED file with Paraview
+Name[de]=MED-Datei mit Paraview öffnen
+

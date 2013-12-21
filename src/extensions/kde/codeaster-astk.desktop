@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+MimeType=application/codeaster-astk;
+Actions=openastk;
+
+[Desktop Action openastk]
+Exec=astk "%f"
+Icon=utilities-terminal
+Name=Open with ASTK
+Name[de]=Mit ASTK öffnen
+

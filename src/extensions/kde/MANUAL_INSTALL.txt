@@ -1,0 +1,3 @@
+* link all files into ~/.kde/share/kde4/services/ServiceMenus
+* restart dolphin etc.
+

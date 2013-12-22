@@ -75,6 +75,8 @@ public:
   
   inline insight::ParameterSet& parameters() { return parameters_; }
   inline insight::Analysis& analysis() { return *analysis_; }
+  
+  inline void forceUpdate() { emit update(); }
     
 private slots:
   void onSaveParameters();

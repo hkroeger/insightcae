@@ -123,6 +123,7 @@ void workbench::onOpenAnalysis()
     form->parameters().readFromNode(doc, *rootnode);
     boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
     form->analysis().setExecutionPath(dir);
+    form->forceUpdate();
     form->showMaximized();
   }
 }

@@ -72,6 +72,9 @@ protected:
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
   ~AnalysisForm();
+  
+  inline insight::ParameterSet& parameters() { return parameters_; }
+  inline insight::Analysis& analysis() { return *analysis_; }
     
 private slots:
   void onSaveParameters();

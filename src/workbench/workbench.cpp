@@ -5,9 +5,14 @@
 #include <QtGui/QMenuBar>
 #include <QtGui/QAction>
 #include <QMessageBox>
+#include <QFileDialog>
 
 #include "newanalysisdlg.h"
 #include "analysisform.h"
+
+#include <fstream>
+#include "rapidxml/rapidxml.hpp"
+#include "rapidxml/rapidxml_print.hpp"
 
 WorkbenchApplication::WorkbenchApplication(int &argc, char **argv)
 : QApplication(argc, argv)
@@ -67,6 +72,11 @@ workbench::workbench()
     a->setShortcut(Qt::ControlModifier + Qt::Key_N);
     connect(a, SIGNAL(triggered()), SLOT(newAnalysis()) );
     analysisMenu->addAction( a );
+    
+    a = new QAction("Open...", this); 
+    a->setShortcut(Qt::ControlModifier + Qt::Key_O);
+    connect(a, SIGNAL(triggered()), SLOT(onOpenAnalysis()) );
+    analysisMenu->addAction( a );
 }
 
 workbench::~workbench()
@@ -78,6 +88,41 @@ void workbench::newAnalysis()
   if (dlg.exec() == QDialog::Accepted)
   {
     AnalysisForm *form= new AnalysisForm(mdiArea_, dlg.getAnalysisName());
+    form->showMaximized();
+  }
+}
+
+void workbench::onOpenAnalysis()
+{
+  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
+  if (!fn.isEmpty())
+  {
+    using namespace rapidxml;
+    
+    std::ifstream in(fn.toStdString().c_str());
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+
+    xml_document<> doc;
+    doc.parse<0>(&contents[0]);
+    
+    xml_node<> *rootnode = doc.first_node("root");
+    
+    std::string analysisName;
+    xml_node<> *analysisnamenode = rootnode->first_node("analysis");
+    if (analysisnamenode)
+    {
+      analysisName = analysisnamenode->first_attribute("name")->value();
+    }
+    
+    AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
+    form->parameters().readFromNode(doc, *rootnode);
+    boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
+    form->analysis().setExecutionPath(dir);
     form->showMaximized();
   }
 }

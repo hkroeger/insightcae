@@ -91,7 +91,7 @@ void AnalysisForm::onSaveParameters()
 {
   emit apply();
 
-  QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "*.xml");
+  QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())
   {
     parameters_.saveToFile(fn.toStdString());
@@ -100,7 +100,7 @@ void AnalysisForm::onSaveParameters()
 
 void AnalysisForm::onLoadParameters()
 {
-  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "*.xml");
+  QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())
   {
     parameters_.readFromFile(fn.toStdString());

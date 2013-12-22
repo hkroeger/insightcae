@@ -34,6 +34,7 @@ public:
     
 private slots:
     void newAnalysis();
+    void onOpenAnalysis();
 };
 
 #endif // workbench_H

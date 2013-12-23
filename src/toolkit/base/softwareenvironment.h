@@ -23,8 +23,12 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include "pstreams/pstream.h"
+
+#include "boost/foreach.hpp"
+#include "boost/algorithm/string.hpp"
 
 namespace insight
 {
@@ -51,12 +55,48 @@ public:
       std::vector<std::string>* output = NULL
     ) const;
     
-    virtual void forkCommand
+    template<class stream>
+    void forkCommand
     (
-      redi::ipstream& p_in,      
+      /*redi::ip*/ stream& p_in,      
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>()
-    ) const;
+    ) const
+    {
+      
+      argv.insert(argv.begin(), cmd);
+      
+      if (executionMachine_=="")
+      {
+	argv.insert(argv.begin(), "-c");
+	argv.insert(argv.begin(), "bash");
+      }
+      else if (boost::starts_with(executionMachine_, "qrsh:"))
+      {
+	argv.insert(argv.begin(), "qrsh");
+      }
+      else
+      {
+	argv.insert(argv.begin(), executionMachine_);
+	argv.insert(argv.begin(), "ssh");
+      }
+      
+      std::cout<<"argv=( ";
+      int k=0;
+      BOOST_FOREACH(const std::string& a, argv) std::cout<<(++k)<<":"<<a<<" ";
+      std::cout<<")"<<std::endl;
+      
+      if (argv.size()>1)
+      {
+	p_in.open(argv[0], argv);
+      }
+      else
+      {
+	p_in.open(argv[0]);
+      }
+      
+      std::cout<<"Executing "<<p_in.command()<<std::endl;
+    }
     
 };
 

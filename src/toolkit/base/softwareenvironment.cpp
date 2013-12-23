@@ -20,11 +20,6 @@
 
 #include "base/softwareenvironment.h"
 
-#include <iostream>
-
-#include "boost/foreach.hpp"
-#include "boost/algorithm/string.hpp"
-
 using namespace std;
 
 namespace insight
@@ -68,6 +63,7 @@ int SoftwareEnvironment::executeCommand
   return p_in.rdbuf()->status();
 }
 
+/*
 void SoftwareEnvironment::forkCommand
 (
   redi::ipstream& p_in,
@@ -109,5 +105,5 @@ void SoftwareEnvironment::forkCommand
   
   cout<<"Executing "<<p_in.command()<<endl;
 }
-
+*/
 }

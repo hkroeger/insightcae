@@ -240,6 +240,23 @@ void OpenFOAMCase::addRemainingBCs(OFDictData::dict& boundaryDict)
 {
 }
 
+std::string OpenFOAMCase::cmdString
+(
+  const boost::filesystem::path& location, 
+  const std::string& cmd,
+  std::vector<std::string> argv
+)
+const
+{
+  std::string shellcmd;
+  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+cmd;
+  BOOST_FOREACH(std::string& arg, argv)
+  {
+    shellcmd+=" \""+arg+"\"";
+  }
+  return shellcmd;
+}
+
 int OpenFOAMCase::executeCommand
 (
   const boost::filesystem::path& location, 
@@ -248,14 +265,7 @@ int OpenFOAMCase::executeCommand
   std::vector<std::string>* output
 ) const
 {
-  std::string shellcmd;
-  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+cmd;
-  BOOST_FOREACH(std::string& arg, argv)
-  {
-    shellcmd+=" \""+arg+"\"";
-  }
-  //return env_.executeCommand( "bash", boost::assign::list_of<std::string>("-c")(shellcmd), output );
-  return env_.executeCommand( shellcmd, std::vector<std::string>(), output );
+  return env_.executeCommand( cmdString(location, cmd, argv), std::vector<std::string>(), output );
 }
 
 int OpenFOAMCase::runSolver
@@ -268,12 +278,9 @@ int OpenFOAMCase::runSolver
 {
   if (stopFlag) *stopFlag=false;
   
-  std::string shellcmd;
-  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+solverName;
-
   redi::ipstream p_in;
   //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
-  env_.forkCommand( p_in, shellcmd );
+  env_.forkCommand( p_in, cmdString(location, solverName, std::vector<std::string>()) );
 
   std::string line;
   while (std::getline(p_in, line))

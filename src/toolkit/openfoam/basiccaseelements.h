@@ -66,6 +66,7 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);

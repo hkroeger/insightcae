@@ -105,11 +105,21 @@ void tetFemNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   tetFemSolution.addSubDictIfNonexistent("solvers");
 }
 
-OFDictData::dict stdSymmSolverSetup(double tol, double reltol)
+OFDictData::dict stdAsymmSolverSetup(double tol, double reltol)
 {
   OFDictData::dict d;
   d["solver"]="PBiCG";
-  d["smoother"]="DILU";
+  d["preconditioner"]="DILU";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  return d;
+}
+
+OFDictData::dict stdSymmSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  d["solver"]="PCG";
+  d["preconditioner"]="DIC";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   return d;

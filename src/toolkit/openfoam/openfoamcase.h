@@ -134,6 +134,14 @@ public:
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
     virtual void createOnDisk(const boost::filesystem::path& location );
     
+    std::string cmdString
+    (
+      const boost::filesystem::path& location, 
+      const std::string& cmd,
+      std::vector<std::string> argv
+    )
+    const;
+
     int executeCommand
     (
       const boost::filesystem::path& location, 
@@ -149,6 +157,18 @@ public:
       std::string solverName,
       bool *stopFlag = NULL
     );
+    
+    template<class stream>
+    void forkCommand
+    (
+      stream& p_in,      
+      const boost::filesystem::path& location, 
+      const std::string& cmd, 
+      std::vector<std::string> argv = std::vector<std::string>()
+    ) const
+    {
+      env_.forkCommand(p_in, cmdString(location, cmd, argv), std::vector<std::string>());
+    }
     
     const FieldList& fields() const
     {

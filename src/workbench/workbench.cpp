@@ -95,37 +95,39 @@ void workbench::newAnalysis()
 void workbench::onOpenAnalysis()
 {
   QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
-  if (!fn.isEmpty())
-  {
-    using namespace rapidxml;
+  if (!fn.isEmpty()) openAnalysis(fn);
+}
     
-    std::ifstream in(fn.toStdString().c_str());
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
+void workbench::openAnalysis(const QString& fn)
+{
+  using namespace rapidxml;
+  
+  std::ifstream in(fn.toStdString().c_str());
+  std::string contents;
+  in.seekg(0, std::ios::end);
+  contents.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents[0], contents.size());
+  in.close();
 
-    xml_document<> doc;
-    doc.parse<0>(&contents[0]);
-    
-    xml_node<> *rootnode = doc.first_node("root");
-    
-    std::string analysisName;
-    xml_node<> *analysisnamenode = rootnode->first_node("analysis");
-    if (analysisnamenode)
-    {
-      analysisName = analysisnamenode->first_attribute("name")->value();
-    }
-    
-    AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
-    form->parameters().readFromNode(doc, *rootnode);
-    boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
-    form->analysis().setExecutionPath(dir);
-    form->forceUpdate();
-    form->showMaximized();
+  xml_document<> doc;
+  doc.parse<0>(&contents[0]);
+  
+  xml_node<> *rootnode = doc.first_node("root");
+  
+  std::string analysisName;
+  xml_node<> *analysisnamenode = rootnode->first_node("analysis");
+  if (analysisnamenode)
+  {
+    analysisName = analysisnamenode->first_attribute("name")->value();
   }
+  
+  AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
+  form->parameters().readFromNode(doc, *rootnode);
+  boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
+  form->analysis().setExecutionPath(dir);
+  form->forceUpdate();
+  form->showMaximized();
 }
 
-#include "workbench.moc"
+//#include "workbench.moc"

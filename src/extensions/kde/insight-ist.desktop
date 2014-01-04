@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+#MimeType=application/pv-med;application/x-hdf;
+MimeType=application/insight-ist;
+Actions=openinworkbench;
+
+[Desktop Action openinworkbench]
+Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; workbench "%f"'
+Icon=utilities-terminal
+Name=Open parameter file in Insight workbench
+Name[de]=Mit Insight Workbench öffnen
+

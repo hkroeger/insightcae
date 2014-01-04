@@ -79,7 +79,7 @@ struct add##specT##To##baseT##FactoryTable \
   add##specT##To##baseT##FactoryTable()\
   {\
     std::string key(specT::typeName); \
-    std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl; \
+    /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
     baseT::factories_.insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
   }\
 } v_add##specT##To##baseT##FactoryTable;

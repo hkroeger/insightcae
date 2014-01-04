@@ -31,6 +31,8 @@ private:
 public:
     workbench();
     virtual ~workbench();
+
+    void openAnalysis(const QString& fn);
     
 private slots:
     void newAnalysis();

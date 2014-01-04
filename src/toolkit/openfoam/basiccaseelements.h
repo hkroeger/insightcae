@@ -211,7 +211,8 @@ public:
   MeshMotionBC();
   virtual ~MeshMotionBC();
   
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) =0;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
   virtual MeshMotionBC* clone() const =0;
 };
 
@@ -219,7 +220,7 @@ class NoMeshMotion
 : public MeshMotionBC
 {
 public:
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC);
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
   virtual MeshMotionBC* clone() const;
 };
 
@@ -235,13 +236,31 @@ protected:
   boost::filesystem::path FEMScratchDir_;
   double clipPressure_;
   RelaxProfile relax_;
+  double pressureScale_;
+  boost::shared_ptr<double> oldPressure_;
   
 public:
-  CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, double relax=0.1);
-  CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, const RelaxProfile& relax);
+  CAFSIBC
+  (
+    const boost::filesystem::path& FEMScratchDir, 
+    double clipPressure, 
+    double relax=0.1,
+    double pressureScale=1e-3,
+    double *oldPressure = NULL
+  );
+  
+  CAFSIBC
+  (
+    const boost::filesystem::path& FEMScratchDir, 
+    double clipPressure, 
+    const RelaxProfile& relax,
+    double pressureScale=1e-3,
+    double *oldPressure = NULL
+  );
   virtual ~CAFSIBC();
 
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
   virtual MeshMotionBC* clone() const;
 };
 
@@ -258,6 +277,7 @@ public:
     OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity=vec3(0,0,0), 
     const MeshMotionBC& meshmotion = noMeshMotion
   );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
 };

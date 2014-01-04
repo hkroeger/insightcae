@@ -254,17 +254,20 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   simpleFoamNumerics::addIntoDictionaries(dictionaries);
   
+  double interval = 50.0;
+  
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleDyMFoam";
+  controlDict["writeInterval"]=OFDictData::data( interval );
   
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["startTime"]=OFDictData::data( 100.0 );
-  SIMPLE["timeInterval"]=OFDictData::data( 50.0 );
+  SIMPLE["startTime"]=OFDictData::data( 0.0 );
+  SIMPLE["timeInterval"]=OFDictData::data( interval );
   
 }
 
@@ -577,7 +580,10 @@ MeshMotionBC::~MeshMotionBC()
 {
 }
 
-bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
+void MeshMotionBC::addIntoDictionaries(OFdicts& dictionaries) const
+{}
+
+bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
     if 
     ( 
@@ -601,31 +607,50 @@ MeshMotionBC* NoMeshMotion::clone() const
 
 NoMeshMotion noMeshMotion;
 
-CAFSIBC::CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, double relax)
+CAFSIBC::CAFSIBC
+(
+  const boost::filesystem::path& FEMScratchDir, 
+  double clipPressure, 
+  double relax,
+  double pressureScale,
+  double *oldPressure
+)
 : FEMScratchDir_(FEMScratchDir),
-  clipPressure_(clipPressure)
+  clipPressure_(clipPressure),
+  pressureScale_(pressureScale)
 {
   relax_[0.0]=relax;
+  if (oldPressure) oldPressure_.reset(new double(*oldPressure));
 }
 
 
-CAFSIBC::CAFSIBC(const boost::filesystem::path& FEMScratchDir, double clipPressure, const RelaxProfile& relax)
+CAFSIBC::CAFSIBC
+(
+  const boost::filesystem::path& FEMScratchDir,
+  double clipPressure, 
+  const RelaxProfile& relax,
+  double pressureScale,
+  double *oldPressure
+)
 : FEMScratchDir_(FEMScratchDir),
   clipPressure_(clipPressure),
-  relax_(relax)
+  relax_(relax),
+  pressureScale_(pressureScale)
 {
+  if (oldPressure) oldPressure_.reset(new double(*oldPressure));
 }
 
 CAFSIBC::~CAFSIBC()
 {
 }
 
-MeshMotionBC* CAFSIBC::clone() const
+void CAFSIBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  return new CAFSIBC(*this);
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.getList("libs").push_back( OFDictData::data("\"libFEMDisplacementBC.so\"") );
 }
 
-bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC)
+bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
   if (fieldname == "motionU")
   {
@@ -635,12 +660,16 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& f
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
     BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+FEMScratchDir_.c_str()+"\"");
-    BC["lengthScale"]= OFDictData::data(1.0);
-    BC["transform"]=  OFDictData::data("((0 0 0) (0 (0 0 0)))");
-    BC["pressureScale"]=  OFDictData::data(1.0);
+    BC["pressureScale"]=  OFDictData::data(pressureScale_);
     BC["minPressure"]=  OFDictData::data(clipPressure_);
     BC["nSmoothIter"]=  OFDictData::data(4);
     BC["wallCollisionCheck"]=  OFDictData::data(true);
+    if (oldPressure_.get())
+    {
+      std::ostringstream oss;
+      oss<<"uniform "<<*oldPressure_;
+      BC["oldPressure"] = OFDictData::data(oss.str());
+    }
     BC["value"]=OFDictData::data("uniform (0 0 0)");
     OFDictData::list relaxProfile;
     BOOST_FOREACH(const RelaxProfile::value_type& rp, relax_)
@@ -656,6 +685,11 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& f
   return false;
 }
 
+MeshMotionBC* CAFSIBC::clone() const
+{
+  return new CAFSIBC(*this);
+}
+
 
 WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity, const MeshMotionBC& meshmotion)
 : BoundaryCondition(c, patchName, boundaryDict),
@@ -663,6 +697,12 @@ WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::
   meshmotion_(meshmotion.clone())
 {
   type_="wall";
+}
+
+void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  meshmotion_->addIntoDictionaries(dictionaries);
+  BoundaryCondition::addIntoDictionaries(dictionaries);
 }
 
 void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const

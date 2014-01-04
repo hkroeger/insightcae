@@ -238,6 +238,9 @@ class SolidBody(object):
     if not name in self.namedFaces: self.namedFaces[name]=set()
     self.namedFaces[name].update(faces)
     
+  def allFaces(self):
+    return set(range(1, self.fmap.Extent()+1))
+    
   def faceByName(self, name):
     return self.fmap(single(self.namedFaces[name]))
     

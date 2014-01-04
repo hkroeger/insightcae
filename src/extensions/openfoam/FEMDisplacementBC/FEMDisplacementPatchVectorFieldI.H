@@ -285,7 +285,6 @@ FEMDisplacementPatchVectorField
    vector
   >(p, iF),
   FEMCaseDir_("."),
-  //lengthScale_(1e3),
   pressureScale_(1e-3),
   minPressure_(-0.1),
   nSmoothIter_(4),
@@ -323,14 +322,6 @@ FEMDisplacementPatchVectorField
   vector
   >(p, iF, dict),
   FEMCaseDir_(dict.lookup("FEMCaseDir")),
-  //lengthScale_(dict.lookupOrDefault<scalar>("lengthScale", 1e3)),
-  /*
-  transform_(dict.lookupOrDefault<septernion>
-	     (
-	      "transform", 
-	      septernion(vector::zero, quaternion::I)
-	     )),
-	     */
   transform_(FSITransform::New(dict)),
   pressureScale_(dict.lookupOrDefault<scalar>("pressureScale", 1e-3)),
   minPressure_(dict.lookupOrDefault<scalar>("minPressure", -0.1)),
@@ -387,7 +378,6 @@ FEMDisplacementPatchVectorField
    vector
   >(ppf, p, iF, mapper),
   FEMCaseDir_(ppf.FEMCaseDir_),
-  //lengthScale_(ppf.lengthScale_),
   transform_(ppf.transform_),
   pressureScale_(ppf.pressureScale_),
   minPressure_(ppf.minPressure_),
@@ -423,7 +413,6 @@ FEMDisplacementPatchVectorField
    vector
   >(ppf),
   FEMCaseDir_(ppf.FEMCaseDir_),
-  //lengthScale_(ppf.lengthScale_),
   transform_(ppf.transform_),
   pressureScale_(ppf.pressureScale_),
   minPressure_(ppf.minPressure_),
@@ -460,7 +449,6 @@ FEMDisplacementPatchVectorField
    vector
   >(ppf, iF),
   FEMCaseDir_(ppf.FEMCaseDir_),
-  //lengthScale_(ppf.lengthScale_),
   transform_(ppf.transform_),
   pressureScale_(ppf.pressureScale_),
   minPressure_(ppf.minPressure_),
@@ -783,31 +771,40 @@ initEvaluate
 	  IOobject::AUTO_WRITE
 	);
 	insight::vtk::vtkModel2d vtk;
+	
+	vectorField FEMpts(initialPosition_);
+	forAll(FEMpts, pi)
+	  FEMpts[pi] = transform_->locationCFDtoFEM(initialPosition_[pi]);
+	
+	// set points to FEM point locations
+	// CHECK: VTK geometry shall be congruent with FEM model
 	vtk.setPoints
 	(
 	  this->size(), 
-	  initialPosition_.component(vector::X)().data(),
-	  initialPosition_.component(vector::Y)().data(),
-	  initialPosition_.component(vector::Z)().data()
+	  FEMpts.component(vector::X)().data(),
+	  FEMpts.component(vector::Y)().data(),
+	  FEMpts.component(vector::Z)().data()
 	);
+	
+	// set cells
 	const polyPatch& ppatch = fvpatch.patch();
 	for(label fi=0; fi<ppatch.size(); fi++)
 	{
 	  const face& f = ppatch.localFaces()[fi];
 	  vtk.appendPolygon(f.size(), f.cdata());
 	}
-	{
-	  vectorField tp(initialPosition_);
-	  forAll(tp, pi)
-	    tp[pi]=transform_->locationCFDtoFEM(tp[pi]);
-	  vtk.appendPointVectorField
-	  (
-	    "FEMpoints", 
-	    tp.component(vector::X)().cdata(),
-	    tp.component(vector::Y)().cdata(),
-	    tp.component(vector::Z)().cdata()
-	  );
-	}
+	
+	// append fields
+	vtk.appendPointVectorField
+	(
+	  "CFDpoints", 
+	  initialPosition_.component(vector::X)().cdata(),
+	  initialPosition_.component(vector::Y)().cdata(),
+	  initialPosition_.component(vector::Z)().cdata()
+	);
+	
+	// displacements from FEM model, interpolated to CFD points
+	// CHECK: direction and magnitude should be same as in FEM model, disturbance by interpolation should be tolerable
 	vtk.appendPointVectorField
 	(
 	  "sol_DEPL_Vector", 
@@ -815,6 +812,8 @@ initEvaluate
 	  FEMdisplacement.component(vector::Y)().cdata(),
 	  FEMdisplacement.component(vector::Z)().cdata()
 	);
+	
+	// FEM displacement, transformed into CFD model space => displacement of CFD points
 	vtk.appendPointVectorField
 	(
 	  "rawdisplacement", 
@@ -822,6 +821,8 @@ initEvaluate
 	  rawdisplacement.component(vector::Y)().cdata(),
 	  rawdisplacement.component(vector::Z)().cdata()
 	);
+	
+	// displacement of CFD points, smoothed
 	vtk.appendPointVectorField
 	(
 	  "smoothdisplacement", 
@@ -829,6 +830,22 @@ initEvaluate
 	  smoothdisplacement.component(vector::Y)().cdata(),
 	  smoothdisplacement.component(vector::Z)().cdata()
 	);
+	
+	// compute location of CFD points, moved by smoothed and transformed FEM displacements and transformed back into FEM space
+	// then compute distance to FEMpts => result is FEM displacement again
+	// CHECK: compare deformation with initial FEM displacement, should be identical
+	vectorField reverseDisplacement(initialPosition_);
+	forAll(reverseDisplacement, pi)
+	  reverseDisplacement[pi] = transform_->locationCFDtoFEM( initialPosition_[pi] + smoothdisplacement[pi] ) - FEMpts[pi];
+	vtk.appendPointVectorField
+	(
+	  "reverseDisplacement", 
+	  reverseDisplacement.component(vector::X)().cdata(),
+	  reverseDisplacement.component(vector::Y)().cdata(),
+	  reverseDisplacement.component(vector::Z)().cdata()
+	);
+	
+	// smoothed displacement of CFD points, relaxed
 	vtk.appendPointVectorField
 	(
 	  "delta0", 
@@ -836,6 +853,9 @@ initEvaluate
 	  delta0.component(vector::Y)().cdata(),
 	  delta0.component(vector::Z)().cdata()
 	);
+
+	// relaxed and smoothed displacement of CFD points, clipped to not move through wall
+	// CHECK: alteration of deformation by clipping should be tolerable
 	vtk.appendPointVectorField
 	(
 	  "delta", 
@@ -845,8 +865,10 @@ initEvaluate
 	);
 	{
 	  Info<<"Writing "<<oo.objectPath()<<endl;
+	  mkDir(oo.path());
 	  std::ofstream f(oo.objectPath().c_str());
 	  vtk.writeLegacyFile(f);
+	  f.close();
 	}
       }
       curTimeIndex_ = this->db().time().timeIndex();

@@ -1,2 +1,2 @@
-* link all files into ~/.local/share/mime/application
+* link all files into ~/.local/share/mime/packages
 * run update-mime-database ~/.local/share/mime

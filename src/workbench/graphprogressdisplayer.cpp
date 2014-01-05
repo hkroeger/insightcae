@@ -113,12 +113,12 @@ void GraphProgressDisplayer::checkForUpdate()
 	  double(qrand())*255.0/double(RAND_MAX), 
 	  double(qrand())*255.0/double(RAND_MAX), 
 	  double(qrand())*255.0/double(RAND_MAX)
-			       ), 2.0));
+	), 2.0));
 	crv->attach(this);
 	curve_[name]=crv;
       }
 
-      curve_[name]->setSamples(&progressX_[name][0], &progressY_[name][0], progressY_[name].size());
+      curve_[name]->setSamples(&progressX_[name][1], &progressY_[name][1], progressY_[name].size()-1); // leave out first sample, since it is sometimes =0 and this make logscaled plot unreadable
     }
 
     this->replot();

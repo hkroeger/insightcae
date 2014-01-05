@@ -41,21 +41,10 @@ public:
   virtual int version() const;
   virtual const boost::filesystem::path& asrun_cmd() const;
   
-  template<class stream>
-  void forkCommand
+  void forkCase
   (
-    stream& p_in,      
     const boost::filesystem::path& exportfile
-  ) const
-  {
-    boost::filesystem::path dir=exportfile.parent_path();
-    std::string cmd = std::string("cd ")+dir.c_str()+"; "+asrun_cmd().c_str()+" --run "+exportfile.filename().c_str();
-    SoftwareEnvironment::forkCommand<stream>
-    (
-      p_in, 
-      cmd
-    );
-  }
+  ) const;
 };
 
 }

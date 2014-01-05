@@ -20,10 +20,42 @@
 
 #include "openfoamtools.h"
 
+#include "boost/filesystem.hpp"
+
 using namespace std;
+using namespace boost;
+using namespace boost::filesystem;
 
 namespace insight
 {
+  
+TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
+{
+  TimeDirectoryList list;
+  if ( exists( dir ) ) 
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( dir );
+          itr != end_itr;
+          ++itr )
+    {
+      if ( is_directory(itr->status()) )
+      {
+        std::string fn=itr->path().filename().string();
+	try
+	{
+	  double time = lexical_cast<double>(fn);
+	  list[time]=itr->path();
+	}
+	catch (...)
+	{
+	}
+      }
+    }
+  }
+  return list;
+}
+
   
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
 {

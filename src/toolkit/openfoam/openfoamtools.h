@@ -31,6 +31,10 @@
 namespace insight
 {
   
+typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
+
+TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
+  
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds);
 
 void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& location, bool noFlipMap=true);

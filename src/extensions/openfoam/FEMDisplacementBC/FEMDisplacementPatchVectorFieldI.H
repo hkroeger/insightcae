@@ -647,7 +647,12 @@ initEvaluate
       if (wallCollisionCheck_)
 	{
 	  labelHashSet p1;
-	  forAll(mesh.boundaryMesh(), i) p1.insert(i);
+	  forAll(mesh.boundaryMesh(), i) 
+	  {
+	    // do not check collision with myself
+	    if (mesh.boundaryMesh()[i].name() != fvpatch.name())
+	      p1.insert(i);
+	  }
 
 	  triSurfaceMesh boundary
 	    (

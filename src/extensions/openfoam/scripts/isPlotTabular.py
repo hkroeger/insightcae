@@ -49,7 +49,7 @@ frame = wx.Frame(None, -1, 'Plotter')
 plotter = PlotNotebook(frame)
 
 for i in range(1, np.size(data,1)):
-  ax = plotter.add('Col.%d'%i).gca()
+  ax = plotter.add('%d'%i).gca()
   ax.grid(True)
   ax.plot(data[:,0], data[:,i])
 

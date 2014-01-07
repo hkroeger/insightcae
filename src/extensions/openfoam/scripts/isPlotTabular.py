@@ -39,17 +39,21 @@ class PlotNotebook(wx.Panel):
        self.nb.AddPage(page,name)
        return page.figure
 
+lines=open(sys.argv[1]).readlines()
+headings=lines[0].lstrip(' #').split()
 data=np.array([
    map(float, line.replace('(', '').replace(')', '').replace(',', ' ').replace(';', ' ').replace('  ', ' ').split()) 
-   for line in open(sys.argv[1]).readlines()[1:]
+   for line in lines[1:]
   ])
 
 app = wx.PySimpleApp()
 frame = wx.Frame(None, -1, 'Plotter')
 plotter = PlotNotebook(frame)
 
-for i in range(1, np.size(data,1)):
-  ax = plotter.add('%d'%i).gca()
+ncols=np.size(data,1)
+heads= [str(i) for i in range(1,ncols)] if len(headings) != ncols else headings
+for i in range(1, ncols):
+  ax = plotter.add(heads[i]).gca()
   ax.grid(True)
   ax.plot(data[:,0], data[:,i])
 

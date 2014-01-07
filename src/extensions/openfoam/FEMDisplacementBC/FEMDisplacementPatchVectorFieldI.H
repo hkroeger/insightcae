@@ -652,10 +652,13 @@ initEvaluate
       if (rm_.valid())
       {
 	scalarField dr = r - rm_();
-	scalar aitkenScale=max(0.01, min(10., -sum(dr*rm_()) / sum(sqr(dr)) ));
+	scalar aitkenScale=max(0.5, min(1.2, -sum(dr*rm_()) / sum(sqr(dr)) ));
 	Info<<"aitken scale = "<<aitkenScale<<endl;
-	omega_ = max(1e-4, min( this->relax(), omega_*aitkenScale ) );
+	omega_ *= aitkenScale;
       }
+      
+      omega_ = max(1e-4, min( this->relax(), omega_ ) );
+      
       rm_.reset(new scalarField(r));
       
       // relax motion
@@ -756,18 +759,15 @@ initEvaluate
 	  filePtr_.reset(fptr);
 	  filePtr_()
 	    <<"# 1:time"
-	    " 2,3,4: force (CFD)"
-	    " 5,6,7: force (FEM)"
-	    " 8:min(delta due to smoothing)"
-	    " 9:max(delta)"
-	    " 10:avg(delta)"
-	    " 11,12,13:min(smoothed FEM displacement results)"
-	    " 14,15,16:max(displacement)"
-	    " 17,18,19:avg(displacement)"
-	    " 20,21,22:min(current mesh displacement)"
-	    " 23,24,25:max(current mesh displacement)"
-	    " 26,27,28:avg(current mesh displacement)"
-	    " 29:omega"
+	    " 2:Force_CFD_X 3:Force_CFD_Y 4:Force_CFD_Z"
+	    " 5:Force_FEM_X 6:Force_FEM_Y 7:Force_FEM_Z"
+	    " 8:min_u_X 9:min_u_Y 10:min_u_Z"
+	    " 11:max_u_X 12:max_u_Y 13:max_u_Z"
+	    " 14:avg_u_X 15:avg_u_Y 16:avg_u_Z"
+	    " 17:min_curu_X 18:min_curu_Y 19:min_curu_Z"
+	    " 20:max_curu_X 21:max_curu_Y 22:max_curu_Z"
+	    " 23:avg_curu_X 24:avg_curu_Y 25:avg_curu_Z"
+	    " 26:omega"
 	    <<endl;
 	}
 
@@ -776,10 +776,6 @@ initEvaluate
       filePtr_()<<token::SPACE<<fp_cfd;
       filePtr_()<<token::SPACE<<fp_fem;
       
-      filePtr_()<<token::SPACE<<min(smoothdelta)
-		<<token::SPACE<<max(smoothdelta)
-		<<token::SPACE<<average(smoothdelta);
-	
       filePtr_()<<token::SPACE<<min(smoothdisplacement)
 		<<token::SPACE<<max(smoothdisplacement)
 		<<token::SPACE<<average(smoothdisplacement);

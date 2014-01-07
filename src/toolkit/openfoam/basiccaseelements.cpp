@@ -246,28 +246,27 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
-simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c)
-: simpleFoamNumerics(c)
+simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, int FEMinterval)
+: simpleFoamNumerics(c),
+  FEMinterval_(FEMinterval)
 {}
  
 void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   simpleFoamNumerics::addIntoDictionaries(dictionaries);
   
-  double interval = 50.0;
-  
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleDyMFoam";
-  controlDict["writeInterval"]=OFDictData::data( interval );
+  controlDict["writeInterval"]=OFDictData::data( FEMinterval_ );
   
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
   SIMPLE["startTime"]=OFDictData::data( 0.0 );
-  SIMPLE["timeInterval"]=OFDictData::data( interval );
+  SIMPLE["timeInterval"]=OFDictData::data( FEMinterval_ );
   
 }
 

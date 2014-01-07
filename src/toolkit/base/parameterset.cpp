@@ -27,6 +27,7 @@
 
 #include <fstream>
 
+using namespace std;
 using namespace rapidxml;
 
 namespace insight
@@ -45,12 +46,30 @@ ParameterSet::~ParameterSet()
 {
 }
 
+ParameterSet::EntryList ParameterSet::entries() const
+{
+  EntryList alle;
+  BOOST_FOREACH( const_iterator::value_type e, *this)
+  {
+    alle.push_back(SingleEntry(e->first, e->second->clone()));
+  }
+  return alle;
+}
+
 void ParameterSet::extend(const EntryList& entries)
 {
   BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
   {
     std::string key(boost::get<0>(i));
-    insert(key, boost::get<1>(i));
+    SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
+    if (p && this->contains(key))
+    {
+      cout<<"merging subdict "<<key<<endl;
+      SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
+      myp->merge(*p);
+      delete p;
+    }
+    else insert(key, boost::get<1>(i)); // take ownership of objects in given list!
   }
 }
 
@@ -192,6 +211,11 @@ SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::st
 : Parameter(description),
   value_(defaultValue.clone())
 {
+}
+
+void SubsetParameter::merge(const SubsetParameter& other)
+{
+  value_->extend(other.value_->entries());
 }
 
 std::string SubsetParameter::latexRepresentation() const

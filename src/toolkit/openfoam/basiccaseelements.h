@@ -83,8 +83,9 @@ public:
 class simpleDyMFoamNumerics
 : public simpleFoamNumerics
 {
+  int FEMinterval_;
 public:
-  simpleDyMFoamNumerics(OpenFOAMCase& c);
+  simpleDyMFoamNumerics(OpenFOAMCase& c, int FEMinterval=100);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 

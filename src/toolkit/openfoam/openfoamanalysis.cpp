@@ -52,8 +52,19 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
-	    ))
+      ))
          
+      ("solver", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Solver parameters"
+      ))
+
       .convert_to_container<ParameterSet::EntryList>()
   );
 }

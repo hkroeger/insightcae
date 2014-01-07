@@ -53,6 +53,7 @@ public:
     ParameterSet(const EntryList& entries);
     virtual ~ParameterSet();
 
+    EntryList entries() const;
     void extend(const EntryList& entries);
     
     template<class T>
@@ -197,6 +198,7 @@ public:
   SubsetParameter(const ParameterSet& defaultValue, const std::string& description);
   
   inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
+  void merge(const SubsetParameter& other);
   inline ParameterSet& operator()() { return *value_; }
   inline const ParameterSet& operator()() const { return *value_; }
   

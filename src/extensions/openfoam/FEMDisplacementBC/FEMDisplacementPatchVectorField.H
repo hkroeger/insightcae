@@ -140,6 +140,7 @@ private:
   autoPtr<OFstream> filePtr_;
   
   scalar omega_;
+  autoPtr<vectorField> lastdisplacement_;
   autoPtr<scalarField> rm_;
 
   inline scalar relax() const

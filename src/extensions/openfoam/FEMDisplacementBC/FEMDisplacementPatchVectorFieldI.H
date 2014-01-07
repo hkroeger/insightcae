@@ -358,6 +358,12 @@ FEMDisplacementPatchVectorField
 				 dict, 
 				 this->patch().localPoints().size()));
     }
+  if (dict.found("lastdisplacement"))
+    {
+      lastdisplacement_.reset(new vectorField("lastdisplacement", 
+				 dict, 
+				 this->patch().localPoints().size()));
+    }
 }
 
 
@@ -398,7 +404,8 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_)
+  rm_(ppf.rm_),
+  lastdisplacement_(ppf.lastdisplacement_)
 {}
 
 
@@ -435,7 +442,8 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_)
+  rm_(ppf.rm_),
+  lastdisplacement_(ppf.lastdisplacement_)
 {}
 
 
@@ -473,7 +481,8 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_)
+  rm_(ppf.rm_),
+  lastdisplacement_(ppf.lastdisplacement_)
 {}
 
 
@@ -648,18 +657,24 @@ initEvaluate
       delta0 = smoothdisplacement-curdisplacement; 
       
       // determine relaxation factor
-      scalarField r = mag(delta0 - curdisplacement);
-      if (rm_.valid())
+      if (lastdisplacement_.valid())
       {
-	scalarField dr = r - rm_();
-	scalar aitkenScale=max(0.5, min(1.2, -sum(dr*rm_()) / sum(sqr(dr)) ));
-	Info<<"aitken scale = "<<aitkenScale<<endl;
-	omega_ *= aitkenScale;
+	scalarField r = mag(delta0 - lastdisplacement_());
+	if (rm_.valid())
+	{
+	  scalarField dr = r - rm_();
+	  scalar aitkenScale=max(0.5, min(1.2, -sum(dr*rm_()) / sum(sqr(dr)) ));
+	  Info<<"aitken scale = "<<aitkenScale<<endl;
+	  omega_ *= aitkenScale;
+	}
+	rm_.reset(new scalarField(r));
       }
-      
+      else
+      {
+	lastdisplacement_.reset(new vectorField(curdisplacement));
+      }
       omega_ = max(1e-4, min( this->relax(), omega_ ) );
       
-      rm_.reset(new scalarField(r));
       
       // relax motion
       Info<<"Relaxing displacement by "<<omega_<<endl;
@@ -958,6 +973,10 @@ write(Ostream& os) const
   
   os.writeKeyword("omega") << omega_
 			  << token::END_STATEMENT << nl;
+			  
+  if (lastdisplacement_.valid())
+    lastdisplacement_().writeEntry("lastdisplacement", os);
+  
   if (rm_.valid())
     rm_().writeEntry("rm", os);
 

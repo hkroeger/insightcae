@@ -294,7 +294,8 @@ FEMDisplacementPatchVectorField
   prescribeMotionVelocity_(false),
   initialPosition_(this->patch().localPoints()),
   oldPressure_(this->pressurePatchSize(), 0.0),
-  curTimeIndex_(-1)
+  curTimeIndex_(-1),
+  omega_(1.0)
 {}
 
 
@@ -324,7 +325,7 @@ FEMDisplacementPatchVectorField
   FEMCaseDir_(dict.lookup("FEMCaseDir")),
   transform_(FSITransform::New(dict)),
   pressureScale_(dict.lookupOrDefault<scalar>("pressureScale", 1e-3)),
-  minPressure_(dict.lookupOrDefault<scalar>("minPressure", -0.1)),
+  minPressure_(dict.lookupOrDefault<scalar>("minPressure", -100)),
   nSmoothIter_(dict.lookupOrDefault<scalar>("nSmoothIter", 4)),
   wallCollisionCheck_(dict.lookupOrDefault<bool>("wallCollisionCheck", true)),
   relax_(dict.lookup("relax")),
@@ -336,7 +337,8 @@ FEMDisplacementPatchVectorField
 			   )),
   initialPosition_(this->patch().localPoints()),
   oldPressure_(this->pressurePatchSize(), 0.0),
-  curTimeIndex_(-1)
+  curTimeIndex_(-1),
+  omega_(dict.lookupOrDefault<scalar>("omega", 1.0))
 {
   if (dict.found("initialPosition"))
     {
@@ -349,6 +351,12 @@ FEMDisplacementPatchVectorField
       oldPressure_=scalarField("oldPressure", 
 			       dict, 
 			       this->pressurePatchSize());
+    }
+  if (dict.found("rm"))
+    {
+      rm_.reset(new scalarField("rm", 
+				 dict, 
+				 this->patch().localPoints().size()));
     }
 }
 
@@ -388,7 +396,9 @@ FEMDisplacementPatchVectorField
   prescribeMotionVelocity_(ppf.prescribeMotionVelocity_),
   initialPosition_(ppf.initialPosition_),
   oldPressure_(ppf.oldPressure_),
-  curTimeIndex_(-1)
+  curTimeIndex_(-1),
+  omega_(ppf.omega_),
+  rm_(ppf.rm_)
 {}
 
 
@@ -423,7 +433,9 @@ FEMDisplacementPatchVectorField
   prescribeMotionVelocity_(ppf.prescribeMotionVelocity_),
   initialPosition_(ppf.initialPosition_),
   oldPressure_(ppf.oldPressure_),
-  curTimeIndex_(-1)
+  curTimeIndex_(-1),
+  omega_(ppf.omega_),
+  rm_(ppf.rm_)
 {}
 
 
@@ -459,7 +471,9 @@ FEMDisplacementPatchVectorField
   prescribeMotionVelocity_(ppf.prescribeMotionVelocity_),
   initialPosition_(ppf.initialPosition_),
   oldPressure_(ppf.oldPressure_),
-  curTimeIndex_(-1)
+  curTimeIndex_(-1),
+  omega_(ppf.omega_),
+  rm_(ppf.rm_)
 {}
 
 
@@ -633,15 +647,25 @@ initEvaluate
       // required motion of current points to match FEM solution
       delta0 = smoothdisplacement-curdisplacement; 
       
+      // determine relaxation factor
+      scalarField r = mag(delta0 - curdisplacement);
+      if (rm_.valid())
+      {
+	scalarField dr = r - rm_();
+	scalar aitkenScale=max(0.01, min(10., -sum(dr*rm_()) / sum(sqr(dr)) ));
+	Info<<"aitken scale = "<<aitkenScale<<endl;
+	omega_ = max(1e-4, min( this->relax(), omega_*aitkenScale ) );
+      }
+      rm_.reset(new scalarField(r));
+      
       // relax motion
-      Info<<"Relaxing displacement by "<<this->relax()<<endl;
-      //delta *= this->relax();
+      Info<<"Relaxing displacement by "<<omega_<<endl;
 
       vectorField normals=this->patch().pointNormals();
       normals/=mag(normals);
       vectorField dn=normals*(normals&delta0);
       vectorField dt=delta0-dn;
-      delta0 = this->relax()* (dn + (lateralRelax_*dt));
+      delta0 = omega_* (dn + (lateralRelax_*dt));
 
       delta = delta0;
       if (wallCollisionCheck_)
@@ -743,6 +767,7 @@ initEvaluate
 	    " 20,21,22:min(current mesh displacement)"
 	    " 23,24,25:max(current mesh displacement)"
 	    " 26,27,28:avg(current mesh displacement)"
+	    " 29:omega"
 	    <<endl;
 	}
 
@@ -763,6 +788,7 @@ initEvaluate
 		<<token::SPACE<<max(curdisplacement)
 		<<token::SPACE<<average(curdisplacement);
 		
+      filePtr_()<<token::SPACE<<omega_;
       filePtr_()<<endl;
 
       if (this->db().time().outputTime())
@@ -933,6 +959,11 @@ write(Ostream& os) const
 					     << token::END_STATEMENT << nl;
 
   initialPosition_.writeEntry("initialPosition", os);
+  
+  os.writeKeyword("omega") << omega_
+			  << token::END_STATEMENT << nl;
+  if (rm_.valid())
+    rm_().writeEntry("rm", os);
 
   oldPressure_.writeEntry("oldPressure", os);
 }

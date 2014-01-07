@@ -60,11 +60,6 @@ public:
   virtual ResultElement* clone() const =0;
 };
 
-inline ResultElement* new_clone(const ResultElement& e)
-{
-  return e.clone();
-}
-
 
 
 class Image
@@ -187,6 +182,13 @@ public:
 
 typedef boost::shared_ptr<ResultSet> ResultSetPtr;
 
+inline ResultElement* new_clone(const ResultElement& e)
+{
+  return e.clone();
 }
+
+}
+
+
 
 #endif // INSIGHT_RESULTSET_H

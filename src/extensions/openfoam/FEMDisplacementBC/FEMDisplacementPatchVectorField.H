@@ -138,6 +138,9 @@ private:
   scalarField oldPressure_;
   label curTimeIndex_;
   autoPtr<OFstream> filePtr_;
+  
+  scalar omega_;
+  autoPtr<scalarField> rm_;
 
   inline scalar relax() const
   {

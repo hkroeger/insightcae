@@ -74,13 +74,19 @@ public:
 
 
 #define addToFactoryTable(baseT, specT, paramS) \
-struct add##specT##To##baseT##FactoryTable \
+static struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
     std::string key(specT::typeName); \
     /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
     baseT::factories_.insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
+  }\
+  ~add##specT##To##baseT##FactoryTable()\
+  {\
+    std::string key(specT::typeName); \
+    /*std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl;*/ \
+    baseT::factories_.erase(baseT::factories_.find(key)); \
   }\
 } v_add##specT##To##baseT##FactoryTable;
 

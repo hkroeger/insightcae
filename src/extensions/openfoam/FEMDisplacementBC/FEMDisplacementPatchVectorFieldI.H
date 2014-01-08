@@ -41,6 +41,8 @@ License
 
 #include "base/vtktools.h"
 
+#include "boost/foreach.hpp"
+#include "boost/assign.hpp"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 
@@ -651,6 +653,8 @@ initEvaluate
       
       // determine relaxation factor
       scalarField r = mag(delta0);
+      scalar residual = sumSqr(r);
+      Info<<"FSI residual = "<<residual<<endl;
       if (rm_.valid())
       {
 	scalarField dr = r - rm_();
@@ -670,7 +674,6 @@ initEvaluate
       
       // relax motion
       Info<<"Relaxing displacement by "<<omega_<<endl;
-
       vectorField normals=this->patch().pointNormals();
       normals/=mag(normals);
       vectorField dn=normals*(normals&delta0);
@@ -764,21 +767,33 @@ initEvaluate
 	  OFstream *fptr=new OFstream(probeDir/"fsi.dat");
 	  Info<<"Creating file "<<fptr->name()<<endl;
 	  filePtr_.reset(fptr);
-	  filePtr_()
-	    <<"# 1:time"
-	    " 2:omega"
-	    " 3:Force_CFD_X 4:Force_CFD_Y 5:Force_CFD_Z"
-	    " 6:Force_FEM_X 7:Force_FEM_Y 8:Force_FEM_Z"
-	    " 9:min_u_X 10:min_u_Y 11:min_u_Z"
-	    " 12:max_u_X 13:max_u_Y 14:max_u_Z"
-	    " 15:avg_u_X 16:avg_u_Y 17:avg_u_Z"
-	    " 18:min_curu_X 19:min_curu_Y 20:min_curu_Z"
-	    " 21:max_curu_X 22:max_curu_Y 23:max_curu_Z"
-	    " 24:avg_curu_X 25:avg_curu_Y 26:avg_curu_Z"
-	    <<endl;
+	  filePtr_() <<"#";
+	  int i=1;
+	  BOOST_FOREACH(
+	    const std::string& key, 
+	    boost::assign::list_of<std::string>
+	    ("time")
+	    ("omega")
+	    ("residual")
+	    ("Force_CFD_X")("Force_CFD_Y")("Force_CFD_Z")
+	    ("Force_FEM_X")("Force_FEM_Y")("Force_FEM_Z")
+	    ("min_u_X")("min_u_Y")("min_u_Z")
+	    ("max_u_X")("max_u_Y")("max_u_Z")
+	    ("avg_u_X")("avg_u_Y")("avg_u_Z")
+	    ("min_curu_X")(":min_curu_Y")("min_curu_Z")
+	    ("max_curu_X")("max_curu_Y")("max_curu_Z")
+	    ("avg_curu_X")("avg_curu_Y")("avg_curu_Z")
+	    .convert_to_container< std::vector<std::string> >()
+	  )
+	  {
+	    filePtr_()<<" "<<(i++)<<":"<<key.c_str();
+	  }
+	  filePtr_()<<endl;
 	}
 
       filePtr_()<<mesh.time().value();
+      filePtr_()<<token::SPACE<<omega_;
+      filePtr_()<<token::SPACE<<residual;
       
       filePtr_()<<token::SPACE<<fp_cfd;
       filePtr_()<<token::SPACE<<fp_fem;
@@ -791,7 +806,6 @@ initEvaluate
 		<<token::SPACE<<max(curdisplacement)
 		<<token::SPACE<<average(curdisplacement);
 		
-      filePtr_()<<token::SPACE<<omega_;
       filePtr_()<<endl;
 
       if (this->db().time().outputTime())

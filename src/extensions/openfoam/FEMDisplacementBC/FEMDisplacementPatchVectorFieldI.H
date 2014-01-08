@@ -653,7 +653,8 @@ initEvaluate
       
       // determine relaxation factor
       scalarField r = mag(delta0);
-      scalar residual = sumSqr(r);
+      scalar residual = sqrt( sumSqr(r) / scalar(r.size()) );
+      
       Info<<"FSI residual = "<<residual<<endl;
       if (rm_.valid())
       {

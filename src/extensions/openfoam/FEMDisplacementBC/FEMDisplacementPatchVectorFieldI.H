@@ -663,7 +663,7 @@ initEvaluate
 	Info<<"aitken scale (unclipped) = "<<aitkenScale<<endl;
 	
 	aitkenScale=max(0.5, min(1.2, aitkenScale ));
-	Info<<"aitken scale = "<<aitkenScale<<endl;
+	Info<<"aitken scale (applied) = "<<aitkenScale<<endl;
 	
 	omega_ *= aitkenScale;
       }

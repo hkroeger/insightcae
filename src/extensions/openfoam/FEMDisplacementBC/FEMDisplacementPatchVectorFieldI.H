@@ -358,12 +358,6 @@ FEMDisplacementPatchVectorField
 				 dict, 
 				 this->patch().localPoints().size()));
     }
-  if (dict.found("lastdisplacement"))
-    {
-      lastdisplacement_.reset(new vectorField("lastdisplacement", 
-				 dict, 
-				 this->patch().localPoints().size()));
-    }
 }
 
 
@@ -404,8 +398,7 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_),
-  lastdisplacement_(ppf.lastdisplacement_)
+  rm_(ppf.rm_)
 {}
 
 
@@ -442,8 +435,7 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_),
-  lastdisplacement_(ppf.lastdisplacement_)
+  rm_(ppf.rm_)
 {}
 
 
@@ -481,8 +473,7 @@ FEMDisplacementPatchVectorField
   oldPressure_(ppf.oldPressure_),
   curTimeIndex_(-1),
   omega_(ppf.omega_),
-  rm_(ppf.rm_),
-  lastdisplacement_(ppf.lastdisplacement_)
+  rm_(ppf.rm_)
 {}
 
 
@@ -520,7 +511,9 @@ initEvaluate
       const fvPatch& fvpatch = presfield.patch();
       
       // pressure field to use for FEM: current CFD solution, relaxed with pressure from previous FEM solution time
-      scalarField curp = relax() * presfield  +  (1.-relax()) * oldPressure_;
+      //scalarField curp = relax() * presfield  +  (1.-relax()) * oldPressure_; // do relaxation of pressure
+      scalarField curp = presfield; // no relaxation of pressure
+      
       oldPressure_=presfield;
 
       primitivePatchInterpolation ipol(presfield.patch().patch());
@@ -657,23 +650,22 @@ initEvaluate
       delta0 = smoothdisplacement-curdisplacement; 
       
       // determine relaxation factor
-      if (lastdisplacement_.valid())
+      scalarField r = mag(delta0);
+      if (rm_.valid())
       {
-	scalarField r = mag(delta0 - lastdisplacement_());
-	if (rm_.valid())
-	{
-	  scalarField dr = r - rm_();
-	  scalar aitkenScale=max(0.5, min(1.2, -sum(dr*rm_()) / sum(sqr(dr)) ));
-	  Info<<"aitken scale = "<<aitkenScale<<endl;
-	  omega_ *= aitkenScale;
-	}
-	rm_.reset(new scalarField(r));
+	scalarField dr = r - rm_();
+	
+	scalar aitkenScale = -sum(dr*rm_()) / sum(sqr(dr));
+	Info<<"aitken scale (unclipped) = "<<aitkenScale<<endl;
+	
+	aitkenScale=max(0.5, min(1.2, aitkenScale ));
+	Info<<"aitken scale = "<<aitkenScale<<endl;
+	
+	omega_ *= aitkenScale;
       }
-      else
-      {
-	lastdisplacement_.reset(new vectorField(curdisplacement));
-      }
-      omega_ = max(1e-4, min( this->relax(), omega_ ) );
+      rm_.reset(new scalarField(r));
+
+      omega_ = max(1e-2, min( this->relax(), omega_ ) );
       
       
       // relax motion
@@ -774,15 +766,15 @@ initEvaluate
 	  filePtr_.reset(fptr);
 	  filePtr_()
 	    <<"# 1:time"
-	    " 2:Force_CFD_X 3:Force_CFD_Y 4:Force_CFD_Z"
-	    " 5:Force_FEM_X 6:Force_FEM_Y 7:Force_FEM_Z"
-	    " 8:min_u_X 9:min_u_Y 10:min_u_Z"
-	    " 11:max_u_X 12:max_u_Y 13:max_u_Z"
-	    " 14:avg_u_X 15:avg_u_Y 16:avg_u_Z"
-	    " 17:min_curu_X 18:min_curu_Y 19:min_curu_Z"
-	    " 20:max_curu_X 21:max_curu_Y 22:max_curu_Z"
-	    " 23:avg_curu_X 24:avg_curu_Y 25:avg_curu_Z"
-	    " 26:omega"
+	    " 2:omega"
+	    " 3:Force_CFD_X 4:Force_CFD_Y 5:Force_CFD_Z"
+	    " 6:Force_FEM_X 7:Force_FEM_Y 8:Force_FEM_Z"
+	    " 9:min_u_X 10:min_u_Y 11:min_u_Z"
+	    " 12:max_u_X 13:max_u_Y 14:max_u_Z"
+	    " 15:avg_u_X 16:avg_u_Y 17:avg_u_Z"
+	    " 18:min_curu_X 19:min_curu_Y 20:min_curu_Z"
+	    " 21:max_curu_X 22:max_curu_Y 23:max_curu_Z"
+	    " 24:avg_curu_X 25:avg_curu_Y 26:avg_curu_Z"
 	    <<endl;
 	}
 
@@ -974,9 +966,6 @@ write(Ostream& os) const
   os.writeKeyword("omega") << omega_
 			  << token::END_STATEMENT << nl;
 			  
-  if (lastdisplacement_.valid())
-    lastdisplacement_().writeEntry("lastdisplacement", os);
-  
   if (rm_.valid())
     rm_().writeEntry("rm", os);
 

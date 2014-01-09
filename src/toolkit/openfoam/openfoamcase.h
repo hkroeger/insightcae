@@ -134,6 +134,9 @@ public:
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
     virtual void createOnDisk(const boost::filesystem::path& location );
     
+    virtual bool meshPresentOnDisk( const boost::filesystem::path& location ) const;
+    virtual bool outputTimesPresentOnDisk( const boost::filesystem::path& location ) const;
+    
     std::string cmdString
     (
       const boost::filesystem::path& location, 

@@ -20,8 +20,10 @@
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
 #include "openfoam/openfoamcase.h"
+#include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 #include <base/analysis.h>
+
 
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
@@ -205,6 +207,24 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::
 	  writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
 	}
       }
+}
+
+bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) const
+{
+  path meshPath = location/"constant"/"polyMesh";
+  return
+    exists(meshPath) &&
+    ( exists(meshPath/"points") || exists(meshPath/"points.gz") ) &&
+    ( exists(meshPath/"faces") || exists(meshPath/"faces.gz") ) &&
+    ( exists(meshPath/"neighbour") || exists(meshPath/"neighbour.gz") ) &&
+    ( exists(meshPath/"owner") || exists(meshPath/"owner.gz") ) &&
+    exists(meshPath/"boundary");
+}
+
+bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& location ) const
+{
+  TimeDirectoryList timedirs=listTimeDirectories(location);
+  return (timedirs.size()>1);
 }
 
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)

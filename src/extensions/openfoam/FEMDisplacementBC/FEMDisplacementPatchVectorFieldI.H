@@ -513,8 +513,16 @@ initEvaluate
       const fvPatch& fvpatch = presfield.patch();
       
       // pressure field to use for FEM: current CFD solution, relaxed with pressure from previous FEM solution time
-      //scalarField curp = relax() * presfield  +  (1.-relax()) * oldPressure_; // do relaxation of pressure
-      scalarField curp = presfield; // no relaxation of pressure
+      scalarField curp(presfield.size());
+      if (this->db().time().timeIndex() == this->db().time().startTimeIndex()+1 )
+      {
+	Info<<"Relaxing pressure field by "<<relax()<<endl;
+	curp = relax() * presfield  +  (1.-relax()) * oldPressure_; // do relaxation of pressure
+      }
+      else
+      {
+	curp = presfield; // no relaxation of pressure
+      }
       
       oldPressure_=presfield;
 

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+MimeType=text/plain;
+Actions=plottabular;
+
+[Desktop Action plottabular]
+Exec=bash -lc 'isPlotTabular.py "%f"'
+Icon=utilities-terminal
+Name=Plot tabular ASCII data
+Name[de]=ASCII-Tabellendaten plotten

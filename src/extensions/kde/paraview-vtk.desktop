@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+#MimeType=application/pv-med;application/x-hdf;
+MimeType=application/pv-vtk;
+Actions=openinparaview;
+
+[Desktop Action openinparaview]
+Exec=paraview --data="%f"
+Icon=utilities-terminal
+Name=Open VTK file with Paraview
+Name[de]=VTK-Datei mit Paraview öffnen
+

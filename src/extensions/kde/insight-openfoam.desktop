@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+#MimeType=application/pv-med;application/x-hdf;
+MimeType=inode/directory;
+Actions=openasofinparaview;
+
+[Desktop Action openasofinparaview]
+Exec=bash -lc 'cd "%f"; isPV.py'
+Icon=utilities-terminal
+Name=Open as OF case in Paraview
+Name[de]=Als OF-Case in Paraview öffnen
+

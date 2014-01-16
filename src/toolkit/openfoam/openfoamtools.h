@@ -27,6 +27,7 @@
 #include "boost/filesystem.hpp"
 
 #include "openfoam/openfoamcase.h"
+#include "progrock/cppx/collections/options_boosted.h"
 
 namespace insight
 {
@@ -38,6 +39,64 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds);
 
 void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& location, bool noFlipMap=true);
+
+
+namespace setFieldOps
+{
+  
+//typedef boost::tuple<std::string, std::string, FieldValue> FieldValueSpec;
+typedef std::string FieldValueSpec;
+
+class setFieldOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( fieldValues, std::vector<FieldValueSpec>, std::vector<FieldValueSpec>() )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  setFieldOperator(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
+  
+  virtual setFieldOperator* clone() const =0;
+};
+
+class fieldToCellOperator
+: public setFieldOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
+      ( fieldName, std::string, "" )
+      ( min, double, 0.0 )
+      ( max, double, DBL_MAX )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  fieldToCellOperator(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
+  
+  setFieldOperator* clone() const;
+};
+
+inline setFieldOperator* new_clone(const setFieldOperator& op)
+{
+  return op.clone();
+}
+
+}
+
+void setFields(const OpenFOAMCase& ofc, 
+	       const boost::filesystem::path& location, 
+	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
+	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
 
 }
 

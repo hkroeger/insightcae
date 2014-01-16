@@ -291,7 +291,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["deltaT"]=1e-6;
   controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
-  controlDict["maxAcousticCo"]=1000.;
+  controlDict["maxAcousticCo"]=50.;
   
   // ============ setup fvSolution ================================
   

@@ -76,6 +76,7 @@ public:
   inline DirectoryParameter& executionPathParameter() { return executionPath_; }
   
   inline const std::string& getName() const { return name_; }
+  inline std::string& name() { return name_; }
   inline const std::string& getDescription() const { return description_; }
   inline std::string& description() { return description_; }
   

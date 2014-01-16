@@ -246,9 +246,9 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
-simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, int FEMinterval)
+simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
 : simpleFoamNumerics(c),
-  FEMinterval_(FEMinterval)
+  p_(p)
 {}
  
 void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -259,15 +259,86 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleDyMFoam";
-  controlDict["writeInterval"]=OFDictData::data( FEMinterval_ );
+  controlDict["writeInterval"]=OFDictData::data( p_.FEMinterval() );
   
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
   SIMPLE["startTime"]=OFDictData::data( 0.0 );
-  SIMPLE["timeInterval"]=OFDictData::data( FEMinterval_ );
+  SIMPLE["timeInterval"]=OFDictData::data( p_.FEMinterval() );
   
+}
+
+
+cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c)
+: FVNumerics(c)
+{
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5) ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(0.0) ) );
+}
+ 
+void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="cavitatingFoam";
+  controlDict["endTime"]=1000.0;
+  controlDict["deltaT"]=1e-6;
+  controlDict["adjustTimeStep"]=true;
+  controlDict["maxCo"]=0.5;
+  controlDict["maxAcousticCo"]=1000.;
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["p"]=stdSymmSolverSetup(1e-7, 0.0);
+  solvers["pFinal"]=stdSymmSolverSetup(1e-7, 0.0);
+  solvers["rho"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
+
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PISO");
+  SIMPLE["nCorrectors"]=OFDictData::data( 2 );
+  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  grad["grad(U)"]="cellLimited leastSquares 1";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  div["default"]="Gauss upwind";
+  div["div(phiv,rho)"]="Gauss limitedLinear 0.5";
+  div["div(phi,U)"]="Gauss limitedLinearV 0.5";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p"]="";
+  fluxRequired["rho"]="";
 }
 
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
@@ -309,14 +380,46 @@ void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictiona
 
 }
 
+thermodynamicModel::thermodynamicModel(OpenFOAMCase& c)
+: OpenFOAMCaseElement(c, "thermodynamicModel")
+{
+}
+
+cavitatingFoamThermodynamics::cavitatingFoamThermodynamics(OpenFOAMCase& c, const Parameters& p)
+: thermodynamicModel(c),
+  p_(p)
+{
+}
+
+void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& thermodynamicProperties=dictionaries.addDictionaryIfNonexistent("constant/thermodynamicProperties");
+  thermodynamicProperties["barotropicCompressibilityModel"]="linear";
+  thermodynamicProperties["psiv"]=OFDictData::dimensionedData("psiv", 
+							      OFDictData::dimension(0, -2, 2), 
+							      p_.psiv());
+  thermodynamicProperties["rholSat"]=OFDictData::dimensionedData("rholSat", 
+								 OFDictData::dimension(1, -3), 
+								 p_.rholSat());
+  thermodynamicProperties["psil"]=OFDictData::dimensionedData("psil", 
+								 OFDictData::dimension(0, -2, 2), 
+								 p_.psil());
+  thermodynamicProperties["pSat"]=OFDictData::dimensionedData("pSat", 
+								 OFDictData::dimension(1, -1, -2), 
+								 p_.pSat());
+  thermodynamicProperties["rhoMin"]=OFDictData::dimensionedData("rhoMin", 
+								 OFDictData::dimension(1, -3), 
+								 p_.rhoMin());
+}
 
 transportModel::transportModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "transportModel")
 {
 }
 
-singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c)
-: transportModel(c)
+singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
+: transportModel(c),
+  p_(p)
 {
 }
  
@@ -325,6 +428,32 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
   transportProperties["transportModel"]="Newtonian";
   transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), OFDictData::data(1e-6));
+}
+
+twoPhaseTransportProperties::twoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
+: transportModel(c),
+  p_(p)
+{
+}
+ 
+void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  
+  OFDictData::dict& twoPhase=transportProperties.addSubDictIfNonexistent("twoPhase");
+  twoPhase["transportModel"]="twoPhase";
+  twoPhase["phase1"]="phase1";
+  twoPhase["phase2"]="phase2";
+  
+  OFDictData::dict& phase1=transportProperties.addSubDictIfNonexistent("phase1");
+  phase1["transportModel"]="Newtonian";
+  phase1["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu1());
+  phase1["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho1());
+  
+  OFDictData::dict& phase2=transportProperties.addSubDictIfNonexistent("phase2");
+  phase2["transportModel"]="Newtonian";
+  phase2["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu2());
+  phase2["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho2());
 }
 
 dynamicMesh::dynamicMesh(OpenFOAMCase& c)
@@ -390,6 +519,12 @@ turbulenceModel::turbulenceModel(OpenFOAMCase& c)
 {
 }
 
+void turbulenceModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+  RASProperties["simulationType"]="RASModel";
+}
+
 laminar_RASModel::laminar_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {
@@ -397,6 +532,8 @@ laminar_RASModel::laminar_RASModel(OpenFOAMCase& c)
   
 void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  turbulenceModel::addIntoDictionaries(dictionaries);
+  
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="laminar";
   RASProperties["turbulence"]="true";
@@ -413,6 +550,8 @@ kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  turbulenceModel::addIntoDictionaries(dictionaries);
+
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="kOmegaSST";
   RASProperties["turbulence"]="true";
@@ -506,6 +645,8 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   boundaryDict.erase(oe);
 }
 
+
+
 SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)
 : BoundaryCondition(c, patchName, boundaryDict),
   className_(className)
@@ -526,9 +667,15 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
-SuctionInletBC::SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, double pressure)
+SuctionInletBC::SuctionInletBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const Parameters& p
+)
 : BoundaryCondition(c, patchName, boundaryDict),
-  pressure_(pressure)
+  p_(p)
 {
 }
 
@@ -547,17 +694,22 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("totalPressure");
-      BC["p0"]=OFDictData::data("uniform "+lexical_cast<std::string>(pressure_));
-      BC["U"]=OFDictData::data("U");
-      BC["phi"]=OFDictData::data("phi");
-      BC["rho"]=OFDictData::data("none");
-      BC["psi"]=OFDictData::data("none");
-      BC["gamma"]=OFDictData::data(1.0);
-      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(pressure_));
+      BC["p0"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      BC["U"]=OFDictData::data(p_.UName());
+      BC["phi"]=OFDictData::data(p_.phiName());
+      BC["rho"]=OFDictData::data(p_.rhoName());
+      BC["psi"]=OFDictData::data(p_.psiName());
+      BC["gamma"]=OFDictData::data(p_.gamma());
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
@@ -606,37 +758,11 @@ MeshMotionBC* NoMeshMotion::clone() const
 
 NoMeshMotion noMeshMotion;
 
-CAFSIBC::CAFSIBC
-(
-  const boost::filesystem::path& FEMScratchDir, 
-  double clipPressure, 
-  double relax,
-  double pressureScale,
-  double *oldPressure
-)
-: FEMScratchDir_(FEMScratchDir),
-  clipPressure_(clipPressure),
-  pressureScale_(pressureScale)
-{
-  relax_[0.0]=relax;
-  if (oldPressure) oldPressure_.reset(new double(*oldPressure));
-}
 
 
-CAFSIBC::CAFSIBC
-(
-  const boost::filesystem::path& FEMScratchDir,
-  double clipPressure, 
-  const RelaxProfile& relax,
-  double pressureScale,
-  double *oldPressure
-)
-: FEMScratchDir_(FEMScratchDir),
-  clipPressure_(clipPressure),
-  relax_(relax),
-  pressureScale_(pressureScale)
+CAFSIBC::CAFSIBC(const Parameters& p)
+: p_(p)
 {
-  if (oldPressure) oldPressure_.reset(new double(*oldPressure));
 }
 
 CAFSIBC::~CAFSIBC()
@@ -658,27 +784,39 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& f
   if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
   {
     BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+FEMScratchDir_.c_str()+"\"");
-    BC["pressureScale"]=  OFDictData::data(pressureScale_);
-    BC["minPressure"]=  OFDictData::data(clipPressure_);
+    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p_.FEMScratchDir().c_str()+"\"");
+    BC["pressureScale"]=  OFDictData::data(p_.pressureScale());
+    BC["minPressure"]=  OFDictData::data(p_.clipPressure());
     BC["nSmoothIter"]=  OFDictData::data(4);
     BC["wallCollisionCheck"]=  OFDictData::data(true);
-    if (oldPressure_.get())
+    if (p_.oldPressure().get())
     {
       std::ostringstream oss;
-      oss<<"uniform "<<*oldPressure_;
+      oss<<"uniform "<<*p_.oldPressure();
       BC["oldPressure"] = OFDictData::data(oss.str());
     }
     BC["value"]=OFDictData::data("uniform (0 0 0)");
+    
     OFDictData::list relaxProfile;
-    BOOST_FOREACH(const RelaxProfile::value_type& rp, relax_)
+    if (p_.relax().which()==0)
     {
       OFDictData::list cp;
-      cp.push_back(rp.first);
-      cp.push_back(rp.second);
-      relaxProfile.push_back(cp);
+      cp.push_back(0.0);
+      cp.push_back( boost::get<double>(p_.relax()) );
+      relaxProfile.push_back( cp );
+    }
+    else
+    {
+      BOOST_FOREACH(const RelaxProfile::value_type& rp,  boost::get<RelaxProfile>(p_.relax()) )
+      {
+	OFDictData::list cp;
+	cp.push_back(rp.first);
+	cp.push_back(rp.second);
+	relaxProfile.push_back(cp);
+      }
     }
     BC["relax"]=  relaxProfile;
+    
     return true;
   }
   return false;
@@ -690,17 +828,16 @@ MeshMotionBC* CAFSIBC::clone() const
 }
 
 
-WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity, const MeshMotionBC& meshmotion)
+WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, Parameters const& p)
 : BoundaryCondition(c, patchName, boundaryDict),
-  wallVelocity_(wallVelocity),
-  meshmotion_(meshmotion.clone())
+  p_(p)
 {
   type_="wall";
 }
 
 void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  meshmotion_->addIntoDictionaries(dictionaries);
+  p_.meshmotion()->addIntoDictionaries(dictionaries);
   BoundaryCondition::addIntoDictionaries(dictionaries);
 }
 
@@ -714,7 +851,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform ("+toStr(wallVelocity_)+")");
+      BC["value"]=OFDictData::data("uniform ("+toStr(p_.wallVelocity())+")");
     }
     else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
     {
@@ -730,9 +867,13 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform 1e-10");
     }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
     else
     {
-      if (!meshmotion_->addIntoFieldDictionary(field.first, field.second, BC))
+      if (!p_.meshmotion()->addIntoFieldDictionary(field.first, field.second, BC))
 	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }

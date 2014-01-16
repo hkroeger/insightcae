@@ -101,10 +101,12 @@ public:
 };
 
 
+extern const OFDictData::dimensionSet dimPressure;
 extern const OFDictData::dimensionSet dimKinPressure;
 extern const OFDictData::dimensionSet dimKinEnergy;
 extern const OFDictData::dimensionSet dimVelocity;
 extern const OFDictData::dimensionSet dimLength;
+extern const OFDictData::dimensionSet dimDensity;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue> FieldInfo;
@@ -173,7 +175,11 @@ public:
       env_.forkCommand(p_in, cmdString(location, cmd, argv), std::vector<std::string>());
     }
     
-    const FieldList& fields() const
+    inline const FieldList& fields() const
+    {
+      return fields_;
+    }  
+    inline FieldList& fields()
     {
       return fields_;
     }  

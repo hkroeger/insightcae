@@ -25,6 +25,23 @@
 
 #include "base/softwareenvironment.h"
 #include "base/parameterset.h"
+#include <boost/typeof/typeof.hpp>
+
+/*
+#define DECL_ELEM_PARAMETERS() \
+public: \
+template <RT> struct TParameters
+
+#define DEF_ELEM_PARAMETERS(classname) \
+public: \
+typdef TParameters<classname> Parameters; \
+protected: \
+Parameters p_;
+
+#define ADD_ELEM_PARAMETER(type, name) \
+ boost::value_initialized< type > name; \
+ inline RT& set_##name(const type& value) { name.data()=value; return static_cast<RT>(*this); }
+ */
 
 namespace insight
 {

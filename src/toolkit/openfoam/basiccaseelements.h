@@ -22,9 +22,13 @@
 #define INSIGHT_BASICCASEELEMENTS_H
 
 #include "base/linearalgebra.h"
+#include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
 
 #include <map>
+#include "boost/utility.hpp"
+#include "boost/variant.hpp"
+#include "progrock/cppx/collections/options_boosted.h"
 
 namespace insight 
 {
@@ -42,6 +46,8 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
 /**
  Manages basic settings in faSchemes, faSolution
  */
@@ -53,6 +59,8 @@ public:
   FaNumerics(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
+
 
 /**
  Manages basic settings in tetFemSolution
@@ -66,10 +74,13 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
 OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
+
 
 
 class simpleFoamNumerics
@@ -80,14 +91,35 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
 class simpleDyMFoamNumerics
 : public simpleFoamNumerics
 {
-  int FEMinterval_;
 public:
-  simpleDyMFoamNumerics(OpenFOAMCase& c, int FEMinterval=100);
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      (FEMinterval, int, 10)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  simpleDyMFoamNumerics(OpenFOAMCase& c, Parameters const& params = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
+
+
+class cavitatingFoamNumerics
+: public FVNumerics
+{
+public:
+  cavitatingFoamNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
 
 class FSIDisplacementExtrapolationNumerics
 : public FaNumerics
@@ -98,6 +130,38 @@ public:
 };
 
 
+
+class thermodynamicModel
+: public OpenFOAMCaseElement
+{
+public:
+  thermodynamicModel(OpenFOAMCase& c);
+};
+
+
+
+class cavitatingFoamThermodynamics
+: public thermodynamicModel
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (psiv, double, 2.5e-6)
+    (psil, double, 5e-7)
+    (pSat, double, 2000.0)
+    (rholSat, double, 1025.0)
+    (rhoMin, double, 0.001)
+  )
+
+protected:
+  Parameters p_;
+  
+public:
+  cavitatingFoamThermodynamics(OpenFOAMCase& c, Parameters const& p = Parameters());
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
 class transportModel
 : public OpenFOAMCaseElement
 {
@@ -106,13 +170,45 @@ public:
 };
 
 
+
 class singlePhaseTransportProperties
 : public transportModel
 {
 public:
-  singlePhaseTransportProperties(OpenFOAMCase& c);
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (nu, double, 1e-6)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
+
+
+class twoPhaseTransportProperties
+: public transportModel
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (nu1, double, 1e-6)
+    (rho1, double, 1025.0)
+    (nu2, double, 1.5e-5)
+    (rho2, double, 1.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  twoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
 
 class dynamicMesh
 : public OpenFOAMCaseElement
@@ -120,6 +216,8 @@ class dynamicMesh
 public:
   dynamicMesh(OpenFOAMCase& c);
 };
+
+
 
 class velocityTetFEMMotionSolver
 : public dynamicMesh
@@ -130,6 +228,8 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
 class displacementFvMotionSolver
 : public dynamicMesh
 {
@@ -138,12 +238,16 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
 class turbulenceModel
 : public OpenFOAMCaseElement
 {
 public:
   turbulenceModel(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
 };
+
 
 
 class laminar_RASModel
@@ -155,6 +259,7 @@ public:
 };
 
 
+
 class kOmegaSST_RASModel
 : public turbulenceModel
 {
@@ -162,6 +267,7 @@ public:
   kOmegaSST_RASModel(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
 };
+
 
 
 /*
@@ -185,6 +291,7 @@ public:
 };
 
 
+
 class SimpleBC
 : public BoundaryCondition
 {
@@ -197,14 +304,30 @@ public:
 };
 
 
+
 class SuctionInletBC
 : public BoundaryCondition
 {
-  double pressure_;
 public:
-  SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, double pressure=0.0);
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (pressure, double, 0.0)
+    (rho, double, 1025.0)
+    (gamma, double, 1.0)
+    (phiName, std::string, "phi")
+    (psiName, std::string, "none")
+    (rhoName, std::string, "none")
+    (UName, std::string, "U")
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, Parameters const& p = Parameters());
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
+
 
 class MeshMotionBC
 {
@@ -217,6 +340,8 @@ public:
   virtual MeshMotionBC* clone() const =0;
 };
 
+
+
 class NoMeshMotion
 : public MeshMotionBC
 {
@@ -225,7 +350,11 @@ public:
   virtual MeshMotionBC* clone() const;
 };
 
+
+
 extern NoMeshMotion noMeshMotion;
+
+
 
 class CAFSIBC
 : public MeshMotionBC
@@ -233,31 +362,22 @@ class CAFSIBC
 public:
   typedef std::map<double, double> RelaxProfile;
   
+  typedef boost::variant<double, RelaxProfile> RelaxParameter;
+  
+  CPPX_DEFINE_OPTIONCLASS( Parameters, CPPX_OPTIONS_NO_BASE,
+	(FEMScratchDir, boost::filesystem::path, "")
+	(clipPressure, double, -100.0)
+        (relax, RelaxParameter, RelaxParameter(0.2) )
+        (pressureScale, double, 1e-3)
+        (oldPressure, boost::shared_ptr<double>, boost::shared_ptr<double>() )
+  )
+  
 protected:
-  boost::filesystem::path FEMScratchDir_;
-  double clipPressure_;
-  RelaxProfile relax_;
-  double pressureScale_;
-  boost::shared_ptr<double> oldPressure_;
+  Parameters p_;
   
 public:
-  CAFSIBC
-  (
-    const boost::filesystem::path& FEMScratchDir, 
-    double clipPressure, 
-    double relax=0.1,
-    double pressureScale=1e-3,
-    double *oldPressure = NULL
-  );
-  
-  CAFSIBC
-  (
-    const boost::filesystem::path& FEMScratchDir, 
-    double clipPressure, 
-    const RelaxProfile& relax,
-    double pressureScale=1e-3,
-    double *oldPressure = NULL
-  );
+  CAFSIBC(const Parameters& p);
+
   virtual ~CAFSIBC();
 
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
@@ -265,19 +385,27 @@ public:
   virtual MeshMotionBC* clone() const;
 };
 
+
+
 class WallBC
 : public BoundaryCondition
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (wallVelocity, arma::mat, vec3(0., 0., 0.))
+    (meshmotion, boost::shared_ptr<MeshMotionBC>, boost::shared_ptr<MeshMotionBC>(noMeshMotion.clone()) )
+  )
+  
 protected:
-  arma::mat wallVelocity_;
-  boost::shared_ptr<MeshMotionBC> meshmotion_;
+  Parameters p_;
   
 public:
   WallBC
   (
-    OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, arma::mat wallVelocity=vec3(0,0,0), 
-    const MeshMotionBC& meshmotion = noMeshMotion
+    OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+    Parameters const &p = Parameters()
   );
+  
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;

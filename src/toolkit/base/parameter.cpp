@@ -63,8 +63,10 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
       return child;
     }
   }
-  
-  throw insight::Exception("No xml node found with type="+type()+" and name="+name);
+ 
+  cout<<"Warning: No xml node found with type="+type()+" and name="+name<<", default value is used."<<endl;
+  //throw insight::Exception("No xml node found with type="+type()+" and name="+name);
+  return NULL;
 }
 
 defineType(DirectoryParameter);
@@ -107,7 +109,8 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
-  value_=boost::filesystem::path(child->first_attribute("value")->value());
+  if (child)
+    value_=boost::filesystem::path(child->first_attribute("value")->value());
 }
 
 defineType(SelectionParameter);
@@ -159,7 +162,8 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
-  value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
+  if (child)
+    value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
 }
 
 defineType(DoubleRangeParameter);
@@ -238,13 +242,16 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
-  std::istringstream iss(child->first_attribute("values")->value());
-  while (!iss.eof())
+  if (child)
   {
-    double v;
-    iss >> v;
-    if (iss.fail()) break;
-    values_.insert(v);
+    std::istringstream iss(child->first_attribute("values")->value());
+    while (!iss.eof())
+    {
+      double v;
+      iss >> v;
+      if (iss.fail()) break;
+      values_.insert(v);
+    }
   }
 }
 
@@ -295,24 +302,27 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
   value_.clear();
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
-  for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
+  if (child)
   {
-    std::string name(e->first_attribute("name")->value());
-    if (name=="default")
+    for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
     {
-      cout<<"reading default value"<<endl;
-      defaultValue_.reset(Parameter::lookup(e->name(), ""));
-      defaultValue_->readFromNode( name, doc, *child );
-    }
-    else
-    {
-      int i=boost::lexical_cast<int>(name);
-      cout<<"Reading element i="<<i<<endl;
-      if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
-      cout<<"now at size="<<size()<<endl;
-      Parameter* curp = Parameter::lookup(e->name(), "");
-      curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child );
-      value_.replace(i, curp);
+      std::string name(e->first_attribute("name")->value());
+      if (name=="default")
+      {
+	cout<<"reading default value"<<endl;
+	defaultValue_.reset(Parameter::lookup(e->name(), ""));
+	defaultValue_->readFromNode( name, doc, *child );
+      }
+      else
+      {
+	int i=boost::lexical_cast<int>(name);
+	cout<<"Reading element i="<<i<<endl;
+	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
+	cout<<"now at size="<<size()<<endl;
+	Parameter* curp = Parameter::lookup(e->name(), "");
+	curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child );
+	value_.replace(i, curp);
+      }
     }
   }
 }

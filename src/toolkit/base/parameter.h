@@ -46,7 +46,7 @@ class Parameter
   
 public:
   declareFactoryTable(Parameter, std::string);  
-
+  
 protected:
   std::string description_;
   
@@ -74,6 +74,9 @@ template<class T, char const* N>
 class SimpleParameter
 : public Parameter
 {
+  
+public:
+  typedef T value_type;
   
 protected:
   T value_;
@@ -122,8 +125,10 @@ public:
   {
     using namespace rapidxml;
     xml_node<>* child = findNode(node, name);
-    value_=boost::lexical_cast<T>(child->first_attribute("value")->value());
-    std::cout<<"name="<<name<<", value="<<value_<<std::endl;
+    if (child)
+    {
+      value_=boost::lexical_cast<T>(child->first_attribute("value")->value());
+    }
   }
   
 };
@@ -192,6 +197,8 @@ protected:
   RangeList values_;
   
 public:
+  typedef RangeList value_type;
+
   declareType("doubleRange");
   
   DoubleRangeParameter(const std::string& description);
@@ -220,6 +227,9 @@ public:
 class ArrayParameter
 : public Parameter
 {
+public:
+  typedef boost::ptr_vector<Parameter> value_type;
+
 protected:
   boost::shared_ptr<Parameter> defaultValue_;
   boost::ptr_vector<Parameter> value_;

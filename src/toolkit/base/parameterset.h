@@ -75,14 +75,14 @@ public:
 	iterator i = find(name);
 	if (i==end())
 	{
-	  throw Exception("Parameter "+name+" not found in parameterset");
+	  throw insight::Exception("Parameter "+name+" not found in parameterset");
 	}
 	else
 	{
 	  typedef T PT;
 	  PT* const pt=static_cast<PT* const>(i->second);
 	  if (!pt)
-	    throw Exception("Parameter "+name+" not of requested type!");
+	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else
 	    return (*pt);
 	}
@@ -108,20 +108,33 @@ public:
 	const_iterator i = find(name);
 	if (i==end())
 	{
-	  throw Exception("Parameter "+name+" not found in parameterset");
+	  throw insight::Exception("Parameter "+name+" not found in parameterset");
 	}
 	else
 	{
 	  typedef T PT;
 	  const PT* const pt=static_cast<const PT* const>(i->second);
 	  if (!pt)
-	    throw Exception("Parameter "+name+" not of requested type!");
+	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else
 	    return (*pt);
 	}
       }
      }
      
+    template<class T>
+    const typename T::value_type& getOrDefault(const std::string& name, const typename T::value_type& defaultValue) const
+    {
+      try 
+      {
+	return this->get<T>(name)();
+      }
+      catch (insight::Exception e)
+      {
+	return defaultValue;
+      }
+    }
+    
     inline bool contains(const std::string& name) const
     {
       const_iterator i = find(name);
@@ -136,7 +149,7 @@ public:
     { return this->get<PathParameter>(name)(); }
     ParameterSet& getSubset(const std::string& name);
 
-    inline const int& getInt(const std::string& name) const { return this->get<IntParameter>(name)(); }
+    inline const int& getInt(const std::string& name) const { return this->get<IntParameter>(name)(); }    
     inline const double& getDouble(const std::string& name) const { return this->get<DoubleParameter>(name)(); }
     inline const bool& getBool(const std::string& name) const { return this->get<BoolParameter>(name)(); }
     inline const std::string& getString(const std::string& name) const { return this->get<StringParameter>(name)(); }
@@ -188,6 +201,9 @@ typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 class SubsetParameter
 : public Parameter
 {
+public:
+  typedef ParameterSet value_type;
+  
 protected:
   boost::shared_ptr<ParameterSet> value_;
   

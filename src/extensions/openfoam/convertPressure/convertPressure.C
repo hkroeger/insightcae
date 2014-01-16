@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 
     argList::validArgs.append("p0");
     argList::validArgs.append("rho");
+    argList::validOptions.insert("pclip", "real pressure for clipping");
     /*
     argList::validOptions.insert("p0", "reference pressure");
     argList::validOptions.insert("noShiftY", "");
@@ -67,6 +68,10 @@ int main(int argc, char *argv[])
     
     dimensionedScalar rho("rho", dimDensity, 1e5);
     rho.value()=readScalar(IStringStream(args.additionalArgs()[1])());
+    
+    dimensionedScalar pclip("pclip", dimPressure, 0.0);
+    if (args.optionFound("pclip"))
+      pclip.value()=readScalar(IStringStream(args.options()["pclip"])());
     
     forAll(timeDirs, timeI)
     {
@@ -101,6 +106,7 @@ int main(int argc, char *argv[])
 	  // need to be converted into real pressure
 	  p*=rho.value();
 	  p+=p0;
+	  p=max(pclip, p);
 	}
 	else
 	  FatalErrorIn("main")

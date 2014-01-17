@@ -121,6 +121,28 @@ public:
 
 
 
+class interFoamNumerics
+: public FVNumerics
+{
+protected:
+  std::string pname_;
+public:
+  interFoamNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
+class interPhaseChangeFoamNumerics
+: public interFoamNumerics
+{
+public:
+  interPhaseChangeFoamNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
 class FSIDisplacementExtrapolationNumerics
 : public FaNumerics
 {
@@ -162,6 +184,24 @@ public:
 
 
 
+class gravity
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (g, arma::mat, vec3(0, 0, -9.81))
+  )
+
+protected:
+  Parameters p_;
+  
+public:
+  gravity(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
 class transportModel
 : public OpenFOAMCaseElement
 {
@@ -198,6 +238,7 @@ public:
     (rho1, double, 1025.0)
     (nu2, double, 1.5e-5)
     (rho2, double, 1.0)
+    (sigma, double, 0.07)
   )
 
 protected:
@@ -205,6 +246,63 @@ protected:
 
 public:
   twoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
+namespace phaseChangeModels
+{
+  
+  
+  
+class phaseChangeModel
+{
+public:
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
+};
+
+typedef boost::shared_ptr<phaseChangeModel> Ptr;
+
+class SchnerrSauer: public phaseChangeModel
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (n, double, 1.6e13)
+    (dNuc, double, 2.0e-6)
+    (Cc, double, 1.0)
+    (Cv, double, 1.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  SchnerrSauer(Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
+}
+
+
+
+class cavitationTwoPhaseTransportProperties
+: public twoPhaseTransportProperties
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, twoPhaseTransportProperties::Parameters,
+    (model, phaseChangeModels::Ptr, 
+      phaseChangeModels::Ptr( new phaseChangeModels::SchnerrSauer() ))
+    (psat, double, 2300.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  cavitationTwoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -304,6 +402,37 @@ public:
 };
 
 
+namespace multiphaseBC
+{
+  
+class multiphaseBC
+{
+public:
+  // return true, if this field was handled, false otherwise
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
+};
+
+typedef boost::shared_ptr<multiphaseBC> Ptr;
+
+class uniformPhases : public multiphaseBC
+{
+public:
+  typedef std::map<std::string, double> PhaseFractionList;
+  
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (phasefractions, PhaseFractionList, PhaseFractionList())
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  uniformPhases( Parameters const& p = Parameters() );
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
+}
+
 
 class SuctionInletBC
 : public BoundaryCondition
@@ -317,13 +446,20 @@ public:
     (psiName, std::string, "none")
     (rhoName, std::string, "none")
     (UName, std::string, "U")
+    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
   )
   
 protected:
   Parameters p_;
   
 public:
-  SuctionInletBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, Parameters const& p = Parameters());
+  SuctionInletBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 

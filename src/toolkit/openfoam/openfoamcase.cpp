@@ -137,6 +137,7 @@ const OFDictData::dimensionSet dimKinEnergy = OFDictData::dimension(0, 2, -2, 0,
 const OFDictData::dimensionSet dimVelocity = OFDictData::dimension(0, 1, -1, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimLength = OFDictData::dimension(0, 1, 0, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimDensity = OFDictData::dimension(1, -3, 0, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimless = OFDictData::dimension(0, 0, 0, 0, 0, 0, 0);
 
 boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {

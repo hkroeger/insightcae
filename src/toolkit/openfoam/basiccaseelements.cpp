@@ -341,6 +341,148 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["rho"]="";
 }
 
+interFoamNumerics::interFoamNumerics(OpenFOAMCase& c)
+: FVNumerics(c)
+{
+  if (OFversion()<=160)
+    pname_="pd";
+  else
+    pname_="p_rgh";
+  
+  c.addField(pname_, FieldInfo(scalarField, 	dimPressure, 		list_of(0.0) ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+  c.addField("alpha1", FieldInfo(scalarField, 	dimless, 		list_of(0.0) ) );
+}
+ 
+void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="interFoam";
+  controlDict["endTime"]=1000.0;
+  controlDict["deltaT"]=1e-6;
+
+  controlDict["adjustTimeStep"]=true;
+  controlDict["maxCo"]=0.5;
+  controlDict["maxAlphaCo"]=50.;
+  controlDict["maxDeltaT"]=1.0;
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["pcorr"]=stdSymmSolverSetup(1e-10, 0.0);
+  solvers[pname_]=stdSymmSolverSetup(1e-7, 0.01);
+  solvers[pname_+"Final"]=stdSymmSolverSetup(1e-7, 0.0);
+  
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
+  
+  solvers["UFinal"]=stdAsymmSolverSetup(1e-10, 0);
+  solvers["kFinal"]=stdAsymmSolverSetup(1e-10, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-10, 0);
+  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-10, 0);
+
+  std::string solutionScheme("PISO");
+  if (OFversion()>=210) solutionScheme="PIMPLE";
+  OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
+  SOL["momentumPredictor"]=true;
+  SOL["nCorrectors"]=2;
+  SOL["nNonOrthogonalCorrectors"]=0;
+  SOL["nAlphaCorr"]=1;
+  SOL["nAlphaSubCycles"]=4;
+  SOL["cAlpha"]=1.0;
+  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  grad["grad(U)"]="cellLimited leastSquares 1";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  if (OFversion()==160) 
+    suf="cellLimited leastSquares 1";
+  else 
+    suf="grad(U)";
+  div["div(rho*phi,U)"]="Gauss linearUpwind "+suf;
+  div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
+  div["div(phi,alpha)"]="Gauss vanLeer";
+  div["div(phirb,alpha)"]="Gauss interfaceCompression";
+  div["div(phi,k)"]="Gauss upwind";
+  div["div(phi,epsilon)"]="Gauss upwind";
+  div["div(phi,R)"]="Gauss upwind";
+  div["div(R)"]="Gauss linear";
+  div["div(phi,nuTilda)"]="Gauss upwind";
+  if (OFversion()>=210)
+    div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
+  else
+    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired[pname_]="";
+  fluxRequired["pcorr"]="";
+  fluxRequired["alpha"]="";
+  fluxRequired["alpha1"]="";
+}
+
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c)
+: interFoamNumerics(c)
+{
+}
+ 
+void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  interFoamNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  OFDictData::dict alphasol = stdAsymmSolverSetup(1e-10, 0.0);
+  alphasol["maxUnboundedness"]=1e-5;
+  alphasol["CoCoeff"]=0;
+  alphasol["maxIter"]=5;
+  alphasol["nLimiterIter"]=2;
+
+  solvers["alpha1"]=alphasol;
+
+  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  if (OFversion()==160) 
+    suf="cellLimited leastSquares 1";
+  else 
+    suf="grad(U)";
+  div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
+
+}
+
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
 : FaNumerics(c)
 {
@@ -412,6 +554,21 @@ void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) co
 								 p_.rhoMin());
 }
 
+gravity::gravity(OpenFOAMCase& c, Parameters const& p)
+: OpenFOAMCaseElement(c, "gravity"),
+  p_(p)
+{
+}
+
+void gravity::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& g=dictionaries.addDictionaryIfNonexistent("constant/g");
+  g["dimensions"]="[0 1 -2 0 0 0 0]";
+  OFDictData::list gv;
+  for (int i=0; i<3; i++) gv.push_back(p_.g()(i));
+  g["value"]=gv;
+}
+  
 transportModel::transportModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "transportModel")
 {
@@ -454,8 +611,52 @@ void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) con
   phase2["transportModel"]="Newtonian";
   phase2["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu2());
   phase2["rho"]=OFDictData::dimensionedData("rho", OFDictData::dimension(1, -3), p_.rho2());
+
+  transportProperties["sigma"]=OFDictData::dimensionedData("sigma", OFDictData::dimension(1, 0, -2), p_.sigma());
+
 }
 
+namespace phaseChangeModels
+{
+
+SchnerrSauer::SchnerrSauer(Parameters const& p)
+: p_(p)
+{
+}
+
+void SchnerrSauer::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  transportProperties["phaseChangeTwoPhaseMixture"]="SchnerrSauer";
+  
+  OFDictData::dict& coeffs=transportProperties.addSubDictIfNonexistent("SchnerrSauerCoeffs");
+  coeffs["n"] = OFDictData::dimensionedData("n", OFDictData::dimension(0, -3), p_.n());
+  coeffs["dNuc"] = OFDictData::dimensionedData("dNuc", OFDictData::dimension(0, 1), p_.dNuc());
+  coeffs["Cc"] = OFDictData::dimensionedData("Cc", OFDictData::dimension(), p_.Cc());
+  coeffs["Cv"] = OFDictData::dimensionedData("Cv", OFDictData::dimension(), p_.Cv());
+}
+
+}
+
+cavitationTwoPhaseTransportProperties::cavitationTwoPhaseTransportProperties
+(
+  OpenFOAMCase& c, 
+  Parameters const& p
+)
+: twoPhaseTransportProperties(c, p),
+  p_(p)
+{
+}
+
+void cavitationTwoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  twoPhaseTransportProperties::addIntoDictionaries(dictionaries);
+  OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+  transportProperties["pSat"]=OFDictData::dimensionedData("pSat", OFDictData::dimension(1, -1, -2), p_.psat());
+  p_.model()->addIntoDictionaries(dictionaries);
+}
+  
+  
 dynamicMesh::dynamicMesh(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "dynamicMesh")
 {
@@ -667,6 +868,35 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+namespace multiphaseBC
+{
+
+uniformPhases::uniformPhases( Parameters const& p )
+: p_(p)
+{}
+
+bool uniformPhases::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  const PhaseFractionList& f = p_.phasefractions();
+  if 
+  (     
+    (f.find(fieldname)!=f.end())
+    && 
+    (get<0>(fieldinfo)==scalarField) 
+  )
+  {
+    BC["type"]="fixedValue";
+    std::ostringstream entry;
+    entry << "uniform "<<f.find(fieldname)->second;
+    BC["value"]=entry.str();
+    return true;
+  }
+  else 
+    return false;
+}
+
+}
+
 SuctionInletBC::SuctionInletBC
 (
   OpenFOAMCase& c, 
@@ -691,7 +921,11 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("pressureInletOutletVelocity");
       BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
     }
-    else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
+    else if ( 
+      ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
     {
       BC["type"]=OFDictData::data("totalPressure");
       BC["p0"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
@@ -717,7 +951,11 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else
     {
-      if (!noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC))
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ))
 	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
@@ -867,7 +1105,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform 1e-10");
     }
-    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    else if (get<0>(field.second)==scalarField)
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }

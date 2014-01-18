@@ -141,6 +141,25 @@ OFDictData::dict GAMGSolverSetup(double tol, double reltol)
   return d;
 }
 
+OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  d["solver"]="PCG";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  OFDictData::dict pd;
+  pd["preconditioner"]="GAMG";
+  pd["smoother"]="DICGaussSeidel";
+  pd["nPreSweeps"]=0;
+  pd["nPostSweeps"]=2;
+  pd["cacheAgglomeration"]="on";
+  pd["agglomerator"]="faceAreaPair";
+  pd["nCellsInCoarsestLevel"]=10;
+  pd["mergeLevels"]=1;
+  d["preconditioner"]=pd;
+  return d;
+}
+
 OFDictData::dict smoothSolverSetup(double tol, double reltol)
 {
   OFDictData::dict d;
@@ -375,26 +394,39 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["pcorr"]=stdSymmSolverSetup(1e-10, 0.0);
-  solvers[pname_]=stdSymmSolverSetup(1e-7, 0.01);
-  solvers[pname_+"Final"]=stdSymmSolverSetup(1e-7, 0.0);
+  solvers["pcorr"]=GAMGPCGSolverSetup(1e-6, 0.0);
+  solvers[pname_]=GAMGPCGSolverSetup(1e-7, 0.01);
+  solvers[pname_+"Final"]=GAMGPCGSolverSetup(1e-7, 0.0);
   
-  solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["U"]=smoothSolverSetup(1e-8, 0);
+  solvers["k"]=smoothSolverSetup(1e-8, 0);
+  solvers["omega"]=smoothSolverSetup(1e-8, 0);
+  solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
   
-  solvers["UFinal"]=stdAsymmSolverSetup(1e-10, 0);
-  solvers["kFinal"]=stdAsymmSolverSetup(1e-10, 0);
-  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-10, 0);
-  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-10, 0);
+  solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
+
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  if (OFversion()<210)
+  {
+    relax["U"]=0.7;
+  }
+  else
+  {
+    OFDictData::dict /*fieldRelax,*/ eqnRelax;
+    eqnRelax["U"]=0.7;
+//     relax["fields"]=fieldRelax;
+    relax["equations"]=eqnRelax;
+  }
 
   std::string solutionScheme("PISO");
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=true;
   SOL["nCorrectors"]=2;
-  SOL["nNonOrthogonalCorrectors"]=0;
+  SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
   SOL["cAlpha"]=1.0;

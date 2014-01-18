@@ -80,6 +80,7 @@ OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
+OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
 
 
 
@@ -129,6 +130,8 @@ protected:
 public:
   interFoamNumerics(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  inline const std::string& pressureFieldName() const { return pname_; }
 };
 
 

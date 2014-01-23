@@ -774,11 +774,16 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
+bool laminar_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  return false;
+}
+
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(0.0) ) );
-  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(0.0) ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
+  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0) ) );
 }
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
@@ -791,6 +796,28 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["printCoeffs"]="true";
   RASProperties.addSubDictIfNonexistent("kOmegaSSTCoeffs");
 }
+
+bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k")
+  {
+    BC["type"]=OFDictData::data("kqRWallFunction");
+    BC["value"]=OFDictData::data("uniform 1e-10");
+    return true;
+  }
+  else if (fieldname == "omega")
+  {
+    BC["type"]=OFDictData::data("omegaWallFunction");
+    BC["Cmu"]=0.09;
+    BC["kappa"]=0.41;
+    BC["E"]=9.8;
+    BC["beta1"]=0.075;
+    BC["value"]="uniform 1";
+    return true;
+  }
+  return false;
+}
+
 
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
@@ -1129,13 +1156,15 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform 1e-10");
+      OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC);
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]=OFDictData::data("uniform 1e-10");
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform 1e-10");
+      OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC);
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]=OFDictData::data("uniform 1e-10");
     }
     else if (get<0>(field.second)==scalarField)
     {

@@ -60,6 +60,7 @@ public:
     CaseElement(const CaseElement& other);
     virtual ~CaseElement();
 
+    inline const std::string& name() const { return name_; };
     const ParameterSet& params() const;
 
 };

@@ -19,6 +19,7 @@
 
 
 #include "openfoamanalysis.h"
+#include "basiccaseelements.h"
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/ptr_map_inserter.hpp>
@@ -30,6 +31,22 @@ using namespace boost::assign;
 
 namespace insight
 {
+
+void insertTurbulenceModel(OpenFOAMCase& cm, int selection)
+{
+  switch (selection)
+  {
+    case 0:
+      cm.insert(new laminar_RASModel(cm));
+      break;
+    case 1:
+      cm.insert(new kOmegaSST_RASModel(cm));
+      break;
+    default:
+      throw insight::Exception("Unrecognized RASModel selection: "+boost::lexical_cast<std::string>(selection));
+  }
+}
+
   
 OpenFOAMAnalysis::OpenFOAMAnalysis(const std::string& name, const std::string& description)
 : Analysis(name, description)

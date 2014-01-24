@@ -28,7 +28,7 @@ namespace insight {
   
 class OpenFOAMCase;
   
-void insertTurbulenceModel(OpenFOAMCase& cm, int selection);
+void insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name);
 
 class OpenFOAMAnalysis
 : public insight::Analysis

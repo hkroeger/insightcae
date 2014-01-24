@@ -32,19 +32,14 @@ using namespace boost::assign;
 namespace insight
 {
 
-void insertTurbulenceModel(OpenFOAMCase& cm, int selection)
+void insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name)
 {
-  switch (selection)
-  {
-    case 0:
-      cm.insert(new laminar_RASModel(cm));
-      break;
-    case 1:
-      cm.insert(new kOmegaSST_RASModel(cm));
-      break;
-    default:
-      throw insight::Exception("Unrecognized RASModel selection: "+boost::lexical_cast<std::string>(selection));
-  }
+  turbulenceModel* model = turbulenceModel::lookup(name, cm);
+  
+  if (!model) 
+    throw insight::Exception("Unrecognized RASModel selection: "+name);
+  
+  cm.insert(model);
 }
 
   

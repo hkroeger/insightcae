@@ -80,10 +80,6 @@ int OFEnvironment::executeCommand(const std::vector<std::string>& args) const
 }
 */
 
-const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const
-{ 
-  return *static_cast<OpenFOAMCase*>(&case_); 
-}
 
 int OpenFOAMCaseElement::OFversion() const 
 {

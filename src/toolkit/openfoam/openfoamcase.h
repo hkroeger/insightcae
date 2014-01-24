@@ -63,8 +63,11 @@ class OpenFOAMCaseElement
 
 public:
   OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name);
- 
-  const OpenFOAMCase& OFcase() const;
+
+  // defined below declaration of OpenFOAMCase
+  inline const OpenFOAMCase& OFcase() const;
+  inline OpenFOAMCase& OFcase();
+  
   int OFversion() const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
 };
@@ -185,6 +188,9 @@ public:
       return fields_;
     }  
 };
+
+const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const { return *static_cast<OpenFOAMCase*>(&case_); }
+OpenFOAMCase& OpenFOAMCaseElement::OFcase() { return *static_cast<OpenFOAMCase*>(&case_); }
 
 }
 

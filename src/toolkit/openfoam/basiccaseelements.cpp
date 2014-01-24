@@ -746,9 +746,16 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
+defineType(turbulenceModel);
+defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);
 
 turbulenceModel::turbulenceModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "turbulenceModel")
+{
+}
+
+turbulenceModel::turbulenceModel(const turbulenceModel::ConstrP& c)
+: OpenFOAMCaseElement(c.get<0>(), "turbulenceModel")
 {
 }
 
@@ -758,10 +765,16 @@ void turbulenceModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["simulationType"]="RASModel";
 }
 
+defineType(laminar_RASModel);
+addToFactoryTable(turbulenceModel, laminar_RASModel, turbulenceModel::ConstrP);
+
 laminar_RASModel::laminar_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
-{
-}
+{}
+  
+laminar_RASModel::laminar_RASModel(const turbulenceModel::ConstrP& c)
+: turbulenceModel(c)
+{}
   
 void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -779,11 +792,25 @@ bool laminar_RASModel::addIntoFieldDictionary(const std::string& fieldname, cons
   return false;
 }
 
+defineType(kOmegaSST_RASModel);
+addToFactoryTable(turbulenceModel, kOmegaSST_RASModel, turbulenceModel::ConstrP);
+
+void kOmegaSST_RASModel::addFields()
+{
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
+  OFcase().addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0) ) );
+}
+
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
 : turbulenceModel(c)
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
-  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0) ) );
+  addFields();
+}
+  
+kOmegaSST_RASModel::kOmegaSST_RASModel(const turbulenceModel::ConstrP& c)
+: turbulenceModel(c)
+{
+  addFields();
 }
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
@@ -813,6 +840,38 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     BC["E"]=9.8;
     BC["beta1"]=0.075;
     BC["value"]="uniform 1";
+    return true;
+  }
+  return false;
+}
+
+defineType(kOmegaSST_LowRe_RASModel);
+addToFactoryTable(turbulenceModel, kOmegaSST_LowRe_RASModel, turbulenceModel::ConstrP);
+
+kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(OpenFOAMCase& c)
+: kOmegaSST_RASModel(c)
+{}
+  
+kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(const turbulenceModel::ConstrP& c)
+: kOmegaSST_RASModel(c)
+{}
+  
+void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  turbulenceModel::addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  RASProperties["RASModel"]="kOmegaSST_LowRe";
+  RASProperties["turbulence"]="true";
+  RASProperties["printCoeffs"]="true";
+  RASProperties.addSubDictIfNonexistent("kOmegaSST_LowReCoeffs");
+}
+
+bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if ( (fieldname == "k") || (fieldname == "omega") )
+  {
+    BC["type"]=OFDictData::data("zeroGradient");
     return true;
   }
   return false;

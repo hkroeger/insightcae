@@ -345,7 +345,14 @@ class turbulenceModel
 : public OpenFOAMCaseElement
 {
 public:
+  typedef boost::tuple<OpenFOAMCase&> ConstrP;
+  declareFactoryTable(turbulenceModel, ConstrP);  
+
+public:
+  declareType("turbulenceModel");
+
   turbulenceModel(OpenFOAMCase& c);
+  turbulenceModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
@@ -357,7 +364,10 @@ class laminar_RASModel
 : public turbulenceModel
 {
 public:
+  declareType("laminar");
+
   laminar_RASModel(OpenFOAMCase& c);
+  laminar_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
@@ -367,8 +377,26 @@ public:
 class kOmegaSST_RASModel
 : public turbulenceModel
 {
+protected:
+  void addFields();
+  
 public:
+  declareType("kOmegaSST");
+  
   kOmegaSST_RASModel(OpenFOAMCase& c);
+  kOmegaSST_RASModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
+class kOmegaSST_LowRe_RASModel
+: public kOmegaSST_RASModel
+{
+public:
+  declareType("kOmegaSST_LowRe");
+  
+  kOmegaSST_LowRe_RASModel(OpenFOAMCase& c);
+  kOmegaSST_LowRe_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };

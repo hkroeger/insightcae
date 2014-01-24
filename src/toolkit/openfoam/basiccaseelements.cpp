@@ -877,6 +877,70 @@ bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldna
   return false;
 }
 
+defineType(kOmegaSST2_RASModel);
+addToFactoryTable(turbulenceModel, kOmegaSST2_RASModel, turbulenceModel::ConstrP);
+
+void kOmegaSST2_RASModel::addFields()
+{
+  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
+}
+
+kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c)
+: kOmegaSST_RASModel(c)
+{
+  kOmegaSST2_RASModel::addFields();
+}
+  
+kOmegaSST2_RASModel::kOmegaSST2_RASModel(const turbulenceModel::ConstrP& c)
+: kOmegaSST_RASModel(c)
+{
+  kOmegaSST2_RASModel::addFields();  
+}
+  
+void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  turbulenceModel::addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  RASProperties["RASModel"]="kOmegaSST2";
+  RASProperties["turbulence"]="true";
+  RASProperties["printCoeffs"]="true";
+  RASProperties.addSubDictIfNonexistent("kOmegaSST2");
+  
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaSST2.so\"") );
+}
+
+bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k")
+  {
+    BC["type"]="kqRWallFunction";
+    BC["value"]="uniform 1e-10";
+    return true;
+  }
+  else if (fieldname == "omega")
+  {
+    BC["type"]="hybridOmegaWallFunction2";
+    BC["Cmu"]=0.09;
+    BC["kappa"]=0.41;
+    BC["E"]=9.8;
+    BC["tw"]=0.057;
+    BC["value"]="uniform 1";
+    return true;
+  }
+  else if (fieldname == "nut")
+  {
+    BC["type"]="nutHybridWallFunction2";
+    BC["Cmu"]=0.09;
+    BC["kappa"]=0.41;
+    BC["E"]=9.8;
+    BC["value"]="uniform 1e-10";
+    return true;
+  }
+  return false;
+}
+
 
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
@@ -1067,6 +1131,10 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
     else
     {
       if (!(
@@ -1204,31 +1272,36 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC = dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    
+    // velocity
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform ("+toStr(p_.wallVelocity())+")");
     }
+    
+    // pressure
     else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
-    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    
+    // turbulence quantities, should be handled by turbulence model
+    else if ( 
+      ( (field.first=="k") || (field.first=="omega") || (field.first=="nut") ) 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
     {
       OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC);
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]=OFDictData::data("uniform 1e-10");
     }
-    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
-    {
-      OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC);
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]=OFDictData::data("uniform 1e-10");
-    }
+    
+    // any other scalar field
     else if (get<0>(field.second)==scalarField)
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
+    
     else
     {
       if (!p_.meshmotion()->addIntoFieldDictionary(field.first, field.second, BC))

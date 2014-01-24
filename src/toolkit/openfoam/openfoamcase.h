@@ -111,6 +111,7 @@ extern const OFDictData::dimensionSet dimVelocity;
 extern const OFDictData::dimensionSet dimLength;
 extern const OFDictData::dimensionSet dimDensity;
 extern const OFDictData::dimensionSet dimless;
+extern const OFDictData::dimensionSet dimKinViscosity;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue> FieldInfo;

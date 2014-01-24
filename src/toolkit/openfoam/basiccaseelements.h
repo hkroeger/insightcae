@@ -401,6 +401,21 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
+class kOmegaSST2_RASModel
+: public kOmegaSST_RASModel
+{
+protected:
+  void addFields();
+
+public:
+  declareType("kOmegaSST2");
+  
+  kOmegaSST2_RASModel(OpenFOAMCase& c);
+  kOmegaSST2_RASModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
 
 
 /*

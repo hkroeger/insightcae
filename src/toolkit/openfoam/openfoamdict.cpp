@@ -83,6 +83,12 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     {
       d.erase(i);
     }
+    
+    for(OFDictData::dict::const_iterator i=d.begin();
+	i!=d.end(); i++)
+	{
+	  std::cout << i->first << std::endl;
+	}
    /* 
     OFDictData::list bl;
     for(OFDictData::dict::const_iterator i=d.begin();
@@ -177,6 +183,23 @@ list& dict::addListIfNonexistent(const std::string& key)
     (*this)[key]=list();
   } 
   return this->lookup<list>(key);
+}
+
+OFDictData::list vector3(const arma::mat& v)
+{
+  OFDictData::list l;
+  for (int i=0; i<v.n_rows; i++)
+    l.push_back(v(i));
+  return l;
+}
+
+OFDictData::list vector3(double x, double y, double z)
+{
+  OFDictData::list l;
+  l.push_back(x);
+  l.push_back(y);
+  l.push_back(z);
+  return l;
 }
 
 std::ostream& operator<<(std::ostream& os, const dimensionSet& d)

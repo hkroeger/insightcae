@@ -75,7 +75,7 @@ class InsightWorkbench (Workbench):
         import Insight
 
         # setup menus
-        self.cmdList = ["Insight_ExtractCurve"]
+        self.cmdList = ["Insight_ExtractCurve", 'Insight_ExtractedWire']
         self.appendMenu("&Insight", self.cmdList)
 
 FreeCADGui.addWorkbench(InsightWorkbench)

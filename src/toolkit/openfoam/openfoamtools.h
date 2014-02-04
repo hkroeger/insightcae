@@ -40,6 +40,18 @@ void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, co
 
 void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& location, bool noFlipMap=true);
 
+/*
+ * Copy polyMesh directory below "from" into "to"
+ * "to" is created, if nonexistent
+ * Copy only basic mesh description, if "purify" is set
+ */
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify=false);
+
+/*
+ * Copy field files below "from" into "to"
+ * "to" is created, if nonexistent
+ */
+void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to);
 
 namespace setFieldOps
 {
@@ -97,6 +109,47 @@ void setFields(const OpenFOAMCase& ofc,
 	       const boost::filesystem::path& location, 
 	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
 	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
+
+
+namespace createPatchOps
+{
+  
+
+class createPatchOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( name, std::string, std::string("newpatch") )
+      ( constructFrom, std::string, std::string("patches") )
+      ( type, std::string, std::string("patch") )
+      ( patches, std::vector<std::string>, std::vector<std::string>() )
+      ( set, std::string, std::string("set") )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  createPatchOperator(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& createPatchDict) const;
+  
+  virtual createPatchOperator* clone() const;
+};
+
+
+inline createPatchOperator* new_clone(const createPatchOperator& op)
+{
+  return op.clone();
+}
+
+}
+
+void createPatch(const OpenFOAMCase& ofc, 
+		  const boost::filesystem::path& location, 
+		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
+		  bool overwrite=true
+		);
 
 }
 

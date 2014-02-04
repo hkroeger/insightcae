@@ -172,6 +172,95 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol)
 }
 
 
+MeshingNumerics::MeshingNumerics(OpenFOAMCase& c)
+: FVNumerics(c)
+{
+}
+ 
+void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["writeFormat"]="ascii";
+  controlDict["writeCompression"]="uncompressed";
+  controlDict["application"]="none";
+  controlDict["endTime"]=1000.0;
+  controlDict["deltaT"]=1.0;
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  /*
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
+  solvers["U"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["k"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
+
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  if (OFversion()<210)
+  {
+    relax["p"]=0.3;
+    relax["U"]=0.7;
+    relax["k"]=0.7;
+    relax["omega"]=0.7;
+    relax["epsilon"]=0.7;
+  }
+  else
+  {
+    OFDictData::dict fieldRelax, eqnRelax;
+    fieldRelax["p"]=0.3;
+    eqnRelax["U"]=0.7;
+    eqnRelax["k"]=0.7;
+    eqnRelax["omega"]=0.7;
+    eqnRelax["epsilon"]=0.7;
+    relax["fields"]=fieldRelax;
+    relax["equations"]=eqnRelax;
+  }
+
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+*/  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="steadyState";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  div["default"]="Gauss upwind";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  
+  OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
+  decomposeParDict["numberOfSubdomains"]=1;
+  decomposeParDict["method"]="hierarchical";
+  OFDictData::dict coeffs;
+  coeffs["n"]=OFDictData::vector3(1,1,1);
+  coeffs["delta"]=0.001;
+  coeffs["order"]="xyz";
+  decomposeParDict["hierarchicalCoeffs"]=coeffs;
+  
+}
+
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c)
 : FVNumerics(c)
 {
@@ -1050,6 +1139,40 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+CyclicGGIBC::CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p )
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
+{
+  bndDict["type"]="cyclicGgi";
+  bndDict["nFaces"]=nFaces_;
+  bndDict["startFace"]=startFace_;
+  bndDict["shadowPatch"]= p_.shadowPatch();
+  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
+  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
+  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
+  bndDict["rotationAngle"]=p_.rotationAngle();
+  bndDict["zone"]=p_.zone();
+}
+
+void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+    else
+      BC["type"]=OFDictData::data("cyclicGgi");
+  }
+}
+
 namespace multiphaseBC
 {
 
@@ -1146,6 +1269,137 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
   }
 }
+
+VelocityInletBC::VelocityInletBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const Parameters& p
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform ( "
+	+lexical_cast<std::string>(p_.velocity()(0))+" "
+	+lexical_cast<std::string>(p_.velocity()(1))+" "
+	+lexical_cast<std::string>(p_.velocity()(2))+" )");
+    }
+    else if ( 
+      ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
+    }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1.0";
+    }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ))
+	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+    }
+  }
+}
+
+PressureOutletBC::PressureOutletBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const Parameters& p
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("inletOutlet");
+      BC["inletValue"]=OFDictData::data("uniform ( 0 0 0 )");
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( 
+      ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+    }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+/*	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
+	  ))
+	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+    }
+  }
+}
+
 
 MeshMotionBC::MeshMotionBC()
 {

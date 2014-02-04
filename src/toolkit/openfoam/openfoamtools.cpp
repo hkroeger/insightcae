@@ -22,10 +22,12 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
+#include "boost/assign.hpp"
 
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+using namespace boost::assign;
 
 namespace insight
 {
@@ -74,6 +76,50 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
   std::vector<std::string> args;
   if (noFlipMap) args.push_back("-noFlipMap");
   ofc.executeCommand(location, "setsToZones", args);
+}
+
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify)
+{
+  path source(from/"polyMesh");
+  path target(to/"polyMesh");
+  if (!exists(target))
+    create_directories(target);
+  
+  std::string cmd("ls "); cmd+=source.c_str();
+  ::system(cmd.c_str());
+  
+  if (purify)
+  {
+    BOOST_FOREACH(const std::string& fname, 
+		  list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
+		  .convert_to_container<std::vector<std::string> >())
+    {
+      path gzname(fname.c_str()); gzname+=".gz";
+      if (exists(source/gzname)) copy_file(source/gzname, target/gzname);
+      else if (exists(source/fname)) copy_file(source/fname, target/fname);
+      else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+    }
+  }
+  else
+    throw insight::Exception("Not implemented!");
+}
+
+
+void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to)
+{
+  if (!exists(to))
+    create_directories(to);
+
+  directory_iterator end_itr; // default construction yields past-the-end
+  for ( directory_iterator itr( from );
+	itr != end_itr;
+	++itr )
+  {
+    if ( is_regular_file(itr->status()) )
+    {
+      copy_file(itr->path(), to/itr->path().filename());
+    }
+  }
 }
 
 namespace setFieldOps
@@ -150,5 +196,75 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
 
   ofc.executeCommand(location, "setField");
 }
+
+namespace createPatchOps
+{
+
+createPatchOperator::createPatchOperator(Parameters const& p )
+: p_(p)
+{
+}
+  
+void createPatchOperator::addIntoDictionary(OFDictData::dict& createPatchDict) const
+{
+  OFDictData::dict opdict;
+  opdict["name"]=p_.name();
+  opdict["constructFrom"]=p_.constructFrom();
+  OFDictData::list pl;
+  std::copy(p_.patches().begin(), p_.patches().end(), pl.begin());
+  opdict["patches"]=pl;
+  opdict["set"]=p_.set();
+
+  OFDictData::dict opsubdict;
+  opsubdict["type"]=p_.type();
+  opdict["dictionary"]=opsubdict;
+
+  createPatchDict.getList("patchInfo").push_back( opdict );
+}
+  
+createPatchOperator* createPatchOperator::clone() const
+{
+  return new createPatchOperator(p_);
+}
+
+}
+
+void createPatch(const OpenFOAMCase& ofc, 
+		  const boost::filesystem::path& location, 
+		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
+		  bool overwrite
+		)
+{
+  using namespace createPatchOps;
+  
+  OFDictData::dict createPatchDict;
+  
+  createPatchDict["matchTolerance"] = 1e-3;
+  createPatchDict["pointSync"] = false;
+  
+  createPatchDict.addListIfNonexistent("patchInfo");  
+  BOOST_FOREACH( const createPatchOperator& op, ops)
+  {
+    op.addIntoDictionary(createPatchDict);
+  }
+  
+  // then write to file
+  boost::filesystem::path dictpath = location / "system" / "createPatchDict";
+  if (!exists(dictpath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictpath.parent_path());
+  }
+  
+  {
+    std::ofstream f(dictpath.c_str());
+    writeOpenFOAMDict(f, createPatchDict, boost::filesystem::basename(dictpath));
+  }
+
+  std::vector<std::string> opts;
+  if (overwrite) opts.push_back("-overwrite");
+    
+  ofc.executeCommand(location, "createPatch", opts);
+}
+
 
 }

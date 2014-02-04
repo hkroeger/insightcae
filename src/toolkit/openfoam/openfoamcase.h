@@ -134,6 +134,7 @@ public:
 
     void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict);
     void addRemainingBCs(OFDictData::dict& boundaryDict);
+    inline const OFEnvironment& ofe() const { return env_; }
     inline int OFversion() const { return env_.version(); }
     
     boost::shared_ptr<OFdicts> createDictionaries() const;

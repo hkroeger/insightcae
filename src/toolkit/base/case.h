@@ -29,6 +29,14 @@
 namespace insight
 {
 
+struct TemporaryCaseDir
+{
+  boost::filesystem::path dir;
+  
+  TemporaryCaseDir();
+  ~TemporaryCaseDir();
+};
+  
 class Case
 {
   

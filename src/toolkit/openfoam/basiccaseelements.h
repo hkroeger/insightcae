@@ -83,6 +83,14 @@ OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
 
 
+class MeshingNumerics
+: public FVNumerics
+{
+public:
+  MeshingNumerics(OpenFOAMCase& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class simpleFoamNumerics
 : public FVNumerics
@@ -451,6 +459,29 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class CyclicGGIBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (shadowPatch, std::string, "")
+    (separationOffset, arma::mat, vec3(0,0,0))
+    (bridgeOverlap, bool, true)
+    (rotationAxis, arma::mat, vec3(0,0,1))
+    (rotationAngle, double, 0.0)
+    (zone, std::string, "")
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p = Parameters() );
+  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
 
 namespace multiphaseBC
 {
@@ -504,6 +535,57 @@ protected:
   
 public:
   SuctionInletBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+class VelocityInletBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (velocity, arma::mat, vec3(0,0,0))
+    (rho, double, 1025.0)
+    (turbulenceIntensity, double, 0.05)
+    (mixingLength, double, 1.0)
+    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  VelocityInletBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+class PressureOutletBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (pressure, double, 0.0)
+    (rho, double, 1025.0)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  PressureOutletBC
   (
     OpenFOAMCase& c, 
     const std::string& patchName, 

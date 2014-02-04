@@ -40,7 +40,8 @@ def readMeshes(nMeshes):
 
 
 def area(mesh, group_ma_name):
-  from Cata.cata import *
+  from Cata.cata import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
+      AFFE_MATERIAU, AFFE_CARA_ELEM, POST_ELEM, DETRUIRE
   from Accas import _F
   
   tmpmesh=CREA_MAILLAGE(MAILLAGE=mesh,
@@ -100,13 +101,12 @@ class PressureField(object):
 
 class BoltedJoint(object):
   
-  steps=5
   allTempRamps={}
   
   """
   some implicit conventions on group naming:
   """
-  def __init__(self, label, Ds, Fv, headface, beamhead, nutface, beamnut, E=210000.0, alpha=11e-6):
+  def __init__(self, label, Ds, Fv, headface, beamhead, nutface, beamnut, steps, E=210000.0, alpha=11e-6):
     from Cata.cata import DEFI_FONCTION
     from Accas import _F
     
@@ -115,6 +115,7 @@ class BoltedJoint(object):
     self.nutface=nutface
     self.beamhead=beamhead
     self.beamnut=beamnut
+    self.steps=steps
     self.Ds=Ds
     self.E=E
     self.alpha=alpha
@@ -126,8 +127,8 @@ class BoltedJoint(object):
     blT[self.label]=DEFI_FONCTION(
 		    NOM_PARA='INST',
 		    VALE=(
-			    0,          		0,
-			    BoltedJoint.steps,      	-self.dt
+			    0,          	0,
+			    self.steps,      	-self.dt
 			),
 		    INTERPOL='LIN',
 		    PROL_DROITE='CONSTANT',
@@ -158,15 +159,36 @@ class BoltedJoint(object):
 	      COEF_ESCL=1,
              )
              
-  def LIAISON_RBE3_NUT(self):
+  def LIAISON_SOLIDE_HEAD(self):
     from Accas import _F
     return _F(
-	      GROUP_NO_MAIT=self.beamnut,
-	      DDL_MAIT=('DX', 'DY', 'DZ', 'DRX', 'DRY', 'DRZ',),
-	      GROUP_NO_ESCL=self.nutface,
-	      DDL_ESCL='DX-DY-DZ',
-	      COEF_ESCL=1,
+	      GROUP_NO=(self.beamhead, self.headface),
              )
+             
+  def LIAISON_RBE3_NUT(self):
+    from Accas import _F
+    if not self.nutface is None:
+      return _F(
+		GROUP_NO_MAIT=self.beamnut,
+		DDL_MAIT=('DX', 'DY', 'DZ', 'DRX', 'DRY', 'DRZ',),
+		GROUP_NO_ESCL=self.nutface,
+		DDL_ESCL='DX-DY-DZ',
+		COEF_ESCL=1,
+	      )
+    else: 
+      return None
+
+  def DDL_IMPO_NUT(self):
+    from Accas import _F
+    if self.nutface is None:
+      return  _F(GROUP_NO=self.beamnut,
+		  DX=0.0,
+		  DY=0.0,
+		  DZ=0.0,
+		  DRX=0.0, DRY=0.0, DRZ=0.0
+		  )
+    else: 
+      return None
 
   def CREA_CHAMP_Temp(self):
     from Accas import _F
@@ -206,7 +228,7 @@ class BoltedJoint(object):
              
     blT[self.label]=DEFI_FONCTION(NOM_PARA='INST',VALE=(
                         0,       		0,
-                        BoltedJoint.steps,   	-self.dt
+                        self.steps,   	-self.dt
                        ),
                     INTERPOL='LIN',
                     PROL_DROITE='CONSTANT',

@@ -41,6 +41,7 @@
 #include <boost/spirit/include/qi_eol.hpp>
 
 #include "base/exception.h"
+#include "base/linearalgebra.h"
 
 namespace insight
 {
@@ -200,6 +201,9 @@ struct dict
 
 };
 
+OFDictData::list vector3(const arma::mat& v);
+OFDictData::list vector3(double x, double y, double z);
+
 std::ostream& operator<<(std::ostream& os, const dimensionSet& d);
 std::ostream& operator<<(std::ostream& os, const dimensionedData& d);
 std::ostream& operator<<(std::ostream& os, const dict& d);
@@ -246,7 +250,7 @@ struct OpenFOAMDictParser
     {
         rquery =  *( rpair );
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  +(~qi::char_(" \"\\/;{}\n"));
+        ridentifier  =  +(~qi::char_(" \"\\/;{}()\n"));
 	rstring = '"' >> *(~qi::char_('"')) >> '"';
 	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
 	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
@@ -295,7 +299,7 @@ struct OpenFOAMBoundaryDictParser
         *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9')) 
 	>> qi::lit('(') >> *(rpair) >> qi::lit(')');
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  +(~qi::char_(" \"\\/;{}\n"));
+        ridentifier  =  +(~qi::char_(" \"\\/;{}()\n"));
 	rstring = '"' >> *(~qi::char_('"')) >> '"';
 	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
 	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
@@ -305,16 +309,14 @@ struct OpenFOAMBoundaryDictParser
         rlist = /*qi::char_("0-9") >>*/ qi::lit('(')
 	      >> *(rentry) >> qi::lit(')');
 
-	//BOOST_SPIRIT_DEBUG_NODE(rquery);
-	//BOOST_SPIRIT_DEBUG_NODE(rpair);
-	/*      
+	BOOST_SPIRIT_DEBUG_NODE(rquery);
+	BOOST_SPIRIT_DEBUG_NODE(rpair);   
 	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
 	BOOST_SPIRIT_DEBUG_NODE(rstring);
 	BOOST_SPIRIT_DEBUG_NODE(rraw);
-	*/
-	//BOOST_SPIRIT_DEBUG_NODE(rentry);
-	//BOOST_SPIRIT_DEBUG_NODE(rsubdict);
-	//BOOST_SPIRIT_DEBUG_NODE(rlist);
+	BOOST_SPIRIT_DEBUG_NODE(rentry);
+	BOOST_SPIRIT_DEBUG_NODE(rsubdict);
+	BOOST_SPIRIT_DEBUG_NODE(rlist);
 
     }
     

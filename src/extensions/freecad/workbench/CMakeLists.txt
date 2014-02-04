@@ -6,6 +6,7 @@ SET(InsightWorkbench_SOURCES
     Init.py
     InitGui.py
     Insight.py
+    InsightFeatures.py
     Insight_rc.py
 )
 

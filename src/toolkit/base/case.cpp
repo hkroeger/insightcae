@@ -20,8 +20,23 @@
 
 #include "base/case.h"
 
+using namespace boost::filesystem;
+
 namespace insight
 {
+  
+TemporaryCaseDir::TemporaryCaseDir()
+{
+  dir = unique_path();
+  create_directories(dir);
+}
+
+TemporaryCaseDir::~TemporaryCaseDir()
+{
+  remove_all(dir);
+}
+
+
 
 Case::Case()
 : elements_()

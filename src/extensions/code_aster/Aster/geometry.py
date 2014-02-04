@@ -1,4 +1,4 @@
- #!/usr/bin/python
+#!/usr/bin/python
 
 import math, os, sys, subprocess
 import numpy as np
@@ -602,7 +602,11 @@ class GmshBoltMesh(object):
   
   def __init__(self):
     self.bolts=[]
+    self.nodes=[]
   
+  def addSingleNode(self, p, name):
+    self.nodes.append((p, name))
+    
   def addBolt(self, p0, p1, name):
     self.bolts.append((p0, p1, name))
     
@@ -637,6 +641,17 @@ Physical Line("%s")={%d};
   ))
       vi+=2
       li+=1
+      
+    vi+=1
+    for p,name in self.nodes:
+      f.write("""\
+Point(%d) = {%g, %g, %g, 999};
+Physical Point("%s")={%d};
+"""%(
+  vi, p[0], p[1], p[2],
+  name, vi
+  ))
+      vi+=1
       
     f.write("""\
 Mesh.Format=33; /* 1=msh, 2=unv, 10=automatic, 19=vrml, 27=stl, 30=mesh, 31=bdf, 32=cgns, 33=med, 40=ply2 */

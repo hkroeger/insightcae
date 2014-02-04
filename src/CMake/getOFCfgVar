@@ -1,0 +1,15 @@
+#!/bin/bash
+ARG_BRC=$1
+shift 1
+ARGS=$*
+source $ARG_BRC
+make $ARGS -s -f - << --ende--
+GENERAL_RULES = \$(WM_DIR)/rules/General
+RULES         = \$(WM_DIR)/rules/\$(WM_ARCH)\$(WM_COMPILER)
+BIN           = \$(WM_DIR)/bin/\$(WM_ARCH)\$(WM_COMPILER)
+include \$(GENERAL_RULES)/general
+include \$(RULES)/general
+include \$(RULES)/\$(WM_LINK_LANGUAGE)
+print-%:
+	@echo -n '\$(\$*)'
+--ende--

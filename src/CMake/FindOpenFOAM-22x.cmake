@@ -7,34 +7,47 @@
 # OF22x_LIBRARIES      - Link this to use OCC
 
 
-
-FIND_PATH(OF22x_LIBSRC_DIR NAMES OpenFOAM/lnInclude/polyMesh.H
+FIND_PATH(OF22x_DIR NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2.x/src
-  /opt/OpenFOAM/OpenFOAM-2.2.x/src
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2.x
+  /opt/OpenFOAM/OpenFOAM-2.2.x
 )
 
-message(STATUS ${OF22x_LIBSRC_DIR})
-
-FIND_LIBRARY(OF22x_LIBRARY NAMES OpenFOAM
-  HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2.x/platforms/*/lib
-  /opt/OpenFOAM/OpenFOAM-2.2.x/platforms/*/lib
-)
-
-message(STATUS ${OF22x_LIBRARY})
 
 SET(OF22x_FOUND FALSE)
 
-IF(OF22x_LIBRARY)
-  GET_FILENAME_COMPONENT(OF22x_LIB_DIR ${OF22x_LIBRARY} PATH)
-  message(STATUS ${OF22x_LIB_DIR})
+IF(OF22x_BASHRC)
+  set(OF22x_BASHRC "${OF22x_DIR}/etc/bashrc")
+
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF22x_CXX_FLAGS)
+  set(OF22x_CXX_FLAGS "${OF22x_CXX_FLAGS} -DOF22x")
+  message(STATUS "OF22x-CXXFLAGS=" ${OF22x_CXX_FLAGS})
+
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE OF22x_WM_OPTIONS)
+
+  set(OF22x_LIBSRC_DIR "${OF22x_DIR}/src")
+  message(STATUS "LIBSRC_DIR(OF22x)=" ${OF22x_LIBSRC_DIR})
+  set(OF22x_LIB_DIR "${OF22x_DIR}/platforms/${OF22x_WM_OPTIONS}/lib")
+  message(STATUS "LIB_DIR(OF22x)=" ${OF22x_LIB_DIR})
+  
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF22x_LINKLIBSO)
+  message(STATUS "LINKLIBSO(OF22x)=" ${OF22x_LINKLIBSO})
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF22x_LINKEXE)
+  message(STATUS "LINKEXE(OF22x)=" ${OF22x_LINKEXE})
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF22x_MPI)
+  message(STATUS "MPI(OF22x)=" ${OF22x_MPI})
+  
+  macro (setup_target_OF22x targetname exename)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OF22x_CXX_FLAGS}")
+    set(LINK_FLAGS "${LINK_FLAGS} ${OF22x_LINKEXE}")
+    link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI})
+    add_executable(${targetname} ${${targetname}_SOURCES})
+    set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.2.x)
+    message(STATUS ${ARGN})
+    target_link_libraries(${targetname} ${ARGN}) 
+  endmacro()
+  
   SET(OF22x_FOUND TRUE)
-  SET(OF22x_CXX_FLAGS "-Dlinux64 -DWM_DP -O3 -DNoRepository -ftemplate-depth-100 -fPIC -fpermissive -DOF22x")
-  message(STATUS ${OF22x_CXX_FLAGS})
-  SET(OF22x_SHARED_LINKER_FLAGS "-shared -Xlinker --add-needed -Wl,--no-as-needed")
-  SET(OF22x_LINK_FLAGS "-Xlinker --add-needed -Wl,--no-as-needed")
-  #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.2.x)
-  #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.2.x)
-ENDIF(OF22x_LIBRARY)
+ENDIF(OF22x_BASHRC)
 

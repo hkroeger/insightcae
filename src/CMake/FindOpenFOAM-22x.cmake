@@ -30,7 +30,7 @@ IF(OF22x_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF22x_LINKLIBSO)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF22x_LINKEXE)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF22x_MPI)
-´  
+
   macro (setup_target_OF22x targetname exename)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OF22x_CXX_FLAGS}")
     set(LINK_FLAGS "${LINK_FLAGS} ${OF22x_LINKEXE}")

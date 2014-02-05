@@ -205,7 +205,7 @@ createPatchOperator::createPatchOperator(Parameters const& p )
 {
 }
   
-void createPatchOperator::addIntoDictionary(OFDictData::dict& createPatchDict) const
+void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
 {
   OFDictData::dict opdict;
   opdict["name"]=p_.name();
@@ -217,9 +217,18 @@ void createPatchOperator::addIntoDictionary(OFDictData::dict& createPatchDict) c
 
   OFDictData::dict opsubdict;
   opsubdict["type"]=p_.type();
-  opdict["dictionary"]=opsubdict;
+  
+  if (ofc.OFversion()<=160)
+  {
+    opdict["dictionary"]=opsubdict;
+    createPatchDict.getList("patchInfo").push_back( opdict );
+  }
+  else
+  {
+    opdict["patchInfo"]=opsubdict;
+    createPatchDict.getList("patches").push_back( opdict );
+  }
 
-  createPatchDict.getList("patchInfo").push_back( opdict );
 }
   
 createPatchOperator* createPatchOperator::clone() const
@@ -242,10 +251,14 @@ void createPatch(const OpenFOAMCase& ofc,
   createPatchDict["matchTolerance"] = 1e-3;
   createPatchDict["pointSync"] = false;
   
-  createPatchDict.addListIfNonexistent("patchInfo");  
+  if (ofc.OFversion()<=160)
+    createPatchDict.addListIfNonexistent("patchInfo");  
+  else
+    createPatchDict.addListIfNonexistent("patches");  
+  
   BOOST_FOREACH( const createPatchOperator& op, ops)
   {
-    op.addIntoDictionary(createPatchDict);
+    op.addIntoDictionary(ofc, createPatchDict);
   }
   
   // then write to file

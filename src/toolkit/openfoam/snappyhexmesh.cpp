@@ -81,6 +81,7 @@ void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
   castellatedCtrls["maxLoadUnbalance"]=0.1;
   castellatedCtrls["nCellsBetweenLevels"]=1;
   castellatedCtrls["resolveFeatureAngle"]=30.0;
+  castellatedCtrls["allowFreeStandingZoneFaces"]=true;
 }
 
 void setStdSnapCtrls(OFDictData::dict& snapCtrls)
@@ -89,6 +90,12 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
   snapCtrls["tolerance"]=4.0;
   snapCtrls["nSolveIter"]=30;
   snapCtrls["nRelaxIter"]=5;  
+
+  snapCtrls["nFeatureSnapIter"]=10;  
+  snapCtrls["implicitFeatureSnap"]=false;  
+  snapCtrls["explicitFeatureSnap"]=true;  
+  snapCtrls["multiRegionFeatureSnap"]=false;  
+
 }
 
 void setStdLayerCtrls(OFDictData::dict& layerCtrls)
@@ -99,6 +106,9 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["minThickness"]=0.1;  
   layerCtrls["nGrow"]=1;  
   layerCtrls["featureAngle"]=30.0;  
+
+  layerCtrls["slipFeatureAngle"]=30.0;  
+
   layerCtrls["nRelaxIter"]=3;  
   layerCtrls["nSmoothSurfaceNormals"]=1;  
   layerCtrls["nSmoothNormals"]=3;  
@@ -126,6 +136,8 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["minTriangleTwist"]=-1.0;  
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
+
+  qualityCtrls["minTetQuality"]=1e-30;  
 }
 
 

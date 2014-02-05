@@ -132,7 +132,7 @@ protected:
 public:
   createPatchOperator(Parameters const& p = Parameters() );
   
-  virtual void addIntoDictionary(OFDictData::dict& createPatchDict) const;
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
   
   virtual createPatchOperator* clone() const;
 };

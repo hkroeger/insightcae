@@ -1,7 +1,5 @@
 project(kOmegaSST216ext)
 
-find_package(OpenFOAM-16ext REQUIRED)
-
 set(kOmegaSST2_SOURCES 
  kOmegaSST2.C
 )

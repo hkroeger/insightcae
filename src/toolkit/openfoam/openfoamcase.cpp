@@ -269,11 +269,17 @@ std::string OpenFOAMCase::cmdString
 const
 {
   std::string shellcmd;
-  shellcmd = "source "+env_.bashrc().string()+";cd \""+boost::filesystem::absolute(location).string()+"\";"+cmd;
+  shellcmd = 
+    "source "+env_.bashrc().string()+";"
+    "export PATH=$PATH:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
+    "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
+    "cd \""+boost::filesystem::absolute(location).string()+"\";"
+    + cmd;
   BOOST_FOREACH(std::string& arg, argv)
   {
     shellcmd+=" \""+arg+"\"";
   }
+  cout<<shellcmd<<endl;
   return shellcmd;
 }
 

@@ -1,8 +1,6 @@
  
 project(convertPressure22x)
 
-find_package(OpenFOAM-22x REQUIRED)
-
 set(convertPressure22x_SOURCES ../convertPressure.C)
 
 include_directories(

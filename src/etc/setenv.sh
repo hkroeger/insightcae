@@ -1,8 +1,17 @@
+#this file shall be source'd in ~/.bashrc
+SCRPATH=${BASH_SOURCE[0]}
 
-USERSHAREDDIR=$HOME/.insight/share
-GLOBALSHAREDDIR=/usr/share/insight
+export INSIGHT_BINDIR=$(cd `dirname $SCRPATH`; pwd)
+export INSIGHT_INSTDIR=$(cd $BINDIR; cd ..; pwd)
+export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib
 
-for cfgd in $USERSHAREDDIR $GLOBALSHAREDDIR; do # in that order!
+export INSIGHT_USERSHAREDDIR=$HOME/.insight/share
+export INSIGHT_GLOBALSHAREDDIRS="$INSIGHT_INSTDIR/share/insight /usr/share/insight"
+
+export PATH=$PATH:$INSIGHT_BINDIR
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR
+
+for cfgd in $INSIGHT_USERSHAREDDIR $INSIGHT_GLOBALSHAREDDIRS; do # in that order!
  if [ -d $cfgd/python ]; then
   export PYTHONPATH=$cfgd/python:$PYTHONPATH
  fi

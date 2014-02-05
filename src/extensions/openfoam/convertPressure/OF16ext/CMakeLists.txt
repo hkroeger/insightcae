@@ -1,8 +1,6 @@
  
 project(convertPressure16ext)
 
-find_package(OpenFOAM-16ext REQUIRED)
-
 set(convertPressure16ext_SOURCES ../convertPressure.C)
 
 include_directories(

@@ -1,7 +1,5 @@
 project(simpleDyMFoam16ext)
 
-find_package(OpenFOAM-16ext REQUIRED)
-
 set(simpleDyMFoam16ext_SOURCES ../simpleDyMFoam.C)
 
 include_directories(

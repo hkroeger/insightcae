@@ -1,6 +1,5 @@
 project(FEMDisplacementBC16ext)
 
-find_package(OpenFOAM-16ext REQUIRED)
 
 set(FEMDisplacementBC16ext_SOURCES 
  fsitransform.cpp 

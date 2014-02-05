@@ -79,8 +79,11 @@ GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
   insertLegend( new QwtLegend() );
   setCanvasBackground( Qt::white );
   
-  //setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
+#if (QWT_VERSION < 0x060100)
+  setAxisScaleEngine(QwtPlot::yLeft, new QwtLog10ScaleEngine() );
+#else
   setAxisScaleEngine(QwtPlot::yLeft, new QwtLogScaleEngine() );
+#endif
   
   QwtPlotGrid *grid = new QwtPlotGrid();
   grid->attach(this);

@@ -5,7 +5,7 @@ set(kOmegaSST2_SOURCES
 )
 
 include_directories(
-  ${kOmegaSST2_SOURCE_DIR}
+  ${kOmegaSST216ext_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
   ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
@@ -27,8 +27,6 @@ include_directories(
 
 add_subdirectory(wallFunctions/hybridOmegaWallFunction2)
 add_subdirectory(wallFunctions/nutHybridWallFunction2)
-
-message(${kOmegaSST2_SOURCE_DIR})
 
 set(kOmegaSST216ext_SOURCES ${kOmegaSST2_SOURCES})
 setup_lib_target_OF16ext(kOmegaSST216ext "kOmegaSST2"

@@ -20,7 +20,7 @@
 #ifndef INSIGHT_EXPLICITVORTEX_H
 #define INSIGHT_EXPLICITVORTEX_H
 
-#include <../../mnt/home/hk354/Projekte/insight/src/toolkit/openfoam/openfoamanalysis.h>
+#include "openfoam/openfoamanalysis.h"
 
 namespace insight {
 

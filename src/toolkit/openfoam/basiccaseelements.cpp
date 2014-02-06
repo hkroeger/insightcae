@@ -313,6 +313,8 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
   SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+  SIMPLE["pRefCell"]=0;
+  SIMPLE["pRefValue"]=0.0;
   
   // ============ setup fvSchemes ================================
   
@@ -333,7 +335,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,U)"]=pref+"Gauss linearUpwindV"+suf;
   if (OFversion()>=210)
   {
-    div["div((nuEff*dev(T(grad(U)))))"]=pref+"Gauss linear";
+    div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
   }
   else 
   {

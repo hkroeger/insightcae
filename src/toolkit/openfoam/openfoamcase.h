@@ -24,7 +24,7 @@
 #include "base/case.h"
 #include "openfoam/openfoamdict.h"
 #include "base/softwareenvironment.h"
-
+//#include "openfoam/basiccaseelements.h"
 #include "boost/ptr_container/ptr_map.hpp"
 
 
@@ -133,7 +133,21 @@ public:
     void addField(const std::string& name, const FieldInfo& field);
 
     void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict);
-    void addRemainingBCs(OFDictData::dict& boundaryDict);
+    
+    std::set<std::string> getUnhandledPatches(OFDictData::dict& boundaryDict) const;
+    
+    template<class BC>
+    void addRemainingBCs(OFDictData::dict& boundaryDict, const typename BC::Parameters& params)
+    {
+      typedef std::set<std::string> StringSet;
+      StringSet unhandledPatches = getUnhandledPatches(boundaryDict);
+	  
+      for (StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++)
+      {
+	insert(new BC(*this, *i, boundaryDict, params));  
+      }
+    }  
+    
     inline const OFEnvironment& ofe() const { return env_; }
     inline int OFversion() const { return env_.version(); }
     

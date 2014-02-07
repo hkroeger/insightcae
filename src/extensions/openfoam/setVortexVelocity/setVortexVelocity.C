@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	Up == etan * Gamma / (2.0*M_PI*mag(r));
       
 	fixedGradientFvPatchScalarField& ppfg = static_cast<fixedGradientFvPatchScalarField&>(pp);
-	ppfg.gradient() = -patch.nf() & (er*( sqr(Gamma / 2. / M_PI) / pow(mag(r),3)));
+	ppfg.gradient() = -patch.nf() & (er*( sqr(Gamma / 2. / M_PI) / pow(mag(r),3)) );
       }
     }
     

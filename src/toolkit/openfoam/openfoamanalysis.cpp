@@ -42,7 +42,7 @@ void insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name)
   cm.insert(model);
 }
 
-  
+
 OpenFOAMAnalysis::OpenFOAMAnalysis(const std::string& name, const std::string& description)
 : Analysis(name, description)
 {

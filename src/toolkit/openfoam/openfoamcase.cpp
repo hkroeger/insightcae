@@ -23,6 +23,7 @@
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 #include <base/analysis.h>
+#include "openfoam/basiccaseelements.h"
 
 
 #include "boost/lexical_cast.hpp"
@@ -256,9 +257,33 @@ void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OF
   readOpenFOAMBoundaryDict(f, boundaryDict);
 }
 
-void OpenFOAMCase::addRemainingBCs(OFDictData::dict& boundaryDict)
+/*
+void OpenFOAMCase::addRemainingBCs(OFDictData::dict& boundaryDict, const std::string& className)
 {
+  typedef std::set<std::string> StringSet;
+  StringSet unhandledPatches;
+  BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+  {
+    unhandledPatches.insert(bde.first);
+  }
+  
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+       i!=elements_.end(); i++)
+       {
+	 const BoundaryCondition *e= dynamic_cast<const BoundaryCondition*>(&(*i));
+	 if (e)
+	 {
+	   StringSet::iterator i=unhandledPatches.find(e->patchName());
+	   if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
+	 }
+       }
+       
+  for (StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++)
+  {
+    insert(new SimpleBC(*this, *i, boundaryDict, className));  
+  }
 }
+*/
 
 std::string OpenFOAMCase::cmdString
 (
@@ -322,5 +347,26 @@ int OpenFOAMCase::runSolver
   return p_in.rdbuf()->status();
 }
 
-
+std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const
+{
+  typedef std::set<std::string> StringSet;
+  StringSet unhandledPatches;
+  BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+  {
+    unhandledPatches.insert(bde.first);
+  }
+  
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+      i!=elements_.end(); i++)
+      {
+	const BoundaryCondition *e= dynamic_cast<const BoundaryCondition*>(&(*i));
+	if (e)
+	{
+	  StringSet::iterator i=unhandledPatches.find(e->patchName());
+	  if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
+	}
+      }
+      
+   return unhandledPatches;
+}
 }

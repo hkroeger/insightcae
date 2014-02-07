@@ -34,6 +34,9 @@ namespace insight
 {
 
 
+class OpenFOAMCase;
+class OFdicts;
+  
 /**
  Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
  */
@@ -221,6 +224,25 @@ public:
 };
 
 
+class MRFZone
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "rotor")
+    (rpm, double, 1000.0)
+    (nonRotatingPatches, std::vector<std::string>, std::vector<std::string>())
+    (rotationCentre, arma::mat, vec3(0,0,0))
+    (rotationAxis, arma::mat, vec3(0,0,1))
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  MRFZone(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class singlePhaseTransportProperties
 : public transportModel
@@ -444,6 +466,9 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const =0;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  inline const std::string patchName() const { return patchName_; }
+  inline const std::string type() const { return type_; }
 };
 
 
@@ -467,6 +492,7 @@ public:
     (shadowPatch, std::string, "")
     (separationOffset, arma::mat, vec3(0,0,0))
     (bridgeOverlap, bool, true)
+    (rotationCentre, arma::mat, vec3(0,0,0))
     (rotationAxis, arma::mat, vec3(0,0,1))
     (rotationAngle, double, 0.0)
     (zone, std::string, "")
@@ -563,7 +589,7 @@ protected:
 public:
   VelocityInletBC
   (
-    OpenFOAMCase& c, 
+    OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()

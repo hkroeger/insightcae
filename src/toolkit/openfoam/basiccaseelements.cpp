@@ -19,6 +19,7 @@
 
 
 #include "basiccaseelements.h"
+#include "openfoam/openfoamcase.h"
 
 #include <utility>
 #include "boost/assign.hpp"
@@ -697,6 +698,40 @@ transportModel::transportModel(OpenFOAMCase& c)
 {
 }
 
+MRFZone::MRFZone(OpenFOAMCase& c, Parameters const& p )
+: OpenFOAMCaseElement(c, "MRFZone"+p.name()),
+  p_(p)
+{
+}
+
+void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  if (OFversion()<220)
+  {
+    throw insight::Exception("Not yet supported!");
+  }
+  else
+  {
+    OFDictData::dict coeffs;
+    OFDictData::list nrp;
+    copy(p_.nonRotatingPatches().begin(), p_.nonRotatingPatches().end(), nrp.begin());
+    coeffs["nonRotatingPatches"]=nrp;
+    coeffs["origin"]=OFDictData::vector3(p_.rotationCentre());
+    coeffs["axis"]=OFDictData::vector3(p_.rotationAxis());
+    coeffs["omega"]=2.*M_PI*p_.rpm()/60.;
+
+    OFDictData::dict fod;
+    fod["type"]="MRFSource";
+    fod["active"]=true;
+    fod["selectionMode"]="cellZone";
+    fod["cellZone"]=p_.name();
+    fod["MRFSourceCoeffs"]=coeffs;
+    
+    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    fvOptions[p_.name()]=fod;     
+  }
+}
+  
 singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
 : transportModel(c),
   p_(p)
@@ -1125,6 +1160,7 @@ SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictDa
 : BoundaryCondition(c, patchName, boundaryDict),
   className_(className)
 {
+  type_=className;
 }
 
 void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1150,15 +1186,28 @@ CyclicGGIBC::CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OF
 
 void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 {
-  bndDict["type"]="cyclicGgi";
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
-  bndDict["shadowPatch"]= p_.shadowPatch();
-  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
-  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
-  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
-  bndDict["rotationAngle"]=p_.rotationAngle();
-  bndDict["zone"]=p_.zone();
+  if (OFversion()>=210)
+  {
+    bndDict["type"]="cyclicAMI";
+    bndDict["neighbourPatch"]= p_.shadowPatch();
+    bndDict["matchTolerance"]= 0.001;
+    bndDict["transform"]= "rotational";    
+    bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre());
+    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
+    bndDict["rotationAngle"]=p_.rotationAngle();
+  }
+  else
+  {
+    bndDict["type"]="cyclicGgi";
+    bndDict["shadowPatch"]= p_.shadowPatch();
+    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
+    bndDict["bridgeOverlap"]=p_.bridgeOverlap();
+    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
+    bndDict["rotationAngle"]=p_.rotationAngle();
+    bndDict["zone"]=p_.zone();
+  }
 }
 
 void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1168,10 +1217,16 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    
     if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
-      BC["type"]=OFDictData::data("cyclicGgi");
+    {
+      if (OFversion()>=220)
+	BC["type"]=OFDictData::data("cyclicAMI");
+      else
+	BC["type"]=OFDictData::data("cyclicGgi");
+    }
   }
 }
 

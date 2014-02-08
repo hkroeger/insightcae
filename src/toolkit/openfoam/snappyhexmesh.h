@@ -57,6 +57,9 @@ public:
       ( fileName, boost::filesystem::path, "" )
       ( minLevel, int, 0 )
       ( maxLevel, int, 4 )
+      ( nLayers, int, 2 )
+      ( scale, arma::mat, vec3(1,1,1) )
+      ( rollPitchYaw, arma::mat, vec3(0,0,0) )
   )
 
 protected:
@@ -74,10 +77,18 @@ public:
 
 }
 
+namespace snappyHexMeshOpts
+{
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (tlayer, double, 0.5)
+  )
+};
+
 void snappyHexMesh(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location, 
 		  const OFDictData::list& PiM,
 		  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+		  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
 		  bool overwrite=true
 		  );
 

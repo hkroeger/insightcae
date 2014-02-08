@@ -713,8 +713,9 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
   else
   {
     OFDictData::dict coeffs;
-    OFDictData::list nrp;
+    OFDictData::list nrp; nrp.resize(p_.nonRotatingPatches().size());
     copy(p_.nonRotatingPatches().begin(), p_.nonRotatingPatches().end(), nrp.begin());
+    
     coeffs["nonRotatingPatches"]=nrp;
     coeffs["origin"]=OFDictData::vector3(p_.rotationCentre());
     coeffs["axis"]=OFDictData::vector3(p_.rotationAxis());
@@ -925,6 +926,7 @@ void kOmegaSST_RASModel::addFields()
 {
   OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
   OFcase().addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0) ) );
+  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
@@ -968,6 +970,13 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     BC["value"]="uniform 1";
     return true;
   }
+  else if (fieldname == "nut")
+  {
+    BC["type"]=OFDictData::data("nutkWallFunction");
+    BC["value"]=OFDictData::data("uniform 1e-10");
+    return true;
+  }
+  
   return false;
 }
 

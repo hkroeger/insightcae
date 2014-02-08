@@ -140,7 +140,7 @@ const OFDictData::dimensionSet dimKinViscosity = OFDictData::dimension(0, 2, -1,
 boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
   boost::shared_ptr<OFdicts> dictionaries(new OFdicts);
-  
+
   // create field dictionaries first
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
@@ -165,12 +165,14 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
        i!=elements_.end(); i++)
        {
 	 const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
+	 cout<<e<<endl;
 	 if (e)
 	 {
+	   cout<<e->name()<<endl;
 	   e->addIntoDictionaries(*dictionaries);
 	 }
        }  
-       
+
   return dictionaries;
 }
 

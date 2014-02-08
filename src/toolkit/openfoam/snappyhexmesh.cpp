@@ -20,9 +20,11 @@
 #include "snappyhexmesh.h"
 
 #include "boost/filesystem.hpp"
+#include "boost/assign.hpp"
 
 using namespace boost;
 using namespace boost::filesystem;
+using namespace boost::assign;
 
 namespace insight
 {
@@ -54,6 +56,11 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   levels.push_back(p_.maxLevel());
   castdict["level"]=levels;
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name()]=castdict;
+
+  OFDictData::dict layerdict;
+  layerdict["nSurfaceLayers"]=p_.nLayers();
+  sHMDict.subDict("addLayersControls").subDict("layers")["\""+p_.name()+".*\""]=layerdict;
+
 }
 
 void Geometry::modifyFiles(const OpenFOAMCase& ofc, 
@@ -63,7 +70,16 @@ void Geometry::modifyFiles(const OpenFOAMCase& ofc,
   boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName().filename());
   if (!exists(to.parent_path()))
     create_directories(to.parent_path());
-  copy_file(from, to);
+  //copy_file(from, to);
+  ofc.executeCommand(location, "surfaceTransformPoints",
+    list_of<std::string>
+    (absolute(from).string())
+    (absolute(to).string())
+    ("-scale")
+    ("("+lexical_cast<std::string>(p_.scale()(0))+" "+lexical_cast<std::string>(p_.scale()(1))+" "+lexical_cast<std::string>(p_.scale()(2))+")")
+    ("-rollPitchYaw")
+    ("("+lexical_cast<std::string>(p_.rollPitchYaw()(0))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(1))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(2))+")")
+  );
 }
 
 Feature* Geometry::clone() const
@@ -103,7 +119,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["relativeSizes"]=true;
   layerCtrls["expansionRatio"]=1.2;
   layerCtrls["finalLayerThickness"]=0.5;
-  layerCtrls["minThickness"]=0.1;  
+  layerCtrls["minThickness"]=0.001;  
   layerCtrls["nGrow"]=1;  
   layerCtrls["featureAngle"]=30.0;  
 
@@ -117,7 +133,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["maxThicknessToMedialRatio"]=0.3;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
-  layerCtrls["nLayerIter"]=50;  
+  layerCtrls["nLayerIter"]=10;  
 }
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
@@ -145,6 +161,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
 		  const boost::filesystem::path& location,
 		  const OFDictData::list& PiM,
 		  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+		  snappyHexMeshOpts::Parameters const& p,
 		  bool overwrite
 		  )
 {
@@ -173,6 +190,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   setStdCastellatedCtrls(castellatedCtrls);
   castellatedCtrls["locationInMesh"]=PiM;
   setStdLayerCtrls(layerCtrls);
+  layerCtrls["finalLayerThickness"]=p.tlayer();
   setStdQualityCtrls(qualityCtrls);
 
   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)

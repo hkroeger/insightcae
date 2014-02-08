@@ -2,7 +2,7 @@
 SCRPATH=${BASH_SOURCE[0]}
 
 export INSIGHT_BINDIR=$(cd `dirname $SCRPATH`; pwd)
-export INSIGHT_INSTDIR=$(cd $BINDIR; cd ..; pwd)
+export INSIGHT_INSTDIR=$(cd $INSIGHT_BINDIR; cd ..; pwd)
 export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib
 
 export INSIGHT_USERSHAREDDIR=$HOME/.insight/share

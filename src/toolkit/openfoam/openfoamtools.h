@@ -151,6 +151,10 @@ void createPatch(const OpenFOAMCase& ofc,
 		  bool overwrite=true
 		);
 
+void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target);
+
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location);
+
 }
 
 #endif // OPENFOAMTOOLS_H

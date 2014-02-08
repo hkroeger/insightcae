@@ -37,6 +37,10 @@ class OpenFOAMAnalysis
 public:
     OpenFOAMAnalysis(const std::string& name, const std::string& description);
     virtual insight::ParameterSet defaultParameters() const;
+/*    
+    virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p);
+    virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p);    
+*/
 };
 
 }

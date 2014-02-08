@@ -484,6 +484,27 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class GGIBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (shadowPatch, std::string, "")
+    (separationOffset, arma::mat, vec3(0,0,0))
+    (bridgeOverlap, bool, true)
+    (zone, std::string, "")
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p = Parameters() );
+  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
 class CyclicGGIBC
 : public BoundaryCondition
 {

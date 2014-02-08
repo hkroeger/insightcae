@@ -63,7 +63,10 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
 {
   redi::opstream proc;
-  ofc.forkCommand(proc, location, "setSet");
+  
+  std::vector<std::string> opts;
+  if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
+  ofc.forkCommand(proc, location, "setSet", opts);
   BOOST_FOREACH(const std::string& line, cmds)
   {
     proc << line << endl;
@@ -277,6 +280,31 @@ void createPatch(const OpenFOAMCase& ofc,
   if (overwrite) opts.push_back("-overwrite");
     
   ofc.executeCommand(location, "createPatch", opts);
+}
+
+void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target)
+{
+  targetcase.executeCommand
+  (
+    target, "mergeMeshes", 
+    list_of<std::string>
+    (".")
+    (source.c_str()) 
+  );
+}
+
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location)
+{
+  TimeDirectoryList times = listTimeDirectories(location);
+  boost::filesystem::path lastTime = times.rbegin()->second;
+  
+  remove_all(location/"constant"/"polyMesh");
+  copyPolyMesh(lastTime, location/"constant", true);
+  
+  BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+  {
+    remove_all(td.second);
+  }
 }
 
 

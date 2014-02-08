@@ -1,6 +1,9 @@
 project(insight)
 cmake_minimum_required(VERSION 2.6)
- 
+
+OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
+OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 find_package(OpenFOAM-16ext REQUIRED)
@@ -46,9 +49,13 @@ macro (add_sources SRCS)
 endmacro()
 
 add_subdirectory(toolkit)
-add_subdirectory(workbench)
+if (INSIGHT_BUILD_WORKBENCH)
+  add_subdirectory(workbench)
+endif (INSIGHT_BUILD_WORKBENCH)
 add_subdirectory(addons)
 add_subdirectory(modules)
 add_subdirectory(etc)
-add_subdirectory(extensions/freecad)
+if (INSIGHT_BUILD_FREECAD)
+  add_subdirectory(extensions/freecad)
+endif (INSIGHT_BUILD_FREECAD)
 add_subdirectory(extensions/openfoam)

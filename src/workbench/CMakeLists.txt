@@ -1,10 +1,9 @@
 project(workbench)
-cmake_minimum_required(VERSION 2.6)
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)
-find_package(Boost COMPONENTS system filesystem REQUIRED)
+#find_package(Boost COMPONENTS system filesystem REQUIRED)
 set(CMAKE_AUTOMOC ON)
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
+#SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})

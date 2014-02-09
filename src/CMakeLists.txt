@@ -56,6 +56,7 @@ macro (add_sources SRCS)
 endmacro()
 
 add_subdirectory(toolkit)
+add_subdirectory(analyze)
 if (INSIGHT_BUILD_WORKBENCH)
   add_subdirectory(workbench)
 endif (INSIGHT_BUILD_WORKBENCH)

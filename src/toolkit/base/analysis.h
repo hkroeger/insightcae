@@ -41,6 +41,13 @@ public:
   virtual void update(const ProgressState& pi) =0;
 };
 
+class TextProgressDisplayer
+: public ProgressDisplayer
+{
+public:
+  virtual void update(const ProgressState& pi);
+};
+
 class Analysis
 {
   

@@ -36,6 +36,22 @@ using namespace boost::filesystem;
 namespace insight
 {
   
+void TextProgressDisplayer::update(const ProgressState& pi)
+{
+  double iter=pi.first;
+  const ProgressVariableList& pvl=pi.second;
+  
+  BOOST_FOREACH( const ProgressVariableList::value_type& i, pvl)
+  {
+    const std::string& name = i.first;
+    double value = i.second;
+
+    cout << name << "=" << value << "\t";
+  }
+  cout << endl;
+}
+
+  
 defineType(Analysis);
 
 /*  

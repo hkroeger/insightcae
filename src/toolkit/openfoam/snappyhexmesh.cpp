@@ -117,7 +117,7 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
 void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 {
   layerCtrls["relativeSizes"]=true;
-  layerCtrls["expansionRatio"]=1.2;
+  layerCtrls["expansionRatio"]=1.1;
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=0.001;  
   layerCtrls["nGrow"]=1;  
@@ -138,17 +138,17 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
 {
-  qualityCtrls["maxNonOrtho"]=65.0;
+  qualityCtrls["maxNonOrtho"]=75.0;
   qualityCtrls["maxBoundarySkewness"]=20.0;
   qualityCtrls["maxInternalSkewness"]=4.0;
   qualityCtrls["maxConcave"]=80.0;  
-  qualityCtrls["minFlatness"]=0.5;  
-  qualityCtrls["minVol"]=1e-13;  
+  qualityCtrls["minFlatness"]=0.2;  
+  qualityCtrls["minVol"]=1e-18;  
   qualityCtrls["minArea"]=-1.0;  
-  qualityCtrls["minTwist"]=0.02;  
+  qualityCtrls["minTwist"]=0.01;  
   qualityCtrls["minDeterminant"]=0.001;  
-  qualityCtrls["minFaceWeight"]=0.02;  
-  qualityCtrls["minVolRatio"]=0.01;  
+  qualityCtrls["minFaceWeight"]=0.01;  
+  qualityCtrls["minVolRatio"]=0.005;  
   qualityCtrls["minTriangleTwist"]=-1.0;  
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  

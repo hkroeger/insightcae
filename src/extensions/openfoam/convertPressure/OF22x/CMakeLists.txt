@@ -5,7 +5,7 @@ set(convertPressure22x_SOURCES ../convertPressure.C)
 
 include_directories(
   ${insight_INCLUDE_DIR}
-  ${journalbearingcommon_SOURCE_DIR}
+  ${journalbearingcommon22x_SOURCE_DIR}
   ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 
   ${OF22x_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 

@@ -6,6 +6,7 @@
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 
+using namespace std;
 using namespace insight;
 
 int main(int argc, char *argv[])
@@ -40,13 +41,15 @@ int main(int argc, char *argv[])
   
   AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
   analysis->setDefaults();
-  ParameterSetPtr parameters ( analysis->defaultParameters().clone() );
-
-  parameters->readFromNode(doc, *rootnode);
   
-  boost::filesystem::path dir=boost::filesystem::path(fn).parent_path();
+  boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
+  cout<< "Executing analysis in directory "<<dir<<endl;
   analysis->setExecutionPath(dir);
 
+  ParameterSet parameters = analysis->defaultParameters();
+  parameters.readFromNode(doc, *rootnode);
+  analysis->setParameters(parameters);
+  
   // run analysis
   TextProgressDisplayer pd;
   ResultSetPtr results = (*analysis)(&pd);

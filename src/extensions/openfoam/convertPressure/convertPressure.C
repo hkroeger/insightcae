@@ -35,12 +35,9 @@ Description
 #include "transformField.H"
 #include "transformGeometricField.H"
 
-#include "transformation.h"
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
-using namespace insight;
 
 
 int main(int argc, char *argv[])

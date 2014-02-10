@@ -4,7 +4,6 @@ set(simpleDyMFoam16ext_SOURCES ../simpleDyMFoam.C)
 
 include_directories(
   ${insight_INCLUDE_DIR}
-  ${journalbearingcommon_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
   ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
@@ -19,7 +18,6 @@ include_directories(
   )
 
 setup_exe_target_OF16ext(simpleDyMFoam16ext "simpleDyMFoam"
-  journalbearingcommon
   OpenFOAM
   Pstream
   finiteVolume

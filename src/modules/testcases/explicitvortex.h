@@ -30,7 +30,7 @@ class ExplicitVortex
 protected:
   bool stopFlag_;
 public:
-  declareType("Explcicit Vortex");
+  declareType("Explicit Vortex");
   
   ExplicitVortex(const NoParameters&);
   ~ExplicitVortex();

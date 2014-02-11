@@ -73,6 +73,8 @@ public:
       }
       else if (boost::starts_with(executionMachine_, "qrsh:"))
       {
+	argv.insert(argv.begin(), "n");
+	argv.insert(argv.begin(), "-now");
 	argv.insert(argv.begin(), "qrsh");
       }
       else

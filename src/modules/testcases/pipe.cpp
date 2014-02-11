@@ -17,7 +17,7 @@
  *
  */
 
-#include "explicitvortex.h"
+#include "pipe.h"
 
 #include "base/factory.h"
 #include "openfoam/blockmesh.h"
@@ -37,22 +37,22 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-defineType(ExplicitVortex);
+defineType(Pipe);
 
-ExplicitVortex::ExplicitVortex(const NoParameters&)
+Pipe::Pipe(const NoParameters&)
 : OpenFOAMAnalysis
   (
-    "Explicit Vortex",
-    "Rectangular domain with dirichlet BCs for velocity everywhere describing a vortex"
+    "Pipe Flow Testcase",
+    "Cylindrical domain with cyclic BCs on axial ends"
   )
 {}
 
-ExplicitVortex::~ExplicitVortex()
+Pipe::~Pipe()
 {
 
 }
 
-ParameterSet ExplicitVortex::defaultParameters() const
+ParameterSet Pipe::defaultParameters() const
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -65,12 +65,8 @@ ParameterSet ExplicitVortex::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Lx",		new DoubleParameter(1.0, "[m] Extension in X direction"))
-	    ("Ly",		new DoubleParameter(1.0, "[m] Extension in Y direction"))
-	    ("Lz",		new DoubleParameter(1.0, "[m] Extension in Z direction"))
-	    ("vcx",		new DoubleParameter(0.0, "[m] X coord of vortex center"))
-	    ("vcy",		new DoubleParameter(-0.3, "[m] Y coord of vortex center"))
-	    ("b", 		new DoubleParameter(100, "[mm] Width of bearing shell"))
+	    ("D",		new DoubleParameter(1.0, "[m] Diameter of the pipe"))
+	    ("L",		new DoubleParameter(1.0, "[m] Length of the pipe"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Geometrical properties of the bearing"
@@ -81,9 +77,9 @@ ParameterSet ExplicitVortex::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nx",	new IntParameter(20, "# cells in X"))
-	    ("ny",	new IntParameter(20, "# cells in Y"))
-	    ("nz",	new IntParameter(20, "# cells in Z"))
+	    ("nax",	new IntParameter(100, "# cells in axial direction"))
+	    ("nc",	new IntParameter(20, "# cells in circumferential direction"))
+	    ("nr",	new IntParameter(20, "# cells in radial direction"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -94,7 +90,7 @@ ParameterSet ExplicitVortex::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Gamma",		new DoubleParameter(0.01, "[-] Vortex strength"))
+	    ("Re_tau",		new DoubleParameter(100, "[-] Friction-Velocity-Reynolds number"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Definition of the operation point under consideration"
@@ -105,7 +101,6 @@ ParameterSet ExplicitVortex::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nu",	new DoubleParameter(1e-15, "[m^2/s] Viscosity of the fluid"))
 	    ("RASModel",new SelectionParameter(0, 
 					       boost::assign::list_of<std::string>
 					       ("laminar")
@@ -126,12 +121,12 @@ ParameterSet ExplicitVortex::defaultParameters() const
   return p;
 }
 
-void ExplicitVortex::cancel()
+void Pipe::cancel()
 {
   stopFlag_=true;
 }
 
-void ExplicitVortex::createMesh
+void Pipe::createMesh
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
@@ -140,80 +135,98 @@ void ExplicitVortex::createMesh
   // create local variables from ParameterSet
   path dir = executionPath();
   
-  PSDBL(p, "geometry", Lx);
-  PSDBL(p, "geometry", Ly);
-  PSDBL(p, "geometry", Lz);
-  PSDBL(p, "geometry", vcx);
-  PSDBL(p, "geometry", vcy);
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
 
-  PSINT(p, "mesh", nx);
-  PSINT(p, "mesh", ny);
-  PSINT(p, "mesh", nz);
-  
-  PSDBL(p, "operation", Gamma);
-  
+  PSINT(p, "mesh", nax);
+  PSINT(p, "mesh", nc);
+  PSINT(p, "mesh", nr);
+    
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("symmetryPlanes", "symmetryPlane");
+  bmd->setDefaultPatch("walls", "walls");
   
   std::map<int, Point> pts;
   
+  double al = M_PI/2.;
+  double Lc=0.33*L;
+  
   pts = boost::assign::map_list_of 
     
-      (0, 	vec3(-Lx/2., -Ly/2., -Lz/2.))
-      (1, 	vec3( Lx/2., -Ly/2., -Lz/2.))
-      (2, 	vec3( Lx/2.,  Ly/2., -Lz/2.))
-      (3, 	vec3(-Lx/2.,  Ly/2., -Lz/2.))
-      (4, 	vec3(-Lx/2., -Ly/2.,  Lz/2.))
-      (5, 	vec3( Lx/2., -Ly/2.,  Lz/2.))
-      (6, 	vec3( Lx/2.,  Ly/2.,  Lz/2.))
-      (7, 	vec3(-Lx/2.,  Ly/2.,  Lz/2.))
+      (10, 	vec3(0, 0.5*D, 0))
+      /*
+      (1, 	vec3(0, 0.5*D*cos(1.5*al), 0.5*D*sin(1.5*al)))
+      (2, 	vec3(0, 0.5*D*cos(2.5*al), 0.5*D*sin(2.5*al)))
+      (3, 	vec3(0, 0.5*D*cos(3.5*al), 0.5*D*sin(3.5*al)))
+      */
+      (11, 	vec3(0,  sqrt(2.)*Lc, 0.))
+      /*
+      (5, 	vec3(0, -0.5*Lc,  0.5*Lc))
+      (6, 	vec3(0, -0.5*Lc, -0.5*Lc))
+      (7, 	vec3(0,  0.5*Lc, -0.5*Lc))
+      */
   ;
-
+  arma::mat vL=vec3(-L, 0, 0);
+  arma::mat ax=vec3(1, 0, 0);
   
   // create patches
-  Patch& sides = 	bmd->addPatch("sides", new Patch());
+  Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
+  Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
   
   {
-    std::map<int, Point>& p = pts;
+    arma::mat r0=rotMatrix(0.5*al, ax);
+    arma::mat r1=rotMatrix(1.5*al, ax);
+    arma::mat r2=rotMatrix(2.5*al, ax);
+    arma::mat r3=rotMatrix(3.5*al, ax);
     
-    {
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    p[0], p[1], p[2], p[3],
-	    p[4], p[5], p[6], p[7]
-	  ),
-	  nx, ny, nz
-	)
-      );
-      sides.addFace(bl.face("0154"));
-      sides.addFace(bl.face("1265"));
-      sides.addFace(bl.face("2376"));
-      sides.addFace(bl.face("0473"));
-    }
+    Block& bl = bmd->addBlock
+    (  
+      new Block(P_8(
+	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
+	  (r1*pts[10])+L, (r2*pts[10])+L, (r3*pts[10])+L, (r0*pts[10])+L
+	),
+	nc, nc, nax
+      )
+    );
+    cycl_in.addFace(bl.face("0321"));
+    cycl_out.addFace(bl.face("4567"));
   }
-  
+  /*
+  for (int i=0; i<4; i++)
+  {
+    arma::mat r0=rotMatrix(double(i+0.5)*al, ax);
+    arma::mat r1=rotMatrix(double(i+1.5)*al, ax);
+    
+    Block& bl = bmd->addBlock
+    (
+      new Block(P_8(
+	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
+	  (r1*pts[10])+L, (r0*pts[10])+L, (r0*pts[11])+L, (r1*pts[11])+L
+	),
+	nc, nr, nax
+      )
+    );
+    cycl_in.addFace(bl.face("0321"));
+    cycl_out.addFace(bl.face("4567"));
+  }
+  */
   cm.insert(bmd.release());
 
   cm.createOnDisk(dir);
   cm.executeCommand(dir, "blockMesh");  
 }
 
-void ExplicitVortex::createCase
+void Pipe::createCase
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
 )
 {
   // create local variables from ParameterSet
-  PSDBL(p, "geometry", vcx);
-  PSDBL(p, "geometry", vcy);
-  PSDBL(p, "operation", Gamma);
-  PSDBL(p, "fluid", nu);
+  PSDBL(p, "operation", Re_tau);
   PSINT(p, "fluid", RASModel);
   
   path dir = executionPath();
@@ -222,33 +235,34 @@ void ExplicitVortex::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
     
   cm.insert(new simpleFoamNumerics(cm));
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   
-  cm.insert(new SimpleBC(cm, "symmetryPlanes", boundaryDict, "symmetryPlane"));
-  cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
+  //cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
+  
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/RASModel").selection());
   
   //cm.createOnDisk(dir);
   boost::shared_ptr<OFdicts> dicts=cm.createDictionaries();
-  dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
-  dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);  
+  //dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
+  //dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);  
   cm.createOnDisk(dir, dicts);
-  
+/*  
   cm.executeCommand(dir, "setVortexVelocity",
     list_of<std::string>
     (lexical_cast<std::string>(Gamma))
     ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
   );  
+  */
 }
 
-ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
+ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
 {
   const ParameterSet& p = *parameters_;
   
-  PSDBL(p, "geometry", Lx);
-  PSDBL(p, "geometry", Ly);
-  PSDBL(p, "geometry", Lz);
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
 
   PSSTR(p, "run", machine);
   
@@ -274,22 +288,12 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
   }
   else
     cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  
+  /*
   SolverOutputAnalyzer analyzer(*displayer);
   runCase.runSolver(dir, analyzer, "simpleFoam", &stopFlag_);
-/*  
-  double pclip = (pcav-pambient)/rho - 9.81*depthByD*Di;
-  BearingForceList bfl = calcBearingForce(runCase, Di, pclip, dir);
-  
-  const PatchBearingForce& bf = bfl.find("pivot")->second;
-  const arma::mat& f = get<0>(bf);
-  const arma::mat& m = get<1>(bf);
-  double minp = get<2>(bf);
-  
-  double fac=1.0; if (symm) fac=2.0;
-  */
+*/
   ResultSetPtr results(new ResultSet(p, "Circular Journal Bearing Analysis", "Result Report"));
-  
+  /*
   std::string init=
       "cbi=loadOFCase('.')\n"
       "eb=extractPatches(cbi, 'symmetryPlanes')\n"
@@ -363,26 +367,13 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
     "Uz_above.jpg", 
     "Contour of Z-Velocity", ""
   )));
+  */
   
-  
-  /*
-  ptr_map_insert<ScalarResult>(*results) ("Excentricity", ex, "Excentricity of the shaft", "", "");
-  ptr_map_insert<ScalarResult>(*results) ("PsiEff", PsiEff, "Realtive bearing clearance", "", "");
-  ptr_map_insert<ScalarResult>(*results) ("Re", Re, "Reynolds number", "", "");
-  ptr_map_insert<ScalarResult>(*results) ("ReLim", ReLim, "Laminar limit Reynolds number", "", "");
-  ptr_map_insert<ScalarResult>(*results) ("PivotTorque", rho*m(2)*fac, "Torque on bearing shaft", "", "Nm");
-  ptr_map_insert<ScalarResult>(*results) ("Power", rho*m(2)*fac * 2.*M_PI*rpm/60., "Power required to drive shaft", "", "W");
-  ptr_map_insert<ScalarResult>(*results) ("VerticalPivotForce", rho*f(1)*fac, "Force on bearing shaft in vertical direction", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("HorizontalPivotForce", rho*f(0)*fac, "Force on bearing shaft in horizontal direction", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("ResultantPivotForce", rho*sqrt( f(0)*f(0) + f(1)*f(1) ) *fac, "Resultant force on bearing shaft", "", "N");
-  ptr_map_insert<ScalarResult>(*results) ("PivotForceAngle", 180.* atan2(f(0), f(1)) /M_PI, "Angular direction of force on bearing shaft", "", "deg");
-  ptr_map_insert<ScalarResult>(*results) ("CavitationMargin", pambient+(9.81*depthByD*Di+minp)*rho-pcav, 
-					  "Difference between minimum pressure and cavitation pressure", "", "Pa");
-*/
   return results;
 }
 
 
-addToFactoryTable(Analysis, ExplicitVortex, NoParameters);
+addToFactoryTable(Analysis, Pipe, NoParameters);
+
 
 }

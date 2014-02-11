@@ -90,9 +90,7 @@ bool compare(const Point& v1, const Point& v2)
 
 PointList P_4(const Point& p1, const Point& p2, const Point& p3, const Point& p4)
 {
-  PointList p;
-  p += p1, p2, p3, p4;
-  return p;
+  return list_of<Point>(p1)(p2)(p3)(p4);
 }
 
 PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4)
@@ -104,9 +102,7 @@ PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4)
 PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
 	      const Point& p5, const Point& p6, const Point& p7, const Point& p8)
 {
-  PointList p;
-  p += p1, p2, p3, p4, p5, p6, p7, p8;
-  return p;
+  return list_of<Point>(p1)(p2)(p3)(p4)(p5)(p6)(p7)(p8);
 }
 
 

@@ -36,7 +36,13 @@ try:
         
         vs=case.TimestepValues
         view=GetActiveView()
+        if not view:
+	  # When using the ParaView UI, the View will be present, not otherwise.
+	  view = CreateRenderView()
+
         view.ViewTime=vs[-1]
+        view.Background = [1,1,1]
+        view.ViewSize = [1024, 768]
         
         return (case, blockIndices)
     
@@ -70,9 +76,17 @@ try:
         return GetLookupTableForArray(arrayName, component, **p)
     
     
-    def displayContour(obj, arrayName, minV, maxV, component=-1, LUTName="bluered", 
-                       title=None, barpos=[0.75, 0.25], barorient=1):
+    def displayContour(obj, arrayName, minV=None, maxV=None, component=0, LUTName="bluered", 
+                       title=None, barpos=[0.75, 0.25], barorient=1, arrayType='POINT_DATA'):
         disp = GetDisplayProperties(obj)
+        if minV is None or maxV is None:
+	  if (arrayType=='POINT_DATA'):
+	    pdi=obj.PointData.GetArray(arrayName)
+	  else:
+	    pdi=obj.CellData.GetArray(arrayName)
+	  mi, ma = pdi.GetRange(component)
+	  if minV is None: minV=mi
+	  if maxV is None: maxV=ma
         #disp.LookupTable=MakeBlueToRedLT(-1, 1)
         disp.LookupTable=getLookupTable(arrayName, minV, maxV, 
                                         1 if component<0 else component, 
@@ -82,7 +96,7 @@ try:
             disp.LookupTable.VectorMode="Component"
         disp.Representation = 'Surface'
         disp.ColorArrayName=arrayName
-        disp.ColorAttributeType='POINT_DATA'
+        disp.ColorAttributeType=arrayType
             
         bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
@@ -92,6 +106,7 @@ try:
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
         GetRenderView().Representations.append(bar)
+        return bar
     
     
     
@@ -125,10 +140,11 @@ try:
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=1.):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()
-        cam.SetParallelScale(scale)
+        #cam.SetParallelScale(scale)
         cam.SetViewUp(up)
         cam.SetFocalPoint(focus)
         cam.SetPosition(pos)
+        ResetCamera() # rescales but keeps view direction intact
         
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()

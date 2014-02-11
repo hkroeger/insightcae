@@ -743,7 +743,7 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
 {
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
   transportProperties["transportModel"]="Newtonian";
-  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), OFDictData::data(1e-6));
+  transportProperties["nu"]=OFDictData::dimensionedData("nu", OFDictData::dimension(0, 2, -1), p_.nu());
 }
 
 twoPhaseTransportProperties::twoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )

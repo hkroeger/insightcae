@@ -21,6 +21,7 @@
 
 #include "base/factory.h"
 #include "openfoam/blockmesh.h"
+#include "openfoam/openfoamtools.h"
 #include "openfoam/basiccaseelements.h"
 
 #include <boost/assign/list_of.hpp>
@@ -244,6 +245,10 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
 {
   const ParameterSet& p = *parameters_;
   
+  PSDBL(p, "geometry", Lx);
+  PSDBL(p, "geometry", Ly);
+  PSDBL(p, "geometry", Lz);
+
   PSSTR(p, "run", machine);
   
   OFEnvironment ofe(220, "/home/hannes/OpenFOAM/bashrc.of22x");
@@ -283,6 +288,82 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
   double fac=1.0; if (symm) fac=2.0;
   */
   ResultSetPtr results(new ResultSet(p, "Circular Journal Bearing Analysis", "Result Report"));
+  
+  std::string init=
+      "cbi=loadOFCase('.')\n"
+      "eb=extractPatches(cbi, 'symmetryPlanes')\n"
+      "Show(eb)\n"
+      "prepareSnapshots()\n";
+      
+  runPvPython
+  (
+    runCase, dir, list_of<std::string>
+    (
+      init+
+      "displayContour(eb, 'p', arrayType='CELL_DATA')\n"
+      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
+      "WriteImage('pressure_above.jpg')\n"
+    )
+  );
+  results->insert("pressureContour",
+    std::auto_ptr<Image>(new Image
+    (
+    "pressure_above.jpg", 
+    "Contour of pressure", ""
+  )));
+  
+  runPvPython
+  (
+    runCase, dir, list_of<std::string>
+    (
+      init+
+      "displayContour(eb, 'U', component=0, arrayType='CELL_DATA')\n"
+      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
+      "WriteImage('Ux_above.jpg')\n"
+    )
+  );
+  results->insert("UxContour",
+    std::auto_ptr<Image>(new Image
+    (
+    "Ux_above.jpg", 
+    "Contour of X-Velocity", ""
+  )));
+  
+  runPvPython
+  (
+    runCase, dir, list_of<std::string>
+    (
+      init+
+      "displayContour(eb, 'U', component=1)\n"
+      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
+      "WriteImage('Uy_above.jpg')\n"
+    )
+  );
+  results->insert("UyContour",
+    std::auto_ptr<Image>(new Image
+    (
+    "Uy_above.jpg", 
+    "Contour of Y-Velocity", ""
+  )));
+
+  runPvPython
+  (
+    runCase, dir, list_of<std::string>
+    (
+      init+
+      "displayContour(eb, 'U', component=2)\n"
+      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
+      "WriteImage('Uz_above.jpg')\n"
+    )
+  );
+  results->insert("UzContour",
+    std::auto_ptr<Image>(new Image
+    (
+    "Uz_above.jpg", 
+    "Contour of Z-Velocity", ""
+  )));
+  
+  
   /*
   ptr_map_insert<ScalarResult>(*results) ("Excentricity", ex, "Excentricity of the shaft", "", "");
   ptr_map_insert<ScalarResult>(*results) ("PsiEff", PsiEff, "Realtive bearing clearance", "", "");

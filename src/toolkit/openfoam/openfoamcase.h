@@ -56,6 +56,20 @@ public:
   //virtual int executeCommand(const std::vector<std::string>& args) const;
 };
 
+class OFEs
+: public boost::ptr_map<std::string, OFEnvironment>
+{
+public:
+  static OFEs list;
+  static inline const OFEnvironment& get(const std::string& name)
+  {
+    return *(list.find(name)->second);
+  }
+  
+  OFEs();
+  ~OFEs();
+};
+
 
 class OpenFOAMCaseElement
 : public CaseElement

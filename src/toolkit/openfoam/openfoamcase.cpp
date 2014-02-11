@@ -28,6 +28,7 @@
 
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace boost;
@@ -73,6 +74,26 @@ int OFEnvironment::version() const
 const boost::filesystem::path& OFEnvironment::bashrc() const
 {
   return bashrc_;
+}
+
+OFEs OFEs::list;
+
+OFEs::OFEs()
+{
+  std::string cfgvar(getenv("INSIGHT_OFES"));
+  std::vector<std::string> ofestrs;
+  boost::split(ofestrs, cfgvar, boost::is_any_of(":"));
+  BOOST_FOREACH(const std::string& ofe, ofestrs)
+  {
+    std::vector<std::string> strs;
+    boost::split(strs, ofe, boost::is_any_of("@#"));
+    //cout << "adding " << strs[0] << ": "<<strs[1] << " (version "<<strs[2]<<")"<<endl;
+    (*this).insert(strs[0], new OFEnvironment(lexical_cast<int>(strs[2]), strs[1]));
+  }
+}
+
+OFEs::~OFEs()
+{
 }
 
 /*

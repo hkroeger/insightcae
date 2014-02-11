@@ -307,5 +307,21 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
   }
 }
 
+void extractSnapshot
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const std::set<std::string>& patches,
+  const std::string& field,
+  const arma::mat& lookOnPt, const arma::mat& lookFromPt,
+  const boost::filesystem::path& outfile
+)
+{
+  redi::opstream proc;  
+  ofc.forkCommand(proc, location, "pvpython");
+  proc << "from paraview.simple import *" << endl;
+  proc << "from FOAMToolkit.Paraview import *" << endl;
+  proc.close();
+}
 
 }

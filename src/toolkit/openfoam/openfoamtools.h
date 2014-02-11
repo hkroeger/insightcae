@@ -155,6 +155,16 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
 
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location);
 
+void extractSnapshot
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const std::set<std::string>& patches,
+  const std::string& field,
+  const arma::mat& lookOnPt, const arma::mat& lookFromPt,
+  const boost::filesystem::path& outfile
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

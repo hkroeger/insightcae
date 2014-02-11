@@ -42,6 +42,25 @@ macro(install_script NAME SCRIPTFILE)
     )
 endmacro(install_script)
 
+macro(install_package_script PACKAGENAME)
+  foreach (_src ${ARGN})
+    file(GLOB COPY_FILES
+      RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+      ${_src})
+      
+    add_custom_target(${PACKAGENAME}_${_src} ALL
+      COMMENT "Copying file: ${_src}")
+
+    set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
+    set(DST "${CMAKE_BINARY_DIR}/share/insight/python/Insight/${PACKAGENAME}/${_src}")
+
+    add_custom_command(
+      TARGET ${PACKAGENAME}_${_src}
+      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+      )
+  endforeach()
+endmacro(install_package_script)
+
 macro (add_sources SRCS)
     #message("ARGC='${ARGC}' ARGV='${ARGV}' ARGN='${ARGN}'")
     file (RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_LIST_DIR}")
@@ -71,3 +90,6 @@ if (INSIGHT_BUILD_FREECAD)
   add_subdirectory(extensions/freecad)
 endif (INSIGHT_BUILD_FREECAD)
 add_subdirectory(extensions/openfoam)
+add_subdirectory(extensions/python)
+add_subdirectory(extensions/paraview)
+add_subdirectory(extensions/code_aster)

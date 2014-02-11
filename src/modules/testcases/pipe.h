@@ -20,7 +20,7 @@
 #ifndef INSIGHT_PIPE_H
 #define INSIGHT_PIPE_H
 
-#include <../../mnt/home/hk354/Projekte/insight/src/toolkit/openfoam/openfoamanalysis.h>
+#include "openfoam/openfoamanalysis.h"
 
 namespace insight {
 

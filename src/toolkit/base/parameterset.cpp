@@ -99,7 +99,7 @@ std::string ParameterSet::latexRepresentation() const
     "\\item "
       +cleanSymbols(i->second->description())
       +"\\\\\n"
-      +"{\\bf "+i->first+"} = "
+      +"{\\bf "+cleanSymbols(i->first)+"} = "
       +i->second->latexRepresentation()
       +"\n";
   }

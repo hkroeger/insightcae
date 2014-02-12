@@ -42,7 +42,7 @@ defineType(Pipe);
 Pipe::Pipe(const NoParameters&)
 : OpenFOAMAnalysis
   (
-    "Pipe Flow Testcase",
+    "Pipe Flow Test Case",
     "Cylindrical domain with cyclic BCs on axial ends"
   ),
   cycl_in_("cycl_in"),
@@ -80,6 +80,8 @@ ParameterSet Pipe::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
+	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
+	    ("x",	new DoubleParameter(0.5, "Edge length of core block as fraction of diameter"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -101,15 +103,7 @@ ParameterSet Pipe::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("RASModel",new SelectionParameter(0, 
-					       boost::assign::list_of<std::string>
-					       ("laminar")
-					       ("kOmegaSST")
-					       ("kEpsilon")
-					       ("kOmegaSST_LowRe")
-					       ("kOmegaSST2")
-					       .convert_to_container<SelectionParameter::ItemList>(),
-					       "Turbulence model"))
+	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Parameters of the fluid"
@@ -126,6 +120,107 @@ void Pipe::cancel()
   stopFlag_=true;
 }
 
+double Pipe::calcLc(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "mesh", x);
+  return x*D;
+}
+
+int Pipe::calcnc(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+
+  PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", x);
+  PSDBL(p, "mesh", s);
+  double Delta=L/double(nax);
+  return D*(M_PI+4.*x)/(8.*Delta/s);
+}
+
+int Pipe::calcnr(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+
+  PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", s);
+  PSDBL(p, "mesh", x);
+  double Delta=L/double(nax);
+  return D*(1.-sqrt(2.)*x)/(2.*Delta/s);
+}
+
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_roots.h>
+
+double lambda_func(double lambda, void *param)
+{
+  double Retau=*static_cast<double*>(param);
+  double Re=exp((2./5.)+1./(2.*lambda))/sqrt(lambda);
+  //cout<<Retau<<" "<<lambda<<" "<<Re<<endl;
+  return 2.*Retau*sqrt(8./lambda) - Re;
+}
+
+double Pipe::calcRe(const ParameterSet& p) const
+{
+  PSDBL(p, "operation", Re_tau);
+  
+  int i, times, status;
+  gsl_function f;
+  gsl_root_fsolver *workspace_f;
+  double x, x_l, x_r;
+
+ 
+    /* Define Solver */
+    workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
+ 
+    //printf("F solver: %s\n", gsl_root_fsolver_name(workspace_f));
+ 
+    f.function = &lambda_func;
+    f.params = &Re_tau;
+ 
+    /* set initial interval */
+    x_l = 1e-3;
+    x_r = 10;
+ 
+    /* set solver */
+    gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
+ 
+    /* main loop */
+    for(times = 0; times < 100; times++)
+    {
+        status = gsl_root_fsolver_iterate(workspace_f);
+ 
+        x_l = gsl_root_fsolver_x_lower(workspace_f);
+        x_r = gsl_root_fsolver_x_upper(workspace_f);
+        //printf("%d times: [%10.3e, %10.3e]\n", times, x_l, x_r);
+ 
+        status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
+        if(status != GSL_CONTINUE)
+        {
+            //printf("Status: %s\n", gsl_strerror(status));
+            //printf("\n Root = [%25.17e, %25.17e]\n\n", x_l, x_r);
+            break;
+        }
+    }
+ 
+    /* free */
+    gsl_root_fsolver_free(workspace_f);
+    double lambda=x_l;
+    double Re=2.*Re_tau*sqrt(8./x_l);
+    cout<<"Re="<<Re<<endl;
+    return Re;
+}
+
+double Pipe::calcUbulk(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "operation", Re_tau);
+  
+  return calcRe(p)*(1./Re_tau)/D;
+}
+
 void Pipe::createMesh
 (
   OpenFOAMCase& cm,
@@ -139,10 +234,10 @@ void Pipe::createMesh
   PSDBL(p, "geometry", L);
 
   PSINT(p, "mesh", nax);
-  double Delta=L/double(nax);
-  double Lc=D/2.;
-  int nc=D*(2.+M_PI)/(8.*Delta);
-  int nr=D*(2.-sqrt(2.))/(4.*Delta);
+  
+  double Lc=calcLc(p);
+  int nc=calcnc(p);
+  int nr=calcnr(p);
   cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<endl;
     
   cm.insert(new MeshingNumerics(cm));
@@ -231,6 +326,7 @@ void Pipe::createMesh
   cm.executeCommand(dir, "blockMesh");  
 }
 
+
 void Pipe::createCase
 (
   OpenFOAMCase& cm,
@@ -239,21 +335,28 @@ void Pipe::createCase
 {
   // create local variables from ParameterSet
   PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", RASModel);
+  PSINT(p, "fluid", turbulenceModel);
   
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
     
-  cm.insert(new simpleFoamNumerics(cm));
+  cm.insert(new pimpleFoamNumerics(cm) );
+  cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
+    .set_fields(list_of<std::string>("p")("U")("k"))
+  ));
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   
-  //cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
-  
+  cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
+    .set_velocity(vec3(calcUbulk(p), 0, 0)) 
+  ));
+  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0.0) 
+  ));
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/RASModel").selection());
+  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
   
   //cm.createOnDisk(dir);
   boost::shared_ptr<OFdicts> dicts=cm.createDictionaries();
@@ -304,12 +407,10 @@ ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
   SolverOutputAnalyzer analyzer(*displayer);
   runCase.runSolver(dir, analyzer, "simpleFoam", &stopFlag_);
 */
-  ResultSetPtr results(new ResultSet(p, "Circular Journal Bearing Analysis", "Result Report"));
-  /*
+  ResultSetPtr results(new ResultSet(p, "Pipe Flow Test Case", "Result Report"));
+  
   std::string init=
       "cbi=loadOFCase('.')\n"
-      "eb=extractPatches(cbi, 'symmetryPlanes')\n"
-      "Show(eb)\n"
       "prepareSnapshots()\n";
       
   runPvPython
@@ -317,69 +418,43 @@ ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
     runCase, dir, list_of<std::string>
     (
       init+
-      "displayContour(eb, 'p', arrayType='CELL_DATA')\n"
-      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
-      "WriteImage('pressure_above.jpg')\n"
+      "eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+      "Show(eb)\n"
+      "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
+      "setCam([0,0,10], [0,0,0], [0,1,0])\n"
+      "WriteImage('pressure_longi.jpg')\n"
     )
   );
   results->insert("pressureContour",
     std::auto_ptr<Image>(new Image
     (
-    "pressure_above.jpg", 
-    "Contour of pressure", ""
+    "pressure_longi.jpg", 
+    "Contour of pressure (longitudinal section)", ""
   )));
   
-  runPvPython
-  (
-    runCase, dir, list_of<std::string>
+  for(int i=0; i<3; i++)
+  {
+    std::string c("x"); c[0]+=i;
+    runPvPython
     (
-      init+
-      "displayContour(eb, 'U', component=0, arrayType='CELL_DATA')\n"
-      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
-      "WriteImage('Ux_above.jpg')\n"
-    )
-  );
-  results->insert("UxContour",
-    std::auto_ptr<Image>(new Image
-    (
-    "Ux_above.jpg", 
-    "Contour of X-Velocity", ""
-  )));
-  
-  runPvPython
-  (
-    runCase, dir, list_of<std::string>
-    (
-      init+
-      "displayContour(eb, 'U', component=1)\n"
-      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
-      "WriteImage('Uy_above.jpg')\n"
-    )
-  );
-  results->insert("UyContour",
-    std::auto_ptr<Image>(new Image
-    (
-    "Uy_above.jpg", 
-    "Contour of Y-Velocity", ""
-  )));
+      runCase, dir, list_of<std::string>
+      (
+	init+
+	"eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+	"Show(eb)\n"
+	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
+	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
+	"WriteImage('U"+c+"_longi.jpg')\n"
+      )
+    );
+    results->insert("U"+c+"Contour",
+      std::auto_ptr<Image>(new Image
+      (
+      "U"+c+"_longi.jpg", 
+      "Contour of "+c+"-Velocity", ""
+    )));
+  }
 
-  runPvPython
-  (
-    runCase, dir, list_of<std::string>
-    (
-      init+
-      "displayContour(eb, 'U', component=2)\n"
-      "setCam([0,0,"+lexical_cast<std::string>(Lz)+"], [0,0,0], [0,1,0])\n"
-      "WriteImage('Uz_above.jpg')\n"
-    )
-  );
-  results->insert("UzContour",
-    std::auto_ptr<Image>(new Image
-    (
-    "Uz_above.jpg", 
-    "Contour of Z-Velocity", ""
-  )));
-  */
   
   return results;
 }

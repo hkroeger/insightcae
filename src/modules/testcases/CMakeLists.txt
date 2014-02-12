@@ -10,6 +10,7 @@ include_directories(${toolkit_SOURCE_DIR})
 add_library(testcases SHARED ${testcases_SOURCES})
 target_link_libraries(testcases 
 toolkit
+gsl
 )
 
 install(TARGETS testcases LIBRARY DESTINATION lib)

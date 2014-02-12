@@ -23,6 +23,8 @@
 
 #include "boost/ptr_container/ptr_map.hpp"
 
+#include "boost/foreach.hpp"
+
 namespace insight {
   
 struct NoParameters
@@ -60,7 +62,8 @@ public:
 #define declareFactoryTable(baseT, paramS) \
  typedef boost::ptr_map<std::string, insight::Factory<baseT, paramS> > FactoryTable; \
  static FactoryTable factories_; \
- static baseT* lookup(const std::string& key, const paramS& cp) \
+ static baseT* lookup(const std::string& key, const paramS& cp); \
+ static std::vector<std::string> factoryToC();
 
 #define defineFactoryTable(baseT, paramS) \
  boost::ptr_map<std::string, insight::Factory<baseT, paramS> > baseT::factories_; \
@@ -70,6 +73,13 @@ public:
   if (i==baseT::factories_.end()) \
     throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
   return (*i->second)( cp ); \
+ } \
+ std::vector<std::string> baseT::factoryToC() \
+ { \
+   std::vector<std::string> toc; \
+   BOOST_FOREACH(const FactoryTable::value_type& e, factories_) \
+   { toc.push_back(e.first); } \
+   return toc; \
  }
 
 

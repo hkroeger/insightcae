@@ -104,6 +104,25 @@ public:
 };
 
 
+class pimpleFoamNumerics
+: public FVNumerics
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (deltaT, double, 1.0)
+    (adjustTimeStep, bool, true)
+    (maxCo, double, 0.45)
+    (maxDeltaT, double, 1.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class simpleDyMFoamNumerics
 : public simpleFoamNumerics
@@ -370,6 +389,22 @@ public:
 };
 
 
+class fieldAveraging
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (fields, std::vector<std::string>, std::vector<std::string>())
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  fieldAveraging(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class turbulenceModel
 : public OpenFOAMCaseElement
@@ -383,15 +418,38 @@ public:
 
   turbulenceModel(OpenFOAMCase& c);
   turbulenceModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
 };
 
+class RASModel
+: public turbulenceModel
+{
 
+public:
+  declareType("RASModel");
+
+  RASModel(OpenFOAMCase& c);
+  RASModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+
+};
+
+class LESModel
+: public turbulenceModel
+{
+
+public:
+  declareType("LESModel");
+
+  LESModel(OpenFOAMCase& c);
+  LESModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+
+};
 
 class laminar_RASModel
-: public turbulenceModel
+: public RASModel
 {
 public:
   declareType("laminar");
@@ -402,10 +460,23 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
-
+class oneEqEddy_LESModel
+: public LESModel
+{
+protected:
+  void addFields();
+  
+public:
+  declareType("oneEqEddy");
+  
+  oneEqEddy_LESModel(OpenFOAMCase& c);
+  oneEqEddy_LESModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
 
 class kOmegaSST_RASModel
-: public turbulenceModel
+: public RASModel
 {
 protected:
   void addFields();

@@ -123,6 +123,13 @@ try:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
         
         return eb
+      
+    def planarSlice(cbi, origin, normal):
+      reader,blockindices=cbi
+      sl = Slice(Input=reader)
+      sl.SliceType.Normal=[0,0,1]
+      sl.SliceType.Origin=[0,0,0]
+      return sl
     
     
     def waterSurface(cbi, minZ, maxZ):

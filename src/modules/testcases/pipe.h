@@ -32,7 +32,7 @@ protected:
   std::string cycl_in_, cycl_out_;
   
 public:
-  declareType("Pipe Flow Testcase");
+  declareType("Pipe Flow Test Case");
   
   Pipe(const NoParameters&);
   ~Pipe();
@@ -40,6 +40,12 @@ public:
   virtual void cancel();
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
   virtual ParameterSet defaultParameters() const;
+  
+  virtual double calcLc(const ParameterSet& p) const;
+  virtual int calcnc(const ParameterSet& p) const;
+  virtual int calcnr(const ParameterSet& p) const;
+  virtual double calcRe(const ParameterSet& p) const;
+  virtual double calcUbulk(const ParameterSet& p) const;
 
   virtual void createMesh
   (

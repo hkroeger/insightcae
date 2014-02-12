@@ -357,6 +357,90 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
+pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c),
+  p_(p)
+{
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0) ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+}
+ 
+void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="pimpleFoam";
+  controlDict["endTime"]=1000.0;
+  controlDict["deltaT"]=1.0;
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["maxCo"]=p_.maxCo();
+  controlDict["maxDeltaT"]=p_.maxDeltaT();
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
+  solvers["U"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["k"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
+  
+  solvers["pFinal"]=GAMGSolverSetup(1e-7, 0.0);
+  solvers["UFinal"]=smoothSolverSetup(1e-8, 0.0);
+  solvers["kFinal"]=smoothSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-8, 0);
+  solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
+
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  SIMPLE["nCorrectors"]=2;
+  SIMPLE["nNonOrthogonalCorrectors"]=0;
+  SIMPLE["pRefCell"]=0;
+  SIMPLE["pRefValue"]=0.0;
+  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  grad["grad(U)"]="cellLimited leastSquares 1";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  div["default"]="Gauss limitedLinear 1";
+  div["div(phi,U)"]="Gauss limitedLinearV 1";
+  if (OFversion()>=210)
+  {
+    div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
+  }
+  else 
+  {
+    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  }
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p"]="";
+}
+
+
 simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
 : simpleFoamNumerics(c),
   p_(p)
@@ -873,6 +957,36 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
+fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, "fieldAveraging"),
+  p_(p)
+{
+}
+
+void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="fieldAverage";
+  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["enabled"]=true;
+  fod["outputControl"]="outputTime";
+  
+  OFDictData::list fl;
+  BOOST_FOREACH(const std::string& fln, p_.fields())
+  {
+    fl.push_back(fln);
+    OFDictData::dict cod;
+    cod["mean"]=true;
+    cod["prime2Mean"]=true;
+    cod["base"]="time";
+    fl.push_back(cod);
+  }
+  fod["fields"]=fl;
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")["fieldAverage1"]=fod;
+}
+  
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);
 
@@ -886,26 +1000,57 @@ turbulenceModel::turbulenceModel(const turbulenceModel::ConstrP& c)
 {
 }
 
-void turbulenceModel::addIntoDictionaries(OFdicts& dictionaries) const
+
+defineType(RASModel);
+
+RASModel::RASModel(OpenFOAMCase& c)
+: turbulenceModel(c)
 {
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-  RASProperties["simulationType"]="RASModel";
+}
+
+RASModel::RASModel(const turbulenceModel::ConstrP& c)
+: turbulenceModel(c)
+{
+}
+
+void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+  turbProperties["simulationType"]="RASModel";
+}
+
+defineType(LESModel);
+
+LESModel::LESModel(OpenFOAMCase& c)
+: turbulenceModel(c)
+{
+}
+
+LESModel::LESModel(const turbulenceModel::ConstrP& c)
+: turbulenceModel(c)
+{
+}
+
+void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+  turbProperties["simulationType"]="LESModel";
 }
 
 defineType(laminar_RASModel);
 addToFactoryTable(turbulenceModel, laminar_RASModel, turbulenceModel::ConstrP);
 
 laminar_RASModel::laminar_RASModel(OpenFOAMCase& c)
-: turbulenceModel(c)
+: RASModel(c)
 {}
   
 laminar_RASModel::laminar_RASModel(const turbulenceModel::ConstrP& c)
-: turbulenceModel(c)
+: RASModel(c)
 {}
   
 void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  turbulenceModel::addIntoDictionaries(dictionaries);
+  RASModel::addIntoDictionaries(dictionaries);
   
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="laminar";
@@ -919,6 +1064,60 @@ bool laminar_RASModel::addIntoFieldDictionary(const std::string& fieldname, cons
   return false;
 }
 
+defineType(oneEqEddy_LESModel);
+addToFactoryTable(turbulenceModel, oneEqEddy_LESModel, turbulenceModel::ConstrP);
+
+void oneEqEddy_LESModel::addFields()
+{
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
+  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
+}
+  
+
+oneEqEddy_LESModel::oneEqEddy_LESModel(OpenFOAMCase& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+oneEqEddy_LESModel::oneEqEddy_LESModel(const ConstrP& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  LESModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  LESProperties["LESModel"]="oneEqEddy";
+  LESProperties["delta"]="cubeRootVol";
+  LESProperties["printCoeffs"]=true;
+  OFDictData::dict crvc;
+  crvc["deltaCoeff"]=1.0;
+  LESProperties["cubeRootVolCoeffs"]=crvc;
+  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+}
+
+bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k")
+  {
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 0";
+    return true;
+  }
+  else if (fieldname == "nuSgs")
+  {
+    BC["type"]="zeroGradient";
+    return true;
+  }
+  
+  return false;
+}
+
+
 defineType(kOmegaSST_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_RASModel, turbulenceModel::ConstrP);
 
@@ -930,20 +1129,20 @@ void kOmegaSST_RASModel::addFields()
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
-: turbulenceModel(c)
+: RASModel(c)
 {
   addFields();
 }
   
 kOmegaSST_RASModel::kOmegaSST_RASModel(const turbulenceModel::ConstrP& c)
-: turbulenceModel(c)
+: RASModel(c)
 {
   addFields();
 }
   
 void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  turbulenceModel::addIntoDictionaries(dictionaries);
+  RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="kOmegaSST";
@@ -993,7 +1192,7 @@ kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(const turbulenceModel::Constr
   
 void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  turbulenceModel::addIntoDictionaries(dictionaries);
+  RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="kOmegaSST_LowRe";
@@ -1034,7 +1233,7 @@ kOmegaSST2_RASModel::kOmegaSST2_RASModel(const turbulenceModel::ConstrP& c)
   
 void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  turbulenceModel::addIntoDictionaries(dictionaries);
+  RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
   RASProperties["RASModel"]="kOmegaSST2";
@@ -1356,20 +1555,24 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["gamma"]=OFDictData::data(p_.gamma());
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
     }
-    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
     }
-    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
-    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    else if 
+    ( 
+      (
+	(field.first=="k") ||
+	(field.first=="epsilon") ||
+	(field.first=="omega") ||
+	(field.first=="nut") ||
+	(field.first=="nuSgs") ||
+	(field.first=="nuTilda")
+      )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
@@ -1420,15 +1623,15 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
-    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform 1e-10";
-    }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
@@ -1436,6 +1639,11 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["value"]="uniform 1.0";
     }
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
+    }
+    else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform 1e-10";
@@ -1486,20 +1694,24 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
     }
-    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
     }
-    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
-    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    else if 
+    (
+      (
+	(field.first=="k") ||
+	(field.first=="epsilon") ||
+	(field.first=="omega") ||
+	(field.first=="nut") ||
+	(field.first=="nuSgs") ||
+	(field.first=="nuTilda")
+      )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }

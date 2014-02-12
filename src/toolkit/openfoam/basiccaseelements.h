@@ -405,6 +405,25 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class probes
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (fields, std::vector<std::string>, std::vector<std::string>())
+    (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 1.0)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  probes(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class turbulenceModel
 : public OpenFOAMCaseElement

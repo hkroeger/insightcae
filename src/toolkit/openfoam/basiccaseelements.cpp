@@ -986,6 +986,44 @@ void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.addSubDictIfNonexistent("functions")["fieldAverage1"]=fod;
 }
+
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (fields, std::vector<std::string>, std::vector<std::string>())
+    (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 1.0)
+  )
+  
+probes::probes(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, "probes"),
+  p_(p)
+{
+}
+
+void probes::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="probes";
+  OFDictData::list libl; libl.push_back("\"libsampling.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["enabled"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  
+  OFDictData::list pl;
+  BOOST_FOREACH(const arma::mat& lo, p_.probeLocations())
+  {
+    pl.push_back(OFDictData::vector3(lo));
+  }
+  fod["probeLocations"]=pl;
+  
+  OFDictData::list fl; fl.resize(p_.fields().size());
+  copy(p_.fields().begin(), p_.fields().end(), fl.begin());
+  fod["fields"]=fl;
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")["probes1"]=fod;
+}
   
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);

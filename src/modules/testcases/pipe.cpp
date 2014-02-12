@@ -157,8 +157,9 @@ int Pipe::calcnr(const ParameterSet& p) const
 double lambda_func(double lambda, void *param)
 {
   double Retau=*static_cast<double*>(param);
-  double Re=exp((2./5.)+1./(2.*lambda))/sqrt(lambda);
-  //cout<<Retau<<" "<<lambda<<" "<<Re<<endl;
+  //cout<<Retau<<" "<<lambda<<endl;
+  //cout<<(2./5.)+1./(2.*lambda)<<endl;
+  double Re=pow(10, (2./5.)+1./(2.*lambda))/sqrt(lambda);
   return 2.*Retau*sqrt(8./lambda) - Re;
 }
 
@@ -181,7 +182,7 @@ double Pipe::calcRe(const ParameterSet& p) const
     f.params = &Re_tau;
  
     /* set initial interval */
-    x_l = 1e-3;
+    x_l = 1e-2;
     x_r = 10;
  
     /* set solver */
@@ -334,6 +335,8 @@ void Pipe::createCase
 )
 {
   // create local variables from ParameterSet
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   PSINT(p, "fluid", turbulenceModel);
   
@@ -344,7 +347,22 @@ void Pipe::createCase
     
   cm.insert(new pimpleFoamNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_fields(list_of<std::string>("p")("U")("k"))
+    .set_fields(list_of<std::string>("p")("U"))
+  ));
+  cm.insert(new probes(cm, probes::Parameters()
+    .set_fields(list_of<std::string>("p")("U"))
+    .set_probeLocations(list_of<arma::mat>
+      (vec3(0.1*L, 0, 0))
+      (vec3(0.33*L, 0, 0))
+      (vec3(0.5*L, 0, 0))
+      (vec3(0.66*L, 0, 0))
+      (vec3(0.9*L, 0, 0))
+      (vec3(0.1*L, 0.9*0.5*D, 0))
+      (vec3(0.33*L, 0.9*0.5*D, 0))
+      (vec3(0.5*L, 0.9*0.5*D, 0))
+      (vec3(0.66*L, 0.9*0.5*D, 0))
+      (vec3(0.9*L, 0.9*0.5*D, 0))
+    )
   ));
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   

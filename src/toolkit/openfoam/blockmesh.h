@@ -464,6 +464,9 @@ public:
   
   inline Patch& addPatch(const std::string& name, Patch *patch) 
   { 
+    if (name=="")
+      throw insight::Exception("Empty patch names are not allowed!");
+    
     std::string key(name);
     allPatches_.insert(key, patch); 
     return *patch; 

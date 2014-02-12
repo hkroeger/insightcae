@@ -80,7 +80,13 @@ OFEs OFEs::list;
 
 OFEs::OFEs()
 {
-  std::string cfgvar(getenv("INSIGHT_OFES"));
+  const char *envvar=getenv("INSIGHT_OFES");
+  if (!envvar)
+  {
+    cout<<"Warning: No OpenFOAM installations defined! (environment variable INSIGHT_OFES)"<<endl;
+    return;
+  }
+  std::string cfgvar(envvar);
   std::vector<std::string> ofestrs;
   boost::split(ofestrs, cfgvar, boost::is_any_of(":"));
   BOOST_FOREACH(const std::string& ofe, ofestrs)

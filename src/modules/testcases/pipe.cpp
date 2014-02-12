@@ -44,7 +44,9 @@ Pipe::Pipe(const NoParameters&)
   (
     "Pipe Flow Testcase",
     "Cylindrical domain with cyclic BCs on axial ends"
-  )
+  ),
+  cycl_in_("cycl_in"),
+  cycl_out_("cycl_out")
 {}
 
 Pipe::~Pipe()
@@ -78,8 +80,6 @@ ParameterSet Pipe::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("nc",	new IntParameter(20, "# cells in circumferential direction"))
-	    ("nr",	new IntParameter(20, "# cells in radial direction"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -139,37 +139,40 @@ void Pipe::createMesh
   PSDBL(p, "geometry", L);
 
   PSINT(p, "mesh", nax);
-  PSINT(p, "mesh", nc);
-  PSINT(p, "mesh", nr);
+  double Delta=L/double(nax);
+  double Lc=D/2.;
+  int nc=D*(2.+M_PI)/(8.*Delta);
+  int nr=D*(2.-sqrt(2.))/(4.*Delta);
+  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<endl;
     
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("walls", "walls");
+  bmd->setDefaultPatch("walls", "wall");
   
-  std::map<int, Point> pts;
   
   double al = M_PI/2.;
-  double Lc=0.33*L;
   
+  std::map<int, Point> pts;
   pts = boost::assign::map_list_of 
     
-      (10, 	vec3(0, 0.5*D, 0))
+      (11, 	vec3(0, 0.5*D, 0))
       /*
       (1, 	vec3(0, 0.5*D*cos(1.5*al), 0.5*D*sin(1.5*al)))
       (2, 	vec3(0, 0.5*D*cos(2.5*al), 0.5*D*sin(2.5*al)))
       (3, 	vec3(0, 0.5*D*cos(3.5*al), 0.5*D*sin(3.5*al)))
       */
-      (11, 	vec3(0,  sqrt(2.)*Lc, 0.))
+      (10, 	vec3(0,  cos(0.5*al)*Lc, 0.))
+      (9, 	vec3(0,  1.2*0.5*Lc, 0.))
       /*
       (5, 	vec3(0, -0.5*Lc,  0.5*Lc))
       (6, 	vec3(0, -0.5*Lc, -0.5*Lc))
       (7, 	vec3(0,  0.5*Lc, -0.5*Lc))
       */
   ;
-  arma::mat vL=vec3(-L, 0, 0);
+  arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
   
   // create patches
@@ -181,12 +184,12 @@ void Pipe::createMesh
     arma::mat r1=rotMatrix(1.5*al, ax);
     arma::mat r2=rotMatrix(2.5*al, ax);
     arma::mat r3=rotMatrix(3.5*al, ax);
-    
+
     Block& bl = bmd->addBlock
     (  
       new Block(P_8(
 	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
-	  (r1*pts[10])+L, (r2*pts[10])+L, (r3*pts[10])+L, (r0*pts[10])+L
+	  (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
 	),
 	nc, nc, nax
       )
@@ -194,7 +197,7 @@ void Pipe::createMesh
     cycl_in.addFace(bl.face("0321"));
     cycl_out.addFace(bl.face("4567"));
   }
-  /*
+
   for (int i=0; i<4; i++)
   {
     arma::mat r0=rotMatrix(double(i+0.5)*al, ax);
@@ -204,15 +207,24 @@ void Pipe::createMesh
     (
       new Block(P_8(
 	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
-	  (r1*pts[10])+L, (r0*pts[10])+L, (r0*pts[11])+L, (r1*pts[11])+L
+	  (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
 	),
 	nc, nr, nax
       )
     );
     cycl_in.addFace(bl.face("0321"));
     cycl_out.addFace(bl.face("4567"));
+
+    arma::mat rmid=rotMatrix(double(i+1)*al, ax);
+    bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
+    bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
+
+    //inner core
+    bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
+    bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
+
   }
-  */
+
   cm.insert(bmd.release());
 
   cm.createOnDisk(dir);
@@ -266,7 +278,7 @@ ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
 
   PSSTR(p, "run", machine);
   
-  OFEnvironment ofe(220, "/home/hannes/OpenFOAM/bashrc.of22x");
+  OFEnvironment ofe = OFEs::get("OF22x");
   ofe.setExecutionMachine(machine);
   
   path dir = setupExecutionEnvironment();

@@ -289,7 +289,7 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
     target, "mergeMeshes", 
     list_of<std::string>
     (".")
-    (source.c_str()) 
+    (boost::filesystem::absolute(source).c_str()) 
   );
 }
 

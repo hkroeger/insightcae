@@ -39,17 +39,44 @@ using namespace insight::OFDictData;
 namespace insight
 {
   
-OFDictData::dict& OFdicts::addDictionaryIfNonexistent(const std::string& key)
+OFDictData::dictFile& OFdicts::addDictionaryIfNonexistent(const std::string& key)
 {
   OFdicts::iterator i=find(key);
   if (i==end())
   {
-    (*this)[key]=OFDictData::dict();
+    (*this)[key]=OFDictData::dictFile();
   }
   return (*this)[key];
 }
 
-OFDictData::dict& OFdicts::lookupDict(const std::string& key)
+OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, const FieldInfo& fi)
+{
+  OFDictData::dictFile& d=addDictionaryIfNonexistent(key);
+  std::string className;
+  if (boost::fusion::get<3>(fi) == volField )
+    className="vol";
+  else if (boost::fusion::get<3>(fi) == pointField )
+    className="point";
+  else if (boost::fusion::get<3>(fi) == tetField )
+    className="tetPoint";
+  else
+    throw insight::Exception("Don't know the geotype of field "+lexical_cast<std::string>(boost::fusion::get<3>(fi)));
+    
+  if (boost::fusion::get<0>(fi)==scalarField)
+    className+="ScalarField";
+  else if (boost::fusion::get<0>(fi)==vectorField)
+    className+="VectorField";
+  else if (boost::fusion::get<0>(fi)==symmTensorField)
+    className+="SymmTensorField";
+  else
+    throw insight::Exception("Don't know the class name of field type "+lexical_cast<std::string>(boost::fusion::get<0>(fi)));
+  
+  d.className=className;
+
+  return d;
+}
+
+OFDictData::dictFile& OFdicts::lookupDict(const std::string& key)
 {
   OFdicts::iterator i=find(key);
   if (i==end())
@@ -171,7 +198,7 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
   // create field dictionaries first
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
-    OFDictData::dict& field = dictionaries->addDictionaryIfNonexistent("0/"+i.first);
+    OFDictData::dictFile& field = dictionaries->addFieldIfNonexistent("0/"+i.first, i.second);
     
     std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
     field["dimensions"] = OFDictData::data( dimss.str() );

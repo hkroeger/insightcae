@@ -31,12 +31,43 @@
 namespace insight {
 
 class ProgressDisplayer;
-  
-struct OFdicts
-: public boost::ptr_map<std::string, OFDictData::dict> 
+
+
+enum FieldType
 {
-  OFDictData::dict& addDictionaryIfNonexistent(const std::string& key);
-  OFDictData::dict& lookupDict(const std::string& key);
+  scalarField,
+  vectorField,
+  symmTensorField
+};
+
+enum FieldGeoType
+{
+  volField,
+  pointField,
+  tetField
+};
+
+extern const OFDictData::dimensionSet dimPressure;
+extern const OFDictData::dimensionSet dimKinPressure;
+extern const OFDictData::dimensionSet dimKinEnergy;
+extern const OFDictData::dimensionSet dimVelocity;
+extern const OFDictData::dimensionSet dimLength;
+extern const OFDictData::dimensionSet dimDensity;
+extern const OFDictData::dimensionSet dimless;
+extern const OFDictData::dimensionSet dimKinViscosity;
+
+typedef std::vector<double> FieldValue;
+typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue, FieldGeoType > FieldInfo;
+
+typedef std::map<std::string, FieldInfo> FieldList;
+
+
+struct OFdicts
+: public boost::ptr_map<std::string, OFDictData::dictFile> 
+{
+  OFDictData::dictFile& addDictionaryIfNonexistent(const std::string& key);
+  OFDictData::dictFile& addFieldIfNonexistent(const std::string& key, const FieldInfo& fi);
+  OFDictData::dictFile& lookupDict(const std::string& key);
 };
 
 class OpenFOAMCase;
@@ -87,21 +118,6 @@ public:
 };
 
 
-enum FieldType
-{
-  scalarField,
-  vectorField,
-  symmTensorField
-};
-
-enum FieldGeoType
-{
-  volField,
-  pointField,
-  tetField
-};
-
-
 class SolverOutputAnalyzer
 {
   
@@ -117,20 +133,6 @@ public:
   void update(const std::string& line);
 };
 
-
-extern const OFDictData::dimensionSet dimPressure;
-extern const OFDictData::dimensionSet dimKinPressure;
-extern const OFDictData::dimensionSet dimKinEnergy;
-extern const OFDictData::dimensionSet dimVelocity;
-extern const OFDictData::dimensionSet dimLength;
-extern const OFDictData::dimensionSet dimDensity;
-extern const OFDictData::dimensionSet dimless;
-extern const OFDictData::dimensionSet dimKinViscosity;
-
-typedef std::vector<double> FieldValue;
-typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue> FieldInfo;
-
-typedef std::map<std::string, FieldInfo> FieldList;
 
 class OpenFOAMCase 
 : public Case

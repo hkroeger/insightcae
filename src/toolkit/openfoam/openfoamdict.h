@@ -45,40 +45,6 @@
 
 namespace insight
 {
-
- /*
-class OpenFOAMDictEntry
-{
-public:
-  virtual std::string toString() =0;
-};
-
-
-class PlainEntry
-: public OpenFOAMDictEntry,
-  public std::string
-{
-public:
-  virtual std::string toString();
-};
-
-
-class ListEntry
-: public OpenFOAMDictEntry,
-  public boost::ptr_vector<OpenFOAMDictEntry>
-{
-public:
-  virtual std::string toString();
-};
-
-class Dict
-: public OpenFOAMDictEntry,
-  public boost::ptr_map<std::string, OpenFOAMDictEntry>
-{
-public:
-  virtual std::string toString();
-};
-*/
  
 
 namespace OFDictData
@@ -201,6 +167,16 @@ struct dict
 
 };
 
+struct dictFile
+: public dict
+{
+  std::string className;
+  int dictVersion;
+  int OFversion;
+  
+  dictFile();
+};
+
 OFDictData::list vector3(const arma::mat& v);
 OFDictData::list vector3(double x, double y, double z);
 
@@ -211,17 +187,7 @@ std::ostream& operator<<(std::ostream& os, const list& l);
 
 }
 
-/*
-class OpenFOAMDict
-: public Dict
-{
 
-public:
-    OpenFOAMDict();
-    OpenFOAMDict(const OpenFOAMDict& other);
-    virtual ~OpenFOAMDict();
-};
-*/
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 
@@ -356,10 +322,10 @@ bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
 
 
 void readOpenFOAMDict(std::istream& in, OFDictData::dict& d);
-void writeOpenFOAMDict(std::ostream& out, const OFDictData::dict& d, const std::string& objname);
+void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
 
 void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
-void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dict& d);
+void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
 
 }
 

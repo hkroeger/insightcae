@@ -20,7 +20,10 @@
 
 #include "openfoamdict.h"
 
+#include "boost/lexical_cast.hpp"
+
 using namespace std;
+using namespace boost;
 
 namespace insight
 {
@@ -51,16 +54,16 @@ void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
 	}
 }
 
-void writeOpenFOAMDict(std::ostream& out, const OFDictData::dict& d, const std::string& objname)
+void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
 {
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     2.0;"<<endl
+       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
-       <<" class       dictionary;"<<endl
+       <<" class       "+d.className+";"<<endl
        <<" object      " << objname << ";"<<endl
        <<"}"<<endl;
-    //out<<d;
+
     for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
       out<< i->first << " " << i->second << ";\n";
 }
@@ -102,20 +105,20 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     */
 }
 
-void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dict& d)
+void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
 {
   typedef std::map<int, std::string> Ordering;
   Ordering ord;
-  BOOST_FOREACH( const OFDictData::dict::value_type& i, d )
+  BOOST_FOREACH( const OFDictData::dictFile::value_type& i, d )
   {
     ord[d.subDict(i.first).getInt("startFace")] = i.first;
   }
   
     out<<"FoamFile"<<endl
        <<"{"<<endl
-       <<" version     2.0;"<<endl
+       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
        <<" format      ascii;"<<endl
-       <<" class       dictionary;"<<endl
+       <<" class       "+d.className+";"<<endl
        <<" object      boundary;"<<endl
        <<"}"<<endl;
 
@@ -183,6 +186,13 @@ list& dict::addListIfNonexistent(const std::string& key)
     (*this)[key]=list();
   } 
   return this->lookup<list>(key);
+}
+
+OFDictData::dictFile::dictFile()
+: className("dictionary"),
+  dictVersion(2),
+  OFversion(-1)
+{
 }
 
 OFDictData::list vector3(const arma::mat& v)

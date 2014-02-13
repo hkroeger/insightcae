@@ -265,8 +265,8 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c)
 : FVNumerics(c)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0) ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
 }
  
 void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -361,8 +361,8 @@ pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
 : FVNumerics(c),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0) ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
 }
  
 void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -469,9 +469,9 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c)
 : FVNumerics(c)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5) ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
-  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(0.0) ) );
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(0.0), volField ) );
 }
  
 void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -544,9 +544,9 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c)
   else
     pname_="p_rgh";
   
-  c.addField(pname_, FieldInfo(scalarField, 	dimPressure, 		list_of(0.0) ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
-  c.addField("alpha1", FieldInfo(scalarField, 	dimless, 		list_of(0.0) ) );
+  c.addField(pname_, FieldInfo(scalarField, 	dimPressure, 		list_of(0.0), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField("alpha1", FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
 }
  
 void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -694,7 +694,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
 : FaNumerics(c)
 {
-  //c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0) ) );
+  //c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0), volField ) );
 }
  
 void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -909,7 +909,7 @@ velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
 : dynamicMesh(c),
   tetFemNumerics_(c)
 {
-  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0) ) );
+  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), tetField ) );
 }
 
 void velocityTetFEMMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
@@ -1107,8 +1107,8 @@ addToFactoryTable(turbulenceModel, oneEqEddy_LESModel, turbulenceModel::ConstrP)
 
 void oneEqEddy_LESModel::addFields()
 {
-  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
-  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
   
 
@@ -1161,9 +1161,9 @@ addToFactoryTable(turbulenceModel, kOmegaSST_RASModel, turbulenceModel::ConstrP)
 
 void kOmegaSST_RASModel::addFields()
 {
-  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10) ) );
-  OFcase().addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0) ) );
-  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  OFcase().addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0), volField ) );
+  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c)
@@ -1254,7 +1254,7 @@ addToFactoryTable(turbulenceModel, kOmegaSST2_RASModel, turbulenceModel::ConstrP
 
 void kOmegaSST2_RASModel::addFields()
 {
-  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10) ) );
+  OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
 
 kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c)
@@ -1334,7 +1334,7 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& fieldDict=dictionaries.addDictionaryIfNonexistent("0/"+field.first);
+    OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
     OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
     OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
   }
@@ -1415,7 +1415,8 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     if ( (className_=="cyclic") && ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
@@ -1457,7 +1458,8 @@ void GGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     
     if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
@@ -1511,7 +1513,8 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     
     if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
@@ -1572,7 +1575,8 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("pressureInletOutletVelocity");
@@ -1644,7 +1648,8 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
@@ -1716,7 +1721,8 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC=dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("inletOutlet");
@@ -1890,7 +1896,8 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
-    OFDictData::dict& BC = dictionaries.addDictionaryIfNonexistent("0/"+field.first).subDict("boundaryField").subDict(patchName_);
+    OFDictData::dict& BC = dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
     
     // velocity
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )

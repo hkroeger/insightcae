@@ -167,7 +167,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
 {
   using namespace snappyHexMeshFeats;
   
-  OFDictData::dict sHMDict;
+  OFDictData::dictFile sHMDict;
   
   // setup dict structure
   sHMDict["castellatedMesh"] = true;

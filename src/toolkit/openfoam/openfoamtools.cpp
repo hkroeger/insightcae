@@ -171,7 +171,7 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
 {
   using namespace setFieldOps;
   
-  OFDictData::dict setFieldsDict;
+  OFDictData::dictFile setFieldsDict;
   
   OFDictData::list& dvl = setFieldsDict.addListIfNonexistent("defaultFieldValues");
   BOOST_FOREACH( const FieldValueSpec& dv, defaultValues)
@@ -249,7 +249,7 @@ void createPatch(const OpenFOAMCase& ofc,
 {
   using namespace createPatchOps;
   
-  OFDictData::dict createPatchDict;
+  OFDictData::dictFile createPatchDict;
   
   createPatchDict["matchTolerance"] = 1e-3;
   createPatchDict["pointSync"] = false;

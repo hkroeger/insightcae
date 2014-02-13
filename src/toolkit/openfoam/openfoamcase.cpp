@@ -39,17 +39,44 @@ using namespace insight::OFDictData;
 namespace insight
 {
   
-OFDictData::dict& OFdicts::addDictionaryIfNonexistent(const std::string& key)
+OFDictData::dictFile& OFdicts::addDictionaryIfNonexistent(const std::string& key)
 {
   OFdicts::iterator i=find(key);
   if (i==end())
   {
-    (*this)[key]=OFDictData::dict();
+    (*this)[key]=OFDictData::dictFile();
   }
   return (*this)[key];
 }
 
-OFDictData::dict& OFdicts::lookupDict(const std::string& key)
+OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, const FieldInfo& fi)
+{
+  OFDictData::dictFile& d=addDictionaryIfNonexistent(key);
+  std::string className;
+  if (boost::fusion::get<3>(fi) == volField )
+    className="vol";
+  else if (boost::fusion::get<3>(fi) == pointField )
+    className="point";
+  else if (boost::fusion::get<3>(fi) == tetField )
+    className="tetPoint";
+  else
+    throw insight::Exception("Don't know the geotype of field "+lexical_cast<std::string>(boost::fusion::get<3>(fi)));
+    
+  if (boost::fusion::get<0>(fi)==scalarField)
+    className+="ScalarField";
+  else if (boost::fusion::get<0>(fi)==vectorField)
+    className+="VectorField";
+  else if (boost::fusion::get<0>(fi)==symmTensorField)
+    className+="SymmTensorField";
+  else
+    throw insight::Exception("Don't know the class name of field type "+lexical_cast<std::string>(boost::fusion::get<0>(fi)));
+  
+  d.className=className;
+
+  return d;
+}
+
+OFDictData::dictFile& OFdicts::lookupDict(const std::string& key)
 {
   OFdicts::iterator i=find(key);
   if (i==end())
@@ -171,7 +198,7 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
   // create field dictionaries first
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
-    OFDictData::dict& field = dictionaries->addDictionaryIfNonexistent("0/"+i.first);
+    OFDictData::dictFile& field = dictionaries->addFieldIfNonexistent("0/"+i.first, i.second);
     
     std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
     field["dimensions"] = OFDictData::data( dimss.str() );
@@ -342,10 +369,18 @@ int OpenFOAMCase::executeCommand
   const boost::filesystem::path& location, 
   const std::string& cmd,
   std::vector<std::string> argv,
-  std::vector<std::string>* output
+  std::vector<std::string>* output,
+  int np
 ) const
 {
-  return env_.executeCommand( cmdString(location, cmd, argv), std::vector<std::string>(), output );
+  string execmd=cmd;
+  if (np>1)
+  {
+    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    argv.push_back("-parallel");
+  }
+  
+  return env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output );
 }
 
 int OpenFOAMCase::runSolver
@@ -353,14 +388,24 @@ int OpenFOAMCase::runSolver
   const boost::filesystem::path& location, 
   SolverOutputAnalyzer& analyzer,
   std::string solverName,
-  bool *stopFlag
+  bool *stopFlag,
+  int np
 )
 {
   if (stopFlag) *stopFlag=false;
   
   redi::ipstream p_in;
+  
+  string cmd=solverName;
+  std::vector<std::string> argv;
+  if (np>1)
+  {
+    cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    argv.push_back("-parallel");
+  }
+
   //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
-  env_.forkCommand( p_in, cmdString(location, solverName, std::vector<std::string>()) );
+  env_.forkCommand( p_in, cmdString(location, cmd, argv) );
 
   std::string line;
   while (std::getline(p_in, line))

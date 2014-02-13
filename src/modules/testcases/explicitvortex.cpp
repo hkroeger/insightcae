@@ -210,9 +210,6 @@ void ExplicitVortex::createCase
 )
 {
   // create local variables from ParameterSet
-  PSDBL(p, "geometry", vcx);
-  PSDBL(p, "geometry", vcy);
-  PSDBL(p, "operation", Gamma);
   PSDBL(p, "fluid", nu);
   PSINT(p, "fluid", RASModel);
   
@@ -228,67 +225,33 @@ void ExplicitVortex::createCase
   cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
   
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/RASModel").selection());
-  
-  //cm.createOnDisk(dir);
-  boost::shared_ptr<OFdicts> dicts=cm.createDictionaries();
+}
+
+void ExplicitVortex::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
   dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
   dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);  
-  cm.createOnDisk(dir, dicts);
-  
-  cm.executeCommand(dir, "setVortexVelocity",
+}
+
+void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  PSDBL(p, "geometry", vcx);
+  PSDBL(p, "geometry", vcy);
+  PSDBL(p, "operation", Gamma);
+
+  cm.executeCommand(executionPath(), "setVortexVelocity",
     list_of<std::string>
     (lexical_cast<std::string>(Gamma))
     ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
   );  
 }
 
-ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
+
+ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  const ParameterSet& p = *parameters_;
-  
-  PSDBL(p, "geometry", Lx);
-  PSDBL(p, "geometry", Ly);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+
   PSDBL(p, "geometry", Lz);
-
-  PSSTR(p, "run", machine);
-  
-  OFEnvironment ofe(220, "/home/hannes/OpenFOAM/bashrc.of22x");
-  ofe.setExecutionMachine(machine);
-  
-  path dir = setupExecutionEnvironment();
-
-  p.saveToFile(dir/"parameters.ist", type());
-  
-  {
-    OpenFOAMCase meshCase(ofe);
-    if (!meshCase.meshPresentOnDisk(dir))
-      createMesh(meshCase, p);
-    else
-      cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
-  }
-
-  OpenFOAMCase runCase(ofe);
-  if (!runCase.outputTimesPresentOnDisk(dir))
-  {
-    createCase(runCase, p);
-  }
-  else
-    cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  
-  SolverOutputAnalyzer analyzer(*displayer);
-  runCase.runSolver(dir, analyzer, "simpleFoam", &stopFlag_);
-/*  
-  double pclip = (pcav-pambient)/rho - 9.81*depthByD*Di;
-  BearingForceList bfl = calcBearingForce(runCase, Di, pclip, dir);
-  
-  const PatchBearingForce& bf = bfl.find("pivot")->second;
-  const arma::mat& f = get<0>(bf);
-  const arma::mat& m = get<1>(bf);
-  double minp = get<2>(bf);
-  
-  double fac=1.0; if (symm) fac=2.0;
-  */
-  ResultSetPtr results(new ResultSet(p, "Circular Journal Bearing Analysis", "Result Report"));
   
   std::string init=
       "cbi=loadOFCase('.')\n"
@@ -298,7 +261,7 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
       
   runPvPython
   (
-    runCase, dir, list_of<std::string>
+    cm, executionPath(), list_of<std::string>
     (
       init+
       "displayContour(eb, 'p', arrayType='CELL_DATA')\n"
@@ -315,7 +278,7 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
   
   runPvPython
   (
-    runCase, dir, list_of<std::string>
+    cm, executionPath(), list_of<std::string>
     (
       init+
       "displayContour(eb, 'U', component=0, arrayType='CELL_DATA')\n"
@@ -332,7 +295,7 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
   
   runPvPython
   (
-    runCase, dir, list_of<std::string>
+    cm, executionPath(), list_of<std::string>
     (
       init+
       "displayContour(eb, 'U', component=1)\n"
@@ -349,7 +312,7 @@ ResultSetPtr ExplicitVortex::operator()(ProgressDisplayer* displayer)
 
   runPvPython
   (
-    runCase, dir, list_of<std::string>
+    cm, executionPath(), list_of<std::string>
     (
       init+
       "displayContour(eb, 'U', component=2)\n"

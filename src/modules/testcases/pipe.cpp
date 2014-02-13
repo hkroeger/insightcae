@@ -115,11 +115,6 @@ ParameterSet Pipe::defaultParameters() const
   return p;
 }
 
-void Pipe::cancel()
-{
-  stopFlag_=true;
-}
-
 double Pipe::calcLc(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
@@ -217,9 +212,9 @@ double Pipe::calcRe(const ParameterSet& p) const
 double Pipe::calcUbulk(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
-  PSDBL(p, "operation", Re_tau);
+  //PSDBL(p, "operation", Re_tau);
   
-  return calcRe(p)*(1./Re_tau)/D;
+  return 1./D; //calcRe(p)*(1./Re_tau)/D;
 }
 
 void Pipe::createMesh
@@ -252,21 +247,10 @@ void Pipe::createMesh
   double al = M_PI/2.;
   
   std::map<int, Point> pts;
-  pts = boost::assign::map_list_of 
-    
+  pts = boost::assign::map_list_of   
       (11, 	vec3(0, 0.5*D, 0))
-      /*
-      (1, 	vec3(0, 0.5*D*cos(1.5*al), 0.5*D*sin(1.5*al)))
-      (2, 	vec3(0, 0.5*D*cos(2.5*al), 0.5*D*sin(2.5*al)))
-      (3, 	vec3(0, 0.5*D*cos(3.5*al), 0.5*D*sin(3.5*al)))
-      */
       (10, 	vec3(0,  cos(0.5*al)*Lc, 0.))
       (9, 	vec3(0,  1.2*0.5*Lc, 0.))
-      /*
-      (5, 	vec3(0, -0.5*Lc,  0.5*Lc))
-      (6, 	vec3(0, -0.5*Lc, -0.5*Lc))
-      (7, 	vec3(0,  0.5*Lc, -0.5*Lc))
-      */
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
@@ -364,7 +348,7 @@ void Pipe::createCase
       (vec3(0.9*L, 0.9*0.5*D, 0))
     )
   ));
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./calcRe(p)) ));
   
   cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
     .set_velocity(vec3(calcUbulk(p), 0, 0)) 
@@ -375,12 +359,7 @@ void Pipe::createCase
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
-  
-  //cm.createOnDisk(dir);
-  boost::shared_ptr<OFdicts> dicts=cm.createDictionaries();
-  //dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
-  //dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);  
-  cm.createOnDisk(dir, dicts);
+
 /*  
   cm.executeCommand(dir, "setVortexVelocity",
     list_of<std::string>
@@ -389,43 +368,10 @@ void Pipe::createCase
   );  
   */
 }
-
-ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
+  
+ResultSetPtr Pipe::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  const ParameterSet& p = *parameters_;
-  
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-
-  PSSTR(p, "run", machine);
-  
-  OFEnvironment ofe = OFEs::get("OF22x");
-  ofe.setExecutionMachine(machine);
-  
-  path dir = setupExecutionEnvironment();
-
-  p.saveToFile(dir/"parameters.ist", type());
-  
-  {
-    OpenFOAMCase meshCase(ofe);
-    if (!meshCase.meshPresentOnDisk(dir))
-      createMesh(meshCase, p);
-    else
-      cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
-  }
-
-  OpenFOAMCase runCase(ofe);
-  if (!runCase.outputTimesPresentOnDisk(dir))
-  {
-    createCase(runCase, p);
-  }
-  else
-    cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  /*
-  SolverOutputAnalyzer analyzer(*displayer);
-  runCase.runSolver(dir, analyzer, "simpleFoam", &stopFlag_);
-*/
-  ResultSetPtr results(new ResultSet(p, "Pipe Flow Test Case", "Result Report"));
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
   std::string init=
       "cbi=loadOFCase('.')\n"
@@ -433,7 +379,7 @@ ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
       
   runPvPython
   (
-    runCase, dir, list_of<std::string>
+    cm, executionPath(), list_of<std::string>
     (
       init+
       "eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
@@ -455,7 +401,7 @@ ResultSetPtr Pipe::operator()(ProgressDisplayer* displayer)
     std::string c("x"); c[0]+=i;
     runPvPython
     (
-      runCase, dir, list_of<std::string>
+      cm, executionPath(), list_of<std::string>
       (
 	init+
 	"eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"

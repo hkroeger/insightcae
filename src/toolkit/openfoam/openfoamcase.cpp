@@ -369,10 +369,18 @@ int OpenFOAMCase::executeCommand
   const boost::filesystem::path& location, 
   const std::string& cmd,
   std::vector<std::string> argv,
-  std::vector<std::string>* output
+  std::vector<std::string>* output,
+  int np
 ) const
 {
-  return env_.executeCommand( cmdString(location, cmd, argv), std::vector<std::string>(), output );
+  string execmd=cmd;
+  if (np>1)
+  {
+    execmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    argv.push_back("-parallel");
+  }
+  
+  return env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output );
 }
 
 int OpenFOAMCase::runSolver
@@ -380,14 +388,24 @@ int OpenFOAMCase::runSolver
   const boost::filesystem::path& location, 
   SolverOutputAnalyzer& analyzer,
   std::string solverName,
-  bool *stopFlag
+  bool *stopFlag,
+  int np
 )
 {
   if (stopFlag) *stopFlag=false;
   
   redi::ipstream p_in;
+  
+  string cmd=solverName;
+  std::vector<std::string> argv;
+  if (np>1)
+  {
+    cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
+    argv.push_back("-parallel");
+  }
+
   //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
-  env_.forkCommand( p_in, cmdString(location, solverName, std::vector<std::string>()) );
+  env_.forkCommand( p_in, cmdString(location, cmd, argv) );
 
   std::string line;
   while (std::getline(p_in, line))

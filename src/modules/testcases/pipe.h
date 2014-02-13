@@ -28,7 +28,6 @@ class Pipe
 : public OpenFOAMAnalysis
 {
 protected:
-  bool stopFlag_;
   std::string cycl_in_, cycl_out_;
   
 public:
@@ -37,8 +36,6 @@ public:
   Pipe(const NoParameters&);
   ~Pipe();
   
-  virtual void cancel();
-  virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
   virtual ParameterSet defaultParameters() const;
   
   virtual double calcLc(const ParameterSet& p) const;
@@ -58,6 +55,9 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+  
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+  
 };
 
 }

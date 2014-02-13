@@ -22,25 +22,50 @@
 #define INSIGHT_OPENFOAMANALYSIS_H
 
 #include "base/analysis.h"
+#include "openfoam/openfoamcase.h"
 
 
 namespace insight {
   
-class OpenFOAMCase;
+//class OpenFOAMCase;
   
 void insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name);
 
 class OpenFOAMAnalysis
 : public insight::Analysis
 {
+protected:
+    bool stopFlag_;
 
 public:
     OpenFOAMAnalysis(const std::string& name, const std::string& description);
+    
+    virtual void cancel();
+    
     virtual insight::ParameterSet defaultParameters() const;
-/*    
-    virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p);
-    virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p);    
-*/
+
+    virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p) =0;
+    virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p) =0;
+    
+    virtual void createDictsInMemory(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    
+    /**
+     * Customize dictionaries before they get written to disk
+     */
+    virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    
+    virtual void writeDictsToDisk(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    
+    /**
+     * Do modifications to the case when it has been created on disk
+     */
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+    
+    virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p);
+    
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+    
+    virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
 };
 
 }

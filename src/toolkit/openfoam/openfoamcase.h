@@ -188,7 +188,8 @@ public:
       const boost::filesystem::path& location, 
       const std::string& cmd,
       std::vector<std::string> argv = std::vector<std::string>(),
-      std::vector<std::string>* output = NULL
+      std::vector<std::string>* output = NULL,
+      int np=0
     ) const;
     
     int runSolver
@@ -196,7 +197,8 @@ public:
       const boost::filesystem::path& location, 
       SolverOutputAnalyzer& analyzer,
       std::string solverName,
-      bool *stopFlag = NULL
+      bool *stopFlag = NULL,
+      int np=0
     );
     
     template<class stream>

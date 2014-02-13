@@ -230,7 +230,9 @@ void ExplicitVortex::createCase
 void ExplicitVortex::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
 {
   dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
-  dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);  
+  dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);
+
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
 }
 
 void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
@@ -244,6 +246,8 @@ void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterS
     (lexical_cast<std::string>(Gamma))
     ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
   );  
+  
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
 
 

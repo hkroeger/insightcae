@@ -50,6 +50,11 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+  
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
 };
 
 }

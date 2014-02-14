@@ -99,6 +99,10 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, const ParameterSet&
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
 {
   PSINT(p, "run", np);
+  PSDBL(p, "run", endTime);
+
+  OFDictData::dict& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  controlDict["endTime"]=endTime;
   
   OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
   decomposeParDict["numberOfSubdomains"]=np;

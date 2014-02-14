@@ -23,21 +23,21 @@ License
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
-    homogeneousTurbulence
+    homogeneousTurbulenceVorton
 
 Description
 
 Author
 
 SourceFiles
-    homogeneousTurbulenceI.H
-    homogeneousTurbulence.C
-    homogeneousTurbulenceIO.C
+    homogeneousTurbulenceVortonI.H
+    homogeneousTurbulenceVorton.C
+    homogeneousTurbulenceVortonIO.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef homogeneousTurbulence_H
-#define homogeneousTurbulence_H
+#ifndef homogeneousTurbulenceVorton_H
+#define homogeneousTurbulenceVorton_H
 
 #include "scalar.H"
 #include "vector.H"
@@ -45,30 +45,31 @@ SourceFiles
 #include "IOdictionary.H"
 #include "Istream.H"
 #include "Ostream.H"
+#include "turbulentStructure.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-class homogeneousTurbulence;
+class homogeneousTurbulenceVorton;
 
-Ostream& operator<<(Ostream&, const homogeneousTurbulence&);
-Istream& operator>>(Istream&, homogeneousTurbulence&);
+Ostream& operator<<(Ostream&, const homogeneousTurbulenceVorton&);
+Istream& operator>>(Istream&, homogeneousTurbulenceVorton&);
 
 /*---------------------------------------------------------------------------*\
-                           Class homogeneousTurbulence Declaration
+                           Class homogeneousTurbulenceVorton Declaration
 \*---------------------------------------------------------------------------*/
 
-class homogeneousTurbulence
+class homogeneousTurbulenceVorton
+: turbulentStructure
 {
 
 public:
 
-    class Parameters
+    class StructureParameters
     {
     public:
-        scalar L_;    // integral length scale
         scalar eta_;  // Kolmogorov length
         scalar Cl_;
         scalar Ceta_;
@@ -76,78 +77,51 @@ public:
         scalar C_2;
         scalar C_3;
 
-        Parameters();
-        Parameters(const dictionary&);
-        Parameters(scalar, scalar, scalar, scalar);
+        StructureParameters();
+        StructureParameters(const dictionary&);
 
+	void autoMap
+	(
+	    const fvPatchFieldMapper&
+	);
+
+	//- Reverse map the given fvPatchField onto this fvPatchField
+	void rmap
+	(
+	    const fvPatchField<vector>&,
+	    const labelList&
+	);
+    
         void write(Ostream&) const;
+	
+	scalar calcInfluenceLength(const vector& L);
     };
 
 private:
-    // Private data
-
-    vector location_;
     vector omegav_;
-
-    // Private Member Functions
 
 public:
 
-
-    static scalar calcInfluenceLength(const Parameters& p);
-
-
     // Constructors
-    homogeneousTurbulence();
+    homogeneousTurbulenceVorton();
+    homogeneousTurbulenceVorton(Istream&);
+    homogeneousTurbulenceVorton(const vector&);
+    homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
-    homogeneousTurbulence(Istream&);
-
-    //- Construct from components
-    homogeneousTurbulence(const vector&);
-    
-    //- Construct as copy
-    homogeneousTurbulence(const homogeneousTurbulence&);
-    
-    // Selectors
-
-    //- Select null constructed
-    static autoPtr<homogeneousTurbulence> New(Istream&);
-
-
-    // Destructor
-
-    ~homogeneousTurbulence();
-    
-
-    // Member Functions
-
-    // Access
-    inline void setLocation(const vector& x) { location_=x; }
-    inline const vector& location() const { return location_; }
+    ~homogeneousTurbulenceVorton();
 
     vector fluctuation(const Parameters&, const vector&) const;
-    
-    // Check
 
-    // Edit
     void randomize(Random&);
-    void moveForward(vector);
-    
-    // Write
+    void operator=(const homogeneousTurbulenceVorton&);
+    bool operator!=(const homogeneousTurbulenceVorton&) const;
 
-
-    // Member Operators
-
-    void operator=(const homogeneousTurbulence&);
-    bool operator!=(const homogeneousTurbulence&) const;
-
-    autoPtr<homogeneousTurbulence> clone() const;
-
-    // Friend Functions
+    static autoPtr<homogeneousTurbulenceVorton> New(Istream&);
+    autoPtr<homogeneousTurbulenceVorton> clone() const;
 
     // Friend Operators
-    friend Ostream& operator<<(Ostream&, const homogeneousTurbulence&);
-    friend Istream& operator>>(Istream&, homogeneousTurbulence&);
+    friend Ostream& operator<<(Ostream&, const homogeneousTurbulenceVorton&);
+    friend Istream& operator>>(Istream&, homogeneousTurbulenceVorton&);
 };
 
 

@@ -36,9 +36,11 @@ SourceFiles
 #define inflowGeneratorFvPatchVectorField_H
 
 #include "Random.H"
-#include "fixedValueFvPatchField.H"
-#include "homogeneousTurbulenceVorton.H"
+#include "fixedValueFvPatchFields.H"
+
+#include "turbulentStructure.H"
 #include "hatSpot.H"
+#include "homogeneousTurbulenceVorton.H"
 #include "SLList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -81,13 +83,11 @@ class inflowGeneratorFvPatchVectorField
      */
     typename TurbulentStructure::Parameters structureParameters_;
     
-    Field<scalar> conditioningFactor_;
+    autoPtr<Field<scalar> > conditioningFactor_;
     
     scalar overlap_;
     
     label curTimeIndex_;
-    
-    vector n_;
 
     void computeConditioningFactor();
     

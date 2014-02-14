@@ -23,107 +23,72 @@ License
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
-    hatSpot
+    turbulentStructure
 
 Description
 
 Author
 
 SourceFiles
-    hatSpotI.H
-    hatSpot.C
-    hatSpotIO.C
+    turbulentStructureI.H
+    turbulentStructure.C
+    turbulentStructureIO.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef hatSpot_H
-#define hatSpot_H
+#ifndef turbulentStructure_H
+#define turbulentStructure_H
 
-#include "scalar.H"
-#include "vector.H"
+#include "fvCFD.H"
 #include "Random.H"
 #include "IOdictionary.H"
 #include "Istream.H"
 #include "Ostream.H"
-#include "turbulentStructure.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
 
-class hatSpot;
+class turbulentStructure;
 
-Ostream& operator<<(Ostream&, const hatSpot&);
-Istream& operator>>(Istream&, hatSpot&);
+Ostream& operator<<(Ostream&, const turbulentStructure&);
+Istream& operator>>(Istream&, turbulentStructure&);
 
-/*---------------------------------------------------------------------------*\
-                           Class hatSpot Declaration
-\*---------------------------------------------------------------------------*/
-
-class hatSpot
-: public turbulentStructure
+class turbulentStructure
 {
-
-public:
-
-    class StructureParameters
-    {
-    public:
-        StructureParameters();
-        StructureParameters(const dictionary&);
-
-	void autoMap
-	(
-	    const fvPatchFieldMapper&
-	);
-
-	//- Reverse map the given fvPatchField onto this fvPatchField
-	void rmap
-	(
-	    const fvPatchField<vector>&,
-	    const labelList&
-	);
-    
-        void write(Ostream&) const;
-	
-	scalar calcInfluenceLength(const vector& L);
-    };
-
 protected:
-    vector epsilon_;
-    vector Ls_;
+    point location_;
 
-public:
-
-    // Constructors
-    hatSpot();
-    hatSpot(Istream&);
-    hatSpot(const point& p);
-    hatSpot(const hatSpot& p);
+public:    
+    /**
+     * default
+     */
+    turbulentStructure();
     
-    ~hatSpot();
+    /**
+     * Create from stream (during restart)
+     */
+    turbulentStructure(Istream&);
     
+    /**
+     * create at some location (during run)
+     */
+    turbulentStructure(const point& p);
 
-    vector fluctuation(const vector&) const;
+    /**
+     * copy constructor
+     */
+    turbulentStructure(const turbulentStructure& p);
+
+    inline void setLocation(const vector& x) { location_=x; }
+    inline const vector& location() const { return location_; }
     
-    // Check
-
     // Edit
-    void randomize();
-
-    void operator=(const hatSpot&);
-    bool operator!=(const hatSpot&) const;
-
-    // Required for storage in SLList
-    static autoPtr<hatSpot> New(Istream& s);
-    autoPtr<hatSpot> clone() const;
-
-    // Friend Functions
-
-    // Friend Operators
-    friend Ostream& operator<<(Ostream&, const hatSpot&);
-    friend Istream& operator>>(Istream&, hatSpot&);
+    void moveForward(vector);
+    
+    friend Ostream& operator<<(Ostream&, const turbulentStructure&);
+    friend Istream& operator>>(Istream&, turbulentStructure&);
 };
 
 

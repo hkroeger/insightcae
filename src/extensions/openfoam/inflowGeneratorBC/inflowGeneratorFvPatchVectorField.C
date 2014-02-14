@@ -52,25 +52,9 @@ namespace Foam
 {
 
 template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::initialize()
+void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningFactor()
 {
-    if (size()>0)
-    {
-        n_=average(patch().nf());
-        
-        if (mag(n_)<SMALL)
-        {
-            FatalErrorIn("inflowGeneratorFvPatchVectorField::updateCoeffs()")
-                << "Could not determine patch normal direction"
-                    << abort(FatalError);
-        }
-        
-        n_/=mag(n_);
-        
-    }
 
-    Lspot_=TurbulentStructure::calcInfluenceLength(param_);
-    //Info<<"Influence length Lspot="<<Lspot_<<endl;
 }
 
 
@@ -83,8 +67,15 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    genericInflowGeneratorFvPatchVectorField(p, iF),
-    overlap_(0.5)
+    fixedValueFvPatchField<vector>(p, iF),
+    vortons_(),
+    Umean_(),
+    R_(),
+    L_(),
+    structureParameters_(),
+    conditioningFactor_(),
+    overlap_(0.5),
+    curTimeIndex_(-1)
 {
     initialize();
 }
@@ -98,10 +89,15 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const fvPatchFieldMapper& mapper
 )
 :
-    genericInflowGeneratorFvPatchVectorField(ptf, p, iF, mapper),
+    fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
     vortons_(ptf.vortons_),
-    param_(ptf.param_),
-    overlap_(0.5)
+    Umean_(ptf.Umean_),
+    R_(ptf.R_),
+    L_(ptf.L_),
+    structureParameters_(ptf.structureParameters_),
+    conditioningFactor_(ptf.conditioningFactor_),
+    overlap_(ptf.overlap_),
+    curTimeIndex_(ptf.curTimeIndex_)
 {
     initialize();
 }
@@ -114,14 +110,26 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const dictionary& dict
 )
 :
-    genericInflowGeneratorFvPatchVectorField(p, iF, dict),
-    param_(dict),
-    overlap_(readScalar(dict.lookup("overlap")))
+    fixedValueFvPatchField<vector>(p, iF, dict),
+    Umean_(dict.lookup("Umean")),
+    R_(dict.lookup("R")),
+    L_(dict.lookup("L")),
+    structureParameters_(dict),
+    overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
+    curTimeIndex_(-1)
 {
-    initialize();
     if (dict.found("vortons"))
     {
         vortons_=SLList<TurbulentStructure>(dict.lookup("vortons"));
+    }
+    if (dict.found("conditioningFactor"))
+    {
+        conditioningFactor_.reset
+        (
+	  new scalarField("conditioningFactor", 
+			  dict, 
+			  this->size())
+	);
     }
 }
 
@@ -131,12 +139,15 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const inflowGeneratorFvPatchVectorField& ptf
 )
 :
-    genericInflowGeneratorFvPatchVectorField(ptf),
+    fixedValueFvPatchField<vector>(ptf),
     vortons_(ptf.vortons_),
-    param_(ptf.param_),
-    Lspot_(ptf.Lspot_),
+    Umean_(ptf.Umean_),
+    R_(ptf.R_),
+    L_(ptf.L_),
+    structureParameters_(ptf.structureParameters_),
+    conditioningFactor_(ptf.conditioningFactor_),
     overlap_(ptf.overlap_),
-    n_(ptf.n_)
+    curTimeIndex_(ptf.curTimeIndex_)
 {}
 
 template<class TurbulentStructure>
@@ -146,12 +157,15 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    genericInflowGeneratorFvPatchVectorField(ptf, iF),
+    fixedValueFvPatchField<vector>(ptf, iF),
     vortons_(ptf.vortons_),
-    param_(ptf.param_),
-    Lspot_(ptf.Lspot_),
+    Umean_(ptf.Umean_),
+    R_(ptf.R_),
+    L_(ptf.L_),
+    structureParameters_(ptf.structureParameters_),
+    conditioningFactor_(ptf.conditioningFactor_),
     overlap_(ptf.overlap_),
-    n_(ptf.n_)
+    curTimeIndex_(ptf.curTimeIndex_)
 {}
 
 
@@ -165,7 +179,10 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::autoMap
 )
 {
     Field<vector>::autoMap(m);
-    referenceField_.autoMap(m);
+    Umean_.autoMap(m);
+    R_.autoMap(m);
+    L_.autoMap(m);
+    structureParameters_.autoMap(m);
 }
 
 
@@ -177,11 +194,10 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 )
 {
     fixedValueFvPatchField<vector>::rmap(ptf, addr);
-
-    const inflowGeneratorFvPatchVectorField& tiptf =
-        refCast<const inflowGeneratorFvPatchVectorField >(ptf);
-
-    referenceField_.rmap(tiptf.referenceField_, addr);
+    Umean_.rmap(ptf.Umean_, addr);
+    R_.rmap(ptf.R_, addr);
+    L_.rmap(ptf.L_, addr);
+    structureParameters_.rmap(ptf.structureParameters_, addr);
 }
 
 
@@ -190,208 +206,190 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
 {
     Field<vector>& patchField = *this;
 
-    // build the global list of face centres
-    Field<vector> myFaceCentres = patch().Cf();    
-    List<List<vector> > faceCentres(Pstream::nProcs());
-    faceCentres[Pstream::myProcNo()]=myFaceCentres;
-    Pstream::gatherList(faceCentres);
-    List<vector> globlFaceCentres = ListListOps::combine<List<vector> >(faceCentres, accessOp<List<vector> >());
-    
-    /**
-     * ==================== Generation of new spots ========================
-     */
-    
-    List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
-
-    if ( Pstream::master() )
-    {
-        label n_x=label(ceil((bb.max().x()-bb.min().x())/(overlap_*Lspot_)));
-        label n_y=label(ceil((bb.max().y()-bb.min().y())/(overlap_*Lspot_)));
-
-        scalar dx=ranGen_.scalar01() * overlap_ * Lspot_;
-        scalar dy=ranGen_.scalar01() * overlap_ * Lspot_;
-        
-        for (label i=0;i<n_x;i++)
-        {
-            for (label j=0;j<n_y;j++)
-            {
-                vector x
-                    (
-                        bb.min().x() + scalar(i)*Lspot_ + dx,
-                        bb.min().y() + scalar(j)*Lspot_ + dy,
-                        -Lspot_
-                    );
-
-                bool keep=true;
-                for (typename SLList<TurbulentStructure>::iterator vorton
-                         = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-                {
-                    if (mag(vorton().location() - x) < overlap_*Lspot_)
-                    {
-                        keep=false;
-                        break;
-                    }
-                }
-
-                if (keep)
-                {
-                    TurbulentStructure newvorton(x);
-                    newvorton.randomize(ranGen_);
-                    vortons_.insert(newvorton);
-                }
-            }
-        }
-
-        scatterList[Pstream::myProcNo()].setSize(vortons_.size());
-        // transfer vortons to scatterList
-        label i=0;
-        for (typename SLList<TurbulentStructure>::iterator vorton
-                 = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-            scatterList[Pstream::myProcNo()][i++]=vorton();
-    }
-
-    // Distribute vortons to all processors
-    Pstream::scatterList(scatterList);
-    
-    List<TurbulentStructure> allvortons= 
-        ListListOps::combine<List<TurbulentStructure> >
-        (
-            scatterList,
-            accessOp<List<TurbulentStructure> >()
-        );
-
-    // =========== Calculation of induced turbulent fluctuations ==========
-    if (size()>0)
-    {
-        Field<vector> turbulent(referenceField_.size(), pTraits<vector>::zero);
-
-        forAll(patchField, I)
-        {
-            vector pt=tloc[I];
-            
-            forAll(allvortons, vI)
-            {
-                const TurbulentStructure& vorton=allvortons[vI];
-
-                if (mag(vorton.location() - pt) < Lspot_)
-                {
-                    turbulent[I]+=
-                        cmptMultiply
-                        (
-                            fluctuationScale_,
-                            transform(rotback, vorton.fluctuation(param_, pt))
-                        );
-                }
-            }
-        }
-
-        tensorField a(turbulent.size(), pTraits<tensor>::zero);
-	a.replace(tensor::XX, sqrt(RField_.component(symmTensor::XX)));
-	a.replace(tensor::YX, RField_.component(symmTensor::XY)/a.component(tensor::XX));
-	a.replace(tensor::ZX, RField_.component(symmTensor::XZ)/a.component(tensor::XX));
-	a.replace(tensor::YY, sqrt(RField_.component(symmTensor::YY)-sqr(a.component(tensor::YX))));
-	a.replace(tensor::ZY, ( RField_.component(symmTensor::YZ)
-             -a.component(tensor::YX)*a.component(tensor::ZX) )/a.component(tensor::YY));
-        a.replace(tensor::ZZ, sqrt(RField_.component(symmTensor::ZZ)
-             -sqr(a.component(tensor::ZX))-sqr(a.component(tensor::ZY))));
-
-        fixedValueFvPatchField<vector>::operator==(referenceField_+ (a&turbulent) );
-    }
-
-    scalar um=gAverage(referenceField_ & (-patch().nf()) );
-
-    if (Pstream::master())
-    {
-        // =================== Vorton motion =======================
-        
-        if (um*this->db().time().deltaT().value() > 0.5*Lspot_)
-        {
-            WarningIn("inflowGeneratorFvPatchVectorField::updateCoeffs()")
-                << "timestep to large: spots pass inlet within one timestep"<<endl;
-        }
-        
-        for (typename SLList<TurbulentStructure>::iterator vorton
-                 = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-        {
-            vorton().moveForward(um*this->db().time().deltaT().value()*vector(0,0,1));
-        }        
-        
-        // ================ remove Vortons that left inlet plane =====================
-        
-        bool modified;
-        do
-        {
-            modified=false;
-            for (typename SLList<TurbulentStructure>::iterator vorton
-                     = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-            {
-                if (vorton().location().z() > Lspot_) 
-                {
-                    vortons_.remove(vorton);
-                    modified=true;
-                    break;
-                }
-            } 
-        } while (modified);
-        
-        Pout<<"Number of turbulent spots: "<<vortons_.size()<<endl;
-    }
+//     // build the global list of face centres
+//     Field<vector> myFaceCentres = patch().Cf();    
+//     List<List<vector> > faceCentres(Pstream::nProcs());
+//     faceCentres[Pstream::myProcNo()]=myFaceCentres;
+//     Pstream::gatherList(faceCentres);
+//     List<vector> globalFaceCentres = ListListOps::combine<List<vector> >(faceCentres, accessOp<List<vector> >());
+//     
+//     /**
+//      * ==================== Generation of new spots ========================
+//      */
+//     
+//     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
+// 
+//     if ( Pstream::master() )
+//     {
+//         label n_x=label(ceil((bb.max().x()-bb.min().x())/(overlap_*Lspot_)));
+//         label n_y=label(ceil((bb.max().y()-bb.min().y())/(overlap_*Lspot_)));
+// 
+//         scalar dx=ranGen_.scalar01() * overlap_ * Lspot_;
+//         scalar dy=ranGen_.scalar01() * overlap_ * Lspot_;
+//         
+//         for (label i=0;i<n_x;i++)
+//         {
+//             for (label j=0;j<n_y;j++)
+//             {
+//                 vector x
+//                     (
+//                         bb.min().x() + scalar(i)*Lspot_ + dx,
+//                         bb.min().y() + scalar(j)*Lspot_ + dy,
+//                         -Lspot_
+//                     );
+// 
+//                 bool keep=true;
+//                 for (typename SLList<TurbulentStructure>::iterator vorton
+//                          = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
+//                 {
+//                     if (mag(vorton().location() - x) < overlap_*Lspot_)
+//                     {
+//                         keep=false;
+//                         break;
+//                     }
+//                 }
+// 
+//                 if (keep)
+//                 {
+//                     TurbulentStructure newvorton(x);
+//                     newvorton.randomize(ranGen_);
+//                     vortons_.insert(newvorton);
+//                 }
+//             }
+//         }
+// 
+//         scatterList[Pstream::myProcNo()].setSize(vortons_.size());
+//         // transfer vortons to scatterList
+//         label i=0;
+//         for (typename SLList<TurbulentStructure>::iterator vorton
+//                  = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
+//             scatterList[Pstream::myProcNo()][i++]=vorton();
+//     }
+// 
+//     // Distribute vortons to all processors
+//     Pstream::scatterList(scatterList);
+//     
+//     List<TurbulentStructure> allvortons= 
+//         ListListOps::combine<List<TurbulentStructure> >
+//         (
+//             scatterList,
+//             accessOp<List<TurbulentStructure> >()
+//         );
+// 
+//     // =========== Calculation of induced turbulent fluctuations ==========
+//     if (size()>0)
+//     {
+//         Field<vector> turbulent(referenceField_.size(), pTraits<vector>::zero);
+// 
+//         forAll(patchField, I)
+//         {
+//             vector pt=tloc[I];
+//             
+//             forAll(allvortons, vI)
+//             {
+//                 const TurbulentStructure& vorton=allvortons[vI];
+// 
+//                 if (mag(vorton.location() - pt) < Lspot_)
+//                 {
+//                     turbulent[I]+=
+//                         cmptMultiply
+//                         (
+//                             fluctuationScale_,
+//                             transform(rotback, vorton.fluctuation(param_, pt))
+//                         );
+//                 }
+//             }
+//         }
+// 
+//         tensorField a(turbulent.size(), pTraits<tensor>::zero);
+// 	a.replace(tensor::XX, sqrt(RField_.component(symmTensor::XX)));
+// 	a.replace(tensor::YX, RField_.component(symmTensor::XY)/a.component(tensor::XX));
+// 	a.replace(tensor::ZX, RField_.component(symmTensor::XZ)/a.component(tensor::XX));
+// 	a.replace(tensor::YY, sqrt(RField_.component(symmTensor::YY)-sqr(a.component(tensor::YX))));
+// 	a.replace(tensor::ZY, ( RField_.component(symmTensor::YZ)
+//              -a.component(tensor::YX)*a.component(tensor::ZX) )/a.component(tensor::YY));
+//         a.replace(tensor::ZZ, sqrt(RField_.component(symmTensor::ZZ)
+//              -sqr(a.component(tensor::ZX))-sqr(a.component(tensor::ZY))));
+// 
+//         fixedValueFvPatchField<vector>::operator==(referenceField_+ (a&turbulent) );
+//     }
+// 
+//     scalar um=gAverage(referenceField_ & (-patch().nf()) );
+// 
+//     if (Pstream::master())
+//     {
+//         // =================== Vorton motion =======================
+//         
+//         if (um*this->db().time().deltaT().value() > 0.5*Lspot_)
+//         {
+//             WarningIn("inflowGeneratorFvPatchVectorField::updateCoeffs()")
+//                 << "timestep to large: spots pass inlet within one timestep"<<endl;
+//         }
+//         
+//         for (typename SLList<TurbulentStructure>::iterator vorton
+//                  = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
+//         {
+//             vorton().moveForward(um*this->db().time().deltaT().value()*vector(0,0,1));
+//         }        
+//         
+//         // ================ remove Vortons that left inlet plane =====================
+//         
+//         bool modified;
+//         do
+//         {
+//             modified=false;
+//             for (typename SLList<TurbulentStructure>::iterator vorton
+//                      = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
+//             {
+//                 if (vorton().location().z() > Lspot_) 
+//                 {
+//                     vortons_.remove(vorton);
+//                     modified=true;
+//                     break;
+//                 }
+//             } 
+//         } while (modified);
+//         
+//         Pout<<"Number of turbulent spots: "<<vortons_.size()<<endl;
+//     }
 }
 
+template<class TurbulentStructure>
+void inflowGeneratorFvPatchVectorField<TurbulentStructure>::updateCoeffs()
+{
+    if (this->updated())
+    {
+        return;
+    }
+
+    if (curTimeIndex_ != this->db().time().timeIndex())
+    {
+        doUpdate();
+        curTimeIndex_ = this->db().time().timeIndex();
+    }
+
+    fixedValueFvPatchField<vector>::updateCoeffs();
+}
 
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::write(Ostream& os) const
 {
-    os.writeKeyword("overlap")
-        << overlap_ << token::END_STATEMENT <<nl;
+    Umean_.writeEntry("Umean", dict);
+    R_.writeEntry("R", dict);
+    L_.writeEntry("L", dict);
+    structureParameters_.write(dict);
+    os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
     param_.write(os);
-
-    genericInflowGeneratorFvPatchVectorField::write(os);
-
-    if (Pstream::master())
-    {
-        os.writeKeyword("vortons")
-            << vortons_ << token::END_STATEMENT <<nl;
-    }
-}
-
-/*
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    #define makeInflowGeneratorFvPatchField(spotType)                   \
-                                                                        \
-typedef inflowGeneratorFvPatchVectorField<spotType>                     \
-inflowGeneratorFvPatchVectorField##spotType;                            \
-                                                                        \
-defineTemplateTypeNameAndDebugWithName(                                 \
-    inflowGeneratorFvPatchVectorField##spotType,                        \
-    "inflowGenerator<"#spotType">", 0)                                  \
-                                                                        \
-    addToRunTimeSelectionTable                                          \
-(                                                                       \
-    fvPatchVectorField,                                                 \
-    inflowGeneratorFvPatchVectorField##spotType,                        \
-    patch                                                               \
-);                                                                      \
-                                                                        \
-addToRunTimeSelectionTable                                              \
-(                                                                       \
-    fvPatchVectorField,                                                 \
-    inflowGeneratorFvPatchVectorField##spotType,                        \
-    dictionary                                                          \
-);                                                                      \
-                                                                        \
-addToRunTimeSelectionTable                                              \
-(                                                                       \
-    fvPatchVectorField,                                                 \
-    inflowGeneratorFvPatchVectorField##spotType,                        \
-    patchMapper                                                         \
-)                                                                       \
     
-
-makeInflowGeneratorFvPatchField(hat);
-makeInflowGeneratorFvPatchField(homogeneousTurbulence);
-*/
+    if (conditioningFactor_.isValid())
+    {
+        conditioningFactor_().writeEntry("conditioningFactor", os);
+    }
+    
+    os.writeKeyword("vortons") << vortons_ << token::END_STATEMENT <<nl;
+    
+    fixedValueFvPatchField<vector>::write(os);
+}
 
 } // End namespace Foam
 

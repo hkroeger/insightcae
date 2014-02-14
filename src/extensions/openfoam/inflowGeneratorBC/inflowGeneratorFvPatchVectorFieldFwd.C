@@ -68,8 +68,8 @@ addToRunTimeSelectionTable                                              \
 )                                                                       \
     
 
-makeInflowGeneratorFvPatchField(hat);
-makeInflowGeneratorFvPatchField(homogeneousTurbulence);
+makeInflowGeneratorFvPatchField(hatSpot);
+makeInflowGeneratorFvPatchField(homogeneousTurbulenceVorton);
 
 } // End namespace Foam
 

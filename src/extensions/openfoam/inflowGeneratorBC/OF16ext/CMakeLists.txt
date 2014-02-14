@@ -1,8 +1,8 @@
 project(inflowGeneratorBC16ext)
 
 
-set(inflowGeneratorBC16ext_SOURCES 
- genericInflowGeneratorFvPatchVectorFieldFwd.C
+set(inflowGeneratorBC_SOURCES 
+ ../inflowGeneratorFvPatchVectorFieldFwd.C
 )
 
 include_directories(
@@ -12,18 +12,19 @@ include_directories(
   ${OF16ext_LIBSRC_DIR}/lduSolvers/lnInclude  
   ${OF16ext_LIBSRC_DIR}/turbulenceModels
   ${OF16ext_LIBSRC_DIR}/transportModels
-  ${OF16ext_LIBSRC_DIR}/tetDecompositionFiniteElement/lnInclude
-  ${OF16ext_LIBSRC_DIR}/dynamicMesh/dynamicMesh/lnInclude
-  ${OF16ext_LIBSRC_DIR}/dynamicMesh/dynamicFvMesh/lnInclude
-  ${OF16ext_LIBSRC_DIR}/dynamicMesh/meshMotion/tetDecompositionMotionSolver/lnInclude
-  ${OF16ext_LIBSRC_DIR}/dynamicMesh/meshMotion/fvMotionSolver/lnInclude
   ${OF16ext_LIBSRC_DIR}/meshTools/lnInclude
-  ${OF16ext_LIBSRC_DIR}/sampling/lnInclude
   ${OF16ext_LIBSRC_DIR}/triSurface/lnInclude
   ${OF16ext_LIBSRC_DIR}/surfMesh/lnInclude
-  ${OF16ext_LIBSRC_DIR}/finiteArea/lnInclude
 )
-  
+
+set(inflowGeneratorBC_SOURCE_DIR "${inflowGeneratorBC16ext_SOURCE_DIR}/..")
+add_subdirectory(../turbulentStructures/turbulentStructure "${CMAKE_CURRENT_BINARY_DIR}/turbulentStructures/turbulentStructure")
+add_subdirectory(../turbulentStructures/hatSpot "${CMAKE_CURRENT_BINARY_DIR}/turbulentStructures/hatSpot")
+add_subdirectory(../turbulentStructures/homogeneousTurbulenceVorton "${CMAKE_CURRENT_BINARY_DIR}/turbulentStructures/homogeneousTurbulenceVorton")
+include_directories(${inflowGeneratorBC_INC_DIRS})
+message(STATUS "INC_DIRS=" ${inflowGeneratorBC_INC_DIRS})
+set(inflowGeneratorBC16ext_SOURCES ${inflowGeneratorBC_SOURCES})
+
 setup_lib_target_OF16ext(inflowGeneratorBC16ext "inflowGeneratorBC"
   OpenFOAM
   finiteVolume

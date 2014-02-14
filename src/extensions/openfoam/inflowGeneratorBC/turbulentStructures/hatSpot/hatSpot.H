@@ -91,6 +91,7 @@ public:
     };
 
 protected:
+    const StructureParameters& p_;
     vector epsilon_;
     vector Ls_;
 
@@ -110,7 +111,7 @@ public:
     // Check
 
     // Edit
-    void randomize();
+    void randomize(Random&);
 
     void operator=(const hatSpot&);
     bool operator!=(const hatSpot&) const;

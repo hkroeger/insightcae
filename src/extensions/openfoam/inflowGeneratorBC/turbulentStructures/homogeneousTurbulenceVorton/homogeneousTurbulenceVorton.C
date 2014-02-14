@@ -39,11 +39,9 @@ namespace Foam
 homogeneousTurbulenceVorton::StructureParameters::StructureParameters
 (
 )
-    :
-    L_(0.0),    // integral length scale
-    eta_(0.0),  // Kolmogorov length
-    Cl_(0.0),
-    Ceta_(0.0)
+: eta_(0.0),  // Kolmogorov length
+  Cl_(0.0),
+  Ceta_(0.0)
 {
     C_2=0.0;
     C_3=0.0;    
@@ -53,39 +51,34 @@ homogeneousTurbulenceVorton::StructureParameters::StructureParameters
 (
     const dictionary& dict
 )
-    :
-    L_(readScalar(dict.lookup("L"))),    // integral length scale
-    eta_(readScalar(dict.lookup("eta"))),  // Kolmogorov length
-    Cl_(readScalar(dict.lookup("Cl"))),
-    Ceta_(readScalar(dict.lookup("Ceta")))
+: eta_(readScalar(dict.lookup("eta"))),  // Kolmogorov length
+  Cl_(readScalar(dict.lookup("Cl"))),
+  Ceta_(readScalar(dict.lookup("Ceta")))
 {
     C_2=5.087*pow(Ceta_,(-1.1));
     C_3=0.369*Cl_;    
 }
 
-homogeneousTurbulenceVorton::StructureParameters::StructureParameters
-(
-    scalar L,    // integral length scale
-    scalar eta,  // Kolmogorov length
-    scalar Cl,
-    scalar Ceta
-
-):
-    L_(L),    // integral length scale
-    eta_(eta),  // Kolmogorov length
-    Cl_(Cl),
-    Ceta_(Ceta)
-{
-    C_2=5.087*pow(Ceta_,(-1.1));
-    C_3=0.369*Cl_;    
-}
-
+// homogeneousTurbulenceVorton::StructureParameters::StructureParameters
+// (
+//     scalar eta,  // Kolmogorov length
+//     scalar Cl,
+//     scalar Ceta
+// 
+// ):
+//     eta_(eta),  // Kolmogorov length
+//     Cl_(Cl),
+//     Ceta_(Ceta)
+// {
+//     C_2=5.087*pow(Ceta_,(-1.1));
+//     C_3=0.369*Cl_;    
+// }
+// 
 void homogeneousTurbulenceVorton::StructureParameters::write
 (
     Ostream& os
 ) const
 {
-    os.writeKeyword("L") << L_ << token::END_STATEMENT << nl;
     os.writeKeyword("eta") << eta_ << token::END_STATEMENT << nl;
     os.writeKeyword("Cl") << Cl_ << token::END_STATEMENT << nl;
     os.writeKeyword("Ceta") << Ceta_ << token::END_STATEMENT << nl;
@@ -95,7 +88,7 @@ void homogeneousTurbulenceVorton::StructureParameters::write
 
 scalar homogeneousTurbulenceVorton::StructureParameters::calcInfluenceLength(const vector& Lv)
 {
-  scalar L=mag(lv);
+  scalar L=mag(Lv);
   
     scalar dyy=eta_/10.0;
     scalar yyy=1e-8;
@@ -110,7 +103,7 @@ scalar homogeneousTurbulenceVorton::StructureParameters::calcInfluenceLength(con
 
         funct=
             ::pow(
-                reta/ ::pow( ::pow(reta,2.5)+p.C_2, 0.4),
+                reta/ ::pow( ::pow(reta,2.5)+C_2, 0.4),
                 2.166667
                 )
                 /(::pow(yyy,1.166667))
@@ -151,7 +144,6 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const vector& loc)
     turbulentStructure(loc),
     omegav_(pTraits<vector>::zero)
 {
-  randomize();
 }
 
 
@@ -161,8 +153,9 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const homogeneousTurbul
     omegav_(o.omegav_)
 {}
 
-vector homogeneousTurbulenceVorton::fluctuation(const Parameters& p, const vector& x) const
+vector homogeneousTurbulenceVorton::fluctuation(const vector& x) const
 {
+  scalar L=mag(Ls_);
     vector delta_x = x - location_;
 
     scalar radiika=magSqr(delta_x);
@@ -174,16 +167,16 @@ vector homogeneousTurbulenceVorton::fluctuation(const Parameters& p, const vecto
     if (tmod>SMALL) t/=tmod;
     tmod=max(1e-5, tmod);
 
-    scalar sradiika=sqrt(radiika);
-    scalar reta =sradiika/p.eta_;
-    scalar aleta=sradiika/p.L_;
+    scalar sradiika=::sqrt(radiika);
+    scalar reta =sradiika/p_.eta_;
+    scalar aleta=sradiika/L;
 
     scalar sperva=
         (
-            pow(reta/pow(pow(reta,2.5)+p.C_2, 0.4), 2.166667)
+            ::pow(reta/::pow(::pow(reta,2.5)+p_.C_2, 0.4), 2.166667)
         )
-        /pow(sradiika,1.166667)
-        /(p.C_3*pow(aleta, 1.83333)+1.000)
+        /::pow(sradiika,1.166667)
+        /(p_.C_3*::pow(aleta, 1.83333)+1.000)
         *tmod/sradiika;
         
     return sperva*t;
@@ -249,14 +242,14 @@ bool homogeneousTurbulenceVorton::operator!=(const homogeneousTurbulenceVorton& 
 
 Ostream& operator<<(Ostream& s, const homogeneousTurbulenceVorton& ht)
 {
-    s << dynamic_cast<turbulentStructure&>(ht);
+    s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.omegav_<<endl;
     return s;
 }
 
 Istream& operator>>(Istream& s, homogeneousTurbulenceVorton& ht)
 {
-    s >> dynamic_cast<turbulentStructure&>(ht);
+    s >> *static_cast<turbulentStructure*>(&ht);
     vector om(s);
     ht.omegav_=om;
     return s;

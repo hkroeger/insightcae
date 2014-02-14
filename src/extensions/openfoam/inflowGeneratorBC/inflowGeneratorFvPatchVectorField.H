@@ -58,10 +58,10 @@ class inflowGeneratorFvPatchVectorField
     public fixedValueFvPatchField<vector>
 {
     
+    Random ranGen_;
+    
     // Private data
     SLList<TurbulentStructure> vortons_;
-    
-    Random ranGen_;
     
     /**
      * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
@@ -81,7 +81,7 @@ class inflowGeneratorFvPatchVectorField
     /**
      * Additional parameters for the selected turbulent structure
      */
-    typename TurbulentStructure::Parameters structureParameters_;
+    typename TurbulentStructure::StructureParameters structureParameters_;
     
     autoPtr<Field<scalar> > conditioningFactor_;
     
@@ -164,20 +164,20 @@ public:
 
 
 
-        // Mapping functions
+    // Mapping functions
 
-            //- Map (and resize as needed) from self given a mapping object
-            virtual void autoMap
-            (
-                const fvPatchFieldMapper&
-            );
+	//- Map (and resize as needed) from self given a mapping object
+	virtual void autoMap
+	(
+	    const fvPatchFieldMapper&
+	);
 
-            //- Reverse map the given fvPatchField onto this fvPatchField
-            virtual void rmap
-            (
-                const fvPatchField<vector>&,
-                const labelList&
-            );
+	//- Reverse map the given fvPatchField onto this fvPatchField
+	virtual void rmap
+	(
+	    const fvPatchField<vector>&,
+	    const labelList&
+	);
 
 
 

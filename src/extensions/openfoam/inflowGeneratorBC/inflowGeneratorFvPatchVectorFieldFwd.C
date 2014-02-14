@@ -25,6 +25,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "inflowGeneratorFvPatchVectorField.H"
+#include "fixedValueFvPatchFields.H"
 #include "transform.H"
 #include "transformField.H"
 #include "volFields.H"
@@ -37,7 +38,7 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    #define makeInflowGeneratorFvPatchField(spotType)                   \
+#define makeInflowGeneratorFvPatchField(spotType)                   	\
                                                                         \
 typedef inflowGeneratorFvPatchVectorField<spotType>                     \
 inflowGeneratorFvPatchVectorField##spotType;                            \
@@ -46,7 +47,7 @@ defineTemplateTypeNameAndDebugWithName(                                 \
     inflowGeneratorFvPatchVectorField##spotType,                        \
     "inflowGenerator<"#spotType">", 0)                                  \
                                                                         \
-    addToRunTimeSelectionTable                                          \
+addToRunTimeSelectionTable                                          \
 (                                                                       \
     fvPatchVectorField,                                                 \
     inflowGeneratorFvPatchVectorField##spotType,                        \
@@ -69,7 +70,7 @@ addToRunTimeSelectionTable                                              \
     
 
 makeInflowGeneratorFvPatchField(hatSpot);
-makeInflowGeneratorFvPatchField(homogeneousTurbulenceVorton);
+//makeInflowGeneratorFvPatchField(homogeneousTurbulenceVorton);
 
 } // End namespace Foam
 

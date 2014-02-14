@@ -1,5 +1,6 @@
 
 add_subdirectory(FEMDisplacementBC)
+add_subdirectory(inflowGeneratorBC)
 add_subdirectory(scripts)
 add_subdirectory(simpleDyMFoam)
 add_subdirectory(convertPressure)

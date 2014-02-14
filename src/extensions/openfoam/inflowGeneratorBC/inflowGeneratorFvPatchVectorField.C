@@ -68,6 +68,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     fixedValueFvPatchField<vector>(p, iF),
+    ranGen_(1),
     vortons_(),
     Umean_(),
     R_(),
@@ -77,7 +78,6 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     overlap_(0.5),
     curTimeIndex_(-1)
 {
-    initialize();
 }
 
 template<class TurbulentStructure>
@@ -90,6 +90,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
+    ranGen_(1),
     vortons_(ptf.vortons_),
     Umean_(ptf.Umean_),
     R_(ptf.R_),
@@ -99,7 +100,6 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     overlap_(ptf.overlap_),
     curTimeIndex_(ptf.curTimeIndex_)
 {
-    initialize();
 }
 
 template<class TurbulentStructure>
@@ -111,6 +111,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     fixedValueFvPatchField<vector>(p, iF, dict),
+    ranGen_(1),
     Umean_(dict.lookup("Umean")),
     R_(dict.lookup("R")),
     L_(dict.lookup("L")),
@@ -140,6 +141,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     fixedValueFvPatchField<vector>(ptf),
+    ranGen_(1),
     vortons_(ptf.vortons_),
     Umean_(ptf.Umean_),
     R_(ptf.R_),
@@ -158,6 +160,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     fixedValueFvPatchField<vector>(ptf, iF),
+    ranGen_(1),
     vortons_(ptf.vortons_),
     Umean_(ptf.Umean_),
     R_(ptf.R_),
@@ -178,7 +181,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::autoMap
     const fvPatchFieldMapper& m
 )
 {
-    Field<vector>::autoMap(m);
+    fixedValueFvPatchField<vector>::autoMap(m);
     Umean_.autoMap(m);
     R_.autoMap(m);
     L_.autoMap(m);
@@ -194,10 +197,12 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 )
 {
     fixedValueFvPatchField<vector>::rmap(ptf, addr);
-    Umean_.rmap(ptf.Umean_, addr);
-    R_.rmap(ptf.R_, addr);
-    L_.rmap(ptf.L_, addr);
-    structureParameters_.rmap(ptf.structureParameters_, addr);
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& tiptf = 
+      refCast<const inflowGeneratorFvPatchVectorField<TurbulentStructure> >(ptf);
+    Umean_.rmap(tiptf.Umean_, addr);
+    R_.rmap(tiptf.R_, addr);
+    L_.rmap(tiptf.L_, addr);
+    structureParameters_.rmap(ptf, addr);
 }
 
 
@@ -374,14 +379,14 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::updateCoeffs()
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::write(Ostream& os) const
 {
-    Umean_.writeEntry("Umean", dict);
-    R_.writeEntry("R", dict);
-    L_.writeEntry("L", dict);
-    structureParameters_.write(dict);
+    Umean_.writeEntry("Umean", os);
+    R_.writeEntry("R", os);
+    L_.writeEntry("L", os);
+    structureParameters_.write(os);
     os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
-    param_.write(os);
+    structureParameters_.write(os);
     
-    if (conditioningFactor_.isValid())
+    if (conditioningFactor_.valid())
     {
         conditioningFactor_().writeEntry("conditioningFactor", os);
     }

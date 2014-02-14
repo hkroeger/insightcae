@@ -93,7 +93,6 @@ hatSpot::hatSpot(const vector& loc)
 : turbulentStructure(loc),
   epsilon_(pTraits<vector>::zero)
 {
-  randomize();
 }
 
 
@@ -109,15 +108,15 @@ vector hatSpot::fluctuation(const vector& x) const
 
     if 
         (
-            (delta_x.x()  < p.Lspot_ / 2.0) &&
-            (delta_x.y()  < p.Lspot_ / 2.0) &&
-            (delta_x.z()  < p.Lspot_ / 2.0)
+            (delta_x.x()  < Ls_.x() / 2.0) &&
+            (delta_x.y()  < Ls_.y() / 2.0) &&
+            (delta_x.z()  < Ls_.z() / 2.0)
         )
     {
       vector f=
-           (1.0 - 2.0*delta_x.x()  / p.Lspot_)
-          *(1.0 - 2.0*delta_x.y()  / p.Lspot_)
-          *(1.0 - 2.0*delta_x.z()  / p.Lspot_)
+           (1.0 - 2.0*delta_x.x()  / Ls_.x() )
+          *(1.0 - 2.0*delta_x.y()  / Ls_.y() )
+          *(1.0 - 2.0*delta_x.z()  / Ls_.z() )
           * pTraits<vector>::one;
 
       return cmptMultiply(epsilon_, f);
@@ -186,14 +185,14 @@ bool hatSpot::operator!=(const hatSpot& o) const
 
 Ostream& operator<<(Ostream& s, const hatSpot& ht)
 {
-    s << dynamic_cast<turbulentStructure&>(ht);
+    s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.epsilon_<<endl;
     return s;
 }
 
 Istream& operator>>(Istream& s, hatSpot& ht)
 {
-    s >> dynamic_cast<turbulentStructure&>(ht);
+    s >> *static_cast<turbulentStructure*>(&ht);
     vector eps(s);
     ht.epsilon_=eps;
     return s;

@@ -188,27 +188,18 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
 {
-    Field<vector> tloc;
-    vector rotbase(pTraits<vector>::zero);
-    tensor rot(pTraits<tensor>::zero), rotback(pTraits<tensor>::zero);
-
     Field<vector>& patchField = *this;
 
-    // transform face centres to local frame
-    rotbase=gAverage(patch().Cf());
-    if (size()>0)
-    {
-    
-        rot=rotationTensor(n_, -vector(0,0,1));
-        rotback=inv(rot);
-        tloc=transform(rot, patch().Cf()-rotbase);
-
-    }
+    // build the global list of face centres
+    Field<vector> myFaceCentres = patch().Cf();    
+    List<List<vector> > faceCentres(Pstream::nProcs());
+    faceCentres[Pstream::myProcNo()]=myFaceCentres;
+    Pstream::gatherList(faceCentres);
+    List<vector> globlFaceCentres = ListListOps::combine<List<vector> >(faceCentres, accessOp<List<vector> >());
     
     /**
      * ==================== Generation of new spots ========================
      */
-    boundBox bb(tloc);
     
     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
 

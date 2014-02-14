@@ -107,7 +107,7 @@ public:
     // Constructors
     homogeneousTurbulenceVorton();
     homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(const vector&);
+    homogeneousTurbulenceVorton(const point& p, const vector& v);
     homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
     ~homogeneousTurbulenceVorton();

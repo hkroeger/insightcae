@@ -58,7 +58,20 @@ Istream& operator>>(Istream&, turbulentStructure&);
 class turbulentStructure
 {
 protected:
-    point location_;
+  /**
+   * current location of the structure
+   */
+  point location_;
+  
+  /**
+   * convection velocity of the structure
+   */
+  vector velocity_;
+  
+  /**
+   * prescribed turbulent length scale, converted into (principal axes)*(principal values)
+   */
+  vector L1_, L2_, L3_;
 
 public:    
     /**
@@ -74,18 +87,19 @@ public:
     /**
      * create at some location (during run)
      */
-    turbulentStructure(const point& p);
+    turbulentStructure(const point& p, const vector& v, const symmTensor& L);
 
     /**
      * copy constructor
      */
     turbulentStructure(const turbulentStructure& p);
 
+    inline void setVelocity(const vector& x) { velocity_=x; }
     inline void setLocation(const vector& x) { location_=x; }
     inline const vector& location() const { return location_; }
     
     // Edit
-    void moveForward(vector);
+    void moveForward(scalar dt);
     
     friend Ostream& operator<<(Ostream&, const turbulentStructure&);
     friend Istream& operator>>(Istream&, turbulentStructure&);

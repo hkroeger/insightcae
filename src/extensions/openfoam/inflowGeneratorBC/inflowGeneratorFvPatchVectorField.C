@@ -139,17 +139,16 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 (
     const inflowGeneratorFvPatchVectorField& ptf
 )
-:
-    fixedValueFvPatchField<vector>(ptf),
-    ranGen_(1),
-    vortons_(ptf.vortons_),
-    Umean_(ptf.Umean_),
-    R_(ptf.R_),
-    L_(ptf.L_),
-    structureParameters_(ptf.structureParameters_),
-    conditioningFactor_(ptf.conditioningFactor_),
-    overlap_(ptf.overlap_),
-    curTimeIndex_(ptf.curTimeIndex_)
+: fixedValueFvPatchField<vector>(ptf),
+  ranGen_(1),
+  vortons_(ptf.vortons_),
+  Umean_(ptf.Umean_),
+  R_(ptf.R_),
+  L_(ptf.L_),
+  structureParameters_(ptf.structureParameters_),
+  conditioningFactor_(ptf.conditioningFactor_),
+  overlap_(ptf.overlap_),
+  curTimeIndex_(ptf.curTimeIndex_)
 {}
 
 template<class TurbulentStructure>
@@ -158,17 +157,16 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const inflowGeneratorFvPatchVectorField& ptf,
     const DimensionedField<vector, volMesh>& iF
 )
-:
-    fixedValueFvPatchField<vector>(ptf, iF),
-    ranGen_(1),
-    vortons_(ptf.vortons_),
-    Umean_(ptf.Umean_),
-    R_(ptf.R_),
-    L_(ptf.L_),
-    structureParameters_(ptf.structureParameters_),
-    conditioningFactor_(ptf.conditioningFactor_),
-    overlap_(ptf.overlap_),
-    curTimeIndex_(ptf.curTimeIndex_)
+: fixedValueFvPatchField<vector>(ptf, iF),
+  ranGen_(1),
+  vortons_(ptf.vortons_),
+  Umean_(ptf.Umean_),
+  R_(ptf.R_),
+  L_(ptf.L_),
+  structureParameters_(ptf.structureParameters_),
+  conditioningFactor_(ptf.conditioningFactor_),
+  overlap_(ptf.overlap_),
+  curTimeIndex_(ptf.curTimeIndex_)
 {}
 
 
@@ -217,11 +215,43 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
 //     faceCentres[Pstream::myProcNo()]=myFaceCentres;
 //     Pstream::gatherList(faceCentres);
 //     List<vector> globalFaceCentres = ListListOps::combine<List<vector> >(faceCentres, accessOp<List<vector> >());
-//     
-//     /**
-//      * ==================== Generation of new spots ========================
-//      */
-//     
+    
+    
+    /**
+     * ==================== Generation of new turbulent structures ========================
+     */
+    forAll(faceCentres, fi)
+    {
+      // location of the new turbulent structure: randomly deflected around the current face centre
+      const point& p = faceCentres[fi] + randomTangentialDeflection(fi);
+      
+      TurbulentStructure snew(p, Umean_[fi], L_[fi]);
+      snew.randomize(ranGen_);
+      
+      if (computeOverlap(snew) < overlap_)
+      {
+	vortons_.insert(snew);
+      }
+    }
+    
+    /**
+     * ==================== Generation of turbulent fluctuations ========================
+     */
+    vectorField fluctuations(size(), pTraits<vector>::zero);
+    for (typename SLList<TurbulentStructure>::iterator s
+	      = vortons_.begin(); s!=vortons_.end(); ++s)
+    {      
+      // do tree search for finding faces affected by the current structure
+      labelList ifl = findAffectedFaces( s() );
+      
+      // superimpose turbulent velocity in affected faces
+      forAll(ifl, j)
+	fluctuations[ifl[j]] += s().fluctuation(faceCentres[ifl[j]]);
+      
+      // convect structure
+      s().moveForward(time().deltaT().value());
+    }
+    
 //     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
 // 
 //     if ( Pstream::master() )
@@ -362,18 +392,21 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::updateCoeffs()
 {
-    if (this->updated())
-    {
-        return;
-    }
+  if (!conditioningFactor_.valid())
+    computeConditioningFactor();
+  
+  if (this->updated())
+  {
+      return;
+  }
 
-    if (curTimeIndex_ != this->db().time().timeIndex())
-    {
-        doUpdate();
-        curTimeIndex_ = this->db().time().timeIndex();
-    }
+  if (curTimeIndex_ != this->db().time().timeIndex())
+  {
+      doUpdate();
+      curTimeIndex_ = this->db().time().timeIndex();
+  }
 
-    fixedValueFvPatchField<vector>::updateCoeffs();
+  fixedValueFvPatchField<vector>::updateCoeffs();
 }
 
 template<class TurbulentStructure>

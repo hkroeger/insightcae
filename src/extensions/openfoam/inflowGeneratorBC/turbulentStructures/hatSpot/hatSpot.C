@@ -89,17 +89,16 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(const vector& loc)
-: turbulentStructure(loc),
+hatSpot::hatSpot(const vector& loc, const vector& v, const symmTensor& L)
+: turbulentStructure(loc, v, L),
   epsilon_(pTraits<vector>::zero)
 {
 }
 
 
 hatSpot::hatSpot(const hatSpot& o)
-:
-    turbulentStructure(o),
-    epsilon_(o.epsilon_)
+: turbulentStructure(o),
+  epsilon_(o.epsilon_)
 {}
 
 vector hatSpot::fluctuation(const vector& x) const

@@ -39,12 +39,6 @@ SourceFiles
 #ifndef hatSpot_H
 #define hatSpot_H
 
-#include "scalar.H"
-#include "vector.H"
-#include "Random.H"
-#include "IOdictionary.H"
-#include "Istream.H"
-#include "Ostream.H"
 #include "turbulentStructure.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -93,14 +87,13 @@ public:
 protected:
     const StructureParameters& p_;
     vector epsilon_;
-    vector Ls_;
 
 public:
 
     // Constructors
     hatSpot();
     hatSpot(Istream&);
-    hatSpot(const point& p);
+    hatSpot(const point& p, const vector& v, const symmTensor& L);
     hatSpot(const hatSpot& p);
     
     ~hatSpot();

@@ -139,9 +139,9 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 {
 }
 
-homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const vector& loc)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const point& loc, const vector& v)
 :
-    turbulentStructure(loc),
+    turbulentStructure(loc, v),
     omegav_(pTraits<vector>::zero)
 {
 }

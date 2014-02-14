@@ -76,7 +76,7 @@ class inflowGeneratorFvPatchVectorField
     /**
      * Prescribed length scale field
      */
-    Field<vector> L_;
+    Field<symmTensor> L_;
     
     /**
      * Additional parameters for the selected turbulent structure

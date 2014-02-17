@@ -212,7 +212,7 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap(
 template<class TurbulentStructure>
 vector inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomTangentialDeflection(label fi)
 {
-  vector n=patch().n()[fi];
+  vector n=patch().Sf()[fi]; n/=mag(n);
   vector e1=n^vector(1,0,0);
   if (mag(e1)<SMALL) e1=n^vector(0,1,0);
   vector e2=n^e1;
@@ -238,7 +238,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
     /**
      * ==================== Generation of new turbulent structures ========================
      */
-    pointField locs(vortons_);
+    pointField locs;//(vortons_);
     autoPtr<indexedOctree<treeDataPoint> > tree (new indexedOctree<treeDataPoint>(treeDataPoint(locs)) );
     forAll(patch().Cf(), fi)
     {
@@ -251,7 +251,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
       if (computeMinOverlap(tree, snew) < overlap_)
       {
 	vortons_.insert(snew);
-	locs=vortons_;
+	//locs=vortons_;
 	tree.reset( new indexedOctree<treeDataPoint>(locs) );
       }
     }
@@ -259,20 +259,20 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
     /**
      * ==================== Generation of turbulent fluctuations ========================
      */
-    vectorField fluctuations(size(), pTraits<vector>::zero);
-    for (typename SLList<TurbulentStructure>::iterator s
-	      = vortons_.begin(); s!=vortons_.end(); ++s)
-    {      
-      // do tree search for finding faces affected by the current structure
-      labelList ifl = findAffectedFaces( s() );
-      
-      // superimpose turbulent velocity in affected faces
-      forAll(ifl, j)
-	fluctuations[ifl[j]] += s().fluctuation(patch().Cf()[ifl[j]]);
-      
-      // convect structure
-      s().moveForward(mesh().time().deltaT().value());
-    }
+//     vectorField fluctuations(size(), pTraits<vector>::zero);
+//     for (typename SLList<TurbulentStructure>::iterator s
+// 	      = vortons_.begin(); s!=vortons_.end(); ++s)
+//     {      
+//       // do tree search for finding faces affected by the current structure
+//       labelList ifl = findAffectedFaces( s() );
+//       
+//       // superimpose turbulent velocity in affected faces
+//       forAll(ifl, j)
+// 	fluctuations[ifl[j]] += s().fluctuation(patch().Cf()[ifl[j]]);
+//       
+//       // convect structure
+//       s().moveForward(mesh().time().deltaT().value());
+//     }
     
 //     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
 // 

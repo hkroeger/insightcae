@@ -99,7 +99,6 @@ public:
 
 private:
     const StructureParameters& p_;
-    vector Ls_;
     vector omegav_;
 
 public:
@@ -107,7 +106,7 @@ public:
     // Constructors
     homogeneousTurbulenceVorton();
     homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(const point& p, const vector& v);
+    homogeneousTurbulenceVorton(const point& p, const vector& v, const symmTensor& L);
     homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
     ~homogeneousTurbulenceVorton();

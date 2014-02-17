@@ -139,9 +139,9 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 {
 }
 
-homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const point& loc, const vector& v)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const point& loc, const vector& v, const symmTensor& L)
 :
-    turbulentStructure(loc, v),
+    turbulentStructure(loc, v, L),
     omegav_(pTraits<vector>::zero)
 {
 }
@@ -155,31 +155,32 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const homogeneousTurbul
 
 vector homogeneousTurbulenceVorton::fluctuation(const vector& x) const
 {
-  scalar L=mag(Ls_);
-    vector delta_x = x - location_;
+  scalar L = (mag(L1_)+mag(L2_)+mag(L3_)) / 3.0;
+  
+  vector delta_x = x - location();
 
-    scalar radiika=magSqr(delta_x);
+  scalar radiika=magSqr(delta_x);
 
-    vector t=delta_x ^ omegav_;
+  vector t=delta_x ^ omegav_;
 
-    scalar tmod=mag(t);
+  scalar tmod=mag(t);
 
-    if (tmod>SMALL) t/=tmod;
-    tmod=max(1e-5, tmod);
+  if (tmod>SMALL) t/=tmod;
+  tmod=Foam::max(1e-5, tmod);
 
-    scalar sradiika=::sqrt(radiika);
-    scalar reta =sradiika/p_.eta_;
-    scalar aleta=sradiika/L;
+  scalar sradiika=::sqrt(radiika);
+  scalar reta =sradiika/p_.eta_;
+  scalar aleta=sradiika/L;
 
-    scalar sperva=
-        (
-            ::pow(reta/::pow(::pow(reta,2.5)+p_.C_2, 0.4), 2.166667)
-        )
-        /::pow(sradiika,1.166667)
-        /(p_.C_3*::pow(aleta, 1.83333)+1.000)
-        *tmod/sradiika;
-        
-    return sperva*t;
+  scalar sperva=
+      (
+	  ::pow(reta/::pow(::pow(reta,2.5)+p_.C_2, 0.4), 2.166667)
+      )
+      /::pow(sradiika,1.166667)
+      /(p_.C_3*::pow(aleta, 1.83333)+1.000)
+      *tmod/sradiika;
+      
+  return sperva*t;
         
 }
 
@@ -195,7 +196,7 @@ void homogeneousTurbulenceVorton::randomize(Random& rand)
 {
     omegav_ = rand.vector01() - 0.5*pTraits<vector>::one;
     omegav_/=mag(omegav_);
-    for (label i=0;i<3;i++) omegav_[i]=min(1.0,max(-1.0, omegav_[i]));
+    for (label i=0;i<3;i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
 }
 
 
@@ -228,14 +229,14 @@ void homogeneousTurbulenceVorton::operator=(const homogeneousTurbulenceVorton& r
             << abort(FatalError);
     }
 
-    location_=rhs.location_;
+    point::operator=(rhs);
     omegav_=rhs.omegav_;
 }
 
 bool homogeneousTurbulenceVorton::operator!=(const homogeneousTurbulenceVorton& o) const
 {
     return 
-        (location_!=o.location_)
+        (location()!=o.location())
         ||
         (omegav_!=o.omegav_);
 }

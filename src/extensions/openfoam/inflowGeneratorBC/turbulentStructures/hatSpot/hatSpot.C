@@ -105,17 +105,18 @@ vector hatSpot::fluctuation(const vector& x) const
 {
     vector delta_x = x - location_;
 
+    scalar l1=mag(L1_), l2=mag(L2_), l3=mag(L3_);
     if 
         (
-            (delta_x.x()  < Ls_.x() / 2.0) &&
-            (delta_x.y()  < Ls_.y() / 2.0) &&
-            (delta_x.z()  < Ls_.z() / 2.0)
+            (delta_x&(L1_/l1)  < l1 / 2.0) &&
+            (delta_x&(L2_/l2)  < l2 / 2.0) &&
+            (delta_x&(L3_/l3)  < l3 / 2.0)
         )
     {
       vector f=
-           (1.0 - 2.0*delta_x.x()  / Ls_.x() )
-          *(1.0 - 2.0*delta_x.y()  / Ls_.y() )
-          *(1.0 - 2.0*delta_x.z()  / Ls_.z() )
+           (1.0 - 2.0*delta_x&(L1_/l1)  / l1 )
+          *(1.0 - 2.0*delta_x&(L2_/l2)  / l2 )
+          *(1.0 - 2.0*delta_x&(L3_/l3)  / l3 )
           * pTraits<vector>::one;
 
       return cmptMultiply(epsilon_, f);
@@ -128,7 +129,6 @@ vector hatSpot::fluctuation(const vector& x) const
 
 autoPtr<hatSpot> hatSpot::New(Istream& s)
 {
-    Info<<"reading"<<endl;
     return autoPtr<hatSpot>(new hatSpot(s));
 }
 
@@ -170,14 +170,14 @@ void hatSpot::operator=(const hatSpot& rhs)
             << abort(FatalError);
     }
 
-    location_=rhs.location_;
+    point::operator=(rhs);
     epsilon_=rhs.epsilon_;
 }
 
 bool hatSpot::operator!=(const hatSpot& o) const
 {
     return 
-        (location_!=o.location_)
+        (location()!=o.location())
         ||
         (epsilon_!=o.epsilon_);
 }

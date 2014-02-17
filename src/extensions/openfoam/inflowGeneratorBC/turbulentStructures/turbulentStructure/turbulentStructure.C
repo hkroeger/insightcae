@@ -37,7 +37,7 @@ namespace Foam
 {
 
 turbulentStructure::turbulentStructure()
-: location_(pTraits<point>::zero),
+: point(pTraits<point>::zero),
   velocity_(pTraits<point>::zero),
   L1_(pTraits<vector>::zero),
   L2_(pTraits<vector>::zero),
@@ -51,7 +51,7 @@ turbulentStructure::turbulentStructure(Istream& is)
 }
 
 turbulentStructure::turbulentStructure(const point& p, const vector& v, const symmTensor& L)
-: location_(p),
+: point(p),
   velocity_(v)
 {
   vector evals(eigenValues(L));
@@ -59,13 +59,13 @@ turbulentStructure::turbulentStructure(const point& p, const vector& v, const sy
   L2_ = eigenVector(L, evals.y()) * evals.y();
   L3_ = eigenVector(L, evals.z()) * evals.z();
   tensor dbg=eigenVectors(L);
-  Info<<"Check: ("<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<") == "<<(dbg.T()*L*dbg)<<endl;
+  Info<<"Check: ("<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<") == "<<(dbg.T()&L&dbg)<<endl;
   
-  p -= (v/mag(v)) * 0.5*max(evals); // start 1/2 of the max. length scale before inlet plane
+  p -= (v/mag(v)) * 0.5*Foam::max(Foam::max(evals.x(), evals.y()), evals.z()); // start 1/2 of the max. length scale before inlet plane
 }
 
 turbulentStructure::turbulentStructure(const turbulentStructure& o)
-: location_(o.location_),
+: point(o),
   velocity_(o.velocity_),
   L1_(o.L1_),
   L2_(o.L2_),
@@ -76,12 +76,12 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
 
 void turbulentStructure::moveForward(scalar dt)
 {
-  location_+=dt*velocity_;
+  *this += dt*velocity_;
 }
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
 {
-  s<<ht.location_<<endl;
+  s<<static_cast<const point&>(ht)<<endl;
   s<<ht.velocity_<<endl;
   s<<ht.L1_<<endl;
   s<<ht.L2_<<endl;
@@ -96,7 +96,7 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     vector L1(s);
     vector L2(s);
     vector L3(s);
-    ht.location_=loc;
+    ht.setLocation(loc);
     ht.velocity_=v;
     ht.L1_=L1;
     ht.L2_=L2;

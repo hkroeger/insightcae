@@ -43,6 +43,9 @@ SourceFiles
 #include "homogeneousTurbulenceVorton.H"
 #include "SLList.H"
 
+#include "indexedOctree.H"
+#include "treeDataPoint.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -91,6 +94,8 @@ class inflowGeneratorFvPatchVectorField
 
     void computeConditioningFactor();
     
+    scalar computeMinOverlap(const indexedOctree<treeDataPoint>& tree, const TurbulentStructure& snew) const;
+    vector randomTangentialDeflection(label fi);
 
 public:
 

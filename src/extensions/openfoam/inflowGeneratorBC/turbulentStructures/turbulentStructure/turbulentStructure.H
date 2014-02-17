@@ -55,14 +55,14 @@ class turbulentStructure;
 Ostream& operator<<(Ostream&, const turbulentStructure&);
 Istream& operator>>(Istream&, turbulentStructure&);
 
+/**
+ * base class for turbulent structures.
+ * derived from point => represents its location
+ */
 class turbulentStructure
+: public point
 {
 protected:
-  /**
-   * current location of the structure
-   */
-  point location_;
-  
   /**
    * convection velocity of the structure
    */
@@ -95,8 +95,8 @@ public:
     turbulentStructure(const turbulentStructure& p);
 
     inline void setVelocity(const vector& x) { velocity_=x; }
-    inline void setLocation(const vector& x) { location_=x; }
-    inline const vector& location() const { return location_; }
+    inline void setLocation(const point& x) { point::operator=(x); }
+    inline const point& location() const { return *this; }
     
     // Edit
     void moveForward(scalar dt);

@@ -203,6 +203,24 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
     structureParameters_.rmap(ptf, addr);
 }
 
+template<class TurbulentStructure>
+scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap(const indexedOctree<treeDataPoint>& tree, const TurbulentStructure& snew) const
+{
+  
+}
+
+template<class TurbulentStructure>
+vector inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomTangentialDeflection(label fi)
+{
+  vector n=patch().n()[fi];
+  vector e1=n^vector(1,0,0);
+  if (mag(e1)<SMALL) e1=n^vector(0,1,0);
+  vector e2=n^e1;
+  
+  scalar dist=Foam::sqrt(patch().magSf()[fi]);
+
+  return (0.5-ranGen_.scalar01())*dist*e1 + (0.5-ranGen_.scalar01())*dist*e2;
+}
 
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
@@ -220,17 +238,21 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
     /**
      * ==================== Generation of new turbulent structures ========================
      */
-    forAll(faceCentres, fi)
+    pointField locs(vortons_);
+    autoPtr<indexedOctree<treeDataPoint> > tree (new indexedOctree<treeDataPoint>(treeDataPoint(locs)) );
+    forAll(patch().Cf(), fi)
     {
       // location of the new turbulent structure: randomly deflected around the current face centre
-      const point& p = faceCentres[fi] + randomTangentialDeflection(fi);
+      const point& p = patch().Cf()[fi] + randomTangentialDeflection(fi);
       
       TurbulentStructure snew(p, Umean_[fi], L_[fi]);
       snew.randomize(ranGen_);
       
-      if (computeOverlap(snew) < overlap_)
+      if (computeMinOverlap(tree, snew) < overlap_)
       {
 	vortons_.insert(snew);
+	locs=vortons_;
+	tree.reset( new indexedOctree<treeDataPoint>(locs) );
       }
     }
     
@@ -246,10 +268,10 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::doUpdate()
       
       // superimpose turbulent velocity in affected faces
       forAll(ifl, j)
-	fluctuations[ifl[j]] += s().fluctuation(faceCentres[ifl[j]]);
+	fluctuations[ifl[j]] += s().fluctuation(patch().Cf()[ifl[j]]);
       
       // convect structure
-      s().moveForward(time().deltaT().value());
+      s().moveForward(mesh().time().deltaT().value());
     }
     
 //     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());

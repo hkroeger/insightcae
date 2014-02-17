@@ -96,28 +96,29 @@ addToRunTimeSelectionTable
 //makeInflowGeneratorFvPatchField(hatSpot);
 
 
-typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton;
-defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton, "inflowGenerator<homogeneousTurbulenceVorton>", 0); 
-addToRunTimeSelectionTable                                          
-(                                                                       
-    fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
-    patch                                                               
-);                                                                      
-                                                                        
-addToRunTimeSelectionTable                                              
-(                                                                       
-    fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
-    dictionary                                                          
-);                                                                      
-                                                                        
-addToRunTimeSelectionTable                                              
-(                                                                       
-    fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
-    patchMapper                                                         
-);
+// typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton;
+// defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton, "inflowGenerator<homogeneousTurbulenceVorton>", 0); 
+// addToRunTimeSelectionTable                                          
+// (                                                                       
+//     fvPatchVectorField,                                                 
+//     inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
+//     patch                                                               
+// );                                                                      
+//                                                                         
+// addToRunTimeSelectionTable                                              
+// (                                                                       
+//     fvPatchVectorField,                                                 
+//     inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
+//     dictionary                                                          
+// );                                                                      
+//                                                                         
+// addToRunTimeSelectionTable                                              
+// (                                                                       
+//     fvPatchVectorField,                                                 
+//     inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton,                        
+//     patchMapper                                                         
+// );
+
 //makeInflowGeneratorFvPatchField(homogeneousTurbulenceVorton);
 
 } // End namespace Foam

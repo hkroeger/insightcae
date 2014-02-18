@@ -69,7 +69,7 @@ protected:
   vector velocity_;
   
   /**
-   * prescribed turbulent length scale, converted into (principal axes)*(principal values)
+   * prescribed turbulent length scale, converted into (principal axes)*(length of ellipsoids semiaxis)
    */
   vector L1_, L2_, L3_;
 
@@ -87,7 +87,7 @@ public:
     /**
      * create at some location (during run)
      */
-    turbulentStructure(const point& p, const vector& v, const symmTensor& L);
+    turbulentStructure(Random&, const point& p, const vector& v, const symmTensor& L);
 
     /**
      * copy constructor
@@ -98,8 +98,12 @@ public:
     inline void setLocation(const point& x) { point::operator=(x); }
     inline const point& location() const { return *this; }
     
+    scalar Lalong(const vector& x) const;
+    
     // Edit
     void moveForward(scalar dt);
+
+    void operator=(const turbulentStructure&);
     
     friend Ostream& operator<<(Ostream&, const turbulentStructure&);
     friend Istream& operator>>(Istream&, turbulentStructure&);

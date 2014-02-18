@@ -6,6 +6,7 @@ set(inflowGeneratorBC_SOURCES
 )
 
 include_directories(
+  ${toolkit_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
   ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
@@ -26,6 +27,7 @@ message(STATUS "INC_DIRS=" ${inflowGeneratorBC_INC_DIRS})
 set(inflowGeneratorBC16ext_SOURCES ${inflowGeneratorBC_SOURCES})
 
 setup_lib_target_OF16ext(inflowGeneratorBC16ext "inflowGeneratorBC"
+  toolkit
   OpenFOAM
   finiteVolume
   incompressibleRASModels 

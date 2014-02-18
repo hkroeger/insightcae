@@ -131,7 +131,7 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton()
 
 homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 (
-    Istream& s
+  Istream& s
 )
 : 
     turbulentStructure(s),
@@ -139,9 +139,9 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 {
 }
 
-homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const point& loc, const vector& v, const symmTensor& L)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(Random& r, const point& loc, const vector& v, const symmTensor& L)
 :
-    turbulentStructure(loc, v, L),
+    turbulentStructure(r, loc, v, L),
     omegav_(pTraits<vector>::zero)
 {
 }
@@ -153,7 +153,7 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const homogeneousTurbul
     omegav_(o.omegav_)
 {}
 
-vector homogeneousTurbulenceVorton::fluctuation(const vector& x) const
+vector homogeneousTurbulenceVorton::fluctuation(const StructureParameters& pa, const vector& x) const
 {
   scalar L = (mag(L1_)+mag(L2_)+mag(L3_)) / 3.0;
   
@@ -169,15 +169,15 @@ vector homogeneousTurbulenceVorton::fluctuation(const vector& x) const
   tmod=Foam::max(1e-5, tmod);
 
   scalar sradiika=::sqrt(radiika);
-  scalar reta =sradiika/p_.eta_;
+  scalar reta =sradiika/pa.eta_;
   scalar aleta=sradiika/L;
 
   scalar sperva=
       (
-	  ::pow(reta/::pow(::pow(reta,2.5)+p_.C_2, 0.4), 2.166667)
+	  ::pow(reta/::pow(::pow(reta,2.5)+pa.C_2, 0.4), 2.166667)
       )
       /::pow(sradiika,1.166667)
-      /(p_.C_3*::pow(aleta, 1.83333)+1.000)
+      /(pa.C_3*::pow(aleta, 1.83333)+1.000)
       *tmod/sradiika;
       
   return sperva*t;

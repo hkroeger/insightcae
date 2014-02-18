@@ -71,21 +71,22 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
 		    ("OFEname", 	new StringParameter("OF22x", "identifier of the OpenFOAM installation, that shall be used"))
 		    ("np", 	new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
+		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
       ))
          
-      ("solver", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Solver parameters"
-      ))
+//       ("run", new SubsetParameter	
+// 	    (
+// 		  ParameterSet
+// 		  (
+// 		    boost::assign::list_of<ParameterSet::SingleEntry>
+// 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+// 		    .convert_to_container<ParameterSet::EntryList>()
+// 		  ), 
+// 		  "Solver parameters"
+//       ))
 
       .convert_to_container<ParameterSet::EntryList>()
   );

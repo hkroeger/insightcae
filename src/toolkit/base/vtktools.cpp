@@ -30,21 +30,85 @@ namespace insight
 namespace vtk
 {
 
+vtkModel::vtkModel()
+{
+}
+
+vtkModel::~vtkModel()
+{
+}
+
+void vtkModel::setPoints(int npts, const double* x, const double* y, const double* z)
+{
+  for (int i=0; i<npts; i++)
+  {
+    pts_.push_back(vec3(x[i], y[i], z[i]));
+  }
+}
+
+
+void vtkModel::appendPointScalarField(const std::string& name, const double v[])
+{
+  pointScalarFields_[name]=ScalarField(v, v+pts_.size());
+}
+
+void vtkModel::appendPointVectorField(const std::string& name, const double x[], const double y[], const double z[])
+{
+  pointVectorFields_[name]=VectorField();
+  VectorField& vf = pointVectorFields_[name];
+  for (int i=0; i<pts_.size(); i++)
+  {
+    vf.push_back(vec3(x[i], y[i], z[i]));
+  }  
+}
+
+void vtkModel::writeGeometryToLegacyFile(std::ostream& os) const
+{
+  os << "POINTS "<<pts_.size()<<" float"<<endl;
+  BOOST_FOREACH(const arma::mat& p, pts_)
+  {
+    os << p(0)<<" "<<p(1)<<" "<<p(2)<<endl;
+  }  
+}
+
+
+void vtkModel::writeDataToLegacyFile(std::ostream& os) const
+{
+  os<<"POINT_DATA "<<pts_.size()<<endl;
+  BOOST_FOREACH(const ScalarFieldList::value_type& sf, pointScalarFields_)
+  {
+    os<<"SCALARS "<<sf.first<<" float 1"<<endl;
+    BOOST_FOREACH(const double& v, sf.second)
+    {
+      os<<v<<endl;
+    }
+  }
+  BOOST_FOREACH(const VectorFieldList::value_type& sf, pointVectorFields_)
+  {
+    os<<"VECTORS "<<sf.first<<" float"<<endl;
+    BOOST_FOREACH(const arma::mat& v, sf.second)
+    {
+      os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
+    }
+  }
+}
+
+void vtkModel::writeLegacyFile(std::ostream& os) const
+{
+  os << "# vtk DataFile Version 2.0" << endl;
+  os << "vtkModel2d" << endl;
+  os << "ASCII" <<endl;
+  os << "DATASET POLYDATA"<<endl;
+  writeGeometryToLegacyFile(os);
+  writeDataToLegacyFile(os);
+}
+
 vtkModel2d::vtkModel2d()
 {
 }
 
 vtkModel2d::~vtkModel2d()
 {
-
-}
-
-void vtkModel2d::setPoints(int npts, const double* x, const double* y, const double* z)
-{
-  for (int i=0; i<npts; i++)
-  {
-    pts_.push_back(vec3(x[i], y[i], z[i]));
-  }
 }
 
 void vtkModel2d::appendPolygon(int nc, const int ci[])
@@ -62,32 +126,11 @@ int vtkModel2d::nPolyPts() const
   return n;
 }
 
-void vtkModel2d::appendPointScalarField(const std::string& name, const double v[])
-{
-  pointScalarFields_[name]=ScalarField(v, v+pts_.size());
-}
 
-void vtkModel2d::appendPointVectorField(const std::string& name, const double x[], const double y[], const double z[])
+void vtkModel2d::writeGeometryToLegacyFile(std::ostream& os) const
 {
-  pointVectorFields_[name]=VectorField();
-  VectorField& vf = pointVectorFields_[name];
-  for (int i=0; i<pts_.size(); i++)
-  {
-    vf.push_back(vec3(x[i], y[i], z[i]));
-  }  
-}
-
-void vtkModel2d::writeLegacyFile(std::ostream& os) const
-{
-  os << "# vtk DataFile Version 2.0" << endl;
-  os << "vtkModel2d" << endl;
-  os << "ASCII" <<endl;
-  os << "DATASET POLYDATA"<<endl;
-  os << "POINTS "<<pts_.size()<<" float"<<endl;
-  BOOST_FOREACH(const arma::mat& p, pts_)
-  {
-    os << p(0)<<" "<<p(1)<<" "<<p(2)<<endl;
-  }
+  vtkModel::writeGeometryToLegacyFile(os);
+  
   os<<"POLYGONS "<<poly_.size()<<" "<<nPolyPts()<<endl;
   BOOST_FOREACH(const Polygon& p, poly_)
   {
@@ -97,24 +140,6 @@ void vtkModel2d::writeLegacyFile(std::ostream& os) const
       os<<" "<<i;
     }
     os<<endl;
-  }
-
-  os<<"POINT_DATA "<<pts_.size()<<endl;
-  BOOST_FOREACH(const ScalarFieldList::value_type& sf, pointScalarFields_)
-  {
-    os<<"SCALARS "<<sf.first<<" float 1"<<endl;
-    BOOST_FOREACH(const double& v, sf.second)
-    {
-      os<<v<<endl;
-    }
-  }
-  BOOST_FOREACH(const VectorFieldList::value_type& sf, pointVectorFields_)
-  {
-    os<<"VECTORS "<<sf.first<<" float"<<endl;
-    BOOST_FOREACH(const arma::mat& v, sf.second)
-    {
-      os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
-    }
   }
 }
 

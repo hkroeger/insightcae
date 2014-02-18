@@ -50,18 +50,17 @@ turbulentStructure::turbulentStructure(Istream& is)
   is >> *this;
 }
 
-turbulentStructure::turbulentStructure(const point& p, const vector& v, const symmTensor& L)
+turbulentStructure::turbulentStructure(Random& r, const point& p, const vector& v, const symmTensor& L)
 : point(p),
   velocity_(v)
 {
   vector evals(eigenValues(L));
-  L1_ = eigenVector(L, evals.x()) * evals.x();
-  L2_ = eigenVector(L, evals.y()) * evals.y();
-  L3_ = eigenVector(L, evals.z()) * evals.z();
-  tensor dbg=eigenVectors(L);
-  Info<<"Check: ("<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<") == "<<(dbg.T()&L&dbg)<<endl;
+  L1_ = eigenVector(L, evals.x()) * sqrt(1./evals.x());
+  L2_ = eigenVector(L, evals.y()) * sqrt(1./evals.y());
+  L3_ = eigenVector(L, evals.z()) * sqrt(1./evals.z());
   
-  p -= (v/mag(v)) * 0.5*Foam::max(Foam::max(evals.x(), evals.y()), evals.z()); // start 1/2 of the max. length scale before inlet plane
+  // start at least 1/2 of the max. length scale before inlet plane
+  *this -= (v/mag(v)) * (0.25*r.scalar01()+0.5)*Foam::max(Foam::max(evals.x(), evals.y()), evals.z()); 
 }
 
 turbulentStructure::turbulentStructure(const turbulentStructure& o)
@@ -73,10 +72,36 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
 {
 }
 
+scalar turbulentStructure::Lalong(const vector& x) const
+{
+  vector e=x/mag(x);
+  diagTensor Alpha(1./magSqr(L1_), 1./magSqr(L2_), 1./magSqr(L3_));
+  tensor Q( L1_/Alpha.xx(), L2_/Alpha.yy(), L3_/Alpha.zz());
+  //Info<<"RES="<<(e & ((Q.T()&Alpha&Q) & e))<<endl;
+  return ::sqrt(1./(e & (Q.T()&Alpha&Q) & e));
+}
+
 
 void turbulentStructure::moveForward(scalar dt)
 {
-  *this += dt*velocity_;
+  point::operator+=(dt*velocity_);
+}
+
+void turbulentStructure::operator=(const turbulentStructure& rhs)
+{
+    // Check for assignment to self
+    if (this == &rhs)
+    {
+        FatalErrorIn("turbulentStructure::operator=(const turbulentStructure&)")
+            << "Attempted assignment to self"
+            << abort(FatalError);
+    }
+
+    point::operator=(rhs);
+    velocity_=rhs.velocity_;
+    L1_=rhs.L1_;
+    L2_=rhs.L2_;
+    L3_=rhs.L3_;
 }
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)

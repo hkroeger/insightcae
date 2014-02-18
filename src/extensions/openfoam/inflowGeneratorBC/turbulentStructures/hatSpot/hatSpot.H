@@ -85,7 +85,6 @@ public:
     };
 
 protected:
-    const StructureParameters& p_;
     vector epsilon_;
 
 public:
@@ -93,13 +92,13 @@ public:
     // Constructors
     hatSpot();
     hatSpot(Istream&);
-    hatSpot(const point& p, const vector& v, const symmTensor& L);
+    hatSpot(Random&, const point& p, const vector& v, const symmTensor& L);
     hatSpot(const hatSpot& p);
     
     ~hatSpot();
     
 
-    vector fluctuation(const vector&) const;
+    vector fluctuation(const StructureParameters& pa, const vector&) const;
     
     // Check
 

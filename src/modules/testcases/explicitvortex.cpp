@@ -126,11 +126,6 @@ ParameterSet ExplicitVortex::defaultParameters() const
   return p;
 }
 
-void ExplicitVortex::cancel()
-{
-  stopFlag_=true;
-}
-
 void ExplicitVortex::createMesh
 (
   OpenFOAMCase& cm,

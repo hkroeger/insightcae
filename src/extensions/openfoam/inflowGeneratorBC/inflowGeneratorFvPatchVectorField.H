@@ -64,7 +64,10 @@ class inflowGeneratorFvPatchVectorField
     Random ranGen_;
     
     // Private data
-    SLList<TurbulentStructure> vortons_;
+    /**
+     * not a linked list: each vorton needs to have an index for tree seach
+     */
+    Field<TurbulentStructure> vortons_; 
     
     /**
      * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
@@ -94,9 +97,10 @@ class inflowGeneratorFvPatchVectorField
 
     void computeConditioningFactor();
     
-    scalar computeMinOverlap(const indexedOctree<treeDataPoint>& tree, const TurbulentStructure& snew) const;
+    scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
     vector randomTangentialDeflection(label fi);
-
+    autoPtr<indexedOctree<treeDataPoint> > buildTree(const pointField& vloc) const;
+    
 public:
 
     //- Runtime type information
@@ -188,7 +192,7 @@ public:
 
         // Evaluation functions
 
-        virtual void doUpdate();
+        virtual tmp<vectorField> continueFluctuationProcess();
 	
 	virtual void updateCoeffs();
 	

@@ -39,21 +39,19 @@ typedef std::map<std::string, ScalarField> ScalarFieldList;
 typedef std::vector<arma::mat> VectorField;
 typedef std::map<std::string, VectorField> VectorFieldList;
 
-
-class vtkModel2d
+class vtkModel
 {
   
 protected:
   PointList pts_;
-  PolygonList poly_;
   ScalarFieldList pointScalarFields_;
   VectorFieldList pointVectorFields_;
   ScalarFieldList cellScalarFields_;
   VectorFieldList cellVectorFields_;
   
 public:
-    vtkModel2d();
-    ~vtkModel2d();
+    vtkModel();
+    virtual ~vtkModel();
 
     void setPoints(int npts, const double* x, const double* y, const double* z);
     
@@ -63,7 +61,27 @@ public:
     void appendPointScalarField(const std::string& name, const double v[]);
     void appendPointVectorField(const std::string& name, const double x[], const double y[], const double z[]);
     
-    void writeLegacyFile(std::ostream& os) const;
+    virtual void writeGeometryToLegacyFile(std::ostream& os) const;
+    virtual void writeDataToLegacyFile(std::ostream& os) const;
+    virtual void writeLegacyFile(std::ostream& os) const;
+};
+
+
+class vtkModel2d
+: public vtkModel
+{
+  
+protected:
+  PolygonList poly_;
+  
+public:
+    vtkModel2d();
+    virtual ~vtkModel2d();
+
+    void appendPolygon(int nc, const int ci[]);
+    int nPolyPts() const;
+    
+    virtual void writeGeometryToLegacyFile(std::ostream& os) const;
 };
 
 }

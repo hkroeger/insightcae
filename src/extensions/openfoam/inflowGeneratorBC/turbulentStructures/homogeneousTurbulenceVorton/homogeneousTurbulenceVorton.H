@@ -98,7 +98,6 @@ public:
     };
 
 private:
-    const StructureParameters& p_;
     vector omegav_;
 
 public:
@@ -106,12 +105,12 @@ public:
     // Constructors
     homogeneousTurbulenceVorton();
     homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(const point& p, const vector& v, const symmTensor& L);
+    homogeneousTurbulenceVorton(Random&, const point& p, const vector& v, const symmTensor& L);
     homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
     ~homogeneousTurbulenceVorton();
 
-    vector fluctuation(const vector&) const;
+    vector fluctuation(const StructureParameters& pa, const vector&) const;
 
     void randomize(Random&);
     void operator=(const homogeneousTurbulenceVorton&);

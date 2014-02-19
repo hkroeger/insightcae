@@ -34,6 +34,21 @@ mat vec3(double x, double y, double z)
   return v;
 }
 
+arma::mat tensor3(
+  double xx, double xy, double xz,
+  double yx, double yy, double yz,
+  double zx, double zy, double zz
+)
+{
+  mat v;
+  v 
+    << xx << xy <<  xz <<endr
+    << yx << yy <<  yz <<endr
+    << zx << zy <<  zz <<endr;
+    
+  return v;
+}
+
 mat vec2(double x, double y)
 {
   mat v;

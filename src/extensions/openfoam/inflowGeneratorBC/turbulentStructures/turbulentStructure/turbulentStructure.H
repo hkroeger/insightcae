@@ -72,6 +72,8 @@ protected:
    * prescribed turbulent length scale, converted into (principal axes)*(length of ellipsoids semiaxis)
    */
   vector L1_, L2_, L3_;
+  
+  point startPoint_; 
 
 public:    
     /**
@@ -97,8 +99,21 @@ public:
     inline void setVelocity(const vector& x) { velocity_=x; }
     inline void setLocation(const point& x) { point::operator=(x); }
     inline const point& location() const { return *this; }
+    inline const vector& velocity() const { return velocity_; }
+    inline const vector& L(label i) const 
+    { 
+      switch (i)
+      {
+	case 0: return L1_; break;
+	case 1: return L2_; break;	
+	case 2: return L3_; break;      
+	default: FatalErrorIn("L()") << "Prinicipal length scale "<<i<<" is undefined"<<abort(FatalError);
+      }
+    }
     
     scalar Lalong(const vector& x) const;
+    scalar travelledDistance() const;
+    scalar passedThrough() const;
     
     // Edit
     void moveForward(scalar dt);

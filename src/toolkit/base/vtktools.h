@@ -81,6 +81,14 @@ public:
     void appendPolygon(int nc, const int ci[]);
     int nPolyPts() const;
     
+    void appendCellVectorField(const std::string& name, const double x[], const double y[], const double z[]);
+    void appendCellTensorField(const std::string& name, 
+			       const double xx[], const double xy[], const double xz[],
+			       const double yx[], const double yy[], const double yz[],
+			       const double zx[], const double zy[], const double zz[]
+			      );
+
+    virtual void writeDataToLegacyFile(std::ostream& os) const;
     virtual void writeGeometryToLegacyFile(std::ostream& os) const;
 };
 

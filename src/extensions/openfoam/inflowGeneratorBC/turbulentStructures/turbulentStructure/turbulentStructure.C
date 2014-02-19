@@ -41,7 +41,8 @@ turbulentStructure::turbulentStructure()
   velocity_(pTraits<point>::zero),
   L1_(pTraits<vector>::zero),
   L2_(pTraits<vector>::zero),
-  L3_(pTraits<vector>::zero)
+  L3_(pTraits<vector>::zero),
+  startPoint_(pTraits<point>::zero)
 {
 }
 
@@ -51,16 +52,16 @@ turbulentStructure::turbulentStructure(Istream& is)
 }
 
 turbulentStructure::turbulentStructure(Random& r, const point& p, const vector& v, const symmTensor& L)
-: point(p),
-  velocity_(v)
+: velocity_(v)
 {
   vector evals(eigenValues(L));
-  L1_ = eigenVector(L, evals.x()) * sqrt(1./evals.x());
-  L2_ = eigenVector(L, evals.y()) * sqrt(1./evals.y());
-  L3_ = eigenVector(L, evals.z()) * sqrt(1./evals.z());
+  L1_ = eigenVector(L, evals.x()) * evals.x();
+  L2_ = eigenVector(L, evals.y()) * evals.y();
+  L3_ = eigenVector(L, evals.z()) * evals.z();
   
   // start at least 1/2 of the max. length scale before inlet plane
-  *this -= (v/mag(v)) * (0.25*r.scalar01()+0.5)*Foam::max(Foam::max(evals.x(), evals.y()), evals.z()); 
+  startPoint_ = p + ((v/mag(v)) * (2.*r.scalar01()-1.)*Foam::max(Foam::max(evals.x(), evals.y()), evals.z())); 
+  point::operator=(startPoint_);
 }
 
 turbulentStructure::turbulentStructure(const turbulentStructure& o)
@@ -68,17 +69,29 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
   velocity_(o.velocity_),
   L1_(o.L1_),
   L2_(o.L2_),
-  L3_(o.L3_)
+  L3_(o.L3_),
+  startPoint_(o.startPoint_)
 {
 }
 
 scalar turbulentStructure::Lalong(const vector& x) const
 {
   vector e=x/mag(x);
-  diagTensor Alpha(1./magSqr(L1_), 1./magSqr(L2_), 1./magSqr(L3_));
-  tensor Q( L1_/Alpha.xx(), L2_/Alpha.yy(), L3_/Alpha.zz());
+  diagTensor Alpha(mag(L1_), mag(L2_), mag(L3_));
+  tensor Q( L1_/Alpha.xx(), L2_/Alpha.yy(), L3_/Alpha.zz() );
   //Info<<"RES="<<(e & ((Q.T()&Alpha&Q) & e))<<endl;
-  return ::sqrt(1./(e & (Q.T()&Alpha&Q) & e));
+  return e & (Q.T()&Alpha&Q) & e;
+}
+
+scalar turbulentStructure::travelledDistance() const
+{
+  return mag(*this - startPoint_);
+}
+
+scalar turbulentStructure::passedThrough() const
+{
+  //Info<<"dist="<<travelledDistance()<<endl<< Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_))) <<endl;
+  return travelledDistance() > 2.*Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
 }
 
 
@@ -102,6 +115,7 @@ void turbulentStructure::operator=(const turbulentStructure& rhs)
     L1_=rhs.L1_;
     L2_=rhs.L2_;
     L3_=rhs.L3_;
+    startPoint_=rhs.startPoint_;
 }
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
@@ -111,6 +125,7 @@ Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
   s<<ht.L1_<<endl;
   s<<ht.L2_<<endl;
   s<<ht.L3_<<endl;
+  s<<ht.startPoint_<<endl;
   return s;
 }
 
@@ -121,11 +136,13 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     vector L1(s);
     vector L2(s);
     vector L3(s);
+    point sp(s);
     ht.setLocation(loc);
     ht.velocity_=v;
     ht.L1_=L1;
     ht.L2_=L2;
     ht.L3_=L3;
+    ht.startPoint_=sp;
     return s;
 }
 

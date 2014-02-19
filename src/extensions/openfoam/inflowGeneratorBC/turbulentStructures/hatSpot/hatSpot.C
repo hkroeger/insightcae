@@ -106,17 +106,18 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
     vector delta_x = x - location();
 
     scalar l1=mag(L1_), l2=mag(L2_), l3=mag(L3_);
+    vector e1=L1_/l1, e2=L2_/l2, e3=L3_/l3;
     if 
         (
-            ((delta_x&(L1_/l1))  < l1 / 2.0) &&
-            ((delta_x&(L2_/l2))  < l2 / 2.0) &&
-            ((delta_x&(L3_/l3))  < l3 / 2.0)
+            (mag(delta_x&e1)  < (l1 / 2.0)) &&
+            (mag(delta_x&e2)  < (l2 / 2.0)) &&
+            (mag(delta_x&e3)  < (l3 / 2.0))
         )
     {
       vector f=
-           (1.0 - 2.0*(delta_x&(L1_/l1))  / l1 )
-          *(1.0 - 2.0*(delta_x&(L2_/l2))  / l2 )
-          *(1.0 - 2.0*(delta_x&(L3_/l3))  / l3 )
+           (1.0 - 2.0*mag(delta_x&e1)  / l1 )
+          *(1.0 - 2.0*mag(delta_x&e2)  / l2 )
+          *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
       return cmptMultiply(epsilon_, f);

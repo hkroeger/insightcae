@@ -48,6 +48,7 @@ SourceFiles
 
 #include "base/vtktools.h"
 
+#include <vector>
 #include "boost/lexical_cast.hpp"
 
 using namespace std;
@@ -65,7 +66,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
   vectorField uMean(size(), vector::zero);
   tensorField uPrime2Mean(size(), tensor::zero);
   
-  for (int i=0; i<50; i++)
+  for (int i=1; i<1000; i++)
   {
     
     vectorField u( continueFluctuationProcess() );
@@ -74,20 +75,73 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
     scalar beta = 1.0/scalar(i);
     
     uMean = alpha*uMean + beta*u;
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean);
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u); // uMean shoudl be zero - sqr(uMean);
     
     Info<<"Averages: uMean="<<average(uMean)<<" \t R^2="<< average(uPrime2Mean) << endl;
 		
-    insight::vtk::vtkModel vtk;
-    
-    vtk.setPoints(
+    insight::vtk::vtkModel vtk_vortons;
+    vtk_vortons.setPoints(
       vortons_.size(),
       vortons_.component(vector::X)().data(),
       vortons_.component(vector::Y)().data(),
       vortons_.component(vector::Z)().data()
       );
-    
+    for (label i=0; i<3; i++)
     {
+      std::vector<double> Lx, Ly, Lz;
+      forAll(vortons_, j)
+      {
+	const vector& L = vortons_[j].L(i);
+	Lx.push_back(L.x()); Ly.push_back(L.y()); Lz.push_back(L.z());
+      }
+      vtk_vortons.appendPointVectorField("L"+lexical_cast<string>(i), Lx.data(), Ly.data(), Lz.data());
+    }
+    
+    insight::vtk::vtkModel2d vtk_patch;
+    // set cells
+    const polyPatch& ppatch = patch().patch();
+    vtk_patch.setPoints
+    (
+      ppatch.localPoints().size(), 
+      ppatch.localPoints().component(vector::X)().data(),
+      ppatch.localPoints().component(vector::Y)().data(),
+      ppatch.localPoints().component(vector::Z)().data()
+    );
+    for(label fi=0; fi<ppatch.size(); fi++)
+    {
+      const face& f = ppatch.localFaces()[fi];
+      vtk_patch.appendPolygon(f.size(), f.cdata());
+    }
+    
+    vtk_patch.appendCellVectorField
+    (
+      "u", 
+      u.component(vector::X)().cdata(),
+      u.component(vector::Y)().cdata(),
+      u.component(vector::Z)().cdata()
+    );
+    vtk_patch.appendCellVectorField
+    (
+      "uMean", 
+      uMean.component(vector::X)().cdata(),
+      uMean.component(vector::Y)().cdata(),
+      uMean.component(vector::Z)().cdata()
+    );
+    vtk_patch.appendCellTensorField
+    (
+      "R", 
+      uPrime2Mean.component(tensor::XX)().cdata(),
+      uPrime2Mean.component(tensor::XY)().cdata(),
+      uPrime2Mean.component(tensor::XZ)().cdata(),
+      uPrime2Mean.component(tensor::YX)().cdata(),
+      uPrime2Mean.component(tensor::YY)().cdata(),
+      uPrime2Mean.component(tensor::YZ)().cdata(),
+      uPrime2Mean.component(tensor::ZX)().cdata(),
+      uPrime2Mean.component(tensor::ZY)().cdata(),
+      uPrime2Mean.component(tensor::ZZ)().cdata()
+    );
+    {
+      
       IOobject oo
       (
 	"vortons_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
@@ -96,13 +150,29 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
 	IOobject::NO_READ,
 	IOobject::AUTO_WRITE
       );
-      Info<<"Writing "<<oo.objectPath()<<endl;
+      IOobject oop
+      (
+	"patch_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
+	this->db().time().timeName(),
+	this->db().time(),
+	IOobject::NO_READ,
+	IOobject::AUTO_WRITE
+      );
       mkDir(oo.path());
+      
+      Info<<"Writing "<<oo.objectPath()<<endl;
       std::ofstream f(oo.objectPath().c_str());
-      vtk.writeLegacyFile(f);
+      vtk_vortons.writeLegacyFile(f);
       f.close();
+      
+      Info<<"Writing "<<oop.objectPath()<<endl;
+      std::ofstream f2(oop.objectPath().c_str());
+      vtk_patch.writeLegacyFile(f2);
+      f2.close();
     }
   }
+  
+  FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
 }
 
 
@@ -268,8 +338,7 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
       vector d = r.hitPoint() - snew;
       scalar l1 = snew.Lalong(d);
       scalar l2 = vortons_[r.index()].Lalong(-d);
-      scalar ovl = ( l1+l2 - mag(d) ) / Foam::min(l1, l2);
-      Info<<"d="<<d<<" l1="<<l1<<" l2="<<l2<<" ovl="<<ovl<<endl;
+      scalar ovl = ( 0.5*(l1+l2) - mag(d) ) / (Foam::min(l1, l2));
       return ovl;
     }
   }
@@ -286,7 +355,7 @@ vector inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomTangentialDe
   
   scalar dist=Foam::sqrt(patch().magSf()[fi]);
 
-  return (0.5-ranGen_.scalar01())*dist*e1 + (0.5-ranGen_.scalar01())*dist*e2;
+  return (0.5-ranGen_.scalar01())*dist*e1 + (0.5-ranGen_.scalar01())*dist*e2 ;
 }
 
 template<class TurbulentStructure>
@@ -349,7 +418,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       scalar ovl = computeMinOverlap(tree, snew);
       //Info<<"gen: "<<patch().Cf()[fi] <<" "<< p <<" => ovl="<<ovl<<endl;
-      Info<<ovl<<" "<<flush;
+      //Info<<ovl<<" "<<flush;
       if ( ovl < overlap_)
       {
 	// append new structure to the end of the list
@@ -364,8 +433,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	n_generated++;
       }
     }
-    Info<<endl;
-    Info<<"Generated "<<n_generated<<" turbulent structures (now total "<<vortons_.size()<<")"<<endl;
+//     //Info<<endl;
     
     /**
      * ==================== Generation of turbulent fluctuations ========================
@@ -385,6 +453,20 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       // convect structure
       vortons_[j].moveForward(this->db().time().deltaT().value());
     }
+    
+    Field<TurbulentStructure> os(vortons_);
+    label kept=0;
+    forAll(vortons_, j)
+    {
+      if (!vortons_[j].passedThrough())
+      {
+	vortons_[kept++]=os[j];
+      }
+    }
+    vortons_.resize(kept);
+    label n_removed=os.size()-kept;
+
+    Info<<"Generated "<<n_generated<<" turbulent structures, removed "<<n_removed<<" (now total "<<vortons_.size()<<")"<<endl;
     
 //     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
 // 

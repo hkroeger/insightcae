@@ -27,6 +27,11 @@ namespace insight
 {
 
 arma::mat vec3(double x, double y, double z);
+arma::mat tensor3(
+  double xx, double xy, double xz,
+  double yx, double yy, double yz,
+  double zx, double zy, double zz
+);
 arma::mat vec2(double x, double y);
 
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );

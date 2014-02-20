@@ -397,11 +397,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["omegaFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  SIMPLE["nCorrectors"]=2;
-  SIMPLE["nNonOrthogonalCorrectors"]=0;
-  SIMPLE["pRefCell"]=0;
-  SIMPLE["pRefValue"]=0.0;
+  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  PIMPLE["nCorrectors"]=2;
+  PIMPLE["nOuterCorrectors"]=1;
+  PIMPLE["nNonOrthogonalCorrectors"]=0;
+  PIMPLE["pRefCell"]=0;
+  PIMPLE["pRefValue"]=0.0;
   
   // ============ setup fvSchemes ================================
   

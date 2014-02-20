@@ -269,8 +269,9 @@ void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData
     }
     if (suf=="_half1" || suf=="")
     {
-      pl.resize(pl.size()+p_.patches().size());
-      std::copy(p_.patches_half1().begin(), p_.patches_half1().end(), pl.begin());
+      int osize=pl.size();
+      pl.resize(osize+p_.patches_half1().size());
+      std::copy(p_.patches_half1().begin(), p_.patches_half1().end(), pl.begin()+osize);
       if (suf!="") opdict["set"]=p_.set_half1();
     }
     opdict["patches"]=pl;

@@ -98,17 +98,6 @@ ParameterSet PipeBase::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
-      ("fluid", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Parameters of the fluid"
-	))
-      
       .convert_to_container<ParameterSet::EntryList>()
   );
   

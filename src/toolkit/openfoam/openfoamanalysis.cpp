@@ -76,7 +76,18 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		  ), 
 		  "Execution parameters"
       ))
-         
+
+      ("fluid", new SubsetParameter
+	(
+	  ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
+	    .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Parameters of the fluid"
+	))
+      
 //       ("run", new SubsetParameter	
 // 	    (
 // 		  ParameterSet

@@ -642,7 +642,11 @@ SplineEdge::SplineEdge(const PointList& points, string splinekeyword)
 std::vector<OFDictData::data> SplineEdge::bmdEntry(const PointMap& allPoints, int OFversion) const
 {
   std::vector<OFDictData::data> l;
-  l.push_back( OFDictData::data(splinekeyword_) );
+  //l.push_back( OFDictData::data(splinekeyword_) );
+  if (OFversion<=160)
+    l.push_back(splinekeyword_);
+  else
+    l.push_back("spline");
   l.push_back( OFDictData::data(allPoints.find(c0_)->second) );
   l.push_back( OFDictData::data(allPoints.find(c1_)->second) );
   

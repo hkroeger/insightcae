@@ -127,8 +127,8 @@ try:
     def planarSlice(cbi, origin, normal):
       reader,blockindices=cbi
       sl = Slice(Input=reader)
-      sl.SliceType.Normal=[0,0,1]
-      sl.SliceType.Origin=[0,0,0]
+      sl.SliceType.Normal=normal
+      sl.SliceType.Origin=origin
       return sl
     
     
@@ -144,14 +144,16 @@ try:
         
         return elev
     
-    def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=1.):
+    def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()
-        #cam.SetParallelScale(scale)
         cam.SetViewUp(up)
         cam.SetFocalPoint(focus)
         cam.SetPosition(pos)
-        ResetCamera() # rescales but keeps view direction intact
+        if not scale is None:
+	  cam.SetParallelScale(scale)
+	else:
+	  ResetCamera() # rescales but keeps view direction intact
         
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()

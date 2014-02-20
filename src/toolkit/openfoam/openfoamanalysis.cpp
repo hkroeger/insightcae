@@ -205,15 +205,14 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   if (!runCase.outputTimesPresentOnDisk(dir))
   {
     createCase(runCase, p);
+    boost::shared_ptr<OFdicts> dicts;
+    createDictsInMemory(runCase, p, dicts);
+    applyCustomOptions(runCase, p, dicts);
+    writeDictsToDisk(runCase, p, dicts);
+    applyCustomPreprocessing(runCase, p);
   }
   else
     cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  
-  boost::shared_ptr<OFdicts> dicts;
-  createDictsInMemory(runCase, p, dicts);
-  applyCustomOptions(runCase, p, dicts);
-  writeDictsToDisk(runCase, p, dicts);
-  applyCustomPreprocessing(runCase, p);
   
   runSolver(displayer, runCase, p);
   

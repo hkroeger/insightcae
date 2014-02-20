@@ -1347,6 +1347,16 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
   
+  insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
+}
+
+void BoundaryCondition::insertIntoBoundaryDict
+(
+  OFdicts& dictionaries, 
+  const string& patchName,
+  const OFDictData::dict& bndsubd
+)
+{
   // contents is created as list of string / subdict pairs
   // patches have to appear ordered by "startFace"!
   OFDictData::dict& boundaryDict=dictionaries.addDictionaryIfNonexistent("constant/polyMesh/boundary");
@@ -1363,7 +1373,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
     if (std::string *name = boost::get<std::string>(&(*i)))
     {
       //cout<<"found "<<*name<<endl;
-      if ( *name == patchName_ )
+      if ( *name == patchName )
       {
 	i++;
 	*i=bndsubd;
@@ -1393,7 +1403,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
       }
     }
   }
-  j = bl.insert( j, OFDictData::data(patchName_) );
+  j = bl.insert( j, OFDictData::data(patchName) );
   bl.insert( j+1, bndsubd );
   
   OFDictData::dict::iterator oe=boundaryDict.begin();
@@ -1401,6 +1411,10 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   boundaryDict.erase(oe);
 }
 
+bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
+{
+  return (patchName == patchName_);
+}
 
 
 SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)
@@ -1423,6 +1437,97 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
       BC["type"]=OFDictData::data(className_);
   }
+}
+
+
+CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
+: OpenFOAMCaseElement(c, patchName+"CyclicBC"),
+  patchName_(patchName)
+{
+  if (c.OFversion()>=210)
+  {
+    nFaces_=boundaryDict.subDict(patchName_+"_half0").getInt("nFaces");
+    startFace_=boundaryDict.subDict(patchName_+"_half0").getInt("startFace");
+    nFaces1_=boundaryDict.subDict(patchName_+"_half1").getInt("nFaces");
+    startFace1_=boundaryDict.subDict(patchName_+"_half1").getInt("startFace");
+  }
+  else
+  {
+    nFaces_=boundaryDict.subDict(patchName_).getInt("nFaces");
+    startFace_=boundaryDict.subDict(patchName_).getInt("startFace");
+  }
+}
+
+void CyclicPairBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  addIntoFieldDictionaries(dictionaries);
+  
+  OFDictData::dict bndsubd, bndsubd1;
+  bndsubd["type"]="cyclic";
+  bndsubd["nFaces"]=nFaces_;
+  bndsubd["startFace"]=startFace_;
+  bndsubd1["type"]="cyclic";
+  bndsubd1["nFaces"]=nFaces1_;
+  bndsubd1["startFace"]=startFace1_;
+  
+  if (OFversion()>=210)
+  {
+    bndsubd["neighbourPatch"]=patchName_+"_half1";
+    bndsubd1["neighbourPatch"]=patchName_+"_half0";
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_+"_half0", bndsubd);
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_+"_half1", bndsubd1);
+  }
+  else
+  {
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
+  }
+}
+
+void CyclicPairBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
+    OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
+    
+    if (OFversion()>=210)
+    {
+      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_+"_half0");
+      OFDictData::dict& BC1=boundaryField.addSubDictIfNonexistent(patchName_+"_half1");
+      
+      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      {
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC1);
+      }
+      else
+      {
+	BC["type"]="cyclic";
+	BC1["type"]="cyclic";
+      }
+    }
+    else
+    {
+      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
+      
+      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      {
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+      }
+      else
+      {
+	BC["type"]="cyclic";
+      }
+    }
+  }
+}
+
+bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
+{
+  if (OFversion()>=210)
+    return ( (patchName == patchName_+"_half0") || (patchName == patchName_+"_half1") );
+  else
+    return ( patchName == patchName_ );
 }
 
 GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 

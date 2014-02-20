@@ -24,7 +24,7 @@
 
 namespace insight {
 
-class Pipe 
+class PipeBase 
 : public OpenFOAMAnalysis
 {
 protected:
@@ -33,11 +33,12 @@ protected:
 public:
   declareType("Pipe Flow Test Case");
   
-  Pipe(const NoParameters&);
-  ~Pipe();
+  PipeBase(const NoParameters&);
+  ~PipeBase();
   
   virtual ParameterSet defaultParameters() const;
   
+  std::string cyclPrefix() const;
   virtual double calcLc(const ParameterSet& p) const;
   virtual int calcnc(const ParameterSet& p) const;
   virtual int calcnr(const ParameterSet& p) const;
@@ -57,6 +58,28 @@ public:
   );
   
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+  
+};
+
+class PipeCyclic
+: public PipeBase
+{
+public:
+  declareType("Pipe Flow Test Case (Axial Cyclic)");
+  
+  PipeCyclic(const NoParameters&);
+  
+  virtual void createMesh
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );  
+  
+  virtual void createCase
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );
   
 };
 

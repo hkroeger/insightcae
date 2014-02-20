@@ -557,8 +557,17 @@ public:
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
+  static void insertIntoBoundaryDict
+  (
+    OFdicts& dictionaries, 
+    const std::string& patchName,
+    const OFDictData::dict& bndsubd
+  );
+
   inline const std::string patchName() const { return patchName_; }
   inline const std::string type() const { return type_; }
+  
+  virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
 
@@ -572,6 +581,30 @@ protected:
 public:
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+class CyclicPairBC
+: public OpenFOAMCaseElement
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (prefixName, std::string, "")
+//   )
+//   
+// protected:
+//   Parameters p_;
+//   
+protected:
+  std::string patchName_;
+  int nFaces_, nFaces1_;
+  int startFace_, startFace1_;
+
+public:
+  CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+
+  virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
 class GGIBC

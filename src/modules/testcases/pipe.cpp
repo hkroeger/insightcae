@@ -37,24 +37,24 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-defineType(Pipe);
+defineType(PipeBase);
 
-Pipe::Pipe(const NoParameters&)
+PipeBase::PipeBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
     "Pipe Flow Test Case",
     "Cylindrical domain with cyclic BCs on axial ends"
   ),
-  cycl_in_("cycl_in"),
-  cycl_out_("cycl_out")
+  cycl_in_("cycl_half0"),
+  cycl_out_("cycl_half1")
 {}
 
-Pipe::~Pipe()
+PipeBase::~PipeBase()
 {
 
 }
 
-ParameterSet Pipe::defaultParameters() const
+ParameterSet PipeBase::defaultParameters() const
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -115,14 +115,24 @@ ParameterSet Pipe::defaultParameters() const
   return p;
 }
 
-double Pipe::calcLc(const ParameterSet& p) const
+std::string PipeBase::cyclPrefix() const
+{
+  boost:smatch m;
+  boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
+  std::string namePrefix=m[1];
+  cout<<namePrefix<<endl;
+  return namePrefix;
+}
+
+
+double PipeBase::calcLc(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "mesh", x);
   return x*D;
 }
 
-int Pipe::calcnc(const ParameterSet& p) const
+int PipeBase::calcnc(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -134,7 +144,7 @@ int Pipe::calcnc(const ParameterSet& p) const
   return D*(M_PI+4.*x)/(8.*Delta/s);
 }
 
-int Pipe::calcnr(const ParameterSet& p) const
+int PipeBase::calcnr(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -158,7 +168,7 @@ double lambda_func(double lambda, void *param)
   return 2.*Retau*sqrt(8./lambda) - Re;
 }
 
-double Pipe::calcRe(const ParameterSet& p) const
+double PipeBase::calcRe(const ParameterSet& p) const
 {
   PSDBL(p, "operation", Re_tau);
   
@@ -209,7 +219,7 @@ double Pipe::calcRe(const ParameterSet& p) const
     return Re;
 }
 
-double Pipe::calcUbulk(const ParameterSet& p) const
+double PipeBase::calcUbulk(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   //PSDBL(p, "operation", Re_tau);
@@ -217,7 +227,7 @@ double Pipe::calcUbulk(const ParameterSet& p) const
   return 1./D; //calcRe(p)*(1./Re_tau)/D;
 }
 
-void Pipe::createMesh
+void PipeBase::createMesh
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
@@ -312,7 +322,7 @@ void Pipe::createMesh
 }
 
 
-void Pipe::createCase
+void PipeBase::createCase
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
@@ -350,12 +360,12 @@ void Pipe::createCase
   ));
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./calcRe(p)) ));
   
-  cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(vec3(calcUbulk(p), 0, 0)) 
-  ));
-  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0) 
-  ));
+//   cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
+//     .set_velocity(vec3(calcUbulk(p), 0, 0)) 
+//   ));
+//   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
+//     .set_pressure(0.0) 
+//   ));
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
@@ -369,7 +379,7 @@ void Pipe::createCase
   */
 }
   
-ResultSetPtr Pipe::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
@@ -423,8 +433,46 @@ ResultSetPtr Pipe::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   return results;
 }
 
+defineType(PipeCyclic);
 
-addToFactoryTable(Analysis, Pipe, NoParameters);
+PipeCyclic::PipeCyclic(const NoParameters& nop)
+: PipeBase(nop)
+{
+}
+
+void PipeCyclic::createMesh
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  PipeBase::createMesh(cm, p);
+  convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
+}
+
+void PipeCyclic::createCase
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  PSINT(p, "fluid", turbulenceModel);
+  
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+      
+  cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
+
+  PipeBase::createCase(cm, p);
+}
+
+addToFactoryTable(Analysis, PipeCyclic, NoParameters);
 
 
 }

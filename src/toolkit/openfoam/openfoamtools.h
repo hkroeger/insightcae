@@ -131,12 +131,33 @@ protected:
 
 public:
   createPatchOperator(Parameters const& p = Parameters() );
-  
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
-  
   virtual createPatchOperator* clone() const;
 };
 
+/**
+ * Creates a cyclic patch or cyclic patch pair (depending on OF version)
+ * from two other patches
+ */
+class createCyclicOperator
+: public createPatchOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, createPatchOperator::Parameters,
+      ( name, std::string, std::string("newpatch") )
+      ( constructFrom, std::string, std::string("patches") )
+      ( patches_half1, std::vector<std::string>, std::vector<std::string>() )
+      ( set_half1, std::string, std::string("set_half1") )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  createCyclicOperator(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
+  virtual createPatchOperator* clone() const;
+};
 
 inline createPatchOperator* new_clone(const createPatchOperator& op)
 {
@@ -150,6 +171,18 @@ void createPatch(const OpenFOAMCase& ofc,
 		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
 		  bool overwrite=true
 		);
+
+/**
+ * Converts a pair of patches into a cyclic pair using createPatch.
+ * The names of the two patches must be of the pattern (.*)_half[0,1]. 
+ * Only the name prefix (in parantheses_) must be supplied as an argument.
+ */
+void convertPatchPairToCyclic
+(
+  const OpenFOAMCase& ofc,
+  const boost::filesystem::path& location, 
+  const std::string& namePrefix
+);
 
 void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target);
 

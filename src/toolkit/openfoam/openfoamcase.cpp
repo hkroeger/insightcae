@@ -146,6 +146,11 @@ OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& nam
 {
 }
 
+bool OpenFOAMCaseElement::providesBCsForPatch(const std::string& patchName) const
+{
+  return false;
+}
+
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN"))
@@ -433,12 +438,26 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
   for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
       i!=elements_.end(); i++)
       {
+	const OpenFOAMCaseElement* e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
+	BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+	{
+	  std::string pn(bde.first);
+	  
+	  if (e->providesBCsForPatch(pn))
+	  {
+	    StringSet::iterator i=unhandledPatches.find(pn);
+	    if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
+	  }
+	}
+	
+	/*
 	const BoundaryCondition *e= dynamic_cast<const BoundaryCondition*>(&(*i));
 	if (e)
 	{
 	  StringSet::iterator i=unhandledPatches.find(e->patchName());
 	  if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
 	}
+	*/
       }
       
    return unhandledPatches;

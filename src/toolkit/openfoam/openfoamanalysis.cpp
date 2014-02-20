@@ -19,6 +19,7 @@
 
 
 #include "openfoamanalysis.h"
+#include "openfoamtools.h"
 #include "basiccaseelements.h"
 
 #include <boost/assign/list_of.hpp>
@@ -73,6 +74,7 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    ("np", 	new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
 		    ("deltaT", 	new DoubleParameter(1.0, "simulation time step"))
 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
@@ -159,6 +161,9 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   {
     cm.executeCommand(executionPath(), "decomposePar");
   }
+  
+  if (p.getBool("run/potentialinit"))
+    runPotentialFoam(cm, executionPath(), &stopFlag_, np);
   
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   

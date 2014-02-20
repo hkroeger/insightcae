@@ -19,6 +19,8 @@
  */
 
 #include "openfoamtools.h"
+#include "openfoam/basiccaseelements.h"
+#include "base/analysis.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
@@ -385,6 +387,79 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
   {
     remove_all(td.second);
   }
+}
+
+void runPotentialFoam
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  bool* stopFlagPtr,
+  int np
+)
+{
+  path fvSol(location/"system"/"fvSolution");
+  path fvSolBackup(fvSol); fvSolBackup.replace_extension(".potf");
+  path fvSch(location/"system"/"fvSchemes");
+  path fvSchBackup(fvSch); fvSchBackup.replace_extension(".potf");
+  
+  if (exists(fvSol)) copy_file(fvSol, fvSolBackup, copy_option::overwrite_if_exists);
+  if (exists(fvSch)) copy_file(fvSch, fvSchBackup, copy_option::overwrite_if_exists);
+  
+  OFDictData::dictFile fvSolution;
+  OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
+  solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
+  fvSolution.addSubDictIfNonexistent("relaxationFactors");
+  OFDictData::dict& potentialFlow=fvSolution.addSubDictIfNonexistent("potentialFlow");
+  potentialFlow["nNonOrthogonalCorrectors"]=3;
+  
+  OFDictData::dictFile fvSchemes;
+  fvSchemes.addSubDictIfNonexistent("ddtSchemes");
+  fvSchemes.addSubDictIfNonexistent("gradSchemes");
+  fvSchemes.addSubDictIfNonexistent("divSchemes");
+  fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
+  fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
+  fvSchemes.addSubDictIfNonexistent("snGradSchemes");
+  fvSchemes.addSubDictIfNonexistent("fluxRequired");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="steadyState";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  div["default"]="Gauss upwind";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["p"]="";
+  fluxRequired["default"]="no";
+  
+  // then write to file
+  {
+    std::ofstream f(fvSol.c_str());
+    writeOpenFOAMDict(f, fvSolution, boost::filesystem::basename(fvSol));
+  }
+  {
+    std::ofstream f(fvSch.c_str());
+    writeOpenFOAMDict(f, fvSchemes, boost::filesystem::basename(fvSch));
+  }
+  
+  TextProgressDisplayer displayer;
+  SolverOutputAnalyzer analyzer(displayer);
+  cm.runSolver(location, analyzer, "potentialFoam", stopFlagPtr, np);
+
+  if (exists(fvSol)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
+  if (exists(fvSch)) copy_file(fvSchBackup, fvSch, copy_option::overwrite_if_exists);
+  
 }
 
 void runPvPython

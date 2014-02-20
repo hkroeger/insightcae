@@ -201,7 +201,7 @@ public:
       std::string solverName,
       bool *stopFlag = NULL,
       int np=0
-    );
+    ) const;
     
     template<class stream>
     void forkCommand

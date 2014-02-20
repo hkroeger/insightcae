@@ -395,7 +395,7 @@ int OpenFOAMCase::runSolver
   std::string solverName,
   bool *stopFlag,
   int np
-)
+) const
 {
   if (stopFlag) *stopFlag=false;
   

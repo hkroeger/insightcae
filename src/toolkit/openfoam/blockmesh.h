@@ -140,6 +140,11 @@ public:
   bmdEntry(const PointMap& allPoints, int OFversion) const;
 
   Block* transformed(const arma::mat& tm, bool inv=false) const;
+  
+  inline int nCells() const
+  {
+    return resolution_[0]*resolution_[1]*resolution_[2];
+  }
 
 };
 

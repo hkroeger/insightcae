@@ -71,6 +71,7 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
 		    ("OFEname", 	new StringParameter("OF22x", "identifier of the OpenFOAM installation, that shall be used"))
 		    ("np", 	new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
+		    ("deltaT", 	new DoubleParameter(1.0, "simulation time step"))
 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
@@ -111,9 +112,11 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, const ParameterSet&
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
 {
   PSINT(p, "run", np);
+  PSDBL(p, "run", deltaT);
   PSDBL(p, "run", endTime);
 
   OFDictData::dict& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  controlDict["deltaT"]=deltaT;
   controlDict["endTime"]=endTime;
   
   OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");

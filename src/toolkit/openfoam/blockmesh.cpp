@@ -939,14 +939,17 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
        }
   blockMeshDict["vertices"]=vl;
   
+  int n_cells=0;
   OFDictData::list bl;
   for (boost::ptr_vector<Block>::const_iterator i=allBlocks_.begin();
        i!=allBlocks_.end(); i++)
        {
+	 n_cells+=i->nCells();
 	 std::vector<OFDictData::data> l = i->bmdEntry(pts, OFversion());
 	 bl.insert( bl.end(), l.begin(), l.end() );
        }
   blockMeshDict["blocks"]=bl;
+  cout<<"blockMeshDict will create "<<n_cells<<" cells."<<endl;
 
   OFDictData::list el;
   for (boost::ptr_vector<Edge>::const_iterator i=allEdges_.begin();

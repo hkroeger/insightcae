@@ -41,6 +41,17 @@ IF(OF22x_DIR)
     target_link_libraries(${targetname} ${ARGN}) 
   endmacro()
   
+  macro (setup_lib_target_OF22x targetname exename)
+    link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OF22x_CXX_FLAGS}")
+    set(LINK_FLAGS "${LINK_FLAGS} ${OF22x_LINKEXE}")
+    add_library(${targetname} SHARED ${${targetname}_SOURCES})
+    set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.2.x)
+    target_link_libraries(${targetname} ${ARGN}) 
+  endmacro()
+  
   SET(OF22x_FOUND TRUE)
 ENDIF(OF22x_DIR)
 

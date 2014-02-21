@@ -263,6 +263,24 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+class PressureGradientSource
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (Ubar, arma::mat, vec3(0,0,0))
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  PressureGradientSource(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
 class singlePhaseTransportProperties
 : public transportModel
 {
@@ -410,6 +428,7 @@ class probes
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (probeSetName, std::string, "probes")
     (fields, std::vector<std::string>, std::vector<std::string>())
     (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
     (outputControl, std::string, "timeStep")    

@@ -385,13 +385,13 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
+  solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["omega"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   
-  solvers["pFinal"]=stdSymmSolverSetup(1e-7, 0.0);
+  solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=stdAsymmSolverSetup(1e-8, 0);
@@ -818,7 +818,39 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     fvOptions[p_.name()]=fod;     
   }
 }
-  
+
+PressureGradientSource::PressureGradientSource(OpenFOAMCase& c, Parameters const& p )
+: OpenFOAMCaseElement(c, "PressureGradientSource"),
+  p_(p)
+{
+}
+
+void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  if (OFversion()>=220)
+  {
+    OFDictData::dict coeffs;    
+    OFDictData::list flds; flds.push_back("U");
+    coeffs["fieldNames"]=flds;
+    coeffs["Ubar"]=OFDictData::vector3(p_.Ubar());
+
+    OFDictData::dict fod;
+    fod["type"]="pressureGradientExplicitSource";
+    fod["active"]=true;
+    fod["selectionMode"]="all";
+    fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
+    
+    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    fvOptions[name()]=fod;  
+  }
+  else
+  {
+    // for channelFoam:
+    OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+    transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar()));
+  }
+}
+
 singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
 : transportModel(c),
   p_(p)
@@ -997,7 +1029,7 @@ void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
   )
   
 probes::probes(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, "probes"),
+: OpenFOAMCaseElement(c, p.probeSetName()+"Probes"),
   p_(p)
 {
 }

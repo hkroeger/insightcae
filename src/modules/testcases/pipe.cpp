@@ -30,6 +30,7 @@
 #include "boost/regex.hpp"
 
 using namespace arma;
+using namespace std;
 using namespace boost;
 using namespace boost::assign;
 using namespace boost::filesystem;
@@ -159,61 +160,60 @@ double lambda_func(double lambda, void *param)
 
 double PipeBase::calcRe(const ParameterSet& p) const
 {
+/*  
   PSDBL(p, "operation", Re_tau);
-  
   int i, times, status;
   gsl_function f;
   gsl_root_fsolver *workspace_f;
   double x, x_l, x_r;
 
  
-    /* Define Solver */
     workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
- 
-    //printf("F solver: %s\n", gsl_root_fsolver_name(workspace_f));
  
     f.function = &lambda_func;
     f.params = &Re_tau;
  
-    /* set initial interval */
     x_l = 1e-2;
     x_r = 10;
  
-    /* set solver */
     gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
  
-    /* main loop */
     for(times = 0; times < 100; times++)
     {
         status = gsl_root_fsolver_iterate(workspace_f);
  
         x_l = gsl_root_fsolver_x_lower(workspace_f);
         x_r = gsl_root_fsolver_x_upper(workspace_f);
-        //printf("%d times: [%10.3e, %10.3e]\n", times, x_l, x_r);
  
         status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
         if(status != GSL_CONTINUE)
         {
-            //printf("Status: %s\n", gsl_strerror(status));
-            //printf("\n Root = [%25.17e, %25.17e]\n\n", x_l, x_r);
             break;
         }
     }
  
-    /* free */
     gsl_root_fsolver_free(workspace_f);
     double lambda=x_l;
     double Re=2.*Re_tau*sqrt(8./x_l);
     cout<<"Re="<<Re<<endl;
-    return Re;
+    return Re;*/
+  PSDBL(p, "operation", D);
+  PSDBL(p, "operation", Re_tau);
+  double nu=1./Re_tau;
+  return calcUbulk(p)*D/nu;
 }
 
 double PipeBase::calcUbulk(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
-  //PSDBL(p, "operation", Re_tau);
+  PSDBL(p, "operation", Re_tau);
+  double k=0.41;
+  double Cplus=5.0;
   
-  return 1./D; //calcRe(p)*(1./Re_tau)/D;
+  double nu=1./Re_tau;
+  double rho=1.0;
+  double tau0= pow(Re_tau*nu*sqrt(rho)/(0.5*D), 2);
+  return sqrt(tau0/rho)*(1./k)*log(Re_tau)+Cplus; //calcRe(p)*(1./Re_tau)/D;
 }
 
 void PipeBase::createMesh
@@ -347,7 +347,7 @@ void PipeBase::createCase
       (vec3(0.9*L, 0.9*0.5*D, 0))
     )
   ));
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./calcRe(p)) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   
 //   cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
 //     .set_velocity(vec3(calcUbulk(p), 0, 0)) 
@@ -366,6 +366,8 @@ void PipeBase::createCase
     ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
   );  
   */
+
+  cout<<"Ubulk="<<calcUbulk(p)<<endl;
 }
   
 ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
@@ -422,6 +424,9 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   return results;
 }
 
+
+
+
 defineType(PipeCyclic);
 
 PipeCyclic::PipeCyclic(const NoParameters& nop)
@@ -457,8 +462,31 @@ void PipeCyclic::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
-
+  cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
+					    .set_Ubar(vec3(calcUbulk(p), 0, 0))
+		));
+  
   PipeBase::createCase(cm, p);
+}
+
+void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  setFields(cm, executionPath(), 
+	    list_of<setFieldOps::FieldValueSpec>
+	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
+	    ptr_vector<setFieldOps::setFieldOperator>()
+  );
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+}
+
+void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  if (cm.OFversion()<=160)
+  {
+    OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+    controlDict["application"]="channelFoam";
+  }
 }
 
 addToFactoryTable(Analysis, PipeCyclic, NoParameters);

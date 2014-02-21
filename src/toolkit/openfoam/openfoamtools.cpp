@@ -188,7 +188,7 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   }
   
   // then write to file
-  boost::filesystem::path dictpath = location / "system" / "setFieldDict";
+  boost::filesystem::path dictpath = location / "system" / "setFieldsDict";
   if (!exists(dictpath.parent_path())) 
   {
     boost::filesystem::create_directories(dictpath.parent_path());
@@ -199,7 +199,7 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
     writeOpenFOAMDict(f, setFieldsDict, boost::filesystem::basename(dictpath));
   }
 
-  ofc.executeCommand(location, "setField");
+  ofc.executeCommand(location, "setFields");
 }
 
 namespace createPatchOps

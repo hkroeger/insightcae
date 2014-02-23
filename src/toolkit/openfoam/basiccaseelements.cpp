@@ -1027,6 +1027,45 @@ void probes::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.addSubDictIfNonexistent("functions")["probes1"]=fod;
 }
   
+forces::forces(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, p.name()+"forces"),
+  p_(p)
+{
+}
+
+void forces::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="forces";
+  OFDictData::list libl; libl.push_back("\"libforces.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["log"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  
+  OFDictData::list pl;
+  BOOST_FOREACH(const std::string& lo, p_.patches())
+  {
+    pl.push_back(lo);
+  }
+  fod["patches"]=pl;
+  fod["pName"]=p_.pName();
+  fod["UName"]=p_.UName();
+  fod["rhoName"]=p_.rhoName();
+  fod["rhoInf"]=p_.rhoInf();
+  
+  fod["CofR"]=OFDictData::vector3(p_.CofR());
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+}
+
+arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
+{
+  return arma::mat();
+}
+
+  
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);
 

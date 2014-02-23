@@ -425,6 +425,33 @@ public:
 };
 
 
+class forces
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "forces")
+    (patches, std::vector<std::string>, std::vector<std::string>())
+    (pName, std::string, "p")
+    (UName, std::string, "U")
+    (rhoName, std::string, "rhoInf")
+    (rhoInf, double, 1.0)
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 10.0)
+    (CofR, arma::mat, vec3(0,0,0))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  forces(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
+};
+
+
 class turbulenceModel
 : public OpenFOAMCaseElement
 {

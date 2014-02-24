@@ -24,6 +24,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "twoPointCorrelation.H"
+#include "../../../../../../../OpenFOAM/OpenFOAM-1.6-ext/src/OpenFOAM/db/IOstreams/IOstreams/Ostream.H"
 #include "dictionary.H"
 #include "dlLibraryTable.H"
 #include "Time.H"
@@ -49,8 +50,7 @@ Foam::twoPointCorrelation::twoPointCorrelation
 :
     name_(name),
     obr_(obr),
-    active_(true),
-    searchEngine_(mesh_)
+    active_(true)
 {
       // Check if the available mesh is an fvMesh, otherwise deactivate
     if (!isA<fvMesh>(obr_))
@@ -64,50 +64,12 @@ Foam::twoPointCorrelation::twoPointCorrelation
             << endl;
     }
 
+    const fvMesh& mesh=static_cast<const fvMesh&>(obr_);
+    searchEngine_.reset(new meshSearch(mesh));
+    
     read(dict);
-}
-
-
-// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
-
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
-
-Foam::twoPointCorrelation::~twoPointCorrelation()
-{}
-
-void Foam::twoPointCorrelation::read(const dictionary& dict)
-{
-    if (active_)
-    {
-        const fvMesh& mesh=static_cast<const fvMesh&>(obr_);
-
-	point p0(dict.lookup("p0"));
-	point p1(dict.lookup("p1"));
-	label np=readLabel(dict.lookup("np"));
-	
-        Info<<"twoPointCorrelation "<<name_<<":"<<nl
-            <<"    p0="<<p0<<nl
-            <<"    p1="<<p1<<endl;
-	    
-	lines_.resize(1);
-	lines_.set(0,
-	  new uniformSet
-	  (
-	    name_,
-	    mesh,
-            searchEngine_,
-            "distance",
-            p0, p1, np
-	  )
-	 );
-	
-	correlationCoeffs_.reset(new tensorField(np, tensor::zero));
-     }
-}
-
-void Foam::twoPointCorrelation::start()
-{
-  totalTime_= db_.time().deltaTValue();
+    
+  totalTime_= obr_.time().deltaTValue();
 
   IOobject propsDictHeader
   (
@@ -127,18 +89,66 @@ void Foam::twoPointCorrelation::start()
     if (propsDict.found(name_))
     {
       Info<< "    Restarting averaging for twoPointCorrelation site " << name_ << nl;
-      totalTime_=readScalar(propsDict.lookup(name_));
+      totalTime_ = readScalar(propsDict.subDict(name_).lookup("totalTime"));
+      correlationCoeffs_.reset(new tensorField(propsDict.subDict(name_).lookup("correlationCoeffs")));
       return;
     }
   }
   
   Info<< "    Starting averaging twoPointCorrelation at time " << obr_.time().timeName()
       << nl;
+  
+}
+
+
+// * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+Foam::twoPointCorrelation::~twoPointCorrelation()
+{}
+
+void Foam::twoPointCorrelation::read(const dictionary& dict)
+{
+  Info<<"read!"<<endl;
+  if (active_)
+    {
+        const fvMesh& mesh=static_cast<const fvMesh&>(obr_);
+	
+	p0_ = point(dict.lookup("p0"));
+	directionSpan_=vector(dict.lookup("directionSpan"));
+	np_=readLabel(dict.lookup("np"));
+    
+	homogeneousTranslationSpan_=vector(dict.lookup("homogeneousTranslationSpan"));
+	nph_=readLabel(dict.lookup("nph"));
+    
+	dictionary csysDict(dict.subDict("csys"));
+	csys_=coordinateSystem::New
+	(
+	  word(csysDict.lookup("type")),
+	  csysDict
+	);
+  
+        Info<<"twoPointCorrelation "<<name_<<":"<<nl
+            <<"    from point "<<p0_<<nl
+            <<"    on "<<np_<<" points along "<<directionSpan_<<nl
+            <<"    averaged over "<<nph_<<" copies along "<<homogeneousTranslationSpan_<<endl;
+	    
+	createInterpolators();
+     }
+}
+
+void Foam::twoPointCorrelation::start()
+{
+  Info<<"start!"<<endl;
 }
 
 void Foam::twoPointCorrelation::execute()
 {
-  const volVectorField& U = db_.lookupObject<volVectorField>("U");
+  if (active_)
+  {
+  Info<<"execute!"<<endl;
+  const volVectorField& U = obr_.lookupObject<volVectorField>("U");
   
   autoPtr<interpolation<vector> > interpolator
     (
@@ -146,12 +156,12 @@ void Foam::twoPointCorrelation::execute()
     );
     
     
-  tensorField cCoeffs(correlationCoeffs_.size(), tensor::zero);
+  tensorField cCoeffs(correlationCoeffs_().size(), tensor::zero);
   forAll(lines_, i)
   {
-    const uniformSet& samples = lines_[i];
+    const cloudSet& samples = lines_[i];
 
-    vectorField values(samples.size(), vector::zero);
+    vectorField values(np_, vector::zero); // Fixed size according to input params!
     
     forAll(samples, sampleI)
     {
@@ -166,35 +176,38 @@ void Foam::twoPointCorrelation::execute()
 	}
 	else
 	{
-	    values[sampleI] = interpolator().interpolate
+	    values[sampleI] = csys_().localVector
 	    (
-		samplePt,
-		cellI,
-		faceI
+	      interpolator().interpolate
+	      (
+		  samplePt,
+		  cellI,
+		  faceI
+	      )	      
 	    );
 	}
     }
     
-    Pstream::listCombineGather(values, plusEqOp<vectorField>());
+    Pstream::listCombineGather(values, plusEqOp<vector>());
     Pstream::listCombineScatter(values);
 
     forAll(values, j)
     {
-      cCoeffs[j]+=cmptMultiply(values[0], values[j]);
+      cCoeffs[j] += values[0] * values[j]; //cmptMultiply(values[0], values[j]);
     }    
   }
   
   // averaging over homogeneous directions
-  scalar dt = db_.time().deltaTValue();
+  scalar dt = obr_.time().deltaTValue();
   scalar Dt = totalTime_;
   scalar alpha = (Dt - dt)/Dt;
   scalar beta = dt/Dt;
 
-  correlationCoeffs_ = alpha * correlationCoeffs_ + beta*(cCoeffs/scalar(lines_.size()));
+  correlationCoeffs_() = alpha * correlationCoeffs_() + beta*(cCoeffs/scalar(lines_.size()));
   
   totalTime_ += dt;
   
-  if (db_.time().outputTime())
+  if (obr_.time().outputTime())
   {
     IOdictionary propsDict
     (
@@ -209,7 +222,10 @@ void Foam::twoPointCorrelation::execute()
             false
         )
     );
-    propsDict.add(name_, totalTime_);
+    propsDict.add(name_, dictionary());
+    propsDict.subDict(name_).add("totalTime", totalTime_);
+    propsDict.subDict(name_).add("correlationCoeffs", correlationCoeffs_());
+  }
   }
 }
 
@@ -240,11 +256,11 @@ void Foam::twoPointCorrelation::makeFile()
             {
                 // Put in undecomposed case (Note: gives problems for
                 // distributed data running)
-                outputDir = obr_.time().path()/".."/name_/startTimeName;
+                outputDir = obr_.time().path()/".."/"postProcessing"/name_/startTimeName;
             }
             else
             {
-                outputDir = obr_.time().path()/name_/startTimeName;
+                outputDir = obr_.time().path()/"postProcessing"/name_/startTimeName;
             }
 
             // Create directory if does not exist.
@@ -272,28 +288,82 @@ void Foam::twoPointCorrelation::writeFileHeader()
 
 void Foam::twoPointCorrelation::write()
 {
-    if (active_)
+  Info<<"write!"<<endl;
+  if (active_)
     {
       makeFile();
+      
+      if (Pstream::master())
+      {
+	filePtr_()<<obr_.time().value()<<token::TAB;
+	for (label k=0; k < pTraits<tensor>::nComponents; k++)
+	{
+	  for (label i=0; i<np_; i++)
+	  {
+	    filePtr_()<<correlationCoeffs_()[i][k]<<token::SPACE;
+	  }
+	  filePtr_()<<token::TAB;
+	}
+	filePtr_()<<endl;
+      }
     }
 }
 
-void Foam::twoPointCorrelation::correct()
+void Foam::twoPointCorrelation::createInterpolators()
 {
-  // need to rebuild uniform sets
-  FatalErrorIn("twoPointCorrelation::correct()")
-  << "not implemented"<<abort(FatalError);
+    Info<<"createIpol!"<<endl;
+  const fvMesh& mesh=static_cast<const fvMesh&>(obr_);
+
+  lines_.resize(nph_);
+  for (label i=0; i<nph_; i++)
+  {
+    List<point> pts(np_);
+    for (label j=0; j<np_; j++)
+      pts[j]=csys_().globalPosition
+      ( 
+	p0_ 
+	 + scalar(i)/scalar(nph_-1) * homogeneousTranslationSpan_
+	 + scalar(j)/scalar(np_-1)  * directionSpan_ 
+      );
+    
+    lines_.set
+    (
+      i,
+      new cloudSet
+      (
+	name_,
+	mesh,
+	searchEngine_(),
+	"distance",
+	pts
+      )
+    );
+  }
+  
+  bool reset=false;
+  if (!correlationCoeffs_.valid()) 
+    reset=true;
+  else
+    if (correlationCoeffs_().size()!=np_) reset=true;
+  
+  if (reset) 
+  {
+    Info << "Reset averaging because parameters became incompatible to previous averaging."<<endl;
+    filePtr_.reset();
+    correlationCoeffs_.reset(new tensorField(np_, tensor::zero));
+  }
+  
 }
 
 void Foam::twoPointCorrelation::updateMesh(const mapPolyMesh&)
 {
-    correct();
+    createInterpolators();
 }
 
 
 void Foam::twoPointCorrelation::movePoints(const polyMesh&)
 {
-    correct();
+    createInterpolators();
 }
 
 
@@ -301,12 +371,28 @@ void Foam::twoPointCorrelation::readUpdate(const polyMesh::readUpdateState state
 {
     if (state != polyMesh::UNCHANGED)
     {
-        correct();
+        createInterpolators();
     }
+}
+
+bool Foam::twoPointCorrelation::timeSet()
+{
+  // Do nothing - only valid on write
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
+namespace Foam
+{
+    defineNamedTemplateTypeNameAndDebug(twoPointCorrelationFunctionObject, 0);
+
+    addToRunTimeSelectionTable
+    (
+        functionObject,
+        twoPointCorrelationFunctionObject,
+        dictionary
+    );
+}
 
 
 // ************************************************************************* //

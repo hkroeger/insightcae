@@ -34,7 +34,6 @@ setup_lib_target_OF22x(LESFunctionObjects22x "LESFunctionObjects"
   incompressibleRASModels 
   incompressibleTransportModels
   triSurface
-  finiteArea
   surfMesh
   sampling
 )

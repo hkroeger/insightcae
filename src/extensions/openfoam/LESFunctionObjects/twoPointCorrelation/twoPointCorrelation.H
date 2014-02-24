@@ -42,10 +42,15 @@ SourceFiles
 #include "autoPtr.H"
 #include "runTimeSelectionTables.H"
 
-#include "uniformSet.H"
+#include "OFstream.H"
+#include "cloudSet.H"
 #include "meshSearch.H"
+#include "coordinateSystem.H"
+
+#include "OutputFilterFunctionObject.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include <boost/concept_check.hpp>
 
 namespace Foam
 {
@@ -71,11 +76,20 @@ protected:
     bool active_;
     
     //- Mesh search engine
-    meshSearch searchEngine_;
+    autoPtr<meshSearch> searchEngine_;
     
     autoPtr<OFstream> filePtr_;
 
-    PtrList<uniformSet> lines_;
+    point p0_;
+    vector directionSpan_;
+    label np_;
+    
+    vector homogeneousTranslationSpan_;
+    label nph_;
+    
+    autoPtr<coordinateSystem> csys_;
+    
+    PtrList<cloudSet> lines_;
     autoPtr<tensorField> correlationCoeffs_;
     scalar totalTime_;
 
@@ -84,6 +98,7 @@ protected:
 
     //- Output file header information
     virtual void writeFileHeader();
+    void createInterpolators();
 
 public:
     //- Runtime type information
@@ -118,16 +133,16 @@ public:
 
         //- Called at each ++ or += of the time-loop. forceWrite overrides the
         //  outputControl behaviour.
-        virtual bool execute(const bool forceWrite);
+        virtual void execute();
 	
-        virtual bool start();
-        virtual bool end();
+        virtual void start();
+        virtual void end();
 
         //- Called when time was set at the end of the Time::operator++
         virtual bool timeSet();
 
         //- Read and set the function object if its data have changed
-        virtual bool read(const dictionary&);
+        virtual void read(const dictionary&);
 	
         virtual void write();
 
@@ -136,8 +151,12 @@ public:
 
         //- Update for changes of mesh
         virtual void movePoints(const polyMesh& mesh);
+	
+	virtual void readUpdate(const polyMesh::readUpdateState state);
 };
 
+typedef OutputFilterFunctionObject<twoPointCorrelation>
+    twoPointCorrelationFunctionObject;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

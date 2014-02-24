@@ -127,6 +127,45 @@ void ParameterStudy::cancel()
   queue_.cancelAll();
 }
 
+ResultElementPtr ParameterStudy::table
+(
+  std::string shortDescription,
+  std::string longDescription,
+  const std::string& varp,
+  const std::vector<std::string>& res,
+  const std::vector<std::string>* headers
+) const
+{
+  TabularResult::Table tab;
+  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  {
+    const AnalysisPtr& a = get<1>(ai);
+    const ResultSetPtr& r = get<2>(ai);
+
+    double x=a->p().getDouble(varp);
+    
+    std::vector<double> row;
+    row.push_back(x);
+    BOOST_FOREACH( const std::string& ren, res)
+    {
+      row.push_back( dynamic_cast<ScalarResult*>(&(r->at(ren)))->value() ); 
+    }
+    tab.push_back( row );    
+  }
+  
+  std::vector<std::string> heads;
+  if (headers) 
+    heads=*headers;
+  else
+    heads=res;
+  
+  return ResultElementPtr
+  (
+    new TabularResult(heads, tab, shortDescription, longDescription, "")
+  );
+  
+}
+
 insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
 {
   const ParameterSet& p = *parameters_;
@@ -152,8 +191,41 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   
   //wait for computation to finish
   workers_.join_all();
+
   
-  return ResultSetPtr(new ResultSet(p, name_, "Result Summary"));
+  ResultSetPtr results(new ResultSet(p, name_, "Result Summary"));
+  
+  TabularResult::Table force_data;
+  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  {
+    const AnalysisPtr& a = get<1>(ai);
+    const ResultSetPtr& r = get<2>(ai);
+    /*
+    BOOST_FOREACH( const std::string& parname, varp_ )
+    {
+      double orgval=p.getDouble(parname);
+      p.replace( parname, new DoubleRangeParameter(orgval, 0, 1, p.get<DoubleParameter>(parname).description()) );
+    }
+    
+    force_data.push_back( list_of<double>
+      (h)
+      ( dynamic_cast<ScalarResult*>(&(r->at("ResultantPivotForce")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("VerticalPivotForce")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("PivotForceAngle")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("CavitationMargin")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("minDist")))->value())
+    );
+    
+    std::string newkey="heightProfile (h="+lexical_cast<std::string>(h)+")";
+    
+    results->insert(newkey, r->find("heightProfile")->second->clone() );
+    */
+    std::string key=r->title()+" ("+r->subtitle()+")";
+    results->insert( key, r->clone() );
+    
+  }
+  
+  return results;
 }
 
 }

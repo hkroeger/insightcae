@@ -371,13 +371,13 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
     target, "mergeMeshes", 
     list_of<std::string>
     (".")
-    (source.c_str()) 
+    (boost::filesystem::absolute(source).c_str()) 
   );
 }
 
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location)
 {
-  TimeDirectoryList times = listTimeDirectories(location);
+  TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
   boost::filesystem::path lastTime = times.rbegin()->second;
   
   remove_all(location/"constant"/"polyMesh");
@@ -397,9 +397,9 @@ void runPotentialFoam
   int np
 )
 {
-  path fvSol(location/"system"/"fvSolution");
+  path fvSol(boost::filesystem::absolute(location)/"system"/"fvSolution");
   path fvSolBackup(fvSol); fvSolBackup.replace_extension(".potf");
-  path fvSch(location/"system"/"fvSchemes");
+  path fvSch(boost::filesystem::absolute(location)/"system"/"fvSchemes");
   path fvSchBackup(fvSch); fvSchBackup.replace_extension(".potf");
   
   if (exists(fvSol)) copy_file(fvSol, fvSolBackup, copy_option::overwrite_if_exists);

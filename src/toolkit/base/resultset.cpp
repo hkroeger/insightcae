@@ -27,13 +27,25 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
 #include "boost/date_time.hpp"
+#include <boost/graph/buffer_concepts.hpp>
+#include "boost/filesystem.hpp"
 
 using namespace std;
 using namespace boost;
-
+using namespace boost::filesystem;
 
 namespace insight
 {
+  
+  
+string latex_subsection(int level)
+{
+  string cmd="\\";
+  for (int i=0; i<min(3,level); i++)
+    cmd+="sub";
+  cmd+="section";
+  return cmd;
+}
 
 defineType(ResultElement);
 defineFactoryTable(ResultElement, ResultElement::ResultElementConstrP);
@@ -52,7 +64,7 @@ void ResultElement::writeLatexHeaderCode(std::ostream& f) const
 {
 }
 
-void ResultElement::writeLatexCode(ostream& f) const
+void ResultElement::writeLatexCode(ostream& f, int level) const
 {
 }
 
@@ -67,7 +79,7 @@ Image::Image(const ResultElementConstrP& par)
 
 Image::Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
 : ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
-  imagePath_(value)
+  imagePath_(absolute(value))
 {
 }
 
@@ -76,7 +88,7 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
   f<<"\\usepackage{graphicx}\n";
 }
 
-void Image::writeLatexCode(std::ostream& f) const
+void Image::writeLatexCode(std::ostream& f, int level) const
 {
   f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << imagePath_.c_str() << "}\n";
 }
@@ -100,7 +112,7 @@ ScalarResult::ScalarResult(const double& value, const string& shortDesc, const s
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
 
-void ScalarResult::writeLatexCode(ostream& f) const
+void ScalarResult::writeLatexCode(ostream& f, int level) const
 {
   f.setf(ios::fixed,ios::floatfield);
   f.precision(3);
@@ -161,7 +173,7 @@ ResultElement* TabularResult::clone() const
 }
 
 
-void TabularResult::writeLatexCode(std::ostream& f) const
+void TabularResult::writeLatexCode(std::ostream& f, int level) const
 {
   f<<
   "\\begin{tabular}{";
@@ -196,10 +208,11 @@ ResultSet::ResultSet
   const ParameterSet& p,
   const std::string& title,
   const std::string& subtitle,
-  std::string* date,
-  std::string* author
+  const std::string* date,
+  const std::string* author
 )
-: p_(p),
+: ResultElement(ResultElementConstrP("", "", "")),
+  p_(p),
   title_(title),
   subtitle_(subtitle)
 {
@@ -224,6 +237,7 @@ ResultSet::~ResultSet()
 
 ResultSet::ResultSet(const ResultSet& other)
 : ptr_map< std::string, ResultElement>(other),
+  ResultElement(ResultElementConstrP("", "", "")),
   p_(other.p_),
   title_(other.title_),
   subtitle_(other.subtitle_),
@@ -243,38 +257,58 @@ void ResultSet::transfer(const ResultSet& other)
   date_=other.date_;
 }
 
-
-void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
+void ResultSet::writeLatexHeaderCode(std::ostream& f) const
 {
-  std::ofstream f(file.c_str());
-  f<<
-  "\\documentclass[a4paper,10pt]{scrartcl}\n";
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
     i->second->writeLatexHeaderCode(f);
-  }    
+  }  
+}
+
+void ResultSet::writeLatexCode(std::ostream& f, int level) const
+{
+  f  
+  << latex_subsection(level)
+  << "{Input Parameters}\n";
+  
+  f<<p_.latexRepresentation();
+  
+  f
+  << latex_subsection(level)
+  << "{Numerical Result Summary}\n";
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    f << "\\paragraph{" << i->first << "}\n";
+    f << i->second->shortDescription() << " \\\\ ";
+    i->second->writeLatexCode(f, level+1);
+    f << endl;
+  }
+}
+
+void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
+{
+  std::ofstream f(absolute(file).c_str());
+  f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
+  
+  writeLatexHeaderCode(f);
+   
   f<<
   "\\begin{document}\n"
   "\\title{"<<title_<<"}\n"
   "\\subtitle{"<<subtitle_<<"}\n"
   "\\date{"<<date_<<"}\n"
   "\\author{"<<author_<<"}\n"
-  "\\maketitle\n"
-  "\\section{Input Parameters}\n";
+  "\\maketitle\n";
+    
+  writeLatexCode(f, 0);
   
-  f<<p_.latexRepresentation();
-  
-  f<<
-  "\\section{Numerical Result Summary}\n";
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    f << "\\paragraph{" << i->first << "}\n";
-    f << i->second->shortDescription() << " \\\\ ";
-    i->second->writeLatexCode(f);
-    f << endl;
-  }
   f<<
   "\\end{document}\n";
+}
+
+ResultElement* ResultSet::clone() const
+{
+  return new ResultSet(p_, title_, subtitle_, &author_, &date_);
 }
 
 }

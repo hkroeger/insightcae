@@ -44,4 +44,17 @@ void mplDataRead(std::ostream& f, const std::string& name, TabularResult::Table&
   f<<"])\n";
 }
 
+void mplDataRead(std::ostream& f, const std::string& name, const arma::mat& x, const arma::mat& y)
+{
+  f<<
+  name<<"=np.array([\n"
+  ;
+  for (int j=0; j<x.n_rows; j++)
+  {
+    f<<"["<<x(j)<<","<<y(j)<<"]";
+    if (j!=x.n_rows-1) f<<",\n";
+  }
+  f<<"])\n";
+}
+
 }

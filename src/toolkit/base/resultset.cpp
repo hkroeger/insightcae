@@ -41,7 +41,7 @@ namespace insight
 string latex_subsection(int level)
 {
   string cmd="\\";
-  for (int i=0; i<max(3,level); i++)
+  for (int i=0; i<min(3,level); i++)
     cmd+="sub";
   cmd+="section";
   return cmd;

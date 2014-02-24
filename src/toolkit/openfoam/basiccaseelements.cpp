@@ -20,6 +20,7 @@
 
 #include "basiccaseelements.h"
 #include "openfoam/openfoamcase.h"
+#include "openfoam/openfoamtools.h"
 
 #include <utility>
 #include "boost/assign.hpp"
@@ -27,6 +28,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace boost::filesystem;
 using namespace boost::assign;
 using namespace boost::fusion;
 
@@ -1060,9 +1062,60 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
 }
 
-arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
+arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
 {
-  return arma::mat();
+  arma::mat fl;
+  
+  path fp;
+  if (c.OFversion()<=160)
+    fp=absolute(location)/foName;
+  else
+    fp=absolute(location)/"postProcessing"/foName;
+  
+  TimeDirectoryList tdl=listTimeDirectories(fp);
+  
+  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+  {
+    std::ifstream f( (td.second/"forces.dat").c_str());
+    while (!f.eof())
+    {
+      string line;
+      getline(f, line);
+      if (f.fail()) break;
+      cout<<line<<endl;
+      if (!starts_with(line, "#"))
+      {
+	erase_all(line, "(");
+	erase_all(line, ")");
+	replace_all(line, ",", " ");
+	replace_all(line, "  ", " ");
+	
+	std::vector<string> strs;
+	boost::split(strs, line, boost::is_any_of(" \t"));
+	
+	if (fl.n_rows==0) 
+	  fl.set_size(1, strs.size());
+	else
+	  fl.resize(fl.n_rows+1, fl.n_cols);
+	int j=fl.n_rows-1;
+	
+	int k=0;
+	BOOST_FOREACH(const string& e, strs)
+	{
+	  fl(j,k++)=lexical_cast<double>(e);
+	}
+      }
+    }
+  }
+  
+  if (c.OFversion()>=220)
+  {
+    // remove porous forces
+    fl.shed_cols(16,18);
+    fl.shed_cols(7,9);
+  }
+  
+  return fl;
 }
 
   

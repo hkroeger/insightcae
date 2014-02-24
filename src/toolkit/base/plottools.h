@@ -22,6 +22,7 @@
 #define INSIGHT_PLOTTOOLS_H
 
 #include "base/resultset.h"
+#include "base/linearalgebra.h"
 #include "boost/foreach.hpp"
 
 #include <iostream>
@@ -30,6 +31,7 @@ namespace insight
 {
 
 void mplDataRead(std::ostream& f, const std::string& name, TabularResult::Table& data);
+void mplDataRead(std::ostream& f, const std::string& name, const arma::mat& x, const arma::mat& y);
 
 }
 

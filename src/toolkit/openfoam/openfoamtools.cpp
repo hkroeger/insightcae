@@ -109,6 +109,26 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     throw insight::Exception("Not implemented!");
 }
 
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to)
+{
+  path source(from/"polyMesh");
+  path target(to/"polyMesh");
+  if (!exists(target))
+    create_directories(target);
+  
+  std::string cmd("ls "); cmd+=source.c_str();
+  ::system(cmd.c_str());
+  
+  BOOST_FOREACH(const std::string& fname, 
+		list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
+		.convert_to_container<std::vector<std::string> >())
+  {
+    path gzname(fname.c_str()); gzname+=".gz";
+    if (exists(source/gzname)) create_symlink(source/gzname, target/gzname);
+    else if (exists(source/fname)) create_symlink(source/fname, target/fname);
+    else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+  }
+}
 
 void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to)
 {
@@ -447,10 +467,12 @@ void runPotentialFoam
   {
     std::ofstream f(fvSol.c_str());
     writeOpenFOAMDict(f, fvSolution, boost::filesystem::basename(fvSol));
+    f.close();
   }
   {
     std::ofstream f(fvSch.c_str());
     writeOpenFOAMDict(f, fvSchemes, boost::filesystem::basename(fvSch));
+    f.close();
   }
   
   TextProgressDisplayer displayer;

@@ -70,6 +70,10 @@ public:
     const std::vector<std::string>* headers = NULL
   ) const;
   
+  virtual void setupQueue();
+  virtual void processQueue(insight::ProgressDisplayer* displayer);
+  virtual ResultSetPtr evaluateRuns();
+  
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
   virtual void cancel();
 };

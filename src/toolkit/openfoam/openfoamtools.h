@@ -47,6 +47,8 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
  */
 void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify=false);
 
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to);
+
 /*
  * Copy field files below "from" into "to"
  * "to" is created, if nonexistent

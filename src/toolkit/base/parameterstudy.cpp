@@ -166,7 +166,7 @@ ResultElementPtr ParameterStudy::table
   
 }
 
-insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
+void ParameterStudy::setupQueue()
 {
   const ParameterSet& p = *parameters_;
   
@@ -177,7 +177,12 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   
   queue_.clear();
   generateInstances(queue_, p, 0, iters);
-  
+}
+
+void ParameterStudy::processQueue(insight::ProgressDisplayer* displayer)
+{
+  const ParameterSet& p = *parameters_;
+
   boost::ptr_vector<AnalysisWorkerThread> threads;
   for (int i=0; i<p.getInt("run/numthread"); i++)
   {
@@ -191,8 +196,12 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   
   //wait for computation to finish
   workers_.join_all();
+}
 
-  
+insight::ResultSetPtr ParameterStudy::evaluateRuns()
+{  
+  const ParameterSet& p = *parameters_;
+
   ResultSetPtr results(new ResultSet(p, name_, "Result Summary"));
   
   TabularResult::Table force_data;
@@ -226,6 +235,13 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   }
   
   return results;
+}
+
+insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
+{  
+  setupQueue();
+  processQueue(displayer);
+  return evaluateRuns();
 }
 
 }

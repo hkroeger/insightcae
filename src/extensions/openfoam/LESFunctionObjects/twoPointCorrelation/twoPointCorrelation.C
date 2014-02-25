@@ -332,7 +332,7 @@ void Foam::twoPointCorrelation::execute()
                 const vectorField& values=vfs()[i];
 
 		//vectorField values(np_, vector::zero); // Fixed size according to input params!
-                forAll(values, j)
+                for(label j=0; j<np_; j++)
                 {
                     if (dbgFile.valid())
                     {
@@ -360,7 +360,7 @@ void Foam::twoPointCorrelation::execute()
             correlationCoeffs_() = alpha * correlationCoeffs_() + beta*(cCoeffs/scalar(lines_.size()));
 
             totalTime_ += dt;
-
+	    
             if (obr_.time().outputTime())
             {
                 IOdictionary propsDict

@@ -44,6 +44,7 @@ SourceFiles
 
 #include "OFstream.H"
 #include "cloudSet.H"
+#include "sampledSets.H"
 #include "meshSearch.H"
 #include "coordinateSystem.H"
 
@@ -63,6 +64,79 @@ class mapPolyMesh;
 /*---------------------------------------------------------------------------*\
                        Class functionObject Declaration
 \*---------------------------------------------------------------------------*/
+
+
+//- Class used for sampling volFields
+template<class Type>
+class volFieldSampler
+: public List<Field<Type> >
+{
+    //- Name of this collection of values
+    const word name_;
+
+public:
+
+    //- Construct interpolating field to the sampleSets
+    volFieldSampler
+    (
+        const word& interpolationScheme,
+        const GeometricField<Type, fvPatchField, volMesh>& field,
+        const PtrList<sampledSet>& samplers
+    )
+        :
+        List<Field<Type> >(samplers.size()),
+        name_(field.name())
+    {
+        autoPtr<interpolation<Type> > interpolator
+        (
+            interpolation<Type>::New(interpolationScheme, field)
+        );
+
+        forAll(samplers, setI)
+        {
+            Field<Type>& values = this->operator[](setI);
+            const sampledSet& samples = samplers[setI];
+
+            values.setSize(samples.size());
+            forAll(samples, sampleI)
+            {
+                const point& samplePt = samples[sampleI];
+                label cellI = samples.cells()[sampleI];
+                label faceI = samples.faces()[sampleI];
+
+                if (cellI == -1 && faceI == -1)
+                {
+                    // Special condition for illegal sampling points
+                    values[sampleI] = pTraits<Type>::max;
+                }
+                else
+                {
+                    values[sampleI] = interpolator().interpolate
+                                      (
+                                          samplePt,
+                                          cellI,
+                                          faceI
+                                      );
+                }
+            }
+        }
+    }
+
+    volFieldSampler
+    (
+        const List<Field<Type> >& values,
+        const word& name
+    )
+        :
+        List<Field<Type> >(values),
+        name_(name)
+    {}
+
+    inline const word& name() const {
+        return name_;
+    }
+};
+
 
 class twoPointCorrelation
 {
@@ -89,7 +163,13 @@ protected:
     
     autoPtr<coordinateSystem> csys_;
     
-    PtrList<cloudSet> lines_;
+    PtrList<sampledSet> lines_;
+    
+    // Merging structures
+    autoPtr<scalarField> x_;
+    PtrList<coordSet> masterSampledSets_;
+    labelListList indexSets_;
+
     autoPtr<tensorField> correlationCoeffs_;
     scalar totalTime_;
 
@@ -98,61 +178,49 @@ protected:
 
     //- Output file header information
     virtual void writeFileHeader();
+    
     void createInterpolators();
+    
+    void combineSampledSets
+    (
+	PtrList<coordSet>& masterSampledSets,
+	labelListList& indexSets
+    );
+
 
 public:
     //- Runtime type information
     TypeName("twoPointCorrelation");
 
     // Constructors
-
-        //- Construct from components
-        twoPointCorrelation
-        (
-	  const word& name,
-	  const objectRegistry&,
-	  const dictionary&,
-	  const bool loadFromFiles = false
-	);
-
-
-
-    //- Destructor
+    twoPointCorrelation
+    (
+      const word& name,
+      const objectRegistry&,
+      const dictionary&,
+      const bool loadFromFiles = false
+    );
     virtual ~twoPointCorrelation();
 
-
     // Member Functions
-    
-        //- Return name of the set of staticPressure
-        virtual const word& name() const
-        {
-            return name_;
-        }
+    virtual const word& name() const { return name_; }
 
+    //- Read and set the function object if its data have changed
+    virtual void read(const dictionary&);
 
+    virtual void start();
+    virtual void execute();
+    virtual void end();
 
-        //- Called at each ++ or += of the time-loop. forceWrite overrides the
-        //  outputControl behaviour.
-        virtual void execute();
-	
-        virtual void start();
-        virtual void end();
+    //- Called when time was set at the end of the Time::operator++
+    virtual void timeSet();
 
-        //- Called when time was set at the end of the Time::operator++
-        virtual bool timeSet();
+    virtual void write();
 
-        //- Read and set the function object if its data have changed
-        virtual void read(const dictionary&);
-	
-        virtual void write();
-
-        //- Update for changes of mesh
-        virtual void updateMesh(const mapPolyMesh& mpm);
-
-        //- Update for changes of mesh
-        virtual void movePoints(const polyMesh& mesh);
-	
-	virtual void readUpdate(const polyMesh::readUpdateState state);
+    //- Update for changes of mesh
+    virtual void updateMesh(const mapPolyMesh& mpm);
+    virtual void movePoints(const polyMesh& mesh);    
+    virtual void readUpdate(const polyMesh::readUpdateState state);
 };
 
 typedef OutputFilterFunctionObject<twoPointCorrelation>

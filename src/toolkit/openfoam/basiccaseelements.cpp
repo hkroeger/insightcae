@@ -993,20 +993,38 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
-fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, "fieldAveraging"),
+outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, p.name()+"outputFilterFunctionObject"),
   p_(p)
 {
 }
 
-void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
+void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod=functionObjectDict();
+  fod["enabled"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  fod["timeStart"]=p_.timeStart();
+  fod["storeFilter"]=false;
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+}
+
+fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
+: outputFilterFunctionObject(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict fieldAveraging::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="fieldAverage";
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
-  fod["outputControl"]="outputTime";
   
   OFDictData::list fl;
   BOOST_FOREACH(const std::string& fln, p_.fields())
@@ -1019,32 +1037,22 @@ void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
     fl.push_back(cod);
   }
   fod["fields"]=fl;
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["fieldAverage1"]=fod;
+  
+  return fod;
 }
-
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (fields, std::vector<std::string>, std::vector<std::string>())
-    (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 1.0)
-  )
   
 probes::probes(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, p.probeSetName()+"Probes"),
+: outputFilterFunctionObject(c, p),
   p_(p)
 {
 }
 
-void probes::addIntoDictionaries(OFdicts& dictionaries) const
+OFDictData::dict probes::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="probes";
   OFDictData::list libl; libl.push_back("\"libsampling.so\"");
   fod["functionObjectLibs"]=libl;
-  fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
   
   OFDictData::list pl;
   BOOST_FOREACH(const arma::mat& lo, p_.probeLocations())
@@ -1057,18 +1065,62 @@ void probes::addIntoDictionaries(OFdicts& dictionaries) const
   copy(p_.fields().begin(), p_.fields().end(), fl.begin());
   fod["fields"]=fl;
   
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["probes1"]=fod;
+  return fod;
 }
 
 twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, p.name()+"twoPointCorrelation"),
+: outputFilterFunctionObject(c, p),
   p_(p)
 {
 }
 
-void twoPointCorrelation::addIntoDictionaries(OFdicts& dictionaries) const
+OFDictData::dict twoPointCorrelation::csysConfiguration() const
 {
+  OFDictData::dict csys;
+  csys["type"]="cartesian";
+  csys["origin"]=OFDictData::vector3(0,0,0);
+  csys["e1"]=OFDictData::vector3(1,0,0);
+  csys["e2"]=OFDictData::vector3(0,1,0);
+  return csys;
+}
+
+OFDictData::dict twoPointCorrelation::functionObjectDict() const
+{
+  OFDictData::dict fod;
+  fod["type"]="twoPointCorrelation";
+  OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["enabled"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  fod["timeStart"]=p_.timeStart();
+  
+  fod["p0"]=OFDictData::vector3(p_.p0());
+  fod["directionSpan"]=OFDictData::vector3(p_.directionSpan());
+  fod["np"]=p_.np();
+  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p_.homogeneousTranslationUnit());
+  fod["nph"]=p_.nph();
+
+  fod["csys"]=csysConfiguration();
+  
+  return fod;
+}
+
+cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
+: twoPointCorrelation(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
+{
+  OFDictData::dict csys;
+  csys["type"]="cylindrical";
+  csys["origin"]=OFDictData::vector3(0,0,0);
+  csys["e3"]=OFDictData::vector3(p_.ez());
+  csys["e1"]=OFDictData::vector3(p_.er());
+  csys["degrees"]=p_.degrees();
+  return csys;
 }
 
 forces::forces(OpenFOAMCase& c, Parameters const &p )

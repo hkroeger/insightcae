@@ -407,11 +407,31 @@ public:
 };
 
 
-class fieldAveraging
+class outputFilterFunctionObject
 : public OpenFOAMCaseElement
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "unnamed")
+    (timeStart, double, 0.0)
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 1.0)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict functionObjectDict() const =0;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+class fieldAveraging
+: public outputFilterFunctionObject
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
   )
   
@@ -420,19 +440,16 @@ protected:
   
 public:
   fieldAveraging(OpenFOAMCase& c, Parameters const &p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual OFDictData::dict functionObjectDict() const;
 };
 
 class probes
-: public OpenFOAMCaseElement
+: public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (probeSetName, std::string, "probes")
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
     (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 1.0)
   )
   
 protected:
@@ -440,21 +457,18 @@ protected:
   
 public:
   probes(OpenFOAMCase& c, Parameters const &p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual OFDictData::dict functionObjectDict() const;
 };
 
 class twoPointCorrelation
-: public OpenFOAMCaseElement
+: public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "twoPointCorrelation")
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 1.0)
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (p0, arma::mat, vec3(0,0,0))
     (directionSpan, arma::mat, vec3(1,0,0))
     (np, int, 50)
-    (homogeneousTranslationSpan, arma::mat, vec3(0,1,0))
+    (homogeneousTranslationUnit, arma::mat, vec3(0,1,0))
     (nph, int, 1)
   )
   
@@ -463,7 +477,26 @@ protected:
   
 public:
   twoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual OFDictData::dict functionObjectDict() const;
+  virtual OFDictData::dict csysConfiguration() const;
+};
+
+class cylindricalTwoPointCorrelation
+: public twoPointCorrelation
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, twoPointCorrelation::Parameters,
+    (ez, arma::mat, vec3(0,0,1))
+    (er, arma::mat, vec3(1,0,0))
+    (degrees, bool, false)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict csysConfiguration() const;
 };
 
 class forces

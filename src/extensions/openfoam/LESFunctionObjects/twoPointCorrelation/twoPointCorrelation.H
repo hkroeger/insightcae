@@ -158,7 +158,7 @@ protected:
     vector directionSpan_;
     label np_;
     
-    vector homogeneousTranslationSpan_;
+    vector homogeneousTranslationUnit_;
     label nph_;
     
     autoPtr<coordinateSystem> csys_;

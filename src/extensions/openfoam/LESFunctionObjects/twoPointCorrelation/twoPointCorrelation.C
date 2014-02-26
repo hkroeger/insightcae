@@ -128,7 +128,7 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
         directionSpan_=vector(dict.lookup("directionSpan"));
         np_=readLabel(dict.lookup("np"));
 
-        homogeneousTranslationSpan_=vector(dict.lookup("homogeneousTranslationSpan"));
+        homogeneousTranslationUnit_=vector(dict.lookup("homogeneousTranslationUnit"));
         nph_=readLabel(dict.lookup("nph"));
 
         dictionary csysDict(dict.subDict("csys"));
@@ -141,7 +141,7 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
         Info<<"twoPointCorrelation "<<name_<<":"<<nl
             <<"    from point "<<p0_<<nl
             <<"    on "<<np_<<" points along "<<directionSpan_<<nl
-            <<"    averaged over "<<nph_<<" copies along "<<homogeneousTranslationSpan_<<endl;
+            <<"    averaged over "<<nph_<<" copies, translated by "<<homogeneousTranslationUnit_<<endl;
 
         createInterpolators();
     }
@@ -513,7 +513,7 @@ void Foam::twoPointCorrelation::createInterpolators()
             pts[j]=csys_().globalPosition
                    (
                        p0_
-                       + scalar(i)/scalar(nph_-1) * homogeneousTranslationSpan_
+                       + scalar(i) * homogeneousTranslationUnit_
                        + scalar(j)/scalar(np_-1)  * directionSpan_
                    );
 	    if ((i==0)&&(j>0))

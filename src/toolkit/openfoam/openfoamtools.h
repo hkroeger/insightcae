@@ -188,6 +188,8 @@ void convertPatchPairToCyclic
 
 void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target);
 
+void mapFields(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target, bool parallelTarget=false);
+
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location);
 
 void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);

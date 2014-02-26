@@ -348,16 +348,7 @@ void createPatch(const OpenFOAMCase& ofc,
   }
   
   // then write to file
-  boost::filesystem::path dictpath = location / "system" / "createPatchDict";
-  if (!exists(dictpath.parent_path())) 
-  {
-    boost::filesystem::create_directories(dictpath.parent_path());
-  }
-  
-  {
-    std::ofstream f(dictpath.c_str());
-    writeOpenFOAMDict(f, createPatchDict, boost::filesystem::basename(dictpath));
-  }
+  createPatchDict.write( location / "system" / "createPatchDict" );
 
   std::vector<std::string> opts;
   if (overwrite) opts.push_back("-overwrite");
@@ -394,6 +385,43 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
     (boost::filesystem::absolute(source).c_str()) 
   );
 }
+
+
+void mapFields
+(
+  const OpenFOAMCase& targetcase, 
+  const boost::filesystem::path& source, 
+  const boost::filesystem::path& target,
+  bool parallelTarget
+)
+{
+  path mfdPath=target / "system" / "mapFieldsDict";
+  if (!exists(mfdPath))
+  {
+    OFDictData::dictFile mapFieldsDict;
+    mapFieldsDict["patchMap"] = OFDictData::list();
+    mapFieldsDict["cuttingPatches"] = OFDictData::list();
+    mapFieldsDict.write( mfdPath );
+  }
+  else
+  {
+    cout<<"A mapFieldsDict is existing. It will be used."<<endl;
+  }
+
+  std::vector<string> args =
+    list_of<std::string>
+    (boost::filesystem::absolute(source).c_str())
+    ("-sourceTime")("latestTime")
+    ;
+  if (parallelTarget) 
+    args.push_back("-parallelTarget");
+
+  targetcase.executeCommand
+  (
+    target, "mapFields", args
+  );
+}
+
 
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location)
 {

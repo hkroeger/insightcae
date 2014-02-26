@@ -195,6 +195,19 @@ OFDictData::dictFile::dictFile()
 {
 }
 
+void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
+{
+  if (!exists(dictPath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictPath.parent_path());
+  }
+  
+  {
+    std::ofstream f(dictPath.c_str());
+    writeOpenFOAMDict(f, *this, boost::filesystem::basename(dictPath));
+  }
+}
+
 OFDictData::list vector3(const arma::mat& v)
 {
   OFDictData::list l;

@@ -74,7 +74,8 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    ("np", 		new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
 		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam"))
+		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
+		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
@@ -162,8 +163,16 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
     cm.executeCommand(executionPath(), "decomposePar");
   }
   
-  if (p.getBool("run/potentialinit"))
-    runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+  path mapFromPath=p.getPath("run/mapFrom");
+  if (mapFromPath!="")
+  {
+    mapFields(cm, mapFromPath, executionPath(), np>1);
+  }
+  else
+  {
+    if (p.getBool("run/potentialinit"))
+      runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+  }
   
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   

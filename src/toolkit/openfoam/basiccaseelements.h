@@ -414,7 +414,7 @@ public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (name, std::string, "unnamed")
     (timeStart, double, 0.0)
-    (outputControl, std::string, "timeStep")    
+    (outputControl, std::string, "outputTime")    
     (outputInterval, double, 1.0)
   )
   
@@ -433,7 +433,6 @@ class fieldAveraging
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
-    (outputControl, std::string, "outputTime")    
   )
   
 protected:

@@ -486,6 +486,7 @@ void PipeCyclic::createCase
     
     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
       .set_name("tpc_tan_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
       .set_p0(vec3(r, 0, 0.5*L))
       .set_directionSpan(vec3(0,M_PI,0)) 
       .set_np(100)
@@ -499,6 +500,7 @@ void PipeCyclic::createCase
     
     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
       .set_name("tpc_ax_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
       .set_p0(vec3(r, 0, 0))
       .set_directionSpan(vec3(0,0,L)) 
       .set_np(100)

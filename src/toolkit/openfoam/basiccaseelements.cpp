@@ -1060,7 +1060,17 @@ void probes::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.addSubDictIfNonexistent("functions")["probes1"]=fod;
 }
-  
+
+twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, p.name()+"twoPointCorrelation"),
+  p_(p)
+{
+}
+
+void twoPointCorrelation::addIntoDictionaries(OFdicts& dictionaries) const
+{
+}
+
 forces::forces(OpenFOAMCase& c, Parameters const &p )
 : OpenFOAMCaseElement(c, p.name()+"forces"),
   p_(p)

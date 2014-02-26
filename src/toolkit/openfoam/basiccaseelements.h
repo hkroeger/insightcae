@@ -443,6 +443,28 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class twoPointCorrelation
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "twoPointCorrelation")
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 1.0)
+    (p0, arma::mat, vec3(0,0,0))
+    (directionSpan, arma::mat, vec3(1,0,0))
+    (np, int, 50)
+    (homogeneousTranslationSpan, arma::mat, vec3(0,1,0))
+    (nph, int, 1)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  twoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class forces
 : public OpenFOAMCaseElement

@@ -209,7 +209,7 @@ autoPtr<volFieldSampler<Type> > sample
     // Storage for interpolated values
     volFieldSampler<Type> sampledField
     (
-        "cellPoint",
+        "cellPointFace",
         field,
         sets
     );

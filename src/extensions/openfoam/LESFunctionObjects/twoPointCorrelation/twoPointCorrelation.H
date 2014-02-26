@@ -186,6 +186,8 @@ protected:
 	PtrList<coordSet>& masterSampledSets,
 	labelListList& indexSets
     );
+    
+    void resetAveraging();
 
 
 public:

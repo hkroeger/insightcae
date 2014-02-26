@@ -338,10 +338,14 @@ void PipeBase::createCase
   cout << "Flow-through time T="<<T<<endl;
   cm.insert(new pimpleFoamNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
+    .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))
     .set_timeStart(T)
   ));
+  
+  /*
   cm.insert(new probes(cm, probes::Parameters()
+    .set_name("probes")
     .set_fields(list_of<std::string>("p")("U"))
     .set_timeStart(T)
     .set_probeLocations(list_of<arma::mat>
@@ -357,6 +361,7 @@ void PipeBase::createCase
       (vec3(0.9*L, 0.9*0.5*D, 0))
     )
   ));
+  */
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   
 //   cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()

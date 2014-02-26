@@ -58,17 +58,17 @@ Foam::twoPointCorrelation::twoPointCorrelation
     obr_(obr),
     active_(true)
 {
-    // Check if the available mesh is an fvMesh, otherwise deactivate
-    if (!isA<fvMesh>(obr_))
-    {
-        active_ = false;
-        WarningIn
-        (
-            "minMaxSurfacePressure::minMaxSurfacePressure"
-            "(const objectRegistry&, const dictionary&)"
-        )   << "No fvMesh available, deactivating." << nl
-            << endl;
-    }
+  // Check if the available mesh is an fvMesh, otherwise deactivate
+  if (!isA<fvMesh>(obr_))
+  {
+      active_ = false;
+      WarningIn
+      (
+	  "minMaxSurfacePressure::minMaxSurfacePressure"
+	  "(const objectRegistry&, const dictionary&)"
+      )   << "No fvMesh available, deactivating." << nl
+	  << endl;
+  }
 
   if (active_)
   {
@@ -312,8 +312,9 @@ void Foam::twoPointCorrelation::execute()
       
 	if (!obr_.foundObject<volVectorField>("UMean"))
 	{
+	  resetAveraging();
 	  WarningIn("execute")
-	  << "No mean velocity field in registry, omitting evaluation of this time step";
+	  << "No mean velocity field in registry, restarting averaging in next timestep";
 	  return;
 	}
 	
@@ -547,13 +548,16 @@ void Foam::twoPointCorrelation::createInterpolators()
 	reset=true;
       }
 
-      if (reset)
-      {
-	  filePtr_.reset();
-	  correlationCoeffs_.reset(new tensorField(np_, tensor::zero));
-      }
+      if (reset) resetAveraging();
     }
 
+}
+
+void Foam::twoPointCorrelation::resetAveraging()
+{
+  totalTime_=0.0;
+  filePtr_.reset();
+  correlationCoeffs_.reset(new tensorField(np_, tensor::zero));
 }
 
 void Foam::twoPointCorrelation::updateMesh(const mapPolyMesh&)

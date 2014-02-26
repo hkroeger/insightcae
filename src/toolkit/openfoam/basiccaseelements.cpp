@@ -1006,7 +1006,6 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
   fod["outputControl"]=p_.outputControl();
   fod["outputInterval"]=p_.outputInterval();
   fod["timeStart"]=p_.timeStart();
-  fod["storeFilter"]=false;
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;

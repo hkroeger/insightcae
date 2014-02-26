@@ -104,7 +104,9 @@ Foam::twoPointCorrelation::twoPointCorrelation
 		  for(label i=0; i<pTraits<tensor>::nComponents; i++)
 		  {
 		    Istream& is=propsDict.subDict(name_).lookup("correlationCoeffs");
-		    readLabel(is); // overread list size
+		    label num=readLabel(is); // overread list size
+		    if (num!=np_)
+		      FatalErrorIn("read") << "number of sampling points does not match" <<abort(FatalError);
 		    correlationCoeffs_.reset(new tensorField(readList<tensor>(is)));
 		  }
 		  Pout<<correlationCoeffs_()<<endl;

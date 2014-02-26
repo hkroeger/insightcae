@@ -433,6 +433,7 @@ class fieldAveraging
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
+    (outputControl, std::string, "outputTime")    
   )
   
 protected:

@@ -360,15 +360,16 @@ void Foam::twoPointCorrelation::execute()
                 dbgFile.reset();
             }
 
-            // averaging over homogeneous directions
+
+	    // averaging over homogeneous directions
             scalar dt = obr_.time().deltaTValue();
+            totalTime_ += dt;
             scalar Dt = totalTime_;
             scalar alpha = (Dt - dt)/Dt;
             scalar beta = dt/Dt;
 
             correlationCoeffs_() = alpha * correlationCoeffs_() + beta*(cCoeffs/scalar(lines_.size()));
 
-            totalTime_ += dt;
 	}
 	
 	if (obr_.time().outputTime())

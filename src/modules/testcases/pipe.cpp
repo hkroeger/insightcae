@@ -83,6 +83,7 @@ ParameterSet PipeBase::defaultParameters() const
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
 	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
 	    ("x",	new DoubleParameter(0.5, "Edge length of core block as fraction of diameter"))
+	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -143,7 +144,36 @@ int PipeBase::calcnr(const ParameterSet& p) const
   PSDBL(p, "mesh", s);
   PSDBL(p, "mesh", x);
   double Delta=L/double(nax);
-  return D*(1.-sqrt(2.)*x)/(2.*Delta/s);
+  double lr=0.5*D*(1.-sqrt(2.)*x);
+  int nr=max(1, bmd::GradingAnalyzer(calcgradr(p)).calc_n(calcywall(p), lr));
+  cout<<"n_r="<<nr<<endl;
+  return nr;
+}
+
+double PipeBase::calcywall(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "operation", Re_tau);
+  
+  double ywall= ypluswall*0.5*D/Re_tau;
+  cout<<"ywall = "<<ywall<<endl;
+  return ywall;
+}
+
+double PipeBase::calcgradr(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+
+  PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", s);
+
+  double Delta=L/double(nax);
+  double delta0=calcywall(p);
+  double grad=(Delta/s) / delta0;
+  cout<<"Grading = "<<grad<<endl;
+  return grad;
 }
 
 #include <gsl/gsl_errno.h>
@@ -239,7 +269,8 @@ void PipeBase::createMesh
   double Lc=calcLc(p);
   int nc=calcnc(p);
   int nr=calcnr(p);
-  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<endl;
+  double gradr=calcgradr(p);
+  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<", grad_r="<<gradr<<endl;
     
   cm.insert(new MeshingNumerics(cm));
   
@@ -294,7 +325,8 @@ void PipeBase::createMesh
 	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
 	  (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
 	),
-	nc, nr, nax
+	nc, nr, nax,
+	list_of<double>(1)(1./gradr)(1)
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -502,7 +534,7 @@ void PipeCyclic::createCase
       .set_name("tpc_ax_"+lexical_cast<string>(i))
       .set_outputControl("timeStep")
       .set_p0(vec3(r, 0, 0))
-      .set_directionSpan(vec3(0,0,L)) 
+      .set_directionSpan(vec3(0,0,0.5*L)) 
       .set_np(100)
       .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
       .set_nph(4)

@@ -42,6 +42,8 @@ public:
   virtual double calcLc(const ParameterSet& p) const;
   virtual int calcnc(const ParameterSet& p) const;
   virtual int calcnr(const ParameterSet& p) const;
+  virtual double calcgradr(const ParameterSet& p) const;
+  virtual double calcywall(const ParameterSet& p) const;
   virtual double calcRe(const ParameterSet& p) const;
   virtual double calcUbulk(const ParameterSet& p) const;
   virtual double calcT(const ParameterSet& p) const;

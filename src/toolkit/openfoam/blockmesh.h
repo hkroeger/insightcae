@@ -106,6 +106,16 @@ public:
     bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
 };
 
+class GradingAnalyzer
+{
+  double grad_;
+public:
+  GradingAnalyzer(double grad);
+  
+  inline double grad() const { return grad_; }
+  
+  int calc_n(double delta0, double L) const;
+};
 
 class Block
 {

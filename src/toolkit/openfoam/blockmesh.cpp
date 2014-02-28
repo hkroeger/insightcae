@@ -805,6 +805,66 @@ Patch::bmdEntry(const PointMap& allPoints, const std::string& name, int OFversio
 }
 
 
+GradingAnalyzer::GradingAnalyzer(double grad)
+: grad_(grad)
+{
+}
+
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_roots.h>
+
+typedef boost::tuple<const GradingAnalyzer*,double,double> f_calc_n_param;
+
+double f_calc_n(double n, void* ga)
+{
+  f_calc_n_param* p = static_cast<f_calc_n_param*>(ga);
+  double L=p->get<1>();
+  double delta0=p->get<2>();
+  
+  double G=pow(p->get<0>()->grad(), 1./(n-1.));
+  int n_c=1+log( 1./G + L*(G-1.)/delta0)/log(G);
+  
+  cout << L<< " "<<delta0 << " "<<n<<" "<<G<<" "<<n_c<<endl;
+  return n_c-n;
+}
+
+int GradingAnalyzer::calc_n(double delta0, double L) const
+{
+  int i, times, status;
+  gsl_function f;
+  gsl_root_fsolver *workspace_f;
+  double x, x_l, x_r;
+
+ 
+    workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
+ 
+    f.function = &f_calc_n;
+    f_calc_n_param p(this, L, delta0);
+    f.params = static_cast<void*>(&p);
+ 
+    x_l = 2;
+    x_r = 10000;
+ 
+    gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
+ 
+    for(times = 0; times < 100; times++)
+    {
+        status = gsl_root_fsolver_iterate(workspace_f);
+ 
+        x_l = gsl_root_fsolver_x_lower(workspace_f);
+        x_r = gsl_root_fsolver_x_upper(workspace_f);
+ 
+        status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
+        if(status != GSL_CONTINUE)
+        {
+            break;
+        }
+    }
+ 
+    gsl_root_fsolver_free(workspace_f);
+    
+  return x_l;
+}
 
 Patch2D::Patch2D(const transform2D& t2d, std::string typ)
 : Patch(typ),

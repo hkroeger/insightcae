@@ -109,6 +109,19 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     throw insight::Exception("Not implemented!");
 }
 
+void create_symlink_force_overwrite(const path& source, const path& targ)
+{
+  if (is_symlink(targ))
+    remove(targ);
+  else
+  {
+    if (exists(targ))
+      throw insight::Exception("Link target "+targ.string()+" exists and is not a symlink! Please remove manually first.");
+  }
+    
+  create_symlink(source, targ);
+}
+
 void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to)
 {
   path source(from/"polyMesh");
@@ -124,8 +137,8 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		.convert_to_container<std::vector<std::string> >())
   {
     path gzname(fname.c_str()); gzname+=".gz";
-    if (exists(source/gzname)) create_symlink(source/gzname, target/gzname);
-    else if (exists(source/fname)) create_symlink(source/fname, target/fname);
+    if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
+    else if (exists(source/fname)) create_symlink_force_overwrite(source/fname, target/fname);
     else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
   }
 }
@@ -520,7 +533,9 @@ void runPvPython
 )
 {
   redi::opstream proc;  
-  ofc.forkCommand(proc, location, "pvpython");
+  std::vector<string> args;
+  args.push_back("--use-offscreen-rendering");
+  ofc.forkCommand(proc, location, "pvbatch", args);
   proc << "from Insight.Paraview import *" << endl;
   BOOST_FOREACH(const std::string& cmd, pvpython_commands)
   {

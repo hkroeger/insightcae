@@ -156,27 +156,36 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
     np=decomposeParDict.getInt("numberOfSubdomains");
   }
   
+  bool is_parallel = np>1;
+  
   std::cout<<"Executing application "<<solverName<<std::endl;
   
-  if (np>1)
+  if (is_parallel)
   {
     cm.executeCommand(executionPath(), "decomposePar");
   }
   
-  path mapFromPath=p.getPath("run/mapFrom");
-  if (mapFromPath!="")
+  if (!cm.outputTimesPresentOnDisk(executionPath()))
   {
-    mapFields(cm, mapFromPath, executionPath(), np>1);
+    path mapFromPath=p.getPath("run/mapFrom");
+    if (mapFromPath!="")
+    {
+      mapFields(cm, mapFromPath, executionPath(), is_parallel);
+    }
+    else
+    {
+      if (p.getBool("run/potentialinit"))
+	runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+    }
   }
   else
   {
-    if (p.getBool("run/potentialinit"))
-      runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+    cout<<"case in "<<executionPath()<<": output timestep are already there, skipping initialization."<<endl;
   }
   
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   
-  if (np>1)
+  if (is_parallel)
   {
     cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
   }

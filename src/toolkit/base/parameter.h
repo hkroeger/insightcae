@@ -22,6 +22,7 @@
 #define INSIGHT_PARAMETER_H
 
 #include "factory.h"
+#include "base/latextools.h"
 
 #include <string>
 #include <vector>
@@ -101,7 +102,7 @@ public:
 
   virtual std::string latexRepresentation() const
   {
-    return boost::lexical_cast<std::string>(value_);
+    return cleanSymbols(boost::lexical_cast<std::string>(value_));
   }
 
   virtual Parameter* clone() const

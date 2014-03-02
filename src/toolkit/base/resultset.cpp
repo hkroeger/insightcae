@@ -19,6 +19,7 @@
 
 
 #include "resultset.h"
+#include "base/latextools.h"
 
 #include <fstream>
 
@@ -41,9 +42,15 @@ namespace insight
 string latex_subsection(int level)
 {
   string cmd="\\";
-  for (int i=0; i<min(3,level); i++)
-    cmd+="sub";
-  cmd+="section";
+  if (level==2) cmd+="paragraph";
+  else if (level==3) cmd+="subparagraph";
+  else if (level>3) cmd="";
+  else
+  {
+    for (int i=0; i<min(2,level); i++)
+      cmd+="sub";
+    cmd+="section";
+  }
   return cmd;
 }
 
@@ -90,7 +97,8 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
 
 void Image::writeLatexCode(std::ostream& f, int level) const
 {
-  f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << imagePath_.c_str() << "}\n";
+  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+  f<< "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n";
 }
 
 ResultElement* Image::clone() const
@@ -267,20 +275,16 @@ void ResultSet::writeLatexHeaderCode(std::ostream& f) const
 
 void ResultSet::writeLatexCode(std::ostream& f, int level) const
 {
-  f  
-  << latex_subsection(level)
-  << "{Input Parameters}\n";
+  f << latex_subsection(level) << "{Input Parameters}\n";
   
   f<<p_.latexRepresentation();
   
-  f
-  << latex_subsection(level)
-  << "{Numerical Result Summary}\n";
+  f << latex_subsection(level) << "{Numerical Result Summary}\n";
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
-    f << "\\paragraph{" << i->first << "}\n";
-    f << i->second->shortDescription() << " \\\\ ";
-    i->second->writeLatexCode(f, level+1);
+    f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
+    f << cleanSymbols(i->second->shortDescription()) << "\n";
+    i->second->writeLatexCode(f, level+2);
     f << endl;
   }
 }
@@ -289,7 +293,12 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
 {
   std::ofstream f(absolute(file).c_str());
   f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
-  
+  f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
+   <<"\\\\\\includegraphics[#1]{#2}\\endgroup}\n"
+   <<"\\def\\PlotFrame{\\begingroup\n"
+   <<"\\catcode`\\_=12\n"
+   <<"\\PlotFrameB}\n";
+   
   writeLatexHeaderCode(f);
    
   f<<
@@ -308,7 +317,14 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
 
 ResultElement* ResultSet::clone() const
 {
-  return new ResultSet(p_, title_, subtitle_, &author_, &date_);
+  std::auto_ptr<ResultSet> nr(new ResultSet(p_, title_, subtitle_, &author_, &date_));
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    cout<<i->first<<endl;
+    std::string key(i->first);
+    nr->insert(key, i->second->clone());
+  }
+  return nr.release();
 }
 
 }

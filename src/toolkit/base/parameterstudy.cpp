@@ -157,7 +157,10 @@ ResultElementPtr ParameterStudy::table
   if (headers) 
     heads=*headers;
   else
+  {
     heads=res;
+    heads.insert(heads.begin(), varp);
+  }
   
   return ResultElementPtr
   (
@@ -170,9 +173,6 @@ void ParameterStudy::setupQueue()
 {
   const ParameterSet& p = *parameters_;
   
-  path dir = setupExecutionEnvironment();
-  p.saveToFile(dir/"parameters.ist", type());
-
   DoubleRangeParameter::RangeList::const_iterator iters[varp_.size()];
   
   queue_.clear();
@@ -207,6 +207,7 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
   TabularResult::Table force_data;
   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
   {
+    const std::string& n = get<0>(ai);
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
     /*
@@ -229,7 +230,7 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
     
     results->insert(newkey, r->find("heightProfile")->second->clone() );
     */
-    std::string key=r->title()+" ("+r->subtitle()+")";
+    std::string key=n+", "+r->title()+" ("+r->subtitle()+")";
     results->insert( key, r->clone() );
     
   }
@@ -239,6 +240,11 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
 
 insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
 {  
+  const ParameterSet& p = *parameters_;
+
+  path dir = setupExecutionEnvironment();
+  p.saveToFile(dir/"parameters.ist", type());
+
   setupQueue();
   processQueue(displayer);
   return evaluateRuns();

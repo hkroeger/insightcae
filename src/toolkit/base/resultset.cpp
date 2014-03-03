@@ -155,6 +155,24 @@ TabularResult::TabularResult
   setTableData(headings, rows);
 }
 
+arma::mat TabularResult::toMat() const
+{
+  arma::mat res;
+  res.resize(rows_.size(), rows_[0].size());
+  int i=0;
+  BOOST_FOREACH(const std::vector<double>& row, rows_)
+  {
+    int j=0;
+    BOOST_FOREACH(double v, row)
+    {
+      cout<<"res("<<i<<","<<j<<")="<<v<<endl;
+      res(i, j++)=v;
+    }
+    i++;
+  }
+  return res;
+}
+
 void TabularResult::writeGnuplotData(std::ostream& f) const
 {
   f<<"#";

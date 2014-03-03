@@ -38,6 +38,16 @@ arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 
 std::string toStr(const arma::mat& v3);
 
+/**
+ * Fits c_j in
+ *  c_j*x_ij approx y_i
+ * add a column with all values "1" to x_ij to include constant offset!
+ * 
+ * y: column vector with values to fit
+ * x: matrix with x-values
+ */
+arma::mat linearRegression(const arma::mat& y, const arma::mat& x);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

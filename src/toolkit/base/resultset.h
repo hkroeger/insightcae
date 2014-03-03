@@ -22,6 +22,7 @@
 #define INSIGHT_RESULTSET_H
 
 #include "base/parameterset.h"
+#include "base/linearalgebra.h"
 
 #include <string>
 
@@ -144,6 +145,8 @@ public:
   
   inline const std::vector<std::string>& headings() const { return headings_; }
   inline const Table& rows() const { return rows_; }
+  
+  arma::mat toMat() const;
   
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   

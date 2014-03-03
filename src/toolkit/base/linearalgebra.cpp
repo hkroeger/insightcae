@@ -78,4 +78,9 @@ std::string toStr(const arma::mat& v3)
   return s+" ";
 }
 
+arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
+{
+  return solve(x.t()*x, x.t()*y);
+}
+
 }

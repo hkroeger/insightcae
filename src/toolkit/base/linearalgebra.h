@@ -48,6 +48,8 @@ std::string toStr(const arma::mat& v3);
  */
 arma::mat linearRegression(const arma::mat& y, const arma::mat& x);
 
+arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder=0);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

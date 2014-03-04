@@ -228,7 +228,16 @@ void TabularResult::writeLatexCode(std::ostream& f, int level) const
   f<<"\\end{tabular}\n";
 }
 
-
+ResultElementPtr polynomialFitResult(const arma::mat& coeffs, const std::string& xvarName, int minorder)
+{
+  std::vector<std::string> header;
+  TabularResult::Row coeffs;
+  for (int i=0; i<coeffs.n_rows; i++)
+  {
+    header.push_back("$"+xvarName+"^{"+lexical_cast<string>(minorder+i)+"}$");
+  }
+}
+  
 ResultSet::ResultSet
 (
   const ParameterSet& p,

@@ -123,7 +123,8 @@ class TabularResult
 : public ResultElement
 {
 public:
-  typedef std::vector<std::vector<double> > Table;
+  typedef std::vector<double> Row;
+  typedef std::vector<Row> Table;
   
 protected:
   std::vector<std::string> headings_;
@@ -156,6 +157,7 @@ public:
   virtual ResultElement* clone() const;
 };
 
+ResultElementPtr polynomialFitResult(const arma::mat& coeffs, const std::string& xvarName, int minorder=0);
 
 class ResultSet
 : public boost::ptr_map<std::string, ResultElement>,

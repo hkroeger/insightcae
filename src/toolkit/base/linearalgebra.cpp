@@ -83,4 +83,12 @@ arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
   return solve(x.t()*x, x.t()*y);
 }
 
+arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder)
+{
+  arma::mat xx(x.n_rows, maxorder-minorder);
+  for (int i=0; i<maxorder-minorder; i++)
+    xx.col(i)=pow(x, minorder+i);
+  return linearRegression(y, xx);
+}
+
 }

@@ -27,6 +27,7 @@
 //#include "boost/gil/extension/io/jpeg_io.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
+#include "boost/assign.hpp"
 #include "boost/date_time.hpp"
 #include <boost/graph/buffer_concepts.hpp>
 #include "boost/filesystem.hpp"
@@ -34,6 +35,7 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+using namespace boost::assign;
 
 namespace insight
 {
@@ -228,14 +230,38 @@ void TabularResult::writeLatexCode(std::ostream& f, int level) const
   f<<"\\end{tabular}\n";
 }
 
-ResultElementPtr polynomialFitResult(const arma::mat& coeffs, const std::string& xvarName, int minorder)
+ResultElementPtr polynomialFitResult
+(
+  const arma::mat& coeffs, 
+  const std::string& xvarName, 
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  int minorder  
+)
 {
   std::vector<std::string> header;
-  TabularResult::Row coeffs;
-  for (int i=0; i<coeffs.n_rows; i++)
+  TabularResult::Row cr;
+  for (int i=coeffs.n_rows-1; i>=0; i--)
   {
-    header.push_back("$"+xvarName+"^{"+lexical_cast<string>(minorder+i)+"}$");
+    int order=minorder+i;
+    if (order==0)
+      header.push_back("$1$");
+    else if (order==1)
+      header.push_back("$"+xvarName+"$");
+    else
+      header.push_back("$"+xvarName+"^{"+lexical_cast<string>(order)+"}$");
+    cr.push_back(coeffs(i));
   }
+  
+  return ResultElementPtr
+  (
+    new TabularResult
+    (
+      header, 
+      list_of<TabularResult::Row>(cr),
+      shortDesc, longDesc, ""
+    )
+  );
 }
   
 ResultSet::ResultSet
@@ -310,7 +336,7 @@ void ResultSet::writeLatexCode(std::ostream& f, int level) const
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
-    f << cleanSymbols(i->second->shortDescription()) << "\n";
+    f << cleanSymbols(i->second->shortDescription()) << "\n\n";
     i->second->writeLatexCode(f, level+2);
     f << endl;
   }
@@ -321,7 +347,7 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   std::ofstream f(absolute(file).c_str());
   f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
   f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
-   <<"\\\\\\includegraphics[#1]{#2}\\endgroup}\n"
+   <<"\\includegraphics[#1]{#2}\\endgroup}\n"
    <<"\\def\\PlotFrame{\\begingroup\n"
    <<"\\catcode`\\_=12\n"
    <<"\\PlotFrameB}\n";

@@ -157,7 +157,14 @@ public:
   virtual ResultElement* clone() const;
 };
 
-ResultElementPtr polynomialFitResult(const arma::mat& coeffs, const std::string& xvarName, int minorder=0);
+ResultElementPtr polynomialFitResult
+(
+  const arma::mat& coeffs, 
+  const std::string& xvarName,
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  int minorder=0
+);
 
 class ResultSet
 : public boost::ptr_map<std::string, ResultElement>,

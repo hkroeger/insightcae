@@ -58,7 +58,6 @@ using namespace boost;
 
 namespace Foam
 {
-
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningFactor()
 {
@@ -176,6 +175,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
 }
 
 
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 template<class TurbulentStructure>
@@ -185,16 +185,9 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const DimensionedField<vector, volMesh>& iF
 )
 :
-    fixedValueFvPatchField<vector>(p, iF),
-    ranGen_(1),
+    inflowGeneratorBaseFvPatchVectorField(p, iF),
     vortons_(),
-    Umean_(),
-    R_(),
-    L_(),
-    structureParameters_(),
-    conditioningFactor_(),
-    overlap_(0.5),
-    curTimeIndex_(-1)
+    structureParameters_()
 {
 }
 
@@ -207,16 +200,9 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const fvPatchFieldMapper& mapper
 )
 :
-    fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
-    ranGen_(1),
+    inflowGeneratorBaseFvPatchVectorField(ptf, p, iF, mapper),
     vortons_(ptf.vortons_),
-    Umean_(ptf.Umean_),
-    R_(ptf.R_),
-    L_(ptf.L_),
-    structureParameters_(ptf.structureParameters_),
-    conditioningFactor_(ptf.conditioningFactor_),
-    overlap_(ptf.overlap_),
-    curTimeIndex_(ptf.curTimeIndex_)
+    structureParameters_(ptf.structureParameters_)
 {
 }
 
@@ -228,28 +214,13 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const dictionary& dict
 )
 :
-    fixedValueFvPatchField<vector>(p, iF, dict),
-    ranGen_(1),
-    Umean_("Umean", dict, size()),
-    R_("R", dict, size()),
-    L_("L", dict, size()),
-    structureParameters_(dict),
-    overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
-    curTimeIndex_(-1)
+    inflowGeneratorBaseFvPatchVectorField(p, iF, dict),
+    structureParameters_(dict)
 {
     if (dict.found("vortons"))
     {
         //vortons_=SLList<TurbulentStructure>(dict.lookup("vortons"));
       vortons_=Field<TurbulentStructure>(dict.lookup("vortons"));
-    }
-    if (dict.found("conditioningFactor"))
-    {
-        conditioningFactor_.reset
-        (
-	  new scalarField("conditioningFactor", 
-			  dict, 
-			  this->size())
-	);
     }
 }
 
@@ -258,16 +229,9 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 (
     const inflowGeneratorFvPatchVectorField& ptf
 )
-: fixedValueFvPatchField<vector>(ptf),
-  ranGen_(1),
+: inflowGeneratorBaseFvPatchVectorField(ptf),
   vortons_(ptf.vortons_),
-  Umean_(ptf.Umean_),
-  R_(ptf.R_),
-  L_(ptf.L_),
-  structureParameters_(ptf.structureParameters_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
-  curTimeIndex_(ptf.curTimeIndex_)
+  structureParameters_(ptf.structureParameters_)
 {}
 
 template<class TurbulentStructure>
@@ -276,16 +240,9 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     const inflowGeneratorFvPatchVectorField& ptf,
     const DimensionedField<vector, volMesh>& iF
 )
-: fixedValueFvPatchField<vector>(ptf, iF),
-  ranGen_(1),
+: inflowGeneratorBaseFvPatchVectorField(ptf, iF),
   vortons_(ptf.vortons_),
-  Umean_(ptf.Umean_),
-  R_(ptf.R_),
-  L_(ptf.L_),
-  structureParameters_(ptf.structureParameters_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
-  curTimeIndex_(ptf.curTimeIndex_)
+  structureParameters_(ptf.structureParameters_)
 {}
 
 
@@ -343,45 +300,6 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
     }
   }
   return 0;
-}
-
-template<class TurbulentStructure>
-vector inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomTangentialDeflection(label fi)
-{
-  vector n=patch().Sf()[fi]; n/=mag(n);
-  vector e1=n^vector(1,0,0);
-  if (mag(e1)<SMALL) e1=n^vector(0,1,0);
-  vector e2=n^e1;
-  
-  scalar dist=Foam::sqrt(patch().magSf()[fi]);
-
-  return (0.5-ranGen_.scalar01())*dist*e1 + (0.5-ranGen_.scalar01())*dist*e2 ;
-}
-
-template<class TurbulentStructure>
-autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorFvPatchVectorField<TurbulentStructure>::buildTree(const pointField& vloc) const
-{
-  if (vloc.size()>3)
-  {
-    treeBoundBox overallBb(vloc);
-    Random rndGen(123456);
-    overallBb = overallBb.extend(rndGen, 1E-4);
-    overallBb.min() -= point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-    overallBb.max() += point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-
-    return autoPtr<indexedOctree<treeDataPoint> > 
-    (
-      new indexedOctree<treeDataPoint>
-      ( 
-	treeDataPoint( vloc ),
-	overallBb,                      // overall search domain
-	8,                              // maxLevel
-	10,                             // leafsize
-	3.0                             // duplicity
-      )
-    );
-  }
-  return autoPtr<indexedOctree<treeDataPoint> > ();
 }
 
 template<class TurbulentStructure>
@@ -607,44 +525,13 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   return tfluctuations;
 }
 
-template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::updateCoeffs()
-{
-  if (!conditioningFactor_.valid())
-    computeConditioningFactor();
-  
-  if (this->updated())
-  {
-      return;
-  }
-
-  if (curTimeIndex_ != this->db().time().timeIndex())
-  {
-      fixedValueFvPatchField<vector>::operator==(Umean_ + continueFluctuationProcess());
-      curTimeIndex_ = this->db().time().timeIndex();
-  }
-
-  fixedValueFvPatchField<vector>::updateCoeffs();
-}
 
 template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::write(Ostream& os) const
 {
-    Umean_.writeEntry("Umean", os);
-    R_.writeEntry("R", os);
-    L_.writeEntry("L", os);
     structureParameters_.write(os);
-    os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
-    structureParameters_.write(os);
-    
-    if (conditioningFactor_.valid())
-    {
-        conditioningFactor_().writeEntry("conditioningFactor", os);
-    }
-    
-    os.writeKeyword("vortons") << vortons_ << token::END_STATEMENT <<nl;
-    
-    fixedValueFvPatchField<vector>::write(os);
+    os.writeKeyword("vortons") << vortons_ << token::END_STATEMENT <<nl;    
+    inflowGeneratorBaseFvPatchVectorField::write(os);
 }
 
 } // End namespace Foam

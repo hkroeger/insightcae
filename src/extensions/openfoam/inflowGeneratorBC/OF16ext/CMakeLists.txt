@@ -2,6 +2,7 @@ project(inflowGeneratorBC16ext)
 
 
 set(inflowGeneratorBC_SOURCES 
+ ../inflowGeneratorBaseFvPatchVectorField.C
  ../inflowGeneratorFvPatchVectorFieldFwd.C
 )
 

@@ -36,7 +36,7 @@ SourceFiles
 #define inflowGeneratorFvPatchVectorField_H
 
 #include "Random.H"
-#include "fixedValueFvPatchFields.H"
+#include "inflowGeneratorBaseFvPatchVectorField.H"
 
 #include "turbulentStructure.H"
 #include "hatSpot.H"
@@ -55,51 +55,27 @@ namespace Foam
                      Class inflowGeneratorFvPatchVectorField Declaration
 \*---------------------------------------------------------------------------*/
 
+
 template<class TurbulentStructure>
 class inflowGeneratorFvPatchVectorField
-:
-    public fixedValueFvPatchField<vector>
+: public inflowGeneratorBaseFvPatchVectorField
 {
     
-    Random ranGen_;
-    
-    // Private data
+protected:
     /**
      * not a linked list: each vorton needs to have an index for tree seach
      */
     Field<TurbulentStructure> vortons_; 
     
-    /**
-     * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
-     */
-    Field<vector> Umean_;
-    
-    /**
-     * Prescribed reynolds stress tensor
-     */
-    Field<symmTensor> R_;
-    
-    /**
-     * Prescribed length scale field
-     */
-    Field<symmTensor> L_;
     
     /**
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
-    
-    autoPtr<Field<scalar> > conditioningFactor_;
-    
-    scalar overlap_;
-    
-    label curTimeIndex_;
-
+        
     void computeConditioningFactor();
-    
+
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
-    vector randomTangentialDeflection(label fi);
-    autoPtr<indexedOctree<treeDataPoint> > buildTree(const pointField& vloc) const;
     
 public:
 
@@ -189,12 +165,9 @@ public:
 	);
 
 
-
         // Evaluation functions
 
         virtual tmp<vectorField> continueFluctuationProcess();
-	
-	virtual void updateCoeffs();
 	
         //- Write
         virtual void write(Ostream&) const;

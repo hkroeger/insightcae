@@ -196,7 +196,7 @@ void homogeneousTurbulenceVorton::randomize(Random& rand)
 {
     omegav_ = rand.vector01() - 0.5*pTraits<vector>::one;
     omegav_/=mag(omegav_);
-    for (label i=0;i<3;i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
+    for (label i=0; i<3; i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
 }
 
 

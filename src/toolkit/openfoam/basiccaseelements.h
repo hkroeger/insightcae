@@ -865,6 +865,7 @@ public:
     Parameters const& p = Parameters()
   );
   virtual void setField_U(OFDictData::dict& BC) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void initInflowBC(const boost::filesystem::path& location) const;
 };
 

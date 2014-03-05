@@ -2038,6 +2038,14 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   BC["value"]="uniform "+Uvec;
 }
 
+void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  VelocityInletBC::addIntoFieldDictionaries(dictionaries);
+  
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
+}
+
 void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location) const
 {
 }

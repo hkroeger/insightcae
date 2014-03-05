@@ -88,10 +88,36 @@ public:
   );
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
-
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
   
 };
+
+
+class PipeInflow
+: public PipeBase
+{
+public:
+  declareType("Pipe Flow Test Case (Inflow Generator)");
+  
+  PipeInflow(const NoParameters&);
+  
+  virtual void createMesh
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );  
+  
+  virtual void createCase
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );
+
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  
+};
+
 
 }
 

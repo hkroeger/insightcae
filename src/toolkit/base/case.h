@@ -54,7 +54,7 @@ public:
     template<class T>
     T* get(const std::string& name)
     {
-      BOOST_FOREACH(const CaseElement& el, elements_)
+      BOOST_FOREACH(CaseElement& el, elements_)
       {
 	if (el.name() == name)
 	  return static_cast<T*>(&el);

@@ -572,4 +572,121 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boo
 addToFactoryTable(Analysis, PipeCyclic, NoParameters);
 
 
+
+
+defineType(PipeInflow);
+
+PipeInflow::PipeInflow(const NoParameters& nop)
+: PipeBase(nop)
+{
+}
+
+void PipeInflow::createMesh
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  PipeBase::createMesh(cm, p);
+  //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
+}
+
+void PipeInflow::createCase
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  PSINT(p, "fluid", turbulenceModel);
+  
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+      
+  cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
+    .set_velocity(vec3(calcUbulk(p), 0, 0))
+    .set_turbulenceIntensity(0.05)
+    .set_mixingLength(0.1*D)
+  ));
+  
+  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0.0)
+  ));
+  
+  PipeBase::createCase(cm, p);
+  
+  double T=calcT(p);
+  int n_r=10;
+  for (int i=1; i<n_r; i++) // omit first and last
+  {
+    double x = double(i)/(n_r);
+    double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
+    cout<<"Inserting tpc FO at r="<<r<<endl;
+    
+    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name("tpc_tan_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, 0.5*L))
+      .set_directionSpan(vec3(0,M_PI,0)) 
+      .set_np(100)
+      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+      .set_nph(4)
+      .set_er(vec3(0,1,0))
+      .set_ez(vec3(1,0,0))
+      .set_degrees(false)
+      .set_timeStart(3*T)
+    ));
+    
+    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name("tpc_ax_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, 0))
+      .set_directionSpan(vec3(0,0,0.5*L)) 
+      .set_np(100)
+      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+      .set_nph(4)
+      .set_er(vec3(0,1,0))
+      .set_ez(vec3(1,0,0))
+      .set_degrees(false)
+      .set_timeStart(3*T)
+    ));
+    
+  }
+}
+
+void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  
+  setFields(cm, executionPath(), 
+	    list_of<setFieldOps::FieldValueSpec>
+	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
+	    ptr_vector<setFieldOps::setFieldOperator>()
+  );
+  
+  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath());
+  
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+}
+
+void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  
+  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  /*
+  if (cm.OFversion()<=160)
+  {
+    controlDict["application"]="channelFoam";
+  }
+  */
+  controlDict["endTime"]=10.0*calcT(p);
+}
+
+addToFactoryTable(Analysis, PipeInflow, NoParameters);
+
 }

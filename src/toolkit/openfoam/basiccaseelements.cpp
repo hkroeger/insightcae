@@ -1934,6 +1934,15 @@ VelocityInletBC::VelocityInletBC
 {
 }
 
+void VelocityInletBC::setField_U(OFDictData::dict& BC) const
+{
+  BC["type"]=OFDictData::data("fixedValue");
+  BC["value"]=OFDictData::data("uniform ( "
+    +lexical_cast<std::string>(p_.velocity()(0))+" "
+    +lexical_cast<std::string>(p_.velocity()(1))+" "
+    +lexical_cast<std::string>(p_.velocity()(2))+" )");
+}
+
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
@@ -1944,11 +1953,7 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       .subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform ( "
-	+lexical_cast<std::string>(p_.velocity()(0))+" "
-	+lexical_cast<std::string>(p_.velocity()(1))+" "
-	+lexical_cast<std::string>(p_.velocity()(2))+" )");
+      setField_U(BC);
     }
     else if ( 
       ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
@@ -1995,6 +2000,48 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+TurbulentVelocityInletBC::TurbulentVelocityInletBC
+(
+  OpenFOAMCase& c,
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  Parameters const& p
+)
+: VelocityInletBC(c, patchName, boundaryDict, p),
+  p_(p)
+{
+}
+
+
+void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
+{
+  std::string Uvec="( "
+    +lexical_cast<std::string>(p_.velocity()(0))+" "
+    +lexical_cast<std::string>(p_.velocity()(1))+" "
+    +lexical_cast<std::string>(p_.velocity()(2))+" )";
+    
+  BC["type"]="inflowGenerator<"+p_.structureType()+">";
+  BC["Umean"]="uniform "+Uvec;
+  
+  double L=p_.mixingLength();
+  BC["L"]="uniform ( "
+    +lexical_cast<string>(L)+" 0 0 "
+    +lexical_cast<string>(L)+" 0 "
+    +lexical_cast<string>(L)+" )";
+
+  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity(),2), 2);
+  BC["R"]="uniform ( "
+    +lexical_cast<string>(R)+" 0 0 "
+    +lexical_cast<string>(R)+" 0 "
+    +lexical_cast<string>(R)+" )";
+
+  BC["value"]="uniform "+Uvec;
+}
+
+void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location) const
+{
+}
+  
 PressureOutletBC::PressureOutletBC
 (
   OpenFOAMCase& c, 

@@ -839,7 +839,33 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+  virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+class TurbulentVelocityInletBC
+: public VelocityInletBC
+{
+
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
+    (structureType, std::string, "hatSpot")
+  )
+  
+protected:
+  Parameters p_;
+
+public:
+  TurbulentVelocityInletBC
+  (
+    OpenFOAMCase& c,
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void setField_U(OFDictData::dict& BC) const;
+  virtual void initInflowBC(const boost::filesystem::path& location) const;
 };
 
 

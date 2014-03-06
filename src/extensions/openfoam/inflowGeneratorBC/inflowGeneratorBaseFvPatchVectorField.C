@@ -28,7 +28,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF),
-    ranGen_(1),
+    ranGen_(time(NULL)),
     Umean_(),
     R_(),
     L_(),
@@ -47,7 +47,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
-    ranGen_(1),
+    ranGen_(time(NULL)),
     Umean_(ptf.Umean_),
     R_(ptf.R_),
     L_(ptf.L_),
@@ -65,7 +65,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF, dict),
-    ranGen_(1),
+    ranGen_(time(NULL)),
     Umean_("Umean", dict, size()),
     R_("R", dict, size()),
     L_("L", dict, size()),
@@ -88,7 +88,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const inflowGeneratorBaseFvPatchVectorField& ptf
 )
 : fixedValueFvPatchField<vector>(ptf),
-  ranGen_(1),
+  ranGen_(time(NULL)),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
@@ -103,7 +103,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 : fixedValueFvPatchField<vector>(ptf, iF),
-  ranGen_(1),
+  ranGen_(time(NULL)),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
@@ -116,7 +116,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label fi)
 {
   vector n=patch().Sf()[fi]; n/=mag(n);
-  vector e1=n^vector(1,0,0);
+  vector e1=n^vector(1,1,1);
   if (mag(e1)<SMALL) e1=n^vector(0,1,0);
   vector e2=n^e1;
   

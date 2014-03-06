@@ -80,7 +80,7 @@ turbulentStructure::turbulentStructure(Random& r, const point& p, const vector& 
   L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2);
   
   // start at least 1/2 of the max. length scale before inlet plane
-  startPoint_ = p + ((v/mag(v)) * (2.*r.scalar01()-1.)*eigval.max()); 
+  startPoint_ = p - ((v/mag(v)) * (2.*r.scalar01()-1.)*eigval.max()); 
   point::operator=(startPoint_);
 }
 

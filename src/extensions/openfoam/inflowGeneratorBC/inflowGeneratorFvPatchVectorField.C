@@ -65,7 +65,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
   vectorField uMean(size(), vector::zero);
   tensorField uPrime2Mean(size(), tensor::zero);
   
-  for (int i=1; i<1000; i++)
+  for (int i=1; i<100000; i++)
   {
     
     vectorField u( continueFluctuationProcess() );
@@ -79,96 +79,99 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
     Info<<"Averages: uMean="<<average(uMean)<<" \t R^2="<< average(uPrime2Mean) << endl;
 		
     insight::vtk::vtkModel vtk_vortons;
-
-    vtk_vortons.setPoints(
-      vortons_.size(),
-      vortons_.component(vector::X)().data(),
-      vortons_.component(vector::Y)().data(),
-      vortons_.component(vector::Z)().data()
-      );
-    for (label k=0; k<3; k++)
+    
+    if (i%1000==0)
     {
-      std::vector<double> Lx, Ly, Lz;
-      forAll(vortons_, j)
+      vtk_vortons.setPoints(
+	vortons_.size(),
+	vortons_.component(vector::X)().data(),
+	vortons_.component(vector::Y)().data(),
+	vortons_.component(vector::Z)().data()
+	);
+      for (label k=0; k<3; k++)
       {
-	const vector& L = vortons_[j].L(k);
-	Lx.push_back(L.x()); Ly.push_back(L.y()); Lz.push_back(L.z());
+	std::vector<double> Lx, Ly, Lz;
+	forAll(vortons_, j)
+	{
+	  const vector& L = vortons_[j].L(k);
+	  Lx.push_back(L.x()); Ly.push_back(L.y()); Lz.push_back(L.z());
+	}
+	vtk_vortons.appendPointVectorField("L"+lexical_cast<string>(k), Lx.data(), Ly.data(), Lz.data());
       }
-      vtk_vortons.appendPointVectorField("L"+lexical_cast<string>(k), Lx.data(), Ly.data(), Lz.data());
-    }
-    
-    insight::vtk::vtkModel2d vtk_patch;
-    // set cells
-    const polyPatch& ppatch = patch().patch();
-    vtk_patch.setPoints
-    (
-      ppatch.localPoints().size(), 
-      ppatch.localPoints().component(vector::X)().data(),
-      ppatch.localPoints().component(vector::Y)().data(),
-      ppatch.localPoints().component(vector::Z)().data()
-    );
-    for(label fi=0; fi<ppatch.size(); fi++)
-    {
-      const face& f = ppatch.localFaces()[fi];
-      vtk_patch.appendPolygon(f.size(), f.cdata());
-    }
-    
-    vtk_patch.appendCellVectorField
-    (
-      "u", 
-      u.component(vector::X)().cdata(),
-      u.component(vector::Y)().cdata(),
-      u.component(vector::Z)().cdata()
-    );
-    vtk_patch.appendCellVectorField
-    (
-      "uMean", 
-      uMean.component(vector::X)().cdata(),
-      uMean.component(vector::Y)().cdata(),
-      uMean.component(vector::Z)().cdata()
-    );
-    vtk_patch.appendCellTensorField
-    (
-      "R", 
-      uPrime2Mean.component(tensor::XX)().cdata(),
-      uPrime2Mean.component(tensor::XY)().cdata(),
-      uPrime2Mean.component(tensor::XZ)().cdata(),
-      uPrime2Mean.component(tensor::YX)().cdata(),
-      uPrime2Mean.component(tensor::YY)().cdata(),
-      uPrime2Mean.component(tensor::YZ)().cdata(),
-      uPrime2Mean.component(tensor::ZX)().cdata(),
-      uPrime2Mean.component(tensor::ZY)().cdata(),
-      uPrime2Mean.component(tensor::ZZ)().cdata()
-    );
-    {
       
-      IOobject oo
+      insight::vtk::vtkModel2d vtk_patch;
+      // set cells
+      const polyPatch& ppatch = patch().patch();
+      vtk_patch.setPoints
       (
-	"vortons_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
-	this->db().time().timeName(),
-	this->db().time(),
-	IOobject::NO_READ,
-	IOobject::AUTO_WRITE
+	ppatch.localPoints().size(), 
+	ppatch.localPoints().component(vector::X)().data(),
+	ppatch.localPoints().component(vector::Y)().data(),
+	ppatch.localPoints().component(vector::Z)().data()
       );
-      IOobject oop
+      for(label fi=0; fi<ppatch.size(); fi++)
+      {
+	const face& f = ppatch.localFaces()[fi];
+	vtk_patch.appendPolygon(f.size(), f.cdata());
+      }
+      
+      vtk_patch.appendCellVectorField
       (
-	"patch_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
-	this->db().time().timeName(),
-	this->db().time(),
-	IOobject::NO_READ,
-	IOobject::AUTO_WRITE
+	"u", 
+	u.component(vector::X)().cdata(),
+	u.component(vector::Y)().cdata(),
+	u.component(vector::Z)().cdata()
       );
-      mkDir(oo.path());
-      
-      Info<<"Writing "<<oo.objectPath()<<endl;
-      std::ofstream f(oo.objectPath().c_str());
-      vtk_vortons.writeLegacyFile(f);
-      f.close();
-      
-      Info<<"Writing "<<oop.objectPath()<<endl;
-      std::ofstream f2(oop.objectPath().c_str());
-      vtk_patch.writeLegacyFile(f2);
-      f2.close();
+      vtk_patch.appendCellVectorField
+      (
+	"uMean", 
+	uMean.component(vector::X)().cdata(),
+	uMean.component(vector::Y)().cdata(),
+	uMean.component(vector::Z)().cdata()
+      );
+      vtk_patch.appendCellTensorField
+      (
+	"R", 
+	uPrime2Mean.component(tensor::XX)().cdata(),
+	uPrime2Mean.component(tensor::XY)().cdata(),
+	uPrime2Mean.component(tensor::XZ)().cdata(),
+	uPrime2Mean.component(tensor::YX)().cdata(),
+	uPrime2Mean.component(tensor::YY)().cdata(),
+	uPrime2Mean.component(tensor::YZ)().cdata(),
+	uPrime2Mean.component(tensor::ZX)().cdata(),
+	uPrime2Mean.component(tensor::ZY)().cdata(),
+	uPrime2Mean.component(tensor::ZZ)().cdata()
+      );
+      {
+	
+	IOobject oo
+	(
+	  "vortons_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
+	  this->db().time().timeName(),
+	  this->db().time(),
+	  IOobject::NO_READ,
+	  IOobject::AUTO_WRITE
+	);
+	IOobject oop
+	(
+	  "patch_"+this->patch().name()+"_"+lexical_cast<string>(i)+".vtk",
+	  this->db().time().timeName(),
+	  this->db().time(),
+	  IOobject::NO_READ,
+	  IOobject::AUTO_WRITE
+	);
+	mkDir(oo.path());
+	
+	Info<<"Writing "<<oo.objectPath()<<endl;
+	std::ofstream f(oo.objectPath().c_str());
+	vtk_vortons.writeLegacyFile(f);
+	f.close();
+	
+	Info<<"Writing "<<oop.objectPath()<<endl;
+	std::ofstream f2(oop.objectPath().c_str());
+	vtk_patch.writeLegacyFile(f2);
+	f2.close();
+      }
     }
   }
   
@@ -328,6 +331,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       tree=buildTree(vloc);
     }
     label n_generated=0;
+
     forAll(patch().Cf(), fi)
     {
       // location of the new turbulent structure: randomly deflected around the current face centre
@@ -361,12 +365,18 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     tmp<vectorField> tfluctuations(new vectorField(size(), pTraits<vector>::zero));
     vectorField& fluctuations = tfluctuations();
     
+    Map<label> induced;
     forAll(*this, fi)
     {
       // superimpose turbulent velocity in affected faces
       forAll(vortons_, j)
-	fluctuations[fi] += vortons_[j].fluctuation(structureParameters_, patch().Cf()[fi]);
+      {
+	vector u=vortons_[j].fluctuation(structureParameters_, patch().Cf()[fi]);
+	if (mag(u)>SMALL) induced.insert(j, 0);
+	fluctuations[fi] += u;
+      }
     }
+    label n_induced=induced.size();
     
     forAll(vortons_, j)
     {
@@ -386,7 +396,8 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     vortons_.resize(kept);
     label n_removed=os.size()-kept;
 
-    Info<<"Generated "<<n_generated<<" turbulent structures, removed "<<n_removed<<" (now total "<<vortons_.size()<<")"<<endl;
+    Info<<"Generated "<<n_generated<<" turbulent structures, removed "<<n_removed<<endl;
+    Info<<" now total "<<vortons_.size()<<", velocity contributions generated by "<<n_induced<<endl;
     
 //     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
 // 

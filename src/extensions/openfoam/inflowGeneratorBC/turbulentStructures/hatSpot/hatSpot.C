@@ -136,9 +136,12 @@ autoPtr<hatSpot> hatSpot::New(Istream& s)
 
 void hatSpot::randomize(Random& rand)
 {
+  /*
     rand.randomise(epsilon_);
     epsilon_ -= pTraits<vector>::one*0.5;
     epsilon_ *= 2.0;
+    */
+  epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
 }
 
 

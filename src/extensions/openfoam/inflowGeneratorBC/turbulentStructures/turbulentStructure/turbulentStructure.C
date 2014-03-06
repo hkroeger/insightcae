@@ -32,6 +32,7 @@ Author
 \*----------------------------------------------------------------------------*/
 
 #include "turbulentStructure.H"
+#include <armadillo>
 
 namespace Foam
 {
@@ -54,13 +55,32 @@ turbulentStructure::turbulentStructure(Istream& is)
 turbulentStructure::turbulentStructure(Random& r, const point& p, const vector& v, const symmTensor& L)
 : velocity_(v)
 {
+  /*
+  // OF eigensystem analysis is crap for simplest cases: equal eigenvalues result in zero eigenvectors
   vector evals(eigenValues(L));
   L1_ = eigenVector(L, evals.x()) * evals.x();
   L2_ = eigenVector(L, evals.y()) * evals.y();
   L3_ = eigenVector(L, evals.z()) * evals.z();
+  Info<<"L="<<L<<", evals="<<evals<<", L1="<<L1_<<", L2="<<L2_<<", L3="<<L3_<<endl;
+  */
+  
+  // use armadillo instead
+  arma::mat mL;
+  mL 
+  << L.xx()<<L.xy()<<L.xz()<<arma::endr
+  << L.xy()<<L.yy()<<L.yz()<<arma::endr
+  << L.xz()<<L.yz()<<L.zz()<<arma::endr;
+  
+  arma::vec eigval;
+  arma::mat eigvec;
+  eig_sym(eigval, eigvec, mL);
+  //std::cout<<eigval<<eigvec<<std::endl;
+  L1_ = vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * eigval(0);
+  L2_ = vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1);
+  L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2);
   
   // start at least 1/2 of the max. length scale before inlet plane
-  startPoint_ = p + ((v/mag(v)) * (2.*r.scalar01()-1.)*Foam::max(Foam::max(evals.x(), evals.y()), evals.z())); 
+  startPoint_ = p + ((v/mag(v)) * (2.*r.scalar01()-1.)*eigval.max()); 
   point::operator=(startPoint_);
 }
 

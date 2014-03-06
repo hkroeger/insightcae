@@ -54,10 +54,12 @@ void vtkModel::appendPointScalarField(const std::string& name, const double v[])
 
 void vtkModel::appendPointVectorField(const std::string& name, const double x[], const double y[], const double z[])
 {
+  //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
   pointVectorFields_[name]=VectorField();
   VectorField& vf = pointVectorFields_[name];
   for (int i=0; i<pts_.size(); i++)
   {
+    //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
     vf.push_back(vec3(x[i], y[i], z[i]));
   }  
 }
@@ -110,25 +112,29 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
   }
   BOOST_FOREACH(const VectorFieldList::value_type& sf, pointVectorFields_)
   {
-    const arma::mat& fe=sf.second[0];
-    if ( (fe.n_rows==3) && (fe.n_cols==1) )
+    cout<<sf.first<<endl;
+    if (pts_.size()>0)
     {
-      // vector 
-      os<<"VECTORS "<<sf.first<<" float"<<endl;
-      BOOST_FOREACH(const arma::mat& v, sf.second)
+      const arma::mat& fe=sf.second[0];
+      if ( (fe.n_rows==3) && (fe.n_cols==1) )
       {
-	os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
+	// vector 
+	os<<"VECTORS "<<sf.first<<" float"<<endl;
+	BOOST_FOREACH(const arma::mat& v, sf.second)
+	{
+	  os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
+	}
       }
-    }
-    else if ( (fe.n_rows==3) && (fe.n_cols==3) )
-    {
-      // tensor
-      os<<"TENSORS "<<sf.first<<" float"<<endl;
-      BOOST_FOREACH(const arma::mat& v, sf.second)
+      else if ( (fe.n_rows==3) && (fe.n_cols==3) )
       {
-	os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
-	os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
-	os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	// tensor
+	os<<"TENSORS "<<sf.first<<" float"<<endl;
+	BOOST_FOREACH(const arma::mat& v, sf.second)
+	{
+	  os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
+	  os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
+	  os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	}
       }
     }
   }
@@ -141,24 +147,27 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
   os<<"CELL_DATA "<<poly_.size()<<endl;
   BOOST_FOREACH(const VectorFieldList::value_type& sf, cellVectorFields_)
   {
-    const arma::mat& fe=sf.second[0];
-    if ( (fe.n_rows==3) && (fe.n_cols==1) )
+    if (poly_.size()>0)
     {
-      os<<"VECTORS "<<sf.first<<" float"<<endl;
-      BOOST_FOREACH(const arma::mat& v, sf.second)
+      const arma::mat& fe=sf.second[0];
+      if ( (fe.n_rows==3) && (fe.n_cols==1) )
       {
-	os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
+	os<<"VECTORS "<<sf.first<<" float"<<endl;
+	BOOST_FOREACH(const arma::mat& v, sf.second)
+	{
+	  os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
+	}
       }
-    }
-    else if ( (fe.n_rows==3) && (fe.n_cols==3) )
-    {
-      // tensor
-      os<<"TENSORS "<<sf.first<<" float"<<endl;
-      BOOST_FOREACH(const arma::mat& v, sf.second)
+      else if ( (fe.n_rows==3) && (fe.n_cols==3) )
       {
-	os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
-	os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
-	os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	// tensor
+	os<<"TENSORS "<<sf.first<<" float"<<endl;
+	BOOST_FOREACH(const arma::mat& v, sf.second)
+	{
+	  os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
+	  os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
+	  os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	}
       }
     }
   }

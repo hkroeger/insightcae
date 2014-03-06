@@ -34,6 +34,26 @@ arma::mat tensor3(
 );
 arma::mat vec2(double x, double y);
 
+template<class T>
+arma::mat Tensor(const T& t)
+{
+  arma::mat rt;
+  rt << t.XX() << t.XY() << t.XZ() << arma::endr
+     << t.YX() << t.YY() << t.YZ() << arma::endr
+     << t.ZX() << t.ZY() << t.ZZ() << arma::endr;
+  return rt;
+}
+
+template<class T>
+arma::mat tensor(const T& t)
+{
+  arma::mat rt;
+  rt << t.xx() << t.xy() << t.xz() << arma::endr
+     << t.yx() << t.yy() << t.yz() << arma::endr
+     << t.zx() << t.zx() << t.zz() << arma::endr;
+  return rt;
+}
+
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );
 
 std::string toStr(const arma::mat& v3);

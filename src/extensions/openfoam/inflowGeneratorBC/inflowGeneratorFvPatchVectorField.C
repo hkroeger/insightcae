@@ -74,26 +74,27 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
     scalar beta = 1.0/scalar(i);
     
     uMean = alpha*uMean + beta*u;
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u); // uMean shoudl be zero - sqr(uMean);
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u); // - sqr(uMean); //uMean shoudl be zero
     
     Info<<"Averages: uMean="<<average(uMean)<<" \t R^2="<< average(uPrime2Mean) << endl;
 		
     insight::vtk::vtkModel vtk_vortons;
+
     vtk_vortons.setPoints(
       vortons_.size(),
       vortons_.component(vector::X)().data(),
       vortons_.component(vector::Y)().data(),
       vortons_.component(vector::Z)().data()
       );
-    for (label i=0; i<3; i++)
+    for (label k=0; k<3; k++)
     {
       std::vector<double> Lx, Ly, Lz;
       forAll(vortons_, j)
       {
-	const vector& L = vortons_[j].L(i);
+	const vector& L = vortons_[j].L(k);
 	Lx.push_back(L.x()); Ly.push_back(L.y()); Lz.push_back(L.z());
       }
-      vtk_vortons.appendPointVectorField("L"+lexical_cast<string>(i), Lx.data(), Ly.data(), Lz.data());
+      vtk_vortons.appendPointVectorField("L"+lexical_cast<string>(k), Lx.data(), Ly.data(), Lz.data());
     }
     
     insight::vtk::vtkModel2d vtk_patch;
@@ -296,6 +297,7 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
       scalar l1 = snew.Lalong(d);
       scalar l2 = vortons_[r.index()].Lalong(-d);
       scalar ovl = ( 0.5*(l1+l2) - mag(d) ) / (Foam::min(l1, l2));
+      //Info<<"d="<<d<<", l1="<<l1<<", l2="<<l2<< ", ovl="<<ovl<<endl;
       return ovl;
     }
   }

@@ -107,7 +107,9 @@ public:
 	case 0: return L1_; break;
 	case 1: return L2_; break;	
 	case 2: return L3_; break;      
-	default: FatalErrorIn("L()") << "Prinicipal length scale "<<i<<" is undefined"<<abort(FatalError);
+	default: 
+	  FatalErrorIn("L()") << "Prinicipal length scale "<<i<<" is undefined"<<abort(FatalError); 
+	  return vector::zero;
       }
     }
     

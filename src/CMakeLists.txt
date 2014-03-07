@@ -8,6 +8,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 find_package(OpenFOAM-16ext REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
+find_package(OpenFOAM-22eng REQUIRED)
 find_package(Armadillo REQUIRED)
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"

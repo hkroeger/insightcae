@@ -91,8 +91,8 @@ Feature* Geometry::clone() const
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
 {
-  castellatedCtrls["maxLocalCells"]=500000;
-  castellatedCtrls["maxGlobalCells"]=2000000;
+  castellatedCtrls["maxLocalCells"]=1000000;
+  castellatedCtrls["maxGlobalCells"]=10000000;
   castellatedCtrls["minRefinementCells"]=10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
   castellatedCtrls["nCellsBetweenLevels"]=1;
@@ -119,21 +119,22 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["relativeSizes"]=true;
   layerCtrls["expansionRatio"]=1.1;
   layerCtrls["finalLayerThickness"]=0.5;
-  layerCtrls["minThickness"]=0.001;  
+  layerCtrls["minThickness"]=1e-5;  
   layerCtrls["nGrow"]=1;  
   layerCtrls["featureAngle"]=30.0;  
 
   layerCtrls["slipFeatureAngle"]=30.0;  
 
-  layerCtrls["nRelaxIter"]=3;  
+  layerCtrls["nRelaxIter"]=10;  
   layerCtrls["nSmoothSurfaceNormals"]=1;  
   layerCtrls["nSmoothNormals"]=3;  
   layerCtrls["nSmoothThickness"]=10;  
-  layerCtrls["maxFaceThicknessRatio"]=0.5;  
+  layerCtrls["maxFaceThicknessRatio"]=2.0;  
   layerCtrls["maxThicknessToMedialRatio"]=0.3;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
-  layerCtrls["nLayerIter"]=10;  
+  layerCtrls["nLayerIter"]=10;  //OCFD
+  layerCtrls["maxLayerIter"]=10;  // engys
 }
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)

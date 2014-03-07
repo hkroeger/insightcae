@@ -1,14 +1,14 @@
 project(FEMDisplacementBC16ext)
 
 
-set(FEMDisplacementBC16ext_SOURCES 
+set(FEMDisplacementBC_SOURCES 
  fsitransform.cpp 
  FEMDisplacementPointPatchVectorField.C
  FEMDisplacementTetPolyPatchVectorFieldCellDecomp.C
  FEMDisplacementTetPolyPatchVectorFieldFaceDecomp.C 
 )
 
-include_directories(
+set(include_directories
   ${toolkit_SOURCE_DIR}
   ${journalbearingcommon_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
@@ -29,18 +29,17 @@ include_directories(
   ${OF16ext_LIBSRC_DIR}/finiteArea/lnInclude
 )
   
-setup_lib_target_OF16ext(FEMDisplacementBC16ext "FEMDisplacementBC"
-  OpenFOAM
-  finiteVolume
-  incompressibleRASModels 
-  incompressibleTransportModels
-  triSurface
-  finiteArea
-  dynamicFvMesh
-  faceDecompositionMotionSolver
-  fvMotionSolver
-  surfMesh
-  sampling
+setup_lib_target_OF16ext(FEMDisplacementBC16ext "${FEMDisplacementBC_SOURCES}" "FEMDisplacementBC" "${include_directories}"
+  ${OF16ext_LIB_DIR}/libfiniteVolume.so
+  ${OF16ext_LIB_DIR}/libincompressibleRASModels.so 
+  ${OF16ext_LIB_DIR}/libincompressibleTransportModels.so
+  ${OF16ext_LIB_DIR}/libtriSurface.so
+  ${OF16ext_LIB_DIR}/libfiniteArea.so
+  ${OF16ext_LIB_DIR}/libdynamicFvMesh.so
+  ${OF16ext_LIB_DIR}/libfaceDecompositionMotionSolver.so
+  ${OF16ext_LIB_DIR}/libfvMotionSolver.so
+  ${OF16ext_LIB_DIR}/libsurfMesh.so
+  ${OF16ext_LIB_DIR}/libsampling.so
 )
 
 #install(TARGETS FEMDisplacementBC LIBRARY DESTINATION lib)

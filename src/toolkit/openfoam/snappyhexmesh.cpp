@@ -133,8 +133,8 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["maxThicknessToMedialRatio"]=0.3;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
-  layerCtrls["nLayerIter"]=10;  //OCFD
-  layerCtrls["maxLayerIter"]=10;  // engys
+  layerCtrls["nLayerIter"]=2;  //OCFD
+  layerCtrls["maxLayerIter"]=2;  // engys
 }
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)

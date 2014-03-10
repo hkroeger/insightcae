@@ -144,7 +144,7 @@ public:
 
         // Evaluation functions
 
-        virtual tmp<vectorField> continueFluctuationProcess() =0;
+        virtual tmp<vectorField> continueFluctuationProcess(label *n_active=NULL) =0;
 	
 	virtual void updateCoeffs();
 	

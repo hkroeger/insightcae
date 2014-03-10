@@ -64,19 +64,24 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
 
   vectorField uMean(size(), vector::zero);
   tensorField uPrime2Mean(size(), tensor::zero);
+  scalar N=0.0;
+  scalar A=gSum(patch().magSf());
   
   for (int i=1; i<100000; i++)
   {
     
-    vectorField u( continueFluctuationProcess() );
+    label n=0;
+    vectorField u( continueFluctuationProcess(&n) );
     
     scalar alpha = scalar(i - 1)/scalar(i);
     scalar beta = 1.0/scalar(i);
     
+    uPrime2Mean = uPrime2Mean + sqr(uMean);
     uMean = alpha*uMean + beta*u;
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u); // - sqr(uMean); //uMean shoudl be zero
+    N = alpha*N + beta*scalar(n);
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
     
-    Info<<"Averages: uMean="<<average(uMean)<<" \t R^2="<< average(uPrime2Mean) << endl;
+    Info<<"Averages: uMean="<<average(uMean)<<" \t R^2="<< average(uPrime2Mean) << "\t N="<<N<<"\t A="<<A<< endl;
 		
     insight::vtk::vtkModel vtk_vortons;
     
@@ -308,7 +313,7 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
 }
 
 template<class TurbulentStructure>
-tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess()
+tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(label *n_active)
 {
 
 //     // build the global list of face centres
@@ -377,6 +382,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       }
     }
     label n_induced=induced.size();
+    if (n_active) *n_active=n_induced;
     
     forAll(vortons_, j)
     {

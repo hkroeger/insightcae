@@ -167,7 +167,7 @@ public:
 
         // Evaluation functions
 
-        virtual tmp<vectorField> continueFluctuationProcess(label *n_active=NULL);
+        virtual tmp<vectorField> continueFluctuationProcess(ProcessStepInfo *info=NULL);
 	
         //- Write
         virtual void write(Ostream&) const;

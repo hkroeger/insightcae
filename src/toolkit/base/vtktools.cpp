@@ -131,9 +131,9 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
 	os<<"TENSORS "<<sf.first<<" float"<<endl;
 	BOOST_FOREACH(const arma::mat& v, sf.second)
 	{
-	  os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
-	  os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
-	  os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	  os<<v(0,0)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
+	  os<<v(1,0)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
+	  os<<v(2,0)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
 	}
       }
     }
@@ -164,9 +164,9 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
 	os<<"TENSORS "<<sf.first<<" float"<<endl;
 	BOOST_FOREACH(const arma::mat& v, sf.second)
 	{
-	  os<<v(0,1)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
-	  os<<v(1,1)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
-	  os<<v(2,1)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
+	  os<<v(0,0)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
+	  os<<v(1,0)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
+	  os<<v(2,0)<<" "<<v(2,1)<<" "<<v(2,2)<<endl;
 	}
       }
     }

@@ -2,6 +2,7 @@
 
 
 set(inflowGeneratorBC_SOURCES 
+ boostRandomGen.C 
  inflowGeneratorBaseFvPatchVectorField.C
  inflowGeneratorFvPatchVectorFieldFwd.C
 )
@@ -13,6 +14,7 @@ add_subdirectory(turbulentStructures/homogeneousTurbulenceVorton)
 
 project(inflowGeneratorBC16ext)
 set(include_directories
+  ${PROJECT_SOURCE_DIR}
   ${inflowGeneratorBC_INC_DIRS}
   ${toolkit_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
@@ -37,6 +39,7 @@ setup_lib_target_OF16ext(inflowGeneratorBC16ext "${inflowGeneratorBC_SOURCES}" "
 
 project(inflowGeneratorBC22x)
 set(include_directories
+  ${PROJECT_SOURCE_DIR}
   ${inflowGeneratorBC_INC_DIRS}
   ${toolkit_SOURCE_DIR}
   ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude

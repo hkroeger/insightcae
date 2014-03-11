@@ -89,7 +89,7 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(Random& r, const vector& loc, const vector& v, const symmTensor& L)
+hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L)
 : turbulentStructure(r, loc, v, L),
   epsilon_(pTraits<vector>::zero)
 {
@@ -134,14 +134,12 @@ autoPtr<hatSpot> hatSpot::New(Istream& s)
 }
 
 
-void hatSpot::randomize(Random& rand)
+void hatSpot::randomize(BoostRandomGen& rand)
 {
-  /*
-    rand.randomise(epsilon_);
-    epsilon_ -= pTraits<vector>::one*0.5;
-    epsilon_ *= 2.0;
-    */
-  epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
+  //epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
+  epsilon_.x() = 2.0*(rand() - 0.5);
+  epsilon_.y() = 2.0*(rand() - 0.5);
+  epsilon_.z() = 2.0*(rand() - 0.5);
 }
 
 

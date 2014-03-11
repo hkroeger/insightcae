@@ -41,7 +41,7 @@ SourceFiles
 
 #include "scalar.H"
 #include "vector.H"
-#include "Random.H"
+#include "boostRandomGen.H"
 #include "IOdictionary.H"
 #include "Istream.H"
 #include "Ostream.H"
@@ -62,7 +62,7 @@ Istream& operator>>(Istream&, homogeneousTurbulenceVorton&);
 \*---------------------------------------------------------------------------*/
 
 class homogeneousTurbulenceVorton
-: turbulentStructure
+: public turbulentStructure
 {
 
 public:
@@ -105,14 +105,14 @@ public:
     // Constructors
     homogeneousTurbulenceVorton();
     homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(Random&, const point& p, const vector& v, const symmTensor& L);
+    homogeneousTurbulenceVorton(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
     homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
     ~homogeneousTurbulenceVorton();
 
     vector fluctuation(const StructureParameters& pa, const vector&) const;
 
-    void randomize(Random&);
+    void randomize(BoostRandomGen&);
     void operator=(const homogeneousTurbulenceVorton&);
     bool operator!=(const homogeneousTurbulenceVorton&) const;
 

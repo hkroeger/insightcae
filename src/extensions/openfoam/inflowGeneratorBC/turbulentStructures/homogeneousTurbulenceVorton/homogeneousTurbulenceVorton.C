@@ -59,6 +59,22 @@ homogeneousTurbulenceVorton::StructureParameters::StructureParameters
     C_3=0.369*Cl_;    
 }
 
+void homogeneousTurbulenceVorton::StructureParameters::autoMap
+(
+    const fvPatchFieldMapper&
+)
+{
+}
+
+//- Reverse map the given fvPatchField onto this fvPatchField
+void homogeneousTurbulenceVorton::StructureParameters::rmap
+(
+    const fvPatchField<vector>&,
+    const labelList&
+)
+{
+}
+
 // homogeneousTurbulenceVorton::StructureParameters::StructureParameters
 // (
 //     scalar eta,  // Kolmogorov length
@@ -139,7 +155,7 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 {
 }
 
-homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(Random& r, const point& loc, const vector& v, const symmTensor& L)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(BoostRandomGen& r, const point& loc, const vector& v, const symmTensor& L)
 :
     turbulentStructure(r, loc, v, L),
     omegav_(pTraits<vector>::zero)
@@ -156,7 +172,7 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const homogeneousTurbul
 vector homogeneousTurbulenceVorton::fluctuation(const StructureParameters& pa, const vector& x) const
 {
   scalar L = (mag(L1_)+mag(L2_)+mag(L3_)) / 3.0;
-  
+ /* 
   vector delta_x = x - location();
 
   scalar radiika=magSqr(delta_x);
@@ -181,7 +197,12 @@ vector homogeneousTurbulenceVorton::fluctuation(const StructureParameters& pa, c
       *tmod/sradiika;
       
   return sperva*t;
-        
+   */
+  vector dv = x - location();
+  scalar nrm2 = magSqr(dv);
+  vector t = dv ^ omegav_;
+
+  return (1./L)*exp(-(M_PI/2)*nrm2/(L*L))*t;
 }
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
@@ -192,9 +213,9 @@ autoPtr<homogeneousTurbulenceVorton> homogeneousTurbulenceVorton::New(Istream& s
 }
 
 
-void homogeneousTurbulenceVorton::randomize(Random& rand)
+void homogeneousTurbulenceVorton::randomize(BoostRandomGen& rand)
 {
-    omegav_ = rand.vector01() - 0.5*pTraits<vector>::one;
+    omegav_ = 2.0* (vector(rand(), rand(), rand()) - 0.5*pTraits<vector>::one);
     omegav_/=mag(omegav_);
     for (label i=0; i<3; i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
 }
@@ -229,7 +250,7 @@ void homogeneousTurbulenceVorton::operator=(const homogeneousTurbulenceVorton& r
             << abort(FatalError);
     }
 
-    point::operator=(rhs);
+    turbulentStructure::operator=(rhs);
     omegav_=rhs.omegav_;
 }
 

@@ -92,7 +92,7 @@ public:
     // Constructors
     hatSpot();
     hatSpot(Istream&);
-    hatSpot(Random&, const point& p, const vector& v, const symmTensor& L);
+    hatSpot(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
     hatSpot(const hatSpot& p);
     
     ~hatSpot();
@@ -103,7 +103,7 @@ public:
     // Check
 
     // Edit
-    void randomize(Random&);
+    void randomize(BoostRandomGen&);
 
     void operator=(const hatSpot&);
     bool operator!=(const hatSpot&) const;

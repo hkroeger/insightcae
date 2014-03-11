@@ -95,6 +95,28 @@ addToRunTimeSelectionTable
 
 //makeInflowGeneratorFvPatchField(hatSpot);
 
+typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence;
+defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence, "inflowGenerator<homogeneousTurbulence>", 0); 
+addToRunTimeSelectionTable                                          
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    patch                                                               
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    dictionary                                                          
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    patchMapper                                                         
+);
 
 // typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton;
 // defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton, "inflowGenerator<homogeneousTurbulenceVorton>", 0); 

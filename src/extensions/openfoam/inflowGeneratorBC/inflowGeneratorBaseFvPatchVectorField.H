@@ -36,7 +36,7 @@ SourceFiles
 #ifndef inflowGeneratorBaseFvPatchVectorField_H
 #define inflowGeneratorBaseFvPatchVectorField_H
 
-#include "Random.H"
+#include "boostRandomGen.H"
 #include "fixedValueFvPatchFields.H"
 
 #include "SLList.H"
@@ -49,13 +49,38 @@ SourceFiles
 namespace Foam
 {
 
+
 class inflowGeneratorBaseFvPatchVectorField
 :
     public fixedValueFvPatchField<vector>
 {
+  
+public:
+  struct ProcessStepInfo
+  {
+    /**
+     * # structures currently in simulation
+     */
+    int n_total;
+
+    /**
+     * # structures generated in current step
+     */
+    int n_generated;
+
+    /**
+     * # structures deleted in current step
+     */
+    int n_removed;
+
+    /**
+     * # structures that induced fluctuations in patch
+     */
+    int n_induced;
+  };
 
 protected:
-    Random ranGen_;
+    BoostRandomGen ranGen_;
     
     /**
      * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
@@ -144,7 +169,7 @@ public:
 
         // Evaluation functions
 
-        virtual tmp<vectorField> continueFluctuationProcess(label *n_active=NULL) =0;
+        virtual tmp<vectorField> continueFluctuationProcess(ProcessStepInfo *info=NULL) =0;
 	
 	virtual void updateCoeffs();
 	

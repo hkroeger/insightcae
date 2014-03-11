@@ -19,6 +19,7 @@ using namespace boost;
 namespace Foam 
 {
 
+
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
@@ -28,7 +29,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF),
-    ranGen_(time(NULL)),
+    ranGen_(1),
     Umean_(),
     R_(),
     L_(),
@@ -47,7 +48,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
-    ranGen_(time(NULL)),
+    ranGen_(1),
     Umean_(ptf.Umean_),
     R_(ptf.R_),
     L_(ptf.L_),
@@ -65,7 +66,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF, dict),
-    ranGen_(time(NULL)),
+    ranGen_(1),
     Umean_("Umean", dict, size()),
     R_("R", dict, size()),
     L_("L", dict, size()),
@@ -88,7 +89,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const inflowGeneratorBaseFvPatchVectorField& ptf
 )
 : fixedValueFvPatchField<vector>(ptf),
-  ranGen_(time(NULL)),
+  ranGen_(1),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
@@ -103,7 +104,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 : fixedValueFvPatchField<vector>(ptf, iF),
-  ranGen_(time(NULL)),
+  ranGen_(1),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
@@ -122,7 +123,7 @@ vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label f
   
   scalar dist=Foam::sqrt(patch().magSf()[fi]);
 
-  return (0.5-ranGen_.scalar01())*dist*e1 + (0.5-ranGen_.scalar01())*dist*e2 ;
+  return (0.5-ranGen_())*dist*e1 + (0.5-ranGen_())*dist*e2 ;
 }
 
 autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorBaseFvPatchVectorField::buildTree(const pointField& vloc) const

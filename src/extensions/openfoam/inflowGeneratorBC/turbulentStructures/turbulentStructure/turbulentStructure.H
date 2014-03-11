@@ -40,7 +40,7 @@ SourceFiles
 #define turbulentStructure_H
 
 #include "fvCFD.H"
-#include "Random.H"
+#include "boostRandomGen.H"
 #include "IOdictionary.H"
 #include "Istream.H"
 #include "Ostream.H"
@@ -89,7 +89,7 @@ public:
     /**
      * create at some location (during run)
      */
-    turbulentStructure(Random&, const point& p, const vector& v, const symmTensor& L);
+    turbulentStructure(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
 
     /**
      * copy constructor

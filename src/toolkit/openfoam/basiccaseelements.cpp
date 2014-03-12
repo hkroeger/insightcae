@@ -2048,6 +2048,22 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 
 void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location) const
 {
+  OFDictData::dictFile inflowProperties;
+  
+  OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
+  
+  OFDictData::dict d;
+  d["Ubulk"]=arma::norm(p_.velocity(), 2);
+  d["D"]=2.0;
+  d["patchName"]=patchName_;
+  
+  initializers.push_back( "pipeFlow" );
+  initializers.push_back( d );
+  
+  // then write to file
+  inflowProperties.write( location / "constant" / "inflowProperties" );
+  
+  OFcase().executeCommand(location, "initInflowGenerator");
 }
   
 PressureOutletBC::PressureOutletBC

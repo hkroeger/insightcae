@@ -70,7 +70,25 @@ public:
       Istream& is
   )
   {
-    return autoPtr<inflowInitializer>();
+    word typeName(is);
+    Info<< "Selecting initializer type " << typeName << endl;
+
+    istreamConstructorTable::iterator cstrIter =
+        istreamConstructorTablePtr_->find(typeName);
+
+    if (cstrIter == istreamConstructorTablePtr_->end())
+    {
+        FatalErrorIn
+        (
+            "inflowInitializer::New()"
+        )   << "Unknown turbulenceModel type " << typeName
+            << endl << endl
+            << "Valid inflowInitializer types are :" << endl
+            << istreamConstructorTablePtr_->toc()
+            << exit(FatalError);
+    }
+
+    return autoPtr<inflowInitializer>(cstrIter()(is));
   }
 
   inflowInitializer
@@ -81,7 +99,8 @@ public:
   {}
 
   inflowInitializer(Istream& is)
-  : dict_(is)
+  : dict_(is),
+    patchName_(dict_.lookup("patchName"))
   {}
   
   virtual ~inflowInitializer() 
@@ -148,6 +167,8 @@ public:
     
   virtual void initialize(volVectorField& U) const
   {
+    scalar L=0.1*D_;
+    
     inflowGeneratorBaseFvPatchVectorField& ifpf = inflowGeneratorPatchField(U);
     const fvPatch& patch=ifpf.patch();
     forAll(patch.Cf(), fi)
@@ -155,7 +176,9 @@ public:
       const point& p=patch.Cf()[fi];
       vector rv=p-p0_; rv-=axis_*(rv&axis_);
       scalar r=mag(rv);
+      
       ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(2.*r/D_, 1./7.);
+      ifpf.L()[fi]=symmTensor(1, 0, 0, 1, 0, 1) * max(0.05, 2.*r/D_)*L;
     }
   }
 

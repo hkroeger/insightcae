@@ -79,8 +79,12 @@ turbulentStructure::turbulentStructure(BoostRandomGen& r, const point& p, const 
   L2_ = vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1);
   L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2);
   
+  /*
   // start at least 1/2 of the max. length scale before inlet plane
   startPoint_ = p - ((v/mag(v)) * r()*eigval.max()); 
+  point::operator=(startPoint_);
+  */
+  startPoint_ = p;
   point::operator=(startPoint_);
 }
 
@@ -111,7 +115,7 @@ scalar turbulentStructure::travelledDistance() const
 scalar turbulentStructure::passedThrough() const
 {
   //Info<<"dist="<<travelledDistance()<<endl<< Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_))) <<endl;
-  return travelledDistance() > 2.*Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+  return travelledDistance() > 1.5*Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
 }
 
 

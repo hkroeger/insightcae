@@ -97,6 +97,11 @@ protected:
      */
     Field<symmTensor> L_;
     
+    /**
+     * Prescribed excess parameter
+     */
+    Field<scalar> c_;
+    
     autoPtr<Field<scalar> > conditioningFactor_;
     
     scalar overlap_;
@@ -169,7 +174,7 @@ public:
 
         // Evaluation functions
 
-        virtual tmp<vectorField> continueFluctuationProcess(ProcessStepInfo *info=NULL) =0;
+        virtual tmp<vectorField> continueFluctuationProcess(scalar t, ProcessStepInfo *info=NULL) =0;
 	
 	virtual void updateCoeffs();
 	

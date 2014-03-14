@@ -67,12 +67,15 @@ protected:
      */
     Field<TurbulentStructure> vortons_; 
     
+    autoPtr<scalarField> tau_;
+    autoPtr<scalarField> crTimes_;
     
     /**
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
         
+    void computeTau();
     void computeConditioningFactor();
 
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
@@ -163,11 +166,14 @@ public:
 	    const fvPatchField<vector>&,
 	    const labelList&
 	);
+	
+	// choose a random location x inside face fi, such that PDF of x is P(x)=1/A_f
+	point randomFacePosition(label fi);
 
 
         // Evaluation functions
 
-        virtual tmp<vectorField> continueFluctuationProcess(ProcessStepInfo *info=NULL);
+        virtual tmp<vectorField> continueFluctuationProcess(scalar t, ProcessStepInfo *info=NULL);
 	
         //- Write
         virtual void write(Ostream&) const;

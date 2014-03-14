@@ -177,8 +177,8 @@ public:
       vector rv=p-p0_; rv-=axis_*(rv&axis_);
       scalar r=mag(rv);
       
-      ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(2.*r/D_, 1./7.);
-      ifpf.L()[fi]=symmTensor(1, 0, 0, 1, 0, 1) * max(0.05, 2.*r/D_)*L;
+      ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(2.*(1.-r/D_), 1./7.);
+      ifpf.L()[fi]=symmTensor(1, 0, 0, 1, 0, 1) * max(0.05, 2.*(1.-r/D_))*L;
     }
   }
 

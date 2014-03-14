@@ -33,6 +33,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     Umean_(),
     R_(),
     L_(),
+    c_(),
     conditioningFactor_(),
     overlap_(0.5),
     curTimeIndex_(-1)
@@ -52,6 +53,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     Umean_(ptf.Umean_),
     R_(ptf.R_),
     L_(ptf.L_),
+    c_(ptf.c_),
     conditioningFactor_(ptf.conditioningFactor_),
     overlap_(ptf.overlap_),
     curTimeIndex_(ptf.curTimeIndex_)
@@ -70,6 +72,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     Umean_("Umean", dict, size()),
     R_("R", dict, size()),
     L_("L", dict, size()),
+    c_("c", dict, size()),
     overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
     curTimeIndex_(-1)
 {
@@ -93,6 +96,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
+  c_(ptf.c_),
   conditioningFactor_(ptf.conditioningFactor_),
   overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -108,6 +112,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
+  c_(ptf.c_),
   conditioningFactor_(ptf.conditioningFactor_),
   overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -164,7 +169,7 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 
   if (curTimeIndex_ != this->db().time().timeIndex())
   {
-      fixedValueFvPatchField<vector>::operator==(Umean_ + continueFluctuationProcess());
+      fixedValueFvPatchField<vector>::operator==(Umean_ + continueFluctuationProcess(this->db().time().value()));
       curTimeIndex_ = this->db().time().timeIndex();
   }
 
@@ -177,6 +182,7 @@ void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
     Umean_.writeEntry("Umean", os);
     R_.writeEntry("R", os);
     L_.writeEntry("L", os);
+    c_.writeEntry("c", os);
     os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
     
     if (conditioningFactor_.valid())

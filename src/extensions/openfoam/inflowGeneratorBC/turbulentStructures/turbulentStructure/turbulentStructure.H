@@ -113,6 +113,11 @@ public:
       }
     }
     
+    inline scalar Lmax() const
+    {
+      return Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+    }
+    
     scalar Lalong(const vector& x) const;
     scalar travelledDistance() const;
     scalar passedThrough() const;

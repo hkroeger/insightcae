@@ -101,17 +101,35 @@ void RadialTPCArray::addIntoDictionaries(OFdicts& dictionaries) const
 void RadialTPCArray::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
 {
   {
-    Gnuplot gp;
-    gp<<"set terminal 'png'; set output '"<<p_.name_prefix()<<".png';";
-    gp<<"set xlabel 'Angle [rad]'; set ylabel '<u_i u_j>';";
+    int nk=6;
+    int nr=tpc_tan_.size();
+    Gnuplot gp[nk];
+    for(int k=0; k<nr; k++)
+    {
+      std::string chart_name=p_.name_prefix()+"_"+lexical_cast<string>(k);
+      std::string chart_file_name=chart_name+".png";
+      
+      gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+      gp[k]<<"set xlabel 'Angle [rad]'; set ylabel '<u_i u_j>';";
+
+      results->insert(chart_name,
+	std::auto_ptr<Image>(new Image
+	(
+	chart_file_name, 
+	"two-point correlation of velocity along tangential direction at different radii", ""
+      )));
+
+    }
+    int ir=0;
     BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_tan_)
     {
       boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
       for (int k=0; k<6; k++)
       {
-	gp<<"plot '-' u 0:1 w l t '<u_"<<k<<" u_"<<k<<">'";
-	gp.send1d( arma::mat( res[k+1].row(res[k+1].n_rows-1) ) );
+	gp[k]<<"plot '-' u 0:1 w l t 'r="<<r_[ir]<<"'";
+	gp[k].send1d( arma::mat( res[k+1].row(res[k+1].n_rows-1) ) );
       }
+      ir++;
     }
   }
 /*  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_ax_)
@@ -458,7 +476,7 @@ void PipeBase::createCase
   PSINT(p, "fluid", turbulenceModel);
   
   PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "meantime", meantime);
+  PSDBL(p, "evaluation", meantime);
   double T=calcT(p);
   cout << "Flow-through time T="<<T<<endl;
   

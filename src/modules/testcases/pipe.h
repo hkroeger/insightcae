@@ -20,10 +20,23 @@
 #ifndef INSIGHT_PIPE_H
 #define INSIGHT_PIPE_H
 
+#include "base/linearalgebra.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/basiccaseelements.h"
 
 namespace insight {
+  
+class CorrelationFunctionModel
+: public RegressionModel
+{
+public:
+  double B_, omega_;
+  
+  CorrelationFunctionModel();
+  virtual int numP() const;
+  virtual void setParameters(const double* params);
+  virtual arma::mat evaluateObjective(const arma::mat& x) const;
+};
   
 class RadialTPCArray
 : public OpenFOAMCaseElement

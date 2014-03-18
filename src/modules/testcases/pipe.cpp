@@ -39,7 +39,27 @@ using namespace boost::filesystem;
 
 namespace insight
 {
-  
+
+CorrelationFunctionModel::CorrelationFunctionModel()
+: B_(1.0), omega_(1.0)
+{}
+
+int CorrelationFunctionModel::numP() const
+{
+  return 2;
+}
+
+void CorrelationFunctionModel::setParameters(const double* params)
+{
+  B_=params[0];
+  omega_=params[1];
+}
+
+arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
+{
+  return arma::ones(1) * exp(-B_*x(0))*cos(omega_*x(0));
+}
+
 const char * RadialTPCArray::cmptNames[] = 
 { "xx", "xy", "xz",
   "yx", "yy", "yz",

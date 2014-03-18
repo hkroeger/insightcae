@@ -70,6 +70,24 @@ arma::mat linearRegression(const arma::mat& y, const arma::mat& x);
 
 arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder=0);
 
+class RegressionModel
+{
+public:
+  virtual ~RegressionModel();
+  
+  virtual int numP() const =0;
+  virtual void setParameters(const double* params) =0;
+  virtual arma::mat evaluateObjective(const arma::mat& x) const =0;
+  
+  double computeQuality(const arma::mat& y, const arma::mat& x) const;
+};
+
+/**
+ * fits parameters of a nonlinear model F
+ * return fit quality
+ */
+double nonlinearRegression(const arma::mat& y, const arma::mat& x, RegressionModel& model);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

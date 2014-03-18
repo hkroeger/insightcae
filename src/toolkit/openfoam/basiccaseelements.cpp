@@ -1105,6 +1105,70 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
   return fod;
 }
 
+boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName)
+{
+  std::vector<double> t;
+  std::vector<double> profs[6];
+  int np=-1;
+  
+  path fp;
+  if (c.OFversion()<=160)
+    fp=absolute(location)/tpcName;
+  else
+    fp=absolute(location)/"postProcessing"/tpcName;
+  
+  TimeDirectoryList tdl=listTimeDirectories(fp);
+  
+  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+  {
+    std::ifstream f( (td.second/"twoPointCorrelation.dat").c_str());
+    while (!f.eof())
+    {
+      string line;
+      getline(f, line);
+      if (f.fail()) break;
+      cout<<line<<endl;
+      if (!starts_with(line, "#"))
+      {
+// 	erase_all(line, "(");
+// 	erase_all(line, ")");
+// 	replace_all(line, ",", " ");
+// 	replace_all(line, "  ", " ");
+	
+	// split into component tpcs
+	std::vector<string> strs;
+	boost::split(strs, line, boost::is_any_of("\t"));
+	
+	t.push_back(lexical_cast<double>(strs[0]));
+	
+	if (strs.size()!=7)
+	  throw insight::Exception("Expected profiles for 6 tensor components in twoPointCorrelation results!");
+	
+	for (int k=1; k<=6; k++)
+	{
+	  std::vector<string> pts;
+	  boost::split(pts, strs[k], boost::is_any_of(" "));
+	  if (np<0) 
+	    np=pts.size();
+	  else if (np!=pts.size())
+	    throw insight::Exception("Expected uniform number of sampling point in twoPointCorrelation results!");
+	  
+	  BOOST_FOREACH(const std::string& s, pts)
+	  {
+	    profs[k-1].push_back(lexical_cast<double>(s));
+	  }
+	}
+      }
+    }
+  }
+  
+  ptr_vector<arma::mat> res;
+  res.push_back(new arma::mat(t.data(), t.size(), 1));
+  for (int k=0; k<6; k++) res.push_back(new arma::mat(profs[k].data(), t.size(), np));
+  
+  return res;  
+}
+
 cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
 : twoPointCorrelation(c, p),
   p_(p)

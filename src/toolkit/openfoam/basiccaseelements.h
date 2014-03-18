@@ -479,6 +479,9 @@ public:
   twoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual OFDictData::dict functionObjectDict() const;
   virtual OFDictData::dict csysConfiguration() const;
+
+  inline const std::string& name() const { return p_.name(); }
+  static boost::ptr_vector<arma::mat> readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName);
 };
 
 class cylindricalTwoPointCorrelation

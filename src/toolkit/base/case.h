@@ -49,7 +49,7 @@ public:
     Case(const Case& other);
     virtual ~Case();
     
-    void insert(CaseElement* elem);
+    CaseElement const* insert(CaseElement* elem);
     
     template<class T>
     T* get(const std::string& name)

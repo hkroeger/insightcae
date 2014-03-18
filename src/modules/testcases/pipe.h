@@ -21,8 +21,37 @@
 #define INSIGHT_PIPE_H
 
 #include "openfoam/openfoamanalysis.h"
+#include "openfoam/basiccaseelements.h"
 
 namespace insight {
+  
+class RadialTPCArray
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name_prefix, std::string, "tpc")
+    (timeStart, double, 0.0)
+    (outputControl, std::string, "outputTime")    
+    (outputInterval, double, 10.0)
+    (x, double, 0.0)
+    (tanSpan, double, M_PI)
+    (axSpan, double, 1.0)
+    (nph, int, 8)
+    (R, double, 1.0)
+  )
+  
+protected:
+  Parameters p_;
+  std::vector<double> r_;
+  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_ax_;
+  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_tan_;
+  
+public:
+  RadialTPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
+};
 
 class PipeBase 
 : public OpenFOAMAnalysis
@@ -59,6 +88,7 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+
   
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   

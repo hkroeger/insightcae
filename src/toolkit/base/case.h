@@ -54,23 +54,25 @@ public:
     template<class T>
     T* get(const std::string& name)
     {
+      T* res=NULL;
       BOOST_FOREACH(CaseElement& el, elements_)
       {
 	if (el.name() == name)
-	  return static_cast<T*>(&el);
+	  res=static_cast<T*>(&el);
       }
-      return NULL;
+      return res;
     }
     
     template<class T>
     const T* get(const std::string& name) const
     {
+      const T* res=NULL;
       BOOST_FOREACH(const CaseElement& el, elements_)
       {
 	if (el.name() == name)
-	  return static_cast<const T*>(&el);
+	  res=static_cast<const T*>(&el);
       }
-      return NULL;
+      return res;
     }
     
     inline const ParameterSet& params() const

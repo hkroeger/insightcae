@@ -535,13 +535,22 @@ void runPvPython
   redi::opstream proc;  
   std::vector<string> args;
   args.push_back("--use-offscreen-rendering");
-  ofc.forkCommand(proc, location, "pvbatch", args);
-  proc << "from Insight.Paraview import *" << endl;
-  BOOST_FOREACH(const std::string& cmd, pvpython_commands)
+  //ofc.forkCommand(proc, location, "pvpython", args);
+  
+  path tempfile=absolute(unique_path("%%%%%%%%%.py"));
   {
-    proc << cmd;
+    std::ofstream tf(tempfile.c_str());
+    tf << "from Insight.Paraview import *" << endl;
+    BOOST_FOREACH(const std::string& cmd, pvpython_commands)
+    {
+      tf << cmd;
+    }
+    tf.close();
   }
-  proc.close();
+  args.push_back(tempfile.c_str());
+  ofc.executeCommand(location, "pvbatch", args);
+  remove(tempfile);
+
 }
 
 }

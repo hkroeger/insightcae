@@ -1107,8 +1107,10 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
 
 boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName)
 {
+  int nk=9;
+  
   std::vector<double> t;
-  std::vector<double> profs[6];
+  std::vector<double> profs[nk];
   int np=-1;
   
   path fp;
@@ -1127,7 +1129,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
       string line;
       getline(f, line);
       if (f.fail()) break;
-      cout<<line<<endl;
+//       cout<<line<<endl;
       if (!starts_with(line, "#"))
       {
 // 	erase_all(line, "(");
@@ -1141,21 +1143,24 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 	
 	t.push_back(lexical_cast<double>(strs[0]));
 	
-	if (strs.size()!=7)
-	  throw insight::Exception("Expected profiles for 6 tensor components in twoPointCorrelation results!");
+	if (strs.size()!=(nk+2))
+	  throw insight::Exception("Expected "
+				    +lexical_cast<string>(nk+1)
+				    +" profiles in twoPointCorrelation results but got "
+				    +lexical_cast<string>(strs.size()-1)+"!");
 	
-	for (int k=1; k<=6; k++)
+	for (int k=1; k<=nk; k++)
 	{
 	  std::vector<string> pts;
 	  boost::split(pts, strs[k], boost::is_any_of(" "));
 	  if (np<0) 
-	    np=pts.size();
-	  else if (np!=pts.size())
+	    np=pts.size()-1; // trailing space!
+	  else if (np!=pts.size()-1)
 	    throw insight::Exception("Expected uniform number of sampling point in twoPointCorrelation results!");
 	  
-	  BOOST_FOREACH(const std::string& s, pts)
+	  for (int j=0; j<np; j++)
 	  {
-	    profs[k-1].push_back(lexical_cast<double>(s));
+	    profs[k-1].push_back(lexical_cast<double>(pts[j]));
 	  }
 	}
       }
@@ -1164,7 +1169,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
   
   ptr_vector<arma::mat> res;
   res.push_back(new arma::mat(t.data(), t.size(), 1));
-  for (int k=0; k<6; k++) res.push_back(new arma::mat(profs[k].data(), t.size(), np));
+  for (int k=0; k<nk; k++) res.push_back(new arma::mat(profs[k].data(), t.size(), np));
   
   return res;  
 }

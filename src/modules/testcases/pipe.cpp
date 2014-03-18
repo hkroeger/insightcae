@@ -40,7 +40,11 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-
+const char * RadialTPCArray::cmptNames[] = 
+{ "xx", "xy", "xz",
+  "yx", "yy", "yz",
+  "zx", "zy", "zz" };
+  
 RadialTPCArray::RadialTPCArray(OpenFOAMCase& cm, Parameters const &p )
 : OpenFOAMCaseElement(cm, p.name_prefix()+"RadialTPCArray"),
   p_(p)
@@ -60,7 +64,7 @@ RadialTPCArray::RadialTPCArray(OpenFOAMCase& cm, Parameters const &p )
       .set_outputControl("timeStep")
       .set_p0(vec3(r, 0, p_.x()))
       .set_directionSpan(vec3(0, p_.tanSpan(), 0)) 
-      .set_np(50)
+      .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
       .set_nph( p_.nph() )
       .set_er(vec3(0, 1, 0))
@@ -74,7 +78,7 @@ RadialTPCArray::RadialTPCArray(OpenFOAMCase& cm, Parameters const &p )
       .set_outputControl("timeStep")
       .set_p0(vec3(r, 0, p_.x()))
       .set_directionSpan(vec3(0, 0, p_.axSpan())) 
-      .set_np(50)
+      .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
       .set_nph(p_.nph())
       .set_er(vec3(0, 1, 0))
@@ -100,42 +104,80 @@ void RadialTPCArray::addIntoDictionaries(OFdicts& dictionaries) const
 
 void RadialTPCArray::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
 {
+  evaluateSingle(cm, location, results, 
+	   p_.name_prefix()+"_tan", 
+	   p_.tanSpan(), "Angle [rad]",
+	   tpc_tan_, 
+	   "two-point correlation of velocity along tangential direction at different radii");
+  
+  evaluateSingle(cm, location, results, 
+	   p_.name_prefix()+"_ax", 
+	   p_.axSpan(),  "Axial distance [length]",
+	   tpc_ax_, 
+	   "two-point correlation of velocity along axial direction at different radii");
+}
+
+void RadialTPCArray::evaluateSingle
+(
+  OpenFOAMCase& cm, const boost::filesystem::path& location, 
+  ResultSetPtr& results, 
+  const std::string& name_prefix,
+  double span,
+  const std::string& axisLabel,
+  const boost::ptr_vector<cylindricalTwoPointCorrelation>& tpcarray,
+  const std::string& shortDescription
+) const
+{
+  // create one plot per component, with the profiles for all radii overlayed
   {
-    int nk=6;
-    int nr=tpc_tan_.size();
+    int nk=9;
+    int nr=tpcarray.size();
     Gnuplot gp[nk];
-    for(int k=0; k<nr; k++)
+    std::ostringstream cmd[nk];
+    arma::mat data[nk];
+    
+    for(int k=0; k<nk; k++)
     {
-      std::string chart_name=p_.name_prefix()+"_"+lexical_cast<string>(k);
+      std::string chart_name=name_prefix+"_"+cmptNames[k];
       std::string chart_file_name=chart_name+".png";
       
       gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
-      gp[k]<<"set xlabel 'Angle [rad]'; set ylabel '<u_i u_j>';";
+      gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
+      cmd[k]<<"plot 0 not lc -1";
+      data[k]=arma::linspace<arma::mat>(0, span, p_.np());
 
       results->insert(chart_name,
 	std::auto_ptr<Image>(new Image
 	(
 	chart_file_name, 
-	"two-point correlation of velocity along tangential direction at different radii", ""
+	shortDescription, ""
       )));
 
     }
     int ir=0;
-    BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_tan_)
+    BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpcarray)
     {
       boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
-      for (int k=0; k<6; k++)
+      
+      // append profile of this radius to chart of this component
+      for (int k=0; k<nk; k++)
       {
-	gp[k]<<"plot '-' u 0:1 w l t 'r="<<r_[ir]<<"'";
-	gp[k].send1d( arma::mat( res[k+1].row(res[k+1].n_rows-1) ) );
+	cmd[k]<<", '-' w l t 'r="<<r_[ir]<<"'";
+	data[k]=join_rows(data[k], res[k+1].row(res[k+1].n_rows-1).t());
       }
       ir++;
     }
-  }
-/*  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_ax_)
-  {
-    tpc.addIntoDictionaries(dictionaries);
-  } */ 
+      
+    for (int k=0; k<nk; k++)
+    {
+      gp[k]<<cmd[k].str()<<endl;
+      for (int c=1; c<data[k].n_cols; c++)
+      {
+	arma::mat pdata=join_rows(data[k].col(0), data[k].col(c));
+	gp[k].send1d( pdata );
+      }
+    }
+  } 
 }
   
   
@@ -535,7 +577,10 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
-  cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray")->evaluate(cm, executionPath(), results);
+  const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray");
+  if (!tpcs)
+    throw insight::Exception("tpc FO array not found in case!");
+  tpcs->evaluate(cm, executionPath(), results);
   
   std::string init=
       "cbi=loadOFCase('.')\n"

@@ -19,6 +19,7 @@
 
 
 #include "openfoamanalysis.h"
+#include "openfoamtools.h"
 #include "basiccaseelements.h"
 
 #include <boost/assign/list_of.hpp>
@@ -70,22 +71,37 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
 		    ("OFEname", 	new StringParameter("OF22x", "identifier of the OpenFOAM installation, that shall be used"))
-		    ("np", 	new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
+		    ("np", 		new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
+		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
+		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
+		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
       ))
-         
-      ("solver", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Solver parameters"
-      ))
+
+      ("fluid", new SubsetParameter
+	(
+	  ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
+	    .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Parameters of the fluid"
+	))
+      
+//       ("run", new SubsetParameter	
+// 	    (
+// 		  ParameterSet
+// 		  (
+// 		    boost::assign::list_of<ParameterSet::SingleEntry>
+// 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+// 		    .convert_to_container<ParameterSet::EntryList>()
+// 		  ), 
+// 		  "Solver parameters"
+//       ))
 
       .convert_to_container<ParameterSet::EntryList>()
   );
@@ -99,9 +115,11 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, const ParameterSet&
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
 {
   PSINT(p, "run", np);
+  PSDBL(p, "run", deltaT);
   PSDBL(p, "run", endTime);
 
   OFDictData::dict& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  controlDict["deltaT"]=deltaT;
   controlDict["endTime"]=endTime;
   
   OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
@@ -138,16 +156,36 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
     np=decomposeParDict.getInt("numberOfSubdomains");
   }
   
+  bool is_parallel = np>1;
+  
   std::cout<<"Executing application "<<solverName<<std::endl;
   
-  if (np>1)
+  if (is_parallel)
   {
     cm.executeCommand(executionPath(), "decomposePar");
   }
   
+  if (!cm.outputTimesPresentOnDisk(executionPath()))
+  {
+    path mapFromPath=p.getPath("run/mapFrom");
+    if (mapFromPath!="")
+    {
+      mapFields(cm, mapFromPath, executionPath(), is_parallel);
+    }
+    else
+    {
+      if (p.getBool("run/potentialinit"))
+	runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+    }
+  }
+  else
+  {
+    cout<<"case in "<<executionPath()<<": output timestep are already there, skipping initialization."<<endl;
+  }
+  
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   
-  if (np>1)
+  if (is_parallel)
   {
     cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
   }
@@ -185,15 +223,14 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   if (!runCase.outputTimesPresentOnDisk(dir))
   {
     createCase(runCase, p);
+    boost::shared_ptr<OFdicts> dicts;
+    createDictsInMemory(runCase, p, dicts);
+    applyCustomOptions(runCase, p, dicts);
+    writeDictsToDisk(runCase, p, dicts);
+    applyCustomPreprocessing(runCase, p);
   }
   else
     cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  
-  boost::shared_ptr<OFdicts> dicts;
-  createDictsInMemory(runCase, p, dicts);
-  applyCustomOptions(runCase, p, dicts);
-  writeDictsToDisk(runCase, p, dicts);
-  applyCustomPreprocessing(runCase, p);
   
   runSolver(displayer, runCase, p);
   

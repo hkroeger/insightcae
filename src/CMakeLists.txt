@@ -8,13 +8,14 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 find_package(OpenFOAM-16ext REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
+find_package(OpenFOAM-22eng REQUIRED)
 find_package(Armadillo REQUIRED)
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"
         "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"
         "1.33.1" "1.33.0" "1.33" )
-find_package(Boost COMPONENTS system filesystem regex date_time thread REQUIRED)
+find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams REQUIRED)
 message(STATUS "BOOST_INC=" ${Boost_INCLUDE_DIRS})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

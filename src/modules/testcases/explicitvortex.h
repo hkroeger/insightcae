@@ -23,20 +23,16 @@
 #include "openfoam/openfoamanalysis.h"
 
 namespace insight {
-
+  
 class ExplicitVortex 
 : public insight::OpenFOAMAnalysis
 {
-protected:
-  bool stopFlag_;
 public:
   declareType("Explicit Vortex");
   
   ExplicitVortex(const NoParameters&);
   ~ExplicitVortex();
   
-  virtual void cancel();
-  virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
   virtual ParameterSet defaultParameters() const;
 
   virtual void createMesh

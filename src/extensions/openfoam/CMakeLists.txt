@@ -1,7 +1,11 @@
 
 add_subdirectory(FEMDisplacementBC)
+add_subdirectory(inflowGeneratorBC)
 add_subdirectory(scripts)
 add_subdirectory(simpleDyMFoam)
 add_subdirectory(convertPressure)
 add_subdirectory(kOmegaSST2)
 add_subdirectory(setVortexVelocity)
+add_subdirectory(setPipeFlow)
+add_subdirectory(LESFunctionObjects)
+add_subdirectory(initInflowGenerator)

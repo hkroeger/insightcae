@@ -35,52 +35,41 @@ Author
 
 namespace Foam
 {
+  
+hatSpot::StructureParameters::StructureParameters()
+{
+}
 
-hatSpot::Parameters::Parameters
+hatSpot::StructureParameters::StructureParameters(const dictionary&)
+{
+}
+
+void hatSpot::StructureParameters::autoMap
 (
+    const fvPatchFieldMapper&
 )
-    :
-    L_(0.0),    // integral length scale
-    Lspot_(calcInfluenceLength(*this))
 {
 }
 
-hatSpot::Parameters::Parameters
+//- Reverse map the given fvPatchField onto this fvPatchField
+void hatSpot::StructureParameters::rmap
 (
-    const dictionary& dict
+    const fvPatchField<vector>&,
+    const labelList&
 )
-    :
-    L_(readScalar(dict.lookup("L"))),    // integral length scale
-    Lspot_(calcInfluenceLength(*this))
 {
 }
 
-hatSpot::Parameters::Parameters
-(
-    scalar L    // integral length scale
-
-):
-    L_(L),    // integral length scale
-    Lspot_(calcInfluenceLength(*this))
+void hatSpot::StructureParameters::write(Ostream&) const
 {
 }
 
-void hatSpot::Parameters::write
-(
-    Ostream& os
-) const
-{
-    os.writeKeyword("L")
-        << L_ << token::END_STATEMENT << nl;
-}
-
-// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
-
+/*
 scalar hatSpot::calcInfluenceLength(const Parameters& p)
 {
 #warning Please check the factor!
     return (4./3.)*p.L_;
-}
+}*/
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -88,51 +77,47 @@ scalar hatSpot::calcInfluenceLength(const Parameters& p)
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 hatSpot::hatSpot()
-: 
-    location_(pTraits<vector>::zero),
-    epsilon_(pTraits<vector>::zero)
-{
-}
+: turbulentStructure(),
+  epsilon_(pTraits<vector>::zero)
+{}
 
 hatSpot::hatSpot
 (
     Istream& s
 )
-: 
-    location_(s),
-    epsilon_(s)
-{
-    Info<<location_<<endl;
-}
-
-hatSpot::hatSpot(const vector& loc)
-:
-    location_(loc),
-    epsilon_(pTraits<vector>::zero)
+: turbulentStructure(s),
+  epsilon_(s)
 {}
+
+hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L)
+: turbulentStructure(r, loc, v, L),
+  epsilon_(pTraits<vector>::zero)
+{
+}
 
 
 hatSpot::hatSpot(const hatSpot& o)
-:
-    location_(o.location_),
-    epsilon_(o.epsilon_)
+: turbulentStructure(o),
+  epsilon_(o.epsilon_)
 {}
 
-vector hatSpot::fluctuation(const Parameters& p, const vector& x) const
+vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) const
 {
-    vector delta_x = x - location_;
+    vector delta_x = x - location();
 
+    scalar l1=mag(L1_), l2=mag(L2_), l3=mag(L3_);
+    vector e1=L1_/l1, e2=L2_/l2, e3=L3_/l3;
     if 
         (
-            (delta_x.x()  < p.Lspot_ / 2.0) &&
-            (delta_x.y()  < p.Lspot_ / 2.0) &&
-            (delta_x.z()  < p.Lspot_ / 2.0)
+            (mag(delta_x&e1)  < (l1 / 2.0)) &&
+            (mag(delta_x&e2)  < (l2 / 2.0)) &&
+            (mag(delta_x&e3)  < (l3 / 2.0))
         )
     {
       vector f=
-           (1.0 - 2.0*delta_x.x()  / p.Lspot_)
-          *(1.0 - 2.0*delta_x.y()  / p.Lspot_)
-          *(1.0 - 2.0*delta_x.z()  / p.Lspot_)
+           (1.0 - 2.0*mag(delta_x&e1)  / l1 )
+          *(1.0 - 2.0*mag(delta_x&e2)  / l2 )
+          *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
       return cmptMultiply(epsilon_, f);
@@ -145,22 +130,18 @@ vector hatSpot::fluctuation(const Parameters& p, const vector& x) const
 
 autoPtr<hatSpot> hatSpot::New(Istream& s)
 {
-    Info<<"reading"<<endl;
     return autoPtr<hatSpot>(new hatSpot(s));
 }
 
 
-void hatSpot::randomize(Random& rand)
+void hatSpot::randomize(BoostRandomGen& rand)
 {
-    rand.randomise(epsilon_);
-    epsilon_ -= pTraits<vector>::one*0.5;
-    epsilon_ *= 2.0;
+  //epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
+  epsilon_.x() = 2.0*(rand() - 0.5);
+  epsilon_.y() = 2.0*(rand() - 0.5);
+  epsilon_.z() = 2.0*(rand() - 0.5);
 }
 
-void hatSpot::moveForward(vector delta)
-{
-    location_+=delta;
-}
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
@@ -191,30 +172,29 @@ void hatSpot::operator=(const hatSpot& rhs)
             << abort(FatalError);
     }
 
-    location_=rhs.location_;
+    turbulentStructure::operator=(rhs);
     epsilon_=rhs.epsilon_;
 }
 
 bool hatSpot::operator!=(const hatSpot& o) const
 {
     return 
-        (location_!=o.location_)
+        (location()!=o.location())
         ||
         (epsilon_!=o.epsilon_);
 }
 
 Ostream& operator<<(Ostream& s, const hatSpot& ht)
 {
-    s<<ht.location_<<endl;
+    s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.epsilon_<<endl;
     return s;
 }
 
 Istream& operator>>(Istream& s, hatSpot& ht)
 {
-    vector loc(s);
+    s >> *static_cast<turbulentStructure*>(&ht);
     vector eps(s);
-    ht.location_=loc;
     ht.epsilon_=eps;
     return s;
 }

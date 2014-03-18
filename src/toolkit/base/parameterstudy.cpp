@@ -127,18 +127,62 @@ void ParameterStudy::cancel()
   queue_.cancelAll();
 }
 
-insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
+ResultElementPtr ParameterStudy::table
+(
+  std::string shortDescription,
+  std::string longDescription,
+  const std::string& varp,
+  const std::vector<std::string>& res,
+  const std::vector<std::string>* headers
+) const
+{
+  TabularResult::Table tab;
+  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  {
+    const AnalysisPtr& a = get<1>(ai);
+    const ResultSetPtr& r = get<2>(ai);
+
+    double x=a->p().getDouble(varp);
+    
+    std::vector<double> row;
+    row.push_back(x);
+    BOOST_FOREACH( const std::string& ren, res)
+    {
+      row.push_back( dynamic_cast<ScalarResult*>(&(r->at(ren)))->value() ); 
+    }
+    tab.push_back( row );    
+  }
+  
+  std::vector<std::string> heads;
+  if (headers) 
+    heads=*headers;
+  else
+  {
+    heads=res;
+    heads.insert(heads.begin(), varp);
+  }
+  
+  return ResultElementPtr
+  (
+    new TabularResult(heads, tab, shortDescription, longDescription, "")
+  );
+  
+}
+
+void ParameterStudy::setupQueue()
 {
   const ParameterSet& p = *parameters_;
   
-  path dir = setupExecutionEnvironment();
-  p.saveToFile(dir/"parameters.ist", type());
-
   DoubleRangeParameter::RangeList::const_iterator iters[varp_.size()];
   
   queue_.clear();
   generateInstances(queue_, p, 0, iters);
-  
+}
+
+void ParameterStudy::processQueue(insight::ProgressDisplayer* displayer)
+{
+  const ParameterSet& p = *parameters_;
+
   boost::ptr_vector<AnalysisWorkerThread> threads;
   for (int i=0; i<p.getInt("run/numthread"); i++)
   {
@@ -152,8 +196,58 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   
   //wait for computation to finish
   workers_.join_all();
+}
+
+insight::ResultSetPtr ParameterStudy::evaluateRuns()
+{  
+  const ParameterSet& p = *parameters_;
+
+  ResultSetPtr results(new ResultSet(p, name_, "Result Summary"));
   
-  return ResultSetPtr(new ResultSet(p, name_, "Result Summary"));
+  TabularResult::Table force_data;
+  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  {
+    const std::string& n = get<0>(ai);
+    const AnalysisPtr& a = get<1>(ai);
+    const ResultSetPtr& r = get<2>(ai);
+    /*
+    BOOST_FOREACH( const std::string& parname, varp_ )
+    {
+      double orgval=p.getDouble(parname);
+      p.replace( parname, new DoubleRangeParameter(orgval, 0, 1, p.get<DoubleParameter>(parname).description()) );
+    }
+    
+    force_data.push_back( list_of<double>
+      (h)
+      ( dynamic_cast<ScalarResult*>(&(r->at("ResultantPivotForce")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("VerticalPivotForce")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("PivotForceAngle")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("CavitationMargin")))->value()) 
+      ( dynamic_cast<ScalarResult*>(&(r->at("minDist")))->value())
+    );
+    
+    std::string newkey="heightProfile (h="+lexical_cast<std::string>(h)+")";
+    
+    results->insert(newkey, r->find("heightProfile")->second->clone() );
+    */
+    std::string key=n+", "+r->title()+" ("+r->subtitle()+")";
+    results->insert( key, r->clone() );
+    
+  }
+  
+  return results;
+}
+
+insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
+{  
+  const ParameterSet& p = *parameters_;
+
+  path dir = setupExecutionEnvironment();
+  p.saveToFile(dir/"parameters.ist", type());
+
+  setupQueue();
+  processQueue(displayer);
+  return evaluateRuns();
 }
 
 }

@@ -57,6 +57,23 @@ public:
   );
   
   virtual ParameterSet defaultParameters() const;
+  
+  /**
+   * return a table of resutls in case the study runs only over a single parameter
+   */
+  virtual ResultElementPtr table
+  (
+    std::string shortDescription,
+    std::string longDescription,
+    const std::string& varp,
+    const std::vector<std::string>& res,
+    const std::vector<std::string>* headers = NULL
+  ) const;
+  
+  virtual void setupQueue();
+  virtual void processQueue(insight::ProgressDisplayer* displayer);
+  virtual ResultSetPtr evaluateRuns();
+  
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
   virtual void cancel();
 };

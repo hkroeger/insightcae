@@ -115,6 +115,8 @@ public:
   
   int OFversion() const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
+  
+  virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
 
@@ -199,7 +201,7 @@ public:
       std::string solverName,
       bool *stopFlag = NULL,
       int np=0
-    );
+    ) const;
     
     template<class stream>
     void forkCommand

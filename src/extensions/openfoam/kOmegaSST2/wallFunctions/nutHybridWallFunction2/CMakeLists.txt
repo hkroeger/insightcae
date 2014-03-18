@@ -4,5 +4,5 @@ add_sources(kOmegaSST2_SOURCES
 )
 
 include_directories(
-  ${kOmegaSST2_SOURCE_DIR}/wallFunctions/nutHybridWallFunction2
+  ${PROJECT_SOURCE_DIR}/wallFunctions/nutHybridWallFunction2
 )

@@ -20,6 +20,7 @@
 
 #include "basiccaseelements.h"
 #include "openfoam/openfoamcase.h"
+#include "openfoam/openfoamtools.h"
 
 #include <utility>
 #include "boost/assign.hpp"
@@ -27,6 +28,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace boost::filesystem;
 using namespace boost::assign;
 using namespace boost::fusion;
 
@@ -385,23 +387,24 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
-  solvers["U"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   
-  solvers["pFinal"]=GAMGSolverSetup(1e-7, 0.0);
-  solvers["UFinal"]=smoothSolverSetup(1e-8, 0.0);
-  solvers["kFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=smoothSolverSetup(1e-8, 0);
-  solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
+  solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  SIMPLE["nCorrectors"]=2;
-  SIMPLE["nNonOrthogonalCorrectors"]=0;
-  SIMPLE["pRefCell"]=0;
-  SIMPLE["pRefValue"]=0.0;
+  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  PIMPLE["nCorrectors"]=2;
+  PIMPLE["nOuterCorrectors"]=1;
+  PIMPLE["nNonOrthogonalCorrectors"]=0;
+  PIMPLE["pRefCell"]=0;
+  PIMPLE["pRefValue"]=0.0;
   
   // ============ setup fvSchemes ================================
   
@@ -817,7 +820,39 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     fvOptions[p_.name()]=fod;     
   }
 }
-  
+
+PressureGradientSource::PressureGradientSource(OpenFOAMCase& c, Parameters const& p )
+: OpenFOAMCaseElement(c, "PressureGradientSource"),
+  p_(p)
+{
+}
+
+void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  if (OFversion()>=220)
+  {
+    OFDictData::dict coeffs;    
+    OFDictData::list flds; flds.push_back("U");
+    coeffs["fieldNames"]=flds;
+    coeffs["Ubar"]=OFDictData::vector3(p_.Ubar());
+
+    OFDictData::dict fod;
+    fod["type"]="pressureGradientExplicitSource";
+    fod["active"]=true;
+    fod["selectionMode"]="all";
+    fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
+    
+    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    fvOptions[name()]=fod;  
+  }
+  else
+  {
+    // for channelFoam:
+    OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+    transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar()));
+  }
+}
+
 singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
 : transportModel(c),
   p_(p)
@@ -958,20 +993,37 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
-fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, "fieldAveraging"),
+outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, p.name()+"outputFilterFunctionObject"),
   p_(p)
 {
 }
 
-void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
+void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod=functionObjectDict();
+  fod["enabled"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  fod["timeStart"]=p_.timeStart();
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+}
+
+fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
+: outputFilterFunctionObject(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict fieldAveraging::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="fieldAverage";
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
-  fod["outputControl"]="outputTime";
   
   OFDictData::list fl;
   BOOST_FOREACH(const std::string& fln, p_.fields())
@@ -984,32 +1036,22 @@ void fieldAveraging::addIntoDictionaries(OFdicts& dictionaries) const
     fl.push_back(cod);
   }
   fod["fields"]=fl;
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["fieldAverage1"]=fod;
+  
+  return fod;
 }
-
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (fields, std::vector<std::string>, std::vector<std::string>())
-    (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 1.0)
-  )
   
 probes::probes(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, "probes"),
+: outputFilterFunctionObject(c, p),
   p_(p)
 {
 }
 
-void probes::addIntoDictionaries(OFdicts& dictionaries) const
+OFDictData::dict probes::functionObjectDict() const
 {
   OFDictData::dict fod;
   fod["type"]="probes";
   OFDictData::list libl; libl.push_back("\"libsampling.so\"");
   fod["functionObjectLibs"]=libl;
-  fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
   
   OFDictData::list pl;
   BOOST_FOREACH(const arma::mat& lo, p_.probeLocations())
@@ -1022,9 +1064,217 @@ void probes::addIntoDictionaries(OFdicts& dictionaries) const
   copy(p_.fields().begin(), p_.fields().end(), fl.begin());
   fod["fields"]=fl;
   
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")["probes1"]=fod;
+  return fod;
 }
+
+twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
+: outputFilterFunctionObject(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict twoPointCorrelation::csysConfiguration() const
+{
+  OFDictData::dict csys;
+  csys["type"]="cartesian";
+  csys["origin"]=OFDictData::vector3(0,0,0);
+  csys["e1"]=OFDictData::vector3(1,0,0);
+  csys["e2"]=OFDictData::vector3(0,1,0);
+  return csys;
+}
+
+OFDictData::dict twoPointCorrelation::functionObjectDict() const
+{
+  OFDictData::dict fod;
+  fod["type"]="twoPointCorrelation";
+  OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["enabled"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  fod["timeStart"]=p_.timeStart();
+  
+  fod["p0"]=OFDictData::vector3(p_.p0());
+  fod["directionSpan"]=OFDictData::vector3(p_.directionSpan());
+  fod["np"]=p_.np();
+  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p_.homogeneousTranslationUnit());
+  fod["nph"]=p_.nph();
+
+  fod["csys"]=csysConfiguration();
+  
+  return fod;
+}
+
+boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName)
+{
+  std::vector<double> t;
+  std::vector<double> profs[6];
+  int np=-1;
+  
+  path fp;
+  if (c.OFversion()<=160)
+    fp=absolute(location)/tpcName;
+  else
+    fp=absolute(location)/"postProcessing"/tpcName;
+  
+  TimeDirectoryList tdl=listTimeDirectories(fp);
+  
+  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+  {
+    std::ifstream f( (td.second/"twoPointCorrelation.dat").c_str());
+    while (!f.eof())
+    {
+      string line;
+      getline(f, line);
+      if (f.fail()) break;
+      cout<<line<<endl;
+      if (!starts_with(line, "#"))
+      {
+// 	erase_all(line, "(");
+// 	erase_all(line, ")");
+// 	replace_all(line, ",", " ");
+// 	replace_all(line, "  ", " ");
+	
+	// split into component tpcs
+	std::vector<string> strs;
+	boost::split(strs, line, boost::is_any_of("\t"));
+	
+	t.push_back(lexical_cast<double>(strs[0]));
+	
+	if (strs.size()!=7)
+	  throw insight::Exception("Expected profiles for 6 tensor components in twoPointCorrelation results!");
+	
+	for (int k=1; k<=6; k++)
+	{
+	  std::vector<string> pts;
+	  boost::split(pts, strs[k], boost::is_any_of(" "));
+	  if (np<0) 
+	    np=pts.size();
+	  else if (np!=pts.size())
+	    throw insight::Exception("Expected uniform number of sampling point in twoPointCorrelation results!");
+	  
+	  BOOST_FOREACH(const std::string& s, pts)
+	  {
+	    profs[k-1].push_back(lexical_cast<double>(s));
+	  }
+	}
+      }
+    }
+  }
+  
+  ptr_vector<arma::mat> res;
+  res.push_back(new arma::mat(t.data(), t.size(), 1));
+  for (int k=0; k<6; k++) res.push_back(new arma::mat(profs[k].data(), t.size(), np));
+  
+  return res;  
+}
+
+cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
+: twoPointCorrelation(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
+{
+  OFDictData::dict csys;
+  csys["type"]="cylindrical";
+  csys["origin"]=OFDictData::vector3(0,0,0);
+  csys["e3"]=OFDictData::vector3(p_.ez());
+  csys["e1"]=OFDictData::vector3(p_.er());
+  csys["degrees"]=p_.degrees();
+  return csys;
+}
+
+forces::forces(OpenFOAMCase& c, Parameters const &p )
+: OpenFOAMCaseElement(c, p.name()+"forces"),
+  p_(p)
+{
+}
+
+void forces::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="forces";
+  OFDictData::list libl; libl.push_back("\"libforces.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["log"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  
+  OFDictData::list pl;
+  BOOST_FOREACH(const std::string& lo, p_.patches())
+  {
+    pl.push_back(lo);
+  }
+  fod["patches"]=pl;
+  fod["pName"]=p_.pName();
+  fod["UName"]=p_.UName();
+  fod["rhoName"]=p_.rhoName();
+  fod["rhoInf"]=p_.rhoInf();
+  
+  fod["CofR"]=OFDictData::vector3(p_.CofR());
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+}
+
+arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
+{
+  arma::mat fl;
+  
+  path fp;
+  if (c.OFversion()<=160)
+    fp=absolute(location)/foName;
+  else
+    fp=absolute(location)/"postProcessing"/foName;
+  
+  TimeDirectoryList tdl=listTimeDirectories(fp);
+  
+  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+  {
+    std::ifstream f( (td.second/"forces.dat").c_str());
+    while (!f.eof())
+    {
+      string line;
+      getline(f, line);
+      if (f.fail()) break;
+      cout<<line<<endl;
+      if (!starts_with(line, "#"))
+      {
+	erase_all(line, "(");
+	erase_all(line, ")");
+	replace_all(line, ",", " ");
+	replace_all(line, "  ", " ");
+	
+	std::vector<string> strs;
+	boost::split(strs, line, boost::is_any_of(" \t"));
+	
+	if (fl.n_rows==0) 
+	  fl.set_size(1, strs.size());
+	else
+	  fl.resize(fl.n_rows+1, fl.n_cols);
+	int j=fl.n_rows-1;
+	
+	int k=0;
+	BOOST_FOREACH(const string& e, strs)
+	{
+	  fl(j,k++)=lexical_cast<double>(e);
+	}
+      }
+    }
+  }
+  
+  if (c.OFversion()>=220)
+  {
+    // remove porous forces
+    fl.shed_cols(16,18);
+    fl.shed_cols(7,9);
+  }
+  
+  return fl;
+}
+
   
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);
@@ -1347,6 +1597,16 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
   
+  insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
+}
+
+void BoundaryCondition::insertIntoBoundaryDict
+(
+  OFdicts& dictionaries, 
+  const string& patchName,
+  const OFDictData::dict& bndsubd
+)
+{
   // contents is created as list of string / subdict pairs
   // patches have to appear ordered by "startFace"!
   OFDictData::dict& boundaryDict=dictionaries.addDictionaryIfNonexistent("constant/polyMesh/boundary");
@@ -1363,7 +1623,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
     if (std::string *name = boost::get<std::string>(&(*i)))
     {
       //cout<<"found "<<*name<<endl;
-      if ( *name == patchName_ )
+      if ( *name == patchName )
       {
 	i++;
 	*i=bndsubd;
@@ -1393,7 +1653,7 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
       }
     }
   }
-  j = bl.insert( j, OFDictData::data(patchName_) );
+  j = bl.insert( j, OFDictData::data(patchName) );
   bl.insert( j+1, bndsubd );
   
   OFDictData::dict::iterator oe=boundaryDict.begin();
@@ -1401,6 +1661,10 @@ void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
   boundaryDict.erase(oe);
 }
 
+bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
+{
+  return (patchName == patchName_);
+}
 
 
 SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)
@@ -1423,6 +1687,97 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
       BC["type"]=OFDictData::data(className_);
   }
+}
+
+
+CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
+: OpenFOAMCaseElement(c, patchName+"CyclicBC"),
+  patchName_(patchName)
+{
+  if (c.OFversion()>=210)
+  {
+    nFaces_=boundaryDict.subDict(patchName_+"_half0").getInt("nFaces");
+    startFace_=boundaryDict.subDict(patchName_+"_half0").getInt("startFace");
+    nFaces1_=boundaryDict.subDict(patchName_+"_half1").getInt("nFaces");
+    startFace1_=boundaryDict.subDict(patchName_+"_half1").getInt("startFace");
+  }
+  else
+  {
+    nFaces_=boundaryDict.subDict(patchName_).getInt("nFaces");
+    startFace_=boundaryDict.subDict(patchName_).getInt("startFace");
+  }
+}
+
+void CyclicPairBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  addIntoFieldDictionaries(dictionaries);
+  
+  OFDictData::dict bndsubd, bndsubd1;
+  bndsubd["type"]="cyclic";
+  bndsubd["nFaces"]=nFaces_;
+  bndsubd["startFace"]=startFace_;
+  bndsubd1["type"]="cyclic";
+  bndsubd1["nFaces"]=nFaces1_;
+  bndsubd1["startFace"]=startFace1_;
+  
+  if (OFversion()>=210)
+  {
+    bndsubd["neighbourPatch"]=patchName_+"_half1";
+    bndsubd1["neighbourPatch"]=patchName_+"_half0";
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_+"_half0", bndsubd);
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_+"_half1", bndsubd1);
+  }
+  else
+  {
+    BoundaryCondition::insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
+  }
+}
+
+void CyclicPairBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
+    OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
+    
+    if (OFversion()>=210)
+    {
+      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_+"_half0");
+      OFDictData::dict& BC1=boundaryField.addSubDictIfNonexistent(patchName_+"_half1");
+      
+      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      {
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC1);
+      }
+      else
+      {
+	BC["type"]="cyclic";
+	BC1["type"]="cyclic";
+      }
+    }
+    else
+    {
+      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
+      
+      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      {
+	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+      }
+      else
+      {
+	BC["type"]="cyclic";
+      }
+    }
+  }
+}
+
+bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
+{
+  if (OFversion()>=210)
+    return ( (patchName == patchName_+"_half0") || (patchName == patchName_+"_half1") );
+  else
+    return ( patchName == patchName_ );
 }
 
 GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
@@ -1643,6 +1998,15 @@ VelocityInletBC::VelocityInletBC
 {
 }
 
+void VelocityInletBC::setField_U(OFDictData::dict& BC) const
+{
+  BC["type"]=OFDictData::data("fixedValue");
+  BC["value"]=OFDictData::data("uniform ( "
+    +lexical_cast<std::string>(p_.velocity()(0))+" "
+    +lexical_cast<std::string>(p_.velocity()(1))+" "
+    +lexical_cast<std::string>(p_.velocity()(2))+" )");
+}
+
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
@@ -1653,11 +2017,7 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       .subDict("boundaryField").subDict(patchName_);
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform ( "
-	+lexical_cast<std::string>(p_.velocity()(0))+" "
-	+lexical_cast<std::string>(p_.velocity()(1))+" "
-	+lexical_cast<std::string>(p_.velocity()(2))+" )");
+      setField_U(BC);
     }
     else if ( 
       ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
@@ -1704,6 +2064,72 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+TurbulentVelocityInletBC::TurbulentVelocityInletBC
+(
+  OpenFOAMCase& c,
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  Parameters const& p
+)
+: VelocityInletBC(c, patchName, boundaryDict, p),
+  p_(p)
+{
+}
+
+
+void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
+{
+  std::string Uvec="( "
+    +lexical_cast<std::string>(p_.velocity()(0))+" "
+    +lexical_cast<std::string>(p_.velocity()(1))+" "
+    +lexical_cast<std::string>(p_.velocity()(2))+" )";
+    
+  BC["type"]="inflowGenerator<"+p_.structureType()+">";
+  BC["Umean"]="uniform "+Uvec;
+  
+  double L=p_.mixingLength();
+  BC["L"]="uniform ( "
+    +lexical_cast<string>(L)+" 0 0 "
+    +lexical_cast<string>(L)+" 0 "
+    +lexical_cast<string>(L)+" )";
+
+  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity(),2), 2);
+  BC["R"]="uniform ( "
+    +lexical_cast<string>(R)+" 0 0 "
+    +lexical_cast<string>(R)+" 0 "
+    +lexical_cast<string>(R)+" )";
+
+  BC["value"]="uniform "+Uvec;
+}
+
+void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  VelocityInletBC::addIntoFieldDictionaries(dictionaries);
+  
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
+}
+
+void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location) const
+{
+  OFDictData::dictFile inflowProperties;
+  
+  OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
+  
+  OFDictData::dict d;
+  d["Ubulk"]=arma::norm(p_.velocity(), 2);
+  d["D"]=2.0;
+  d["patchName"]=patchName_;
+  
+  initializers.push_back( "pipeFlow" );
+  initializers.push_back( d );
+  
+  // then write to file
+  inflowProperties.write( location / "constant" / "inflowProperties" );
+  
+  OFcase().executeCommand(location, "initInflowGenerator");
+}
+  
 PressureOutletBC::PressureOutletBC
 (
   OpenFOAMCase& c, 

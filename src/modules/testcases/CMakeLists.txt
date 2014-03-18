@@ -2,7 +2,7 @@ project(testcases)
 
 #find_package(OpenCasCade REQUIRED)
 
-set(testcases_SOURCES pipe.cpp explicitvortex.cpp) # channel.cpp)
+set(testcases_SOURCES decayingturbulence.cpp pipe.cpp explicitvortex.cpp) # channel.cpp)
 
 include_directories(${toolkit_SOURCE_DIR})
 #include_directories(${OCC_INCLUDE_DIR})

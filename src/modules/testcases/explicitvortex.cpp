@@ -106,15 +106,6 @@ ParameterSet ExplicitVortex::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("nu",	new DoubleParameter(1e-15, "[m^2/s] Viscosity of the fluid"))
-	    ("RASModel",new SelectionParameter(0, 
-					       boost::assign::list_of<std::string>
-					       ("laminar")
-					       ("kOmegaSST")
-					       ("kEpsilon")
-					       ("kOmegaSST_LowRe")
-					       ("kOmegaSST2")
-					       .convert_to_container<SelectionParameter::ItemList>(),
-					       "Turbulence model"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Parameters of the fluid"
@@ -124,11 +115,6 @@ ParameterSet ExplicitVortex::defaultParameters() const
   );
   
   return p;
-}
-
-void ExplicitVortex::cancel()
-{
-  stopFlag_=true;
 }
 
 void ExplicitVortex::createMesh
@@ -211,7 +197,7 @@ void ExplicitVortex::createCase
 {
   // create local variables from ParameterSet
   PSDBL(p, "fluid", nu);
-  PSINT(p, "fluid", RASModel);
+  PSINT(p, "fluid", turbulenceModel);
   
   path dir = executionPath();
 
@@ -224,7 +210,7 @@ void ExplicitVortex::createCase
   cm.insert(new SimpleBC(cm, "symmetryPlanes", boundaryDict, "symmetryPlane"));
   cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
   
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/RASModel").selection());
+  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 void ExplicitVortex::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)

@@ -19,6 +19,7 @@
 
 
 #include "resultset.h"
+#include "base/latextools.h"
 
 #include <fstream>
 
@@ -26,14 +27,34 @@
 //#include "boost/gil/extension/io/jpeg_io.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
+#include "boost/assign.hpp"
 #include "boost/date_time.hpp"
+#include <boost/graph/buffer_concepts.hpp>
+#include "boost/filesystem.hpp"
 
 using namespace std;
 using namespace boost;
-
+using namespace boost::filesystem;
+using namespace boost::assign;
 
 namespace insight
 {
+  
+  
+string latex_subsection(int level)
+{
+  string cmd="\\";
+  if (level==2) cmd+="paragraph";
+  else if (level==3) cmd+="subparagraph";
+  else if (level>3) cmd="";
+  else
+  {
+    for (int i=0; i<min(2,level); i++)
+      cmd+="sub";
+    cmd+="section";
+  }
+  return cmd;
+}
 
 defineType(ResultElement);
 defineFactoryTable(ResultElement, ResultElement::ResultElementConstrP);
@@ -52,7 +73,7 @@ void ResultElement::writeLatexHeaderCode(std::ostream& f) const
 {
 }
 
-void ResultElement::writeLatexCode(ostream& f) const
+void ResultElement::writeLatexCode(ostream& f, int level) const
 {
 }
 
@@ -67,7 +88,7 @@ Image::Image(const ResultElementConstrP& par)
 
 Image::Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
 : ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
-  imagePath_(value)
+  imagePath_(absolute(value))
 {
 }
 
@@ -76,9 +97,10 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
   f<<"\\usepackage{graphicx}\n";
 }
 
-void Image::writeLatexCode(std::ostream& f) const
+void Image::writeLatexCode(std::ostream& f, int level) const
 {
-  f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << imagePath_.c_str() << "}\n";
+  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+  f<< "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n";
 }
 
 ResultElement* Image::clone() const
@@ -100,7 +122,7 @@ ScalarResult::ScalarResult(const double& value, const string& shortDesc, const s
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
 
-void ScalarResult::writeLatexCode(ostream& f) const
+void ScalarResult::writeLatexCode(ostream& f, int level) const
 {
   f.setf(ios::fixed,ios::floatfield);
   f.precision(3);
@@ -135,6 +157,24 @@ TabularResult::TabularResult
   setTableData(headings, rows);
 }
 
+arma::mat TabularResult::toMat() const
+{
+  arma::mat res;
+  res.resize(rows_.size(), rows_[0].size());
+  int i=0;
+  BOOST_FOREACH(const std::vector<double>& row, rows_)
+  {
+    int j=0;
+    BOOST_FOREACH(double v, row)
+    {
+      cout<<"res("<<i<<","<<j<<")="<<v<<endl;
+      res(i, j++)=v;
+    }
+    i++;
+  }
+  return res;
+}
+
 void TabularResult::writeGnuplotData(std::ostream& f) const
 {
   f<<"#";
@@ -161,7 +201,7 @@ ResultElement* TabularResult::clone() const
 }
 
 
-void TabularResult::writeLatexCode(std::ostream& f) const
+void TabularResult::writeLatexCode(std::ostream& f, int level) const
 {
   f<<
   "\\begin{tabular}{";
@@ -190,16 +230,50 @@ void TabularResult::writeLatexCode(std::ostream& f) const
   f<<"\\end{tabular}\n";
 }
 
-
+ResultElementPtr polynomialFitResult
+(
+  const arma::mat& coeffs, 
+  const std::string& xvarName, 
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  int minorder  
+)
+{
+  std::vector<std::string> header;
+  TabularResult::Row cr;
+  for (int i=coeffs.n_rows-1; i>=0; i--)
+  {
+    int order=minorder+i;
+    if (order==0)
+      header.push_back("$1$");
+    else if (order==1)
+      header.push_back("$"+xvarName+"$");
+    else
+      header.push_back("$"+xvarName+"^{"+lexical_cast<string>(order)+"}$");
+    cr.push_back(coeffs(i));
+  }
+  
+  return ResultElementPtr
+  (
+    new TabularResult
+    (
+      header, 
+      list_of<TabularResult::Row>(cr),
+      shortDesc, longDesc, ""
+    )
+  );
+}
+  
 ResultSet::ResultSet
 (
   const ParameterSet& p,
   const std::string& title,
   const std::string& subtitle,
-  std::string* date,
-  std::string* author
+  const std::string* date,
+  const std::string* author
 )
-: p_(p),
+: ResultElement(ResultElementConstrP("", "", "")),
+  p_(p),
   title_(title),
   subtitle_(subtitle)
 {
@@ -224,6 +298,7 @@ ResultSet::~ResultSet()
 
 ResultSet::ResultSet(const ResultSet& other)
 : ptr_map< std::string, ResultElement>(other),
+  ResultElement(ResultElementConstrP("", "", "")),
   p_(other.p_),
   title_(other.title_),
   subtitle_(other.subtitle_),
@@ -243,38 +318,66 @@ void ResultSet::transfer(const ResultSet& other)
   date_=other.date_;
 }
 
-
-void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
+void ResultSet::writeLatexHeaderCode(std::ostream& f) const
 {
-  std::ofstream f(file.c_str());
-  f<<
-  "\\documentclass[a4paper,10pt]{scrartcl}\n";
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
     i->second->writeLatexHeaderCode(f);
-  }    
+  }  
+}
+
+void ResultSet::writeLatexCode(std::ostream& f, int level) const
+{
+  f << latex_subsection(level) << "{Input Parameters}\n";
+  
+  f<<p_.latexRepresentation();
+  
+  f << latex_subsection(level) << "{Numerical Result Summary}\n";
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
+    f << cleanSymbols(i->second->shortDescription()) << "\n\n";
+    i->second->writeLatexCode(f, level+2);
+    f << endl;
+  }
+}
+
+void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
+{
+  std::ofstream f(absolute(file).c_str());
+  f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
+  f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
+   <<"\\includegraphics[#1]{#2}\\endgroup}\n"
+   <<"\\def\\PlotFrame{\\begingroup\n"
+   <<"\\catcode`\\_=12\n"
+   <<"\\PlotFrameB}\n";
+   
+  writeLatexHeaderCode(f);
+   
   f<<
   "\\begin{document}\n"
   "\\title{"<<title_<<"}\n"
   "\\subtitle{"<<subtitle_<<"}\n"
   "\\date{"<<date_<<"}\n"
   "\\author{"<<author_<<"}\n"
-  "\\maketitle\n"
-  "\\section{Input Parameters}\n";
+  "\\maketitle\n";
+    
+  writeLatexCode(f, 0);
   
-  f<<p_.latexRepresentation();
-  
-  f<<
-  "\\section{Numerical Result Summary}\n";
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    f << "\\paragraph{" << i->first << "}\n";
-    f << i->second->shortDescription() << " \\\\ ";
-    i->second->writeLatexCode(f);
-    f << endl;
-  }
   f<<
   "\\end{document}\n";
+}
+
+ResultElement* ResultSet::clone() const
+{
+  std::auto_ptr<ResultSet> nr(new ResultSet(p_, title_, subtitle_, &author_, &date_));
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    cout<<i->first<<endl;
+    std::string key(i->first);
+    nr->insert(key, i->second->clone());
+  }
+  return nr.release();
 }
 
 }

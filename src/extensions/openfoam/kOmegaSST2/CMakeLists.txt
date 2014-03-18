@@ -1,10 +1,14 @@
-project(kOmegaSST216ext)
 
 set(kOmegaSST2_SOURCES 
  kOmegaSST2.C
 )
 
-include_directories(
+set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
+add_subdirectory(wallFunctions/hybridOmegaWallFunction2)
+add_subdirectory(wallFunctions/nutHybridWallFunction2)
+
+project(kOmegaSST216ext)
+set(include_directories
   ${kOmegaSST216ext_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
@@ -24,16 +28,10 @@ include_directories(
   ${OF16ext_LIBSRC_DIR}/surfMesh/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteArea/lnInclude
   )
-
-add_subdirectory(wallFunctions/hybridOmegaWallFunction2)
-add_subdirectory(wallFunctions/nutHybridWallFunction2)
-
-set(kOmegaSST216ext_SOURCES ${kOmegaSST2_SOURCES})
-setup_lib_target_OF16ext(kOmegaSST216ext "kOmegaSST2"
-  OpenFOAM
-  finiteVolume
-  incompressibleRASModels 
-  incompressibleTransportModels
+setup_lib_target_OF16ext(kOmegaSST216ext "${kOmegaSST2_SOURCES}" "kOmegaSST2" "${include_directories}"
+  ${OF16ext_LIB_DIR}/libfiniteVolume.so
+  ${OF16ext_LIB_DIR}/libincompressibleRASModels.so
+  ${OF16ext_LIB_DIR}/libincompressibleTransportModels.so
   ) 
 
 #install(TARGETS kOmegaSST2 LIBRARY DESTINATION lib)

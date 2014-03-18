@@ -21,10 +21,39 @@
 #define INSIGHT_PIPE_H
 
 #include "openfoam/openfoamanalysis.h"
+#include "openfoam/basiccaseelements.h"
 
 namespace insight {
+  
+class RadialTPCArray
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name_prefix, std::string, "tpc")
+    (timeStart, double, 0.0)
+    (outputControl, std::string, "outputTime")    
+    (outputInterval, double, 10.0)
+    (x, double, 0.0)
+    (tanSpan, double, M_PI)
+    (axSpan, double, 1.0)
+    (nph, int, 8)
+    (R, double, 1.0)
+  )
+  
+protected:
+  Parameters p_;
+  std::vector<double> r_;
+  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_ax_;
+  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_tan_;
+  
+public:
+  RadialTPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
+};
 
-class Pipe 
+class PipeBase 
 : public OpenFOAMAnalysis
 {
 protected:
@@ -33,16 +62,20 @@ protected:
 public:
   declareType("Pipe Flow Test Case");
   
-  Pipe(const NoParameters&);
-  ~Pipe();
+  PipeBase(const NoParameters&);
+  ~PipeBase();
   
   virtual ParameterSet defaultParameters() const;
   
+  std::string cyclPrefix() const;
   virtual double calcLc(const ParameterSet& p) const;
   virtual int calcnc(const ParameterSet& p) const;
   virtual int calcnr(const ParameterSet& p) const;
+  virtual double calcgradr(const ParameterSet& p) const;
+  virtual double calcywall(const ParameterSet& p) const;
   virtual double calcRe(const ParameterSet& p) const;
   virtual double calcUbulk(const ParameterSet& p) const;
+  virtual double calcT(const ParameterSet& p) const;
 
   virtual void createMesh
   (
@@ -55,10 +88,66 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+
   
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   
 };
+
+
+
+
+class PipeCyclic
+: public PipeBase
+{
+public:
+  declareType("Pipe Flow Test Case (Axial Cyclic)");
+  
+  PipeCyclic(const NoParameters&);
+  
+  virtual void createMesh
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );  
+  
+  virtual void createCase
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );
+
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  
+};
+
+
+class PipeInflow
+: public PipeBase
+{
+public:
+  declareType("Pipe Flow Test Case (Inflow Generator)");
+  
+  PipeInflow(const NoParameters&);
+  
+  virtual void createMesh
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );  
+  
+  virtual void createCase
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );
+
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  
+};
+
 
 }
 

@@ -22,6 +22,7 @@
 #define INSIGHT_RESULTSET_H
 
 #include "base/parameterset.h"
+#include "base/linearalgebra.h"
 
 #include <string>
 
@@ -55,11 +56,12 @@ public:
   inline const std::string& unit() const { return unit_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, int level) const;
   
   virtual ResultElement* clone() const =0;
 };
 
+typedef std::auto_ptr<ResultElement> ResultElementPtr;
 
 
 class Image
@@ -76,7 +78,7 @@ public:
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, int level) const;
   virtual ResultElement* clone() const;
 };
 
@@ -112,7 +114,7 @@ public:
   
   ScalarResult(const ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
-  virtual void writeLatexCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, int level) const;
   virtual ResultElement* clone() const;
 };
 
@@ -121,7 +123,8 @@ class TabularResult
 : public ResultElement
 {
 public:
-  typedef std::vector<std::vector<double> > Table;
+  typedef std::vector<double> Row;
+  typedef std::vector<Row> Table;
   
 protected:
   std::vector<std::string> headings_;
@@ -144,17 +147,28 @@ public:
   inline const std::vector<std::string>& headings() const { return headings_; }
   inline const Table& rows() const { return rows_; }
   
+  arma::mat toMat() const;
+  
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   
   virtual void writeGnuplotData(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, int level) const;
   
   virtual ResultElement* clone() const;
 };
 
+ResultElementPtr polynomialFitResult
+(
+  const arma::mat& coeffs, 
+  const std::string& xvarName,
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  int minorder=0
+);
 
 class ResultSet
-: public boost::ptr_map<std::string, ResultElement>
+: public boost::ptr_map<std::string, ResultElement>,
+  public ResultElement
 {
 protected:
   ParameterSet p_;
@@ -166,18 +180,25 @@ public:
     const ParameterSet& p,
     const std::string& title,
     const std::string& subtitle,
-    std::string *author = NULL,
-    std::string *date = NULL
+    const std::string *author = NULL,
+    const std::string *date = NULL
   );
   
   ResultSet(const ResultSet& other);
-
   virtual ~ResultSet();
+  
+  inline const std::string& title() const { return title_; }
+  inline const std::string& subtitle() const { return subtitle_; }
   
   void transfer(const ResultSet& other);
   inline const ParameterSet& parameters() const { return p_; }
   
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, int level) const;
+
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
+  
+  virtual ResultElement* clone() const;
 };
 
 typedef boost::shared_ptr<ResultSet> ResultSetPtr;

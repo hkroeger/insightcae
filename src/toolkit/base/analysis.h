@@ -65,8 +65,6 @@ protected:
   PathList sharedSearchPath_;
   void extendSharedSearchPath(const std::string& name);
   
-  virtual boost::filesystem::path setupExecutionEnvironment();
-
 public:
   declareType("Analysis");
   
@@ -76,6 +74,7 @@ public:
   virtual ~Analysis();
   
   void setDefaults();
+  virtual boost::filesystem::path setupExecutionEnvironment();
   virtual void setExecutionPath(boost::filesystem::path& exePath);
   virtual void setParameters(const ParameterSet& p);
   virtual boost::filesystem::path executionPath() const;
@@ -124,6 +123,7 @@ public:
     
     inline void clear() { m_queue=std::queue<AnalysisInstance>(); processed_.clear(); }
     inline bool isEmpty() { return m_queue.size()==0; }
+    inline AnalysisInstance& front() { return m_queue.front(); }
     
     void cancelAll();
     

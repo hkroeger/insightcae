@@ -39,12 +39,7 @@ SourceFiles
 #ifndef hatSpot_H
 #define hatSpot_H
 
-#include "scalar.H"
-#include "vector.H"
-#include "Random.H"
-#include "IOdictionary.H"
-#include "Istream.H"
-#include "Ostream.H"
+#include "turbulentStructure.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -61,6 +56,7 @@ Istream& operator>>(Istream&, hatSpot&);
 \*---------------------------------------------------------------------------*/
 
 class hatSpot
+: public turbulentStructure
 {
 
 public:
@@ -68,75 +64,52 @@ public:
     class StructureParameters
     {
     public:
-        scalarField L_;    // integral length scale
-        scalar Lspot_; // spot length
-
         StructureParameters();
         StructureParameters(const dictionary&);
-        StructureParameters(scalar);
 
+	void autoMap
+	(
+	    const fvPatchFieldMapper&
+	);
+
+	//- Reverse map the given fvPatchField onto this fvPatchField
+	void rmap
+	(
+	    const fvPatchField<vector>&,
+	    const labelList&
+	);
+    
         void write(Ostream&) const;
+	
+	scalar calcInfluenceLength(const vector& L);
     };
 
-private:
-    // Private data
-
-    vector location_;
+protected:
     vector epsilon_;
-    scalar L_;
-
-    // Private Member Functions
 
 public:
 
-
-    static scalar calcInfluenceLength(const Parameters& p);
-
-
     // Constructors
     hatSpot();
-
     hatSpot(Istream&);
-
-    //- Construct from components
-    hatSpot(const vector&);
+    hatSpot(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
+    hatSpot(const hatSpot& p);
     
-    //- Construct as copy
-    hatSpot(const hatSpot&);
-    
-    // Selectors
-
-    //- Select null constructed
-    static autoPtr<hatSpot> New(Istream&);
-
-
-    // Destructor
-
     ~hatSpot();
     
 
-    // Member Functions
-
-    // Access
-    inline void setLocation(const vector& x) { location_=x; }
-    inline const vector& location() const { return location_; }
-
-    vector fluctuation(const Parameters&, const vector&) const;
+    vector fluctuation(const StructureParameters& pa, const vector&) const;
     
     // Check
 
     // Edit
-    void randomize(Random&);
-    void moveForward(vector);
-    
-    // Write
-
-
-    // Member Operators
+    void randomize(BoostRandomGen&);
 
     void operator=(const hatSpot&);
     bool operator!=(const hatSpot&) const;
 
+    // Required for storage in SLList
+    static autoPtr<hatSpot> New(Istream& s);
     autoPtr<hatSpot> clone() const;
 
     // Friend Functions

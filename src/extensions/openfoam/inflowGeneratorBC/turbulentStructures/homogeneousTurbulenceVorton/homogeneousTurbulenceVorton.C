@@ -23,7 +23,7 @@ License
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
-    homogeneousTurbulence
+    homogeneousTurbulenceVorton
 
 Description
 
@@ -31,75 +31,82 @@ Author
 
 \*----------------------------------------------------------------------------*/
 
-#include "homogeneousTurbulence.H"
+#include "homogeneousTurbulenceVorton.H"
 
 namespace Foam
 {
 
-homogeneousTurbulence::Parameters::Parameters
+homogeneousTurbulenceVorton::StructureParameters::StructureParameters
 (
 )
-    :
-    L_(0.0),    // integral length scale
-    eta_(0.0),  // Kolmogorov length
-    Cl_(0.0),
-    Ceta_(0.0)
+: eta_(0.0),  // Kolmogorov length
+  Cl_(0.0),
+  Ceta_(0.0)
 {
     C_2=0.0;
     C_3=0.0;    
 }
 
-homogeneousTurbulence::Parameters::Parameters
+homogeneousTurbulenceVorton::StructureParameters::StructureParameters
 (
     const dictionary& dict
 )
-    :
-    L_(readScalar(dict.lookup("L"))),    // integral length scale
-    eta_(readScalar(dict.lookup("eta"))),  // Kolmogorov length
-    Cl_(readScalar(dict.lookup("Cl"))),
-    Ceta_(readScalar(dict.lookup("Ceta")))
+: eta_(readScalar(dict.lookup("eta"))),  // Kolmogorov length
+  Cl_(readScalar(dict.lookup("Cl"))),
+  Ceta_(readScalar(dict.lookup("Ceta")))
 {
     C_2=5.087*pow(Ceta_,(-1.1));
     C_3=0.369*Cl_;    
 }
 
-homogeneousTurbulence::Parameters::Parameters
+void homogeneousTurbulenceVorton::StructureParameters::autoMap
 (
-    scalar L,    // integral length scale
-    scalar eta,  // Kolmogorov length
-    scalar Cl,
-    scalar Ceta
-
-):
-    L_(L),    // integral length scale
-    eta_(eta),  // Kolmogorov length
-    Cl_(Cl),
-    Ceta_(Ceta)
+    const fvPatchFieldMapper&
+)
 {
-    C_2=5.087*pow(Ceta_,(-1.1));
-    C_3=0.369*Cl_;    
 }
 
-void homogeneousTurbulence::Parameters::write
+//- Reverse map the given fvPatchField onto this fvPatchField
+void homogeneousTurbulenceVorton::StructureParameters::rmap
+(
+    const fvPatchField<vector>&,
+    const labelList&
+)
+{
+}
+
+// homogeneousTurbulenceVorton::StructureParameters::StructureParameters
+// (
+//     scalar eta,  // Kolmogorov length
+//     scalar Cl,
+//     scalar Ceta
+// 
+// ):
+//     eta_(eta),  // Kolmogorov length
+//     Cl_(Cl),
+//     Ceta_(Ceta)
+// {
+//     C_2=5.087*pow(Ceta_,(-1.1));
+//     C_3=0.369*Cl_;    
+// }
+// 
+void homogeneousTurbulenceVorton::StructureParameters::write
 (
     Ostream& os
 ) const
 {
-    os.writeKeyword("L")
-        << L_ << token::END_STATEMENT << nl;
-    os.writeKeyword("eta")
-        << eta_ << token::END_STATEMENT << nl;
-    os.writeKeyword("Cl")
-        << Cl_ << token::END_STATEMENT << nl;
-    os.writeKeyword("Ceta")
-        << Ceta_ << token::END_STATEMENT << nl;
+    os.writeKeyword("eta") << eta_ << token::END_STATEMENT << nl;
+    os.writeKeyword("Cl") << Cl_ << token::END_STATEMENT << nl;
+    os.writeKeyword("Ceta") << Ceta_ << token::END_STATEMENT << nl;
 }
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-scalar homogeneousTurbulence::calcInfluenceLength(const Parameters& p)
+scalar homogeneousTurbulenceVorton::StructureParameters::calcInfluenceLength(const vector& Lv)
 {
-    scalar dyy=p.eta_/10.0;
+  scalar L=mag(Lv);
+  
+    scalar dyy=eta_/10.0;
     scalar yyy=1e-8;
     scalar funct=1.0;
     scalar amax=0.0;
@@ -107,19 +114,19 @@ scalar homogeneousTurbulence::calcInfluenceLength(const Parameters& p)
 
     while(criterion>1e-3)
     {
-        scalar reta =yyy/p.eta_;
-        scalar aleta=yyy/p.L_;
+        scalar reta =yyy/eta_;
+        scalar aleta=yyy/L;
 
         funct=
-            pow(
-                reta/ pow( pow(reta,2.5)+p.C_2, 0.4),
+            ::pow(
+                reta/ ::pow( ::pow(reta,2.5)+C_2, 0.4),
                 2.166667
                 )
-                /(pow(yyy,1.166667))
-                /(p.C_3*pow(aleta, 1.83333)+1.000);
+                /(::pow(yyy,1.166667))
+                /(C_3*::pow(aleta, 1.83333)+1.000);
 
         if (funct>amax) amax=funct;
-        if (yyy>10*p.eta_) criterion=funct/amax;
+        if (yyy>10*eta_) criterion=funct/amax;
         yyy=yyy+dyy;
     }   
 
@@ -131,99 +138,100 @@ scalar homogeneousTurbulence::calcInfluenceLength(const Parameters& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-homogeneousTurbulence::homogeneousTurbulence()
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton()
 : 
-    location_(pTraits<vector>::zero),
+    turbulentStructure(),
     omegav_(pTraits<vector>::zero)
 {
 }
 
-homogeneousTurbulence::homogeneousTurbulence
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 (
-    Istream& s
+  Istream& s
 )
 : 
-    location_(s),
+    turbulentStructure(s),
     omegav_(s)
 {
-    Info<<location_<<endl;
 }
 
-homogeneousTurbulence::homogeneousTurbulence(const vector& loc)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(BoostRandomGen& r, const point& loc, const vector& v, const symmTensor& L)
 :
-    location_(loc),
+    turbulentStructure(r, loc, v, L),
     omegav_(pTraits<vector>::zero)
-{}
+{
+}
 
 
-homogeneousTurbulence::homogeneousTurbulence(const homogeneousTurbulence& o)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton& o)
 :
-    location_(o.location_),
+    turbulentStructure(o),
     omegav_(o.omegav_)
 {}
 
-vector homogeneousTurbulence::fluctuation(const Parameters& p, const vector& x) const
+vector homogeneousTurbulenceVorton::fluctuation(const StructureParameters& pa, const vector& x) const
 {
+  scalar L = (mag(L1_)+mag(L2_)+mag(L3_)) / 3.0;
+ /* 
+  vector delta_x = x - location();
 
-    vector delta_x = x - location_;
+  scalar radiika=magSqr(delta_x);
 
-    scalar radiika=magSqr(delta_x);
+  vector t=delta_x ^ omegav_;
 
-    vector t=delta_x ^ omegav_;
+  scalar tmod=mag(t);
 
-    scalar tmod=mag(t);
+  if (tmod>SMALL) t/=tmod;
+  tmod=Foam::max(1e-5, tmod);
 
-    if (tmod>SMALL) t/=tmod;
-    tmod=max(1e-5, tmod);
+  scalar sradiika=::sqrt(radiika);
+  scalar reta =sradiika/pa.eta_;
+  scalar aleta=sradiika/L;
 
-    scalar sradiika=sqrt(radiika);
-    scalar reta =sradiika/p.eta_;
-    scalar aleta=sradiika/p.L_;
+  scalar sperva=
+      (
+	  ::pow(reta/::pow(::pow(reta,2.5)+pa.C_2, 0.4), 2.166667)
+      )
+      /::pow(sradiika,1.166667)
+      /(pa.C_3*::pow(aleta, 1.83333)+1.000)
+      *tmod/sradiika;
+      
+  return sperva*t;
+   */
+  vector dv = x - location();
+  scalar nrm2 = magSqr(dv);
+  vector t = dv ^ omegav_;
 
-    scalar sperva=
-        (
-            pow(reta/pow(pow(reta,2.5)+p.C_2, 0.4), 2.166667)
-        )
-        /pow(sradiika,1.166667)
-        /(p.C_3*pow(aleta, 1.83333)+1.000)
-        *tmod/sradiika;
-        
-    return sperva*t;
-        
+  return (1./L)*exp(-(M_PI/2)*nrm2/(L*L))*t;
 }
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
-autoPtr<homogeneousTurbulence> homogeneousTurbulence::New(Istream& s)
+autoPtr<homogeneousTurbulenceVorton> homogeneousTurbulenceVorton::New(Istream& s)
 {
-    Info<<"reading"<<endl;
-    return autoPtr<homogeneousTurbulence>(new homogeneousTurbulence(s));
+    return autoPtr<homogeneousTurbulenceVorton>(new homogeneousTurbulenceVorton(s));
 }
 
 
-void homogeneousTurbulence::randomize(Random& rand)
+void homogeneousTurbulenceVorton::randomize(BoostRandomGen& rand)
 {
-    omegav_ = rand.vector01() - 0.5*pTraits<vector>::one;
+    omegav_ = 2.0* (vector(rand(), rand(), rand()) - 0.5*pTraits<vector>::one);
     omegav_/=mag(omegav_);
-    for (label i=0;i<3;i++) omegav_[i]=min(1.0,max(-1.0, omegav_[i]));
+    for (label i=0; i<3; i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
 }
 
-void homogeneousTurbulence::moveForward(vector delta)
-{
-    location_+=delta;
-}
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-homogeneousTurbulence::~homogeneousTurbulence()
+homogeneousTurbulenceVorton::~homogeneousTurbulenceVorton()
 {}
 
 
-autoPtr<homogeneousTurbulence> homogeneousTurbulence::clone() const
+autoPtr<homogeneousTurbulenceVorton> homogeneousTurbulenceVorton::clone() const
 {
-    return autoPtr<homogeneousTurbulence>
+    return autoPtr<homogeneousTurbulenceVorton>
         (
-            new homogeneousTurbulence(*this)
+            new homogeneousTurbulenceVorton(*this)
         );
 }
 
@@ -232,40 +240,39 @@ autoPtr<homogeneousTurbulence> homogeneousTurbulence::clone() const
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
-void homogeneousTurbulence::operator=(const homogeneousTurbulence& rhs)
+void homogeneousTurbulenceVorton::operator=(const homogeneousTurbulenceVorton& rhs)
 {
     // Check for assignment to self
     if (this == &rhs)
     {
-        FatalErrorIn("homogeneousTurbulence::operator=(const homogeneousTurbulence&)")
+        FatalErrorIn("homogeneousTurbulenceVorton::operator=(const homogeneousTurbulenceVorton&)")
             << "Attempted assignment to self"
             << abort(FatalError);
     }
 
-    location_=rhs.location_;
+    turbulentStructure::operator=(rhs);
     omegav_=rhs.omegav_;
 }
 
-bool homogeneousTurbulence::operator!=(const homogeneousTurbulence& o) const
+bool homogeneousTurbulenceVorton::operator!=(const homogeneousTurbulenceVorton& o) const
 {
     return 
-        (location_!=o.location_)
+        (location()!=o.location())
         ||
         (omegav_!=o.omegav_);
 }
 
-Ostream& operator<<(Ostream& s, const homogeneousTurbulence& ht)
+Ostream& operator<<(Ostream& s, const homogeneousTurbulenceVorton& ht)
 {
-    s<<ht.location_<<endl;
+    s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.omegav_<<endl;
     return s;
 }
 
-Istream& operator>>(Istream& s, homogeneousTurbulence& ht)
+Istream& operator>>(Istream& s, homogeneousTurbulenceVorton& ht)
 {
-    vector loc(s);
+    s >> *static_cast<turbulentStructure*>(&ht);
     vector om(s);
-    ht.location_=loc;
     ht.omegav_=om;
     return s;
 }

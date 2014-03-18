@@ -19,7 +19,110 @@ IF(OF22x_DIR)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF22x_CXX_FLAGS)
   set(OF22x_CXX_FLAGS "${OF22x_CXX_FLAGS} -DOF22x")
-
+# SET(OF22x_LIBRARIES autoMesh
+# autoMesh
+# barotropicCompressibilityModel
+# blockMesh
+# chemistryModel
+# cloudFunctionObjects
+# coalCombustion
+# combustionModels
+# compressibleEulerianInterfacialModels
+# compressibleKineticTheoryModel
+# compressibleLESModels
+# compressibleMultiphaseEulerianInterfacialModels
+# compressibleMultiPhaseModel
+# compressiblePhaseModel
+# compressibleRASModels
+# compressibleTurbulenceModel
+# conversion
+# decompose
+# decompositionMethods
+# distributed
+# distributionModels
+# DPMDragModels
+# dsmc
+# dynamicFvMesh
+# dynamicMesh
+# edgeMesh
+# engine
+# EulerianInterfacialModels
+# extrude2DMesh
+# extrudeModel
+# fieldFunctionObjects
+# fileFormats
+# finiteVolume
+# fluidThermophysicalModels
+# foamCalcFunctions
+# forces
+# FVFunctionObjects
+# fvMotionSolvers
+# fvOptions
+# genericPatchFields
+# helpTypes
+# incompressibleLESModels
+# incompressibleRASModels
+# incompressibleTransportModels
+# incompressibleTurbulenceModel
+# interfaceProperties
+# IOFunctionObjects
+# jobControl
+# kineticTheoryModel
+# lagrangianIntermediate
+# lagrangian
+# lagrangianSpray
+# laminarFlameSpeedModels
+# LEMOS-2.2.x
+# LESdeltas
+# LESfilters
+# liquidMixtureProperties
+# liquidProperties
+# meshTools
+# molecularMeasurements
+# molecule
+# multiphaseInterFoam
+# multiphaseSystem
+# ODE
+# OpenFOAM
+# pairPatchAgglomeration
+# phaseChangeTwoPhaseMixtures
+# phaseModel
+# potential
+# pyrolysisModels
+# radiationModels
+# randomProcesses
+# reactionThermophysicalModels
+# reconstruct
+# regionCoupled
+# regionCoupling
+# regionModels
+# renumberMethods
+# rhoCentralFoam
+# sampling
+# scotchDecomp
+# SLGThermo
+# solidChemistryModel
+# solidMixtureProperties
+# solidParticle
+# solidProperties
+# solidSpecie
+# solidThermo
+# specie
+# surfaceFilmModels
+# surfMesh
+# systemCall
+# tabulatedWallFunctions
+# thermalBaffleModels
+# thermophysicalFunctions
+# topoChangerFvMesh
+# triSurface
+# turbulenceDerivedFvPatchFields
+# twoPhaseMixture
+# twoPhaseMixtureThermo
+# twoPhaseProperties
+# userd-foam
+# utilityFunctionObjects
+# )
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE OF22x_WM_OPTIONS)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF22x_FOAM_EXT_LIBBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF22x_SCOTCH_ROOT)
@@ -27,18 +130,54 @@ IF(OF22x_DIR)
   set(OF22x_LIBSRC_DIR "${OF22x_DIR}/src")
   set(OF22x_LIB_DIR "${OF22x_DIR}/platforms/${OF22x_WM_OPTIONS}/lib")
   
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF22x_LINKLIBSO)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF22x_LINKEXE)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF22x_LINKLIBSO_full)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF22x_LINKEXE_full)
+  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKLIBSO ${OF22x_LINKLIBSO_full})
+  string(REGEX REPLACE "^[^ ]+" "" OF22x_LINKEXE ${OF22x_LINKEXE_full})
+  message(STATUS "libso link flags = "  ${OF22x_LINKLIBSO})
+  message(STATUS "exe link flags = "  ${OF22x_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF22x_MPI)
 
-  macro (setup_exe_target_OF22x targetname exename)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OF22x_CXX_FLAGS}")
-    set(LINK_FLAGS "${LINK_FLAGS} ${OF22x_LINKEXE}")
-    link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")
-    add_executable(${targetname} ${${targetname}_SOURCES})
+  macro (setup_exe_target_OF22x targetname sources exename includes)
+    #message(STATUS "target " ${targetname} ": includes=" ${includes})
+    get_directory_property(temp LINK_DIRECTORIES)
+    message(STATUS "temp" ${temp})
+    
+    #link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")
+    #SET(LIB_SEARCHFLAGS "-L${OF22x_LIB_DIR} -L${OF22x_LIB_DIR}/${OF22x_MPI} -L${OF22x_FOAM_EXT_LIBBIN} -L${OF22x_SCOTCH_ROOT}/lib")
+    
+    add_executable(${targetname} ${sources})
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF22x_CXX_FLAGS})
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF22x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.2.x)
+    target_link_libraries(${targetname} 
+      ${OF22x_LIB_DIR}/libOpenFOAM.so 
+      ${OF22x_LIB_DIR}/${OF22x_MPI}/libPstream.so 
+      ${ARGN} ) 
+
+    set_directory_properties(LINK_DIRECTORIES ${temp})
+    get_directory_property(temp LINK_DIRECTORIES)
+    message(STATUS "temp => " ${temp})
+  endmacro()
+  
+  macro (setup_lib_target_OF22x targetname sources exename includes)
+    get_directory_property(temp LINK_DIRECTORIES)
+    message(STATUS "temp" ${temp})
+
+    #message(STATUS "target " ${targetname} ": includes=" ${includes})
+    #link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")
+    SET(LIB_SEARCHFLAGS "-L${OF22x_LIB_DIR} -L${OF22x_LIB_DIR}/${OF22x_MPI} -L${OF22x_FOAM_EXT_LIBBIN} -L${OF22x_SCOTCH_ROOT}/lib")
+    add_library(${targetname} SHARED ${sources})
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF22x_CXX_FLAGS})
+    set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF22x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
+    set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.2.x)
     target_link_libraries(${targetname} ${ARGN}) 
+    
+    set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()
   
   SET(OF22x_FOUND TRUE)

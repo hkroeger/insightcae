@@ -106,6 +106,16 @@ public:
     bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
 };
 
+class GradingAnalyzer
+{
+  double grad_;
+public:
+  GradingAnalyzer(double grad);
+  
+  inline double grad() const { return grad_; }
+  
+  int calc_n(double delta0, double L) const;
+};
 
 class Block
 {
@@ -140,6 +150,11 @@ public:
   bmdEntry(const PointMap& allPoints, int OFversion) const;
 
   Block* transformed(const arma::mat& tm, bool inv=false) const;
+  
+  inline int nCells() const
+  {
+    return resolution_[0]*resolution_[1]*resolution_[2];
+  }
 
 };
 

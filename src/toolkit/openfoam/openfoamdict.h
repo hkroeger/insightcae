@@ -39,6 +39,7 @@
 #include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
+#include "boost/filesystem.hpp"
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
@@ -175,6 +176,8 @@ struct dictFile
   int OFversion;
   
   dictFile();
+  
+  void write(const boost::filesystem::path& dictPath) const;
 };
 
 OFDictData::list vector3(const arma::mat& v);

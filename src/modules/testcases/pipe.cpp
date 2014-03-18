@@ -29,7 +29,10 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
 
+#include "gnuplot-iostream.h"
+
 using namespace arma;
+using namespace std;
 using namespace boost;
 using namespace boost::assign;
 using namespace boost::filesystem;
@@ -37,24 +40,123 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-defineType(Pipe);
 
-Pipe::Pipe(const NoParameters&)
+RadialTPCArray::RadialTPCArray(OpenFOAMCase& cm, Parameters const &p )
+: OpenFOAMCaseElement(cm, p.name_prefix()+"RadialTPCArray"),
+  p_(p)
+{
+  int n_r=10;
+  for (int i=1; i<n_r; i++) // omit first and last
+  {
+    double x = double(i)/(n_r);
+    double r = -cos(M_PI*(0.5+0.5*x))*p_.R();
+    
+    cout<<"Creating tpc FOs at r="<<r<<endl;
+    
+    r_.push_back(r);
+    
+    tpc_tan_.push_back(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, p_.x()))
+      .set_directionSpan(vec3(0, p_.tanSpan(), 0)) 
+      .set_np(50)
+      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
+      .set_nph( p_.nph() )
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+      .set_timeStart( p_.timeStart() )
+    ));
+    
+    tpc_ax_.push_back(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, p_.x()))
+      .set_directionSpan(vec3(0, 0, p_.axSpan())) 
+      .set_np(50)
+      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
+      .set_nph(p_.nph())
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+      .set_timeStart( p_.timeStart() )
+    ));
+    
+  }  
+}
+
+void RadialTPCArray::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_tan_)
+  {
+    tpc.addIntoDictionaries(dictionaries);
+  }
+  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_ax_)
+  {
+    tpc.addIntoDictionaries(dictionaries);
+  }
+}
+
+void RadialTPCArray::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
+{
+  {
+    int nk=6;
+    int nr=tpc_tan_.size();
+    Gnuplot gp[nk];
+    for(int k=0; k<nr; k++)
+    {
+      std::string chart_name=p_.name_prefix()+"_"+lexical_cast<string>(k);
+      std::string chart_file_name=chart_name+".png";
+      
+      gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+      gp[k]<<"set xlabel 'Angle [rad]'; set ylabel '<u_i u_j>';";
+
+      results->insert(chart_name,
+	std::auto_ptr<Image>(new Image
+	(
+	chart_file_name, 
+	"two-point correlation of velocity along tangential direction at different radii", ""
+      )));
+
+    }
+    int ir=0;
+    BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_tan_)
+    {
+      boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
+      for (int k=0; k<6; k++)
+      {
+	gp[k]<<"plot '-' u 0:1 w l t 'r="<<r_[ir]<<"'";
+	gp[k].send1d( arma::mat( res[k+1].row(res[k+1].n_rows-1) ) );
+      }
+      ir++;
+    }
+  }
+/*  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_ax_)
+  {
+    tpc.addIntoDictionaries(dictionaries);
+  } */ 
+}
+  
+  
+defineType(PipeBase);
+
+PipeBase::PipeBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
     "Pipe Flow Test Case",
     "Cylindrical domain with cyclic BCs on axial ends"
   ),
-  cycl_in_("cycl_in"),
-  cycl_out_("cycl_out")
+  cycl_in_("cycl_half0"),
+  cycl_out_("cycl_half1")
 {}
 
-Pipe::~Pipe()
+PipeBase::~PipeBase()
 {
 
 }
 
-ParameterSet Pipe::defaultParameters() const
+ParameterSet PipeBase::defaultParameters() const
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -82,6 +184,7 @@ ParameterSet Pipe::defaultParameters() const
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
 	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
 	    ("x",	new DoubleParameter(0.5, "Edge length of core block as fraction of diameter"))
+	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -98,15 +201,17 @@ ParameterSet Pipe::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
-      ("fluid", new SubsetParameter
+      ("evaluation", new SubsetParameter
 	(
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
+	    ("inittime",	new DoubleParameter(5, "[T] length grace period before averaging starts"))
+	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS"))
+	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
-	  "Parameters of the fluid"
+	  "Options for statistical evaluation"
 	))
       
       .convert_to_container<ParameterSet::EntryList>()
@@ -115,14 +220,24 @@ ParameterSet Pipe::defaultParameters() const
   return p;
 }
 
-double Pipe::calcLc(const ParameterSet& p) const
+std::string PipeBase::cyclPrefix() const
+{
+  boost:smatch m;
+  boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
+  std::string namePrefix=m[1];
+  cout<<namePrefix<<endl;
+  return namePrefix;
+}
+
+
+double PipeBase::calcLc(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "mesh", x);
   return x*D;
 }
 
-int Pipe::calcnc(const ParameterSet& p) const
+int PipeBase::calcnc(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -134,7 +249,7 @@ int Pipe::calcnc(const ParameterSet& p) const
   return D*(M_PI+4.*x)/(8.*Delta/s);
 }
 
-int Pipe::calcnr(const ParameterSet& p) const
+int PipeBase::calcnr(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -143,7 +258,36 @@ int Pipe::calcnr(const ParameterSet& p) const
   PSDBL(p, "mesh", s);
   PSDBL(p, "mesh", x);
   double Delta=L/double(nax);
-  return D*(1.-sqrt(2.)*x)/(2.*Delta/s);
+  double lr=0.5*D*(1.-sqrt(2.)*x);
+  int nr=max(1, bmd::GradingAnalyzer(calcgradr(p)).calc_n(calcywall(p), lr));
+  cout<<"n_r="<<nr<<endl;
+  return nr;
+}
+
+double PipeBase::calcywall(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "operation", Re_tau);
+  
+  double ywall= ypluswall*0.5*D/Re_tau;
+  cout<<"ywall = "<<ywall<<endl;
+  return ywall;
+}
+
+double PipeBase::calcgradr(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+
+  PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", s);
+
+  double Delta=L/double(nax);
+  double delta0=calcywall(p);
+  double grad=(Delta/s) / delta0;
+  cout<<"Grading = "<<grad<<endl;
+  return grad;
 }
 
 #include <gsl/gsl_errno.h>
@@ -158,66 +302,71 @@ double lambda_func(double lambda, void *param)
   return 2.*Retau*sqrt(8./lambda) - Re;
 }
 
-double Pipe::calcRe(const ParameterSet& p) const
+double PipeBase::calcRe(const ParameterSet& p) const
 {
+/*  
   PSDBL(p, "operation", Re_tau);
-  
   int i, times, status;
   gsl_function f;
   gsl_root_fsolver *workspace_f;
   double x, x_l, x_r;
 
  
-    /* Define Solver */
     workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
- 
-    //printf("F solver: %s\n", gsl_root_fsolver_name(workspace_f));
  
     f.function = &lambda_func;
     f.params = &Re_tau;
  
-    /* set initial interval */
     x_l = 1e-2;
     x_r = 10;
  
-    /* set solver */
     gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
  
-    /* main loop */
     for(times = 0; times < 100; times++)
     {
         status = gsl_root_fsolver_iterate(workspace_f);
  
         x_l = gsl_root_fsolver_x_lower(workspace_f);
         x_r = gsl_root_fsolver_x_upper(workspace_f);
-        //printf("%d times: [%10.3e, %10.3e]\n", times, x_l, x_r);
  
         status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
         if(status != GSL_CONTINUE)
         {
-            //printf("Status: %s\n", gsl_strerror(status));
-            //printf("\n Root = [%25.17e, %25.17e]\n\n", x_l, x_r);
             break;
         }
     }
  
-    /* free */
     gsl_root_fsolver_free(workspace_f);
     double lambda=x_l;
     double Re=2.*Re_tau*sqrt(8./x_l);
     cout<<"Re="<<Re<<endl;
-    return Re;
+    return Re;*/
+  PSDBL(p, "operation", D);
+  PSDBL(p, "operation", Re_tau);
+  double nu=1./Re_tau;
+  return calcUbulk(p)*D/nu;
 }
 
-double Pipe::calcUbulk(const ParameterSet& p) const
+double PipeBase::calcUbulk(const ParameterSet& p) const
 {
   PSDBL(p, "geometry", D);
-  //PSDBL(p, "operation", Re_tau);
+  PSDBL(p, "operation", Re_tau);
+  double k=0.41;
+  double Cplus=5.0;
   
-  return 1./D; //calcRe(p)*(1./Re_tau)/D;
+  double nu=1./Re_tau;
+  double rho=1.0;
+  double tau0= pow(Re_tau*nu*sqrt(rho)/(0.5*D), 2);
+  return sqrt(tau0/rho)*(1./k)*log(Re_tau)+Cplus; //calcRe(p)*(1./Re_tau)/D;
 }
 
-void Pipe::createMesh
+double PipeBase::calcT(const ParameterSet& p) const
+{
+  PSDBL(p, "geometry", L);
+  return L/calcUbulk(p);
+}
+
+void PipeBase::createMesh
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
@@ -234,7 +383,8 @@ void Pipe::createMesh
   double Lc=calcLc(p);
   int nc=calcnc(p);
   int nr=calcnr(p);
-  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<endl;
+  double gradr=calcgradr(p);
+  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<", grad_r="<<gradr<<endl;
     
   cm.insert(new MeshingNumerics(cm));
   
@@ -289,7 +439,8 @@ void Pipe::createMesh
 	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
 	  (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
 	),
-	nc, nr, nax
+	nc, nr, nax,
+	list_of<double>(1)(1./gradr)(1)
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -312,7 +463,7 @@ void Pipe::createMesh
 }
 
 
-void Pipe::createCase
+void PipeBase::createCase
 (
   OpenFOAMCase& cm,
   const ParameterSet& p
@@ -324,17 +475,38 @@ void Pipe::createCase
   PSDBL(p, "operation", Re_tau);
   PSINT(p, "fluid", turbulenceModel);
   
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  double T=calcT(p);
+  cout << "Flow-through time T="<<T<<endl;
+  
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
-    
+
+  
   cm.insert(new pimpleFoamNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
+    .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))
+    .set_timeStart(inittime*T)
   ));
+  
+  cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
+    .set_name_prefix("tpc_interior")
+    .set_R(0.5*D)
+    .set_x(0.5*L)
+    .set_axSpan(0.5*L)
+    .set_tanSpan(M_PI)
+    .set_timeStart( (inittime+meantime)*T )
+  ));
+  
+  /*
   cm.insert(new probes(cm, probes::Parameters()
+    .set_name("probes")
     .set_fields(list_of<std::string>("p")("U"))
+    .set_timeStart(inittime*T)
     .set_probeLocations(list_of<arma::mat>
       (vec3(0.1*L, 0, 0))
       (vec3(0.33*L, 0, 0))
@@ -348,30 +520,22 @@ void Pipe::createCase
       (vec3(0.9*L, 0.9*0.5*D, 0))
     )
   ));
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./calcRe(p)) ));
+  */
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
   
-  cm.insert(new VelocityInletBC(cm, cycl_in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(vec3(calcUbulk(p), 0, 0)) 
-  ));
-  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0) 
-  ));
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
-  
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 
-/*  
-  cm.executeCommand(dir, "setVortexVelocity",
-    list_of<std::string>
-    (lexical_cast<std::string>(Gamma))
-    ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
-  );  
-  */
+  cout<<"Ubulk="<<calcUbulk(p)<<endl;
 }
+
+
   
-ResultSetPtr Pipe::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  
+  cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray")->evaluate(cm, executionPath(), results);
   
   std::string init=
       "cbi=loadOFCase('.')\n"
@@ -424,7 +588,248 @@ ResultSetPtr Pipe::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 }
 
 
-addToFactoryTable(Analysis, Pipe, NoParameters);
 
+
+defineType(PipeCyclic);
+
+PipeCyclic::PipeCyclic(const NoParameters& nop)
+: PipeBase(nop)
+{
+}
+
+void PipeCyclic::createMesh
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  PipeBase::createMesh(cm, p);
+  convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
+}
+
+void PipeCyclic::createCase
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  PSINT(p, "fluid", turbulenceModel);
+  
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  double T=calcT(p);
+  
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+      
+  cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
+  
+  PipeBase::createCase(cm, p);
+  
+  cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
+					    .set_Ubar(vec3(calcUbulk(p), 0, 0))
+		));
+/*  
+  int n_r=10;
+  for (int i=1; i<n_r; i++) // omit first and last
+  {
+    double x = double(i)/(n_r);
+    double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
+    cout<<"Inserting tpc FO at r="<<r<<endl;
+    
+    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name("tpc_tan_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, 0.5*L))
+      .set_directionSpan(vec3(0, M_PI, 0)) 
+      .set_np(50)
+      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+      .set_nph(8)
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+      .set_timeStart( (inittime+meantime)*T )
+    ));
+    
+    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+      .set_name("tpc_ax_"+lexical_cast<string>(i))
+      .set_outputControl("timeStep")
+      .set_p0(vec3(r, 0, 0))
+      .set_directionSpan(vec3(0, 0, 0.5*L)) 
+      .set_np(50)
+      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+      .set_nph(8)
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+      .set_timeStart( (inittime+meantime)*T )
+    ));
+    
+  }*/
+}
+
+void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  setFields(cm, executionPath(), 
+	    list_of<setFieldOps::FieldValueSpec>
+	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
+	    ptr_vector<setFieldOps::setFieldOperator>()
+  );
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+}
+
+void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
+  double T=calcT(p);
+
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  
+  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  if (cm.OFversion()<=160)
+  {
+    controlDict["application"]="channelFoam";
+  }
+  controlDict["endTime"] = (inittime+meantime+mean2time)*T;
+}
+
+addToFactoryTable(Analysis, PipeCyclic, NoParameters);
+
+
+
+
+defineType(PipeInflow);
+
+PipeInflow::PipeInflow(const NoParameters& nop)
+: PipeBase(nop)
+{
+}
+
+void PipeInflow::createMesh
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  PipeBase::createMesh(cm, p);
+  //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
+}
+
+void PipeInflow::createCase
+(
+  OpenFOAMCase& cm,
+  const ParameterSet& p
+)
+{  
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  PSINT(p, "fluid", turbulenceModel);
+  
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  double T=calcT(p);
+
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+      
+  cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
+    .set_velocity(vec3(calcUbulk(p), 0, 0))
+    .set_turbulenceIntensity(0.05)
+    .set_mixingLength(0.1*D)
+  ));
+  
+  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0.0)
+  ));
+  
+  PipeBase::createCase(cm, p);
+  
+  cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
+    .set_name_prefix("tpc_inlet")
+    .set_R(0.5*D)
+    .set_x(0.)
+    .set_axSpan(0.5*L)
+    .set_tanSpan(M_PI)
+    .set_timeStart( (inittime+meantime)*T )
+  ));
+
+//   int n_r=10;
+//   for (int i=1; i<n_r; i++) // omit first and last
+//   {
+//     double x = double(i)/(n_r);
+//     double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
+//     cout<<"Inserting tpc FO at r="<<r<<endl;
+//     
+//     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+//       .set_name("tpc_tan_"+lexical_cast<string>(i))
+//       .set_outputControl("timeStep")
+//       .set_p0(vec3(r, 0, 0.5*L))
+//       .set_directionSpan(vec3(0, M_PI, 0)) 
+//       .set_np(50)
+//       .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+//       .set_nph(8)
+//       .set_er(vec3(0, 1, 0))
+//       .set_ez(vec3(1, 0, 0))
+//       .set_degrees(false)
+//       .set_timeStart(inittime*T)
+//     ));
+//     
+//     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
+//       .set_name("tpc_ax_"+lexical_cast<string>(i))
+//       .set_outputControl("timeStep")
+//       .set_p0(vec3(r, 0, 0))
+//       .set_directionSpan(vec3(0, 0, 0.5*L)) 
+//       .set_np(50)
+//       .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
+//       .set_nph(8)
+//       .set_er(vec3(0, 1, 0))
+//       .set_ez(vec3(1, 0, 0))
+//       .set_degrees(false)
+//       .set_timeStart(inittime*T)
+//     ));
+//     
+//   }
+}
+
+void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  
+  setFields(cm, executionPath(), 
+	    list_of<setFieldOps::FieldValueSpec>
+	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
+	    ptr_vector<setFieldOps::setFieldOperator>()
+  );
+  
+  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath());
+  
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+}
+
+void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
+  double T=calcT(p);
+
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  
+  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+  controlDict["endTime"] = (inittime+meantime+mean2time)*T;
+}
+
+addToFactoryTable(Analysis, PipeInflow, NoParameters);
 
 }

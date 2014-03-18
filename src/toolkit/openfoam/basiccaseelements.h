@@ -263,6 +263,24 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+
+class PressureGradientSource
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (Ubar, arma::mat, vec3(0,0,0))
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  PressureGradientSource(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
 class singlePhaseTransportProperties
 : public transportModel
 {
@@ -389,11 +407,31 @@ public:
 };
 
 
-class fieldAveraging
+class outputFilterFunctionObject
 : public OpenFOAMCaseElement
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "unnamed")
+    (timeStart, double, 0.0)
+    (outputControl, std::string, "outputTime")    
+    (outputInterval, double, 1.0)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict functionObjectDict() const =0;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+class fieldAveraging
+: public outputFilterFunctionObject
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
   )
   
@@ -402,18 +440,16 @@ protected:
   
 public:
   fieldAveraging(OpenFOAMCase& c, Parameters const &p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual OFDictData::dict functionObjectDict() const;
 };
 
 class probes
-: public OpenFOAMCaseElement
+: public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
     (fields, std::vector<std::string>, std::vector<std::string>())
     (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 1.0)
   )
   
 protected:
@@ -421,7 +457,75 @@ protected:
   
 public:
   probes(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict functionObjectDict() const;
+};
+
+class twoPointCorrelation
+: public outputFilterFunctionObject
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+    (p0, arma::mat, vec3(0,0,0))
+    (directionSpan, arma::mat, vec3(1,0,0))
+    (np, int, 50)
+    (homogeneousTranslationUnit, arma::mat, vec3(0,1,0))
+    (nph, int, 1)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  twoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict functionObjectDict() const;
+  virtual OFDictData::dict csysConfiguration() const;
+
+  inline const std::string& name() const { return p_.name(); }
+  static boost::ptr_vector<arma::mat> readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName);
+};
+
+class cylindricalTwoPointCorrelation
+: public twoPointCorrelation
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, twoPointCorrelation::Parameters,
+    (ez, arma::mat, vec3(0,0,1))
+    (er, arma::mat, vec3(1,0,0))
+    (degrees, bool, false)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict csysConfiguration() const;
+};
+
+class forces
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "forces")
+    (patches, std::vector<std::string>, std::vector<std::string>())
+    (pName, std::string, "p")
+    (UName, std::string, "U")
+    (rhoName, std::string, "rhoInf")
+    (rhoInf, double, 1.0)
+    (outputControl, std::string, "timeStep")    
+    (outputInterval, double, 10.0)
+    (CofR, arma::mat, vec3(0,0,0))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  forces(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
 };
 
 
@@ -557,8 +661,17 @@ public:
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
+  static void insertIntoBoundaryDict
+  (
+    OFdicts& dictionaries, 
+    const std::string& patchName,
+    const OFDictData::dict& bndsubd
+  );
+
   inline const std::string patchName() const { return patchName_; }
   inline const std::string type() const { return type_; }
+  
+  virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
 
@@ -572,6 +685,30 @@ protected:
 public:
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+class CyclicPairBC
+: public OpenFOAMCaseElement
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (prefixName, std::string, "")
+//   )
+//   
+// protected:
+//   Parameters p_;
+//   
+protected:
+  std::string patchName_;
+  int nFaces_, nFaces1_;
+  int startFace_, startFace1_;
+
+public:
+  CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+
+  virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
 class GGIBC
@@ -705,7 +842,34 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+  virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+class TurbulentVelocityInletBC
+: public VelocityInletBC
+{
+
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
+    (structureType, std::string, "hatSpot")
+  )
+  
+protected:
+  Parameters p_;
+
+public:
+  TurbulentVelocityInletBC
+  (
+    OpenFOAMCase& c,
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void setField_U(OFDictData::dict& BC) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  virtual void initInflowBC(const boost::filesystem::path& location) const;
 };
 
 

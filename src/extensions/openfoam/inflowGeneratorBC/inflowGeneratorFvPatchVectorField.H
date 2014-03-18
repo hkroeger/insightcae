@@ -36,10 +36,15 @@ SourceFiles
 #define inflowGeneratorFvPatchVectorField_H
 
 #include "Random.H"
-#include "fixedValueFvPatchField.H"
-#include "homogeneousTurbulenceVorton.H"
+#include "inflowGeneratorBaseFvPatchVectorField.H"
+
+#include "turbulentStructure.H"
 #include "hatSpot.H"
+#include "homogeneousTurbulenceVorton.H"
 #include "SLList.H"
+
+#include "indexedOctree.H"
+#include "treeDataPoint.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -50,48 +55,31 @@ namespace Foam
                      Class inflowGeneratorFvPatchVectorField Declaration
 \*---------------------------------------------------------------------------*/
 
+
 template<class TurbulentStructure>
 class inflowGeneratorFvPatchVectorField
-:
-    public fixedValueFvPatchField<vector>
+: public inflowGeneratorBaseFvPatchVectorField
 {
     
-    // Private data
-    SLList<TurbulentStructure> vortons_;
-    
-    Random ranGen_;
-    
+protected:
     /**
-     * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
+     * not a linked list: each vorton needs to have an index for tree seach
      */
-    Field<vector> Umean_;
+    Field<TurbulentStructure> vortons_; 
     
-    /**
-     * Prescribed reynolds stress tensor
-     */
-    Field<symmTensor> R_;
-    
-    /**
-     * Prescribed length scale field
-     */
-    Field<vector> L_;
+    autoPtr<scalarField> tau_;
+    autoPtr<scalarField> crTimes_;
     
     /**
      * Additional parameters for the selected turbulent structure
      */
-    typename TurbulentStructure::Parameters structureParameters_;
-    
-    Field<scalar> conditioningFactor_;
-    
-    scalar overlap_;
-    
-    label curTimeIndex_;
-    
-    vector n_;
-
+    typename TurbulentStructure::StructureParameters structureParameters_;
+        
+    void computeTau();
     void computeConditioningFactor();
-    
 
+    scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
+    
 public:
 
     //- Runtime type information
@@ -164,28 +152,28 @@ public:
 
 
 
-        // Mapping functions
+    // Mapping functions
 
-            //- Map (and resize as needed) from self given a mapping object
-            virtual void autoMap
-            (
-                const fvPatchFieldMapper&
-            );
+	//- Map (and resize as needed) from self given a mapping object
+	virtual void autoMap
+	(
+	    const fvPatchFieldMapper&
+	);
 
-            //- Reverse map the given fvPatchField onto this fvPatchField
-            virtual void rmap
-            (
-                const fvPatchField<vector>&,
-                const labelList&
-            );
-
+	//- Reverse map the given fvPatchField onto this fvPatchField
+	virtual void rmap
+	(
+	    const fvPatchField<vector>&,
+	    const labelList&
+	);
+	
+	// choose a random location x inside face fi, such that PDF of x is P(x)=1/A_f
+	point randomFacePosition(label fi);
 
 
         // Evaluation functions
 
-        virtual void doUpdate();
-	
-	virtual void updateCoeffs();
+        virtual tmp<vectorField> continueFluctuationProcess(scalar t, ProcessStepInfo *info=NULL);
 	
         //- Write
         virtual void write(Ostream&) const;

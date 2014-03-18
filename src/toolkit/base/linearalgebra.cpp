@@ -34,6 +34,21 @@ mat vec3(double x, double y, double z)
   return v;
 }
 
+arma::mat tensor3(
+  double xx, double xy, double xz,
+  double yx, double yy, double yz,
+  double zx, double zy, double zz
+)
+{
+  mat v;
+  v 
+    << xx << xy <<  xz <<endr
+    << yx << yy <<  yz <<endr
+    << zx << zy <<  zz <<endr;
+    
+  return v;
+}
+
 mat vec2(double x, double y)
 {
   mat v;
@@ -61,6 +76,19 @@ std::string toStr(const arma::mat& v3)
   for (int i=0; i<3; i++)
     s+=" "+lexical_cast<std::string>(v3(i));
   return s+" ";
+}
+
+arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
+{
+  return solve(x.t()*x, x.t()*y);
+}
+
+arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder)
+{
+  arma::mat xx(x.n_rows, maxorder-minorder);
+  for (int i=0; i<maxorder-minorder; i++)
+    xx.col(i)=pow(x, minorder+i);
+  return linearRegression(y, xx);
 }
 
 }

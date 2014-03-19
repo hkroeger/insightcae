@@ -808,6 +808,18 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boo
 
   OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
   
+  OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
+  int np=decomposeParDict.getInt("numberOfSubdomains");
+  OFDictData::dict msd;
+  OFDictData::list dl;
+  dl.push_back(np);
+  dl.push_back(1);
+  dl.push_back(1);
+  msd["n"]=dl;
+  msd["delta"]=0.001;
+  decomposeParDict["method"]="simple";
+  decomposeParDict["simpleCoeffs"]=msd;
+
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
   if (cm.OFversion()<=160)
   {

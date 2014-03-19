@@ -10,6 +10,8 @@ set(FEMDisplacementBC_SOURCES
 
 set(include_directories
   ${toolkit_SOURCE_DIR}
+  ${ARMADILLO_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
   ${journalbearingcommon_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 

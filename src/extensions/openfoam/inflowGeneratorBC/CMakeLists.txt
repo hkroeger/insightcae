@@ -16,6 +16,8 @@ project(inflowGeneratorBC16ext)
 set(include_directories
   ${PROJECT_SOURCE_DIR}
   ${inflowGeneratorBC_INC_DIRS}
+  ${ARMADILLO_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${toolkit_SOURCE_DIR}
   ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
@@ -41,6 +43,8 @@ project(inflowGeneratorBC22x)
 set(include_directories
   ${PROJECT_SOURCE_DIR}
   ${inflowGeneratorBC_INC_DIRS}
+  ${ARMADILLO_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
   ${toolkit_SOURCE_DIR}
   ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
   ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 

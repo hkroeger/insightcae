@@ -318,9 +318,9 @@ ParameterSet PipeBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(5, "[T] length grace period before averaging starts"))
-	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS"))
-	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics"))
+	    ("inittime",	new DoubleParameter(5, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
+	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
+	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Options for statistical evaluation"

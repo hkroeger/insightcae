@@ -71,11 +71,11 @@ public:
 	argv.insert(argv.begin(), "-c");
 	argv.insert(argv.begin(), "bash");
       }
-      else if (boost::starts_with(executionMachine_, "qrsh:"))
+      else if (boost::starts_with(executionMachine_, "qrsh-wrap"))
       {
 	//argv.insert(argv.begin(), "n");
 	//argv.insert(argv.begin(), "-now");
-	argv.insert(argv.begin(), "qrsh");
+	argv.insert(argv.begin(), "qrsh-wrap");
       }
       else
       {

@@ -20,6 +20,8 @@
 
 #include "linearalgebra.h"
 #include "boost/lexical_cast.hpp"
+#include "boost/tuple/tuple.hpp"
+#include "gsl/gsl_multimin.h"
 
 using namespace arma;
 using namespace boost;
@@ -90,5 +92,98 @@ arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxor
     xx.col(i)=pow(x, minorder+i);
   return linearRegression(y, xx);
 }
+
+typedef boost::tuple<RegressionModel&, const arma::mat&, const arma::mat&> RegressionData;
+
+double f_nonlinearRegression(const gsl_vector * p, void * params)
+{
+  RegressionData* md = static_cast<RegressionData*>(params);
+  
+  RegressionModel& m = boost::get<0>(*md);
+  const arma::mat& y = boost::get<1>(*md);
+  const arma::mat& x = boost::get<2>(*md);
+  
+  m.setParameters(p->data);
+  
+  return m.computeQuality(y, x);
+}
+
+RegressionModel::~RegressionModel()
+{
+}
+
+double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) const
+{
+  double q=0.0;
+  for (int r=0; r<y.n_rows; r++)
+  {
+    q += norm( y.row(r) - evaluateObjective(x.row(r)), 2 );
+  }
+  return q;
+}
+
+
+double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionModel& model)
+{
+  const gsl_multimin_fminimizer_type *T = 
+    gsl_multimin_fminimizer_nmsimplex2;
+  gsl_multimin_fminimizer *s = NULL;
+  gsl_vector *ss, *p;
+  gsl_multimin_function minex_func;
+
+  size_t iter = 0;
+  int status;
+  double size;
+
+  /* Starting point */
+  p = gsl_vector_alloc (model.numP());
+  gsl_vector_set (p, 0, 5.0);
+  gsl_vector_set (p, 1, 7.0);
+
+  /* Set initial step sizes to 1 */
+  ss = gsl_vector_alloc (model.numP());
+  gsl_vector_set_all (ss, 1.0);
+
+  /* Initialize method and iterate */
+  RegressionData param(model, y, x);
+  minex_func.n = model.numP();
+  minex_func.f = f_nonlinearRegression;
+  minex_func.params = (void*) (&param);
+
+  s = gsl_multimin_fminimizer_alloc (T, model.numP());
+  gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
+
+  do
+    {
+      iter++;
+      status = gsl_multimin_fminimizer_iterate(s);
+      
+      if (status) 
+        break;
+
+      size = gsl_multimin_fminimizer_size (s);
+      status = gsl_multimin_test_size (size, 1e-3);
+
+      if (status == GSL_SUCCESS)
+        {
+          printf ("converged to minimum at\n");
+        }
+
+      printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
+              iter,
+              gsl_vector_get (s->x, 0), 
+              s->fval, size);
+    }
+  while (status == GSL_CONTINUE && iter < 100);
+  
+  model.setParameters(s->x->data);
+  
+  gsl_vector_free(p);
+  gsl_vector_free(ss);
+  gsl_multimin_fminimizer_free (s);
+
+  return model.computeQuality(y, x);
+}
+
 
 }

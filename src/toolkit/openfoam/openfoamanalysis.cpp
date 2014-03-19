@@ -76,6 +76,7 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
 		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
 		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
+		    ("evaluateonly", 	new BoolParameter(false, "Whether to skip solver run and do only the evaluation"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Execution parameters"
@@ -209,30 +210,41 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   
   path dir = setupExecutionEnvironment();
 
-  p.saveToFile(dir/"parameters.ist", type());
+  OpenFOAMCase runCase(ofe);
   
+  if (p.getBool("run/evaluateonly"))
+    cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
+
+  if (!p.getBool("run/evaluateonly"))
   {
-    OpenFOAMCase meshCase(ofe);
-    if (!meshCase.meshPresentOnDisk(dir))
-      createMesh(meshCase, p);
-    else
-      cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
+    p.saveToFile(dir/"parameters.ist", type());
+    
+    {
+      OpenFOAMCase meshCase(ofe);
+      if (!meshCase.meshPresentOnDisk(dir))
+	createMesh(meshCase, p);
+      else
+	cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
+    }
   }
 
-  OpenFOAMCase runCase(ofe);
+  createCase(runCase, p);
+  boost::shared_ptr<OFdicts> dicts;
+  createDictsInMemory(runCase, p, dicts);
+  applyCustomOptions(runCase, p, dicts);
+  
   if (!runCase.outputTimesPresentOnDisk(dir))
   {
-    createCase(runCase, p);
-    boost::shared_ptr<OFdicts> dicts;
-    createDictsInMemory(runCase, p, dicts);
-    applyCustomOptions(runCase, p, dicts);
     writeDictsToDisk(runCase, p, dicts);
     applyCustomPreprocessing(runCase, p);
   }
   else
-    cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation and run."<<endl;    
-  
-  runSolver(displayer, runCase, p);
+    cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation."<<endl;    
+    
+  if (!p.getBool("run/evaluateonly"))
+  {
+    runSolver(displayer, runCase, p);
+  }
   
   return evaluateResults(runCase, p);
 }

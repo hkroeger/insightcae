@@ -20,10 +20,25 @@
 #ifndef INSIGHT_PIPE_H
 #define INSIGHT_PIPE_H
 
+#include "base/linearalgebra.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/basiccaseelements.h"
 
 namespace insight {
+  
+class CorrelationFunctionModel
+: public RegressionModel
+{
+public:
+  double B_, omega_;
+  
+  CorrelationFunctionModel();
+  virtual int numP() const;
+  virtual void setParameters(const double* params);
+  virtual arma::mat evaluateObjective(const arma::mat& x) const;
+  
+  double lengthScale() const;
+};
   
 class RadialTPCArray
 : public OpenFOAMCaseElement
@@ -37,9 +52,12 @@ public:
     (x, double, 0.0)
     (tanSpan, double, M_PI)
     (axSpan, double, 1.0)
+    (np, int, 50)
     (nph, int, 8)
     (R, double, 1.0)
   )
+  
+  static const char * cmptNames[];
   
 protected:
   Parameters p_;
@@ -51,6 +69,16 @@ public:
   RadialTPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
+  virtual void evaluateSingle
+  (
+    OpenFOAMCase& cm, const boost::filesystem::path& location, 
+    ResultSetPtr& results, 
+    const std::string& name_prefix,
+    double span,
+    const std::string& axisLabel,
+    const boost::ptr_vector<cylindricalTwoPointCorrelation>& tpcarray,
+    const std::string& shortDescription
+  ) const;
 };
 
 class PipeBase 

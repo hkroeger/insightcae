@@ -36,6 +36,8 @@ public:
   virtual int numP() const;
   virtual void setParameters(const double* params);
   virtual arma::mat evaluateObjective(const arma::mat& x) const;
+  
+  double lengthScale() const;
 };
   
 class RadialTPCArray

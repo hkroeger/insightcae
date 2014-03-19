@@ -57,7 +57,12 @@ void CorrelationFunctionModel::setParameters(const double* params)
 
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
-  return arma::ones(1) * exp(-B_*x(0))*cos(omega_*x(0));
+  return exp(-B_*x.col(0))*cos(omega_*x.col(0));
+}
+
+double CorrelationFunctionModel::lengthScale() const
+{
+  return B_ / ( pow(B_, 2)+pow(omega_, 2) );
 }
 
 const char * RadialTPCArray::cmptNames[] = 
@@ -125,16 +130,18 @@ void RadialTPCArray::addIntoDictionaries(OFdicts& dictionaries) const
 void RadialTPCArray::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
 {
   evaluateSingle(cm, location, results, 
-	   p_.name_prefix()+"_tan", 
-	   p_.tanSpan(), "Angle [rad]",
-	   tpc_tan_, 
-	   "two-point correlation of velocity along tangential direction at different radii");
+		  p_.name_prefix()+"_tan", 
+		  p_.tanSpan(), "Angle [rad]",
+		  tpc_tan_, 
+		  "two-point correlation of velocity along tangential direction at different radii"
+		);
   
   evaluateSingle(cm, location, results, 
-	   p_.name_prefix()+"_ax", 
-	   p_.axSpan(),  "Axial distance [length]",
-	   tpc_ax_, 
-	   "two-point correlation of velocity along axial direction at different radii");
+		  p_.name_prefix()+"_ax", 
+		  p_.axSpan(),  "Axial distance [length]",
+		  tpc_ax_, 
+		  "two-point correlation of velocity along axial direction at different radii"
+		);
 }
 
 void RadialTPCArray::evaluateSingle
@@ -148,13 +155,17 @@ void RadialTPCArray::evaluateSingle
   const std::string& shortDescription
 ) const
 {
+  int nk=9;
+  int nr=tpcarray.size();
+  
+  arma::mat L(r_.data(), r_.size(), 1);
+  L=arma::join_rows(L, arma::zeros(r_.size(), nk)); // append nk column with 0's
+
   // create one plot per component, with the profiles for all radii overlayed
   {
-    int nk=9;
-    int nr=tpcarray.size();
     Gnuplot gp[nk];
     std::ostringstream cmd[nk];
-    arma::mat data[nk];
+    arma::mat data[nk], regressions[nk];
     
     for(int k=0; k<nk; k++)
     {
@@ -165,6 +176,7 @@ void RadialTPCArray::evaluateSingle
       gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
       cmd[k]<<"plot 0 not lc -1";
       data[k]=arma::linspace<arma::mat>(0, span, p_.np());
+      regressions[k]=arma::linspace<arma::mat>(0, span, p_.np());
 
       results->insert(chart_name,
 	std::auto_ptr<Image>(new Image
@@ -182,8 +194,14 @@ void RadialTPCArray::evaluateSingle
       // append profile of this radius to chart of this component
       for (int k=0; k<nk; k++)
       {
-	cmd[k]<<", '-' w l t 'r="<<r_[ir]<<"'";
+	cmd[k]<<", '-' w p lt "<<ir+1<<" t 'r="<<r_[ir]<<"', '-' w l lt "<<ir+1<<" t 'r="<<r_[ir]<<" (fit)'";
 	data[k]=join_rows(data[k], res[k+1].row(res[k+1].n_rows-1).t());
+	
+	CorrelationFunctionModel m;
+	nonlinearRegression(data[k].col(0), data[k].col(k+1), m);
+	regressions[k]=join_rows(regressions[k], m.evaluateObjective(regressions[k].col(0)));
+	
+	L(ir, 1+k)=m.lengthScale();
       }
       ir++;
     }
@@ -193,11 +211,43 @@ void RadialTPCArray::evaluateSingle
       gp[k]<<cmd[k].str()<<endl;
       for (int c=1; c<data[k].n_cols; c++)
       {
-	arma::mat pdata=join_rows(data[k].col(0), data[k].col(c));
+	arma::mat pdata;
+	pdata=join_rows(data[k].col(0), data[k].col(c));
+	gp[k].send1d( pdata );
+	pdata=join_rows(regressions[k].col(0), regressions[k].col(c));
 	gp[k].send1d( pdata );
       }
     }
-  } 
+  }
+  
+  {
+    std::string chart_name=name_prefix+"_L";
+    std::string chart_file_name=chart_name+".png";
+
+    Gnuplot gp;
+    std::ostringstream cmd;
+    gp<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+    gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
+    cmd<<"plot 0 not lc -1";
+    for (int k=0; k<nk; k++)
+    {
+      cmd<<", '-' w p lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
+    }
+    gp<<cmd.str();
+    for (int k=0; k<nk; k++)
+    {
+      arma::mat pdata;
+      pdata=join_rows(L.col(0), L.col(k+1));
+      gp.send1d(pdata);
+    }
+    
+    results->insert(chart_name,
+      std::auto_ptr<Image>(new Image
+      (
+      chart_file_name, 
+      "Length scale", ""
+    )));
+  }
 }
   
   

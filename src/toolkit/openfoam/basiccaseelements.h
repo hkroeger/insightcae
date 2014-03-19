@@ -113,6 +113,7 @@ public:
     (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
+    (LES, bool, false)
   )
 
 protected:

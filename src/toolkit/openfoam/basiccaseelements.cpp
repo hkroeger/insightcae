@@ -420,7 +420,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
   div["default"]="Gauss limitedLinear 1";
-  div["div(phi,U)"]="Gauss limitedLinearV 1";
+
+  if (p_.LES())
+   div["div(phi,U)"]="Gauss linear";
+  else
+   div["div(phi,U)"]="Gauss limitedLinearV 1";
+
   if (OFversion()>=210)
   {
     div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";

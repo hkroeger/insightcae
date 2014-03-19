@@ -598,7 +598,7 @@ void PipeBase::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
 
   
-  cm.insert(new pimpleFoamNumerics(cm) );
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters().set_LES(true) ) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))

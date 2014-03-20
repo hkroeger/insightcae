@@ -57,7 +57,7 @@ void CorrelationFunctionModel::setParameters(const double* params)
 
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
-  return exp(-B_*x.col(0))*cos(omega_*x.col(0));
+  return exp(-B_*x.col(0)) % cos(omega_*x.col(0));
 }
 
 double CorrelationFunctionModel::lengthScale() const
@@ -175,8 +175,10 @@ void RadialTPCArray::evaluateSingle
       gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
       gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
       cmd[k]<<"plot 0 not lc -1";
-      data[k]=arma::linspace<arma::mat>(0, span, p_.np());
-      regressions[k]=arma::linspace<arma::mat>(0, span, p_.np());
+      data[k]=zeros(p_.np(), nk+1);
+      data[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
+      regressions[k]=zeros(p_.np(), nk+1);
+      regressions[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
 
       results->insert(chart_name,
 	std::auto_ptr<Image>(new Image
@@ -195,11 +197,12 @@ void RadialTPCArray::evaluateSingle
       for (int k=0; k<nk; k++)
       {
 	cmd[k]<<", '-' w p lt "<<ir+1<<" t 'r="<<r_[ir]<<"', '-' w l lt "<<ir+1<<" t 'r="<<r_[ir]<<" (fit)'";
-	data[k]=join_rows(data[k], res[k+1].row(res[k+1].n_rows-1).t());
+	data[k].col(k+1) = res[k+1].row(res[k+1].n_rows-1).t();
 	
 	CorrelationFunctionModel m;
+	cout<<k<<" "<<data[k].n_cols<<endl;
 	nonlinearRegression(data[k].col(0), data[k].col(k+1), m);
-	regressions[k]=join_rows(regressions[k], m.evaluateObjective(regressions[k].col(0)));
+	regressions[k].col(k+1)=m.evaluateObjective(regressions[k].col(0));
 	
 	L(ir, 1+k)=m.lengthScale();
       }
@@ -233,7 +236,7 @@ void RadialTPCArray::evaluateSingle
     {
       cmd<<", '-' w p lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
     }
-    gp<<cmd.str();
+    gp<<cmd.str()<<endl;
     for (int k=0; k<nk; k++)
     {
       arma::mat pdata;

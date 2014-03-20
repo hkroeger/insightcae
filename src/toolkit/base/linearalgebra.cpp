@@ -112,12 +112,18 @@ RegressionModel::~RegressionModel()
 {
 }
 
+arma::mat RegressionModel::weights(const arma::mat& x) const
+{
+  return ones(x.n_rows);
+}
+
 double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) const
 {
   double q=0.0;
+  arma::mat w=weights(x);
   for (int r=0; r<y.n_rows; r++)
   {
-    q += norm( y.row(r) - evaluateObjective(x.row(r)), 2 );
+    q +=  w(r) * pow(norm( y.row(r) - evaluateObjective(x.row(r)), 2 ), 2);
   }
   return q;
 }
@@ -137,12 +143,11 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
 
   /* Starting point */
   p = gsl_vector_alloc (model.numP());
-  gsl_vector_set (p, 0, 5.0);
-  gsl_vector_set (p, 1, 7.0);
+  gsl_vector_set_all (p, 1.0);
 
-  /* Set initial step sizes to 1 */
+  /* Set initial step sizes to 0.1 */
   ss = gsl_vector_alloc (model.numP());
-  gsl_vector_set_all (ss, 1.0);
+  gsl_vector_set_all (ss, 0.1);
 
   /* Initialize method and iterate */
   RegressionData param(model, y, x);

@@ -1114,8 +1114,8 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 {
   int nk=9;
   
-  std::vector<double> t;
-  std::vector<double> profs[nk];
+  std::vector<double> t; // time step array
+  std::vector<double> profs[nk]; // profiles
   int np=-1;
   
   path fp;
@@ -1134,13 +1134,9 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
       string line;
       getline(f, line);
       if (f.fail()) break;
-//       cout<<line<<endl;
+
       if (!starts_with(line, "#"))
       {
-// 	erase_all(line, "(");
-// 	erase_all(line, ")");
-// 	replace_all(line, ",", " ");
-// 	replace_all(line, "  ", " ");
 	
 	// split into component tpcs
 	std::vector<string> strs;
@@ -1174,7 +1170,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
   
   ptr_vector<arma::mat> res;
   res.push_back(new arma::mat(t.data(), t.size(), 1));
-  for (int k=0; k<nk; k++) res.push_back(new arma::mat(profs[k].data(), t.size(), np));
+  for (int k=0; k<nk; k++) res.push_back(new arma::mat( arma::mat(profs[k].data(), np, t.size()).t() ) );
   
   return res;  
 }

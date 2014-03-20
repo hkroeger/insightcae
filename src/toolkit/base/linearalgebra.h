@@ -78,7 +78,7 @@ public:
   virtual int numP() const =0;
   virtual void setParameters(const double* params) =0;
   virtual arma::mat evaluateObjective(const arma::mat& x) const =0;
-  
+  virtual arma::mat weights(const arma::mat& x) const;
   double computeQuality(const arma::mat& y, const arma::mat& x) const;
 };
 

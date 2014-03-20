@@ -51,13 +51,19 @@ int CorrelationFunctionModel::numP() const
 
 void CorrelationFunctionModel::setParameters(const double* params)
 {
-  B_=params[0];
+  B_=max(0.1, params[0]);
   omega_=params[1];
+}
+
+arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
+{
+  return exp( -x / max(x.col(0)) );
 }
 
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
-  return exp(-B_*x.col(0)) % cos(omega_*x.col(0));
+  //cout<<exp(-B_*x.col(0)) % cos(omega_*x.col(0))<<endl;
+  return exp(-B_*x.col(0)) % ( cos(omega_*x.col(0)) );
 }
 
 double CorrelationFunctionModel::lengthScale() const
@@ -175,9 +181,9 @@ void RadialTPCArray::evaluateSingle
       gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
       gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
       cmd[k]<<"plot 0 not lc -1";
-      data[k]=zeros(p_.np(), nk+1);
+      data[k]=zeros(p_.np(), nr+1);
       data[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
-      regressions[k]=zeros(p_.np(), nk+1);
+      regressions[k]=zeros(p_.np(), nr+1);
       regressions[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
 
       results->insert(chart_name,
@@ -197,12 +203,13 @@ void RadialTPCArray::evaluateSingle
       for (int k=0; k<nk; k++)
       {
 	cmd[k]<<", '-' w p lt "<<ir+1<<" t 'r="<<r_[ir]<<"', '-' w l lt "<<ir+1<<" t 'r="<<r_[ir]<<" (fit)'";
-	data[k].col(k+1) = res[k+1].row(res[k+1].n_rows-1).t();
+	data[k].col(ir+1) = res[k+1].row(res[k+1].n_rows-1).t();
+	data[k].col(ir+1) /= data[k].col(ir+1)(0); // Normalize
 	
 	CorrelationFunctionModel m;
-	cout<<k<<" "<<data[k].n_cols<<endl;
-	nonlinearRegression(data[k].col(0), data[k].col(k+1), m);
-	regressions[k].col(k+1)=m.evaluateObjective(regressions[k].col(0));
+	cout<<"Fitting TPC for radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
+	nonlinearRegression(data[k].col(ir+1), data[k].col(0), m);
+	regressions[k].col(ir+1)=m.evaluateObjective(regressions[k].col(0));
 	
 	L(ir, 1+k)=m.lengthScale();
       }
@@ -224,7 +231,7 @@ void RadialTPCArray::evaluateSingle
   }
   
   {
-    std::string chart_name=name_prefix+"_L";
+    std::string chart_name=name_prefix+"_L_diag";
     std::string chart_file_name=chart_name+".png";
 
     Gnuplot gp;
@@ -232,12 +239,15 @@ void RadialTPCArray::evaluateSingle
     gp<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
     cmd<<"plot 0 not lc -1";
-    for (int k=0; k<nk; k++)
+    
+    std::vector<double> ks=list_of<double>(0)(4)(8);
+    
+    BOOST_FOREACH(int k, ks)
     {
-      cmd<<", '-' w p lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
+      cmd<<", '-' w lp lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
     }
     gp<<cmd.str()<<endl;
-    for (int k=0; k<nk; k++)
+    BOOST_FOREACH(int k, ks)
     {
       arma::mat pdata;
       pdata=join_rows(L.col(0), L.col(k+1));
@@ -248,9 +258,42 @@ void RadialTPCArray::evaluateSingle
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Length scale", ""
+      "Autocorrelation lengths", ""
     )));
   }
+
+  {
+    std::string chart_name=name_prefix+"_L_offdiag";
+    std::string chart_file_name=chart_name+".png";
+
+    Gnuplot gp;
+    std::ostringstream cmd;
+    gp<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+    gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
+    cmd<<"plot 0 not lc -1";
+    
+    std::vector<double> ks=list_of<double>(1)(2)(3)(5)(6)(7);
+    
+    BOOST_FOREACH(int k, ks)
+    {
+      cmd<<", '-' w lp lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
+    }
+    gp<<cmd.str()<<endl;
+    BOOST_FOREACH(int k, ks)
+    {
+      arma::mat pdata;
+      pdata=join_rows(L.col(0), L.col(k+1));
+      gp.send1d(pdata);
+    }
+    
+    results->insert(chart_name,
+      std::auto_ptr<Image>(new Image
+      (
+      chart_file_name, 
+      "Cross-correlation lengths", ""
+    )));
+  }
+
 }
   
   

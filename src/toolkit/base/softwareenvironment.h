@@ -52,7 +52,8 @@ public:
     (  
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>(),
-      std::vector<std::string>* output = NULL
+      std::vector<std::string>* output = NULL,
+      std::string *ovr_machine=NULL
     ) const;
     
     template<class stream>
@@ -60,18 +61,22 @@ public:
     (
       /*redi::ip*/ stream& p_in,      
       const std::string& cmd, 
-      std::vector<std::string> argv = std::vector<std::string>()
+      std::vector<std::string> argv = std::vector<std::string>(),
+      std::string *ovr_machine=NULL
     ) const
     {
       
+      std::string machine=executionMachine_;
+      if (ovr_machine) machine=*ovr_machine;
+      
       argv.insert(argv.begin(), cmd);
       
-      if (executionMachine_=="")
+      if (machine=="")
       {
 	argv.insert(argv.begin(), "-c");
 	argv.insert(argv.begin(), "bash");
       }
-      else if (boost::starts_with(executionMachine_, "qrsh-wrap"))
+      else if (boost::starts_with(machine, "qrsh-wrap"))
       {
 	//argv.insert(argv.begin(), "n");
 	//argv.insert(argv.begin(), "-now");
@@ -79,7 +84,7 @@ public:
       }
       else
       {
-	argv.insert(argv.begin(), executionMachine_);
+	argv.insert(argv.begin(), machine);
 	argv.insert(argv.begin(), "ssh");
       }
       

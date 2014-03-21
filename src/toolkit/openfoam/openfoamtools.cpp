@@ -535,6 +535,7 @@ void runPvPython
   redi::opstream proc;  
   std::vector<string> args;
   args.push_back("--use-offscreen-rendering");
+  std::string machine=""; // execute always on local machine
   //ofc.forkCommand(proc, location, "pvpython", args);
   
   path tempfile=absolute(unique_path("%%%%%%%%%.py"));
@@ -548,7 +549,7 @@ void runPvPython
     tf.close();
   }
   args.push_back(tempfile.c_str());
-  ofc.executeCommand(location, "pvbatch", args);
+  ofc.executeCommand(location, "pvbatch", args, NULL, 0, &machine);
   remove(tempfile);
 
 }

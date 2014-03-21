@@ -375,7 +375,8 @@ int OpenFOAMCase::executeCommand
   const std::string& cmd,
   std::vector<std::string> argv,
   std::vector<std::string>* output,
-  int np
+  int np,
+  std::string *ovr_machine
 ) const
 {
   string execmd=cmd;
@@ -385,7 +386,7 @@ int OpenFOAMCase::executeCommand
     argv.push_back("-parallel");
   }
   
-  return env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output );
+  return env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output, ovr_machine );
 }
 
 int OpenFOAMCase::runSolver

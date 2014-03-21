@@ -45,12 +45,13 @@ int SoftwareEnvironment::executeCommand
 (
   const std::string& cmd, 
   std::vector<std::string> argv,
-  std::vector<std::string>* output
+  std::vector<std::string>* output,
+  std::string *ovr_machine
 ) const
 {
   redi::ipstream p_in;
   
-  forkCommand(p_in, cmd, argv);
+  forkCommand(p_in, cmd, argv, ovr_machine);
   
   std::string line;
   while (std::getline(p_in, line))

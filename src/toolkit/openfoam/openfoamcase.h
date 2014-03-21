@@ -191,7 +191,8 @@ public:
       const std::string& cmd,
       std::vector<std::string> argv = std::vector<std::string>(),
       std::vector<std::string>* output = NULL,
-      int np=0
+      int np=0,
+      std::string *ovr_machine=NULL
     ) const;
     
     int runSolver
@@ -209,10 +210,11 @@ public:
       stream& p_in,      
       const boost::filesystem::path& location, 
       const std::string& cmd, 
-      std::vector<std::string> argv = std::vector<std::string>()
+      std::vector<std::string> argv = std::vector<std::string>(),
+      std::string *ovr_machine=NULL
     ) const
     {
-      env_.forkCommand(p_in, cmdString(location, cmd, argv), std::vector<std::string>());
+      env_.forkCommand(p_in, cmdString(location, cmd, argv), std::vector<std::string>(), ovr_machine );
     }
     
     inline const FieldList& fields() const

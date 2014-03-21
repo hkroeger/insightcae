@@ -105,6 +105,7 @@ public:
   virtual double calcRe(const ParameterSet& p) const;
   virtual double calcUbulk(const ParameterSet& p) const;
   virtual double calcT(const ParameterSet& p) const;
+  virtual double calcUtau(const ParameterSet& p) const;
 
   virtual void createMesh
   (

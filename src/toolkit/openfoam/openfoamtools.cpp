@@ -25,8 +25,10 @@
 #include "boost/filesystem.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/assign.hpp"
+#include <boost/tokenizer.hpp>
 
 using namespace std;
+using namespace arma;
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::assign;
@@ -367,6 +369,262 @@ void createPatch(const OpenFOAMCase& ofc,
   if (overwrite) opts.push_back("-overwrite");
     
   ofc.executeCommand(location, "createPatch", opts);
+}
+
+namespace sampleOps
+{
+
+set::set(Parameters const& p)
+: p_(p)
+{
+}
+  
+
+uniformLine::uniformLine(Parameters const& p )
+: set(p),
+  p_(p)
+{
+}
+
+void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  
+  OFDictData::dict sd;
+  sd["type"]="uniform";
+  sd["axis"]="distance";
+  sd["start"]=OFDictData::vector3(p_.start());
+  sd["end"]=OFDictData::vector3(p_.end());
+  sd["nPoints"]=p_.np();
+  
+  l.push_back(p_.name());
+  l.push_back(sd);
+}
+
+set* uniformLine::clone() const
+{
+  return new uniformLine(p_);
+}
+
+arma::mat uniformLine::readSamples
+(
+  const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+  const std::string& setName,
+  ColumnDescription* coldescr
+)
+{
+  arma::mat data;
+  
+  path fp;
+  if (ofc.OFversion()<=160)
+    fp=absolute(location)/"sets";
+  else
+    fp=absolute(location)/"postProcessing"/"sets";
+  
+  TimeDirectoryList tdl=listTimeDirectories(fp);
+  
+  BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
+  {
+    arma::mat m;
+    std::vector<std::string> files;
+    
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( tde.second );
+          itr != end_itr;
+          ++itr )
+    {      
+      if ( is_regular_file(itr->status()) )
+      {
+        std::string fn=itr->path().filename().string();
+	if (starts_with(fn, setName)) files.push_back(fn);
+      }
+    }
+      
+    sort(files.begin(), files.end());
+    
+    for (int i=0; i<files.size(); i++)
+    {
+      std::string fn=files[i];
+      path fp=tde.second/fn;
+
+      erase_tail(fn, 3);
+      std::vector<std::string> flnames;
+      boost::split(flnames, fn, boost::is_any_of("_"));
+      flnames.erase(flnames.begin());
+      
+      cout<<"Reading "<< fp <<endl;
+      arma::mat res;	  
+      res.load(fp.string(), arma::raw_ascii);
+      cout << "Got size ("<< res.n_rows << "x" << res.n_cols << ")" << endl;
+    
+      int start_col=1;
+      if (m.n_cols==0) m=res;
+      else 
+      {
+	start_col=m.n_cols;
+	m=arma::join_rows(m, res.cols(1, res.n_cols-1));
+      }
+      
+      int ncmpt=(res.n_cols-1)/flnames.size();
+      for (int j=0; j<flnames.size(); j++)
+      {
+	if (coldescr) 
+	{
+	  (*coldescr)[flnames[j]].ncmpt=ncmpt;
+	  (*coldescr)[flnames[j]].col=start_col+ncmpt*j;
+	}
+      }
+    }
+
+    if (data.n_rows==0) 
+      data=m;
+    else 
+      data=join_cols(data, m);
+  }
+  
+  return data;
+  
+}
+
+
+
+
+circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameters const& p )
+: set(p),
+  p_(p)
+{
+}
+
+void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  
+  for (int i=0; i<p_.nc(); i++)
+  {
+    OFDictData::dict sd;
+    sd["type"]="uniform";
+    sd["axis"]="distance";
+    sd["start"]=OFDictData::vector3(p_.start());
+    sd["end"]=OFDictData::vector3(rotMatrix(i) * p_.end());
+    sd["nPoints"]=p_.np();
+    
+    l.push_back(setname(i));
+    l.push_back(sd);
+  }
+}
+
+set* circumferentialAveragedUniformLine::clone() const
+{
+  return new circumferentialAveragedUniformLine(p_);
+}
+
+arma::mat circumferentialAveragedUniformLine::rotMatrix(int i) const
+{
+  return insight::rotMatrix( 2.*M_PI*double(i)/double(p_.nc()), p_.axis());
+}
+
+arma::mat circumferentialAveragedUniformLine::readSamples
+(
+  const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+  ColumnDescription* coldescr
+) const
+{
+  arma::mat data;
+  ColumnDescription cd;
+  for (int i=0; i< p_.nc(); i++)
+  {
+    arma::mat datai = uniformLine::readSamples(ofc, location, setname(i), &cd);
+    arma::mat Ri=rotMatrix(i).t();
+    
+    BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+    {
+      ColumnInfo ci=fn.second;
+      cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+      if (ci.ncmpt==1)
+      {
+	// scalar: no transform needed
+      }
+      else if (ci.ncmpt==3)
+      {
+	datai.cols(ci.col, ci.col+2) = (Ri * datai.cols(ci.col, ci.col+2).t()).t();
+      }
+      else if (ci.ncmpt==6)
+      {
+	// symmetric tensor
+	int c0=ci.col;
+	for (int j=0; j<datai.n_rows; j++)
+	{
+	  arma::mat t;
+	  t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << endr
+	    << datai(j,c0+1) << datai(j,c0+3) << datai(j,c0+4) << endr
+	    << datai(j,c0+2) << datai(j,c0+4) << datai(j,c0+5) << endr;
+	   
+	  t = Ri * t * Ri.t();
+	  double symm=fabs(t(1,0)-t(0,1))+fabs(t(0,2)-t(2,0))+fabs(t(1,2)-t(2,1));
+	  if (symm>1e-6) cout<<"Warning: unsymmetric tensor after rotation: "<<endl<<t<<endl;	  
+	  
+	  datai(j,c0)   = t(0,0);
+	  datai(j,c0+1) = t(0,1);
+	  datai(j,c0+2) = t(0,2);
+	  datai(j,c0+3) = t(1,1);
+	  datai(j,c0+4) = t(1,2);
+	  datai(j,c0+5) = t(2,2);
+	}
+      }
+    }
+    
+    datai.save("data_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
+    
+    if (i==0)
+      data=datai;
+    else
+      data+=datai;
+  }
+  
+  if (coldescr) *coldescr=cd;
+  
+  return data / double(p_.nc());
+  
+}
+
+}
+
+void sample(const OpenFOAMCase& ofc, 
+	    const boost::filesystem::path& location, 
+	    const std::vector<std::string>& fields,
+	    const boost::ptr_vector<sampleOps::set>& sets
+	    )
+{
+  using namespace sampleOps;
+  
+  OFDictData::dictFile sampleDict;
+  
+  sampleDict["setFormat"] = "raw";
+  sampleDict["surfaceFormat"] = "vtk";
+  sampleDict["interpolationScheme"] = "cellPointFace";
+  sampleDict["formatOptions"] = OFDictData::dict();
+  
+  OFDictData::list flds; flds.resize(fields.size());
+  copy(fields.begin(), fields.end(), flds.begin());
+  sampleDict["fields"] = flds;
+  
+  sampleDict["sets"] = OFDictData::list();
+  sampleDict["surfaces"] = OFDictData::list();
+    
+  BOOST_FOREACH( const set& s, sets)
+  {
+    s.addIntoDictionary(ofc, sampleDict);
+  }
+  
+  // then write to file
+  sampleDict.write( location / "system" / "sampleDict" );
+
+  std::vector<std::string> opts;
+  opts.push_back("-latestTime");
+  //if (overwrite) opts.push_back("-overwrite");
+    
+  ofc.executeCommand(location, "sample", opts);
+  
 }
 
 void convertPatchPairToCyclic

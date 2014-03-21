@@ -174,6 +174,107 @@ void createPatch(const OpenFOAMCase& ofc,
 		  bool overwrite=true
 		);
 
+namespace sampleOps
+{
+
+class set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( name, std::string, "unnamed" )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  set(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
+  
+  virtual set* clone() const =0;
+};
+
+inline set* new_clone(const set& op)
+{
+  return op.clone();
+}
+
+/**
+ * Creates a cyclic patch or cyclic patch pair (depending on OF version)
+ * from two other patches
+ */
+struct ColumnInfo
+{
+  int col, ncmpt;
+};
+
+typedef std::map<std::string, ColumnInfo > ColumnDescription;
+
+class uniformLine
+: public set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( start, arma::mat, vec3(0,0,0) )
+      ( end, arma::mat, vec3(1,0,0) )
+      ( np, int, 100 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  uniformLine(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  /**
+   * reads the sampled data from the files
+   * OF writes different files for scalars, vectors tensors. 
+   * They are all read and combined into a single matrix in the above order by column.
+   * multiple times are combined by row
+   */
+  static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       const std::string& setName,
+			       ColumnDescription* coldescr=NULL
+			      );
+};
+
+class circumferentialAveragedUniformLine
+: public set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( start, arma::mat, vec3(0,0,0) )
+      ( end, arma::mat, vec3(1,0,0) )
+      ( axis, arma::mat, vec3(1,0,0) )
+      ( np, int, 100 )
+      ( nc, int, 10 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  circumferentialAveragedUniformLine(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  arma::mat rotMatrix(int i) const;
+  inline std::string setname(int i) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i); }
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       ColumnDescription* coldescr=NULL
+			      ) const;
+};
+
+}
+
+void sample(const OpenFOAMCase& ofc, 
+	    const boost::filesystem::path& location, 
+	    const std::vector<std::string>& fields,
+	    const boost::ptr_vector<sampleOps::set>& sets
+	    );
 /**
  * Converts a pair of patches into a cyclic pair using createPatch.
  * The names of the two patches must be of the pattern (.*)_half[0,1]. 

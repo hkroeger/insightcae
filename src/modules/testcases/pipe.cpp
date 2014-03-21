@@ -178,7 +178,7 @@ void RadialTPCArray::evaluateSingle
       std::string chart_name=name_prefix+"_"+cmptNames[k];
       std::string chart_file_name=chart_name+".png";
       
-      gp[k]<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+      gp[k]<<"set terminal png; set output '"<<chart_file_name<<"';";
       gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
       cmd[k]<<"plot 0 not lc -1";
       data[k]=zeros(p_.np(), nr+1);
@@ -236,7 +236,7 @@ void RadialTPCArray::evaluateSingle
 
     Gnuplot gp;
     std::ostringstream cmd;
-    gp<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
     cmd<<"plot 0 not lc -1";
     
@@ -268,7 +268,7 @@ void RadialTPCArray::evaluateSingle
 
     Gnuplot gp;
     std::ostringstream cmd;
-    gp<<"set terminal 'png'; set output '"<<chart_file_name<<"';";
+    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
     cmd<<"plot 0 not lc -1";
     

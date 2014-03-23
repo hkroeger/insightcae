@@ -99,5 +99,6 @@
 #include <BRepAlgoAPI_Section.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepFilletAPI_MakeFillet.hxx>
-
+#include <IGESControl_Writer.hxx>
+#include <IGESControl_Controller.hxx>
 #endif

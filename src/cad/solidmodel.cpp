@@ -20,12 +20,24 @@
 #include <memory>
 #include "solidmodel.h"
 #include <base/exception.h>
+#include "boost/foreach.hpp"
 
 namespace insight 
 {
 namespace cad 
 {
-  
+
+std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
+{
+  os<<fs.size()<<" {";
+  BOOST_FOREACH(int fi, fs)
+  {
+    os<<" "<<fi;
+  }
+  os<<" }";
+  return os;
+}
+
 Filter::Filter()
 : model_(NULL)
 {
@@ -40,27 +52,77 @@ void Filter::initialize(const SolidModel& m)
   model_=&m;
 }
 
+ANDFilter::ANDFilter(const Filter& f1, const Filter& f2)
+: Filter(),
+  f1_(f1.clone()), f2_(f2.clone())
+{
+}
+void ANDFilter::initialize(const SolidModel& m)
+{
+  f1_->initialize(m);
+  f2_->initialize(m);
+}
 
-edgeTopology::edgeTopology(Topology t)
-: top_(t)
+bool ANDFilter::checkMatch(FeatureID feature) const
+{
+  return f1_->checkMatch(feature) && f2_->checkMatch(feature);
+}
+
+Filter* ANDFilter::clone() const
+{
+  return new ANDFilter(*f1_, *f2_);
+}
+
+NOTFilter::NOTFilter(const Filter& f1)
+: Filter(),
+  f1_(f1.clone())
+{
+}
+void NOTFilter::initialize(const SolidModel& m)
+{
+  f1_->initialize(m);
+}
+
+bool NOTFilter::checkMatch(FeatureID feature) const
+{
+  return !f1_->checkMatch(feature);
+}
+
+Filter* NOTFilter::clone() const
+{
+  return new NOTFilter(*f1_);
+}
+
+ANDFilter operator&&(const Filter& f1, const Filter& f2)
+{
+  return ANDFilter(f1, f2);
+}
+
+NOTFilter operator!(const Filter& f1)
+{
+  return NOTFilter(f1);
+}
+
+
+edgeTopology::edgeTopology(GeomAbs_CurveType ct)
+: ct_(ct)
 {
 }
 
 bool edgeTopology::checkMatch(FeatureID feature) const
 {
-  const TopoDS_Edge& edge = model_->edge(feature);
-  double t0, t1;
-  Handle_Geom_Curve crv=BRep_Tool::Curve(edge, t0, t1);
-  GeomAdaptor_Curve adapt(crv);
-  if (adapt.GetType()==GeomAbs_Circle)
-    return true;
-  else
-    return false;
+  return model_->edgeType(feature) == ct_;
 }
 
 Filter* edgeTopology::clone() const
 {
-  return new edgeTopology(top_);
+  return new edgeTopology(ct_);
+}
+
+SolidModel::SolidModel(const SolidModel& o)
+: shape_(o.shape_)
+{
+  nameFeatures();
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
@@ -71,6 +133,23 @@ SolidModel::SolidModel(const TopoDS_Shape& shape)
 
 SolidModel::~SolidModel()
 {
+}
+
+GeomAbs_CurveType SolidModel::edgeType(FeatureID i) const
+{
+  const TopoDS_Edge& e = edge(i);
+  double t0, t1;
+  Handle_Geom_Curve crv=BRep_Tool::Curve(e, t0, t1);
+  GeomAdaptor_Curve adapt(crv);
+  return adapt.GetType();
+}
+
+arma::mat SolidModel::edgeCoG(FeatureID i) const
+{
+  GProp_GProps props;
+  BRepGProp::LinearProperties(edge(i), props);
+  gp_Pnt cog = props.CentreOfMass();
+  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
 
 FeatureSet SolidModel::query_edges(const Filter& filter) const
@@ -86,7 +165,59 @@ FeatureSet SolidModel::query_edges(const Filter& filter) const
   return res;
 }
 
+void SolidModel::saveAs(const boost::filesystem::path& filename) const
+{
+  std::string ext=filename.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  
+  if (ext==".brep")
+  {
+    BRepTools::Write(shape_, filename.c_str());
+  } 
+  else if ( (ext==".igs") || (ext==".iges") )
+  {
+    Interface_Static::SetIVal("write.iges.brep.mode", 1);
+    IGESControl_Controller igesctrl;
+    igesctrl.Init();
+    IGESControl_Writer igeswriter;
+    igeswriter.AddShape(shape_);
+    igeswriter.Write(filename.c_str());
+  } 
+  else if ( (ext==".stp") || (ext==".step") )
+  {
+    STEPControl_Writer stepwriter;
+    stepwriter.Transfer(shape_, STEPControl_AsIs);
+    stepwriter.Write(filename.c_str());
+  }
+  else
+  {
+    throw insight::Exception("Unknown export file format! (Extension "+ext+")");
+  }
+}
 
+SolidModel::operator const TopoDS_Shape& () const 
+{ return shape_; }
+
+edgeCoG::edgeCoG() 
+{}
+
+edgeCoG::~edgeCoG()
+{}
+  
+arma::mat edgeCoG::evaluate(FeatureID ei)
+{
+//   GProp_GProps props;
+//   BRepGProp::LinearProperties(model_->edge(ei), props);
+//   gp_Pnt cog = props.CentreOfMass();
+//   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+  return model_->edgeCoG(ei);
+}
+  
+QuantityComputer<arma::mat>* edgeCoG::clone() const 
+{
+  return new edgeCoG();
+}
+  
 void SolidModel::nameFeatures()
 {
 
@@ -240,6 +371,44 @@ void SolidModel::nameFeatures()
 
 }
 
+Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
+: SolidModel
+  (
+    BRepPrimAPI_MakeCylinder
+    (
+      gp_Ax2
+      (
+	gp_Pnt(p1(0),p1(1),p1(2)), 
+	gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+      ),
+      0.5*D, 
+      norm(p2-p1, 2)
+    ).Shape()
+  )
+{
+}
+
+Sphere::Sphere(const arma::mat& p, double D)
+: SolidModel
+  (
+    BRepPrimAPI_MakeSphere
+    (
+      gp_Pnt(p(0),p(1),p(2)),
+      0.5*D
+    ).Shape()
+  )
+{
+}
+
+BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
+: SolidModel(BRepAlgoAPI_Fuse(m1, m2))
+{
+}
+
+BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
+: SolidModel(BRepAlgoAPI_Cut(m1, m2))
+{
+}
 
 }
 }

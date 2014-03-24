@@ -40,7 +40,6 @@ IF(OF22eng_DIR)
   macro (setup_exe_target_OF22eng targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp" ${temp})
     
     #link_directories(${OF22eng_LIB_DIR} ${OF22eng_LIB_DIR}/${OF22eng_MPI} ${OF22eng_FOAM_EXT_LIBBIN} "${OF22eng_SCOTCH_ROOT}/lib")
     #SET(LIB_SEARCHFLAGS "-L${OF22eng_LIB_DIR} -L${OF22eng_LIB_DIR}/${OF22eng_MPI} -L${OF22eng_FOAM_EXT_LIBBIN} -L${OF22eng_SCOTCH_ROOT}/lib")
@@ -58,12 +57,10 @@ IF(OF22eng_DIR)
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp => " ${temp})
   endmacro()
   
   macro (setup_lib_target_OF22eng targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp" ${temp})
 
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     #link_directories(${OF22eng_LIB_DIR} ${OF22eng_LIB_DIR}/${OF22eng_MPI} ${OF22eng_FOAM_EXT_LIBBIN} "${OF22eng_SCOTCH_ROOT}/lib")

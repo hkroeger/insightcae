@@ -19,110 +19,7 @@ IF(OF22x_DIR)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF22x_CXX_FLAGS)
   set(OF22x_CXX_FLAGS "${OF22x_CXX_FLAGS} -DOF22x")
-# SET(OF22x_LIBRARIES autoMesh
-# autoMesh
-# barotropicCompressibilityModel
-# blockMesh
-# chemistryModel
-# cloudFunctionObjects
-# coalCombustion
-# combustionModels
-# compressibleEulerianInterfacialModels
-# compressibleKineticTheoryModel
-# compressibleLESModels
-# compressibleMultiphaseEulerianInterfacialModels
-# compressibleMultiPhaseModel
-# compressiblePhaseModel
-# compressibleRASModels
-# compressibleTurbulenceModel
-# conversion
-# decompose
-# decompositionMethods
-# distributed
-# distributionModels
-# DPMDragModels
-# dsmc
-# dynamicFvMesh
-# dynamicMesh
-# edgeMesh
-# engine
-# EulerianInterfacialModels
-# extrude2DMesh
-# extrudeModel
-# fieldFunctionObjects
-# fileFormats
-# finiteVolume
-# fluidThermophysicalModels
-# foamCalcFunctions
-# forces
-# FVFunctionObjects
-# fvMotionSolvers
-# fvOptions
-# genericPatchFields
-# helpTypes
-# incompressibleLESModels
-# incompressibleRASModels
-# incompressibleTransportModels
-# incompressibleTurbulenceModel
-# interfaceProperties
-# IOFunctionObjects
-# jobControl
-# kineticTheoryModel
-# lagrangianIntermediate
-# lagrangian
-# lagrangianSpray
-# laminarFlameSpeedModels
-# LEMOS-2.2.x
-# LESdeltas
-# LESfilters
-# liquidMixtureProperties
-# liquidProperties
-# meshTools
-# molecularMeasurements
-# molecule
-# multiphaseInterFoam
-# multiphaseSystem
-# ODE
-# OpenFOAM
-# pairPatchAgglomeration
-# phaseChangeTwoPhaseMixtures
-# phaseModel
-# potential
-# pyrolysisModels
-# radiationModels
-# randomProcesses
-# reactionThermophysicalModels
-# reconstruct
-# regionCoupled
-# regionCoupling
-# regionModels
-# renumberMethods
-# rhoCentralFoam
-# sampling
-# scotchDecomp
-# SLGThermo
-# solidChemistryModel
-# solidMixtureProperties
-# solidParticle
-# solidProperties
-# solidSpecie
-# solidThermo
-# specie
-# surfaceFilmModels
-# surfMesh
-# systemCall
-# tabulatedWallFunctions
-# thermalBaffleModels
-# thermophysicalFunctions
-# topoChangerFvMesh
-# triSurface
-# turbulenceDerivedFvPatchFields
-# twoPhaseMixture
-# twoPhaseMixtureThermo
-# twoPhaseProperties
-# userd-foam
-# utilityFunctionObjects
-# )
+
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE OF22x_WM_OPTIONS)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF22x_FOAM_EXT_LIBBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF22x_SCOTCH_ROOT)
@@ -141,7 +38,6 @@ IF(OF22x_DIR)
   macro (setup_exe_target_OF22x targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp" ${temp})
     
     #link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")
     #SET(LIB_SEARCHFLAGS "-L${OF22x_LIB_DIR} -L${OF22x_LIB_DIR}/${OF22x_MPI} -L${OF22x_FOAM_EXT_LIBBIN} -L${OF22x_SCOTCH_ROOT}/lib")
@@ -159,12 +55,10 @@ IF(OF22x_DIR)
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp => " ${temp})
   endmacro()
   
   macro (setup_lib_target_OF22x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
-    message(STATUS "temp" ${temp})
 
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     #link_directories(${OF22x_LIB_DIR} ${OF22x_LIB_DIR}/${OF22x_MPI} ${OF22x_FOAM_EXT_LIBBIN} "${OF22x_SCOTCH_ROOT}/lib")

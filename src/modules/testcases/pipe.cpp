@@ -181,7 +181,7 @@ void RadialTPCArray::evaluateSingle
       
       gp[k]<<"set terminal png; set output '"<<chart_file_name<<"';";
       gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
-      cmd[k]<<"plot 0 not lc -1";
+      cmd[k]<<"plot 0 not lt -1";
       data[k]=zeros(p_.np(), nr+1);
       data[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
       regressions[k]=zeros(p_.np(), nr+1);
@@ -239,7 +239,7 @@ void RadialTPCArray::evaluateSingle
     std::ostringstream cmd;
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
-    cmd<<"plot 0 not lc -1";
+    cmd<<"plot 0 not lt -1";
     
     std::vector<double> ks=list_of<double>(0)(4)(8);
     
@@ -271,7 +271,7 @@ void RadialTPCArray::evaluateSingle
     std::ostringstream cmd;
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
-    cmd<<"plot 0 not lc -1";
+    cmd<<"plot 0 not lt -1";
     
     std::vector<double> ks=list_of<double>(1)(2)(3)(5)(6)(7);
     

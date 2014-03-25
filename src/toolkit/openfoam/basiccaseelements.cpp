@@ -422,7 +422,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["default"]="Gauss limitedLinear 1";
 
   if (p_.LES())
-   div["div(phi,U)"]="Gauss linear";
+  {
+    /*if (OFversion()>=220)
+      div["div(phi,U)"]="Gauss LUST grad(U)";
+    else*/
+      div["div(phi,U)"]="Gauss linear";
+  }
   else
    div["div(phi,U)"]="Gauss limitedLinearV 1";
 
@@ -1412,6 +1417,65 @@ bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, co
   return false;
 }
 
+defineType(dynSmagorinsky_LESModel);
+addToFactoryTable(turbulenceModel, dynSmagorinsky_LESModel, turbulenceModel::ConstrP);
+
+void dynSmagorinsky_LESModel::addFields()
+{
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+}
+
+dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(OpenFOAMCase& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(const ConstrP& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+
+void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  LESModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  
+  string modelName="dynSmagorinsky";
+  if (OFversion()>160)
+    modelName="homogeneousDynSmagorinsky";
+  
+  LESProperties["LESModel"]=modelName;
+  LESProperties["delta"]="cubeRootVol";
+  LESProperties["printCoeffs"]=true;
+  
+  OFDictData::dict crvc;
+  crvc["deltaCoeff"]=1.0;
+  LESProperties["cubeRootVolCoeffs"]=crvc;
+  OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+  cd["filter"]="simple";
+}
+
+bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k")
+  {
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 0";
+    return true;
+  }
+  else if (fieldname == "nuSgs")
+  {
+    BC["type"]="zeroGradient";
+    return true;
+  }
+  
+  return false;
+}
 
 defineType(kOmegaSST_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_RASModel, turbulenceModel::ConstrP);

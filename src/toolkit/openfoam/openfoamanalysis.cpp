@@ -108,6 +108,10 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
   );
 }
 
+void OpenFOAMAnalysis::calcDerivedInputData(const ParameterSet& p)
+{
+}
+
 void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
 {
   dicts=cm.createDictionaries();
@@ -209,6 +213,8 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   ofe.setExecutionMachine(machine);
   
   path dir = setupExecutionEnvironment();
+  
+  calcDerivedInputData(p);
 
   OpenFOAMCase runCase(ofe);
   

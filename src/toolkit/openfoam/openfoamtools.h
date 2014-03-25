@@ -268,6 +268,34 @@ public:
 			      ) const;
 };
 
+class linearAveragedUniformLine
+: public set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( start, arma::mat, vec3(0,0,0) )
+      ( end, arma::mat, vec3(1,0,0) )
+      ( np, int, 100 )
+      ( dir1, arma::mat, vec3(1,0,0) )
+      ( dir2, arma::mat, vec3(0,0,1) )
+      ( nd1, int, 10 )
+      ( nd2, int, 10 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  linearAveragedUniformLine(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       ColumnDescription* coldescr=NULL
+			      ) const;
+};
+
 }
 
 void sample(const OpenFOAMCase& ofc, 

@@ -44,6 +44,7 @@ public:
     
     virtual insight::ParameterSet defaultParameters() const;
 
+    virtual void calcDerivedInputData(const ParameterSet& p);
     virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p) =0;
     virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p) =0;
     

@@ -599,6 +599,21 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
+class dynSmagorinsky_LESModel
+: public LESModel
+{
+protected:
+  void addFields();
+  
+public:
+  declareType("dynSmagorinsky");
+  
+  dynSmagorinsky_LESModel(OpenFOAMCase& c);
+  dynSmagorinsky_LESModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
 class kOmegaSST_RASModel
 : public RASModel
 {

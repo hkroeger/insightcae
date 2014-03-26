@@ -167,6 +167,9 @@ dimensionedData::dimensionedData(const std::string& n, const std::vector<int>& d
   data>(n, dim, d)
 {
 }
+
+list::list()
+{}
     
 dict& dict::addSubDictIfNonexistent(const std::string& key)
 {

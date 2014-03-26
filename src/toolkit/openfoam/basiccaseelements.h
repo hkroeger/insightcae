@@ -416,7 +416,7 @@ public:
     (name, std::string, "unnamed")
     (timeStart, double, 0.0)
     (outputControl, std::string, "outputTime")    
-    (outputInterval, double, 1.0)
+    (outputInterval, double, 10.0)
   )
   
 protected:
@@ -458,6 +458,25 @@ protected:
   
 public:
   probes(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual OFDictData::dict functionObjectDict() const;
+};
+
+class cuttingPlane
+: public outputFilterFunctionObject
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+    (fields, std::vector<std::string>, std::vector<std::string>())
+    (basePoint, arma::mat, vec3(0,0,0))
+    (normal, arma::mat, vec3(0,0,1))
+    (interpolate, bool, false)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  cuttingPlane(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual OFDictData::dict functionObjectDict() const;
 };
 

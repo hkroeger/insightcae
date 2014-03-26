@@ -411,7 +411,10 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-  ddt["default"]="Euler";
+  if (p_.LES())
+    ddt["default"]="backward";
+  else
+    ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   grad["default"]="Gauss linear";

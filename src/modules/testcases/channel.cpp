@@ -308,10 +308,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   double x=0.0;
   sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
     .set_name("radial")
-    .set_start( vec3(-0.5*L, -0.5*B,  0.01* 0.5*H))
-    .set_end(   vec3(-0.5*L, -0.5*B, 0.997* 0.5*H))
-    .set_dir1(vec3(L,0,0))
-    .set_dir2(vec3(0,B,0))
+    .set_start( vec3(-0.49*L, 0.005* 0.5*H, -0.49*B))
+    .set_end(   vec3(-0.49*L, 0.997* 0.5*H, -0.49*B))
+    .set_dir1(vec3(0.98*L,0,0))
+    .set_dir2(vec3(0,0,0.98*B))
     .set_nd1(5)
     .set_nd2(5)
   ));
@@ -340,6 +340,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     
     double fac_yp=Re_tau;
     double fac_Up=1.0;
+    
     gp<<"plot 0 not lc -1,"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Spanwise',"
@@ -535,6 +536,8 @@ void ChannelCyclic::createCase
 
 void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
 {
+  PSDBL(p, "operation", Re_tau);
+  /*
   setFields(cm, executionPath(), 
 	    list_of<setFieldOps::FieldValueSpec>
 	      ("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
@@ -542,6 +545,12 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
   );
   cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
   cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*Ubulk_)) );
+  */
+  cm.executeCommand(executionPath(), "perturbU", 
+		    list_of<string>
+		    (lexical_cast<string>(Re_tau))
+		    ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+		   );
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
 

@@ -436,7 +436,7 @@ arma::mat uniformLine::readSamples
       if ( is_regular_file(itr->status()) )
       {
         std::string fn=itr->path().filename().string();
-	if (starts_with(fn, setName)) files.push_back(fn);
+	if (starts_with(fn, setName+"_")) files.push_back(fn);
       }
     }
       
@@ -636,7 +636,7 @@ arma::mat linearAveragedUniformLine::readSamples
       
       datai.save("data_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
       
-      if (i==0)
+      if ((i==0) && (j==0))
 	data=datai;
       else
 	data+=datai;

@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     fluctuations[ci]=(rg.vector01()-0.5*vector::one)*RMS;
   
   simpleFilter filter(mesh);
-  for (int i=0; i<100; i++)
+  for (int i=0; i<10; i++)
     fluctuations=filter(fluctuations);
   
   U+=fluctuations;

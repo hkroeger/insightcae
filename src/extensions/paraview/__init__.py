@@ -29,7 +29,9 @@ try:
         regions=['internalMesh']+[bnds[i] for i in range(0, len(bnds), 2)]
         
         blockIndices={regions[0]: 1}
-        blockIndices.update({n: 2+i for i,n in enumerate(regions[1:])})
+        #blockIndices.update({n: 2+i for i,n in enumerate(regions[1:])})
+        for i,n in enumerate(regions[1:]):
+	   blockIndices[n]=2+i
         
         #print blockIndices
         case.MeshRegions=regions
@@ -88,8 +90,11 @@ try:
 	  if minV is None: minV=mi
 	  if maxV is None: maxV=ma
         #disp.LookupTable=MakeBlueToRedLT(-1, 1)
+        c=component
+        if component<0: 
+           c=1
         disp.LookupTable=getLookupTable(arrayName, minV, maxV, 
-                                        1 if component<0 else component, 
+                                        c, #1 if component<0 else component, 
                                         lookupTableTemplates[LUTName])
         if component>=0:
             disp.LookupTable.VectorComponent=component
@@ -97,10 +102,13 @@ try:
         disp.Representation = 'Surface'
         disp.ColorArrayName=arrayName
         disp.ColorAttributeType=arrayType
-            
+           
+        t=title
+        if title is None:
+           t=arrayName 
         bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
-                              Title=(arrayName if title is None else title),
+                              Title=t, #(arrayName if title is None else title),
                               Position=barpos, Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
@@ -118,7 +126,10 @@ try:
             eb.BlockIndices=[blockIndices[k] for k in patches]
         elif isinstance(patches, str):
             se=re.compile(patches)
-            eb.BlockIndices=[i for n,i in blockIndices.items() if se.match(n)]
+            #eb.BlockIndices=[i for n,i in blockIndices.items() if se.match(n)]
+            for n,i in blockIndices.items():
+                if se.match(n):
+                  eb.BlockIndices.append(i)
         else:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
         

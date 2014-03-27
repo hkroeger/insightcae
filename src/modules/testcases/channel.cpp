@@ -23,6 +23,7 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/basiccaseelements.h"
+#include <refdata.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/ptr_map_inserter.hpp>
@@ -52,7 +53,8 @@ ChannelBase::ChannelBase(const NoParameters&)
   ),
   cycl_in_("cycl_half0"),
   cycl_out_("cycl_half1")
-{}
+{
+}
 
 ChannelBase::~ChannelBase()
 {
@@ -338,16 +340,27 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     
     int c=cd["UMean"].col;
     
+    arma::mat refdata_umean, refdata_wmean;
+    refdata_umean=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
+    refdata_wmean=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
+    
     double fac_yp=Re_tau;
     double fac_Up=1.0;
     
     gp<<"plot 0 not lt -1,"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Spanwise',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Wall normal'"<<endl;
+	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Wall normal',"
+	
+	" '-' w p t 'Axial (DNS, MKM)',"
+	" '-' w p t 'Spanwise (DNS, MKM)'"
+	<<endl;
+	
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
+    gp.send1d( refdata_umean );
+    gp.send1d( refdata_wmean );
 
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
@@ -374,15 +387,26 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     gp<<"set logscale x;";
     gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
     
+    arma::mat refdata_Ruu, refdata_Rvv, refdata_Rww;
+    refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
+    refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
+    refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
     
     gp<<"plot 0 not lt -1,"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
+	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)',"
+	" '-' w p t 'Rxx (DNS, MKM)',"
+	" '-' w p t 'Ryy (DNS, MKM)',"
+	" '-' w p t 'Rzz (DNS, MKM)'"
+	<<endl;
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
-
+    gp.send1d( refdata_Ruu );
+    gp.send1d( refdata_Rvv );
+    gp.send1d( refdata_Rww );
+    
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
       (
@@ -407,7 +431,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     cm, executionPath(), list_of<std::string>
     (
       init+
-      "eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+      "eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
       "Show(eb)\n"
       "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
       "setCam([0,0,10], [0,0,0], [0,1,0])\n"
@@ -429,7 +453,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       cm, executionPath(), list_of<std::string>
       (
 	init+
-	"eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
 	"Show(eb)\n"
 	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
 	"setCam([0,0,10], [0,0,0], [0,1,0])\n"

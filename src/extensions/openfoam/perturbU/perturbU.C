@@ -43,6 +43,7 @@ Description
 #include "fvCFD.H"
 #include "Random.H"
 #include "wallDist.H"
+#include "cuttingPlane.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,7 +56,7 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
    
-   Switch setU(true);
+   Switch resetU(true);
    Switch setPerturb(true);
    
     Info<< "Calculating wall distance field" << endl;
@@ -94,6 +95,22 @@ int main(int argc, char *argv[])
       ), 
       mesh
     );
+    
+    point center=boundBox(mesh.C()).midpoint();
+#ifdef OF16ext
+    cuttingPlane cpl(plane(center, nflow), mesh);
+#else
+    cuttingPlane cpl(plane(center, nflow), mesh, false);
+#endif
+    vector Ub=gAverage(cpl.sample(U));
+    if (mag(Ub)>SMALL)
+    {
+      scalar sf=mag(Ubar)/mag(Ub);
+      Info<<"Mean flow is present, scaling to proper bulk velocity by "<<sf<<endl;
+      U*=sf;
+      U.write();
+      return (0);
+    }
 
     IOdictionary transportProperties
     (
@@ -146,7 +163,7 @@ int main(int argc, char *argv[])
         scalar yplus = y*Retau/h;
         scalar xplus = (nflow&cCentre)*Retau/h;
 
-        if (setU)
+        if (resetU)
         {
             // laminar parabolic profile
             U[celli] = vector::zero;

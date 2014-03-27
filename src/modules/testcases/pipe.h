@@ -85,6 +85,7 @@ public:
 class PipeBase 
 : public OpenFOAMAnalysis
 {
+
 protected:
   std::string cycl_in_, cycl_out_;
   

@@ -809,7 +809,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
     cm, executionPath(), list_of<std::string>
     (
       init+
-      "eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+      "eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
       "Show(eb)\n"
       "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
       "setCam([0,0,10], [0,0,0], [0,1,0])\n"
@@ -831,7 +831,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
       cm, executionPath(), list_of<std::string>
       (
 	init+
-	"eb = planarSlice(cbi, [0,0,0], [0,0,1])\n"
+	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
 	"Show(eb)\n"
 	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
 	"setCam([0,0,10], [0,0,0], [0,1,0])\n"

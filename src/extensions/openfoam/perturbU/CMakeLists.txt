@@ -12,10 +12,13 @@ set(include_directories
   ${OF16ext_LIBSRC_DIR}/turbulenceModels/incompressible/LES/lnInclude
   ${OF16ext_LIBSRC_DIR}/turbulenceModels/LES/LESfilters/lnInclude
   ${OF16ext_LIBSRC_DIR}/meshTools/lnInclude  
+  ${OF16ext_LIBSRC_DIR}/sampling/lnInclude  
+  ${OF16ext_LIBSRC_DIR}/surfMesh/lnInclude  
   )
 setup_exe_target_OF16ext(${PRJ}16ext "${${PRJ}_SOURCES}" "${PRJ}" "${include_directories}"
   ${OF16ext_LIB_DIR}/libfiniteVolume.so
   ${OF16ext_LIB_DIR}/libLESfilters.so
+  ${OF16ext_LIB_DIR}/libsampling.so
   ) 
 
 project(${PRJ}22x)
@@ -28,8 +31,11 @@ set(include_directories
   ${OF22x_LIBSRC_DIR}/meshTools/lnInclude
   ${OF22x_LIBSRC_DIR}/turbulenceModels/incompressible/LES/lnInclude
   ${OF22x_LIBSRC_DIR}/turbulenceModels/LES/LESfilters/lnInclude
+  ${OF22x_LIBSRC_DIR}/sampling/lnInclude  
+  ${OF22x_LIBSRC_DIR}/surfMesh/lnInclude  
   )
 setup_exe_target_OF22x(${PRJ}22x "${${PRJ}_SOURCES}" "${PRJ}" "${include_directories}"
   ${OF22x_LIB_DIR}/libfiniteVolume.so
   ${OF22x_LIB_DIR}/libLESfilters.so
+  ${OF22x_LIB_DIR}/libsampling.so
 ) 

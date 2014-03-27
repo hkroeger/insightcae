@@ -11,7 +11,7 @@ include_directories(${toolkit_SOURCE_DIR})
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
-target_link_libraries(toolkit ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} gsl dl)
+target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} gsl dl)
 
 install(TARGETS toolkit LIBRARY DESTINATION lib)
 install(

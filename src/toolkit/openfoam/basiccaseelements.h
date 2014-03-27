@@ -416,7 +416,7 @@ public:
     (name, std::string, "unnamed")
     (timeStart, double, 0.0)
     (outputControl, std::string, "outputTime")    
-    (outputInterval, double, 10.0)
+    (outputInterval, double, 1.0)
   )
   
 protected:

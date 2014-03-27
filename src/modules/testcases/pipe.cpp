@@ -658,8 +658,6 @@ void PipeBase::createCase
     .set_basePoint(vec3(0,0,0))
     .set_normal(vec3(0,0,1))
     .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
-    .set_outputControl("timeStep")
-    .set_outputInterval(100)
   ));
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
@@ -724,10 +722,10 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
     .set_axis(vec3(1,0,0))
   ));
   
-//   sample(cm, executionPath(), 
-//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
-//      sets
-//   );
+  sample(cm, executionPath(), 
+     list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+     sets
+  );
   
   sampleOps::ColumnDescription cd;
   arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())

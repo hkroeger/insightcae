@@ -328,8 +328,8 @@ ParameterSet PipeBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("D",		new DoubleParameter(1.0, "[m] Diameter of the pipe"))
-	    ("L",		new DoubleParameter(1.0, "[m] Length of the pipe"))
+	    ("D",		new DoubleParameter(2.0, "[m] Diameter of the pipe"))
+	    ("L",		new DoubleParameter(12.0, "[m] Length of the pipe"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Geometrical properties of the bearing"
@@ -354,7 +354,7 @@ ParameterSet PipeBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Re_tau",		new DoubleParameter(100, "[-] Friction-Velocity-Reynolds number"))
+	    ("Re_tau",		new DoubleParameter(180, "[-] Friction-Velocity-Reynolds number"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Definition of the operation point under consideration"
@@ -365,7 +365,7 @@ ParameterSet PipeBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(5, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
+	    ("inittime",	new DoubleParameter(10, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
 	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
 	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
 	    .convert_to_container<ParameterSet::EntryList>()
@@ -653,6 +653,15 @@ void PipeBase::createCase
 
   
   cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters().set_LES(true) ) );
+  cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
+    .set_name("plane")
+    .set_basePoint(vec3(0,0,0))
+    .set_normal(vec3(0,0,1))
+    .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
+    .set_outputControl("timeStep")
+    .set_outputInterval(100)
+  ));
+  
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))
@@ -932,6 +941,9 @@ void PipeCyclic::createCase
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
 {
+  PSDBL(p, "operation", Re_tau);
+  
+  /*
   setFields(cm, executionPath(), 
 	    list_of<setFieldOps::FieldValueSpec>
 	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
@@ -939,7 +951,14 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
   );
   cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
   cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*calcUbulk(p))) );
-
+  */
+  
+  cm.executeCommand(executionPath(), "perturbU", 
+		    list_of<string>
+		    (lexical_cast<string>(Re_tau))
+		    ("("+lexical_cast<string>(calcUbulk(p))+" 0 0)") 
+		   );
+  
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
 

@@ -1080,6 +1080,46 @@ OFDictData::dict probes::functionObjectDict() const
   return fod;
 }
 
+cuttingPlane::cuttingPlane(OpenFOAMCase& c, Parameters const &p )
+: outputFilterFunctionObject(c, p),
+  p_(p)
+{
+}
+
+OFDictData::dict cuttingPlane::functionObjectDict() const
+{
+  OFDictData::dict fod;
+
+  fod["type"]="surfaces";
+  OFDictData::list l;
+  l.assign<string>(list_of<string>("\"libsampling.so\""));
+  fod["functionObjectLibs"]=l;
+  fod["interpolationScheme"]="cellPoint";
+
+  fod["surfaceFormat"]="vtk";
+
+        // Fields to be sampled
+  l.assign<string>(p_.fields());
+  fod["fields"]=l;
+
+  OFDictData::dict pd;
+  pd["type"]="cuttingPlane";
+  pd["planeType"]="pointAndNormal";
+  pd["interpolate"]=false;
+  OFDictData::dict pand;
+  pand["basePoint"]="(0 0 0)";
+  pand["normalVector"]="(0 0 1)";
+  pd["pointAndNormalDict"]=pand;
+
+  OFDictData::list sl;
+  sl.push_back(p_.name());
+  sl.push_back(pd);
+  fod["surfaces"]=sl;
+  
+  return fod;
+}
+
+    
 twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
 : outputFilterFunctionObject(c, p),
   p_(p)
@@ -1289,7 +1329,7 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
   return fl;
 }
 
-  
+
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, turbulenceModel::ConstrP);
 

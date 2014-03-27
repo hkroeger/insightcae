@@ -84,7 +84,16 @@ struct dimensionedData
 
 struct list 
 : public std::vector<data> 
-{};
+{
+  list();
+  
+  template<class T>
+  void assign(const std::vector<T>& vec)
+  {
+    resize(vec.size());
+    std::copy(vec.begin(), vec.end(), begin());
+  }
+};
 
 struct dict 
 : public std::map<std::string, data> 

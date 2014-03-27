@@ -11,6 +11,7 @@
 #include <TopExp.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <BRepLProp_SLProps.hxx>
@@ -89,6 +90,7 @@
 #include <TopoDS_Iterator.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
+#include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
@@ -101,4 +103,18 @@
 #include <BRepFilletAPI_MakeFillet.hxx>
 #include <IGESControl_Writer.hxx>
 #include <IGESControl_Controller.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+
+#include "GC_MakePlane.hxx"
+
+inline gp_Pnt to_Pnt(const arma::mat& xyz)
+{
+  return gp_Pnt(xyz(0), xyz(1), xyz(2));
+}
+
+inline gp_Vec to_Vec(const arma::mat& xyz)
+{
+  return gp_Vec(xyz(0), xyz(1), xyz(2));
+}
+
 #endif

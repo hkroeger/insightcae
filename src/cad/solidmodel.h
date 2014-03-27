@@ -410,6 +410,28 @@ public:
   Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
 };
 
+class Box
+: public SolidModel
+{
+protected:
+  TopoDS_Shape makeBox
+  (
+    const arma::mat& p0,
+    const arma::mat& L1,
+    const arma::mat& L2,
+    const arma::mat& L3
+  );
+  
+public:
+  Box
+  (
+    const arma::mat& p0, 
+    const arma::mat& L1, 
+    const arma::mat& L2, 
+    const arma::mat& L3
+  );
+};
+
 class Sphere
 : public SolidModel
 {
@@ -425,12 +447,16 @@ public:
   BooleanUnion(const SolidModel& m1, const SolidModel& m2);
 };
 
+SolidModel operator|(const SolidModel& m1, const SolidModel& m2);
+
 class BooleanSubtract
 : public SolidModel
 {
 public:
   BooleanSubtract(const SolidModel& m1, const SolidModel& m2);
 };
+
+SolidModel operator-(const SolidModel& m1, const SolidModel& m2);
 
 
 }

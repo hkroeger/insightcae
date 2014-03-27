@@ -1528,7 +1528,7 @@ void LEMOSHybrid_LESModel::addFields()
 {
   OFcase().addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
   OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
-  OFcase().addField("UavgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	list_of(1e-10), volField ) );
+  OFcase().addField("UavgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	list_of(0)(0)(0), volField ) );
 }
 
 LEMOSHybrid_LESModel::LEMOSHybrid_LESModel(OpenFOAMCase& c)
@@ -1550,7 +1550,7 @@ void LEMOSHybrid_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
 
-  string modelName="hybKOmegaSST2Coeffs";
+  string modelName="hybKOmegaSST2";
 
   if (OFversion()<230)
     throw insight::Exception("The LES model "+modelName+" is unsupported in the selected OF version!");

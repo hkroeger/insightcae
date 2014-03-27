@@ -21,6 +21,7 @@
 #include "solidmodel.h"
 #include <base/exception.h>
 #include "boost/foreach.hpp"
+#include "geotest.h"
 
 namespace insight 
 {
@@ -119,6 +120,53 @@ Filter* edgeTopology::clone() const
   return new edgeTopology(ct_);
 }
 
+everything::everything()
+{}
+
+bool everything::checkMatch(FeatureID feature) const
+{
+  return true;
+}
+  
+Filter* everything::clone() const
+{
+  return new everything();
+}
+  
+coincides::coincides(const SolidModel& m, FeatureSet f, EntityType et)
+: m_(m),
+  f_(f),
+  et_(et)
+{
+}
+
+bool coincides::checkMatch(FeatureID feature) const
+{
+  bool match=false;
+  
+  switch (et_)
+  {
+    case Edge:
+      BOOST_FOREACH(int f, f_)
+      {
+	TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
+	TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
+	match |= isPartOf(e2, e1);
+      }
+      return match;
+      break;
+    default:
+      throw insight::Exception("Filter coincides: Cannot handle entity type!");
+  }
+  
+  return false;
+}
+
+Filter* coincides::clone() const
+{
+  return new coincides(m_, f_);
+}
+  
 SolidModel::SolidModel(const SolidModel& o)
 : shape_(o.shape_)
 {

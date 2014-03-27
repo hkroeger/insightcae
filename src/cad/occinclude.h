@@ -106,6 +106,12 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 
 #include "GC_MakePlane.hxx"
+#include "BRepMesh_FastDiscret.hxx"
+#include "ShapeAnalysis_Curve.hxx"
+#include "ShapeAnalysis_Surface.hxx"
+#include "GeomLProp_SLProps.hxx"
+
+#include <armadillo>
 
 inline gp_Pnt to_Pnt(const arma::mat& xyz)
 {

@@ -116,6 +116,34 @@ public:
   virtual Filter* clone() const;
 };
 
+class everything
+: public Filter
+{
+  
+public:
+  everything();
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual Filter* clone() const;
+};
+
+class coincides
+: public Filter
+{
+public:
+  enum EntityType {Edge, Face};
+  
+protected:
+  const SolidModel& m_;
+  FeatureSet f_;
+  EntityType et_;
+  
+public:
+  coincides(const SolidModel& m, FeatureSet f, EntityType et = Edge);
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual Filter* clone() const;
+};
 
 template<class T>
 class QuantityComputer

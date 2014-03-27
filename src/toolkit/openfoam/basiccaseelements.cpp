@@ -1521,41 +1521,41 @@ bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldnam
 }
 
 
-defineType(LEMOSHybrid_LESModel);
-addToFactoryTable(turbulenceModel, LEMOSHybrid_LESModel, turbulenceModel::ConstrP);
+defineType(LEMOSHybrid_RASModel);
+addToFactoryTable(turbulenceModel, LEMOSHybrid_RASModel, turbulenceModel::ConstrP);
 
-void LEMOSHybrid_LESModel::addFields()
+void LEMOSHybrid_RASModel::addFields()
 {
   OFcase().addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
   OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
   OFcase().addField("UavgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	list_of(0)(0)(0), volField ) );
 }
 
-LEMOSHybrid_LESModel::LEMOSHybrid_LESModel(OpenFOAMCase& c)
-: LESModel(c)
+LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c)
+: RASModel(c)
 {
   addFields();
 }
 
-LEMOSHybrid_LESModel::LEMOSHybrid_LESModel(const ConstrP& c)
-: LESModel(c)
+LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(const ConstrP& c)
+: RASModel(c)
 {
   addFields();
 }
 
 
-void LEMOSHybrid_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  LESModel::addIntoDictionaries(dictionaries);
+  RASModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
 
   string modelName="hybKOmegaSST2";
 
   if (OFversion()<230)
     throw insight::Exception("The LES model "+modelName+" is unsupported in the selected OF version!");
     
-  LESProperties["LESModel"]=modelName;
+  LESProperties["RASModel"]=modelName;
   LESProperties["delta"]="maxEdge";
   LESProperties["printCoeffs"]=true;
   
@@ -1584,7 +1584,7 @@ void LEMOSHybrid_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").push_back( OFDictData::data("\"libLEMOS-2.3.x.so\"") );  
 }
 
-bool LEMOSHybrid_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
   if (fieldname == "k" || fieldname == "kSgs")
   {

@@ -633,8 +633,8 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
-class LEMOSHybrid_LESModel
-: public LESModel
+class LEMOSHybrid_RASModel
+: public RASModel
 {
 protected:
   void addFields();
@@ -642,8 +642,8 @@ protected:
 public:
   declareType("LEMOSHybrid");
   
-  LEMOSHybrid_LESModel(OpenFOAMCase& c);
-  LEMOSHybrid_LESModel(const ConstrP& c);
+  LEMOSHybrid_RASModel(OpenFOAMCase& c);
+  LEMOSHybrid_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };

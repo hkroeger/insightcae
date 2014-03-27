@@ -9,6 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 find_package(OpenFOAM-16ext REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
+find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
 

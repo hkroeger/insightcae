@@ -67,8 +67,6 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
            "result=mod.getProfile('"<<path<<"')";
         cout<<cmd.str()<<endl;
 
-        //PyObject *result = PyRun_String( cmd.string() );
-
         object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
 
         object main_namespace = main_module.attr("__dict__");
@@ -96,36 +94,6 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
     catch (const error_already_set &)
     {
       PyErr_Print();
-      
-//         PyObject *ptype, *pvalue, *ptraceback;
-//         PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-// 
-//         handle<> hType(ptype);
-//         object extype(hType);
-//         handle<> hTraceback(ptraceback);
-//         object traceback(hTraceback);
-// 
-//         //Extract error message
-//         string strErrorMessage = extract<string>(pvalue);
-// 
-//         //Extract line number (top entry of call stack)
-//         // if you want to extract another levels of call stack
-//         // also process traceback.attr("tb_next") recurently
-// //         long lineno = extract<long> (traceback.attr("tb_lineno"));
-// //         string filename = extract<string>(traceback.attr("tb_frame").attr("f_code").attr("co_filename"));
-// //         string funcname = extract<string>(traceback.attr("tb_frame").attr("f_code").attr("co_name"));
-// 	PyErr_Restore(ptype, pvalue, ptraceback);
-// 	
-//         throw insight::Exception
-//         (
-//             "Error in python call: "
-//             +strErrorMessage
-// //             +" at line "
-// //             +lexical_cast<string>(lineno)
-// //             +" in file "
-// //             +filename
-// //             +" in function "+funcname
-//         );
     }
 
     return profile;

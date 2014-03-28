@@ -9,7 +9,7 @@ link_directories(${Boost_LIBRARY_DIR})
 
 add_library(refdata SHARED ${refdata_SOURCES})
 
-target_link_libraries(refdata ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${ARMADILLO_LIBRARY} gsl dl)
+target_link_libraries(refdata ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${ARMADILLO_LIBRARY})
 
 install(TARGETS refdata LIBRARY DESTINATION lib)
 install(

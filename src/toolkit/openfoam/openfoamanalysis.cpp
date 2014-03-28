@@ -164,7 +164,14 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   bool is_parallel = np>1;
   
   std::cout<<"Executing application "<<solverName<<std::endl;
+  path mapFromPath=p.getPath("run/mapFrom");
   
+  if ((cm.OFversion()>=230) && (mapFromPath!=""))
+  {
+    // parallelTarget option is not present in OF2.3.x
+    mapFields(cm, mapFromPath, executionPath(), false);
+  }
+
   if (is_parallel)
   {
     cm.executeCommand(executionPath(), "decomposePar");
@@ -172,8 +179,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   
   if (!cm.outputTimesPresentOnDisk(executionPath()))
   {
-    path mapFromPath=p.getPath("run/mapFrom");
-    if (mapFromPath!="")
+    if ( (!(cm.OFversion()>=230)) && (mapFromPath!=""))
     {
       mapFields(cm, mapFromPath, executionPath(), is_parallel);
     }

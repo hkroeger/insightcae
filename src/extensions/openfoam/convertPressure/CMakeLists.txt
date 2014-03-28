@@ -1,27 +1,16 @@
+set(SRC convertPressure.C)
 
-set(convertPressure_SOURCES convertPressure.C)
+set(OF_INCLUDE_DIRS
+  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+  meshTools
+)
 
-project(convertPressure22x)
-set(include_directories
+set(OF_LIBS finiteVolume)
+
+set(INCLUDE_DIRS 
   ${insight_INCLUDE_DIR}
-  ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF22x_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF22x_LIBSRC_DIR}/lduSolvers/lnInclude  
-  )
-setup_exe_target_OF22x(convertPressure22x ${convertPressure_SOURCES} "convertPressure" "${include_directories}"
-  ${OF22x_LIB_DIR}/libfiniteVolume.so
-  ) 
+)
 
-project(convertPressure16ext)
-set(include_directories
-  ${insight_INCLUDE_DIR}
-  ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/lduSolvers/lnInclude  
-  )
-setup_exe_target_OF16ext(convertPressure16ext ${convertPressure_SOURCES} "convertPressure" "${include_directories}"
-  ${OF16ext_LIB_DIR}/libfiniteVolume.so
-  ) 
+setup_exe_target_OF(convertPressure "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "")
+
 

@@ -1,33 +1,15 @@
+set(SRC randomizeVelocity.C)
 
-set(randomizeVelocity_SOURCES randomizeVelocity.C)
+set(OF_INCLUDE_DIRS
+  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+  turbulenceModels/incompressible/LES turbulenceModels/LES/LESfilters
+  meshTools
+)
 
-project(randomizeVelocity16ext)
-set(include_directories
+set(OF_LIBS finiteVolume LESfilters)
+
+set(INCLUDE_DIRS 
   ${insight_INCLUDE_DIR}
-  ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/lduSolvers/lnInclude  
-  ${OF16ext_LIBSRC_DIR}/turbulenceModels/incompressible/LES/lnInclude
-  ${OF16ext_LIBSRC_DIR}/turbulenceModels/LES/LESfilters/lnInclude
-  )
-setup_exe_target_OF16ext(randomizeVelocity16ext "${randomizeVelocity_SOURCES}" "randomizeVelocity" "${include_directories}"
-  ${OF16ext_LIB_DIR}/libfiniteVolume.so
-  ${OF16ext_LIB_DIR}/libLESfilters.so
-  ) 
+)
 
-project(randomizeVelocity22x)
-set(include_directories
-  ${insight_INCLUDE_DIR}
-  ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF22x_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF22x_LIBSRC_DIR}/lduSolvers/lnInclude  
-  ${OF22x_LIBSRC_DIR}/meshTools/lnInclude
-  ${OF22x_LIBSRC_DIR}/turbulenceModels/incompressible/LES/lnInclude
-  ${OF22x_LIBSRC_DIR}/turbulenceModels/LES/LESfilters/lnInclude
-  )
-setup_exe_target_OF22x(randomizeVelocity22x "${randomizeVelocity_SOURCES}" "randomizeVelocity" "${include_directories}"
-  ${OF22x_LIB_DIR}/libfiniteVolume.so
-  ${OF22x_LIB_DIR}/libLESfilters.so
-  ) 
+setup_exe_target_OF(randomizeVelocity "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "")

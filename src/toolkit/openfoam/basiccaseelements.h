@@ -633,21 +633,6 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
-class LEMOSHybrid_RASModel
-: public RASModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("LEMOSHybrid");
-  
-  LEMOSHybrid_RASModel(OpenFOAMCase& c);
-  LEMOSHybrid_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
-};
-
 class kOmegaSST_RASModel
 : public RASModel
 {
@@ -659,6 +644,21 @@ public:
   
   kOmegaSST_RASModel(OpenFOAMCase& c);
   kOmegaSST_RASModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
+class LEMOSHybrid_RASModel
+: public kOmegaSST_RASModel
+{
+protected:
+  void addFields();
+  
+public:
+  declareType("LEMOSHybrid");
+  
+  LEMOSHybrid_RASModel(OpenFOAMCase& c);
+  LEMOSHybrid_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };

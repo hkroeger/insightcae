@@ -747,6 +747,12 @@ void mapFields
     ;
   if (parallelTarget) 
     args.push_back("-parallelTarget");
+  
+  if (targetcase.OFversion()>=230)
+  {
+    args.push_back("-mapMethod");
+    args.push_back("mapNearest");
+  }
 
   targetcase.executeCommand
   (

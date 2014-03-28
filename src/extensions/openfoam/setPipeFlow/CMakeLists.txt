@@ -1,26 +1,14 @@
+set(SRC setPipeFlow.C)
 
-set(setPipeFlow_SOURCES setPipeFlow.C)
+set(OF_INCLUDE_DIRS
+  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+  meshTools
+)
 
-project(setPipeFlow16ext)
-set(include_directories
+set(OF_LIBS finiteVolume)
+
+set(INCLUDE_DIRS 
   ${insight_INCLUDE_DIR}
-  ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/lduSolvers/lnInclude  
-  )
-setup_exe_target_OF16ext(setPipeFlow16ext "${setPipeFlow_SOURCES}" "setPipeFlow" "${include_directories}"
-  ${OF16ext_LIB_DIR}/libfiniteVolume.so
-  )
+)
 
-project(setPipeFlow22x)
-set(include_directories
-  ${insight_INCLUDE_DIR}
-  ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF22x_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF22x_LIBSRC_DIR}/lduSolvers/lnInclude  
-  )
-setup_exe_target_OF22x(setPipeFlow22x "${setPipeFlow_SOURCES}" "setPipeFlow" "${include_directories}"
-  ${OF22x_LIB_DIR}/libfiniteVolume.so
-  ) 
+setup_exe_target_OF(setPipeFlow "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "")

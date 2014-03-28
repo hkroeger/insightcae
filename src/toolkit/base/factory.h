@@ -36,6 +36,7 @@ class Factory
 {
 
 public:
+    virtual ~Factory() {};
     virtual baseT* operator()(const paramS& p) const =0;
 };
 
@@ -44,6 +45,7 @@ class SpecFactory
 : public Factory<baseT, paramS>
 {
 public:
+  virtual ~SpecFactory() {};
   
   virtual baseT* operator()(const paramS& p) const
   {
@@ -88,14 +90,16 @@ static struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
+    std::cout<<"and..."<<std::endl; \
     std::string key(specT::typeName); \
-    /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
+    std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl; \
     baseT::factories_.insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
+    std::cout<<"ok"<<std::endl; \
   }\
   ~add##specT##To##baseT##FactoryTable()\
   {\
     std::string key(specT::typeName); \
-    /*std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl;*/ \
+    std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl; \
     baseT::factories_.erase(baseT::factories_.find(key)); \
   }\
 } v_add##specT##To##baseT##FactoryTable;

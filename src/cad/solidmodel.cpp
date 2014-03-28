@@ -17,11 +17,14 @@
  *
  */
 
+#include "geotest.h"
+#include "sketch.h"
+
 #include <memory>
 #include "solidmodel.h"
 #include <base/exception.h>
 #include "boost/foreach.hpp"
-#include "geotest.h"
+#include <boost/iterator/counting_iterator.hpp>
 
 namespace insight 
 {
@@ -132,41 +135,85 @@ Filter* everything::clone() const
 {
   return new everything();
 }
-  
-coincides::coincides(const SolidModel& m, FeatureSet f, EntityType et)
+
+template<> coincident<Edge>::coincident(const SolidModel& m)
 : m_(m),
-  f_(f),
-  et_(et)
+  f_(m.allEdges())
 {
 }
 
-bool coincides::checkMatch(FeatureID feature) const
+template<>
+bool coincident<Edge>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  switch (et_)
+  BOOST_FOREACH(int f, f_)
   {
-    case Edge:
-      BOOST_FOREACH(int f, f_)
-      {
-	TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-	TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
-	match |= isPartOf(e2, e1);
-      }
-      return match;
-      break;
-    default:
-      throw insight::Exception("Filter coincides: Cannot handle entity type!");
+    TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
+    TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
+    match |= isPartOf(e2, e1);
   }
   
-  return false;
+  return match;
 }
 
-Filter* coincides::clone() const
+template<> coincident<Face>::coincident(const SolidModel& m)
+: m_(m),
+  f_(m.allFaces())
 {
-  return new coincides(m_, f_);
 }
+
+template<>
+bool coincident<Face>::checkMatch(FeatureID feature) const
+{
+  bool match=false;
   
+  BOOST_FOREACH(int f, f_)
+  {
+    TopoDS_Face e1=TopoDS::Face(model_->face(feature));
+    TopoDS_Face e2=TopoDS::Face(m_.face(f));
+    match |= isPartOf(e2, e1);
+  }
+  
+  return match;
+}
+
+TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filename)
+{
+  std::string ext=filename.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  
+  if (ext==".brep")
+  {
+    BRep_Builder bb;
+    BRepTools::Read(shape_, filename.c_str(), bb);
+  } 
+  else if ( (ext==".igs") || (ext==".iges") )
+  {
+    IGESControl_Reader igesReader;
+
+    igesReader = IGESControl_Reader();
+    igesReader.ReadFile(filename.c_str());
+    igesReader.TransferRoots();
+
+    shape_ = igesReader.OneShape();
+  } 
+  else if ( (ext==".stp") || (ext==".step") )
+  {
+    STEPControl_Reader stepReader;
+
+    stepReader = STEPControl_Reader();
+    stepReader.ReadFile(filename.c_str());
+    stepReader.TransferRoots();
+
+    shape_ = stepReader.OneShape();
+  } 
+  else
+  {
+    throw insight::Exception("Unknown import file format! (Extension "+ext+")");
+  }  
+}
+
 SolidModel::SolidModel(const SolidModel& o)
 : shape_(o.shape_)
 {
@@ -175,6 +222,12 @@ SolidModel::SolidModel(const SolidModel& o)
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
 : shape_(shape)
+{
+  nameFeatures();
+}
+
+SolidModel::SolidModel(const boost::filesystem::path& filepath)
+: shape_(loadShapeFromFile(filepath))
 {
   nameFeatures();
 }
@@ -192,12 +245,59 @@ GeomAbs_CurveType SolidModel::edgeType(FeatureID i) const
   return adapt.GetType();
 }
 
+GeomAbs_SurfaceType SolidModel::faceType(FeatureID i) const
+{
+  const TopoDS_Face& f = face(i);
+  double t0, t1;
+  Handle_Geom_Surface surf=BRep_Tool::Surface(f);
+  GeomAdaptor_Surface adapt(surf);
+  return adapt.GetType();
+}
+
 arma::mat SolidModel::edgeCoG(FeatureID i) const
 {
   GProp_GProps props;
   BRepGProp::LinearProperties(edge(i), props);
   gp_Pnt cog = props.CentreOfMass();
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+}
+
+arma::mat SolidModel::faceCoG(FeatureID i) const
+{
+  GProp_GProps props;
+  BRepGProp::LinearProperties(face(i), props);
+  gp_Pnt cog = props.CentreOfMass();
+  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+}
+
+arma::mat SolidModel::faceNormal(FeatureID i) const
+{
+  BRepGProp_Face prop(face(i));
+  double u1,u2,v1,v2;
+  prop.Bounds(u1, u2, v1, v2);
+  double u = (u1+u2)/2.;
+  double v = (v1+v2)/2.;
+  gp_Vec vec;
+  gp_Pnt pnt;
+  prop.Normal(u,v,pnt,vec);
+  vec.Normalize();
+  return insight::vec3( vec.X(), vec.Y(), vec.Z() );  
+}
+
+FeatureSet SolidModel::allEdges() const
+{
+  return FeatureSet(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( emap_.Extent()+1 ) 
+  );
+}
+
+FeatureSet SolidModel::allFaces() const
+{
+  return FeatureSet(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( fmap_.Extent()+1 ) 
+  );
 }
 
 FeatureSet SolidModel::query_edges(const Filter& filter) const
@@ -493,6 +593,14 @@ Sphere::Sphere(const arma::mat& p, double D)
 {
 }
 
+Extrusion::Extrusion(const Sketch& sk, const arma::mat& L)
+: SolidModel
+(
+  BRepPrimAPI_MakePrism( sk, to_Vec(L) ).Shape()
+)
+{
+}
+
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
@@ -512,6 +620,23 @@ BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
 SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
 {
   return BooleanSubtract(m1, m2);
+}
+
+
+TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, double r)
+{
+  BRepFilletAPI_MakeFillet fb(m1);
+  BOOST_FOREACH(FeatureID f, edges)
+  {
+    fb.Add(r, m1.edge(f));
+  }
+  fb.Build();
+  return fb.Shape();
+}
+  
+Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
+: SolidModel(makeFillets(m1, edges, r))
+{
 }
 
 }

@@ -153,7 +153,8 @@ rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, 
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
-      doc.allocate_string(boost::lexical_cast<std::string>(value_).c_str())
+      //doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
+      doc.allocate_string( items_[value_].c_str() )
     ));
     return child;
 }
@@ -163,7 +164,27 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
   if (child)
-    value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
+  {
+    //value_=boost::lexical_cast<int>(child->first_attribute("value")->value());
+    string key=child->first_attribute("value")->value();
+    ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
+    if (i!=items_.end()) 
+    {
+      value_ = i - items_.begin();
+    }
+    else
+    {
+      try
+      {
+	int v=boost::lexical_cast<int>(key);
+	value_=v;
+      }
+      catch(...)
+      {
+	throw insight::Exception("Invalid selection value: "+key);
+      }
+    }
+  }
 }
 
 defineType(DoubleRangeParameter);

@@ -1520,6 +1520,87 @@ bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldnam
   return false;
 }
 
+
+defineType(LEMOSHybrid_RASModel);
+addToFactoryTable(turbulenceModel, LEMOSHybrid_RASModel, turbulenceModel::ConstrP);
+
+void LEMOSHybrid_RASModel::addFields()
+{
+  OFcase().addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  OFcase().addField("UavgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	list_of(0)(0)(0), volField ) );
+}
+
+LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c)
+: RASModel(c)
+{
+  addFields();
+}
+
+LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(const ConstrP& c)
+: RASModel(c)
+{
+  addFields();
+}
+
+
+void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  RASModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+
+  string modelName="hybKOmegaSST2";
+
+  if (OFversion()<230)
+    throw insight::Exception("The LES model "+modelName+" is unsupported in the selected OF version!");
+    
+  LESProperties["RASModel"]=modelName;
+  LESProperties["delta"]="maxEdge";
+  LESProperties["printCoeffs"]=true;
+  
+  OFDictData::dict mec;
+  mec["deltaCoeff"]=1.0;
+  LESProperties["maxEdgeCoeffs"]=mec;
+  
+  OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+  cd["filter"]="simple";
+  cd["x1"]=1.0;
+  cd["x2"]=2.0;
+  cd["Cint"]=1.0;
+  cd["CN"]=1.0;
+
+  cd["averagingTime"]=1;
+  cd["fixedInterface"]=false;
+  cd["useIDDESDelta"]=false;
+
+  cd["delta"]="maxEdge";
+
+  cd["cubeRootVolCoeffs"]=mec;
+  cd["IDDESDeltaCoeffs"]=mec;
+  cd["maxEdgeCoeffs"]=mec;
+
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.getList("libs").push_back( OFDictData::data("\"libLEMOS-2.3.x.so\"") );  
+}
+
+bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k" || fieldname == "kSgs")
+  {
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 0";
+    return true;
+  }
+  else if (fieldname == "nuSgs")
+  {
+    BC["type"]="zeroGradient";
+    return true;
+  }
+  
+  return false;
+}
+
 defineType(kOmegaSST_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_RASModel, turbulenceModel::ConstrP);
 
@@ -2094,7 +2175,10 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 	  ||
 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
-	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+      {
+	BC["type"]=OFDictData::data("zeroGradient");
+      }
     }
   }
 }
@@ -2172,7 +2256,10 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 	  ||
 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
-	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	{
+	  BC["type"]=OFDictData::data("zeroGradient");
+	}
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
 }
@@ -2306,7 +2393,11 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 /*	  ||
 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
 	  ))
-	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	{
+	  BC["type"]=OFDictData::data("zeroGradient");
+	}
+	  
     }
   }
 }
@@ -2471,7 +2562,10 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
     {
       if (!p_.meshmotion()->addIntoFieldDictionary(field.first, field.second, BC))
-	throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	{
+	  BC["type"]=OFDictData::data("zeroGradient");
+	}
     }
   }
 }

@@ -21,6 +21,7 @@
 #include "solidmodel.h"
 #include <base/exception.h>
 #include "boost/foreach.hpp"
+#include "geotest.h"
 
 namespace insight 
 {
@@ -119,6 +120,53 @@ Filter* edgeTopology::clone() const
   return new edgeTopology(ct_);
 }
 
+everything::everything()
+{}
+
+bool everything::checkMatch(FeatureID feature) const
+{
+  return true;
+}
+  
+Filter* everything::clone() const
+{
+  return new everything();
+}
+  
+coincides::coincides(const SolidModel& m, FeatureSet f, EntityType et)
+: m_(m),
+  f_(f),
+  et_(et)
+{
+}
+
+bool coincides::checkMatch(FeatureID feature) const
+{
+  bool match=false;
+  
+  switch (et_)
+  {
+    case Edge:
+      BOOST_FOREACH(int f, f_)
+      {
+	TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
+	TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
+	match |= isPartOf(e2, e1);
+      }
+      return match;
+      break;
+    default:
+      throw insight::Exception("Filter coincides: Cannot handle entity type!");
+  }
+  
+  return false;
+}
+
+Filter* coincides::clone() const
+{
+  return new coincides(m_, f_);
+}
+  
 SolidModel::SolidModel(const SolidModel& o)
 : shape_(o.shape_)
 {
@@ -188,6 +236,16 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
     STEPControl_Writer stepwriter;
     stepwriter.Transfer(shape_, STEPControl_AsIs);
     stepwriter.Write(filename.c_str());
+  } 
+  else if ( (ext==".stl") || (ext==".stlb") )
+  {
+    StlAPI_Writer stlwriter;
+
+    stlwriter.ASCIIMode() = (ext==".stl");
+    //stlwriter.RelativeMode()=false;
+    //stlwriter.SetDeflection(maxdefl);
+    stlwriter.SetCoefficient(5e-5);
+    stlwriter.Write(shape_, filename.c_str());
   }
   else
   {
@@ -206,10 +264,6 @@ edgeCoG::~edgeCoG()
   
 arma::mat edgeCoG::evaluate(FeatureID ei)
 {
-//   GProp_GProps props;
-//   BRepGProp::LinearProperties(model_->edge(ei), props);
-//   gp_Pnt cog = props.CentreOfMass();
-//   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
   return model_->edgeCoG(ei);
 }
   
@@ -388,6 +442,45 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 {
 }
 
+TopoDS_Shape Box::makeBox
+(
+  const arma::mat& p0, 
+  const arma::mat& L1, 
+  const arma::mat& L2, 
+  const arma::mat& L3
+)
+{
+  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1), to_Pnt(p0+L2)).Value();
+  return 
+  BRepPrimAPI_MakePrism
+  (
+    BRepBuilderAPI_MakeFace
+    (
+      pln,
+      BRepBuilderAPI_MakePolygon
+      (
+	to_Pnt(p0), 
+	to_Pnt(p0+L1), 
+	to_Pnt(p0+L1+L2), 
+	to_Pnt(p0+L2), 
+	true
+      ).Wire()
+    ).Face(),
+    to_Vec(L3)
+  ).Shape();
+}
+  
+Box::Box
+(
+  const arma::mat& p0, 
+  const arma::mat& L1, 
+  const arma::mat& L2, 
+  const arma::mat& L3
+)
+: SolidModel(makeBox(p0, L1, L2, L3))
+{
+}
+  
 Sphere::Sphere(const arma::mat& p, double D)
 : SolidModel
   (
@@ -401,13 +494,24 @@ Sphere::Sphere(const arma::mat& p, double D)
 }
 
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
-: SolidModel(BRepAlgoAPI_Fuse(m1, m2))
+: SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
 }
 
-BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
-: SolidModel(BRepAlgoAPI_Cut(m1, m2))
+SolidModel operator|(const SolidModel& m1, const SolidModel& m2)
 {
+  return BooleanUnion(m1, m2);
+}
+
+
+BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
+: SolidModel(BRepAlgoAPI_Cut(m1, m2).Shape())
+{
+}
+
+SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
+{
+  return BooleanSubtract(m1, m2);
 }
 
 }

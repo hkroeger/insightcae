@@ -2,12 +2,14 @@
 #include "base/linearalgebra.h"
 #include "solidmodel.h"
 #include "sketch.h"
+#include "parser.h"
 
 using namespace insight;
 using namespace insight::cad;
 
 int main()
 {
+  /*
   arma::mat p0=vec3(0,0,0);
   arma::mat ax=vec3(0,0,1), ax2=vec3(0,1,0);
 
@@ -35,6 +37,16 @@ int main()
   Extrusion m3(Sketch(p, "sketch1.dxf"), vec3(0,0,10));
   
   m3.saveAs( "shape.brep" );
+  */
+  
+  parser::model m;
+  std::ifstream fs("test.iscad");
+  bool ok=parseISCADModelStream(fs, m);
+  cout<<"OK="<<ok<<endl;
+  BOOST_FOREACH(const parser::modelstep& ms, m)
+  {
+    cout<<ms.first<<endl;
+  }
 //   
 //   e = m.query_edges( edgeTopology(GeomAbs_Circle) );
 //   cout<<e<<endl;

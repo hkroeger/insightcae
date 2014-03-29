@@ -178,15 +178,27 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   return match;
 }
 
+std::ostream& operator<<(std::ostream& os, const SolidModel& m)
+{
+  os<<"ENTITIES\n================\n\n";
+  BRepTools::Dump(m.shape_, os);
+  os<<"\n================\n\n";
+  return os;
+}
+
 TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filename)
 {
+  cout<<"Reading "<<filename<<endl;
+    
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
   
   if (ext==".brep")
   {
     BRep_Builder bb;
-    BRepTools::Read(shape_, filename.c_str(), bb);
+    TopoDS_Shape s;
+    BRepTools::Read(s, filename.c_str(), bb);
+    return s;
   } 
   else if ( (ext==".igs") || (ext==".iges") )
   {
@@ -196,7 +208,7 @@ TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filena
     igesReader.ReadFile(filename.c_str());
     igesReader.TransferRoots();
 
-    shape_ = igesReader.OneShape();
+    return igesReader.OneShape();
   } 
   else if ( (ext==".stp") || (ext==".step") )
   {
@@ -206,12 +218,17 @@ TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filena
     stepReader.ReadFile(filename.c_str());
     stepReader.TransferRoots();
 
-    shape_ = stepReader.OneShape();
+    return stepReader.OneShape();
   } 
   else
   {
     throw insight::Exception("Unknown import file format! (Extension "+ext+")");
+    return TopoDS_Shape();
   }  
+}
+
+SolidModel::SolidModel()
+{
 }
 
 SolidModel::SolidModel(const SolidModel& o)

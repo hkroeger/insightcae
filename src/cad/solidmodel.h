@@ -422,7 +422,7 @@ RELATION_QTY_FILTER_OPERATOR(less, operator< );
 RELATION_QTY_FILTER_OPERATOR(lessequal, operator<= );
 RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 
-
+std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
 class SolidModel
 {
@@ -435,6 +435,8 @@ protected :
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
  
 public:
+  
+  SolidModel();
   SolidModel(const SolidModel& o);
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
@@ -462,6 +464,8 @@ public:
   void saveAs(const boost::filesystem::path& filename) const;
   
   operator const TopoDS_Shape& () const;
+  
+  friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
 
 // =================== Primitives ======================

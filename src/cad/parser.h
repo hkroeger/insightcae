@@ -90,9 +90,10 @@ struct ISCADParser
 
     struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
     struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
+    struct modelstepSymbolTable : public qi::symbols<char, solidmodel> {} modelstepSymbols;
     
 
-    ISCADParser(model& m)
+    ISCADParser()
       : ISCADParser::base_type(r_model)
     {
       
@@ -103,46 +104,91 @@ struct ISCADParser
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression) [ phx::bind(scalarSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(scalarSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_vectorExpression) [ phx::bind(vectorSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
 	  ;
 	
-        r_modelstep  =  r_identifier >> "<<" >> r_solidmodel;
+        r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression >> ';' ) [ phx::bind(modelstepSymbols.add, _1, _2) ];
 	
-	r_solidmodel = 
-	 ( lit("import") >> '(' >> r_path >> ')' ) [ _val = construct<SolidModel>(_1) ]
-	 | r_solidmodel_by_primitive 
-	 | r_solidmodel_operations;
-	 
-	r_solidmodel_by_primitive = 
+	
+	r_solidmodel_expression =
+	 r_solidmodel_term [_val=_1 ]
+	 >> *( '-' >> r_solidmodel_term [_val=construct<BooleanSubtract>(_val, _1)] )
+	 ;
+	
+	r_solidmodel_term =
+	 r_solidmodel_primary [_val=_1 ]
+	 >> *( '|' >> r_solidmodel_primary [_val=construct<BooleanUnion>(_val, _1)] )
+	 ;
+	
+	r_solidmodel_primary = 
+	 modelstepSymbols [ _val = _1 ]
+	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
+         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<SolidModel>(_1) ]
 	 // Primitives
-	 ( ( lit("Sphere") >> '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = construct<Sphere>(_1, _2) ] )
+	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<Sphere>(_1, _2) ]
+	 | ( lit("Cylinder") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<Cylinder>(_1, _2, _3) ]
+	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
+			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+	      [ _val = construct<Box>(_1, _2, _3, _4) ]
 	 ;
 	 
-	r_solidmodel_operations = 
-	 // Operations
-	 ( ( r_solidmodel >> '|' >> r_solidmodel ) [ _val = construct<BooleanUnion>(_1, _2) ] )
-	 ;
 	 
 	r_path = as_string[ 
                             lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
                          ];
 			 
 	r_scalarExpression = 
+	  r_scalar_term [_val =_1]  >> *(
+	    ( '+' >> r_scalar_term [_val+=_1] )
+	  | ( '-' >> r_scalar_term [_val-=_1] )
+	  )
+	  ;
+	
+	r_scalar_term =
+	(
+	  r_scalar_primary [_val=_1] >> *(
+	    ( '*' >> r_scalar_primary [ _val*=_1 ] )
+	  | ( '/' >> r_scalar_primary [ _val/=_1 ] )
+	  )
+	) | (
+	  r_vector_primary >> '&' >> r_vector_primary
+	) [_val = dot_(_1, _2) ]
+	  ;
+	  
+	r_scalar_primary =
 	  scalarSymbols [ _val = _1 ]
 	  | double_ [ _val = _1 ]
-	  | ( r_vectorExpression >> '&' >> r_vectorExpression ) [ _val = dot_(_1, _2) ]
-	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  | '(' >> r_scalarExpression [_val=_1] >> ')'
 	  ;
 
-	r_vectorExpression = 
+
+	r_vectorExpression =
+	  r_vector_term [_val =_1]  >> *(
+	    ( '+' >> r_vector_term [_val+=_1] )
+	  | ( '-' >> r_vector_term [_val-=_1] )
+	  )
+	  ;
+	
+	r_vector_term =
+	(
+	  r_vector_primary [_val=_1] >> *(
+	    ( '*' >> r_scalar_primary [ _val*=_1 ] )
+	  | ( '/' >> r_scalar_primary [ _val/=_1 ] )
+	  | ( '^' >> r_vector_primary [ _val=cross_(_val, _1) ] )
+	  )
+	) | (
+	  r_scalar_primary >> '*' >> r_vector_primary
+	) [_val=_1*_2]
+	;
+	  
+	r_vector_primary =
 	  vectorSymbols [ _val = _1 ]
-	  | ( "[" >> double_ >> "," >> double_ >> "," >> double_ >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
-	  | ( r_vectorExpression > '\'') [ _val = trans_(_1) ]
-	  | ( r_scalarExpression >> '*' >> r_vectorExpression ) [ _val = _1*_2 ]
-	  | ( r_vectorExpression >> '*' >> r_scalarExpression ) [ _val = _1*_2 ]
-	  | ( r_vectorExpression >> '^' >> r_vectorExpression ) [ _val = cross_(_1, _2) ]
+	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
+	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
@@ -153,30 +199,40 @@ struct ISCADParser
 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
+//	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
 
     }
     
-    qi::rule<Iterator, scalar(), Skipper> r_scalarExpression;
-    qi::rule<Iterator, vector(), Skipper> r_vectorExpression;
+    qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
+    qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
 
     qi::rule<Iterator, Skipper> r_model;
     qi::rule<Iterator, Skipper> r_assignment;
     qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
     qi::rule<Iterator, std::string()> r_identifier;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
-    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel;
-    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_by_primitive;
-    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_operations;
+    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
     
+};
+
+template<typename T>
+struct ModelStepsWriter
+: public std::map<std::string, T>
+{
+    void operator() (std::basic_string<char> s, T ct)
+    {
+      cout<<s<<endl<<ct<<endl;
+      //(*this)[s]=ct;
+      ct.saveAs(s+".brep");
+    }
 };
 
 template <typename Parser, typename Result, typename Iterator>
 bool parseISCADModel(Iterator first, Iterator last, Result& d)
 {
-  Parser parser(d);
+  Parser parser;
   skip_grammar<Iterator> skip;
   
   bool r = qi::phrase_parse(
@@ -185,7 +241,10 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
       parser,
       skip
   );
-     
+  
+  ModelStepsWriter<SolidModel> writer;
+  parser.modelstepSymbols.for_each(writer);
+
   if (first != last) // fail if we did not get a full match
       return false;
   

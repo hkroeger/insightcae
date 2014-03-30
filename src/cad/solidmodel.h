@@ -441,6 +441,8 @@ public:
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
   virtual ~SolidModel();
+  
+  SolidModel& operator=(const SolidModel& o);
 
   void nameFeatures();
   

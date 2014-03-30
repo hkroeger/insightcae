@@ -253,6 +253,13 @@ SolidModel::~SolidModel()
 {
 }
 
+SolidModel& SolidModel::operator=(const SolidModel& o)
+{
+  shape_=o.shape_;
+  nameFeatures();
+  return *this;
+}
+
 GeomAbs_CurveType SolidModel::edgeType(FeatureID i) const
 {
   const TopoDS_Edge& e = edge(i);
@@ -557,6 +564,7 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
     ).Shape()
   )
 {
+  cout<<"Cylinder created"<<endl;
 }
 
 TopoDS_Shape Box::makeBox
@@ -621,6 +629,7 @@ Extrusion::Extrusion(const Sketch& sk, const arma::mat& L)
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
+  cout<<"Union done"<<endl;
 }
 
 SolidModel operator|(const SolidModel& m1, const SolidModel& m2)

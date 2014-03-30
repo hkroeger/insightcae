@@ -38,6 +38,7 @@
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/phoenix/function.hpp>
 #include <boost/phoenix/function/adapt_callable.hpp>
+#include <boost/spirit/include/qi_no_case.hpp>
 
 namespace insight {
 namespace cad {
@@ -69,41 +70,34 @@ typedef SolidModel solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
-/*
-solidmodel import(const boost::filesystem::path& filepath);
 
-// primitives
-solidmodel cylinder(const vector& p1, const vector& p2, scalar D);
-solidmodel box
-(
-  const vector& p0, 
-  const vector& L1, 
-  const vector& L2, 
-  const vector& L3
-);
-solidmodel sphere(const vector& p, scalar D);
-
-// operations
-solidmodel booleanUnion(const aolidmodel& m1, const solidmodel& m2);
-*/
 
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, vec3_, vec3, 3);
-//BOOST_PHOENIX_ADAPT_CALLABLE(import_, SolidModel, 1);
+
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
-  : qi::grammar<Iterator, model(), Skipper>
+  : qi::grammar<Iterator, Skipper>
 {
-    ISCADParser()
+//     std::map<std::string, double> scalarSymbols;
+//     void insertScalarSymbol(std::pair<std::string, scalar>& p) { scalarSymbols[p.first] = p.second; }
+
+    struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
+    
+
+    ISCADParser(model& m)
       : ISCADParser::base_type(r_model)
     {
+      
 	using namespace qi;
 	using namespace phx;
 	using namespace insight::cad;
       
-        r_model =  *( r_modelstep );
+        r_model =  *( r_assignment | r_modelstep );
 	
-        r_modelstep  =  r_identifier >> lit('=') >> r_solidmodel; //( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
+	r_assignment = ( r_identifier >> '='  >> r_scalarExpression) [ phx::bind(scalarSymbols.add, _1, _2) ];
+	
+        r_modelstep  =  r_identifier >> "<<" >> r_solidmodel; //( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
 	
 	r_solidmodel = 
 	 ( lit("import") >> '(' >> r_path >> ')' ) // [ _val = import_(_1) ];
@@ -111,7 +105,7 @@ struct ISCADParser
 	 
 	r_solidmodel_by_primitive = 
 	 // Primitives
-	 ( ( lit("Sphere") >> '(' >> r_vector >> ',' >> r_scalar >> ')' ) [ _val = construct<Sphere>(_1, _2) ] )
+	 ( ( lit("Sphere") >> '(' >> r_vector >> ',' >> r_scalarExpression >> ')' ) [ _val = construct<Sphere>(_1, _2) ] )
 	 ;
 	 
 	r_solidmodel_operations = 
@@ -123,80 +117,53 @@ struct ISCADParser
                             lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
                          ];
 			 
-	r_scalar = qi::double_;
+	r_scalarExpression = 
+	  scalarSymbols [ _val = _1 ]
+	  | double_ [ _val = _1 ]
+	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  ;
 
-	r_vector = (lit("[") >> qi::double_ >> lit(",") >> qi::double_ >> lit(",") >> qi::double_ >> lit("]") ) [ _val = vec3_(_1, _2, _3) ] ;
+	r_vector = ( "[" >> double_ >> "," >> double_ >> "," >> double_ >> "]" ) [ _val = vec3_(_1, _2, _3) ] ;
 
-	r_identifier = qi::alpha >> *qi::alnum;
+	r_identifier = alpha >> *(alnum | '_');
 	 
-	/*
-        ridentifier  =  +(~qi::char_(" \"\\/;{}()\n"));
-	
-	rstring = '"' >> *(~qi::char_('"')) >> '"';
-	
-	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
-	
-	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
-	
-	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
-	
-        rsubdict = qi::lit('{')
-	      >> *(rpair) >> qi::lit('}');
-	      
-        rlist = qi::lit('(')
-	      >> *(rentry) >> qi::lit(')');
-*/
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalar);
+	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
 	BOOST_SPIRIT_DEBUG_NODE(r_vector);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
-/*	      
-	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
-	BOOST_SPIRIT_DEBUG_NODE(rstring);
-	BOOST_SPIRIT_DEBUG_NODE(rraw);
-	*/
-	//BOOST_SPIRIT_DEBUG_NODE(rentry);
-	//BOOST_SPIRIT_DEBUG_NODE(rsubdict);
-	//BOOST_SPIRIT_DEBUG_NODE(rlist);
 
     }
     
-    qi::rule<Iterator, scalar(), Skipper> r_scalar;
+    qi::rule<Iterator, scalar(), Skipper> r_scalarExpression;
     qi::rule<Iterator, vector(), Skipper> r_vector;
 
-    qi::rule<Iterator, model(), Skipper> r_model;
+    qi::rule<Iterator, Skipper> r_model;
+    qi::rule<Iterator, Skipper> r_assignment;
+    //qi::rule<Iterator, Skipper> r_var_decl;
     qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
     qi::rule<Iterator, std::string()> r_identifier;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_by_primitive;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_operations;
-/*
-    qi::rule<Iterator, std::string()> rstring;
-    qi::rule<Iterator, std::string()> rraw;
-    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
-    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
-    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
-    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
-    */
     
 };
 
 template <typename Parser, typename Result, typename Iterator>
 bool parseISCADModel(Iterator first, Iterator last, Result& d)
 {
-  Parser parser;
+  Parser parser(d);
   skip_grammar<Iterator> skip;
   
   bool r = qi::phrase_parse(
       first,
       last,
       parser,
-      skip,
-      d
+      skip
   );
      
   if (first != last) // fail if we did not get a full match

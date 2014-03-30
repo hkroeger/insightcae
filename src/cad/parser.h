@@ -83,6 +83,7 @@ struct ISCADParser
 //     void insertScalarSymbol(std::pair<std::string, scalar>& p) { scalarSymbols[p.first] = p.second; }
 
     struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
+    struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
     
 
     ISCADParser(model& m)
@@ -95,17 +96,22 @@ struct ISCADParser
       
         r_model =  *( r_assignment | r_modelstep );
 	
-	r_assignment = ( r_identifier >> '='  >> r_scalarExpression) [ phx::bind(scalarSymbols.add, _1, _2) ];
+	r_assignment = 
+	  ( r_identifier >> '='  >> r_scalarExpression) [ phx::bind(scalarSymbols.add, _1, _2) ]
+	  |
+	  ( r_identifier >> '='  >> r_vectorExpression) [ phx::bind(vectorSymbols.add, _1, _2) ]
+	  ;
 	
-        r_modelstep  =  r_identifier >> "<<" >> r_solidmodel; //( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
+        r_modelstep  =  r_identifier >> "<<" >> r_solidmodel;
 	
 	r_solidmodel = 
-	 ( lit("import") >> '(' >> r_path >> ')' ) // [ _val = import_(_1) ];
-	 | r_solidmodel_by_primitive | r_solidmodel_operations;
+	 ( lit("import") >> '(' >> r_path >> ')' ) [ _val = construct<SolidModel>(_1) ]
+	 | r_solidmodel_by_primitive 
+	 | r_solidmodel_operations;
 	 
 	r_solidmodel_by_primitive = 
 	 // Primitives
-	 ( ( lit("Sphere") >> '(' >> r_vector >> ',' >> r_scalarExpression >> ')' ) [ _val = construct<Sphere>(_1, _2) ] )
+	 ( ( lit("Sphere") >> '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = construct<Sphere>(_1, _2) ] )
 	 ;
 	 
 	r_solidmodel_operations = 
@@ -123,7 +129,11 @@ struct ISCADParser
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
 
-	r_vector = ( "[" >> double_ >> "," >> double_ >> "," >> double_ >> "]" ) [ _val = vec3_(_1, _2, _3) ] ;
+	r_vectorExpression = 
+	  vectorSymbols [ _val = _1 ]
+	  | ( "[" >> double_ >> "," >> double_ >> "," >> double_ >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
+	  | ('(' >> r_vectorExpression >> ')') [_val=_1]
+	  ;
 
 	r_identifier = alpha >> *(alnum | '_');
 	 
@@ -131,7 +141,7 @@ struct ISCADParser
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_vector);
+	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
@@ -139,11 +149,10 @@ struct ISCADParser
     }
     
     qi::rule<Iterator, scalar(), Skipper> r_scalarExpression;
-    qi::rule<Iterator, vector(), Skipper> r_vector;
+    qi::rule<Iterator, vector(), Skipper> r_vectorExpression;
 
     qi::rule<Iterator, Skipper> r_model;
     qi::rule<Iterator, Skipper> r_assignment;
-    //qi::rule<Iterator, Skipper> r_var_decl;
     qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
     qi::rule<Iterator, std::string()> r_identifier;
     qi::rule<Iterator, boost::filesystem::path()> r_path;

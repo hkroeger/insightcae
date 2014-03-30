@@ -57,6 +57,7 @@ struct skip_grammar : public qi::grammar<Iterator>
                 =   boost::spirit::ascii::space
                 | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
                 | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
                 ;
         }
 
@@ -71,16 +72,21 @@ typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
 
+double dot(const vector& v1, const vector& v2)
+{
+  return arma::as_scalar(arma::dot(v1,v2));
+}
 
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, vec3_, vec3, 3);
+BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
+BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
+BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
   : qi::grammar<Iterator, Skipper>
 {
-//     std::map<std::string, double> scalarSymbols;
-//     void insertScalarSymbol(std::pair<std::string, scalar>& p) { scalarSymbols[p.first] = p.second; }
 
     struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
     struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
@@ -119,20 +125,25 @@ struct ISCADParser
 	 ( ( r_solidmodel >> '|' >> r_solidmodel ) [ _val = construct<BooleanUnion>(_1, _2) ] )
 	 ;
 	 
-	r_path = as_string [ 
+	r_path = as_string[ 
                             lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
                          ];
 			 
 	r_scalarExpression = 
 	  scalarSymbols [ _val = _1 ]
 	  | double_ [ _val = _1 ]
+	  | ( r_vectorExpression >> '&' >> r_vectorExpression ) [ _val = dot_(_1, _2) ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
 
 	r_vectorExpression = 
 	  vectorSymbols [ _val = _1 ]
 	  | ( "[" >> double_ >> "," >> double_ >> "," >> double_ >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
-	  | ('(' >> r_vectorExpression >> ')') [_val=_1]
+	  | ( r_vectorExpression > '\'') [ _val = trans_(_1) ]
+	  | ( r_scalarExpression >> '*' >> r_vectorExpression ) [ _val = _1*_2 ]
+	  | ( r_vectorExpression >> '*' >> r_scalarExpression ) [ _val = _1*_2 ]
+	  | ( r_vectorExpression >> '^' >> r_vectorExpression ) [ _val = cross_(_1, _2) ]
+	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
 	r_identifier = alpha >> *(alnum | '_');

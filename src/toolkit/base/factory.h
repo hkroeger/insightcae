@@ -63,13 +63,13 @@ public:
 
 #define declareFactoryTable(baseT, paramS) \
  typedef boost::ptr_map<std::string, insight::Factory<baseT, paramS> > FactoryTable; \
- static std::auto_ptr<FactoryTable> factories_; \
+ static FactoryTable* factories_; \
  static baseT* lookup(const std::string& key, const paramS& cp); \
  static std::vector<std::string> factoryToC();
 
 // boost::ptr_map<std::string, insight::Factory<baseT, paramS> > baseT::factories_;
 #define defineFactoryTable(baseT, paramS) \
- std::auto_ptr<baseT::FactoryTable> baseT::factories_; \
+ baseT::FactoryTable* baseT::factories_; \
  baseT* baseT::lookup(const std::string& key, const paramS& cp) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -91,7 +91,7 @@ static struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
-    if (!baseT::factories_.get()) baseT::factories_.reset(new baseT::FactoryTable()); \
+    if (!baseT::factories_) baseT::factories_=new baseT::FactoryTable(); \
     std::string key(specT::typeName); \
     /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
     baseT::factories_->insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
@@ -101,6 +101,7 @@ static struct add##specT##To##baseT##FactoryTable \
     std::string key(specT::typeName); \
     /*std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl;*/ \
     baseT::factories_->erase(baseT::factories_->find(key)); \
+    if (baseT::factories_->size()==0) delete baseT::factories_;\
   }\
 } v_add##specT##To##baseT##FactoryTable;
 

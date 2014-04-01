@@ -49,8 +49,8 @@ newAnalysisDlg::~newAnalysisDlg()
 
 void newAnalysisDlg::fillAnalysisList()
 {
-  for (insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.begin();
-       i != insight::Analysis::factories_.end(); i++)
+  for (insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_->begin();
+       i != insight::Analysis::factories_->end(); i++)
   {
     new QListWidgetItem(i->first.c_str(), ui->listWidget);
   }

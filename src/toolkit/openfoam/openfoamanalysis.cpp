@@ -20,7 +20,7 @@
 
 #include "openfoamanalysis.h"
 #include "openfoamtools.h"
-#include "basiccaseelements.h"
+#include "openfoamcaseelements.h"
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/ptr_map_inserter.hpp>

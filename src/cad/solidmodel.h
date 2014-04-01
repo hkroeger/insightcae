@@ -28,6 +28,7 @@
 #include "boost/filesystem.hpp"
 
 #include "base/linearalgebra.h"
+#include "base/exception.h"
 
 #include "occinclude.h"
 
@@ -53,6 +54,7 @@ typedef std::set<FeatureID> FeatureSet;
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 
 class SolidModel;
+class Sketch;
 
 class Filter
 {
@@ -127,23 +129,45 @@ public:
   virtual Filter* clone() const;
 };
 
-class coincides
+enum EntityType { Edge, Face};
+
+template<EntityType T>
+class coincident
 : public Filter
 {
-public:
-  enum EntityType {Edge, Face};
-  
 protected:
   const SolidModel& m_;
   FeatureSet f_;
-  EntityType et_;
   
 public:
-  coincides(const SolidModel& m, FeatureSet f, EntityType et = Edge);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual Filter* clone() const;
+  coincident(const SolidModel& m)
+  : m_(m)
+  {
+    throw insight::Exception("coincident filter: not implemented!");
+  }
+
+  coincident(const SolidModel& m, FeatureSet f)
+  : m_(m),
+    f_(f)
+  {}
+
+  bool checkMatch(FeatureID feature) const
+  {
+    throw insight::Exception("coincident filter: not implemented!");
+  }
+
+  Filter* clone() const
+  {
+    return new coincident(m_, f_);
+  }
+    
 };
+
+template<> coincident<Edge>::coincident(const SolidModel& m);
+template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
+template<> coincident<Face>::coincident(const SolidModel& m);
+template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
+
 
 template<class T>
 class QuantityComputer
@@ -398,7 +422,7 @@ RELATION_QTY_FILTER_OPERATOR(less, operator< );
 RELATION_QTY_FILTER_OPERATOR(lessequal, operator<= );
 RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 
-
+std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
 class SolidModel
 {
@@ -407,11 +431,18 @@ protected :
   TopoDS_Shape shape_;
   // all the (sub) TopoDS_Shapes in 'shape'
   TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
+  
+  TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
  
 public:
+  
+  SolidModel();
   SolidModel(const SolidModel& o);
   SolidModel(const TopoDS_Shape& shape);
+  SolidModel(const boost::filesystem::path& filepath);
   virtual ~SolidModel();
+  
+  SolidModel& operator=(const SolidModel& o);
 
   void nameFeatures();
   
@@ -420,14 +451,23 @@ public:
   inline const TopoDS_Vertex& vertex(FeatureID i) const { return TopoDS::Vertex(vmap_.FindKey(i)); }
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
+  GeomAbs_SurfaceType faceType(FeatureID i) const;
   
   arma::mat edgeCoG(FeatureID i) const;
+  arma::mat faceCoG(FeatureID i) const;
+  
+  arma::mat faceNormal(FeatureID i) const;
+
+  FeatureSet allEdges() const;
+  FeatureSet allFaces() const;
   
   FeatureSet query_edges(const Filter& filter) const;
   
   void saveAs(const boost::filesystem::path& filename) const;
   
   operator const TopoDS_Shape& () const;
+  
+  friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
 
 // =================== Primitives ======================
@@ -467,6 +507,13 @@ public:
   Sphere(const arma::mat& p, double D);
 };
 
+class Extrusion
+: public SolidModel
+{
+public:
+  Extrusion(const Sketch& sk, const arma::mat& L);
+};
+
 // =================== Boolean operations ======================
 class BooleanUnion
 : public SolidModel
@@ -486,6 +533,16 @@ public:
 
 SolidModel operator-(const SolidModel& m1, const SolidModel& m2);
 
+// =================== Cosmetic features ======================
+
+class Fillet
+: public SolidModel
+{
+  TopoDS_Shape makeFillets(const SolidModel& m1, const FeatureSet& edges, double r);
+  
+public:
+  Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
+};
 
 }
 }

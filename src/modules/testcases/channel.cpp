@@ -22,7 +22,6 @@
 #include "base/factory.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/basiccaseelements.h"
 #include "refdata.h"
 
 #include <boost/assign/list_of.hpp>

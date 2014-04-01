@@ -44,12 +44,13 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent)
 {
-  
+  /*
   insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
   if (i==insight::Analysis::factories_.end())
     throw insight::Exception("Could not lookup analysis type "+analysisName);
   
-  analysis_.reset( (*i->second)( insight::NoParameters() ) );
+  analysis_.reset( (*i->second)( insight::NoParameters() ) );*/
+  analysis_.reset ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
   analysis_->setDefaults();
   parameters_ = analysis_->defaultParameters();
   

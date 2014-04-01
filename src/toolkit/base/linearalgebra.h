@@ -23,6 +23,7 @@
 
 #include <armadillo>
 
+
 namespace insight 
 {
 

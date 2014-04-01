@@ -22,9 +22,13 @@
 #include <Poly_Triangle.hxx>
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>
+#include <BRepGProp_Face.hxx>
 #include <Geom_Surface.hxx>
 #include <TopExp.hxx>
 #include <gp_Pnt.hxx>
+#include <gp_Ax3.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Pln.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Solid.hxx>
 #include <TopExp_Explorer.hxx>
@@ -44,6 +48,7 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <BRepLProp_CLProps.hxx>
 #include <BRepLProp_SLProps.hxx>
@@ -104,6 +109,8 @@
 #include <IGESControl_Writer.hxx>
 #include <IGESControl_Controller.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
 
 #include "GC_MakePlane.hxx"
 #include "BRepMesh_FastDiscret.hxx"

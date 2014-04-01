@@ -19,7 +19,7 @@
  */
 
 #include "openfoamtools.h"
-#include "openfoam/basiccaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 #include "base/analysis.h"
 
 #include "boost/filesystem.hpp"

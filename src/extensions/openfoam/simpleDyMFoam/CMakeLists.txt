@@ -1,3 +1,4 @@
+if (OF16ext_FOUND)
 
 set(simpleDyMFoam_SOURCES simpleDyMFoam.C)
 
@@ -25,3 +26,5 @@ setup_exe_target_OF16ext(simpleDyMFoam16ext "${simpleDyMFoam_SOURCES}" "simpleDy
   ${OF16ext_LIB_DIR}/libdynamicMesh.so
   ${OF16ext_LIB_DIR}/libmeshTools.so
 ) 
+
+endif()

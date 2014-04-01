@@ -1,3 +1,5 @@
+if (OF16ext_FOUND)
+
 project(FEMDisplacementBC16ext)
 
 
@@ -45,3 +47,4 @@ setup_lib_target_OF16ext(FEMDisplacementBC16ext "${FEMDisplacementBC_SOURCES}" "
 )
 
 #install(TARGETS FEMDisplacementBC LIBRARY DESTINATION lib)
+endif(OF16ext_FOUND)

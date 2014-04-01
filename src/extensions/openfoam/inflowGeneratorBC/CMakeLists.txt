@@ -12,6 +12,7 @@ add_subdirectory(turbulentStructures/turbulentStructure)
 add_subdirectory(turbulentStructures/hatSpot)
 add_subdirectory(turbulentStructures/homogeneousTurbulenceVorton)
 
+if (OF16ext_FOUND)
 project(inflowGeneratorBC16ext)
 set(include_directories
   ${PROJECT_SOURCE_DIR}
@@ -38,6 +39,7 @@ setup_lib_target_OF16ext(inflowGeneratorBC16ext "${inflowGeneratorBC_SOURCES}" "
   ${OF16ext_LIB_DIR}/libsurfMesh.so
   ${OF16ext_LIB_DIR}/libsampling.so
 )
+endif()
 
 project(inflowGeneratorBC22x)
 set(include_directories

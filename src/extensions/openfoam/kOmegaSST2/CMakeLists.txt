@@ -7,6 +7,8 @@ set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 add_subdirectory(wallFunctions/hybridOmegaWallFunction2)
 add_subdirectory(wallFunctions/nutHybridWallFunction2)
 
+if (OF16ext_FOUND)
+
 project(kOmegaSST216ext)
 set(include_directories
   ${kOmegaSST216ext_SOURCE_DIR}
@@ -35,3 +37,4 @@ setup_lib_target_OF16ext(kOmegaSST216ext "${kOmegaSST2_SOURCES}" "kOmegaSST2" "$
   ) 
 
 #install(TARGETS kOmegaSST2 LIBRARY DESTINATION lib)
+endif()

@@ -2,6 +2,8 @@
 
 set(initInflowGenerator_SOURCES initInflowGenerator.C)
 
+if (OF16ext_FOUND)
+
 project(initInflowGenerator16ext)
 set(include_directories
   ${inflowGeneratorBC16ext_SOURCE_DIR}
@@ -15,6 +17,7 @@ setup_exe_target_OF16ext(initInflowGenerator16ext "${initInflowGenerator_SOURCES
   ${OF16ext_LIB_DIR}/libfiniteVolume.so
   inflowGeneratorBC16ext
   ) 
+endif()
 
 project(initInflowGenerator22x)
 set(include_directories

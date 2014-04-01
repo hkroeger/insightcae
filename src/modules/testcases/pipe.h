@@ -22,7 +22,7 @@
 
 #include "base/linearalgebra.h"
 #include "openfoam/openfoamanalysis.h"
-#include "openfoam/basiccaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 
 namespace insight {
   

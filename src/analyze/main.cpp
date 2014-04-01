@@ -36,12 +36,14 @@ int main(int argc, char *argv[])
     {
       analysisName = analysisnamenode->first_attribute("name")->value();
     }
-    
+    /*
     insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
     if (i==insight::Analysis::factories_.end())
       throw insight::Exception("Could not lookup analysis type "+analysisName);
     
     AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
+    */
+    AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
     analysis->setDefaults();
     
     boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();

@@ -24,7 +24,6 @@
 #include "base/case.h"
 #include "openfoam/openfoamdict.h"
 #include "base/softwareenvironment.h"
-//#include "openfoam/basiccaseelements.h"
 #include "boost/ptr_container/ptr_map.hpp"
 
 

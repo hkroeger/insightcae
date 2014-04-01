@@ -23,7 +23,7 @@
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
 #include <base/analysis.h>
-#include "openfoam/basiccaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 
 
 #include "boost/lexical_cast.hpp"

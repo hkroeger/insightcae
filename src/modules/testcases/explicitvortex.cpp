@@ -22,7 +22,7 @@
 #include "base/factory.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
-#include "openfoam/basiccaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/ptr_map_inserter.hpp>

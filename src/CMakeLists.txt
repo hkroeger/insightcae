@@ -11,7 +11,7 @@ find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
-find_package(PythonLibs REQUIRED)
+find_package(PythonLibs 2.7 REQUIRED)
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"

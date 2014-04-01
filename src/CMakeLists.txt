@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
+OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
@@ -162,7 +163,9 @@ endmacro()
 
 add_subdirectory(refdata)
 add_subdirectory(toolkit)
-add_subdirectory(cad)
+if (INSIGHT_BUILD_CAD)
+  add_subdirectory(cad)
+endif (INSIGHT_BUILD_CAD)
 add_subdirectory(analyze)
 if (INSIGHT_BUILD_WORKBENCH)
   add_subdirectory(workbench)

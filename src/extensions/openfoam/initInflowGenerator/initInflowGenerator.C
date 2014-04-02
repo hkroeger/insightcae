@@ -152,7 +152,6 @@ public:
     Ubulk_(Ubulk),
     D_(D), p0_(p0), axis_(axis)
   {
-    Info<<Ubulk_<<endl;
   }
 
   pipeFlow(Istream& is)
@@ -162,7 +161,6 @@ public:
     p0_(dict_.lookupOrDefault<point>("p0", point(0,0,0))),
     axis_(dict_.lookupOrDefault<vector>("axis", vector(1,0,0)))
   {
-    Info<<Ubulk_<<endl;
   }
     
   virtual void initialize(volVectorField& U) const

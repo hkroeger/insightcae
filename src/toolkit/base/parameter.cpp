@@ -6,6 +6,7 @@
 #include <iostream>
 
 using namespace std;
+using namespace boost;
 using namespace rapidxml;
 
 namespace insight 
@@ -36,23 +37,53 @@ rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml:
     return child;
 }
 
+
+std::string valueToString(const arma::mat& value)
+{
+  return 
+  boost::lexical_cast<string>(value(0))
+  +" "+
+  boost::lexical_cast<string>(value(1))
+  +" "+
+  boost::lexical_cast<string>(value(2));
+}
+
+
+void stringToValue(const std::string& s, arma::mat& v)
+{
+  std::vector<double> vals;
+  std::istringstream iss(s);
+  while (!iss.eof())
+  {
+    double c;
+    iss >> c;
+    if (iss.fail()) break;
+    vals.push_back(c);
+  }
+  v=arma::mat(vals.data(), vals.size(), 1);
+}
+ 
 char DoubleName[] = "double";
 char IntName[] = "int";
 char BoolName[] = "bool";
+char VectorName[] = "vector";
 char StringName[] = "string";
 char PathName[] = "path";
 
 template<> defineType(DoubleParameter);
 template<> defineType(IntParameter);
 template<> defineType(BoolParameter);
+template<> defineType(VectorParameter);
 template<> defineType(StringParameter);
 template<> defineType(PathParameter);
 
 addToFactoryTable(Parameter, DoubleParameter, std::string);
 addToFactoryTable(Parameter, IntParameter, std::string);
 addToFactoryTable(Parameter, BoolParameter, std::string);
+addToFactoryTable(Parameter, VectorParameter, std::string);
 addToFactoryTable(Parameter, StringParameter, std::string);
 addToFactoryTable(Parameter, PathParameter, std::string);
+
 
 rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& name)
 {

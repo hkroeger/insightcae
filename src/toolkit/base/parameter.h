@@ -23,6 +23,7 @@
 
 #include "factory.h"
 #include "base/latextools.h"
+#include "base/linearalgebra.h"
 
 #include <string>
 #include <vector>
@@ -71,6 +72,22 @@ public:
 };
 
 
+template<class V>
+std::string valueToString(const V& value)
+{
+  return boost::lexical_cast<std::string>(value);
+}
+
+std::string valueToString(const arma::mat& value);
+
+template<class V>
+void stringToValue(const std::string& s, V& v)
+{
+  v=boost::lexical_cast<V>(s);
+}
+
+void stringToValue(const std::string& s, arma::mat& v);
+  
 template<class T, char const* N>
 class SimpleParameter
 : public Parameter
@@ -102,7 +119,7 @@ public:
 
   virtual std::string latexRepresentation() const
   {
-    return cleanSymbols(boost::lexical_cast<std::string>(value_));
+    return cleanSymbols(valueToString(value_));
   }
 
   virtual Parameter* clone() const
@@ -117,7 +134,7 @@ public:
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
-      doc.allocate_string(boost::lexical_cast<std::string>(value_).c_str())
+      doc.allocate_string(valueToString(value_).c_str())
     ));
     return child;
   }
@@ -128,21 +145,24 @@ public:
     xml_node<>* child = findNode(node, name);
     if (child)
     {
-      value_=boost::lexical_cast<T>(child->first_attribute("value")->value());
+      stringToValue(child->first_attribute("value")->value(), value_);
     }
   }
   
 };
 
+
 extern char DoubleName[];
 extern char IntName[];
 extern char BoolName[];
+extern char VectorName[];
 extern char StringName[];
 extern char PathName[];
 
 typedef SimpleParameter<double, DoubleName> DoubleParameter;
 typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
+typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 

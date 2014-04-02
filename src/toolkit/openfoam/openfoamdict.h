@@ -189,6 +189,7 @@ struct dictFile
   void write(const boost::filesystem::path& dictPath) const;
 };
 
+std::string to_OF(const arma::mat& v);
 OFDictData::list vector3(const arma::mat& v);
 OFDictData::list vector3(double x, double y, double z);
 

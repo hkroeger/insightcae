@@ -14,6 +14,12 @@ find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(PythonLibs REQUIRED)
 
+# ADD_DEFINITIONS(
+#     -std=c++11 # Or -std=c++0x
+#     #-std=c++0x
+#     # Other flags
+# )
+
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"
         "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"

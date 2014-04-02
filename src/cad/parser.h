@@ -100,7 +100,8 @@ struct ISCADParser
 	using namespace qi;
 	using namespace phx;
 	using namespace insight::cad;
-      
+
+		
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
@@ -176,12 +177,12 @@ struct ISCADParser
 	r_vector_term =
 	(
 	  r_vector_primary [_val=_1] >> *(
-	    ( '*' >> r_scalar_primary [ _val*=_1 ] )
-	  | ( '/' >> r_scalar_primary [ _val/=_1 ] )
+	    ( '*' >> r_scalar_term [ _val*=_1 ] )
+	  | ( '/' >> r_scalar_term [ _val/=_1 ] )
 	  | ( '^' >> r_vector_primary [ _val=cross_(_val, _1) ] )
 	  )
 	) | (
-	  r_scalar_primary >> '*' >> r_vector_primary
+	  r_scalar_term >> '*' >> r_vector_term
 	) [_val=_1*_2]
 	;
 	  
@@ -197,7 +198,11 @@ struct ISCADParser
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
+	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
 //	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);

@@ -1,35 +1,23 @@
+set(PRJ initInflowGenerator)
 
+set(SRC initInflowGenerator.C)
 
-set(initInflowGenerator_SOURCES initInflowGenerator.C)
+set(OF_INCLUDE_DIRS
+  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+  turbulenceModels/incompressible/LES turbulenceModels/LES/LESfilters
+  meshTools sampling surfMesh
+)
 
-if (OF16ext_FOUND)
+set(OF_LIBS finiteVolume LESfilters sampling)
 
-project(initInflowGenerator16ext)
-set(include_directories
-  ${inflowGeneratorBC16ext_SOURCE_DIR}
-  ${insight_INCLUDE_DIR}
-  ${OF16ext_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF16ext_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF16ext_LIBSRC_DIR}/lduSolvers/lnInclude  
-  )
-setup_exe_target_OF16ext(initInflowGenerator16ext "${initInflowGenerator_SOURCES}" "initInflowGenerator" "${include_directories}"
-  ${OF16ext_LIB_DIR}/libfiniteVolume.so
-  inflowGeneratorBC16ext
-  ) 
-endif()
-
-project(initInflowGenerator22x)
-set(include_directories
+set(INCLUDE_DIRS 
   ${inflowGeneratorBC22x_SOURCE_DIR}
   ${insight_INCLUDE_DIR}
-  ${OF22x_LIBSRC_DIR}/OpenFOAM/lnInclude
-  ${OF22x_LIBSRC_DIR}/finiteVolume/lnInclude 
-  ${OF22x_LIBSRC_DIR}/OSspecific/POSIX/lnInclude 
-  ${OF22x_LIBSRC_DIR}/lduSolvers/lnInclude  
-  ${OF22x_LIBSRC_DIR}/meshTools/lnInclude
-  )
-setup_exe_target_OF22x(initInflowGenerator22x "${initInflowGenerator_SOURCES}" "initInflowGenerator" "${include_directories}"
-  ${OF22x_LIB_DIR}/libfiniteVolume.so
-  inflowGeneratorBC22x
-  ) 
+)
+
+set(OF16ext_LIBS inflowGeneratorBCOF16ext)
+set(OF22x_LIBS inflowGeneratorBCOF22x)
+set(OF22eng_LIBS inflowGeneratorBCOF22eng)
+set(OF23x_LIBS inflowGeneratorBCOF23x)
+
+setup_exe_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")

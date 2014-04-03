@@ -163,7 +163,7 @@ struct ISCADParser
 	r_scalar_primary =
 	  scalarSymbols [ _val = _1 ]
 	  | double_ [ _val = _1 ]
-	  | '(' >> r_scalarExpression [_val=_1] >> ')'
+	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
 
 
@@ -182,7 +182,7 @@ struct ISCADParser
 	  | ( '^' >> r_vector_primary [ _val=cross_(_val, _1) ] )
 	  )
 	) | (
-	  r_scalar_term >> '*' >> r_vector_term
+	  r_scalar_primary >> '*' >> r_vector_term
 	) [_val=_1*_2]
 	;
 	  

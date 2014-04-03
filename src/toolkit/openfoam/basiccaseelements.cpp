@@ -676,6 +676,11 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["alpha1"]="";
 }
 
+LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c)
+: interFoamNumerics(c)
+{
+}
+
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c)
 : interFoamNumerics(c)
 {
@@ -1901,14 +1906,25 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       setField_U(BC);
     }
+    
     else if ( 
-      ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
-      && 
-      (get<0>(field.second)==scalarField) 
+      (field.first=="p") && (get<0>(field.second)==scalarField) 
     )
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
+    
+    else if ( 
+      ( (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("buoyantPressure");
+//       BC["type"]=OFDictData::data("calculated");
+//       BC["value"]=OFDictData::data("uniform 0");
+    }
+    
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("fixedValue");
@@ -1972,6 +1988,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   BC["type"]="inflowGenerator<"+p_.structureType()+">";
   BC["Umean"]="uniform "+Uvec;
   
+  BC["c"]="uniform 16";
   double L=p_.mixingLength();
   BC["L"]="uniform ( "
     +lexical_cast<string>(L)+" 0 0 "
@@ -2226,6 +2243,13 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]=OFDictData::data("zeroGradient");
+    }
+        
+    // pressure
+    else if ( ( (field.first=="p_rgh") || (field.first=="pd") ) 
+	      && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("buoyantPressure");
     }
     
     // turbulence quantities, should be handled by turbulence model

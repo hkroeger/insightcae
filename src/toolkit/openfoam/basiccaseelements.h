@@ -165,7 +165,13 @@ public:
   inline const std::string& pressureFieldName() const { return pname_; }
 };
 
-
+class LTSInterFoamNumerics
+: public interFoamNumerics
+{
+public:
+  LTSInterFoamNumerics(OpenFOAMCase& c);
+  //virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+};
 
 class interPhaseChangeFoamNumerics
 : public interFoamNumerics

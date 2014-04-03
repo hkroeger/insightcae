@@ -37,12 +37,37 @@ Description
 #include "fixedGradientFvPatchFields.H"
 #include "addToRunTimeSelectionTable.H"
 #include "inflowGeneratorBaseFvPatchVectorField.H"
+#include "wallDist.H"
 #include <boost/concept_check.hpp>
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
+
+class LengthScaleModel
+{
+protected:
+  scalar c0_, c1_, c2_, c3_;
+public:
+  LengthScaleModel()
+  : c0_(0.841), c1_(-0.6338), c2_(0.6217), c3_(0.778)
+  {
+  }
+  
+  LengthScaleModel(const dictionary& d)
+  : c0_(readScalar(d.lookup("c0"))),
+    c1_(readScalar(d.lookup("c1"))),
+    c2_(readScalar(d.lookup("c2"))),
+    c3_(readScalar(d.lookup("c3")))
+  {
+  }
+  
+  scalar operator()(scalar y) const
+  {
+    return c0_*::pow(y, c2_) + c1_*::pow(y, c3_);
+  }
+};
 
 class inflowInitializer
 {
@@ -136,6 +161,8 @@ class pipeFlow
   scalar D_;
   point p0_;
   vector axis_;
+  LengthScaleModel L_long_;
+  LengthScaleModel L_lat_;
   
 public:
   TypeName("pipeFlow");
@@ -159,24 +186,37 @@ public:
     Ubulk_(readScalar(dict_.lookup("Ubulk"))),
     D_(readScalar(dict_.lookup("D"))),
     p0_(dict_.lookupOrDefault<point>("p0", point(0,0,0))),
-    axis_(dict_.lookupOrDefault<vector>("axis", vector(1,0,0)))
+    axis_(dict_.lookupOrDefault<vector>("axis", vector(1,0,0))),
+    L_long_(dict_.subDict("L_long")),
+    L_lat_(dict_.subDict("L_lat"))
   {
   }
     
   virtual void initialize(volVectorField& U) const
   {
-    scalar L=0.1*D_;
-    
     inflowGeneratorBaseFvPatchVectorField& ifpf = inflowGeneratorPatchField(U);
     const fvPatch& patch=ifpf.patch();
     forAll(patch.Cf(), fi)
     {
       const point& p=patch.Cf()[fi];
+      
       vector rv=p-p0_; rv-=axis_*(rv&axis_);
       scalar r=mag(rv);
+      scalar y=(1.-r/(0.5*D_));
       
-      ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(2.*(1.-r/D_), 1./7.);
-      ifpf.L()[fi]=symmTensor(1, 0, 0, 1, 0, 1) * max(0.05, 2.*(1.-r/D_))*L;
+      ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(y, 1./7.);
+      
+      vector e_radial(rv/mag(rv));
+      vector e_tan=axis_^e_radial;
+      
+      tensor ev(axis_, e_radial, e_tan); // eigenvectors => rows
+      scalar delta=0.5*D_;
+      
+      tensor L = ev.T() & (delta*diagTensor(L_long_(y), L_lat_(y), L_lat_(y))) & ev;
+
+      ifpf.L()[fi] = symmTensor(L.xx(), L.xy(), L.xz(),
+					L.yy(), L.yz(),
+						L.zz());
     }
   }
 
@@ -195,6 +235,8 @@ int main(int argc, char *argv[])
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
+  
+  wallDist y(mesh);
   
   Info<< "Reading combustion properties\n" << endl;
 

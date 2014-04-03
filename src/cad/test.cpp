@@ -3,11 +3,13 @@
 #include "solidmodel.h"
 #include "sketch.h"
 #include "parser.h"
+#include "boost/exception/diagnostic_information.hpp"
 
+using namespace boost;
 using namespace insight;
 using namespace insight::cad;
 
-int main()
+int main(int argc, char* argv[])
 {
   /*
   arma::mat p0=vec3(0,0,0);
@@ -38,14 +40,19 @@ int main()
   
   m3.saveAs( "shape.brep" );
   */
-  
+  try{
   parser::model m;
-  std::ifstream fs("test.iscad");
+  std::ifstream fs(argv[1]);
   bool ok=parseISCADModelStream(fs, m);
   cout<<"OK="<<ok<<endl;
   BOOST_FOREACH(const parser::modelstep& ms, m)
   {
     cout<<ms.first<<endl;
+  }
+  }
+  catch (boost::exception& ex) {
+    // error handling
+    std::cerr << boost::diagnostic_information(ex);
   }
 //   
 //   e = m.query_edges( edgeTopology(GeomAbs_Circle) );

@@ -100,6 +100,26 @@ public:
   setFieldOperator* clone() const;
 };
 
+class boxToCellOperator
+: public setFieldOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
+      ( min, arma::mat, vec3(-1e10, -1e10, -1e10) )
+      ( max, arma::mat, vec3(1e10, 1e10, 1e10) )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  boxToCellOperator(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
+  
+  setFieldOperator* clone() const;
+};
+
 inline setFieldOperator* new_clone(const setFieldOperator& op)
 {
   return op.clone();

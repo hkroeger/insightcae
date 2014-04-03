@@ -23,6 +23,7 @@
 
 #include <armadillo>
 
+#define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace insight 
 {
@@ -53,6 +54,20 @@ arma::mat tensor(const T& t)
      << t.yx() << t.yy() << t.yz() << arma::endr
      << t.zx() << t.zx() << t.zz() << arma::endr;
   return rt;
+}
+
+template<class T>
+arma::mat vector(const T& t)
+{
+  arma::mat rt;
+  rt << t.x() << t.y() << t.z() << arma::endr;
+  return rt;
+}
+
+template<class T>
+T toVec(const arma::mat& v)
+{
+  return T(v(0), v(1), v(2));
 }
 
 arma::mat rotMatrix( double theta, arma::mat u=vec3(0,0,1) );

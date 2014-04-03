@@ -1,9 +1,6 @@
  
-add_sources(inflowGeneratorBC_SOURCES 
+add_sources(SRC 
   turbulentStructure.C
 )
 
-list (APPEND inflowGeneratorBC_INC_DIRS
-  ${PROJECT_SOURCE_DIR}/turbulentStructures/turbulentStructure
-)
-set (inflowGeneratorBC_INC_DIRS ${inflowGeneratorBC_INC_DIRS} PARENT_SCOPE)
+add_include_dir(INCLUDE_DIRS)

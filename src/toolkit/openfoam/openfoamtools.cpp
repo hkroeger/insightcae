@@ -191,13 +191,42 @@ void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) cons
     fve.push_back( fvs );
   }
   opdict["fieldValues"]=fve;
-  setFieldDict.getList("regions").push_back( fve );
+  setFieldDict.getList("regions").push_back( "fieldToCell" );
+  setFieldDict.getList("regions").push_back( opdict );
   
 }
 
 setFieldOperator* fieldToCellOperator::clone() const
 {
   return new fieldToCellOperator(p_);
+}
+
+boxToCellOperator::boxToCellOperator(Parameters const& p )
+: setFieldOperator(p),
+  p_(p)
+{
+}
+
+void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
+{
+  OFDictData::dict opdict;
+  opdict["box"]=OFDictData::to_OF(p_.min()) + OFDictData::to_OF(p_.max());
+
+  OFDictData::list fve;
+  BOOST_FOREACH(const FieldValueSpec& fvs, p_.fieldValues())
+  {
+    //std::ostringstream line;
+    //line << fvs.get<0>() << " " << fvs.get<1>() ;
+    fve.push_back( fvs );
+  }
+  opdict["fieldValues"]=fve;
+  setFieldDict.getList("regions").push_back( "boxToCell" );
+  setFieldDict.getList("regions").push_back( opdict );
+}
+
+setFieldOperator* boxToCellOperator::clone() const
+{
+  return new boxToCellOperator(p_);
 }
 
 }

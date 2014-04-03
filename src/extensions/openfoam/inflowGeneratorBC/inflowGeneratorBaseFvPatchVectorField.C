@@ -159,8 +159,8 @@ autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorBaseFvPatchVectorField::bu
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-  if (!conditioningFactor_.valid())
-    computeConditioningFactor();
+//   if (!conditioningFactor_.valid())
+//     computeConditioningFactor();
   
   if (this->updated())
   {

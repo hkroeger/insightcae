@@ -1,9 +1,6 @@
  
-add_sources(inflowGeneratorBC_SOURCES 
+add_sources(SRC 
   hatSpot.C
 )
 
-list (APPEND inflowGeneratorBC_INC_DIRS
- ${PROJECT_SOURCE_DIR}/turbulentStructures/hatSpot
-)
-set (inflowGeneratorBC_INC_DIRS ${inflowGeneratorBC_INC_DIRS} PARENT_SCOPE)
+add_include_dir(INCLUDE_DIRS)

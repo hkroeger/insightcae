@@ -85,7 +85,7 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
   ofc.executeCommand(location, "setsToZones", args);
 }
 
-void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify)
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify, bool ignoremissing)
 {
   path source(from/"polyMesh");
   path target(to/"polyMesh");
@@ -102,9 +102,20 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		  .convert_to_container<std::vector<std::string> >())
     {
       path gzname(fname.c_str()); gzname+=".gz";
-      if (exists(source/gzname)) copy_file(source/gzname, target/gzname);
-      else if (exists(source/fname)) copy_file(source/fname, target/fname);
-      else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+      if (exists(source/gzname)) 
+      {
+	cout<<"Copying file "<<gzname<<endl;
+	if (exists(target/gzname)) remove(target/gzname);
+	copy_file(source/gzname, target/gzname);
+      }
+      else if (exists(source/fname))
+      {
+	cout<<"Copying file "<<fname<<endl;
+	if (exists(target/fname)) remove(target/fname);
+	copy_file(source/fname, target/fname);
+      }
+      else 
+	if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
     }
   }
   else
@@ -790,13 +801,13 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing)
 {
   TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
   boost::filesystem::path lastTime = times.rbegin()->second;
   
-  remove_all(location/"constant"/"polyMesh");
-  copyPolyMesh(lastTime, location/"constant", true);
+  if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
+  copyPolyMesh(lastTime, location/"constant", true, ignoremissing);
   
   BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
   {

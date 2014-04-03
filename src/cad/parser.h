@@ -39,6 +39,7 @@
 #include <boost/phoenix/function.hpp>
 #include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
+#include <boost/spirit/home/classic/utility/distinct.hpp>
 
 namespace insight {
 namespace cad {
@@ -101,7 +102,8 @@ struct ISCADParser
 	using namespace phx;
 	using namespace insight::cad;
 
-		
+	boost::spirit::classic::distinct_directive<> keyword_d("a-zA-Z0-9_");
+	
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
@@ -163,7 +165,7 @@ struct ISCADParser
 	r_scalar_primary =
 	  scalarSymbols [ _val = _1 ]
 	  | double_ [ _val = _1 ]
-	  | '(' >> r_scalarExpression [_val=_1] >> ')'
+	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
 
 
@@ -182,18 +184,19 @@ struct ISCADParser
 	  | ( '^' >> r_vector_primary [ _val=cross_(_val, _1) ] )
 	  )
 	) | (
-	  r_scalar_term >> '*' >> r_vector_term
+	  r_scalar_primary >> '*' >> r_vector_term
 	) [_val=_1*_2]
 	;
 	  
 	r_vector_primary =
-	  vectorSymbols [ _val = _1 ]
+	  lexeme[ vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	  //vectorSymbols [ _val = _1 ]
 	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
 	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
-	r_identifier = alpha >> *(alnum | '_');
+	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
 	 
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);

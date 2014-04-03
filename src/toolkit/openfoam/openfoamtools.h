@@ -45,7 +45,7 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
  * "to" is created, if nonexistent
  * Copy only basic mesh description, if "purify" is set
  */
-void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify=false);
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify=false, bool ignoremissing=false);
 
 void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to);
 
@@ -339,7 +339,7 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
 
 void mapFields(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target, bool parallelTarget=false);
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location);
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false);
 
 void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);
 

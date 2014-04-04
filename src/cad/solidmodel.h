@@ -58,6 +58,9 @@ class Sketch;
 
 class Filter
 {
+public:
+  typedef boost::shared_ptr<Filter> Ptr;
+  
 protected:
   const SolidModel* model_;
 public:

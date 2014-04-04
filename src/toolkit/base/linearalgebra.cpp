@@ -190,5 +190,55 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
   return model.computeQuality(y, x);
 }
 
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_roots.h>
+
+Objective1D::~Objective1D()
+{
+}
+
+
+double F_obj(double x, void *param)
+{
+  const Objective1D& model=*static_cast<Objective1D*>(param);
+  return model(x);
+}
+
+double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
+{
+  int i, times, status;
+  gsl_function f;
+  gsl_root_fsolver *workspace_f;
+  double x, x_l, x_r;
+
+ 
+  workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
+
+  f.function = &F_obj;
+  f.params = const_cast<void *>(static_cast<const void*>(&model));
+
+  x_l = x_min;
+  x_r = x_max;
+
+  gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
+
+  for(times = 0; times < 100; times++)
+  {
+      status = gsl_root_fsolver_iterate(workspace_f);
+
+      x_l = gsl_root_fsolver_x_lower(workspace_f);
+      x_r = gsl_root_fsolver_x_upper(workspace_f);
+
+      status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
+      if(status != GSL_CONTINUE)
+      {
+	  break;
+      }
+  }
+
+  gsl_root_fsolver_free(workspace_f);
+
+  return x_l;
+}
 
 }

@@ -199,6 +199,10 @@ void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) con
 
 namespace phaseChangeModels
 {
+  
+phaseChangeModel::~phaseChangeModel()
+{
+}
 
 SchnerrSauer::SchnerrSauer(Parameters const& p)
 : p_(p)
@@ -1050,6 +1054,11 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 namespace multiphaseBC
 {
+  
+multiphaseBC::~multiphaseBC()
+{
+}
+
 
 uniformPhases::uniformPhases( Parameters const& p )
 : p_(p)
@@ -1302,6 +1311,19 @@ void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& locat
   d["Ubulk"]=arma::norm(p_.velocity(), 2);
   d["D"]=2.0;
   d["patchName"]=patchName_;
+  
+  OFDictData::dict d_long, d_lat;
+  d_long["c0"]=0.78102065;
+  d_long["c1"]=-0.30801496;
+  d_long["c2"]=0.18299657;
+  d_long["c3"]=3.73012118;
+  d["L_long"]=d_long;
+  
+  d_lat["c0"]=0.84107675;
+  d_lat["c1"]=-0.63386837;
+  d_lat["c2"]=0.62172817;
+  d_lat["c3"]=0.7780003;
+  d["L_lat"]=d_lat;
   
   initializers.push_back( "pipeFlow" );
   initializers.push_back( d );

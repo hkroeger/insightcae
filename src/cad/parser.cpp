@@ -18,6 +18,7 @@
  */
 
 #include "parser.h"
+#include "boost/locale.hpp"
 
 namespace insight {
 namespace cad {
@@ -33,15 +34,23 @@ namespace parser {
 }
 using namespace parser;
 
-bool parseISCADModelStream(std::istream& in, parser::model& m)
+
+bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m)
 {
-  std::string contents;
-  in.seekg(0, std::ios::end);
-  contents.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
+  std::wifstream f(fn.c_str());
+  return parseISCADModelStream(f, m);
+}
+
+bool parseISCADModelStream(std::wistream& in, parser::model& m)
+{
+  std::wstring contents_raw;
+  in.seekg(0, std::wios::end);
+  contents_raw.resize(in.tellg());
+  in.seekg(0, std::wios::beg);
+  in.read(&contents_raw[0], contents_raw.size());
   //in.close();
-  
+  std::string contents=boost::locale::conv::from_utf(contents_raw, "Latin1");
+  cout<<contents<<endl;
   return parser::parseISCADModel< ISCADParser<std::string::iterator> >(contents.begin(), contents.end(), m);
 }
 

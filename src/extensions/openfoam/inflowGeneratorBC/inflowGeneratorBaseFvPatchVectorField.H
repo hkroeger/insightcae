@@ -102,6 +102,7 @@ protected:
      */
     Field<scalar> c_;
     
+    autoPtr<tensorField> Lund_;
     autoPtr<Field<scalar> > conditioningFactor_;
     
     scalar overlap_;

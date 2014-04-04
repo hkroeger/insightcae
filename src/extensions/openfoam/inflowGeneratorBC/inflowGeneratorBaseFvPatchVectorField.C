@@ -162,6 +162,21 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 //   if (!conditioningFactor_.valid())
 //     computeConditioningFactor();
   
+  if (!Lund_.valid())
+  {
+    tensorField LT(size(), tensor::zero);
+    
+    LT.replace(tensor::XX, sqrt(R_.component(symmTensor::XX)));
+    LT.replace(tensor::YX, R_.component(symmTensor::XY)/LT.component(tensor::XX));
+    LT.replace(tensor::ZX, R_.component(symmTensor::XZ)/LT.component(tensor::XX));
+    LT.replace(tensor::YY, sqrt(R_.component(symmTensor::YY)-sqr(LT.component(tensor::YX))));
+    LT.replace(tensor::ZY, (R_.component(symmTensor::YZ) - LT.component(tensor::YX)*LT.component(tensor::ZX) )/LT.component(tensor::YY));
+    LT.replace(tensor::ZZ, sqrt(R_.component(symmTensor::ZZ) - sqr(LT.component(tensor::ZX))-sqr(LT.component(tensor::ZY))));
+    
+    Lund_.reset(new tensorField(LT));
+  }
+
+  
   if (this->updated())
   {
       return;
@@ -169,8 +184,12 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 
   if (curTimeIndex_ != this->db().time().timeIndex())
   {
-      fixedValueFvPatchField<vector>::operator==(Umean_ + continueFluctuationProcess(this->db().time().value()));
-      curTimeIndex_ = this->db().time().timeIndex();
+    vectorField fluctuations=continueFluctuationProcess(this->db().time().value());
+    
+    fluctuations = Lund_() & fluctuations;
+    
+    fixedValueFvPatchField<vector>::operator==(Umean_ + fluctuations);
+    curTimeIndex_ = this->db().time().timeIndex();
   }
 
   fixedValueFvPatchField<vector>::updateCoeffs();

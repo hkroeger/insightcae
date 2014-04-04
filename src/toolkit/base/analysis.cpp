@@ -36,6 +36,10 @@ using namespace boost::filesystem;
 namespace insight
 {
   
+ProgressDisplayer::~ProgressDisplayer()
+{
+}
+
 void TextProgressDisplayer::update(const ProgressState& pi)
 {
   double iter=pi.first;

@@ -25,6 +25,7 @@
 
 #include "solidmodel.h"
 
+#include "boost/filesystem.hpp"
 #include <boost/fusion/include/std_pair.hpp>
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
@@ -40,6 +41,9 @@
 #include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
+#include <boost/fusion/adapted.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma.hpp>
 
 namespace insight {
 namespace cad {
@@ -83,6 +87,11 @@ BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
 BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 
+template <typename It, typename A>
+    qi::rule<It, double()> kw(qi::rule<It, A()> const& p) { return qi::lazy(phx::cref(p)); }
+
+template <typename It, typename P>
+    qi::rule<It, double()> kw(P const& p) { return qi::lazy(phx::cref(p)); }   
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
@@ -101,13 +110,11 @@ struct ISCADParser
 	using namespace qi;
 	using namespace phx;
 	using namespace insight::cad;
-
-	boost::spirit::classic::distinct_directive<> keyword_d("a-zA-Z0-9_");
 	
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(scalarSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [/* phx::bind(scalarSymbols.add, _1, _2)*/ cout<<_1 ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
 	  ;
@@ -163,7 +170,7 @@ struct ISCADParser
 	  ;
 	  
 	r_scalar_primary =
-	  scalarSymbols [ _val = _1 ]
+	  lexeme[ scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
@@ -261,7 +268,8 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
 
 }
 
-bool parseISCADModelStream(std::istream& in, parser::model& m);
+bool parseISCADModelStream(std::wistream& in, parser::model& m);
+bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m);
 
 }
 }

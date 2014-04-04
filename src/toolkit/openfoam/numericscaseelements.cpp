@@ -752,9 +752,10 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="localEuler rDeltaT";
   
-//   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-//   grad["default"]="Gauss linear";
-//   grad["grad(U)"]="cellLimited leastSquares 1";
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["grad(p)"]="Gauss linear";
+  grad["default"]="cellLimited leastSquares 1";
+  grad["grad(U)"]="cellLimited leastSquares 1";
 //   
 //   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
 //   std::string suf;

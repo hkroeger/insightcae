@@ -114,7 +114,7 @@ struct ISCADParser
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [/* phx::bind(scalarSymbols.add, _1, _2)*/ cout<<_1 ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [/* phx::bind(scalarSymbols.add, _1, _2)*/ cout<<_1<<endl ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
 	  ;
@@ -204,6 +204,7 @@ struct ISCADParser
 	  ;
 
 	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
+	r_identifier = lexeme[ alpha >> *(alnum) >> !(alnum) ];
 	 
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
@@ -236,8 +237,9 @@ template<typename T>
 struct ModelStepsWriter
 : public std::map<std::string, T>
 {
-    void operator() (std::basic_string<char> s, T ct)
+    void operator() (std::string s, T ct)
     {
+      //std::string s(ws.begin(), ws.end());
       cout<<s<<endl<<ct<<endl;
       //(*this)[s]=ct;
       ct.saveAs(s+".brep");
@@ -268,7 +270,7 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
 
 }
 
-bool parseISCADModelStream(std::wistream& in, parser::model& m);
+bool parseISCADModelStream(std::istream& in, parser::model& m);
 bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m);
 
 }

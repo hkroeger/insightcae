@@ -37,21 +37,19 @@ using namespace parser;
 
 bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m)
 {
-  std::wifstream f(fn.c_str());
+  std::ifstream f(fn.c_str());
   return parseISCADModelStream(f, m);
 }
 
-bool parseISCADModelStream(std::wistream& in, parser::model& m)
+bool parseISCADModelStream(std::istream& in, parser::model& m)
 {
-  std::wstring contents_raw;
-  in.seekg(0, std::wios::end);
+  std::string contents_raw;
+  in.seekg(0, std::ios::end);
   contents_raw.resize(in.tellg());
-  in.seekg(0, std::wios::beg);
+  in.seekg(0, std::ios::beg);
   in.read(&contents_raw[0], contents_raw.size());
   //in.close();
-  std::string contents=boost::locale::conv::from_utf(contents_raw, "Latin1");
-  cout<<contents<<endl;
-  return parser::parseISCADModel< ISCADParser<std::string::iterator> >(contents.begin(), contents.end(), m);
+  return parser::parseISCADModel< ISCADParser<std::string::iterator> >(contents_raw.begin(), contents_raw.end(), m);
 }
 
 

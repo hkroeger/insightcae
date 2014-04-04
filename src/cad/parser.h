@@ -87,11 +87,6 @@ BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
 BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 
-template <typename It, typename A>
-    qi::rule<It, double()> kw(qi::rule<It, A()> const& p) { return qi::lazy(phx::cref(p)); }
-
-template <typename It, typename P>
-    qi::rule<It, double()> kw(P const& p) { return qi::lazy(phx::cref(p)); }   
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
@@ -114,7 +109,7 @@ struct ISCADParser
         r_model =  *( r_assignment | r_modelstep );
 	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [/* phx::bind(scalarSymbols.add, _1, _2)*/ cout<<_1<<endl ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(scalarSymbols.add, _1, _2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
 	  ;
@@ -203,7 +198,8 @@ struct ISCADParser
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
-	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
+// 	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
+	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
 	 
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);

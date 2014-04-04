@@ -204,7 +204,6 @@ struct ISCADParser
 	  ;
 
 	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
-	r_identifier = lexeme[ alpha >> *(alnum) >> !(alnum) ];
 	 
 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);

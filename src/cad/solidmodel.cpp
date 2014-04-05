@@ -673,5 +673,23 @@ Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
 {
 }
 
+TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l)
+{
+  BRepFilletAPI_MakeChamfer fb(m1);
+  BOOST_FOREACH(FeatureID f, edges)
+  {
+    TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
+    TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
+    fb.Add(l, m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
+  }
+  fb.Build();
+  return fb.Shape();
+}
+  
+Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
+: SolidModel(makeChamfers(m1, edges, l))
+{
+}
+
 }
 }

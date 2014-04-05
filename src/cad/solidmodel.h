@@ -550,6 +550,15 @@ public:
   Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
 };
 
+class Chamfer
+: public SolidModel
+{
+  TopoDS_Shape makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l);
+  
+public:
+  Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
+};
+
 }
 }
 

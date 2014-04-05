@@ -155,6 +155,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4)) ]
 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
+	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
 	 ;
 	 
 	r_edgeFeaturesExpression = 

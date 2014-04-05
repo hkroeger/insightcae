@@ -429,6 +429,9 @@ std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
 class SolidModel
 {
+public:
+  typedef boost::shared_ptr<SolidModel> Ptr;
+  
 protected :
   // the shape
   TopoDS_Shape shape_;

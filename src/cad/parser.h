@@ -72,7 +72,7 @@ struct skip_grammar : public qi::grammar<Iterator>
 
 typedef double scalar;
 typedef arma::mat vector;
-typedef SolidModel solidmodel;
+typedef SolidModel::Ptr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
@@ -133,35 +133,35 @@ struct ISCADParser
 	
 	r_solidmodel_expression =
 	 r_solidmodel_term [_val=_1 ]
-	 >> *( '-' >> r_solidmodel_term [_val=construct<BooleanSubtract>(_val, _1)] )
+	 >> *( '-' >> r_solidmodel_term [_val=construct<solidmodel>(new_<BooleanSubtract>(*_val, *_1))] )
 	 ;
 	
 	r_solidmodel_term =
 	 r_solidmodel_primary [_val=_1 ]
-	 >> *( '|' >> r_solidmodel_primary [_val=construct<BooleanUnion>(_val, _1)] )
+	 >> *( '|' >> r_solidmodel_primary [_val=construct<solidmodel>(new_<BooleanUnion>(*_val, *_1))] )
 	 ;
 	
 	r_solidmodel_primary = 
 	 lexeme[ modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
-         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<SolidModel>(_1) ]
+         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
 	 // Primitives
 	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<Sphere>(_1, _2) ]
+	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
 	 | ( lit("Cylinder") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<Cylinder>(_1, _2, _3) ]
+	      [ _val = construct<solidmodel>(new_<Cylinder>(_1, _2, _3)) ]
 	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
 			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-	      [ _val = construct<Box>(_1, _2, _3, _4) ]
+	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4)) ]
 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<Fillet>(_1, _2, _3) ]
+	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
 	 ;
 	 
 	r_edgeFeaturesExpression = 
 	     lexeme[ edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	     | (
 	     ( lit("edges") > lit("from") >> 
-		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(_1, _2) ]
+		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
 	     )
 	  ;
 	  
@@ -169,7 +169,7 @@ struct ISCADParser
 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
 	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
 	 | ( lit("coincident") >> r_edgeFeaturesExpression >> lit("at") >> r_solidmodel_expression ) 
-	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(_2, _1)) ]
+	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
 	 ;
 	 
 	r_path = as_string[ 
@@ -228,7 +228,6 @@ struct ISCADParser
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
-// 	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
 	 
 // 	BOOST_SPIRIT_DEBUG_NODE(r_path);
@@ -265,14 +264,14 @@ struct ISCADParser
 
 template<typename T>
 struct ModelStepsWriter
-: public std::map<std::string, T>
+//: public std::map<std::string, T>
 {
     void operator() (std::string s, T ct)
     {
       //std::string s(ws.begin(), ws.end());
-      cout<<s<<endl<<ct<<endl;
+      //cout<<s<<endl<<ct<<endl;
       //(*this)[s]=ct;
-      ct.saveAs(s+".brep");
+      ct->saveAs(s+".brep");
     }
 };
 
@@ -289,7 +288,7 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
       skip
   );
   
-  ModelStepsWriter<SolidModel> writer;
+  ModelStepsWriter<SolidModel::Ptr> writer;
   parser.modelstepSymbols.for_each(writer);
 
   if (first != last) // fail if we did not get a full match

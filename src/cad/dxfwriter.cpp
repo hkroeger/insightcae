@@ -79,7 +79,7 @@ DXFWriter::DXFWriter
   dw_->tableLayers(numberOfLayers);
   dxf_.writeLayer(*dw_, DL_LayerData("ANNOTATIONS", 0), DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS") );
   dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS") );
-  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "DOT2") );
+  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS") );
   BOOST_FOREACH(const LayerDefinition& ld, layers)
   {
     DL_LayerData ldata(boost::get<0>(ld), 0);
@@ -147,7 +147,6 @@ void DXFWriter::writeLine_HatchLoop(const BRepAdaptor_Curve& c, const std::strin
 {
   gp_Pnt p0=c.Value(c.FirstParameter());
   gp_Pnt p1=c.Value(c.LastParameter());
-  cout <<p0.X()<<" "<<p0.Y()<<" >>> "<<p1.X()<<" "<<p1.Y()<<endl;
 
   dxf_.writeHatchEdge
   (
@@ -293,6 +292,12 @@ void DXFWriter::writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::str
 
 void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer)
 {
+  writeLine(c, layer);
+}
+  
+void DXFWriter::writeDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
+{
+  writeLine_HatchLoop(c, layer);
 }
   
 void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer)
@@ -374,8 +379,8 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 	    writeEllipse(adapt, layer);
 	  } break;
 
-// 	  default:
-// 	    throw insight::Exception("DXFWriter::writeShapeEdges : Unsupported curve type: "+lexical_cast<string>(adapt.GetType()));
+	  default:
+	    writeDiscrete(adapt, layer);
 	}
     }
 }
@@ -387,7 +392,7 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, std::string layer)
   {
     TopoDS_Face f=TopoDS::Face(exf.Current());
     
-    DL_Attributes attributes(layer, 2, 0, -1, "BYLAYER");
+    DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
  
     // start hatch with one loop:
     DL_HatchData data(1, false, 0.5, 45.0, "iso03w100");
@@ -423,8 +428,8 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, std::string layer)
 	    writeCircle_HatchLoop(adapt, layer);
 	  } break;
 
-// 	  default:
-// 	    throw insight::Exception("DXFWriter::writeShapeEdges : Unsupported curve type: "+lexical_cast<string>(adapt.GetType()));
+	  default:
+	    writeDiscrete_HatchLoop(adapt, layer);
 	}
     }
     

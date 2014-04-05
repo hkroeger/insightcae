@@ -52,6 +52,7 @@ public:
   void writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer);
+  void writeDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
   void writeSection(const TopoDS_Shape& s, std::string layer="0");

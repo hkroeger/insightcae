@@ -473,7 +473,12 @@ public:
   
   operator const TopoDS_Shape& () const;
   
-  void createView() const;
+  void createView
+  (
+    const arma::mat p0,
+    const arma::mat n,
+    bool section
+  ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };

@@ -49,7 +49,7 @@ void ModelStepsWriter::operator() (std::string s, SolidModel::Ptr ct)
   if (s=="final")
   {
     ct->saveAs(s+".brep");
-    ct->createView();
+    ct->createView(vec3(0,0,0), vec3(1,0.1,0.1), true);
   }
 }
     

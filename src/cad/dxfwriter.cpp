@@ -77,11 +77,11 @@ DXFWriter::DXFWriter
   int numberOfLayers = 2*(1+layers.size()); // add an extra layer in addition to each defined layer for hidden lines (name=layername+"_HL")
   dw_->tableLayers(numberOfLayers);
   dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 30, "CONTINUOUS") );
-  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::gray, 30, "DOT2") );
+  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 30, "DOT2") );
   BOOST_FOREACH(const string& ln, layers)
   {
     dxf_.writeLayer(*dw_, DL_LayerData(ln, 0), DL_Attributes(std::string(""), DL_Codes::black, 30, "CONTINUOUS") );
-    dxf_.writeLayer(*dw_, DL_LayerData(ln+"_HL", 0), DL_Attributes(std::string(""), DL_Codes::gray, 30, "DOT2") );
+    dxf_.writeLayer(*dw_, DL_LayerData(ln+"_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 30, "DOT2") );
   }
   dw_->tableEnd();
 
@@ -205,17 +205,20 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
 {
     gp_Elips ellp = c.Ellipse();
     const gp_Pnt& p= ellp.Location();
+    
     double r1 = ellp.MajorRadius();
     double r2 = ellp.MinorRadius();
+    
     double f = c.FirstParameter();
     double l = c.LastParameter();
+    
     gp_Pnt s = c.Value(f);
-    gp_Pnt m = c.Value((l+f)/2.0);
     gp_Pnt e = c.Value(l);
+    gp_Pnt m = c.Value(0.5*(l+f));
 
-    gp_Vec v1(m,s);
-    gp_Vec v2(m,e);
-    gp_Vec v3(0,0,1.);
+    gp_Vec v1(m, s);
+    gp_Vec v2(m, e);
+    gp_Vec v3(0, 0, 1.);
     double a = v3.DotCross(v1,v2);
 
     // a full ellipse
@@ -240,7 +243,6 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
         double angle = xaxis.Angle(gp_Dir(1,0,0));
         //double rotation = Base::toDegrees<double>(angle);
 
-
 	double ax = s.X() - p.X();
 	double ay = s.Y() - p.Y();
 	double bx = e.X() - p.X();
@@ -249,18 +251,12 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
 	double start_angle = atan2(ay, ax) * 180./M_PI;
 	double end_angle = atan2(by, bx) * 180./M_PI;
 
-	double major_x;double major_y;
-	
-	major_x = r1 * sin(angle*90.);
-	major_y = r1 * cos(angle*90.);
+	double major_x = r1 * sin(angle*90.);
+	double major_y = r1 * cos(angle*90.);
 
 	double ratio = r2/r1;
 
-	if(a > 0){
-		double temp = start_angle;
-		start_angle = end_angle;
-		end_angle = temp;
-	}
+	if (a>0) std::swap(start_angle, end_angle);
 	
 	dxf_.writeEllipse
 	(
@@ -304,8 +300,8 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 	    writeEllipse(adapt, layer);
 	  } break;
 
-	  default:
-	    throw insight::Exception("DXFWriter::writeShapeEdges : Unsupported curve type: "+lexical_cast<string>(adapt.GetType()));
+// 	  default:
+// 	    throw insight::Exception("DXFWriter::writeShapeEdges : Unsupported curve type: "+lexical_cast<string>(adapt.GetType()));
 	}
     }
 }

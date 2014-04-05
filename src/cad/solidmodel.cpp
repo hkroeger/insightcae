@@ -386,13 +386,36 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
 SolidModel::operator const TopoDS_Shape& () const 
 { return shape_; }
 
-void SolidModel::createView() const
+void SolidModel::createView
+(
+  const arma::mat p0,
+  const arma::mat n,
+  bool section
+) const
 {
+  TopoDS_Shape dispshape=shape_;
+  
+  gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
+  gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
+  
+  if (section)
+  {
+    gp_Dir normal = -view_dir;
+    gp_Pln plane = gp_Pln(p_base, normal);
+    gp_Pnt refPnt = gp_Pnt(p_base.X()-normal.X(), p_base.Y()-normal.Y(), p_base.Z()-normal.Z());
+    
+    TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
+    TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
+    
+    dispshape=BRepAlgoAPI_Cut(shape_, HalfSpace);
+  }
+  
+  gp_Ax2 transform(p_base, view_dir);
+  
   
   Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
-  brep_hlr->Add( shape_ );
+  brep_hlr->Add( dispshape );
 
-  gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(0.5, 0.5, 0.5));
   HLRAlgo_Projector projector( transform );
   brep_hlr->Projector( projector );
   brep_hlr->Update();
@@ -400,16 +423,25 @@ void SolidModel::createView() const
 
   // extracting the result sets:
   HLRBRep_HLRToShape shapes( brep_hlr );
-
-  TopoDS_Shape VisiblyEdges = shapes.VCompound();
+  
+  TopoDS_Compound allVisible;
+  BRep_Builder builder;
+  builder.MakeCompound( allVisible );
+  TopoDS_Shape vs=shapes.VCompound();
+  if (!vs.IsNull()) builder.Add(allVisible, vs);
+  TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+  if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+  TopoDS_Shape olvs = shapes.OutLineVCompound();
+  if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+  
   TopoDS_Shape HiddenEdges = shapes.HCompound();
   
-  BRepTools::Write(VisiblyEdges, "visible.brep");
+  BRepTools::Write(allVisible, "visible.brep");
   BRepTools::Write(HiddenEdges, "hidden.brep");
   
   {
     DXFWriter dxf("view.dxf");
-    dxf.writeShapeEdges(VisiblyEdges, "0");
+    dxf.writeShapeEdges(allVisible, "0");
     dxf.writeShapeEdges(HiddenEdges, "0_HL");
   }
 }

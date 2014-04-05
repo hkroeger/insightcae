@@ -26,6 +26,8 @@
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 
+#include "dxfwriter.h"
+
 namespace insight 
 {
 namespace cad 
@@ -379,8 +381,38 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
   }
 }
 
+
+
 SolidModel::operator const TopoDS_Shape& () const 
 { return shape_; }
+
+void SolidModel::createView() const
+{
+  
+  Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
+  brep_hlr->Add( shape_ );
+
+  gp_Ax2 transform(gp_Pnt(0,0,0),gp_Dir(0.5, 0.5, 0.5));
+  HLRAlgo_Projector projector( transform );
+  brep_hlr->Projector( projector );
+  brep_hlr->Update();
+  brep_hlr->Hide();
+
+  // extracting the result sets:
+  HLRBRep_HLRToShape shapes( brep_hlr );
+
+  TopoDS_Shape VisiblyEdges = shapes.VCompound();
+  TopoDS_Shape HiddenEdges = shapes.HCompound();
+  
+  BRepTools::Write(VisiblyEdges, "visible.brep");
+  BRepTools::Write(HiddenEdges, "hidden.brep");
+  
+  {
+    DXFWriter dxf("view.dxf");
+    dxf.writeShapeEdges(VisiblyEdges, "0");
+    dxf.writeShapeEdges(HiddenEdges, "0_HL");
+  }
+}
 
 edgeCoG::edgeCoG() 
 {}

@@ -264,17 +264,11 @@ struct ISCADParser
     
 };
 
-template<typename T>
+
 struct ModelStepsWriter
 //: public std::map<std::string, T>
 {
-    void operator() (std::string s, T ct)
-    {
-      //std::string s(ws.begin(), ws.end());
-      //cout<<s<<endl<<ct<<endl;
-      //(*this)[s]=ct;
-      ct->saveAs(s+".brep");
-    }
+    void operator() (std::string s, SolidModel::Ptr ct);
 };
 
 template <typename Parser, typename Result, typename Iterator>
@@ -290,7 +284,7 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
       skip
   );
   
-  ModelStepsWriter<SolidModel::Ptr> writer;
+  ModelStepsWriter writer;
   parser.modelstepSymbols.for_each(writer);
 
   if (first != last) // fail if we did not get a full match

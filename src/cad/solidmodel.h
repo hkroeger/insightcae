@@ -473,6 +473,8 @@ public:
   
   operator const TopoDS_Shape& () const;
   
+  void createView() const;
+  
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
 

@@ -41,6 +41,18 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m)
   return parseISCADModelStream(f, m);
 }
 
+void ModelStepsWriter::operator() (std::string s, SolidModel::Ptr ct)
+{
+  //std::string s(ws.begin(), ws.end());
+  //cout<<s<<endl<<ct<<endl;
+  //(*this)[s]=ct;
+  if (s=="final")
+  {
+    ct->saveAs(s+".brep");
+    ct->createView();
+  }
+}
+    
 bool parseISCADModelStream(std::istream& in, parser::model& m)
 {
   std::string contents_raw;

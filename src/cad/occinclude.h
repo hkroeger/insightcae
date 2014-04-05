@@ -3,6 +3,8 @@
 
 #include <BRep_Tool.hxx>
 #include <Geom_Curve.hxx>
+#include <GeomAdaptor_Curve.hxx>
+#include <GeomAbs_CurveType.hxx>
 #include <Geom2d_Curve.hxx>
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
@@ -29,6 +31,8 @@
 #include <gp_Ax3.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
+#include <gp_Elips.hxx>
+#include <gp_Circ.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Solid.hxx>
 #include <TopExp_Explorer.hxx>
@@ -69,6 +73,8 @@
 #include <Standard_ErrorHandler.hxx>
 #include <Standard_Failure.hxx>
 #include <ShapeUpgrade_ShellSewing.hxx>
+#include <ShapeFix_Edge.hxx>
+#include <ShapeFix_Face.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <ShapeFix_Wireframe.hxx>
 #include <BRepMesh.hxx>
@@ -114,10 +120,14 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 
 #include "GC_MakePlane.hxx"
+#include "GC_MakeSegment.hxx"
 #include "BRepMesh_FastDiscret.hxx"
 #include "ShapeAnalysis_Curve.hxx"
 #include "ShapeAnalysis_Surface.hxx"
 #include "GeomLProp_SLProps.hxx"
+
+#include "HLRBRep_Algo.hxx"
+#include "HLRBRep_HLRToShape.hxx"
 
 #include <armadillo>
 

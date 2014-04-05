@@ -2,7 +2,7 @@ project(insightcad)
 
 find_package(OpenCasCade REQUIRED)
 
-set(insightcad_SOURCES parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp )
+set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp )
 
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})

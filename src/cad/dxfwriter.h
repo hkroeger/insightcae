@@ -29,6 +29,8 @@
 namespace insight {
 namespace cad {
 
+typedef boost::tuple<std::string, DL_Attributes, bool> LayerDefinition;
+
 class DXFWriter
 {
 protected:
@@ -40,15 +42,19 @@ public:
   DXFWriter
   (
     const boost::filesystem::path& file,
-    const std::vector<std::string>& layers = std::vector<std::string>()
+    const std::vector<LayerDefinition>& layers = std::vector<LayerDefinition>()
   );
   ~DXFWriter();
 
   void writeLine(const BRepAdaptor_Curve& c, const std::string& layer);
+  void writeLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeCircle(const BRepAdaptor_Curve& c, const std::string& layer);
+  void writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer);
+  void writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer);
   
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
+  void writeSection(const TopoDS_Shape& s, std::string layer="0");
 };
 }
 }

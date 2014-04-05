@@ -394,6 +394,7 @@ void SolidModel::createView
 ) const
 {
   TopoDS_Shape dispshape=shape_;
+  TopoDS_Shape secshape;
   
   gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
   gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
@@ -408,15 +409,18 @@ void SolidModel::createView
     TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
     
     dispshape=BRepAlgoAPI_Cut(shape_, HalfSpace);
+    secshape=BRepAlgoAPI_Common(shape_, Face);
+    
   }
   
-  gp_Ax2 transform(p_base, view_dir);
-  
+  gp_Ax2 viewCS(p_base, view_dir); 
   
   Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
   brep_hlr->Add( dispshape );
 
-  HLRAlgo_Projector projector( transform );
+  HLRAlgo_Projector projector( viewCS );
+  gp_Trsf transform=projector.FullTransformation();
+  
   brep_hlr->Projector( projector );
   brep_hlr->Update();
   brep_hlr->Hide();
@@ -440,10 +444,24 @@ void SolidModel::createView
   BRepTools::Write(HiddenEdges, "hidden.brep");
   
   {
-    DXFWriter dxf("view.dxf");
+    std::vector<LayerDefinition> addlayers;
+    if (section) addlayers.push_back
+    (
+      LayerDefinition("section", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
+    );
+    
+    DXFWriter dxf("view.dxf", addlayers);
+    
     dxf.writeShapeEdges(allVisible, "0");
     dxf.writeShapeEdges(HiddenEdges, "0_HL");
+    
+    if (!secshape.IsNull())
+    {
+      BRepTools::Write(secshape, "section.brep");
+      dxf.writeSection( BRepBuilderAPI_Transform(secshape, transform).Shape(), "section");
+    }
   }
+  
 }
 
 edgeCoG::edgeCoG() 

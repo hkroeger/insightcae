@@ -20,6 +20,8 @@
 #include "parser.h"
 #include "boost/locale.hpp"
 
+#include "dxfwriter.h"
+
 namespace insight {
 namespace cad {
   
@@ -30,6 +32,27 @@ namespace parser {
 //   cout << "reading model "<<filepath<<endl;
 //   return solidmodel(new SolidModel(filepath));
 // }
+
+  
+void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
+{
+  SolidModel::Views views;
+  BOOST_FOREACH(const viewdef& vd, viewdefs)
+  {
+    bool sec=boost::get<3>(vd);
+    cout<<"is_section="<<sec<<endl;
+    views[boost::get<0>(vd)]=model->createView
+    (
+      boost::get<1>(vd),
+      boost::get<2>(vd),
+      sec
+    );
+  }
+  
+  {
+    DXFWriter::writeViews(file, views);
+  }
+}
 
 }
 using namespace parser;
@@ -49,7 +72,7 @@ void ModelStepsWriter::operator() (std::string s, SolidModel::Ptr ct)
   if (s=="final")
   {
     ct->saveAs(s+".brep");
-    ct->createView(vec3(0, 0, 0), vec3(1, 0.2, 0.1), true);
+    //ct->createView(vec3(0, 0, 0), vec3(0, -1, 0), false);
   }
 }
     

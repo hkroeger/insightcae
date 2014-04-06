@@ -21,6 +21,9 @@
 #define INSIGHT_CAD_SOLIDMODEL_H
 
 #include <set>
+#include <map>
+#include <vector>
+
 #include "boost/shared_ptr.hpp"
 #include "boost/concept_check.hpp"
 #include "boost/utility.hpp"
@@ -432,6 +435,12 @@ class SolidModel
 public:
   typedef boost::shared_ptr<SolidModel> Ptr;
   
+  struct View
+  {
+    TopoDS_Shape visibleEdges, hiddenEdges, crossSection;
+  };
+  typedef std::map<std::string, View> Views;
+  
 protected :
   // the shape
   TopoDS_Shape shape_;
@@ -473,7 +482,7 @@ public:
   
   operator const TopoDS_Shape& () const;
   
-  void createView
+  View createView
   (
     const arma::mat p0,
     const arma::mat n,

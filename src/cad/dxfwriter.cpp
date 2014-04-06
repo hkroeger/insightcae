@@ -441,5 +441,39 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, std::string layer)
   }
 }
 
+void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel::Views& views)
+{
+  std::vector<LayerDefinition> addlayers;
+  
+  BOOST_FOREACH(const SolidModel::Views::value_type& v, views)
+  {
+    string name=v.first;
+    addlayers.push_back
+    (
+      LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS"), true)
+    );
+    if (!v.second.crossSection.IsNull())
+    {
+      addlayers.push_back
+      (
+	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
+      );
+    }
+  }
+
+  DXFWriter dxf(file, addlayers);
+
+  BOOST_FOREACH(const SolidModel::Views::value_type& v, views)
+  {
+    string name=v.first;
+    dxf.writeShapeEdges(v.second.visibleEdges, name);
+    dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
+    if (!v.second.crossSection.IsNull())
+    {
+      dxf.writeSection( v.second.crossSection, name+"_XSEC");
+    }
+  }
+}
+  
 }
 }

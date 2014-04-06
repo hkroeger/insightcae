@@ -386,19 +386,24 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
 SolidModel::operator const TopoDS_Shape& () const 
 { return shape_; }
 
-void SolidModel::createView
+SolidModel::View SolidModel::createView
 (
   const arma::mat p0,
   const arma::mat n,
   bool section
 ) const
 {
+  View result_view;
+  
   TopoDS_Shape dispshape=shape_;
-  TopoDS_Shape secshape;
   
   gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
   gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
   
+  gp_Ax2 viewCS(p_base, view_dir); 
+  HLRAlgo_Projector projector( viewCS );
+  gp_Trsf transform=projector.FullTransformation();
+
   if (section)
   {
     gp_Dir normal = -view_dir;
@@ -409,18 +414,12 @@ void SolidModel::createView
     TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
     
     dispshape=BRepAlgoAPI_Cut(shape_, HalfSpace);
-    secshape=BRepAlgoAPI_Common(shape_, Face);
-    
+    result_view.crossSection = BRepBuilderAPI_Transform(BRepAlgoAPI_Common(shape_, Face), transform).Shape();
   }
   
-  gp_Ax2 viewCS(p_base, view_dir); 
   
   Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
   brep_hlr->Add( dispshape );
-
-  HLRAlgo_Projector projector( viewCS );
-  gp_Trsf transform=projector.FullTransformation();
-  
   brep_hlr->Projector( projector );
   brep_hlr->Update();
   brep_hlr->Hide();
@@ -440,27 +439,32 @@ void SolidModel::createView
   
   TopoDS_Shape HiddenEdges = shapes.HCompound();
   
-  BRepTools::Write(allVisible, "visible.brep");
-  BRepTools::Write(HiddenEdges, "hidden.brep");
+  result_view.visibleEdges=allVisible;
+  result_view.hiddenEdges=HiddenEdges;
   
-  {
-    std::vector<LayerDefinition> addlayers;
-    if (section) addlayers.push_back
-    (
-      LayerDefinition("section", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
-    );
-    
-    DXFWriter dxf("view.dxf", addlayers);
-    
-    dxf.writeShapeEdges(allVisible, "0");
-    dxf.writeShapeEdges(HiddenEdges, "0_HL");
-    
-    if (!secshape.IsNull())
-    {
-      BRepTools::Write(secshape, "section.brep");
-      dxf.writeSection( BRepBuilderAPI_Transform(secshape, transform).Shape(), "section");
-    }
-  }
+  return result_view;
+  
+//   BRepTools::Write(allVisible, "visible.brep");
+//   BRepTools::Write(HiddenEdges, "hidden.brep");
+//   
+//   {
+//     std::vector<LayerDefinition> addlayers;
+//     if (section) addlayers.push_back
+//     (
+//       LayerDefinition("section", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
+//     );
+//     
+//     DXFWriter dxf("view.dxf", addlayers);
+//     
+//     dxf.writeShapeEdges(allVisible, "0");
+//     dxf.writeShapeEdges(HiddenEdges, "0_HL");
+//     
+//     if (!secshape.IsNull())
+//     {
+//       BRepTools::Write(secshape, "section.brep");
+//       dxf.writeSection( BRepBuilderAPI_Transform(secshape, transform).Shape(), "section");
+//     }
+//   }
   
 }
 

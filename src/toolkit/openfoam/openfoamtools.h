@@ -350,6 +350,9 @@ void runPvPython
   const std::vector<std::string> pvpython_commands
 );
 
+arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+		    const std::string& fieldName, const std::string& patchName);
+
 
 }
 

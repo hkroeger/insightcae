@@ -21,11 +21,14 @@
 #include "openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "base/analysis.h"
+#include "base/linearalgebra.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/assign.hpp"
 #include <boost/tokenizer.hpp>
+#include "boost/regex.hpp"
+#include "boost/foreach.hpp"
 
 using namespace std;
 using namespace arma;
@@ -918,5 +921,40 @@ void runPvPython
   remove(tempfile);
 
 }
+
+arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+		    const std::string& fieldName, const std::string& patchName)
+{
+  std::vector<std::string> opts;
+  opts.push_back(fieldName);
+  opts.push_back(patchName);
+  opts.push_back("-latestTime");
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "patchIntegrate", opts, &output);
+  
+  boost::regex re_time("^ *Time = (.+)$");
+  boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+  boost::match_results<std::string::const_iterator> what;
+  double time=0;
+  std::vector<double> data;
+  BOOST_FOREACH(const std::string& line, output)
+  {
+    if (boost::regex_match(line, what, re_time))
+    {
+      cout<< what[1]<<endl;
+      time=lexical_cast<double>(what[1]);
+      data.push_back(time);
+    }
+    if (boost::regex_match(line, what, re_mag))
+    {
+      cout<<what[1]<<" : "<<what[4]<<endl;
+      data.push_back(lexical_cast<double>(what[4]));
+    }
+  }
+  
+  return arma::mat(data.data(), 2, data.size()/2).t();
+}
+
 
 }

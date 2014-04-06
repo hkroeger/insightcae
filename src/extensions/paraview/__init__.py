@@ -127,9 +127,11 @@ try:
         elif isinstance(patches, str):
             se=re.compile(patches)
             #eb.BlockIndices=[i for n,i in blockIndices.items() if se.match(n)]
+            bi=[]
             for n,i in blockIndices.items():
                 if se.match(n):
-                  eb.BlockIndices.append(i)
+                  bi.append(i)
+            eb.BlockIndices=bi
         else:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
         

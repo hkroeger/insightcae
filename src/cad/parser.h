@@ -97,8 +97,6 @@ FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f)
 {
   using namespace std;
   using namespace insight::cad;
-  cout<<"Perform query"<<endl;
-  cout<<m<<endl<<f<<endl;
   return m.query_edges(*f);
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSet, queryEdges_, queryEdges, 2);
@@ -124,7 +122,8 @@ struct ISCADParser
 	using namespace phx;
 	using namespace insight::cad;
 	
-        r_model =  *( r_assignment | r_modelstep ) >> -( lit("@postproc")  >> *r_postproc);
+        r_model =  *( r_assignment | r_modelstep ) 
+		  >> -( lit("@post")  >> *r_postproc);
 	
 	r_assignment = 
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(scalarSymbols.add, _1, _2) ]
@@ -135,14 +134,14 @@ struct ISCADParser
 	  ;
 	  
 	r_postproc =
-	  ( lit("DXF") >> r_path >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) [ writeViews_(_1, _2, _3) ]
+	  ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) [ writeViews_(_1, _2, _3) ]
 	  ;
 	  
 	r_viewDef =
 	   (r_identifier >> '(' 
 	      >> r_vectorExpression >> ',' 
 	      >> r_vectorExpression
-	      >> -( ',' >> lit("is_section") >> qi::attr(true) )
+	      >> -( ',' >> lit("section") >> qi::attr(true) )
 	      >> ')' 
 	   )
 	  ;

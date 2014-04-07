@@ -202,7 +202,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");

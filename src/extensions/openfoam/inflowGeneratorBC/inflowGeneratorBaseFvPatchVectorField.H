@@ -109,6 +109,14 @@ protected:
     
     label curTimeIndex_;
 
+    virtual void writeStateVisualization
+    (  
+      int i,
+      const vectorField& u,
+      const vectorField* uMean=NULL,
+      const symmTensorField* uPrime2Mean=NULL
+    ) const =0;
+    
     virtual void computeConditioningFactor() =0;
     
     vector randomTangentialDeflection(label fi);

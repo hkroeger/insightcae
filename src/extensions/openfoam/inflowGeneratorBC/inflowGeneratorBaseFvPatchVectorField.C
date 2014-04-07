@@ -159,8 +159,11 @@ autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorBaseFvPatchVectorField::bu
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-//   if (!conditioningFactor_.valid())
-//     computeConditioningFactor();
+  if (debug>5)
+  {
+    Info<<"Calculating conditioning factor. This will take a long time. Reduce debug level, if inappropriate."<<endl;
+    computeConditioningFactor();
+  }
   
   if (!Lund_.valid())
   {
@@ -187,6 +190,8 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     vectorField fluctuations=continueFluctuationProcess(this->db().time().value());
     
     fluctuations = Lund_() & fluctuations;
+    
+    if (this->db().time().outputTime()) writeStateVisualization(0, fluctuations);
     
     fixedValueFvPatchField<vector>::operator==(Umean_ + fluctuations);
     curTimeIndex_ = this->db().time().timeIndex();

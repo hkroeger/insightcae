@@ -88,7 +88,7 @@ public:
   ReynoldsStressModel()
   {
     resize(yp.size());
-    for (int i=0; i<yp.size(); i++)
+    for (size_t i=0; i<yp.size(); i++)
     {
       UList<Tuple2<scalar, diagTensor> >::operator[](i).first()=yp[i];
       UList<Tuple2<scalar, diagTensor> >::operator[](i).second()=diagTensor(Ruu[i], Rvv[i], Rww[i]);

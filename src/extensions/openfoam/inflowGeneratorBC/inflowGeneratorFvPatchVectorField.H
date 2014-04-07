@@ -35,6 +35,7 @@ SourceFiles
 #ifndef inflowGeneratorFvPatchVectorField_H
 #define inflowGeneratorFvPatchVectorField_H
 
+#include "boost/shared_ptr.hpp"
 #include "Random.H"
 #include "inflowGeneratorBaseFvPatchVectorField.H"
 
@@ -67,8 +68,8 @@ protected:
      */
     Field<TurbulentStructure> vortons_; 
     
-    autoPtr<scalarField> tau_;
-    autoPtr<scalarField> crTimes_;
+    boost::shared_ptr<scalarField> tau_;
+    boost::shared_ptr<scalarField> crTimes_;
     
     /**
      * Additional parameters for the selected turbulent structure
@@ -76,7 +77,16 @@ protected:
     typename TurbulentStructure::StructureParameters structureParameters_;
         
     void computeTau();
-    void computeConditioningFactor();
+    
+    virtual void writeStateVisualization
+    (  
+      int i,
+      const vectorField& fluctuations,
+      const vectorField* uMean=NULL,
+      const symmTensorField* uPrime2Mean=NULL
+    ) const;
+    
+    virtual void computeConditioningFactor();
 
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
     

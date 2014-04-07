@@ -267,7 +267,12 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     }
     if (dict.found("crTimes"))
     {
-      crTimes_.reset(new scalarField(dict.lookup("crTimes")));
+      crTimes_.reset
+      (
+	new scalarField("crTimes", 
+			dict, 
+			this->size())
+      );
     }
 }
 

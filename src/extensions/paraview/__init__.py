@@ -156,14 +156,14 @@ try:
                        #)
         elev=Elevation(Input=surf)
         if minZ is None or maxZ is None:
-	  mima=elev.PointData[1].GetRange()
+	  mima=elev.PointData.GetArray('Elevation').GetRange()
 	  if minZ is None: minZ=mima[0]
 	  if maxZ is None: maxZ=mima[1]
         elev.LowPoint=[0,0,minZ]
         elev.HighPoint=[0,0,maxZ]
         elev.ScalarRange=[minZ, maxZ]
 
-        return elev
+	return elev, minZ, maxZ
     
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
         cam = GetActiveCamera()

@@ -5,6 +5,11 @@
 #include <QMainWindow>
 #include <QMdiArea>
 #include <QSplitter>
+#include <QTextEdit>
+#include <QListWidget>
+
+
+#include "parser.h"
 
 class ISCADApplication
 : public QApplication
@@ -22,18 +27,61 @@ class QoccViewerContext;
 class QoccViewWidget;
 
 
-//class 
+class ModelStepList
+: public QListWidget
+{
+  Q_OBJECT
+  
+public:
+  ModelStepList(QWidget* parent = 0);
+  
+protected slots:
+  void showContextMenuForWidget(const QPoint &);
+};
 
 class ISCADMainWindow
 : public QMainWindow
 {
   Q_OBJECT
-protected:
-  QoccViewerContext* context_;
-  QoccViewWidget* viewer_;
   
+protected:
+  void clearDerivedData();
+  
+  inline void setFilename(const boost::filesystem::path& fn)
+  {
+    filename_=fn;
+    setWindowTitle(filename_.filename().c_str());
+  }
+
+protected slots:
+  void onModelStepItemChanged(QListWidgetItem * item);
+
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+  
+  // insert model step
+  void addModelStep(std::string sn, insight::cad::SolidModel::Ptr sm);
+  void addVariable(std::string sn, insight::cad::parser::scalar sv);
+  void addVariable(std::string sn, insight::cad::parser::vector vv);
+  
+  void loadFile(const boost::filesystem::path& file);
+
+public slots:
+  void loadModel();
+  void saveModel();
+  void saveModelAs();
+  void rebuildModel();
+
+protected:
+  boost::filesystem::path filename_;
+  QoccViewerContext* context_;
+  QoccViewWidget* viewer_;
+  QListWidget* modelsteplist_;
+  QListWidget* variablelist_;
+  QTextEdit* editor_;
+  
+  std::set<std::string> checked_modelsteps_;
+
 };
 
 #endif

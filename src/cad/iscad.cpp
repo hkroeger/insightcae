@@ -11,6 +11,8 @@ int main(int argc, char** argv)
 {
     ISCADApplication app(argc, argv);
     ISCADMainWindow w;
+    if (argc>1) 
+      w.loadFile(argv[1]);
     w.show();
     return app.exec();
 }

@@ -80,11 +80,7 @@ typedef std::vector<modelstep> model;
 typedef boost::tuple<std::string, vector, vector, boost::optional<bool> > viewdef;
 
 
-double dot(const vector& v1, const vector& v2)
-{
-  return arma::as_scalar(arma::dot(v1,v2));
-}
-
+double dot(const vector& v1, const vector& v2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, vec3_, vec3, 3);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
@@ -93,12 +89,7 @@ BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs);
 BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
 
-FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f)
-{
-  using namespace std;
-  using namespace insight::cad;
-  return m.query_edges(*f);
-}
+FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSet, queryEdges_, queryEdges, 2);
 
 

@@ -33,7 +33,18 @@ namespace parser {
 //   return solidmodel(new SolidModel(filepath));
 // }
 
-  
+double dot(const vector& v1, const vector& v2)
+{
+  return arma::as_scalar(arma::dot(v1,v2));
+}
+
+FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return m.query_edges(*f);
+}
+
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
 {
   SolidModel::Views views;

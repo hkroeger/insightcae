@@ -291,7 +291,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-18, 0.1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -390,13 +390,13 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
-  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-18, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   
   solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-18, 0);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
@@ -519,7 +519,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["rho"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omega"]=stdAsymmSolverSetup(1e-18, 0);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PISO");
@@ -597,12 +597,12 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   solvers["U"]=smoothSolverSetup(1e-8, 0);
   solvers["k"]=smoothSolverSetup(1e-8, 0);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0);
+  solvers["omega"]=smoothSolverSetup(1e-18, 0);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
   
   solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
-  solvers["omegaFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-18, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");

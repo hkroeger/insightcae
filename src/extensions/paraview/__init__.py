@@ -149,12 +149,20 @@ try:
         case, blockIndices=cbi
         
         surf=Contour(Input=case, ContourBy='alpha1', Isosurfaces=[0.5])
-        elev=Elevation(Input=surf, 
-                       LowPoint=[0,0,minZ], 
-                       HighPoint=[0,0,maxZ], 
-                       ScalarRange=[minZ, maxZ]
-                       )
-        
+        #elev=Elevation(Input=surf, 
+                       #LowPoint=[0,0,minZ], 
+                       #HighPoint=[0,0,maxZ], 
+                       #ScalarRange=[minZ, maxZ]
+                       #)
+        elev=Elevation(Input=surf)
+        if minZ is None or maxZ is None:
+	  mima=elev.PointData[1].GetRange()
+	  if minZ is None: minZ=mima[0]
+	  if maxZ is None: maxZ=mima[1]
+        elev.LowPoint=[0,0,minZ]
+        elev.HighPoint=[0,0,maxZ]
+        elev.ScalarRange=[minZ, maxZ]
+
         return elev
     
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):

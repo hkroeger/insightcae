@@ -236,7 +236,7 @@ public:
     double Re=Ubulk_*0.5*D_/nu;
     double Retau=insight::PipeBase::Retau(Re);
     double utau=Ubulk_*Retau/Re;
-    Info<<"Re="<<Re<<", Retau="<<Retau<<endl;
+    Info<<"Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
     
     const fvPatch& patch=ifpf.patch();
     forAll(patch.Cf(), fi)

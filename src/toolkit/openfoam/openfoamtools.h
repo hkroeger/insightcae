@@ -354,6 +354,8 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 		    const std::string& fieldName, const std::string& patchName);
 
 
+arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
+
 }
 
 #endif // OPENFOAMTOOLS_H

@@ -956,5 +956,44 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
   return arma::mat(data.data(), 2, data.size()/2).t();
 }
 
+arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers, int num)
+{
+  if (num<0)
+    throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
+  
+  boost::filesystem::path file=filetemplate.parent_path() 
+    / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
+    
+  cout << "Reading "<<file<<endl;
+    
+  std::ifstream f(file.c_str());
+  
+  std::vector<double> data;
+  
+  std::string headerline;
+  getline(f, headerline);
+  std::vector<std::string> colnames;
+  boost::split(colnames, headerline, boost::is_any_of(","));
+  for(size_t i=0; i<colnames.size(); i++)
+  {
+    (*headers)[colnames[i]]=i;
+  }
+  
+  while(!f.eof())
+  {
+    std::string line;
+    getline(f, line);
+    if (f.fail()) break;
+    
+    std::vector<std::string> cols;
+    boost::split(cols, line, boost::is_any_of(","));
+    for(size_t i=0; i<cols.size(); i++)
+    {
+      data.push_back(lexical_cast<double>(cols[i]));
+    }
+  }
+  
+  return arma::mat(data.data(), colnames.size(), data.size()/colnames.size()).t();
+}
 
 }

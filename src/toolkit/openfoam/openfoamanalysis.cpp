@@ -71,7 +71,7 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
 		    ("OFEname", 	new StringParameter("OF22x", "identifier of the OpenFOAM installation, that shall be used"))
-		    ("np", 		new IntParameter(1, "number of processors for parallel run, <=1 means serial execution"))
+		    ("np", 		new IntParameter(1, "number of processors for parallel run (less or equal 1 means serial execution)"))
 		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
 		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))

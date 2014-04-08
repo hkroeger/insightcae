@@ -44,7 +44,8 @@ try:
 
         view.ViewTime=vs[-1]
         view.Background = [1,1,1]
-        view.ViewSize = [1024, 768]
+        #view.ViewSize = [1024, 768]
+        view.ViewSize = [1920, 1080] # HD-Ready!
         
         return (case, blockIndices)
     
@@ -109,7 +110,8 @@ try:
         bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
                               Title=t, #(arrayName if title is None else title),
-                              Position=barpos, Orientation=barorient,
+                              #Position=barpos, 
+                              #Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
@@ -154,14 +156,16 @@ try:
                        #HighPoint=[0,0,maxZ], 
                        #ScalarRange=[minZ, maxZ]
                        #)
-        elev=Elevation(Input=surf)
+        Show(surf)
         if minZ is None or maxZ is None:
-	  mima=elev.PointData.GetArray('Elevation').GetRange()
-	  if minZ is None: minZ=mima[0]
-	  if maxZ is None: maxZ=mima[1]
-        elev.LowPoint=[0,0,minZ]
-        elev.HighPoint=[0,0,maxZ]
-        elev.ScalarRange=[minZ, maxZ]
+	  mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()
+	  if minZ is None: minZ=mima[4]
+	  if maxZ is None: maxZ=mima[5]
+	  print mima, minZ, maxZ
+        elev=Elevation(Input=surf,
+         LowPoint=[0,0,minZ],
+         HighPoint=[0,0,maxZ],
+         ScalarRange=[minZ, maxZ])
 
 	return elev, minZ, maxZ
     
@@ -179,6 +183,9 @@ try:
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
         active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
+	RenderView1 = GetRenderView()
+	RenderView1.OrientationAxesVisibility = 1
+	RenderView1.CenterAxesVisibility=0
 
 except ImportError:
     pass

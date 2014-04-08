@@ -923,12 +923,14 @@ void runPvPython
 }
 
 arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-		    const std::string& fieldName, const std::string& patchName)
+		    const std::string& fieldName, const std::string& patchName,
+		   const std::vector<std::string>& addopts
+			)
 {
   std::vector<std::string> opts;
   opts.push_back(fieldName);
   opts.push_back(patchName);
-  opts.push_back("-latestTime");
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
   cm.executeCommand(location, "patchIntegrate", opts, &output);

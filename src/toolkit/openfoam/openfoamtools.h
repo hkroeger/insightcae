@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "boost/filesystem.hpp"
+#include "boost/assign.hpp"
 
 #include "openfoam/openfoamcase.h"
 #include "progrock/cppx/collections/options_boosted.h"
@@ -350,6 +351,15 @@ void runPvPython
   const std::vector<std::string> pvpython_commands
 );
 
+arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+		    const std::string& fieldName, const std::string& patchName,
+		    const std::vector<std::string>& addopts=boost::assign::list_of<std::string>("-latestTime")
+			);
+
+
+arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
+
+int readDecomposeParDict(const boost::filesystem::path& ofcloc);
 
 }
 

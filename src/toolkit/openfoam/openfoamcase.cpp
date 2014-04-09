@@ -289,6 +289,28 @@ bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& loca
   return (timedirs.size()>1);
 }
 
+void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& location ) const
+{
+  boost::regex re_pdn("^processor([0-9]+)$");
+  std::vector<path> list;
+  if ( exists( location ) ) 
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( location );
+          itr != end_itr;
+          ++itr )
+    {
+      if ( is_directory(itr->status()) )
+      {
+	boost::match_results<std::string::const_iterator> what;
+        std::string fn=itr->path().filename().string();
+	if (boost::regex_match(fn, what, re_pdn))
+	  remove_all(itr->path());
+      }
+    }
+  }  
+}
+
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
   env_(env)

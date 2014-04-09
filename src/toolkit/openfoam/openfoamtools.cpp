@@ -21,11 +21,14 @@
 #include "openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "base/analysis.h"
+#include "base/linearalgebra.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/assign.hpp"
 #include <boost/tokenizer.hpp>
+#include "boost/regex.hpp"
+#include "boost/foreach.hpp"
 
 using namespace std;
 using namespace arma;
@@ -917,6 +920,92 @@ void runPvPython
   ofc.executeCommand(location, "pvbatch", args, NULL, 0, &machine);
   remove(tempfile);
 
+}
+
+arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+		    const std::string& fieldName, const std::string& patchName,
+		   const std::vector<std::string>& addopts
+			)
+{
+  std::vector<std::string> opts;
+  opts.push_back(fieldName);
+  opts.push_back(patchName);
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "patchIntegrate", opts, &output);
+  
+  boost::regex re_time("^ *Time = (.+)$");
+  boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+  boost::match_results<std::string::const_iterator> what;
+  double time=0;
+  std::vector<double> data;
+  BOOST_FOREACH(const std::string& line, output)
+  {
+    if (boost::regex_match(line, what, re_time))
+    {
+      cout<< what[1]<<endl;
+      time=lexical_cast<double>(what[1]);
+      data.push_back(time);
+    }
+    if (boost::regex_match(line, what, re_mag))
+    {
+      cout<<what[1]<<" : "<<what[4]<<endl;
+      data.push_back(lexical_cast<double>(what[4]));
+    }
+  }
+  
+  return arma::mat(data.data(), 2, data.size()/2).t();
+}
+
+arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers, int num)
+{
+  if (num<0)
+    throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
+  
+  boost::filesystem::path file=filetemplate.parent_path() 
+    / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
+    
+  cout << "Reading "<<file<<endl;
+    
+  std::ifstream f(file.c_str());
+  
+  std::vector<double> data;
+  
+  std::string headerline;
+  getline(f, headerline);
+  std::vector<std::string> colnames;
+  boost::split(colnames, headerline, boost::is_any_of(","));
+  for(size_t i=0; i<colnames.size(); i++)
+  {
+    (*headers)[colnames[i]]=i;
+  }
+  
+  while(!f.eof())
+  {
+    std::string line;
+    getline(f, line);
+    if (f.fail()) break;
+    
+    std::vector<std::string> cols;
+    boost::split(cols, line, boost::is_any_of(","));
+    for(size_t i=0; i<cols.size(); i++)
+    {
+      data.push_back(lexical_cast<double>(cols[i]));
+    }
+  }
+  
+  return arma::mat(data.data(), colnames.size(), data.size()/colnames.size()).t();
+}
+
+
+int readDecomposeParDict(const boost::filesystem::path& ofcloc)
+{
+  OFDictData::dict decomposeParDict;
+  std::ifstream cdf( (ofcloc/"system"/"decomposeParDict").c_str() );
+  readOpenFOAMDict(cdf, decomposeParDict);
+  //cout<<decomposeParDict<<endl;
+  return decomposeParDict.getInt("numberOfSubdomains");
 }
 
 }

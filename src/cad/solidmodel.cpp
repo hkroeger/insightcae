@@ -26,6 +26,8 @@
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 
+#include "dxfwriter.h"
+
 namespace insight 
 {
 namespace cad 
@@ -235,6 +237,7 @@ SolidModel::SolidModel(const SolidModel& o)
 : shape_(o.shape_)
 {
   nameFeatures();
+  cout<<"Copied SolidModel"<<endl;
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
@@ -257,6 +260,7 @@ SolidModel& SolidModel::operator=(const SolidModel& o)
 {
   shape_=o.shape_;
   nameFeatures();
+  cout<<"Assigned SolidModel"<<endl;
   return *this;
 }
 
@@ -377,8 +381,92 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
   }
 }
 
+
+
 SolidModel::operator const TopoDS_Shape& () const 
 { return shape_; }
+
+SolidModel::View SolidModel::createView
+(
+  const arma::mat p0,
+  const arma::mat n,
+  bool section
+) const
+{
+  View result_view;
+  
+  TopoDS_Shape dispshape=shape_;
+  
+  gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
+  gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
+  
+  gp_Ax2 viewCS(p_base, view_dir); 
+  HLRAlgo_Projector projector( viewCS );
+  gp_Trsf transform=projector.FullTransformation();
+
+  if (section)
+  {
+    gp_Dir normal = -view_dir;
+    gp_Pln plane = gp_Pln(p_base, normal);
+    gp_Pnt refPnt = gp_Pnt(p_base.X()-normal.X(), p_base.Y()-normal.Y(), p_base.Z()-normal.Z());
+    
+    TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
+    TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
+    
+    dispshape=BRepAlgoAPI_Cut(shape_, HalfSpace);
+    result_view.crossSection = BRepBuilderAPI_Transform(BRepAlgoAPI_Common(shape_, Face), transform).Shape();
+  }
+  
+  
+  Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
+  brep_hlr->Add( dispshape );
+  brep_hlr->Projector( projector );
+  brep_hlr->Update();
+  brep_hlr->Hide();
+
+  // extracting the result sets:
+  HLRBRep_HLRToShape shapes( brep_hlr );
+  
+  TopoDS_Compound allVisible;
+  BRep_Builder builder;
+  builder.MakeCompound( allVisible );
+  TopoDS_Shape vs=shapes.VCompound();
+  if (!vs.IsNull()) builder.Add(allVisible, vs);
+  TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+  if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+  TopoDS_Shape olvs = shapes.OutLineVCompound();
+  if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+  
+  TopoDS_Shape HiddenEdges = shapes.HCompound();
+  
+  result_view.visibleEdges=allVisible;
+  result_view.hiddenEdges=HiddenEdges;
+  
+  return result_view;
+  
+//   BRepTools::Write(allVisible, "visible.brep");
+//   BRepTools::Write(HiddenEdges, "hidden.brep");
+//   
+//   {
+//     std::vector<LayerDefinition> addlayers;
+//     if (section) addlayers.push_back
+//     (
+//       LayerDefinition("section", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
+//     );
+//     
+//     DXFWriter dxf("view.dxf", addlayers);
+//     
+//     dxf.writeShapeEdges(allVisible, "0");
+//     dxf.writeShapeEdges(HiddenEdges, "0_HL");
+//     
+//     if (!secshape.IsNull())
+//     {
+//       BRepTools::Write(secshape, "section.brep");
+//       dxf.writeSection( BRepBuilderAPI_Transform(secshape, transform).Shape(), "section");
+//     }
+//   }
+  
+}
 
 edgeCoG::edgeCoG() 
 {}
@@ -398,154 +486,160 @@ QuantityComputer<arma::mat>* edgeCoG::clone() const
   
 void SolidModel::nameFeatures()
 {
+  fmap_.Clear();
+  emap_.Clear(); 
+  vmap_.Clear(); 
+  somap_.Clear(); 
+  shmap_.Clear(); 
+  wmap_.Clear();
+  
+  // Solids
+  TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
+  for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next()) {
+      TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
+      if(somap_.FindIndex(solid) < 1) {
+	  somap_.Add(solid);
 
-    // Solids
-    TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
-    for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next()) {
-        TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
-        if(somap_.FindIndex(solid) < 1) {
-            somap_.Add(solid);
+	  for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
+	      TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
+	      if(shmap_.FindIndex(shell) < 1) {
+		  shmap_.Add(shell);
 
-            for(exp1.Init(solid, TopAbs_SHELL); exp1.More(); exp1.Next()) {
-                TopoDS_Shell shell = TopoDS::Shell(exp1.Current());
-                if(shmap_.FindIndex(shell) < 1) {
-                    shmap_.Add(shell);
+		  for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+		      TopoDS_Face face = TopoDS::Face(exp2.Current());
+		      if(fmap_.FindIndex(face) < 1) {
+			  fmap_.Add(face);
 
-                    for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-                        TopoDS_Face face = TopoDS::Face(exp2.Current());
-                        if(fmap_.FindIndex(face) < 1) {
-                            fmap_.Add(face);
+			  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
+			      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+			      if(wmap_.FindIndex(wire) < 1) {
+				  wmap_.Add(wire);
 
-                            for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-                                TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-                                if(wmap_.FindIndex(wire) < 1) {
-                                    wmap_.Add(wire);
+				  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
+				      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+				      if(emap_.FindIndex(edge) < 1) {
+					  emap_.Add(edge);
 
-                                    for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                                        TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                                        if(emap_.FindIndex(edge) < 1) {
-                                            emap_.Add(edge);
+					  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+					      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+					      if(vmap_.FindIndex(vertex) < 1)
+						  vmap_.Add(vertex);
+					  }
+				      }
+				  }
+			      }
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+  }
 
-                                            for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                                                TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                                                if(vmap_.FindIndex(vertex) < 1)
-                                                    vmap_.Add(vertex);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+  // Free Shells
+  for(exp1.Init(exp0.Current(), TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
+      TopoDS_Shape shell = exp1.Current();
+      if(shmap_.FindIndex(shell) < 1) {
+	  shmap_.Add(shell);
 
-    // Free Shells
-    for(exp1.Init(exp0.Current(), TopAbs_SHELL, TopAbs_SOLID); exp1.More(); exp1.Next()) {
-        TopoDS_Shape shell = exp1.Current();
-        if(shmap_.FindIndex(shell) < 1) {
-            shmap_.Add(shell);
+	  for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
+	      TopoDS_Face face = TopoDS::Face(exp2.Current());
+	      if(fmap_.FindIndex(face) < 1) {
+		  fmap_.Add(face);
 
-            for(exp2.Init(shell, TopAbs_FACE); exp2.More(); exp2.Next()) {
-                TopoDS_Face face = TopoDS::Face(exp2.Current());
-                if(fmap_.FindIndex(face) < 1) {
-                    fmap_.Add(face);
+		  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
+		      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+		      if(wmap_.FindIndex(wire) < 1) {
+			  wmap_.Add(wire);
 
-                    for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-                        TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-                        if(wmap_.FindIndex(wire) < 1) {
-                            wmap_.Add(wire);
+			  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
+			      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+			      if(emap_.FindIndex(edge) < 1) {
+				  emap_.Add(edge);
 
-                            for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                                TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                                if(emap_.FindIndex(edge) < 1) {
-                                    emap_.Add(edge);
+				  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+				      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+				      if(vmap_.FindIndex(vertex) < 1)
+					  vmap_.Add(vertex);
+				  }
+			      }
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+  }
 
-                                    for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                                        TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                                        if(vmap_.FindIndex(vertex) < 1)
-                                            vmap_.Add(vertex);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+  // Free Faces
+  for(exp2.Init(shape_, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
+      TopoDS_Face face = TopoDS::Face(exp2.Current());
+      if(fmap_.FindIndex(face) < 1) {
+	  fmap_.Add(face);
 
-    // Free Faces
-    for(exp2.Init(shape_, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
-        TopoDS_Face face = TopoDS::Face(exp2.Current());
-        if(fmap_.FindIndex(face) < 1) {
-            fmap_.Add(face);
+	  for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
+	      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+	      if(wmap_.FindIndex(wire) < 1) {
+		  wmap_.Add(wire);
 
-            for(exp3.Init(exp2.Current(), TopAbs_WIRE); exp3.More(); exp3.Next()) {
-                TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-                if(wmap_.FindIndex(wire) < 1) {
-                    wmap_.Add(wire);
+		  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
+		      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+		      if(emap_.FindIndex(edge) < 1) {
+			  emap_.Add(edge);
 
-                    for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                        TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                        if(emap_.FindIndex(edge) < 1) {
-                            emap_.Add(edge);
+			  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+			      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+			      if(vmap_.FindIndex(vertex) < 1)
+				  vmap_.Add(vertex);
+			  }
+		      }
+		  }
+	      }
+	  }
+      }
+  }
 
-                            for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                                TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                                if(vmap_.FindIndex(vertex) < 1)
-                                    vmap_.Add(vertex);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+  // Free Wires
+  for(exp3.Init(shape_, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
+      TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
+      if(wmap_.FindIndex(wire) < 1) {
+	  wmap_.Add(wire);
 
-    // Free Wires
-    for(exp3.Init(shape_, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
-        TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
-        if(wmap_.FindIndex(wire) < 1) {
-            wmap_.Add(wire);
+	  for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
+	      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+	      if(emap_.FindIndex(edge) < 1) {
+		  emap_.Add(edge);
 
-            for(exp4.Init(exp3.Current(), TopAbs_EDGE); exp4.More(); exp4.Next()) {
-                TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-                if(emap_.FindIndex(edge) < 1) {
-                    emap_.Add(edge);
+		  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+		      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+		      if(vmap_.FindIndex(vertex) < 1)
+			  vmap_.Add(vertex);
+		  }
+	      }
+	  }
+      }
+  }
 
-                    for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                        TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                        if(vmap_.FindIndex(vertex) < 1)
-                            vmap_.Add(vertex);
-                    }
-                }
-            }
-        }
-    }
+  // Free Edges
+  for(exp4.Init(shape_, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
+      TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
+      if(emap_.FindIndex(edge) < 1) {
+	  emap_.Add(edge);
 
-    // Free Edges
-    for(exp4.Init(shape_, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
-        TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
-        if(emap_.FindIndex(edge) < 1) {
-            emap_.Add(edge);
+	  for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
+	      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+	      if(vmap_.FindIndex(vertex) < 1)
+		  vmap_.Add(vertex);
+	  }
+      }
+  }
 
-            for(exp5.Init(exp4.Current(), TopAbs_VERTEX); exp5.More(); exp5.Next()) {
-                TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-                if(vmap_.FindIndex(vertex) < 1)
-                    vmap_.Add(vertex);
-            }
-        }
-    }
-
-    // Free Vertices
-    for(exp5.Init(shape_, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
-        TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
-        if(vmap_.FindIndex(vertex) < 1)
-            vmap_.Add(vertex);
-    }
+  // Free Vertices
+  for(exp5.Init(shape_, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
+      TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
+      if(vmap_.FindIndex(vertex) < 1)
+	  vmap_.Add(vertex);
+  }
 
 }
 
@@ -662,6 +756,24 @@ TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, 
   
 Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
 : SolidModel(makeFillets(m1, edges, r))
+{
+}
+
+TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l)
+{
+  BRepFilletAPI_MakeChamfer fb(m1);
+  BOOST_FOREACH(FeatureID f, edges)
+  {
+    TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
+    TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
+    fb.Add(l, m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
+  }
+  fb.Build();
+  return fb.Shape();
+}
+  
+Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
+: SolidModel(makeChamfers(m1, edges, l))
 {
 }
 

@@ -83,6 +83,9 @@ IF(OCC_LIBRARY)
     TKFeat
   )
   set(OCC_OCAF_LIBRARIES
+    TKV3d 
+    TKV2d 
+    TKService
     TKCAF
     TKXCAF
     TKLCAF

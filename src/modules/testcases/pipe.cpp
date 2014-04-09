@@ -300,6 +300,26 @@ void RadialTPCArray::evaluateSingle
   
 defineType(PipeBase);
 
+double PipeBase::Re(double Re_tau)
+{
+  double k=0.41;
+  double Cplus=5.0;
+  
+  return Re_tau*((1./k)*log(Re_tau)+Cplus);
+}
+
+
+double PipeBase::Retau(double Re)
+{
+  struct Obj: public Objective1D
+  {
+    double Re;
+    virtual double operator()(double x) const { return Re-PipeBase::Re(x); }
+  } obj;
+  obj.Re=Re;
+  return nonlinearSolve1D(obj, 1e-3*Re, Re);
+}
+  
 PipeBase::PipeBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
@@ -456,57 +476,10 @@ double PipeBase::calcUtau(const ParameterSet& p) const
   return 1./(0.5*D);
 }
 
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_roots.h>
-
-double lambda_func(double lambda, void *param)
-{
-  double Retau=*static_cast<double*>(param);
-  //cout<<Retau<<" "<<lambda<<endl;
-  //cout<<(2./5.)+1./(2.*lambda)<<endl;
-  double Re=pow(10, (2./5.)+1./(2.*lambda))/sqrt(lambda);
-  return 2.*Retau*sqrt(8./lambda) - Re;
-}
 
 double PipeBase::calcRe(const ParameterSet& p) const
 {
-/*  
-  PSDBL(p, "operation", Re_tau);
-  int i, times, status;
-  gsl_function f;
-  gsl_root_fsolver *workspace_f;
-  double x, x_l, x_r;
 
- 
-    workspace_f = gsl_root_fsolver_alloc(gsl_root_fsolver_bisection);
- 
-    f.function = &lambda_func;
-    f.params = &Re_tau;
- 
-    x_l = 1e-2;
-    x_r = 10;
- 
-    gsl_root_fsolver_set(workspace_f, &f, x_l, x_r);
- 
-    for(times = 0; times < 100; times++)
-    {
-        status = gsl_root_fsolver_iterate(workspace_f);
- 
-        x_l = gsl_root_fsolver_x_lower(workspace_f);
-        x_r = gsl_root_fsolver_x_upper(workspace_f);
- 
-        status = gsl_root_test_interval(x_l, x_r, 1.0e-13, 1.0e-20);
-        if(status != GSL_CONTINUE)
-        {
-            break;
-        }
-    }
- 
-    gsl_root_fsolver_free(workspace_f);
-    double lambda=x_l;
-    double Re=2.*Re_tau*sqrt(8./x_l);
-    cout<<"Re="<<Re<<endl;
-    return Re;*/
   PSDBL(p, "operation", D);
   PSDBL(p, "operation", Re_tau);
   double nu=1./Re_tau;

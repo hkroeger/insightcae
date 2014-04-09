@@ -175,6 +175,7 @@ public:
     
     virtual bool meshPresentOnDisk( const boost::filesystem::path& location ) const;
     virtual bool outputTimesPresentOnDisk( const boost::filesystem::path& location ) const;
+    virtual void removeProcessorDirectories( const boost::filesystem::path& location ) const;
     
     std::string cmdString
     (

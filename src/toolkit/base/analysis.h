@@ -38,6 +38,7 @@ typedef std::pair<double, ProgressVariableList> ProgressState;
 class ProgressDisplayer
 {
 public:
+  virtual ~ProgressDisplayer();
   virtual void update(const ProgressState& pi) =0;
 };
 

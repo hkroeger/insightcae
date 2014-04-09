@@ -44,7 +44,8 @@ try:
 
         view.ViewTime=vs[-1]
         view.Background = [1,1,1]
-        view.ViewSize = [1024, 768]
+        #view.ViewSize = [1024, 768]
+        view.ViewSize = [1920, 1080] # HD-Ready!
         
         return (case, blockIndices)
     
@@ -109,7 +110,8 @@ try:
         bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
                               Title=t, #(arrayName if title is None else title),
-                              Position=barpos, Orientation=barorient,
+                              #Position=barpos, 
+                              #Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
@@ -127,9 +129,11 @@ try:
         elif isinstance(patches, str):
             se=re.compile(patches)
             #eb.BlockIndices=[i for n,i in blockIndices.items() if se.match(n)]
+            bi=[]
             for n,i in blockIndices.items():
                 if se.match(n):
-                  eb.BlockIndices.append(i)
+                  bi.append(i)
+            eb.BlockIndices=bi
         else:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
         
@@ -147,13 +151,23 @@ try:
         case, blockIndices=cbi
         
         surf=Contour(Input=case, ContourBy='alpha1', Isosurfaces=[0.5])
-        elev=Elevation(Input=surf, 
-                       LowPoint=[0,0,minZ], 
-                       HighPoint=[0,0,maxZ], 
-                       ScalarRange=[minZ, maxZ]
-                       )
-        
-        return elev
+        #elev=Elevation(Input=surf, 
+                       #LowPoint=[0,0,minZ], 
+                       #HighPoint=[0,0,maxZ], 
+                       #ScalarRange=[minZ, maxZ]
+                       #)
+        Show(surf)
+        if minZ is None or maxZ is None:
+	  mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()
+	  if minZ is None: minZ=mima[4]
+	  if maxZ is None: maxZ=mima[5]
+	  print mima, minZ, maxZ
+        elev=Elevation(Input=surf,
+         LowPoint=[0,0,minZ],
+         HighPoint=[0,0,maxZ],
+         ScalarRange=[minZ, maxZ])
+
+	return elev, minZ, maxZ
     
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
         cam = GetActiveCamera()
@@ -169,6 +183,9 @@ try:
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
         active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
+	RenderView1 = GetRenderView()
+	RenderView1.OrientationAxesVisibility = 1
+	RenderView1.CenterAxesVisibility=0
 
 except ImportError:
     pass

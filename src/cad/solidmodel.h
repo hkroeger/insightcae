@@ -21,6 +21,9 @@
 #define INSIGHT_CAD_SOLIDMODEL_H
 
 #include <set>
+#include <map>
+#include <vector>
+
 #include "boost/shared_ptr.hpp"
 #include "boost/concept_check.hpp"
 #include "boost/utility.hpp"
@@ -58,6 +61,9 @@ class Sketch;
 
 class Filter
 {
+public:
+  typedef boost::shared_ptr<Filter> Ptr;
+  
 protected:
   const SolidModel* model_;
 public:
@@ -426,6 +432,15 @@ std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
 class SolidModel
 {
+public:
+  typedef boost::shared_ptr<SolidModel> Ptr;
+  
+  struct View
+  {
+    TopoDS_Shape visibleEdges, hiddenEdges, crossSection;
+  };
+  typedef std::map<std::string, View> Views;
+  
 protected :
   // the shape
   TopoDS_Shape shape_;
@@ -466,6 +481,13 @@ public:
   void saveAs(const boost::filesystem::path& filename) const;
   
   operator const TopoDS_Shape& () const;
+  
+  View createView
+  (
+    const arma::mat p0,
+    const arma::mat n,
+    bool section
+  ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
@@ -542,6 +564,15 @@ class Fillet
   
 public:
   Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
+};
+
+class Chamfer
+: public SolidModel
+{
+  TopoDS_Shape makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l);
+  
+public:
+  Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
 };
 
 }

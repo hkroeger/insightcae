@@ -25,9 +25,11 @@
 
 #include "solidmodel.h"
 
+#include "boost/filesystem.hpp"
 #include <boost/fusion/include/std_pair.hpp>
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
+#include <boost/fusion/adapted/boost_tuple.hpp>
 #include "boost/variant.hpp"
 #include "boost/ptr_container/ptr_map.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
@@ -40,6 +42,9 @@
 #include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
+#include <boost/fusion/adapted.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma.hpp>
 
 namespace insight {
 namespace cad {
@@ -68,20 +73,24 @@ struct skip_grammar : public qi::grammar<Iterator>
 
 typedef double scalar;
 typedef arma::mat vector;
-typedef SolidModel solidmodel;
+typedef SolidModel::Ptr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
+typedef boost::tuple<std::string, vector, vector, boost::optional<bool> > viewdef;
 
-double dot(const vector& v1, const vector& v2)
-{
-  return arma::as_scalar(arma::dot(v1,v2));
-}
 
+double dot(const vector& v1, const vector& v2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, vec3_, vec3, 3);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
 BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
+
+void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs);
+BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
+
+FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSet, queryEdges_, queryEdges, 2);
 
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
@@ -93,6 +102,8 @@ struct ISCADParser
     struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
     struct modelstepSymbolTable : public qi::symbols<char, solidmodel> {} modelstepSymbols;
     
+    struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
+    
 
     ISCADParser()
       : ISCADParser::base_type(r_model)
@@ -101,15 +112,29 @@ struct ISCADParser
 	using namespace qi;
 	using namespace phx;
 	using namespace insight::cad;
-
-	boost::spirit::classic::distinct_directive<> keyword_d("a-zA-Z0-9_");
 	
-        r_model =  *( r_assignment | r_modelstep );
+        r_model =  *( r_assignment | r_modelstep ) 
+		  >> -( lit("@post")  >> *r_postproc);
 	
 	r_assignment = 
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(scalarSymbols.add, _1, _2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
+	  |
+	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(edgeFeatureSymbols.add, _1, _2) ]
+	  ;
+	  
+	r_postproc =
+	  ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) [ writeViews_(_1, _2, _3) ]
+	  ;
+	  
+	r_viewDef =
+	   (r_identifier >> '(' 
+	      >> r_vectorExpression >> ',' 
+	      >> r_vectorExpression
+	      >> -( ',' >> lit("section") >> qi::attr(true) )
+	      >> ')' 
+	   )
 	  ;
 	
         r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression >> ';' ) [ phx::bind(modelstepSymbols.add, _1, _2) ];
@@ -117,28 +142,48 @@ struct ISCADParser
 	
 	r_solidmodel_expression =
 	 r_solidmodel_term [_val=_1 ]
-	 >> *( '-' >> r_solidmodel_term [_val=construct<BooleanSubtract>(_val, _1)] )
+	 >> *( '-' >> r_solidmodel_term [_val=construct<solidmodel>(new_<BooleanSubtract>(*_val, *_1))] )
 	 ;
 	
 	r_solidmodel_term =
 	 r_solidmodel_primary [_val=_1 ]
-	 >> *( '|' >> r_solidmodel_primary [_val=construct<BooleanUnion>(_val, _1)] )
+	 >> *( '|' >> r_solidmodel_primary [_val=construct<solidmodel>(new_<BooleanUnion>(*_val, *_1))] )
 	 ;
 	
 	r_solidmodel_primary = 
-	 modelstepSymbols [ _val = _1 ]
+	 lexeme[ modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
-         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<SolidModel>(_1) ]
+	 
+         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
+         
 	 // Primitives
 	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<Sphere>(_1, _2) ]
+	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
 	 | ( lit("Cylinder") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<Cylinder>(_1, _2, _3) ]
+	      [ _val = construct<solidmodel>(new_<Cylinder>(_1, _2, _3)) ]
 	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
 			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-	      [ _val = construct<Box>(_1, _2, _3, _4) ]
+	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4)) ]
+	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
+	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
 	 ;
 	 
+	r_edgeFeaturesExpression = 
+	     lexeme[ edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	     | (
+	     ( lit("edges") > lit("from") >> 
+		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
+	     )
+	  ;
+	  
+	r_edgeFilterExpression = 
+	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
+	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
+	 | ( lit("coincident") >> r_edgeFeaturesExpression >> lit("at") >> r_solidmodel_expression ) 
+	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
+	 ;
 	 
 	r_path = as_string[ 
                             lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
@@ -163,7 +208,7 @@ struct ISCADParser
 	  ;
 	  
 	r_scalar_primary =
-	  scalarSymbols [ _val = _1 ]
+	  lexeme[ scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  ;
@@ -196,17 +241,21 @@ struct ISCADParser
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
 	  ;
 
-	r_identifier = lexeme[ alpha >> *(alnum | '_') >> !(alnum | '_') ];
+	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
 	 
-	BOOST_SPIRIT_DEBUG_NODE(r_path);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_path);
 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
-	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
-	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
+	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
 //	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
@@ -215,9 +264,14 @@ struct ISCADParser
     
     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
-
+    
+    qi::rule<Iterator, FeatureSet(), Skipper> r_edgeFeaturesExpression;
+    qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
+    
     qi::rule<Iterator, Skipper> r_model;
     qi::rule<Iterator, Skipper> r_assignment;
+    qi::rule<Iterator, Skipper> r_postproc;
+    qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
     qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
     qi::rule<Iterator, std::string()> r_identifier;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
@@ -225,16 +279,11 @@ struct ISCADParser
     
 };
 
-template<typename T>
+
 struct ModelStepsWriter
-: public std::map<std::string, T>
+//: public std::map<std::string, T>
 {
-    void operator() (std::basic_string<char> s, T ct)
-    {
-      cout<<s<<endl<<ct<<endl;
-      //(*this)[s]=ct;
-      ct.saveAs(s+".brep");
-    }
+    void operator() (std::string s, SolidModel::Ptr ct);
 };
 
 template <typename Parser, typename Result, typename Iterator>
@@ -250,7 +299,7 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
       skip
   );
   
-  ModelStepsWriter<SolidModel> writer;
+  ModelStepsWriter writer;
   parser.modelstepSymbols.for_each(writer);
 
   if (first != last) // fail if we did not get a full match
@@ -262,6 +311,7 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
 }
 
 bool parseISCADModelStream(std::istream& in, parser::model& m);
+bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m);
 
 }
 }

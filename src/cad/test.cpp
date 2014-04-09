@@ -42,8 +42,7 @@ int main(int argc, char* argv[])
   */
   try{
   parser::model m;
-  std::ifstream fs(argv[1]);
-  bool ok=parseISCADModelStream(fs, m);
+  bool ok=parseISCADModelFile(argv[1], m);
   cout<<"OK="<<ok<<endl;
   BOOST_FOREACH(const parser::modelstep& ms, m)
   {

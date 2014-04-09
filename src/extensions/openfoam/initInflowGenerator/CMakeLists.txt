@@ -11,10 +11,15 @@ set(OF_INCLUDE_DIRS
 set(OF_LIBS finiteVolume LESfilters sampling)
 
 set(INCLUDE_DIRS 
+  ${toolkit_SOURCE_DIR}
+  ${testcases_SOURCE_DIR}
   ${inflowGeneratorBC22x_SOURCE_DIR}
   ${insight_INCLUDE_DIR}
 )
 
+set(LIBS
+ testcases
+)
 set(OF16ext_LIBS inflowGeneratorBCOF16ext)
 set(OF22x_LIBS inflowGeneratorBCOF22x)
 set(OF22eng_LIBS inflowGeneratorBCOF22eng)

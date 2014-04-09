@@ -199,7 +199,7 @@ public:
   
   inline ItemList& items() { return items_; };
   virtual const ItemList& items() const;
-  inline const std::string& selection() const { items_[value_]; }
+  inline const std::string& selection() const { return items_[value_]; }
 
   virtual std::string latexRepresentation() const;
   

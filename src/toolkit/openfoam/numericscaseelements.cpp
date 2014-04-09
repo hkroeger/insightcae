@@ -36,8 +36,9 @@ namespace insight
 {
   
   
-FVNumerics::FVNumerics(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "FVNumerics")
+FVNumerics::FVNumerics(OpenFOAMCase& c, Parameters const& p)
+: OpenFOAMCaseElement(c, "FVNumerics"),
+  p_(p)
 {
 }
 
@@ -53,7 +54,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["writeInterval"]=100;
   controlDict["purgeWrite"]=10;
   controlDict["writeFormat"]="binary";
-  controlDict["writePrecision"]=6;
+  controlDict["writePrecision"]=8;
   controlDict["writeCompression"]="compressed";
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
@@ -176,8 +177,8 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol)
 }
 
 
-MeshingNumerics::MeshingNumerics(OpenFOAMCase& c)
-: FVNumerics(c)
+MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c, p)
 {
 }
  
@@ -202,7 +203,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -255,18 +256,23 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["default"]="no";
   
   OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
-  decomposeParDict["numberOfSubdomains"]=1;
+  int np1, np2, np3; 
+  np1=std::max(1, int(pow(p_.np(), 1./3.)));
+  np2=std::max(1, int(pow(double(p_.np()/np1), 1./2.)));
+  np3=p_.np()/np1/np2;
+  cout<<"decomp "<<p_.np()<<": "<<np1<<" "<<np2<<" "<<np3<<endl;
+  decomposeParDict["numberOfSubdomains"]=p_.np();
   decomposeParDict["method"]="hierarchical";
   OFDictData::dict coeffs;
-  coeffs["n"]=OFDictData::vector3(1,1,1);
+  coeffs["n"]=OFDictData::vector3(np1,np2,np3);
   coeffs["delta"]=0.001;
   coeffs["order"]="xyz";
   decomposeParDict["hierarchicalCoeffs"]=coeffs;
   
 }
 
-simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c)
-: FVNumerics(c)
+simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c, p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
@@ -291,7 +297,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -361,7 +367,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c),
+: FVNumerics(c, p),
   p_(p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
@@ -390,13 +396,13 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
-  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   
   solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
@@ -463,7 +469,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: simpleFoamNumerics(c),
+: simpleFoamNumerics(c, p),
   p_(p)
 {}
  
@@ -487,8 +493,8 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
-cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c)
-: FVNumerics(c)
+cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c, p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
@@ -519,7 +525,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["rho"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omega"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PISO");
@@ -557,8 +563,8 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["rho"]="";
 }
 
-interFoamNumerics::interFoamNumerics(OpenFOAMCase& c)
-: FVNumerics(c)
+interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c, p)
 {
   if (OFversion()<=160)
     pname_="pd";
@@ -597,12 +603,12 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   solvers["U"]=smoothSolverSetup(1e-8, 0);
   solvers["k"]=smoothSolverSetup(1e-8, 0);
-  solvers["omega"]=smoothSolverSetup(1e-8, 0);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
   
   solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
-  solvers["omegaFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -677,8 +683,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["alpha1"]="";
 }
 
-LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c)
-: interFoamNumerics(c)
+LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: interFoamNumerics(c, p)
 {
 }
 
@@ -794,8 +800,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   fluxRequired["alpha1"]="";
 }
 
-interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c)
-: interFoamNumerics(c)
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: interFoamNumerics(c, p)
 {
 }
  

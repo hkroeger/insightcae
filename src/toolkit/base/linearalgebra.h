@@ -104,6 +104,16 @@ public:
  */
 double nonlinearRegression(const arma::mat& y, const arma::mat& x, RegressionModel& model);
 
+class Objective1D
+{
+public:
+  virtual ~Objective1D();
+  
+  virtual double operator()(double x) const =0;
+};
+
+double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

@@ -65,7 +65,12 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
        <<"}"<<endl;
 
     for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
-      out<< i->first << " " << i->second << ";\n";
+    {
+      out<< i->first << " " << i->second;
+      const OFDictData::data* o=&(i->second);
+      if (!boost::get<OFDictData::dict>(o)) out<<";";
+      out << "\n";
+    }
 }
 
 void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)

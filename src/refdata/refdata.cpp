@@ -27,7 +27,7 @@ ReferenceDataLibrary::ReferenceDataLibrary()
     {
       if ( is_directory(itr->status()) )
       {
-	path mod=itr->path()/"lookup.py";
+	path mod=itr->path()/"__init__.py";
         if (exists(mod))
 	{
 	  datasets_[itr->path().filename().string()]=mod;

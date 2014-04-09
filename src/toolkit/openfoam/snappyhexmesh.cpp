@@ -21,7 +21,9 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
+#include "openfoam/openfoamtools.h"
 
+using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::assign;
@@ -215,7 +217,25 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   std::vector<std::string> opts;
   if (overwrite) opts.push_back("-overwrite");
         
-  ofc.executeCommand(location, "snappyHexMesh", opts);
+  int np=readDecomposeParDict(location);
+  bool is_parallel = (np>1);
+
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "decomposePar");
+  }
+  
+  //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
+  ofc.executeCommand(location, "snappyHexMesh", opts, NULL, np);
+  
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "reconstructParMesh"/*, list_of<string>("-latestTime")*/ );
+    ofc.removeProcessorDirectories(location);
+  }
+  
+  
+  //ofc.executeCommand(location, "snappyHexMesh", opts);
 }
   
 }

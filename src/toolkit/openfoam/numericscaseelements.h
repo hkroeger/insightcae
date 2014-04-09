@@ -42,9 +42,16 @@ class OFdicts;
 class FVNumerics
 : public OpenFOAMCaseElement
 {
-  
 public:
-  FVNumerics(OpenFOAMCase& c);
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (np, int, 1)
+  )
+
+protected:
+  Parameters p_;
+   
+public:
+  FVNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -89,7 +96,7 @@ class MeshingNumerics
 : public FVNumerics
 {
 public:
-  MeshingNumerics(OpenFOAMCase& c);
+  MeshingNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -98,7 +105,7 @@ class simpleFoamNumerics
 : public FVNumerics
 {
 public:
-  simpleFoamNumerics(OpenFOAMCase& c);
+  simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -107,7 +114,7 @@ class pimpleFoamNumerics
 : public FVNumerics
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
     (deltaT, double, 1.0)
     (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)
@@ -128,7 +135,7 @@ class simpleDyMFoamNumerics
 : public simpleFoamNumerics
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+  CPPX_DEFINE_OPTIONCLASS(Parameters, simpleFoamNumerics::Parameters,
       (FEMinterval, int, 10)
   )
 
@@ -146,7 +153,7 @@ class cavitatingFoamNumerics
 : public FVNumerics
 {
 public:
-  cavitatingFoamNumerics(OpenFOAMCase& c);
+  cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -158,7 +165,7 @@ class interFoamNumerics
 protected:
   std::string pname_;
 public:
-  interFoamNumerics(OpenFOAMCase& c);
+  interFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   inline const std::string& pressureFieldName() const { return pname_; }
@@ -168,7 +175,7 @@ class LTSInterFoamNumerics
 : public interFoamNumerics
 {
 public:
-  LTSInterFoamNumerics(OpenFOAMCase& c);
+  LTSInterFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
 };
 
@@ -176,7 +183,7 @@ class interPhaseChangeFoamNumerics
 : public interFoamNumerics
 {
 public:
-  interPhaseChangeFoamNumerics(OpenFOAMCase& c);
+  interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 

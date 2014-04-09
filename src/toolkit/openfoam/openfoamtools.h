@@ -359,6 +359,8 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 
 arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
 
+int readDecomposeParDict(const boost::filesystem::path& ofcloc);
+
 }
 
 #endif // OPENFOAMTOOLS_H

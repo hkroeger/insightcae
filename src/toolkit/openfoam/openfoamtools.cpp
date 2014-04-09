@@ -998,4 +998,14 @@ arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<
   return arma::mat(data.data(), colnames.size(), data.size()/colnames.size()).t();
 }
 
+
+int readDecomposeParDict(const boost::filesystem::path& ofcloc)
+{
+  OFDictData::dict decomposeParDict;
+  std::ifstream cdf( (ofcloc/"system"/"decomposeParDict").c_str() );
+  readOpenFOAMDict(cdf, decomposeParDict);
+  //cout<<decomposeParDict<<endl;
+  return decomposeParDict.getInt("numberOfSubdomains");
+}
+
 }

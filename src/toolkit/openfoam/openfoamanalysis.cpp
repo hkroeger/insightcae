@@ -146,7 +146,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   SolverOutputAnalyzer analyzer(*displayer);
   
   string solverName;
-  int np;
+  int np=readDecomposeParDict(executionPath());
   
   {
     OFDictData::dict controlDict;
@@ -154,12 +154,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
     readOpenFOAMDict(cdf, controlDict);
     solverName=controlDict.getString("application");
   }
-  {
-    OFDictData::dict decomposeParDict;
-    std::ifstream cdf( (executionPath()/"system"/"decomposeParDict").c_str() );
-    readOpenFOAMDict(cdf, decomposeParDict);
-    np=decomposeParDict.getInt("numberOfSubdomains");
-  }
+
   
   bool is_parallel = np>1;
   

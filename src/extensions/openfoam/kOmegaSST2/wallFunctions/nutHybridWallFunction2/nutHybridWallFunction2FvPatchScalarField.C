@@ -29,6 +29,7 @@ License
 #include "fvPatchFieldMapper.H"
 #include "volFields.H"
 #include "addToRunTimeSelectionTable.H"
+#include "wallFvPatch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,7 +44,7 @@ namespace RASModels
 
 void nutHybridWallFunction2FvPatchScalarField::checkType()
 {
-    if (!patch().isWall())
+    if (isA<wallFvPatch>(patch())) //(!patch().isWall())
     {
         FatalErrorIn("nutHybridWallFunction2FvPatchScalarField::checkType()")
             << "Invalid wall function specification" << nl
@@ -80,7 +81,11 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
       = db().lookupObject<kOmegaSST2>("RASProperties");
 
     const scalarField& y = rasModel.y()[patchI];
+#ifdef OF16ext
     const scalarField& nuw = rasModel.nu().boundaryField()[patchI];
+#else
+    const scalarField& nuw = rasModel.nu()().boundaryField()[patchI];
+#endif
 
     const scalarField& yPlusw =
       rasModel.yPlus().boundaryField()[patchI];

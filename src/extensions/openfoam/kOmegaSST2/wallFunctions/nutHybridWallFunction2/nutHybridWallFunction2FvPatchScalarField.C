@@ -44,7 +44,7 @@ namespace RASModels
 
 void nutHybridWallFunction2FvPatchScalarField::checkType()
 {
-    if (isA<wallFvPatch>(patch())) //(!patch().isWall())
+    if (!isA<wallFvPatch>(patch())) //(!patch().isWall())
     {
         FatalErrorIn("nutHybridWallFunction2FvPatchScalarField::checkType()")
             << "Invalid wall function specification" << nl

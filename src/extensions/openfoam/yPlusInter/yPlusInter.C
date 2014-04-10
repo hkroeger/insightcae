@@ -36,7 +36,7 @@ Description
 #include "fvCFD.H"
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
-#ifdef OF16ext
+#if defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
@@ -61,7 +61,7 @@ void calcIncompressibleYPlus
 )
 {
     typedef 
-#ifdef OF16ext
+#if defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
@@ -70,7 +70,7 @@ void calcIncompressibleYPlus
 
     #include "createPhi.H"
 
-#ifdef OF16ext
+#if defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
 #else
     incompressibleTwoPhaseMixture

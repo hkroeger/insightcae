@@ -8,6 +8,7 @@ OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 find_package(OpenFOAM-16ext REQUIRED)
+find_package(OpenFOAM-21x REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
@@ -40,6 +41,9 @@ SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-neede
 macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs)
   if (OF16ext_FOUND)
     list (APPEND OF_VERSIONS OF16ext)
+  endif()
+  if (OF21x_FOUND)
+    list (APPEND OF_VERSIONS OF21x)
   endif()
   if (OF22x_FOUND)
     list (APPEND OF_VERSIONS OF22x)
@@ -83,6 +87,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+    if (${_ofvers} STREQUAL "OF21x")
+      setup_exe_target_OF21x(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
     if (${_ofvers} STREQUAL "OF22x")
       setup_exe_target_OF22x(
 	${PRJ_NAME}${_ofvers} 
@@ -116,6 +129,9 @@ endmacro(setup_exe_target_OF)
 macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs)
   if (OF16ext_FOUND)
     list (APPEND OF_VERSIONS OF16ext)
+  endif()
+  if (OF21x_FOUND)
+    list (APPEND OF_VERSIONS OF21x)
   endif()
   if (OF22x_FOUND)
     list (APPEND OF_VERSIONS OF22x)
@@ -152,6 +168,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 
     if (${_ofvers} STREQUAL "OF16ext")
       setup_lib_target_OF16ext(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "OF21x")
+      setup_lib_target_OF21x(
 	${PRJ_NAME}${_ofvers} 
 	"${sources}" 
 	"${PRJ_NAME}" 

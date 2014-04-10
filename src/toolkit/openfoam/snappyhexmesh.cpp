@@ -132,7 +132,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["nSmoothNormals"]=3;  
   layerCtrls["nSmoothThickness"]=10;  
   layerCtrls["maxFaceThicknessRatio"]=200.0;  
-  layerCtrls["maxThicknessToMedialRatio"]=0.6;  
+  layerCtrls["maxThicknessToMedialRatio"]=0.5;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
   layerCtrls["nLayerIter"]=2;  //OCFD
@@ -144,8 +144,8 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["maxNonOrtho"]=85.0;
   qualityCtrls["maxBoundarySkewness"]=20.0;
   qualityCtrls["maxInternalSkewness"]=4.0;
-  qualityCtrls["maxConcave"]=80.0;  
-  qualityCtrls["minFlatness"]=0.02;  
+  qualityCtrls["maxConcave"]=85.0;  
+  qualityCtrls["minFlatness"]=0.002;  
   qualityCtrls["minVol"]=1e-18;  
   qualityCtrls["minArea"]=-1.0;  
   qualityCtrls["minTwist"]=0.001;  

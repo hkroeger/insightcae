@@ -112,6 +112,11 @@ public:
 class PipeInflow
 : public PipeBase
 {
+  
+  const static int ntpc_ = 4;
+  const static char* tpc_names_[ntpc_]; 
+  const static double tpc_xlocs_[ntpc_];
+  
 public:
   declareType("Pipe Flow Test Case (Inflow Generator)");
   
@@ -128,6 +133,8 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+
+  ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);

@@ -294,7 +294,7 @@ kOmegaSST2::kOmegaSST2
         );
     nut_.correctBoundaryConditions();
 
-    correct();
+    //correct();
 
     printCoeffs();
 }

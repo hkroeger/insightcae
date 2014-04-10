@@ -119,7 +119,7 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
 void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 {
   layerCtrls["relativeSizes"]=true;
-  layerCtrls["expansionRatio"]=1.1;
+  layerCtrls["expansionRatio"]=1.5;
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=1e-5;  
   layerCtrls["nGrow"]=1;  
@@ -131,8 +131,8 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["nSmoothSurfaceNormals"]=1;  
   layerCtrls["nSmoothNormals"]=3;  
   layerCtrls["nSmoothThickness"]=10;  
-  layerCtrls["maxFaceThicknessRatio"]=2.0;  
-  layerCtrls["maxThicknessToMedialRatio"]=0.3;  
+  layerCtrls["maxFaceThicknessRatio"]=200.0;  
+  layerCtrls["maxThicknessToMedialRatio"]=0.6;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
   layerCtrls["nLayerIter"]=2;  //OCFD
@@ -141,22 +141,22 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
 {
-  qualityCtrls["maxNonOrtho"]=75.0;
+  qualityCtrls["maxNonOrtho"]=85.0;
   qualityCtrls["maxBoundarySkewness"]=20.0;
   qualityCtrls["maxInternalSkewness"]=4.0;
   qualityCtrls["maxConcave"]=80.0;  
-  qualityCtrls["minFlatness"]=0.2;  
+  qualityCtrls["minFlatness"]=0.02;  
   qualityCtrls["minVol"]=1e-18;  
   qualityCtrls["minArea"]=-1.0;  
-  qualityCtrls["minTwist"]=0.01;  
-  qualityCtrls["minDeterminant"]=0.001;  
-  qualityCtrls["minFaceWeight"]=0.01;  
-  qualityCtrls["minVolRatio"]=0.005;  
+  qualityCtrls["minTwist"]=0.001;  
+  qualityCtrls["minDeterminant"]=0.00001;  
+  qualityCtrls["minFaceWeight"]=0.001;  
+  qualityCtrls["minVolRatio"]=0.0005;  
   qualityCtrls["minTriangleTwist"]=-1.0;  
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
 
-  qualityCtrls["minTetQuality"]=1e-30;  
+  qualityCtrls["minTetQuality"]=1e-40;  
 }
 
 
@@ -193,6 +193,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   setStdCastellatedCtrls(castellatedCtrls);
   castellatedCtrls["locationInMesh"]=PiM;
   setStdLayerCtrls(layerCtrls);
+  layerCtrls["relativeSizes"]=p.relativeSizes();
   layerCtrls["finalLayerThickness"]=p.tlayer();
   setStdQualityCtrls(qualityCtrls);
 
@@ -230,7 +231,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   
   if (is_parallel)
   {
-    ofc.executeCommand(location, "reconstructParMesh"/*, list_of<string>("-latestTime")*/ );
+    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
     ofc.removeProcessorDirectories(location);
   }
   

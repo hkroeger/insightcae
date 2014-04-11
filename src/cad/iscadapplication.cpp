@@ -319,7 +319,8 @@ void ISCADMainWindow::rebuildModel()
   
   parser::model m;
   typedef std::string::iterator Iterator;
-  Iterator begin=code.begin();
+  Iterator orgbegin, begin;
+  orgbegin=begin=code.begin();
   Iterator end=code.end();
   ISCADParser<Iterator> parser;
   skip_grammar<std::string::iterator> skip;
@@ -333,7 +334,12 @@ void ISCADMainWindow::rebuildModel()
 
   if (begin != end) // fail if we did not get a full match
   {
-    statusBar()->showMessage("Model regeneration failed!");
+    QTextCursor tmpCursor = editor_->textCursor();
+    tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
+    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, int(begin-orgbegin) );
+    editor_->setTextCursor(tmpCursor);
+    
+    statusBar()->showMessage("Model regeneration failed => Cursor moved to location where parsing stopped!");
   }
   else
   {

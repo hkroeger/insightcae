@@ -259,7 +259,15 @@ struct ISCADParser
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
 //	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
-
+	
+        on_error<fail>(r_model, 
+                phx::ref(std::cout)
+                   << "Error! Expecting "
+                   << qi::_4
+                   << " here: '"
+                   << phx::construct<std::string>(qi::_3, qi::_2)
+                   << "'\n"
+            );
     }
     
     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;

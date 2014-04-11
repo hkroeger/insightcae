@@ -81,6 +81,7 @@ namespace snappyHexMeshOpts
 {
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (tlayer, double, 0.5)
+    (relativeSizes, bool, true)
   )
 };
 

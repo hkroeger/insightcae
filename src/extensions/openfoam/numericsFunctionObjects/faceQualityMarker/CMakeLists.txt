@@ -1,6 +1,6 @@
-  
+ 
 add_sources(SRC 
-  hybridOmegaWallFunction2FvPatchScalarField.C
+  faceQualityMarkerFunctionObject.C
 )
 
 add_include_dir(INCLUDE_DIRS)

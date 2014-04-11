@@ -124,7 +124,10 @@ class kOmegaSST2
 
             //- Small y value used to avoid divide by zero
             dimensionedScalar ySmall_;
-
+#ifndef OF16ext
+        //- Small omega value used to avoid divide by zero
+        dimensionedScalar omegaSmall_;
+#endif
         //- Wall distance field
         //  Note: different to wall distance in parent RASModel
         wallDist y_;
@@ -201,6 +204,11 @@ public:
             const volVectorField& U,
             const surfaceScalarField& phi,
             transportModel& transport
+#ifndef OF16ext
+			,
+            const word& turbulenceModelName = turbulenceModel::typeName,
+            const word& modelName = typeName
+#endif
         );
 
 
@@ -228,7 +236,10 @@ public:
             {
                 return ySmall_;
             }
-
+#ifndef OF16ext
+        //- Calculate y+ at the edge of the laminar sublayer
+        scalar yPlusLam(const scalar kappa, const scalar E) const;
+#endif
         //- Return the turbulence viscosity
         virtual tmp<volScalarField> nut() const
         {
@@ -292,6 +303,15 @@ public:
 
         //- Return the source term for the momentum equation
         virtual tmp<fvVectorMatrix> divDevReff(volVectorField& U) const;
+
+#ifndef OF16ext
+        //- Return the source term for the momentum equation
+        virtual tmp<fvVectorMatrix> divDevRhoReff
+        (
+            const volScalarField& rho,
+            volVectorField& U
+        ) const;
+#endif
 
         //- Solve the turbulence equations and correct the turbulence viscosity
         virtual void correct();

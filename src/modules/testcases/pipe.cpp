@@ -41,262 +41,7 @@ using namespace boost::filesystem;
 namespace insight
 {
 
-CorrelationFunctionModel::CorrelationFunctionModel()
-: B_(1.0), omega_(1.0)
-{}
 
-int CorrelationFunctionModel::numP() const
-{
-  return 2;
-}
-
-void CorrelationFunctionModel::setParameters(const double* params)
-{
-  B_=max(0.1, params[0]);
-  omega_=params[1];
-}
-
-arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
-{
-  return exp( -x / max(x.col(0)) );
-}
-
-arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
-{
-  //cout<<exp(-B_*x.col(0)) % cos(omega_*x.col(0))<<endl;
-  return exp(-B_*x.col(0)) % ( cos(omega_*x.col(0)) );
-}
-
-double CorrelationFunctionModel::lengthScale() const
-{
-  return B_ / ( pow(B_, 2)+pow(omega_, 2) );
-}
-
-const char * RadialTPCArray::cmptNames[] = 
-{ "xx", "xy", "xz",
-  "yx", "yy", "yz",
-  "zx", "zy", "zz" };
-  
-RadialTPCArray::RadialTPCArray(OpenFOAMCase& cm, Parameters const &p )
-: OpenFOAMCaseElement(cm, p.name_prefix()+"RadialTPCArray"),
-  p_(p)
-{
-  int n_r=10;
-  for (int i=1; i<n_r; i++) // omit first and last
-  {
-    double x = double(i)/(n_r);
-    double r = -cos(M_PI*(0.5+0.5*x))*p_.R();
-    
-    cout<<"Creating tpc FOs at r="<<r<<endl;
-    
-    r_.push_back(r);
-    
-    tpc_tan_.push_back(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, p_.x()))
-      .set_directionSpan(vec3(0, p_.tanSpan(), 0)) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
-      .set_nph( p_.nph() )
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( p_.timeStart() )
-    ));
-    
-    tpc_ax_.push_back(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, p_.x()))
-      .set_directionSpan(vec3(0, 0, p_.axSpan())) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
-      .set_nph(p_.nph())
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( p_.timeStart() )
-    ));
-    
-  }  
-}
-
-void RadialTPCArray::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_tan_)
-  {
-    tpc.addIntoDictionaries(dictionaries);
-  }
-  BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpc_ax_)
-  {
-    tpc.addIntoDictionaries(dictionaries);
-  }
-}
-
-void RadialTPCArray::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
-{
-  evaluateSingle(cm, location, results, 
-		  p_.name_prefix()+"_tan", 
-		  p_.tanSpan(), "Angle [rad]",
-		  tpc_tan_, 
-		  "two-point correlation of velocity along tangential direction at different radii"
-		);
-  
-  evaluateSingle(cm, location, results, 
-		  p_.name_prefix()+"_ax", 
-		  p_.axSpan(),  "Axial distance [length]",
-		  tpc_ax_, 
-		  "two-point correlation of velocity along axial direction at different radii"
-		);
-}
-
-void RadialTPCArray::evaluateSingle
-(
-  OpenFOAMCase& cm, const boost::filesystem::path& location, 
-  ResultSetPtr& results, 
-  const std::string& name_prefix,
-  double span,
-  const std::string& axisLabel,
-  const boost::ptr_vector<cylindricalTwoPointCorrelation>& tpcarray,
-  const std::string& shortDescription
-) const
-{
-  int nk=9;
-  int nr=tpcarray.size();
-  
-  arma::mat L(r_.data(), r_.size(), 1);
-  L=arma::join_rows(L, arma::zeros(r_.size(), nk)); // append nk column with 0's
-
-  // create one plot per component, with the profiles for all radii overlayed
-  {
-    Gnuplot gp[nk];
-    std::ostringstream cmd[nk];
-    arma::mat data[nk], regressions[nk];
-    
-    for(int k=0; k<nk; k++)
-    {
-      std::string chart_name=name_prefix+"_"+cmptNames[k];
-      std::string chart_file_name=chart_name+".png";
-      
-      gp[k]<<"set terminal png; set output '"<<chart_file_name<<"';";
-      gp[k]<<"set xlabel '"<<axisLabel<<"'; set ylabel '<R_"<<cmptNames[k]<<">'; set grid; ";
-      cmd[k]<<"plot 0 not lt -1";
-      data[k]=zeros(p_.np(), nr+1);
-      data[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
-      regressions[k]=zeros(p_.np(), nr+1);
-      regressions[k].col(0)=arma::linspace<arma::mat>(0, span, p_.np());
-
-      results->insert(chart_name,
-	std::auto_ptr<Image>(new Image
-	(
-	chart_file_name, 
-	shortDescription, ""
-      )));
-
-    }
-    int ir=0;
-    BOOST_FOREACH(const cylindricalTwoPointCorrelation& tpc, tpcarray)
-    {
-      boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
-      
-      // append profile of this radius to chart of this component
-      for (int k=0; k<nk; k++)
-      {
-	cmd[k]<<", '-' w p lt "<<ir+1<<" t 'r="<<r_[ir]<<"', '-' w l lt "<<ir+1<<" t 'r="<<r_[ir]<<" (fit)'";
-	data[k].col(ir+1) = res[k+1].row(res[k+1].n_rows-1).t();
-	data[k].col(ir+1) /= data[k].col(ir+1)(0); // Normalize
-	
-	CorrelationFunctionModel m;
-	cout<<"Fitting TPC for radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
-	nonlinearRegression(data[k].col(ir+1), data[k].col(0), m);
-	regressions[k].col(ir+1)=m.evaluateObjective(regressions[k].col(0));
-	
-	L(ir, 1+k)=m.lengthScale();
-      }
-      ir++;
-    }
-      
-    for (int k=0; k<nk; k++)
-    {
-      gp[k]<<cmd[k].str()<<endl;
-      for (int c=1; c<data[k].n_cols; c++)
-      {
-	arma::mat pdata;
-	pdata=join_rows(data[k].col(0), data[k].col(c));
-	gp[k].send1d( pdata );
-	pdata=join_rows(regressions[k].col(0), regressions[k].col(c));
-	gp[k].send1d( pdata );
-      }
-    }
-  }
-  
-  {
-    std::string chart_name=name_prefix+"_L_diag";
-    std::string chart_file_name=chart_name+".png";
-
-    Gnuplot gp;
-    std::ostringstream cmd;
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
-    cmd<<"plot 0 not lt -1";
-    
-    std::vector<double> ks=list_of<double>(0)(4)(8);
-    
-    BOOST_FOREACH(int k, ks)
-    {
-      cmd<<", '-' w lp lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
-    }
-    gp<<cmd.str()<<endl;
-    BOOST_FOREACH(int k, ks)
-    {
-      arma::mat pdata;
-      pdata=join_rows(L.col(0), L.col(k+1));
-      gp.send1d(pdata);
-    }
-    
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Autocorrelation lengths", ""
-    )));
-  }
-
-  {
-    std::string chart_name=name_prefix+"_L_offdiag";
-    std::string chart_file_name=chart_name+".png";
-
-    Gnuplot gp;
-    std::ostringstream cmd;
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'Radius [length]'; set ylabel 'L [length]'; set grid; ";
-    cmd<<"plot 0 not lt -1";
-    
-    std::vector<double> ks=list_of<double>(1)(2)(3)(5)(6)(7);
-    
-    BOOST_FOREACH(int k, ks)
-    {
-      cmd<<", '-' w lp lt "<<k+1<<" t 'L_"<<cmptNames[k]<<"'";
-    }
-    gp<<cmd.str()<<endl;
-    BOOST_FOREACH(int k, ks)
-    {
-      arma::mat pdata;
-      pdata=join_rows(L.col(0), L.col(k+1));
-      gp.send1d(pdata);
-    }
-    
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Cross-correlation lengths", ""
-    )));
-  }
-
-}
-  
   
 defineType(PipeBase);
 
@@ -628,7 +373,7 @@ void PipeBase::createCase
   cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters().set_LES(true) ) );
   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
     .set_name("plane")
-    .set_basePoint(vec3(0,0,0))
+    .set_basePoint(vec3(0,1e-6,1e-6))
     .set_normal(vec3(0,0,1))
     .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
   ));
@@ -777,6 +522,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
+  std::string pressure_contour_name="pressure_longi";
+  std::string pressure_contour_filename=pressure_contour_name+".jpg";
   runPvPython
   (
     cm, executionPath(), list_of<std::string>
@@ -786,19 +533,21 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
       "Show(eb)\n"
       "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
       "setCam([0,0,10], [0,0,0], [0,1,0])\n"
-      "WriteImage('pressure_longi.jpg')\n"
+      "WriteImage('"+pressure_contour_filename+"')\n"
     )
   );
-  results->insert("pressureContour",
+  results->insert(pressure_contour_name,
     std::auto_ptr<Image>(new Image
     (
-    "pressure_longi.jpg", 
+    pressure_contour_filename, 
     "Contour of pressure (longitudinal section)", ""
   )));
   
   for(int i=0; i<3; i++)
   {
     std::string c("x"); c[0]+=i;
+    std::string velocity_contour_name="U"+c+"Contour";
+    string velocity_contour_filename=velocity_contour_name+".jpg";
     runPvPython
     (
       cm, executionPath(), list_of<std::string>
@@ -808,13 +557,13 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 	"Show(eb)\n"
 	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
 	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
-	"WriteImage('U"+c+"_longi.jpg')\n"
+	"WriteImage('"+velocity_contour_filename+"')\n"
       )
     );
-    results->insert("U"+c+"Contour",
+    results->insert(velocity_contour_name,
       std::auto_ptr<Image>(new Image
       (
-      "U"+c+"_longi.jpg", 
+      velocity_contour_filename, 
       "Contour of "+c+"-Velocity", ""
     )));
   }
@@ -871,43 +620,7 @@ void PipeCyclic::createCase
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(calcUbulk(p), 0, 0))
 		));
-/*  
-  int n_r=10;
-  for (int i=1; i<n_r; i++) // omit first and last
-  {
-    double x = double(i)/(n_r);
-    double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
-    cout<<"Inserting tpc FO at r="<<r<<endl;
-    
-    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name("tpc_tan_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, 0.5*L))
-      .set_directionSpan(vec3(0, M_PI, 0)) 
-      .set_np(50)
-      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-      .set_nph(8)
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( (inittime+meantime)*T )
-    ));
-    
-    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name("tpc_ax_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, 0))
-      .set_directionSpan(vec3(0, 0, 0.5*L)) 
-      .set_np(50)
-      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-      .set_nph(8)
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( (inittime+meantime)*T )
-    ));
-    
-  }*/
+
 }
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
@@ -969,6 +682,16 @@ addToFactoryTable(Analysis, PipeCyclic, NoParameters);
 
 defineType(PipeInflow);
 
+const char* PipeInflow::tpc_names_[] = 
+  {
+    "tpc0_inlet",
+    "tpc1_intermediate1",
+    "tpc2_intermediate2",
+    "tpc3_intermediate3"
+  };
+
+const double PipeInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
+
 PipeInflow::PipeInflow(const NoParameters& nop)
 : PipeBase(nop)
 {
@@ -1017,51 +740,61 @@ void PipeInflow::createCase
   
   PipeBase::createCase(cm, p);
   
-  cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
-    .set_name_prefix("tpc_inlet")
-    .set_R(0.5*D)
-    .set_x(0.)
-    .set_axSpan(0.5*L)
-    .set_tanSpan(M_PI)
-    .set_timeStart( (inittime+meantime)*T )
-  ));
+  for (int i=0; i<ntpc_; i++)
+  {
+    cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
+      .set_name_prefix(tpc_names_[i])
+      .set_R(0.5*D)
+      .set_x(tpc_xlocs_[i]*L)
+      .set_axSpan(0.5*L)
+      .set_tanSpan(M_PI)
+      .set_timeStart( (inittime+meantime)*T )
+    ));
+  }
+  
+}
 
-//   int n_r=10;
-//   for (int i=1; i<n_r; i++) // omit first and last
-//   {
-//     double x = double(i)/(n_r);
-//     double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
-//     cout<<"Inserting tpc FO at r="<<r<<endl;
-//     
-//     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-//       .set_name("tpc_tan_"+lexical_cast<string>(i))
-//       .set_outputControl("timeStep")
-//       .set_p0(vec3(r, 0, 0.5*L))
-//       .set_directionSpan(vec3(0, M_PI, 0)) 
-//       .set_np(50)
-//       .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-//       .set_nph(8)
-//       .set_er(vec3(0, 1, 0))
-//       .set_ez(vec3(1, 0, 0))
-//       .set_degrees(false)
-//       .set_timeStart(inittime*T)
-//     ));
-//     
-//     cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-//       .set_name("tpc_ax_"+lexical_cast<string>(i))
-//       .set_outputControl("timeStep")
-//       .set_p0(vec3(r, 0, 0))
-//       .set_directionSpan(vec3(0, 0, 0.5*L)) 
-//       .set_np(50)
-//       .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-//       .set_nph(8)
-//       .set_er(vec3(0, 1, 0))
-//       .set_ez(vec3(1, 0, 0))
-//       .set_degrees(false)
-//       .set_timeStart(inittime*T)
-//     ));
-//     
-//   }
+ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  for (int i=0; i<ntpc_; i++)
+  {
+    const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"RadialTPCArray");
+    if (!tpcs)
+      throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
+    tpcs->evaluate(cm, executionPath(), results);
+
+    std::string init=
+      "cbi=loadOFCase('.')\n"
+      "prepareSnapshots()\n";
+      
+    std::string pressure_contour_name="sliceAt_"+string(tpc_names_[i]);
+    std::string pressure_contour_filename=pressure_contour_name+".jpg";
+    runPvPython
+    (
+      cm, executionPath(), list_of<std::string>
+      (
+	init+
+	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
+	"Show(eb)\n"
+	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
+	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
+	"WriteImage('"+pressure_contour_filename+"')\n"
+      )
+    );
+    results->insert(pressure_contour_name,
+      std::auto_ptr<Image>(new Image
+      (
+      pressure_contour_filename, 
+      "Contour of pressure (longitudinal section)", ""
+    )));
+  }
+    
+  return results;
 }
 
 void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)

@@ -26,62 +26,6 @@
 
 namespace insight {
   
-  
-class CorrelationFunctionModel
-: public RegressionModel
-{
-public:
-  double B_, omega_;
-  
-  CorrelationFunctionModel();
-  virtual int numP() const;
-  virtual void setParameters(const double* params);
-  virtual arma::mat weights(const arma::mat& x) const;
-  virtual arma::mat evaluateObjective(const arma::mat& x) const;
-  
-  double lengthScale() const;
-};
-  
-class RadialTPCArray
-: public OpenFOAMCaseElement
-{
-public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name_prefix, std::string, "tpc")
-    (timeStart, double, 0.0)
-    (outputControl, std::string, "outputTime")    
-    (outputInterval, double, 10.0)
-    (x, double, 0.0)
-    (tanSpan, double, M_PI)
-    (axSpan, double, 1.0)
-    (np, int, 50)
-    (nph, int, 8)
-    (R, double, 1.0)
-  )
-  
-  static const char * cmptNames[];
-  
-protected:
-  Parameters p_;
-  std::vector<double> r_;
-  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_ax_;
-  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_tan_;
-  
-public:
-  RadialTPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
-  virtual void evaluateSingle
-  (
-    OpenFOAMCase& cm, const boost::filesystem::path& location, 
-    ResultSetPtr& results, 
-    const std::string& name_prefix,
-    double span,
-    const std::string& axisLabel,
-    const boost::ptr_vector<cylindricalTwoPointCorrelation>& tpcarray,
-    const std::string& shortDescription
-  ) const;
-};
 
 class PipeBase 
 : public OpenFOAMAnalysis
@@ -168,6 +112,11 @@ public:
 class PipeInflow
 : public PipeBase
 {
+  
+  const static int ntpc_ = 4;
+  const static char* tpc_names_[ntpc_]; 
+  const static double tpc_xlocs_[ntpc_];
+  
 public:
   declareType("Pipe Flow Test Case (Inflow Generator)");
   
@@ -184,6 +133,8 @@ public:
     OpenFOAMCase& cm,
     const ParameterSet& p
   );
+
+  ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);

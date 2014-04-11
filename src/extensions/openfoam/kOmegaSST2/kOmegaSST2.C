@@ -78,6 +78,20 @@ tmp<volScalarField> kOmegaSST2::F2() const
     return tanh(sqr(arg2));
 }
 
+#ifndef OF16ext
+scalar kOmegaSST2::yPlusLam(const scalar kappa, const scalar E) const
+{
+    scalar ypl = 11.0;
+
+    for (int i=0; i<10; i++)
+    {
+        ypl = log(max(E*ypl, 1))/kappa;
+    }
+
+    return ypl;
+}
+#endif
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -86,9 +100,18 @@ kOmegaSST2::kOmegaSST2
     const volVectorField& U,
     const surfaceScalarField& phi,
     transportModel& lamTransportModel
+#ifndef OF16ext
+    ,
+    const word& turbulenceModelName,
+    const word& modelName
+#endif
 )
 :
+#ifdef OF16ext
     RASModel(typeName, U, phi, lamTransportModel),
+#else
+    RASModel(modelName, U, phi, lamTransportModel, turbulenceModelName),
+#endif
 
     alphaK1_
     (
@@ -192,7 +215,9 @@ kOmegaSST2::kOmegaSST2
 
     nutSmall_("nutSmall", dimLength*dimLength/dimTime, SMALL),
     ySmall_("ySmall", dimLength, SMALL),
-
+#ifndef OF16ext
+    omegaSmall_("omegaSmall", omegaMin_.dimensions(), SMALL),
+#endif
     y_(mesh_),
 
     k_
@@ -269,7 +294,7 @@ kOmegaSST2::kOmegaSST2
         );
     nut_.correctBoundaryConditions();
 
-    correct();
+    //correct();
 
     printCoeffs();
 }
@@ -327,6 +352,22 @@ tmp<fvVectorMatrix> kOmegaSST2::divDevReff(volVectorField& U) const
     );
 }
 
+#ifndef OF16ext
+tmp<fvVectorMatrix> kOmegaSST2::divDevRhoReff
+(
+    const volScalarField& rho,
+    volVectorField& U
+) const
+{
+    volScalarField muEff("muEff", rho*nuEff());
+
+    return
+    (
+      - fvm::laplacian(muEff, U)
+      - fvc::div(muEff*dev(T(fvc::grad(U))))
+    );
+}
+#endif
 
 bool kOmegaSST2::read()
 {
@@ -424,8 +465,12 @@ void kOmegaSST2::correct()
     omegaEqn().boundaryManipulate(omega_.boundaryField());
 
     solve(omegaEqn);
+#ifdef OF16ext
     bound(omega_, omega0_);
-	
+#else
+    bound(omega_, omegaMin_);
+#endif
+
     // Turbulent kinetic energy equation
     tmp<fvScalarMatrix> kEqn
     (
@@ -440,8 +485,11 @@ void kOmegaSST2::correct()
 
     kEqn().relax();
     solve(kEqn);
+#ifdef OF16ext
     bound(k_, k0_);
-
+#else
+    bound(k_, kMin_);
+#endif
 
     // Re-calculate viscosity
     nut_ = a1_*k_/max(a1_*omega_, F2()*sqrt(2.0*S2));

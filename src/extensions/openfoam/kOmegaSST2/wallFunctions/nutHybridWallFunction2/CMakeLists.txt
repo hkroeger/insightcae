@@ -1,8 +1,6 @@
- 
-add_sources(kOmegaSST2_SOURCES 
+   
+add_sources(SRC 
   nutHybridWallFunction2FvPatchScalarField.C
 )
 
-include_directories(
-  ${PROJECT_SOURCE_DIR}/wallFunctions/nutHybridWallFunction2
-)
+add_include_dir(INCLUDE_DIRS)

@@ -16,6 +16,7 @@ set(INCLUDE_DIRS
   ${refdata_SOURCE_DIR}
   ${inflowGeneratorBCOF22x_SOURCE_DIR}
   ${insight_INCLUDE_DIR}
+  ${Boost_INCLUDE_DIRS}
 )
 
 set(LIBS

@@ -86,11 +86,12 @@ protected:
       const symmTensorField* uPrime2Mean=NULL
     ) const;
     
-    virtual void computeConditioningFactor();
 
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
+    autoPtr<indexedOctree<treeDataPoint> > buildTree() const;
     
 public:
+    virtual void computeConditioningFactor();
 
     //- Runtime type information
     TypeName("inflowGenerator");

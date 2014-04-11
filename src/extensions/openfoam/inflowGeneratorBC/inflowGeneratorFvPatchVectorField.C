@@ -76,7 +76,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
   
   for (int i=1; i<100000; i++)
   {
-    scalar t=dt*scalar(i);
+    scalar t=dt*scalar(i-1);
     
     ProcessStepInfo info;
     vectorField u( continueFluctuationProcess(t, &info) );
@@ -311,10 +311,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::autoMap
     const fvPatchFieldMapper& m
 )
 {
-    fixedValueFvPatchField<vector>::autoMap(m);
-    Umean_.autoMap(m);
-    R_.autoMap(m);
-    L_.autoMap(m);
+    inflowGeneratorBaseFvPatchVectorField::autoMap(m);
     structureParameters_.autoMap(m);
 }
 
@@ -326,12 +323,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
     const labelList& addr
 )
 {
-    fixedValueFvPatchField<vector>::rmap(ptf, addr);
-    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& tiptf = 
-      refCast<const inflowGeneratorFvPatchVectorField<TurbulentStructure> >(ptf);
-    Umean_.rmap(tiptf.Umean_, addr);
-    R_.rmap(tiptf.R_, addr);
-    L_.rmap(tiptf.L_, addr);
+    inflowGeneratorBaseFvPatchVectorField::rmap(ptf, addr);
     structureParameters_.rmap(ptf, addr);
 }
 
@@ -406,6 +398,20 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
 }
 
 template<class TurbulentStructure>
+autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorFvPatchVectorField<TurbulentStructure>::buildTree() const
+{
+    Info << "rebuilding tree" <<endl;
+    pointField vloc(vortons_.size());
+    if (vortons_.size()>0)
+    {
+      forAll(vortons_, vi) vloc[vi]=vortons_[vi];
+      return buildTree(vloc);
+    }
+    else
+      return autoPtr<indexedOctree<treeDataPoint> > ();
+}
+
+template<class TurbulentStructure>
 tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(scalar t, ProcessStepInfo *info)
 {
 
@@ -429,57 +435,15 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     
     /**
      * ==================== Generation of new turbulent structures ========================
-     */
-    pointField vloc(vortons_.size());
-    autoPtr<indexedOctree<treeDataPoint> > tree;
-    
-    if (vortons_.size()>0)
-    {
-      forAll(vortons_, vi) vloc[vi]=vortons_[vi];
-      tree=buildTree(vloc);
-    }
+     */    
     label n_generated=0;
 
-    /*
-    // randomize processing order of face ID's
-    std::vector<label> fids;
-    std::copy(boost::counting_iterator<label>(0),
-         boost::counting_iterator<label>(patch().Cf().size()),
-         std::back_inserter(fids));
-    std::random_shuffle(fids.begin(), fids.end());
-    BOOST_FOREACH(label fi, fids)
-    {
-      // location of the new turbulent structure: randomly deflected around the current face centre
-      const point& p = patch().Cf()[fi] + randomTangentialDeflection(fi);
-      
-      TurbulentStructure snew(ranGen_, p, Umean_[fi], L_[fi]);
-      snew.randomize(ranGen_);
-      
-      scalar ovl = computeMinOverlap(tree, snew);
-      //Info<<"gen: "<<patch().Cf()[fi] <<" "<< p <<" => ovl="<<ovl<<endl;
-      //Info<<ovl<<" "<<flush;
-      if ( ovl < overlap_)
-      {
-	// append new structure to the end of the list
-	vortons_.resize(vortons_.size()+1);
-	vortons_[vortons_.size()-1]=snew;
-	
-	//Info << "rebuilding tree" <<endl;
-	vloc.resize(vortons_.size());
-	vloc[vloc.size()-1]=vortons_[vortons_.size()-1];
-	tree=buildTree(vloc);
-	
-	n_generated++;
-      }
-    }
-//     //Info<<endl;
-    */
     
     /**
      * Creation of new spots
      */
     
-    //scalar t=this->db().time().value();
+    Info<<"Generating new spots"<<endl;
     scalar dt=this->db().time().deltaT().value();
     forAll(*this, fi)
     {
@@ -507,29 +471,38 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	  if (debug>2) Info<<"."<<flush;
 	  n_generated++;
 	  
-	  (*crTimes_)[fi] += 2.0*ranGen_()*(*tau_)[fi];
+	  scalar rnum=ranGen_();
+	  (*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
+	  
+	  //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
 	}
 	while ( (*crTimes_)[fi]-horiz <= /*dt*/ 0.0 );
       }
       if (debug>2) Info<<endl;
     }
     
-    {
-      Info << "rebuilding tree" <<endl;
-      pointField vloc(vortons_.size());
-      if (vortons_.size()>0)
-      {
-	forAll(vortons_, vi) vloc[vi]=vortons_[vi];
-	tree=buildTree(vloc);
-      }
-    }
+    //autoPtr<indexedOctree<treeDataPoint> > tree = buildTree();
 
+
+    Info<<"Distributing structures to processors."<<endl;
+    // Distribute vorton list to all processors
+    List<List<TurbulentStructure> > sl(Pstream::nProcs());
+    sl[Pstream::myProcNo()] = vortons_;
+    Pstream::scatterList(sl);
+    //Pstream::gatherList(sl);
+    List<TurbulentStructure> vortonsGlobal =
+      ListListOps::combine<List<TurbulentStructure> >
+      (
+	sl, accessOp<List<TurbulentStructure> >()
+      );
+    
+    Info<<"Generating fluctuations."<<endl;
     /**
      * ==================== Generation of turbulent fluctuations ========================
      */
     tmp<vectorField> tfluctuations(new vectorField(size(), pTraits<vector>::zero));
     vectorField& fluctuations = tfluctuations();
-    
+
     Map<label> induced;
     forAll(*this, fi)
     {
@@ -539,15 +512,16 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       scalar f=sqrt(1./k/c_[fi]);
       // superimpose turbulent velocity in affected faces
-      forAll(vortons_, j)
+      forAll(vortonsGlobal, j)
       {
-	vector u=vortons_[j].fluctuation(structureParameters_, patch().Cf()[fi]);
+	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
 	if (mag(u)>SMALL) induced.insert(j, 0);
 	fluctuations[fi] += f*u;
       }
     }
     label n_induced=induced.size();
     
+    Info<<"Convecting and removing structures."<<endl;
     forAll(vortons_, j)
     {
       // convect structure
@@ -565,152 +539,35 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     }
     vortons_.resize(kept);
     label n_removed=os.size()-kept;
+    label n_total=vortons_.size();
+    
+//     Pout<<"InflowGen["<<patch().name()<<"]: "
+//       "Generated "<<n_generated<<
+//       ", removed "<<n_removed<<
+//       " now total "<<n_total<<
+//       ", contributions by "<<n_induced<<
+//       endl;
 
-    Info<<"t="<<t<<"\t Generated "<<n_generated<<" turbulent structures, removed "<<n_removed<<endl;
-    Info<<" now total "<<vortons_.size()<<", velocity contributions generated by "<<n_induced<<endl;
+    reduce(n_generated, sumOp<label>());
+    reduce(n_removed, sumOp<label>());
+    reduce(n_total, sumOp<label>());
+    reduce(n_induced, sumOp<label>());
+    
+    Info<<"InflowGen["<<patch().name()<<"]: "
+      "Generated "<<n_generated<<
+      ", removed "<<n_removed<<
+      " now total "<<n_total<<
+      ", contributions by "<<n_induced<<
+      endl;
+
     if (info) 
     {
       info->n_induced=n_induced;
       info->n_removed=n_removed;
       info->n_generated=n_generated;
-      info->n_total=vortons_.size();
+      info->n_total=n_total;
     }
-    
-//     List<List<TurbulentStructure> > scatterList(Pstream::nProcs());
-// 
-//     if ( Pstream::master() )
-//     {
-//         label n_x=label(ceil((bb.max().x()-bb.min().x())/(overlap_*Lspot_)));
-//         label n_y=label(ceil((bb.max().y()-bb.min().y())/(overlap_*Lspot_)));
-// 
-//         scalar dx=ranGen_.scalar01() * overlap_ * Lspot_;
-//         scalar dy=ranGen_.scalar01() * overlap_ * Lspot_;
-//         
-//         for (label i=0;i<n_x;i++)
-//         {
-//             for (label j=0;j<n_y;j++)
-//             {
-//                 vector x
-//                     (
-//                         bb.min().x() + scalar(i)*Lspot_ + dx,
-//                         bb.min().y() + scalar(j)*Lspot_ + dy,
-//                         -Lspot_
-//                     );
-// 
-//                 bool keep=true;
-//                 for (typename SLList<TurbulentStructure>::iterator vorton
-//                          = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-//                 {
-//                     if (mag(vorton().location() - x) < overlap_*Lspot_)
-//                     {
-//                         keep=false;
-//                         break;
-//                     }
-//                 }
-// 
-//                 if (keep)
-//                 {
-//                     TurbulentStructure newvorton(x);
-//                     newvorton.randomize(ranGen_);
-//                     vortons_.insert(newvorton);
-//                 }
-//             }
-//         }
-// 
-//         scatterList[Pstream::myProcNo()].setSize(vortons_.size());
-//         // transfer vortons to scatterList
-//         label i=0;
-//         for (typename SLList<TurbulentStructure>::iterator vorton
-//                  = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-//             scatterList[Pstream::myProcNo()][i++]=vorton();
-//     }
-// 
-//     // Distribute vortons to all processors
-//     Pstream::scatterList(scatterList);
-//     
-//     List<TurbulentStructure> allvortons= 
-//         ListListOps::combine<List<TurbulentStructure> >
-//         (
-//             scatterList,
-//             accessOp<List<TurbulentStructure> >()
-//         );
-// 
-//     // =========== Calculation of induced turbulent fluctuations ==========
-//     if (size()>0)
-//     {
-//         Field<vector> turbulent(referenceField_.size(), pTraits<vector>::zero);
-// 
-//         forAll(patchField, I)
-//         {
-//             vector pt=tloc[I];
-//             
-//             forAll(allvortons, vI)
-//             {
-//                 const TurbulentStructure& vorton=allvortons[vI];
-// 
-//                 if (mag(vorton.location() - pt) < Lspot_)
-//                 {
-//                     turbulent[I]+=
-//                         cmptMultiply
-//                         (
-//                             fluctuationScale_,
-//                             transform(rotback, vorton.fluctuation(param_, pt))
-//                         );
-//                 }
-//             }
-//         }
-// 
-//         tensorField a(turbulent.size(), pTraits<tensor>::zero);
-// 	a.replace(tensor::XX, sqrt(RField_.component(symmTensor::XX)));
-// 	a.replace(tensor::YX, RField_.component(symmTensor::XY)/a.component(tensor::XX));
-// 	a.replace(tensor::ZX, RField_.component(symmTensor::XZ)/a.component(tensor::XX));
-// 	a.replace(tensor::YY, sqrt(RField_.component(symmTensor::YY)-sqr(a.component(tensor::YX))));
-// 	a.replace(tensor::ZY, ( RField_.component(symmTensor::YZ)
-//              -a.component(tensor::YX)*a.component(tensor::ZX) )/a.component(tensor::YY));
-//         a.replace(tensor::ZZ, sqrt(RField_.component(symmTensor::ZZ)
-//              -sqr(a.component(tensor::ZX))-sqr(a.component(tensor::ZY))));
-// 
-//        fixedValueFvPatchField<vector>::operator==(referenceField_+ (a&turbulent) );
-//     }
-// 
-//     scalar um=gAverage(referenceField_ & (-patch().nf()) );
-// 
-//     if (Pstream::master())
-//     {
-//         // =================== Vorton motion =======================
-//         
-//         if (um*this->db().time().deltaT().value() > 0.5*Lspot_)
-//         {
-//             WarningIn("inflowGeneratorFvPatchVectorField::updateCoeffs()")
-//                 << "timestep to large: spots pass inlet within one timestep"<<endl;
-//         }
-//         
-//         for (typename SLList<TurbulentStructure>::iterator vorton
-//                  = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-//         {
-//             vorton().moveForward(um*this->db().time().deltaT().value()*vector(0,0,1));
-//         }        
-//         
-//         // ================ remove Vortons that left inlet plane =====================
-//         
-//         bool modified;
-//         do
-//         {
-//             modified=false;
-//             for (typename SLList<TurbulentStructure>::iterator vorton
-//                      = vortons_.begin(); vorton!=vortons_.end(); ++vorton)
-//             {
-//                 if (vorton().location().z() > Lspot_) 
-//                 {
-//                     vortons_.remove(vorton);
-//                     modified=true;
-//                     break;
-//                 }
-//             } 
-//         } while (modified);
-//         
-//         Pout<<"Number of turbulent spots: "<<vortons_.size()<<endl;
-//     }
+
 
   return tfluctuations;
 }

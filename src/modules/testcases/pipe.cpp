@@ -420,21 +420,23 @@ void PipeBase::createCase
   cout<<"Ubulk="<<calcUbulk(p)<<endl;
 }
 
-
-  
-ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+void PipeBase::evaluateAtSection(
+  OpenFOAMCase& cm, const ParameterSet& p, 
+  ResultSetPtr results, double x
+)
 {
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
-  
+  ostringstream sns; sns<<"section_x"<<x;
+  string title=sns.str();
+  replace_all(title, ".", "_");
+    
   boost::ptr_vector<sampleOps::set> sets;
   
-  double x=L*0.5;
   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-    .set_name("radial")
+    .set_name(title)
     .set_start( vec3(x, 0,  0.01* 0.5*D))
     .set_end(   vec3(x, 0, 0.997* 0.5*D))
     .set_axis(vec3(1,0,0))
@@ -453,7 +455,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   // Mean velocity profiles
   {
     Gnuplot gp;
-    string chart_name="mean_velocity";
+    string chart_name="mean_velocity_"+title;
     string chart_file_name=chart_name+".png";
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
@@ -484,7 +486,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   // Mean reynolds stress profiles
   {
     Gnuplot gp;
-    string chart_name="mean_Rstress";
+    string chart_name="mean_Rstress_"+title;
     string chart_file_name=chart_name+".png";
     double fac_yp=Re_tau*2.0/D;
     double fac_Rp=1./pow(calcUtau(p),2);
@@ -512,6 +514,150 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
     )));
     
   }
+
+  std::string init=
+      "cbi=loadOFCase('.')\n"
+      "prepareSnapshots()\n";
+      
+  std::string pressure_contour_name="pressure_ax_"+title;
+  std::string pressure_contour_filename=pressure_contour_name+".jpg";
+  runPvPython
+  (
+    cm, executionPath(), list_of<std::string>
+    (
+      init+
+      "eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+      "Show(eb)\n"
+      "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
+      "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
+      "WriteImage('"+pressure_contour_filename+"')\n"
+    )
+  );
+  results->insert(pressure_contour_name,
+    std::auto_ptr<Image>(new Image
+    (
+    pressure_contour_filename, 
+    "Contour of pressure (axial section)", ""
+  )));
+  
+  for(int i=0; i<3; i++)
+  {
+    std::string c("x"); c[0]+=i;
+    std::string velocity_contour_name="U"+c+"Contour_"+title;
+    string velocity_contour_filename=velocity_contour_name+".jpg";
+    runPvPython
+    (
+      cm, executionPath(), list_of<std::string>
+      (
+	init+
+	"eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+	"Show(eb)\n"
+	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
+	"setCam([-10,0,0], [0,0,0], [0,1,0])\n"
+	"WriteImage('"+velocity_contour_filename+"')\n"
+      )
+    );
+    results->insert(velocity_contour_name,
+      std::auto_ptr<Image>(new Image
+      (
+      velocity_contour_filename, 
+      "Contour of "+c+"-Velocity (axial section)", ""
+    )));
+  }
+}
+
+  
+ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_tau);
+  
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  
+  boost::ptr_vector<sampleOps::set> sets;
+  
+  //double x=L*0.5;
+  evaluateAtSection(cm, p, results, 0.5*L);
+//   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
+//     .set_name("radial")
+//     .set_start( vec3(x, 0,  0.01* 0.5*D))
+//     .set_end(   vec3(x, 0, 0.997* 0.5*D))
+//     .set_axis(vec3(1,0,0))
+//   ));
+//   
+//   sample(cm, executionPath(), 
+//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+//      sets
+//   );
+//   
+//   sampleOps::ColumnDescription cd;
+//   arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())
+//     .readSamples(cm, executionPath(), &cd);
+//     
+//     
+//   // Mean velocity profiles
+//   {
+//     Gnuplot gp;
+//     string chart_name="mean_velocity";
+//     string chart_file_name=chart_name+".png";
+//     
+//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+//     gp<<"set xlabel 'y+'; set ylabel '<U+>'; set grid; ";
+//     gp<<"set logscale x;";
+//     
+//     int c=cd["UMean"].col;
+//     
+//     double fac_yp=Re_tau*2.0/D;
+//     double fac_Up=1./calcUtau(p);
+//     gp<<"plot 0 not lt -1,"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Circumferential',"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
+// 
+//     results->insert(chart_name,
+//       std::auto_ptr<Image>(new Image
+//       (
+//       chart_file_name, 
+//       "Radial profiles of averaged velocities", ""
+//     )));
+//     
+//   }
+//   
+//   // Mean reynolds stress profiles
+//   {
+//     Gnuplot gp;
+//     string chart_name="mean_Rstress";
+//     string chart_file_name=chart_name+".png";
+//     double fac_yp=Re_tau*2.0/D;
+//     double fac_Rp=1./pow(calcUtau(p),2);
+//     int c=cd["UPrime2Mean"].col;
+//     
+//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+//     gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
+//     gp<<"set logscale x;";
+//     gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+//     
+//     
+//     gp<<"plot 0 not lt -1,"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
+// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
+//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
+// 
+//     results->insert(chart_name,
+//       std::auto_ptr<Image>(new Image
+//       (
+//       chart_file_name, 
+//       "Radial profiles of averaged reynolds stresses", ""
+//     )));
+//     
+//   }
 
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray");
   if (!tpcs)
@@ -564,7 +710,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
       std::auto_ptr<Image>(new Image
       (
       velocity_contour_filename, 
-      "Contour of "+c+"-Velocity", ""
+      "Contour of "+c+"-Velocity (longitudinal section)", ""
     )));
   }
 
@@ -763,35 +909,12 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   for (int i=0; i<ntpc_; i++)
   {
+    evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L);
+    
     const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"RadialTPCArray");
     if (!tpcs)
       throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
     tpcs->evaluate(cm, executionPath(), results);
-
-    std::string init=
-      "cbi=loadOFCase('.')\n"
-      "prepareSnapshots()\n";
-      
-    std::string pressure_contour_name="sliceAt_"+string(tpc_names_[i]);
-    std::string pressure_contour_filename=pressure_contour_name+".jpg";
-    runPvPython
-    (
-      cm, executionPath(), list_of<std::string>
-      (
-	init+
-	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
-	"Show(eb)\n"
-	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
-	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
-	"WriteImage('"+pressure_contour_filename+"')\n"
-      )
-    );
-    results->insert(pressure_contour_name,
-      std::auto_ptr<Image>(new Image
-      (
-      pressure_contour_filename, 
-      "Contour of pressure (longitudinal section)", ""
-    )));
   }
     
   return results;

@@ -14,7 +14,7 @@ set(INCLUDE_DIRS
   ${toolkit_SOURCE_DIR}
   ${testcases_SOURCE_DIR}
   ${refdata_SOURCE_DIR}
-  ${inflowGeneratorBC22x_SOURCE_DIR}
+  ${inflowGeneratorBCOF22x_SOURCE_DIR}
   ${insight_INCLUDE_DIR}
 )
 

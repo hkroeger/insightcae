@@ -119,7 +119,7 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
 void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 {
   layerCtrls["relativeSizes"]=true;
-  layerCtrls["expansionRatio"]=1.5;
+  layerCtrls["expansionRatio"]=1.3;
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=1e-5;  
   layerCtrls["nGrow"]=1;  
@@ -195,6 +195,7 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   setStdLayerCtrls(layerCtrls);
   layerCtrls["relativeSizes"]=p.relativeSizes();
   layerCtrls["finalLayerThickness"]=p.tlayer();
+  layerCtrls["expansionRatio"]=p.erlayer();
   setStdQualityCtrls(qualityCtrls);
 
   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)

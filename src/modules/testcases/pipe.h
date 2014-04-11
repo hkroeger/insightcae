@@ -75,7 +75,10 @@ public:
     const ParameterSet& p
   );
 
-  
+  virtual void evaluateAtSection(
+    OpenFOAMCase& cm, const ParameterSet& p, 
+    ResultSetPtr results, double x
+  );  
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   
 };

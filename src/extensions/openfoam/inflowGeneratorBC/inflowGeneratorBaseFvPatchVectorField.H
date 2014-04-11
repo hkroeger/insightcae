@@ -116,14 +116,13 @@ protected:
       const vectorField* uMean=NULL,
       const symmTensorField* uPrime2Mean=NULL
     ) const =0;
-    
-    virtual void computeConditioningFactor() =0;
-    
+        
     vector randomTangentialDeflection(label fi);
 
     autoPtr<indexedOctree<treeDataPoint> > buildTree(const pointField& vloc) const;
     
 public:
+    virtual void computeConditioningFactor() =0;
 
     //- Runtime type information
     TypeName("inflowGeneratorBase");
@@ -170,15 +169,27 @@ public:
         );
 
 
+	//- Map (and resize as needed) from self given a mapping object
+	virtual void autoMap
+	(
+	    const fvPatchFieldMapper&
+	);
 
-    // Member functions
-    inline Field<vector>& Umean() { return Umean_; }
-    inline Field<symmTensor>& R() { return R_; }
-    inline Field<symmTensor>& L() { return L_; }
-    inline scalar& overlap() { return overlap_; }
-    inline const Field<vector>& Umean() const { return Umean_; }
-    inline const Field<symmTensor>& R() const { return R_; }
-    inline const Field<symmTensor>& L() const { return L_; }
+	//- Reverse map the given fvPatchField onto this fvPatchField
+	virtual void rmap
+	(
+	    const fvPatchField<vector>&,
+	    const labelList&
+	);
+	
+	// Member functions
+	inline Field<vector>& Umean() { return Umean_; }
+	inline Field<symmTensor>& R() { return R_; }
+	inline Field<symmTensor>& L() { return L_; }
+	inline scalar& overlap() { return overlap_; }
+	inline const Field<vector>& Umean() const { return Umean_; }
+	inline const Field<symmTensor>& R() const { return R_; }
+	inline const Field<symmTensor>& L() const { return L_; }
 
 
         // Evaluation functions

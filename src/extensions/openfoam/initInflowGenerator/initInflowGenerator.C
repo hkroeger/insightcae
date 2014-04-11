@@ -218,7 +218,7 @@ public:
     return refCast<inflowGeneratorBaseFvPatchVectorField>(U.boundaryField()[patchI]);
   }
   
-  virtual void initialize(volVectorField& U, scalar nu) const =0;
+  virtual void initialize(volVectorField& U, scalar nu, bool checkStatistics=false) const =0;
   
   virtual autoPtr<inflowInitializer> clone() const =0;
 };
@@ -267,7 +267,7 @@ public:
   {
   }
     
-  virtual void initialize(volVectorField& U, scalar nu) const
+  virtual void initialize(volVectorField& U, scalar nu, bool checkStatistics=false) const
   {
     inflowGeneratorBaseFvPatchVectorField& ifpf = inflowGeneratorPatchField(U);
     double Re=Ubulk_*0.5*D_/nu;
@@ -303,6 +303,9 @@ public:
 					R.yy(), R.yz(),
 						R.zz());
     }
+    
+    if (checkStatistics)
+      ifpf.computeConditioningFactor();
   }
 
   virtual autoPtr<inflowInitializer> clone() const
@@ -319,9 +322,17 @@ addToRunTimeSelectionTable(inflowInitializer, pipeFlow, istream);
 
 int main(int argc, char *argv[])
 {
+#ifdef OF16ext
+  argList::validOptions.insert("checkStatistics", "");
+#else
+  argList::addBoolOption("checkStatistics", "do a precursor run of the boundary field generation alone and collect statistics");
+#endif
+  
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
+  
+  bool checkStatistics = args.optionFound("checkStatistics");
   
   wallDist y(mesh);
   
@@ -373,7 +384,7 @@ int main(int argc, char *argv[])
   );
 
   forAll(inits, i)
-    inits[i].initialize(U, nu.value());
+    inits[i].initialize(U, nu.value(), checkStatistics);
   
   U.write();
 

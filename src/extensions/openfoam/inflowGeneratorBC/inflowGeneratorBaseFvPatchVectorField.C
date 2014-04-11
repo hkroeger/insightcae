@@ -50,11 +50,11 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 :
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
     ranGen_(1),
-    Umean_(ptf.Umean_),
-    R_(ptf.R_),
-    L_(ptf.L_),
-    c_(ptf.c_),
-    conditioningFactor_(ptf.conditioningFactor_),
+    Umean_(ptf.Umean_, mapper),
+    R_(ptf.R_, mapper),
+    L_(ptf.L_, mapper),
+    c_(ptf.c_, mapper),
+    conditioningFactor_(),
     overlap_(ptf.overlap_),
     curTimeIndex_(ptf.curTimeIndex_)
 {
@@ -119,6 +119,34 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 {}
 
 
+void inflowGeneratorBaseFvPatchVectorField::autoMap
+(
+    const fvPatchFieldMapper& m
+)
+{
+    fixedValueFvPatchField<vector>::autoMap(m);
+    Umean_.autoMap(m);
+    R_.autoMap(m);
+    L_.autoMap(m);
+    c_.autoMap(m);
+}
+
+
+void inflowGeneratorBaseFvPatchVectorField::rmap
+(
+    const fvPatchField<vector>& ptf,
+    const labelList& addr
+)
+{
+    fixedValueFvPatchField<vector>::rmap(ptf, addr);
+    const inflowGeneratorBaseFvPatchVectorField& tiptf = 
+      refCast<const inflowGeneratorBaseFvPatchVectorField >(ptf);
+    Umean_.rmap(tiptf.Umean_, addr);
+    R_.rmap(tiptf.R_, addr);
+    L_.rmap(tiptf.L_, addr);
+    c_.rmap(tiptf.c_, addr);
+}
+
 vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label fi)
 {
   vector n=patch().Sf()[fi]; n/=mag(n);
@@ -159,11 +187,11 @@ autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorBaseFvPatchVectorField::bu
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-  if (debug>5)
-  {
-    Info<<"Calculating conditioning factor. This will take a long time. Reduce debug level, if inappropriate."<<endl;
-    computeConditioningFactor();
-  }
+//   if (debug>5)
+//   {
+//     Info<<"Calculating conditioning factor. This will take a long time. Reduce debug level, if inappropriate."<<endl;
+//     computeConditioningFactor();
+//   }
   
   if (!Lund_.valid())
   {

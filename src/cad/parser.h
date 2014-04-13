@@ -163,6 +163,12 @@ struct ISCADParser
 	    >> r_scalarExpression >> ')' ) 
 	     [ _val = construct<solidmodel>(new_<LinearPattern>(*_1, _2, _3)) ]
          
+         | ( lit("Transform") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
+	    >> r_vectorExpression >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<Transform>(*_1, _2, _3)) ]
+         | ( lit("Compound") > '(' >> ( r_solidmodel_expression % ',' ) >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<Compound>(_1)) ]
+
 	 // Primitives
 	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
@@ -218,6 +224,7 @@ struct ISCADParser
 	  lexeme[ scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  | ('-' >> r_scalar_primary) [_val=-_1]
 	  ;
 
 
@@ -242,10 +249,10 @@ struct ISCADParser
 	  
 	r_vector_primary =
 	  lexeme[ vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	  //vectorSymbols [ _val = _1 ]
 	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
 	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
+	  | ( '-' >> r_vector_primary ) [_val=-_1]
 	  ;
 
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];

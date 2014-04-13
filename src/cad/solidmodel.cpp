@@ -28,6 +28,9 @@
 
 #include "dxfwriter.h"
 
+using namespace std;
+using namespace boost;
+
 namespace insight 
 {
 namespace cad 
@@ -841,6 +844,50 @@ LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
 : SolidModel(makePattern(m1, axis, n))
 {
   m1.unsetLeaf();
+}
+
+TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
+{
+  gp_Trsf tr1, tr2;
+  tr1.SetTranslation(to_Vec(trans));
+  double phi=norm(rot, 2);
+  tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), to_Vec(rot/phi)), phi);
+  
+  // Apply rotation first, then translation
+  return BRepBuilderAPI_Transform(
+    BRepBuilderAPI_Transform(m1, tr2).Shape(),
+    tr1
+  ).Shape();
+}
+
+Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
+: SolidModel(makeTransform(m1, trans, rot))
+{
+  m1.unsetLeaf();
+}
+
+TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
+{
+  BRep_Builder bb;
+  TopoDS_Compound result;
+  bb.MakeCompound(result);
+  
+  BOOST_FOREACH(const SolidModel::Ptr& p, m1)
+  {
+    bb.Add(result, *p);
+  }
+  
+  return result;
+}
+
+
+Compound::Compound(const std::vector<SolidModel::Ptr>& m1)
+: SolidModel(makeCompound(m1))
+{
+  BOOST_FOREACH(const SolidModel::Ptr& p, m1)
+  {
+    p->unsetLeaf();
+  }
 }
 
 }

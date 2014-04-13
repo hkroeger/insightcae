@@ -603,6 +603,26 @@ public:
   LinearPattern(const SolidModel& m1, const arma::mat& axis, int n);
 };
 
+// =================== Modifier features ======================
+
+class Transform
+: public SolidModel
+{
+  TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+  
+public:
+  Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+};
+
+class Compound
+: public SolidModel
+{
+  TopoDS_Shape makeCompound(const std::vector<SolidModel::Ptr>& m1);
+  
+public:
+  Compound(const std::vector<SolidModel::Ptr>& m1);
+};
+
 }
 }
 

@@ -120,8 +120,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   fmenu->addAction(act);
   
   act = new QAction(("&Rebuild model"), this);
-  //act->setShortcut(Qt::Key_F5);
-  act->setShortcut(Qt::ControlModifier + Qt::Key_Space);
+  act->setShortcut(Qt::ControlModifier + Qt::Key_Return);
   connect(act, SIGNAL(triggered()), this, SLOT(rebuildModel()));
   mmenu->addAction(act);
   

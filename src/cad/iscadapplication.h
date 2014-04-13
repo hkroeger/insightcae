@@ -39,6 +39,17 @@ protected slots:
   void showContextMenuForWidget(const QPoint &);
 };
 
+struct ViewState
+{
+  int shading;
+  bool visible;
+  double r, g, b;
+  
+  ViewState();
+  void randomizeColor();
+};
+
+
 class ISCADMainWindow
 : public QMainWindow
 {
@@ -46,6 +57,7 @@ class ISCADMainWindow
   
 protected:
   void clearDerivedData();
+  virtual void closeEvent(QCloseEvent *event);
   
   inline void setFilename(const boost::filesystem::path& fn)
   {
@@ -80,7 +92,7 @@ protected:
   QListWidget* variablelist_;
   QTextEdit* editor_;
   
-  std::set<std::string> checked_modelsteps_;
+  std::map<std::string, ViewState> checked_modelsteps_;
 
 };
 

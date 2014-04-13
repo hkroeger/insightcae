@@ -1,6 +1,9 @@
 #ifndef OCC_INCLUDE
 #define OCC_INCLUDE
 
+#include <Quantity_Color.hxx>
+#include <Quantity_TypeOfColor.hxx>
+#include <Graphic3d_NameOfMaterial.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom_Curve.hxx>
 #include <GeomAdaptor_Curve.hxx>

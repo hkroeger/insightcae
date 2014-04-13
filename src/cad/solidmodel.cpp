@@ -230,24 +230,25 @@ TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filena
 }
 
 SolidModel::SolidModel()
+: isleaf_(true)
 {
 }
 
 SolidModel::SolidModel(const SolidModel& o)
-: shape_(o.shape_)
+: isleaf_(true), shape_(o.shape_)
 {
   nameFeatures();
   cout<<"Copied SolidModel"<<endl;
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
-: shape_(shape)
+: isleaf_(true), shape_(shape)
 {
   nameFeatures();
 }
 
 SolidModel::SolidModel(const boost::filesystem::path& filepath)
-: shape_(loadShapeFromFile(filepath))
+: isleaf_(true), shape_(loadShapeFromFile(filepath))
 {
   nameFeatures();
 }
@@ -666,11 +667,12 @@ TopoDS_Shape Box::makeBox
   const arma::mat& p0, 
   const arma::mat& L1, 
   const arma::mat& L2, 
-  const arma::mat& L3
+  const arma::mat& L3,
+  bool centered
 )
 {
   Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1), to_Pnt(p0+L2)).Value();
-  return 
+  TopoDS_Shape box=
   BRepPrimAPI_MakePrism
   (
     BRepBuilderAPI_MakeFace
@@ -687,6 +689,13 @@ TopoDS_Shape Box::makeBox
     ).Face(),
     to_Vec(L3)
   ).Shape();
+  if (centered)
+  {
+    gp_Trsf t;
+    t.SetTranslation(to_Vec(-0.5*L1-0.5*L2-0.5*L3));
+    box=BRepBuilderAPI_Transform(box, t).Shape();
+  }
+  return box;
 }
   
 Box::Box
@@ -694,9 +703,10 @@ Box::Box
   const arma::mat& p0, 
   const arma::mat& L1, 
   const arma::mat& L2, 
-  const arma::mat& L3
+  const arma::mat& L3,
+  bool centered
 )
-: SolidModel(makeBox(p0, L1, L2, L3))
+: SolidModel(makeBox(p0, L1, L2, L3, centered))
 {
 }
   
@@ -723,6 +733,8 @@ Extrusion::Extrusion(const Sketch& sk, const arma::mat& L)
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
+  m1.unsetLeaf();
+  m2.unsetLeaf();
   cout<<"Union done"<<endl;
 }
 
@@ -735,6 +747,8 @@ SolidModel operator|(const SolidModel& m1, const SolidModel& m2)
 BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Cut(m1, m2).Shape())
 {
+  m1.unsetLeaf();
+  m2.unsetLeaf();
 }
 
 SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
@@ -757,6 +771,7 @@ TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, 
 Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
 : SolidModel(makeFillets(m1, edges, r))
 {
+  m1.unsetLeaf();
 }
 
 TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l)
@@ -775,6 +790,57 @@ TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges
 Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
 : SolidModel(makeChamfers(m1, edges, l))
 {
+  m1.unsetLeaf();
+}
+
+
+TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
+{
+  BRep_Builder bb;
+  TopoDS_Compound result;
+  bb.MakeCompound(result);
+  
+  double delta_phi=norm(axis, 2);
+  gp_Ax1 ax(to_Pnt(p0), to_Vec(axis/delta_phi));
+  for (int i=0; i<n; i++)
+  {
+    gp_Trsf tr;
+    tr.SetRotation(ax, delta_phi*double(i));
+    bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
+  }
+  
+  return result;
+}
+  
+CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
+: SolidModel(makePattern(m1, p0, axis, n))
+{
+  m1.unsetLeaf();
+}
+
+TopoDS_Shape LinearPattern::makePattern(const SolidModel& m1, const arma::mat& axis, int n)
+{
+  BRep_Builder bb;
+  TopoDS_Compound result;
+  bb.MakeCompound(result);
+  
+  double delta_x=norm(axis, 2);
+  gp_Vec ax(to_Vec(axis/delta_x));
+  
+  for (int i=0; i<n; i++)
+  {
+    gp_Trsf tr;
+    tr.SetTranslation(ax*delta_x*double(i));
+    bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
+  }
+  
+  return result;
+}
+  
+LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
+: SolidModel(makePattern(m1, axis, n))
+{
+  m1.unsetLeaf();
 }
 
 }

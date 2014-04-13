@@ -442,6 +442,8 @@ public:
   typedef std::map<std::string, View> Views;
   
 protected :
+  // needs to be unset, if this shape is used as a tool to create another shape
+  mutable bool isleaf_;
   // the shape
   TopoDS_Shape shape_;
   // all the (sub) TopoDS_Shapes in 'shape'
@@ -456,6 +458,9 @@ public:
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
   virtual ~SolidModel();
+  
+  inline bool isleaf() const { return isleaf_; }
+  inline void unsetLeaf() const { isleaf_=false; }
   
   SolidModel& operator=(const SolidModel& o);
 
@@ -509,7 +514,8 @@ protected:
     const arma::mat& p0,
     const arma::mat& L1,
     const arma::mat& L2,
-    const arma::mat& L3
+    const arma::mat& L3,
+    bool centered=false
   );
   
 public:
@@ -518,7 +524,8 @@ public:
     const arma::mat& p0, 
     const arma::mat& L1, 
     const arma::mat& L2, 
-    const arma::mat& L3
+    const arma::mat& L3,
+    bool centered=false
   );
 };
 
@@ -573,6 +580,27 @@ class Chamfer
   
 public:
   Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
+};
+
+
+// =================== Pattern features ======================
+
+class CircularPattern
+: public SolidModel
+{
+  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+  
+public:
+  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+};
+
+class LinearPattern
+: public SolidModel
+{
+  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& axis, int n);
+  
+public:
+  LinearPattern(const SolidModel& m1, const arma::mat& axis, int n);
 };
 
 }

@@ -29,6 +29,9 @@
 #include <boost/tokenizer.hpp>
 #include "boost/regex.hpp"
 #include "boost/foreach.hpp"
+#include <boost/graph/graph_concepts.hpp>
+
+#include <map>
 
 using namespace std;
 using namespace arma;
@@ -1006,6 +1009,187 @@ int readDecomposeParDict(const boost::filesystem::path& ofcloc)
   readOpenFOAMDict(cdf, decomposeParDict);
   //cout<<decomposeParDict<<endl;
   return decomposeParDict.getInt("numberOfSubdomains");
+}
+
+struct MeshQualityInfo
+{
+  std::string time;
+  
+  int ncells;
+  int nhex, nprism, ntet, npoly;
+  
+  int nmeshregions;
+  
+  arma::mat bb_min, bb_max;
+  double max_aspect_ratio, min_faceA, min_cellV;
+  
+  double max_nonorth, avg_nonorth;
+  int n_severe_nonorth;
+  
+  int n_neg_facepyr;
+  
+  double max_skewness;
+  int n_severe_skew;
+  
+  MeshQualityInfo()
+  {
+    n_severe_nonorth=0;
+    n_neg_facepyr=0;
+    n_severe_skew=0;
+  }
+};
+  
+void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& location, 
+		       ResultSetPtr results,
+		       const std::vector<string>& addopts
+		      )
+{
+  std::vector<std::string> opts;
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "checkMesh", opts, &output);
+
+  // Pattern
+  enum Section {MeshStats, CellTypes, Topology, Geometry} ;
+  boost::regex SectionIntroPattern[] = {
+    boost::regex("^Mesh stats$"),
+    boost::regex("^Overall number of cells of each type:$"),
+    boost::regex("^Checking topology...$"),
+    boost::regex("^Checking geometry...$")
+  };
+  Section curSection;
+  
+  boost::regex re_time("^ *Time = (.+)$");
+  boost::match_results<std::string::const_iterator> what;
+  std::string time="";
+  
+
+  
+  typedef std::vector<MeshQualityInfo> MQInfoList;
+  MQInfoList mqinfos;
+  MeshQualityInfo curmq;
+  BOOST_FOREACH(const std::string& line, output)
+  {
+    if (boost::regex_match(line, what, re_time))
+    {
+      if (curmq.time!="") 
+      {
+	mqinfos.push_back(curmq);
+      }
+      curmq.time=what[1];
+    }
+    for (int i=0; i<4; i++) 
+      if (boost::regex_match(line, what, SectionIntroPattern[i])) curSection=static_cast<Section>(i);
+      
+    switch (curSection)
+    {
+      case MeshStats:
+      {
+	if (boost::regex_match(line, what, boost::regex("^ *cells: *([0-9]+)$")))
+	  curmq.ncells=lexical_cast<int>(what[1]);
+	break;
+      }
+      case CellTypes:
+      {
+	if (boost::regex_match(line, what, boost::regex("^ *hexahedra: *([0-9]+)$")))
+	  curmq.nhex=lexical_cast<int>(what[1]);
+	if (boost::regex_match(line, what, boost::regex("^ *prisms: *([0-9]+)$")))
+	  curmq.nprism=lexical_cast<int>(what[1]);
+	if (boost::regex_match(line, what, boost::regex("^ *tetrahedra: *([0-9]+)$")))
+	  curmq.ntet=lexical_cast<int>(what[1]);
+	if (boost::regex_match(line, what, boost::regex("^ *polyhedra: *([0-9]+)$")))
+	  curmq.npoly=lexical_cast<int>(what[1]);
+	break;
+      }
+      case Topology:
+      {
+	if (boost::regex_match(line, what, boost::regex("^ *Number of regions: *([0-9]+) ")))
+	  curmq.nmeshregions=lexical_cast<int>(what[1]);
+	break;
+      }
+      case Geometry:
+      {
+	if (boost::regex_match(line, what, boost::regex("^ *Overall domain bounding box \\(([^ ]+) ([^ ]+) ([^ ]+)\\) \\(([^ ]+) ([^ ]+) ([^ ]+)\\)$")))
+	{
+	  curmq.bb_min=vec3( lexical_cast<double>(what[1]), lexical_cast<double>(what[2]), lexical_cast<double>(what[3]) );
+	  curmq.bb_max=vec3( lexical_cast<double>(what[4]), lexical_cast<double>(what[5]), lexical_cast<double>(what[6]) );
+	}
+	if (boost::regex_match(line, what, boost::regex("^ *Max aspect ratio = (.+) ")))
+	{
+	  curmq.max_aspect_ratio=lexical_cast<double>(what[1]);
+	}
+	if (boost::regex_match(line, what, boost::regex("^ *Minimum face area = (.+)\\. Maximum face area = (.+)\\.")))
+	{
+	  curmq.min_faceA=lexical_cast<double>(what[1]);
+	}
+	if (boost::regex_match(line, what, boost::regex("^ *Min volume = (.+)\\. Max volume")))
+	{
+	  curmq.min_cellV=lexical_cast<double>(what[1]);
+	}
+	if (boost::regex_match(line, what, boost::regex("^ *Mesh non-orthogonality Max: (.+) average: (.+)$")))
+	{
+	  curmq.max_nonorth=lexical_cast<double>(what[1]);
+	  curmq.avg_nonorth=lexical_cast<double>(what[2]);
+	}
+	if (boost::regex_match(line, what, boost::regex("^ *Number of severely non-orthogonal \\(> (.+) degrees\\) faces: (.+)\\.$")))
+	{
+	  curmq.n_severe_nonorth=lexical_cast<double>(what[2]);
+	}
+	if (boost::regex_match(line, what, boost::regex("Max skewness = (.+), (.+) highly skew faces")))
+	{
+	  curmq.n_severe_nonorth=lexical_cast<double>(what[1]);
+	  curmq.max_skewness=lexical_cast<double>(what[2]);
+	}
+	if (boost::regex_match(line, what, boost::regex("Max skewness = (.+) ")))
+	{
+	  curmq.n_severe_nonorth=lexical_cast<double>(what[1]);
+	}
+	if (boost::regex_match(line, what, boost::regex("Error in face pyramids: (.+) faces are incorrectly oriented")))
+	{
+	  curmq.n_neg_facepyr=lexical_cast<double>(what[1]);
+	}
+	break;
+      }
+    }
+  }
+  if (curmq.time!="") mqinfos.push_back(curmq);
+  
+  BOOST_FOREACH(const MeshQualityInfo& mq, mqinfos)
+  {
+    results->insert("Mesh quality at time "+mq.time,
+		    std::auto_ptr<AttributeTableResult>(new AttributeTableResult(
+	list_of<string>
+	    ("Number of cells")
+	    ("thereof hexahedra")
+	    ("prisms")
+	    ("tetrahedra")
+	    ("polyhedra")
+	    ("Number of mesh regions")
+	    ("Domain extent (X)")
+	    ("Domain extent (Y)")
+	    ("Domain extent (Z)")
+	    ("Max. aspect ratio")
+	    ("Min. face area")
+	    ("Min. cell volume")
+	    ("Max. non-orthogonality")
+	    ("Avg. non-orthogonality")
+	    ("Max. skewness")
+	    ("# of severely non-orthogonal faces")
+	    ("# of negative face pyramids")
+	    ("# of severely skew faces"),
+
+	list_of<double>
+	(mq.ncells)(mq.nhex)(mq.nprism)(mq.ntet)(mq.npoly)(mq.nmeshregions)
+	(mq.bb_max(0)-mq.bb_min(0))(mq.bb_max(1)-mq.bb_min(1))(mq.bb_max(2)-mq.bb_min(2))
+	(mq.max_aspect_ratio)(mq.min_faceA)(mq.min_cellV)(mq.max_nonorth)(mq.avg_nonorth)
+	(mq.max_skewness)
+	(mq.n_severe_nonorth)(mq.n_neg_facepyr)(mq.n_severe_skew),
+	"Mesh Quality", "", ""
+	))
+      
+    );
+  }
 }
 
 }

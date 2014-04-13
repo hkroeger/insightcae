@@ -200,6 +200,9 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
   ResultSetPtr results(new ResultSet(p, name_, "Result Report"));
+  
+  meshQualityReport(cm, executionPath(), results);
+  
   return results;
 }
 

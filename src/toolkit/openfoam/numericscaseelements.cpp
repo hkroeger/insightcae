@@ -613,7 +613,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
 
-  double Urelax=1.0;
+  double Urelax=0.7;
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
   {

@@ -171,6 +171,8 @@ public:
   inline const std::string& pressureFieldName() const { return pname_; }
 };
 
+OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);
+
 class LTSInterFoamNumerics
 : public interFoamNumerics
 {

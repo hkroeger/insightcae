@@ -803,21 +803,6 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,R)"]="Gauss linearUpwind "+suf;
   div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
 
-//   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-//   laplacian["default"]="Gauss linear limited 0.66";
-// 
-//   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-//   interpolation["default"]="linear";
-// 
-//   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-//   snGrad["default"]="limited 0.66";
-// 
-//   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
-//   fluxRequired["default"]="no";
-//   fluxRequired[pname_]="";
-//   fluxRequired["pcorr"]="";
-//   fluxRequired["alpha"]="";
-//   fluxRequired["alpha1"]="";
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)

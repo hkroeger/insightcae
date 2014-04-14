@@ -119,11 +119,11 @@ class PipeReynoldsStresses
 public:
   PipeReynoldsStresses()
   {
-    const char *names[] = {"590/Ruu_vs_yp", "590/Rvv_vs_yp", "590/Rww_vs_yp"};
+    const char *names[] = {"590/Rzz_vs_yp", "590/Rrr_vs_yp", "590/Rphiphi_vs_yp"};
     
     for (int i=0; i<3; i++)
     {
-      arma::mat rvsyp=insight::refdatalib.getProfile("MKM_Channel", names[i]);
+      arma::mat rvsyp=insight::refdatalib.getProfile("K_Pipe", names[i]);
       cmpt[i].resize(rvsyp.n_rows);
       cmpt[i].outOfBounds(interpolationTable<scalar>::CLAMP);
       for (size_t j=0; j<rvsyp.n_rows; j++)

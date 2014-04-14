@@ -255,7 +255,7 @@ AttributeTableResult::AttributeTableResult
 void AttributeTableResult::writeLatexCode(std::ostream& f, int level) const
 {
   f<<
-  "\\begin{tabular}{cc}\n"
+  "\\begin{tabular}{lc}\n"
   "Attribute & Value \\\\\n"
   "\\hline\\\\";
   for(int i=0; i<names_.size(); i++)

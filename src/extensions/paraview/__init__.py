@@ -186,6 +186,10 @@ try:
 	RenderView1 = GetRenderView()
 	RenderView1.OrientationAxesVisibility = 1
 	RenderView1.CenterAxesVisibility=0
+	# Turn off "Head Light"
+	RenderView1.LightSwitch = 1
+	# Turn off "Light Kit"
+	RenderView1.UseLight = 1 
 
 except ImportError:
     pass

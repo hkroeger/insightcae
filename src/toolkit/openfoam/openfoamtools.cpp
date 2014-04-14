@@ -1023,7 +1023,8 @@ struct MeshQualityInfo
   int nmeshregions;
   
   arma::mat bb_min, bb_max;
-  double max_aspect_ratio, min_faceA, min_cellV;
+  double max_aspect_ratio;
+  std::string min_faceA, min_cellV;
   
   double max_nonorth, avg_nonorth;
   int n_severe_nonorth;
@@ -1044,8 +1045,8 @@ struct MeshQualityInfo
     bb_min=vec3(-DBL_MAX, -DBL_MAX, -DBL_MAX);
     bb_max=vec3(DBL_MAX, DBL_MAX, DBL_MAX);
     max_aspect_ratio=-1;
-    min_faceA=-1;
-    min_cellV=-1;
+    min_faceA="";
+    min_cellV="";
     max_nonorth=-1;
     avg_nonorth=-1;
     max_skewness=-1;
@@ -1136,17 +1137,19 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 	{
 	  curmq.max_aspect_ratio=lexical_cast<double>(what[1]);
 	}
-	if (boost::regex_match(line, what, boost::regex("^ *Minimum face area = ([^ ]+)\\. Maximum face area = ([^ ]+)\\..*$")))
+	if (boost::regex_match(line, what, boost::regex("^ *Minimum face area = *([^ ]+)\\. Maximum face area = *([^ ]+)\\..*$")))
 	{
 	  cout<<what[1]<<endl;
-	  //curmq.min_faceA=lexical_cast<double>(what[1]);
-	  sscanf(string(what[1]).data(), "%g", &curmq.min_faceA);
+	  curmq.min_faceA=std::string(what[1]); // is a very small value, keep as string
+	  cout<<curmq.min_faceA<<endl;
+	  //sscanf(string(what[1]).data(), "%g", &curmq.min_faceA);
 	}
-	if (boost::regex_match(line, what, boost::regex("^ *Min volume = ([^ ]+)\\. Max volume.*$")))
+	if (boost::regex_match(line, what, boost::regex("^ *Min volume = *([^ ]+)\\. Max volume.*$")))
 	{
 	  cout<<what[1]<<endl;
-	  //curmq.min_cellV=lexical_cast<double>(what[1]);
-	  sscanf(string(what[1]).data(), "%g", &curmq.min_cellV);
+	  curmq.min_cellV=std::string(what[1]); // is a very small value, keep as string
+	  cout<<curmq.min_cellV<<endl;
+	  //sscanf(string(what[1]).data(), "%g", &curmq.min_cellV);
 	}
 	if (boost::regex_match(line, what, boost::regex("^ *Mesh non-orthogonality Max: ([^ ]+) average: ([^ ]+)$")))
 	{
@@ -1159,8 +1162,8 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 	}
 	if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+), ([^ ]+) highly skew faces.*$")))
 	{
-	  curmq.n_severe_nonorth=lexical_cast<double>(what[1]);
-	  curmq.max_skewness=lexical_cast<double>(what[2]);
+	  curmq.n_severe_skew=lexical_cast<double>(what[2]);
+	  curmq.max_skewness=lexical_cast<double>(what[1]);
 	}
 	if (boost::regex_match(line, what, boost::regex("^.*Max skewness = ([^ ]+) OK.*$")))
 	{
@@ -1172,7 +1175,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 	}
 	break;
       }
-//     }
+    }
 //     }
 //     catch(boost::bad_lexical_cast& e) {
 //      cout<<"Lexical_cast: "<<e.what()<<endl;
@@ -1182,43 +1185,48 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
   
   BOOST_FOREACH(const MeshQualityInfo& mq, mqinfos)
   {
-    results->insert("Mesh quality at time "+mq.time,
-		    std::auto_ptr<AttributeTableResult>(new AttributeTableResult(
-	list_of<string>
-	    ("Number of cells")
-	    ("thereof hexahedra")
-	    ("prisms")
-	    ("tetrahedra")
-	    ("polyhedra")
-	    
-	    ("Number of mesh regions")
-	    
-	    ("Domain extent (X)")
-	    ("Domain extent (Y)")
-	    ("Domain extent (Z)")
-	    
-	    ("Max. aspect ratio")
-	    ("Min. face area")
-	    ("Min. cell volume")
-	    
-	    ("Max. non-orthogonality")
-	    ("Avg. non-orthogonality")
-	    ("Max. skewness")
-	    
-	    ("No. of severely non-orthogonal faces")
-	    ("No. of negative face pyramids")
-	    ("No. of severely skew faces"),
+    results->insert
+    (
+     "Mesh quality at time "+mq.time,
+     std::auto_ptr<AttributeTableResult>
+     (
+       new AttributeTableResult
+       (
+	 list_of<string>
+	  ("Number of cells")
+	  ("thereof hexahedra")
+	  ("prisms")
+	  ("tetrahedra")
+	  ("polyhedra")
+	  
+	  ("Number of mesh regions")
+	  
+	  ("Domain extent (X)")
+	  ("Domain extent (Y)")
+	  ("Domain extent (Z)")
+	  
+	  ("Max. aspect ratio")
+	  ("Min. face area")
+	  ("Min. cell volume")
+	  
+	  ("Max. non-orthogonality")
+	  ("Avg. non-orthogonality")
+	  ("Max. skewness")
+	  
+	  ("No. of severely non-orthogonal faces")
+	  ("No. of negative face pyramids")
+	  ("No. of severely skew faces"),
 
-	list_of<AttributeTableResult::AttributeValue>
-	(mq.ncells)(mq.nhex)(mq.nprism)(mq.ntet)(mq.npoly)
-	(mq.nmeshregions)
-	(mq.bb_max(0)-mq.bb_min(0))(mq.bb_max(1)-mq.bb_min(1))(mq.bb_max(2)-mq.bb_min(2))
-	(mq.max_aspect_ratio)(mq.min_faceA)(mq.min_cellV)
-	(mq.max_nonorth)(mq.avg_nonorth)(mq.max_skewness)
-	(mq.n_severe_nonorth)(mq.n_neg_facepyr)(mq.n_severe_skew),
+	 list_of<AttributeTableResult::AttributeValue>
+	  (mq.ncells)(mq.nhex)(mq.nprism)(mq.ntet)(mq.npoly)
+	  (mq.nmeshregions)
+	  (mq.bb_max(0)-mq.bb_min(0))(mq.bb_max(1)-mq.bb_min(1))(mq.bb_max(2)-mq.bb_min(2))
+	  (mq.max_aspect_ratio)(mq.min_faceA)(mq.min_cellV)
+	  (mq.max_nonorth)(mq.avg_nonorth)(mq.max_skewness)
+	  (mq.n_severe_nonorth)(mq.n_neg_facepyr)(mq.n_severe_skew),
 	"Mesh Quality", "", ""
-	))
-      
+	)
+     )
     );
   }
 }

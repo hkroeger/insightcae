@@ -163,7 +163,7 @@ class AttributeTableResult
 {
 public:
   typedef std::vector<std::string> AttributeNames;
-  typedef boost::variant<int, double> AttributeValue;
+  typedef boost::variant<int, double, std::string> AttributeValue;
   typedef std::vector<AttributeValue> AttributeValues;
   
 protected:

@@ -1209,7 +1209,10 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       (get<0>(field.second)==scalarField) 
     )
     {
-      BC["type"]=OFDictData::data("buoyantPressure");
+      if (OFversion()>=210)
+	BC["type"]=OFDictData::data("fixedFluxPressure");
+      else
+	BC["type"]=OFDictData::data("buoyantPressure");
 //       BC["type"]=OFDictData::data("calculated");
 //       BC["value"]=OFDictData::data("uniform 0");
     }
@@ -1551,7 +1554,11 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else if ( ( (field.first=="p_rgh") || (field.first=="pd") ) 
 	      && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("buoyantPressure");
+      if (OFversion()>=220)
+	BC["type"]=OFDictData::data("fixedFluxPressure");
+      else
+	BC["type"]=OFDictData::data("buoyantPressure");
+//       BC["type"]=OFDictData::data("buoyantPressure");
     }
     
     // turbulence quantities, should be handled by turbulence model

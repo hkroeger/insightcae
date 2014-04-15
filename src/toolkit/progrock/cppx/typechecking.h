@@ -122,14 +122,14 @@ namespace progrock{ namespace cppx{
     template< class Derived, class Base >
     inline Derived* downcast( Base* p )
     {
-        CPPX_STATIC_ASSERT( CPPX_IS( DerivedAndBase, Derived, Base ) );
+        //CPPX_STATIC_ASSERT( CPPX_IS( DerivedAndBase, Derived, Base ) );
         return static_cast< Derived* >( p );
     }
 
     template< class Derived, class Base >
     inline Derived& downcast( Base& r )
     {
-        CPPX_STATIC_ASSERT( CPPX_IS( DerivedAndBase, Derived, Base ) );
+        //CPPX_STATIC_ASSERT( CPPX_IS( DerivedAndBase, Derived, Base ) );
         return static_cast< Derived& >( r );
     }
 

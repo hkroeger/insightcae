@@ -127,6 +127,11 @@ bool Analysis::checkParameters(const ParameterSet& p)
   return true;
 }
 
+void Analysis::cancel()
+{
+}
+
+
 boost::filesystem::path Analysis::getSharedFilePath(const boost::filesystem::path& file)
 {
   path userSharedDir( path(getenv("HOME"))/".insight"/"share" );

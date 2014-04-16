@@ -77,7 +77,7 @@ public:
 
   virtual void evaluateAtSection(
     OpenFOAMCase& cm, const ParameterSet& p, 
-    ResultSetPtr results, double x
+    ResultSetPtr results, double x, int i
   );  
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   

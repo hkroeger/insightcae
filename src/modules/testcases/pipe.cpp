@@ -422,7 +422,7 @@ void PipeBase::createCase
 
 void PipeBase::evaluateAtSection(
   OpenFOAMCase& cm, const ParameterSet& p, 
-  ResultSetPtr results, double x
+  ResultSetPtr results, double x, int i
 )
 {
   PSDBL(p, "geometry", D);
@@ -436,7 +436,7 @@ void PipeBase::evaluateAtSection(
   boost::ptr_vector<sampleOps::set> sets;
   
   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-    .set_name(title)
+    .set_name("section"+lexical_cast<string>(i))
     .set_start( vec3(x, 0,  0.01* 0.5*D))
     .set_end(   vec3(x, 0, 0.997* 0.5*D))
     .set_axis(vec3(1,0,0))
@@ -455,7 +455,7 @@ void PipeBase::evaluateAtSection(
   // Mean velocity profiles
   {
     Gnuplot gp;
-    string chart_name="mean_velocity_"+title;
+    string chart_name="chartMeanVelocity_"+title;
     string chart_file_name=chart_name+".png";
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
@@ -486,7 +486,7 @@ void PipeBase::evaluateAtSection(
   // Mean reynolds stress profiles
   {
     Gnuplot gp;
-    string chart_name="mean_Rstress_"+title;
+    string chart_name="chartMeanRstress_"+title;
     string chart_file_name=chart_name+".png";
     double fac_yp=Re_tau*2.0/D;
     double fac_Rp=1./pow(calcUtau(p),2);
@@ -494,7 +494,7 @@ void PipeBase::evaluateAtSection(
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
-    gp<<"set logscale x;";
+    //gp<<"set logscale x;";
     gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
     
     
@@ -519,8 +519,8 @@ void PipeBase::evaluateAtSection(
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
-  std::string pressure_contour_name="pressure_ax_"+title;
-  std::string pressure_contour_filename=pressure_contour_name+".jpg";
+  std::string pressure_contour_name="contourPressure_ax_"+title;
+  std::string pressure_contour_filename=pressure_contour_name+".png";
   runPvPython
   (
     cm, executionPath(), list_of<std::string>
@@ -543,8 +543,8 @@ void PipeBase::evaluateAtSection(
   for(int i=0; i<3; i++)
   {
     std::string c("x"); c[0]+=i;
-    std::string velocity_contour_name="U"+c+"Contour_"+title;
-    string velocity_contour_filename=velocity_contour_name+".jpg";
+    std::string velocity_contour_name="contourU"+c+"_ax_"+title;
+    string velocity_contour_filename=velocity_contour_name+".png";
     runPvPython
     (
       cm, executionPath(), list_of<std::string>
@@ -578,86 +578,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   boost::ptr_vector<sampleOps::set> sets;
   
   //double x=L*0.5;
-  evaluateAtSection(cm, p, results, 0.5*L);
-//   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-//     .set_name("radial")
-//     .set_start( vec3(x, 0,  0.01* 0.5*D))
-//     .set_end(   vec3(x, 0, 0.997* 0.5*D))
-//     .set_axis(vec3(1,0,0))
-//   ));
-//   
-//   sample(cm, executionPath(), 
-//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
-//      sets
-//   );
-//   
-//   sampleOps::ColumnDescription cd;
-//   arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())
-//     .readSamples(cm, executionPath(), &cd);
-//     
-//     
-//   // Mean velocity profiles
-//   {
-//     Gnuplot gp;
-//     string chart_name="mean_velocity";
-//     string chart_file_name=chart_name+".png";
-//     
-//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-//     gp<<"set xlabel 'y+'; set ylabel '<U+>'; set grid; ";
-//     gp<<"set logscale x;";
-//     
-//     int c=cd["UMean"].col;
-//     
-//     double fac_yp=Re_tau*2.0/D;
-//     double fac_Up=1./calcUtau(p);
-//     gp<<"plot 0 not lt -1,"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Circumferential',"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
-// 
-//     results->insert(chart_name,
-//       std::auto_ptr<Image>(new Image
-//       (
-//       chart_file_name, 
-//       "Radial profiles of averaged velocities", ""
-//     )));
-//     
-//   }
-//   
-//   // Mean reynolds stress profiles
-//   {
-//     Gnuplot gp;
-//     string chart_name="mean_Rstress";
-//     string chart_file_name=chart_name+".png";
-//     double fac_yp=Re_tau*2.0/D;
-//     double fac_Rp=1./pow(calcUtau(p),2);
-//     int c=cd["UPrime2Mean"].col;
-//     
-//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-//     gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
-//     gp<<"set logscale x;";
-//     gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
-//     
-//     
-//     gp<<"plot 0 not lt -1,"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-// 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
-//     gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
-// 
-//     results->insert(chart_name,
-//       std::auto_ptr<Image>(new Image
-//       (
-//       chart_file_name, 
-//       "Radial profiles of averaged reynolds stresses", ""
-//     )));
-//     
-//   }
+  evaluateAtSection(cm, p, results, 0.5*L, 0);
 
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray");
   if (!tpcs)
@@ -668,8 +589,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
-  std::string pressure_contour_name="pressure_longi";
-  std::string pressure_contour_filename=pressure_contour_name+".jpg";
+  std::string pressure_contour_name="contourPressure_longitudinal";
+  std::string pressure_contour_filename=pressure_contour_name+".png";
   runPvPython
   (
     cm, executionPath(), list_of<std::string>
@@ -692,8 +613,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   for(int i=0; i<3; i++)
   {
     std::string c("x"); c[0]+=i;
-    std::string velocity_contour_name="U"+c+"Contour";
-    string velocity_contour_filename=velocity_contour_name+".jpg";
+    std::string velocity_contour_name="contourU"+c+"_longitudinal";
+    string velocity_contour_filename=velocity_contour_name+".png";
     runPvPython
     (
       cm, executionPath(), list_of<std::string>
@@ -909,12 +830,106 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   for (int i=0; i<ntpc_; i++)
   {
-    evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L);
+    evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
     
     const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"RadialTPCArray");
     if (!tpcs)
       throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
     tpcs->evaluate(cm, executionPath(), results);
+  }
+  
+  // ============= Longitudinal profile of Velocity an RMS ================
+  int nr=10;
+  for (int i=0; i<nr; i++)
+  {
+    double r0=0.1, r1=0.997;
+    double r=r0+(r1-r0)*double(i)/double(nr-1);
+    
+    ostringstream sns; sns<<"longitudinal_r"<<r;
+    string title=sns.str();
+    replace_all(title, ".", "_");
+
+    boost::ptr_vector<sampleOps::set> sets;
+    
+    sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
+      .set_name("longitudinal"+lexical_cast<string>(i))
+      .set_start( vec3(0.001*L, 0, r*0.5*D))
+      .set_end(   vec3(0.999*L, 0, r*0.5*D))
+      .set_axis(vec3(1,0,0))
+    ));
+    
+    sample(cm, executionPath(), 
+      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+      sets
+    );
+    
+    sampleOps::ColumnDescription cd;
+    arma::mat data = static_cast<sampleOps::circumferentialAveragedUniformLine&>(*sets.begin())
+      .readSamples(cm, executionPath(), &cd);
+      
+      
+    // Mean velocity profiles
+    {
+      Gnuplot gp;
+      string chart_name="chartMeanVelocity_"+title;
+      string chart_file_name=chart_name+".png";
+      
+      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+      gp<<"set xlabel 'x+'; set ylabel '<U+>'; set grid; ";
+      //gp<<"set logscale x;";
+      
+      int c=cd["UMean"].col;
+      
+      double fac_yp=Re_tau*2.0/D;
+      double fac_Up=1./calcUtau(p);
+      gp<<"plot 0 not lt -1,"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Axial',"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Circumferential',"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
+
+      results->insert(chart_name,
+	std::auto_ptr<Image>(new Image
+	(
+	chart_file_name, 
+	"Longitudinal profiles of averaged velocities", ""
+      )));
+      
+    }
+    
+    // Mean reynolds stress profiles
+    {
+      Gnuplot gp;
+      string chart_name="chartMeanRstress_"+title;
+      string chart_file_name=chart_name+".png";
+      double fac_yp=Re_tau*2.0/D;
+      double fac_Rp=1./pow(calcUtau(p),2);
+      int c=cd["UPrime2Mean"].col;
+      
+      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+      gp<<"set xlabel 'x+'; set ylabel '<R+>'; set grid; ";
+      //gp<<"set logscale x;";
+      gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+      
+      
+      gp<<"plot 0 not lt -1,"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
+	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
+
+      results->insert(chart_name,
+	std::auto_ptr<Image>(new Image
+	(
+	chart_file_name, 
+	"Longitudinal profiles of averaged reynolds stresses", ""
+      )));
+      
+    }
   }
     
   return results;

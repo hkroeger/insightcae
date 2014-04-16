@@ -94,7 +94,7 @@ public:
   virtual bool checkParameters(const ParameterSet& p);
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL) =0;
-  virtual void cancel() =0;
+  virtual void cancel();
   
   virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
   

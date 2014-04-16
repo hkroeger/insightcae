@@ -619,14 +619,39 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 	  datai(j,c0+5) = t(2,2);
 	}
       }
+      else
+      {
+	throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity with "
+	    +lexical_cast<string>(ci.ncmpt)+" components. Don't know how to handle.");
+      }
     }
     
-    datai.save("data_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
+    datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
     
     if (i==0)
       data=datai;
     else
       data+=datai;
+  }
+  
+  {
+    std::ofstream f( (p_.name()+"_circularinstance_colheader.txt").c_str() );
+    f<<"#";
+    BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+    {
+      ColumnInfo ci=fn.second;
+      if (ci.ncmpt==0)
+      {
+	f<<" "+fn.first;
+      }
+      else
+      {
+	for (int c=0; c<ci.ncmpt; c++)
+	  f<<" "+fn.first+"_"+lexical_cast<string>(c);
+      }
+      //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+    }
+    f<<endl;
   }
   
   if (coldescr) *coldescr=cd;
@@ -682,7 +707,7 @@ arma::mat linearAveragedUniformLine::readSamples
     {
       arma::mat datai = uniformLine::readSamples(ofc, location, setname(i, j), &cd);
       
-      datai.save("data_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
+      datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
       
       if ((i==0) && (j==0))
 	data=datai;

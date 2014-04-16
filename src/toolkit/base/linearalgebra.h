@@ -23,6 +23,9 @@
 
 #include <armadillo>
 
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
+
 #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace insight 
@@ -115,6 +118,19 @@ public:
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5);
+
+class Interpolator
+{
+  arma::mat first, last;
+  gsl_interp_accel *acc;
+  std::vector<gsl_spline*> spline ;
+  
+public:
+  Interpolator(const arma::mat& xy);
+  ~Interpolator();
+  double y(double x, int col=0) const;
+  arma::mat operator()(double x) const;
+};
 
 }
 

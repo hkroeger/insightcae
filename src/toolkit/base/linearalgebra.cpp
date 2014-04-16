@@ -22,6 +22,7 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/tuple/tuple.hpp"
 #include "gsl/gsl_multimin.h"
+#include "base/exception.h"
 
 using namespace arma;
 using namespace boost;
@@ -264,4 +265,51 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction)
     return timeProfs;
 }
 
+Interpolator::Interpolator(const arma::mat& xy)
+{
+  if (xy.n_cols<2)
+    throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
+  if (xy.n_rows<2)
+    throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
+  spline.resize(xy.n_cols-1);
+  
+  int nf=xy.n_cols-1;
+  int nrows=xy.n_rows;
+  
+  acc = gsl_interp_accel_alloc ();
+  for (int i=0; i<nf; i++)
+  {
+    spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
+    gsl_spline_init (spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+  }
+  
+  first=xy.row(0);
+  last=xy.row(xy.n_rows-1);
+}
+
+Interpolator::~Interpolator()
+{
+  for (int i=0; i<spline.size(); i++)
+    gsl_spline_free (spline[i]);
+  gsl_interp_accel_free (acc);
+}
+
+double Interpolator::y(double x, int col) const
+{
+  cout<<x<<endl;
+  if (x<first(0)) return first(col+1);
+  if (x>last(0)) return last(col+1);
+  double v=gsl_spline_eval (spline[col], x, acc);
+  cout<<v<<endl;
+  return v;
+}
+
+arma::mat Interpolator::operator()(double x) const
+{
+  arma::mat result=zeros(1, spline.size());
+  for (int i=0; i<spline.size(); i++)
+    result(0,i)=y(x, i);
+  return result;
+}
+  
 }

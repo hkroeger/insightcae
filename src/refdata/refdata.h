@@ -25,6 +25,10 @@
 #include <map>
 #include "boost/filesystem.hpp"
 
+class _ts;
+
+typedef struct _ts PyThreadState;
+
 namespace insight
 {
  
@@ -35,6 +39,7 @@ public:
   
 protected:
   DataSetList datasets_;
+  PyThreadState* mainThreadState;
   
 public:
   ReferenceDataLibrary();

@@ -38,18 +38,22 @@ ReferenceDataLibrary::ReferenceDataLibrary()
   }
 
   Py_Initialize();
-
+  //PyEval_InitThreads();
+  PyEval_InitThreads();
+  mainThreadState = PyEval_SaveThread();
 }
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
+  PyEval_RestoreThread(mainThreadState);
   Py_Finalize();
 }
   
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const
 {
     arma::mat profile;
-
+PyEval_AcquireLock();                // get the GIL
+PyThreadState *myThreadState = Py_NewInterpreter();
     try
     {
 
@@ -70,12 +74,12 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
         object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
 
         object main_namespace = main_module.attr("__dict__");
-
+// cout<<"call"<<endl;
         handle<> ignore(PyRun_String( cmd.str().c_str(),
                                       Py_file_input,
                                       main_namespace.ptr(),
                                       main_namespace.ptr() ));
-
+// cout<<"eval"<<endl;
         boost::python::list l = extract<boost::python::list>(main_namespace["result"]);
         int nrows=boost::python::len(l), ncols;
         for (int j=0; j<nrows; j++)
@@ -95,7 +99,8 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
     {
       PyErr_Print();
     }
-
+Py_EndInterpreter(myThreadState);
+PyEval_ReleaseLock();     
     return profile;
 }
 

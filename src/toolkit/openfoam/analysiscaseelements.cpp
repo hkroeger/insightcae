@@ -348,7 +348,7 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
       string line;
       getline(f, line);
       if (f.fail()) break;
-      cout<<line<<endl;
+      //cout<<line<<endl;
       if (!starts_with(line, "#"))
       {
 	erase_all(line, "(");

@@ -241,4 +241,27 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   return x_l;
 }
 
+arma::mat movingAverage(const arma::mat& timeProfs, double fraction)
+{
+  if ( (timeProfs.n_rows>0) && (timeProfs.n_cols>2) )
+  {
+    int n_raw=timeProfs.n_rows;
+    int window=std::min(n_raw, std::max(1, int( double(n_raw)*fraction )) );
+    int n_avg=n_raw-window;
+    
+    arma::mat result=zeros(n_avg, timeProfs.n_cols);
+    
+    for (int i=0; i<n_avg; i++)
+    {
+      int from=i, to=from+window;
+      //cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
+      result(i,0)=timeProfs(to, 0); // copy time
+      for (int j=1; j<timeProfs.n_cols; j++)
+	result(i, j)=mean(timeProfs.rows(from, to).col(j));
+    }
+    return result;
+  } else 
+    return timeProfs;
+}
+
 }

@@ -13,7 +13,7 @@ QoccViewerContext::QoccViewerContext()
 
   myContext = new AIS_InteractiveContext( myViewer );
   
-  showGrid         = true;
+  showGrid         = false;
   myGridType       = Aspect_GT_Rectangular;
   myGridMode       = Aspect_GDM_Lines;
   myGridColor      = Quantity_NOC_RED4;
@@ -23,7 +23,7 @@ QoccViewerContext::QoccViewerContext()
 
   setGridOffset (0.0);
   gridXY();
-  gridOn();
+  gridOff();
 
 }
 

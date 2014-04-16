@@ -27,6 +27,7 @@
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
 
+#include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 #include "progrock/cppx/collections/options_boosted.h"
 
@@ -360,6 +361,12 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
 
 int readDecomposeParDict(const boost::filesystem::path& ofcloc);
+
+void meshQualityReport(const OpenFOAMCase& cm, 
+		       const boost::filesystem::path& location, 
+		       ResultSetPtr results,
+		       const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
+		      );
 
 }
 

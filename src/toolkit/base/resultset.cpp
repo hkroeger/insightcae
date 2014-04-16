@@ -230,6 +230,47 @@ void TabularResult::writeLatexCode(std::ostream& f, int level) const
   f<<"\\end{tabular}\n";
 }
 
+defineType(AttributeTableResult);
+addToFactoryTable(ResultElement, AttributeTableResult, ResultElement::ResultElementConstrP);
+
+AttributeTableResult::AttributeTableResult(const ResultElementConstrP& par)
+: ResultElement(par)
+{
+}
+  
+AttributeTableResult::AttributeTableResult
+(
+  AttributeNames names,
+  AttributeValues values, 
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  const std::string& unit
+)
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
+{
+  setTableData(names, values);
+}
+  
+  
+void AttributeTableResult::writeLatexCode(std::ostream& f, int level) const
+{
+  f<<
+  "\\begin{tabular}{lc}\n"
+  "Attribute & Value \\\\\n"
+  "\\hline\\\\";
+  for(int i=0; i<names_.size(); i++)
+  {
+    f<<names_[i]<<" & "<<values_[i]<<"\\\\"<<endl;
+  }
+  f<<"\\end{tabular}\n";
+}
+  
+ResultElement* AttributeTableResult::clone() const
+{
+  return new AttributeTableResult(names_, values_, 
+					       shortDescription_, longDescription_, unit_);
+}
+
 ResultElementPtr polynomialFitResult
 (
   const arma::mat& coeffs, 

@@ -575,6 +575,8 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
   c.addField("alpha1", FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
 }
+
+
  
 void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -611,15 +613,16 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
 
+  double Urelax=1.0;
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
   {
-    relax["U"]=0.7;
+    relax["U"]=Urelax;
   }
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
-    eqnRelax["U"]=0.7;
+    eqnRelax["U"]=Urelax;
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
   }
@@ -683,6 +686,28 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["alpha1"]="";
 }
 
+OFDictData::dict stdMULESSolverSetup(double tol, double reltol)
+{
+  OFDictData::dict d;
+  
+  d["nAlphaCorr"]=2;
+  d["nAlphaSubCycles"]=1;
+  d["cAlpha"]=1;
+  d["icAlpha"]=0;
+
+  d["MULESCorr"]=true;
+  d["nLimiterIter"]=10;
+  d["alphaApplyPrevCorr"]=true;
+
+  d["solver"]="smoothSolver";
+  d["smoother"]="symGaussSeidel";
+  d["tolerance"]=tol;
+  d["relTol"]=reltol;
+  d["minIter"]=1;
+
+  return d;
+}
+
 LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, Parameters const& p)
 : interFoamNumerics(c, p)
 {
@@ -707,7 +732,10 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
-//   OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  
+  if (OFversion()>=230)
+    solvers["\"alpha1.*\""]=stdMULESSolverSetup();
 //   solvers["pcorr"]=GAMGPCGSolverSetup(1e-6, 0.0);
 //   solvers[pname_]=GAMGPCGSolverSetup(1e-7, 0.01);
 //   solvers[pname_+"Final"]=GAMGPCGSolverSetup(1e-7, 0.0);
@@ -759,45 +787,22 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="localEuler rDeltaT";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["grad(p)"]="Gauss linear";
+  //grad["grad(p_rgh)"]="Gauss linear";
   grad["default"]="cellLimited leastSquares 1";
   grad["grad(U)"]="cellLimited leastSquares 1";
-//   
-//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-//   std::string suf;
-//   if (OFversion()==160) 
-//     suf="cellLimited leastSquares 1";
-//   else 
-//     suf="grad(U)";
-//   div["div(rho*phi,U)"]="Gauss linearUpwind "+suf;
-//   div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
-//   div["div(phi,alpha)"]="Gauss vanLeer";
-//   div["div(phirb,alpha)"]="Gauss interfaceCompression";
-//   div["div(phi,k)"]="Gauss upwind";
-//   div["div(phi,epsilon)"]="Gauss upwind";
-//   div["div(phi,R)"]="Gauss upwind";
-//   div["div(R)"]="Gauss linear";
-//   div["div(phi,nuTilda)"]="Gauss upwind";
-//   if (OFversion()>=210)
-//     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
-//   else
-//     div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
-// 
-//   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-//   laplacian["default"]="Gauss linear limited 0.66";
-// 
-//   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-//   interpolation["default"]="linear";
-// 
-//   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-//   snGrad["default"]="limited 0.66";
-// 
-//   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
-//   fluxRequired["default"]="no";
-//   fluxRequired[pname_]="";
-//   fluxRequired["pcorr"]="";
-//   fluxRequired["alpha"]="";
-//   fluxRequired["alpha1"]="";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  if (OFversion()==160) 
+    suf="cellLimited leastSquares 1";
+  else 
+    suf="grad(U)";
+  div["div(phi,k)"]="Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]="Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]="Gauss linearUpwind "+suf;
+  div["div(phi,R)"]="Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
+
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)

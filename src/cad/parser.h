@@ -156,14 +156,27 @@ struct ISCADParser
 	 
          | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
          
+         | ( lit("CircularPattern") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
+	    >> r_vectorExpression >> ','>> r_scalarExpression >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<CircularPattern>(*_1, _2, _3, _4)) ]
+         | ( lit("LinearPattern") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
+	    >> r_scalarExpression >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<LinearPattern>(*_1, _2, _3)) ]
+         
+         | ( lit("Transform") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
+	    >> r_vectorExpression >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<Transform>(*_1, _2, _3)) ]
+         | ( lit("Compound") > '(' >> ( r_solidmodel_expression % ',' ) >> ')' ) 
+	     [ _val = construct<solidmodel>(new_<Compound>(_1)) ]
+
 	 // Primitives
 	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
 	 | ( lit("Cylinder") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Cylinder>(_1, _2, _3)) ]
 	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
-			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4)) ]
+			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4, _5)) ]
 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
@@ -211,6 +224,7 @@ struct ISCADParser
 	  lexeme[ scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  | ('-' >> r_scalar_primary) [_val=-_1]
 	  ;
 
 
@@ -235,10 +249,10 @@ struct ISCADParser
 	  
 	r_vector_primary =
 	  lexeme[ vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	  //vectorSymbols [ _val = _1 ]
 	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
 	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
+	  | ( '-' >> r_vector_primary ) [_val=-_1]
 	  ;
 
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
@@ -270,6 +284,7 @@ struct ISCADParser
             );
     }
     
+//     qi::rule<Iterator, int(), Skipper> r_int_primary, r_int_term, r_intExpression;
     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
     

@@ -86,10 +86,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   viewer_=new QoccViewWidget(context_->getContext(), spl);
   spl->addWidget(viewer_);
   
-  editor_=new QTextEdit;
+  editor_=new QTextEdit(spl);
   spl->addWidget(editor_);
   
-  QSplitter* spl2=new QSplitter(Qt::Vertical);
+  QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
   variablelist_=new QListWidget;
   spl2->addWidget(variablelist_);
   modelsteplist_=new ModelStepList;
@@ -97,8 +97,13 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   spl2->addWidget(modelsteplist_);
   spl->addWidget(spl2);
   
+  QList<int> sizes;
+  sizes << 500 << 350 << 150;
+  spl->setSizes(sizes);
+ 
   QMenu *fmenu = menuBar()->addMenu("&File");
   QMenu *mmenu = menuBar()->addMenu("&Model");
+  QMenu *vmenu = menuBar()->addMenu("&View");
 
   QAction* act;
   act = new QAction(("&Load"), this);
@@ -115,11 +120,25 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   fmenu->addAction(act);
   
   act = new QAction(("&Rebuild model"), this);
-  act->setShortcut(Qt::Key_F5);
+  act->setShortcut(Qt::ControlModifier + Qt::Key_Return);
   connect(act, SIGNAL(triggered()), this, SLOT(rebuildModel()));
   mmenu->addAction(act);
+  
+  act = new QAction(("Toggle &grid"), this);
+  connect(act, SIGNAL(triggered()), context_, SLOT(toggleGrid()));
+  vmenu->addAction(act);
+
+  QSettings settings;
+  restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
+  restoreState(settings.value("mainWindowState").toByteArray());
 }
 
+void ISCADMainWindow::closeEvent(QCloseEvent *event) 
+{
+  QSettings settings;
+  settings.setValue("mainWindowGeometry", saveGeometry());
+  settings.setValue("mainWindowState", saveState());
+}
 
 void ISCADMainWindow::loadModel()
 {
@@ -200,46 +219,81 @@ struct Transferrer
 };
 
 
+ViewState::ViewState()
+: shading(1),
+  visible(true),
+  r(0.5),
+  g(0.5),
+  b(0.5)
+{
+  randomizeColor();
+}
+
+void ViewState::randomizeColor()
+{
+  r=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+  g=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+  b=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+}
+
 class QModelStepItem
 : public QListWidgetItem
 {
   SolidModel::Ptr smp_;
   QoccViewerContext* context_;
   Handle_AIS_Shape ais_;
+    
 public:
-  QModelStepItem(const std::string& name, SolidModel::Ptr smp, QoccViewerContext* context, bool visible=false, QListWidget* view = 0)
+  ViewState state_;
+
+  QModelStepItem(const std::string& name, SolidModel::Ptr smp, QoccViewerContext* context, 
+		 const ViewState& state, QListWidget* view = 0)
   : QListWidgetItem(QString::fromStdString(name), view),
-    context_(context)
+    context_(context),
+    state_(state)
   {
-    setCheckState(visible ? Qt::Checked : Qt::Unchecked);
+    setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
     reset(smp);
   }
   
   void reset(SolidModel::Ptr smp)
   {
     smp_=smp;
-    context_->getContext()->Erase(ais_);
+    if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
     ais_=new AIS_Shape(*smp_);
+    context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
     updateDisplay();
   }
   
   void wireframe()
   {
-    context_->getContext()->SetDisplayMode(ais_, 0, Standard_True );
+    state_.shading=0;
+    updateDisplay();
   }
 
   void shaded()
   {
-    context_->getContext()->SetDisplayMode(ais_, 1, Standard_True );
+    state_.shading=1;
+    updateDisplay();
+  }
+  
+  void randomizeColor()
+  {
+    state_.randomizeColor();
+    updateDisplay();
   }
   
   void updateDisplay()
   {
-    if (checkState()==Qt::Checked)
+    state_.visible = (checkState()==Qt::Checked);
+    
+    if (state_.visible)
     {
       context_->getContext()->Display(ais_);
+      context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+      context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
     }
-    if (checkState()==Qt::Unchecked)
+    else
     {
       context_->getContext()->Erase(ais_);
     }
@@ -254,6 +308,7 @@ public slots:
       QMenu myMenu;
       myMenu.addAction("Shaded");
       myMenu.addAction("Wireframe");
+      myMenu.addAction("Randomize Color");
       // ...
 
       QAction* selectedItem = myMenu.exec(gpos);
@@ -261,6 +316,7 @@ public slots:
       {
 	  if (selectedItem->text()=="Shaded") shaded();
 	  if (selectedItem->text()=="Wireframe") wireframe();
+	  if (selectedItem->text()=="Randomize Color") randomizeColor();
       }
       else
       {
@@ -290,10 +346,16 @@ void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
 
 void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModel::Ptr sm)
 { 
-  bool visible=false;
-  if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end()) visible=true;
+  ViewState vd;
   
-  modelsteplist_->addItem(new QModelStepItem(sn, sm, context_, visible));
+  if (sm->isleaf()) vd.visible=true; else vd.visible=false;
+  
+  if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end())
+  {
+    vd=checked_modelsteps_.find(sn)->second;
+  }
+  
+  modelsteplist_->addItem(new QModelStepItem(sn, sm, context_, vd));
 }
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar sv)
@@ -308,10 +370,15 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
 
 void ISCADMainWindow::rebuildModel()
 {
-  checked_modelsteps_.clear();
+  //checked_modelsteps_.clear();
   for (int i=0; i<modelsteplist_->count(); i++)
-    if (modelsteplist_->item(i)->checkState()==Qt::Checked) 
-      checked_modelsteps_.insert(modelsteplist_->item(i)->text().toStdString());
+  {
+    QModelStepItem *qmsi=dynamic_cast<QModelStepItem*>(modelsteplist_->item(i));
+    if (qmsi)
+    {
+      checked_modelsteps_[qmsi->text().toStdString()]=qmsi->state_;
+    }
+  }
 
   clearDerivedData();
     

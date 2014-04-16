@@ -157,6 +157,41 @@ public:
   virtual ResultElement* clone() const;
 };
 
+
+class AttributeTableResult
+: public ResultElement
+{
+public:
+  typedef std::vector<std::string> AttributeNames;
+  typedef boost::variant<int, double, std::string> AttributeValue;
+  typedef std::vector<AttributeValue> AttributeValues;
+  
+protected:
+  AttributeNames names_;
+  AttributeValues values_;
+  
+public:
+  declareType("AttributeTableResult");
+  
+  AttributeTableResult(const ResultElementConstrP& par);
+  
+  AttributeTableResult
+  (
+    AttributeNames names,
+    AttributeValues values, 
+   const std::string& shortDesc, 
+   const std::string& longDesc,
+   const std::string& unit
+  );
+  
+  inline void setTableData(AttributeNames names, AttributeValues values) 
+  { names_=names; values_=values; }
+  
+  virtual void writeLatexCode(std::ostream& f, int level) const;
+  
+  virtual ResultElement* clone() const;
+};
+
 ResultElementPtr polynomialFitResult
 (
   const arma::mat& coeffs, 

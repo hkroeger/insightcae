@@ -30,10 +30,10 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 :
     fixedValueFvPatchField<vector>(p, iF),
     ranGen_(1),
-    Umean_(),
-    R_(),
-    L_(),
-    c_(),
+    Umean_(p.size(), vector::zero),
+    R_(p.size(), symmTensor::zero),
+    L_(p.size(), symmTensor::zero),
+    c_(p.size(), 16),
     conditioningFactor_(),
     overlap_(0.5),
     curTimeIndex_(-1)

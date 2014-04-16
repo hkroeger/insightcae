@@ -243,8 +243,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 :
     inflowGeneratorBaseFvPatchVectorField(ptf, p, iF, mapper),
     vortons_(ptf.vortons_),
-    tau_(ptf.tau_),
-    crTimes_(ptf.crTimes_),
+    tau_(ptf.tau_?new scalarField(*(ptf.tau_), mapper):NULL),
+    crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_), mapper):NULL),
     structureParameters_(ptf.structureParameters_)
 {
 }
@@ -283,8 +283,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 : inflowGeneratorBaseFvPatchVectorField(ptf),
   vortons_(ptf.vortons_),
-  tau_(ptf.tau_),
-  crTimes_(ptf.crTimes_),
+  tau_(ptf.tau_?new scalarField(*(ptf.tau_)):NULL),
+  crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_)):NULL),
   structureParameters_(ptf.structureParameters_)
 {}
 
@@ -296,8 +296,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 : inflowGeneratorBaseFvPatchVectorField(ptf, iF),
   vortons_(ptf.vortons_),
-  tau_(ptf.tau_),
-  crTimes_(ptf.crTimes_),
+  tau_(ptf.tau_?new scalarField(*(ptf.tau_)):NULL),
+  crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_)):NULL),
   structureParameters_(ptf.structureParameters_)
 {}
 
@@ -312,6 +312,8 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::autoMap
 )
 {
     inflowGeneratorBaseFvPatchVectorField::autoMap(m);
+    if (tau_) tau_->autoMap(m);
+    if (crTimes_) crTimes_->autoMap(m);
     structureParameters_.autoMap(m);
 }
 
@@ -324,6 +326,10 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 )
 {
     inflowGeneratorBaseFvPatchVectorField::rmap(ptf, addr);
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& tiptf =
+      refCast<const inflowGeneratorFvPatchVectorField<TurbulentStructure> >(ptf);
+    if (tau_) tau_->rmap(*(tiptf.tau_), addr);
+    if (crTimes_) crTimes_->rmap(*(tiptf.crTimes_), addr);
     structureParameters_.rmap(ptf, addr);
 }
 

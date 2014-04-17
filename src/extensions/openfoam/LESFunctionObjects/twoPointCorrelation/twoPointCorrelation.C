@@ -83,7 +83,7 @@ Foam::twoPointCorrelation::twoPointCorrelation
 	  obr_.time().timeName(obr_.time().startTime().value()),
 	  "uniform",
 	  obr_,
-	  IOobject::MUST_READ_IF_MODIFIED,
+	  IOobject::MUST_READ,
 	  IOobject::NO_WRITE,
 	  false
       );
@@ -134,7 +134,11 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
         dictionary csysDict(dict.subDict("csys"));
         csys_=coordinateSystem::New
               (
+#ifdef OF23x
+		  obr_,
+#else
                   word(csysDict.lookup("type")),
+#endif
                   csysDict
               );
 
@@ -295,8 +299,11 @@ void Foam::twoPointCorrelation::combineSampledSets
             (
                 samplePts.name(),
                 samplePts.axis(),
-                List<point>(UIndirectList<point>(allPts, indexSets[setI])),
+                List<point>(UIndirectList<point>(allPts, indexSets[setI]))
+#ifndef OF16ext
+		,
                 allCurveDist
+#endif
             )
         );
     }
@@ -567,13 +574,17 @@ void Foam::twoPointCorrelation::updateMesh(const mapPolyMesh&)
     createInterpolators();
 }
 
-
-void Foam::twoPointCorrelation::movePoints(const polyMesh&)
+void Foam::twoPointCorrelation::movePoints(
+#if ! (defined(OF16ext) || defined(OF21x))
+    const polyMesh& mesh
+#else
+    const pointField& points
+#endif
+)
 {
     if (debug) Pout<<"movePoints"<<endl;
     createInterpolators();
 }
-
 
 void Foam::twoPointCorrelation::readUpdate(const polyMesh::readUpdateState state)
 {

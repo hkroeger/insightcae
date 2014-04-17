@@ -221,7 +221,15 @@ public:
 
     //- Update for changes of mesh
     virtual void updateMesh(const mapPolyMesh& mpm);
-    virtual void movePoints(const polyMesh& mesh);    
+    
+    virtual void movePoints(    
+#if ! (defined(OF16ext) || defined(OF21x))
+    const polyMesh& mesh
+#else
+    const pointField& points
+#endif
+    );
+    
     virtual void readUpdate(const polyMesh::readUpdateState state);
 };
 

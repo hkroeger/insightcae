@@ -71,10 +71,11 @@ class localLimitedSnGrad
 {
     // Private data
 
-        tmp<snGradScheme<Type> > correctedScheme_;
+	word limitCoeffFieldName_;
+
+	tmp<snGradScheme<Type> > correctedScheme_;
 
         scalar limitCoeffMult_;
-	word limitCoeffFieldName_;
 
 
     // Private Member Functions
@@ -86,7 +87,7 @@ class localLimitedSnGrad
         //  of dictionary specification
         tmp<snGradScheme<Type> > lookupCorrectedScheme(Istream& schemeData)
         {
-	  schemeData >> limitCoeffFieldName_;
+	    limitCoeffFieldName_=token(schemeData).wordToken();
 	  
             token nextToken(schemeData);
 
@@ -125,9 +126,9 @@ public:
         localLimitedSnGrad(const fvMesh& mesh)
         :
             snGradScheme<Type>(mesh),
+            limitCoeffFieldName_(""),
             correctedScheme_(new correctedSnGrad<Type>(this->mesh())),
-            limitCoeffMult_(1),
-            limitCoeffFieldName_("")
+            limitCoeffMult_(1)
         {}
 
 

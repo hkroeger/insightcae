@@ -60,18 +60,20 @@ localLimitedSnGrad<Type>::correction
         correctedScheme_().correction(vf)
     );
     
-    const surfaceScalarField& limitCoeff = 
+    const surfaceScalarField& limitCoeffField =
       this->mesh().objectRegistry::template 
       lookupObject<const surfaceScalarField>(limitCoeffFieldName_);
 
+    surfaceScalarField limitCoeff = (1.0 - min(1.0, max(0.0, limitCoeffField*limitCoeffMult_)));
+    
     const surfaceScalarField limiter
     (
         min
         (
-            limitCoeff*limitCoeffMult_
+            limitCoeff
            *mag(snGradScheme<Type>::snGrad(vf, deltaCoeffs(vf), "SndGrad"))
            /(
-                (1.0 - limitCoeff*limitCoeffMult_)*mag(corr)
+                (1.0 - limitCoeff)*mag(corr)
               + dimensionedScalar("small", corr.dimensions(), SMALL)
             ),
             dimensionedScalar("one", dimless, 1.0)

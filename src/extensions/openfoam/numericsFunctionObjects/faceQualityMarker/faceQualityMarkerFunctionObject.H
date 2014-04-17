@@ -67,6 +67,8 @@ class faceQualityMarkerFunctionObject
 
         Switch markNonOrthFaces_;
         Switch markSkewFaces_;
+        Switch markWarpedFaces_;
+        Switch markConcaveFaces_;
 
         const polyMesh& mesh_;
         autoPtr<surfaceScalarField> UBlendingFactor_;

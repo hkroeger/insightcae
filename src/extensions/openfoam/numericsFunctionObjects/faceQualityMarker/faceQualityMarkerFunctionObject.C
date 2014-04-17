@@ -92,6 +92,40 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
       markFaceSet(faces, UBlendingFactor_());
     }
+    
+  if (markWarpedFaces_)
+    {
+      faceSet faces(mesh_, "warpedFaces", mesh_.nFaces()/100 + 1);
+      mesh_.checkFaceFlatness(true, 
+#ifndef OF16ext
+			      0.8, 
+#endif
+			      &faces);
+      label nFaces=faces.size();
+      reduce(nFaces, sumOp<label>());
+      Info<<"Marking "
+	  <<nFaces
+	  <<" warped faces."<<endl;
+
+      markFaceSet(faces, UBlendingFactor_());
+    }
+    
+  if (markConcaveFaces_)
+    {
+      faceSet faces(mesh_, "concaveFaces", mesh_.nFaces()/100 + 1);
+      mesh_.checkFaceAngles(true, 
+#ifndef OF16ext
+			    10, 
+#endif
+			    &faces);
+      label nFaces=faces.size();
+      reduce(nFaces, sumOp<label>());
+      Info<<"Marking "
+	  <<nFaces
+	  <<" concave faces."<<endl;
+
+      markFaceSet(faces, UBlendingFactor_());
+    }
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -108,6 +142,8 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     regionName_(dict.lookupOrDefault<word>("region", polyMesh::defaultRegion)),
     markNonOrthFaces_(dict.lookupOrDefault<bool>("markNonOrthFaces", true)),
     markSkewFaces_(dict.lookupOrDefault<bool>("markSkewFaces", true)),
+    markWarpedFaces_(dict.lookupOrDefault<bool>("markWarpedFaces", true)),
+    markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", true)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
 }

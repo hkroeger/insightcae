@@ -129,6 +129,38 @@ void DoubleParameterWrapper::onUpdate()
 defineType(StringParameterWrapper);
 addToFactoryTable(ParameterWrapper, StringParameterWrapper, ParameterWrapper::ConstrP);
 
+
+VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  le_=new QLineEdit(this);
+  le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  //le_->setValidator(new QDoubleValidator());
+  le_->setToolTip(QString(param().description().c_str()));
+  layout->addWidget(le_);
+  this->setLayout(layout);
+}
+
+void VectorParameterWrapper::onApply()
+{
+  QStringList sl=le_->text().split(" ", QString::SkipEmptyParts);
+  param()()=insight::vec3(sl[0].toDouble(), sl[1].toDouble(), sl[2].toDouble());
+}
+
+void VectorParameterWrapper::onUpdate()
+{
+  le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  //le_->setText(QString::number(param()()));
+}
+
+defineType(VectorParameterWrapper);
+addToFactoryTable(ParameterWrapper, VectorParameterWrapper, ParameterWrapper::ConstrP);
+
+
 StringParameterWrapper::StringParameterWrapper(const ConstrP& p)
 : ParameterWrapper(p)
 {

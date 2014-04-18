@@ -94,6 +94,21 @@ public slots:
   virtual void onUpdate();
 };
 
+class VectorParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+protected:
+  QLineEdit *le_;
+public:
+  declareType(insight::VectorParameter::typeName_());
+  VectorParameterWrapper(const ConstrP& p);
+  inline insight::VectorParameter& param() { return dynamic_cast<insight::VectorParameter&>(p_); }
+public slots:
+  virtual void onApply();
+  virtual void onUpdate();
+};
+
 class StringParameterWrapper
 : public ParameterWrapper
 {

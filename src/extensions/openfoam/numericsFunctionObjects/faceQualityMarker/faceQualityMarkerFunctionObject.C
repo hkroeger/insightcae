@@ -46,7 +46,7 @@ namespace Foam
     );
 }
 
-void markFaceSet(const faceSet& faces, surfaceScalarField& UBlendingFactor)
+void markFaceSet1(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 {
   const labelList& fl=faces.toc();
   const fvMesh& mesh=UBlendingFactor.mesh();
@@ -62,11 +62,18 @@ void markFaceSet(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 	  UBlendingFactor[fI-patch.start()]=1.0;
 	}
     }
- }
+}
+
+void Foam::faceQualityMarkerFunctionObject::markFaceSet(const faceSet& faces)
+{
+  forAll(blendingFactors_, i)
+   markFaceSet1(faces, blendingFactors_[i]);
+}
 
 void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 {
-  UBlendingFactor_()=0.0;  
+  forAll(blendingFactors_, i)
+    blendingFactors_[i]=0.0;  
 
   if (markNonOrthFaces_)
     {
@@ -77,7 +84,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
       Info<<"Marking "
 	  <<nFaces
 	  <<" non orthogonal faces."<<endl;
-      markFaceSet(faces, UBlendingFactor_());
+      markFaceSet(faces);
     }
 
   if (markSkewFaces_)
@@ -90,7 +97,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  <<nFaces
 	  <<" skewed faces."<<endl;
 
-      markFaceSet(faces, UBlendingFactor_());
+      markFaceSet(faces);
     }
     
   if (markWarpedFaces_)
@@ -107,7 +114,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  <<nFaces
 	  <<" warped faces."<<endl;
 
-      markFaceSet(faces, UBlendingFactor_());
+      markFaceSet(faces);
     }
     
   if (markConcaveFaces_)
@@ -124,7 +131,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  <<nFaces
 	  <<" concave faces."<<endl;
 
-      markFaceSet(faces, UBlendingFactor_());
+      markFaceSet(faces);
     }
 }
 
@@ -146,6 +153,16 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", true)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
+    if (dict.found("blendingFieldNames"))
+    	blendingFieldNames_.reset(new wordList(dict.lookup("blendingFieldNames")));
+    else
+    {
+    	blendingFieldNames_.reset(new wordList(4));
+        blendingFieldNames_()[0]="U";
+        blendingFieldNames_()[1]="k";
+        blendingFieldNames_()[2]="omega";
+        blendingFieldNames_()[3]="epsilon";
+    }
 }
 
 
@@ -161,23 +178,28 @@ bool Foam::faceQualityMarkerFunctionObject::start()
     }
     Info << "Creating face quality markers" << endl;
     const fvMesh& mesh=refCast<const fvMesh>(mesh_);
-    UBlendingFactor_.reset
-    (
-	new surfaceScalarField
-    (
-     IOobject
+    blendingFactors_.resize(blendingFieldNames_().size());
+    for (label i=0; i<blendingFieldNames_().size(); i++)
+    {
+     Info<<"Creating "<<blendingFieldNames_()[i]<<"BlendingFactor"<<endl;
+     blendingFactors_.set
      (
-      "UBlendingFactor",
-      mesh.time().timeName(),
-      mesh,
-      IOobject::NO_READ,
-      IOobject::NO_WRITE
-     ),
-     mesh,
-     dimensionedScalar("", dimless, 0.0)
-    )
-
-    );
+        i,
+	new surfaceScalarField
+        (
+         IOobject
+         (
+          blendingFieldNames_()[i]+"BlendingFactor",
+          mesh.time().timeName(),
+          mesh,
+          IOobject::NO_READ,
+          IOobject::NO_WRITE
+         ),
+         mesh,
+         dimensionedScalar("", dimless, 0.0)
+        )
+     );
+    }
     updateBlendingFactor();
     return true;
 }

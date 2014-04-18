@@ -52,6 +52,7 @@ namespace Foam
 /*---------------------------------------------------------------------------*\
                      Class faceQualityMarkerFunctionObject Declaration
 \*---------------------------------------------------------------------------*/
+class faceSet;
 
 class faceQualityMarkerFunctionObject
 :
@@ -71,7 +72,8 @@ class faceQualityMarkerFunctionObject
         Switch markConcaveFaces_;
 
         const polyMesh& mesh_;
-        autoPtr<surfaceScalarField> UBlendingFactor_;
+        autoPtr<wordList> blendingFieldNames_;
+        PtrList<surfaceScalarField> blendingFactors_;
 
     // Private Member Functions
 
@@ -81,6 +83,7 @@ class faceQualityMarkerFunctionObject
         //- Disallow default bitwise assignment
         void operator=(const faceQualityMarkerFunctionObject&);
 
+        void markFaceSet(const faceSet& faces);
         void updateBlendingFactor();
 
 public:

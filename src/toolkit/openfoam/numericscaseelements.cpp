@@ -645,8 +645,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  //grad["grad("+pname_+")"]="Gauss linear";
+  grad["default"]="cellLimited leastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -658,12 +658,12 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
   div["div(phi,alpha)"]="Gauss vanLeer";
   div["div(phirb,alpha)"]="Gauss interfaceCompression";
-  div["div(phi,k)"]="Gauss upwind";
-  div["div(phi,epsilon)"]="Gauss upwind";
-  div["div(phi,omega)"]="Gauss upwind";
-  div["div(phi,R)"]="Gauss upwind";
+  div["div(phi,k)"]="Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]="Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]="Gauss linearUpwind "+suf;
+  div["div(phi,R)"]="Gauss linearUpwind "+suf;
   div["div(R)"]="Gauss linear";
-  div["div(phi,nuTilda)"]="Gauss upwind";
+  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
   if (OFversion()>=210)
     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
   else
@@ -673,7 +673,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   laplacian["default"]="Gauss linear limited 0.66";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-  interpolation["default"]="linear";
+  interpolation["default"]="pointLinear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
   snGrad["default"]="limited 0.66";
@@ -788,8 +788,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad(p_rgh)"]="Gauss linear";
-  grad["default"]="cellLimited leastSquares 1";
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  //grad["default"]="cellLimited leastSquares 1";
+  //grad["grad(U)"]="cellLimited leastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

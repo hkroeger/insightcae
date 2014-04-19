@@ -44,6 +44,26 @@ namespace insight
 
 defineType(ChannelBase);
 
+double ChannelBase::Re(double Re_tau)
+{
+  double k=0.41;
+  double Cplus=5.0;
+  
+  return Re_tau*((1./k)*log(Re_tau)+Cplus-1.7);
+}
+
+
+double ChannelBase::Retau(double Re)
+{
+  struct Obj: public Objective1D
+  {
+    double Re;
+    virtual double operator()(double x) const { return Re-ChannelBase::Re(x); }
+  } obj;
+  obj.Re=Re;
+  return nonlinearSolve1D(obj, 1e-3*Re, Re);
+}
+
 ChannelBase::ChannelBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
@@ -147,8 +167,8 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   // Physics
   double kappa=0.41;
   double Cplus=5.0;
-  Ubulk_=(1./kappa)*log(Re_tau)+Cplus-1.7;
-  Re_=Re_tau*Ubulk_;
+  Re_=Re(Re_tau); //Re_tau*Ubulk_;
+  Ubulk_=Re_/Re_tau; //(1./kappa)*log(Re_tau)+Cplus-1.7;
   T_=L/Ubulk_;
   nu_=1./Re_tau;
   ywall_ = ypluswall/Re_tau;

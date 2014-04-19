@@ -29,6 +29,17 @@ namespace insight {
 class ChannelBase 
 : public OpenFOAMAnalysis
 {
+public:
+  /**
+   * convert friction velocity Reynolds number into bulk velocity Re
+   */
+  static double Re(double Retau);
+
+  /**
+   * convert friction velocity Reynolds number into bulk velocity Re
+   */
+  static double Retau(double Re);
+
 protected:
   std::string cycl_in_, cycl_out_;
   

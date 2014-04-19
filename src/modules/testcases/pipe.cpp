@@ -50,7 +50,7 @@ double PipeBase::Re(double Re_tau)
   double k=0.41;
   double Cplus=5.0;
   
-  return Re_tau*((1./k)*log(Re_tau)+Cplus);
+  return Re_tau*((1./k)*log(Re_tau)+Cplus-3.04);
 }
 
 

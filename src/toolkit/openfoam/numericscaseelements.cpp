@@ -599,7 +599,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["pcorr"]=GAMGPCGSolverSetup(1e-7, 0.01);
+  solvers["pcorr"]=stdSymmSolverSetup(1e-7, 0.01);
   solvers[pname_]=GAMGPCGSolverSetup(1e-7, 0.01);
   solvers[pname_+"Final"]=GAMGPCGSolverSetup(1e-7, 0.0);
   

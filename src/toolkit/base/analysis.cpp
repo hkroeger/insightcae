@@ -244,40 +244,54 @@ void SynchronisedAnalysisQueue::cancelAll()
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
-  char *homedir=getenv("HOME");
-  if (homedir)
+  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
+  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
+  
+  std::vector<path> paths;
+  if (var_usershareddir) paths.push_back(var_usershareddir);
+  if (var_globalshareddir) 
   {
-    path userconfigdir(homedir);
-    userconfigdir /= ".insight";
-    userconfigdir /= "modules.d";
-    if (is_directory(userconfigdir))
+    std::vector<string> globals;
+    split(globals, var_globalshareddir, is_any_of(" "));
+    BOOST_FOREACH(const string& s, globals) paths.push_back(s);
+  }
+  
+  BOOST_FOREACH(const path& p, paths)
+  {
+    if (is_directory(p))
     {
-      directory_iterator end_itr; // default construction yields past-the-end
-      for ( directory_iterator itr( userconfigdir );
-	    itr != end_itr;
-	    ++itr )
+      path userconfigdir(p);
+      userconfigdir /= "modules.d";
+      
+      if (is_directory(userconfigdir))
       {
-	if ( is_regular_file(itr->status()) )
+	directory_iterator end_itr; // default construction yields past-the-end
+	for ( directory_iterator itr( userconfigdir );
+	      itr != end_itr;
+	      ++itr )
 	{
-	  if (itr->path().extension() == ".module" )
+	  if ( is_regular_file(itr->status()) )
 	  {
-	    std::ifstream f(itr->path().c_str());
-	    std::string type;
-	    path location;
-	    f>>type>>location;
-	    cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
-	    
-	    if (type=="library")
+	    if (itr->path().extension() == ".module" )
 	    {
-	      void *handle = dlopen(location.c_str(), RTLD_NOW|RTLD_GLOBAL);
-	      if (!handle)
+	      std::ifstream f(itr->path().c_str());
+	      std::string type;
+	      path location;
+	      f>>type>>location;
+	      cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
+	      
+	      if (type=="library")
 	      {
-		std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+		void *handle = dlopen(location.c_str(), RTLD_NOW|RTLD_GLOBAL);
+		if (!handle)
+		{
+		  std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+		}
+		else
+		  handles_.push_back(handle);
 	      }
-	      else
-		handles_.push_back(handle);
+	      
 	    }
-	    
 	  }
 	}
       }

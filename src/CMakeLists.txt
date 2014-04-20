@@ -1,5 +1,4 @@
 project(insight)
-cmake_minimum_required(VERSION 2.6)
 
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
@@ -233,6 +232,23 @@ macro(install_script NAME SCRIPTFILE)
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
 endmacro(install_script)
+
+macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
+  file(GLOB COPY_FILES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    ${SHAREDFILE})
+    
+  add_custom_target(${NAME} ALL
+    COMMENT "Copying file: ${SHAREDFILE}")
+
+  set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDFILE}")
+  set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${SHAREDFILE}")
+
+  add_custom_command(
+    TARGET ${NAME}
+    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    )
+endmacro(install_shared_file)
 
 macro(install_package_script PACKAGENAME)
   foreach (_src ${ARGN})

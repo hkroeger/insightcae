@@ -27,8 +27,31 @@
 
 namespace insight {
 namespace cad {
+  
+class Datum
+{
+public:
+  typedef boost::shared_ptr<Datum> Ptr;
+  
+protected:
+  bool providesPointReference_, providesAxisReference_, providesPlanarReference_;
+  
+public:
+  Datum(bool point, bool axis, bool planar);
+  virtual ~Datum();
+  
+  inline bool providesPointReference() const { return providesPointReference_; }
+  virtual operator const gp_Pnt () const;
+  
+  inline bool providesAxisReference() const { return providesAxisReference_; }
+  virtual operator const gp_Ax1 () const;
+
+  inline bool providesPlanarReference() const { return providesPlanarReference_; }
+  virtual operator const gp_Ax3 () const;
+};
 
 class DatumPlane
+: public Datum
 {
   gp_Ax3 cs_;
   
@@ -44,7 +67,8 @@ public:
     FeatureID f
   );
   
-  operator const gp_Ax3& () const;
+  virtual operator const gp_Pnt () const;
+  virtual operator const gp_Ax3 () const;
 };
 
 }

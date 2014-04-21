@@ -540,7 +540,7 @@ class Extrusion
 : public SolidModel
 {
 public:
-  Extrusion(const Sketch& sk, const arma::mat& L);
+  Extrusion(const SolidModel& sk, const arma::mat& L);
 };
 
 // =================== Boolean operations ======================

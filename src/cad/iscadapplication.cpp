@@ -124,6 +124,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   connect(act, SIGNAL(triggered()), this, SLOT(rebuildModel()));
   mmenu->addAction(act);
   
+  act = new QAction(("Fit &all"), this);
+  connect(act, SIGNAL(triggered()), viewer_, SLOT(fitAll()));
+  act->setShortcut(Qt::ControlModifier + Qt::Key_A);
+  vmenu->addAction(act);
   act = new QAction(("Toggle &grid"), this);
   connect(act, SIGNAL(triggered()), context_, SLOT(toggleGrid()));
   vmenu->addAction(act);

@@ -21,8 +21,38 @@
 
 namespace insight {
 namespace cad {
+
+Datum::Datum(bool point, bool axis, bool planar)
+: providesPointReference_(point),
+  providesAxisReference_(axis),
+  providesPlanarReference_(planar)
+{
+}
+
+Datum::~Datum()
+{
+}
+  
+Datum::operator const gp_Pnt () const
+{
+  throw insight::Exception("Not implemented: provide point reference");
+  return gp_Pnt();
+}
+
+Datum::operator const gp_Ax1 () const
+{
+  throw insight::Exception("Not implemented: provide axis reference");
+  return gp_Ax1();
+}
+
+Datum::operator const gp_Ax3 () const
+{
+  throw insight::Exception("Not implemented: provide planar reference");
+  return gp_Ax3();
+}
   
 DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni)
+: Datum(true, false, true)
 {
   arma::mat n=ni/norm(ni,2);
 
@@ -43,6 +73,7 @@ DatumPlane::DatumPlane
   const SolidModel& m, 
   FeatureID f
 )
+: Datum(true, false, true)
 {
   arma::mat p0=m.faceCoG(f);
   arma::mat n=m.faceNormal(f);
@@ -61,7 +92,12 @@ DatumPlane::DatumPlane
   cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
 }
 
-DatumPlane::operator const gp_Ax3& () const
+DatumPlane::operator const gp_Pnt () const
+{
+  return cs_.Location();
+}
+
+DatumPlane::operator const gp_Ax3 () const
 {
   return cs_;
 }

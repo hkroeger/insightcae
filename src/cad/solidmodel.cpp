@@ -725,10 +725,10 @@ Sphere::Sphere(const arma::mat& p, double D)
 {
 }
 
-Extrusion::Extrusion(const Sketch& sk, const arma::mat& L)
+Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L)
 : SolidModel
 (
-  BRepPrimAPI_MakePrism( sk, to_Vec(L) ).Shape()
+  BRepPrimAPI_MakePrism( TopoDS::Face(sk), to_Vec(L) ).Shape()
 )
 {
 }
@@ -849,15 +849,22 @@ LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
 TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
 {
   gp_Trsf tr1, tr2;
-  tr1.SetTranslation(to_Vec(trans));
+  TopoDS_Shape intermediate_shape=m1;
+
+  tr1.SetTranslation(to_Vec(trans));  
+  intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr1).Shape();
+
   double phi=norm(rot, 2);
-  tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), to_Vec(rot/phi)), phi);
-  
+  if (phi>1e-10)
+  {
+    gp_Vec axis=to_Vec(rot);
+    axis.Normalize();
+    tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), axis), phi);
+    intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr2).Shape();
+  }  
+
   // Apply rotation first, then translation
-  return BRepBuilderAPI_Transform(
-    BRepBuilderAPI_Transform(m1, tr2).Shape(),
-    tr1
-  ).Shape();
+  return intermediate_shape;
 }
 
 Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)

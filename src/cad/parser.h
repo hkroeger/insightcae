@@ -24,6 +24,8 @@
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 
 #include "solidmodel.h"
+#include "datum.h"
+#include "sketch.h"
 
 #include "boost/filesystem.hpp"
 #include <boost/fusion/include/std_pair.hpp>
@@ -73,6 +75,7 @@ struct skip_grammar : public qi::grammar<Iterator>
 
 typedef double scalar;
 typedef arma::mat vector;
+typedef Datum::Ptr datum;
 typedef SolidModel::Ptr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
@@ -100,6 +103,7 @@ struct ISCADParser
 
     struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
     struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
+    struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
     struct modelstepSymbolTable : public qi::symbols<char, solidmodel> {} modelstepSymbols;
     
     struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
@@ -122,6 +126,8 @@ struct ISCADParser
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(vectorSymbols.add, _1, _2) ]
 	  |
 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(edgeFeatureSymbols.add, _1, _2) ]
+	  |
+	  ( r_identifier >> '='  >> r_datumExpression >> ';') [ phx::bind(datumSymbols.add, _1, _2) ]
 	  ;
 	  
 	r_postproc =
@@ -155,6 +161,8 @@ struct ISCADParser
 	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
 	 
          | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
+         | ( lit("Sketch") > '(' >> r_datumExpression >> ',' >> r_path >> ',' >> r_string >> ')' ) 
+	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
          
          | ( lit("CircularPattern") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
 	    >> r_vectorExpression >> ','>> r_scalarExpression >> ')' ) 
@@ -181,6 +189,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
+	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2)) ]
 	 ;
 	 
 	r_edgeFeaturesExpression = 
@@ -198,8 +208,18 @@ struct ISCADParser
 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
 	 ;
 	 
+	r_datumExpression = 
+	     lexeme[ datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	     |
+	     ( lit("Plane") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2)) ]
+	  ;
+	  
 	r_path = as_string[ 
                             lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
+                         ];
+	r_string = as_string[ 
+                            lexeme [ "\'" >> *~char_("\'") >> "\'" ] 
                          ];
 			 
 	r_scalarExpression = 
@@ -290,6 +310,7 @@ struct ISCADParser
     
     qi::rule<Iterator, FeatureSet(), Skipper> r_edgeFeaturesExpression;
     qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
+    qi::rule<Iterator, datum(), Skipper> r_datumExpression;
     
     qi::rule<Iterator, Skipper> r_model;
     qi::rule<Iterator, Skipper> r_assignment;
@@ -297,6 +318,7 @@ struct ISCADParser
     qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
     qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
     qi::rule<Iterator, std::string()> r_identifier;
+    qi::rule<Iterator, std::string()> r_string;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
     

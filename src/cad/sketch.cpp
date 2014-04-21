@@ -23,7 +23,8 @@
 namespace insight {
 namespace cad {
 
-DXFReader::DXFReader(const boost::filesystem::path& filename)
+DXFReader::DXFReader(const boost::filesystem::path& filename, const std::string& layername)
+: layername_(layername)
 {
   std::auto_ptr<DL_Dxf> dxf(new DL_Dxf());
   if (!dxf->in(filename.c_str(), this)) 
@@ -32,30 +33,46 @@ DXFReader::DXFReader(const boost::filesystem::path& filename)
   }
 }
 
+DXFReader::~DXFReader()
+{
+}
+
 void DXFReader::addLine (const DL_LineData &l)
 {
-  gp_Pnt p0(l.x1, l.y1, l.z1);
-  gp_Pnt p1(l.x2, l.y2, l.z2);
-  cout<<"added line"<<endl;
-  TopoDS_Edge e=BRepBuilderAPI_MakeEdge(p0, p1).Edge();
-  ls_.Append(e);
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    gp_Pnt p0(l.x1, l.y1, l.z1);
+    gp_Pnt p1(l.x2, l.y2, l.z2);
+    cout<<"added line"<<endl;
+    TopoDS_Edge e=BRepBuilderAPI_MakeEdge(p0, p1).Edge();
+    ls_.Append(e);
+  }
 }
 
 void DXFReader::addPolyline(const DL_PolylineData &pl)
 {
-  lp_.reset();
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    lp_.reset();
+  }
 }
 
 void DXFReader::addVertex(const DL_VertexData &pv)
 {
-  gp_Pnt p(pv.x, pv.y, pv.z);
-  if (lp_.get())
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
   {
-    cout<<"added line"<<endl;
-    TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp_, p).Edge();
-    ls_.Append(e);
+    gp_Pnt p(pv.x, pv.y, pv.z);
+    if (lp_.get())
+    {
+      cout<<"added line"<<endl;
+      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp_, p).Edge();
+      ls_.Append(e);
+    }
+    lp_.reset(new gp_Pnt(p));
   }
-  lp_.reset(new gp_Pnt(p));
 }
 
 TopoDS_Wire DXFReader::Wire() const
@@ -65,21 +82,29 @@ TopoDS_Wire DXFReader::Wire() const
   return wb.Wire();
 }
 
-Sketch::Sketch(const DatumPlane& pl, const boost::filesystem::path& filename)
+TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername)
 {
-  TopoDS_Wire w = DXFReader(filename).Wire();
+  if (!pl.providesPlanarReference())
+    throw insight::Exception("Sketch: Planar reference required!");
+  
+  TopoDS_Wire w = DXFReader(filename, layername).Wire();
   gp_Trsf tr;
   gp_Ax3 ax=pl;
   tr.SetTransformation(ax);
   
   BRepBuilderAPI_Transform btr(w, tr);
 
-  face_=TopoDS::Face(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+  return BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape();
+}
+
+Sketch::Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername)
+: SolidModel(makeSketch(pl, filename, layername))
+{
 }
 
 Sketch::operator const TopoDS_Face& () const
 {
-  return face_;
+  return TopoDS::Face(shape_);
 }
 
 }

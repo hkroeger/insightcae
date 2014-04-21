@@ -36,11 +36,13 @@ class DXFReader
 : public DL_CreationAdapter
 {
 protected:
+  std::string layername_;
   TopTools_ListOfShape ls_;
   std::auto_ptr<gp_Pnt> lp_;
   
 public:
-  DXFReader(const boost::filesystem::path& filename);
+  DXFReader(const boost::filesystem::path& filename, const std::string& layername="0");
+  virtual ~DXFReader();
   virtual void addLine(const DL_LineData &);
   virtual void addPolyline(const DL_PolylineData &);
   virtual void addVertex(const DL_VertexData &);
@@ -48,12 +50,12 @@ public:
 };
 
 class Sketch
+: public SolidModel
 {
-protected:
-  TopoDS_Face face_;
-  
+  TopoDS_Shape makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
+
 public:
-  Sketch(const DatumPlane& pl, const boost::filesystem::path& filename);
+  Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
   operator const TopoDS_Face& () const;
 };
 

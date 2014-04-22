@@ -370,7 +370,7 @@ void PipeBase::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
 
   
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters().set_LES(true) ) );
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters() ) );
   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
     .set_name("plane")
     .set_basePoint(vec3(0,1e-6,1e-6))

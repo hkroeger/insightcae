@@ -263,6 +263,8 @@ class turbulenceModel
 public:
   typedef boost::tuple<OpenFOAMCase&> ConstrP;
   declareFactoryTable(turbulenceModel, ConstrP);  
+  
+  enum AccuracyRequirement { AC_RANS, AC_LES, AC_DNS };
 
 public:
   declareType("turbulenceModel");
@@ -271,6 +273,8 @@ public:
   turbulenceModel(const ConstrP& c);
   
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
+  
+  virtual AccuracyRequirement minAccuracyRequirement() const =0;
 };
 
 class RASModel
@@ -283,7 +287,7 @@ public:
   RASModel(OpenFOAMCase& c);
   RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-
+  virtual AccuracyRequirement minAccuracyRequirement() const;
 };
 
 class LESModel
@@ -296,7 +300,7 @@ public:
   LESModel(OpenFOAMCase& c);
   LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-
+  virtual AccuracyRequirement minAccuracyRequirement() const;
 };
 
 class laminar_RASModel

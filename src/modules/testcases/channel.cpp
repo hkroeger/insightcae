@@ -22,6 +22,7 @@
 #include "base/factory.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
+#include "openfoam/basiccaseelements.h"
 #include "refdata.h"
 
 #include <boost/assign/list_of.hpp>
@@ -109,6 +110,7 @@ ParameterSet ChannelBase::defaultParameters() const
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
 	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
 	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
+	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -125,6 +127,17 @@ ParameterSet ChannelBase::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
+      ("run", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Execution parameters"
+      ))
+
       ("evaluation", new SubsetParameter
 	(
 	  ParameterSet
@@ -176,7 +189,11 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   // grid
   double Delta=L/double(nax);
   
-  nb_=B/(Delta/s);
+  if (p.getBool("mesh/2d"))
+    nb_=1;
+  else
+    nb_=B/(Delta/s);
+  
   gradh_=(Delta/s) / ywall_;
   nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
 }
@@ -220,7 +237,10 @@ void ChannelBase::createMesh
   Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
-  Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch("cyclic"));
+  
+  string side_type="cyclic";
+  if (p.getBool("mesh/2d")) side_type="empty";
+  Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
   
   {
     Block& bl = bmd->addBlock
@@ -287,8 +307,7 @@ void ChannelBase::createCase
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters().set_LES(true) ) );
+  cm.insert( new pimpleFoamNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))
@@ -306,9 +325,13 @@ void ChannelBase::createCase
   
 
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
-  cm.insert(new CyclicPairBC(cm, "cycl_side", boundaryDict) );
+  if (p.getBool("mesh/2d"))
+    cm.insert(new SimpleBC(cm, "cycl_side", boundaryDict, "empty") );
+  else
+    cm.insert(new CyclicPairBC(cm, "cycl_side", boundaryDict) );
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
+  
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 
 }
@@ -500,6 +523,32 @@ ChannelCyclic::ChannelCyclic(const NoParameters& nop)
 {
 }
 
+ParameterSet ChannelCyclic::defaultParameters() const
+{
+  ParameterSet p(ChannelBase::defaultParameters());
+  
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+          
+      ("run", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Execution parameters"
+      ))
+      
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+  
+  return p;
+}
+
+
 void ChannelCyclic::createMesh
 (
   OpenFOAMCase& cm,
@@ -538,62 +587,29 @@ void ChannelCyclic::createCase
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(Ubulk_, 0, 0))
 		));
-/*  
-  int n_r=10;
-  for (int i=1; i<n_r; i++) // omit first and last
-  {
-    double x = double(i)/(n_r);
-    double r = -cos(M_PI*(0.5+0.5*x))*0.5*D;
-    cout<<"Inserting tpc FO at r="<<r<<endl;
-    
-    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name("tpc_tan_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, 0.5*L))
-      .set_directionSpan(vec3(0, M_PI, 0)) 
-      .set_np(50)
-      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-      .set_nph(8)
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( (inittime+meantime)*T )
-    ));
-    
-    cm.insert(new cylindricalTwoPointCorrelation(cm, cylindricalTwoPointCorrelation::Parameters()
-      .set_name("tpc_ax_"+lexical_cast<string>(i))
-      .set_outputControl("timeStep")
-      .set_p0(vec3(r, 0, 0))
-      .set_directionSpan(vec3(0, 0, 0.5*L)) 
-      .set_np(50)
-      .set_homogeneousTranslationUnit(vec3(0, M_PI/2., 0))
-      .set_nph(8)
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( (inittime+meantime)*T )
-    ));
-    
-  }*/
+
 }
 
 void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  PSDBL(p, "operation", Re_tau);
-  /*
-  setFields(cm, executionPath(), 
-	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
-	    ptr_vector<setFieldOps::setFieldOperator>()
-  );
-  cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
-  cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*Ubulk_)) );
-  */
-  cm.executeCommand(executionPath(), "perturbU", 
-		    list_of<string>
-		    (lexical_cast<string>(Re_tau))
-		    ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
-		   );
+  if (p.getBool("run/perturbU"))
+  {
+    PSDBL(p, "operation", Re_tau);
+    /*
+    setFields(cm, executionPath(), 
+	      list_of<setFieldOps::FieldValueSpec>
+		("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
+	      ptr_vector<setFieldOps::setFieldOperator>()
+    );
+    cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
+    cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*Ubulk_)) );
+    */
+    cm.executeCommand(executionPath(), "perturbU", 
+		      list_of<string>
+		      (lexical_cast<string>(Re_tau))
+		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+		    );
+  }
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
 

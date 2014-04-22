@@ -19,6 +19,7 @@
  */
 
 #include "numericscaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 
@@ -414,10 +415,22 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   // ============ setup fvSchemes ================================
   
+  // check if LES required
+  bool LES=p_.forceLES();
+  try 
+  {
+    const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
+    LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+  }
+  catch (...)
+  {
+    cout<<"Warning: unhandled exception during LES check!"<<endl;
+  }
+  
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-  if (p_.LES())
+  if (LES)
     ddt["default"]="backward";
   else
     ddt["default"]="Euler";
@@ -428,17 +441,27 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
-  div["default"]="Gauss limitedLinear 1";
+  div["default"]="Gauss linear";
 
-  if (p_.LES())
+  if (LES)
   {
     /*if (OFversion()>=220)
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
       div["div(phi,U)"]="Gauss linear";
+    div["div(phi,k)"]="Gauss upwind";
+    div["div(phi,epsilon)"]="Gauss upwind";
+    div["div(phi,omega)"]="Gauss upwind";
+    div["div(phi,nuTilda)"]="Gauss upwind";
   }
   else
-   div["div(phi,U)"]="Gauss limitedLinearV 1";
+  {
+    div["div(phi,U)"]="Gauss limitedLinearV 1";
+    div["div(phi,k)"]="Gauss limitedLinear 1";
+    div["div(phi,epsilon)"]="Gauss limitedLinear 1";
+    div["div(phi,omega)"]="Gauss limitedLinear 1";
+    div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
+  }
 
   if (OFversion()>=230)
   {

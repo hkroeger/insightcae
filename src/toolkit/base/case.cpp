@@ -51,10 +51,10 @@ Case::Case(const Case& other)
 Case::~Case()
 {}
 
-CaseElement const* Case::insert(CaseElement* elem)
-{
-  elements_.push_back(elem);
-  return &elements_.back();
-}
+// CaseElement const* Case::insert(CaseElement* elem)
+// {
+//   elements_.push_back(elem);
+//   return &elements_.back();
+// }
 
 }

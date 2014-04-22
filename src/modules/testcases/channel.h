@@ -87,6 +87,8 @@ public:
   
   ChannelCyclic(const NoParameters&);
   
+  virtual ParameterSet defaultParameters() const;
+
   virtual void createMesh
   (
     OpenFOAMCase& cm,

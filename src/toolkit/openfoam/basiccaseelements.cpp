@@ -332,6 +332,11 @@ void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   turbProperties["simulationType"]="RASModel";
 }
 
+turbulenceModel::AccuracyRequirement RASModel::minAccuracyRequirement() const
+{
+  return AC_RANS;
+}
+
 defineType(LESModel);
 
 LESModel::LESModel(OpenFOAMCase& c)
@@ -348,6 +353,11 @@ void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
   turbProperties["simulationType"]="LESModel";
+}
+
+turbulenceModel::AccuracyRequirement LESModel::minAccuracyRequirement() const
+{
+  return AC_LES;
 }
 
 defineType(laminar_RASModel);

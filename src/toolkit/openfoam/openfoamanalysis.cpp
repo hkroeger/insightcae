@@ -36,14 +36,14 @@ using namespace std;
 namespace insight
 {
 
-void insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name)
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name)
 {
   turbulenceModel* model = turbulenceModel::lookup(name, cm);
   
   if (!model) 
     throw insight::Exception("Unrecognized RASModel selection: "+name);
   
-  cm.insert(model);
+  return cm.insert(model);
 }
 
 

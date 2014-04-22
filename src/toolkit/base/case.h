@@ -49,8 +49,14 @@ public:
     Case(const Case& other);
     virtual ~Case();
     
-    CaseElement const* insert(CaseElement* elem);
-    
+    //CaseElement const* insert(CaseElement* elem);
+    template<class T>
+    T insert(T elem)
+    {
+      elements_.push_back(elem);
+      return static_cast<T>(&elements_.back());
+    }
+      
     template<class T>
     T* get(const std::string& name)
     {

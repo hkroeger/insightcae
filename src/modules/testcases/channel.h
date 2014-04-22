@@ -44,7 +44,7 @@ protected:
   std::string cycl_in_, cycl_out_;
   
   // Derived input data
-  double Re_, Ubulk_, T_, nu_, ywall_;
+  double Re_, utau_, Ubulk_, T_, nu_, ywall_;
   int nb_, nh_;
   double gradh_;
   

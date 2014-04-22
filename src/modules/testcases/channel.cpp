@@ -184,6 +184,7 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   Ubulk_=Re_/Re_tau; //(1./kappa)*log(Re_tau)+Cplus-1.7;
   T_=L/Ubulk_;
   nu_=1./Re_tau;
+  utau_=0.5*H*Re_tau/nu_;
   ywall_ = ypluswall/Re_tau;
   
   // grid
@@ -361,7 +362,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   ));
   
   sample(cm, executionPath(), 
-     list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+     list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
      sets
   );
   
@@ -373,7 +374,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   // Mean velocity profiles
   {
     Gnuplot gp;
-    string chart_name="mean_velocity";
+    string chart_name="chartMeanVelocity";
     string chart_file_name=chart_name+".png";
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
@@ -415,39 +416,41 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   
   // Mean reynolds stress profiles
   {
-    Gnuplot gp;
-    string chart_name="mean_Rstress";
+    string chart_name="chartMeanReyStress";
     string chart_file_name=chart_name+".png";
     
     double fac_yp=Re_tau;
     double fac_Rp=1.;
     
     int c=cd["UPrime2Mean"].col;
-    
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
-    gp<<"set logscale x;";
-    gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
-    
+
     arma::mat refdata_Ruu, refdata_Rvv, refdata_Rww;
     refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
     refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
     refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
     
-    gp<<"plot 0 not lt -1,"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)',"
-	" '-' w p t 'Rxx (DNS, MKM)',"
-	" '-' w p t 'Ryy (DNS, MKM)',"
-	" '-' w p t 'Rzz (DNS, MKM)'"
-	<<endl;
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
-    gp.send1d( refdata_Ruu );
-    gp.send1d( refdata_Rvv );
-    gp.send1d( refdata_Rww );
+    {    
+      Gnuplot gp;
+      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+      gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
+      gp<<"set logscale x;";
+      gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+      
+      gp<<"plot 0 not lt -1,"
+	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
+	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
+	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)',"
+	  " '-' w p t 'Rxx (DNS, MKM)',"
+	  " '-' w p t 'Ryy (DNS, MKM)',"
+	  " '-' w p t 'Rzz (DNS, MKM)'"
+	  <<endl;
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
+      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
+      gp.send1d( refdata_Ruu );
+      gp.send1d( refdata_Rvv );
+      gp.send1d( refdata_Rww );
+    }
     
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
@@ -455,9 +458,53 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       chart_file_name, 
       "Wall normal profiles of averaged reynolds stresses", ""
     )));
+
+    chart_name="chartMeanTKE";
+    chart_file_name=chart_name+".png";
     
+    int ck=cd["k"].col;
+    
+    arma::mat K= 0.5*(data.col(c)+data.col(c+1)+data.col(c+2));
+    if (cd.find("k")!=cd.end())
+    {
+      K+=data.col(ck);
+    }
+    else
+      cout<<"not adding k"<<endl;
+	  
+    K*=utau_/nu_; // K => K+
+    cout<<K<<endl;
+    
+    {
+      Gnuplot gp;
+      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+      gp<<"set xlabel 'y+'; set ylabel '<K+>'; set grid; ";
+  //       gp<<"set logscale x;";
+  //       gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+      
+  //       arma::mat refdata_Ruu, refdata_Rvv, refdata_Rww;
+  //       refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
+  //       refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
+  //       refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
+      
+      gp<<"plot 0 not lt -1,"
+	  " '-' u ("<<Re_tau<<"-$1*"<<fac_yp<<"):2 w l t 'TKE'"
+	  <<endl;
+      gp.send1d( arma::mat(join_rows(data.col(0), K))   );
+  //       gp.send1d( refdata_Ruu );
+  //       gp.send1d( refdata_Rvv );
+  //       gp.send1d( refdata_Rww );
+    }
+    
+    results->insert(chart_name,
+      std::auto_ptr<Image>(new Image
+      (
+      chart_file_name, 
+      "Wall normal profiles of averaged turbulent kinetic energy ($\\frac{1}{2} R_ii + k_{model}$)", ""
+    )));
   }
-/*
+
+  /*
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray");
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");

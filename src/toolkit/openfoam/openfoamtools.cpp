@@ -1256,4 +1256,32 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
   }
 }
 
+arma::mat viscousForceProfile
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const arma::mat& axis, int n,
+  const std::vector<std::string>& addopts
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back("-n");
+  opts.push_back(lexical_cast<string>(n));
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "viscousForceProfile", opts, &output);
+  
+  path pref=location/"postProcessing"/"viscousForceProfile";
+  TimeDirectoryList tdl=listTimeDirectories(pref);
+  path lastTimeDir=tdl.rbegin()->second;
+  arma::mat vfm;
+  vfm.load( ( lastTimeDir/"viscousForceMean.dat").c_str(), arma::raw_ascii);
+  arma::mat vf;
+  vf.load( (lastTimeDir/"viscousForce.dat").c_str(), arma::raw_ascii);
+  
+  return arma::mat(join_rows(vfm, vf.col(1)));
+}
+
 }

@@ -296,11 +296,9 @@ Interpolator::~Interpolator()
 
 double Interpolator::y(double x, int col) const
 {
-  cout<<x<<endl;
   if (x<first(0)) return first(col+1);
   if (x>last(0)) return last(col+1);
   double v=gsl_spline_eval (spline[col], x, acc);
-  cout<<v<<endl;
   return v;
 }
 
@@ -309,6 +307,16 @@ arma::mat Interpolator::operator()(double x) const
   arma::mat result=zeros(1, spline.size());
   for (int i=0; i<spline.size(); i++)
     result(0,i)=y(x, i);
+  return result;
+}
+
+arma::mat Interpolator::operator()(const arma::mat& x) const
+{
+  arma::mat result=zeros(x.n_rows, spline.size());
+  for (int j=0; j<x.n_rows; j++)
+  {
+    result.row(j) = this->operator()(x(j));
+  }
   return result;
 }
   

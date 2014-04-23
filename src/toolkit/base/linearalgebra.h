@@ -130,6 +130,7 @@ public:
   ~Interpolator();
   double y(double x, int col=0) const;
   arma::mat operator()(double x) const;
+  arma::mat operator()(const arma::mat& x) const;
 };
 
 }

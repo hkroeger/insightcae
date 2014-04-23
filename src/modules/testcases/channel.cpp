@@ -180,11 +180,11 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   // Physics
   double kappa=0.41;
   double Cplus=5.0;
-  Re_=Re(Re_tau); //Re_tau*Ubulk_;
-  Ubulk_=Re_/Re_tau; //(1./kappa)*log(Re_tau)+Cplus-1.7;
+  Re_=Re(Re_tau);
+  Ubulk_=Re_/Re_tau;
   T_=L/Ubulk_;
   nu_=1./Re_tau;
-  utau_=0.5*H*Re_tau/nu_;
+  utau_=Re_tau*nu_/(0.5*H);
   ywall_ = ypluswall/Re_tau;
   
   // grid
@@ -197,6 +197,16 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   
   gradh_=(Delta/s) / ywall_;
   nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
+  
+  cout<<"Derived data:"<<endl
+      <<"============================================="<<endl;
+  cout<<"Reynolds number \tRe="<<Re_<<endl;
+  cout<<"Bulk velocity \tUbulk="<<Ubulk_<<endl;
+  cout<<"Flow-through time \tT="<<T_<<endl;
+  cout<<"Viscosity \tnu="<<nu_<<endl;
+  cout<<"Friction velocity \tutau="<<utau_<<endl;
+  cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"============================================="<<endl;
 }
 
 void ChannelBase::createMesh
@@ -348,6 +358,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
+  PSINT(p, "mesh", nax);
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
@@ -417,6 +428,59 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     
   }
   
+  // Wall friction coefficient
+  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax);
+  arma::mat refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
+  arma::mat refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
+  arma::mat refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
+  
+  arma::mat refdata_K=refdata_Ruu;
+  refdata_K.col(1)+=Interpolator(refdata_Rvv)(refdata_Ruu.col(0));
+  refdata_K.col(1)+=Interpolator(refdata_Rww)(refdata_Ruu.col(0));
+  refdata_K.col(1)*=0.5;
+  cout<<refdata_K<<endl;
+  
+  {
+    Gnuplot gp;
+    string chart_name="chartMeanWallFriction";
+    string chart_file_name=chart_name+".png";
+    
+    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+    gp<<"set xlabel 'x+'; set ylabel '<Cf>'; set grid; ";
+    //gp<<"set logscale x;";
+    
+    double fac_yp=Re_tau;
+    
+    arma::mat Cf_vs_xp=join_rows(
+      wallforce.col(0)*Re_tau, 
+      wallforce.col(1)/(0.5*pow(Ubulk_,2))
+    );
+    arma::mat Cftheo_vs_xp=zeros(2,2);
+    Cftheo_vs_xp(0,0)=Cf_vs_xp(0,0);
+    Cftheo_vs_xp(1,0)=Cf_vs_xp(Cf_vs_xp.n_rows-1,0);
+    double Cftheo=pow(utau_,2)/(0.5*pow(Ubulk_,2));
+    Cftheo_vs_xp(0,1)=Cftheo;
+    Cftheo_vs_xp(1,1)=Cftheo;
+    
+    cout<<Cf_vs_xp<<endl;
+    cout<<Cftheo_vs_xp<<endl;
+
+    gp<<"plot 0 not lt -1,"
+	" '-' w l t 'CFD'"
+	", '-' w l t 'Analytical'"
+	<<endl;
+    gp.send1d( Cf_vs_xp );
+    gp.send1d( Cftheo_vs_xp );
+
+    results->insert(chart_name,
+      std::auto_ptr<Image>(new Image
+      (
+      chart_file_name, 
+      "Axial profile of wall shear stress", ""
+    )));
+    
+  }
+  
   // Mean reynolds stress profiles
   {
     string chart_name="chartMeanReyStress";
@@ -426,11 +490,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     double fac_Rp=1.;
     
     int c=cd["UPrime2Mean"].col;
-
-    arma::mat refdata_Ruu, refdata_Rvv, refdata_Rww;
-    refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
-    refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
-    refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
     
     {    
       Gnuplot gp;
@@ -476,7 +535,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       cout<<"not adding k"<<endl;
 	  
     K /= pow(utau_, 2); // K => K+
-    cout<<K<<endl;
     
     {
       Gnuplot gp;
@@ -492,9 +550,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       
       gp<<"plot 0 not lt -1,"
 	  " '-' u ("<<Re_tau<<"-$1*"<<fac_yp<<"):2 w l t 'TKE'"
+	  ", '-' u 1:2 w l t 'DNS'"
 	  <<endl;
       gp.send1d( arma::mat(join_rows(data.col(0), K))   );
-  //       gp.send1d( refdata_Ruu );
+      gp.send1d( refdata_K );
   //       gp.send1d( refdata_Rvv );
   //       gp.send1d( refdata_Rww );
     }

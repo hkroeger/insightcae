@@ -44,7 +44,8 @@ public:
     virtual void cancel();
     
     virtual insight::ParameterSet defaultParameters() const;
-
+    virtual boost::filesystem::path setupExecutionEnvironment();
+    
     virtual void calcDerivedInputData(const ParameterSet& p);
     virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p) =0;
     virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p) =0;

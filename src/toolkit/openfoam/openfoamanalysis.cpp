@@ -108,6 +108,13 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
   );
 }
 
+boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
+{
+  path p=Analysis::setupExecutionEnvironment();
+  calcDerivedInputData(*parameters_);
+  return p;
+}
+
 void OpenFOAMAnalysis::calcDerivedInputData(const ParameterSet& p)
 {
 }
@@ -218,7 +225,7 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   
   path dir = setupExecutionEnvironment();
   
-  calcDerivedInputData(p);
+//   calcDerivedInputData(p);
 
   OpenFOAMCase runCase(ofe);
   

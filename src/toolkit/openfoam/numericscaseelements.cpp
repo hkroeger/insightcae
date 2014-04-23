@@ -308,12 +308,12 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["default"]="no";
   
   OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
-  std::vector<int> n=combinefactors(3, factors(p_.np()));
-  cout<<"decomp "<<p_.np()<<": "<<n.size()<<" "<<n[0]<<" "<<n[1]<<" "<<n[2]<<endl;
+  std::vector<int> ns=combinefactors(3, factors(p_.np()));
+  cout<<"decomp "<<p_.np()<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
   decomposeParDict["numberOfSubdomains"]=p_.np();
   decomposeParDict["method"]="hierarchical";
   OFDictData::dict coeffs;
-  coeffs["n"]=OFDictData::vector3(n[0], n[1], n[2]);
+  coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
   coeffs["delta"]=0.001;
   coeffs["order"]="xyz";
   decomposeParDict["hierarchicalCoeffs"]=coeffs;

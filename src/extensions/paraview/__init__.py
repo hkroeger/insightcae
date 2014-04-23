@@ -187,7 +187,7 @@ try:
 	RenderView1.OrientationAxesVisibility = 1
 	RenderView1.CenterAxesVisibility=0
 	# Turn off "Head Light"
-	RenderView1.LightSwitch = 1
+	RenderView1.LightSwitch = 0
 	# Turn off "Light Kit"
 	RenderView1.UseLight = 1 
 

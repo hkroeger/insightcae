@@ -198,7 +198,14 @@ public:
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
 };
 
-  
+class extendedForces
+: public forces
+{
+public:
+  extendedForces(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 class CorrelationFunctionModel
 : public RegressionModel
 {

@@ -309,9 +309,12 @@ void ChannelBase::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
 
   cm.insert( new pimpleFoamNumerics(cm) );
+  cm.insert(new extendedForces(cm, extendedForces::Parameters()
+    .set_patches( list_of<string>("walls") )
+  ));
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("averaging")
-    .set_fields(list_of<std::string>("p")("U"))
+    .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
     .set_timeStart(inittime*T_)
   ));
   

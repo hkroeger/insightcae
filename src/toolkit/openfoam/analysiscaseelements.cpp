@@ -384,6 +384,38 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
   return fl;
 }
 
+extendedForces::extendedForces(OpenFOAMCase& c, Parameters const &p)
+: forces(c, p)
+{
+}
+
+void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict fod;
+  fod["type"]="extendedForces";
+  OFDictData::list libl; libl.push_back("\"libextendedForcesFunctionObject.so\"");
+  fod["functionObjectLibs"]=libl;
+  fod["log"]=true;
+  fod["outputControl"]=p_.outputControl();
+  fod["outputInterval"]=p_.outputInterval();
+  
+  OFDictData::list pl;
+  BOOST_FOREACH(const std::string& lo, p_.patches())
+  {
+    pl.push_back(lo);
+  }
+  fod["patches"]=pl;
+  fod["pName"]=p_.pName();
+  fod["UName"]=p_.UName();
+  fod["rhoName"]=p_.rhoName();
+  fod["rhoInf"]=p_.rhoInf();
+  
+  fod["CofR"]=OFDictData::vector3(p_.CofR());
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+}
+  
 CorrelationFunctionModel::CorrelationFunctionModel()
 : B_(1.0), omega_(1.0)
 {}

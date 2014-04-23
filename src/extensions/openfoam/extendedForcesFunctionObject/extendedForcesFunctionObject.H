@@ -14,6 +14,7 @@ protected:
   autoPtr<volVectorField> pressureForce_, viscousForce_;
   
 public:
+  TypeName("extendedForces");
     // Constructors
 
         //- Construct for given objectRegistry and dictionary.

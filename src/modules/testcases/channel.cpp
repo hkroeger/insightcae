@@ -475,7 +475,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     else
       cout<<"not adding k"<<endl;
 	  
-    K*=utau_/nu_; // K => K+
+    K /= pow(utau_, 2); // K => K+
     cout<<K<<endl;
     
     {

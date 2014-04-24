@@ -3,8 +3,13 @@
 #include "base/analysis.h"
 
 #include <fstream>
+#include <vector>
+#include <string>
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 using namespace std;
 using namespace insight;
@@ -12,10 +17,41 @@ using namespace insight;
 int main(int argc, char *argv[])
 {
   using namespace rapidxml;
+  namespace po = boost::program_options;
   
+  typedef std::vector<string> StringList;
+
+  // Declare the supported options.
+  po::options_description desc("Allowed options");
+  desc.add_options()
+      ("help", "produce help message")
+      ("bool,b", po::value<StringList>(), "boolean variable assignment")
+      ("input-file,i", po::value< StringList >(),"Specifies input file.")
+  ;  
+  
+  po::positional_options_description p;
+  p.add("input-file", -1);  
+  
+  po::variables_map vm;
+  po::store(po::command_line_parser(argc, argv).
+	    options(desc).positional(p).run(), vm);
+  po::notify(vm);
+  
+  if (vm.count("help"))
+  {
+    cout << desc << endl;
+    exit(-1);
+  }
+
+  if (!vm.count("input-file"))
+  {
+    cout<<"input file has to be specified!"<<endl;
+    exit(-1);
+  }
+
   try
   {
-    std::string fn(argv[1]);
+    std::string fn = vm["input-file"].as<StringList>()[0];
     
     std::ifstream in(fn.c_str());
     std::string contents;
@@ -52,6 +88,20 @@ int main(int argc, char *argv[])
 
     ParameterSet parameters = analysis->defaultParameters();
     parameters.readFromNode(doc, *rootnode);
+    
+    if (vm.count("bool"))
+    {
+      StringList sets=vm["bool"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	bool v=boost::lexical_cast<bool>(pair[1]);
+	cout << "Setting '"<<pair[0]<<"' = "<<v<<endl;
+	parameters.getBool(pair[0])=v;
+      }
+    }
+    
     analysis->setParameters(parameters);
     
     // run analysis

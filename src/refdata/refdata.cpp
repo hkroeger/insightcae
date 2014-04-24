@@ -13,7 +13,35 @@ using namespace boost::python;
 
 namespace insight
 {
+
+struct aquire_py_GIL 
+{
+    PyGILState_STATE state;
+    aquire_py_GIL() 
+    {
+        state = PyGILState_Ensure();
+    }
  
+    ~aquire_py_GIL() 
+    {
+        PyGILState_Release(state);
+    }
+};
+
+struct release_py_GIL 
+{
+    PyThreadState *state;
+    
+    release_py_GIL() 
+    {
+        state = PyEval_SaveThread();
+    }
+    ~release_py_GIL() 
+    {
+        PyEval_RestoreThread(state);
+    }
+};
+  
 ReferenceDataLibrary::ReferenceDataLibrary()
 {
   path dir=path(getenv("HOME"))/"Referenzdaten";
@@ -38,22 +66,23 @@ ReferenceDataLibrary::ReferenceDataLibrary()
   }
 
   Py_Initialize();
-  //PyEval_InitThreads();
   PyEval_InitThreads();
   mainThreadState = PyEval_SaveThread();
 }
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
-  PyEval_RestoreThread(mainThreadState);
+  //PyEval_RestoreThread(mainThreadState);
   Py_Finalize();
 }
   
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const
 {
+  aquire_py_GIL locker;
+  
     arma::mat profile;
-PyEval_AcquireLock();                // get the GIL
-PyThreadState *myThreadState = Py_NewInterpreter();
+// PyEval_AcquireLock();                // get the GIL
+// PyThreadState *myThreadState = Py_NewInterpreter();
     try
     {
 
@@ -99,8 +128,8 @@ PyThreadState *myThreadState = Py_NewInterpreter();
     {
       PyErr_Print();
     }
-Py_EndInterpreter(myThreadState);
-PyEval_ReleaseLock();     
+/*Py_EndInterpreter(myThreadState);
+PyEval_ReleaseLock();  */   
     return profile;
 }
 

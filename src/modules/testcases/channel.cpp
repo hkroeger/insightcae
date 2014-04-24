@@ -108,7 +108,7 @@ ParameterSet ChannelBase::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
+	    ("nh",	new IntParameter(100, "# cells in vertical direction"))
 	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
 	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
 	    .convert_to_container<ParameterSet::EntryList>()
@@ -162,7 +162,6 @@ std::string ChannelBase::cyclPrefix() const
   boost:smatch m;
   boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
   std::string namePrefix=m[1];
-  cout<<namePrefix<<endl;
   return namePrefix;
 }
 
@@ -175,7 +174,7 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
 
   PSDBL(p, "mesh", ypluswall);
   PSINT(p, "mesh", nax);
-  PSDBL(p, "mesh", s);
+  PSINT(p, "mesh", nh);
   
   // Physics
   double kappa=0.41;
@@ -193,10 +192,11 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   if (p.getBool("mesh/2d"))
     nb_=1;
   else
-    nb_=B/(Delta/s);
+    nb_=B/Delta;
   
-  gradh_=(Delta/s) / ywall_;
-  nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
+  nh_=nh/2;
+  gradh_=bmd::GradingAnalyzer(ywall_, H/2., nh_).grad();
+  //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
   
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
@@ -206,6 +206,8 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   cout<<"Viscosity \tnu="<<nu_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"# cells spanwise \tnb="<<nb_<<endl;
+  cout<<"# grading vertical \tgradh="<<gradh_<<endl;
   cout<<"============================================="<<endl;
 }
 
@@ -318,7 +320,11 @@ void ChannelBase::createCase
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert( new pimpleFoamNumerics(cm) );
+  cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+    .set_maxDeltaT(0.25*T_)
+    .set_writeControl("adjustableRunTime")
+    .set_writeInterval(0.25*T_)
+  ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
   ));
@@ -350,6 +356,13 @@ void ChannelBase::createCase
 
 }
 
+void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+{
+  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  
+//   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
+//   controlDict["maxDeltaT"]=0.5*T_;
+}
 
   
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
@@ -365,10 +378,11 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   boost::ptr_vector<sampleOps::set> sets;
   
   double x=0.0;
+  double delta_yp1=1./Re_tau;
   sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
     .set_name("radial")
-    .set_start( vec3(-0.49*L, 0.005* 0.5*H, -0.49*B))
-    .set_end(   vec3(-0.49*L, 0.997* 0.5*H, -0.49*B))
+    .set_start( vec3(-0.49*L, delta_yp1, -0.49*B))
+    .set_end(   vec3(-0.49*L, 0.5*H-delta_yp1, -0.49*B))
     .set_dir1(vec3(0.98*L,0,0))
     .set_dir2(vec3(0,0,0.98*B))
     .set_nd1(5)
@@ -424,6 +438,40 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       (
       chart_file_name, 
       "Wall normal profiles of averaged velocities", ""
+    )));
+    
+  }
+  
+  // L profiles from k/omega
+  if ((cd.find("k")!=cd.end()) && (cd.find("omega")!=cd.end()))
+  {
+    Gnuplot gp;
+    string chart_name="chartTurbulentLengthScale";
+    string chart_file_name=chart_name+".png";
+    
+    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+    gp<<"set xlabel 'y+'; set ylabel '<L_delta>'; set grid; ";
+    //gp<<"set logscale x;";
+    
+    arma::mat k=data.col(cd["k"].col);
+    arma::mat omega=data.col(cd["omega"].col);
+    arma::mat Lt=sqrt(k)/(0.09*omega);
+    
+    double fac_yp=Re_tau;
+    double fac_delta=2./H;
+    
+    gp<<"plot 0 not lt -1,"
+	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_delta<<") w l not"
+	<<endl;
+	
+    gp.send1d( arma::mat(join_rows(data.col(0), Lt))   );
+
+    results->insert(chart_name,
+      std::auto_ptr<Image>(new Image
+      (
+      chart_file_name, 
+      "Wall normal profile of turbulent length scale", 
+      "The length scale is computed from the RANS model's k and omega field."
     )));
     
   }
@@ -728,7 +776,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, 
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
 
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  ChannelBase::applyCustomOptions(cm, p, dicts);
   
   OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
   int np=decomposeParDict.getInt("numberOfSubdomains");

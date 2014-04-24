@@ -71,6 +71,7 @@ public:
     const ParameterSet& p
   );
 
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
   
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   

@@ -822,7 +822,7 @@ GradingAnalyzer::GradingAnalyzer(double delta0, double L, int n)
   } obj;
   obj.n=n;
   obj.Lbydelta0=L/delta0;
-  grad_=nonlinearSolve1D(obj, 1.0001, 100);
+  grad_=nonlinearSolve1D(obj, 1.0001, 10000);
 }
 
 #include <gsl/gsl_errno.h>

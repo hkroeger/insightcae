@@ -45,6 +45,8 @@ class FVNumerics
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (np, int, 1)
+    (writeControl, std::string, "timeStep")
+    (writeInterval, double, 100.0)
   )
 
 protected:

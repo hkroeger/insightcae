@@ -51,8 +51,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
   controlDict["endTime"]=1000.0;
-  controlDict["writeControl"]="timeStep";
-  controlDict["writeInterval"]=100;
+  controlDict["writeControl"]=p_.writeControl();
+  controlDict["writeInterval"]=p_.writeInterval();
   controlDict["purgeWrite"]=10;
   controlDict["writeFormat"]="binary";
   controlDict["writePrecision"]=8;

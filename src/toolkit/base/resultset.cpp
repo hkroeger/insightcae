@@ -379,6 +379,7 @@ void ResultSet::writeLatexCode(std::ostream& f, int level) const
     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
     i->second->writeLatexCode(f, level+2);
+    f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
     f << endl;
   }
 }

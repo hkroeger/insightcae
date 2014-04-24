@@ -399,6 +399,11 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     .readSamples(cm, executionPath(), &cd);
     
     
+  arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
+  arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
+  arma::mat refdata_umean590=refdatalib.getProfile("MKM_Channel", "590/umean_vs_yp");
+  arma::mat refdata_wmean590=refdatalib.getProfile("MKM_Channel", "590/wmean_vs_yp");
+    
   // Mean velocity profiles
   {
     Gnuplot gp;
@@ -411,27 +416,32 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     
     int c=cd["UMean"].col;
     
-    arma::mat refdata_umean, refdata_wmean;
-    refdata_umean=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
-    refdata_wmean=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
+    arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
-    double fac_yp=Re_tau;
-    double fac_Up=1.0;
+    axial.save( (executionPath()/"umeanaxial_vs_yp.txt").c_str(), arma_ascii);
+    spanwise.save( (executionPath()/"umeanspanwise_vs_yp.txt").c_str(), arma_ascii);
+    wallnormal.save( (executionPath()/"umeanwallnormal_vs_yp.txt").c_str(), arma_ascii);
     
     gp<<"plot 0 not lt -1,"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Spanwise',"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Wall normal',"
+	" '-' w l t 'Axial',"
+	" '-' w l t 'Spanwise',"
+	" '-' w l t 'Wall normal',"
 	
-	" '-' w p t 'Axial (DNS, MKM)',"
-	" '-' w p t 'Spanwise (DNS, MKM)'"
+	" '-' w l t 'Axial (DNS Re_tau=180, MKM)',"
+	" '-' w l t 'Spanwise (DNS Re_tau=180, MKM)',"
+	" '-' w l t 'Axial (DNS Re_tau=590, MKM)',"
+	" '-' w l t 'Spanwise (DNS Re_tau=590, MKM)'"
 	<<endl;
 	
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
-    gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
-    gp.send1d( refdata_umean );
-    gp.send1d( refdata_wmean );
+    gp.send1d( axial );
+    gp.send1d( spanwise );
+    gp.send1d( wallnormal );
+    gp.send1d( refdata_umean180 );
+    gp.send1d( refdata_wmean180 );
+    gp.send1d( refdata_umean590 );
+    gp.send1d( refdata_wmean590 );
 
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
@@ -450,21 +460,19 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     string chart_file_name=chart_name+".png";
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'y+'; set ylabel '<L_delta>'; set grid; ";
+    gp<<"set xlabel 'y+'; set ylabel '<L_delta_RANS>'; set grid; ";
     //gp<<"set logscale x;";
     
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
-    arma::mat Lt=sqrt(k)/(0.09*omega);
+    arma::mat Lt(join_rows(Re_tau-Re_tau*data.col(0), (2./H)*sqrt(k)/(0.09*omega)));
     
-    double fac_yp=Re_tau;
-    double fac_delta=2./H;
+    Lt.save( (executionPath()/"LdeltaRANS_vs_yp.txt").c_str(), arma_ascii);
     
     gp<<"plot 0 not lt -1,"
-	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_delta<<") w l not"
+	" '-' w l not"
 	<<endl;
-	
-    gp.send1d( arma::mat(join_rows(data.col(0), Lt))   );
+    gp.send1d( Lt );
 
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
@@ -481,12 +489,21 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   arma::mat refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
   arma::mat refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
   arma::mat refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
+  arma::mat refdata_Ruu590=refdatalib.getProfile("MKM_Channel", "590/Ruu_vs_yp");
+  arma::mat refdata_Rvv590=refdatalib.getProfile("MKM_Channel", "590/Rvv_vs_yp");
+  arma::mat refdata_Rww590=refdatalib.getProfile("MKM_Channel", "590/Rww_vs_yp");
   
   arma::mat refdata_K=refdata_Ruu;
   refdata_K.col(1)+=Interpolator(refdata_Rvv)(refdata_Ruu.col(0));
   refdata_K.col(1)+=Interpolator(refdata_Rww)(refdata_Ruu.col(0));
   refdata_K.col(1)*=0.5;
-  cout<<refdata_K<<endl;
+  refdata_K.col(0)/=180.0;
+  
+  arma::mat refdata_K590=refdata_Ruu590;
+  refdata_K590.col(1)+=Interpolator(refdata_Rvv590)(refdata_Ruu590.col(0));
+  refdata_K590.col(1)+=Interpolator(refdata_Rww590)(refdata_Ruu590.col(0));
+  refdata_K590.col(1)*=0.5;
+  refdata_K590.col(0)/=590.0;
   
   {
     Gnuplot gp;
@@ -497,21 +514,18 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     gp<<"set xlabel 'x+'; set ylabel '<Cf>'; set grid; ";
     //gp<<"set logscale x;";
     
-    double fac_yp=Re_tau;
-    
-    arma::mat Cf_vs_xp=join_rows(
+    arma::mat Cf_vs_xp(join_rows(
       wallforce.col(0)*Re_tau, 
       wallforce.col(1)/(0.5*pow(Ubulk_,2))
-    );
+    ));
+    Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").c_str(), arma_ascii);
+    
     arma::mat Cftheo_vs_xp=zeros(2,2);
     Cftheo_vs_xp(0,0)=Cf_vs_xp(0,0);
     Cftheo_vs_xp(1,0)=Cf_vs_xp(Cf_vs_xp.n_rows-1,0);
     double Cftheo=pow(utau_,2)/(0.5*pow(Ubulk_,2));
     Cftheo_vs_xp(0,1)=Cftheo;
     Cftheo_vs_xp(1,1)=Cftheo;
-    
-    cout<<Cf_vs_xp<<endl;
-    cout<<Cftheo_vs_xp<<endl;
 
     gp<<"plot 0 not lt -1,"
 	" '-' w l t 'CFD'"
@@ -534,32 +548,38 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     string chart_name="chartMeanReyStress";
     string chart_file_name=chart_name+".png";
     
-    double fac_yp=Re_tau;
-    double fac_Rp=1.;
-    
     int c=cd["UPrime2Mean"].col;
+    arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
     
     {    
       Gnuplot gp;
       gp<<"set terminal png; set output '"<<chart_file_name<<"';";
       gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
       gp<<"set logscale x;";
-      gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
+      gp<<"set yrange [:"<<max(axial.col(1))<<"];";
       
       gp<<"plot 0 not lt -1,"
-	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
-	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-	  " '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)',"
-	  " '-' w p t 'Rxx (DNS, MKM)',"
-	  " '-' w p t 'Ryy (DNS, MKM)',"
-	  " '-' w p t 'Rzz (DNS, MKM)'"
+	  " '-' w l t 'Rxx (Axial)',"
+	  " '-' w l t 'Ryy (Spanwise)',"
+	  " '-' w l t 'Rzz (Wall normal)',"
+	  " '-' w l t 'Rxx (DNS Re_tau=180, MKM)',"
+	  " '-' w l t 'Ryy (DNS Re_tau=180, MKM)',"
+	  " '-' w l t 'Rzz (DNS Re_tau=180, MKM)',"
+	  " '-' w l t 'Rxx (DNS Re_tau=590, MKM)',"
+	  " '-' w l t 'Ryy (DNS Re_tau=590, MKM)',"
+	  " '-' w l t 'Rzz (DNS Re_tau=590, MKM)'"
 	  <<endl;
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
-      gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
+      gp.send1d( axial );
+      gp.send1d( spanwise );
+      gp.send1d( wallnormal );
       gp.send1d( refdata_Ruu );
       gp.send1d( refdata_Rvv );
       gp.send1d( refdata_Rww );
+      gp.send1d( refdata_Ruu590 );
+      gp.send1d( refdata_Rvv590 );
+      gp.send1d( refdata_Rww590 );
     }
     
     results->insert(chart_name,
@@ -584,33 +604,29 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
 	  
     K /= pow(utau_, 2); // K => K+
     
+    arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
+    Kp.save( (executionPath()/"Kp_vs_ydelta.txt").c_str(), arma_ascii);
+    
     {
       Gnuplot gp;
       gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-      gp<<"set xlabel 'y+'; set ylabel '<K+>'; set grid; ";
-  //       gp<<"set logscale x;";
-  //       gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
-      
-  //       arma::mat refdata_Ruu, refdata_Rvv, refdata_Rww;
-  //       refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
-  //       refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
-  //       refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
+      gp<<"set xlabel 'y_delta'; set ylabel '<K+>'; set grid; ";
       
       gp<<"plot 0 not lt -1,"
-	  " '-' u ("<<Re_tau<<"-$1*"<<fac_yp<<"):2 w l t 'TKE'"
-	  ", '-' u 1:2 w l t 'DNS'"
+	  " '-' w l t 'TKE'"
+	  ", '-' u 1:2 w l t 'DNS (Re_tau=180, MKM)'"
+	  ", '-' u 1:2 w l t 'DNS (Re_tau=590, MKM)'"
 	  <<endl;
-      gp.send1d( arma::mat(join_rows(data.col(0), K))   );
+      gp.send1d( Kp );
       gp.send1d( refdata_K );
-  //       gp.send1d( refdata_Rvv );
-  //       gp.send1d( refdata_Rww );
+      gp.send1d( refdata_K590 );
     }
     
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged turbulent kinetic energy ($\\frac{1}{2} R_ii + k_{model}$)", ""
+      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model)", ""
     )));
   }
 
@@ -637,7 +653,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
       "WriteImage('pressure_longi.jpg')\n"
     )
   );
-  results->insert("pressureContour",
+  results->insert("contourPressure",
     std::auto_ptr<Image>(new Image
     (
     "pressure_longi.jpg", 
@@ -659,7 +675,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
 	"WriteImage('U"+c+"_longi.jpg')\n"
       )
     );
-    results->insert("U"+c+"Contour",
+    results->insert("contourU"+c,
       std::auto_ptr<Image>(new Image
       (
       "U"+c+"_longi.jpg", 

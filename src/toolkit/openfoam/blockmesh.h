@@ -111,6 +111,7 @@ class GradingAnalyzer
   double grad_;
 public:
   GradingAnalyzer(double grad);
+  GradingAnalyzer(double delta0, double L, int n);
   
   inline double grad() const { return grad_; }
   

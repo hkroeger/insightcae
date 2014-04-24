@@ -810,6 +810,21 @@ GradingAnalyzer::GradingAnalyzer(double grad)
 {
 }
 
+GradingAnalyzer::GradingAnalyzer(double delta0, double L, int n)
+{
+  struct Obj: public Objective1D
+  {
+    double Lbydelta0;
+    int n;
+    double F(double R) const
+    { return (pow(R, n/(n-1.))-1.) / (pow(R, 1./(n-1.))-1.); }
+    virtual double operator()(double x) const { return Lbydelta0-F(x); }
+  } obj;
+  obj.n=n;
+  obj.Lbydelta0=L/delta0;
+  grad_=nonlinearSolve1D(obj, 1.0001, 100);
+}
+
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_roots.h>
 

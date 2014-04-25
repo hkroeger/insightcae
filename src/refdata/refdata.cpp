@@ -72,7 +72,7 @@ ReferenceDataLibrary::ReferenceDataLibrary()
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
-  //PyEval_RestoreThread(mainThreadState);
+  PyEval_RestoreThread(mainThreadState);
   Py_Finalize();
 }
   

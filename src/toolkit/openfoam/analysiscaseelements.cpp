@@ -431,6 +431,12 @@ void CorrelationFunctionModel::setParameters(const double* params)
   omega_=params[1];
 }
 
+void CorrelationFunctionModel::setInitialValues(double* params) const
+{
+  params[0]=0.1;
+  params[1]=0.1;
+}
+
 arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
 {
   return exp( -x / max(x.col(0)) );

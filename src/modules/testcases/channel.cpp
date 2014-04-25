@@ -465,15 +465,65 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
-    arma::mat Lt(join_rows(Re_tau-Re_tau*data.col(0), (2./H)*sqrt(k)/(0.09*omega)));
     
-    Lt.save( (executionPath()/"LdeltaRANS_vs_yp.txt").c_str(), arma_ascii);
+    arma::mat ydelta=Re_tau-Re_tau*data.col(0);
+    arma::mat Lt=(2./H)*sqrt(k)/(0.09*omega);
+    arma::mat Ltp(join_rows(ydelta, Lt));
+    Ltp.save( (executionPath()/"LdeltaRANS_vs_yp.txt").c_str(), arma_ascii);
+    
+    struct cfm : public RegressionModel
+    {
+      double c0, c1, c2, c3;
+        virtual int numP() const { return 4; }
+	virtual void setParameters(const double* params)
+	{
+	  c0=params[0];
+	  c1=params[1];
+	  c2=params[2];
+	  c3=params[3];
+	}
+	virtual void setInitialValues(double* params) const
+	{
+	  params[0]=1.0;
+	  params[1]=-1.0;
+	  params[2]=1.0;
+	  params[3]=1.0;
+	}
+
+	virtual arma::mat evaluateObjective(const arma::mat& x) const
+	{
+	  return c0*pow(x, c2)+c1*pow(x, c3);
+	}
+    } m;
+    nonlinearRegression(Lt, ydelta, m);
+    arma::mat yfit=m.evaluateObjective(ydelta);
     
     gp<<"plot 0 not lt -1,"
-	" '-' w l not"
+	" '-' w l t 'CFD', '-' w l t 'Fit "<<m.c0<<"*ydelta^"<<m.c2<<" + ("<<m.c1<<"*ydelta^"<<m.c3<<")'"
 	<<endl;
-    gp.send1d( Lt );
+    gp.send1d( Ltp );
+    gp.send1d( arma::mat(join_rows(ydelta, yfit)) );
 
+    results->insert
+    (
+     "regressionCoefficientsTubulentLengthScale",
+     std::auto_ptr<AttributeTableResult>
+     (
+       new AttributeTableResult
+       (
+	 list_of<string>
+	  ("c0")
+	  ("c1")
+	  ("c2")
+	  ("c3"),
+
+	 list_of<AttributeTableResult::AttributeValue>
+	  (m.c0)(m.c1)(m.c2)(m.c3),
+	"Regression coefficients", "", ""
+	)
+     )
+    );
+     
     results->insert(chart_name,
       std::auto_ptr<Image>(new Image
       (

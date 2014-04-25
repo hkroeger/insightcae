@@ -215,6 +215,7 @@ public:
   CorrelationFunctionModel();
   virtual int numP() const;
   virtual void setParameters(const double* params);
+  virtual void setInitialValues(double* params) const;
   virtual arma::mat weights(const arma::mat& x) const;
   virtual arma::mat evaluateObjective(const arma::mat& x) const;
   

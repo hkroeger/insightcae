@@ -148,7 +148,8 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
 
   /* Set initial step sizes to 0.1 */
   ss = gsl_vector_alloc (model.numP());
-  gsl_vector_set_all (ss, 0.1);
+  //gsl_vector_set_all (ss, 0.1);
+  model.setInitialValues(ss->data);
 
   /* Initialize method and iterate */
   RegressionData param(model, y, x);

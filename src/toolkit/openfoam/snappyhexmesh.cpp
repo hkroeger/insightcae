@@ -196,6 +196,8 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   layerCtrls["relativeSizes"]=p.relativeSizes();
   layerCtrls["finalLayerThickness"]=p.tlayer();
   layerCtrls["expansionRatio"]=p.erlayer();
+  layerCtrls["nLayerIter"]=p.nLayerIter();  //OCFD
+  layerCtrls["maxLayerIter"]=p.nLayerIter();  // engys
   setStdQualityCtrls(qualityCtrls);
 
   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)

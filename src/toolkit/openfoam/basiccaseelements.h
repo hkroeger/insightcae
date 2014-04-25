@@ -616,8 +616,15 @@ class TurbulentVelocityInletBC
 {
 
 public:
+  typedef arma::mat CoeffList;
+  typedef boost::variant<double, CoeffList> LengthScaleProfile;
+  
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
     (structureType, std::string, "hatSpot")
+    (initializerType, std::string, "pipeFlow")
+    (delta, double, 1.0)
+    (longLengthScale, LengthScaleProfile, 1.0)
+    (latLengthScale, LengthScaleProfile, 1.0)
   )
   
 protected:

@@ -44,8 +44,49 @@ protected:
   std::string cycl_in_, cycl_out_;
   
   // Derived input data
-  double Re_, utau_, Ubulk_, T_, nu_, ywall_;
-  int nb_, nh_;
+  /**
+   * Bulk velocity reynolds number
+   */
+  double Re_;
+  
+  /**
+   * friction velocity
+   */
+  double utau_;
+  
+  /**
+   * bulk velocity
+   */
+  double Ubulk_;
+  
+  /** 
+   * flow-through time
+   */
+  double T_;
+  
+  /**
+   * viscosity
+   */
+  double nu_;
+  
+  /**
+   * height of cell layer nearest to wall
+   */
+  double ywall_;
+  
+  /**
+   * number of cells along span
+   */
+  int nb_;
+  
+  /**
+   * number of cells along half height
+   */
+  int nh_;
+  
+  /**
+   * grading towards wall
+   */
   double gradh_;
   
 public:
@@ -107,6 +148,39 @@ public:
   
 };
 
+class ChannelInflow
+: public ChannelBase
+{
+  
+  const static int ntpc_ = 4;
+  const static char* tpc_names_[ntpc_]; 
+  const static double tpc_xlocs_[ntpc_];
+  
+public:
+  declareType("Channel Flow Test Case (Inflow Generator)");
+  
+  ChannelInflow(const NoParameters&);
+  
+  virtual ParameterSet defaultParameters() const;
+
+  virtual void createMesh
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );  
+  
+  virtual void createCase
+  (
+    OpenFOAMCase& cm,
+    const ParameterSet& p
+  );
+
+  ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+
+  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  
+};
 
 }
 

@@ -1322,23 +1322,56 @@ void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& locat
   
   OFDictData::dict d;
   d["Ubulk"]=arma::norm(p_.velocity(), 2);
-  d["D"]=2.0;
   d["patchName"]=patchName_;
   
   OFDictData::dict d_long, d_lat;
-  d_long["c0"]=0.78102065;
-  d_long["c1"]=-0.30801496;
-  d_long["c2"]=0.18299657;
-  d_long["c3"]=3.73012118;
+  
+  const TurbulentVelocityInletBC::CoeffList* cl
+   = boost::get<TurbulentVelocityInletBC::CoeffList>( &(p_.longLengthScale()) );
+  if (cl)
+  {
+    d_long["c0"]=(*cl)(0);
+    d_long["c1"]=(*cl)(1);
+    d_long["c2"]=(*cl)(2);
+    d_long["c3"]=(*cl)(3);
+  }
+  else
+  {
+    cout<<"Using default coefficients for longitudinal length scale profile"<<endl;
+    d_long["c0"]=0.78102065;
+    d_long["c1"]=-0.30801496;
+    d_long["c2"]=0.18299657;
+    d_long["c3"]=3.73012118;
+  }
   d["L_long"]=d_long;
   
-  d_lat["c0"]=0.84107675;
-  d_lat["c1"]=-0.63386837;
-  d_lat["c2"]=0.62172817;
-  d_lat["c3"]=0.7780003;
+  cl = boost::get<TurbulentVelocityInletBC::CoeffList>( &(p_.latLengthScale()) );
+  if (cl)
+  {
+    d_lat["c0"]=(*cl)(0);
+    d_lat["c1"]=(*cl)(1);
+    d_lat["c2"]=(*cl)(2);
+    d_lat["c3"]=(*cl)(3);
+  }
+  else
+  {
+    cout<<"Using default coefficients for lateral length scale profile"<<endl;
+    d_lat["c0"]=0.84107675;
+    d_lat["c1"]=-0.63386837;
+    d_lat["c2"]=0.62172817;
+    d_lat["c3"]=0.7780003;
+  }
   d["L_lat"]=d_lat;
-  
-  initializers.push_back( "pipeFlow" );
+
+  initializers.push_back( p_.initializerType() );
+  if (p_.initializerType()=="pipeFlow")
+  {
+    d["D"]=2.0*p_.delta();
+  }
+  else if (p_.initializerType()=="channelFlow")
+  {
+    d["H"]=2.0*p_.delta();
+  }
   initializers.push_back( d );
   
   // then write to file

@@ -318,6 +318,97 @@ public:
 defineTypeNameAndDebug(pipeFlow, 0);
 addToRunTimeSelectionTable(inflowInitializer, pipeFlow, istream);
    
+
+class channelFlow
+: public inflowInitializer
+{
+  scalar Ubulk_;
+  scalar D_;
+  point p0_;
+  vector axis_;
+  LengthScaleModel L_long_;
+  LengthScaleModel L_lat_;
+  PipeReynoldsStresses rsm_;
+  
+public:
+  TypeName("channelFlow");
+  
+  channelFlow
+  (
+    const word& patchName,
+    scalar Ubulk,
+    scalar D,
+    point p0 = point(0, 0, 0),
+    vector axis = vector(1, 0, 0)
+  )
+  : inflowInitializer(patchName),
+    Ubulk_(Ubulk),
+    D_(D), p0_(p0), axis_(axis)
+  {
+  }
+
+  channelFlow(Istream& is)
+  : inflowInitializer(is),
+    Ubulk_(readScalar(dict_.lookup("Ubulk"))),
+    D_(readScalar(dict_.lookup("D"))),
+    p0_(dict_.lookupOrDefault<point>("p0", point(0,0,0))),
+    axis_(dict_.lookupOrDefault<vector>("axis", vector(1,0,0))),
+    L_long_(dict_.subDict("L_long")),
+    L_lat_(dict_.subDict("L_lat"))
+  {
+  }
+    
+  virtual void initialize(volVectorField& U, scalar nu, bool checkStatistics=false) const
+  {
+    inflowGeneratorBaseFvPatchVectorField& ifpf = inflowGeneratorPatchField(U);
+    double Re=Ubulk_*0.5*D_/nu;
+    double Retau=insight::PipeBase::Retau(Re);
+    double utau=Ubulk_*Retau/Re;
+    Info<<"Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
+    
+    const fvPatch& patch=ifpf.patch();
+    forAll(patch.Cf(), fi)
+    {
+      const point& p=patch.Cf()[fi];
+      
+      vector rv=p-p0_; rv-=axis_*(rv&axis_);
+      scalar r=mag(rv);
+      scalar y=(1.-r/(0.5*D_));
+      
+      ifpf.Umean()[fi]=Ubulk_ * axis_*Foam::pow(y, 1./7.);
+      
+      vector e_radial(rv/mag(rv));
+      vector e_tan=axis_^e_radial;
+      
+      tensor ev(axis_, e_radial, e_tan); // eigenvectors => rows
+      scalar delta=0.5*D_;
+      
+      tensor L = ev.T() & (delta*diagTensor(L_long_(y), L_lat_(y), L_lat_(y))) & ev;
+
+      ifpf.L()[fi] = symmTensor(L.xx(), L.xy(), L.xz(),
+					L.yy(), L.yz(),
+						L.zz());
+      scalar yplus=y*utau/nu;
+      tensor R=ev.T() & (rsm_(yplus)*sqr(utau)) & ev;
+      ifpf.R()[fi] = symmTensor(R.xx(), R.xy(), R.xz(),
+					R.yy(), R.yz(),
+						R.zz());
+    }
+    
+    if (checkStatistics)
+      ifpf.computeConditioningFactor();
+  }
+
+  virtual autoPtr<inflowInitializer> clone() const
+  {
+    return autoPtr<inflowInitializer>(new channelFlow(patchName_, Ubulk_, D_, p0_, axis_));
+  }
+
+};
+
+defineTypeNameAndDebug(channelFlow, 0);
+addToRunTimeSelectionTable(inflowInitializer, channelFlow, istream);
+
 }
 
 int main(int argc, char *argv[])

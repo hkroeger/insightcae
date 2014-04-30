@@ -70,6 +70,9 @@ public:
 // boost::ptr_map<std::string, insight::Factory<baseT, paramS> > baseT::factories_;
 #define defineFactoryTable(baseT, paramS) \
  baseT::FactoryTable* baseT::factories_; \
+ /** \
+  * lookup a factory from the table and construct an instance with the given parameters \
+  */ \
  baseT* baseT::lookup(const std::string& key, const paramS& cp) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -77,6 +80,9 @@ public:
     throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
   return (*i->second)( cp ); \
  } \
+ /** \
+  * return a list with the available factories \
+  */ \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \

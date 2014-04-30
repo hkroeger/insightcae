@@ -120,6 +120,11 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5);
 
+/**
+ * interpolates in a 2D-matrix using GSL spline routines.
+ * The first column is assumed to contain the x-values.
+ * All remaining columns are dependents and to be interpolated.
+ */
 class Interpolator
 {
   arma::mat first, last;
@@ -129,8 +134,18 @@ class Interpolator
 public:
   Interpolator(const arma::mat& xy);
   ~Interpolator();
+  /**
+   * returns a single y-value from column column
+   */
   double y(double x, int col=0) const;
+  /**
+   * interpolates all y values (row vector) at x
+   */
   arma::mat operator()(double x) const;
+  /**
+   * interpolates all y values (row vector) 
+   * at multiple locations given in x
+   */
   arma::mat operator()(const arma::mat& x) const;
 };
 

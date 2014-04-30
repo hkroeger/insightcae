@@ -22,6 +22,7 @@
 #define INSIGHT_EXCEPTION_H
 
 #include <string>
+#include <iostream>
 
 namespace insight {
 
@@ -33,6 +34,8 @@ public:
     Exception(const std::string& msg);
     virtual ~Exception();
 };
+
+void Warning(const std::string& msg);
 
 }
 

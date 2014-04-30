@@ -20,7 +20,8 @@
 
 #include "exception.h"
 
-using namespace insight;
+namespace insight
+{
 
 Exception::Exception(const std::string& msg)
 : std::string(msg)
@@ -33,3 +34,9 @@ Exception::~Exception()
 
 }
 
+void Warning(const std::string& msg)
+{
+  std::cout<<msg<<std::endl;
+}
+
+}

@@ -276,6 +276,27 @@ signals:
   void apply();
 };
 
+class SelectableSubsetParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+  
+  QComboBox* selBox_;
+  
+public:
+  declareType(insight::SelectableSubsetParameter::typeName_());
+  SelectableSubsetParameterWrapper(const ConstrP& p);
+  inline insight::SelectableSubsetParameter& param() { return dynamic_cast<insight::SelectableSubsetParameter&>(p_); }
+  
+public slots:
+  virtual void onApply();
+  virtual void onUpdate();
+  
+signals:
+  void apply();
+  void update();
+};
+
 void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *superform=NULL);
 
 #endif // PARAMETERWRAPPER_H

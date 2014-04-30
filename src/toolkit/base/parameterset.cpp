@@ -246,4 +246,63 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
     value_->readFromNode(doc, *child);
 }
 
+defineType(SelectableSubsetParameter);
+addToFactoryTable(Parameter, SelectableSubsetParameter, std::string);
+
+SelectableSubsetParameter::SelectableSubsetParameter(const std::string& description)
+: Parameter(description)
+{
 }
+
+SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description)
+: Parameter(description),
+  selection_(defaultSelection)
+{
+  BOOST_FOREACH( const SelectableSubsetParameter::SingleSubset& i, defaultValue )
+  {
+    std::string key(boost::get<0>(i));
+    value_.insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+  }
+}
+
+std::string SelectableSubsetParameter::latexRepresentation() const
+{
+  return "(Not implemented)";
+}
+
+Parameter* SelectableSubsetParameter::clone () const
+{
+  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_);
+  np->selection_=selection_;
+  for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
+  {
+    std::string key(i->first);
+    np->value_.insert(key, i->second->clone());
+  }
+  return np; 
+}
+
+rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  using namespace rapidxml;
+  
+   xml_node<>* child = Parameter::appendToNode(name, doc, node);
+//   child->append_attribute(doc.allocate_attribute
+//   (
+//     "value", 
+//     doc.allocate_string(valueToString(value_).c_str())
+//   ));
+//     
+//   std::cout<<"appending subset "<<name<<std::endl;
+//   using namespace rapidxml;
+//   xml_node<>* child = Parameter::appendToNode(name, doc, node);
+//   value_->appendToNode(doc, *child);
+   return child;  
+}
+
+void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+}
+
+}
+

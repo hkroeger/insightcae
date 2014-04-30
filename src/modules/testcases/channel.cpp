@@ -26,7 +26,7 @@
 #include "refdata.h"
 
 #include <boost/assign/list_of.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
+#include <boost/assign.hpp>
 #include "boost/ptr_container/ptr_container.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
@@ -912,6 +912,44 @@ ParameterSet ChannelInflow::defaultParameters() const
 	  ), 
 	  "Definition of the operation point under consideration"
 	))
+      
+      (
+	"inflow", new SubsetParameter
+	(
+	  ParameterSet( list_of<ParameterSet::SingleEntry>
+	  (
+	    "meanvelocity",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "PowerLawMeanVelocity", 
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"PowerLawMeanVelocity", new ParameterSet
+		(
+		  list_of<ParameterSet::SingleEntry>
+		  ("power", new DoubleParameter(1./7., "exponent of mean velocity power law"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"TabulatedMeanVelocity", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      ).convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	      "Coefficients of longitudinal length scale profile fit"
+	    )
+	  )
+	  .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Definition of the operation point under consideration"
+	)
+      )
+	
       
       .convert_to_container<ParameterSet::EntryList>()
   );

@@ -512,3 +512,45 @@ void DoubleRangeParameterWrapper::onUpdate()
 {
   rebuildList();
 }
+
+
+
+
+SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
+{
+  QVBoxLayout *layout0=new QVBoxLayout(this);
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  selBox_=new QComboBox(this);
+  BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
+  {
+    selBox_->addItem(pair.first.c_str());
+  }
+  layout->addWidget(selBox_);
+  layout0->addLayout(layout);
+
+  QGroupBox *name2Label = new QGroupBox(param().selection().c_str(), this);
+  //QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  addWrapperToWidget(param()(), name2Label, this);
+  layout0->addWidget(name2Label);
+  this->setLayout(layout0);
+}
+
+void SelectableSubsetParameterWrapper::onApply()
+{
+  param().selection()=selBox_->currentText().toStdString();
+  emit(apply());
+}
+
+void SelectableSubsetParameterWrapper::onUpdate()
+{
+  //selBox_->setCurrentIndex(param()());
+  emit(update());
+}
+
+defineType(SelectableSubsetParameterWrapper);
+addToFactoryTable(ParameterWrapper, SelectableSubsetParameterWrapper, ParameterWrapper::ConstrP);

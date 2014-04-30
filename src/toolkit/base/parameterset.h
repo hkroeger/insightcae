@@ -45,6 +45,7 @@ class ParameterSet
 {
   
 public:
+  typedef boost::shared_ptr<ParameterSet> Ptr;
   typedef boost::tuple<std::string, Parameter*> SingleEntry;
   typedef std::vector< boost::tuple<std::string, Parameter*> > EntryList;
 
@@ -202,6 +203,7 @@ class SubsetParameter
 : public Parameter
 {
 public:
+  typedef boost::shared_ptr<SubsetParameter> Ptr;
   typedef ParameterSet value_type;
   
 protected:
@@ -220,6 +222,41 @@ public:
   
   virtual std::string latexRepresentation() const;
   
+  virtual Parameter* clone () const;
+
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+};
+
+class SelectableSubsetParameter
+: public Parameter
+{
+public:
+  typedef std::string key_type;
+  typedef boost::ptr_map<key_type, ParameterSet> ItemList;
+  typedef ItemList value_type;
+  
+  typedef boost::tuple<key_type, ParameterSet*> SingleSubset;
+  typedef std::vector< boost::tuple<key_type, ParameterSet*> > SubsetList;
+  
+protected:
+  key_type selection_;
+  ItemList value_;
+  
+public:
+  declareType("selectableSubset");
+  
+  SelectableSubsetParameter(const std::string& description);
+  SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description);
+  
+  inline key_type& selection() { return selection_; }
+  inline const key_type& selection() const { return selection_; }
+  inline const ItemList& items() { return value_; }
+  inline ParameterSet& operator()() { return *(value_.find(selection_)->second); }
+  inline const ParameterSet& operator()() const { return *(value_.find(selection_)->second); }
+
+  virtual std::string latexRepresentation() const;
+
   virtual Parameter* clone () const;
 
   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;

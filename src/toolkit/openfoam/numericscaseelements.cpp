@@ -442,13 +442,13 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers["p"]=GAMGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   
-  solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers["pFinal"]=GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);

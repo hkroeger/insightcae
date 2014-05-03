@@ -418,8 +418,8 @@ void ISCADMainWindow::rebuildModel()
   }
     
   context_->getContext()->EraseAll();
-  parser.modelstepSymbols.for_each(Transferrer(*this));
-  parser.scalarSymbols.for_each(Transferrer(*this));
-  parser.vectorSymbols.for_each(Transferrer(*this));
+  parser.model_.modelstepSymbols.for_each(Transferrer(*this));
+  parser.model_.scalarSymbols.for_each(Transferrer(*this));
+  parser.model_.vectorSymbols.for_each(Transferrer(*this));
   
 }

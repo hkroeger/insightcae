@@ -47,6 +47,7 @@ public:
     (np, int, 1)
     (writeControl, std::string, "timeStep")
     (writeInterval, double, 100.0)
+    (purgeWrite, int, 10)
   )
 
 protected:

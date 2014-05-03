@@ -53,7 +53,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["endTime"]=1000.0;
   controlDict["writeControl"]=p_.writeControl();
   controlDict["writeInterval"]=p_.writeInterval();
-  controlDict["purgeWrite"]=10;
+  controlDict["purgeWrite"]=p_.purgeWrite();
   controlDict["writeFormat"]="binary";
   controlDict["writePrecision"]=8;
   controlDict["writeCompression"]="compressed";

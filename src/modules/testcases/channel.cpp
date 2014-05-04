@@ -917,6 +917,7 @@ ParameterSet ChannelInflow::defaultParameters() const
 	"inflow", new SubsetParameter
 	(
 	  ParameterSet( list_of<ParameterSet::SingleEntry>
+	  // Mean velocity
 	  (
 	    "meanvelocity",
 	    
@@ -941,12 +942,84 @@ ParameterSet ChannelInflow::defaultParameters() const
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
 	      ).convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	      "Coefficients of longitudinal length scale profile fit"
+	     
+	      "Definition of the mean inflow velocity"
 	    )
 	  )
+
+	  // RMS
+	  (
+	    "reystress",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "WallLayerReynoldsStresses",  // default selection
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"WallLayerReynoldsStresses", new ParameterSet
+		(
+		  ParameterSet::EntryList()
+		)
+	      )
+	      (
+		"ChannelDNSReynoldsStresses", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("dataset", new StringParameter("MKM_Channel", "name of the DNS dataset"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"TabulatedKReynoldsStresses", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("filename", new PathParameter("fileName", "name of the ascii file containing the profile of TKE"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	     
+	      "Definition of the reynolds stresses"
+	    )
+	  )
+	  
+	  // length scale
+	  (
+	    "lengthscale",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "FittedIsotropicLengthScaleModel",  // default selection
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"FittedIsotropicLengthScaleModel", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("Lcoeff",	new VectorParameter(Clong, "Coefficients of isotropic length scale profile fit"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"FittedAnisotropicLengthScaleModel", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("Llongcoeff",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
+		  ("Lwallcoeff",	new VectorParameter(Clat, "Coefficients of wall-normal length scale profile fit"))
+		  ("Llatcoeff",		new VectorParameter(Clat, "Coefficients of lateral length scale profile fit"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	     
+	      "Definition of the length scale"
+	    )
+	  )
+
 	  .convert_to_container<ParameterSet::EntryList>()
 	  ), 
-	  "Definition of the operation point under consideration"
+	  "Definition of the inflow boundary condition"
 	)
       )
 	

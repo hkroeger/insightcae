@@ -125,6 +125,8 @@ public:
   
   PipeInflow(const NoParameters&);
   
+  ParameterSet defaultParameters() const;
+  
   virtual void createMesh
   (
     OpenFOAMCase& cm,

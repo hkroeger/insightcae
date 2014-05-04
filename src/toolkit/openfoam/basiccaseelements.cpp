@@ -1267,6 +1267,227 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+
+TurbulentVelocityInletBC::inflowInitializer::~inflowInitializer()
+{
+}
+
+void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
+(
+  OFDictData::dict& d, 
+  const std::string& patchName,
+  const arma::mat& Ubulk,
+  const ParameterSet& params
+) const
+{
+  d["patchName"]=patchName;
+  
+  std::string MeanVelocityModel = params.get<SelectableSubsetParameter>("meanvelocity").selection();
+  std::string ReynoldsStressModel = params.get<SelectableSubsetParameter>("reystress").selection();
+  std::string LengthScaleModel = params.get<SelectableSubsetParameter>("lengthscale").selection();
+  const ParameterSet& MeanVelocityModelParams = params.get<SelectableSubsetParameter>("meanvelocity")();
+  const ParameterSet& LengthScaleModelParams = params.get<SelectableSubsetParameter>("lengthscale")();
+  const ParameterSet& ReynoldsStressModelParams = params.get<SelectableSubsetParameter>("reystress")();
+  
+  d["MeanVelocityModel"]=MeanVelocityModel;
+  OFDictData::dict cd;
+  if (MeanVelocityModel=="PowerLawMeanVelocity")
+  {
+    cd["n"]=MeanVelocityModelParams.getDouble("n");
+  }
+  else throw insight::Exception("Unsupported MeanVelocityModel: "+MeanVelocityModel);
+  d[MeanVelocityModel+"Coeffs"]=cd;
+  
+  d["LengthScaleModel"]=LengthScaleModel;
+  OFDictData::dict lcd;
+  if (LengthScaleModel=="FittedIsotropicLengthScaleModel")
+  {
+    arma::mat coeff=LengthScaleModelParams.get<VectorParameter>("Lcoeff")();
+    lcd["c0"]=coeff(0);
+    lcd["c1"]=coeff(1);
+    lcd["c2"]=coeff(2);
+    lcd["c3"]=coeff(3);
+  }
+  else throw insight::Exception("Unsupported LengthScaleModel: "+LengthScaleModel);
+  d[LengthScaleModel+"Coeffs"]=lcd;
+
+  d["ReynoldsStressModel"]=ReynoldsStressModel;
+  OFDictData::dict rcd;
+  if (ReynoldsStressModel=="TabulatedKReynoldsStresses")
+  {
+    rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("filename").string()+"\"";
+  }
+  else throw insight::Exception("Unsupported ReynoldsStressModel: "+ReynoldsStressModel);
+  d[ReynoldsStressModel+"Coeffs"]=rcd;
+  
+}
+
+ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
+{
+  arma::mat Clong, Clat;
+  Clong << 0.78102065<<-0.30801496<<0.18299657<<3.73012118;
+  Clat << 0.84107675<<-0.63386837<<0.62172817<<0.7780003;  
+  
+  return ParameterSet
+  (
+      boost::assign::list_of<ParameterSet::SingleEntry>
+      (
+	"inflow", new SubsetParameter
+	(
+	  ParameterSet( list_of<ParameterSet::SingleEntry>
+	  // Mean velocity
+	  (
+	    "meanvelocity",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "PowerLawMeanVelocity", 
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"PowerLawMeanVelocity", new ParameterSet
+		(
+		  list_of<ParameterSet::SingleEntry>
+		  ("n", new DoubleParameter(7., "denominator of exponent 1/n of mean velocity power law"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"TabulatedMeanVelocity", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      ).convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	     
+	      "Definition of the mean inflow velocity"
+	    )
+	  )
+
+	  // RMS
+	  (
+	    "reystress",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "WallLayerReynoldsStresses",  // default selection
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"WallLayerReynoldsStresses", new ParameterSet
+		(
+		  ParameterSet::EntryList()
+		)
+	      )
+	      (
+		"ChannelDNSReynoldsStresses", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("dataset", new StringParameter("MKM_Channel", "name of the DNS dataset"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"TabulatedKReynoldsStresses", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("filename", new PathParameter("fileName", "name of the ascii file containing the profile of TKE"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	     
+	      "Definition of the reynolds stresses"
+	    )
+	  )
+	  
+	  // length scale
+	  (
+	    "lengthscale",
+	    
+	    new SelectableSubsetParameter
+	    (
+	      
+	      "FittedIsotropicLengthScaleModel",  // default selection
+	      list_of<SelectableSubsetParameter::SingleSubset>
+	      (
+		"FittedIsotropicLengthScaleModel", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("Lcoeff",	new VectorParameter(Clong, "Coefficients of isotropic length scale profile fit"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"FittedAnisotropicLengthScaleModel", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("Llongcoeff",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
+		  ("Lwallcoeff",	new VectorParameter(Clat, "Coefficients of wall-normal length scale profile fit"))
+		  ("Llatcoeff",		new VectorParameter(Clat, "Coefficients of lateral length scale profile fit"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	     
+	      "Definition of the length scale"
+	    )
+	  )
+
+	  .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Definition of the inflow boundary condition"
+	)
+      )
+      
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+}
+
+TurbulentVelocityInletBC::pipeInflowInitializer::pipeInflowInitializer()
+{
+}
+
+std::string TurbulentVelocityInletBC::pipeInflowInitializer::type() const
+{
+  return "pipeFlow";
+}
+
+void TurbulentVelocityInletBC::pipeInflowInitializer::addToInitializerList
+(
+  OFDictData::dict& d, 
+  const std::string& patchName,
+  const arma::mat& Ubulk,
+  const ParameterSet& params
+) const
+{
+  d["Ubulk"]=arma::norm(Ubulk, 2);
+  inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
+}
+
+TurbulentVelocityInletBC::channelInflowInitializer::channelInflowInitializer()
+{
+}
+
+std::string TurbulentVelocityInletBC::channelInflowInitializer::type() const
+{
+  return "channelFlow";
+}
+
+void TurbulentVelocityInletBC::channelInflowInitializer::addToInitializerList
+(
+  OFDictData::dict& d, 
+  const std::string& patchName,
+  const arma::mat& Ubulk,
+  const ParameterSet& params
+) const
+{
+  d["Ubulk"]=arma::norm(Ubulk, 2);
+  d["vertical"]=OFDictData::to_OF(vec3(0,1,0));
+  inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
+}
+
 TurbulentVelocityInletBC::TurbulentVelocityInletBC
 (
   OpenFOAMCase& c,
@@ -1314,70 +1535,27 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
   controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 }
 
-void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location) const
-{
-  OFDictData::dictFile inflowProperties;
-  
-  OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
-  
-  OFDictData::dict d;
-  d["Ubulk"]=arma::norm(p_.velocity(), 2);
-  d["patchName"]=patchName_;
-  
-  OFDictData::dict d_long, d_lat;
-  
-  const TurbulentVelocityInletBC::CoeffList* cl
-   = boost::get<TurbulentVelocityInletBC::CoeffList>( &(p_.longLengthScale()) );
-  if (cl)
-  {
-    d_long["c0"]=(*cl)(0);
-    d_long["c1"]=(*cl)(1);
-    d_long["c2"]=(*cl)(2);
-    d_long["c3"]=(*cl)(3);
-  }
-  else
-  {
-    cout<<"Using default coefficients for longitudinal length scale profile"<<endl;
-    d_long["c0"]=0.78102065;
-    d_long["c1"]=-0.30801496;
-    d_long["c2"]=0.18299657;
-    d_long["c3"]=3.73012118;
-  }
-  d["L_long"]=d_long;
-  
-  cl = boost::get<TurbulentVelocityInletBC::CoeffList>( &(p_.latLengthScale()) );
-  if (cl)
-  {
-    d_lat["c0"]=(*cl)(0);
-    d_lat["c1"]=(*cl)(1);
-    d_lat["c2"]=(*cl)(2);
-    d_lat["c3"]=(*cl)(3);
-  }
-  else
-  {
-    cout<<"Using default coefficients for lateral length scale profile"<<endl;
-    d_lat["c0"]=0.84107675;
-    d_lat["c1"]=-0.63386837;
-    d_lat["c2"]=0.62172817;
-    d_lat["c3"]=0.7780003;
-  }
-  d["L_lat"]=d_lat;
 
-  initializers.push_back( p_.initializerType() );
-  if (p_.initializerType()=="pipeFlow")
+
+
+void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const
+{
+  if (p_.initializer())
   {
-    d["D"]=2.0*p_.delta();
+    OFDictData::dictFile inflowProperties;
+    
+    OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
+    
+    initializers.push_back( p_.initializer()->type() );
+    OFDictData::dict d;
+    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity(), iniparams);
+    initializers.push_back(d);
+    
+    // then write to file
+    inflowProperties.write( location / "constant" / "inflowProperties" );
+    
+    OFcase().executeCommand(location, "initInflowGenerator");
   }
-  else if (p_.initializerType()=="channelFlow")
-  {
-    d["H"]=2.0*p_.delta();
-  }
-  initializers.push_back( d );
-  
-  // then write to file
-  inflowProperties.write( location / "constant" / "inflowProperties" );
-  
-  OFcase().executeCommand(location, "initInflowGenerator");
 }
   
 PressureOutletBC::PressureOutletBC

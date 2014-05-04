@@ -138,7 +138,9 @@ VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   le_=new QLineEdit(this);
-  le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  
+  //le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  le_->setText(QString(insight::valueToString(param()()).c_str()));
   //le_->setValidator(new QDoubleValidator());
   le_->setToolTip(QString(param().description().c_str()));
   layout->addWidget(le_);
@@ -147,13 +149,15 @@ VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
 
 void VectorParameterWrapper::onApply()
 {
-  QStringList sl=le_->text().split(" ", QString::SkipEmptyParts);
-  param()()=insight::vec3(sl[0].toDouble(), sl[1].toDouble(), sl[2].toDouble());
+//   QStringList sl=le_->text().split(" ", QString::SkipEmptyParts);
+//   param()()=insight::vec3(sl[0].toDouble(), sl[1].toDouble(), sl[2].toDouble());
+  insight::stringToValue(le_->text().toStdString(), param()());
 }
 
 void VectorParameterWrapper::onUpdate()
 {
-  le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  //le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
+  le_->setText(QString(insight::valueToString(param()()).c_str()));
   //le_->setText(QString::number(param()()));
 }
 
@@ -564,12 +568,13 @@ void SelectableSubsetParameterWrapper::onApply()
 void SelectableSubsetParameterWrapper::onUpdate()
 {
   //selBox_->setCurrentIndex(param()());
+  selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
+  insertSubset();
   emit(update());
 }
 
 void SelectableSubsetParameterWrapper::onCurrentIndexChanged(const QString& qs)
 {
-  std::cout<<"on cis"<<std::endl;
   insertSubset();
 }
 

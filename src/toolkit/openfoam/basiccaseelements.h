@@ -619,14 +619,66 @@ public:
   typedef arma::mat CoeffList;
   typedef boost::variant<double, CoeffList> LengthScaleProfile;
   
+  struct inflowInitializer
+  {
+    typedef boost::shared_ptr<inflowInitializer> Ptr;
+    
+    virtual ~inflowInitializer();
+    virtual std::string type() const =0;
+    virtual void addToInitializerList
+    (
+      OFDictData::dict& initdict, 
+      const std::string& patchName,
+      const arma::mat& Ubulk,
+      const ParameterSet& params
+    ) const;
+    static ParameterSet defaultParameters();
+  };
+  
+//   struct isotropicTurbulenceInflowInitializer
+//   {
+//     double Ubulk;
+//     arma::mat RMS;
+//     
+//     virtual void addToInitializerList(OFDictData::list&) const;
+//   };
+  
+  struct pipeInflowInitializer
+  : public inflowInitializer
+  {
+    pipeInflowInitializer();
+    virtual std::string type() const;
+    virtual void addToInitializerList
+    (
+      OFDictData::dict& initdict, 
+      const std::string& patchName, 
+      const arma::mat& Ubulk,
+      const ParameterSet& params
+    ) const;
+  };
+
+  struct channelInflowInitializer
+  : public inflowInitializer
+  {
+    channelInflowInitializer();
+    virtual std::string type() const;
+    virtual void addToInitializerList
+    (
+      OFDictData::dict& initdict, 
+      const std::string& patchName, 
+      const arma::mat& Ubulk,
+      const ParameterSet& params
+    ) const;
+  };
+
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
     (structureType, std::string, "hatSpot")
-    (initializerType, std::string, "pipeFlow")
+    (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
     (delta, double, 1.0)
     (longLengthScale, LengthScaleProfile, 1.0)
     (latLengthScale, LengthScaleProfile, 1.0)
   )
-  
+    
 protected:
   Parameters p_;
 
@@ -640,7 +692,7 @@ public:
   );
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-  virtual void initInflowBC(const boost::filesystem::path& location) const;
+  virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
 };
 
 

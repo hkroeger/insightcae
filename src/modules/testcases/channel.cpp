@@ -314,6 +314,7 @@ void ChannelBase::createCase
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
   
   path dir = executionPath();
 
@@ -324,6 +325,8 @@ void ChannelBase::createCase
     .set_maxDeltaT(0.25*T_)
     .set_writeControl("adjustableRunTime")
     .set_writeInterval(0.25*T_)
+    .set_endTime( (inittime+meantime+mean2time)*T_ )
+    .set_writeFormat("ascii")
   ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
@@ -892,141 +895,7 @@ ChannelInflow::ChannelInflow(const NoParameters& nop)
 ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
-  
-  arma::mat Clong, Clat;
-  Clong << 0.78102065<<-0.30801496<<0.18299657<<3.73012118;
-  Clat<<0.84107675<<-0.63386837<<0.62172817<<0.7780003;  
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-          
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Llongitudinal",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
-	    ("Llateral",	new VectorParameter(Clat, "Coefficients of longitudinal length scale profile fit"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      (
-	"inflow", new SubsetParameter
-	(
-	  ParameterSet( list_of<ParameterSet::SingleEntry>
-	  // Mean velocity
-	  (
-	    "meanvelocity",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "PowerLawMeanVelocity", 
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"PowerLawMeanVelocity", new ParameterSet
-		(
-		  list_of<ParameterSet::SingleEntry>
-		  ("power", new DoubleParameter(1./7., "exponent of mean velocity power law"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"TabulatedMeanVelocity", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      ).convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the mean inflow velocity"
-	    )
-	  )
-
-	  // RMS
-	  (
-	    "reystress",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "WallLayerReynoldsStresses",  // default selection
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"WallLayerReynoldsStresses", new ParameterSet
-		(
-		  ParameterSet::EntryList()
-		)
-	      )
-	      (
-		"ChannelDNSReynoldsStresses", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("dataset", new StringParameter("MKM_Channel", "name of the DNS dataset"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"TabulatedKReynoldsStresses", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("filename", new PathParameter("fileName", "name of the ascii file containing the profile of TKE"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the reynolds stresses"
-	    )
-	  )
-	  
-	  // length scale
-	  (
-	    "lengthscale",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "FittedIsotropicLengthScaleModel",  // default selection
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"FittedIsotropicLengthScaleModel", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("Lcoeff",	new VectorParameter(Clong, "Coefficients of isotropic length scale profile fit"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"FittedAnisotropicLengthScaleModel", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("Llongcoeff",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
-		  ("Lwallcoeff",	new VectorParameter(Clat, "Coefficients of wall-normal length scale profile fit"))
-		  ("Llatcoeff",		new VectorParameter(Clat, "Coefficients of lateral length scale profile fit"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the length scale"
-	    )
-	  )
-
-	  .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the inflow boundary condition"
-	)
-      )
-	
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
+  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries()); 
   return p;
 }
 
@@ -1047,13 +916,14 @@ void ChannelInflow::createCase
 )
 {  
   // create local variables from ParameterSet
-  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   PSINT(p, "fluid", turbulenceModel);
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(executionPath(), boundaryDict);
@@ -1062,8 +932,7 @@ void ChannelInflow::createCase
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
     //.set_mixingLength(0.1*D)
-    .set_longLengthScale( p.get<VectorParameter>("operation/Llongitudinal")() )
-    .set_latLengthScale( p.get<VectorParameter>("operation/Llateral")() )
+    .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
@@ -1088,7 +957,7 @@ void ChannelInflow::createCase
 
 ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
@@ -1209,7 +1078,7 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
-  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath());
+  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }

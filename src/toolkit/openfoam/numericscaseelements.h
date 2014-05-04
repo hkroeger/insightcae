@@ -47,7 +47,10 @@ public:
     (np, int, 1)
     (writeControl, std::string, "timeStep")
     (writeInterval, double, 100.0)
+    (writeFormat, std::string, "binary")
     (purgeWrite, int, 10)
+    (deltaT, double, 1.0)
+    (endTime, double, 1000.0)
   )
 
 protected:
@@ -118,6 +121,9 @@ class pimpleFoamNumerics
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (nCorrectors, int, 2)
+    (nOuterCorrectors, int, 1)
+    (nNonOrthogonalCorrectors, int, 0)
     (deltaT, double, 1.0)
     (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)

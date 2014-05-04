@@ -247,6 +247,12 @@ public:
   declareType("selectableSubset");
   
   SelectableSubsetParameter(const std::string& description);
+  /**
+   * Construct from components:
+   * \param defaultSelection The key of the subset which is selected per default
+   * \param defaultValue A map of key-subset pairs. Between these can be selected
+   * \param description The description of the selection parameter
+   */
   SelectableSubsetParameter(const key_type& defaultSelection, const SubsetList& defaultValue, const std::string& description);
   
   inline key_type& selection() { return selection_; }

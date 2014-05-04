@@ -286,22 +286,31 @@ rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string&
 {
   using namespace rapidxml;
   
-   xml_node<>* child = Parameter::appendToNode(name, doc, node);
-//   child->append_attribute(doc.allocate_attribute
-//   (
-//     "value", 
-//     doc.allocate_string(valueToString(value_).c_str())
-//   ));
-//     
-//   std::cout<<"appending subset "<<name<<std::endl;
-//   using namespace rapidxml;
-//   xml_node<>* child = Parameter::appendToNode(name, doc, node);
-//   value_->appendToNode(doc, *child);
-   return child;  
+  xml_node<>* child = Parameter::appendToNode(name, doc, node);
+  child->append_attribute(doc.allocate_attribute
+  (
+    "value", 
+    doc.allocate_string(selection_.c_str())
+  ));
+  
+  operator()().appendToNode(doc, *child);
+
+  return child;  
 }
 
 void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
 {
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, name);
+  if (child)
+  {
+    selection_=child->first_attribute("value")->value();
+    
+    if (value_.find(selection_)==value_.end())
+      throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
+    
+    operator()().readFromNode(doc, *child);
+  }
 }
 
 }

@@ -40,12 +40,13 @@ rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml:
 
 std::string valueToString(const arma::mat& value)
 {
-  return 
-  boost::lexical_cast<string>(value(0))
-  +" "+
-  boost::lexical_cast<string>(value(1))
-  +" "+
-  boost::lexical_cast<string>(value(2));
+  std::string s;
+  for (int i=0; i<value.n_elem; i++)
+  {
+    if (i>0) s+=" ";
+    s+=boost::lexical_cast<string>(value(i));
+  }
+  return s;
 }
 
 

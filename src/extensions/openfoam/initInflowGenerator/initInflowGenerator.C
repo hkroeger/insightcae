@@ -124,6 +124,33 @@ defineType(ReynoldsStressModel);
 defineFactoryTable(ReynoldsStressModel, Foam::dictionary);
 
 //=============================================================================
+//========================= Mean Velocity Model Implementations ================
+//=============================================================================
+
+
+class PowerLawMeanVelocity
+: public MeanVelocityModel
+{
+  scalar n_;
+  
+public:
+  declareType("PowerLawMeanVelocity");
+  
+  PowerLawMeanVelocity(const Foam::dictionary& d)
+  : n_(readScalar(d.lookup("n")))
+  {
+  }
+  
+  virtual Foam::vector operator()(double yp) const
+  {
+    return Foam::vector(::pow(yp, 1./n_), 0, 0);
+  }
+};
+
+defineType(PowerLawMeanVelocity);
+addToFactoryTable(MeanVelocityModel, PowerLawMeanVelocity, Foam::dictionary);
+
+//=============================================================================
 //========================= Length Scale Model Implementations ================
 //=============================================================================
 
@@ -524,9 +551,10 @@ public:
     forAll(patch.Cf(), fi)
     {
       scalar r=mag(rv[fi]);
-      scalar y=(1.-r/(0.5*D));
-      scalar yplus=y*utau/nu;
       scalar delta=0.5*D;
+      scalar y=(delta-r);
+      scalar yplus=y*utau/nu;
+      scalar ydelta=y/delta;
       
       ifpf.Umean()[fi]= utau*(*Umean_)(yplus);//Ubulk_ * axis*Foam::pow(y, 1./7.);
       
@@ -534,7 +562,7 @@ public:
       vector e_tan=axis^e_radial;
       
       tensor ev(axis, e_radial, e_tan); // eigenvectors => rows      
-      tensor L = ev.T() & (delta* (*Ldelta_)(y/delta)) & ev;
+      tensor L = ev.T() & (delta* (*Ldelta_)(ydelta)) & ev;
 
       ifpf.L()[fi] = symmTensor(L.xx(), L.xy(), L.xz(),
 					L.yy(), L.yz(),
@@ -592,13 +620,13 @@ public:
     vectorField hv=patch.Cf()-p0; 
     hv-=e_ax*(hv&e_ax);
     hv-=e_span*(hv&e_span);
-    scalar H=max(mag(hv));
+    scalar H=2.*max(mag(hv));
     scalar delta=0.5*H;
     
     double Re=Ubulk_*0.5*H/nu;
     double Retau=insight::ChannelBase::Retau(Re);
     double utau=Ubulk_*Retau/Re;
-    Info<<"D="<<H<<", center="<<p0<<", flow dir="<<e_ax<<", Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
+    Info<<"H="<<H<<", center="<<p0<<", flow dir="<<e_ax<<", Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
 
     
     tensor ev(e_ax, e_v, e_span); // eigenvectors => rows

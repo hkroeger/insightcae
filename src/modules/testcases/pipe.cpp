@@ -764,6 +764,13 @@ PipeInflow::PipeInflow(const NoParameters& nop)
 {
 }
 
+ParameterSet PipeInflow::defaultParameters() const
+{
+  ParameterSet p(PipeBase::defaultParameters());
+  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries()); 
+  return p;
+}
+
 void PipeInflow::createMesh
 (
   OpenFOAMCase& cm,
@@ -799,6 +806,7 @@ void PipeInflow::createCase
     .set_velocity(vec3(calcUbulk(p), 0, 0))
     .set_turbulenceIntensity(0.05)
     .set_mixingLength(0.1*D)
+    .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
   ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
@@ -944,7 +952,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
-  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath());
+  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }

@@ -47,6 +47,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+//   controlDict["endTime"]=p_.endTime();
+  controlDict["deltaT"]=p_.deltaT();
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
@@ -54,7 +56,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["writeControl"]=p_.writeControl();
   controlDict["writeInterval"]=p_.writeInterval();
   controlDict["purgeWrite"]=p_.purgeWrite();
-  controlDict["writeFormat"]="binary";
+  controlDict["writeFormat"]=p_.writeFormat();
   controlDict["writePrecision"]=8;
   controlDict["writeCompression"]="compressed";
   controlDict["timeFormat"]="general";
@@ -335,8 +337,6 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleFoam";
-  controlDict["endTime"]=1000.0;
-  controlDict["deltaT"]=1.0;
   
   // ============ setup fvSolution ================================
   
@@ -431,8 +431,6 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="pimpleFoam";
-  controlDict["endTime"]=1000.0;
-  controlDict["deltaT"]=1.0;
   controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
@@ -455,9 +453,9 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=2;
-  PIMPLE["nOuterCorrectors"]=1;
-  PIMPLE["nNonOrthogonalCorrectors"]=0;
+  PIMPLE["nCorrectors"]=p_.nCorrectors();
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
   PIMPLE["pRefCell"]=0;
   PIMPLE["pRefValue"]=0.0;
   
@@ -490,7 +488,32 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
   div["default"]="Gauss linear";
-
+  
+  if (p_.nOuterCorrectors()>1)
+  {
+    // SIMPLE mode: add underrelaxation
+    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+    if (OFversion()<210)
+    {
+      relax["p"]=0.3;
+      relax["U"]=0.7;
+      relax["k"]=0.7;
+      relax["omega"]=0.7;
+      relax["epsilon"]=0.7;
+    }
+    else
+    {
+      OFDictData::dict fieldRelax, eqnRelax;
+      fieldRelax["p"]=0.3;
+      eqnRelax["U"]=0.7;
+      eqnRelax["k"]=0.7;
+      eqnRelax["omega"]=0.7;
+      eqnRelax["epsilon"]=0.7;
+      relax["fields"]=fieldRelax;
+      relax["equations"]=eqnRelax;
+    }
+  }
+  
   if (LES)
   {
     /*if (OFversion()>=220)
@@ -580,8 +603,6 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="cavitatingFoam";
-  controlDict["endTime"]=1000.0;
-  controlDict["deltaT"]=1e-6;
   controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
@@ -657,8 +678,6 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="interFoam";
-  controlDict["endTime"]=1000.0;
-  controlDict["deltaT"]=1e-6;
 
   controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
@@ -792,8 +811,6 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
-  controlDict["endTime"]=100000.0;
-  controlDict["deltaT"]=1;
 
 //   controlDict["maxCo"]=0.5;
 //   controlDict["maxAlphaCo"]=50.;

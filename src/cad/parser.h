@@ -105,34 +105,43 @@ struct Model
   struct modelstepSymbolTable : public qi::symbols<char, solidmodel> {} modelstepSymbols;
 
   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
+
+  struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
 };
+
+Model::Ptr loadModel(const std::string& name);
+BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 1);
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
   : qi::grammar<Iterator, Skipper>
 {
 
-  Model model_;
+  Model::Ptr model_;
 
     ISCADParser()
-      : ISCADParser::base_type(r_model)
+      : ISCADParser::base_type(r_model),
+	model_(new Model)
     {
       
 	using namespace qi;
 	using namespace phx;
 	using namespace insight::cad;
 	
-        r_model =  *( r_assignment | r_modelstep ) 
+        r_model =  *( r_assignment | r_modelstep | r_loadmodel ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
+	r_loadmodel = ( lit("loadmodel") >> '(' >> r_identifier >> ')' >> ';' ) 
+	  [ phx::bind(model_->modelSymbols.add, _1, loadModel_(_1)) ];
+	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(model_.scalarSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(model_->scalarSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(model_.vectorSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(model_->vectorSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_.edgeFeatureSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_datumExpression >> ';') [ phx::bind(model_.datumSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_datumExpression >> ';') [ phx::bind(model_->datumSymbols.add, _1, _2) ]
 	  ;
 	  
 	r_postproc =
@@ -148,7 +157,7 @@ struct ISCADParser
 	   )
 	  ;
 	
-        r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression >> ';' ) [ phx::bind(model_.modelstepSymbols.add, _1, _2) ];
+        r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression >> ';' ) [ phx::bind(model_->modelstepSymbols.add, _1, _2) ];
 	
 	
 	r_solidmodel_expression =
@@ -162,7 +171,7 @@ struct ISCADParser
 	 ;
 	
 	r_solidmodel_primary = 
-	 lexeme[ model_.modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
 	 
          | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
@@ -199,7 +208,7 @@ struct ISCADParser
 	 ;
 	 
 	r_edgeFeaturesExpression = 
-	     lexeme[ model_.edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	     | (
 	     ( lit("edges") > lit("from") >> 
 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
@@ -214,7 +223,7 @@ struct ISCADParser
 	 ;
 	 
 	r_datumExpression = 
-	     lexeme[ model_.datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	     |
 	     ( lit("Plane") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2)) ]
@@ -246,7 +255,7 @@ struct ISCADParser
 	  ;
 	  
 	r_scalar_primary =
-	  lexeme[ model_.scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  | ('-' >> r_scalar_primary) [_val=-_1]
@@ -273,7 +282,7 @@ struct ISCADParser
 	;
 	  
 	r_vector_primary =
-	  lexeme[ model_.vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	  lexeme[ model_->vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
 	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
@@ -318,6 +327,7 @@ struct ISCADParser
     qi::rule<Iterator, datum(), Skipper> r_datumExpression;
     
     qi::rule<Iterator, Skipper> r_model;
+    qi::rule<Iterator, Skipper> r_loadmodel;
     qi::rule<Iterator, Skipper> r_assignment;
     qi::rule<Iterator, Skipper> r_postproc;
     qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
@@ -336,8 +346,8 @@ struct ModelStepsWriter
     void operator() (std::string s, SolidModel::Ptr ct);
 };
 
-template <typename Parser, typename Result, typename Iterator>
-bool parseISCADModel(Iterator first, Iterator last, Result& d)
+template <typename Parser, typename Iterator>
+bool parseISCADModel(Iterator first, Iterator last, Model::Ptr& model)
 {
   Parser parser;
   skip_grammar<Iterator> skip;
@@ -349,19 +359,22 @@ bool parseISCADModel(Iterator first, Iterator last, Result& d)
       skip
   );
   
-  ModelStepsWriter writer;
-  parser.model_.modelstepSymbols.for_each(writer);
+//   ModelStepsWriter writer;
+//   parser.model_.modelstepSymbols.for_each(writer);
 
   if (first != last) // fail if we did not get a full match
       return false;
+  
+  model = parser.model_;
   
   return r;
 }
 
 }
 
-bool parseISCADModelStream(std::istream& in, parser::model& m);
-bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m);
+bool parseISCADModelStream(std::istream& in, parser::Model::Ptr& m);
+bool parseISCADModelFile(const boost::filesystem::path& fn, parser::Model::Ptr& m);
+
 
 }
 }

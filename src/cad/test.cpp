@@ -41,13 +41,13 @@ int main(int argc, char* argv[])
   m3.saveAs( "shape.brep" );
   */
   try{
-  parser::model m;
+  parser::Model::Ptr m;
   bool ok=parseISCADModelFile(argv[1], m);
   cout<<"OK="<<ok<<endl;
-  BOOST_FOREACH(const parser::modelstep& ms, m)
-  {
-    cout<<ms.first<<endl;
-  }
+//   BOOST_FOREACH(const parser::modelstep& ms, m->modelstepSymbols)
+//   {
+//     cout<<ms.first<<endl;
+//   }
   }
   catch (boost::exception& ex) {
     // error handling

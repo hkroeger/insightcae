@@ -302,6 +302,17 @@ public:
       context_->getContext()->Erase(ais_);
     }
   }
+  
+  void exportShape()
+  {
+    QString fn=QFileDialog::getSaveFileName
+    (
+      listWidget(), 
+      "Export file name", 
+      "", "BREP file (*,brep);;STL file (*.stl)"
+    );
+    if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
+  }
  
 public slots:
   void showContextMenu(const QPoint& gpos) // this is a slot
@@ -313,6 +324,7 @@ public slots:
       myMenu.addAction("Shaded");
       myMenu.addAction("Wireframe");
       myMenu.addAction("Randomize Color");
+      myMenu.addAction("Export...");
       // ...
 
       QAction* selectedItem = myMenu.exec(gpos);
@@ -321,6 +333,7 @@ public slots:
 	  if (selectedItem->text()=="Shaded") shaded();
 	  if (selectedItem->text()=="Wireframe") wireframe();
 	  if (selectedItem->text()=="Randomize Color") randomizeColor();
+	  if (selectedItem->text()=="Export...") exportShape();
       }
       else
       {
@@ -418,8 +431,8 @@ void ISCADMainWindow::rebuildModel()
   }
     
   context_->getContext()->EraseAll();
-  parser.model_.modelstepSymbols.for_each(Transferrer(*this));
-  parser.model_.scalarSymbols.for_each(Transferrer(*this));
-  parser.model_.vectorSymbols.for_each(Transferrer(*this));
+  parser.model_->modelstepSymbols.for_each(Transferrer(*this));
+  parser.model_->scalarSymbols.for_each(Transferrer(*this));
+  parser.model_->vectorSymbols.for_each(Transferrer(*this));
   
 }

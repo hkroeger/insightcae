@@ -19,8 +19,15 @@
 
 #include "parser.h"
 #include "boost/locale.hpp"
+#include "boost/algorithm/string.hpp"
+#include "boost/foreach.hpp"
+#include "boost/filesystem.hpp"
 
 #include "dxfwriter.h"
+
+using namespace std;
+using namespace boost;
+using namespace boost::filesystem;
 
 namespace insight {
 namespace cad {
@@ -65,11 +72,36 @@ void writeViews(const boost::filesystem::path& file, const solidmodel& model, co
   }
 }
 
+Model::Ptr loadModel(const std::string& name)
+{
+  std::vector<std::string> paths;
+  const char* e=getenv("ISCAD_MODEL_PATH");
+  if (e)
+  {
+    boost::split(paths, e, boost::is_any_of(":"));
+  }
+  paths.insert(paths.begin(), ".");
+  
+  BOOST_FOREACH(const std::string& ps, paths)
+  {
+    path p(ps); 
+    p=p/(name+".iscad");
+    if (exists(p))
+    {
+      Model::Ptr model;
+      parseISCADModelFile(p, model);
+      return model;
+    }
+  }
+  
+  return Model::Ptr();
+}
+
 }
 using namespace parser;
 
 
-bool parseISCADModelFile(const boost::filesystem::path& fn, parser::model& m)
+bool parseISCADModelFile(const boost::filesystem::path& fn, parser::Model::Ptr& m)
 {
   std::ifstream f(fn.c_str());
   return parseISCADModelStream(f, m);
@@ -87,7 +119,7 @@ void ModelStepsWriter::operator() (std::string s, SolidModel::Ptr ct)
   }
 }
     
-bool parseISCADModelStream(std::istream& in, parser::model& m)
+bool parseISCADModelStream(std::istream& in, parser::Model::Ptr& m)
 {
   std::string contents_raw;
   in.seekg(0, std::ios::end);
@@ -97,7 +129,6 @@ bool parseISCADModelStream(std::istream& in, parser::model& m)
   //in.close();
   return parser::parseISCADModel< ISCADParser<std::string::iterator> >(contents_raw.begin(), contents_raw.end(), m);
 }
-
 
 }
 }

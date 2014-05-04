@@ -349,7 +349,7 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
 {
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  
+  cout<<filename<<" >> "<<ext<<endl;
   if (ext==".brep")
   {
     BRepTools::Write(shape_, filename.c_str());

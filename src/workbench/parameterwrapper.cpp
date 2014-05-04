@@ -517,27 +517,42 @@ void DoubleRangeParameterWrapper::onUpdate()
 
 
 SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  name2Label_(NULL)
 {
-  QVBoxLayout *layout0=new QVBoxLayout(this);
+  layout0_=new QVBoxLayout(this);
   QHBoxLayout *layout=new QHBoxLayout(this);
   
   QLabel *nameLabel = new QLabel(name_, this);
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   selBox_=new QComboBox(this);
+  
   BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
   {
     selBox_->addItem(pair.first.c_str());
   }
   layout->addWidget(selBox_);
-  layout0->addLayout(layout);
+  layout0_->addLayout(layout);
+  this->setLayout(layout0_);
 
-  QGroupBox *name2Label = new QGroupBox(param().selection().c_str(), this);
-  //QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  addWrapperToWidget(param()(), name2Label, this);
-  layout0->addWidget(name2Label);
-  this->setLayout(layout0);
+  insertSubset();
+  connect(selBox_, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(onCurrentIndexChanged(const QString&)));
+}
+
+void SelectableSubsetParameterWrapper::insertSubset()
+{
+  if (name2Label_)
+  {
+    layout0_->removeWidget(name2Label_);
+    delete name2Label_;
+  }
+  
+  param().selection()=selBox_->currentText().toStdString();
+  name2Label_ = new QGroupBox(param().selection().c_str(), this);
+  addWrapperToWidget(param()(), name2Label_, this);
+  layout0_->addWidget(name2Label_);
+  layout0_->update();
 }
 
 void SelectableSubsetParameterWrapper::onApply()
@@ -550,6 +565,12 @@ void SelectableSubsetParameterWrapper::onUpdate()
 {
   //selBox_->setCurrentIndex(param()());
   emit(update());
+}
+
+void SelectableSubsetParameterWrapper::onCurrentIndexChanged(const QString& qs)
+{
+  std::cout<<"on cis"<<std::endl;
+  insertSubset();
 }
 
 defineType(SelectableSubsetParameterWrapper);

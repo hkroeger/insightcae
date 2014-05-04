@@ -282,6 +282,10 @@ class SelectableSubsetParameterWrapper
   Q_OBJECT
   
   QComboBox* selBox_;
+  QVBoxLayout *layout0_;
+  QGroupBox *name2Label_;
+  
+  void insertSubset();
   
 public:
   declareType(insight::SelectableSubsetParameter::typeName_());
@@ -291,6 +295,7 @@ public:
 public slots:
   virtual void onApply();
   virtual void onUpdate();
+  virtual void onCurrentIndexChanged(const QString& qs);
   
 signals:
   void apply();

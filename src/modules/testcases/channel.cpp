@@ -327,6 +327,7 @@ void ChannelBase::createCase
     .set_writeInterval(0.25*T_)
     .set_endTime( (inittime+meantime+mean2time)*T_ )
     .set_writeFormat("ascii")
+    .set_decompositionMethod("simple")
   ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
@@ -463,13 +464,13 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     string chart_file_name=chart_name+".png";
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'y+'; set ylabel '<L_delta_RANS>'; set grid; ";
+    gp<<"set xlabel 'y_delta'; set ylabel '<L_delta_RANS>'; set grid; ";
     //gp<<"set logscale x;";
     
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
     
-    arma::mat ydelta=Re_tau-Re_tau*data.col(0);
+    arma::mat ydelta=1.0-(data.col(0)+delta_yp1)/(0.5*H); //Re_tau-Re_tau*data.col(0);
     arma::mat Lt=(2./H)*sqrt(k)/(0.09*omega);
     arma::mat Ltp(join_rows(ydelta, Lt));
     Ltp.save( (executionPath()/"LdeltaRANS_vs_yp.txt").c_str(), arma_ascii);

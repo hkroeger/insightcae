@@ -1503,13 +1503,8 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  std::string Uvec="( "
-    +lexical_cast<std::string>(p_.velocity()(0))+" "
-    +lexical_cast<std::string>(p_.velocity()(1))+" "
-    +lexical_cast<std::string>(p_.velocity()(2))+" )";
-    
   BC["type"]="inflowGenerator<"+p_.structureType()+">";
-  BC["Umean"]="uniform "+Uvec;
+  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
   
   BC["c"]="uniform 16";
   double L=p_.mixingLength();
@@ -1524,7 +1519,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
     +lexical_cast<string>(R)+" 0 "
     +lexical_cast<string>(R)+" )";
 
-  BC["value"]="uniform "+Uvec;
+  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity());
 }
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const

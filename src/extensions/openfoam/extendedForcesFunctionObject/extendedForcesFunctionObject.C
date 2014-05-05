@@ -129,7 +129,6 @@ void extendedForces::execute()
 	    const symmTensorField& devRhoReffb
 		= tdevRhoReff().boundaryField()[patchI];
 
-	    Info<<"calculating "<<patchI<<endl;
 	      pressureForce_().boundaryField()[patchI]=
 	      (
 		  rho(p)*nfb[patchI]*(p.boundaryField()[patchI] - pRef)

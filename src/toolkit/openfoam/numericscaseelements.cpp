@@ -35,8 +35,85 @@ using namespace boost::fusion;
 
 namespace insight
 {
+
+
+std::vector<int> factors(int n)
+{
+  std::vector<int> facs;
+  int z = 2;
+
+  while (z * z <= n)
+  {
+      if (n % z == 0)
+      {
+	  facs.push_back(z);
+	  n /= z;
+      }
+      else
+      {
+	  z++;
+      }
+  }
+
+  if (n > 1)
+  {
+      facs.push_back( n );
+  }
+  cout<<"factored "<<facs.size()<<endl;
+  BOOST_FOREACH(int i, facs)
+    cout <<" > "<<i<<endl;
+  return facs;
+}
+
+std::vector<int> combinefactors(int n, const std::vector<int>& facs)
+{
+  std::vector<int> nf;
+  int j=0;
+  int numf=facs.size();
+
+  for (int i=0; i<n; i++)
+  {
+    int cf=1;
+    while (j<(numf-n+i+1))
+    {
+      cf*=facs[j];
+      j++;
+    }
+    nf.push_back(cf);
+  }
+  cout<<"combined"<<endl;
+    BOOST_FOREACH(int i, nf)
+      cout <<" > "<<i<<endl;
+  return nf;
+}
+
+void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& method)
+{
+  OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
   
+  std::vector<int> ns=combinefactors(3, factors(np));
+  cout<<"decomp "<<np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
+  decomposeParDict["numberOfSubdomains"]=np;
   
+  decomposeParDict["method"]=method; //"hierarchical";
+  
+  {
+    OFDictData::dict coeffs;
+    coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
+    coeffs["delta"]=0.001;
+    coeffs["order"]="xyz";
+    decomposeParDict["hierarchicalCoeffs"]=coeffs;
+  }
+  
+  {
+    OFDictData::dict coeffs;
+    coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
+    coeffs["delta"]=0.001;
+    decomposeParDict["simpleCoeffs"]=coeffs;
+  }
+}
+
+
 FVNumerics::FVNumerics(OpenFOAMCase& c, Parameters const& p)
 : OpenFOAMCaseElement(c, "FVNumerics"),
   p_(p)
@@ -77,6 +154,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
   fvSchemes.addSubDictIfNonexistent("snGradSchemes");
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
+
+  setDecomposeParDict(dictionaries, p_.np(), p_.decompositionMethod());
 }
 
 FaNumerics::FaNumerics(OpenFOAMCase& c)
@@ -186,56 +265,6 @@ MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, Parameters const& p)
 }
 
 
-std::vector<int> factors(int n)
-{
-  std::vector<int> facs;
-  int z = 2;
-
-  while (z * z <= n)
-  {
-      if (n % z == 0)
-      {
-	  facs.push_back(z);
-	  n /= z;
-      }
-      else
-      {
-	  z++;
-      }
-  }
-
-  if (n > 1)
-  {
-      facs.push_back( n );
-  }
-  cout<<"factored "<<facs.size()<<endl;
-  BOOST_FOREACH(int i, facs)
-    cout <<" > "<<i<<endl;
-  return facs;
-}
-
-std::vector<int> combinefactors(int n, const std::vector<int>& facs)
-{
-  std::vector<int> nf;
-  int j=0;
-  int numf=facs.size();
-
-  for (int i=0; i<n; i++)
-  {
-    int cf=1;
-    while (j<(numf-n+i+1))
-    {
-      cf*=facs[j];
-      j++;
-    }
-    nf.push_back(cf);
-  }
-  cout<<"combined"<<endl;
-    BOOST_FOREACH(int i, nf)
-      cout <<" > "<<i<<endl;
-  return nf;
-}
-
 void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   FVNumerics::addIntoDictionaries(dictionaries);
@@ -309,17 +338,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   
-  OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
-  std::vector<int> ns=combinefactors(3, factors(p_.np()));
-  cout<<"decomp "<<p_.np()<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
-  decomposeParDict["numberOfSubdomains"]=p_.np();
-  decomposeParDict["method"]="hierarchical";
-  OFDictData::dict coeffs;
-  coeffs["n"]=OFDictData::vector3(ns[0], ns[1], ns[2]);
-  coeffs["delta"]=0.001;
-  coeffs["order"]="xyz";
-  decomposeParDict["hierarchicalCoeffs"]=coeffs;
-  
+  setDecomposeParDict(dictionaries, p_.np(), "hierarchical");
 }
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)

@@ -59,6 +59,14 @@ using namespace insight;
 namespace insight
 {
   
+struct FlowProps
+{
+  Foam::vector Ubulk_;
+  double delta_;
+  double utau_;
+  double Retau_;
+  double Re_;
+};
 
 /**
  * abstract base class for providing the length scale L_delta=f(y_delta)
@@ -73,9 +81,9 @@ public:
   
   virtual ~LengthScaleModel() {}
   /**
-   * gets y/delta, returns the length scale as L/delta
+   * gets y, returns the absolute length scale
    */
-  virtual Foam::symmTensor operator()(double ydelta) const =0;
+  virtual Foam::symmTensor operator()(const FlowProps& flow, double y) const =0;
 };
 
 defineType(LengthScaleModel);
@@ -94,9 +102,9 @@ public:
   
   virtual ~MeanVelocityModel() {}
   /**
-   * gets y+, return the mean velocity divided by utau
+   * gets y, return the absolute mean velocity
    */
-  virtual Foam::vector operator()(double yp) const =0;
+  virtual Foam::vector operator()(const FlowProps& flow, double y) const =0;
 };
 
 defineType(MeanVelocityModel);
@@ -115,9 +123,9 @@ public:
   
   virtual ~ReynoldsStressModel() {}
   /**
-   * gets y+, return RMS / sqr(utau)
+   * gets y, return the absolute RMS
    */
-  virtual Foam::symmTensor operator()(double yp) const =0;
+  virtual Foam::symmTensor operator()(const FlowProps& flow, double y) const =0;
 };
 
 defineType(ReynoldsStressModel);
@@ -139,11 +147,12 @@ public:
   PowerLawMeanVelocity(const Foam::dictionary& d)
   : n_(readScalar(d.lookup("n")))
   {
+    Info<<"Initializing mean velocity field with power law (exponent = 1/"<<n_<<")"<<endl;
   }
   
-  virtual Foam::vector operator()(double yp) const
+  virtual Foam::vector operator()(const FlowProps& flow, double y) const
   {
-    return Foam::vector(::pow(yp, 1./n_), 0, 0);
+    return flow.Ubulk_*::pow(y/flow.delta_, 1./n_);
   }
 };
 
@@ -158,19 +167,32 @@ class LengthScaleFit
 {
 protected:
   double c0_, c1_, c2_, c3_;
+  double minL_;
   
 public:
   LengthScaleFit(const Foam::dictionary& d)
   : c0_(readScalar(d.lookup("c0"))),
     c1_(readScalar(d.lookup("c1"))),
     c2_(readScalar(d.lookup("c2"))),
-    c3_(readScalar(d.lookup("c3")))
+    c3_(readScalar(d.lookup("c3"))),
+    minL_(d.lookupOrDefault<scalar>("minL", 1e-6))
   {
   }
   
+  /**
+   * return Ldelta(ydelta)
+   */
   inline double operator()(scalar ydelta) const
   {
-    return c0_*::pow(ydelta, c2_) + c1_*::pow(ydelta, c3_);
+    return max(minL_, c0_*::pow(ydelta, c2_) + c1_*::pow(ydelta, c3_));
+  }
+  
+  void writeCoeffs(Foam::Ostream& os) const
+  {
+    os << "[c0="<<c0_
+    << " c1="<<c1_
+    << " c2="<<c2_
+    << " c3="<<c3_<<"]";
   }
 };
 
@@ -185,11 +207,15 @@ public:
   FittedIsotropicLengthScaleModel(const Foam::dictionary& d)
   : L_(d)
   {
+    Info<<"Initializing length scale field with isotropic length scaler according to fit ";
+    L_.writeCoeffs(Info);
+    Info<<endl;
   }
   
-  virtual Foam::symmTensor operator()(scalar ydelta) const
+  virtual Foam::symmTensor operator()(const FlowProps& flow, scalar y) const
   {
-    double L=L_(ydelta);
+    double L = flow.delta_ * L_(y/flow.delta_);
+    
     return Foam::symmTensor(L, 0, 0, L, 0, L);
   }
 };
@@ -210,11 +236,15 @@ public:
     Ly_(d.subDict("y")),
     Lz_(d.subDict("z"))
   {
+    Info<<"Initializing length scale field with anisotropic length scale according to fits: "<<endl;
+    Info<<" x: "; Lx_.writeCoeffs(Info);Info<<endl;
+    Info<<" y: "; Ly_.writeCoeffs(Info);Info<<endl;
+    Info<<" z: "; Lz_.writeCoeffs(Info);Info<<endl;
   }
   
-  virtual Foam::symmTensor operator()(scalar ydelta) const
+  virtual Foam::symmTensor operator()(const FlowProps& flow, scalar y) const
   {
-    return Foam::symmTensor(Lx_(ydelta), 0, 0, Ly_(ydelta), 0, Lz_(ydelta));
+    return flow.delta_*Foam::symmTensor(Lx_(y/flow.delta_), 0, 0, Ly_(y/flow.delta_), 0, Lz_(y/flow.delta_));
   }
 };
 
@@ -248,9 +278,9 @@ public:
     outOfBounds(CLAMP);
   }
 
-  virtual Foam::symmTensor operator()(double yp) const
+  virtual Foam::symmTensor operator()(const FlowProps& flow, double y) const
   {
-    return interpolationTable<symmTensor>::operator()(yp);
+    return interpolationTable<symmTensor>::operator()(y*flow.Retau_) * Foam::sqr(flow.Retau_);
   }
 };
 
@@ -309,9 +339,9 @@ public:
   : DNSVectorProfile("MKM_Channel", "590/Ruu_vs_yp", "590/Rvv_vs_yp", "590/Rww_vs_yp")
   {}
    
-  virtual Foam::symmTensor operator()(Foam::scalar yp) const
+  virtual Foam::symmTensor operator()(const FlowProps& flow, Foam::scalar y) const
   {
-    Foam::vector v=this->value(yp);
+    Foam::vector v=this->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
     return Foam::symmTensor(v.x(), 0, 0, v.y(), 0, v.z());
   }
 };
@@ -333,9 +363,9 @@ public:
   : DNSVectorProfile("K_Pipe", "590/Rzz_vs_yp", "590/Rrr_vs_yp", "590/Rphiphi_vs_yp")
   {}
    
-  virtual Foam::symmTensor operator()(scalar yp) const
+  virtual Foam::symmTensor operator()(const FlowProps& flow, scalar y) const
   {
-    Foam::vector v=this->value(yp);
+    Foam::vector v=this->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
     return Foam::symmTensor(v.x(), 0, 0, v.y(), 0, v.z());
   }
 };
@@ -344,7 +374,7 @@ defineType(PipeDNSReynoldsStresses);
 addToFactoryTable(ReynoldsStressModel, PipeDNSReynoldsStresses, Foam::dictionary);
 
 /**
- * compute isotropic reynolds stresses from profile of TKE
+ * compute isotropic reynolds stresses from profile of TKE vs ydelta
  */
 class TabulatedKReynoldsStresses
 : public ReynoldsStressModel
@@ -380,9 +410,9 @@ public:
     ipol_.reset(new Interpolator(data));
   }
    
-  virtual symmTensor operator()(scalar yp) const
+  virtual symmTensor operator()(const FlowProps& flow, scalar y) const
   {
-    arma::mat k=ipol_->operator()(yp);
+    arma::mat k=ipol_->operator()(y/flow.delta_) * Foam::sqr(flow.utau_);
     double uPrimeSqr=k(0)/1.5;
     return symmTensor(uPrimeSqr, 0, 0, uPrimeSqr, 0, uPrimeSqr);
   }
@@ -513,6 +543,34 @@ defineTypeNameAndDebug(inflowInitializer, 0);
 defineRunTimeSelectionTable(inflowInitializer, istream);
 
 
+struct pipeFlowProps
+: public FlowProps
+{
+//   Foam::vector Ubulk_;
+//   double delta_;
+//   double utau_;
+//   double Retau_;
+//   double Re_;
+
+  pipeFlowProps(double D, const Foam::vector& Ubulk, double nu)
+  {
+   
+    Ubulk_=Ubulk;
+    delta_=0.5*D;
+    Re_=mag(Ubulk_)*delta_/nu;
+    Retau_=insight::PipeBase::Retau(Re_);
+    utau_=mag(Ubulk_)*Retau_/Re_;
+    
+    Info
+      <<"H="<<D
+      <<", Ubulk="<<Ubulk_
+      <<", Re="<<Re_
+      <<", utau="<<utau_
+      <<", Retau="<<Retau_
+    <<endl;
+  }
+};
+
 /**
  * initializer class for setting up an inlet with a fully developed pipe flow
  */
@@ -543,32 +601,32 @@ public:
     
     scalar D = 2.0*max(mag(rv));
     
-    double Re=Ubulk_*0.5*D/nu;
-    double Retau=insight::PipeBase::Retau(Re);
-    double utau=Ubulk_*Retau/Re;
-    Info<<"D="<<D<<", center="<<p0<<", flow dir="<<axis<<", Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
+    pipeFlowProps flow(D, axis*Ubulk_, nu);
+//     flow.delta_=0.5*D;
+//     flow.Ubulk_=axis*Ubulk_;
+//     flow.Re_=Ubulk_*0.5*D/nu;
+//     flow.Retau_=insight::PipeBase::Retau(flow.Re_);
+//     flow.utau_=Ubulk_*flow.Retau_/flow.Re_;
+//     Info<<"D="<<D<<", center="<<p0<<", flow dir="<<axis<<", Re="<<flow.Re_<<", utau="<<flow.utau_<<", Retau="<<flow.Retau_<<endl;
     
     forAll(patch.Cf(), fi)
     {
       scalar r=mag(rv[fi]);
-      scalar delta=0.5*D;
-      scalar y=(delta-r);
-      scalar yplus=y*utau/nu;
-      scalar ydelta=y/delta;
+      scalar y=(0.5*D-r);
       
-      ifpf.Umean()[fi]= utau*(*Umean_)(yplus);//Ubulk_ * axis*Foam::pow(y, 1./7.);
+      ifpf.Umean()[fi]= (*Umean_)(flow, y);
       
       vector e_radial(rv[fi]/mag(rv[fi]));
       vector e_tan=axis^e_radial;
       
       tensor ev(axis, e_radial, e_tan); // eigenvectors => rows      
-      tensor L = ev.T() & (delta* (*Ldelta_)(ydelta)) & ev;
+      tensor L = ev.T() & (*Ldelta_)(flow, y) & ev;
 
       ifpf.L()[fi] = symmTensor(L.xx(), L.xy(), L.xz(),
 					L.yy(), L.yz(),
 						L.zz());
       
-      tensor R=ev.T() & ((*RMS_)(yplus)*sqr(utau)) & ev;
+      tensor R=ev.T() & (*RMS_)(flow, y) & ev;
       ifpf.R()[fi] = symmTensor(R.xx(), R.xy(), R.xz(),
 					R.yy(), R.yz(),
 						R.zz());
@@ -588,6 +646,32 @@ public:
 defineTypeNameAndDebug(pipeFlow, 0);
 addToRunTimeSelectionTable(inflowInitializer, pipeFlow, istream);
    
+struct channelFlowProps
+: public FlowProps
+{
+//   Foam::vector Ubulk_;
+//   double delta_;
+//   double utau_;
+//   double Retau_;
+//   double Re_;
+
+  channelFlowProps(double H, const Foam::vector& Ubulk, double nu)
+  {
+    Ubulk_=Ubulk;
+    delta_=0.5*H;
+    Re_=mag(Ubulk_)*delta_/nu;
+    Retau_=insight::ChannelBase::Retau(Re_);
+    utau_=mag(Ubulk_)*Retau_/Re_;
+    
+    Info
+      <<"H="<<H
+      <<", Ubulk="<<Ubulk_
+      <<", Re="<<Re_
+      <<", utau="<<utau_
+      <<", Retau="<<Retau_
+    <<endl;
+  }
+};
 
 class channelFlow
 : public inflowInitializer
@@ -623,30 +707,25 @@ public:
     scalar H=2.*max(mag(hv));
     scalar delta=0.5*H;
     
-    double Re=Ubulk_*0.5*H/nu;
-    double Retau=insight::ChannelBase::Retau(Re);
-    double utau=Ubulk_*Retau/Re;
-    Info<<"H="<<H<<", center="<<p0<<", flow dir="<<e_ax<<", Re="<<Re<<", utau="<<utau<<", Retau="<<Retau<<endl;
-
+    channelFlowProps flow(H, Ubulk_*e_ax, nu);
     
     tensor ev(e_ax, e_v, e_span); // eigenvectors => rows
     
     forAll(patch.Cf(), fi)
     {
       scalar h=mag(hv[fi]);
-      scalar y=(1.-h/(0.5*H));
-      scalar yplus=y*utau/nu;
+      scalar y=((0.5*H)-h);
       
-      ifpf.Umean()[fi]=(*Umean_)(yplus)*utau; //Ubulk_ * e_ax*Foam::pow(y, 1./7.);
+      ifpf.Umean()[fi]=(*Umean_)(flow, y);
       
       
-      tensor L = ev.T() & (delta*(*Ldelta_)(y/delta)) & ev;
+      tensor L = ev.T() & (*Ldelta_)(flow, y) & ev;
 
       ifpf.L()[fi] = symmTensor(L.xx(), L.xy(), L.xz(),
 					L.yy(), L.yz(),
 						L.zz());
       
-      tensor R=ev.T() & ( (*RMS_)(yplus)*sqr(utau)) & ev;
+      tensor R=ev.T() & (*RMS_)(flow, y) & ev;
       ifpf.R()[fi] = symmTensor(R.xx(), R.xy(), R.xz(),
 					R.yy(), R.yz(),
 						R.zz());

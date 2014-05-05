@@ -92,7 +92,7 @@ public:
     // Constructors
     hatSpot();
     hatSpot(Istream&);
-    hatSpot(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
+    hatSpot(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L, scalar minL);
     hatSpot(const hatSpot& p);
     
     ~hatSpot();

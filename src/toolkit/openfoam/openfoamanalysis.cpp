@@ -135,8 +135,13 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& 
 //   controlDict["endTime"]=endTime;
   
   OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
-  decomposeParDict["numberOfSubdomains"]=np;
-  decomposeParDict["method"]="scotch";
+//   decomposeParDict["numberOfSubdomains"]=np;
+  std::string method="scotch";
+  if (decomposeParDict.find("method")!=decomposeParDict.end())
+  {
+    method=boost::get<std::string>(decomposeParDict["method"]);
+  }
+  setDecomposeParDict(*dicts, np, method);
 }
 
 void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)

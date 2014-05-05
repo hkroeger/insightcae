@@ -105,7 +105,7 @@ public:
     // Constructors
     homogeneousTurbulenceVorton();
     homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L);
+    homogeneousTurbulenceVorton(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L, scalar minL);
     homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
 
     ~homogeneousTurbulenceVorton();

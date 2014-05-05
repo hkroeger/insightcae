@@ -52,7 +52,7 @@ turbulentStructure::turbulentStructure(Istream& is)
   is >> *this;
 }
 
-turbulentStructure::turbulentStructure(BoostRandomGen& r, const point& p, const vector& v, const symmTensor& L)
+turbulentStructure::turbulentStructure(BoostRandomGen& r, const point& p, const vector& v, const symmTensor& L, scalar minL)
 : velocity_(v)
 {
   /*
@@ -75,9 +75,9 @@ turbulentStructure::turbulentStructure(BoostRandomGen& r, const point& p, const 
   arma::mat eigvec;
   eig_sym(eigval, eigvec, mL);
   //std::cout<<eigval<<eigvec<<std::endl;
-  L1_ = vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * eigval(0);
-  L2_ = vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1);
-  L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2);
+  L1_ = vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * Foam::max(minL, eigval(0));
+  L2_ = vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * Foam::max(minL, eigval(1));
+  L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * Foam::max(minL, eigval(2));
   
   /*
   // start at least 1/2 of the max. length scale before inlet plane

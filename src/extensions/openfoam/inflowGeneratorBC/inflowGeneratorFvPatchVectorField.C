@@ -350,7 +350,7 @@ scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
       scalar l1 = snew.Lalong(d);
       scalar l2 = vortons_[r.index()].Lalong(-d);
       scalar ovl = ( 0.5*(l1+l2) - mag(d) ) / (Foam::min(l1, l2));
-      //Info<<"d="<<d<<", l1="<<l1<<", l2="<<l2<< ", ovl="<<ovl<<endl;
+
       return ovl;
     }
   }
@@ -385,8 +385,6 @@ point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(
   // choose random triangle coordinates inside selected triangle
   scalar u=ranGen_(), v=ranGen_();
   return pts[t[0]]*u + pts[t[1]]*v + pts[t[2]]*(1.-u-v); // compute location from u and v
-  
-  //return patch().Cf()[fi];
 }
 
 template<class TurbulentStructure>
@@ -396,9 +394,11 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
   forAll(*this, fi)
   {
     vector L=eigenValues(L_[fi]);
-    (*tau_)[fi] = L.x()*L.y()*L.z() / (c_[fi] * patch().magSf()[fi] * (mag(Umean_[fi])+SMALL) );
+    scalar minL=sqrt(patch().magSf()[fi]);
+    (*tau_)[fi] = max(minL,L.x())*max(minL,L.y())*max(minL,L.z()) 
+		    / (c_[fi] * patch().magSf()[fi] * (mag(Umean_[fi])+SMALL) );
   }
-  //Info<<tau_()<<endl;
+
   Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
   Info<<"Max spots per timestep: "<<(this->db().time().deltaTValue() / min(*tau_))<<endl;
 }
@@ -421,13 +421,6 @@ template<class TurbulentStructure>
 tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(scalar t, ProcessStepInfo *info)
 {
 
-//     // build the global list of face centres
-//     Field<vector> myFaceCentres = patch().Cf();    
-//     List<List<vector> > faceCentres(Pstream::nProcs());
-//     faceCentres[Pstream::myProcNo()]=myFaceCentres;
-//     Pstream::gatherList(faceCentres);
-//     List<vector> globalFaceCentres = ListListOps::combine<List<vector> >(faceCentres, accessOp<List<vector> >());
-
     if (!tau_.get())
     {
       computeTau();
@@ -449,32 +442,49 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
      * Creation of new spots
      */
     
-    Info<<"Generating new spots"<<endl;
+    if (debug) Info<<"Generating new spots"<<endl;
+    
+    label nclip1=0, nclip2=0;
     scalar dt=this->db().time().deltaT().value();
     forAll(*this, fi)
     {
+      scalar minL=sqrt(patch().magSf()[fi]);
       vector L=eigenValues(L_[fi]);
       scalar Lmax=max(L.x(), max(L.y(), L.z()));
-      scalar horiz = t + 0.5*Lmax/mag(Umean_[fi]);
-      //scalar ddt; 
+      vector Umean=Umean_[fi];
+      vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
+      
+      if ((Umean&in_dir) < SMALL)
+      {
+	Umean += in_dir*((Umean&in_dir)+SMALL);
+	nclip2++;
+      }
+      
+      if (Lmax>minL)
+      {
+	Lmax=minL;
+	nclip1++;
+      }
+      scalar horiz = t + 0.5*Lmax/mag(Umean);
+ 
        // if creation time is within the current time step then create structure now
-      if (debug>2) Info<<fi<<" "<<patch().Cf()[fi]<<" : "<<flush;
+      if (debug>=2) Info<<fi<<" "<<patch().Cf()[fi]<<" : "<<Umean<<"/"<<L_[fi]<<" "<<flush;
       if ((*crTimes_)[fi]-horiz < /*dt*/ 0.0 )
       {
 	do
 	{
 	  scalar ddt=(*crTimes_)[fi]-horiz; // time until next occurence
 
-	  point pf = randomFacePosition(fi) - Umean_[fi]*(ddt+(horiz-t));
+	  point pf = randomFacePosition(fi) - Umean*(ddt+(horiz-t));
 	  
-	  TurbulentStructure snew(ranGen_, pf, Umean_[fi], L_[fi]);
+	  TurbulentStructure snew(ranGen_, pf, Umean, L_[fi], minL);
 	  snew.randomize(ranGen_);
 	  
 	  // append new structure to the end of the list
 	  vortons_.resize(vortons_.size()+1);
 	  vortons_[vortons_.size()-1]=snew;
 	  
-	  if (debug>2) Info<<"."<<flush;
+	  if (debug>=2) Info<<"."<<flush;
 	  n_generated++;
 	  
 	  scalar rnum=ranGen_();
@@ -484,13 +494,20 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	}
 	while ( (*crTimes_)[fi]-horiz <= /*dt*/ 0.0 );
       }
-      if (debug>2) Info<<endl;
+      if (debug>=2) Info<<endl;
     }
     
+    reduce(nclip1, sumOp<label>());
+    reduce(nclip2, sumOp<label>());
+    
+    if (nclip1)
+      Info<<" Inflow generator ["<<patch().name()<<"]: Extended local length scale to face size "<<nclip1<<" time(s)."<<endl;
+    if (nclip2)
+      Info<<" Inflow generator ["<<patch().name()<<"]: Increased local inflow velocity to SMALL "<<nclip2<<" time(s)."<<endl;
     //autoPtr<indexedOctree<treeDataPoint> > tree = buildTree();
 
 
-    Info<<"Distributing structures to processors."<<endl;
+    if (debug) Info<<"Distributing structures to processors."<<endl;
     // Distribute vorton list to all processors
     List<List<TurbulentStructure> > sl(Pstream::nProcs());
     sl[Pstream::myProcNo()] = vortons_;
@@ -502,7 +519,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	sl, accessOp<List<TurbulentStructure> >()
       );
     
-    Info<<"Generating fluctuations."<<endl;
+    if (debug) Info<<"Generating fluctuations."<<endl;
     /**
      * ==================== Generation of turbulent fluctuations ========================
      */
@@ -527,7 +544,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     }
     label n_induced=induced.size();
     
-    Info<<"Convecting and removing structures."<<endl;
+    if (debug) Info<<"Convecting and removing structures."<<endl;
     forAll(vortons_, j)
     {
       // convect structure
@@ -546,20 +563,13 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     vortons_.resize(kept);
     label n_removed=os.size()-kept;
     label n_total=vortons_.size();
-    
-//     Pout<<"InflowGen["<<patch().name()<<"]: "
-//       "Generated "<<n_generated<<
-//       ", removed "<<n_removed<<
-//       " now total "<<n_total<<
-//       ", contributions by "<<n_induced<<
-//       endl;
 
     reduce(n_generated, sumOp<label>());
     reduce(n_removed, sumOp<label>());
     reduce(n_total, sumOp<label>());
     reduce(n_induced, sumOp<label>());
     
-    Info<<"InflowGen["<<patch().name()<<"]: "
+    Info<<" Inflow generator ["<<patch().name()<<"]: "
       "Generated "<<n_generated<<
       ", removed "<<n_removed<<
       " now total "<<n_total<<

@@ -89,8 +89,8 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L)
-: turbulentStructure(r, loc, v, L),
+hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L, scalar minL)
+: turbulentStructure(r, loc, v, L, minL),
   epsilon_(pTraits<vector>::zero)
 {
 }

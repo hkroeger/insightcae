@@ -35,7 +35,9 @@ namespace insight
 
 class OpenFOAMCase;
 class OFdicts;
-  
+
+void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& method);
+
 /**
  Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
  */
@@ -51,6 +53,7 @@ public:
     (purgeWrite, int, 10)
     (deltaT, double, 1.0)
     (endTime, double, 1000.0)
+    (decompositionMethod, std::string, "scotch")
   )
 
 protected:

@@ -72,6 +72,40 @@ void writeViews(const boost::filesystem::path& file, const solidmodel& model, co
   }
 }
 
+scalar Model::lookupModelScalar(const std::string& modelname, const::string& scalarname) const
+{
+  const Model::Ptr* pptr=modelSymbols.find(modelname);
+  if (pptr)
+  {
+    scalar *sptr=(*pptr)->scalarSymbols.find(scalarname);
+    if (sptr)
+    {
+      return *sptr;
+    }
+    else
+      throw insight::Exception("scalar symbol "+scalarname+" not found in model "+modelname+"!");
+  }
+  else
+    throw insight::Exception("model "+modelname+" not found!");
+}
+
+solidmodel Model::lookupModelModelstep(const std::string& modelname, const::string& modelstepname) const
+{
+  const Model::Ptr* pptr=modelSymbols.find(modelname);
+  if (pptr)
+  {
+    solidmodel *sptr=(*pptr)->modelstepSymbols.find(modelstepname);
+    if (sptr)
+    {
+      return *sptr;
+    }
+    else
+      throw insight::Exception("model step "+modelstepname+" not found in model "+modelname+"!");
+  }
+  else
+    throw insight::Exception("model "+modelname+" not found!");
+}
+  
 Model::Ptr loadModel(const std::string& name)
 {
   std::vector<std::string> paths;
@@ -89,11 +123,14 @@ Model::Ptr loadModel(const std::string& name)
     if (exists(p))
     {
       Model::Ptr model;
-      parseISCADModelFile(p, model);
-      return model;
+      if (parseISCADModelFile(p, model))
+      {
+	cout<<"Successfully parsed model "<<p<<endl;
+	return model;
+      }
     }
   }
-  
+  cout<<"Failed to parse model "<<name<<endl;
   return Model::Ptr();
 }
 

@@ -107,6 +107,9 @@ struct Model
   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
 
   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
+  
+  scalar lookupModelScalar(const std::string& modelname, const::string& scalarname) const;
+  solidmodel lookupModelModelstep(const std::string& modelname, const::string& modelstepname) const;
 };
 
 Model::Ptr loadModel(const std::string& name);
@@ -172,7 +175,10 @@ struct ISCADParser
 	
 	r_solidmodel_primary = 
 	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	 | '(' >> r_solidmodel_expression [_val=_1] >> ')'
+
+	 | ( r_identifier >> '.' > r_identifier ) 
+	    [ _val = phx::bind(&Model::lookupModelModelstep, *model_, _1, _2) ]
+	 | ( '(' >> r_solidmodel_expression [_val=_1] >> ')' )
 	 
          | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
          | ( lit("Sketch") > '(' >> r_datumExpression >> ',' >> r_path >> ',' >> r_string >> ')' ) 
@@ -292,18 +298,18 @@ struct ISCADParser
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
 	 
 // 	BOOST_SPIRIT_DEBUG_NODE(r_path);
-	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
-	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
 //	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);

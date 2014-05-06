@@ -62,6 +62,7 @@ namespace insight
 struct FlowProps
 {
   Foam::vector Ubulk_;
+  double UmaxFactor_;
   double delta_;
   double utau_;
   double Retau_;
@@ -152,7 +153,7 @@ public:
   
   virtual Foam::vector operator()(const FlowProps& flow, double y) const
   {
-    return flow.Ubulk_*::pow(y/flow.delta_, 1./n_);
+    return flow.UmaxFactor_ * flow.Ubulk_ * ::pow( y/flow.delta_, 1./n_ );
   }
 };
 
@@ -560,6 +561,7 @@ struct pipeFlowProps
     Re_=mag(Ubulk_)*delta_/nu;
     Retau_=insight::PipeBase::Retau(Re_);
     utau_=mag(Ubulk_)*Retau_/Re_;
+    UmaxFactor_=PipeBase::UmaxByUbulk(Retau_);
     
     Info
       <<"H="<<D
@@ -662,6 +664,7 @@ struct channelFlowProps
     Re_=mag(Ubulk_)*delta_/nu;
     Retau_=insight::ChannelBase::Retau(Re_);
     utau_=mag(Ubulk_)*Retau_/Re_;
+    UmaxFactor_=ChannelBase::UmaxByUbulk(Retau_);
     
     Info
       <<"H="<<H
@@ -705,7 +708,6 @@ public:
     hv-=e_ax*(hv&e_ax);
     hv-=e_span*(hv&e_span);
     scalar H=2.*max(mag(hv));
-    scalar delta=0.5*H;
     
     channelFlowProps flow(H, Ubulk_*e_ax, nu);
     

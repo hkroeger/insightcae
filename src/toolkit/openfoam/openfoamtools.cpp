@@ -189,6 +189,11 @@ setFieldOperator::setFieldOperator(Parameters const& p)
 {
 }
 
+setFieldOperator::~setFieldOperator()
+{
+}
+
+
 fieldToCellOperator::fieldToCellOperator(Parameters const& p)
 : setFieldOperator(p),
   p_(p)
@@ -292,6 +297,11 @@ createPatchOperator::createPatchOperator(Parameters const& p )
 : p_(p)
 {
 }
+
+createPatchOperator::~createPatchOperator()
+{
+}
+
   
 void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const
 {
@@ -427,6 +437,9 @@ set::set(Parameters const& p)
 {
 }
   
+set::~set()
+{
+}
 
 uniformLine::uniformLine(Parameters const& p )
 : set(p),
@@ -675,7 +688,7 @@ void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDic
   for (int i=0; i<p_.nd1(); i++)
     for (int j=0; j<p_.nd2(); j++)
     {
-      arma::mat ofs = p_.dir1()*(double(i)/double(p_.nd1()-1)) + p_.dir2()*(double(j)/double(p_.nd2()-1));
+      arma::mat ofs = p_.dir1()*(double(i)/double(max(1,p_.nd1()-1))) + p_.dir2()*(double(j)/double(max(1,p_.nd2()-1)));
       OFDictData::dict sd;
       sd["type"]="uniform";
       sd["axis"]="distance";

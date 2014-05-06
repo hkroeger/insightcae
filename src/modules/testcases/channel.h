@@ -40,6 +40,11 @@ public:
    */
   static double Retau(double Re);
 
+  /**
+   * compute factor Umax/Ubulk
+   */
+  static double UmaxByUbulk(double Retau);
+
 protected:
   std::string cycl_in_, cycl_out_;
   
@@ -114,6 +119,11 @@ public:
 
   virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
   
+  virtual void evaluateAtSection(
+    OpenFOAMCase& cm, const ParameterSet& p, 
+    ResultSetPtr results, double x, int i
+  );
+    
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
   
 };

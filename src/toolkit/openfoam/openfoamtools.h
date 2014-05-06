@@ -75,6 +75,7 @@ protected:
 
 public:
   setFieldOperator(Parameters const& p = Parameters() );
+  virtual ~setFieldOperator();
   
   virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const =0;
   
@@ -155,6 +156,8 @@ protected:
 
 public:
   createPatchOperator(Parameters const& p = Parameters() );
+  virtual ~createPatchOperator();
+  
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& createPatchDict) const;
   virtual createPatchOperator* clone() const;
 };
@@ -211,6 +214,7 @@ protected:
 
 public:
   set(Parameters const& p = Parameters() );
+  virtual ~set();
   
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
   

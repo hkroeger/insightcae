@@ -221,9 +221,8 @@ public:
   
   double lengthScale() const;
 };
-  
-class RadialTPCArray
-: public OpenFOAMCaseElement
+
+class TPCArrayBase
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
@@ -232,23 +231,34 @@ public:
     (outputControl, std::string, "outputTime")    
     (outputInterval, double, 10.0)
     (x, double, 0.0)
+    (z, double, 0.0)
     (tanSpan, double, M_PI)
     (axSpan, double, 1.0)
     (np, int, 50)
     (nph, int, 8)
     (R, double, 1.0)
   )
+};
+
+template<class TPC>
+class TPCArray
+: public OpenFOAMCaseElement,
+  public TPCArrayBase
+{
   
   static const char * cmptNames[];
   
 protected:
   Parameters p_;
   std::vector<double> r_;
-  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_ax_;
-  boost::ptr_vector<cylindricalTwoPointCorrelation> tpc_tan_;
+  boost::ptr_vector<TPC> tpc_ax_;
+  boost::ptr_vector<TPC> tpc_tan_;
+  
+  typename TPC::Parameters getTanParameters(int i) const;
+  typename TPC::Parameters getAxParameters(int i) const;
   
 public:
-  RadialTPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  TPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
   virtual void evaluateSingle
@@ -258,11 +268,16 @@ public:
     const std::string& name_prefix,
     double span,
     const std::string& axisLabel,
-    const boost::ptr_vector<cylindricalTwoPointCorrelation>& tpcarray,
+    const boost::ptr_vector<TPC>& tpcarray,
     const std::string& shortDescription
   ) const;
 };
 
+typedef TPCArray<twoPointCorrelation> LinearTPCArray;
+typedef TPCArray<cylindricalTwoPointCorrelation> RadialTPCArray;
+
 }
+
+#include "analysiscaseelementstemplates.cpp"
 
 #endif // INSIGHT_ANALYSISCASEELEMENTS_H

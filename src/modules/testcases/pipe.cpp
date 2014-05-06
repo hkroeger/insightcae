@@ -64,7 +64,12 @@ double PipeBase::Retau(double Re)
   obj.Re=Re;
   return nonlinearSolve1D(obj, 1e-3*Re, Re);
 }
-  
+
+double PipeBase::UmaxByUbulk(double Retau)
+{
+  return 1 + 0.7 * Retau/PipeBase::Re(Retau); // Constant not given explictly in Schlichting, taken from Rotta, p. 190
+}
+
 PipeBase::PipeBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
@@ -384,7 +389,7 @@ void PipeBase::createCase
     .set_timeStart(inittime*T)
   ));
   
-  cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
+  cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()
     .set_name_prefix("tpc_interior")
     .set_R(0.5*D)
     .set_x(0.5*L)
@@ -574,13 +579,13 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   PSDBL(p, "operation", Re_tau);
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
-  
-  boost::ptr_vector<sampleOps::set> sets;
+/*  
+  boost::ptr_vector<sampleOps::set> sets;*/
   
   //double x=L*0.5;
   evaluateAtSection(cm, p, results, 0.5*L, 0);
 
-  const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorRadialTPCArray");
+  const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");
   tpcs->evaluate(cm, executionPath(), results);

@@ -120,6 +120,8 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5);
 
+arma::mat sortedByCol(const arma::mat&m, int c);
+
 /**
  * interpolates in a 2D-matrix using GSL spline routines.
  * The first column is assumed to contain the x-values.

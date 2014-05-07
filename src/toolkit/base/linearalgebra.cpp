@@ -266,10 +266,21 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction)
     return timeProfs;
 }
 
+arma::mat sortedByCol(const arma::mat&m, int c)
+{
+  uvec indices = sort_index(m.col(c));
+//   arma::mat xy = xy_us.rows(indices);
+  
+  arma::mat xy = zeros(m.n_rows, m.n_cols);
+  for (int r=0; r<m.n_rows; r++)
+    xy.row(indices(r))=m.row(r);
+  return xy;
+}
+
 Interpolator::Interpolator(const arma::mat& xy_us)
 {
-  uvec indices = sort_index(xy_us.col(0));
-  arma::mat xy = xy_us.rows(indices);
+  //uvec indices = sort_index(xy_us.col(0));
+  arma::mat xy = sortedByCol(xy_us, 0);
   
   if (xy.n_cols<2)
     throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");

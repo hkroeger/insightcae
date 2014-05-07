@@ -158,102 +158,148 @@ std::string PipeBase::cyclPrefix() const
   return namePrefix;
 }
 
-
-double PipeBase::calcLc(const ParameterSet& p) const
+void PipeBase::calcDerivedInputData(const ParameterSet& p)
 {
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "mesh", x);
-  return x*D;
-}
-
-int PipeBase::calcnc(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-
-  PSINT(p, "mesh", nax);
-  PSDBL(p, "mesh", x);
-  PSDBL(p, "mesh", s);
-  double Delta=L/double(nax);
-  return D*(M_PI+4.*x)/(8.*Delta/s);
-}
-
-int PipeBase::calcnr(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-
-  PSINT(p, "mesh", nax);
-  PSDBL(p, "mesh", s);
-  PSDBL(p, "mesh", x);
-  double Delta=L/double(nax);
-  double lr=0.5*D*(1.-sqrt(2.)*x);
-  int nr=max(1, bmd::GradingAnalyzer(calcgradr(p)).calc_n(calcywall(p), lr));
-  cout<<"n_r="<<nr<<endl;
-  return nr;
-}
-
-double PipeBase::calcywall(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", D);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "operation", Re_tau);
-  
-  double ywall= ypluswall*0.5*D/Re_tau;
-  cout<<"ywall = "<<ywall<<endl;
-  return ywall;
-}
-
-double PipeBase::calcgradr(const ParameterSet& p) const
-{
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
-
   PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", x);
   PSDBL(p, "mesh", s);
 
+  Lc_ = x*D;
+
   double Delta=L/double(nax);
-  double delta0=calcywall(p);
-  double grad=(Delta/s) / delta0;
-  cout<<"Grading = "<<grad<<endl;
-  return grad;
-}
+  nc_=D*(M_PI+4.*x)/(8.*Delta/s);
 
-double PipeBase::calcUtau(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", D);
-
-  return 1./(0.5*D);
-}
-
-
-double PipeBase::calcRe(const ParameterSet& p) const
-{
-
-  PSDBL(p, "operation", D);
-  PSDBL(p, "operation", Re_tau);
-  double nu=1./Re_tau;
-  return calcUbulk(p)*D/nu;
-}
-
-double PipeBase::calcUbulk(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "operation", Re_tau);
-  double k=0.41;
-  double Cplus=5.0;
   
-  double nu=1./Re_tau;
-  double rho=1.0;
-  double tau0= pow(Re_tau*nu*sqrt(rho)/(0.5*D), 2);
-  return sqrt(tau0/rho)*(1./k)*log(Re_tau)+Cplus; //calcRe(p)*(1./Re_tau)/D;
+  ywall_ = ypluswall*0.5*D/Re_tau;
+  cout<<"ywall = "<<ywall_<<endl;
+
+  gradr_=(Delta/s) / ywall_;
+  cout<<"Grading = "<<gradr_<<endl;
+  
+  double lr=0.5*D*(1.-sqrt(2.)*x);
+  nr_=max(1, bmd::GradingAnalyzer(gradr_).calc_n(ywall_, lr));
+  cout<<"n_r="<<nr_<<endl;
+  
+  // Physics
+  Re_=Re(Re_tau);
+  Ubulk_=Re_/Re_tau;
+  T_=L/Ubulk_;
+  nu_=1./Re_tau;
+  utau_=Re_tau*nu_/(0.5*D);
+  
+  cout<<"Derived data:"<<endl
+      <<"============================================="<<endl;
+  cout<<"Reynolds number \tRe="<<Re_<<endl;
+  cout<<"Bulk velocity \tUbulk="<<Ubulk_<<endl;
+  cout<<"Flow-through time \tT="<<T_<<endl;
+  cout<<"Viscosity \tnu="<<nu_<<endl;
+  cout<<"Friction velocity \tutau="<<utau_<<endl;
+  cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"# cells circumferential \tnc="<<nc_<<endl;
+  cout<<"# cells radial \tnr="<<nr_<<endl;
+  cout<<"# grading vertical \tgradr="<<gradr_<<endl;
+  cout<<"============================================="<<endl;
 }
 
-double PipeBase::calcT(const ParameterSet& p) const
-{
-  PSDBL(p, "geometry", L);
-  return L/calcUbulk(p);
-}
+// double PipeBase::calcLc(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "mesh", x);
+//   return x*D;
+// }
+// 
+// int PipeBase::calcnc(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "geometry", L);
+// 
+//   PSINT(p, "mesh", nax);
+//   PSDBL(p, "mesh", x);
+//   PSDBL(p, "mesh", s);
+//   double Delta=L/double(nax);
+//   return D*(M_PI+4.*x)/(8.*Delta/s);
+// }
+// 
+// int PipeBase::calcnr(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "geometry", L);
+// 
+//   PSINT(p, "mesh", nax);
+//   PSDBL(p, "mesh", s);
+//   PSDBL(p, "mesh", x);
+//   double Delta=L/double(nax);
+//   double lr=0.5*D*(1.-sqrt(2.)*x);
+//   int nr=max(1, bmd::GradingAnalyzer(calcgradr(p)).calc_n(calcywall(p), lr));
+//   cout<<"n_r="<<nr<<endl;
+//   return nr;
+// }
+// 
+// double PipeBase::calcywall(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "mesh", ypluswall);
+//   PSDBL(p, "operation", Re_tau);
+//   
+//   double ywall= ypluswall*0.5*D/Re_tau;
+//   cout<<"ywall = "<<ywall<<endl;
+//   return ywall;
+// }
+// 
+// double PipeBase::calcgradr(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "geometry", L);
+// 
+//   PSINT(p, "mesh", nax);
+//   PSDBL(p, "mesh", s);
+// 
+//   double Delta=L/double(nax);
+//   double delta0=calcywall(p);
+//   double grad=(Delta/s) / delta0;
+//   cout<<"Grading = "<<grad<<endl;
+//   return grad;
+// }
+// 
+// double PipeBase::calcUtau(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+// 
+//   return 1./(0.5*D);
+// }
+// 
+// 
+// double PipeBase::calcRe(const ParameterSet& p) const
+// {
+// 
+//   PSDBL(p, "operation", D);
+//   PSDBL(p, "operation", Re_tau);
+//   double nu=1./Re_tau;
+//   return calcUbulk(p)*D/nu;
+// }
+// 
+// double PipeBase::calcUbulk(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", D);
+//   PSDBL(p, "operation", Re_tau);
+//   double k=0.41;
+//   double Cplus=5.0;
+//   
+//   double nu=1./Re_tau;
+//   double rho=1.0;
+//   double tau0= pow(Re_tau*nu*sqrt(rho)/(0.5*D), 2);
+//   return sqrt(tau0/rho)*(1./k)*log(Re_tau)+Cplus; //calcRe(p)*(1./Re_tau)/D;
+// }
+// 
+// double PipeBase::calcT(const ParameterSet& p) const
+// {
+//   PSDBL(p, "geometry", L);
+//   return L/calcUbulk(p);
+// }
 
 void PipeBase::createMesh
 (
@@ -268,12 +314,6 @@ void PipeBase::createMesh
   PSDBL(p, "geometry", L);
 
   PSINT(p, "mesh", nax);
-  
-  double Lc=calcLc(p);
-  int nc=calcnc(p);
-  int nr=calcnr(p);
-  double gradr=calcgradr(p);
-  cout<<"Lc="<<Lc<<", nc="<<nc<<", nr="<<nr<<", grad_r="<<gradr<<endl;
     
   cm.insert(new MeshingNumerics(cm));
   
@@ -288,8 +328,8 @@ void PipeBase::createMesh
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
       (11, 	vec3(0, 0.5*D, 0))
-      (10, 	vec3(0,  cos(0.5*al)*Lc, 0.))
-      (9, 	vec3(0,  1.2*0.5*Lc, 0.))
+      (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
+      (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
@@ -310,7 +350,7 @@ void PipeBase::createMesh
 	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
 	  (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
 	),
-	nc, nc, nax
+	nc_, nc_, nax
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -328,8 +368,8 @@ void PipeBase::createMesh
 	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
 	  (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
 	),
-	nc, nr, nax,
-	list_of<double>(1)(1./gradr)(1)
+	nc_, nr_, nax,
+	list_of<double>(1)(1./gradr_)(1)
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -366,8 +406,6 @@ void PipeBase::createCase
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
-  double T=calcT(p);
-  cout << "Flow-through time T="<<T<<endl;
   
   path dir = executionPath();
 
@@ -386,7 +424,7 @@ void PipeBase::createCase
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("averaging")
     .set_fields(list_of<std::string>("p")("U"))
-    .set_timeStart(inittime*T)
+    .set_timeStart(inittime*T_)
   ));
   
   cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()
@@ -395,7 +433,7 @@ void PipeBase::createCase
     .set_x(0.5*L)
     .set_axSpan(0.5*L)
     .set_tanSpan(M_PI)
-    .set_timeStart( (inittime+meantime)*T )
+    .set_timeStart( (inittime+meantime)*T_ )
   ));
   
   /*
@@ -417,12 +455,11 @@ void PipeBase::createCase
     )
   ));
   */
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1./Re_tau) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 
-  cout<<"Ubulk="<<calcUbulk(p)<<endl;
 }
 
 void PipeBase::evaluateAtSection(
@@ -470,7 +507,7 @@ void PipeBase::evaluateAtSection(
     int c=cd["UMean"].col;
     
     double fac_yp=Re_tau*2.0/D;
-    double fac_Up=1./calcUtau(p);
+    double fac_Up=1./utau_;
     gp<<"plot 0 not lt -1,"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Axial',"
 	" '-' u (("<<Re_tau<<"-$1*"<<fac_yp<<")):($2*"<<fac_Up<<") w l t 'Circumferential',"
@@ -494,7 +531,7 @@ void PipeBase::evaluateAtSection(
     string chart_name="chartMeanRstress_"+title;
     string chart_file_name=chart_name+".png";
     double fac_yp=Re_tau*2.0/D;
-    double fac_Rp=1./pow(calcUtau(p),2);
+    double fac_Rp=1./pow(utau_,2);
     int c=cd["UPrime2Mean"].col;
     
     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
@@ -678,7 +715,6 @@ void PipeCyclic::createCase
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
-  double T=calcT(p);
   
   path dir = executionPath();
 
@@ -690,7 +726,7 @@ void PipeCyclic::createCase
   PipeBase::createCase(cm, p);
   
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
-					    .set_Ubar(vec3(calcUbulk(p), 0, 0))
+					    .set_Ubar(vec3(Ubulk_, 0, 0))
 		));
 
 }
@@ -712,7 +748,7 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
   cm.executeCommand(executionPath(), "perturbU", 
 		    list_of<string>
 		    (lexical_cast<string>(Re_tau))
-		    ("("+lexical_cast<string>(calcUbulk(p))+" 0 0)") 
+		    ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
 		   );
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
@@ -723,7 +759,6 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boo
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
-  double T=calcT(p);
 
   OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
   
@@ -744,7 +779,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boo
   {
     controlDict["application"]="channelFoam";
   }
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T;
+  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
 addToFactoryTable(Analysis, PipeCyclic, NoParameters);
@@ -800,7 +835,6 @@ void PipeInflow::createCase
   
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
-  double T=calcT(p);
 
   path dir = executionPath();
 
@@ -808,7 +842,7 @@ void PipeInflow::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
       
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(calcUbulk(p), 0, 0))
+    .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
     .set_mixingLength(0.1*D)
     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
@@ -828,7 +862,7 @@ void PipeInflow::createCase
       .set_x(tpc_xlocs_[i]*L)
       .set_axSpan(0.5*L)
       .set_tanSpan(M_PI)
-      .set_timeStart( (inittime+meantime)*T )
+      .set_timeStart( (inittime+meantime)*T_ )
     ));
   }
   
@@ -845,7 +879,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
   {
     evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
     
-    const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"RadialTPCArray");
+    const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"TPCArray");
     if (!tpcs)
       throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
     tpcs->evaluate(cm, executionPath(), results);
@@ -894,7 +928,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
       int c=cd["UMean"].col;
       
       double fac_yp=Re_tau*2.0/D;
-      double fac_Up=1./calcUtau(p);
+      double fac_Up=1./utau_;
       gp<<"plot 0 not lt -1,"
 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Axial',"
 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Circumferential',"
@@ -918,7 +952,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
       string chart_name="chartMeanRstress_"+title;
       string chart_file_name=chart_name+".png";
       double fac_yp=Re_tau*2.0/D;
-      double fac_Rp=1./pow(calcUtau(p),2);
+      double fac_Rp=1./pow(utau_,2);
       int c=cd["UPrime2Mean"].col;
       
       gp<<"set terminal png; set output '"<<chart_file_name<<"';";
@@ -953,7 +987,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
   
   setFields(cm, executionPath(), 
 	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
+	      ("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
@@ -967,12 +1001,11 @@ void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boo
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
-  double T=calcT(p);
 
   OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
   
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T;
+  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
 addToFactoryTable(Analysis, PipeInflow, NoParameters);

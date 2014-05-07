@@ -23,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <float.h>
 
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
@@ -310,6 +311,7 @@ public:
 
 protected:
   Parameters p_;
+  arma::mat x_;
 
 public:
   linearAveragedUniformLine(Parameters const& p = Parameters() );

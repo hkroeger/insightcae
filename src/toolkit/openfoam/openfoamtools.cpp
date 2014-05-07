@@ -109,7 +109,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		  list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
 		  .convert_to_container<std::vector<std::string> >())
     {
-      path gzname(fname.c_str()); gzname+=".gz";
+      path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
       {
 	cout<<"Copying file "<<gzname<<endl;
@@ -157,7 +157,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
 		.convert_to_container<std::vector<std::string> >())
   {
-    path gzname(fname.c_str()); gzname+=".gz";
+    path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
     else if (exists(source/fname)) create_symlink_force_overwrite(source/fname, target/fname);
     else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
@@ -679,6 +679,7 @@ linearAveragedUniformLine::linearAveragedUniformLine(Parameters const& p )
 : set(p),
   p_(p)
 {
+  x_=arma::linspace(0., norm(p_.end()-p_.start(),2), p_.np()); // valid for axis == distance!
 }
 
 void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
@@ -699,6 +700,7 @@ void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDic
       l.push_back(setname(i, j));
       l.push_back(sd);
     }
+    
 }
 
 set* linearAveragedUniformLine::clone() const
@@ -714,11 +716,12 @@ arma::mat linearAveragedUniformLine::readSamples
 ) const
 {
   arma::mat data;
+  
   ColumnDescription cd;
   for (int i=0; i<p_.nd1(); i++)
     for (int j=0; j<p_.nd2(); j++)
     {
-      arma::mat datai = uniformLine::readSamples(ofc, location, setname(i, j), &cd);
+      arma::mat datai = Interpolator(uniformLine::readSamples(ofc, location, setname(i, j), &cd))(x_);
       
       datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
       
@@ -730,7 +733,7 @@ arma::mat linearAveragedUniformLine::readSamples
   
   if (coldescr) *coldescr=cd;
   
-  return data / double(p_.nd1()*p_.nd2());
+  return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
   
 }
 

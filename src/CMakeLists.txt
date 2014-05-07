@@ -1,5 +1,6 @@
 project(insight)
 
+OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
 OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
@@ -24,7 +25,7 @@ SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0
 	"1.38.0" "1.37.0"
         "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"
         "1.33.1" "1.33.0" "1.33" )
-find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams python locale program_options REQUIRED)
+find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams python program_options REQUIRED)
 message(STATUS "BOOST_INC=" ${Boost_INCLUDE_DIRS})
 
 
@@ -147,6 +148,7 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   endif()
   message(STATUS ${OF_VERSIONS})
   foreach (_ofvers ${OF_VERSIONS})
+   if (${_ofvers}_FOUND)
     message(STATUS "Adding project ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
@@ -214,6 +216,7 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+   endif()
   endforeach()
 endmacro(setup_lib_target_OF)
 

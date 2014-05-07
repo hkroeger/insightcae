@@ -54,7 +54,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("H",		new DoubleParameter(2.0, "[m] Domain height above plate"))
-	    ("Hbl",		new DoubleParameter(0.1, "[m] Domain height above plate"))
+	    ("Hbl",		new DoubleParameter(0.1, "[m] Height of graded mesh zone above plate"))
 	    ("L",		new DoubleParameter(12.0, "[m] Length of the domain"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 

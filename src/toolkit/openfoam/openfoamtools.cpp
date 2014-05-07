@@ -980,9 +980,10 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
   
   boost::regex re_time("^ *Time = (.+)$");
   boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+  boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
   boost::match_results<std::string::const_iterator> what;
   double time=0;
-  std::vector<double> data;
+  std::vector<double> data, areadata;
   BOOST_FOREACH(const std::string& line, output)
   {
     if (boost::regex_match(line, what, re_time))
@@ -996,9 +997,20 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
       //cout<<what[1]<<" : "<<what[4]<<endl;
       data.push_back(lexical_cast<double>(what[4]));
     }
+    if (boost::regex_match(line, what, re_area))
+    {
+      //cout<<what[1]<<" : "<<what[4]<<endl;
+      areadata.push_back(lexical_cast<double>(what[3]));
+    }
   }
   
-  return arma::mat(data.data(), 2, data.size()/2).t();
+  return arma::mat
+    ( join_rows
+      (
+	arma::mat(data.data(), 2, data.size()/2).t(),
+	arma::mat(areadata.data(), 1, areadata.size()).t()
+      )
+    );
 }
 
 arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers, int num)

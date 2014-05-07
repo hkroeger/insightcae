@@ -281,6 +281,6 @@ typedef TPCArray<cylindricalTwoPointCorrelation> RadialTPCArray;
 
 }
 
-#include "analysiscaseelementstemplates.cpp"
+#include "analysiscaseelementstemplates.h"
 
 #endif // INSIGHT_ANALYSISCASEELEMENTS_H

@@ -445,7 +445,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (debug) Info<<"Generating new spots"<<endl;
     
     label nclip1=0, nclip2=0;
-    scalar dt=this->db().time().deltaT().value();
+    //scalar dt=this->db().time().deltaT().value();
     forAll(*this, fi)
     {
       scalar minL=sqrt(patch().magSf()[fi]);

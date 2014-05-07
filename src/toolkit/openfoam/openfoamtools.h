@@ -23,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <float.h>
 
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"

@@ -1,5 +1,6 @@
 project(insight)
 
+OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
 OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)

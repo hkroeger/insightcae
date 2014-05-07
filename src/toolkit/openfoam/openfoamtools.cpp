@@ -109,7 +109,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		  list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
 		  .convert_to_container<std::vector<std::string> >())
     {
-      path gzname(fname.c_str()); gzname+=".gz";
+      path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
       {
 	cout<<"Copying file "<<gzname<<endl;
@@ -157,7 +157,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
 		list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
 		.convert_to_container<std::vector<std::string> >())
   {
-    path gzname(fname.c_str()); gzname+=".gz";
+    path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
     if (exists(source/gzname)) create_symlink_force_overwrite(source/gzname, target/gzname);
     else if (exists(source/fname)) create_symlink_force_overwrite(source/fname, target/fname);
     else throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());

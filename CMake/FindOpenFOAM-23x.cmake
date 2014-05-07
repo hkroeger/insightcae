@@ -9,6 +9,7 @@ FIND_PATH(OF23x_DIR NAMES etc/bashrc
   HINTS
   $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.x
   /opt/OpenFOAM/OpenFOAM-2.3.x
+  /opt/openfoam230
 )
 message(STATUS ${OF23x_DIR})
 

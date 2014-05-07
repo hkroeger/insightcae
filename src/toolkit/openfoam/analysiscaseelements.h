@@ -257,6 +257,9 @@ protected:
   typename TPC::Parameters getTanParameters(int i) const;
   typename TPC::Parameters getAxParameters(int i) const;
   
+  std::string axisTitleTan() const;
+  std::string axisTitleAx() const;
+  
 public:
   TPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;

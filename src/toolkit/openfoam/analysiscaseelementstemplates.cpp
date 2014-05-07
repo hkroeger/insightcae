@@ -48,7 +48,7 @@ TPCArray<TPC>::TPCArray(OpenFOAMCase& cm, Parameters const &p )
     double x = double(i)/(n_r);
     double r = -::cos(M_PI*(0.5+0.5*x))*p_.R();
     
-    cout<<"Creating tpc FOs at r="<<r<<endl;
+    cout<<"Creating tpc FOs for set "<<p_.name_prefix()<<" at r="<<r<<endl;
     r_.push_back(r);
     
     tpc_tan_.push_back(new TPC(cm, getTanParameters(i)));
@@ -75,19 +75,21 @@ void TPCArray<TPC>::addIntoDictionaries(OFdicts& dictionaries) const
   }
 }
 
+
+
 template<class TPC>
 void TPCArray<TPC>::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
 {
   evaluateSingle(cm, location, results, 
 		  p_.name_prefix()+"_tan", 
-		  p_.tanSpan(), "Angle [rad]",
+		  p_.tanSpan(), axisTitleTan(),
 		  tpc_tan_, 
 		  "two-point correlation of velocity along tangential direction at different radii"
 		);
   
   evaluateSingle(cm, location, results, 
 		  p_.name_prefix()+"_ax", 
-		  p_.axSpan(),  "Axial distance [length]",
+		  p_.axSpan(),  axisTitleAx(),
 		  tpc_ax_, 
 		  "two-point correlation of velocity along axial direction at different radii"
 		);
@@ -157,7 +159,7 @@ void TPCArray<TPC>::evaluateSingle
 	data[k].col(ir+1) /= data[k].col(ir+1)(0); // Normalize
 	
 	CorrelationFunctionModel m;
-	cout<<"Fitting TPC for radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
+	cout<<"Fitting tpc profile for set "<<p_.name_prefix()<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
 	nonlinearRegression(data[k].col(ir+1), data[k].col(0), m);
 	regressions[k].col(ir+1)=m.evaluateObjective(regressions[k].col(0));
 	

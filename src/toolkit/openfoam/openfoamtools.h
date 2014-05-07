@@ -310,6 +310,7 @@ public:
 
 protected:
   Parameters p_;
+  arma::mat x_;
 
 public:
   linearAveragedUniformLine(Parameters const& p = Parameters() );

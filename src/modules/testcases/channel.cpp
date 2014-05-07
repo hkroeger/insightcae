@@ -334,6 +334,7 @@ void ChannelBase::createCase
     .set_endTime( (inittime+meantime+mean2time)*T_ )
     .set_writeFormat("ascii")
     .set_decompositionMethod("simple")
+    .set_deltaT(1e-3)
   ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
@@ -347,7 +348,7 @@ void ChannelBase::createCase
   cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
     .set_name_prefix("tpc_interior")
     .set_R(0.5*H)
-    .set_x(0.5*L)
+    .set_x(0.0) // middle x==0!
     .set_z(-0.49*B)
     .set_axSpan(0.5*L)
     .set_tanSpan(0.45*B)
@@ -1018,7 +1019,7 @@ void ChannelInflow::createCase
     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
       .set_name_prefix(tpc_names_[i])
       .set_R(0.5*H)
-      .set_x(tpc_xlocs_[i]*L)
+      .set_x((-0.5+tpc_xlocs_[i])*L)
       .set_z(-0.49*B)
       .set_axSpan(0.5*L)
       .set_tanSpan(0.45*B)
@@ -1039,7 +1040,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
   
   for (int i=0; i<ntpc_; i++)
   {
-    evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
+    evaluateAtSection(cm, p, results, ((-0.5+tpc_xlocs_[i])+1e-6)*L, i+1);
     
     const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
     if (!tpcs)

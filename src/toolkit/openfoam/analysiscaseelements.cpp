@@ -444,7 +444,7 @@ arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
 
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
-  //cout<<exp(-B_*x.col(0)) % cos(omega_*x.col(0))<<endl;
+  cout<<B_<<" "<<omega_<<" "<<x.col(0)<<endl;
   return exp(-B_*x.col(0)) % ( cos(omega_*x.col(0)) );
 }
 
@@ -491,6 +491,18 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) 
 }
 
 template<>
+std::string LinearTPCArray::axisTitleTan() const
+{
+   return "Tangential distance [length]";
+}
+
+template<>
+std::string LinearTPCArray::axisTitleAx() const
+{
+   return "Axial distance [length]";
+}
+
+template<>
 const char * RadialTPCArray::cmptNames[] = 
 { "xx", "xy", "xz",
   "yx", "yy", "yz",
@@ -531,6 +543,18 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParamet
       .set_ez(vec3(1, 0, 0))
       .set_degrees(false)
       .set_timeStart( p_.timeStart() );
+}
+
+template<>
+std::string RadialTPCArray::axisTitleTan() const
+{
+   return "Angle [rad]";
+}
+
+template<>
+std::string RadialTPCArray::axisTitleAx() const
+{
+   return "Axial distance [length]";
 }
 
 }

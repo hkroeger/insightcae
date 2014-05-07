@@ -183,8 +183,6 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   PSINT(p, "mesh", nh);
   
   // Physics
-  double kappa=0.41;
-  double Cplus=5.0;
   Re_=Re(Re_tau);
   Ubulk_=Re_/Re_tau;
   T_=L/Ubulk_;

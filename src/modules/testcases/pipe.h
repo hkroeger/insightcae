@@ -48,6 +48,9 @@ public:
   
 protected:
   std::string cycl_in_, cycl_out_;
+  double Lc_;
+  int nc_, nr_;
+  double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   
 public:
   declareType("Pipe Flow Test Case");
@@ -58,15 +61,16 @@ public:
   virtual ParameterSet defaultParameters() const;
   
   std::string cyclPrefix() const;
-  virtual double calcLc(const ParameterSet& p) const;
-  virtual int calcnc(const ParameterSet& p) const;
-  virtual int calcnr(const ParameterSet& p) const;
-  virtual double calcgradr(const ParameterSet& p) const;
-  virtual double calcywall(const ParameterSet& p) const;
-  virtual double calcRe(const ParameterSet& p) const;
-  virtual double calcUbulk(const ParameterSet& p) const;
-  virtual double calcT(const ParameterSet& p) const;
-  virtual double calcUtau(const ParameterSet& p) const;
+  virtual void calcDerivedInputData(const ParameterSet& p);
+//   virtual double calcLc(const ParameterSet& p) const;
+//   virtual int calcnc(const ParameterSet& p) const;
+//   virtual int calcnr(const ParameterSet& p) const;
+//   virtual double calcgradr(const ParameterSet& p) const;
+//   virtual double calcywall(const ParameterSet& p) const;
+//   virtual double calcRe(const ParameterSet& p) const;
+//   virtual double calcUbulk(const ParameterSet& p) const;
+//   virtual double calcT(const ParameterSet& p) const;
+//   virtual double calcUtau(const ParameterSet& p) const;
 
   virtual void createMesh
   (

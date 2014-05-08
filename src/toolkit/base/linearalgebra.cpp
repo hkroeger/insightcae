@@ -273,7 +273,7 @@ arma::mat sortedByCol(const arma::mat&m, int c)
   
   arma::mat xy = zeros(m.n_rows, m.n_cols);
   for (int r=0; r<m.n_rows; r++)
-    xy.row(indices(r))=m.row(r);
+    xy.row(r)=m.row(indices(r));
   return xy;
 }
 

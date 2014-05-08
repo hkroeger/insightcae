@@ -469,13 +469,11 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
  
        // if creation time is within the current time step then create structure now
       if (debug>=2) Info<<fi<<" "<<patch().Cf()[fi]<<" : "<<Umean<<"/"<<L_[fi]<<" "<<flush;
-      if ((*crTimes_)[fi]-horiz < /*dt*/ 0.0 )
+      if ( (horiz - (*crTimes_)[fi]) > 0.0 )
       {
 	do
 	{
-	  scalar ddt=(*crTimes_)[fi]-horiz; // time until next occurence
-
-	  point pf = randomFacePosition(fi) - Umean*(ddt+(horiz-t));
+	  point pf = randomFacePosition(fi) - Umean*( (*crTimes_)[fi] - t );
 	  
 	  TurbulentStructure snew(ranGen_, pf, Umean, L_[fi], minL);
 	  snew.randomize(ranGen_);
@@ -492,7 +490,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	  
 	  //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
 	}
-	while ( (*crTimes_)[fi]-horiz <= /*dt*/ 0.0 );
+	while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 );
       }
       if (debug>=2) Info<<endl;
     }

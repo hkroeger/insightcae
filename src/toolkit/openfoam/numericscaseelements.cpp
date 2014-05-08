@@ -357,6 +357,13 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleFoam";
   
+  controlDict.getList("libs").push_back( OFDictData::data("\"libnumericsFunctionObjects.so\"") );  
+  controlDict.getList("libs").push_back( OFDictData::data("\"liblocalLimitedSnGrad.so\"") );  
+  
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
@@ -409,25 +416,26 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
   if (OFversion()<=160) suf=" cellLimited leastSquares 1"; else suf=" grad(U)";
-  div["default"]=pref+"Gauss upwind";
+  div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]=pref+"Gauss linearUpwindV"+suf;
-  if (OFversion()>=210)
-  {
-    div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
-  }
-  else 
-  {
-    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
-  }
+  div["div(phi,k)"]=pref+"Gauss upwind";
+  div["div(phi,omega)"]=pref+"Gauss upwind";
+  div["div(phi,nuTilda)"]=pref+"Gauss upwind";
+  div["div(phi,epsilon)"]=pref+"Gauss upwind";
+  div["div(phi,R)"]=pref+"Gauss upwind";
+  div["div(R)"]="Gauss linear";
+      
+  div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
+  div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["default"]="Gauss linear limited 0.66";
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="limited 0.66";
+  snGrad["default"]="limited localLimited UBlendingFactor 1";
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";

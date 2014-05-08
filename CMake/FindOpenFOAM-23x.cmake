@@ -8,7 +8,9 @@
 FIND_PATH(OF23x_DIR NAMES etc/bashrc
   HINTS
   $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.x
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.0
   /opt/OpenFOAM/OpenFOAM-2.3.x
+  /opt/OpenFOAM/OpenFOAM-2.3.0
   /opt/openfoam230
 )
 message(STATUS ${OF23x_DIR})
@@ -18,6 +20,8 @@ SET(OF23x_FOUND FALSE)
 IF(OF23x_DIR)
   set(OF23x_BASHRC "${OF23x_DIR}/etc/bashrc")
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-WM_PROJECT_VERSION OUTPUT_VARIABLE OF23x_WM_PROJECT_VERSION)
+  
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF23x_CXX_FLAGS)
   set(OF23x_CXX_FLAGS "${OF23x_CXX_FLAGS} -DOF23x")
 
@@ -48,7 +52,7 @@ IF(OF23x_DIR)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.3.x)
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF23x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} 
       ${OF23x_LIB_DIR}/libOpenFOAM.so 
       ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
@@ -69,7 +73,7 @@ IF(OF23x_DIR)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.3.x)
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} ${ARGN}) 
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

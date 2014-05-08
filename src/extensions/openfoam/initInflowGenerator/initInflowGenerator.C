@@ -136,6 +136,38 @@ defineFactoryTable(ReynoldsStressModel, Foam::dictionary);
 //========================= Mean Velocity Model Implementations ================
 //=============================================================================
 
+class DNSVectorProfile
+{
+  interpolationTable<scalar> cmpt[3];
+public:
+  DNSVectorProfile
+  (
+    const std::string& databaseID, 
+    const std::string& xname,
+    const std::string& yname,
+    const std::string& zname
+  )
+  {
+    const char *names[] = {xname.c_str(), yname.c_str(), zname.c_str()};
+    
+    for (int i=0; i<3; i++)
+    {
+      arma::mat rvsyp=insight::refdatalib.getProfile(databaseID, names[i]);
+      cmpt[i].resize(rvsyp.n_rows);
+      cmpt[i].outOfBounds(interpolationTable<scalar>::CLAMP);
+      for (size_t j=0; j<rvsyp.n_rows; j++)
+      {
+	cmpt[i].UList<Tuple2<scalar, scalar> >::operator[](j)=Tuple2<scalar, scalar>(rvsyp(j,0), rvsyp(j,1));
+      }
+    }
+  }
+  virtual ~DNSVectorProfile() {};
+   
+  virtual Foam::vector value(scalar yp) const
+  {
+    return Foam::vector(cmpt[0](yp), cmpt[1](yp), cmpt[2](yp));
+  }
+};
 
 class PowerLawMeanVelocity
 : public MeanVelocityModel
@@ -159,6 +191,36 @@ public:
 
 defineType(PowerLawMeanVelocity);
 addToFactoryTable(MeanVelocityModel, PowerLawMeanVelocity, Foam::dictionary);
+
+
+class DNSMeanVelocity
+: public MeanVelocityModel
+{
+  Foam::string datasetName_;
+  double Retau_;
+  
+  boost::shared_ptr<DNSVectorProfile> profile_;
+public:
+  declareType("DNSMeanVelocity");
+  
+  DNSMeanVelocity(const Foam::dictionary& d)
+  : datasetName_(d.lookup("datasetName")),
+    Retau_(readScalar(d.lookup("Retau")))
+  {
+    std::string pref=lexical_cast<std::string>(int(Retau_));
+    profile_.reset(new DNSVectorProfile(datasetName_, pref+"/umean_vs_yp", pref+"/vmean_vs_yp", pref+"/wmean_vs_yp"));
+    Info<<"Initializing mean velocity field from DNS dataset "<<datasetName_<<"/"<<pref<<endl;
+  }
+  
+  virtual Foam::vector operator()(const FlowProps& flow, double y) const
+  {
+    Foam::vector v=profile_->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
+    return v;
+  }
+};
+
+defineType(DNSMeanVelocity);
+addToFactoryTable(MeanVelocityModel, DNSMeanVelocity, Foam::dictionary);
 
 //=============================================================================
 //========================= Length Scale Model Implementations ================
@@ -293,38 +355,7 @@ std::vector<double> WallLayerReynoldsStresses::Rww=list_of<double>(0.0)(0.007009
 defineType(WallLayerReynoldsStresses);
 addToFactoryTable(ReynoldsStressModel, WallLayerReynoldsStresses, Foam::dictionary);
 
-class DNSVectorProfile
-{
-  interpolationTable<scalar> cmpt[3];
-public:
-  DNSVectorProfile
-  (
-    const std::string& databaseID, 
-    const std::string& xname,
-    const std::string& yname,
-    const std::string& zname
-  )
-  {
-    const char *names[] = {xname.c_str(), yname.c_str(), zname.c_str()};
-    
-    for (int i=0; i<3; i++)
-    {
-      arma::mat rvsyp=insight::refdatalib.getProfile(databaseID, names[i]);
-      cmpt[i].resize(rvsyp.n_rows);
-      cmpt[i].outOfBounds(interpolationTable<scalar>::CLAMP);
-      for (size_t j=0; j<rvsyp.n_rows; j++)
-      {
-	cmpt[i].UList<Tuple2<scalar, scalar> >::operator[](j)=Tuple2<scalar, scalar>(rvsyp(j,0), rvsyp(j,1));
-      }
-    }
-  }
-  virtual ~DNSVectorProfile() {};
-   
-  virtual Foam::vector value(scalar yp) const
-  {
-    return Foam::vector(cmpt[0](yp), cmpt[1](yp), cmpt[2](yp));
-  }
-};
+
 
 /**
  * return RMS profile from selected channel DNS

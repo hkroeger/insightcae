@@ -1295,6 +1295,11 @@ void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
   {
     cd["n"]=MeanVelocityModelParams.getDouble("n");
   }
+  else if (MeanVelocityModel=="DNSMeanVelocity")
+  {
+    cd["datasetName"]=MeanVelocityModelParams.getString("datasetName");
+    cd["Retau"]=MeanVelocityModelParams.getDouble("Retau");
+  }
   else throw insight::Exception("Unsupported MeanVelocityModel: "+MeanVelocityModel);
   d[MeanVelocityModel+"Coeffs"]=cd;
   
@@ -1353,13 +1358,23 @@ ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
 		)
 	      )
 	      (
+		"DNSMeanVelocity", new ParameterSet
+		(
+		  boost::assign::list_of<ParameterSet::SingleEntry>
+		  ("datasetName", new StringParameter("MKM_Channel", "name of DNS dataset"))
+		  ("Retau", new DoubleParameter(590, "Retau from dataset"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
 		"TabulatedMeanVelocity", new ParameterSet
 		(
 		  boost::assign::list_of<ParameterSet::SingleEntry>
 		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
-	      ).convert_to_container<SelectableSubsetParameter::SubsetList>(),
+	      )
+	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
 	     
 	      "Definition of the mean inflow velocity"
 	    )

@@ -8,7 +8,9 @@
 FIND_PATH(OF21x_DIR NAMES etc/bashrc
   HINTS
   $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.x
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.0
   /opt/OpenFOAM/OpenFOAM-2.1.x
+  /opt/OpenFOAM/OpenFOAM-2.1.0
 )
 message(STATUS ${OF21x_DIR})
 
@@ -16,6 +18,8 @@ SET(OF21x_FOUND FALSE)
 
 IF(OF21x_DIR)
   set(OF21x_BASHRC "${OF21x_DIR}/etc/bashrc")
+
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-WM_PROJECT_VERSION OUTPUT_VARIABLE OF21x_WM_PROJECT_VERSION)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF21x_CXX_FLAGS)
   set(OF21x_CXX_FLAGS "${OF21x_CXX_FLAGS} -DOF21x")
@@ -47,7 +51,7 @@ IF(OF21x_DIR)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.1.x)
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF21x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} 
       ${OF21x_LIB_DIR}/libOpenFOAM.so 
       ${OF21x_LIB_DIR}/${OF21x_MPI}/libPstream.so 
@@ -68,7 +72,7 @@ IF(OF21x_DIR)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.1.x)
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF21x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} ${ARGN}) 
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

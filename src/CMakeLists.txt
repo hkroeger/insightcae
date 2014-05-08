@@ -58,6 +58,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   endif()
   message(STATUS ${OF_VERSIONS})
   foreach (_ofvers ${OF_VERSIONS})
+   if (${_ofvers}_FOUND)
     message(STATUS "Adding project ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
@@ -125,6 +126,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+   endif()
   endforeach()
 endmacro(setup_exe_target_OF)
 

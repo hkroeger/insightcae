@@ -347,7 +347,7 @@ public:
 
   virtual Foam::symmTensor operator()(const FlowProps& flow, double y) const
   {
-    return interpolationTable<symmTensor>::operator()(y*flow.Retau_) * Foam::sqr(flow.Retau_);
+    return interpolationTable<symmTensor>::operator()(y*flow.Retau_) * Foam::sqr(flow.utau_);
   }
 };
 

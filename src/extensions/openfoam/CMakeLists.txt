@@ -1,6 +1,6 @@
 
 add_subdirectory(FEMDisplacementBC)
-IF (!INSIGHT_OLD_BOOST_COMPAT)
+IF (NOT INSIGHT_OLD_BOOST_COMPAT)
  add_subdirectory(inflowGeneratorBC)
  add_subdirectory(initInflowGenerator)
 ENDIF()

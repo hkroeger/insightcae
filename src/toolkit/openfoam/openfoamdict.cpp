@@ -141,6 +141,11 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
     out << ")" << endl;
 }
 
+bool patchExists(const OFDictData::dict& bd, const std::string& patchName)
+{
+  return (bd.find(patchName)!=bd.end());
+}
+
 namespace OFDictData
 {
 

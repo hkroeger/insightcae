@@ -837,7 +837,7 @@ double f_calc_n(double n, void* ga)
   double delta0=p->get<2>();
   
   double G=pow(p->get<0>()->grad(), 1./(n-1.));
-  int n_c=1+log( 1./G + L*(G-1.)/delta0)/log(G);
+  int n_c=1+log( 1./G + L*(G-1.)/delta0)/(1e-12+log(G));
   
   cout << L<< " "<<delta0 << " "<<n<<" "<<G<<" "<<n_c<<endl;
   return n_c-n;

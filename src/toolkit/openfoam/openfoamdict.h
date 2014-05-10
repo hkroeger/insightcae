@@ -340,6 +340,8 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
 void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
 
+bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
+
 }
 
 #endif // INSIGHT_OPENFOAMDICT_H

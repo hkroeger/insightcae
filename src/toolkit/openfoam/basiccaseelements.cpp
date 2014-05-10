@@ -1297,8 +1297,10 @@ void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
   }
   else if (MeanVelocityModel=="DNSMeanVelocity")
   {
-    cd["datasetName"]=MeanVelocityModelParams.getString("datasetName");
-    cd["Retau"]=MeanVelocityModelParams.getDouble("Retau");
+    cd["datasetName"]="\""+MeanVelocityModelParams.getString("datasetName")+"\"";
+    cd["xCompName"]="\""+MeanVelocityModelParams.getString("xCompName")+"\"";
+    cd["yCompName"]="\""+MeanVelocityModelParams.getString("yCompName")+"\"";
+    cd["zCompName"]="\""+MeanVelocityModelParams.getString("zCompName")+"\"";
   }
   else throw insight::Exception("Unsupported MeanVelocityModel: "+MeanVelocityModel);
   d[MeanVelocityModel+"Coeffs"]=cd;
@@ -1313,14 +1315,47 @@ void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
     lcd["c2"]=coeff(2);
     lcd["c3"]=coeff(3);
   }
+  else if (LengthScaleModel=="FittedAnisotropicLengthScaleModel")
+  {
+    arma::mat Llongcoeff=LengthScaleModelParams.get<VectorParameter>("Llongcoeff")();
+    arma::mat Lwallcoeff=LengthScaleModelParams.get<VectorParameter>("Lwallcoeff")();
+    arma::mat Llatcoeff=LengthScaleModelParams.get<VectorParameter>("Llatcoeff")();
+    OFDictData::dict csd;
+    csd["c0"]=Llongcoeff(0);
+    csd["c1"]=Llongcoeff(1);
+    csd["c2"]=Llongcoeff(2);
+    csd["c3"]=Llongcoeff(3);
+    lcd["x"]=csd;
+    csd["c0"]=Lwallcoeff(0);
+    csd["c1"]=Lwallcoeff(1);
+    csd["c2"]=Lwallcoeff(2);
+    csd["c3"]=Lwallcoeff(3);
+    lcd["y"]=csd;
+    csd["c0"]=Llatcoeff(0);
+    csd["c1"]=Llatcoeff(1);
+    csd["c2"]=Llatcoeff(2);
+    csd["c3"]=Llatcoeff(3);
+    lcd["z"]=csd;
+  }
   else throw insight::Exception("Unsupported LengthScaleModel: "+LengthScaleModel);
   d[LengthScaleModel+"Coeffs"]=lcd;
 
   d["ReynoldsStressModel"]=ReynoldsStressModel;
   OFDictData::dict rcd;
-  if (ReynoldsStressModel=="TabulatedKReynoldsStresses")
+  if (ReynoldsStressModel=="DNSReynoldsStresses")
   {
-    rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("filename").string()+"\"";
+    rcd["datasetName"]="\""+ReynoldsStressModelParams.getString("datasetName")+"\"";
+    rcd["xCompName"]="\""+ReynoldsStressModelParams.getString("xCompName")+"\"";
+    rcd["yCompName"]="\""+ReynoldsStressModelParams.getString("yCompName")+"\"";
+    rcd["zCompName"]="\""+ReynoldsStressModelParams.getString("zCompName")+"\"";
+  }
+  else if (ReynoldsStressModel=="TabulatedKReynoldsStresses")
+  {
+    rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
+  }
+  else if (ReynoldsStressModel=="WallLayerReynoldsStresses")
+  {
+    //rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
   }
   else throw insight::Exception("Unsupported ReynoldsStressModel: "+ReynoldsStressModel);
   d[ReynoldsStressModel+"Coeffs"]=rcd;
@@ -1362,18 +1397,20 @@ ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
 		(
 		  boost::assign::list_of<ParameterSet::SingleEntry>
 		  ("datasetName", new StringParameter("MKM_Channel", "name of DNS dataset"))
-		  ("Retau", new DoubleParameter(590, "Retau from dataset"))
+		  ("xCompName", new StringParameter("590/umean_vs_yp", "Name of x-velocity profile in dataset"))
+		  ("yCompName", new StringParameter("590/vmean_vs_yp", "Name of y-velocity profile in dataset"))
+		  ("zCompName", new StringParameter("590/wmean_vs_yp", "Name of z-velocity profile in dataset"))
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
 	      )
-	      (
-		"TabulatedMeanVelocity", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
+// 	      (
+// 		"TabulatedMeanVelocity", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
 	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
 	     
 	      "Definition of the mean inflow velocity"
@@ -1396,10 +1433,13 @@ ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
 		)
 	      )
 	      (
-		"ChannelDNSReynoldsStresses", new ParameterSet
+		"DNSReynoldsStresses", new ParameterSet
 		(
 		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("dataset", new StringParameter("MKM_Channel", "name of the DNS dataset"))
+		  ("datasetName", new StringParameter("MKM_Channel", "name of the DNS dataset"))
+		  ("xCompName", new StringParameter("590/Ruu_vs_yp", "Name of Rxx profile in dataset"))
+		  ("yCompName", new StringParameter("590/Rvv_vs_yp", "Name of Ryy profile in dataset"))
+		  ("zCompName", new StringParameter("590/Rww_vs_yp", "Name of Rzz profile in dataset"))
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
 	      )
@@ -1407,7 +1447,7 @@ ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
 		"TabulatedKReynoldsStresses", new ParameterSet
 		(
 		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("filename", new PathParameter("fileName", "name of the ascii file containing the profile of TKE"))
+		  ("fileName", new PathParameter("Kp_vs_ydelta.txt", "name of the ascii file containing the profile of TKE"))
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
 	      )

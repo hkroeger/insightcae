@@ -197,7 +197,7 @@ class DNSMeanVelocity
 : public MeanVelocityModel
 {
   Foam::string datasetName_;
-  double Retau_;
+  Foam::string xCompName_, yCompName_, zCompName_;
   
   boost::shared_ptr<DNSVectorProfile> profile_;
 public:
@@ -205,11 +205,15 @@ public:
   
   DNSMeanVelocity(const Foam::dictionary& d)
   : datasetName_(d.lookup("datasetName")),
-    Retau_(readScalar(d.lookup("Retau")))
+    xCompName_(d.lookup("xCompName")),
+    yCompName_(d.lookup("yCompName")),
+    zCompName_(d.lookup("zCompName"))
   {
-    std::string pref=lexical_cast<std::string>(int(Retau_));
-    profile_.reset(new DNSVectorProfile(datasetName_, pref+"/umean_vs_yp", pref+"/vmean_vs_yp", pref+"/wmean_vs_yp"));
-    Info<<"Initializing mean velocity field from DNS dataset "<<datasetName_<<"/"<<pref<<endl;
+    profile_.reset(new DNSVectorProfile(datasetName_, xCompName_, yCompName_, zCompName_));
+    Info<<"Initializing mean velocity field from DNS dataset:"<<endl
+      <<" "<<datasetName_<<"/"<<xCompName_<<endl
+      <<" "<<datasetName_<<"/"<<yCompName_<<endl
+      <<" "<<datasetName_<<"/"<<zCompName_<<endl;
   }
   
   virtual Foam::vector operator()(const FlowProps& flow, double y) const
@@ -358,52 +362,41 @@ addToFactoryTable(ReynoldsStressModel, WallLayerReynoldsStresses, Foam::dictiona
 
 
 /**
- * return RMS profile from selected channel DNS
+ * return RMS profile from selected DNS
  */
-class ChannelDNSReynoldsStresses
-: public DNSVectorProfile,
-  public ReynoldsStressModel
+class DNSReynoldsStresses
+: public ReynoldsStressModel
 {
-public:
-  declareType("ChannelDNSReynoldsStresses");
+protected:
+  Foam::string datasetName_;
+  Foam::string xCompName_, yCompName_, zCompName_;
   
-  ChannelDNSReynoldsStresses(const Foam::dictionary&)
-  : DNSVectorProfile("MKM_Channel", "590/Ruu_vs_yp", "590/Rvv_vs_yp", "590/Rww_vs_yp")
-  {}
+  boost::shared_ptr<DNSVectorProfile> profile_;
+public:
+  declareType("DNSReynoldsStresses");
+  
+  DNSReynoldsStresses(const Foam::dictionary& d)
+  : datasetName_(d.lookup("datasetName")),
+    xCompName_(d.lookup("xCompName")),
+    yCompName_(d.lookup("yCompName")),
+    zCompName_(d.lookup("zCompName"))
+  {
+    profile_.reset(new DNSVectorProfile(datasetName_, xCompName_, yCompName_, zCompName_));
+    cout<<"Initializing reynolds stress field from DNS dataset:"<<endl
+      <<" "<<datasetName_<<"/"<<xCompName_<<endl
+      <<" "<<datasetName_<<"/"<<yCompName_<<endl
+      <<" "<<datasetName_<<"/"<<zCompName_<<endl;
+  }
    
   virtual Foam::symmTensor operator()(const FlowProps& flow, Foam::scalar y) const
   {
-    Foam::vector v=this->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
+    Foam::vector v=profile_->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
     return Foam::symmTensor(v.x(), 0, 0, v.y(), 0, v.z());
   }
 };
 
-defineType(ChannelDNSReynoldsStresses);
-addToFactoryTable(ReynoldsStressModel, ChannelDNSReynoldsStresses, Foam::dictionary);
-
-/**
- * return RMS profile from selected Pipe DNS
- */
-class PipeDNSReynoldsStresses
-: public DNSVectorProfile,
-  public ReynoldsStressModel
-{
-public:
-  declareType("PipeDNSReynoldsStresses");
-  
-  PipeDNSReynoldsStresses(const Foam::dictionary&)
-  : DNSVectorProfile("K_Pipe", "590/Rzz_vs_yp", "590/Rrr_vs_yp", "590/Rphiphi_vs_yp")
-  {}
-   
-  virtual Foam::symmTensor operator()(const FlowProps& flow, scalar y) const
-  {
-    Foam::vector v=this->value(y*flow.Retau_) * Foam::sqr(flow.utau_);
-    return Foam::symmTensor(v.x(), 0, 0, v.y(), 0, v.z());
-  }
-};
-
-defineType(PipeDNSReynoldsStresses);
-addToFactoryTable(ReynoldsStressModel, PipeDNSReynoldsStresses, Foam::dictionary);
+defineType(DNSReynoldsStresses);
+addToFactoryTable(ReynoldsStressModel, DNSReynoldsStresses, Foam::dictionary);
 
 /**
  * compute isotropic reynolds stresses from profile of TKE vs ydelta

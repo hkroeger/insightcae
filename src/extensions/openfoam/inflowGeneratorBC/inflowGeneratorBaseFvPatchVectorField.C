@@ -198,10 +198,10 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     tensorField LT(size(), tensor::zero);
     
     LT.replace(tensor::XX, sqrt(R_.component(symmTensor::XX)));
-    LT.replace(tensor::YX, R_.component(symmTensor::XY)/LT.component(tensor::XX));
-    LT.replace(tensor::ZX, R_.component(symmTensor::XZ)/LT.component(tensor::XX));
+    LT.replace(tensor::YX, R_.component(symmTensor::XY)/(SMALL+LT.component(tensor::XX)));
+    LT.replace(tensor::ZX, R_.component(symmTensor::XZ)/(SMALL+LT.component(tensor::XX)));
     LT.replace(tensor::YY, sqrt(R_.component(symmTensor::YY)-sqr(LT.component(tensor::YX))));
-    LT.replace(tensor::ZY, (R_.component(symmTensor::YZ) - LT.component(tensor::YX)*LT.component(tensor::ZX) )/LT.component(tensor::YY));
+    LT.replace(tensor::ZY, (R_.component(symmTensor::YZ) - LT.component(tensor::YX)*LT.component(tensor::ZX) )/(SMALL+LT.component(tensor::YY)));
     LT.replace(tensor::ZZ, sqrt(R_.component(symmTensor::ZZ) - sqr(LT.component(tensor::ZX))-sqr(LT.component(tensor::ZY))));
     
     Lund_.reset(new tensorField(LT));
@@ -219,6 +219,10 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     
     fluctuations = Lund_() & fluctuations;
     
+    if (debug>=3)
+    { 
+      Pout<<" Lund-transf. fluct.: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
+    }
     if (this->db().time().outputTime()) writeStateVisualization(0, fluctuations);
     
     fixedValueFvPatchField<vector>::operator==(Umean_ + fluctuations);

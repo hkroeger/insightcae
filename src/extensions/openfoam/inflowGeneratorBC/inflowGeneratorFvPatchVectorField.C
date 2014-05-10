@@ -456,7 +456,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       if ((Umean&in_dir) < SMALL)
       {
-	Umean += in_dir*((Umean&in_dir)+SMALL);
+	Umean += in_dir*(-(Umean&in_dir)+SMALL);
 	nclip2++;
       }
       
@@ -465,7 +465,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	Lmax=minL;
 	nclip1++;
       }
-      scalar horiz = t + 0.5*Lmax/mag(Umean);
+      scalar horiz = t + 0.5*Lmax/(SMALL+mag(Umean));
  
        // if creation time is within the current time step then create structure now
       if (debug>=2) Info<<fi<<" "<<patch().Cf()[fi]<<" : "<<Umean<<"/"<<L_[fi]<<" "<<flush;
@@ -582,6 +582,12 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       info->n_total=n_total;
     }
 
+  if (debug>=3)
+  {
+   Pout<<" fluctuations: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
+   forAll(fluctuations, j)
+    if (mag(fluctuations[j])>1e3) Pout<<j<<": "<<tfluctuations<<endl;
+  }
 
   return tfluctuations;
 }

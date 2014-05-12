@@ -421,7 +421,7 @@ void ChannelBase::evaluateAtSection(
     string chart_name="chartMeanVelocity_"+title;
     string chart_file_name=chart_name+".png";
     
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+    gp<<"set terminal pngcairo; set termoption dash; set output '"<<chart_file_name<<"';";
     gp<<"set xlabel 'y+'; set ylabel '<U+>'; set grid; ";
     gp<<"set logscale x;";
     
@@ -436,14 +436,14 @@ void ChannelBase::evaluateAtSection(
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     
     gp<<"plot 0 not lt -1,"
-	" '-' w l t 'Axial',"
-	" '-' w l t 'Spanwise',"
-	" '-' w l t 'Wall normal',"
+	" '-' w l lt 1 lc 1 lw 4 t 'Axial',"
+	" '-' w l lt 1 lc 2 lw 4 t 'Spanwise',"
+	" '-' w l lt 1 lc 3 lw 4 t 'Wall normal',"
 	
-	" '-' w l t 'Axial (DNS Re_tau=180, MKM)',"
-	" '-' w l t 'Spanwise (DNS Re_tau=180, MKM)',"
-	" '-' w l t 'Axial (DNS Re_tau=590, MKM)',"
-	" '-' w l t 'Spanwise (DNS Re_tau=590, MKM)'"
+	" '-' w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)',"
+	" '-' w l lt 2 lc 2 t 'Spanwise (MKM Re_tau=180)',"
+	" '-' w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)',"
+	" '-' w l lt 3 lc 2 t 'Spanwise (MKM Re_tau=590)'"
 	<<endl;
 	
     gp.send1d( axial );
@@ -576,21 +576,21 @@ void ChannelBase::evaluateAtSection(
     
     {    
       Gnuplot gp;
-      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+      gp<<"set terminal pngcairo; set termoption dash; set output '"<<chart_file_name<<"';";
       gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
       gp<<"set logscale x;";
       gp<<"set yrange [:"<<max(axial.col(1))<<"];";
       
       gp<<"plot 0 not lt -1,"
-	  " '-' w l t 'Rxx (Axial)',"
-	  " '-' w l t 'Ryy (Spanwise)',"
-	  " '-' w l t 'Rzz (Wall normal)',"
-	  " '-' w l t 'Rxx (DNS Re_tau=180, MKM)',"
-	  " '-' w l t 'Ryy (DNS Re_tau=180, MKM)',"
-	  " '-' w l t 'Rzz (DNS Re_tau=180, MKM)',"
-	  " '-' w l t 'Rxx (DNS Re_tau=590, MKM)',"
-	  " '-' w l t 'Ryy (DNS Re_tau=590, MKM)',"
-	  " '-' w l t 'Rzz (DNS Re_tau=590, MKM)'"
+	  " '-' w l lt 1 lc 1 lw 4 t 'Rxx (Axial)',"
+	  " '-' w l lt 1 lc 2 lw 4 t 'Ryy (Spanwise)',"
+	  " '-' w l lt 1 lc 3 lw 4 t 'Rzz (Wall normal)',"
+	  " '-' w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)',"
+	  " '-' w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)',"
+	  " '-' w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)',"
+	  " '-' w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)',"
+	  " '-' w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)',"
+	  " '-' w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"
 	  <<endl;
       gp.send1d( axial );
       gp.send1d( spanwise );

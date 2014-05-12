@@ -29,7 +29,28 @@ using namespace boost;
 
 namespace insight
 {
+  
+void insight_gsl_error_handler
+(
+ const char* reason,
+ const char*,
+ int,
+ int
+)
+{
+  throw insight::Exception("Error in GSL subroutine: "+std::string(reason));
+}
 
+GSLExceptionHandling::GSLExceptionHandling()
+{
+  oldHandler_ = gsl_set_error_handler(&insight_gsl_error_handler);
+}
+
+GSLExceptionHandling::~GSLExceptionHandling()
+{
+  gsl_set_error_handler(oldHandler_);
+}
+  
 mat vec3(double x, double y, double z)
 {
   mat v;

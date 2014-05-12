@@ -31,6 +31,14 @@
 namespace insight 
 {
 
+class GSLExceptionHandling
+{
+  gsl_error_handler_t *oldHandler_;
+public:
+  GSLExceptionHandling();
+  ~GSLExceptionHandling();
+};
+
 arma::mat vec3(double x, double y, double z);
 arma::mat tensor3(
   double xx, double xy, double xz,

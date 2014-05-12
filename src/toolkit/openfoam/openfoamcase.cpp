@@ -24,6 +24,7 @@
 #include "base/exception.h"
 #include <base/analysis.h>
 #include "openfoam/openfoamcaseelements.h"
+#include "openfoam/openfoamdict.h"
 
 
 #include "boost/lexical_cast.hpp"
@@ -205,7 +206,10 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
   {
     OFDictData::dictFile& field = dictionaries->addFieldIfNonexistent("0/"+i.first, i.second);
     
-    std::ostringstream dimss; dimss << boost::fusion::get<1>(i.second);
+    const dimensionSet& dimset=boost::fusion::get<1>(i.second);
+    std::ostringstream dimss; 
+    //dimss << dimset;
+    dimss <<"[ "; BOOST_FOREACH(int c, dimset) dimss <<c<<" "; dimss<<"]";
     field["dimensions"] = OFDictData::data( dimss.str() );
     
     std::string vstr="";

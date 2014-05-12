@@ -41,8 +41,8 @@
 #include <boost/spirit/include/qi_eol.hpp>
 #include "boost/filesystem.hpp"
 
-#include "base/exception.h"
 #include "base/linearalgebra.h"
+#include "base/exception.h"
 
 namespace insight
 {

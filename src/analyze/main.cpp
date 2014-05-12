@@ -1,5 +1,6 @@
 #include <boost/concept_check.hpp>
 
+#include "base/linearalgebra.h"
 #include "base/analysis.h"
 
 #include <fstream>
@@ -16,6 +17,8 @@ using namespace insight;
 
 int main(int argc, char *argv[])
 {
+  insight::GSLExceptionHandling gsl_errtreatment;
+  
   using namespace rapidxml;
   namespace po = boost::program_options;
   

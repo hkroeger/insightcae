@@ -19,19 +19,63 @@
 
 
 #include "exception.h"
+#include <execinfo.h>
+#include <sstream>
+#include <cstdlib>
+
+using namespace std;
 
 namespace insight
 {
-
-Exception::Exception(const std::string& msg)
-: std::string(msg)
+  
+std::ostream& operator<<(std::ostream& os, const Exception& ex)
 {
+  os<<ex.message_<<endl;
+  if (ex.strace_!="")
+    os<<ex.strace_<<endl;
+  return os;
+}
 
+
+Exception::Exception(const std::string& msg, bool strace)
+{
+  message_=msg;
+  if (strace)
+  {
+    int num=10;
+    void *array[num];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, num);
+
+    // print out all the frames to stderr
+    char **str=backtrace_symbols(array, size);
+
+    ostringstream oss;
+    for (size_t i=0; i<size; i++)
+    {
+      oss<<str[i]<<endl;
+      //free(str[i]);
+    }
+    //free(str);
+
+    strace_=oss.str();
+  }
+  else
+    strace_="";
 }
 
 Exception::~Exception()
 {
+}
 
+Exception::operator std::string() const
+{
+  if (strace_!="")
+    return message_+"\n"+strace_;
+  else
+    return message_;
 }
 
 void Warning(const std::string& msg)

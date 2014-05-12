@@ -444,7 +444,7 @@ arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
 
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
-  cout<<B_<<" "<<omega_<<" "<<x.col(0)<<endl;
+  //cout<<B_<<" "<<omega_<<" "<<x.col(0)<<endl;
   return exp(-B_*x.col(0)) % ( cos(omega_*x.col(0)) );
 }
 

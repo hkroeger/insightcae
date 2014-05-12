@@ -25,14 +25,25 @@
 #include <iostream>
 
 namespace insight {
+  
+class Exception;
+  
+std::ostream& operator<<(std::ostream& os, const Exception& ex);
 
 class Exception
-: public std::string
 {
-
+  std::string message_;
+  std::string strace_;
+  
 public:
-    Exception(const std::string& msg);
+    Exception(const std::string& msg, bool strace=true);
     virtual ~Exception();
+    
+    inline std::string as_string() const { return static_cast<std::string>(*this); }
+    
+    operator std::string() const;
+    
+    friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
 
 void Warning(const std::string& msg);

@@ -37,7 +37,7 @@ bool ISCADApplication::notify(QObject *rec, QEvent *ev)
     
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Critical);
-    msgBox.setText(QString(e.c_str()));
+    msgBox.setText(QString(e.as_string().c_str()));
 /*    if (e.addInfo()!="")
     {
       msgBox.setInformativeText("Please check additional info.");

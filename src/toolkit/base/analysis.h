@@ -148,9 +148,6 @@ public:
 
 class AnalysisLibraryLoader
 {
-public:
-  static AnalysisLibraryLoader loader;
- 
 protected:
   std::vector<void*> handles_;
   
@@ -159,6 +156,7 @@ public:
   ~AnalysisLibraryLoader();
 };
 
+extern AnalysisLibraryLoader loader;
 
 }
 

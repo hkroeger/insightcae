@@ -41,7 +41,7 @@ SoftwareEnvironment::~SoftwareEnvironment()
 
 }
 
-int SoftwareEnvironment::executeCommand
+void SoftwareEnvironment::executeCommand
 (
   const std::string& cmd, 
   std::vector<std::string> argv,
@@ -60,8 +60,11 @@ int SoftwareEnvironment::executeCommand
     if (output) output->push_back(line);
   }
   p_in.close();
+  
+  if (p_in.rdbuf()->status()!=0)
+    throw insight::Exception("SoftwareEnvironment::executeCommand(): command failed with nonzero return code.");
 
-  return p_in.rdbuf()->status();
+  //return p_in.rdbuf()->status();
 }
 
 /*

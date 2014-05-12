@@ -282,7 +282,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	      
 	      if (type=="library")
 	      {
-		void *handle = dlopen(location.c_str(), RTLD_NOW|RTLD_GLOBAL);
+		void *handle = dlopen(location.c_str(), /*RTLD_NOW|RTLD_GLOBAL*/RTLD_LAZY|RTLD_NODELETE);
 		if (!handle)
 		{
 		  std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
@@ -303,10 +303,10 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
 {
   BOOST_FOREACH(void *handle, handles_)
   {
-    dlclose(handle);
+    //dlclose(handle);
   }
 }
 
-AnalysisLibraryLoader AnalysisLibraryLoader::loader;
+AnalysisLibraryLoader loader;
 
 }

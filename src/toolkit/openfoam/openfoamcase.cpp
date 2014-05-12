@@ -395,7 +395,7 @@ const
   return shellcmd;
 }
 
-int OpenFOAMCase::executeCommand
+void OpenFOAMCase::executeCommand
 (
   const boost::filesystem::path& location, 
   const std::string& cmd,
@@ -412,10 +412,10 @@ int OpenFOAMCase::executeCommand
     argv.push_back("-parallel");
   }
   
-  return env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output, ovr_machine );
+  env_.executeCommand( cmdString(location, execmd, argv), std::vector<std::string>(), output, ovr_machine );
 }
 
-int OpenFOAMCase::runSolver
+void OpenFOAMCase::runSolver
 (
   const boost::filesystem::path& location, 
   SolverOutputAnalyzer& analyzer,
@@ -450,7 +450,8 @@ int OpenFOAMCase::runSolver
   }
   p_in.close();
 
-  return p_in.rdbuf()->status();
+  if (p_in.rdbuf()->status()!=0)
+    throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exeit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const

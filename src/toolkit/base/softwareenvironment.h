@@ -24,11 +24,14 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "pstreams/pstream.h"
 
 #include "boost/foreach.hpp"
 #include "boost/algorithm/string.hpp"
+
+#include "base/exception.h"
 
 namespace insight
 {
@@ -48,7 +51,7 @@ public:
     
     virtual int version() const =0;
     
-    virtual int executeCommand
+    virtual void executeCommand
     (  
       const std::string& cmd, 
       std::vector<std::string> argv = std::vector<std::string>(),
@@ -88,10 +91,11 @@ public:
 	argv.insert(argv.begin(), "ssh");
       }
       
-      std::cout<<"argv=( ";
-      int k=0;
-      BOOST_FOREACH(const std::string& a, argv) std::cout<<(++k)<<":"<<a<<" ";
-      std::cout<<")"<<std::endl;
+      std::ostringstream dbgs;
+      BOOST_FOREACH(const std::string& a, argv) 
+	dbgs<<a<<" ";
+	
+      std::cout<<dbgs.str()<<std::endl;
       
       if (argv.size()>1)
       {
@@ -100,6 +104,11 @@ public:
       else
       {
 	p_in.open(argv[0]);
+      }
+      
+      if (!p_in.is_open())
+      {
+	throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess! ( "+dbgs.str()+")");
       }
       
       std::cout<<"Executing "<<p_in.command()<<std::endl;

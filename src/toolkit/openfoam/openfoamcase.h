@@ -185,7 +185,7 @@ public:
     )
     const;
 
-    int executeCommand
+    void executeCommand
     (
       const boost::filesystem::path& location, 
       const std::string& cmd,
@@ -195,7 +195,7 @@ public:
       std::string *ovr_machine=NULL
     ) const;
     
-    int runSolver
+    void runSolver
     (
       const boost::filesystem::path& location, 
       SolverOutputAnalyzer& analyzer,

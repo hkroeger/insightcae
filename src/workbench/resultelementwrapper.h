@@ -85,6 +85,18 @@ public:
   inline insight::TabularResult& res() { return dynamic_cast<insight::TabularResult&>(p_); }
 };
 
+class AttributeTableResultWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QTableWidget *le_;
+public:
+  declareType(insight::AttributeTableResult::typeName_());
+  AttributeTableResultWrapper(const ConstrP& p);
+  inline insight::AttributeTableResult& res() { return dynamic_cast<insight::AttributeTableResult&>(p_); }
+};
+
 void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform=NULL);
 
 #endif // RESULTELEMENTWRAPPER_H

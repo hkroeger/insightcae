@@ -126,6 +126,38 @@ TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
 }
 
 
+defineType(AttributeTableResultWrapper);
+addToFactoryTable(ResultElementWrapper, AttributeTableResultWrapper, ResultElementWrapper::ConstrP);
+
+AttributeTableResultWrapper::AttributeTableResultWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  
+  le_=new QTableWidget(res().names().size(), 2, this);
+  
+  QStringList headers;
+  headers << "Attribute" << "Value";
+  le_->setHorizontalHeaderLabels( headers );
+  
+  for(int i=0; i<res().names().size(); i++)
+  {
+    QString attr_name(res().names()[i].c_str());
+    QString attr_val(boost::lexical_cast<std::string>(res().values()[i]).c_str());
+    le_->setItem(i, 0, new QTableWidgetItem( attr_name ));
+    le_->setItem(i, 1, new QTableWidgetItem( attr_val ));
+  }
+  
+  le_->setToolTip(QString(res().shortDescription().c_str()));
+  layout->addWidget(le_);
+  
+  this->setLayout(layout);
+}
+
+
 void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform)
 {
   QVBoxLayout *vlayout=new QVBoxLayout(widget);

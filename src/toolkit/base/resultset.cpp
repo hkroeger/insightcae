@@ -32,6 +32,8 @@
 #include <boost/graph/buffer_concepts.hpp>
 #include "boost/filesystem.hpp"
 
+#include "gnuplot-iostream.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -420,6 +422,55 @@ ResultElement* ResultSet::clone() const
     nr->insert(key, i->second->clone());
   }
   return nr.release();
+}
+
+PlotCurve::PlotCurve()
+{
+}
+
+PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plotcmd)
+: xy_(xy), plotcmd_(plotcmd)
+{}
+
+
+void addPlot
+(
+  ResultSetPtr& results, 
+  const boost::filesystem::path& workdir,
+  const std::string& resultelementname,
+  const std::string& xlabel,
+  const std::string& ylabel,
+  const PlotCurveList& plc,
+  const std::string& shortDescription,
+  const std::string& addinit
+)
+{
+  std::string chart_file_name=(workdir/(resultelementname+".png")).string();
+  
+  {
+    Gnuplot gp;
+    
+    gp<<"set terminal pngcairo; set termoption dash;";
+    gp<<"set output '"<<chart_file_name<<"';";
+    gp<<addinit<<";";
+    gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
+    gp<<"plot 0 not lt -1";
+    BOOST_FOREACH(const PlotCurve& pc, plc)
+    {
+      gp<<", '-' "<<pc.plotcmd_;
+    }
+    gp<<endl;
+    BOOST_FOREACH(const PlotCurve& pc, plc)
+    {
+      gp.send1d(pc.xy_);
+    }
+  }
+  results->insert(resultelementname,
+    std::auto_ptr<Image>(new Image
+    (
+    chart_file_name, 
+    shortDescription, ""
+  )));
 }
 
 }

@@ -118,7 +118,122 @@ void TPCArray<TPC>::evaluateSingle
   
   arma::mat L(r_.data(), r_.size(), 1);
   L=arma::join_rows(L, arma::zeros(r_.size(), nk)); // append nk column with 0's
+  
+  // Produce plot for each component of the tensor:
+  // For reach component: setup plot data first
+  PlotCurveList tpc_curves[nk] /*, tpc_regression_curves[nk],*/;
+  int ir=0;
+  BOOST_FOREACH(const TPC& tpc, tpcarray)
+  {
+    boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
+    
+    // append profile of this radius to chart of this component
+    for (int k=0; k<nk; k++)
+    {
+      //cmd[k]<<", '-' w p lt "<<ir+1<<" t 'r="<<r_[ir]<<"', '-' w l lt "<<ir+1<<" t 'r="<<r_[ir]<<" (fit)'";
+      arma::mat data
+      (
+	join_rows
+	(
+	  arma::linspace<arma::mat>(0, span, p_.np()),
+	  res[k+1].row(res[k+1].n_rows-1).t() // one TPC profile per row (one row per output time step), get the last row
+	)
+      );
+      data.col(0) /= data(0,0); // Normalize
+      
+      CorrelationFunctionModel m;
+      cout<<"Fitting tpc profile for set "<<p_.name_prefix()<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
+      nonlinearRegression(data.col(1), data.col(0), m);
+      arma::mat regressiondata
+      (
+	join_rows
+	(
+	  data.col(0),
+	  m.evaluateObjective(data.col(0))
+	)
+      );
+      
+      L(ir, 1+k)=m.lengthScale();
+      
+      tpc_curves[k].push_back
+      (
+	PlotCurve(data, "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+lexical_cast<std::string>(r_[ir])+"'")
+      );
+      
+      tpc_curves[k].push_back
+      (
+	PlotCurve(regressiondata, "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+lexical_cast<std::string>(r_[ir])+" (fit)'")
+      );
+      
+    }
+    ir++;
+  }
+  
+  // Produces plot of two-point correlation functions
+  for (int k=0; k<nk; k++)
+  {
+    addPlot
+    (
+      results, location, name_prefix+"_"+cmptNames[k],
+      axisLabel, "<R_"+std::string(cmptNames[k])+">",
+      tpc_curves[k],
+      shortDescription+", two-point correlation function for component "+cmptNames[k]
+    );
+  }
+  
 
+  //produce plots of diag L profiles
+  {
+    PlotCurveList L_diag_curves;
+    std::vector<double> ks=list_of<double>(0)(4)(8);    
+    BOOST_FOREACH(int k, ks)
+    {
+      L_diag_curves.push_back
+      (
+	PlotCurve
+	(
+	  arma::mat(join_rows(L.col(0), L.col(k+1))),
+	  "w lp t 'L_"+std::string(cmptNames[k])+"'"
+	)
+      );
+    }
+    
+    addPlot
+    (
+      results, location, name_prefix+"_L_diag",
+      "Radius [length]", "L [length]",
+      L_diag_curves,
+      shortDescription+", autocorrelation lengths"
+    );
+  }
+
+  //produce plots of off-diag L profiles
+  {
+    PlotCurveList L_offdiag_curves;
+    std::vector<double> ks=list_of<double>(1)(2)(3)(5)(6)(7);
+    
+    BOOST_FOREACH(int k, ks)
+    {
+      L_offdiag_curves.push_back
+      (
+	PlotCurve
+	(
+	  arma::mat(join_rows(L.col(0), L.col(k+1))),
+	  "w lp t 'L_"+std::string(cmptNames[k])+"'"
+	)
+      );
+    }
+    
+    addPlot
+    (
+      results, location, name_prefix+"_L_offdiag",
+      "Radius [length]", "L [length]",
+      L_offdiag_curves,
+      shortDescription+", cross-correlation lengths"
+    );
+  }
+  
+   /* 
   // create one plot per component, with the profiles for all radii overlayed
   {
     Gnuplot gp[nk];
@@ -244,7 +359,7 @@ void TPCArray<TPC>::evaluateSingle
       chart_file_name, 
       "Cross-correlation lengths", ""
     )));
-  }
+  }*/
 
 }
 

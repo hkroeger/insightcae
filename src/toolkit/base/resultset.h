@@ -243,6 +243,30 @@ inline ResultElement* new_clone(const ResultElement& e)
   return e.clone();
 }
 
+
+struct PlotCurve
+{
+  arma::mat xy_;
+  std::string plotcmd_;
+  
+  PlotCurve();
+  PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
+};
+
+typedef std::vector<PlotCurve> PlotCurveList;
+
+void addPlot
+(
+  ResultSetPtr& results,
+  const boost::filesystem::path& workdir, 
+  const std::string& resultelementname,
+  const std::string& xlabel,
+  const std::string& ylabel,
+  const PlotCurveList& plc,
+  const std::string& shortDescription,
+  const std::string& addinit = ""
+);
+
 }
 
 

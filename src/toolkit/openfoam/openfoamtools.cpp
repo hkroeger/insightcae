@@ -484,7 +484,8 @@ arma::mat uniformLine::readSamples
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
-  BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
+  //BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
+  const TimeDirectoryList::value_type& tde = *tdl.rbegin();
   {
     arma::mat m;
     std::vector<std::string> files;
@@ -721,7 +722,9 @@ arma::mat linearAveragedUniformLine::readSamples
   for (int i=0; i<p_.nd1(); i++)
     for (int j=0; j<p_.nd2(); j++)
     {
-      arma::mat datai = Interpolator(uniformLine::readSamples(ofc, location, setname(i, j), &cd))(x_);
+      arma::mat ds=uniformLine::readSamples(ofc, location, setname(i, j), &cd);
+      cout <<ds<<endl;
+      arma::mat datai = Interpolator(ds)(x_);
       
       datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
       

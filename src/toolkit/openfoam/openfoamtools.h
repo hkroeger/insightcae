@@ -260,7 +260,7 @@ public:
    * reads the sampled data from the files
    * OF writes different files for scalars, vectors tensors. 
    * They are all read and combined into a single matrix in the above order by column.
-   * multiple times are combined by row
+   * Only the last results in the last time folder is returned
    */
   static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       const std::string& setName,

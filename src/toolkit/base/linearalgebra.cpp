@@ -153,64 +153,75 @@ double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) c
 
 double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionModel& model)
 {
-  const gsl_multimin_fminimizer_type *T = 
-    gsl_multimin_fminimizer_nmsimplex2;
-  gsl_multimin_fminimizer *s = NULL;
-  gsl_vector *ss, *p;
-  gsl_multimin_function minex_func;
+  try
+  {
+    const gsl_multimin_fminimizer_type *T = 
+      gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer *s = NULL;
+    gsl_vector *ss, *p;
+    gsl_multimin_function minex_func;
 
-  size_t iter = 0;
-  int status;
-  double size;
+    size_t iter = 0;
+    int status;
+    double size;
 
-  /* Starting point */
-  p = gsl_vector_alloc (model.numP());
-  //gsl_vector_set_all (p, 1.0);
-  model.setInitialValues(p->data);
+    /* Starting point */
+    p = gsl_vector_alloc (model.numP());
+    //gsl_vector_set_all (p, 1.0);
+    model.setInitialValues(p->data);
 
-  /* Set initial step sizes to 0.1 */
-  ss = gsl_vector_alloc (model.numP());
-  gsl_vector_set_all (ss, 0.1);
+    /* Set initial step sizes to 0.1 */
+    ss = gsl_vector_alloc (model.numP());
+    gsl_vector_set_all (ss, 0.1);
 
-  /* Initialize method and iterate */
-  RegressionData param(model, y, x);
-  minex_func.n = model.numP();
-  minex_func.f = f_nonlinearRegression;
-  minex_func.params = (void*) (&param);
+    /* Initialize method and iterate */
+    RegressionData param(model, y, x);
+    minex_func.n = model.numP();
+    minex_func.f = f_nonlinearRegression;
+    minex_func.params = (void*) (&param);
 
-  s = gsl_multimin_fminimizer_alloc (T, model.numP());
-  gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
+    s = gsl_multimin_fminimizer_alloc (T, model.numP());
+    gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
 
-  do
-    {
-      iter++;
-      status = gsl_multimin_fminimizer_iterate(s);
-      
-      if (status) 
-        break;
+    do
+      {
+	iter++;
+	status = gsl_multimin_fminimizer_iterate(s);
+	
+	if (status) 
+	  break;
 
-      size = gsl_multimin_fminimizer_size (s);
-      status = gsl_multimin_test_size (size, 1e-3);
+	size = gsl_multimin_fminimizer_size (s);
+	status = gsl_multimin_test_size (size, 1e-3);
 
-      if (status == GSL_SUCCESS)
-        {
-          printf ("converged to minimum at\n");
-        }
+// 	if (status == GSL_SUCCESS)
+// 	  {
+// 	    printf ("converged to minimum at\n");
+// 	  }
 
-      printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
-              iter,
-              gsl_vector_get (s->x, 0), 
-              s->fval, size);
-    }
-  while (status == GSL_CONTINUE && iter < 100);
+// 	printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
+// 		iter,
+// 		gsl_vector_get (s->x, 0), 
+// 		s->fval, size);
+      }
+    while (status == GSL_CONTINUE && iter < 100);
+    
+    model.setParameters(s->x->data);
+    
+    gsl_vector_free(p);
+    gsl_vector_free(ss);
+    gsl_multimin_fminimizer_free (s);
+
+    return model.computeQuality(y, x);
+  }
+  catch (...)
+  {
+    std::ostringstream os;
+    os<<"x=["<<x.t()<<"]\ty=["<<y.t()<<"]";
+    throw insight::Exception("nonlinearRegression(): Failed to do regression.\nSupplied data: "+os.str());
+  }
   
-  model.setParameters(s->x->data);
-  
-  gsl_vector_free(p);
-  gsl_vector_free(ss);
-  gsl_multimin_fminimizer_free (s);
-
-  return model.computeQuality(y, x);
+  return DBL_MAX;
 }
 
 #include <gsl/gsl_errno.h>
@@ -300,29 +311,38 @@ arma::mat sortedByCol(const arma::mat&m, int c)
 
 Interpolator::Interpolator(const arma::mat& xy_us)
 {
-  //uvec indices = sort_index(xy_us.col(0));
-  arma::mat xy = sortedByCol(xy_us, 0);
-  
-  if (xy.n_cols<2)
-    throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
-  if (xy.n_rows<2)
-    throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
-  spline.resize(xy.n_cols-1);
-  
-  int nf=xy.n_cols-1;
-  int nrows=xy.n_rows;
-  
-  acc = gsl_interp_accel_alloc ();
-  for (int i=0; i<nf; i++)
+  try
   {
-    //cout<<"building interpolator for col "<<i<<endl;
-    spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
-    //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
-    gsl_spline_init (spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
-  }
+    //uvec indices = sort_index(xy_us.col(0));
+    arma::mat xy = sortedByCol(xy_us, 0);
   
-  first=xy.row(0);
-  last=xy.row(xy.n_rows-1);
+    if (xy.n_cols<2)
+      throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
+    if (xy.n_rows<2)
+      throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
+    spline.resize(xy.n_cols-1);
+    
+    int nf=xy.n_cols-1;
+    int nrows=xy.n_rows;
+    
+    acc = gsl_interp_accel_alloc ();
+    for (int i=0; i<nf; i++)
+    {
+      //cout<<"building interpolator for col "<<i<<endl;
+      spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
+      //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
+      gsl_spline_init (spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+    }
+    
+    first=xy.row(0);
+    last=xy.row(xy.n_rows-1);
+  }
+  catch (...)
+  {
+    std::ostringstream os;
+    os<<xy_us;
+    throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
+  }
 }
 
 Interpolator::~Interpolator()

@@ -110,7 +110,29 @@ ResultElement* Image::clone() const
   return new Image(imagePath_, shortDescription_, longDescription_);
 }
   
+defineType(Comment);
+addToFactoryTable(ResultElement, Comment, ResultElement::ResultElementConstrP);
 
+Comment::Comment(const ResultElementConstrP& par)
+: ResultElement(par)
+{}
+
+Comment::Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc)
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
+  value_(value)
+{
+}
+
+void Comment::writeLatexCode(std::ostream& f, int level) const
+{
+  f << value_ <<endl;
+}
+
+ResultElement* Comment::clone() const
+{
+  return new Comment(value_, shortDescription_, longDescription_);
+}
+  
 defineType(ScalarResult);
 addToFactoryTable(ResultElement, ScalarResult, ResultElement::ResultElementConstrP);
 

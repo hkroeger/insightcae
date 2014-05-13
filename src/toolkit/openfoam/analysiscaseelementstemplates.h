@@ -126,6 +126,16 @@ void TPCArray<TPC>::evaluateSingle
   BOOST_FOREACH(const TPC& tpc, tpcarray)
   {
     boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
+    if (res[0].n_rows<1)
+    {
+      results->insert(name_prefix,
+	std::auto_ptr<Comment>(new Comment
+	(
+	"(No data was available for evaluation)", 
+	shortDescription, ""
+      )));
+      return;
+    }
     
     // append profile of this radius to chart of this component
     for (int k=0; k<nk; k++)
@@ -139,7 +149,7 @@ void TPCArray<TPC>::evaluateSingle
 	  res[k+1].row(res[k+1].n_rows-1).t() // one TPC profile per row (one row per output time step), get the last row
 	)
       );
-      data.col(0) /= data(0,0); // Normalize
+      data.col(1) /= data(0,1); // Normalize two-point correlation values (y)
       
       CorrelationFunctionModel m;
       cout<<"Fitting tpc profile for set "<<p_.name_prefix()<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;

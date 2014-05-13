@@ -106,6 +106,21 @@ public:
   inline const T& value() const { return value_; }
 };
 
+class Comment
+: public ResultElement
+{
+protected:
+  std::string value_;
+  
+public:
+  declareType("Comment");
+  
+  Comment(const ResultElementConstrP& par);
+  Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
+  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual ResultElement* clone() const;
+};
+
 class ScalarResult
 : public NumericalResult<double>
 {

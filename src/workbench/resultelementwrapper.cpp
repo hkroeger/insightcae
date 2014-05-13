@@ -131,13 +131,21 @@ void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *supe
   QVBoxLayout *vlayout=new QVBoxLayout(widget);
   for(insight::ResultSet::iterator i=rset.begin(); i!=rset.end(); i++)
       {
-	ResultElementWrapper *wrapper = 
-	  ResultElementWrapper::lookup
-	  (
-	    i->second->type(),
-	    ResultElementWrapper::ConstrP(widget, i->first.c_str(), *i->second)
-	  );
-	vlayout->addWidget(wrapper);
+	try
+	{
+	  ResultElementWrapper *wrapper = 
+	    ResultElementWrapper::lookup
+	    (
+	      i->second->type(),
+	      ResultElementWrapper::ConstrP(widget, i->first.c_str(), *i->second)
+	    );
+	  vlayout->addWidget(wrapper);
+	}
+	catch (insight::Exception e)
+	{
+	  QLabel *comment=new QLabel( (i->first+": "+e.message()).c_str());
+	  vlayout->addWidget(comment);
+	}
 	/*
 	if (superform) 
 	{

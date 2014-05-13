@@ -106,6 +106,19 @@ const boost::filesystem::path& OFEnvironment::bashrc() const
 
 OFEs OFEs::list;
 
+const OFEnvironment& OFEs::get(const std::string& name)
+{
+  const_iterator it=list.find(name);
+  if (it==list.end())
+    throw insight::Exception
+    (
+      "OFEs::get(): Requested OpenFOAM environment "+name+" is undefined.\n"
+      "(Check environment variable INSIGHT_OFES)"
+    );
+  
+  return *(it->second);
+}
+
 OFEs::OFEs()
 {
   const char *envvar=getenv("INSIGHT_OFES");
@@ -421,7 +434,8 @@ void OpenFOAMCase::runSolver
   SolverOutputAnalyzer& analyzer,
   std::string solverName,
   bool *stopFlag,
-  int np
+  int np,
+  const std::vector<std::string>& addopts
 ) const
 {
   if (stopFlag) *stopFlag=false;
@@ -435,6 +449,7 @@ void OpenFOAMCase::runSolver
     cmd="mpirun -np "+lexical_cast<string>(np)+" "+cmd;
     argv.push_back("-parallel");
   }
+  std::copy(addopts.begin(), addopts.end(), back_inserter(argv));
 
   //env_.forkCommand( p_in, "bash", boost::assign::list_of<std::string>("-c")(shellcmd) );
   env_.forkCommand( p_in, cmdString(location, cmd, argv) );

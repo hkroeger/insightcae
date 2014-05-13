@@ -43,6 +43,9 @@ public:
     
     operator std::string() const;
     
+    inline const std::string& message() const { return message_; }
+    inline const std::string& strace() const { return strace_; }
+    
     friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
 

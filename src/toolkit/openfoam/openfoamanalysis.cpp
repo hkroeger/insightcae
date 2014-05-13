@@ -181,7 +181,8 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
 
   if (is_parallel)
   {
-    cm.executeCommand(executionPath(), "decomposePar");
+    if (!exists(executionPath()/"processor0"))
+      cm.executeCommand(executionPath(), "decomposePar");
   }
   
   if (!cm.outputTimesPresentOnDisk(executionPath()))

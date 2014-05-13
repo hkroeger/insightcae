@@ -62,7 +62,7 @@ public:
  const std::string T::typeName( T::typeName_() )
 
 #define declareFactoryTable(baseT, paramS) \
- typedef boost::ptr_map<std::string, insight::Factory<baseT, paramS> > FactoryTable; \
+ typedef std::map<std::string, insight::Factory<baseT, paramS>* > FactoryTable; \
  static FactoryTable* factories_; \
  static baseT* lookup(const std::string& key, const paramS& cp); \
  static std::vector<std::string> factoryToC();
@@ -100,13 +100,16 @@ static struct add##specT##To##baseT##FactoryTable \
     if (!baseT::factories_) baseT::factories_=new baseT::FactoryTable(); \
     std::string key(specT::typeName); \
     /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
-    baseT::factories_->insert(key, new insight::SpecFactory<baseT, specT, paramS>() ); \
+    /*baseT::factories_->insert(key, new insight::SpecFactory<baseT, specT, paramS>() );*/ \
+    (*baseT::factories_)[key]=new insight::SpecFactory<baseT, specT, paramS>();\
   }\
   ~add##specT##To##baseT##FactoryTable()\
   {\
     std::string key(specT::typeName); \
     /*std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl;*/ \
-    baseT::factories_->erase(baseT::factories_->find(key)); \
+    baseT::FactoryTable::iterator k=baseT::factories_->find(key); \
+    delete k->second; \
+    baseT::factories_->erase(k); \
     if (baseT::factories_->size()==0) delete baseT::factories_;\
   }\
 } v_add##specT##To##baseT##FactoryTable;

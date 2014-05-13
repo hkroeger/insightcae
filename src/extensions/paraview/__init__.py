@@ -150,7 +150,13 @@ try:
     def waterSurface(cbi, minZ, maxZ):
         case, blockIndices=cbi
         
-        surf=Contour(Input=case, ContourBy='alpha1', Isosurfaces=[0.5])
+        alphaname="alpha1"
+        for fn in case.PointData.keys():
+	  if fn.startswith("alpha"):
+	    alphaname=fn
+	    break
+	  
+        surf=Contour(Input=case, ContourBy=alphaname, Isosurfaces=[0.5])
         #elev=Elevation(Input=surf, 
                        #LowPoint=[0,0,minZ], 
                        #HighPoint=[0,0,maxZ], 

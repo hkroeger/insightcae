@@ -1303,6 +1303,12 @@ void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
   {
     cd["n"]=MeanVelocityModelParams.getDouble("n");
   }
+  else if (MeanVelocityModel=="TabulatedMeanVelocity")
+  {
+    cd["fileNameX"]="\""+MeanVelocityModelParams.getString("fileNameX")+"\"";
+    cd["fileNameY"]="\""+MeanVelocityModelParams.getString("fileNameY")+"\"";
+    cd["fileNameZ"]="\""+MeanVelocityModelParams.getString("fileNameZ")+"\"";
+  }
   else if (MeanVelocityModel=="DNSMeanVelocity")
   {
     cd["datasetName"]="\""+MeanVelocityModelParams.getString("datasetName")+"\"";
@@ -1397,6 +1403,16 @@ ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
 		(
 		  list_of<ParameterSet::SingleEntry>
 		  ("n", new DoubleParameter(7., "denominator of exponent 1/n of mean velocity power law"))
+		  .convert_to_container<ParameterSet::EntryList>()
+		)
+	      )
+	      (
+		"TabulatedMeanVelocity", new ParameterSet
+		(
+		  list_of<ParameterSet::SingleEntry>
+		  ("fileNameX", new PathParameter("umeanaxial_vs_yp.txt", "name of the ascii file containing the profile of mean axial velocity"))
+		  ("fileNameY", new PathParameter("umeanwallnormal_vs_yp.txt", "name of the ascii file containing the profile of mean wall normal velocity"))
+		  ("fileNameZ", new PathParameter("umeanspanwise_vs_yp.txt", "name of the ascii file containing the profile of mean spanwise velocity"))
 		  .convert_to_container<ParameterSet::EntryList>()
 		)
 	      )

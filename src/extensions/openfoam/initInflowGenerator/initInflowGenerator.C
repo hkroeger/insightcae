@@ -192,6 +192,64 @@ public:
 defineType(PowerLawMeanVelocity);
 addToFactoryTable(MeanVelocityModel, PowerLawMeanVelocity, Foam::dictionary);
 
+/**
+ * interpolate velocity profile from tabulated data from ascii file
+ */
+class TabulatedMeanVelocity
+: public MeanVelocityModel
+{
+  std::auto_ptr<Interpolator> ipol_[3];
+  
+public:
+  declareType("TabulatedMeanVelocity");
+  
+  TabulatedMeanVelocity(const Foam::dictionary& dict)
+  {
+    boost::filesystem::path files[]=
+    {
+      fileName(dict.lookup("fileNameX")),
+      fileName(dict.lookup("fileNameY")),
+      fileName(dict.lookup("fileNameZ")) 
+    };
+    
+    loadData(files);
+  }
+  
+  void loadData
+  (
+    boost::filesystem::path fp[]
+  )
+  {
+    arma::mat data;
+    for (int i=0; i<3; i++)
+    {
+      data.load(fp[i].c_str(), arma::arma_ascii);
+      if (data.n_cols!=2)
+      {
+	insight::Warning
+	(
+	  "Expected 2 columns, got "+lexical_cast<std::string>(data.n_cols)+"!\n"
+	  "Remaining columns are to be omitted!\n"
+	  "Check consistency of input!"
+	);
+      }
+      ipol_[i].reset(new Interpolator(data));
+    }
+  }
+   
+  virtual Foam::vector operator()(const FlowProps& flow, scalar y) const
+  {
+    return Foam::vector
+    (
+      as_scalar(ipol_[0]->operator()(y*flow.Retau_)),
+      as_scalar(ipol_[1]->operator()(y*flow.Retau_)),
+      as_scalar(ipol_[2]->operator()(y*flow.Retau_))
+    );
+  }
+};
+
+defineType(TabulatedMeanVelocity);
+addToFactoryTable(MeanVelocityModel, TabulatedMeanVelocity, Foam::dictionary);
 
 class DNSMeanVelocity
 : public MeanVelocityModel

@@ -49,12 +49,10 @@ extendedForces::~extendedForces()
 
 void extendedForces::execute()
 {
-  Info<<"Execute"<<endl;
   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
   
   if (!pressureForce_.valid())
   {
-    Info<<"reset pressure"<<endl;
     pressureForce_.reset
     (
       new volVectorField
@@ -75,6 +73,7 @@ void extendedForces::execute()
   }
 
   if (!viscousForce_.valid())
+  {
     viscousForce_.reset
     (
       new volVectorField
@@ -92,54 +91,57 @@ void extendedForces::execute()
        calculatedFvPatchField<vector>::typeName
       )
     );
+  }
 
-    forces::execute();
+  forces::execute();
+
+  initialise();
   
-    initialise();
-    
-    if (!active_)
+  if (!active_)
+  {
+      return;
+  }
+  
+  if (directForceDensity_)
+  {
+    WarningIn("extendedForces::execute") << "direct force density unsupported!" << endl;
+  }
+  else
+  {
+    const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
+    const volScalarField& p = obr_.lookupObject<volScalarField>(pName_);
+
+    const fvMesh& mesh = U.mesh();
+
+
+    tmp<volSymmTensorField> tdevRhoReff = devRhoReff();
+
+    // Scale pRef by density for incompressible simulations
+    scalar pRef = pRef_/rho(p);
+
+    //forAllConstIter(labelHashSet, patchSet_, iter)
+    forAll(mesh.boundaryMesh(), patchI)
     {
-        return;
+      if (isA<wallFvPatch>(mesh.boundary()[patchI]))
+      {
+	const vectorField nfb =
+	    mesh.Sf().boundaryField()[patchI] / mesh.magSf().boundaryField()[patchI];
+
+	const symmTensorField& devRhoReffb
+	    = tdevRhoReff().boundaryField()[patchI];
+
+	  pressureForce_().boundaryField()[patchI]==
+	  (
+	      rho(p)*nfb*(p.boundaryField()[patchI] - pRef)
+	  );
+
+	  viscousForce_().boundaryField()[patchI]==
+	  (
+	    nfb & devRhoReffb
+	  );
+      }
     }
-    
-    if (directForceDensity_)
-    {
-      WarningIn("extendedForces::execute") << "direct force density unsupported!" << endl;
-    }
-    else
-    {
-        const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
-        const volScalarField& p = obr_.lookupObject<volScalarField>(pName_);
-
-        const fvMesh& mesh = U.mesh();
-
-
-        tmp<volSymmTensorField> tdevRhoReff = devRhoReff();
-
-        // Scale pRef by density for incompressible simulations
-        scalar pRef = pRef_/rho(p);
-
-        //forAllConstIter(labelHashSet, patchSet_, iter)
-	forAll(mesh.boundaryMesh(), patchI)
-	  if (isA<wallFvPatch>(mesh.boundary()[patchI]))
-	  {
-	    const vectorField nfb =
-		mesh.Sf().boundaryField()[patchI] / mesh.magSf().boundaryField()[patchI];
-
-	    const symmTensorField& devRhoReffb
-		= tdevRhoReff().boundaryField()[patchI];
-
-	      pressureForce_().boundaryField()[patchI]=
-	      (
-		  rho(p)*nfb[patchI]*(p.boundaryField()[patchI] - pRef)
-	      );
-
-	      viscousForce_().boundaryField()[patchI]=
-	      (
-		nfb[patchI] & devRhoReffb[patchI]
-	      );
-	  }
-    }    
+  }    
 }
 
 typedef OutputFilterFunctionObject<extendedForces> extendedForcesFunctionObject;

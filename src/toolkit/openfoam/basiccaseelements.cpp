@@ -178,10 +178,18 @@ void twoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) con
 {
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
   
-  OFDictData::dict& twoPhase=transportProperties.addSubDictIfNonexistent("twoPhase");
-  twoPhase["transportModel"]="twoPhase";
-  twoPhase["phase1"]="phase1";
-  twoPhase["phase2"]="phase2";
+  if (OFversion()<230)
+  {
+    OFDictData::dict& twoPhase=transportProperties.addSubDictIfNonexistent("twoPhase");
+    twoPhase["transportModel"]="twoPhase";
+    twoPhase["phase1"]="phase1";
+    twoPhase["phase2"]="phase2";
+  } else
+  {
+    OFDictData::list& pl=transportProperties.addListIfNonexistent("phases");
+    pl.push_back("phase1");
+    pl.push_back("phase2");
+  }
   
   OFDictData::dict& phase1=transportProperties.addSubDictIfNonexistent("phase1");
   phase1["transportModel"]="Newtonian";

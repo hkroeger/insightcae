@@ -202,6 +202,9 @@ public:
   inline void setTableData(AttributeNames names, AttributeValues values) 
   { names_=names; values_=values; }
   
+  inline const AttributeNames& names() const { return names_; }
+  inline const AttributeValues& values() const { return values_; }
+  
   virtual void writeLatexCode(std::ostream& f, int level) const;
   
   virtual ResultElement* clone() const;

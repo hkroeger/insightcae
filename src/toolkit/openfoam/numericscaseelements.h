@@ -176,6 +176,7 @@ class interFoamNumerics
 {
 protected:
   std::string pname_;
+  std::string alphaname_;
 public:
   interFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;

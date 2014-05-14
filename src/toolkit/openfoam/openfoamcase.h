@@ -91,10 +91,7 @@ class OFEs
 {
 public:
   static OFEs list;
-  static inline const OFEnvironment& get(const std::string& name)
-  {
-    return *(list.find(name)->second);
-  }
+  static const OFEnvironment& get(const std::string& name);
   
   OFEs();
   ~OFEs();
@@ -201,7 +198,8 @@ public:
       SolverOutputAnalyzer& analyzer,
       std::string solverName,
       bool *stopFlag = NULL,
-      int np=0
+      int np=0,
+      const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;
     
     template<class stream>

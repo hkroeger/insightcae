@@ -935,7 +935,8 @@ void runPotentialFoam
   
   TextProgressDisplayer displayer;
   SolverOutputAnalyzer analyzer(displayer);
-  cm.runSolver(location, analyzer, "potentialFoam", stopFlagPtr, np);
+  cm.runSolver(location, analyzer, "potentialFoam", stopFlagPtr, np, 
+			 list_of<std::string>("-noFunctionObjects"));
 
   if (exists(fvSol)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
   if (exists(fvSch)) copy_file(fvSchBackup, fvSch, copy_option::overwrite_if_exists);

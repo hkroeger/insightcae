@@ -129,7 +129,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
-  controlDict["endTime"]=1000.0;
+  controlDict["endTime"]=p_.endTime();
   controlDict["writeControl"]=p_.writeControl();
   controlDict["writeInterval"]=p_.writeInterval();
   controlDict["purgeWrite"]=p_.purgeWrite();
@@ -690,9 +690,13 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
   else
     pname_="p_rgh";
   
+  alphaname_="alpha1";
+  if (OFversion()>=230)
+    alphaname_="alpha.phase1";
+  
   c.addField(pname_, FieldInfo(scalarField, 	dimPressure, 		list_of(0.0), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField("alpha1", FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
+  c.addField(alphaname_, FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
 }
 
 
@@ -800,7 +804,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired[pname_]="";
   fluxRequired["pcorr"]="";
   fluxRequired["alpha"]="";
-  fluxRequired["alpha1"]="";
+  fluxRequired[alphaname_]="";
 }
 
 OFDictData::dict stdMULESSolverSetup(double tol, double reltol)

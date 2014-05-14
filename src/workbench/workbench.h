@@ -17,6 +17,12 @@ public:
   ~WorkbenchApplication( );
 
   bool notify(QObject *rec, QEvent *ev);
+  
+signals:
+  void exceptionOcurred(QString msg, QString addinfo);
+  
+public slots:
+  void displayExceptionNotification(QString msg, QString addinfo);
 
 };
 

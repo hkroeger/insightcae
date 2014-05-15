@@ -362,7 +362,7 @@ point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(
 {
   const pointField& pts = patch().patch().localPoints();
   const face& f=patch().patch().localFaces()[fi];
-  
+ 
   faceList tris(f.nTriangles());
   label tril=0;
   f.triangles(pts, tril, tris); // split face into triangles
@@ -377,9 +377,10 @@ point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(
   }
   
   // setup discrete random generator with area-weighted probability
+
   boost::random::discrete_distribution<> tri_selector(A_f.begin(), A_f.end());
   label i = tri_selector(ranGen_);
-  //Info<<i<<" / "<<tris.size()<<endl;
+
   const face& t=tris[i];
   
   // choose random triangle coordinates inside selected triangle
@@ -460,38 +461,36 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	nclip2++;
       }
       
-      if (Lmax>minL)
+      if (Lmax<minL)
       {
 	Lmax=minL;
 	nclip1++;
       }
-      scalar horiz = t + 0.5*Lmax/(SMALL+mag(Umean));
+      scalar horiz = t + 0.5*Lmax/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
  
        // if creation time is within the current time step then create structure now
-      if (debug>=2) Info<<fi<<" "<<patch().Cf()[fi]<<" : "<<Umean<<"/"<<L_[fi]<<" "<<flush;
-      if ( (horiz - (*crTimes_)[fi]) > 0.0 )
+      if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
+      
+      while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 )
       {
-	do
-	{
-	  point pf = randomFacePosition(fi) - Umean*( (*crTimes_)[fi] - t );
-	  
-	  TurbulentStructure snew(ranGen_, pf, Umean, L_[fi], minL);
-	  snew.randomize(ranGen_);
-	  
-	  // append new structure to the end of the list
-	  vortons_.resize(vortons_.size()+1);
-	  vortons_[vortons_.size()-1]=snew;
-	  
-	  if (debug>=2) Info<<"."<<flush;
-	  n_generated++;
-	  
-	  scalar rnum=ranGen_();
-	  (*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
-	  
-	  //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
-	}
-	while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 );
+	point pf = randomFacePosition(fi) - Umean*( (*crTimes_)[fi] - t );
+	
+	TurbulentStructure snew(ranGen_, pf, Umean, L_[fi], minL);
+	snew.randomize(ranGen_);
+	
+	// append new structure to the end of the list
+	vortons_.resize(vortons_.size()+1);
+	vortons_[vortons_.size()-1]=snew;
+	
+	if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	n_generated++;
+	
+	scalar rnum=ranGen_();
+	(*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
+	
+	//Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
       }
+      
       if (debug>=2) Info<<endl;
     }
     

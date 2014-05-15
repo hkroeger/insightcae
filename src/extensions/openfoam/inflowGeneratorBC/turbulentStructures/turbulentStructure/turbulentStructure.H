@@ -98,6 +98,7 @@ public:
 
     inline void setVelocity(const vector& x) { velocity_=x; }
     inline void setLocation(const point& x) { point::operator=(x); }
+    inline void initialPositioning(const point& x) { startPoint_=x; point::operator=(x); }
     inline const point& location() const { return *this; }
     inline const vector& velocity() const { return velocity_; }
     inline const vector& L(label i) const 

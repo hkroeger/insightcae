@@ -385,8 +385,8 @@ void ChannelBase::evaluateAtSection(
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  double xByL=x/L + 0.5;
-  string title="section__xByL_" + str(format("%07.3f") % xByL);
+  double xByH= (x/L + 0.5)*L/H;
+  string title="section__xByH_" + str(format("%07.3f") % xByH);
   replace_all(title, ".", "_");
     
   boost::ptr_vector<sampleOps::set> sets;
@@ -459,7 +459,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL), ""
+      "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH), ""
     )));
     
   }
@@ -539,7 +539,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profile of turbulent length scale at x/L=" + str(format("%g")%xByL), 
+      "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH), 
       "The length scale is computed from the RANS model's k and omega field."
     )));
     
@@ -608,7 +608,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged reynolds stresses at x/L=" + str(format("%g")%xByL), ""
+      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH), ""
     )));
 
     chart_name="chartMeanTKE_"+title;
@@ -648,7 +648,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/L=" + str(format("%g")%xByL), ""
+      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH), ""
     )));
   }
 
@@ -674,7 +674,7 @@ void ChannelBase::evaluateAtSection(
     std::auto_ptr<Image>(new Image
     (
     pressure_contour_filename, 
-    "Contour of pressure (axial section at x/L=" + str(format("%g")%xByL)+")", ""
+    "Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
   )));
   
   for(int i=0; i<3; i++)
@@ -698,7 +698,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       velocity_contour_filename, 
-      "Contour of "+c+"-Velocity (axial section at x/L=" + str(format("%g")%xByL)+")", ""
+      "Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
     )));
   }
 }
@@ -719,7 +719,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");
   tpcs->evaluate(cm, executionPath(), results, 
-		 "two-point correlation of velocity at different radii at x/L=0.5"
+		 "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
   );
  
   // Wall friction coefficient
@@ -1088,7 +1088,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c))), "w l t 'Axial'"))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+1))), "w l t 'Wall normal'" ))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+2))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged velocities at y/H="+lexical_cast<string>(yByH)
+	"Longitudinal profiles of averaged velocities at y/H="+str(format("%g")%yByH)
       );
     }
     
@@ -1106,7 +1106,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c))), "w l t 'Axial'"))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+3))), "w l t 'Wall normal'" ))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+5))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged reynolds stresses at y/H="+lexical_cast<string>(yByH)
+	"Longitudinal profiles of averaged reynolds stresses at y/H="+str(format("%g")%yByH)
       );    
     }
   }

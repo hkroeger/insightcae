@@ -108,7 +108,7 @@ public:
       
       if (!p_in.is_open())
       {
-	throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess! ( "+dbgs.str()+")");
+	throw insight::Exception("SoftwareEnvironment::forkCommand(): Failed to launch subprocess!\n(Command was \""+dbgs.str()+"\")");
       }
       
       std::cout<<"Executing "<<p_in.command()<<std::endl;

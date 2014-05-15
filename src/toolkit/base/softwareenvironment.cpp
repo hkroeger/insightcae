@@ -53,6 +53,13 @@ void SoftwareEnvironment::executeCommand
   
   forkCommand(p_in, cmd, argv, ovr_machine);
   
+  std::ostringstream os;
+  os << cmd;
+  BOOST_FOREACH( const std::string& s, argv )
+  {
+    os<<" "<<s;
+  }
+  
   std::string line;
   while (std::getline(p_in, line))
   {
@@ -62,7 +69,7 @@ void SoftwareEnvironment::executeCommand
   p_in.close();
   
   if (p_in.rdbuf()->status()!=0)
-    throw insight::Exception("SoftwareEnvironment::executeCommand(): command failed with nonzero return code.");
+    throw insight::Exception("SoftwareEnvironment::executeCommand(): command failed with nonzero return code.\n(Command was \""+os.str()+"\"");
 
   //return p_in.rdbuf()->status();
 }

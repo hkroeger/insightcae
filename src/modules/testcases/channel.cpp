@@ -30,6 +30,7 @@
 #include "boost/ptr_container/ptr_container.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
+#include "boost/format.hpp"
 
 #include "gnuplot-iostream.h"
 
@@ -384,8 +385,8 @@ void ChannelBase::evaluateAtSection(
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ostringstream sns; sns<<"section_x"<<x;
-  string title=sns.str();
+  double xByL=x/L + 0.5;
+  string title="section__xByL_" + str(format("%07.3f") % xByL);
   replace_all(title, ".", "_");
     
   boost::ptr_vector<sampleOps::set> sets;
@@ -458,7 +459,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged velocities", ""
+      "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL), ""
     )));
     
   }
@@ -538,7 +539,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profile of turbulent length scale", 
+      "Wall normal profile of turbulent length scale at x/L=" + str(format("%g")%xByL), 
       "The length scale is computed from the RANS model's k and omega field."
     )));
     
@@ -607,7 +608,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged reynolds stresses", ""
+      "Wall normal profiles of averaged reynolds stresses at x/L=" + str(format("%g")%xByL), ""
     )));
 
     chart_name="chartMeanTKE_"+title;
@@ -647,7 +648,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       chart_file_name, 
-      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model)", ""
+      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/L=" + str(format("%g")%xByL), ""
     )));
   }
 
@@ -673,7 +674,7 @@ void ChannelBase::evaluateAtSection(
     std::auto_ptr<Image>(new Image
     (
     pressure_contour_filename, 
-    "Contour of pressure (axial section)", ""
+    "Contour of pressure (axial section at x/L=" + str(format("%g")%xByL)+")", ""
   )));
   
   for(int i=0; i<3; i++)
@@ -697,7 +698,7 @@ void ChannelBase::evaluateAtSection(
       std::auto_ptr<Image>(new Image
       (
       velocity_contour_filename, 
-      "Contour of "+c+"-Velocity (axial section)", ""
+      "Contour of "+c+"-Velocity (axial section at x/L=" + str(format("%g")%xByL)+")", ""
     )));
   }
 }
@@ -712,12 +713,14 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
-  evaluateAtSection(cm, p, results, 0.5*L, 0);
+  evaluateAtSection(cm, p, results, 0.0, 0);
 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");
-  tpcs->evaluate(cm, executionPath(), results);
+  tpcs->evaluate(cm, executionPath(), results, 
+		 "two-point correlation of velocity at different radii at x/L=0.5"
+  );
  
   // Wall friction coefficient
   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax);
@@ -1042,9 +1045,9 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
   {
     double r0=0.1, r1=0.997;
     double r=r0+(r1-r0)*double(i)/double(nr-1);
+    double yByH=r/H;
     
-    ostringstream sns; sns<<"longitudinal_y"<<r;
-    string title=sns.str();
+    string title="longitudinal__yByH_"+str(format("%7.3f")%yByH);
     replace_all(title, ".", "_");
 
     boost::ptr_vector<sampleOps::set> sets;
@@ -1085,32 +1088,8 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c))), "w l t 'Axial'"))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+1))), "w l t 'Wall normal'" ))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+2))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged velocities"
+	"Longitudinal profiles of averaged velocities at y/H="+lexical_cast<string>(yByH)
       );
-      
-//       Gnuplot gp;
-//       string chart_name="chartMeanVelocity_"+title;
-//       string chart_file_name=chart_name+".png";
-//       
-//       gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-//       gp<<"set xlabel 'x+'; set ylabel '<U+>'; set grid; ";
-//       //gp<<"set logscale x;";
-//       
-//       gp<<"plot 0 not lt -1,"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Axial',"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Circumferential',"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Up<<") w l t 'Radial'"<<endl;
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+1))) );
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+2))) );
-// 
-//       results->insert(chart_name,
-// 	std::auto_ptr<Image>(new Image
-// 	(
-// 	chart_file_name, 
-// 	"Longitudinal profiles of averaged velocities", ""
-//       )));
-      
     }
     
     // Mean reynolds stress profiles
@@ -1127,34 +1106,8 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c))), "w l t 'Axial'"))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+3))), "w l t 'Wall normal'" ))
 	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+5))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged reynolds stresses"
-      );
-      
-//       Gnuplot gp;
-//       string chart_name="chartMeanRstress_"+title;
-//       string chart_file_name=chart_name+".png";
-//       
-//       gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-//       gp<<"set xlabel 'x+'; set ylabel '<R+>'; set grid; ";
-//       //gp<<"set logscale x;";
-//       gp<<"set yrange [:"<<fac_Rp*max(data.col(c))<<"];";
-//       
-//       
-//       gp<<"plot 0 not lt -1,"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rxx (Axial)',"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Ryy (Circumferential)',"
-// 	  " '-' u ($1*"<<fac_yp<<"):($2*"<<fac_Rp<<") w l t 'Rzz (Radial)'"<<endl;
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c)))   );
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+3))) );
-//       gp.send1d( arma::mat(join_rows(data.col(0), data.col(c+5))) );
-// 
-//       results->insert(chart_name,
-// 	std::auto_ptr<Image>(new Image
-// 	(
-// 	chart_file_name, 
-// 	"Longitudinal profiles of averaged reynolds stresses", ""
-//       )));
-//       
+	"Longitudinal profiles of averaged reynolds stresses at y/H="+lexical_cast<string>(yByH)
+      );    
     }
   }
     
@@ -1165,7 +1118,9 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
     const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
     if (!tpcs)
       throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
-    tpcs->evaluate(cm, executionPath(), results);
+    tpcs->evaluate(cm, executionPath(), results,
+      "two-point correlation of velocity at different radii at x/L="+str(format("%f")%(-0.5+tpc_xlocs_[i]))
+    );
   }
   
   return results;

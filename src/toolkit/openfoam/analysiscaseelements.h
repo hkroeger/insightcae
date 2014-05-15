@@ -263,7 +263,8 @@ protected:
 public:
   TPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const;
+  virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
+			const std::string& shortDescription) const;
   virtual void evaluateSingle
   (
     OpenFOAMCase& cm, const boost::filesystem::path& location, 

@@ -640,7 +640,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       }
     }
     
-    datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
+    //datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
     
     if (i==0)
       data=datai;
@@ -726,7 +726,7 @@ arma::mat linearAveragedUniformLine::readSamples
       cout <<ds<<endl;
       arma::mat datai = Interpolator(ds)(x_);
       
-      datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
+      //datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
       
       if ((i==0) && (j==0))
 	data=datai;

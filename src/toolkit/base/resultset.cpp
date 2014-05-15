@@ -97,12 +97,19 @@ Image::Image(const boost::filesystem::path& value, const std::string& shortDesc,
 void Image::writeLatexHeaderCode(std::ostream& f) const
 {
   f<<"\\usepackage{graphicx}\n";
+  f<<"\\usepackage{placeins}\n";
 }
 
 void Image::writeLatexCode(std::ostream& f, int level) const
 {
   //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
-  f<< "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n";
+  f<< 
+  "\n\nSee figure below.\n"
+  "\\begin{figure}[!h]"
+  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n"
+  "\\caption{"+shortDescription_+"}\n"
+  "\\end{figure}"
+  "\\FloatBarrier";
 }
 
 ResultElement* Image::clone() const

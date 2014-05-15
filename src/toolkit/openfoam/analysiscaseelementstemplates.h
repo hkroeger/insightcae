@@ -78,20 +78,25 @@ void TPCArray<TPC>::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 template<class TPC>
-void TPCArray<TPC>::evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results) const
+void TPCArray<TPC>::evaluate(
+  OpenFOAMCase& cm, 
+  const boost::filesystem::path& location, 
+  ResultSetPtr& results,
+  const std::string& shortDescription
+) const
 {
   evaluateSingle(cm, location, results, 
 		  p_.name_prefix()+"_tan", 
 		  p_.tanSpan(), axisTitleTan(),
 		  tpc_tan_, 
-		  "two-point correlation of velocity along tangential direction at different radii"
+		  shortDescription+" (along tangential direction)"
 		);
   
   evaluateSingle(cm, location, results, 
 		  p_.name_prefix()+"_ax", 
 		  p_.axSpan(),  axisTitleAx(),
 		  tpc_ax_, 
-		  "two-point correlation of velocity along axial direction at different radii"
+		  shortDescription+" (along axial direction)" //"two-point correlation of velocity along axial direction at different radii"
 		);
 }
 

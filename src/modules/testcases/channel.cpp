@@ -1047,7 +1047,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
     double r=r0+(r1-r0)*double(i)/double(nr-1);
     double yByH=r/H;
     
-    string title="longitudinal__yByH_"+str(format("%7.3f")%yByH);
+    string title="longitudinal__yByH_"+str(format("%07.3f")%yByH);
     replace_all(title, ".", "_");
 
     boost::ptr_vector<sampleOps::set> sets;

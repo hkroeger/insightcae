@@ -107,7 +107,7 @@ void Image::writeLatexCode(std::ostream& f, int level) const
   "\n\nSee figure below.\n"
   "\\begin{figure}[!h]"
   "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n"
-  "\\caption{"+shortDescription_+"}\n"
+  "\\caption{"+cleanSymbols(shortDescription_)+"}\n"
   "\\end{figure}"
   "\\FloatBarrier";
 }

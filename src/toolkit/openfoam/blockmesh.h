@@ -95,15 +95,15 @@ protected:
   FaceList faces_;
   
 public:
-    Patch(std::string typ="patch");
-    
-    void addFace(Point c1, Point c2, Point c3, Point c4);
-    void addFace(const PointList& corners);
+  Patch(std::string typ="patch");
   
-    void appendPatch(const Patch& opatch);
+  void addFace(Point c1, Point c2, Point c3, Point c4);
+  void addFace(const PointList& corners);
 
-    std::vector<OFDictData::data> 
-    bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
+  void appendPatch(const Patch& opatch);
+
+  std::vector<OFDictData::data> 
+  bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
 };
 
 class GradingAnalyzer
@@ -160,7 +160,6 @@ public:
 };
 
 
-
 class transform2D
 {
 protected:
@@ -180,13 +179,8 @@ public:
 
     inline Patch& fwdPatch() { return fwdPatch_; }
     inline Patch& rvsPatch() { return rvsPatch_; }
-/*
-    void addFwdRvsPatches(bmd)
-    {
-        bmd.addPatch("front", self.fwdPatch);
-        bmd.addPatch("back", self.rvsPatch);
-    }
-    */
+
+    void addFwdRvsPatches(blockMesh *bmd);
 };
 
 class plane2D
@@ -373,7 +367,7 @@ protected:
   
 public:
     Patch2D(const transform2D& t2d, std::string typ="patch");   
-    void addFace(const PointList& corners);
+    void addFace(const Point& c0, const Point& c1);
 };
 
 /*

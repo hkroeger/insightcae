@@ -54,6 +54,7 @@ extern const OFDictData::dimensionSet dimLength;
 extern const OFDictData::dimensionSet dimDensity;
 extern const OFDictData::dimensionSet dimless;
 extern const OFDictData::dimensionSet dimKinViscosity;
+extern const OFDictData::dimensionSet dimTemperature;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue, FieldGeoType > FieldInfo;

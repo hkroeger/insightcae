@@ -62,7 +62,8 @@ public:
   
 protected:
   SpeciesList defaultComposition_;
-  
+
+public:
   inline const SpeciesList& defaultComposition() const { return defaultComposition_; }
 };
 

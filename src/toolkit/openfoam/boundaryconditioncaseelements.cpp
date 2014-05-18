@@ -362,14 +362,22 @@ multiphaseBC::~multiphaseBC()
 {
 }
 
-
-uniformPhases::uniformPhases( Parameters const& p )
-: p_(p)
+uniformPhases::uniformPhases()
 {}
+
+uniformPhases::uniformPhases( const PhaseFractionList& p0 )
+: phaseFractions_(p0)
+{}
+
+uniformPhases* uniformPhases::set(const std::string& name, double val)
+{
+  phaseFractions_[name]=val;
+  return this;
+}
 
 bool uniformPhases::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
-  const PhaseFractionList& f = p_.phasefractions();
+  const PhaseFractionList& f = phaseFractions_;
   if 
   (     
     (f.find(fieldname)!=f.end())

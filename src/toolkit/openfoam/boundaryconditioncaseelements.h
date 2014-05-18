@@ -167,16 +167,14 @@ class uniformPhases : public multiphaseBC
 {
 public:
   typedef std::map<std::string, double> PhaseFractionList;
-  
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (phasefractions, PhaseFractionList, PhaseFractionList())
-  )
 
 protected:
-  Parameters p_;
+  PhaseFractionList phaseFractions_;
 
 public:
-  uniformPhases( Parameters const& p = Parameters() );
+  uniformPhases();
+  uniformPhases( const PhaseFractionList& p0 );
+  uniformPhases* set(const std::string& name, double val);
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 

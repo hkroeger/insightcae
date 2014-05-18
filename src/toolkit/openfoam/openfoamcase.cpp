@@ -214,23 +214,7 @@ const OFDictData::dimensionSet dimTemperature = OFDictData::dimension(0, 0, 0, 1
 
 bool OpenFOAMCase::isCompressible() const
 {
-  bool comp=false;
-  bool found=false;
-  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
-       i!=elements_.end(); i++)
-       {
-	 const FVNumerics *e= dynamic_cast<const FVNumerics*>(&(*i));
-	 if (e)
-	 {
-	   if (found) throw insight::Exception("OpenFOAMCase::isCompressible(): Multiple FVNumerics elements!");
-	   comp=e->isCompressible();
-	   found=true;
-	 }
-       }
-  if (!found)
-    throw insight::Exception("OpenFOAMCase::isCompressible(): No numerics case element found!");
-  
-  return comp;
+  return findUniqueElement<FVNumerics>().isCompressible();
 }
 
 boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const

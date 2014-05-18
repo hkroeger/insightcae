@@ -116,7 +116,8 @@ void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& metho
 
 FVNumerics::FVNumerics(OpenFOAMCase& c, Parameters const& p)
 : OpenFOAMCaseElement(c, "FVNumerics"),
-  p_(p)
+  p_(p),
+  isCompressible_(false)
 {
 }
 
@@ -971,10 +972,12 @@ reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
 : FVNumerics(c, p),
   p_(p)
 {
+  isCompressible_=true;
+  
   if (OFversion() < 230)
     throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
   
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(1e5), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
   c.addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
 }

@@ -54,6 +54,7 @@ extern const OFDictData::dimensionSet dimLength;
 extern const OFDictData::dimensionSet dimDensity;
 extern const OFDictData::dimensionSet dimless;
 extern const OFDictData::dimensionSet dimKinViscosity;
+extern const OFDictData::dimensionSet dimDynViscosity;
 extern const OFDictData::dimensionSet dimTemperature;
 
 typedef std::vector<double> FieldValue;
@@ -166,6 +167,8 @@ public:
     inline const OFEnvironment& ofe() const { return env_; }
     inline int OFversion() const { return env_.version(); }
     
+    bool isCompressible() const;
+    
     boost::shared_ptr<OFdicts> createDictionaries() const;
     
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
@@ -223,7 +226,12 @@ public:
     inline FieldList& fields()
     {
       return fields_;
-    }  
+    }
+    
+    inline FieldInfo& field(const std::string& fname)
+    {
+      return fields_.find(fname)->second;
+    }
 };
 
 const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const { return *static_cast<OpenFOAMCase*>(&case_); }

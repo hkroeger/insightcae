@@ -58,10 +58,13 @@ public:
 
 protected:
   Parameters p_;
+  bool isCompressible_;
    
 public:
   FVNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  inline bool isCompressible() const { return isCompressible_; }
 };
 
 

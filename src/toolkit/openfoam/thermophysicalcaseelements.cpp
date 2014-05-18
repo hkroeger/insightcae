@@ -79,6 +79,21 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 : thermodynamicModel(c),
   p_(p)
 {
+  std::ifstream tf(p_.foamChemistryThermoFile().c_str());
+  OFDictData::dict td;
+  readOpenFOAMDict(tf, td);
+  
+  c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	list_of(0.0), volField ) );
+  BOOST_FOREACH(const OFDictData::dict::value_type e, td)
+  {
+    std::string specie = e.first;
+    double v=0.0;
+    if (specie==p_.inertSpecie()) v=1.0;
+
+    defaultComposition_[specie]=v;
+
+    c.addField(specie, FieldInfo(scalarField, 	dimless, 	list_of(v), volField ) );
+  }
 }
 
 void detailedGasReactionThermodynamics::addIntoDictionaries(OFdicts& dictionaries) const

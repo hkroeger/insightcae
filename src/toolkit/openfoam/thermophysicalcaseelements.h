@@ -26,7 +26,7 @@
 
 namespace insight {
 
-  class thermodynamicModel
+class thermodynamicModel
 : public OpenFOAMCaseElement
 {
 public:
@@ -55,10 +55,20 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
-
+class multispeciesThermodynamics
+{
+public:
+  typedef std::map<std::string, double> SpeciesList;
+  
+protected:
+  SpeciesList defaultComposition_;
+  
+  inline const SpeciesList& defaultComposition() const { return defaultComposition_; }
+};
 
 class detailedGasReactionThermodynamics
-: public thermodynamicModel
+: public thermodynamicModel,
+  public multispeciesThermodynamics
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,

@@ -209,7 +209,29 @@ const OFDictData::dimensionSet dimLength = OFDictData::dimension(0, 1, 0, 0, 0, 
 const OFDictData::dimensionSet dimDensity = OFDictData::dimension(1, -3, 0, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimless = OFDictData::dimension(0, 0, 0, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimKinViscosity = OFDictData::dimension(0, 2, -1, 0, 0, 0, 0);
+const OFDictData::dimensionSet dimDynViscosity = OFDictData::dimension(1, -1, -1, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimTemperature = OFDictData::dimension(0, 0, 0, 1, 0, 0, 0);
+
+bool OpenFOAMCase::isCompressible() const
+{
+  bool comp=false;
+  bool found=false;
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+       i!=elements_.end(); i++)
+       {
+	 const FVNumerics *e= dynamic_cast<const FVNumerics*>(&(*i));
+	 if (e)
+	 {
+	   if (found) throw insight::Exception("OpenFOAMCase::isCompressible(): Multiple FVNumerics elements!");
+	   comp=e->isCompressible();
+	   found=true;
+	 }
+       }
+  if (!found)
+    throw insight::Exception("OpenFOAMCase::isCompressible(): No numerics case element found!");
+  
+  return comp;
+}
 
 boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {

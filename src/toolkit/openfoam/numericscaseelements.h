@@ -58,10 +58,13 @@ public:
 
 protected:
   Parameters p_;
+  bool isCompressible_;
    
 public:
   FVNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  inline bool isCompressible() const { return isCompressible_; }
 };
 
 
@@ -94,6 +97,7 @@ public:
 
 
 
+OFDictData::dict diagonalSolverSetup();
 OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
@@ -202,7 +206,36 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class reactingFoamNumerics
+: public FVNumerics
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (nCorrectors, int, 2)
+    (nOuterCorrectors, int, 1)
+    (nNonOrthogonalCorrectors, int, 0)
+    (deltaT, double, 1.0)
+    (adjustTimeStep, bool, true)
+    (maxCo, double, 0.45)
+    (maxDeltaT, double, 1.0)
+    (forceLES, bool, false)
+  )
 
+protected:
+  Parameters p_;
+
+public:
+  reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+class reactingParcelFoamNumerics
+: public reactingFoamNumerics
+{
+public:
+  reactingParcelFoamNumerics(OpenFOAMCase& c, const Parameters& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class FSIDisplacementExtrapolationNumerics
 : public FaNumerics
@@ -211,6 +244,8 @@ public:
   FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
+
 
 }
 

@@ -54,6 +54,8 @@ extern const OFDictData::dimensionSet dimLength;
 extern const OFDictData::dimensionSet dimDensity;
 extern const OFDictData::dimensionSet dimless;
 extern const OFDictData::dimensionSet dimKinViscosity;
+extern const OFDictData::dimensionSet dimDynViscosity;
+extern const OFDictData::dimensionSet dimTemperature;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue, FieldGeoType > FieldInfo;
@@ -165,6 +167,8 @@ public:
     inline const OFEnvironment& ofe() const { return env_; }
     inline int OFversion() const { return env_.version(); }
     
+    bool isCompressible() const;
+    
     boost::shared_ptr<OFdicts> createDictionaries() const;
     
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
@@ -222,7 +226,42 @@ public:
     inline FieldList& fields()
     {
       return fields_;
-    }  
+    }
+    
+    inline FieldInfo& field(const std::string& fname)
+    {
+      return fields_.find(fname)->second;
+    }
+    
+    template<class T>
+    const T& findUniqueElement() const
+    {
+      const T* the_e;
+      
+      bool found=false;
+      for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+	  i!=elements_.end(); i++)
+	  {
+	    const T *e= dynamic_cast<const T*>(&(*i));
+	    if (e)
+	    {
+	      if (found) throw insight::Exception("OpenFOAMCase::findUniqueElement(): Multiple elements of requested type!");
+	      the_e=e;
+	      found=true;
+	    }
+	  }
+      if (!found)
+	throw insight::Exception("OpenFOAMCase::findUniqueElement(): No element of requested type found !");
+     
+      return *the_e;
+    }
+
+    template<class T>
+    T& getUniqueElement()
+    {
+      return const_cast<T&>(findUniqueElement<T>());
+    }
+
 };
 
 const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const { return *static_cast<OpenFOAMCase*>(&case_); }

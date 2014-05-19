@@ -116,7 +116,8 @@ void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& metho
 
 FVNumerics::FVNumerics(OpenFOAMCase& c, Parameters const& p)
 : OpenFOAMCaseElement(c, "FVNumerics"),
-  p_(p)
+  p_(p),
+  isCompressible_(false)
 {
 }
 
@@ -190,6 +191,13 @@ void tetFemNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // setup structure of dictionaries
   OFDictData::dict& tetFemSolution=dictionaries.addDictionaryIfNonexistent("system/tetFemSolution");
   tetFemSolution.addSubDictIfNonexistent("solvers");
+}
+
+OFDictData::dict diagonalSolverSetup()
+{
+  OFDictData::dict d;
+  d["solver"]="diagonal";
+  return d;
 }
 
 OFDictData::dict stdAsymmSolverSetup(double tol, double reltol)
@@ -959,6 +967,168 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
 
 }
+
+reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(c, p),
+  p_(p)
+{
+  isCompressible_=true;
+  
+  if (OFversion() < 230)
+    throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
+  
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(1e5), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+}
+
+void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  insight::FVNumerics::addIntoDictionaries(dictionaries);
+    
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="reactingFoam";
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["maxCo"]=p_.maxCo();
+  controlDict["maxDeltaT"]=p_.maxDeltaT();
+  
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["\"rho.*\""]=diagonalSolverSetup();
+  solvers["p"]=stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["h"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
+  
+  solvers["pFinal"]=stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["hFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
+  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
+
+  solvers["Yi"]=stdAsymmSolverSetup(1e-8, 0);
+
+  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  PIMPLE["nCorrectors"]=p_.nCorrectors();
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
+  PIMPLE["pRefCell"]=0;
+  PIMPLE["pRefValue"]=1e5;
+  
+  // ============ setup fvSchemes ================================
+  
+  // check if LES required
+  bool LES=p_.forceLES();
+  try 
+  {
+    const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
+    LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+  }
+  catch (...)
+  {
+    cout<<"Warning: unhandled exception during LES check!"<<endl;
+  }
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  if (LES)
+    ddt["default"]="backward";
+  else
+    ddt["default"]="Euler";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  grad["grad(U)"]="cellLimited leastSquares 1";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  div["default"]="Gauss linear";
+  
+  if (p_.nOuterCorrectors()>1)
+  {
+    // SIMPLE mode: add underrelaxation
+    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+    if (OFversion()<210)
+    {
+      relax["p"]=0.3;
+      relax["U"]=0.7;
+      relax["k"]=0.7;
+      relax["h"]=0.7;
+      relax["Yi"]=0.7;
+      relax["omega"]=0.7;
+      relax["epsilon"]=0.7;
+    }
+    else
+    {
+      OFDictData::dict fieldRelax, eqnRelax;
+      fieldRelax["p"]=0.3;
+      eqnRelax["U"]=0.7;
+      eqnRelax["k"]=0.7;
+      eqnRelax["h"]=0.7;
+      eqnRelax["Yi"]=0.7;
+      eqnRelax["omega"]=0.7;
+      eqnRelax["epsilon"]=0.7;
+      relax["fields"]=fieldRelax;
+      relax["equations"]=eqnRelax;
+    }
+  }
+  
+  if (LES)
+  {
+    /*if (OFversion()>=220)
+      div["div(phi,U)"]="Gauss LUST grad(U)";
+    else*/
+      div["div(phi,U)"]="Gauss linear";
+    div["div(phi,k)"]="Gauss limitedLinear 1";
+  }
+  else
+  {
+    div["div(phi,U)"]="Gauss linearUpwindV grad(U)";
+    div["div(phid,p)"]="Gauss limitedLinear 1";
+    div["div(phi,k)"]="Gauss limitedLinear 1";
+    div["div(phi,Yi_h)"]="Gauss limitedLinear 1";
+    div["div(phi,epsilon)"]="Gauss limitedLinear 1";
+    div["div(phi,omega)"]="Gauss limitedLinear 1";
+    div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
+  }
+
+  div["div((muEff*dev2(T(grad(U)))))"]="Gauss linear";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear limited 0.66";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="limited 0.66";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p"]="";
+}
+
+reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: reactingFoamNumerics(c, p)
+{
+
+}
+
+void reactingParcelFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  reactingFoamNumerics::addIntoDictionaries(dictionaries);
+}
+
+
 
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
 : FaNumerics(c)

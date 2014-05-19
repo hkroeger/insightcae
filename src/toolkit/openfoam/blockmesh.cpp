@@ -384,20 +384,22 @@ transform2D::transform2D(int idx)
 
 mat transform2D::mapped3D(const mat& p) const
 {
-    mat p3=vec3(0., 0., 0.);
-    p3[map_[0]]=dir_[0]*p[0];
-    p3[map_[1]]=dir_[1]*p[1];
-    return p3;
+//   cout<<"Mapped "<<p<<flush;
+  mat p3=vec3(0., 0., 0.);
+  p3[map_[0]]=dir_[0]*p[0];
+  p3[map_[1]]=dir_[1]*p[1];
+//   cout<<" to "<<p3<<endl;
+  return p3;
 }
   
 
-/*
-    void addFwdRvsPatches(bmd)
-    {
-        bmd.addPatch("front", self.fwdPatch);
-        bmd.addPatch("back", self.rvsPatch);
-    }
-    */
+
+void transform2D::addFwdRvsPatches(blockMesh* bmd)
+{
+    bmd->addPatch("front", new Patch(fwdPatch_));
+    bmd->addPatch("back", new Patch(rvsPatch_));
+}
+    
 
 
 
@@ -459,21 +461,20 @@ Block2D::Block2D
 : Block
   (
     (boost::assign::list_of
-	(t2d_.rvs(corners[0])), 
-	(t2d_.rvs(corners[1])), 
-	(t2d_.rvs(corners[2])), 
-	(t2d_.rvs(corners[3])),
-	(t2d_.fwd(corners[0])),
-	(t2d_.fwd(corners[1])), 
-	(t2d_.fwd(corners[2])),
-	(t2d_.fwd(corners[3]))),
+	(t2d.rvs(corners[0])), 
+	(t2d.rvs(corners[1])), 
+	(t2d.rvs(corners[2])), 
+	(t2d.rvs(corners[3])),
+	(t2d.fwd(corners[0])),
+	(t2d.fwd(corners[1])), 
+	(t2d.fwd(corners[2])),
+	(t2d.fwd(corners[3]))),
     resx, resy, 1,
     (boost::assign::list_of
 	(grading[0]), (grading[1]), (1)),
 	zone,
 	inv
   ),
-
   t2d_(t2d)
 	
 {
@@ -887,14 +888,14 @@ Patch2D::Patch2D(const transform2D& t2d, std::string typ)
 {
 }
 
-void Patch2D::addFace(const PointList& corners)
+void Patch2D::addFace(const Point& c0, const Point& c1)
 {
     Patch::addFace
     (
-      t2d_.fwd(corners[0]), 
-      t2d_.fwd(corners[1]),
-      t2d_.rvs(corners[1]), 
-      t2d_.rvs(corners[0])
+      t2d_.fwd(c0), 
+      t2d_.fwd(c1),
+      t2d_.rvs(c1), 
+      t2d_.rvs(c0)
     );
 }
 

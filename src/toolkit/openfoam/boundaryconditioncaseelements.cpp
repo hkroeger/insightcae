@@ -365,14 +365,18 @@ multiphaseBC::~multiphaseBC()
 uniformPhases::uniformPhases()
 {}
 
+uniformPhases::uniformPhases(const uniformPhases& o)
+: phaseFractions_(o.phaseFractions_)
+{}
+
 uniformPhases::uniformPhases( const PhaseFractionList& p0 )
 : phaseFractions_(p0)
 {}
 
-uniformPhases* uniformPhases::set(const std::string& name, double val)
+uniformPhases& uniformPhases::set(const std::string& name, double val)
 {
   phaseFractions_[name]=val;
-  return this;
+  return *this;
 }
 
 bool uniformPhases::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
@@ -421,6 +425,15 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       BC["type"]=OFDictData::data("pressureInletOutletVelocity");
       BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(p_.T());
     }
     else if ( 
       ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
@@ -485,6 +498,11 @@ VelocityInletBC::VelocityInletBC
 {
 }
 
+void VelocityInletBC::setField_p(OFDictData::dict& BC) const
+{
+  BC["type"]=OFDictData::data("zeroGradient");
+}
+
 void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
   BC["type"]=OFDictData::data("fixedValue");
@@ -511,9 +529,17 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       (field.first=="p") && (get<0>(field.second)==scalarField) 
     )
     {
-      BC["type"]=OFDictData::data("zeroGradient");
+      setField_p(BC);
     }
-    
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(p_.T());
+    }    
     else if ( 
       ( (field.first=="pd") || (field.first=="p_rgh") )
       && 
@@ -566,6 +592,23 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
   }
+}
+
+CompressibleInletBC::CompressibleInletBC
+(
+  OpenFOAMCase& c, 
+  const string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const CompressibleInletBC::Parameters& p)
+: VelocityInletBC(c, patchName, boundaryDict, p),
+  p_(p)
+{
+}
+
+void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
+{
+  BC["type"]=OFDictData::data( "fixedValue" );
+  BC["value"]=OFDictData::data( "uniform "+lexical_cast<std::string>(p_.pressure()) );
 }
 
 
@@ -952,6 +995,14 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
     }
     else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]="zeroGradient";
+    }
+    else if ( 
       ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
       && 
       (get<0>(field.second)==scalarField) 
@@ -1137,7 +1188,17 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       BC["type"]=OFDictData::data("zeroGradient");
     }
-        
+    
+    // temperature
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]="zeroGradient";
+    }
+    
     // pressure
     else if ( ( (field.first=="p_rgh") || (field.first=="pd") ) 
 	      && (get<0>(field.second)==scalarField) )

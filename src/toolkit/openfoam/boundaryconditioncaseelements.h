@@ -173,8 +173,10 @@ protected:
 
 public:
   uniformPhases();
+  uniformPhases( const uniformPhases& o);
   uniformPhases( const PhaseFractionList& p0 );
-  uniformPhases* set(const std::string& name, double val);
+  uniformPhases& set(const std::string& name, double val);
+  inline Ptr toPtr() { return Ptr(new uniformPhases(*this)); }
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
@@ -188,6 +190,7 @@ public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (pressure, double, 0.0)
     (rho, double, 1025.0)
+    (T, double, 300.0)
     (gamma, double, 1.0)
     (phiName, std::string, "phi")
     (psiName, std::string, "none")
@@ -217,6 +220,7 @@ class VelocityInletBC
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (velocity, arma::mat, vec3(0,0,0))
+    (T, double, 300.0)
     (rho, double, 1025.0)
     (turbulenceIntensity, double, 0.05)
     (mixingLength, double, 1.0)
@@ -235,9 +239,31 @@ public:
     Parameters const& p = Parameters()
   );
   virtual void setField_U(OFDictData::dict& BC) const;
+  virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class CompressibleInletBC
+: public VelocityInletBC
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
+    (pressure, double, 1e5)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  CompressibleInletBC
+  (
+    OpenFOAMCase& c,
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void setField_p(OFDictData::dict& BC) const;
+};
 
 class TurbulentVelocityInletBC
 : public VelocityInletBC

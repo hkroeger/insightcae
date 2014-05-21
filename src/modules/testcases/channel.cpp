@@ -418,14 +418,6 @@ void ChannelBase::evaluateAtSection(
 
   // Mean velocity profiles
   {
-    Gnuplot gp;
-    string chart_name="chartMeanVelocity_"+title;
-    string chart_file_name=chart_name+".png";
-    
-    gp<<"set terminal pngcairo; set termoption dash; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'y+'; set ylabel '<U+>'; set grid; ";
-    gp<<"set logscale x;";
-    
     int c=cd["UMean"].col;
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
@@ -436,43 +428,33 @@ void ChannelBase::evaluateAtSection(
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     
-    gp<<"plot 0 not lt -1,"
-	" '-' w l lt 1 lc 1 lw 4 t 'Axial',"
-	" '-' w l lt 1 lc 2 lw 4 t 'Spanwise',"
-	" '-' w l lt 1 lc 3 lw 4 t 'Wall normal',"
-	
-	" '-' w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)',"
-	" '-' w l lt 2 lc 2 t 'Spanwise (MKM Re_tau=180)',"
-	" '-' w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)',"
-	" '-' w l lt 3 lc 2 t 'Spanwise (MKM Re_tau=590)'"
-	<<endl;
-	
-    gp.send1d( axial );
-    gp.send1d( spanwise );
-    gp.send1d( wallnormal );
-    gp.send1d( refdata_umean180 );
-    gp.send1d( refdata_wmean180 );
-    gp.send1d( refdata_umean590 );
-    gp.send1d( refdata_wmean590 );
-
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH), ""
-    )));
+    addPlot
+    (
+      results, executionPath(), "chartMeanVelocity_"+title,
+      "y+", "<U+>",
+      list_of
+      (PlotCurve(axial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
+      (PlotCurve(spanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
+      (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
+      (PlotCurve(refdata_umean180, "w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)'"))
+      (PlotCurve(refdata_wmean180, "w l lt 2 lc 2 t 'Spanwise (MKM Re_tau=180)'"))
+      (PlotCurve(refdata_umean590, "w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)'"))
+      (PlotCurve(refdata_wmean590, "w l lt 3 lc 2 t 'Spanwise (MKM Re_tau=590)'"))
+      ,
+      "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH)
+    );
     
   }
   
   // L profiles from k/omega
   if ((cd.find("k")!=cd.end()) && (cd.find("omega")!=cd.end()))
   {
-    Gnuplot gp;
-    string chart_name="chartTurbulentLengthScale_"+title;
-    string chart_file_name=chart_name+".png";
-    
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'y_delta'; set ylabel '<L_delta_RANS>'; set grid; ";
+//     Gnuplot gp;
+//     string chart_name="chartTurbulentLengthScale_"+title;
+//     string chart_file_name=chart_name+".png";
+//     
+//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
+//     gp<<"set xlabel 'y_delta'; set ylabel '<L_delta_RANS>'; set grid; ";
     
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
@@ -509,11 +491,19 @@ void ChannelBase::evaluateAtSection(
     nonlinearRegression(Lt, ydelta, m);
     arma::mat yfit=m.evaluateObjective(ydelta);
     
-    gp<<"plot 0 not lt -1,"
-	" '-' w l t 'CFD', '-' w l t 'Fit "<<m.c0<<"*ydelta^"<<m.c2<<" + ("<<m.c1<<"*ydelta^"<<m.c3<<")'"
-	<<endl;
-    gp.send1d( Ltp );
-    gp.send1d( arma::mat(join_rows(ydelta, yfit)) );
+    addPlot
+    (
+      results, executionPath(), "chartTurbulentLengthScale_"+title,
+      "y_delta", "<L_delta_RANS>",
+      list_of
+       (PlotCurve(Ltp, "w l lt 1 lc 1 lw 2 t 'CFD'"))
+       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), 
+		    "w l lt 2 lc 1 lw 1 t 'Fit "
+		    + 	    str(format("%.1g") % m.c0)+"*ydelta^"+str(format("%.1g") % m.c2)
+		    +" + ("+str(format("%.1g") % m.c1)+"*ydelta^"+str(format("%.1g") % m.c3)+")'"))
+       ,
+      "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH)
+    );
 
     results->insert
     (
@@ -535,13 +525,13 @@ void ChannelBase::evaluateAtSection(
      )
     );
      
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH), 
-      "The length scale is computed from the RANS model's k and omega field."
-    )));
+//     results->insert(chart_name,
+//       std::auto_ptr<Image>(new Image
+//       (
+//       chart_file_name, 
+//       "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH), 
+//       "The length scale is computed from the RANS model's k and omega field."
+//     )));
     
   }
 
@@ -718,23 +708,18 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
     throw insight::Exception("tpc FO array not found in case!");
-  tpcs->evaluate(cm, executionPath(), results, 
-		 "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
+  tpcs->evaluate
+  (
+    cm, executionPath(), results, 
+    "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
   );
  
-  // Wall friction coefficient
-  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax);
-
   {
-    Gnuplot gp;
-    string chart_name="chartMeanWallFriction";
-    string chart_file_name=chart_name+".png";
     
-    gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-    gp<<"set xlabel 'x+'; set ylabel '<Cf>'; set grid; ";
-    //gp<<"set logscale x;";
+   // Wall friction coefficient
+   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax);
     
-    arma::mat Cf_vs_xp(join_rows(
+   arma::mat Cf_vs_xp(join_rows(
       wallforce.col(0)*Re_tau, 
       wallforce.col(1)/(0.5*pow(Ubulk_,2))
     ));
@@ -747,20 +732,16 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     Cftheo_vs_xp(0,1)=Cftheo;
     Cftheo_vs_xp(1,1)=Cftheo;
 
-    gp<<"plot 0 not lt -1,"
-	" '-' w l t 'CFD'"
-	", '-' w l t 'Analytical'"
-	<<endl;
-    gp.send1d( Cf_vs_xp );
-    gp.send1d( Cftheo_vs_xp );
-
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Axial profile of wall shear stress", ""
-    )));
-    
+    addPlot
+    (
+      results, executionPath(), "chartMeanWallFriction",
+      "x+", "<Cf>",
+      list_of
+	(PlotCurve(Cf_vs_xp, "w l lt 1 lc 2 lw 2 t 'CFD'"))
+	(PlotCurve(Cftheo_vs_xp, "w l lt 2 lc 2 lw 1 t 'Analytical'"))
+	,
+      "Axial profile of wall friction coefficient"
+    );    
   }
 
   std::string init=

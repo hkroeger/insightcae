@@ -29,7 +29,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF),
-    ranGen_(1),
+    ranGen_(Pstream::myProcNo()),
     Umean_(p.size(), vector::zero),
     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
@@ -49,7 +49,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
-    ranGen_(1),
+    ranGen_(Pstream::myProcNo()),
     Umean_(ptf.Umean_, mapper),
     R_(ptf.R_, mapper),
     L_(ptf.L_, mapper),
@@ -68,7 +68,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 )
 :
     fixedValueFvPatchField<vector>(p, iF, dict),
-    ranGen_(1),
+    ranGen_(Pstream::myProcNo()),
     Umean_("Umean", dict, size()),
     R_("R", dict, size()),
     L_("L", dict, size()),
@@ -92,7 +92,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const inflowGeneratorBaseFvPatchVectorField& ptf
 )
 : fixedValueFvPatchField<vector>(ptf),
-  ranGen_(1),
+  ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),
@@ -108,7 +108,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     const DimensionedField<vector, volMesh>& iF
 )
 : fixedValueFvPatchField<vector>(ptf, iF),
-  ranGen_(1),
+  ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
   R_(ptf.R_),
   L_(ptf.L_),

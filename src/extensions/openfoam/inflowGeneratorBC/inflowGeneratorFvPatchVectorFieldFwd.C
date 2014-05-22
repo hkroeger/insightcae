@@ -95,26 +95,26 @@ addToRunTimeSelectionTable
 
 //makeInflowGeneratorFvPatchField(hatSpot);
 
-typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence;
-defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence, "inflowGenerator<homogeneousTurbulence>", 0); 
+typedef inflowGeneratorFvPatchVectorField<gaussianSpot> inflowGeneratorFvPatchVectorFieldgaussianSpot;
+defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldgaussianSpot, "inflowGenerator<gaussianSpot>", 0); 
 addToRunTimeSelectionTable                                          
 (                                                                       
     fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    inflowGeneratorFvPatchVectorFieldgaussianSpot,                        
     patch                                                               
 );                                                                      
                                                                         
 addToRunTimeSelectionTable                                              
 (                                                                       
     fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    inflowGeneratorFvPatchVectorFieldgaussianSpot,                        
     dictionary                                                          
 );                                                                      
                                                                         
 addToRunTimeSelectionTable                                              
 (                                                                       
     fvPatchVectorField,                                                 
-    inflowGeneratorFvPatchVectorFieldhomogeneousTurbulence,                        
+    inflowGeneratorFvPatchVectorFieldgaussianSpot,                        
     patchMapper                                                         
 );
 

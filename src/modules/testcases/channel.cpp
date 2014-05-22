@@ -76,7 +76,7 @@ ChannelBase::ChannelBase(const NoParameters&)
 : OpenFOAMAnalysis
   (
     "Channel Flow Test Case",
-    "Cylindrical domain with cyclic BCs on axial ends"
+    "Rectangular domain with cyclic BCs on axial ends"
   ),
   cycl_in_("cycl_half0"),
   cycl_out_("cycl_half1")
@@ -949,7 +949,27 @@ ChannelInflow::ChannelInflow(const NoParameters& nop)
 ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries()); 
+  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries());
+  
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    
+      
+      ("inflow", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("spottype", new SelectionParameter(0, list_of<string>("hatSpot")("gaussianSpot"), "Type of turbulent structure"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Inflow generator parameters"
+      ))
+
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+
   return p;
 }
 
@@ -986,6 +1006,7 @@ void ChannelInflow::createCase
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
+    .set_structureType(p.get<SelectionParameter>("inflow/spottype").selection())
     //.set_mixingLength(0.1*D)
     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));

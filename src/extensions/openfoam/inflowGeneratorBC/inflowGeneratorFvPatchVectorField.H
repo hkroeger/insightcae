@@ -41,7 +41,7 @@ SourceFiles
 
 #include "turbulentStructure.H"
 #include "hatSpot.H"
-#include "homogeneousTurbulenceVorton.H"
+#include "gaussianSpot.H"
 #include "SLList.H"
 
 #include "indexedOctree.H"

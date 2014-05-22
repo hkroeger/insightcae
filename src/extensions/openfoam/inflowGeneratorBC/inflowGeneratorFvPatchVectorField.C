@@ -527,16 +527,16 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     forAll(*this, fi)
     {
       
-#warning Only valid for hat spots!
-      scalar k=1./81.;
+// #warning Only valid for hat spots!
+//       scalar k=1./81.;
+//       scalar f=sqrt(1. /k / c_[fi]);
       
-      scalar f=sqrt(1./k/c_[fi]);
       // superimpose turbulent velocity in affected faces
       forAll(vortonsGlobal, j)
       {
 	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
 	if (mag(u)>SMALL) induced.insert(j, 0);
-	fluctuations[fi] += f*u;
+	fluctuations[fi] += u / sqrt(c_[fi]);
       }
     }
     label n_induced=induced.size();

@@ -23,7 +23,7 @@ License
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 Class
-    hatSpot
+    gaussianSpot
 
 Description
 
@@ -31,20 +31,20 @@ Author
 
 \*----------------------------------------------------------------------------*/
 
-#include "hatSpot.H"
+#include "gaussianSpot.H"
 
 namespace Foam
 {
   
-hatSpot::StructureParameters::StructureParameters()
+gaussianSpot::StructureParameters::StructureParameters()
 {
 }
 
-hatSpot::StructureParameters::StructureParameters(const dictionary&)
+gaussianSpot::StructureParameters::StructureParameters(const dictionary&)
 {
 }
 
-void hatSpot::StructureParameters::autoMap
+void gaussianSpot::StructureParameters::autoMap
 (
     const fvPatchFieldMapper&
 )
@@ -52,7 +52,7 @@ void hatSpot::StructureParameters::autoMap
 }
 
 //- Reverse map the given fvPatchField onto this fvPatchField
-void hatSpot::StructureParameters::rmap
+void gaussianSpot::StructureParameters::rmap
 (
     const fvPatchField<vector>&,
     const labelList&
@@ -60,12 +60,12 @@ void hatSpot::StructureParameters::rmap
 {
 }
 
-void hatSpot::StructureParameters::write(Ostream&) const
+void gaussianSpot::StructureParameters::write(Ostream&) const
 {
 }
 
 /*
-scalar hatSpot::calcInfluenceLength(const Parameters& p)
+scalar gaussianSpot::calcInfluenceLength(const Parameters& p)
 {
 #warning Please check the factor!
     return (4./3.)*p.L_;
@@ -76,12 +76,12 @@ scalar hatSpot::calcInfluenceLength(const Parameters& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-hatSpot::hatSpot()
+gaussianSpot::gaussianSpot()
 : turbulentStructure(),
   epsilon_(pTraits<vector>::zero)
 {}
 
-hatSpot::hatSpot
+gaussianSpot::gaussianSpot
 (
     Istream& s
 )
@@ -89,19 +89,19 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L, scalar minL)
+gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L, scalar minL)
 : turbulentStructure(r, loc, v, L, minL),
   epsilon_(pTraits<vector>::zero)
 {
 }
 
 
-hatSpot::hatSpot(const hatSpot& o)
+gaussianSpot::gaussianSpot(const gaussianSpot& o)
 : turbulentStructure(o),
   epsilon_(o.epsilon_)
 {}
 
-vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) const
+vector gaussianSpot::fluctuation(const StructureParameters& pa, const vector& x) const
 {
     vector delta_x = x - location();
 
@@ -109,18 +109,18 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
     vector e1=L1_/l1, e2=L2_/l2, e3=L3_/l3;
     if 
         (
-            (mag(delta_x&e1)  < (l1 / 2.0)) &&
-            (mag(delta_x&e2)  < (l2 / 2.0)) &&
-            (mag(delta_x&e3)  < (l3 / 2.0))
+            (mag(delta_x&e1)  < l1) &&
+            (mag(delta_x&e2)  < l2) &&
+            (mag(delta_x&e3)  < l3)
         )
     {
       vector f=
-           (1.0 - 2.0*mag(delta_x&e1)  / l1 )
-          *(1.0 - 2.0*mag(delta_x&e2)  / l2 )
-          *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
+           exp(- 4.0*magSqr(delta_x&e1)  / sqr(l1) )
+          *exp(- 4.0*magSqr(delta_x&e2)  / sqr(l2) )
+          *exp(- 4.0*magSqr(delta_x&e3)  / sqr(l3) )
           * pTraits<vector>::one;
 
-      return cmptMultiply(epsilon_, f) / sqr( 1./81. );
+      return cmptMultiply(epsilon_, f) / ( 0.0820292*0.0820292 );
     }
   else
     return pTraits<vector>::zero;
@@ -128,13 +128,13 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
-autoPtr<hatSpot> hatSpot::New(Istream& s)
+autoPtr<gaussianSpot> gaussianSpot::New(Istream& s)
 {
-    return autoPtr<hatSpot>(new hatSpot(s));
+    return autoPtr<gaussianSpot>(new gaussianSpot(s));
 }
 
 
-void hatSpot::randomize(BoostRandomGen& rand)
+void gaussianSpot::randomize(BoostRandomGen& rand)
 {
   //epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
   epsilon_.x() = 2.0*(rand() - 0.5);
@@ -145,15 +145,15 @@ void hatSpot::randomize(BoostRandomGen& rand)
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-hatSpot::~hatSpot()
+gaussianSpot::~gaussianSpot()
 {}
 
 
-autoPtr<hatSpot> hatSpot::clone() const
+autoPtr<gaussianSpot> gaussianSpot::clone() const
 {
-    return autoPtr<hatSpot>
+    return autoPtr<gaussianSpot>
         (
-            new hatSpot(*this)
+            new gaussianSpot(*this)
         );
 }
 
@@ -162,12 +162,12 @@ autoPtr<hatSpot> hatSpot::clone() const
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
-void hatSpot::operator=(const hatSpot& rhs)
+void gaussianSpot::operator=(const gaussianSpot& rhs)
 {
     // Check for assignment to self
     if (this == &rhs)
     {
-        FatalErrorIn("hatSpot::operator=(const hatSpot&)")
+        FatalErrorIn("gaussianSpot::operator=(const gaussianSpot&)")
             << "Attempted assignment to self"
             << abort(FatalError);
     }
@@ -176,7 +176,7 @@ void hatSpot::operator=(const hatSpot& rhs)
     epsilon_=rhs.epsilon_;
 }
 
-bool hatSpot::operator!=(const hatSpot& o) const
+bool gaussianSpot::operator!=(const gaussianSpot& o) const
 {
     return 
         (location()!=o.location())
@@ -184,14 +184,14 @@ bool hatSpot::operator!=(const hatSpot& o) const
         (epsilon_!=o.epsilon_);
 }
 
-Ostream& operator<<(Ostream& s, const hatSpot& ht)
+Ostream& operator<<(Ostream& s, const gaussianSpot& ht)
 {
     s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.epsilon_<<endl;
     return s;
 }
 
-Istream& operator>>(Istream& s, hatSpot& ht)
+Istream& operator>>(Istream& s, gaussianSpot& ht)
 {
     s >> *static_cast<turbulentStructure*>(&ht);
     vector eps(s);

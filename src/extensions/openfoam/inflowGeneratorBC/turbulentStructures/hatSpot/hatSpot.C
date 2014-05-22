@@ -120,7 +120,7 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
           *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
-      return cmptMultiply(epsilon_, f) / sqr( 1./81. );
+      return cmptMultiply(epsilon_, f) / sqrt( 1./81. );
     }
   else
     return pTraits<vector>::zero;

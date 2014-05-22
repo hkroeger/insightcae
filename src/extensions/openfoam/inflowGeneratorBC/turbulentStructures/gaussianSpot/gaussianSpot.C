@@ -120,7 +120,7 @@ vector gaussianSpot::fluctuation(const StructureParameters& pa, const vector& x)
           *exp(- 4.0*magSqr(delta_x&e3)  / sqr(l3) )
           * pTraits<vector>::one;
 
-      return cmptMultiply(epsilon_, f) / ( 0.0820292*0.0820292 );
+      return cmptMultiply(epsilon_, f) / sqrt( 0.0820292 );
     }
   else
     return pTraits<vector>::zero;

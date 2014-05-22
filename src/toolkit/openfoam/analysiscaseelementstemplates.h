@@ -25,6 +25,7 @@
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/format.hpp"
 
 #include "gnuplot-iostream.h"
 
@@ -172,12 +173,12 @@ void TPCArray<TPC>::evaluateSingle
       
       tpc_curves[k].push_back
       (
-	PlotCurve(data, "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+lexical_cast<std::string>(r_[ir])+"'")
+	PlotCurve(data, "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+"'")
       );
       
       tpc_curves[k].push_back
       (
-	PlotCurve(regressiondata, "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+lexical_cast<std::string>(r_[ir])+" (fit)'")
+	PlotCurve(regressiondata, "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+" (fit)'")
       );
       
     }

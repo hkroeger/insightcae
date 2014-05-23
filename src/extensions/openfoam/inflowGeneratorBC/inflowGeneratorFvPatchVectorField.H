@@ -42,6 +42,7 @@ SourceFiles
 #include "turbulentStructure.H"
 #include "hatSpot.H"
 #include "gaussianSpot.H"
+#include "decayingTurbulenceSpot.H"
 #include "SLList.H"
 
 #include "indexedOctree.H"

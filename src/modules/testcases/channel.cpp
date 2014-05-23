@@ -638,32 +638,10 @@ void ChannelBase::evaluateAtSection(
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
-  std::string pressure_contour_name="contourPressure_ax_"+title;
-  std::string pressure_contour_filename=pressure_contour_name+".png";
-  runPvPython
-  (
-    cm, executionPath(), list_of<std::string>
-    (
-      init+
-      "eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
-      "Show(eb)\n"
-      "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
-      "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
-      "WriteImage('"+pressure_contour_filename+"')\n"
-    )
-  );
-  results->insert(pressure_contour_name,
-    std::auto_ptr<Image>(new Image
-    (
-    pressure_contour_filename, 
-    "Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
-  )));
-  
-  for(int i=0; i<3; i++)
+  if (!p.getBool("mesh/2d"))
   {
-    std::string c("x"); c[0]+=i;
-    std::string velocity_contour_name="contourU"+c+"_ax_"+title;
-    string velocity_contour_filename=velocity_contour_name+".png";
+    std::string pressure_contour_name="contourPressure_ax_"+title;
+    std::string pressure_contour_filename=pressure_contour_name+".png";
     runPvPython
     (
       cm, executionPath(), list_of<std::string>
@@ -671,17 +649,42 @@ void ChannelBase::evaluateAtSection(
 	init+
 	"eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
 	"Show(eb)\n"
-	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
+	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
 	"setCam([-10,0,0], [0,0,0], [0,1,0])\n"
-	"WriteImage('"+velocity_contour_filename+"')\n"
+	"WriteImage('"+pressure_contour_filename+"')\n"
       )
     );
-    results->insert(velocity_contour_name,
+    results->insert(pressure_contour_name,
       std::auto_ptr<Image>(new Image
       (
-      velocity_contour_filename, 
-      "Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
+      pressure_contour_filename, 
+      "Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
     )));
+    
+    for(int i=0; i<3; i++)
+    {
+      std::string c("x"); c[0]+=i;
+      std::string velocity_contour_name="contourU"+c+"_ax_"+title;
+      string velocity_contour_filename=velocity_contour_name+".png";
+      runPvPython
+      (
+	cm, executionPath(), list_of<std::string>
+	(
+	  init+
+	  "eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+	  "Show(eb)\n"
+	  "displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
+	  "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
+	  "WriteImage('"+velocity_contour_filename+"')\n"
+	)
+      );
+      results->insert(velocity_contour_name,
+	std::auto_ptr<Image>(new Image
+	(
+	velocity_contour_filename, 
+	"Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
+      )));
+    }
   }
 }
 

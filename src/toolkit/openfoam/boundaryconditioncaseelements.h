@@ -347,6 +347,8 @@ public:
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
+
+  static ParameterSet defaultParameters();
 };
 
 

@@ -946,6 +946,37 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 }
 
 
+ParameterSet TurbulentVelocityInletBC::defaultParameters()
+{
+  ParameterSet p
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    
+      
+      ("inflow", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("spottype", new SelectionParameter(0, 
+			    list_of<string>
+			    ("hatSpot")
+			    ("gaussianSpot")
+			    ("decayingTurbulenceSpot")
+			    , 
+		      "Type of turbulent structure"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Inflow generator parameters"
+      ))
+
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+  
+  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries());
+  
+  return p;
+}
 
 
 void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const

@@ -153,6 +153,7 @@ ParameterSet ChannelBase::defaultParameters() const
 	    ("inittime",	new DoubleParameter(5, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
 	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
 	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
+	    ("eval2", 		new BoolParameter(true, "Whether to evaluate second order statistics"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Options for statistical evaluation"
@@ -344,16 +345,18 @@ void ChannelBase::createCase
     .set_timeStart(inittime*T_)
   ));
   
-  cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
-    .set_name_prefix("tpc_interior")
-    .set_R(0.5*H)
-    .set_x(0.0) // middle x==0!
-    .set_z(-0.49*B)
-    .set_axSpan(0.5*L)
-    .set_tanSpan(0.45*B)
-    .set_timeStart( (inittime+meantime)*T_ )
-  ));
-  
+  if (p.getBool("evaluation/eval2"))
+  {
+    cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
+      .set_name_prefix("tpc_interior")
+      .set_R(0.5*H)
+      .set_x(0.0) // middle x==0!
+      .set_z(-0.49*B)
+      .set_axSpan(0.5*L)
+      .set_tanSpan(0.45*B)
+      .set_timeStart( (inittime+meantime)*T_ )
+    ));
+  }
 
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
   if (p.getBool("mesh/2d"))
@@ -448,19 +451,14 @@ void ChannelBase::evaluateAtSection(
   
   // L profiles from k/omega
   if ((cd.find("k")!=cd.end()) && (cd.find("omega")!=cd.end()))
-  {
-//     Gnuplot gp;
-//     string chart_name="chartTurbulentLengthScale_"+title;
-//     string chart_file_name=chart_name+".png";
-//     
-//     gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-//     gp<<"set xlabel 'y_delta'; set ylabel '<L_delta_RANS>'; set grid; ";
-    
+  {    
     arma::mat k=data.col(cd["k"].col);
     arma::mat omega=data.col(cd["omega"].col);
     
     arma::mat ydelta=1.0-(data.col(0)+delta_yp1)/(0.5*H); //Re_tau-Re_tau*data.col(0);
-    arma::mat Lt=(2./H)*sqrt(k)/(0.09*omega);
+    arma::mat Lt1=(2./H)*sqrt(k)/(0.09*omega);
+    arma::mat Lt2=ydelta*0.5*H*0.41;
+    arma::mat Lt=arma::min(Lt1, Lt2);
     arma::mat Ltp(join_rows(ydelta, Lt));
     Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     
@@ -496,9 +494,11 @@ void ChannelBase::evaluateAtSection(
       results, executionPath(), "chartTurbulentLengthScale_"+title,
       "y_delta", "<L_delta_RANS>",
       list_of
+       (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
+       (PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"))
        (PlotCurve(Ltp, "w l lt 1 lc 1 lw 2 t 'CFD'"))
        (PlotCurve(arma::mat(join_rows(ydelta, yfit)), 
-		    "w l lt 2 lc 1 lw 1 t 'Fit "
+		    "w l lt 2 lc 2 lw 2 t 'Fit "
 		    + 	    str(format("%.1g") % m.c0)+"*ydelta^"+str(format("%.1g") % m.c2)
 		    +" + ("+str(format("%.1g") % m.c1)+"*ydelta^"+str(format("%.1g") % m.c3)+")'"))
        ,
@@ -524,15 +524,7 @@ void ChannelBase::evaluateAtSection(
 	)
      )
     );
-     
-//     results->insert(chart_name,
-//       std::auto_ptr<Image>(new Image
-//       (
-//       chart_file_name, 
-//       "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH), 
-//       "The length scale is computed from the RANS model's k and omega field."
-//     )));
-    
+       
   }
 
   arma::mat refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
@@ -707,12 +699,17 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
-    throw insight::Exception("tpc FO array not found in case!");
-  tpcs->evaluate
-  (
-    cm, executionPath(), results, 
-    "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
-  );
+  {
+    //throw insight::Exception("tpc FO array not found in case!");
+  }
+  else
+  {
+    tpcs->evaluate
+    (
+      cm, executionPath(), results, 
+      "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
+    );
+  }
  
   {
     
@@ -949,26 +946,7 @@ ChannelInflow::ChannelInflow(const NoParameters& nop)
 ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      
-      ("inflow", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("spottype", new SelectionParameter(0, list_of<string>("hatSpot")("gaussianSpot"), "Type of turbulent structure"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Inflow generator parameters"
-      ))
-
-      .convert_to_container<ParameterSet::EntryList>()
-  );
+  p.extend(TurbulentVelocityInletBC::defaultParameters().entries());
 
   return p;
 }
@@ -1017,17 +995,20 @@ void ChannelInflow::createCase
   
   ChannelBase::createCase(cm, p);
   
-  for (int i=0; i<ntpc_; i++)
+  if (p.getBool("evaluation/eval2"))
   {
-    cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
-      .set_name_prefix(tpc_names_[i])
-      .set_R(0.5*H)
-      .set_x((-0.5+tpc_xlocs_[i])*L)
-      .set_z(-0.49*B)
-      .set_axSpan(0.5*L)
-      .set_tanSpan(0.45*B)
-      .set_timeStart( (inittime+meantime)*T_ )
-    ));
+    for (int i=0; i<ntpc_; i++)
+    {
+      cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
+	.set_name_prefix(tpc_names_[i])
+	.set_R(0.5*H)
+	.set_x((-0.5+tpc_xlocs_[i])*L)
+	.set_z(-0.49*B)
+	.set_axSpan(0.5*L)
+	.set_tanSpan(0.45*B)
+	.set_timeStart( (inittime+meantime)*T_ )
+      ));
+    }
   }
   
 }

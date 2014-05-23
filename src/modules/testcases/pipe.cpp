@@ -742,7 +742,7 @@ PipeInflow::PipeInflow(const NoParameters& nop)
 ParameterSet PipeInflow::defaultParameters() const
 {
   ParameterSet p(PipeBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries()); 
+  p.extend(TurbulentVelocityInletBC::defaultParameters().entries()); 
   return p;
 }
 

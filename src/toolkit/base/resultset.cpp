@@ -429,8 +429,10 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
    
   f<<
   "\\begin{document}\n"
-  "\\title{"<<title_<<"}\n"
-  "\\subtitle{"<<subtitle_<<"}\n"
+  //"\\title{"<<title_<<"}\n"
+  //"\\subtitle{"<<subtitle_<<"}\n"
+  "\\title{"<<title_<<"\\\\\n"
+  "\\vspace{0.5cm}\\normalsize{"<<subtitle_<<"}}\n"
   "\\date{"<<date_<<"}\n"
   "\\author{"<<author_<<"}\n"
   "\\maketitle\n";

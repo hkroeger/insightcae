@@ -32,8 +32,6 @@
 #include "boost/regex.hpp"
 #include "boost/format.hpp"
 
-#include "gnuplot-iostream.h"
-
 using namespace arma;
 using namespace std;
 using namespace boost;
@@ -550,51 +548,32 @@ void ChannelBase::evaluateAtSection(
   // Mean reynolds stress profiles
   {
     string chart_name="chartMeanReyStress_"+title;
-    string chart_file_name=chart_name+".png";
     
     int c=cd["UPrime2Mean"].col;
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
     arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
     
-    {    
-      Gnuplot gp;
-      gp<<"set terminal pngcairo; set termoption dash; set output '"<<chart_file_name<<"';";
-      gp<<"set xlabel 'y+'; set ylabel '<R+>'; set grid; ";
-      gp<<"set logscale x;";
-      gp<<"set yrange [:"<<max(axial.col(1))<<"];";
-      
-      gp<<"plot 0 not lt -1,"
-	  " '-' w l lt 1 lc 1 lw 4 t 'Rxx (Axial)',"
-	  " '-' w l lt 1 lc 2 lw 4 t 'Ryy (Spanwise)',"
-	  " '-' w l lt 1 lc 3 lw 4 t 'Rzz (Wall normal)',"
-	  " '-' w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)',"
-	  " '-' w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)',"
-	  " '-' w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)',"
-	  " '-' w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)',"
-	  " '-' w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)',"
-	  " '-' w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"
-	  <<endl;
-      gp.send1d( axial );
-      gp.send1d( spanwise );
-      gp.send1d( wallnormal );
-      gp.send1d( refdata_Ruu );
-      gp.send1d( refdata_Rvv );
-      gp.send1d( refdata_Rww );
-      gp.send1d( refdata_Ruu590 );
-      gp.send1d( refdata_Rvv590 );
-      gp.send1d( refdata_Rww590 );
-    }
-    
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH), ""
-    )));
+    addPlot
+    (
+      results, executionPath(), chart_name,
+      "y+", "<R+>",
+      list_of
+       (PlotCurve(axial, "w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"))
+       (PlotCurve(spanwise, "w l lt 1 lc 2 lw 4 t 'Ryy (Spanwise)'"))
+       (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Rzz (Wall normal)'"))
+       (PlotCurve(refdata_Ruu, "w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Rvv, "w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Rww, "w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Ruu590, "w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)'"))
+       (PlotCurve(refdata_Rvv590, "w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)'"))
+       (PlotCurve(refdata_Rww590, "w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"))
+       ,
+     "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
+     "set logscale x;set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"
+    );
 
     chart_name="chartMeanTKE_"+title;
-    chart_file_name=chart_name+".png";
     
     int ck=cd["k"].col;
     
@@ -611,27 +590,17 @@ void ChannelBase::evaluateAtSection(
     arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
     Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma_ascii);
     
-    {
-      Gnuplot gp;
-      gp<<"set terminal png; set output '"<<chart_file_name<<"';";
-      gp<<"set xlabel 'y_delta'; set ylabel '<K+>'; set grid; ";
-      
-      gp<<"plot 0 not lt -1,"
-	  " '-' w l t 'TKE'"
-	  ", '-' u 1:2 w l t 'DNS (Re_tau=180, MKM)'"
-	  ", '-' u 1:2 w l t 'DNS (Re_tau=590, MKM)'"
-	  <<endl;
-      gp.send1d( Kp );
-      gp.send1d( refdata_K );
-      gp.send1d( refdata_K590 );
-    }
-    
-    results->insert(chart_name,
-      std::auto_ptr<Image>(new Image
-      (
-      chart_file_name, 
-      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH), ""
-    )));
+    addPlot
+    (
+      results, executionPath(), chart_name,
+      "y_delta", "<K+>",
+      list_of
+       (PlotCurve( Kp, "w l t 'TKE'" ))
+       (PlotCurve( refdata_K, "u 1:2 w l t 'DNS (Re_tau=180, MKM)'" ))
+       (PlotCurve( refdata_K590, "u 1:2 w l t 'DNS (Re_tau=590, MKM)'" ))
+       ,
+     "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH)
+    );
   }
 
   std::string init=

@@ -88,6 +88,11 @@ protected:
     Field<vector> Umean_;
     
     /**
+     * Convection velocity field, may be different to mean velocity field
+     */
+    Field<vector> Uconv_;
+    
+    /**
      * Prescribed reynolds stress tensor
      */
     Field<symmTensor> R_;

@@ -31,6 +31,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(p, iF),
     ranGen_(Pstream::myProcNo()),
     Umean_(p.size(), vector::zero),
+    Uconv_(p.size(), vector::zero),
     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
     c_(p.size(), 16),
@@ -51,6 +52,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
     ranGen_(Pstream::myProcNo()),
     Umean_(ptf.Umean_, mapper),
+    Uconv_(ptf.Uconv_, mapper),
     R_(ptf.R_, mapper),
     L_(ptf.L_, mapper),
     c_(ptf.c_, mapper),
@@ -70,12 +72,24 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(p, iF, dict),
     ranGen_(Pstream::myProcNo()),
     Umean_("Umean", dict, size()),
+    Uconv_(Umean_),
     R_("R", dict, size()),
     L_("L", dict, size()),
     c_("c", dict, size()),
     overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
     curTimeIndex_(-1)
 {
+  if (dict.lookupOrDefault<Switch>("uniformConvection", false))
+  {
+    Uconv_=gSum(Umean_*patch().magSf())/gSum(patch().magSf());
+  }
+  if (dict.found("Uconv"))
+  {
+    Uconv_=vectorField("Uconv", 
+			  dict, 
+			  this->size());
+  }
+  
     if (dict.found("conditioningFactor"))
     {
         conditioningFactor_.reset
@@ -94,6 +108,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
+  Uconv_(ptf.Uconv_),
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
@@ -110,6 +125,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf, iF),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
+  Uconv_(ptf.Uconv_),
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
@@ -126,6 +142,7 @@ void inflowGeneratorBaseFvPatchVectorField::autoMap
 {
     fixedValueFvPatchField<vector>::autoMap(m);
     Umean_.autoMap(m);
+    Uconv_.autoMap(m);
     R_.autoMap(m);
     L_.autoMap(m);
     c_.autoMap(m);
@@ -142,6 +159,7 @@ void inflowGeneratorBaseFvPatchVectorField::rmap
     const inflowGeneratorBaseFvPatchVectorField& tiptf = 
       refCast<const inflowGeneratorBaseFvPatchVectorField >(ptf);
     Umean_.rmap(tiptf.Umean_, addr);
+    Uconv_.rmap(tiptf.Uconv_, addr);
     R_.rmap(tiptf.R_, addr);
     L_.rmap(tiptf.L_, addr);
     c_.rmap(tiptf.c_, addr);
@@ -236,6 +254,7 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
 {
     Umean_.writeEntry("Umean", os);
+    Uconv_.writeEntry("Uconv", os);
     R_.writeEntry("R", os);
     L_.writeEntry("L", os);
     c_.writeEntry("c", os);

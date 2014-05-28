@@ -397,7 +397,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
     vector L=eigenValues(L_[fi]);
     scalar minL=sqrt(patch().magSf()[fi]);
     (*tau_)[fi] = max(minL,L.x())*max(minL,L.y())*max(minL,L.z()) 
-		    / (c_[fi] * patch().magSf()[fi] * (mag(Umean_[fi])+SMALL) );
+		    / (c_[fi] * patch().magSf()[fi] * (mag(Uconv_[fi])+SMALL) );
   }
 
   Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
@@ -452,7 +452,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       scalar minL=sqrt(patch().magSf()[fi]);
       vector L=eigenValues(L_[fi]);
       scalar Lmax=max(L.x(), max(L.y(), L.z()));
-      vector Umean=Umean_[fi];
+      vector Umean=Uconv_[fi];
       vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
       
       if ((Umean&in_dir) < SMALL)

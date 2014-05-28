@@ -856,14 +856,17 @@ void mapFields
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing)
 {
   TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
-  boost::filesystem::path lastTime = times.rbegin()->second;
-  
-  if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-  copyPolyMesh(lastTime, location/"constant", true, ignoremissing);
-  
-  BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+  if (times.size()>0)
   {
-    remove_all(td.second);
+    boost::filesystem::path lastTime = times.rbegin()->second;
+    
+    if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
+    copyPolyMesh(lastTime, location/"constant", true, ignoremissing);
+    
+    BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+    {
+      remove_all(td.second);
+    }
   }
 }
 

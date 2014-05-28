@@ -956,6 +956,7 @@ void ChannelInflow::createCase
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
+    .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_structureType(p.get<SelectionParameter>("inflow/spottype").selection())
     //.set_mixingLength(0.1*D)
     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
@@ -1071,11 +1072,18 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
     evaluateAtSection(cm, p, results, ((-0.5+tpc_xlocs_[i])+1e-6)*L, i+1);
     
     const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
+    
     if (!tpcs)
-      throw insight::Exception("tpc FO array "+string(tpc_names_[i])+" not found in case!");
-    tpcs->evaluate(cm, executionPath(), results,
-      "two-point correlation of velocity at different radii at x/L="+str(format("%f")%(-0.5+tpc_xlocs_[i]))
-    );
+    {
+      //throw insight::Exception("tpc FO array not found in case!");
+    }
+    else
+    {
+      tpcs->evaluate(cm, executionPath(), results,
+	"two-point correlation of velocity at different radii at x/L="+str(format("%f")%(-0.5+tpc_xlocs_[i]))
+	    );
+    }
+    
   }
   
   return results;

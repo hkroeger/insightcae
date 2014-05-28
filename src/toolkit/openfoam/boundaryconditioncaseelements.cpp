@@ -933,6 +933,9 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
     +lexical_cast<string>(R)+" 0 0 "
     +lexical_cast<string>(R)+" 0 "
     +lexical_cast<string>(R)+" )";
+    
+  if (p_.uniformConvection())
+    BC["uniformConvection"]=true;
 
   BC["value"]="uniform "+OFDictData::to_OF(p_.velocity());
 }
@@ -958,6 +961,7 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 		  ParameterSet
 		  (
 		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
 		    ("spottype", new SelectionParameter(0, 
 			    list_of<string>
 			    ("hatSpot")

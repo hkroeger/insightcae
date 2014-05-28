@@ -327,6 +327,7 @@ public:
 
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
     (structureType, std::string, "hatSpot")
+    (uniformConvection, bool, false)
     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
     (delta, double, 1.0)
     (longLengthScale, LengthScaleProfile, 1.0)

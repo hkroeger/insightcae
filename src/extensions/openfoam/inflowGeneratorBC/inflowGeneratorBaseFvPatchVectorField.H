@@ -40,6 +40,7 @@ SourceFiles
 #include "fixedValueFvPatchFields.H"
 
 #include "SLList.H"
+#include "Switch.H"
 
 #include "indexedOctree.H"
 #include "treeDataPoint.H"
@@ -88,9 +89,10 @@ protected:
     Field<vector> Umean_;
     
     /**
-     * Convection velocity field, may be different to mean velocity field
+     * If set to true, the average of the mean velocity field will be used for spot convection
+     * otherwise, the local mean velue will be used
      */
-    Field<vector> Uconv_;
+    Switch uniformConvection_;
     
     /**
      * Prescribed reynolds stress tensor
@@ -196,6 +198,8 @@ public:
 	inline const Field<symmTensor>& R() const { return R_; }
 	inline const Field<symmTensor>& L() const { return L_; }
 
+	inline vector averageMeanVelocity() const
+	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }
 
         // Evaluation functions
 

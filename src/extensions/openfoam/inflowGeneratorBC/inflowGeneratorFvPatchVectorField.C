@@ -392,12 +392,18 @@ template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
 {
   tau_.reset(new scalarField(size(), 0.0));
+  
+  vector Umean;
+  if (uniformConvection_) Umean=averageMeanVelocity();
+  
   forAll(*this, fi)
   {
+    if (!uniformConvection_) Umean=Umean_[fi];
+    
     vector L=eigenValues(L_[fi]);
     scalar minL=sqrt(patch().magSf()[fi]);
     (*tau_)[fi] = max(minL,L.x())*max(minL,L.y())*max(minL,L.z()) 
-		    / (c_[fi] * patch().magSf()[fi] * (mag(Uconv_[fi])+SMALL) );
+		    / (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
   }
 
   Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
@@ -447,12 +453,14 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     
     label nclip1=0, nclip2=0;
     //scalar dt=this->db().time().deltaT().value();
+    vector Umean;
+    if (uniformConvection_) Umean=averageMeanVelocity();
     forAll(*this, fi)
     {
       scalar minL=sqrt(patch().magSf()[fi]);
       vector L=eigenValues(L_[fi]);
       scalar Lmax=max(L.x(), max(L.y(), L.z()));
-      vector Umean=Uconv_[fi];
+      if (!uniformConvection_) Umean=Umean_[fi];
       vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
       
       if ((Umean&in_dir) < SMALL)

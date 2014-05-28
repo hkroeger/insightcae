@@ -476,7 +476,7 @@ void addPlot
   const std::string& addinit
 )
 {
-  std::string chart_file_name=(workdir/(resultelementname+".pdf")).string();
+  std::string chart_file_name=(workdir/(resultelementname+".png")).string();
   //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
   
   {

@@ -75,6 +75,43 @@ public:
   Feature* clone() const;
 };
 
+class RefinementRegion
+: public Feature
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( name, std::string, "" )
+      ( level, int, 1 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  RefinementRegion(Parameters const& p = Parameters() );
+  
+  virtual void setGeometrySubdict(OFDictData::dict& d) const =0;
+  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+};
+
+class RefinementBox
+: public RefinementRegion
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
+      ( min, arma::mat, vec3(0,0,0) )
+      ( max, arma::mat, vec3(0,0,0) )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  RefinementBox(Parameters const& p = Parameters() );
+  virtual void setGeometrySubdict(OFDictData::dict& d) const;
+  Feature* clone() const;
+};
+
 }
 
 namespace snappyHexMeshOpts

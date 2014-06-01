@@ -89,6 +89,48 @@ Feature* Geometry::clone() const
   return new Geometry(p_);
 }
 
+RefinementRegion::RefinementRegion(Parameters const& p)
+: p_(p)
+{
+}
+
+void RefinementRegion::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict geodict;
+  setGeometrySubdict(geodict);
+  sHMDict.subDict("geometry")[p_.name()]=geodict;
+
+  OFDictData::dict castdict;
+  castdict["mode"]="inside";
+  OFDictData::list level;
+  level.push_back(1e15);
+  level.push_back(p_.level());
+  OFDictData::list levels;
+  levels.push_back(level);
+  castdict["levels"]=levels;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
+}
+
+
+RefinementBox::RefinementBox(const RefinementBox::Parameters& p)
+: RefinementRegion(p),
+  p_(p)
+{
+}
+
+void RefinementBox::setGeometrySubdict(OFDictData::dict& d) const
+{
+  d["type"]="searchableBox";
+  d["min"]=OFDictData::to_OF(p_.min());
+  d["max"]=OFDictData::to_OF(p_.max());
+}
+
+Feature* RefinementBox::clone() const
+{
+  return new RefinementBox(p_);
+}
+
+
 }
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)

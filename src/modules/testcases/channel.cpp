@@ -414,6 +414,8 @@ void ChannelBase::evaluateAtSection(
       
   arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
   arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
+  arma::mat refdata_umean395=refdatalib.getProfile("MKM_Channel", "395/umean_vs_yp");
+  arma::mat refdata_wmean395=refdatalib.getProfile("MKM_Channel", "395/wmean_vs_yp");
   arma::mat refdata_umean590=refdatalib.getProfile("MKM_Channel", "590/umean_vs_yp");
   arma::mat refdata_wmean590=refdatalib.getProfile("MKM_Channel", "590/wmean_vs_yp");
 
@@ -439,10 +441,13 @@ void ChannelBase::evaluateAtSection(
       (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
       (PlotCurve(refdata_umean180, "w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)'"))
       (PlotCurve(refdata_wmean180, "w l lt 2 lc 2 t 'Spanwise (MKM Re_tau=180)'"))
+      (PlotCurve(refdata_umean395, "w l lt 4 lc 1 t 'Axial (MKM Re_tau=395)'"))
+      (PlotCurve(refdata_wmean395, "w l lt 4 lc 2 t 'Spanwise (MKM Re_tau=395)'"))
       (PlotCurve(refdata_umean590, "w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)'"))
       (PlotCurve(refdata_wmean590, "w l lt 3 lc 2 t 'Spanwise (MKM Re_tau=590)'"))
       ,
-      "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH)
+      "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
+      "set logscale x"
     );
     
   }
@@ -528,6 +533,9 @@ void ChannelBase::evaluateAtSection(
   arma::mat refdata_Ruu=refdatalib.getProfile("MKM_Channel", "180/Ruu_vs_yp");
   arma::mat refdata_Rvv=refdatalib.getProfile("MKM_Channel", "180/Rvv_vs_yp");
   arma::mat refdata_Rww=refdatalib.getProfile("MKM_Channel", "180/Rww_vs_yp");
+  arma::mat refdata_Ruu395=refdatalib.getProfile("MKM_Channel", "395/Ruu_vs_yp");
+  arma::mat refdata_Rvv395=refdatalib.getProfile("MKM_Channel", "395/Rvv_vs_yp");
+  arma::mat refdata_Rww395=refdatalib.getProfile("MKM_Channel", "395/Rww_vs_yp");
   arma::mat refdata_Ruu590=refdatalib.getProfile("MKM_Channel", "590/Ruu_vs_yp");
   arma::mat refdata_Rvv590=refdatalib.getProfile("MKM_Channel", "590/Rvv_vs_yp");
   arma::mat refdata_Rww590=refdatalib.getProfile("MKM_Channel", "590/Rww_vs_yp");
@@ -538,6 +546,12 @@ void ChannelBase::evaluateAtSection(
   refdata_K.col(1)*=0.5;
   refdata_K.col(0)/=180.0;
   
+  arma::mat refdata_K395=refdata_Ruu395;
+  refdata_K395.col(1)+=Interpolator(refdata_Rvv395)(refdata_Ruu395.col(0));
+  refdata_K395.col(1)+=Interpolator(refdata_Rww395)(refdata_Ruu395.col(0));
+  refdata_K395.col(1)*=0.5;
+  refdata_K395.col(0)/=395.0;
+
   arma::mat refdata_K590=refdata_Ruu590;
   refdata_K590.col(1)+=Interpolator(refdata_Rvv590)(refdata_Ruu590.col(0));
   refdata_K590.col(1)+=Interpolator(refdata_Rww590)(refdata_Ruu590.col(0));
@@ -565,12 +579,15 @@ void ChannelBase::evaluateAtSection(
        (PlotCurve(refdata_Ruu, "w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
        (PlotCurve(refdata_Rvv, "w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
        (PlotCurve(refdata_Rww, "w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Ruu395, "w l lt 4 lc 1 t 'Rxx (MKM Re_tau=395)'"))
+       (PlotCurve(refdata_Rvv395, "w l lt 4 lc 2 t 'Ryy (MKM Re_tau=395)'"))
+       (PlotCurve(refdata_Rww395, "w l lt 4 lc 3 t 'Rzz (MKM Re_tau=395)'"))
        (PlotCurve(refdata_Ruu590, "w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)'"))
        (PlotCurve(refdata_Rvv590, "w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)'"))
        (PlotCurve(refdata_Rww590, "w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"))
        ,
      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
-     "set logscale x;set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"
+     "set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"
     );
 
     chart_name="chartMeanTKE_"+title;
@@ -596,8 +613,9 @@ void ChannelBase::evaluateAtSection(
       "y_delta", "<K+>",
       list_of
        (PlotCurve( Kp, "w l t 'TKE'" ))
-       (PlotCurve( refdata_K, "u 1:2 w l t 'DNS (Re_tau=180, MKM)'" ))
-       (PlotCurve( refdata_K590, "u 1:2 w l t 'DNS (Re_tau=590, MKM)'" ))
+       (PlotCurve( refdata_K, "u 1:2 w l lt 1 lc 1 t 'DNS (Re_tau=180, MKM)'" ))
+       (PlotCurve( refdata_K395, "u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
+       (PlotCurve( refdata_K590, "u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH)
     );

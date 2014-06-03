@@ -389,12 +389,20 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESModel::addIntoDictionaries(dictionaries);
   
   OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
-  LESProperties["LESModel"]="oneEqEddy";
-  LESProperties["delta"]="cubeRootVol";
   LESProperties["printCoeffs"]=true;
+
+  LESProperties["LESModel"]="oneEqEddy";
+  //LESProperties["delta"]="cubeRootVol";
+  LESProperties["delta"]="IDDESDelta";
+  
   OFDictData::dict crvc;
   crvc["deltaCoeff"]=1.0;
   LESProperties["cubeRootVolCoeffs"]=crvc;
+  
+  OFDictData::dict idc;
+  idc["deltaCoeff"]=2.0;
+  LESProperties["IDDESDeltaCoeffs"]=idc;
+  
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 

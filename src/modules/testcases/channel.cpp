@@ -851,6 +851,20 @@ void ChannelCyclic::createCase
   
   ChannelBase::createCase(cm, p);
   
+  {
+    std::vector<arma::mat> pl;
+    double l=0.25*H;
+    int np=25;
+    for (int j=0; j<np; j++)
+    {
+      pl.push_back(vec3(l*double(j)/double(np-1), 0, 0));
+    }
+    cm.insert(new probes(cm, probes::Parameters()
+    .set_fields( list_of<std::string>("p")("U") )
+    .set_probeLocations(pl)
+    ));
+  }
+  
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(Ubulk_, 0, 0))
 		));

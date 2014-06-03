@@ -860,6 +860,7 @@ void ChannelCyclic::createCase
       pl.push_back(vec3(l*double(j)/double(np-1), 0, 0));
     }
     cm.insert(new probes(cm, probes::Parameters()
+    .set_name("center_probes")
     .set_fields( list_of<std::string>("p")("U") )
     .set_probeLocations(pl)
     ));

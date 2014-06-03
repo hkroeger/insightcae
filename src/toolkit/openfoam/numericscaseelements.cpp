@@ -512,7 +512,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   if (LES)
-    ddt["default"]="backward";
+    ddt["default"]="CrankNicolson 1";
   else
     ddt["default"]="Euler";
   
@@ -555,10 +555,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
       div["div(phi,U)"]="Gauss linear";
-    div["div(phi,k)"]="Gauss upwind";
-    div["div(phi,epsilon)"]="Gauss upwind";
-    div["div(phi,omega)"]="Gauss upwind";
-    div["div(phi,nuTilda)"]="Gauss upwind";
+    div["div(phi,k)"]="Gauss linear";
+    div["div(phi,nuTilda)"]="Gauss linear";
   }
   else
   {

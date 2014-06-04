@@ -425,6 +425,73 @@ bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, co
   return false;
 }
 
+defineType(dynOneEqEddy_LESModel);
+addToFactoryTable(turbulenceModel, dynOneEqEddy_LESModel, turbulenceModel::ConstrP);
+
+void dynOneEqEddy_LESModel::addFields()
+{
+  OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  OFcase().addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+}
+  
+
+dynOneEqEddy_LESModel::dynOneEqEddy_LESModel(OpenFOAMCase& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+dynOneEqEddy_LESModel::dynOneEqEddy_LESModel(const ConstrP& c)
+: LESModel(c)
+{
+  addFields();
+}
+
+void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  LESModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  LESProperties["printCoeffs"]=true;
+
+  LESProperties["LESModel"]="dynOneEqEddy";
+  //LESProperties["delta"]="cubeRootVol";
+  LESProperties["delta"]="vanDriest";
+  
+  OFDictData::dict doeec;
+  doeec["filter"]="simple";
+  LESProperties["dynOneEqEddyCoeffs"]=doeec;
+  
+  OFDictData::dict crvc;
+  crvc["deltaCoeff"]=1.0;
+  LESProperties["cubeRootVolCoeffs"]=crvc;
+  
+  OFDictData::dict vdc;
+  vdc["deltaCoeff"]=1.0;
+  vdc["delta"]="cubeRootVol";
+  vdc["cubeRootVolCoeffs"]=crvc;
+  LESProperties["vanDriestCoeffs"]=vdc;
+  
+  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+}
+
+bool dynOneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+  if (fieldname == "k")
+  {
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 0";
+    return true;
+  }
+  else if (fieldname == "nuSgs")
+  {
+    BC["type"]="zeroGradient";
+    return true;
+  }
+  
+  return false;
+}
+
 defineType(dynSmagorinsky_LESModel);
 addToFactoryTable(turbulenceModel, dynSmagorinsky_LESModel, turbulenceModel::ConstrP);
 

@@ -40,7 +40,13 @@ class PlotNotebook(wx.Panel):
        return page.figure
 
 lines=open(sys.argv[1]).readlines()
-headings=lines[0].lstrip(' #').split()
+for l in lines:
+  if l.startswith('#'):
+    lines.remove(l)
+    
+#headings=lines[0].lstrip(' #').split()
+headings=[]
+
 data=np.array([
    map(float, line.replace('(', '').replace(')', '').replace(',', ' ').replace(';', ' ').replace('  ', ' ').split()) 
    for line in lines[1:]
@@ -52,8 +58,9 @@ plotter = PlotNotebook(frame)
 
 ncols=np.size(data,1)
 heads= [str(i) for i in range(1,ncols)] if len(headings) != ncols else headings
+print heads
 for i in range(1, ncols):
-  ax = plotter.add(heads[i]).gca()
+  ax = plotter.add(heads[i-1]).gca()
   ax.grid(True)
   ax.plot(data[:,0], data[:,i])
 

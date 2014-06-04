@@ -473,7 +473,7 @@ void OpenFOAMCase::runSolver
   p_in.close();
 
   if (p_in.rdbuf()->status()!=0)
-    throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exeit code!");
+    throw insight::Exception("OpenFOAMCase::runSolver(): solver execution failed with nonzero exit code!");
 }
 
 std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& boundaryDict) const

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os, sys, subprocess
 import numpy as np
@@ -51,7 +51,9 @@ frame = wx.Frame(None, -1, 'Plotter')
 plotter = PlotNotebook(frame)
 
 ncols=np.size(data,1)
-heads= [str(i) for i in range(1,ncols)] if len(headings) != ncols else headings
+heads= headings
+if len(headings) != ncols:
+ heads=[str(i) for i in range(1,ncols)]
 for i in range(1, ncols):
   ax = plotter.add(heads[i]).gca()
   ax.grid(True)

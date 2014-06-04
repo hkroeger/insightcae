@@ -512,7 +512,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   if (LES)
-    ddt["default"]="CrankNicolson 1";
+    ddt["default"]="CrankNicolson 0.75"; // problems with pressureGradientSource (oscillations), if coefficient is =1!
   else
     ddt["default"]="Euler";
   

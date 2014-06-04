@@ -393,15 +393,17 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 
   LESProperties["LESModel"]="oneEqEddy";
   //LESProperties["delta"]="cubeRootVol";
-  LESProperties["delta"]="IDDESDelta";
+  LESProperties["delta"]="vanDriest";
   
   OFDictData::dict crvc;
   crvc["deltaCoeff"]=1.0;
   LESProperties["cubeRootVolCoeffs"]=crvc;
   
-  OFDictData::dict idc;
-  idc["deltaCoeff"]=2.0;
-  LESProperties["IDDESDeltaCoeffs"]=idc;
+  OFDictData::dict vdc;
+  vdc["deltaCoeff"]=1.0;
+  vdc["delta"]="cubeRootVol";
+  vdc["cubeRootVolCoeffs"]=crvc;
+  LESProperties["vanDriestCoeffs"]=vdc;
   
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
@@ -457,16 +459,18 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   
   LESProperties["LESModel"]=modelName;
   //LESProperties["delta"]="cubeRootVol";
-  LESProperties["delta"]="IDDESDelta";
+  LESProperties["delta"]="vanDriest";
   LESProperties["printCoeffs"]=true;
   
   OFDictData::dict crvc;
   crvc["deltaCoeff"]=1.0;
   LESProperties["cubeRootVolCoeffs"]=crvc;
 
-  OFDictData::dict idc;
-  idc["deltaCoeff"]=2.0;
-  LESProperties["IDDESDeltaCoeffs"]=idc;
+  OFDictData::dict vdc;
+  vdc["deltaCoeff"]=1.0;
+  vdc["delta"]="cubeRootVol";
+  vdc["cubeRootVolCoeffs"]=crvc;
+  LESProperties["vanDriestCoeffs"]=vdc;
 
   OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
   cd["filter"]="simple";

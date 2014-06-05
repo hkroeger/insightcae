@@ -174,6 +174,8 @@ struct dict
   {
     return this->lookup<std::string>(key);
   }
+  
+  void write(std::ostream& os, int indentLevel=0) const;
 
 };
 
@@ -227,9 +229,11 @@ struct OpenFOAMDictParser
     OpenFOAMDictParser()
       : OpenFOAMDictParser::base_type(rquery)
     {
+      using namespace qi;
+      
         rquery =  *( rpair );
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  +(~qi::char_(" \"\\/;{}()\n"));
+        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
 	rstring = '"' >> *(~qi::char_('"')) >> '"';
 	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
 	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
@@ -238,17 +242,6 @@ struct OpenFOAMDictParser
 	      >> *(rpair) >> qi::lit('}');
         rlist = /*b*qi::char_("0-9") >> */ qi::lit('(')
 	      >> *(rentry) >> qi::lit(')');
-
-	//BOOST_SPIRIT_DEBUG_NODE(rquery);
-	//BOOST_SPIRIT_DEBUG_NODE(rpair);
-	      /*
-	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
-	BOOST_SPIRIT_DEBUG_NODE(rstring);
-	BOOST_SPIRIT_DEBUG_NODE(rraw);
-	*/
-	//BOOST_SPIRIT_DEBUG_NODE(rentry);
-	//BOOST_SPIRIT_DEBUG_NODE(rsubdict);
-	//BOOST_SPIRIT_DEBUG_NODE(rlist);
 
     }
     
@@ -274,11 +267,13 @@ struct OpenFOAMBoundaryDictParser
     OpenFOAMBoundaryDictParser()
       : OpenFOAMBoundaryDictParser::base_type(rquery)
     {
+      using namespace qi;
+      
         rquery =  rpair >> 
         *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9')) 
 	>> qi::lit('(') >> *(rpair) >> qi::lit(')');
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
-        ridentifier  =  +(~qi::char_(" \"\\/;{}()\n"));
+        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
 	rstring = '"' >> *(~qi::char_('"')) >> '"';
 	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
 	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );

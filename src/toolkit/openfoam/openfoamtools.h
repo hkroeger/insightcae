@@ -374,6 +374,11 @@ void meshQualityReport(const OpenFOAMCase& cm,
 		       const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
 		      );
 
+void currentNumericalSettingsReport(const OpenFOAMCase& cm, 
+		       const boost::filesystem::path& location, 
+		       ResultSetPtr results
+		      );
+
 arma::mat viscousForceProfile
 (
   const OpenFOAMCase& cm, 

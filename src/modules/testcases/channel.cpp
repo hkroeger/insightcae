@@ -701,6 +701,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     );
   }
  
+  try
   {
     
    // Wall friction coefficient
@@ -729,6 +730,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
 	,
       "Axial profile of wall friction coefficient"
     );    
+  }
+  catch (...)
+  {
+    insight::Warning("Could not include viscous resistance coefficient plot into result report.\nCheck console output for reason.");
   }
 
   std::string init=

@@ -514,10 +514,10 @@ arma::mat uniformLine::readSamples
       boost::split(flnames, fn, boost::is_any_of("_"));
       flnames.erase(flnames.begin());
       
-      cout<<"Reading "<< fp <<endl;
+      //cout<<"Reading "<< fp <<endl;
       arma::mat res;	  
       res.load(fp.string(), arma::raw_ascii);
-      cout << "Got size ("<< res.n_rows << "x" << res.n_cols << ")" << endl;
+      //cout << "Got size ("<< res.n_rows << "x" << res.n_cols << ")" << endl;
     
       int start_col=1;
       if (m.n_cols==0) m=res;
@@ -601,7 +601,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
     BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
     {
       ColumnInfo ci=fn.second;
-      cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+      //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
       if (ci.ncmpt==1)
       {
 	// scalar: no transform needed
@@ -723,7 +723,7 @@ arma::mat linearAveragedUniformLine::readSamples
     for (int j=0; j<p_.nd2(); j++)
     {
       arma::mat ds=uniformLine::readSamples(ofc, location, setname(i, j), &cd);
-      cout <<ds<<endl;
+      //cout <<ds<<endl;
       arma::mat datai = Interpolator(ds)(x_);
       
       //datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
@@ -1290,6 +1290,53 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
     );
   }
 }
+
+void currentNumericalSettingsReport
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location, 
+  ResultSetPtr results
+)
+{
+  BOOST_FOREACH
+  (
+    const boost::filesystem::path& dictname, 
+    list_of<boost::filesystem::path> 
+      ("system/controlDict")("system/fvSchemes")("system/fvSchemes")
+      ("constant/RASProperties")("constant/LESProperties")
+      ("constant/transportProperties")
+      .convert_to_container<std::vector<boost::filesystem::path> >()
+  )
+  {
+    try
+    {
+      OFDictData::dict cdict;
+      std::ifstream cdf( (location/dictname).c_str() );
+      readOpenFOAMDict(cdf, cdict);
+      cout<<cdict<<endl;
+      
+      std::ostringstream latexCode;
+      latexCode<<"\\begin{verbatim}\n"
+	<<cdict
+	<<"\n\\end{verbatim}\n";
+      
+      std::string elemname=dictname.string();
+      replace_all(elemname, "/", "_");
+      results->insert("dictionary_"+elemname,
+	std::auto_ptr<Comment>(new Comment
+	(
+	latexCode.str(), 
+	"Contents of "+dictname.string(), ""
+      )));    
+    }
+    catch (...)
+    {
+      cout<<"File "<<dictname.string()<<" not readable."<<endl;
+      // Ignore errors, files may not exists in current setup
+    }
+  }
+}
+
 
 arma::mat viscousForceProfile
 (

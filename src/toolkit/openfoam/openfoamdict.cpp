@@ -95,7 +95,7 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
     for(OFDictData::dict::const_iterator i=d.begin();
 	i!=d.end(); i++)
 	{
-	  std::cout << i->first << std::endl;
+	  std::cout << "\"" << i->first << "\"" << std::endl;
 	}
    /* 
     OFDictData::list bl;
@@ -201,6 +201,29 @@ list& dict::addListIfNonexistent(const std::string& key)
   return this->lookup<list>(key);
 }
 
+void dict::write(std::ostream& os, int indentLevel) const
+{
+  std::string prec(indentLevel, ' ');
+  std::string pren(indentLevel+1, ' ');
+  
+  os << prec << "{\n";
+  for(dict::const_iterator i=begin(); i!=end(); i++)
+  {
+    os << pren << i->first << SPACE;
+    if (const dict *d = boost::get<dict>(&i->second))
+    {
+      //os << *d;
+      os<<"\n";
+      d->write(os, indentLevel+1);
+    }
+    else
+    {
+      os << i->second << ";\n";
+    }
+  }
+  os << prec << "}\n";
+}
+
 OFDictData::dictFile::dictFile()
 : className("dictionary"),
   dictVersion(2),
@@ -262,34 +285,38 @@ std::ostream& operator<<(std::ostream& os, const dimensionedData& d)
 
 std::ostream& operator<<(std::ostream& os, const dict& d)
 {
-  os << "{\n";
-  for(dict::const_iterator i=d.begin(); i!=d.end(); i++)
-  {
-    os << i->first << SPACE;
-    if (const dict *d = boost::get<dict>(&i->second))
-    {
-      //os << "\n{\n";
-      os << *d;
-      //os << "}\n";
-    }
-    else
-    {
-      os << i->second << ";\n";
-    }
-  }
-  os << "}\n";
+  d.write(os);
+//   os << "{\n";
+//   for(dict::const_iterator i=d.begin(); i!=d.end(); i++)
+//   {
+//     os << i->first << SPACE;
+//     if (const dict *d = boost::get<dict>(&i->second))
+//     {
+//       //os << "\n{\n";
+//       os << *d;
+//       //os << "}\n";
+//     }
+//     else
+//     {
+//       os << i->second << ";\n";
+//     }
+//   }
+//   os << "}\n";
   return os;
 }
 
 
 std::ostream& operator<<(std::ostream& os, const list& l)
 {
-  os << "\n(\n";
+  std::string sep=" ";
+  if (l.size()>9) sep="\n";
+  
+  os << "("+sep;
   for (list::const_iterator i=l.begin(); i!=l.end(); i++)
   {
-    os<<*i<<"\n";
+    os<<*i<<sep;
   }
-  os<<")\n";
+  os<<")";
   return os;
 }
 

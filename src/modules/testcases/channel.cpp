@@ -114,9 +114,10 @@ ParameterSet ChannelBase::defaultParameters() const
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    //("nax",	new IntParameter(100, "# cells in axial direction"))
 	    ("nh",	new IntParameter(64, "# cells in vertical direction"))
+	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
 	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
 	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
-	    ("ypluswall", new DoubleParameter(0.5, "yPlus at the wall grid layer"))
+	    ("ypluswall", new DoubleParameter(2, "yPlus at the wall grid layer"))
 	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
@@ -185,6 +186,7 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   PSDBL(p, "mesh", dzplus);
   //PSINT(p, "mesh", nax);
   PSINT(p, "mesh", nh);
+  PSBOOL(p, "mesh", fixbuf);
   
   // Physics
   Re_=Re(Re_tau);
@@ -202,17 +204,33 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
     nb_=1;
   else
     nb_=int(B*Re_tau/dzplus);
-  
+
+  hbuf_=0.0;  
   nh_=nh/2;
-  gradh_=bmd::GradingAnalyzer(ywall_, H/2., nh_).grad();
+  
+  nhbuf_=0;
+  if (fixbuf>0)
+  {
+    double ypbuf=30.;
+    hbuf_=ypbuf/Re_tau;
+    nhbuf_=hbuf_/ywall_;
+      //ywall_=hbuf_/double(nhbuf);
+    
+    if (nh_-nhbuf_<=1)
+      throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed!");
+  }
+
+  gradh_=bmd::GradingAnalyzer(ywall_, (H-hbuf_)/2., nh_-nhbuf_).grad();
   //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
   
+
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
   cout<<"Reynolds number \tRe="<<Re_<<endl;
   cout<<"Bulk velocity \tUbulk="<<Ubulk_<<endl;
   cout<<"Flow-through time \tT="<<T_<<endl;
   cout<<"Viscosity \tnu="<<nu_<<endl;
+  cout<<"Height of buffer layer\thbuf="<<hbuf_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
   cout<<"# cells axial \tnax="<<nax_<<endl;
@@ -233,7 +251,8 @@ void ChannelBase::createMesh
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", L);
-
+  PSDBL(p, "operation", Re_tau);
+  
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
@@ -251,7 +270,6 @@ void ChannelBase::createMesh
       (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
       (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
   ;
-  arma::mat vH=vec3(0, H, 0);
   
   // create patches
   Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
@@ -263,14 +281,59 @@ void ChannelBase::createMesh
   if (p.getBool("mesh/2d")) side_type="empty";
   Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
   
+  arma::mat vHbuf=vec3(0, 0, 0);
+  arma::mat vH=vec3(0, H, 0);
+  int nh=nh_;
+  if (nhbuf_>0)
+  {
+    vHbuf=vec3(0, hbuf_, 0);
+    vH=vec3(0, H-2.*hbuf_, 0);
+    int nh=nh_-nhbuf_;
+    
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	  pts[0], pts[1], pts[2], pts[3],
+	  (pts[0])+vHbuf, (pts[1])+vHbuf, (pts[2])+vHbuf, (pts[3])+vHbuf
+	  ),
+	  nax_, nb_, nhbuf_,
+	  list_of<double>(1.)(1.)(1.)
+	)
+      );
+      cycl_out.addFace(bl.face("0473"));
+      cycl_in.addFace(bl.face("1265"));
+      cycl_side_0.addFace(bl.face("0154"));
+      cycl_side_1.addFace(bl.face("2376"));
+    }
+
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	    (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf,
+	    (pts[0])+vH+2.*vHbuf, (pts[1])+vH+2.*vHbuf, (pts[2])+vH+2.*vHbuf, (pts[3])+vH+2.*vHbuf
+	  ),
+	  nax_, nb_, nhbuf_,
+	  list_of<double>(1.)(1.)(1.)
+	)
+      );
+      cycl_out.addFace(bl.face("0473"));
+      cycl_in.addFace(bl.face("1265"));
+      cycl_side_0.addFace(bl.face("0154"));
+      cycl_side_1.addFace(bl.face("2376"));
+    }
+    
+  }
+
   {
     Block& bl = bmd->addBlock
     (  
       new Block(P_8(
-	  pts[0], pts[1], pts[2], pts[3],
-	  (pts[0])+0.5*vH, (pts[1])+0.5*vH, (pts[2])+0.5*vH, (pts[3])+0.5*vH
+	  pts[0]+vHbuf, pts[1]+vHbuf, pts[2]+vHbuf, pts[3]+vHbuf,
+	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf
 	),
-	nax_, nb_, nh_,
+	nax_, nb_, nh,
 	list_of<double>(1.)(1.)(gradh_)
       )
     );
@@ -284,10 +347,10 @@ void ChannelBase::createMesh
     Block& bl = bmd->addBlock
     (  
       new Block(P_8(
-	  (pts[0])+0.5*vH, (pts[1])+0.5*vH, (pts[2])+0.5*vH, (pts[3])+0.5*vH,
-	  (pts[0])+1*vH, (pts[1])+1*vH, (pts[2])+1*vH, (pts[3])+1*vH
+	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf,
+	  (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf
 	),
-	nax_, nb_, nh_,
+	nax_, nb_, nh,
 	list_of<double>(1.)(1.)(1./gradh_)
       )
     );
@@ -685,7 +748,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
-  PSINT(p, "mesh", nax);
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
@@ -709,7 +771,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   {
     
    // Wall friction coefficient
-   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax);
+   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
     
    arma::mat Cf_vs_xp(join_rows(
       wallforce.col(0)*Re_tau, 

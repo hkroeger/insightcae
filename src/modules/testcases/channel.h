@@ -95,9 +95,19 @@ protected:
   int nh_;
   
   /**
+   * number of cells along half height
+   */
+  int nhbuf_;
+  
+  /**
    * grading towards wall
    */
   double gradh_;
+  
+  /**
+   * height of buffer layer
+   */
+  double hbuf_;
   
 public:
   declareType("Channel Flow Test Case");

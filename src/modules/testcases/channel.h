@@ -80,6 +80,11 @@ protected:
   double ywall_;
   
   /**
+   * number of cells along flow direction
+   */
+  int nax_;
+  
+  /**
    * number of cells along span
    */
   int nb_;

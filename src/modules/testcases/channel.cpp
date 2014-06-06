@@ -112,9 +112,11 @@ ParameterSet ChannelBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("nh",	new IntParameter(100, "# cells in vertical direction"))
-	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
+	    //("nax",	new IntParameter(100, "# cells in axial direction"))
+	    ("nh",	new IntParameter(64, "# cells in vertical direction"))
+	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
+	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
+	    ("ypluswall", new DoubleParameter(0.5, "yPlus at the wall grid layer"))
 	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
@@ -179,7 +181,9 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   PSDBL(p, "operation", Re_tau);
 
   PSDBL(p, "mesh", ypluswall);
-  PSINT(p, "mesh", nax);
+  PSDBL(p, "mesh", dxplus);
+  PSDBL(p, "mesh", dzplus);
+  //PSINT(p, "mesh", nax);
   PSINT(p, "mesh", nh);
   
   // Physics
@@ -191,12 +195,13 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   ywall_ = ypluswall/Re_tau;
   
   // grid
-  double Delta=L/double(nax);
+  //double Delta=L/double(nax);
+  nax_=int(L*Re_tau/dxplus);
   
   if (p.getBool("mesh/2d"))
     nb_=1;
   else
-    nb_=B/Delta;
+    nb_=int(B*Re_tau/dzplus);
   
   nh_=nh/2;
   gradh_=bmd::GradingAnalyzer(ywall_, H/2., nh_).grad();
@@ -210,6 +215,7 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   cout<<"Viscosity \tnu="<<nu_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"# cells axial \tnax="<<nax_<<endl;
   cout<<"# cells spanwise \tnb="<<nb_<<endl;
   cout<<"# grading vertical \tgradh="<<gradh_<<endl;
   cout<<"============================================="<<endl;
@@ -228,8 +234,6 @@ void ChannelBase::createMesh
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", L);
 
-  PSINT(p, "mesh", nax);
-      
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
@@ -266,7 +270,7 @@ void ChannelBase::createMesh
 	  pts[0], pts[1], pts[2], pts[3],
 	  (pts[0])+0.5*vH, (pts[1])+0.5*vH, (pts[2])+0.5*vH, (pts[3])+0.5*vH
 	),
-	nax, nb_, nh_,
+	nax_, nb_, nh_,
 	list_of<double>(1.)(1.)(gradh_)
       )
     );
@@ -283,7 +287,7 @@ void ChannelBase::createMesh
 	  (pts[0])+0.5*vH, (pts[1])+0.5*vH, (pts[2])+0.5*vH, (pts[3])+0.5*vH,
 	  (pts[0])+1*vH, (pts[1])+1*vH, (pts[2])+1*vH, (pts[3])+1*vH
 	),
-	nax, nb_, nh_,
+	nax_, nb_, nh_,
 	list_of<double>(1.)(1.)(1./gradh_)
       )
     );

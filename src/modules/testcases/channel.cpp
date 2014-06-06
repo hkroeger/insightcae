@@ -213,14 +213,14 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   {
     double ypbuf=30.;
     hbuf_=ypbuf/Re_tau;
-    nhbuf_=hbuf_/ywall_;
+    nhbuf_=std::max(1.0, hbuf_/ywall_);
       //ywall_=hbuf_/double(nhbuf);
     
     if (nh_-nhbuf_<=1)
-      throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed!");
+      throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed! (min "+lexical_cast<string>(nhbuf_+1)+")");
   }
 
-  gradh_=bmd::GradingAnalyzer(ywall_, (H-hbuf_)/2., nh_-nhbuf_).grad();
+  gradh_=bmd::GradingAnalyzer(ywall_, 0.5*H-hbuf_, nh_-nhbuf_).grad();
   //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
   
 
@@ -231,6 +231,7 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   cout<<"Flow-through time \tT="<<T_<<endl;
   cout<<"Viscosity \tnu="<<nu_<<endl;
   cout<<"Height of buffer layer\thbuf="<<hbuf_<<endl;
+  cout<<"No cells in buffer layer\tnhbuf="<<nhbuf_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
   cout<<"# cells axial \tnax="<<nax_<<endl;
@@ -284,11 +285,12 @@ void ChannelBase::createMesh
   arma::mat vHbuf=vec3(0, 0, 0);
   arma::mat vH=vec3(0, H, 0);
   int nh=nh_;
+  
   if (nhbuf_>0)
   {
     vHbuf=vec3(0, hbuf_, 0);
     vH=vec3(0, H-2.*hbuf_, 0);
-    int nh=nh_-nhbuf_;
+    nh=nh_-nhbuf_;
     
     {
       Block& bl = bmd->addBlock

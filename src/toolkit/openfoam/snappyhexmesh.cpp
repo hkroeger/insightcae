@@ -77,10 +77,11 @@ void Geometry::modifyFiles(const OpenFOAMCase& ofc,
     list_of<std::string>
     (absolute(from).string())
     (absolute(to).string())
-    ("-scale")
-    ("("+lexical_cast<std::string>(p_.scale()(0))+" "+lexical_cast<std::string>(p_.scale()(1))+" "+lexical_cast<std::string>(p_.scale()(2))+")")
-    ("-rollPitchYaw")
-    ("("+lexical_cast<std::string>(p_.rollPitchYaw()(0))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(1))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(2))+")")
+    ("-scale")(OFDictData::to_OF(p_.scale()))
+//     ("("+lexical_cast<std::string>(p_.scale()(0))+" "+lexical_cast<std::string>(p_.scale()(1))+" "+lexical_cast<std::string>(p_.scale()(2))+")")
+    ("-translate")(OFDictData::to_OF(p_.translate()))
+    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw()))
+//     ("("+lexical_cast<std::string>(p_.rollPitchYaw()(0))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(1))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(2))+")")
   );
 }
 

@@ -441,7 +441,9 @@ class WallBC
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (wallVelocity, arma::mat, vec3(0., 0., 0.))
+    (wallVelocity, arma::mat, vec3(0., 0., 0.)) // interpreted as omega vector, if "rotating" is set to true
+    (rotating, bool, false)
+    (CofR, arma::mat, vec3(0,0,0))
     (meshmotion, boost::shared_ptr<MeshMotionBC>, boost::shared_ptr<MeshMotionBC>(noMeshMotion.clone()) )
   )
   

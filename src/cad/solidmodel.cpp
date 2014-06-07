@@ -302,6 +302,39 @@ arma::mat SolidModel::faceCoG(FeatureID i) const
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
 
+arma::mat SolidModel::modelCoG() const
+{
+  GProp_GProps props;
+  BRepGProp::LinearProperties(shape_, props);
+  gp_Pnt cog = props.CentreOfMass();
+  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+}
+
+arma::mat SolidModel::modelBndBox() const
+{
+  double aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
+  {
+    Bnd_Box boundingBox;
+    BRepBndLib::Add(shape_, boundingBox);
+
+    boundingBox.Get(aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
+    double deflection= std::max( aXmax-aXmin , std::max(aYmax-aYmin , aZmax-aZmin))*0.001;  
+    BRepMesh_IncrementalMesh Inc(shape_, deflection);
+  }
+  
+  Bnd_Box boundingBox;
+  BRepBndLib::Add(shape_, boundingBox);
+  arma::mat x=arma::zeros(3,2);
+  boundingBox.Get
+  (
+    x(0,0), x(1,0), x(2,0), 
+    x(0,1), x(1,1), x(2,1)
+  );
+
+  return x;
+}
+
+
 arma::mat SolidModel::faceNormal(FeatureID i) const
 {
   BRepGProp_Face prop(face(i));
@@ -867,8 +900,20 @@ TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& tra
   return intermediate_shape;
 }
 
+TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const gp_Trsf& trsf)
+{
+  return BRepBuilderAPI_Transform(m1, trsf).Shape();
+}
+
+
 Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
 : SolidModel(makeTransform(m1, trans, rot))
+{
+  m1.unsetLeaf();
+}
+
+Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
+: SolidModel(makeTransform(m1, trsf))
 {
   m1.unsetLeaf();
 }

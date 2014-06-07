@@ -59,6 +59,7 @@ public:
       ( maxLevel, int, 4 )
       ( nLayers, int, 2 )
       ( scale, arma::mat, vec3(1,1,1) )
+      ( translate, arma::mat, vec3(0,0,0) )
       ( rollPitchYaw, arma::mat, vec3(0,0,0) )
   )
 

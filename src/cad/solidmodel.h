@@ -475,6 +475,14 @@ public:
   
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
+  arma::mat modelCoG() const;
+  
+  /**
+   * return bounding box of model
+   * first col: min point
+   * second col: max point
+   */
+  arma::mat modelBndBox() const;
   
   arma::mat faceNormal(FeatureID i) const;
 
@@ -609,9 +617,11 @@ class Transform
 : public SolidModel
 {
   TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+  TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
   
 public:
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+  Transform(const SolidModel& m1, const gp_Trsf& trsf);
 };
 
 class Compound

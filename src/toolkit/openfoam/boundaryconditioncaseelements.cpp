@@ -1214,8 +1214,20 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     // velocity
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform ("+toStr(p_.wallVelocity())+")");
+      if (p_.rotating())
+      {
+	BC["type"]=OFDictData::data("rotatingWallVelocity");
+	BC["origin"]=OFDictData::to_OF(p_.CofR());
+	double om=norm(p_.wallVelocity(), 2);
+	BC["axis"]=OFDictData::to_OF(p_.wallVelocity()/om);
+	BC["omega"]=lexical_cast<string>(om);
+// 	BC["value"]="uniform (0 0 0)"; //!dont include value, will trigger evaluation
+      }
+      else
+      {
+	BC["type"]=OFDictData::data("fixedValue");
+	BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p_.wallVelocity()));
+      }
     }
     
     // pressure

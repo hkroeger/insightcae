@@ -450,8 +450,29 @@ SolidModel::View SolidModel::createView
     TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
     TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
     
-    dispshape=BRepAlgoAPI_Cut(shape_, HalfSpace);
-    result_view.crossSection = BRepBuilderAPI_Transform(BRepAlgoAPI_Common(shape_, Face), transform).Shape();
+    TopoDS_Compound dispshapes, xsecs;
+    BRep_Builder builder;
+    builder.MakeCompound( dispshapes );
+    builder.MakeCompound( xsecs );
+    int i=-1, j=0;
+    for (TopExp_Explorer ex(shape_, TopAbs_SOLID); ex.More(); ex.Next())
+    {
+      i++;
+      try
+      {
+	TopoDS_Shape ds=BRepAlgoAPI_Cut(ex.Current(), HalfSpace);
+	builder.Add(dispshapes, ds);
+	builder.Add(xsecs, BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ds, Face), transform).Shape());
+	j++;
+      }
+      catch (...)
+      {
+	cout<<"Warning: Failed to compute cross section of solid #"<<i<<endl;
+      }
+    }
+    cout<<"Generated "<<j<<" cross-sections"<<endl;
+    dispshape=dispshapes;
+    result_view.crossSection = xsecs;
   }
   
   

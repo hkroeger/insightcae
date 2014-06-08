@@ -387,6 +387,15 @@ arma::mat viscousForceProfile
   const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
 );
 
+arma::mat projectedArea
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const arma::mat& direction,
+  const std::vector<std::string>& patches,
+  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

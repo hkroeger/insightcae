@@ -1366,4 +1366,43 @@ arma::mat viscousForceProfile
   return arma::mat(join_rows(vfm, vf.col(1)));
 }
 
+
+arma::mat projectedArea
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const arma::mat& direction,
+  const std::vector<std::string>& patches,
+  const std::vector<std::string>& addopts
+)
+{
+  std::vector<std::string> opts;
+  std::string pl="( ";
+  BOOST_FOREACH(const std::string& pn, patches)
+  {
+    pl+=pn+" ";
+  }
+  pl+=")";
+  opts.push_back(pl);
+  opts.push_back(OFDictData::to_OF(direction));
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "projectedArea", opts, &output);
+
+  std::vector<double> t, A;
+  boost::regex re_area("^Projected area at time (.+) = (.+)$");
+  BOOST_FOREACH(const std::string & line, output)
+  {
+    boost::match_results<std::string::const_iterator> what;
+    if (boost::regex_match(line, what, re_area))
+    {
+      t.push_back(lexical_cast<double>(what[1]));
+      A.push_back(lexical_cast<double>(what[2]));
+    }
+  }
+  
+  return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(A.data(), A.size(), 1) ) );
+}
+
 }

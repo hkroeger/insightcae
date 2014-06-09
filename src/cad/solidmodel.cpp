@@ -451,18 +451,17 @@ SolidModel::View SolidModel::createView
     TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
     
     TopoDS_Compound dispshapes, xsecs;
-    BRep_Builder builder;
-    builder.MakeCompound( dispshapes );
-    builder.MakeCompound( xsecs );
+    BRep_Builder builder1, builder2;
+    builder1.MakeCompound( dispshapes );
+    builder2.MakeCompound( xsecs );
     int i=-1, j=0;
     for (TopExp_Explorer ex(shape_, TopAbs_SOLID); ex.More(); ex.Next())
     {
       i++;
       try
       {
-	TopoDS_Shape ds=BRepAlgoAPI_Cut(ex.Current(), HalfSpace);
-	builder.Add(dispshapes, ds);
-	builder.Add(xsecs, BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ds, Face), transform).Shape());
+	builder1.Add(dispshapes, 	BRepAlgoAPI_Cut(ex.Current(), HalfSpace));
+	builder2.Add(xsecs, 		BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ex.Current(), Face), transform).Shape());
 	j++;
       }
       catch (...)

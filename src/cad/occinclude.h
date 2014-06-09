@@ -129,6 +129,7 @@
 #include "ShapeAnalysis_Curve.hxx"
 #include "ShapeAnalysis_Surface.hxx"
 #include "GeomLProp_SLProps.hxx"
+#include "GCPnts_UniformDeflection.hxx"
 
 #include "HLRBRep_Algo.hxx"
 #include "HLRBRep_HLRToShape.hxx"

@@ -32,6 +32,80 @@ namespace cad {
 
 typedef boost::tuple<std::string, DL_Attributes, bool> LayerDefinition;
 
+std::vector<gp_Pnt> discretizeBSpline(const BRepAdaptor_Curve& c);
+
+
+struct hatchLoopWriter
+{
+  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const =0;
+  virtual int nsegments() const =0;
+  virtual void alignStartWith(const gp_Pnt& p) =0;
+  virtual gp_Pnt& start() =0;
+  virtual gp_Pnt& end() =0;
+};
+
+struct writerLine_HatchLoop
+:public hatchLoopWriter
+{
+  gp_Pnt p0, p1;
+  writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse=false);
+  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+
+  virtual int nsegments() const { return 1; }
+  virtual void alignStartWith(const gp_Pnt& p) { p0=p; }
+  virtual gp_Pnt& start() { return p0; }
+  virtual gp_Pnt& end() { return p1; }
+};
+
+struct writerCircle_HatchLoop
+:public hatchLoopWriter
+{
+  gp_Pnt p;
+  double r, start_angle, end_angle;
+  writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
+  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+  
+  virtual int nsegments() const { return 1; }
+  virtual void alignStartWith(const gp_Pnt& p) {};
+#warning garbage!
+  virtual gp_Pnt& start() { return p; }
+#warning garbage!
+  virtual gp_Pnt& end() { return p; }
+};
+
+struct writerDiscrete_HatchLoop
+:public hatchLoopWriter
+{
+  std::vector<gp_Pnt> pts;
+  
+  writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse=false);
+  virtual void write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const;
+  
+  virtual int nsegments() const { return pts.size()-1; }
+  virtual void alignStartWith(const gp_Pnt& p) { pts[0]=p; };
+  virtual gp_Pnt& start() { return pts[0]; }
+  virtual gp_Pnt& end() { return pts.back(); }
+};
+
+class HatchGenerator
+{
+public:
+  struct HatchData
+  {
+    double scale, angle;
+    HatchData(double scale, double angle);
+  };
+  
+protected:
+  int curidx_;
+  static std::vector<HatchData> hatches_;
+  
+public:
+  HatchGenerator();
+  
+  DL_HatchData generate();
+};
+
 class DXFWriter
 {
 protected:
@@ -48,15 +122,12 @@ public:
   ~DXFWriter();
 
   void writeLine(const BRepAdaptor_Curve& c, const std::string& layer);
-  void writeLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeCircle(const BRepAdaptor_Curve& c, const std::string& layer);
-  void writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer);
-  void writeDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer);
   
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
-  void writeSection(const TopoDS_Shape& s, std::string layer="0");
+  void writeSection(const TopoDS_Shape& s, HatchGenerator& hgen, std::string layer="0");
   
   static void writeViews(const boost::filesystem::path& file, const SolidModel::Views& views);
 };

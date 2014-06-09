@@ -21,6 +21,7 @@
 #include "dxfwriter.h"
 
 #include "boost/foreach.hpp"
+#include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/lexical_cast.hpp"
 
 #include "base/exception.h"
@@ -32,6 +33,36 @@ using namespace boost::assign;
 namespace insight {
 namespace cad {
   
+std::vector<gp_Pnt> discretizeBSpline(const BRepAdaptor_Curve& c)
+{
+  GeomAdaptor_Curve ac(c.Curve().Curve(), c.FirstParameter(), c.LastParameter());
+  std::vector<gp_Pnt> res;
+  
+  double deflection=0.01;
+  GCPnts_UniformDeflection discretizer;
+  discretizer.Initialize (ac, deflection);
+  if (!discretizer.IsDone())
+    throw insight::Exception("Discretization of curve failed!");
+  if (discretizer.NbPoints () < 2)
+    throw insight::Exception("Discretization of curve yielded less than 2 points!");
+  
+  gp_Pnt p0=c.Value(c.FirstParameter());
+  gp_Pnt p1=c.Value(c.LastParameter());
+  
+  res.push_back(p0);
+  for (int i=2; i<=discretizer.NbPoints()-1; i++)
+  {
+    res.push_back(c.Value(discretizer.Parameter(i)));
+  }
+  res.push_back(p1);
+  
+  
+//   cout<<p0.X()<<" "<<p0.Y()<<" "<<p0.Z()<<" <=> "<<res[0].X()<<" "<<res[0].Y()<<" "<<res[0].Z()<<endl;
+//   cout<<p1.X()<<" "<<p1.Y()<<" "<<p1.Z()<<" <=> "<<res.back().X()<<" "<<res.back().Y()<<" "<<res.back().Z()<<endl;
+
+  return res;
+}
+
 
 DXFWriter::DXFWriter
 (
@@ -129,7 +160,6 @@ void DXFWriter::writeLine(const BRepAdaptor_Curve& c, const std::string& layer)
 {
   gp_Pnt p0=c.Value(c.FirstParameter());
   gp_Pnt p1=c.Value(c.LastParameter());
-  cout <<p0.X()<<" "<<p0.Y()<<" >>> "<<p1.X()<<" "<<p1.Y()<<endl;
 
   dxf_.writeLine
   (
@@ -143,14 +173,30 @@ void DXFWriter::writeLine(const BRepAdaptor_Curve& c, const std::string& layer)
   );
 }
 
-void DXFWriter::writeLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
+writerLine_HatchLoop::writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)
 {
-  gp_Pnt p0=c.Value(c.FirstParameter());
-  gp_Pnt p1=c.Value(c.LastParameter());
+  p0=c.Value(c.FirstParameter());
+  p1=c.Value(c.LastParameter());
+  
+  if (reverse)
+  {
+    std::swap(p0, p1);
+    //cout<<"curve reversed"<<endl;
+  }
+}
 
-  dxf_.writeHatchEdge
+void writerLine_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
+{
+//   {
+//     std::ofstream f("debug.txt", fstream::app);
+//     f<<endl<<endl;
+//     f<<p0.X()<<" "<<p0.Y()<<endl;
+//     f<<p1.X()<<" "<<p1.Y()<<endl;
+//   }
+  
+  dxf.writeHatchEdge
   (
-    *dw_,
+    *dw,
     DL_HatchEdgeData
     (
       p0.X(), p0.Y(),
@@ -228,12 +274,12 @@ void DXFWriter::writeCircle(const BRepAdaptor_Curve& c, const std::string& layer
     }
 }
 
-void DXFWriter::writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
+writerCircle_HatchLoop::writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
 {
     gp_Circ circ = c.Circle();
 	//const gp_Ax1& axis = c->Axis();
-    const gp_Pnt& p= circ.Location();
-    double r = circ.Radius();
+    p= circ.Location();
+    r = circ.Radius();
     double f = c.FirstParameter();
     double l = c.LastParameter();
     gp_Pnt s = c.Value(f);
@@ -248,17 +294,8 @@ void DXFWriter::writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::str
     // a full circle
     if (s.SquareDistance(e) < 0.001) 
     {
-      dxf_.writeHatchEdge
-      (
-	*dw_,
-	DL_HatchEdgeData
-	(
-	  p.X(), p.Y(),
-	  r,
-	  0, 2.*M_PI,
-	  true
-	)
-      );
+      start_angle=0.0;
+      end_angle=2.*M_PI;
     }
 
     // arc of circle
@@ -269,35 +306,135 @@ void DXFWriter::writeCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::str
 	double bx = e.X() - p.X();
 	double by = e.Y() - p.Y();
 
-	double start_angle = atan2(ay, ax);
-	double end_angle = atan2(by, bx);
+	start_angle = atan2(ay, ax);
+	end_angle = atan2(by, bx);
 
 
 	if (a > 0) std::swap(start_angle, end_angle);
-
-	dxf_.writeHatchEdge
-	(
-	  *dw_,
-	  DL_HatchEdgeData
-	  (
-	    p.X(), p.Y(),
-	    r,
-	    start_angle, end_angle,
-	    true
-	  )
-	);
-
     }
+}
+
+void writerCircle_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
+{
+  dxf.writeHatchEdge
+  (
+    *dw,
+    DL_HatchEdgeData
+    (
+      p.X(), p.Y(),
+      r,
+      start_angle, end_angle,
+      true
+    )
+  );
 }
 
 void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer)
 {
-  writeLine(c, layer);
+//   writeLine(c, layer);
+  std::vector<gp_Pnt> pts=discretizeBSpline(c);
+
+  for (int i=1; i<pts.size(); i++)
+  {
+    gp_Pnt p0=pts[i-1];
+    gp_Pnt p1=pts[i];
+    
+    dxf_.writeLine
+    (
+      *dw_,
+      DL_LineData
+      (
+	p0.X(), p0.Y(), 0,
+	p1.X(), p1.Y(), 0
+      ),
+      DL_Attributes(layer, 256, -1, "BYLAYER")
+    );
+  }
 }
   
-void DXFWriter::writeDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
+writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)
 {
-  writeLine_HatchLoop(c, layer);
+  pts=discretizeBSpline(c);
+  
+  // Replace first and last point from Geom_Curve discretization by Topological end vertices
+  // => consecutive segments thus have identically the same end/start coordinates
+  pts[0]=BRep_Tool::Pnt(TopExp::FirstVertex(c.Edge()));
+  pts.back()=BRep_Tool::Pnt(TopExp::LastVertex(c.Edge()));
+  
+  if (reverse)
+  {
+    std::reverse(pts.begin(), pts.end());
+    //cout<<"curve reversed"<<endl;
+  }
+  
+
+}
+
+void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, auto_ptr< DL_WriterA >& dw) const
+{
+//   {
+//     std::ofstream f("debug.txt", fstream::app);
+//     f<<endl<<endl;
+//     for (int i=0; i<pts.size(); i++)
+//     {
+//       f<<pts[i].X()<<" "<<pts[i].Y()<<endl;
+//     }
+//   }
+  
+  for (int i=1; i<pts.size(); i++)
+  {
+    gp_Pnt p0=pts[i-1];
+    gp_Pnt p1=pts[i];
+    
+    dxf.writeHatchEdge
+    (
+      *dw,
+      DL_HatchEdgeData
+      (
+	p0.X(), p0.Y(),
+	p1.X(), p1.Y()
+      )
+    );
+  }  
+}
+
+HatchGenerator::HatchData::HatchData(double s, double a)
+: scale(s), angle(a)
+{
+}
+
+std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ =
+ list_of<HatchGenerator::HatchData>
+  (HatchData(0.33, 45.0))
+  (HatchData(0.33, -45.0))
+  (HatchData(0.33, 40.0))
+  (HatchData(0.33, -40.0))
+  (HatchData(0.33, 50.0))
+  (HatchData(0.33, -50.0))
+  (HatchData(0.5, 45.0))
+  (HatchData(0.5, -45.0))
+  (HatchData(0.5, 40.0))
+  (HatchData(0.5, -40.0))
+  (HatchData(0.5, 50.0))
+  (HatchData(0.5, -50.0))
+  (HatchData(0.66, 45.0))
+  (HatchData(0.66, -45.0))
+  (HatchData(0.66, 40.0))
+  (HatchData(0.66, -40.0))
+  (HatchData(0.66, 50.0))
+  (HatchData(0.66, -50.0))
+ ;
+
+HatchGenerator::HatchGenerator()
+: curidx_(0)
+{}
+
+DL_HatchData HatchGenerator::generate()
+{
+  const HatchData& hd=hatches_[curidx_];
+  curidx_++;
+  if (curidx_>=hatches_.size()) curidx_=0;
+  return DL_HatchData(1, false, hd.scale, hd.angle, "iso03w100");
 }
   
 void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer)
@@ -360,7 +497,7 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 	
 	BRepAdaptor_Curve adapt(e);
 	
-	cout<<"Processing curve of type "<<adapt.GetType()<<endl;
+	//cout<<"Processing curve of type "<<adapt.GetType()<<endl;
 	
 	switch (adapt.GetType())
 	{
@@ -385,20 +522,68 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
     }
 }
 
-void DXFWriter::writeSection(const TopoDS_Shape& shape, std::string layer)
+void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, std::string layer)
 {
-  TopExp_Explorer exf;
-  for (exf.Init(shape, TopAbs_FACE); exf.More(); exf.Next())
+  for (TopExp_Explorer exf(shape, TopAbs_FACE); exf.More(); exf.Next())
   {
+    //cout<<"Processing face"<<endl;
+    
     TopoDS_Face f=TopoDS::Face(exf.Current());
+    
+    boost::ptr_vector<hatchLoopWriter> segments;
+    for (TopExp_Explorer exw(f, TopAbs_WIRE); exw.More(); exw.Next())
+    {
+      //cout << "ADDING WIRE" << endl;
+      // loop through edges of wire in ordered manner
+      for (BRepTools_WireExplorer ex(TopoDS::Wire(exw.Current())); ex.More(); ex.Next())
+      {
+	  TopoDS_Edge e=ex.Current();
+	  BRepLib::BuildCurve3d(e);
+	  
+	  BRepAdaptor_Curve adapt(e);
+	  
+	  //cout<<"Processing curve of type "<<adapt.GetType()<<endl;
+	  
+	  switch (adapt.GetType())
+	  {
+	    case GeomAbs_Line:
+	    {
+	      segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+	    } break;
+	      
+	    case GeomAbs_Circle:
+  // 	  {
+  // 	    writeCircle_HatchLoop(adapt, layer);
+  // 	  } break;
+
+	    case GeomAbs_Ellipse:
+	    case GeomAbs_Hyperbola:
+	    case GeomAbs_Parabola:
+	    case GeomAbs_BSplineCurve:
+	    case GeomAbs_BezierCurve:
+	    {
+	      segments.push_back(new writerDiscrete_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+	    } break;
+
+	    default:
+	      segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+	  }
+      }
+    }
     
     DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
  
     // start hatch with one loop:
-    DL_HatchData data(1, false, 0.5, 45.0, "iso03w100");
+    DL_HatchData data = hgen.generate(); //(1, false, 0.5, 45.0, "iso03w100");
  
     // start loop:
-    DL_HatchLoopData lData(1);
+    int nsegs=0;
+    BOOST_FOREACH(const hatchLoopWriter& w, segments)
+    {
+      nsegs+=w.nsegments();
+    }
+    //cout<<"nsegs="<<nsegs<<endl;
+    DL_HatchLoopData lData(nsegs);
     
     // start hatch with one loop:
     dxf_.writeHatch1(*dw_, data, attributes);
@@ -406,34 +591,27 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, std::string layer)
     // start loop:
     dxf_.writeHatchLoop1(*dw_, lData);
     
-    TopExp_Explorer ex;
-    for (ex.Init(f, TopAbs_EDGE); ex.More(); ex.Next())
+    for (int i=0; i<segments.size(); i++)
     {
-	TopoDS_Edge e=TopoDS::Edge(ex.Current());
-	BRepLib::BuildCurve3d(e);
-	
-	BRepAdaptor_Curve adapt(e);
-	
-	cout<<"Processing curve of type "<<adapt.GetType()<<endl;
-	
-	switch (adapt.GetType())
-	{
-	  case GeomAbs_Line:
-	  {
-	    writeLine_HatchLoop(adapt, layer);
-	  } break;
-	    
-	  case GeomAbs_Circle:
-	  {
-	    writeCircle_HatchLoop(adapt, layer);
-	  } break;
-
-	  default:
-	    writeDiscrete_HatchLoop(adapt, layer);
-	}
-    }
+      hatchLoopWriter& w=segments[i];
+      if (i>0)
+      {
+	gp_Pnt lpe=segments[i-1].end();
+	w.alignStartWith(lpe);
+	gp_Pnt ps=w.start();
+	//cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+      }
+      else
+      {
+	gp_Pnt lpe=segments.back().end();
+	w.alignStartWith(lpe);
+	gp_Pnt ps=w.start();
+	//cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+      }
+      w.write(dxf_, dw_);
+    }  
     
-        // end loop:
+    // end loop:
     dxf_.writeHatchLoop2(*dw_, lData);
  
     // end hatch:
@@ -463,6 +641,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel
 
   DXFWriter dxf(file, addlayers);
 
+  HatchGenerator hgen;
   BOOST_FOREACH(const SolidModel::Views::value_type& v, views)
   {
     string name=v.first;
@@ -470,7 +649,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel
     dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
     if (!v.second.crossSection.IsNull())
     {
-      dxf.writeSection( v.second.crossSection, name+"_XSEC");
+      dxf.writeSection( v.second.crossSection, hgen, name+"_XSEC");
     }
   }
 }

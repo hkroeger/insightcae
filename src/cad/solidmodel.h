@@ -482,7 +482,7 @@ public:
    * first col: min point
    * second col: max point
    */
-  arma::mat modelBndBox() const;
+  arma::mat modelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
 

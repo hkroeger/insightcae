@@ -310,20 +310,34 @@ arma::mat SolidModel::modelCoG() const
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
 
-arma::mat SolidModel::modelBndBox() const
+arma::mat SolidModel::modelBndBox(double deflection) const
 {
-  double aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
-  {
-    Bnd_Box boundingBox;
-    BRepBndLib::Add(shape_, boundingBox);
-
-    boundingBox.Get(aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
-    double deflection= std::max( aXmax-aXmin , std::max(aYmax-aYmin , aZmax-aZmin))*0.001;  
-    BRepMesh_IncrementalMesh Inc(shape_, deflection);
-  }
-  
   Bnd_Box boundingBox;
   BRepBndLib::Add(shape_, boundingBox);
+
+  //   if (deflection>0)
+//   {
+// //     Bnd_Box boundingBox;
+// //     BRepBndLib::Add(shape_, boundingBox);
+// // 
+// //     double aXmin, aYmin, aZmin, aXmax, aYmax, aZmax;
+// //     boundingBox.Get(aXmin, aYmin, aZmin, aXmax, aYmax, aZmax);
+// //     cout<<aXmin<<" "<<aYmin<<" "<<aZmin<<", "<<aXmax<<" "<<aYmax<<" "<<aZmax<<endl;
+// //     double deflection= std::min( aXmax-aXmin , std::min(aYmax-aYmin , aZmax-aZmin))*0.001;  
+//      BRepMesh_IncrementalMesh Inc(shape_, deflection);
+//     
+// //         BRepMesh_FastDiscret m(0.001, shape_, boundingBox, 0.1, true, true, true, true);
+//         //m.Perform(shape_);
+// 
+//   }
+  
+  if (deflection>0)
+  {
+      BRepMesh_FastDiscret m(deflection, 0.5, boundingBox, true, true, false, true);
+      m.Perform(shape_);
+      //    BRepMesh_IncrementalMesh Inc(shape, deflection);
+  }
+
   arma::mat x=arma::zeros(3,2);
   boundingBox.Get
   (

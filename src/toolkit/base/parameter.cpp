@@ -102,6 +102,53 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
   return NULL;
 }
 
+template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode
+(
+  const std::string& name, 
+  rapidxml::xml_document<>& doc, 
+  rapidxml::xml_node<>& node, 
+  boost::filesystem::path inputfilepath
+) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+    std::string relpath;
+    relpath=value_.string();
+    cout<<relpath<<endl;
+    child->append_attribute(doc.allocate_attribute
+    (
+      "value", 
+      doc.allocate_string(relpath.c_str())
+    ));
+    return child;
+  
+}
+
+template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
+(
+  const std::string& name, 
+  rapidxml::xml_document<>& doc, 
+  rapidxml::xml_node<>& node, 
+  boost::filesystem::path inputfilepath
+)
+{
+  std::cout<<"Reading spec path "<<name<< std::endl;
+    using namespace rapidxml;
+    xml_node<>* child = findNode(node, name);
+    if (child)
+    {
+      boost::filesystem::path abspath(child->first_attribute("value")->value());
+      if (abspath.is_relative())
+      {
+	abspath = boost::filesystem::absolute(inputfilepath / abspath);
+      }
+      abspath=boost::filesystem::canonical(abspath);
+      cout<<"path="<<abspath<<endl;
+      value_=abspath;
+    }
+    std::cout<<"done."<<std::endl;
+}
+
 defineType(DirectoryParameter);
 addToFactoryTable(Parameter, DirectoryParameter, std::string);
 

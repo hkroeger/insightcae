@@ -156,7 +156,8 @@ public:
   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath)
   {
-    using namespace rapidxml;
+   std::cout<<"Reading simple "<<name<< std::endl;
+  using namespace rapidxml;
     xml_node<>* child = findNode(node, name);
     if (child)
     {
@@ -167,6 +168,7 @@ public:
 };
 
 
+  
 extern char DoubleName[];
 extern char IntName[];
 extern char BoolName[];
@@ -181,6 +183,13 @@ typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 
+template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+
+template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+  boost::filesystem::path inputfilepath);
+
+  
 class DirectoryParameter
 : public PathParameter
 {

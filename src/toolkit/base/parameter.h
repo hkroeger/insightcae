@@ -40,6 +40,24 @@
 
 #include "rapidxml/rapidxml.hpp"
 
+#include "boost/version.hpp"
+
+namespace boost 
+{ 
+namespace filesystem
+{
+  
+template < >
+path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end, const codecvt_type& cvt);
+
+boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::filesystem::path a_To );
+  
+} 
+}
+
+//namespace boost { namespace filesystem { using filesystem3::make_relative; } }
+
+
 namespace insight {
   
 class Parameter

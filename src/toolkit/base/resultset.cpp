@@ -75,7 +75,7 @@ void ResultElement::writeLatexHeaderCode(std::ostream& f) const
 {
 }
 
-void ResultElement::writeLatexCode(ostream& f, int level) const
+void ResultElement::writeLatexCode(ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
 }
 
@@ -100,7 +100,7 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
   f<<"\\usepackage{placeins}\n";
 }
 
-void Image::writeLatexCode(std::ostream& f, int level) const
+void Image::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
   f<< 
@@ -130,7 +130,7 @@ Comment::Comment(const std::string& value, const std::string& shortDesc, const s
 {
 }
 
-void Comment::writeLatexCode(std::ostream& f, int level) const
+void Comment::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f << value_ <<endl;
 }
@@ -153,7 +153,7 @@ ScalarResult::ScalarResult(const double& value, const string& shortDesc, const s
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
 
-void ScalarResult::writeLatexCode(ostream& f, int level) const
+void ScalarResult::writeLatexCode(ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f.setf(ios::fixed,ios::floatfield);
   f.precision(3);
@@ -232,7 +232,7 @@ ResultElement* TabularResult::clone() const
 }
 
 
-void TabularResult::writeLatexCode(std::ostream& f, int level) const
+void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f<<
   "\\begin{tabular}{";
@@ -283,7 +283,7 @@ AttributeTableResult::AttributeTableResult
 }
   
   
-void AttributeTableResult::writeLatexCode(std::ostream& f, int level) const
+void AttributeTableResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f<<
   "\\begin{tabular}{lc}\n"
@@ -398,7 +398,7 @@ void ResultSet::writeLatexHeaderCode(std::ostream& f) const
   }  
 }
 
-void ResultSet::writeLatexCode(std::ostream& f, int level) const
+void ResultSet::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f << latex_subsection(level) << "{Input Parameters}\n";
   
@@ -409,7 +409,7 @@ void ResultSet::writeLatexCode(std::ostream& f, int level) const
   {
     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
-    i->second->writeLatexCode(f, level+2);
+    i->second->writeLatexCode(f, level+2, outputfilepath);
     f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
     f << endl;
   }
@@ -437,7 +437,7 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   "\\author{"<<author_<<"}\n"
   "\\maketitle\n";
     
-  writeLatexCode(f, 0);
+  writeLatexCode(f, 0, file.parent_path());
   
   f<<
   "\\end{document}\n";

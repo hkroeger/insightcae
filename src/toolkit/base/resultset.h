@@ -56,7 +56,7 @@ public:
   inline const std::string& unit() const { return unit_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const =0;
 };
@@ -78,7 +78,7 @@ public:
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -117,7 +117,7 @@ public:
   
   Comment(const ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -129,7 +129,7 @@ public:
   
   ScalarResult(const ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -167,7 +167,7 @@ public:
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   
   virtual void writeGnuplotData(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -205,7 +205,7 @@ public:
   inline const AttributeNames& names() const { return names_; }
   inline const AttributeValues& values() const { return values_; }
   
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -247,7 +247,7 @@ public:
   inline const ParameterSet& parameters() const { return p_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level) const;
+  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
 
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
   

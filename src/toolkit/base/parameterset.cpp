@@ -119,19 +119,21 @@ ParameterSet* ParameterSet::clone() const
   return np;
 }
 
-void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+void ParameterSet::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
   for( const_iterator i=begin(); i!= end(); i++)
   {
-    i->second->appendToNode(i->first, doc, node);
+    i->second->appendToNode(i->first, doc, node, inputfilepath);
   }
 }
 
-void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   for( iterator i=begin(); i!= end(); i++)
   {
-    i->second->readFromNode(i->first, doc, node);
+    i->second->readFromNode(i->first, doc, node, inputfilepath);
   }
 }
 
@@ -161,7 +163,7 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
     ));
   }
 
-  appendToNode(doc, *rootnode);
+  appendToNode(doc, *rootnode, file.parent_path());
   
   {
     std::ofstream f(file.c_str());
@@ -193,7 +195,7 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
     analysisName = analysisnamenode->first_attribute("name")->value();
   }
   
-  readFromNode(doc, *rootnode);
+  readFromNode(doc, *rootnode, file.parent_path());
   
   return analysisName;
 }
@@ -229,21 +231,23 @@ Parameter* SubsetParameter::clone() const
   return new SubsetParameter(*value_, description_);
 }
 
-rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
   std::cout<<"appending subset "<<name<<std::endl;
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
-  value_->appendToNode(doc, *child);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+  value_->appendToNode(doc, *child, inputfilepath);
   return child;
 }
 
-void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
   if (child)
-    value_->readFromNode(doc, *child);
+    value_->readFromNode(doc, *child, inputfilepath);
 }
 
 defineType(SelectableSubsetParameter);
@@ -282,23 +286,25 @@ Parameter* SelectableSubsetParameter::clone () const
   return np; 
 }
 
-rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* SelectableSubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
   using namespace rapidxml;
   
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
   child->append_attribute(doc.allocate_attribute
   (
     "value", 
     doc.allocate_string(selection_.c_str())
   ));
   
-  operator()().appendToNode(doc, *child);
+  operator()().appendToNode(doc, *child, inputfilepath);
 
   return child;  
 }
 
-void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
@@ -309,7 +315,7 @@ void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::
     if (value_.find(selection_)==value_.end())
       throw insight::Exception("Invalid selection key during read of selectableSubset "+name);
     
-    operator()().readFromNode(doc, *child);
+    operator()().readFromNode(doc, *child, inputfilepath);
   }
 }
 

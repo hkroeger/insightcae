@@ -64,8 +64,21 @@ public:
 
   virtual std::string latexRepresentation() const =0;
   
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) =0;
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath
+  ) const;
+  
+  virtual void readFromNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath
+  ) =0;
 
   rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name);
   virtual Parameter* clone() const =0;
@@ -127,10 +140,11 @@ public:
     return new SimpleParameter<T, N>(value_, description_);
   }
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
   {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
@@ -139,7 +153,8 @@ public:
     return child;
   }
 
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
   {
     using namespace rapidxml;
     xml_node<>* child = findNode(node, name);
@@ -176,8 +191,10 @@ public:
   DirectoryParameter(boost::filesystem::path value, const std::string& description);
   virtual std::string latexRepresentation() const;
   virtual Parameter* clone() const;
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 
@@ -205,8 +222,10 @@ public:
   
   virtual Parameter* clone() const;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 class DoubleRangeParameter
@@ -241,8 +260,10 @@ public:
   
   virtual Parameter* clone() const;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 
@@ -275,8 +296,10 @@ public:
   
   virtual Parameter* clone () const;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 

@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     analysis->setExecutionPath(dir);
 
     ParameterSet parameters = analysis->defaultParameters();
-    parameters.readFromNode(doc, *rootnode);
+    parameters.readFromNode(doc, *rootnode, dir);
     
     if (vm.count("bool"))
     {

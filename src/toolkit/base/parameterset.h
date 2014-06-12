@@ -182,8 +182,10 @@ public:
 
     virtual ParameterSet* clone() const;
 
-    virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-    virtual void readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+    virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+    virtual void readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
     
     virtual void saveToFile(const boost::filesystem::path& file, std::string analysisType = std::string() ) const;
     virtual std::string readFromFile(const boost::filesystem::path& file);
@@ -224,8 +226,10 @@ public:
   
   virtual Parameter* clone () const;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 class SelectableSubsetParameter
@@ -265,8 +269,10 @@ public:
 
   virtual Parameter* clone () const;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
 };
 
 

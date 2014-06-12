@@ -122,7 +122,9 @@ void workbench::openAnalysis(const QString& fn)
 {
   using namespace rapidxml;
   
-  std::ifstream in(fn.toStdString().c_str());
+  boost::filesystem::path fp(fn.toStdString());
+  
+  std::ifstream in(fp.c_str());
   std::string contents;
   in.seekg(0, std::ios::end);
   contents.resize(in.tellg());
@@ -143,7 +145,7 @@ void workbench::openAnalysis(const QString& fn)
   }
   
   AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
-  form->parameters().readFromNode(doc, *rootnode);
+  form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
   boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
   form->analysis().setExecutionPath(dir);
   form->forceUpdate();

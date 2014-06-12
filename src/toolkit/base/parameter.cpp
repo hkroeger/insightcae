@@ -24,7 +24,8 @@ Parameter::~Parameter()
 {
 }
 
-rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
     using namespace rapidxml;
     xml_node<>* child = doc.allocate_node(node_element, doc.allocate_string(this->type().c_str()));
@@ -125,10 +126,11 @@ Parameter* DirectoryParameter::clone() const
   return new DirectoryParameter(value_, description_);
 }
 
-rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
@@ -137,7 +139,8 @@ rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, 
     return child;
 }
 
-void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
@@ -178,10 +181,11 @@ Parameter* SelectionParameter::clone() const
   return new SelectionParameter(value_, items_, description_);
 }
 
-rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
@@ -191,7 +195,8 @@ rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, 
     return child;
 }
 
-void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
@@ -272,10 +277,11 @@ Parameter* DoubleRangeParameter::clone() const
   return new DoubleRangeParameter(values_, description_);
 }
 
-rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
     using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node);
+    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
     
     std::ostringstream oss;
     oss << *values_.begin();
@@ -291,7 +297,8 @@ rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name
     return child;
 }
 
-void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
@@ -337,20 +344,22 @@ Parameter* ArrayParameter::clone () const
   return np;
 }
 
-rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const
 {
   cout<<"appending array "<<name<<endl;
   using namespace rapidxml;
-  xml_node<>* child = Parameter::appendToNode(name, doc, node);
-  defaultValue_->appendToNode("default", doc, *child);
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+  defaultValue_->appendToNode("default", doc, *child, inputfilepath);
   for (int i=0; i<size(); i++)
   {
-    value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child);
+    value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
   }
   return child;
 }
 
-void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath)
 {
   value_.clear();
   using namespace rapidxml;
@@ -364,7 +373,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       {
 	cout<<"reading default value"<<endl;
 	defaultValue_.reset(Parameter::lookup(e->name(), ""));
-	defaultValue_->readFromNode( name, doc, *child );
+	defaultValue_->readFromNode( name, doc, *child, inputfilepath );
       }
       else
       {
@@ -373,7 +382,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
 	cout<<"now at size="<<size()<<endl;
 	Parameter* curp = Parameter::lookup(e->name(), "");
-	curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child );
+	curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
 	value_.replace(i, curp);
       }
     }

@@ -23,6 +23,7 @@
 
 #include "base/analysis.h"
 #include "openfoam/openfoamcase.h"
+#include "base/parameterstudy.h"
 
 
 namespace insight {
@@ -69,6 +70,26 @@ public:
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
     
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
+};
+
+
+class OpenFOAMParameterStudy
+: public ParameterStudy
+{
+public:
+    declareType("OpenFOAM Parameter Study");
+    
+    OpenFOAMParameterStudy
+    (
+      const std::string& name, 
+      const std::string& description, 
+      const OpenFOAMAnalysis& baseAnalysis, 
+      const RangeParameterList& varp
+    );
+    
+    virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
+
+    virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);
 };
 
 }

@@ -25,8 +25,10 @@ try:
     
         case = OpenFOAMReader(FileName = os.path.join(caseDir, "x.foam"))
         bnds=case.GetPropertyValue('PatchArrayInfo')
+        #print bnds
         
         regions=['internalMesh']+[bnds[i] for i in range(0, len(bnds), 2)]
+        #print regions
         
         blockIndices={regions[0]: 1}
         #blockIndices.update({n: 2+i for i,n in enumerate(regions[1:])})
@@ -132,6 +134,7 @@ try:
             bi=[]
             for n,i in blockIndices.items():
                 if se.match(n):
+		  print "selected patch %s (id %d)"%(n,i)
                   bi.append(i)
             eb.BlockIndices=bi
         else:

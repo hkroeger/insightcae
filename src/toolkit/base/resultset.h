@@ -72,7 +72,7 @@ protected:
 public:
   declareType("Image");
   Image(const ResultElementConstrP& par);
-  Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
+  Image(const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
   
   inline const boost::filesystem::path& imagePath() const { return imagePath_; }
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }

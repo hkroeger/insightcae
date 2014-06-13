@@ -88,9 +88,9 @@ Image::Image(const ResultElementConstrP& par)
 {
 }
 
-Image::Image(const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
+Image::Image(const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
 : ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
-  imagePath_(absolute(value))
+  imagePath_(absolute(value, location))
 {
 }
 
@@ -106,7 +106,7 @@ void Image::writeLatexCode(std::ostream& f, int level, const boost::filesystem::
   f<< 
   "\n\nSee figure below.\n"
   "\\begin{figure}[!h]"
-  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << imagePath_.c_str() << "}\n"
+  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, imagePath_).c_str() << "}\n"
   "\\caption{"+cleanSymbols(shortDescription_)+"}\n"
   "\\end{figure}"
   "\\FloatBarrier";
@@ -114,7 +114,7 @@ void Image::writeLatexCode(std::ostream& f, int level, const boost::filesystem::
 
 ResultElement* Image::clone() const
 {
-  return new Image(imagePath_, shortDescription_, longDescription_);
+  return new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_);
 }
   
 defineType(Comment);
@@ -522,7 +522,7 @@ void addPlot
   results->insert(resultelementname,
     std::auto_ptr<Image>(new Image
     (
-    chart_file_name, 
+    workdir, chart_file_name, 
     shortDescription, ""
   )));
 }

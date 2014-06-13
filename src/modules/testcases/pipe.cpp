@@ -511,7 +511,7 @@ void PipeBase::evaluateAtSection(
   results->insert(pressure_contour_name,
     std::auto_ptr<Image>(new Image
     (
-    pressure_contour_filename, 
+    executionPath(), pressure_contour_filename, 
     "Contour of pressure (axial section)", ""
   )));
   
@@ -535,7 +535,7 @@ void PipeBase::evaluateAtSection(
     results->insert(velocity_contour_name,
       std::auto_ptr<Image>(new Image
       (
-      velocity_contour_filename, 
+      executionPath(), velocity_contour_filename, 
       "Contour of "+c+"-Velocity (axial section)", ""
     )));
   }
@@ -583,7 +583,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
   results->insert(pressure_contour_name,
     std::auto_ptr<Image>(new Image
     (
-    pressure_contour_filename, 
+    executionPath(), pressure_contour_filename, 
     "Contour of pressure (longitudinal section)", ""
   )));
   
@@ -607,7 +607,7 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
     results->insert(velocity_contour_name,
       std::auto_ptr<Image>(new Image
       (
-      velocity_contour_filename, 
+      executionPath(), velocity_contour_filename, 
       "Contour of "+c+"-Velocity (longitudinal section)", ""
     )));
   }
@@ -877,7 +877,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
       results->insert(chart_name,
 	std::auto_ptr<Image>(new Image
 	(
-	chart_file_name, 
+	executionPath(), chart_file_name, 
 	"Longitudinal profiles of averaged velocities", ""
       )));
       
@@ -909,7 +909,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
       results->insert(chart_name,
 	std::auto_ptr<Image>(new Image
 	(
-	chart_file_name, 
+	executionPath(), chart_file_name, 
 	"Longitudinal profiles of averaged reynolds stresses", ""
       )));
       

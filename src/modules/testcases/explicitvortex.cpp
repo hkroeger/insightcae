@@ -262,7 +262,7 @@ ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSe
   results->insert("pressureContour",
     std::auto_ptr<Image>(new Image
     (
-    "pressure_above.jpg", 
+    executionPath(), "pressure_above.jpg", 
     "Contour of pressure", ""
   )));
   
@@ -279,7 +279,7 @@ ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSe
   results->insert("UxContour",
     std::auto_ptr<Image>(new Image
     (
-    "Ux_above.jpg", 
+    executionPath(), "Ux_above.jpg", 
     "Contour of X-Velocity", ""
   )));
   
@@ -296,7 +296,7 @@ ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSe
   results->insert("UyContour",
     std::auto_ptr<Image>(new Image
     (
-    "Uy_above.jpg", 
+    executionPath(), "Uy_above.jpg", 
     "Contour of Y-Velocity", ""
   )));
 
@@ -313,7 +313,7 @@ ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSe
   results->insert("UzContour",
     std::auto_ptr<Image>(new Image
     (
-    "Uz_above.jpg", 
+    executionPath(), "Uz_above.jpg", 
     "Contour of Z-Velocity", ""
   )));
   

@@ -713,7 +713,7 @@ void ChannelBase::evaluateAtSection(
     results->insert(pressure_contour_name,
       std::auto_ptr<Image>(new Image
       (
-      pressure_contour_filename, 
+      executionPath(), pressure_contour_filename, 
       "Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
     )));
     
@@ -737,7 +737,7 @@ void ChannelBase::evaluateAtSection(
       results->insert(velocity_contour_name,
 	std::auto_ptr<Image>(new Image
 	(
-	velocity_contour_filename, 
+	executionPath(), velocity_contour_filename, 
 	"Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
       )));
     }
@@ -823,7 +823,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
   results->insert("contourPressure",
     std::auto_ptr<Image>(new Image
     (
-    "pressure_longi.jpg", 
+    executionPath(), "pressure_longi.jpg", 
     "Contour of pressure (longitudinal section)", ""
   )));
   
@@ -845,7 +845,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& 
     results->insert("contourU"+c,
       std::auto_ptr<Image>(new Image
       (
-      "U"+c+"_longi.jpg", 
+      executionPath(), "U"+c+"_longi.jpg", 
       "Contour of "+c+"-Velocity", ""
     )));
   }

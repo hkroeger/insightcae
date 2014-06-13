@@ -149,9 +149,12 @@ template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathNa
 {
     using namespace rapidxml;
     xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-    std::string relpath;
-    relpath=make_relative(inputfilepath, value_).string();
-    cout<<relpath<<endl;
+    std::string relpath="";
+    if (!value_.empty())
+    {
+      relpath=make_relative(inputfilepath, value_).string();
+      cout<<relpath<<endl;
+    }
     child->append_attribute(doc.allocate_attribute
     (
       "value", 
@@ -169,21 +172,23 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
   boost::filesystem::path inputfilepath
 )
 {
-  std::cout<<"Reading spec path "<<name<< std::endl;
-    using namespace rapidxml;
-    xml_node<>* child = findNode(node, name);
-    if (child)
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, name);
+  if (child)
+  {
+    boost::filesystem::path abspath(child->first_attribute("value")->value());
+    if (!abspath.empty())
     {
-      boost::filesystem::path abspath(child->first_attribute("value")->value());
       if (abspath.is_relative())
       {
 	abspath = boost::filesystem::absolute(inputfilepath / abspath);
       }
       abspath=boost::filesystem::canonical(abspath);
-      cout<<"path="<<abspath<<endl;
-      value_=abspath;
     }
-    std::cout<<"done."<<std::endl;
+    cout<<"path="<<abspath<<endl;
+    value_=abspath;
+  }
+  std::cout<<"done."<<std::endl;
 }
 
 defineType(DirectoryParameter);

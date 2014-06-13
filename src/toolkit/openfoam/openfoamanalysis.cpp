@@ -258,7 +258,8 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
       OpenFOAMCase meshCase(ofe);
       if (!meshCase.meshPresentOnDisk(dir))
       {
-	if (p.getPath("mesh/linkmesh")!="")
+	cout<<p.getPath("mesh/linkmesh")<<endl;
+	if (!p.getPath("mesh/linkmesh").empty())
 	{
 	  linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant");
 	}

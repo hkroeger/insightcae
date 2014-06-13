@@ -19,6 +19,8 @@ set(cadtest_SRCS test.cpp)
 add_executable(cadtest ${cadtest_SRCS})
 target_link_libraries(cadtest insightcad)
 
+if (INSIGHT_BUILD_WORKBENCH)
+
 set(iscad_SRCS iscad.cpp iscadapplication.cpp qoccviewwidget.cpp qoccviewercontext.cpp)
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)
@@ -39,3 +41,4 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
   ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} 
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
   )
+endif()

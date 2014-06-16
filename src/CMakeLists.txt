@@ -14,6 +14,7 @@ find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
+FIND_PACKAGE(SWIG REQUIRED)
 
 # ADD_DEFINITIONS(
 #     -std=c++11 # Or -std=c++0x

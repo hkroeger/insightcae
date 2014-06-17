@@ -561,18 +561,32 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double k=3.*pow(uprime, 2)/2.;
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform 1e-10";
+      BC["value"]="uniform "+lexical_cast<string>(k);
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double k=3.*pow(uprime, 2)/2.;
+      double omega=sqrt(k)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform 1.0";
+      BC["value"]="uniform "+lexical_cast<string>(omega);
+    }
+    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+    {
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double k=3.*pow(uprime, 2)/2.;
+      double epsilon=0.09*pow(k, 1.5)/p_.mixingLength();
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(epsilon);
     }
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
     {
+      double nutilda=1e-10; //sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform 1e-10";
+      BC["value"]="uniform "+lexical_cast<string>(nutilda);
     }
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
@@ -1259,7 +1273,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     
     // turbulence quantities, should be handled by turbulence model
     else if ( 
-      ( (field.first=="k") || (field.first=="omega") || (field.first=="nut") ) 
+      ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") || (field.first=="nut") ) 
       && 
       (get<0>(field.second)==scalarField) 
     )

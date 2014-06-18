@@ -683,6 +683,8 @@ void kEpsilon_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties["RASModel"]="kEpsilon";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
+  RASProperties["kMin"]=1e-3;
+  RASProperties["epsilonMin"]=1e-3;
   RASProperties.addSubDictIfNonexistent("kEpsilonCoeffs");
 }
 

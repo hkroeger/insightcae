@@ -437,6 +437,9 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     {
       Info<<"reset crTimes"<<endl;
       crTimes_.reset(new scalarField(size(), this->db().time().value()));
+      scalar rnum=ranGen_();
+      forAll((*crTimes_), fi)
+	(*crTimes_)[fi] += (1.0 - 2.0*rnum)*(*tau_)[fi];
     }
     
     /**

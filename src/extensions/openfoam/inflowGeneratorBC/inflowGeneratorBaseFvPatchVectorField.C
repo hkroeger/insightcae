@@ -226,7 +226,27 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     }
     if (this->db().time().outputTime()) writeStateVisualization(0, fluctuations);
     
-    fixedValueFvPatchField<vector>::operator==(Umean_ + fluctuations);
+    vectorField turbField = Umean_ + fluctuations;
+    
+    scalar meanflux = gSum(Umean_ & patch().Sf());
+    scalar turbflux = gSum(turbField & patch().Sf());
+    scalar rescale = meanflux/turbflux;
+//     scalar rescale=1.0;
+//     turbField.component(vector::X) = pos(turbField&patch().Sf()) * turbField.component(vector::X);
+//     scalar finalflux = gSum((rescale*turbField) & patch().Sf());
+//     Info<<meanflux<<", "<<turbflux<<", "<<finalflux<<endl;
+    Info<<" Inflow generator ["<<patch().name()<<"]: scaling turbulent fluctuations by "<< rescale << " to ensure constant flux across boundary."<<endl;
+
+//     scalar meanflux = gSum(Umean_ & patch().Sf());
+//     scalar turbflux = gSum(turbField & patch().Sf());
+//     vector addvel = vector((turbflux-meanflux) / gSum(patch().magSf()), 0, 0);
+//     scalar finalflux = gSum((turbField+addvel) & patch().Sf());
+//     Info<<meanflux<<", "<<turbflux<<", "<<addvel<<", "<<finalflux<<endl;
+//     Info<<"adding velocity "<< addvel << " to ensure constant flux across boundary."<<endl;
+    
+    
+    
+    fixedValueFvPatchField<vector>::operator==( turbField * rescale /*+addvel*/);
     curTimeIndex_ = this->db().time().timeIndex();
   }
 

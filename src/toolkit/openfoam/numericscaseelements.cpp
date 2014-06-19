@@ -227,7 +227,7 @@ OFDictData::dict GAMGSolverSetup(double tol, double reltol)
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   d["smoother"]="DICGaussSeidel";
-  d["nPreSweeps"]=0;
+  d["nPreSweeps"]=2;
   d["nPostSweeps"]=2;
   d["cacheAgglomeration"]="on";
   d["agglomerator"]="faceAreaPair";
@@ -245,7 +245,7 @@ OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
   OFDictData::dict pd;
   pd["preconditioner"]="GAMG";
   pd["smoother"]="DICGaussSeidel";
-  pd["nPreSweeps"]=0;
+  pd["nPreSweeps"]=2;
   pd["nPostSweeps"]=2;
   pd["cacheAgglomeration"]="on";
   pd["agglomerator"]="faceAreaPair";

@@ -119,6 +119,11 @@ vector gaussianSpot::fluctuation(const StructureParameters& pa, const vector& x)
           *exp(- 4.0*magSqr(delta_x&e2)  / sqr(l2) )
           *exp(- 4.0*magSqr(delta_x&e3)  / sqr(l3) )
           * pTraits<vector>::one;
+	  
+// #warning rotation depending on sign!
+//       if ((delta_x&e1)<0.0) f[0]*=-1.0;
+//       if ((delta_x&e2)<0.0) f[1]*=-1.0;
+//       if ((delta_x&e3)<0.0) f[2]*=-1.0;
 
       return cmptMultiply(epsilon_, f) / sqrt( 0.0820292 );
     }

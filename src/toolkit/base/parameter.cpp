@@ -251,6 +251,19 @@ SelectionParameter::SelectionParameter(int value, const SelectionParameter::Item
 {
 }
 
+SelectionParameter::SelectionParameter(const std::string& key, const SelectionParameter::ItemList& items, const std::string& description)
+: SimpleParameter< int , IntName>(0, description),
+  items_(items)
+{
+  ItemList::const_iterator i=std::find(items_.begin(), items_.end(), key);
+  if (i!=items_.end()) 
+  {
+    value_ = i - items_.begin();
+  }
+  else
+    value_=0;
+}
+
 SelectionParameter::~SelectionParameter()
 {
 }

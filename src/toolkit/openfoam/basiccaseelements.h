@@ -360,6 +360,21 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
+class SpalartAllmaras_RASModel
+: public RASModel
+{
+protected:
+  void addFields();
+  
+public:
+  declareType("SpalartAllmaras");
+  
+  SpalartAllmaras_RASModel(OpenFOAMCase& c);
+  SpalartAllmaras_RASModel(const ConstrP& c);
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+};
+
 class LEMOSHybrid_RASModel
 : public kOmegaSST_RASModel
 {

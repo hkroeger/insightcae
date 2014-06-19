@@ -98,7 +98,12 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("turbulenceModel",new SelectionParameter(0, turbulenceModel::factoryToC(), "Turbulence model"))
+	    ("turbulenceModel",new SelectionParameter
+	      (
+		kOmegaSST2_RASModel::typeName, 
+		turbulenceModel::factoryToC(), 
+		"Turbulence model"
+	      ))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Parameters of the fluid"

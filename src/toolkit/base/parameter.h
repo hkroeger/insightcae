@@ -239,6 +239,7 @@ public:
   
   SelectionParameter(const std::string& description);
   SelectionParameter(int value, const ItemList& items, const std::string& description);
+  SelectionParameter(const std::string& key, const ItemList& items, const std::string& description);
   virtual ~SelectionParameter();
   
   inline ItemList& items() { return items_; };

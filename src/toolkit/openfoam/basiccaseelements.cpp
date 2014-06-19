@@ -729,6 +729,79 @@ bool kEpsilon_RASModel::addIntoFieldDictionary(const std::string& fieldname, con
   return false;
 }
 
+defineType(SpalartAllmaras_RASModel);
+addToFactoryTable(turbulenceModel, SpalartAllmaras_RASModel, turbulenceModel::ConstrP);
+
+void SpalartAllmaras_RASModel::addFields()
+{
+  OFcase().addField("nuTilda", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  if (OFcase().isCompressible())
+  {
+    OFcase().addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+    OFcase().addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+  }
+  else
+  {
+    OFcase().addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  }
+}
+
+SpalartAllmaras_RASModel::SpalartAllmaras_RASModel(OpenFOAMCase& c)
+: RASModel(c)
+{
+  addFields();
+}
+  
+SpalartAllmaras_RASModel::SpalartAllmaras_RASModel(const turbulenceModel::ConstrP& c)
+: RASModel(c)
+{
+  addFields();
+}
+  
+void SpalartAllmaras_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  RASModel::addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  RASProperties["RASModel"]="SpalartAllmaras";
+  RASProperties["turbulence"]="true";
+  RASProperties["printCoeffs"]="true";
+  RASProperties.addSubDictIfNonexistent("SpalartAllmarasCoeffs");
+}
+
+bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+{
+//   std::string pref="";
+//   if (OFcase().isCompressible()) pref="compressible::";
+  
+  if (fieldname == "nuTilda")
+  {
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]=OFDictData::data("uniform 0");
+    return true;
+  }
+  else if (fieldname == "nut")
+  {
+    BC["type"]=OFDictData::data("nutUSpaldingWallFunction");
+    BC["value"]=OFDictData::data("uniform 0");
+    return true;
+  }
+//   else if (fieldname == "mut")
+//   {
+//     BC["type"]=OFDictData::data("mutkWallFunction");
+//     BC["value"]=OFDictData::data("uniform 1e-10");
+//     return true;
+//   }
+//   else if (fieldname == "alphat")
+//   {
+//     BC["type"]=OFDictData::data(pref+"alphatWallFunction");
+//     BC["value"]=OFDictData::data("uniform 1e-10");
+//     return true;
+//   }
+  
+  return false;
+}
+
 defineType(LEMOSHybrid_RASModel);
 addToFactoryTable(turbulenceModel, LEMOSHybrid_RASModel, turbulenceModel::ConstrP);
 
@@ -910,4 +983,5 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
 }
 
 }
+
 

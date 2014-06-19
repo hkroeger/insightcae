@@ -1259,7 +1259,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     
     // turbulence quantities, should be handled by turbulence model
     else if ( 
-      ( (field.first=="k") || (field.first=="omega") || (field.first=="nut") ) 
+      ( (field.first=="k") || (field.first=="omega") || (field.first=="nut") || (field.first=="nuTilda") ) 
       && 
       (get<0>(field.second)==scalarField) 
     )

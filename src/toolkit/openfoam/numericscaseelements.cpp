@@ -382,6 +382,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
   solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
@@ -391,6 +392,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["k"]=0.7;
     relax["omega"]=0.7;
     relax["epsilon"]=0.7;
+    relax["nuTilda"]=0.7;
   }
   else
   {
@@ -400,6 +402,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     eqnRelax["k"]=0.7;
     eqnRelax["omega"]=0.7;
     eqnRelax["epsilon"]=0.7;
+    eqnRelax["nuTilda"]=0.7;
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
   }
@@ -480,12 +483,14 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.1);
   
   solvers["pFinal"]=GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
   PIMPLE["nCorrectors"]=p_.nCorrectors();
@@ -535,6 +540,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       relax["k"]=0.7;
       relax["omega"]=0.7;
       relax["epsilon"]=0.7;
+      relax["nuTilda"]=0.7;
     }
     else
     {
@@ -544,6 +550,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       eqnRelax["k"]=0.7;
       eqnRelax["omega"]=0.7;
       eqnRelax["epsilon"]=0.7;
+      eqnRelax["nuTilda"]=0.7;
       relax["fields"]=fieldRelax;
       relax["equations"]=eqnRelax;
     }
@@ -652,6 +659,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["omega"]=stdAsymmSolverSetup(1e-12, 0);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("PISO");
   SIMPLE["nCorrectors"]=OFDictData::data( 2 );
@@ -734,11 +742,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["k"]=smoothSolverSetup(1e-8, 0);
   solvers["omega"]=smoothSolverSetup(1e-12, 0);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
+  solvers["nuTilda"]=smoothSolverSetup(1e-8, 0);
   
   solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
+  solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
   double Urelax=0.7;
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -788,6 +798,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,k)"]="Gauss linearUpwind "+suf;
   div["div(phi,epsilon)"]="Gauss linearUpwind "+suf;
   div["div(phi,omega)"]="Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
   div["div(phi,R)"]="Gauss linearUpwind "+suf;
   div["div(R)"]="Gauss linear";
   div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
@@ -1004,6 +1015,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["h"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.1);
   
   solvers["pFinal"]=stdSymmSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
@@ -1011,6 +1023,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["hFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   solvers["Yi"]=stdAsymmSolverSetup(1e-8, 0);
 
@@ -1063,6 +1076,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       relax["h"]=0.7;
       relax["Yi"]=0.7;
       relax["omega"]=0.7;
+      relax["nuTilda"]=0.7;
       relax["epsilon"]=0.7;
     }
     else
@@ -1074,6 +1088,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
       eqnRelax["h"]=0.7;
       eqnRelax["Yi"]=0.7;
       eqnRelax["omega"]=0.7;
+      eqnRelax["nuTilda"]=0.7;
       eqnRelax["epsilon"]=0.7;
       relax["fields"]=fieldRelax;
       relax["equations"]=eqnRelax;

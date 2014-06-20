@@ -428,12 +428,12 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) pref="bounded ";
   if (OFversion()<=160) suf=" cellLimited leastSquares 1"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
-  div["div(phi,U)"]=pref+"Gauss linearUpwindV"+suf;
-  div["div(phi,k)"]=pref+"Gauss upwind";
-  div["div(phi,omega)"]=pref+"Gauss upwind";
-  div["div(phi,nuTilda)"]=pref+"Gauss upwind";
-  div["div(phi,epsilon)"]=pref+"Gauss upwind";
-  div["div(phi,R)"]=pref+"Gauss upwind";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV"+suf;
+  div["div(phi,k)"]	=	pref+"Gauss linearUpwind"+suf;
+  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind"+suf;
+  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind"+suf;
+  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind"+suf;
+  div["div(phi,R)"]	=	pref+"Gauss linearUpwind"+suf;
   div["div(R)"]="Gauss linear";
       
   div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
@@ -791,17 +791,17 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf="cellLimited leastSquares 1";
   else 
     suf="grad(U)";
-  div["div(rho*phi,U)"]="Gauss linearUpwind "+suf;
-  div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
-  div["div(phi,alpha)"]="Gauss vanLeer";
-  div["div(phirb,alpha)"]="Gauss interfaceCompression";
-  div["div(phi,k)"]="Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]="Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]="Gauss linearUpwind "+suf;
-  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
-  div["div(phi,R)"]="Gauss linearUpwind "+suf;
-  div["div(R)"]="Gauss linear";
-  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
+  div["div(rho*phi,U)"]		= "Gauss linearUpwind "+suf;
+  div["div(rhoPhi,U)"]		= "Gauss linearUpwind "+suf; // for interPhaseChangeFoam
+  div["div(phi,alpha)"]		= "Gauss vanLeer";
+  div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
+  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
+  div["div(R)"]			= "Gauss linear";
   if (OFversion()>=210)
     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
   else
@@ -933,11 +933,11 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf="cellLimited leastSquares 1";
   else 
     suf="grad(U)";
-  div["div(phi,k)"]="Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]="Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]="Gauss linearUpwind "+suf;
-  div["div(phi,R)"]="Gauss linearUpwind "+suf;
-  div["div(phi,nuTilda)"]="Gauss linearUpwind "+suf;
+  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
 
 }
 

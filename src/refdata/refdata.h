@@ -39,6 +39,7 @@ public:
   
 protected:
   DataSetList datasets_;
+  bool ranInitialize_;
   PyThreadState* mainThreadState;
   
 public:

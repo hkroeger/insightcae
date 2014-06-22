@@ -97,7 +97,12 @@ static struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
-    if (!baseT::factories_) baseT::factories_=new baseT::FactoryTable(); \
+    if (!baseT::factories_) \
+    {\
+     /*std::cout<<"creating factory of " #baseT <<std::endl;*/\
+     baseT::factories_=new baseT::FactoryTable(); \
+    } \
+      \
     std::string key(specT::typeName); \
     /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
     /*baseT::factories_->insert(key, new insight::SpecFactory<baseT, specT, paramS>() );*/ \
@@ -110,7 +115,11 @@ static struct add##specT##To##baseT##FactoryTable \
     baseT::FactoryTable::iterator k=baseT::factories_->find(key); \
     delete k->second; \
     baseT::factories_->erase(k); \
-    if (baseT::factories_->size()==0) delete baseT::factories_;\
+    if (baseT::factories_->size()==0) \
+    { \
+     /*std::cout << "deleting factory table of " #baseT << std::endl;*/ \
+     delete baseT::factories_;\
+    }\
   }\
 } v_add##specT##To##baseT##FactoryTable;
 

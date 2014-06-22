@@ -59,21 +59,35 @@ ReferenceDataLibrary::ReferenceDataLibrary()
         if (exists(mod))
 	{
 	  datasets_[itr->path().filename().string()]=mod;
-	  //cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
 	}
       }
     }
   }
 
-  Py_Initialize();
-  PyEval_InitThreads();
-  mainThreadState = PyEval_SaveThread();
+  if (!Py_IsInitialized())
+  {
+//     std::cout<<"Init python"<<std::endl;
+    Py_Initialize();
+    PyEval_InitThreads();
+    mainThreadState = PyEval_SaveThread();
+    ranInitialize_=true;
+  }
+  else
+  {
+//     std::cout<<"Skipped python init"<<std::endl;
+    ranInitialize_=false;
+  }
+//   std::cout<<"init python done"<<std::endl;
 }
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
-  PyEval_RestoreThread(mainThreadState);
-  Py_Finalize();
+  if (ranInitialize_)
+  {
+    PyEval_RestoreThread(mainThreadState);
+    Py_Finalize();
+  }
 }
   
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const

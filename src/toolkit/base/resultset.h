@@ -25,6 +25,7 @@
 #include "base/linearalgebra.h"
 
 #include <string>
+#include <vector>
 
 #include "boost/ptr_container/ptr_map.hpp"
 #include "boost/filesystem.hpp"
@@ -268,6 +269,7 @@ struct PlotCurve
   std::string plotcmd_;
   
   PlotCurve();
+  PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
 };
 

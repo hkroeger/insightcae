@@ -97,6 +97,12 @@ arma::mat linearRegression(const arma::mat& y, const arma::mat& x);
 
 arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder=0);
 
+/**
+ * evaluate polynomial
+ * coeffs: coefficients, highest order coefficient first
+ */
+double evalPolynomial(double x, const arma::mat& coeffs);
+
 class RegressionModel
 {
 public:

@@ -115,6 +115,17 @@ arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxor
   return linearRegression(y, xx);
 }
 
+double evalPolynomial(double x, const arma::mat& coeffs)
+{
+  double y=0;
+  for (int k=0; k<coeffs.n_elem; k++)
+  {
+    int p=coeffs.n_elem-k;
+    y+=coeffs(k)*pow(x,p);
+  }
+  return y;
+}
+
 typedef boost::tuple<RegressionModel&, const arma::mat&, const arma::mat&> RegressionData;
 
 double f_nonlinearRegression(const gsl_vector * p, void * params)

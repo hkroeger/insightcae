@@ -459,6 +459,15 @@ PlotCurve::PlotCurve()
 {
 }
 
+PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd)
+: xy_
+  (
+    join_rows( arma::mat(x.data(), x.size(), 1), arma::mat(y.data(), y.size(), 1) )
+  ), 
+  plotcmd_(plotcmd)
+{
+}
+
 PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plotcmd)
 : xy_(xy), plotcmd_(plotcmd)
 {}

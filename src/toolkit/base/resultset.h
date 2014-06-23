@@ -160,6 +160,15 @@ public:
    const std::string& unit
   );
   
+  TabularResult
+  (
+   const std::vector<std::string>& headings, 
+   const arma::mat& rows, 
+   const std::string& shortDesc, 
+   const std::string& longDesc,
+   const std::string& unit
+  );
+  
   inline const std::vector<std::string>& headings() const { return headings_; }
   inline const Table& rows() const { return rows_; }
   
@@ -168,6 +177,7 @@ public:
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }
   
   virtual void writeGnuplotData(std::ostream& f) const;
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;

@@ -188,6 +188,29 @@ TabularResult::TabularResult
   setTableData(headings, rows);
 }
 
+TabularResult::TabularResult
+(
+  const std::vector<std::string>& headings, 
+  const arma::mat& rows,
+  const std::string& shortDesc, 
+  const std::string& longDesc,
+  const std::string& unit
+)
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
+{
+  Table t;
+  for (int i=0; i<rows.n_rows; i++)
+  {
+    Row r;
+    for (int j=0; j<rows.n_cols; j++)
+    {
+      r.push_back(rows(i,j));
+    }
+    t.push_back(r);
+  }
+  setTableData(headings, t);
+}
+
 arma::mat TabularResult::toMat() const
 {
   arma::mat res;
@@ -231,11 +254,16 @@ ResultElement* TabularResult::clone() const
   return new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_);
 }
 
+void TabularResult::writeLatexHeaderCode(ostream& f) const
+{
+  insight::ResultElement::writeLatexHeaderCode(f);
+  f<<"\\usepackage{longtable}\n";
+}
 
 void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
   f<<
-  "\\begin{tabular}{";
+  "\\begin{longtable}{";
   BOOST_FOREACH(const std::string& h, headings_)
   {
     f<<"c";
@@ -258,7 +286,7 @@ void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::file
       f<<*j;
     }
   }
-  f<<"\\end{tabular}\n";
+  f<<"\\end{longtable}\n";
 }
 
 defineType(AttributeTableResult);
@@ -330,7 +358,7 @@ ResultElementPtr polynomialFitResult
     new TabularResult
     (
       header, 
-      list_of<TabularResult::Row>(cr),
+      list_of<TabularResult::Row>(cr).convert_to_container<TabularResult::Table>(),
       shortDesc, longDesc, ""
     )
   );

@@ -329,7 +329,7 @@ void PipeBase::createCase
   ));
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_name("averaging")
+    .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U"))
     .set_timeStart(inittime*T_)
   ));

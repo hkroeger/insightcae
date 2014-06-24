@@ -407,7 +407,7 @@ void ChannelBase::createCase
     .set_patches( list_of<string>("walls") )
   ));
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_name("averaging")
+    .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
     .set_timeStart(inittime*T_)
   ));

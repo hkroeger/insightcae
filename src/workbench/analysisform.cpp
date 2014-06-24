@@ -95,7 +95,7 @@ void AnalysisForm::onSaveParameters()
   QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())
   {
-    parameters_.saveToFile(fn.toStdString());
+    parameters_.saveToFile(fn.toStdString(), analysis_->type());
   }
 }
 

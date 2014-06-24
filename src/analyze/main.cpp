@@ -3,6 +3,7 @@
 #include "base/linearalgebra.h"
 #include "base/analysis.h"
 
+#include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -29,6 +30,7 @@ int main(int argc, char *argv[])
   desc.add_options()
       ("help", "produce help message")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
+      ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
       ("input-file,i", po::value< StringList >(),"Specifies input file.")
   ;  
   
@@ -86,11 +88,22 @@ int main(int argc, char *argv[])
     analysis->setDefaults();
     
     boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
+    std::string filestem = boost::filesystem::path(fn).stem().string();
     cout<< "Executing analysis in directory "<<dir<<endl;
     analysis->setExecutionPath(dir);
 
     ParameterSet parameters = analysis->defaultParameters();
     parameters.readFromNode(doc, *rootnode, dir);
+    
+    if (vm.count("merge"))
+    {
+      StringList ists=vm["merge"].as<StringList>();
+      BOOST_FOREACH(const string& ist, ists)
+      {
+	ParameterSet to_merge;
+	parameters.readFromFile(ist);
+      }
+    }
     
     if (vm.count("bool"))
     {
@@ -111,7 +124,7 @@ int main(int argc, char *argv[])
     TextProgressDisplayer pd;
     ResultSetPtr results = (*analysis)(&pd);
 
-    boost::filesystem::path outpath=analysis->executionPath()/"report.tex";
+    boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
     results->writeLatexFile( outpath );
   }
   catch (insight::Exception e)

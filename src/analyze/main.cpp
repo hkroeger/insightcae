@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
   po::options_description desc("Allowed options");
   desc.add_options()
       ("help", "produce help message")
+      ("workdir,w", po::value<std::string>(), "execution directory")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
       ("input-file,i", po::value< StringList >(),"Specifies input file.")
@@ -88,6 +89,10 @@ int main(int argc, char *argv[])
     analysis->setDefaults();
     
     boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
+    if (vm.count("workdir"))
+    {
+      dir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
+    }
     std::string filestem = boost::filesystem::path(fn).stem().string();
     cout<< "Executing analysis in directory "<<dir<<endl;
     analysis->setExecutionPath(dir);

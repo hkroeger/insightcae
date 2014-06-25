@@ -74,10 +74,10 @@ public:
      */
     int n_removed;
 
-    /**
-     * # structures that induced fluctuations in patch
-     */
-    int n_induced;
+//     /**
+//      * # structures that induced fluctuations in patch
+//      */
+//     int n_induced;
   };
 
 protected:

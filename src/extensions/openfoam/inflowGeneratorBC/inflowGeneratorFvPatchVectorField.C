@@ -66,7 +66,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
 
   vectorField uMean(size(), vector::zero);
   symmTensorField uPrime2Mean(size(), symmTensor::zero);
-  scalar N=0.0;
+//   scalar N=0.0;
   label N_total=0;
   scalar A=gSum(patch().magSf()), V=0.0;
   
@@ -88,14 +88,14 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningF
     
     uPrime2Mean += sqr(uMean);
     uMean = alpha*uMean + beta*u;
-    N = alpha*N + beta*scalar(info.n_induced);
+//     N = alpha*N + beta*scalar(info.n_induced);
     uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
     
     Info<<"Averages: uMean="
 	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
 	<<" \t R^2="
 	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
-	<< "\t N="<<N<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
+	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
 		    
     if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
   }
@@ -534,7 +534,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     tmp<vectorField> tfluctuations(new vectorField(size(), pTraits<vector>::zero));
     vectorField& fluctuations = tfluctuations();
 
-    Map<label> induced;
+    //Map<label> induced;
     forAll(*this, fi)
     {
       
@@ -546,11 +546,11 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       forAll(vortonsGlobal, j)
       {
 	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
-	if (mag(u)>SMALL) induced.insert(j, 0);
+	//if (mag(u)>SMALL) induced.insert(j, 0);
 	fluctuations[fi] += u / sqrt(c_[fi]);
       }
     }
-    label n_induced=induced.size();
+    //label n_induced=induced.size();
     
     if (debug) Info<<"Convecting and removing structures."<<endl;
     forAll(vortons_, j)
@@ -575,18 +575,18 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     reduce(n_generated, sumOp<label>());
     reduce(n_removed, sumOp<label>());
     reduce(n_total, sumOp<label>());
-    reduce(n_induced, sumOp<label>());
+    //reduce(n_induced, sumOp<label>());
     
     Info<<" Inflow generator ["<<patch().name()<<"]: "
       "Generated "<<n_generated<<
       ", removed "<<n_removed<<
       " now total "<<n_total<<
-      ", contributions by "<<n_induced<<
+      //", contributions by "<<n_induced<<
       endl;
 
     if (info) 
     {
-      info->n_induced=n_induced;
+      //info->n_induced=n_induced;
       info->n_removed=n_removed;
       info->n_generated=n_generated;
       info->n_total=n_total;

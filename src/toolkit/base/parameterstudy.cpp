@@ -243,7 +243,7 @@ insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* dis
   const ParameterSet& p = *parameters_;
 
   path dir = setupExecutionEnvironment();
-  p.saveToFile(dir/"parameters.ist", type());
+  //p.saveToFile(dir/"parameters.ist", type());
 
   setupQueue();
   processQueue(displayer);

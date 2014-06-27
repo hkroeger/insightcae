@@ -258,10 +258,12 @@ void TabularResult::writeLatexHeaderCode(ostream& f) const
 {
   insight::ResultElement::writeLatexHeaderCode(f);
   f<<"\\usepackage{longtable}\n";
+  f<<"\\usepackage{placeins}\n";
 }
 
 void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
 {
+
   f<<
   "\\begin{longtable}{";
   BOOST_FOREACH(const std::string& h, headings_)
@@ -269,6 +271,7 @@ void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::file
     f<<"c";
   }
   f<<"}\n";
+  
   for (std::vector<std::string>::const_iterator i=headings_.begin(); i!=headings_.end(); i++)
   {
     if (i!=headings_.begin()) f<<" & ";
@@ -276,6 +279,9 @@ void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::file
   }
   f<<
   "\\\\\n"
+  "\\hline\n"
+  "\\endfirsthead\n"
+  "\\endhead\n"
   "\\hline\n";
   for (TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++)
   {
@@ -286,7 +292,9 @@ void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::file
       f<<*j;
     }
   }
-  f<<"\\end{longtable}\n";
+  f<<
+  "\\end{longtable}\n"
+  "\\newpage\n";  // page break algorithm fails after too short "longtable"
 }
 
 defineType(AttributeTableResult);

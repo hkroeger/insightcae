@@ -196,7 +196,7 @@ void AnalysisWorkerThread::operator()()
     
     // run analysis and transfer results into given ResultSet object
     CollectingProgressDisplayer pd(boost::get<0>(ai), displayer_);
-    boost::get<2>(ai)->transfer( *(*boost::get<1>(ai))(&pd) );
+    boost::get<2>(ai)->transfer( *(*boost::get<1>(ai))(&pd) );  // call operator() from analysis object
     
     // Make sure we can be interrupted
     boost::this_thread::interruption_point();

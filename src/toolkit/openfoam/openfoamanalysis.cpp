@@ -257,7 +257,7 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
 
   if (!p.getBool("run/evaluateonly"))
   {
-    p.saveToFile(dir/"parameters.ist", type());
+    //p.saveToFile(dir/"parameters.ist", type());
     
     {
       OpenFOAMCase meshCase(ofe);
@@ -323,7 +323,7 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
   ParameterSet& p = *parameters_;    
 
   path dir = setupExecutionEnvironment();
-  p.saveToFile(dir/"parameters.ist", type());
+  //p.saveToFile(dir/"parameters.ist", type());
 
   {  
     OpenFOAMAnalysis* base_case=static_cast<OpenFOAMAnalysis*>(baseAnalysis_.get());

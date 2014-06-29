@@ -163,6 +163,13 @@ public:
    * at multiple locations given in x
    */
   arma::mat operator()(const arma::mat& x) const;
+
+  /**
+   * interpolates all y values (row vector) 
+   * at multiple locations given in x
+   * and return matrix with x as first column
+   */
+  arma::mat xy(const arma::mat& x) const;
 };
 
 }

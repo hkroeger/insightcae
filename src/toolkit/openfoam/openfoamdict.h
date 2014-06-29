@@ -236,7 +236,7 @@ struct OpenFOAMDictParser
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
 	rstring = '"' >> *(~qi::char_('"')) >> '"';
 	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
-	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
+	rentry = ( qi::no_skip[qi::int_] | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
 	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{')
 	      >> *(rpair) >> qi::lit('}');

@@ -98,13 +98,13 @@ RefinementRegion::RefinementRegion(Parameters const& p)
 void RefinementRegion::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict geodict;
-  setGeometrySubdict(geodict);
-  sHMDict.subDict("geometry")[p_.name()]=geodict;
+  if (setGeometrySubdict(geodict))
+    sHMDict.subDict("geometry")[p_.name()]=geodict;
 
   OFDictData::dict castdict;
-  castdict["mode"]="inside";
+  castdict["mode"]=p_.mode();
   OFDictData::list level;
-  level.push_back(1e15);
+  level.push_back(p_.distance());
   level.push_back(p_.level());
   OFDictData::list levels;
   levels.push_back(level);
@@ -119,16 +119,34 @@ RefinementBox::RefinementBox(const RefinementBox::Parameters& p)
 {
 }
 
-void RefinementBox::setGeometrySubdict(OFDictData::dict& d) const
+bool RefinementBox::setGeometrySubdict(OFDictData::dict& d) const
 {
   d["type"]="searchableBox";
   d["min"]=OFDictData::to_OF(p_.min());
   d["max"]=OFDictData::to_OF(p_.max());
+  return true;
 }
 
 Feature* RefinementBox::clone() const
 {
   return new RefinementBox(p_);
+}
+
+NearSurfaceRefinement::NearSurfaceRefinement(const RefinementRegion::Parameters& p)
+: RefinementRegion(p)
+{
+}
+
+bool NearSurfaceRefinement::setGeometrySubdict(OFDictData::dict& d) const
+{
+  // do nothing
+  return false;
+}
+
+
+Feature* NearSurfaceRefinement::clone() const
+{
+  return new NearSurfaceRefinement(p_);
 }
 
 
@@ -140,7 +158,7 @@ void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
   castellatedCtrls["maxGlobalCells"]=10000000;
   castellatedCtrls["minRefinementCells"]=10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
-  castellatedCtrls["nCellsBetweenLevels"]=1;
+  castellatedCtrls["nCellsBetweenLevels"]=2;
   castellatedCtrls["resolveFeatureAngle"]=30.0;
   castellatedCtrls["allowFreeStandingZoneFaces"]=true;
 }

@@ -406,11 +406,13 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
   xml_node<>* child = findNode(node, name);
   if (child)
   {
+    values_.clear();
     std::istringstream iss(child->first_attribute("values")->value());
     while (!iss.eof())
     {
       double v;
       iss >> v;
+      //std::cout<<"read value="<<v<<std::endl;
       if (iss.fail()) break;
       values_.insert(v);
     }

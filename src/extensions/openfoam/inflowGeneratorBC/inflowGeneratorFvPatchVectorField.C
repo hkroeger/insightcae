@@ -410,18 +410,31 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
   Info<<"Max spots per timestep: "<<(this->db().time().deltaTValue() / min(*tau_))<<endl;
 }
 
+
 template<class TurbulentStructure>
-autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorFvPatchVectorField<TurbulentStructure>::buildTree() const
+void inflowGeneratorFvPatchVectorField<TurbulentStructure>::induceInNeighbours
+(
+  vectorField& fluctuations, 
+  typename TurbulentStructure& v, 
+  const typename TurbulentStructure::StructureParameters& sp, 
+  label faceI, 
+  labelHashSet& visited
+) const
 {
-    Info << "rebuilding tree" <<endl;
-    pointField vloc(vortons_.size());
-    if (vortons_.size()>0)
+  vector u=v.fluctuation(sp, patch().Cf()[faceI]);
+  fluctuations[faceI] += u / sqrt(c_[fi]);
+  if (mag(u)>SMALL)
+  {
+    forAll(this->patch().patch().faceFaces()[faceI], j)
     {
-      forAll(vortons_, vi) vloc[vi]=vortons_[vi];
-      return buildTree(vloc);
+      label nfi=this->patch().patch().faceFaces()[faceI][j];
+      if (!visited.found(nfi))
+      {
+	visited.insert(nfi, 0);
+	induceInNeighbours(fluctuations, v, sp, nfi, visited);
+      }
     }
-    else
-      return autoPtr<indexedOctree<treeDataPoint> > ();
+  }
 }
 
 template<class TurbulentStructure>
@@ -484,9 +497,9 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 )
       {
-	point pf = randomFacePosition(fi) - Umean*( (*crTimes_)[fi] - t );
+	point pf = randomFacePosition(fi); ;
 	
-	TurbulentStructure snew(ranGen_, pf, Umean, L_[fi], minL);
+	TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, L_[fi], minL);
 	snew.randomize(ranGen_);
 	
 	// append new structure to the end of the list
@@ -545,11 +558,14 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       // superimpose turbulent velocity in affected faces
       forAll(vortonsGlobal, j)
       {
-	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
-	//if (mag(u)>SMALL) induced.insert(j, 0);
-	fluctuations[fi] += u / sqrt(c_[fi]);
+	labelHashSet visited;
+	induceInNeighbours(fluctuations, vortonsGlobal[j], structureParameters_, fi, visited);
+// 	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
+// 	fluctuations[fi] += u / sqrt(c_[fi]);
       }
     }
+
+
     //label n_induced=induced.size();
     
     if (debug) Info<<"Convecting and removing structures."<<endl;

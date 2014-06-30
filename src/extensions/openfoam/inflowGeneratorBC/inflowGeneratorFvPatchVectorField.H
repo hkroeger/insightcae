@@ -47,6 +47,7 @@ SourceFiles
 
 #include "indexedOctree.H"
 #include "treeDataPoint.H"
+#include "treeDataFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -89,7 +90,8 @@ protected:
     
 
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
-    autoPtr<indexedOctree<treeDataPoint> > buildTree() const;
+    
+    void induceInNeighbours(vectorField& fluctuations, TurbulentStructure& v, const typename TurbulentStructure::StructureParameters& sp, label faceI, labelHashSet& visited) const;
     
 public:
     virtual void computeConditioningFactor();

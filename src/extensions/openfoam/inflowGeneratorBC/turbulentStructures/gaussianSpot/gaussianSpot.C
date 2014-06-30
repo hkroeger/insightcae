@@ -89,8 +89,8 @@ gaussianSpot::gaussianSpot
   epsilon_(s)
 {}
 
-gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L, scalar minL)
-: turbulentStructure(r, loc, v, L, minL),
+gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL)
+: turbulentStructure(r, loc, initialDelta, v, L, minL),
   epsilon_(pTraits<vector>::zero)
 {
 }

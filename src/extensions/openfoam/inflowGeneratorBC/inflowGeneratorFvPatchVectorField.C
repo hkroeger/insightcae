@@ -415,23 +415,30 @@ template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::induceInNeighbours
 (
   vectorField& fluctuations, 
-  typename TurbulentStructure& v, 
+  TurbulentStructure& v, 
   const typename TurbulentStructure::StructureParameters& sp, 
   label faceI, 
-  labelHashSet& visited
+  labelList& visited,
+  label& depth
 ) const
 {
-  vector u=v.fluctuation(sp, patch().Cf()[faceI]);
-  fluctuations[faceI] += u / sqrt(c_[fi]);
+  depth++;
+  if (faceI<0) return;
+  
+  vector u = v.fluctuation(sp, patch().Cf()[faceI]);
+  
   if (mag(u)>SMALL)
   {
+    
+    fluctuations[faceI] += u / sqrt(c_[faceI]);
+    visited[faceI]=1;
+    
     forAll(this->patch().patch().faceFaces()[faceI], j)
     {
       label nfi=this->patch().patch().faceFaces()[faceI][j];
-      if (!visited.found(nfi))
+      if (!visited[nfi])
       {
-	visited.insert(nfi, 0);
-	induceInNeighbours(fluctuations, v, sp, nfi, visited);
+	induceInNeighbours(fluctuations, v, sp, nfi, visited, depth);
       }
     }
   }
@@ -499,7 +506,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       {
 	point pf = randomFacePosition(fi); ;
 	
-	TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, L_[fi], minL);
+	TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, L_[fi], minL, fi);
 	snew.randomize(ranGen_);
 	
 	// append new structure to the end of the list
@@ -548,22 +555,40 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     vectorField& fluctuations = tfluctuations();
 
     //Map<label> induced;
-    forAll(*this, fi)
-    {
+//     forAll(*this, fi)
+//     {
       
 // #warning Only valid for hat spots!
 //       scalar k=1./81.;
 //       scalar f=sqrt(1. /k / c_[fi]);
       
       // superimpose turbulent velocity in affected faces
+//     label mina=INT_MAX, maxa=-INT_MAX;
+    labelList visited(size());
       forAll(vortonsGlobal, j)
       {
-	labelHashSet visited;
-	induceInNeighbours(fluctuations, vortonsGlobal[j], structureParameters_, fi, visited);
+	visited=0;
+	label depth=0;
+	induceInNeighbours
+	(
+	  fluctuations, 
+	  vortonsGlobal[j], 
+	  structureParameters_, 
+	  vortonsGlobal[j].nearestFace(*this), 
+	  visited,
+	  depth
+	);
+	
+	//Pout<<j<<": "<<depth<<endl;
+	
+	//Pout<<"Vorton "<<j<<" affected "<<visited.size()<<" faces."<<endl;
+// 	mina=std::min(mina, sum(visited));
+// 	maxa=std::max(maxa, sum(visited));
 // 	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
 // 	fluctuations[fi] += u / sqrt(c_[fi]);
       }
-    }
+//       Pout<<"mina="<<mina<<", maxa="<<maxa<<endl;
+//     }
 
 
     //label n_induced=induced.size();

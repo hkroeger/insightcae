@@ -100,7 +100,16 @@ public:
     /**
      * create at some location (during run)
      */
-    turbulentStructure(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL);
+    turbulentStructure
+    (
+      BoostRandomGen&, 
+      const point& p, 
+      const vector& initialDelta, 
+      const vector& v, 
+      const symmTensor& L, 
+      scalar minL,
+      label creaface
+    );
 
     /**
      * copy constructor

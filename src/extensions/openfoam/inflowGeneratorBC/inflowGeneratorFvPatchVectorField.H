@@ -91,7 +91,15 @@ protected:
 
     scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
     
-    void induceInNeighbours(vectorField& fluctuations, TurbulentStructure& v, const typename TurbulentStructure::StructureParameters& sp, label faceI, labelHashSet& visited) const;
+    void induceInNeighbours
+    (
+      vectorField& fluctuations, 
+      TurbulentStructure& v, 
+      const typename TurbulentStructure::StructureParameters& sp,
+      label faceI, 
+      labelList& visited,
+      label& depth
+    ) const;
     
 public:
     virtual void computeConditioningFactor();

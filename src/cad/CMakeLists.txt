@@ -43,7 +43,7 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
   )
 endif()
 
-
+IF(SWIG_FOUND)
 INCLUDE(${SWIG_USE_FILE})
 set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
 FIND_PACKAGE(PythonLibs)
@@ -56,3 +56,4 @@ SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-includeall
 SWIG_ADD_MODULE(cad python ${cad_INTERFACES} ${insightcad_SOURCES})
 SWIG_LINK_LIBRARIES(cad toolkit dxflib ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES})
 set_target_properties(${SWIG_MODULE_cad_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+ENDIF()

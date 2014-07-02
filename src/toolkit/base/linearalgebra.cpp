@@ -167,7 +167,7 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
   try
   {
     const gsl_multimin_fminimizer_type *T = 
-      gsl_multimin_fminimizer_nmsimplex2;
+      gsl_multimin_fminimizer_nmsimplex;
     gsl_multimin_fminimizer *s = NULL;
     gsl_vector *ss, *p;
     gsl_multimin_function minex_func;

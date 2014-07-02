@@ -388,5 +388,10 @@ arma::mat Interpolator::operator()(const arma::mat& x) const
   }
   return result;
 }
+
+arma::mat Interpolator::xy(const arma::mat& x) const
+{
+  return arma::mat(join_rows(x, operator()(x)));
+}
   
 }

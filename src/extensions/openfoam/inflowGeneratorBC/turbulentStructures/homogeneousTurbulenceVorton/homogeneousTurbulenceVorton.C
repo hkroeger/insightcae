@@ -155,9 +155,10 @@ homogeneousTurbulenceVorton::homogeneousTurbulenceVorton
 {
 }
 
-homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(BoostRandomGen& r, const point& loc, const vector& v, const symmTensor& L, scalar minL)
+homogeneousTurbulenceVorton::homogeneousTurbulenceVorton(BoostRandomGen& r, const point& loc, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
+  label creaface)
 :
-    turbulentStructure(r, loc, v, L, minL),
+    turbulentStructure(r, loc, initialDelta, v, L, minL, creaface),
     omegav_(pTraits<vector>::zero)
 {
 }

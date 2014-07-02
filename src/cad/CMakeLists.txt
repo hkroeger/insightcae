@@ -12,12 +12,13 @@ link_directories(${OCC_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} dxflib)
+set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
-set(cadtest_SRCS test.cpp)
-add_executable(cadtest ${cadtest_SRCS})
-target_link_libraries(cadtest insightcad)
+# set(cadtest_SRCS test.cpp)
+# add_executable(cadtest ${cadtest_SRCS})
+# target_link_libraries(cadtest insightcad)
 
 if (INSIGHT_BUILD_WORKBENCH)
 

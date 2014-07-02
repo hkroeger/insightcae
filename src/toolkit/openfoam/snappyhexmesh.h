@@ -82,6 +82,8 @@ class RefinementRegion
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
       ( name, std::string, "" )
+      ( distance, double, 1e15 )
+      ( mode, std::string, "inside" )
       ( level, int, 1 )
   )
 
@@ -91,7 +93,7 @@ protected:
 public:
   RefinementRegion(Parameters const& p = Parameters() );
   
-  virtual void setGeometrySubdict(OFDictData::dict& d) const =0;
+  virtual bool setGeometrySubdict(OFDictData::dict& d) const =0;
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
 };
 
@@ -109,7 +111,16 @@ protected:
 
 public:
   RefinementBox(Parameters const& p = Parameters() );
-  virtual void setGeometrySubdict(OFDictData::dict& d) const;
+  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
+  Feature* clone() const;
+};
+
+class NearSurfaceRefinement
+: public RefinementRegion
+{
+public:
+  NearSurfaceRefinement(Parameters const& p = Parameters() );
+  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
   Feature* clone() const;
 };
 

@@ -78,7 +78,8 @@ void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, co
   
   std::vector<std::string> opts;
   if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
-  ofc.forkCommand(proc, location, "setSet", opts);
+  std::string machine=""; // problems, if job is put into queue system
+  ofc.forkCommand(proc, location, "setSet", opts, &machine);
   BOOST_FOREACH(const std::string& line, cmds)
   {
     proc << line << endl;

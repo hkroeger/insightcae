@@ -50,6 +50,7 @@ SourceFiles
 namespace Foam
 {
 
+class inflowGeneratorBaseFvPatchVectorField;
 class turbulentStructure;
 
 Ostream& operator<<(Ostream&, const turbulentStructure&);
@@ -75,6 +76,16 @@ protected:
   
   point startPoint_; 
 
+  /**
+   * intersection point of motion path and (global) patch
+   */
+  point footPoint_;
+  
+  /**
+   * contain the id of the nearest face on each processor
+   */
+  mutable labelList nearestFace_;
+
 public:    
     /**
      * default
@@ -89,16 +100,34 @@ public:
     /**
      * create at some location (during run)
      */
-    turbulentStructure(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L, scalar minL);
+    turbulentStructure
+    (
+      BoostRandomGen&, 
+      const point& p, 
+      const vector& initialDelta, 
+      const vector& v, 
+      const symmTensor& L, 
+      scalar minL,
+      label creaface
+    );
 
     /**
      * copy constructor
      */
     turbulentStructure(const turbulentStructure& p);
+    
+    label nearestFace(const inflowGeneratorBaseFvPatchVectorField& patch) const;
 
     inline void setVelocity(const vector& x) { velocity_=x; }
     inline void setLocation(const point& x) { point::operator=(x); }
-    inline void initialPositioning(const point& x) { startPoint_=x; point::operator=(x); }
+    
+    inline void initialPositioning(const point& x, const vector& initialDelta) 
+    { 
+      startPoint_=x+initialDelta; 
+      point::operator=(startPoint_); 
+      footPoint_=x; 
+    }
+    
     inline const point& location() const { return *this; }
     inline const vector& velocity() const { return velocity_; }
     inline const vector& L(label i) const 

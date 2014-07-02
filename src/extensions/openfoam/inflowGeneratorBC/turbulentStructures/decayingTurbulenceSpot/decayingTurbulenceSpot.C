@@ -89,8 +89,9 @@ decayingTurbulenceSpot::decayingTurbulenceSpot
   epsilon_(s)
 {}
 
-decayingTurbulenceSpot::decayingTurbulenceSpot(BoostRandomGen& r, const vector& loc, const vector& v, const symmTensor& L, scalar minL)
-: turbulentStructure(r, loc, v, L, minL),
+decayingTurbulenceSpot::decayingTurbulenceSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
+  label creaface)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface),
   epsilon_(pTraits<vector>::zero)
 {
 }

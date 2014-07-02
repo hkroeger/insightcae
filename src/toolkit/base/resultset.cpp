@@ -281,8 +281,7 @@ void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::file
   "\\\\\n"
   "\\hline\n"
   "\\endfirsthead\n"
-  "\\endhead\n"
-  "\\hline\n";
+  "\\endhead\n";
   for (TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++)
   {
     if (i!=rows_.begin()) f<<"\\\\\n";

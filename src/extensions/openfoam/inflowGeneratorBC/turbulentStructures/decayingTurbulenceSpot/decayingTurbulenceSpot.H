@@ -92,7 +92,8 @@ public:
     // Constructors
     decayingTurbulenceSpot();
     decayingTurbulenceSpot(Istream&);
-    decayingTurbulenceSpot(BoostRandomGen&, const point& p, const vector& v, const symmTensor& L, scalar minL);
+    decayingTurbulenceSpot(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
+  label creaface);
     decayingTurbulenceSpot(const decayingTurbulenceSpot& p);
     
     ~decayingTurbulenceSpot();

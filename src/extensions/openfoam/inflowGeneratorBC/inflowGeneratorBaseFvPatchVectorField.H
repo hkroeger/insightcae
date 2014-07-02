@@ -44,6 +44,7 @@ SourceFiles
 
 #include "indexedOctree.H"
 #include "treeDataPoint.H"
+#include "treeDataFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -126,9 +127,11 @@ protected:
         
     vector randomTangentialDeflection(label fi);
 
-    autoPtr<indexedOctree<treeDataPoint> > buildTree(const pointField& vloc) const;
+    typedef autoPtr< indexedOctree<treeDataFace> > FaceSearcher;
+    mutable FaceSearcher boundaryTree_;
     
 public:
+    label getNearestFace(const point& p) const;
     virtual void computeConditioningFactor() =0;
 
     //- Runtime type information

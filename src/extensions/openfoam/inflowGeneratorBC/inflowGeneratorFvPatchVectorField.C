@@ -459,6 +459,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (!globalPatch_.valid())
     {
       globalPatch_.reset(new globalPatch(this->patch().patch()));
+/*
       if (debug>0)
       {
 	vtkSurfaceWriter().write
@@ -469,6 +470,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	  globalPatch_().points(), globalPatch_()
 	);
       }
+*/
     }
     
     if (!crTimes_.get())

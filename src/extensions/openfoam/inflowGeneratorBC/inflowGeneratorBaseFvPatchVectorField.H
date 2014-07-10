@@ -43,6 +43,7 @@ SourceFiles
 #include "Switch.H"
 #include "ListListOps.H"
 #include "PstreamReduceOps.H"
+#include "Tuple2.H"
 
 #include "indexedOctree.H"
 #include "treeDataPoint.H"
@@ -188,19 +189,20 @@ namespace Foam
 class globalPatch
 : public PrimitivePatch<face, List, pointField>
 {
-  pointField globalPoints_;
-  faceList globalFaces_;
+//   pointField globalPoints_;
+//   faceList globalFaces_;
   
   labelList procOfs_;
+  label nfaces_;
   
-  bool createGlobalDataForReuse(const polyPatch& patch);
+  autoPtr< PrimitivePatch<face, List, pointField> > createGlobalPatch(const polyPatch& patch);
 
 public:
   globalPatch(const polyPatch& patch);
   
-  inline label toGlobalFaceI(const label& localFaceI, const label& procI) const
+  inline label toGlobalFaceI(const label& localFaceI) const
   {
-    return procOfs_[procI] + localFaceI;
+    return procOfs_[Pstream::myProcNo()] + localFaceI;
   }
   
   template<class T>
@@ -216,12 +218,29 @@ public:
     Field<T>& res=tres();
     
     label j=0;
-    for(label i=startI; i<endI; i++)
+    for(label i=startI; i<=endI; i++)
     {
       res[j++]=gfield[i];
     }
     
     return tres;
+  }
+  
+  template<class T>
+  void insertLocalFaceValues(const Field<T>& lfield, Field<T>& gfield) const
+  {
+    label pi=Pstream::myProcNo();
+    
+    label startI=procOfs_[pi];
+    label endI=nfaces_-1;
+    if (pi<Pstream::nProcs()-1)
+      endI=procOfs_[pi+1]-1;
+    
+    label j=0;
+    for(label i=startI; i<=endI; i++)
+    {
+      gfield[i]=lfield[j++];
+    }
   }
   
 };
@@ -241,7 +260,7 @@ protected:
   /**
    * if applied value falls below this tolerance, recursive search will be stopped
    */
-  scalar tol_;
+  static const scalar tol_ = 1e-3;
   
   void recursiveapply
   (
@@ -256,6 +275,10 @@ protected:
     
     vector u = v.fluctuation(sp_, patch_.faceCentres()[faceI]);
     
+//     Pout<<"("<<depth<<")";
+//     for(int i=0; i<depth; i++) Pout<<" ";
+//       Pout<<"face="<<faceI<<" : u="<<u<<endl;
+
     if (mag(u)>tol_)
     {
       

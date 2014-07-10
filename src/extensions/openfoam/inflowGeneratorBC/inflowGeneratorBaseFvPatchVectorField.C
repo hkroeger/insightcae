@@ -23,84 +23,122 @@ namespace Foam
 
   
   
-bool globalPatch::createGlobalDataForReuse(const polyPatch& patch)
+autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(const polyPatch& patch)
 {
-  const polyMesh& mesh=patch.boundaryMesh().mesh();
-  const globalMeshData& gmd = mesh.globalData();
-  const globalIndex& gpi = gmd.globalPointNumbering();
+   const polyMesh& mesh=patch.boundaryMesh().mesh();
+//   const globalMeshData& gmd = mesh.globalData();
+//   const globalIndex& gpi = gmd.globalPointNumbering();
   
-  typedef HashTable<point,label> pointHashTable;
-  typedef HashTable<label,label> labelHashTable;
+  IOobject addrHeader
+  (
+      "pointProcAddressing",
+      mesh.facesInstance()/mesh.meshSubDir,
+      mesh,
+      IOobject::MUST_READ
+  );
   
-  pointHashTable usedGlobalPts;
-  labelHashTable usedGlobalPtsIdx;
-  forAll(patch.meshPoints(), lpI)
+  if (addrHeader.headerOk())
   {
-    label gpt=gpi.toGlobal(patch.meshPoints()[lpI]);
-    usedGlobalPts.insert( gpt, patch.localPoints()[lpI] );
-    usedGlobalPtsIdx.insert( gpt, lpI );
-  }
+    // There is a pointProcAddressing file so use it to get labels
+    // on the original mesh
+    Pout<< "globalMeshData::sharedPointGlobalLabels : "
+	<< "Reading pointProcAddressing" << endl;
+
+    labelIOList gpi(addrHeader);
   
-  Pstream::mapCombineGather(usedGlobalPtsIdx, eqOp<label>());
-  Pstream::mapCombineScatter(usedGlobalPtsIdx);
-  Pstream::mapCombineGather(usedGlobalPts, eqOp<point>());
-  Pstream::mapCombineScatter(usedGlobalPts);
-  
-  globalPoints_.resize(usedGlobalPts.size());
-  label idx=0;
-  forAllIter(pointHashTable, usedGlobalPts, pi)
-  {
-    globalPoints_[idx++] = pi();
-  }
-  idx=0;
-  forAllIter(labelHashTable, usedGlobalPtsIdx, pi)
-  {
-    pi()=idx++;
-  }
-  
-  List<faceList> allfaces(Pstream::nProcs());
-  faceList& myfaces=allfaces[Pstream::myProcNo()];
-  myfaces.resize(patch.size());
-  
-  forAll(patch, fI)
-  {
-    const face& f = patch[fI];
-    face gf(f);
-    forAll(f, vI)
+    typedef Tuple2<point,label> piTuple;
+    typedef HashTable<piTuple,label> pointHashTable;
+    
+    pointHashTable usedGlobalPts;
+    forAll(patch.localPoints(), lpI)
     {
-      gf[vI] = usedGlobalPtsIdx[ gpi.toGlobal(f[vI]) ];
+      label gpt=gpi[patch.meshPoints()[lpI]];
+      usedGlobalPts.insert( gpt, piTuple(patch.localPoints()[lpI], -1) );
     }
-    myfaces[fI]=gf;
+    
+    //Pout<<"# nglobal="<<usedGlobalPts.size()<<endl;
+    
+    Pstream::mapCombineGather(usedGlobalPts, eqOp<piTuple>());
+
+    //Pout<<"# nglobal after gather="<<usedGlobalPts.size()<<endl;
+        
+    if (Pstream::master())
+    {
+      label idx=0;
+      forAllIter(pointHashTable, usedGlobalPts, pi)
+      {
+	pi().second()=idx++;
+      }
+    }
+
+    Pstream::mapCombineScatter(usedGlobalPts);
+
+    //Pout<<"# reduced nglobal="<<usedGlobalPts.size()<<endl;
+
+    pointField globalPoints(usedGlobalPts.size());
+    forAllIter(pointHashTable, usedGlobalPts, pi)
+    {
+      globalPoints[pi().second()] = pi().first();
+    }
+    
+    List<faceList> allfaces(Pstream::nProcs());
+    faceList& myfaces=allfaces[Pstream::myProcNo()];
+    myfaces.resize(patch.size());
+    
+    forAll(patch, fI)
+    {
+      const face& f = patch[fI];
+      face gf(f.size());
+      forAll(gf, vI)
+      {
+	gf[vI] = usedGlobalPts[ gpi[ f[vI] ] ].second();
+      }
+      myfaces[fI]=gf;
+    }
+    
+    Pstream::gatherList(allfaces);
+    Pstream::scatterList(allfaces);
+    
+    faceList globalFaces =
+	ListListOps::combine<faceList>
+	(
+	  allfaces, accessOp<faceList>()
+	);
+    
+    return autoPtr<PrimitivePatch<face, List, pointField> >
+    (
+      new PrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
+    );
   }
-  
-  Pstream::gatherList(allfaces);
-  Pstream::scatterList(allfaces);
-  
-  procOfs_=labelList(Pstream::nProcs());
-  procOfs_[0]=0;
-  for(label j=1; j<allfaces.size(); j++)
+  else
   {
-    procOfs_[j]=procOfs_[j-1] + allfaces[j-1].size();
+    return autoPtr<PrimitivePatch<face, List, pointField> >
+    (
+      new PrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
+    );
   }
   
-  globalFaces_=
-      ListListOps::combine<faceList>
-      (
-	allfaces, accessOp<faceList>()
-      );
-  
-  return true;
 }
 
   
 globalPatch::globalPatch(const polyPatch& patch)
-: PrimitivePatch<face, List, pointField>
-  (
-    globalFaces_, 
-    globalPoints_, 
-    createGlobalDataForReuse(patch)
-  )
+: PrimitivePatch<face, List, pointField>(createGlobalPatch(patch)()),
+  procOfs_(Pstream::nProcs(), -1)
 {
+  labelList nfaces(Pstream::nProcs());
+  nfaces[Pstream::myProcNo()]=patch.size();
+
+  Pstream::gatherList(nfaces);
+  Pstream::scatterList(nfaces);
+  
+  procOfs_[0]=0;
+  nfaces_=nfaces[0];
+  for(label j=1; j<Pstream::nProcs(); j++)
+  {
+    nfaces_+=nfaces[j];
+    procOfs_[j]=procOfs_[j-1] + nfaces[j-1];
+  }
+   Pout<<nfaces<<nfaces_<<procOfs_<<endl;
 }
 
 

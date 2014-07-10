@@ -47,6 +47,8 @@ SourceFiles
 #include "PstreamCombineReduceOps.H"
 #include "addToRunTimeSelectionTable.H"
 
+#include "vtkSurfaceWriter.H"
+
 #include "base/vtktools.h"
 
 #include <vector>
@@ -457,6 +459,16 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (!globalPatch_.valid())
     {
       globalPatch_.reset(new globalPatch(this->patch().patch()));
+      if (debug>0)
+      {
+	vtkSurfaceWriter().write
+	(
+	  this->patch().boundaryMesh().mesh().time().path() /
+	  this->patch().boundaryMesh().mesh().time().timeName(), 
+	  "globalPatch", 
+	  globalPatch_().points(), globalPatch_()
+	);
+      }
     }
     
     if (!crTimes_.get())
@@ -545,17 +557,24 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     /**
      * ==================== Generation of turbulent fluctuations ========================
      */
+    scalarField cglob(globalPatch_->size(), 0.0);
+    globalPatch_->insertLocalFaceValues(c_, cglob);
+    reduce(cglob, sumOp<scalarField>());
     
-    vectorField gfluc(globalPatch_->size());
+    vectorField gfluc(globalPatch_->size(), vector::zero);
     
-    RecursiveApply<TurbulentStructure, globalPatch> apl(globalPatch_(), c_, structureParameters_, gfluc);
+    RecursiveApply<TurbulentStructure, globalPatch> apl(globalPatch_(), cglob, structureParameters_, gfluc);
+    labelList n_affected(vortons_.size(), 0);
     forAll(vortons_, j)
     {
-      label n_affected=apl.apply(vortons_[j], globalPatch_->toGlobalFaceI(vortons_[j].creaFace(), Pstream::myProcNo()));
+      label gfi=globalPatch_->toGlobalFaceI(vortons_[j].creaFace());
+      n_affected[j]=apl.apply(vortons_[j], gfi);
+      //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
     }
+    Pout<<"n_affected: min="<<min(n_affected)<<" / max="<<max(n_affected)<<" / avg="<<average(n_affected)<<endl;
     
     // Make fluctuations global
-    combineReduce(gfluc, sumOp<vectorField>());
+    reduce(gfluc, sumOp<vectorField>());
     
     tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
     vectorField& fluctuations = tfluctuations();

@@ -82,11 +82,12 @@ protected:
   point footPoint_;
   
   /**
-   * contain the id of the nearest face on each processor
+   * label of the face on which the spot was created
    */
-  mutable labelList nearestFace_;
-
+  label creaFace_;
+  
 public:    
+
     /**
      * default
      */
@@ -116,10 +117,9 @@ public:
      */
     turbulentStructure(const turbulentStructure& p);
     
-    label nearestFace(const inflowGeneratorBaseFvPatchVectorField& patch) const;
-
     inline void setVelocity(const vector& x) { velocity_=x; }
     inline void setLocation(const point& x) { point::operator=(x); }
+    inline const point& footPoint() const { return footPoint_; }
     
     inline void initialPositioning(const point& x, const vector& initialDelta) 
     { 
@@ -151,6 +151,7 @@ public:
     scalar Lalong(const vector& x) const;
     scalar travelledDistance() const;
     scalar passedThrough() const;
+    inline label creaFace() const { return creaFace_; }
     
     // Edit
     void moveForward(scalar dt);

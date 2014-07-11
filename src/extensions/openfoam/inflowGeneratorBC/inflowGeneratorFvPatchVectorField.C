@@ -44,7 +44,10 @@ SourceFiles
 #include "volFields.H"
 #include "ListListOps.H"
 #include "PstreamReduceOps.H"
+#include "PstreamCombineReduceOps.H"
 #include "addToRunTimeSelectionTable.H"
+
+#include "vtkSurfaceWriter.H"
 
 #include "base/vtktools.h"
 
@@ -393,7 +396,7 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
 {
   tau_.reset(new scalarField(size(), 0.0));
   
-  vector Umean;
+  vector Umean=vector::zero;
   if (uniformConvection_) Umean=averageMeanVelocity();
   
   forAll(*this, fi)
@@ -451,6 +454,23 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (!tau_.get())
     {
       computeTau();
+    }
+    
+    if (!globalPatch_.valid())
+    {
+      globalPatch_.reset(new globalPatch(this->patch().patch()));
+/*
+      if (debug>0)
+      {
+	vtkSurfaceWriter().write
+	(
+	  this->patch().boundaryMesh().mesh().time().path() /
+	  this->patch().boundaryMesh().mesh().time().timeName(), 
+	  "globalPatch", 
+	  globalPatch_().points(), globalPatch_()
+	);
+      }
+*/
     }
     
     if (!crTimes_.get())
@@ -535,63 +555,32 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     //autoPtr<indexedOctree<treeDataPoint> > tree = buildTree();
 
 
-    if (debug) Info<<"Distributing structures to processors."<<endl;
-    // Distribute vorton list to all processors
-    List<List<TurbulentStructure> > sl(Pstream::nProcs());
-    sl[Pstream::myProcNo()] = vortons_;
-    Pstream::scatterList(sl);
-    //Pstream::gatherList(sl);
-    List<TurbulentStructure> vortonsGlobal =
-      ListListOps::combine<List<TurbulentStructure> >
-      (
-	sl, accessOp<List<TurbulentStructure> >()
-      );
-    
     if (debug) Info<<"Generating fluctuations."<<endl;
     /**
      * ==================== Generation of turbulent fluctuations ========================
      */
-    tmp<vectorField> tfluctuations(new vectorField(size(), pTraits<vector>::zero));
+    scalarField cglob(globalPatch_->size(), 0.0);
+    globalPatch_->insertLocalFaceValues(c_, cglob);
+    reduce(cglob, sumOp<scalarField>());
+    
+    vectorField gfluc(globalPatch_->size(), vector::zero);
+    
+    RecursiveApply<TurbulentStructure, globalPatch> apl(globalPatch_(), cglob, structureParameters_, gfluc);
+    labelList n_affected(vortons_.size(), 0);
+    forAll(vortons_, j)
+    {
+      label gfi=globalPatch_->toGlobalFaceI(vortons_[j].creaFace());
+      n_affected[j]=apl.apply(vortons_[j], gfi);
+      //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
+    }
+    Pout<<"n_affected: min="<<min(n_affected)<<" / max="<<max(n_affected)<<" / avg="<<average(n_affected)<<endl;
+    
+    // Make fluctuations global
+    reduce(gfluc, sumOp<vectorField>());
+    
+    tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
     vectorField& fluctuations = tfluctuations();
-
-    //Map<label> induced;
-//     forAll(*this, fi)
-//     {
-      
-// #warning Only valid for hat spots!
-//       scalar k=1./81.;
-//       scalar f=sqrt(1. /k / c_[fi]);
-      
-      // superimpose turbulent velocity in affected faces
-//     label mina=INT_MAX, maxa=-INT_MAX;
-    labelList visited(size());
-      forAll(vortonsGlobal, j)
-      {
-	visited=0;
-	label depth=0;
-	induceInNeighbours
-	(
-	  fluctuations, 
-	  vortonsGlobal[j], 
-	  structureParameters_, 
-	  vortonsGlobal[j].nearestFace(*this), 
-	  visited,
-	  depth
-	);
-	
-	//Pout<<j<<": "<<depth<<endl;
-	
-	//Pout<<"Vorton "<<j<<" affected "<<visited.size()<<" faces."<<endl;
-// 	mina=std::min(mina, sum(visited));
-// 	maxa=std::max(maxa, sum(visited));
-// 	vector u=vortonsGlobal[j].fluctuation(structureParameters_, patch().Cf()[fi]);
-// 	fluctuations[fi] += u / sqrt(c_[fi]);
-      }
-//       Pout<<"mina="<<mina<<", maxa="<<maxa<<endl;
-//     }
-
-
-    //label n_induced=induced.size();
+    
     
     if (debug) Info<<"Convecting and removing structures."<<endl;
     forAll(vortons_, j)

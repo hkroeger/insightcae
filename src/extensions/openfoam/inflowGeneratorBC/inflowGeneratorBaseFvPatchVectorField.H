@@ -41,15 +41,293 @@ SourceFiles
 
 #include "SLList.H"
 #include "Switch.H"
+#include "ListListOps.H"
+#include "PstreamReduceOps.H"
+#include "Tuple2.H"
 
 #include "indexedOctree.H"
 #include "treeDataPoint.H"
 #include "treeDataFace.H"
 
+#include "PatchTools.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+
+// template<class TurbulentStructure>
+// class globalStructureList
+// : public List<List<TurbulentStructure> >
+// {
+// public:
+//   globalStructureList()
+//   : List<List<TurbulentStructure> > (Pstream::nProcs())
+//   {}
+// 
+//   
+//   void copyLocalToGlobal(const List<TurbulentStructure>& localList, List<TurbulentStructure>& globalList)
+//   {
+//     List<List<TurbulentStructure> >& dl = *this;
+//     dl=List<List<TurbulentStructure> >(Pstream::nProcs()); // reset list
+//      
+//     dl[Pstream::myProcNo()] = localList;
+//     
+//     Pout<<"copyLocalToGlobal 1: "<<dl.size();
+//     forAll(dl, j)
+//     {
+//       Pout<<" / "<<dl[j].size();
+//       if (j==Pstream::myProcNo()) Pout<< " ("<<localList.size()<<")";
+//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
+//     }
+//     Pout<<endl;
+// 
+//     Pstream::gatherList(dl);
+//     Pstream::scatterList(dl);
+//         
+//     globalList =
+//       ListListOps::combine<List<TurbulentStructure> >
+//       (
+// 	dl, accessOp<List<TurbulentStructure> >()
+//       );
+//       
+//     Pout<<"copyLocalToGlobal 2: "<<dl.size();
+//     int s=0;
+//     forAll(dl, j)
+//     {
+//       Pout<<" / "<<dl[j].size();
+//       s+=dl[j].size();
+//       if (j==Pstream::myProcNo()) Pout<< " ("<<localList.size()<<")";
+//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
+//     }
+//     Pout<<"  "<<globalList.size()<<", "<<s;
+//   }
+//   
+//   void copyGlobalToLocal(const List<TurbulentStructure>& globalList, List<TurbulentStructure>& localList)
+//   {
+//     List<List<TurbulentStructure> >& dl = *this;
+// 
+//     label gi=0;
+//     
+//     forAll(dl, lstI)
+//     {
+//         List<TurbulentStructure>& sub = dl[lstI];
+// 
+//         forAll(sub, elemI)
+//         {
+//            sub[elemI]=globalList[gi++];
+//         }
+//     }
+//     
+//     Pstream::gatherList(dl);
+//     Pstream::scatterList(dl);
+//     
+//     localList = dl[Pstream::myProcNo()];
+//   }
+//   
+//   void updateNearestFaceList(const List<TurbulentStructure>& globalList, List<TurbulentStructure>& localList)
+//   {
+//     {
+//     List<List<TurbulentStructure> >& dl = *this;
+//     Pout<<"updateNearestFaceList: "<<dl.size();
+//     forAll(dl, j)
+//     {
+//       Pout<<" / "<<dl[j].size();
+//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
+//     }
+//     Pout<<endl;
+//     }
+// 
+//     List<List<label> > dl(Pstream::nProcs());
+//     labelList& myl=dl[Pstream::myProcNo()];
+//     List<label> nv_pp(Pstream::nProcs(), -1);
+//     nv_pp[Pstream::myProcNo()]=localList.size();
+//     Pstream::gatherList(nv_pp);
+//     Pstream::scatterList(nv_pp);
+//     
+//     //myl.setSize(globalList.size());
+//     myl=labelList(globalList.size(), -1);
+//     forAll(globalList, i)
+//     {
+//       //Pout<<globalList[i].nearestFace_.size()<<" > "<<globalList[i].nearestFace_[Pstream::myProcNo()]<<endl;
+//       myl[i]=globalList[i].nearestFace_[Pstream::myProcNo()];
+//     }
+//     
+//     Pstream::gatherList(dl);
+//     Pstream::scatterList(dl);
+// 
+//     label ofs=0;
+//     for(label p=0; p<Pstream::nProcs(); p++)
+//     {
+//       for(label i=0; i<localList.size(); i++)
+//       {
+// 	label gi=ofs+i;
+// 	{
+// 	//Pout<<localList[i].nearestFace_[p]<<" <<< "<<dl[p][gi]<<" ("<<p<<", "<<i<<", "<<ofs<<", "<<gi<<", "<<localList[i].nearestFace_.size()<<", "<<localList.size()<<")"<<endl;
+// 	if ( localList[i].nearestFace_.size()!=4 )
+// 	{
+// 	  FatalErrorIn("updateNearestFaceList")
+// 	  <<"This should not happen! : Tying to assign into nfl of size = "<<localList[i].nearestFace_.size()<<abort(FatalError);
+// 	}
+// 	if ( (localList[i].nearestFace_[p]!=dl[p][gi]) && (localList[i].nearestFace_[p]>=0) )
+// 	{
+// 	  Pout //FatalErrorIn("updateNearestFaceList")
+// 	  <<"This should not happen! : Assignment "
+// 	    <<localList[i].nearestFace_[p]<<" <<< "<<dl[p][gi]<<" ("<<p<<", "<<i<<", "<<ofs<<", "<<gi<<", "<<localList[i].nearestFace_.size()<<", "<<localList.size()<<")"
+// 	    <<endl; //abort(FatalError);
+// 	}
+// 	}
+// 	localList[i].nearestFace_[p]=dl[p][gi];
+//       }
+//       ofs+=nv_pp[p];
+//     }
+// 
+//   }
+// };
+
+
+class globalPatch
+: public PrimitivePatch<face, List, pointField>
+{
+//   pointField globalPoints_;
+//   faceList globalFaces_;
+  
+  labelList procOfs_;
+  label nfaces_;
+  
+  autoPtr< PrimitivePatch<face, List, pointField> > createGlobalPatch(const polyPatch& patch);
+
+public:
+  globalPatch(const polyPatch& patch);
+  
+  inline label toGlobalFaceI(const label& localFaceI) const
+  {
+    return procOfs_[Pstream::myProcNo()] + localFaceI;
+  }
+  
+  template<class T>
+  tmp< Field<T> > extractLocalFaceValues(const Field<T>& gfield) const
+  {
+    label pi=Pstream::myProcNo();
+    label startI=procOfs_[pi];
+    label endI=gfield.size()-1;
+    if (pi<Pstream::nProcs()-1)
+      endI=procOfs_[pi+1]-1;
+    
+    tmp<Field<T> > tres(new Field<T>(endI-startI+1));
+    Field<T>& res=tres();
+    
+    label j=0;
+    for(label i=startI; i<=endI; i++)
+    {
+      res[j++]=gfield[i];
+    }
+    
+    return tres;
+  }
+  
+  template<class T>
+  void insertLocalFaceValues(const Field<T>& lfield, Field<T>& gfield) const
+  {
+    label pi=Pstream::myProcNo();
+    
+    label startI=procOfs_[pi];
+    label endI=nfaces_-1;
+    if (pi<Pstream::nProcs()-1)
+      endI=procOfs_[pi+1]-1;
+    
+    label j=0;
+    for(label i=startI; i<=endI; i++)
+    {
+      gfield[i]=lfield[j++];
+    }
+  }
+  
+};
+
+
+
+template<class TurbulentStructure, class PatchType>
+class RecursiveApply
+{
+  
+protected:
+  const PatchType& patch_;
+  const scalarField& c_;
+  const typename TurbulentStructure::StructureParameters& sp_;
+  vectorField& fluctuations_;
+  
+  /**
+   * if applied value falls below this tolerance, recursive search will be stopped
+   */
+  static const scalar tol_ = 1e-3;
+  
+  void recursiveapply
+  (
+    const TurbulentStructure& v, 
+    label faceI, 
+    labelHashSet& visited,
+    label depth
+  )
+  {
+    depth++;
+    if (faceI<0) return;
+    
+    vector u = v.fluctuation(sp_, patch_.faceCentres()[faceI]);
+    
+//     Pout<<"("<<depth<<")";
+//     for(int i=0; i<depth; i++) Pout<<" ";
+//       Pout<<"face="<<faceI<<" : u="<<u<<endl;
+
+    if (mag(u)>tol_)
+    {
+      
+      fluctuations_[faceI] += u / sqrt(c_[faceI]);
+      visited.insert(faceI);
+      
+      labelList lneigh=patch_.faceFaces()[faceI];
+      
+      // visit local neighbours
+      forAll(lneigh, j)
+      {
+	label nfi=lneigh[j];
+	if (!visited.found(nfi))
+	{
+	  recursiveapply(v, nfi, visited, depth);
+	}
+      }
+    }
+  }
+
+public:
+  RecursiveApply
+  (
+    const PatchType& patch,
+    const scalarField& c,
+    const typename TurbulentStructure::StructureParameters& sp,
+    vectorField& fluctuations
+  )
+  : patch_(patch),
+    c_(c),
+    sp_(sp),
+    fluctuations_(fluctuations)
+  {
+  }
+  
+  
+  label apply
+  (
+    const TurbulentStructure& v,
+    label startfaceI
+  )
+  {
+    labelHashSet visited;
+    recursiveapply(v, startfaceI, visited, 0);
+    return visited.size();
+  }
+  
+};
+
 
 
 class inflowGeneratorBaseFvPatchVectorField
@@ -131,7 +409,6 @@ protected:
     mutable FaceSearcher boundaryTree_;
     
 public:
-    label getNearestFace(const point& p) const;
     virtual void computeConditioningFactor() =0;
 
     //- Runtime type information

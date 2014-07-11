@@ -65,6 +65,9 @@ class inflowGeneratorFvPatchVectorField
 {
     
 protected:
+  
+    autoPtr<globalPatch> globalPatch_;
+  
     /**
      * not a linked list: each vorton needs to have an index for tree seach
      */

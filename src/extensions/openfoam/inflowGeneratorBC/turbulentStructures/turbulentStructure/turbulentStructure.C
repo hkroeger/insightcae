@@ -46,12 +46,12 @@ turbulentStructure::turbulentStructure()
   L2_(pTraits<vector>::zero),
   L3_(pTraits<vector>::zero),
   startPoint_(pTraits<point>::zero),
-  nearestFace_(Pstream::nProcs(), -1)
+  creaFace_(-1)
 {
 }
 
 turbulentStructure::turbulentStructure(Istream& is)
-: nearestFace_(Pstream::nProcs(), -1)
+: creaFace_(-1)
 {
   is >> *this;
 }
@@ -67,9 +67,8 @@ turbulentStructure::turbulentStructure
   label creaface
 )
 : velocity_(v),
-  nearestFace_(Pstream::nProcs(), -1)
+  creaFace_(creaface)
 {  
-  nearestFace_[Pstream::myProcNo()]=creaface;
   /*
   // OF eigensystem analysis is crap for simplest cases: equal eigenvalues result in zero eigenvectors
   vector evals(eigenValues(L));
@@ -105,21 +104,22 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
   L2_(o.L2_),
   L3_(o.L3_),
   startPoint_(o.startPoint_),
-  nearestFace_(o.nearestFace_)
+  creaFace_(o.creaFace_)
 {
 }
 
-label turbulentStructure::nearestFace(const inflowGeneratorBaseFvPatchVectorField& patch) const
-{
-  if (nearestFace_[Pstream::myProcNo()]<0)
-  {
-    label nearestFace = patch.getNearestFace(footPoint_);
-    nearestFace_[Pstream::myProcNo()] = nearestFace;
-  }
-  
-  return nearestFace_[Pstream::myProcNo()];
-}
+// label turbulentStructure::nearestFace(const inflowGeneratorBaseFvPatchVectorField& patch) const
+// {
+//   if (nearestFace_[Pstream::myProcNo()]<0)
+//   {
+//     label nearestFace = patch.getNearestFace(footPoint_);
+//     nearestFace_[Pstream::myProcNo()] = nearestFace;
+//   }
+//   
+//   return nearestFace_[Pstream::myProcNo()];
+// }
 
+    
 scalar turbulentStructure::Lalong(const vector& x) const
 {
   vector e=x/mag(x);
@@ -148,22 +148,23 @@ void turbulentStructure::moveForward(scalar dt)
 
 void turbulentStructure::operator=(const turbulentStructure& rhs)
 {
-    // Check for assignment to self
-    if (this == &rhs)
-    {
-        FatalErrorIn("turbulentStructure::operator=(const turbulentStructure&)")
-            << "Attempted assignment to self"
-            << abort(FatalError);
-    }
+  // Check for assignment to self
+  if (this == &rhs)
+  {
+      FatalErrorIn("turbulentStructure::operator=(const turbulentStructure&)")
+	  << "Attempted assignment to self"
+	  << abort(FatalError);
+  }
 
-    point::operator=(rhs);
-    velocity_=rhs.velocity_;
-    L1_=rhs.L1_;
-    L2_=rhs.L2_;
-    L3_=rhs.L3_;
-    startPoint_=rhs.startPoint_;
-    footPoint_=rhs.footPoint_;
-    nearestFace_=rhs.nearestFace_;
+  point::operator=(rhs);
+  velocity_=rhs.velocity_;
+  L1_=rhs.L1_;
+  L2_=rhs.L2_;
+  L3_=rhs.L3_;
+  startPoint_=rhs.startPoint_;
+  footPoint_=rhs.footPoint_;
+  creaFace_=rhs.creaFace_;
+  
 }
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
@@ -175,7 +176,7 @@ Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
   s<<ht.L3_<<endl;
   s<<ht.startPoint_<<endl;
   s<<ht.footPoint_<<endl;
-  s<<ht.nearestFace_<<endl;
+  s<<ht.creaFace_<<endl;
   return s;
 }
 
@@ -188,7 +189,8 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     vector L3(s);
     point sp(s);
     point fp(s);
-    labelList nfl(s);
+    label nf=readLabel(s);
+    
     ht.setLocation(loc);
     ht.velocity_=v;
     ht.L1_=L1;
@@ -196,7 +198,8 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     ht.L3_=L3;
     ht.startPoint_=sp;
     ht.footPoint_=fp;
-    ht.nearestFace_=nfl;
+    ht.creaFace_=nf;
+    
     return s;
 }
 

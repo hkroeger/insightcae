@@ -7,6 +7,8 @@
 #include "ListListOps.H"
 #include "PstreamReduceOps.H"
 #include "addToRunTimeSelectionTable.H"
+#include "globalMeshData.H"
+#include "globalIndex.H"
 
 #include "base/vtktools.h"
 
@@ -19,77 +21,203 @@ using namespace boost;
 namespace Foam 
 {
 
+  
+  
+autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(const polyPatch& patch)
+{
+   const polyMesh& mesh=patch.boundaryMesh().mesh();
+//   const globalMeshData& gmd = mesh.globalData();
+//   const globalIndex& gpi = gmd.globalPointNumbering();
+  
+  IOobject addrHeader
+  (
+      "pointProcAddressing",
+      mesh.facesInstance()/mesh.meshSubDir,
+      mesh,
+      IOobject::MUST_READ
+  );
+  
+  if (addrHeader.headerOk())
+  {
+    // There is a pointProcAddressing file so use it to get labels
+    // on the original mesh
+    Pout<< "globalMeshData::sharedPointGlobalLabels : "
+	<< "Reading pointProcAddressing" << endl;
+
+    labelIOList gpi(addrHeader);
+  
+    typedef Tuple2<point,label> piTuple;
+    typedef HashTable<piTuple,label> pointHashTable;
+    
+    pointHashTable usedGlobalPts;
+    forAll(patch.localPoints(), lpI)
+    {
+      label gpt=gpi[patch.meshPoints()[lpI]];
+      usedGlobalPts.insert( gpt, piTuple(patch.localPoints()[lpI], -1) );
+    }
+    
+    //Pout<<"# nglobal="<<usedGlobalPts.size()<<endl;
+    
+    Pstream::mapCombineGather(usedGlobalPts, eqOp<piTuple>());
+
+    //Pout<<"# nglobal after gather="<<usedGlobalPts.size()<<endl;
+        
+    if (Pstream::master())
+    {
+      label idx=0;
+      forAllIter(pointHashTable, usedGlobalPts, pi)
+      {
+	pi().second()=idx++;
+      }
+    }
+
+    Pstream::mapCombineScatter(usedGlobalPts);
+
+    //Pout<<"# reduced nglobal="<<usedGlobalPts.size()<<endl;
+
+    pointField globalPoints(usedGlobalPts.size());
+    forAllIter(pointHashTable, usedGlobalPts, pi)
+    {
+      globalPoints[pi().second()] = pi().first();
+    }
+    
+    List<faceList> allfaces(Pstream::nProcs());
+    faceList& myfaces=allfaces[Pstream::myProcNo()];
+    myfaces.resize(patch.size());
+    
+    forAll(patch, fI)
+    {
+      const face& f = patch[fI];
+      face gf(f.size());
+      forAll(gf, vI)
+      {
+	gf[vI] = usedGlobalPts[ gpi[ f[vI] ] ].second();
+      }
+      myfaces[fI]=gf;
+    }
+    
+    Pstream::gatherList(allfaces);
+    Pstream::scatterList(allfaces);
+    
+    faceList globalFaces =
+	ListListOps::combine<faceList>
+	(
+	  allfaces, accessOp<faceList>()
+	);
+    
+    return autoPtr<PrimitivePatch<face, List, pointField> >
+    (
+      new PrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
+    );
+  }
+  else
+  {
+    return autoPtr<PrimitivePatch<face, List, pointField> >
+    (
+      new PrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
+    );
+  }
+  
+}
+
+  
+globalPatch::globalPatch(const polyPatch& patch)
+: PrimitivePatch<face, List, pointField>(createGlobalPatch(patch)()),
+  procOfs_(Pstream::nProcs(), -1)
+{
+  labelList nfaces(Pstream::nProcs());
+  nfaces[Pstream::myProcNo()]=patch.size();
+
+  Pstream::gatherList(nfaces);
+  Pstream::scatterList(nfaces);
+  
+  procOfs_[0]=0;
+  nfaces_=nfaces[0];
+  for(label j=1; j<Pstream::nProcs(); j++)
+  {
+    nfaces_+=nfaces[j];
+    procOfs_[j]=procOfs_[j-1] + nfaces[j-1];
+  }
+   Pout<<nfaces<<nfaces_<<procOfs_<<endl;
+}
+
+
+
 
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 
-label inflowGeneratorBaseFvPatchVectorField::getNearestFace(const point& p) const
-{
-  if (!boundaryTree_.valid())
-  {
-    Info << "rebuilding tree" <<endl;
-    const polyPatch& pp = this->patch().patch();
-    
-    if (pp.size() > 0)
-    {
-        labelList bndFaces(pp.size());
-	
-        forAll(bndFaces, i)
-        {
-            bndFaces[i] =  pp.start() + i;
-        }
-
-        treeBoundBox overallBb(pp.points());
-        Random rndGen(123456);
-        overallBb = overallBb.extend(rndGen, 1e-4);
-        overallBb.min() -= point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-        overallBb.max() += point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-
-        boundaryTree_.reset
-        (
-	  new indexedOctree<treeDataFace> 
-	  (
-	      treeDataFace    // all information needed to search faces
-	      (
-		  false,                      // do not cache bb
-		  this->patch().boundaryMesh().mesh(),
-		  bndFaces                    // patch faces only
-	      ),
-	      overallBb,                      // overall search domain
-	      8,                              // maxLevel
-	      10,                             // leafsize
-	      3.0                             // duplicity
-	  )
-	);
-    }
-  }
-  
-  if (!boundaryTree_.valid())
-    return -1;
-  else
-  {
-    scalar span = boundaryTree_->bb().mag();
-
-    pointIndexHit info = boundaryTree_->findNearest
-    (
-      p,
-      Foam::sqr(span)
-    );
-    
-    if (!info.hit())
-    {
-	info = boundaryTree_->findNearest
-	(
-	    p,
-	    Foam::sqr(GREAT)
-	);
-    }
-    
-    label faceI = boundaryTree_->shapes().faceLabels()[info.index()];
-    
-    return faceI;
-  }
-    
-}
+// label inflowGeneratorBaseFvPatchVectorField::getNearestFace(const point& p) const
+// {
+//   if (!boundaryTree_.valid())
+//   {
+//     Info << "rebuilding tree" <<endl;
+//     const polyPatch& pp = this->patch().patch();
+//     
+//     if (pp.size() > 0)
+//     {
+//         labelList bndFaces(pp.size());
+// 	
+//         forAll(bndFaces, i)
+//         {
+//             bndFaces[i] =  /*pp.start()*/ + i;
+//         }
+// 
+//         treeBoundBox overallBb(pp.points());
+//         Random rndGen(123456);
+//         overallBb = overallBb.extend(rndGen, 1e-4);
+//         overallBb.min() -= point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
+//         overallBb.max() += point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
+// 
+//         boundaryTree_.reset
+//         (
+// 	  new indexedOctree<treeDataFace> 
+// 	  (
+// 	      treeDataFace    // all information needed to search faces
+// 	      (
+// 		  false,                      // do not cache bb
+// 		  this->patch().boundaryMesh().mesh(),
+// 		  bndFaces                    // patch faces only
+// 	      ),
+// 	      overallBb,                      // overall search domain
+// 	      8,                              // maxLevel
+// 	      10,                             // leafsize
+// 	      3.0                             // duplicity
+// 	  )
+// 	);
+//     }
+//   }
+//   
+//   if (!boundaryTree_.valid())
+//   {
+//     Pout<<"Patch size is zero."<<endl;
+//     return -1;
+//   }
+//   else
+//   {
+//     Pout<<"Perform nearest face query: "<<flush;
+//     scalar span = boundaryTree_->bb().mag();
+// 
+//     pointIndexHit info = boundaryTree_->findNearest
+//     (
+//       p,
+//       Foam::sqr(span)
+//     );
+//     
+//     if (!info.hit())
+//     {
+// 	info = boundaryTree_->findNearest
+// 	(
+// 	    p,
+// 	    Foam::sqr(GREAT)
+// 	);
+//     }
+//     
+//     label faceI = boundaryTree_->shapes().faceLabels()[info.index()];
+//     Pout <<" faceI"<<p<<"="<<faceI<<endl;
+//     return faceI;
+//   }
+//     
+// }
 
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 (

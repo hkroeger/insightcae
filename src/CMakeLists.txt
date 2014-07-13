@@ -4,6 +4,7 @@ OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with old
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
 OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
+OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
@@ -301,17 +302,27 @@ list (APPEND ${VARNAME}
 set (${VARNAME} ${${VARNAME}} PARENT_SCOPE)
 endmacro()
 
+
+
 add_subdirectory(refdata)
-add_subdirectory(toolkit)
+
+IF(INSIGHT_BUILD_TOOLKIT)
+  add_subdirectory(toolkit)
+  add_subdirectory(analyze)
+  if (INSIGHT_BUILD_WORKBENCH)
+    add_subdirectory(workbench)
+  endif (INSIGHT_BUILD_WORKBENCH)
+endif()
+
 if (INSIGHT_BUILD_CAD)
   add_subdirectory(cad)
 endif (INSIGHT_BUILD_CAD)
-add_subdirectory(analyze)
-if (INSIGHT_BUILD_WORKBENCH)
-  add_subdirectory(workbench)
-endif (INSIGHT_BUILD_WORKBENCH)
 add_subdirectory(addons)
-add_subdirectory(modules)
+
+IF(INSIGHT_BUILD_TOOLKIT)
+  add_subdirectory(modules)
+ENDIF()
+
 add_subdirectory(etc)
 if (INSIGHT_BUILD_FREECAD)
   add_subdirectory(extensions/freecad)

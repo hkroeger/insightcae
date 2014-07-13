@@ -24,7 +24,6 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
-toolkit
 )
 
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack

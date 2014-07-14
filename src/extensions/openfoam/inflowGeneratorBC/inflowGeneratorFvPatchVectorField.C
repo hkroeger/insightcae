@@ -459,18 +459,6 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (!globalPatch_.valid())
     {
       globalPatch_.reset(new globalPatch(this->patch().patch()));
-/*
-      if (debug>0)
-      {
-	vtkSurfaceWriter().write
-	(
-	  this->patch().boundaryMesh().mesh().time().path() /
-	  this->patch().boundaryMesh().mesh().time().timeName(), 
-	  "globalPatch", 
-	  globalPatch_().points(), globalPatch_()
-	);
-      }
-*/
     }
     
     if (!crTimes_.get())
@@ -575,9 +563,47 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     }
     Pout<<"n_affected: min="<<min(n_affected)<<" / max="<<max(n_affected)<<" / avg="<<average(n_affected)<<endl;
     
+#ifndef OF16ext
+    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+    {
+      vtkSurfaceWriter().write
+      (
+	this->patch().boundaryMesh().mesh().time().path() /
+	this->patch().boundaryMesh().mesh().time().timeName(), 
+	"globalPatch", 
+	globalPatch_().points(), 
+	globalPatch_(),
+       
+       "u",
+       gfluc,
+       false,
+       true
+      );
+    }
+#endif
+     
     // Make fluctuations global
     reduce(gfluc, sumOp<vectorField>());
     
+#ifndef OF16ext
+    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+    {
+      vtkSurfaceWriter().write
+      (
+	this->patch().boundaryMesh().mesh().time().path() /
+	this->patch().boundaryMesh().mesh().time().timeName(), 
+	"globalPatch_globalizedFluctuations", 
+	globalPatch_().points(), 
+	globalPatch_(),
+       
+       "u",
+       gfluc,
+       false,
+       true
+      );
+    }
+#endif
+
     tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
     vectorField& fluctuations = tfluctuations();
     

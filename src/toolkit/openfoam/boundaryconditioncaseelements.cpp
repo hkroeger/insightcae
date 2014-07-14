@@ -1038,11 +1038,18 @@ PressureOutletBC::PressureOutletBC
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+
+  if (p_.fixMeanValue() && (OFversion()!=160))
+  {
+    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    controlDict.getList("libs").push_back( OFDictData::data("\"libfixedMeanValueBC.so\"") );
+  }
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
+      
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("inletOutlet");
@@ -1063,8 +1070,17 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       (get<0>(field.second)==scalarField) 
     )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      if (p_.fixMeanValue())
+      {
+	BC["type"]=OFDictData::data("fixedMeanValue");
+	BC["meanValue"]=OFDictData::data( p_.pressure() );
+	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      }
+      else
+      {
+	BC["type"]=OFDictData::data("fixedValue");
+	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      }
     }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {

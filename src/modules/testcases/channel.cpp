@@ -1070,6 +1070,7 @@ void ChannelInflow::createCase
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
+    .set_fixMeanValue(true)
   ));
   
   ChannelBase::createCase(cm, p);

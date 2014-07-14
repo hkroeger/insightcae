@@ -39,8 +39,6 @@ Description
 #include "Random.H"
 #include "simpleFilter.H"
 
-#include <boost/concept_check.hpp>
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

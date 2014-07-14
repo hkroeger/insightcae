@@ -38,7 +38,7 @@ include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
-SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-needed -Wl,--no-as-needed") 
+#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-needed -Wl,--no-as-needed") 
 
 macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs)
   if (NOT OF_VERSIONS)

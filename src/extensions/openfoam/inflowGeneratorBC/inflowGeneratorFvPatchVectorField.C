@@ -596,7 +596,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       n_affected[j]=apl.apply(vortons_[j], gfi);
       //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
     }
-    Pout<<"n_affected: min="<<min(n_affected)<<" / max="<<max(n_affected)<<" / avg="<<average(n_affected)<<endl;
+    Info<<"n_affected: min="<<gMin(n_affected)<<" / max="<<gMax(n_affected)<<" / avg="<<gAverage(n_affected)<<endl;
     
 #ifndef OF16ext
     if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )

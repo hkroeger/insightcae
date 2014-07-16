@@ -332,7 +332,7 @@ void modalTurbulenceFvPatchVectorField::createModes()
 	
 	m.s=var_nor();
 	
-	m.sigma=vector(ranGen_(), ranGen_(), 0);
+	m.sigma=vector(ranGen_()-0.5, ranGen_()-0.5, 0);
 	m.sigma.z() = - m.sigma&m.d / m.d.z();
 	m.sigma /= SMALL+mag(m.sigma);
       }

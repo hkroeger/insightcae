@@ -17,6 +17,7 @@ incompressibleTransportModels meshTools triSurface LESfilters
 surfMesh sampling)
 
 set(INCLUDE_DIRS 
+ ${Boost_INCLUDE_DIR}
 )
 
 set(LIBS 

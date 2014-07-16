@@ -326,7 +326,7 @@ public:
   };
 
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
-    (structureType, std::string, "hatSpot")
+    (type, std::string, "inflowGenerator<hatSpot>")
     (uniformConvection, bool, false)
     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
     (delta, double, 1.0)
@@ -359,6 +359,7 @@ class PressureOutletBC
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (pressure, double, 0.0)
+    (fixMeanValue, bool, false)
     (rho, double, 1025.0)
   )
   

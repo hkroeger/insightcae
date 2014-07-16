@@ -6,6 +6,7 @@ set(SRC
  boostRandomGen.C 
  inflowGeneratorBaseFvPatchVectorField.C
  inflowGeneratorFvPatchVectorFieldFwd.C
+ modalTurbulenceFvPatchVectorField.C
 )
 
 set(OF_INCLUDE_DIRS

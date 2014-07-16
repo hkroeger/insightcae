@@ -152,6 +152,7 @@ public:
     scalar travelledDistance() const;
     scalar passedThrough() const;
     inline label creaFace() const { return creaFace_; }
+    inline void setCreaFace(label cf) { creaFace_=cf; }
     
     // Edit
     void moveForward(scalar dt);

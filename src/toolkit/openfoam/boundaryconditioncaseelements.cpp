@@ -938,7 +938,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]="inflowGenerator<"+p_.structureType()+">";
+  BC["type"]=p_.type();
   BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
   
   BC["c"]="uniform 16";
@@ -982,13 +982,14 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 		  (
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-		    ("spottype", new SelectionParameter(0, 
+		    ("type", new SelectionParameter(0, 
 			    list_of<string>
-			    ("hatSpot")
-			    ("gaussianSpot")
-			    ("decayingTurbulenceSpot")
+			    ("inflowGenerator<hatSpot>")
+			    ("inflowGenerator<gaussianSpot>")
+			    ("inflowGenerator<decayingTurbulenceSpot>")
+			    ("modalTurbulence")
 			    , 
-		      "Type of turbulent structure"))
+		      "Type of inflow generator"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Inflow generator parameters"
@@ -1038,11 +1039,18 @@ PressureOutletBC::PressureOutletBC
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+
+  if (p_.fixMeanValue() && (OFversion()!=160))
+  {
+    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    controlDict.getList("libs").push_back( OFDictData::data("\"libfixedMeanValueBC.so\"") );
+  }
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
+      
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
       BC["type"]=OFDictData::data("inletOutlet");
@@ -1063,8 +1071,17 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       (get<0>(field.second)==scalarField) 
     )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      if (p_.fixMeanValue())
+      {
+	BC["type"]=OFDictData::data("fixedMeanValue");
+	BC["meanValue"]=OFDictData::data( p_.pressure() );
+	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      }
+      else
+      {
+	BC["type"]=OFDictData::data("fixedValue");
+	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+      }
     }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {

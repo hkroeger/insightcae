@@ -46,7 +46,7 @@ SourceFiles
 #include "PstreamReduceOps.H"
 #include "PstreamCombineReduceOps.H"
 #include "addToRunTimeSelectionTable.H"
-
+#include "fvPatchFieldMapper.H"
 #include "vtkSurfaceWriter.H"
 
 #include "base/vtktools.h"
@@ -63,48 +63,6 @@ using namespace boost;
 
 namespace Foam
 {
-template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningFactor()
-{
-
-  vectorField uMean(size(), vector::zero);
-  symmTensorField uPrime2Mean(size(), symmTensor::zero);
-//   scalar N=0.0;
-  label N_total=0;
-  scalar A=gSum(patch().magSf()), V=0.0;
-  
-  Info<<"A="<<A<<endl;
-  
-  scalar dt=this->db().time().deltaTValue();
-  
-  for (int i=1; i<100000; i++)
-  {
-    scalar t=dt*scalar(i-1);
-    
-    ProcessStepInfo info;
-    vectorField u( continueFluctuationProcess(t, &info) );
-    N_total+=info.n_generated;
-    V += gSum( (-patch().Sf()&Umean()) * dt );
-    
-    scalar alpha = scalar(i - 1)/scalar(i);
-    scalar beta = 1.0/scalar(i);
-    
-    uPrime2Mean += sqr(uMean);
-    uMean = alpha*uMean + beta*u;
-//     N = alpha*N + beta*scalar(info.n_induced);
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
-    
-    Info<<"Averages: uMean="
-	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
-	<<" \t R^2="
-	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
-	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
-		    
-    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
-  }
-  
-  FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
-}
 
 
 template<class TurbulentStructure>
@@ -236,16 +194,63 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 }
 
 template<class TurbulentStructure>
+tmp<Field<TurbulentStructure> > 
+inflowGeneratorFvPatchVectorField<TurbulentStructure>::filterVortons
+(
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
+    const fvPatchFieldMapper& mapper,
+    const Field<TurbulentStructure>& vlist
+) const
+{
+  tmp<Field<TurbulentStructure> > rnewlist(new Field<TurbulentStructure>());
+  Field<TurbulentStructure>& newlist=rnewlist();
+  
+  if (mapper.direct() && &mapper.directAddressing() && mapper.directAddressing().size())
+  {
+    const labelUList& addr=mapper.directAddressing();
+    HashTable<label, label> inverseAddr;
+    forAll(addr, j)
+    {
+      inverseAddr.insert(addr[j], j);
+    }
+  
+    if (debug) Info<<"mapinfo: "<<mapper.direct()<<", "<<size()<<", "<<mapper.directAddressing().size()<<", "<<inverseAddr.size()<<endl;;
+    
+    label j=0;
+    forAll(vlist, i)
+    {
+      const TurbulentStructure& ov=vlist[i];
+      if (inverseAddr.found(ov.creaFace()))
+      {
+	label myf=inverseAddr[ov.creaFace()];
+	TurbulentStructure nv(ov);
+	nv.setCreaFace(myf);
+	newlist.resize(newlist.size()+1);
+	newlist[newlist.size()-1]=nv;
+      }
+    }
+    if (debug) Info<<"Kept "<<newlist.size()<<" vortons."<<endl;
+  }
+  else
+  {
+    // create new vortons, if meshes don't match
+  }
+  
+  return rnewlist;
+}
+
+// this is called during decomposePar
+template<class TurbulentStructure>
 inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVectorField
 (
-    const inflowGeneratorFvPatchVectorField& ptf,
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
     const fvPatch& p,
     const DimensionedField<vector, volMesh>& iF,
     const fvPatchFieldMapper& mapper
 )
 :
     inflowGeneratorBaseFvPatchVectorField(ptf, p, iF, mapper),
-    vortons_(ptf.vortons_),
+    vortons_(filterVortons(ptf, mapper, ptf.vortons_)),
     tau_(ptf.tau_?new scalarField(*(ptf.tau_), mapper):NULL),
     crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_), mapper):NULL),
     structureParameters_(ptf.structureParameters_)
@@ -329,10 +334,40 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 )
 {
     inflowGeneratorBaseFvPatchVectorField::rmap(ptf, addr);
+    
     const inflowGeneratorFvPatchVectorField<TurbulentStructure>& tiptf =
       refCast<const inflowGeneratorFvPatchVectorField<TurbulentStructure> >(ptf);
-    if (tau_) tau_->rmap(*(tiptf.tau_), addr);
-    if (crTimes_) crTimes_->rmap(*(tiptf.crTimes_), addr);
+    
+    // insert vortons and correct their creaFace member
+    {
+      if (debug) Info<<"mapinfo: "<<size()<<", "<<addr.size()<<endl;
+      
+      label j=0;
+      const Field<TurbulentStructure>& vlist=tiptf.vortons_;
+      forAll(vlist, i)
+      {
+	const TurbulentStructure& ov=vlist[i];
+	label myf=addr[ov.creaFace()];
+	TurbulentStructure nv(ov);
+	nv.setCreaFace(myf);
+	vortons_.resize(vortons_.size()+1);
+	vortons_[vortons_.size()-1]=nv;
+      }
+      if (debug) Info<<"Vorton list now at size "<<vortons_.size()<<endl;
+    }
+      
+    if (tiptf.tau_)
+    {
+      if (!tau_) tau_.reset(new scalarField(size(), 0.0));
+      tau_->rmap(*(tiptf.tau_), addr);
+    }
+    
+    if (tiptf.crTimes_) 
+    {
+      if (!crTimes_) crTimes_.reset(new scalarField(size(), 0.0));
+      crTimes_->rmap(*(tiptf.crTimes_), addr);
+    }
+    
     structureParameters_.rmap(ptf, addr);
 }
 
@@ -459,18 +494,6 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (!globalPatch_.valid())
     {
       globalPatch_.reset(new globalPatch(this->patch().patch()));
-/*
-      if (debug>0)
-      {
-	vtkSurfaceWriter().write
-	(
-	  this->patch().boundaryMesh().mesh().time().path() /
-	  this->patch().boundaryMesh().mesh().time().timeName(), 
-	  "globalPatch", 
-	  globalPatch_().points(), globalPatch_()
-	);
-      }
-*/
     }
     
     if (!crTimes_.get())
@@ -573,11 +596,49 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       n_affected[j]=apl.apply(vortons_[j], gfi);
       //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
     }
-    Pout<<"n_affected: min="<<min(n_affected)<<" / max="<<max(n_affected)<<" / avg="<<average(n_affected)<<endl;
+    Info<<"n_affected: min="<<gMin(n_affected)<<" / max="<<gMax(n_affected)<<" / avg="<<gAverage(n_affected)<<endl;
     
+#ifndef OF16ext
+    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+    {
+      vtkSurfaceWriter().write
+      (
+	this->patch().boundaryMesh().mesh().time().path() /
+	this->patch().boundaryMesh().mesh().time().timeName(), 
+	"globalPatch", 
+	globalPatch_().points(), 
+	globalPatch_(),
+       
+       "u",
+       gfluc,
+       false,
+       true
+      );
+    }
+#endif
+     
     // Make fluctuations global
     reduce(gfluc, sumOp<vectorField>());
     
+#ifndef OF16ext
+    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+    {
+      vtkSurfaceWriter().write
+      (
+	this->patch().boundaryMesh().mesh().time().path() /
+	this->patch().boundaryMesh().mesh().time().timeName(), 
+	"globalPatch_globalizedFluctuations", 
+	globalPatch_().points(), 
+	globalPatch_(),
+       
+       "u",
+       gfluc,
+       false,
+       true
+      );
+    }
+#endif
+
     tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
     vectorField& fluctuations = tfluctuations();
     

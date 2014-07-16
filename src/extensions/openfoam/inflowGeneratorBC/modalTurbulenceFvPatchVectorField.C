@@ -25,8 +25,6 @@ namespace Foam
 {
 
 
-//defineTypeNameAndDebug(modalTurbulenceFvPatchVectorField, 0);
-
 void modalTurbulenceFvPatchVectorField::writeStateVisualization
 (
   int i,

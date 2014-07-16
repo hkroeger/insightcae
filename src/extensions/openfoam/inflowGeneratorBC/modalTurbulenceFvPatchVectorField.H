@@ -149,6 +149,34 @@ public:
 	    const labelList&
 	);
 	
+        //- Construct and return a clone
+        virtual tmp<fvPatchVectorField> clone() const
+        {
+            return tmp<fvPatchVectorField>
+            (
+                new modalTurbulenceFvPatchVectorField
+                (
+                    *this
+                )
+            );
+        }
+        
+        //- Construct and return a clone setting internal field reference
+        virtual tmp<fvPatchVectorField> clone
+        (
+            const DimensionedField<vector, volMesh>& iF
+        ) const
+        {
+            return tmp<fvPatchVectorField>
+            (
+                new modalTurbulenceFvPatchVectorField
+                (
+                    *this,
+                    iF
+                )
+            );
+        }
+
 
         // Evaluation functions
 

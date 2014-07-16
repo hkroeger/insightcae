@@ -233,6 +233,9 @@ void modalTurbulenceFvPatchVectorField::rmap
   }
 }
 
+#define OFLD(f) \
+ Pout<<#f<<": min="<<gMin(f)<<", max="<<gMax(f)<<", avg="<<gAverage(f)<<endl;
+ 
 void modalTurbulenceFvPatchVectorField::createModes()
 {
   const polyPatch& ppatch = patch().patch();
@@ -259,6 +262,9 @@ void modalTurbulenceFvPatchVectorField::createModes()
     delta_max
   );
   
+  OFLD(delta_max);
+  OFLD(lcut);
+  
   scalar ce=3., ctau=2.;
   scalar alpha=0.025;
 #warning viscosity is hard-coded!
@@ -273,7 +279,15 @@ void modalTurbulenceFvPatchVectorField::createModes()
   scalarField kcut = 2.*M_PI/lcut;
   scalar kcutmax=gMax(kcut);
   scalarField keta=2.*M_PI/ (pow(nu,3)*lt/pow(mag(Umean())+SMALL, 3));
+
   tau_=ctau*lemax/ ( gSum(-Umean()&patch().Sf()) / gSum(patch().magSf()) );
+  
+  OFLD(lt);
+  OFLD(le);
+  OFLD(ke);
+  OFLD(kcut);
+  OFLD(keta);
+  Info<<tau_<<endl;
   
   {
     std::vector<scalar> ks;
@@ -282,6 +296,7 @@ void modalTurbulenceFvPatchVectorField::createModes()
     const label nmax=10000;
     while ( (kn=kmin*::pow(1.+alpha, ks.size())) < 1.5*kcutmax )
     {
+      Info<<kn<<endl;
       ks.push_back(kn);
       if (ks.size()>=nmax)
       {
@@ -333,7 +348,7 @@ void modalTurbulenceFvPatchVectorField::createModes()
       reduce(m.phi, sumOp<scalar>());
       reduce(m.s, sumOp<scalar>());
       reduce(m.sigma, sumOp<vector>());
-            
+                  
       scalarField feta=exp(-pow(12.*k/keta,2));
       scalarField fcut=exp(-pow(4*max(k-0.9*kcut,0.0)/kcut, 3));
       scalarField Ek= feta*fcut*
@@ -346,10 +361,14 @@ void modalTurbulenceFvPatchVectorField::createModes()
       
       m.q=Ek*delta_k;
       qsum+=m.q;
+      
+      Pout<<"mode #"<<label(i)<<" : "<<endl;
+      Pout<<m.d<<", "<<m.phi<<", "<<m.s<<", "<<m.sigma<<endl;
+      OFLD(m.q);
     }
     forAll(modes_, i)
     {
-      modes_[i].q/=qsum;
+      modes_[i].q/=max(SMALL, qsum);
     }
     Info<<"Created n="<<modes_.size()<<" modes."<<endl;
   }
@@ -403,23 +422,26 @@ void modalTurbulenceFvPatchVectorField::write(Ostream& os) const
 
 Ostream& operator<<(Ostream& os, const modalTurbulenceFvPatchVectorField::mode& m)
 {
-  os << m.k <<nl;
-  os << m.phi <<nl;
-  os << m.s <<nl;
-  os << m.d <<nl;
-  os << m.sigma <<nl;
-  os << m.q <<nl;
+  dictionary d;
+  d.add("k", m.k);
+  d.add("phi", m.phi);
+  d.add("s", m.s);
+  d.add("d", m.d);
+  d.add("sigma", m.sigma);
+  d.add("q", m.q);
+  os << d;
   return os;
 }
 
 Istream& operator>>(Istream& os, modalTurbulenceFvPatchVectorField::mode& m)
 {
-  m.k=readScalar(os);
-  m.phi=readScalar(os);
-  m.s=readScalar(os);
-  m.d=vector(os); 
-  m.sigma=vector(os);
-  m.q=scalarField(os);
+  dictionary d(os);
+  m.k=readScalar(d.lookup("k"));
+  m.phi=readScalar(d.lookup("phi"));
+  m.s=readScalar(d.lookup("s"));
+  m.d=vector(d.lookup("d")); 
+  m.sigma=vector(d.lookup("sigma"));
+  m.q=scalarField(d.lookup("q"));
   return os;
 }
 

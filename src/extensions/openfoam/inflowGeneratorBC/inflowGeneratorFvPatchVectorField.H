@@ -103,6 +103,13 @@ protected:
       labelList& visited,
       label& depth
     ) const;
+
+    tmp<Field<TurbulentStructure> > filterVortons
+    (
+	const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
+	const fvPatchFieldMapper& mapper,
+	const Field<TurbulentStructure>& vlist
+    ) const;    
     
 public:
 

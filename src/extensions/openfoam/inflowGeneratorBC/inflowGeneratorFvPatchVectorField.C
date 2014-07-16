@@ -46,7 +46,7 @@ SourceFiles
 #include "PstreamReduceOps.H"
 #include "PstreamCombineReduceOps.H"
 #include "addToRunTimeSelectionTable.H"
-
+#include "fvPatchFieldMapper.H"
 #include "vtkSurfaceWriter.H"
 
 #include "base/vtktools.h"
@@ -194,16 +194,63 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 }
 
 template<class TurbulentStructure>
+tmp<Field<TurbulentStructure> > 
+inflowGeneratorFvPatchVectorField<TurbulentStructure>::filterVortons
+(
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
+    const fvPatchFieldMapper& mapper,
+    const Field<TurbulentStructure>& vlist
+) const
+{
+  tmp<Field<TurbulentStructure> > rnewlist(new Field<TurbulentStructure>());
+  Field<TurbulentStructure>& newlist=rnewlist();
+  
+  if (mapper.direct() && &mapper.directAddressing() && mapper.directAddressing().size())
+  {
+    const labelUList& addr=mapper.directAddressing();
+    HashTable<label, label> inverseAddr;
+    forAll(addr, j)
+    {
+      inverseAddr.insert(addr[j], j);
+    }
+  
+    if (debug) Info<<"mapinfo: "<<mapper.direct()<<", "<<size()<<", "<<mapper.directAddressing().size()<<", "<<inverseAddr.size()<<endl;;
+    
+    label j=0;
+    forAll(vlist, i)
+    {
+      const TurbulentStructure& ov=vlist[i];
+      if (inverseAddr.found(ov.creaFace()))
+      {
+	label myf=inverseAddr[ov.creaFace()];
+	TurbulentStructure nv(ov);
+	nv.setCreaFace(myf);
+	newlist.resize(newlist.size()+1);
+	newlist[newlist.size()-1]=nv;
+      }
+    }
+    if (debug) Info<<"Kept "<<newlist.size()<<" vortons."<<endl;
+  }
+  else
+  {
+    // create new vortons, if meshes don't match
+  }
+  
+  return rnewlist;
+}
+
+// this is called during decomposePar
+template<class TurbulentStructure>
 inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVectorField
 (
-    const inflowGeneratorFvPatchVectorField& ptf,
+    const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
     const fvPatch& p,
     const DimensionedField<vector, volMesh>& iF,
     const fvPatchFieldMapper& mapper
 )
 :
     inflowGeneratorBaseFvPatchVectorField(ptf, p, iF, mapper),
-    vortons_(ptf.vortons_),
+    vortons_(filterVortons(ptf, mapper, ptf.vortons_)),
     tau_(ptf.tau_?new scalarField(*(ptf.tau_), mapper):NULL),
     crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_), mapper):NULL),
     structureParameters_(ptf.structureParameters_)
@@ -287,10 +334,40 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
 )
 {
     inflowGeneratorBaseFvPatchVectorField::rmap(ptf, addr);
+    
     const inflowGeneratorFvPatchVectorField<TurbulentStructure>& tiptf =
       refCast<const inflowGeneratorFvPatchVectorField<TurbulentStructure> >(ptf);
-    if (tau_) tau_->rmap(*(tiptf.tau_), addr);
-    if (crTimes_) crTimes_->rmap(*(tiptf.crTimes_), addr);
+    
+    // insert vortons and correct their creaFace member
+    {
+      if (debug) Info<<"mapinfo: "<<size()<<", "<<addr.size()<<endl;
+      
+      label j=0;
+      const Field<TurbulentStructure>& vlist=tiptf.vortons_;
+      forAll(vlist, i)
+      {
+	const TurbulentStructure& ov=vlist[i];
+	label myf=addr[ov.creaFace()];
+	TurbulentStructure nv(ov);
+	nv.setCreaFace(myf);
+	vortons_.resize(vortons_.size()+1);
+	vortons_[vortons_.size()-1]=nv;
+      }
+      if (debug) Info<<"Vorton list now at size "<<vortons_.size()<<endl;
+    }
+      
+    if (tiptf.tau_)
+    {
+      if (!tau_) tau_.reset(new scalarField(size(), 0.0));
+      tau_->rmap(*(tiptf.tau_), addr);
+    }
+    
+    if (tiptf.crTimes_) 
+    {
+      if (!crTimes_) crTimes_.reset(new scalarField(size(), 0.0));
+      crTimes_->rmap(*(tiptf.crTimes_), addr);
+    }
+    
     structureParameters_.rmap(ptf, addr);
 }
 

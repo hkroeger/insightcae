@@ -938,7 +938,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]="inflowGenerator<"+p_.structureType()+">";
+  BC["type"]=p_.type();
   BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
   
   BC["c"]="uniform 16";
@@ -982,13 +982,14 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 		  (
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-		    ("spottype", new SelectionParameter(0, 
+		    ("type", new SelectionParameter(0, 
 			    list_of<string>
-			    ("hatSpot")
-			    ("gaussianSpot")
-			    ("decayingTurbulenceSpot")
+			    ("inflowGenerator<hatSpot>")
+			    ("inflowGenerator<gaussianSpot>")
+			    ("inflowGenerator<decayingTurbulenceSpot>")
+			    ("modalTurbulence")
 			    , 
-		      "Type of turbulent structure"))
+		      "Type of inflow generator"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Inflow generator parameters"

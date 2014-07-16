@@ -258,9 +258,6 @@ protected:
     Field<scalar> c_;
     
     autoPtr<tensorField> Lund_;
-    autoPtr<Field<scalar> > conditioningFactor_;
-    
-    scalar overlap_;
     
     label curTimeIndex_;
 
@@ -278,7 +275,7 @@ protected:
     mutable FaceSearcher boundaryTree_;
     
 public:
-    virtual void computeConditioningFactor() =0;
+    virtual void computeConditioningFactor();
 
     //- Runtime type information
     TypeName("inflowGeneratorBase");
@@ -342,7 +339,6 @@ public:
 	inline Field<vector>& Umean() { return Umean_; }
 	inline Field<symmTensor>& R() { return R_; }
 	inline Field<symmTensor>& L() { return L_; }
-	inline scalar& overlap() { return overlap_; }
 	inline const Field<vector>& Umean() const { return Umean_; }
 	inline const Field<symmTensor>& R() const { return R_; }
 	inline const Field<symmTensor>& L() const { return L_; }

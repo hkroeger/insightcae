@@ -779,7 +779,8 @@ void PipeInflow::createCase
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
-    .set_mixingLength(0.1*D)
+    .set_uniformConvection(p.getBool("inflow/uniformConvection"))
+    .set_type(p.get<SelectionParameter>("inflow/type").selection())
     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
   ));
   

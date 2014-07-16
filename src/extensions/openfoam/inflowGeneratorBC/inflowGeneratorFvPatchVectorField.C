@@ -63,48 +63,6 @@ using namespace boost;
 
 namespace Foam
 {
-template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeConditioningFactor()
-{
-
-  vectorField uMean(size(), vector::zero);
-  symmTensorField uPrime2Mean(size(), symmTensor::zero);
-//   scalar N=0.0;
-  label N_total=0;
-  scalar A=gSum(patch().magSf()), V=0.0;
-  
-  Info<<"A="<<A<<endl;
-  
-  scalar dt=this->db().time().deltaTValue();
-  
-  for (int i=1; i<100000; i++)
-  {
-    scalar t=dt*scalar(i-1);
-    
-    ProcessStepInfo info;
-    vectorField u( continueFluctuationProcess(t, &info) );
-    N_total+=info.n_generated;
-    V += gSum( (-patch().Sf()&Umean()) * dt );
-    
-    scalar alpha = scalar(i - 1)/scalar(i);
-    scalar beta = 1.0/scalar(i);
-    
-    uPrime2Mean += sqr(uMean);
-    uMean = alpha*uMean + beta*u;
-//     N = alpha*N + beta*scalar(info.n_induced);
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
-    
-    Info<<"Averages: uMean="
-	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
-	<<" \t R^2="
-	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
-	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
-		    
-    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
-  }
-  
-  FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
-}
 
 
 template<class TurbulentStructure>

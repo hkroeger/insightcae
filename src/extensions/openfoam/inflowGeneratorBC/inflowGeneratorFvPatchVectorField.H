@@ -105,7 +105,6 @@ protected:
     ) const;
     
 public:
-    virtual void computeConditioningFactor();
 
     //- Runtime type information
     TypeName("inflowGenerator");

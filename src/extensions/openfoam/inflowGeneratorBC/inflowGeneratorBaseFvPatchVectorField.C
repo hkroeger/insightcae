@@ -219,6 +219,48 @@ defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 //     
 // }
 
+void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
+{
+
+  vectorField uMean(size(), vector::zero);
+  symmTensorField uPrime2Mean(size(), symmTensor::zero);
+//   scalar N=0.0;
+  label N_total=0;
+  scalar A=gSum(patch().magSf()), V=0.0;
+  
+  Info<<"A="<<A<<endl;
+  
+  scalar dt=this->db().time().deltaTValue();
+  
+  for (int i=1; i<100000; i++)
+  {
+    scalar t=dt*scalar(i-1);
+    
+    ProcessStepInfo info;
+    vectorField u( continueFluctuationProcess(t, &info) );
+    N_total+=info.n_generated;
+    V += gSum( (-patch().Sf()&Umean()) * dt );
+    
+    scalar alpha = scalar(i - 1)/scalar(i);
+    scalar beta = 1.0/scalar(i);
+    
+    uPrime2Mean += sqr(uMean);
+    uMean = alpha*uMean + beta*u;
+//     N = alpha*N + beta*scalar(info.n_induced);
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
+    
+    Info<<"Averages: uMean="
+	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
+	<<" \t R^2="
+	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
+	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
+		    
+    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
+  }
+  
+  FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
+}
+
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 (
     const fvPatch& p,
@@ -231,8 +273,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
     c_(p.size(), 16),
-    conditioningFactor_(),
-    overlap_(0.5),
     curTimeIndex_(-1)
 {
 }
@@ -251,8 +291,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_(ptf.R_, mapper),
     L_(ptf.L_, mapper),
     c_(ptf.c_, mapper),
-    conditioningFactor_(),
-    overlap_(ptf.overlap_),
     curTimeIndex_(ptf.curTimeIndex_)
 {
 }
@@ -271,18 +309,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_("R", dict, size()),
     L_("L", dict, size()),
     c_("c", dict, size()),
-    overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
     curTimeIndex_(-1)
 {  
-  if (dict.found("conditioningFactor"))
-  {
-      conditioningFactor_.reset
-      (
-	new scalarField("conditioningFactor", 
-			dict, 
-			this->size())
-      );
-  }
 }
 
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
@@ -295,8 +323,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
 {}
 
@@ -311,8 +337,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
 {}
 
@@ -385,11 +409,7 @@ vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label f
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-//   if (debug>5)
-//   {
-//     Info<<"Calculating conditioning factor. This will take a long time. Reduce debug level, if inappropriate."<<endl;
-//     computeConditioningFactor();
-//   }
+
   
   if (!Lund_.valid())
   {
@@ -458,13 +478,7 @@ void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
     R_.writeEntry("R", os);
     L_.writeEntry("L", os);
     c_.writeEntry("c", os);
-    os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
-    
-    if (conditioningFactor_.valid())
-    {
-        conditioningFactor_().writeEntry("conditioningFactor", os);
-    }
-    
+        
     fixedValueFvPatchField<vector>::write(os);
 }
 

@@ -207,7 +207,13 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::filterVortons
   
   if (mapper.direct() && &mapper.directAddressing() && mapper.directAddressing().size())
   {
-    const labelUList& addr=mapper.directAddressing();
+    const 
+#ifdef OF16ext
+    unallocLabelList
+#else
+    labelUList
+#endif
+    & addr=mapper.directAddressing();
     HashTable<label, label> inverseAddr;
     forAll(addr, j)
     {

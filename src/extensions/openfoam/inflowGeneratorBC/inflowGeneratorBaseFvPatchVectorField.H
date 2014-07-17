@@ -342,6 +342,11 @@ public:
 	inline const Field<vector>& Umean() const { return Umean_; }
 	inline const Field<symmTensor>& R() const { return R_; }
 	inline const Field<symmTensor>& L() const { return L_; }
+	
+	/**
+	 * return the max edge lengths for all faces
+	 */
+	tmp<scalarField> maxEdgeLengths() const;
 
 	inline vector averageMeanVelocity() const
 	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }

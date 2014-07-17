@@ -244,17 +244,7 @@ void modalTurbulenceFvPatchVectorField::createModes()
   
   const scalarField& dw=ywall.boundaryField()[patch().index()];
   scalarField delta_x= 2.*(patch().Cf() - ppatch.faceCellCentres()) & patch().nf();
-  scalarField delta_max_edge(size(), 0.0);
-  forAll(ppatch.edges(), ei)
-  {
-    const edge& e = ppatch.edges()[ei];
-    scalar this_edge_len=e.mag(ppatch.localPoints());
-    forAll(ppatch.edgeFaces()[ei], j)
-    {
-      label fi = ppatch.edgeFaces()[ei][j];
-      delta_max_edge[fi] = max(delta_max_edge[fi], this_edge_len);
-    }
-  }
+  scalarField delta_max_edge(maxEdgeLengths());
   scalarField delta_max=max(delta_max_edge, delta_x);
   scalarField lcut=2.*min
   (
@@ -282,13 +272,13 @@ void modalTurbulenceFvPatchVectorField::createModes()
 
   tau_=ctau*lemax/ ( gSum(-Umean()&patch().Sf()) / gSum(patch().magSf()) );
   
-  OFLD(lt);
-  OFLD(le);
-  OFLD(ke);
-  OFLD(kcut);
-  OFLD(keta);
-  Info<<tau_<<endl;
-  
+//   OFLD(lt);
+//   OFLD(le);
+//   OFLD(ke);
+//   OFLD(kcut);
+//   OFLD(keta);
+//   Info<<tau_<<endl;
+//   
   {
     std::vector<scalar> ks;
     scalar kn=0;

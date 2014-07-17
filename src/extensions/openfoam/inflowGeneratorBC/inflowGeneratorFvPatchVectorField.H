@@ -80,6 +80,11 @@ protected:
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
+    
+    /**
+     * clipped length scale field
+     */
+    PtrList<ESAnalyze> esa_;
         
     void computeTau();
     
@@ -92,8 +97,6 @@ protected:
     ) const;
     
 
-    scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
-    
     void induceInNeighbours
     (
       vectorField& fluctuations, 

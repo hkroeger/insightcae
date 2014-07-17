@@ -781,6 +781,7 @@ void PipeInflow::createCase
     .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
+    .set_volexcess(p.getDouble("inflow/volexcess"))
     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
   ));
   

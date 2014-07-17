@@ -1063,6 +1063,7 @@ void ChannelInflow::createCase
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
+    .set_volexcess(p.getDouble("inflow/volexcess"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
     //.set_mixingLength(0.1*D)
     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))

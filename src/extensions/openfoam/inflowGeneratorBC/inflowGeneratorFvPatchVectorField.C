@@ -216,7 +216,6 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::filterVortons
   
     if (debug) Info<<"mapinfo: "<<mapper.direct()<<", "<<size()<<", "<<mapper.directAddressing().size()<<", "<<inverseAddr.size()<<endl;;
     
-    label j=0;
     forAll(vlist, i)
     {
       const TurbulentStructure& ov=vlist[i];
@@ -342,7 +341,6 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
     {
       if (debug) Info<<"mapinfo: "<<size()<<", "<<addr.size()<<endl;
       
-      label j=0;
       const Field<TurbulentStructure>& vlist=tiptf.vortons_;
       forAll(vlist, i)
       {
@@ -371,29 +369,6 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
     structureParameters_.rmap(ptf, addr);
 }
 
-template<class TurbulentStructure>
-scalar inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeMinOverlap
-(
-  const autoPtr<indexedOctree<treeDataPoint> >& tree, 
-  const TurbulentStructure& snew
-) const
-{
-  if (tree.valid())
-  {
-    scalar nearestDistSqr=GREAT;
-    pointIndexHit r = tree().findNearest(snew, nearestDistSqr);
-    if (r.hit())
-    {
-      vector d = r.hitPoint() - snew;
-      scalar l1 = snew.Lalong(d);
-      scalar l2 = vortons_[r.index()].Lalong(-d);
-      scalar ovl = ( 0.5*(l1+l2) - mag(d) ) / (Foam::min(l1, l2));
-
-      return ovl;
-    }
-  }
-  return 0;
-}
 
 template<class TurbulentStructure>
 point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(label fi)
@@ -438,10 +413,10 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
   {
     if (!uniformConvection_) Umean=Umean_[fi];
     
-    vector L=eigenValues(L_[fi]);
-    scalar minL=sqrt(patch().magSf()[fi]);
-    (*tau_)[fi] = max(minL,L.x())*max(minL,L.y())*max(minL,L.z()) 
-		    / (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+    // get (already clipped) length scales
+    scalar L1=mag(esa_[fi].c1()), L2=mag(esa_[fi].c2()), L3=mag(esa_[fi].c3());
+    
+    (*tau_)[fi] = L1*L2*L3 / (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
   }
 
   Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
@@ -449,244 +424,236 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
 }
 
 
-template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::induceInNeighbours
-(
-  vectorField& fluctuations, 
-  TurbulentStructure& v, 
-  const typename TurbulentStructure::StructureParameters& sp, 
-  label faceI, 
-  labelList& visited,
-  label& depth
-) const
-{
-  depth++;
-  if (faceI<0) return;
-  
-  vector u = v.fluctuation(sp, patch().Cf()[faceI]);
-  
-  if (mag(u)>SMALL)
-  {
-    
-    fluctuations[faceI] += u / sqrt(c_[faceI]);
-    visited[faceI]=1;
-    
-    forAll(this->patch().patch().faceFaces()[faceI], j)
-    {
-      label nfi=this->patch().patch().faceFaces()[faceI][j];
-      if (!visited[nfi])
-      {
-	induceInNeighbours(fluctuations, v, sp, nfi, visited, depth);
-      }
-    }
-  }
-}
 
 template<class TurbulentStructure>
 tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(scalar t, ProcessStepInfo *info)
 {
 
-    if (!tau_.get())
+  {
+    label nclip1=0;
+    bool init_needed=false;
+    
+    if (size() != esa_.size())
     {
-      computeTau();
+      scalarField maxEdgeL(maxEdgeLengths());
+      
+      esa_.setSize(size());
+      forAll(*this, fi)
+      {
+	scalar minL=2.*maxEdgeL[fi];
+	esa_.set(fi, new ESAnalyze(L_[fi]));
+	if (esa_[fi].clip(minL)) nclip1++;	
+      }
+      init_needed=true;
     }
     
-    if (!globalPatch_.valid())
+    reduce(init_needed, orOp<bool>());
+    
+    if (init_needed)
     {
-      globalPatch_.reset(new globalPatch(this->patch().patch()));
+      reduce(nclip1, sumOp<label>());
+      
+      if (nclip1)
+	Info<<" Inflow generator ["<<patch().name()<<"]: Extended local length scale to minimum length "<<nclip1<<" time(s)."<<endl;
+    }
+  }
+
+
+  if (!tau_.get())
+  {
+    computeTau();
+  }
+  
+  if (!globalPatch_.valid())
+  {
+    globalPatch_.reset(new globalPatch(this->patch().patch()));
+  }
+  
+  if (!crTimes_.get())
+  {
+    Info<<"reset crTimes"<<endl;
+    crTimes_.reset(new scalarField(size(), this->db().time().value()));
+    scalar rnum=ranGen_();
+    forAll((*crTimes_), fi)
+      (*crTimes_)[fi] += (1.0 - 2.0*rnum)*(*tau_)[fi];
+  }
+  
+  /**
+    * ==================== Generation of new turbulent structures ========================
+    */    
+  label n_generated=0;
+
+  
+  /**
+    * Creation of new spots
+    */
+  
+  if (debug) Info<<"Generating new spots"<<endl;
+  
+  label nclip2=0;
+  //scalar dt=this->db().time().deltaT().value();
+  vector Umean;
+  if (uniformConvection_) Umean=averageMeanVelocity();
+  
+  forAll(*this, fi)
+  {
+    vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
+    
+    scalar Lalong=esa_[fi].Lalong(in_dir);
+    
+    if (!uniformConvection_) Umean=Umean_[fi];
+    
+    if ((Umean&in_dir) < SMALL)
+    {
+      Umean += in_dir*(-(Umean&in_dir)+SMALL);
+      nclip2++;
     }
     
-    if (!crTimes_.get())
+    scalar horiz = t + 0.5*Lalong/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+
+      // if creation time is within the current time step then create structure now
+//       if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
+    
+    while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 )
     {
-      Info<<"reset crTimes"<<endl;
-      crTimes_.reset(new scalarField(size(), this->db().time().value()));
+      point pf = randomFacePosition(fi); ;
+      
+      TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, esa_[fi].Leig(), fi);
+      snew.randomize(ranGen_);
+      
+      // append new structure to the end of the list
+      vortons_.resize(vortons_.size()+1);
+      vortons_[vortons_.size()-1]=snew;
+      
+      if (debug>=2) Info<<"."<<pf<<" "<<flush;
+      n_generated++;
+      
       scalar rnum=ranGen_();
-      forAll((*crTimes_), fi)
-	(*crTimes_)[fi] += (1.0 - 2.0*rnum)*(*tau_)[fi];
+      (*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
+      
+      //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
     }
     
-    /**
-     * ==================== Generation of new turbulent structures ========================
-     */    
-    label n_generated=0;
-
-    
-    /**
-     * Creation of new spots
-     */
-    
-    if (debug) Info<<"Generating new spots"<<endl;
-    
-    label nclip1=0, nclip2=0;
-    //scalar dt=this->db().time().deltaT().value();
-    vector Umean;
-    if (uniformConvection_) Umean=averageMeanVelocity();
-    forAll(*this, fi)
-    {
-      scalar minL=sqrt(patch().magSf()[fi]);
-      vector L=eigenValues(L_[fi]);
-      scalar Lmax=max(L.x(), max(L.y(), L.z()));
-      if (!uniformConvection_) Umean=Umean_[fi];
-      vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
-      
-      if ((Umean&in_dir) < SMALL)
-      {
-	Umean += in_dir*(-(Umean&in_dir)+SMALL);
-	nclip2++;
-      }
-      
-      if (Lmax<minL)
-      {
-	Lmax=minL;
-	nclip1++;
-      }
-      scalar horiz = t + 0.5*Lmax/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
- 
-       // if creation time is within the current time step then create structure now
-      if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
-      
-      while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 )
-      {
-	point pf = randomFacePosition(fi); ;
-	
-	TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, L_[fi], minL, fi);
-	snew.randomize(ranGen_);
-	
-	// append new structure to the end of the list
-	vortons_.resize(vortons_.size()+1);
-	vortons_[vortons_.size()-1]=snew;
-	
-	if (debug>=2) Info<<"."<<pf<<" "<<flush;
-	n_generated++;
-	
-	scalar rnum=ranGen_();
-	(*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
-	
-	//Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
-      }
-      
-      if (debug>=2) Info<<endl;
-    }
-    
-    reduce(nclip1, sumOp<label>());
-    reduce(nclip2, sumOp<label>());
-    
-    if (nclip1)
-      Info<<" Inflow generator ["<<patch().name()<<"]: Extended local length scale to face size "<<nclip1<<" time(s)."<<endl;
-    if (nclip2)
-      Info<<" Inflow generator ["<<patch().name()<<"]: Increased local inflow velocity to SMALL "<<nclip2<<" time(s)."<<endl;
-    //autoPtr<indexedOctree<treeDataPoint> > tree = buildTree();
+    if (debug>=2) Info<<endl;
+  }
+  
+  reduce(nclip2, sumOp<label>());
+  
+  if (nclip2)
+    Info<<" Inflow generator ["<<patch().name()<<"]: Increased local inflow velocity to SMALL "<<nclip2<<" time(s)."<<endl;
+  //autoPtr<indexedOctree<treeDataPoint> > tree = buildTree();
 
 
-    if (debug) Info<<"Generating fluctuations."<<endl;
-    /**
-     * ==================== Generation of turbulent fluctuations ========================
-     */
-    scalarField cglob(globalPatch_->size(), 0.0);
-    globalPatch_->insertLocalFaceValues(c_, cglob);
-    reduce(cglob, sumOp<scalarField>());
-    
-    vectorField gfluc(globalPatch_->size(), vector::zero);
-    
-    RecursiveApply<TurbulentStructure, globalPatch> apl(globalPatch_(), cglob, structureParameters_, gfluc);
-    labelList n_affected(vortons_.size(), 0);
-    forAll(vortons_, j)
-    {
-      label gfi=globalPatch_->toGlobalFaceI(vortons_[j].creaFace());
-      n_affected[j]=apl.apply(vortons_[j], gfi);
-      //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
-    }
-    Info<<"n_affected: min="<<gMin(n_affected)<<" / max="<<gMax(n_affected)<<" / avg="<<gAverage(n_affected)<<endl;
-    
+  if (debug) Info<<"Generating fluctuations."<<endl;
+  /**
+    * ==================== Generation of turbulent fluctuations ========================
+    */
+  scalarField cglob(globalPatch_->size(), 0.0);
+  globalPatch_->insertLocalFaceValues(c_, cglob);
+
+  reduce(cglob, sumOp<scalarField>());
+
+  vectorField gfluc(globalPatch_->size(), vector::zero);
+
+  RecursiveApply<TurbulentStructure, globalPatch> apl(globalPatch_(), cglob, structureParameters_, gfluc);
+  labelList n_affected(vortons_.size(), 0);
+  forAll(vortons_, j)
+  {
+    label gfi=globalPatch_->toGlobalFaceI(vortons_[j].creaFace());
+    n_affected[j]=apl.apply(vortons_[j], gfi);
+    //Pout<<"vorton #"<<j<<": "<<vortons_[j].creaFace()<<" ("<<gfi<<") affected n="<<n_affected<<endl;
+  }
+  Info<<"n_affected: min="<<gMin(n_affected)<<" / max="<<gMax(n_affected)<<" / avg="<<gAverage(n_affected)<<endl;
+  
 #ifndef OF16ext
-    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
-    {
-      vtkSurfaceWriter().write
-      (
-	this->patch().boundaryMesh().mesh().time().path() /
-	this->patch().boundaryMesh().mesh().time().timeName(), 
-	"globalPatch", 
-	globalPatch_().points(), 
-	globalPatch_(),
-       
-       "u",
-       gfluc,
-       false,
-       true
-      );
-    }
+  if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+  {
+    vtkSurfaceWriter().write
+    (
+      this->patch().boundaryMesh().mesh().time().path() /
+      this->patch().boundaryMesh().mesh().time().timeName(), 
+      "globalPatch", 
+      globalPatch_().points(), 
+      globalPatch_(),
+      
+      "u",
+      gfluc,
+      false,
+      true
+    );
+  }
 #endif
-     
-    // Make fluctuations global
-    reduce(gfluc, sumOp<vectorField>());
     
+  // Make fluctuations global
+  reduce(gfluc, sumOp<vectorField>());
+  
 #ifndef OF16ext
-    if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
-    {
-      vtkSurfaceWriter().write
-      (
-	this->patch().boundaryMesh().mesh().time().path() /
-	this->patch().boundaryMesh().mesh().time().timeName(), 
-	"globalPatch_globalizedFluctuations", 
-	globalPatch_().points(), 
-	globalPatch_(),
-       
-       "u",
-       gfluc,
-       false,
-       true
-      );
-    }
+  if ( (debug>0) && (patch().boundaryMesh().mesh().time().outputTime()) )
+  {
+    vtkSurfaceWriter().write
+    (
+      this->patch().boundaryMesh().mesh().time().path() /
+      this->patch().boundaryMesh().mesh().time().timeName(), 
+      "globalPatch_globalizedFluctuations", 
+      globalPatch_().points(), 
+      globalPatch_(),
+      
+      "u",
+      gfluc,
+      false,
+      true
+    );
+  }
 #endif
 
-    tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
-    vectorField& fluctuations = tfluctuations();
-    
-    
-    if (debug) Info<<"Convecting and removing structures."<<endl;
-    forAll(vortons_, j)
+  tmp<vectorField> tfluctuations=globalPatch_->extractLocalFaceValues(gfluc);
+  vectorField& fluctuations = tfluctuations();
+  
+  
+  if (debug) Info<<"Convecting and removing structures."<<endl;
+  forAll(vortons_, j)
+  {
+    // convect structure
+    vortons_[j].moveForward(this->db().time().deltaT().value());
+  }
+  
+  Field<TurbulentStructure> os(vortons_);
+  label kept=0;
+  forAll(vortons_, j)
+  {
+    if (!vortons_[j].passedThrough())
     {
-      // convect structure
-      vortons_[j].moveForward(this->db().time().deltaT().value());
+      vortons_[kept++]=os[j];
     }
-    
-    Field<TurbulentStructure> os(vortons_);
-    label kept=0;
-    forAll(vortons_, j)
-    {
-      if (!vortons_[j].passedThrough())
-      {
-	vortons_[kept++]=os[j];
-      }
-    }
-    vortons_.resize(kept);
-    label n_removed=os.size()-kept;
-    label n_total=vortons_.size();
+  }
+  vortons_.resize(kept);
+  label n_removed=os.size()-kept;
+  label n_total=vortons_.size();
 
-    reduce(n_generated, sumOp<label>());
-    reduce(n_removed, sumOp<label>());
-    reduce(n_total, sumOp<label>());
-    //reduce(n_induced, sumOp<label>());
-    
-    Info<<" Inflow generator ["<<patch().name()<<"]: "
-      "Generated "<<n_generated<<
-      ", removed "<<n_removed<<
-      " now total "<<n_total<<
-      //", contributions by "<<n_induced<<
-      endl;
+  reduce(n_generated, sumOp<label>());
+  reduce(n_removed, sumOp<label>());
+  reduce(n_total, sumOp<label>());
+  //reduce(n_induced, sumOp<label>());
+  
+  Info<<" Inflow generator ["<<patch().name()<<"]: "
+    "Generated "<<n_generated<<
+    ", removed "<<n_removed<<
+    " now total "<<n_total<<
+    //", contributions by "<<n_induced<<
+    endl;
 
-    if (info) 
-    {
-      //info->n_induced=n_induced;
-      info->n_removed=n_removed;
-      info->n_generated=n_generated;
-      info->n_total=n_total;
-    }
+  if (info) 
+  {
+    //info->n_induced=n_induced;
+    info->n_removed=n_removed;
+    info->n_generated=n_generated;
+    info->n_total=n_total;
+  }
 
   if (debug>=3)
   {
-   Pout<<" fluctuations: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
-   forAll(fluctuations, j)
+    Pout<<" fluctuations: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
+    forAll(fluctuations, j)
     if (mag(fluctuations[j])>1e3) Pout<<j<<": "<<tfluctuations<<endl;
   }
 

@@ -46,6 +46,7 @@ SourceFiles
 #include "Ostream.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#include <boost/graph/graph_concepts.hpp>
 
 namespace Foam
 {
@@ -55,6 +56,22 @@ class turbulentStructure;
 
 Ostream& operator<<(Ostream&, const turbulentStructure&);
 Istream& operator>>(Istream&, turbulentStructure&);
+
+
+class ESAnalyze
+{
+  tensor es_;
+public:
+  ESAnalyze(const symmTensor& t);
+  bool clip(scalar minL);
+  inline vector c1() const { return es_.x(); }
+  inline vector c2() const { return es_.y(); }
+  inline vector c3() const { return es_.z(); }
+  inline tensor Leig() const { return es_; }
+  scalar Lalong(const vector& x) const;
+  
+  static tensor eigenSystem(const symmTensor& L);
+};
 
 /**
  * base class for turbulent structures.
@@ -107,8 +124,7 @@ public:
       const point& p, 
       const vector& initialDelta, 
       const vector& v, 
-      const symmTensor& L, 
-      scalar minL,
+      const tensor& Leig,
       label creaface
     );
 
@@ -148,7 +164,7 @@ public:
       return Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
     }
     
-    scalar Lalong(const vector& x) const;
+    
     scalar travelledDistance() const;
     scalar passedThrough() const;
     inline label creaFace() const { return creaFace_; }

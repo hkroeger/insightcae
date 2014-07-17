@@ -26,6 +26,7 @@
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace boost;
@@ -941,7 +942,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   BC["type"]=p_.type();
   BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
   
-  BC["c"]="uniform 16";
+  BC["c"]="uniform "+str( format("%g") % p_.volexcess());
   double L=p_.mixingLength();
   BC["L"]="uniform ( "
     +lexical_cast<string>(L)+" 0 0 "
@@ -982,6 +983,7 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 		  (
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+		    ("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
 		    ("type", new SelectionParameter(0, 
 			    list_of<string>
 			    ("inflowGenerator<hatSpot>")

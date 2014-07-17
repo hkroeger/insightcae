@@ -330,6 +330,7 @@ public:
     (uniformConvection, bool, false)
     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
     (delta, double, 1.0)
+    (volexcess, double, 16.0)
     (longLengthScale, LengthScaleProfile, 1.0)
     (latLengthScale, LengthScaleProfile, 1.0)
   )

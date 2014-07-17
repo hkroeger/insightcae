@@ -39,36 +39,9 @@ Author
 namespace Foam
 {
 
-turbulentStructure::turbulentStructure()
-: point(pTraits<point>::zero),
-  velocity_(pTraits<point>::zero),
-  L1_(pTraits<vector>::zero),
-  L2_(pTraits<vector>::zero),
-  L3_(pTraits<vector>::zero),
-  startPoint_(pTraits<point>::zero),
-  creaFace_(-1)
+  
+tensor ESAnalyze::eigenSystem(const symmTensor& L)
 {
-}
-
-turbulentStructure::turbulentStructure(Istream& is)
-: creaFace_(-1)
-{
-  is >> *this;
-}
-
-turbulentStructure::turbulentStructure
-(
-  BoostRandomGen& r, 
-  const point& p, 
-  const vector& initialDelta, 
-  const vector& v, 
-  const symmTensor& L, 
-  scalar minL,
-  label creaface
-)
-: velocity_(v),
-  creaFace_(creaface)
-{  
   /*
   // OF eigensystem analysis is crap for simplest cases: equal eigenvalues result in zero eigenvectors
   vector evals(eigenValues(L));
@@ -89,10 +62,102 @@ turbulentStructure::turbulentStructure
   arma::mat eigvec;
   eig_sym(eigval, eigvec, mL);
   //std::cout<<eigval<<eigvec<<std::endl;
-  L1_ = vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * Foam::max(minL, eigval(0));
-  L2_ = vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * Foam::max(minL, eigval(1));
-  L3_ = vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * Foam::max(minL, eigval(2));
   
+  return tensor
+  (
+   vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * eigval(0),
+   vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1),
+   vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2)
+  );
+}
+
+ESAnalyze::ESAnalyze(const symmTensor& t)
+: es_(eigenSystem(t))
+{
+}
+
+
+bool ESAnalyze::clip(scalar minL)
+{
+  vector L1=c1();
+  vector L2=c2();
+  vector L3=c3();
+
+  scalar mL1=mag(L1);
+  scalar mL2=mag(L2);
+  scalar mL3=mag(L3);
+  
+  bool clipped=false;
+  
+  if (mL1<minL)
+  {
+    L1*=minL/mL1;
+    clipped=true;
+  }
+  if (mL2<minL)
+  {
+    L2*=minL/mL2;
+    clipped=true;
+  }
+  if (mL3<minL)
+  {
+    L3*=minL/mL3;
+    clipped=true;
+  }
+  
+  es_=tensor(L1, L2, L3);
+  
+  return clipped;
+}
+
+scalar ESAnalyze::Lalong(const vector& x) const
+{
+  vector L1=c1();
+  vector L2=c2();
+  vector L3=c3();
+
+  vector e=x/mag(x);
+  diagTensor Alpha(mag(L1), mag(L2), mag(L3));
+  tensor Q( L1/Alpha.xx(), L2/Alpha.yy(), L3/Alpha.zz() );
+  //Info<<"RES="<<(e & ((Q.T()&Alpha&Q) & e))<<endl;
+  return e & (Q.T()&Alpha&Q) & e;
+}
+
+
+turbulentStructure::turbulentStructure()
+: point(pTraits<point>::zero),
+  velocity_(pTraits<point>::zero),
+  L1_(pTraits<vector>::zero),
+  L2_(pTraits<vector>::zero),
+  L3_(pTraits<vector>::zero),
+  startPoint_(pTraits<point>::zero),
+  creaFace_(-1)
+{
+}
+
+turbulentStructure::turbulentStructure(Istream& is)
+: creaFace_(-1)
+{
+  is >> *this;
+}
+
+
+
+turbulentStructure::turbulentStructure
+(
+  BoostRandomGen& r, 
+  const point& p, 
+  const vector& initialDelta, 
+  const vector& v, 
+  const tensor& Leig,
+  label creaface
+)
+: velocity_(v),
+  creaFace_(creaface)
+{  
+  L1_=Leig.x();
+  L2_=Leig.y();
+  L3_=Leig.z();
 
   initialPositioning(p, initialDelta);
 }
@@ -119,15 +184,6 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
 //   return nearestFace_[Pstream::myProcNo()];
 // }
 
-    
-scalar turbulentStructure::Lalong(const vector& x) const
-{
-  vector e=x/mag(x);
-  diagTensor Alpha(mag(L1_), mag(L2_), mag(L3_));
-  tensor Q( L1_/Alpha.xx(), L2_/Alpha.yy(), L3_/Alpha.zz() );
-  //Info<<"RES="<<(e & ((Q.T()&Alpha&Q) & e))<<endl;
-  return e & (Q.T()&Alpha&Q) & e;
-}
 
 scalar turbulentStructure::travelledDistance() const
 {

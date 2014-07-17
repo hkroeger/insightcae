@@ -92,7 +92,7 @@ public:
     // Constructors
     gaussianSpot();
     gaussianSpot(Istream&);
-    gaussianSpot(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
+    gaussianSpot(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v,  const tensor& Leig,
   label creaface);
     gaussianSpot(const gaussianSpot& p);
     

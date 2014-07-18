@@ -363,6 +363,10 @@ multiphaseBC::~multiphaseBC()
 {
 }
 
+void multiphaseBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+}
+
 uniformPhases::uniformPhases()
 {}
 
@@ -417,6 +421,7 @@ SuctionInletBC::SuctionInletBC
 void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
@@ -516,6 +521,7 @@ void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
@@ -1041,6 +1047,7 @@ PressureOutletBC::PressureOutletBC
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  //p_.phasefractions()->addIntoDictionaries(dictionaries);
 
   if (p_.fixMeanValue() && (OFversion()!=160))
   {

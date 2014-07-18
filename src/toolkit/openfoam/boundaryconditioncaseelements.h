@@ -157,6 +157,7 @@ class multiphaseBC
 public:
   virtual ~multiphaseBC();
   
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   // return true, if this field was handled, false otherwise
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
 };

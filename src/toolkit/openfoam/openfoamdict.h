@@ -93,6 +93,8 @@ struct list
     resize(vec.size());
     std::copy(vec.begin(), vec.end(), begin());
   }
+  
+  void insertNoDuplicate(const OFDictData::data& d);
 };
 
 struct dict 

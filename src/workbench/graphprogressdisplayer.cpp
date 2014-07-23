@@ -20,7 +20,9 @@
 
 #include "graphprogressdisplayer.h"
 
+#ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"
+#endif
 
 #include <QCoreApplication>
 #include <QTimer>

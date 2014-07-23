@@ -21,7 +21,9 @@
 #ifndef GRAPHPROGRESSDISPLAYER_H
 #define GRAPHPROGRESSDISPLAYER_H
 
+#ifndef Q_MOC_RUN
 #include <base/analysis.h>
+#endif
 
 #include <map>
 #include <vector>

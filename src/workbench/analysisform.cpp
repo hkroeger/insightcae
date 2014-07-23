@@ -18,7 +18,9 @@
  *
  */
 
+#ifndef Q_MOC_RUN
 #include "base/resultset.h"
+#endif
 
 #include "analysisform.h"
 #include "ui_analysisform.h"

@@ -31,12 +31,14 @@
 #include <QVBoxLayout>
 #include <QSignalMapper>
 
+#ifndef Q_MOC_RUN
 #include "base/factory.h"
 #include "base/parameter.h"
 #include "base/parameterset.h"
 
 #include "boost/tuple/tuple.hpp"
 #include "boost/fusion/tuple.hpp"
+#endif
 
 class ParameterWrapper 
 : public QWidget

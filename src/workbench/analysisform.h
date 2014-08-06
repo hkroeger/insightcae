@@ -21,8 +21,10 @@
 #ifndef ANALYSISFORM_H
 #define ANALYSISFORM_H
 
+#ifndef Q_MOC_RUN
 #include "base/analysis.h"
 #include "base/resultset.h"
+#endif
 
 #include <QMdiSubWindow>
 #include <QThread>

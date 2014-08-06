@@ -25,9 +25,7 @@ namespace Foam
   
 autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(const polyPatch& patch)
 {
-   const polyMesh& mesh=patch.boundaryMesh().mesh();
-//   const globalMeshData& gmd = mesh.globalData();
-//   const globalIndex& gpi = gmd.globalPointNumbering();
+  const polyMesh& mesh=patch.boundaryMesh().mesh();
   
   IOobject addrHeader
   (
@@ -41,9 +39,6 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
   {
     // There is a pointProcAddressing file so use it to get labels
     // on the original mesh
-    Pout<< "globalMeshData::sharedPointGlobalLabels : "
-	<< "Reading pointProcAddressing" << endl;
-
     labelIOList gpi(addrHeader);
   
     typedef Tuple2<point,label> piTuple;
@@ -56,11 +51,7 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
       usedGlobalPts.insert( gpt, piTuple(patch.localPoints()[lpI], -1) );
     }
     
-    //Pout<<"# nglobal="<<usedGlobalPts.size()<<endl;
-    
     Pstream::mapCombineGather(usedGlobalPts, eqOp<piTuple>());
-
-    //Pout<<"# nglobal after gather="<<usedGlobalPts.size()<<endl;
         
     if (Pstream::master())
     {
@@ -72,8 +63,6 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
     }
 
     Pstream::mapCombineScatter(usedGlobalPts);
-
-    //Pout<<"# reduced nglobal="<<usedGlobalPts.size()<<endl;
 
     pointField globalPoints(usedGlobalPts.size());
     forAllIter(pointHashTable, usedGlobalPts, pi)
@@ -138,7 +127,6 @@ globalPatch::globalPatch(const polyPatch& patch)
     nfaces_+=nfaces[j];
     procOfs_[j]=procOfs_[j-1] + nfaces[j-1];
   }
-   Pout<<nfaces<<nfaces_<<procOfs_<<endl;
 }
 
 
@@ -146,78 +134,48 @@ globalPatch::globalPatch(const polyPatch& patch)
 
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 
-// label inflowGeneratorBaseFvPatchVectorField::getNearestFace(const point& p) const
-// {
-//   if (!boundaryTree_.valid())
-//   {
-//     Info << "rebuilding tree" <<endl;
-//     const polyPatch& pp = this->patch().patch();
-//     
-//     if (pp.size() > 0)
-//     {
-//         labelList bndFaces(pp.size());
-// 	
-//         forAll(bndFaces, i)
-//         {
-//             bndFaces[i] =  /*pp.start()*/ + i;
-//         }
-// 
-//         treeBoundBox overallBb(pp.points());
-//         Random rndGen(123456);
-//         overallBb = overallBb.extend(rndGen, 1e-4);
-//         overallBb.min() -= point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-//         overallBb.max() += point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-// 
-//         boundaryTree_.reset
-//         (
-// 	  new indexedOctree<treeDataFace> 
-// 	  (
-// 	      treeDataFace    // all information needed to search faces
-// 	      (
-// 		  false,                      // do not cache bb
-// 		  this->patch().boundaryMesh().mesh(),
-// 		  bndFaces                    // patch faces only
-// 	      ),
-// 	      overallBb,                      // overall search domain
-// 	      8,                              // maxLevel
-// 	      10,                             // leafsize
-// 	      3.0                             // duplicity
-// 	  )
-// 	);
-//     }
-//   }
-//   
-//   if (!boundaryTree_.valid())
-//   {
-//     Pout<<"Patch size is zero."<<endl;
-//     return -1;
-//   }
-//   else
-//   {
-//     Pout<<"Perform nearest face query: "<<flush;
-//     scalar span = boundaryTree_->bb().mag();
-// 
-//     pointIndexHit info = boundaryTree_->findNearest
-//     (
-//       p,
-//       Foam::sqr(span)
-//     );
-//     
-//     if (!info.hit())
-//     {
-// 	info = boundaryTree_->findNearest
-// 	(
-// 	    p,
-// 	    Foam::sqr(GREAT)
-// 	);
-//     }
-//     
-//     label faceI = boundaryTree_->shapes().faceLabels()[info.index()];
-//     Pout <<" faceI"<<p<<"="<<faceI<<endl;
-//     return faceI;
-//   }
-//     
-// }
+
+void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
+{
+
+  vectorField uMean(size(), vector::zero);
+  symmTensorField uPrime2Mean(size(), symmTensor::zero);
+//   scalar N=0.0;
+  label N_total=0;
+  scalar A=gSum(patch().magSf()), V=0.0;
+  
+  Info<<"A="<<A<<endl;
+  
+  scalar dt=this->db().time().deltaTValue();
+  
+  for (int i=1; i<100000; i++)
+  {
+    scalar t=dt*scalar(i-1);
+    
+    ProcessStepInfo info;
+    vectorField u( continueFluctuationProcess(t, &info) );
+    N_total+=info.n_generated;
+    V += gSum( (-patch().Sf()&Umean()) * dt );
+    
+    scalar alpha = scalar(i - 1)/scalar(i);
+    scalar beta = 1.0/scalar(i);
+    
+    uPrime2Mean += sqr(uMean);
+    uMean = alpha*uMean + beta*u;
+//     N = alpha*N + beta*scalar(info.n_induced);
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
+    
+    Info<<"Averages: uMean="
+	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
+	<<" \t R^2="
+	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
+	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
+		    
+    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
+  }
+  
+  FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
+}
 
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 (
@@ -231,8 +189,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
     c_(p.size(), 16),
-    conditioningFactor_(),
-    overlap_(0.5),
     curTimeIndex_(-1)
 {
 }
@@ -251,8 +207,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_(ptf.R_, mapper),
     L_(ptf.L_, mapper),
     c_(ptf.c_, mapper),
-    conditioningFactor_(),
-    overlap_(ptf.overlap_),
     curTimeIndex_(ptf.curTimeIndex_)
 {
 }
@@ -271,18 +225,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     R_("R", dict, size()),
     L_("L", dict, size()),
     c_("c", dict, size()),
-    overlap_(dict.lookupOrDefault<scalar>("overlap", 0.5)),
     curTimeIndex_(-1)
 {  
-  if (dict.found("conditioningFactor"))
-  {
-      conditioningFactor_.reset
-      (
-	new scalarField("conditioningFactor", 
-			dict, 
-			this->size())
-      );
-  }
 }
 
 inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
@@ -295,8 +239,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
 {}
 
@@ -311,8 +253,6 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
   R_(ptf.R_),
   L_(ptf.L_),
   c_(ptf.c_),
-  conditioningFactor_(ptf.conditioningFactor_),
-  overlap_(ptf.overlap_),
   curTimeIndex_(ptf.curTimeIndex_)
 {}
 
@@ -345,6 +285,28 @@ void inflowGeneratorBaseFvPatchVectorField::rmap
     c_.rmap(tiptf.c_, addr);
 }
 
+
+tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::maxEdgeLengths() const
+{
+  tmp<scalarField> res(new scalarField(size(), 0.0));
+  scalarField& delta_max_edge = res();
+  
+  const polyPatch& ppatch = patch().patch();
+
+  forAll(ppatch.edges(), ei)
+  {
+    const edge& e = ppatch.edges()[ei];
+    scalar this_edge_len=e.mag(ppatch.localPoints());
+    forAll(ppatch.edgeFaces()[ei], j)
+    {
+      label fi = ppatch.edgeFaces()[ei][j];
+      delta_max_edge[fi] = max(delta_max_edge[fi], this_edge_len);
+    }
+  }
+  
+  return res;
+}
+
 vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label fi)
 {
   vector n=patch().Sf()[fi]; n/=mag(n);
@@ -357,39 +319,10 @@ vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label f
   return (0.5-ranGen_())*dist*e1 + (0.5-ranGen_())*dist*e2 ;
 }
 
-// autoPtr<indexedOctree<treeDataPoint> > inflowGeneratorBaseFvPatchVectorField::buildTree(const pointField& vloc) const
-// {
-//   if (vloc.size()>3)
-//   {
-//     treeBoundBox overallBb(vloc);
-//     Random rndGen(123456);
-//     overallBb = overallBb.extend(rndGen, 1E-4);
-//     overallBb.min() -= point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-//     overallBb.max() += point(ROOTVSMALL, ROOTVSMALL, ROOTVSMALL);
-// 
-//     return autoPtr<indexedOctree<treeDataPoint> > 
-//     (
-//       new indexedOctree<treeDataPoint>
-//       ( 
-// 	treeDataPoint( vloc ),
-// 	overallBb,                      // overall search domain
-// 	8,                              // maxLevel
-// 	10,                             // leafsize
-// 	3.0                             // duplicity
-//       )
-//     );
-//   }
-//   return autoPtr<indexedOctree<treeDataPoint> > ();
-// }
-
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-//   if (debug>5)
-//   {
-//     Info<<"Calculating conditioning factor. This will take a long time. Reduce debug level, if inappropriate."<<endl;
-//     computeConditioningFactor();
-//   }
+
   
   if (!Lund_.valid())
   {
@@ -458,13 +391,7 @@ void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
     R_.writeEntry("R", os);
     L_.writeEntry("L", os);
     c_.writeEntry("c", os);
-    os.writeKeyword("overlap") << overlap_ << token::END_STATEMENT << nl;
-    
-    if (conditioningFactor_.valid())
-    {
-        conditioningFactor_().writeEntry("conditioningFactor", os);
-    }
-    
+        
     fixedValueFvPatchField<vector>::write(os);
 }
 

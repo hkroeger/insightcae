@@ -157,6 +157,7 @@ class multiphaseBC
 public:
   virtual ~multiphaseBC();
   
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   // return true, if this field was handled, false otherwise
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
 };
@@ -326,10 +327,11 @@ public:
   };
 
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
-    (structureType, std::string, "hatSpot")
+    (type, std::string, "inflowGenerator<hatSpot>")
     (uniformConvection, bool, false)
     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
     (delta, double, 1.0)
+    (volexcess, double, 16.0)
     (longLengthScale, LengthScaleProfile, 1.0)
     (latLengthScale, LengthScaleProfile, 1.0)
   )

@@ -530,7 +530,9 @@ void ChannelBase::evaluateAtSection(
     arma::mat ydelta=1.0-(data.col(0)+delta_yp1)/(0.5*H); //Re_tau-Re_tau*data.col(0);
     arma::mat Lt1=(2./H)*sqrt(k)/(0.09*omega);
     arma::mat Lt2=ydelta*0.5*H*0.41;
-    arma::mat Lt=arma::min(Lt1, Lt2);
+    //arma::mat Lt=arma::min(Lt1, Lt2);
+    arma::mat Lt=Lt1;
+    for (int i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
     arma::mat Ltp(join_rows(ydelta, Lt));
     Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     
@@ -1063,7 +1065,8 @@ void ChannelInflow::createCase
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
-    .set_structureType(p.get<SelectionParameter>("inflow/spottype").selection())
+    .set_volexcess(p.getDouble("inflow/volexcess"))
+    .set_type(p.get<SelectionParameter>("inflow/type").selection())
     //.set_mixingLength(0.1*D)
     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));

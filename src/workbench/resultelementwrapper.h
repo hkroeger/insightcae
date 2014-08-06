@@ -26,8 +26,10 @@
 #include <QLabel>
 #include <QTableWidget>
 
+#ifndef Q_MOC_RUN
 #include "base/factory.h"
 #include "base/resultset.h"
+#endif
 
 class ResultElementWrapper 
 : public QWidget

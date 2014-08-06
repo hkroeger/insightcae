@@ -216,7 +216,7 @@ struct ISCADParser
 	r_edgeFeaturesExpression = 
 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	     | (
-	     ( lit("edges") > lit("from") >> 
+	     ( lit("edgesFrom") >> 
 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
 	     )
 	  ;
@@ -224,8 +224,9 @@ struct ISCADParser
 	r_edgeFilterExpression = 
 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
 	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
-	 | ( lit("coincident") >> r_edgeFeaturesExpression >> lit("at") >> r_solidmodel_expression ) 
+	 | ( lit("coincidentWith") >> r_edgeFeaturesExpression >> lit("from") >> r_solidmodel_expression ) 
 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
+	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(_1)) ]
 	 ;
 	 
 	r_datumExpression = 

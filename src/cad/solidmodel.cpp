@@ -183,6 +183,21 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   return match;
 }
 
+
+
+template<>
+bool secant<Edge>::checkMatch(FeatureID feature) const
+{
+  TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
+
+  TopoDS_Vertex v0=TopExp::FirstVertex(e1);
+  TopoDS_Vertex v1=TopExp::LastVertex(e1);
+  arma::mat v = Vector( BRep_Tool::Pnt(v0).XYZ() - BRep_Tool::Pnt(v1).XYZ() );
+  
+  return (1.0 - fabs(arma::dot( arma::normalise(v), arma::normalise(dir_) ))) < 1e-10;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const SolidModel& m)
 {
   os<<"ENTITIES\n================\n\n";

@@ -6,7 +6,7 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 message(${toolkit_HEADERS})
 
 #include_directories(${CMAKE_SOURCE_DIR})
-#INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 include_directories(${toolkit_SOURCE_DIR})
 
 link_directories(${Boost_LIBRARY_DIR})

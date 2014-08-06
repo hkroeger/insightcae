@@ -181,6 +181,15 @@ dimensionedData::dimensionedData(const std::string& n, const std::vector<int>& d
 list::list()
 {}
     
+    
+void list::insertNoDuplicate(const OFDictData::data& d)
+{
+  std::vector< OFDictData::data >::const_iterator location;
+  location = std::find( begin(), end(), d );
+  if (location==end()) push_back(d);
+}
+
+
 dict& dict::addSubDictIfNonexistent(const std::string& key)
 {
   dict::iterator i=find(key);

@@ -75,6 +75,15 @@ arma::mat vector(const T& t)
   return rt;
 }
 
+
+template<class T>
+arma::mat Vector(const T& t)
+{
+  arma::mat rt;
+  rt << t.X() << t.Y() << t.Z() << arma::endr;
+  return rt;
+}
+
 template<class T>
 T toVec(const arma::mat& v)
 {

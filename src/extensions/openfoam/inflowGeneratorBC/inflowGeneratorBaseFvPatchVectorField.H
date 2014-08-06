@@ -56,141 +56,10 @@ SourceFiles
 namespace Foam
 {
 
-// template<class TurbulentStructure>
-// class globalStructureList
-// : public List<List<TurbulentStructure> >
-// {
-// public:
-//   globalStructureList()
-//   : List<List<TurbulentStructure> > (Pstream::nProcs())
-//   {}
-// 
-//   
-//   void copyLocalToGlobal(const List<TurbulentStructure>& localList, List<TurbulentStructure>& globalList)
-//   {
-//     List<List<TurbulentStructure> >& dl = *this;
-//     dl=List<List<TurbulentStructure> >(Pstream::nProcs()); // reset list
-//      
-//     dl[Pstream::myProcNo()] = localList;
-//     
-//     Pout<<"copyLocalToGlobal 1: "<<dl.size();
-//     forAll(dl, j)
-//     {
-//       Pout<<" / "<<dl[j].size();
-//       if (j==Pstream::myProcNo()) Pout<< " ("<<localList.size()<<")";
-//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
-//     }
-//     Pout<<endl;
-// 
-//     Pstream::gatherList(dl);
-//     Pstream::scatterList(dl);
-//         
-//     globalList =
-//       ListListOps::combine<List<TurbulentStructure> >
-//       (
-// 	dl, accessOp<List<TurbulentStructure> >()
-//       );
-//       
-//     Pout<<"copyLocalToGlobal 2: "<<dl.size();
-//     int s=0;
-//     forAll(dl, j)
-//     {
-//       Pout<<" / "<<dl[j].size();
-//       s+=dl[j].size();
-//       if (j==Pstream::myProcNo()) Pout<< " ("<<localList.size()<<")";
-//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
-//     }
-//     Pout<<"  "<<globalList.size()<<", "<<s;
-//   }
-//   
-//   void copyGlobalToLocal(const List<TurbulentStructure>& globalList, List<TurbulentStructure>& localList)
-//   {
-//     List<List<TurbulentStructure> >& dl = *this;
-// 
-//     label gi=0;
-//     
-//     forAll(dl, lstI)
-//     {
-//         List<TurbulentStructure>& sub = dl[lstI];
-// 
-//         forAll(sub, elemI)
-//         {
-//            sub[elemI]=globalList[gi++];
-//         }
-//     }
-//     
-//     Pstream::gatherList(dl);
-//     Pstream::scatterList(dl);
-//     
-//     localList = dl[Pstream::myProcNo()];
-//   }
-//   
-//   void updateNearestFaceList(const List<TurbulentStructure>& globalList, List<TurbulentStructure>& localList)
-//   {
-//     {
-//     List<List<TurbulentStructure> >& dl = *this;
-//     Pout<<"updateNearestFaceList: "<<dl.size();
-//     forAll(dl, j)
-//     {
-//       Pout<<" / "<<dl[j].size();
-//       //if (dl[j].size()>0) Pout<<": "<<dl[j][0]<<" ... "<<dl[j][dl[j].size()-1];
-//     }
-//     Pout<<endl;
-//     }
-// 
-//     List<List<label> > dl(Pstream::nProcs());
-//     labelList& myl=dl[Pstream::myProcNo()];
-//     List<label> nv_pp(Pstream::nProcs(), -1);
-//     nv_pp[Pstream::myProcNo()]=localList.size();
-//     Pstream::gatherList(nv_pp);
-//     Pstream::scatterList(nv_pp);
-//     
-//     //myl.setSize(globalList.size());
-//     myl=labelList(globalList.size(), -1);
-//     forAll(globalList, i)
-//     {
-//       //Pout<<globalList[i].nearestFace_.size()<<" > "<<globalList[i].nearestFace_[Pstream::myProcNo()]<<endl;
-//       myl[i]=globalList[i].nearestFace_[Pstream::myProcNo()];
-//     }
-//     
-//     Pstream::gatherList(dl);
-//     Pstream::scatterList(dl);
-// 
-//     label ofs=0;
-//     for(label p=0; p<Pstream::nProcs(); p++)
-//     {
-//       for(label i=0; i<localList.size(); i++)
-//       {
-// 	label gi=ofs+i;
-// 	{
-// 	//Pout<<localList[i].nearestFace_[p]<<" <<< "<<dl[p][gi]<<" ("<<p<<", "<<i<<", "<<ofs<<", "<<gi<<", "<<localList[i].nearestFace_.size()<<", "<<localList.size()<<")"<<endl;
-// 	if ( localList[i].nearestFace_.size()!=4 )
-// 	{
-// 	  FatalErrorIn("updateNearestFaceList")
-// 	  <<"This should not happen! : Tying to assign into nfl of size = "<<localList[i].nearestFace_.size()<<abort(FatalError);
-// 	}
-// 	if ( (localList[i].nearestFace_[p]!=dl[p][gi]) && (localList[i].nearestFace_[p]>=0) )
-// 	{
-// 	  Pout //FatalErrorIn("updateNearestFaceList")
-// 	  <<"This should not happen! : Assignment "
-// 	    <<localList[i].nearestFace_[p]<<" <<< "<<dl[p][gi]<<" ("<<p<<", "<<i<<", "<<ofs<<", "<<gi<<", "<<localList[i].nearestFace_.size()<<", "<<localList.size()<<")"
-// 	    <<endl; //abort(FatalError);
-// 	}
-// 	}
-// 	localList[i].nearestFace_[p]=dl[p][gi];
-//       }
-//       ofs+=nv_pp[p];
-//     }
-// 
-//   }
-// };
-
 
 class globalPatch
 : public PrimitivePatch<face, List, pointField>
 {
-//   pointField globalPoints_;
-//   faceList globalFaces_;
   
   labelList procOfs_;
   label nfaces_;
@@ -389,9 +258,6 @@ protected:
     Field<scalar> c_;
     
     autoPtr<tensorField> Lund_;
-    autoPtr<Field<scalar> > conditioningFactor_;
-    
-    scalar overlap_;
     
     label curTimeIndex_;
 
@@ -409,7 +275,7 @@ protected:
     mutable FaceSearcher boundaryTree_;
     
 public:
-    virtual void computeConditioningFactor() =0;
+    virtual void computeConditioningFactor();
 
     //- Runtime type information
     TypeName("inflowGeneratorBase");
@@ -473,10 +339,14 @@ public:
 	inline Field<vector>& Umean() { return Umean_; }
 	inline Field<symmTensor>& R() { return R_; }
 	inline Field<symmTensor>& L() { return L_; }
-	inline scalar& overlap() { return overlap_; }
 	inline const Field<vector>& Umean() const { return Umean_; }
 	inline const Field<symmTensor>& R() const { return R_; }
 	inline const Field<symmTensor>& L() const { return L_; }
+	
+	/**
+	 * return the max edge lengths for all faces
+	 */
+	tmp<scalarField> maxEdgeLengths() const;
 
 	inline vector averageMeanVelocity() const
 	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }

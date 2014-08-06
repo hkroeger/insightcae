@@ -175,12 +175,29 @@ twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
 
 OFDictData::dict twoPointCorrelation::csysConfiguration() const
 {
+  OFDictData::data 
+    e1=OFDictData::vector3(1,0,0), 
+    e2=OFDictData::vector3(0,1,0);
+    
   OFDictData::dict csys;
   csys["type"]="cartesian";
   csys["origin"]=OFDictData::vector3(0,0,0);
-  csys["e1"]=OFDictData::vector3(1,0,0);
-  csys["e2"]=OFDictData::vector3(0,1,0);
-  return csys;
+  if (OFversion()>=230)
+  {
+    OFDictData::dict top, crd;
+    crd["type"]="axesRotation";
+    crd["e1"]=e1;
+    crd["e2"]=e2;
+    csys["coordinateRotation"]=crd;
+    top["coordinateSystem"]=csys;
+    return top;
+  } 
+  else
+  {
+    csys["e1"]=e1;
+    csys["e2"]=e2;
+    return csys;
+  }
 }
 
 OFDictData::dict twoPointCorrelation::functionObjectDict() const
@@ -285,10 +302,29 @@ OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
   OFDictData::dict csys;
   csys["type"]="cylindrical";
   csys["origin"]=OFDictData::vector3(0,0,0);
-  csys["e3"]=OFDictData::vector3(p_.ez());
-  csys["e1"]=OFDictData::vector3(p_.er());
   csys["degrees"]=p_.degrees();
-  return csys;
+  
+  OFDictData::data 
+    e1=OFDictData::vector3(p_.er()), 
+    e3=OFDictData::vector3(p_.ez());
+    
+  if (OFversion()>=230)
+  {
+    OFDictData::dict top, crd;
+    crd["type"]="axesRotation";
+    crd["e1"]=e1;
+    crd["e3"]=e3;
+    csys["coordinateRotation"]=crd;
+    top["coordinateSystem"]=csys;
+    return top;
+  } 
+  else
+  {
+    csys["e1"]=e1;
+    csys["e3"]=e3;
+    return csys;
+  }
+  
 }
 
 

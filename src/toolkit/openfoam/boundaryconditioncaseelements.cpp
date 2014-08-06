@@ -26,6 +26,7 @@
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace boost;
@@ -156,7 +157,11 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     if ( (className_=="cyclic") && ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
-      BC["type"]=OFDictData::data(className_);
+    {
+      std::string tname=className_;
+      //if ( (OFversion()>=230) && (tname=="symmetryPlane")) tname="symmetry";
+      BC["type"]=OFDictData::data(tname);
+    }
   }
 }
 
@@ -362,6 +367,10 @@ multiphaseBC::~multiphaseBC()
 {
 }
 
+void multiphaseBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+}
+
 uniformPhases::uniformPhases()
 {}
 
@@ -416,6 +425,7 @@ SuctionInletBC::SuctionInletBC
 void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
@@ -515,6 +525,7 @@ void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
@@ -938,10 +949,10 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]="inflowGenerator<"+p_.structureType()+">";
+  BC["type"]=p_.type();
   BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
   
-  BC["c"]="uniform 16";
+  BC["c"]="uniform "+str( format("%g") % p_.volexcess());
   double L=p_.mixingLength();
   BC["L"]="uniform ( "
     +lexical_cast<string>(L)+" 0 0 "
@@ -982,13 +993,15 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 		  (
 		    boost::assign::list_of<ParameterSet::SingleEntry>
 		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-		    ("spottype", new SelectionParameter(0, 
+		    ("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
+		    ("type", new SelectionParameter(0, 
 			    list_of<string>
-			    ("hatSpot")
-			    ("gaussianSpot")
-			    ("decayingTurbulenceSpot")
+			    ("inflowGenerator<hatSpot>")
+			    ("inflowGenerator<gaussianSpot>")
+			    ("inflowGenerator<decayingTurbulenceSpot>")
+			    ("modalTurbulence")
 			    , 
-		      "Type of turbulent structure"))
+		      "Type of inflow generator"))
 		    .convert_to_container<ParameterSet::EntryList>()
 		  ), 
 		  "Inflow generator parameters"
@@ -1038,6 +1051,7 @@ PressureOutletBC::PressureOutletBC
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  //p_.phasefractions()->addIntoDictionaries(dictionaries);
 
   if (p_.fixMeanValue() && (OFversion()!=160))
   {

@@ -169,10 +169,38 @@ public:
     
 };
 
+
 template<> coincident<Edge>::coincident(const SolidModel& m);
 template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
 template<> coincident<Face>::coincident(const SolidModel& m);
 template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
+
+template<EntityType T>
+class secant
+: public Filter
+{
+protected:
+  arma::mat dir_;
+  
+public:
+  secant(const arma::mat& dir)
+  : dir_(dir)
+  {
+  }
+
+  bool checkMatch(FeatureID feature) const
+  {
+    throw insight::Exception("secant filter: not implemented!");
+  }
+
+  Filter* clone() const
+  {
+    return new secant(dir_);
+  }
+    
+};
+
+template<> bool secant<Edge>::checkMatch(FeatureID feature) const;
 
 
 template<class T>

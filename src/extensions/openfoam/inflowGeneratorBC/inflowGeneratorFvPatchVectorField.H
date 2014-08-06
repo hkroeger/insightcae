@@ -80,6 +80,11 @@ protected:
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
+    
+    /**
+     * clipped length scale field
+     */
+    PtrList<ESAnalyze> esa_;
         
     void computeTau();
     
@@ -92,8 +97,6 @@ protected:
     ) const;
     
 
-    scalar computeMinOverlap(const autoPtr<indexedOctree<treeDataPoint> >& tree, const TurbulentStructure& snew) const;
-    
     void induceInNeighbours
     (
       vectorField& fluctuations, 
@@ -103,9 +106,15 @@ protected:
       labelList& visited,
       label& depth
     ) const;
+
+    tmp<Field<TurbulentStructure> > filterVortons
+    (
+	const inflowGeneratorFvPatchVectorField<TurbulentStructure>& ptf,
+	const fvPatchFieldMapper& mapper,
+	const Field<TurbulentStructure>& vlist
+    ) const;    
     
 public:
-    virtual void computeConditioningFactor();
 
     //- Runtime type information
     TypeName("inflowGenerator");

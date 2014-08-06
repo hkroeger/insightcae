@@ -157,7 +157,11 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     if ( (className_=="cyclic") && ((field.first=="motionU")||(field.first=="pointDisplacement")) )
       noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
     else
-      BC["type"]=OFDictData::data(className_);
+    {
+      std::string tname=className_;
+      //if ( (OFversion()>=230) && (tname=="symmetryPlane")) tname="symmetry";
+      BC["type"]=OFDictData::data(tname);
+    }
   }
 }
 

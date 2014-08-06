@@ -143,7 +143,7 @@ void ExplicitVortex::createMesh
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("symmetryPlanes", "symmetryPlane");
+//   bmd->setDefaultPatch("symmetryPlanes", "symmetryPlane");
   
   std::map<int, Point> pts;
   
@@ -162,6 +162,8 @@ void ExplicitVortex::createMesh
   
   // create patches
   Patch& sides = 	bmd->addPatch("sides", new Patch());
+  Patch& top = 	bmd->addPatch("top", new Patch("symmetryPlane"));
+  Patch& bottom = 	bmd->addPatch("bottom", new Patch("symmetryPlane"));
   
   {
     std::map<int, Point>& p = pts;
@@ -180,6 +182,8 @@ void ExplicitVortex::createMesh
       sides.addFace(bl.face("1265"));
       sides.addFace(bl.face("2376"));
       sides.addFace(bl.face("0473"));
+      bottom.addFace(bl.face("0321"));
+      top.addFace(bl.face("4567"));
     }
   }
   
@@ -207,7 +211,8 @@ void ExplicitVortex::createCase
   cm.insert(new simpleFoamNumerics(cm));
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
   
-  cm.insert(new SimpleBC(cm, "symmetryPlanes", boundaryDict, "symmetryPlane"));
+  cm.insert(new SimpleBC(cm, "top", boundaryDict, "symmetryPlane"));
+  cm.insert(new SimpleBC(cm, "bottom", boundaryDict, "symmetryPlane"));
   cm.insert(new VelocityInletBC(cm, "sides", boundaryDict, VelocityInletBC::Parameters() ));
   
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());

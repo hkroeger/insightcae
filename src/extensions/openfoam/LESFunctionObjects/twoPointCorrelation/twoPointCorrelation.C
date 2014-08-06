@@ -56,7 +56,14 @@ Foam::twoPointCorrelation::twoPointCorrelation
     :
     name_(name),
     obr_(obr),
-    active_(true)
+    active_(true),
+
+    p0_(point::zero),
+    directionSpan_(vector::zero),
+    np_(0),
+    homogeneousTranslationUnit_(vector::zero),
+    nph_(0),
+    totalTime_(0.0)
 {
   // Check if the available mesh is an fvMesh, otherwise deactivate
   if (!isA<fvMesh>(obr_))
@@ -142,12 +149,11 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
                   csysDict
               );
 
-        Info<<"twoPointCorrelation "<<name_<<":"<<nl
-            <<"    from point "<<p0_<<nl
-            <<"    on "<<np_<<" points along "<<directionSpan_<<nl
+        Info<<"Definition of twoPointCorrelation "<<name_<<":"<<nl
+            <<"    from point "<<p0_<<" on "<<np_<<" points along "<<directionSpan_<<nl
             <<"    averaged over "<<nph_<<" copies, translated by "<<homogeneousTranslationUnit_<<endl;
-
-        createInterpolators();
+	    
+	createInterpolators();
     }
 }
 
@@ -314,104 +320,114 @@ void Foam::twoPointCorrelation::combineSampledSets
 
 void Foam::twoPointCorrelation::execute()
 {
-    if (active_)
+  if (debug) Pout<<"twoPointCorrelation::execute "<<name_<<endl;
+  
+  if (active_)
     {
       
 	if (!obr_.foundObject<volVectorField>("UMean"))
 	{
-	  resetAveraging();
+	  //resetAveraging();
 	  WarningIn("execute")
-	  << "No mean velocity field in registry, restarting averaging in next timestep";
-	  return;
+	    << "No mean velocity field in registry, delaying until next timestep"<<endl;
 	}
-	
-        const volVectorField& U = obr_.lookupObject<volVectorField>("U");
-        const volVectorField& Umean = obr_.lookupObject<volVectorField>("UMean");
-        volVectorField uPrime = U-Umean;
-
-        autoPtr<OFstream> dbgFile;
-        if (debug && Pstream::master())
-        {
-            dbgFile.reset(new OFstream("twoPointCorrelation_"+name_+".csv"));
-            dbgFile() << "X,Y,Z,Vx,Vy,Vz,Vr,Vtheta,Vz" <<nl;
-        }
-
-        combineSampledSets(masterSampledSets_, indexSets_);
-        autoPtr<volFieldSampler<vector> > vfs = sample(lines_, uPrime, indexSets_);
-
-	if (Pstream::master())
-        {
-            tensorField cCoeffs(correlationCoeffs_().size(), tensor::zero);
-            forAll(vfs(), i)
-            {
-                //const cloudSet& samples = lines_[i];
-                const vectorField& values=vfs()[i];
-
-		//vectorField values(np_, vector::zero); // Fixed size according to input params!
-                for(label j=0; j<np_; j++)
-                {
-                    if (dbgFile.valid())
-                    {
-                        const point& pt = masterSampledSets_[i][j];
-                        const vector& v= values[j]; // in local CS
-                        const vector& lv= csys_().localVector(values[j]); // in local CS
-                        Info<<j<<" "<<pt<<" "<<v<<endl;
-                        dbgFile() << pt.x()<<","<<pt.y()<<","<<pt.z()<<","<<v.x()<<","<<v.y()<<","<<v.z()<<","<<lv.x()<<","<<lv.y()<<","<<lv.z()<<nl;
-                    }
-                    cCoeffs[j] += csys_().localVector(values[0]) * csys_().localVector(values[j]); //cmptMultiply(values[0], values[j]);
-                }
-            }
-
-            if (dbgFile.valid())
-            {
-                dbgFile.reset();
-            }
-
-
-	    // averaging over homogeneous directions
-            scalar dt = obr_.time().deltaTValue();
-            totalTime_ += dt;
-            scalar Dt = totalTime_;
-            scalar alpha = (Dt - dt)/Dt;
-            scalar beta = dt/Dt;
-
-            correlationCoeffs_() = alpha * correlationCoeffs_() + beta*(cCoeffs/scalar(lines_.size()));
-
-	}
-	
-	if (obr_.time().outputTime())
+	else
 	{
-	  Pout<<"output"<<endl;
-	    IOdictionary propsDict
-	    (
-		IOobject
-		(
-		    "twoPointCorrelationProperties",
-		    obr_.time().timeName(),
-		    "uniform",
-		    obr_,
-		    IOobject::READ_IF_PRESENT,
-		    IOobject::NO_WRITE,
-		    false
-		)
-	    );
-	    
-	    if (Pstream::master())
-	    {
-	      propsDict.add(name_, dictionary());
-	      propsDict.subDict(name_).add("totalTime", totalTime_);
+	  
+	  const volVectorField& U = obr_.lookupObject<volVectorField>("U");
+	  const volVectorField& Umean = obr_.lookupObject<volVectorField>("UMean");
+	  volVectorField uPrime = U-Umean;
+
+	  autoPtr<OFstream> dbgFile;
+	  if (debug && Pstream::master())
+	  {
+	      dbgFile.reset(new OFstream("twoPointCorrelation_"+name_+".csv"));
+	      dbgFile() << "X,Y,Z,Vx,Vy,Vz,Vr,Vtheta,Vz" <<nl;
+	  }
+
+	  combineSampledSets(masterSampledSets_, indexSets_);
+	  autoPtr<volFieldSampler<vector> > vfs = sample(lines_, uPrime, indexSets_);
+
+	  if (Pstream::master())
+	  {
+	      tensorField cCoeffs(correlationCoeffs_().size(), tensor::zero);
+	      forAll(vfs(), i)
+	      {
+		  //const cloudSet& samples = lines_[i];
+		  const vectorField& values=vfs()[i];
+
+		  //vectorField values(np_, vector::zero); // Fixed size according to input params!
+		  for(label j=0; j<np_; j++)
+		  {
+		      if (dbgFile.valid())
+		      {
+			  const point& pt = masterSampledSets_[i][j];
+			  const vector& v= values[j]; // in local CS
+			  const vector& lv= csys_().localVector(values[j]); // in local CS
+			  Info<<j<<" "<<pt<<" "<<v<<endl;
+			  dbgFile() << pt.x()<<","<<pt.y()<<","<<pt.z()<<","<<v.x()<<","<<v.y()<<","<<v.z()<<","<<lv.x()<<","<<lv.y()<<","<<lv.z()<<nl;
+		      }
+		      cCoeffs[j] += csys_().localVector(values[0]) * csys_().localVector(values[j]); //cmptMultiply(values[0], values[j]);
+		  }
+	      }
+
+	      if (dbgFile.valid())
+	      {
+		  dbgFile.reset();
+	      }
+
+	      // averaging over homogeneous directions
+	      scalar dt = obr_.time().deltaTValue();
+	      totalTime_ += dt;
+	      scalar Dt = totalTime_;
+	      scalar alpha = (Dt - dt)/Dt;
+	      scalar beta = dt/Dt;
+
+	      correlationCoeffs_() = alpha * correlationCoeffs_() + beta*(cCoeffs/scalar(lines_.size()));
+
+	  }
+
+	  Pstream::scatter(totalTime_);
+	  Pstream::scatter(correlationCoeffs_());
+
+	  
+	  if (obr_.time().outputTime())
+	  {
+	    Pout<<"output"<<endl;
+	      IOdictionary propsDict
+	      (
+		  IOobject
+		  (
+		      "twoPointCorrelationProperties",
+		      obr_.time().timeName(),
+		      "uniform",
+		      obr_,
+		      IOobject::READ_IF_PRESENT,
+		      IOobject::NO_WRITE,
+		      false
+		  )
+	      );
 	      
-	      //propsDict.subDict(name_).add("correlationCoeffs", static_cast<const List<tensor>&>(correlationCoeffs_()));
-	      //for(label i=0; i<pTraits<tensor>::nComponents; i++)
-		propsDict.subDict(name_).add
-		(
-		  "correlationCoeffs", 
-		  correlationCoeffs_()
-		);
-	      propsDict.regIOobject::write();
-	    }
+	      //if (Pstream::master())
+	      {
+		propsDict.add(name_, dictionary());	      
+		
+		propsDict.subDict(name_).add("totalTime", totalTime_);
+		
+		//propsDict.subDict(name_).add("correlationCoeffs", static_cast<const List<tensor>&>(correlationCoeffs_()));
+		//for(label i=0; i<pTraits<tensor>::nComponents; i++)
+		  propsDict.subDict(name_).add
+		  (
+		    "correlationCoeffs", 
+		    correlationCoeffs_()
+		  );
+		propsDict.regIOobject::write();
+	      }
+	  }
 	}
     }
+    
+  if (debug) Pout<<"twoPointCorrelation::execute ended "<<name_<<endl;
 }
 
 
@@ -462,6 +478,8 @@ void Foam::twoPointCorrelation::makeFile()
 
 void Foam::twoPointCorrelation::writeFileHeader()
 {
+  if (debug) Pout<<"twoPointCorrelation::writeFileHeader "<<name_<<endl;
+  
     if (filePtr_.valid())
     {
         filePtr_()
@@ -473,16 +491,25 @@ void Foam::twoPointCorrelation::writeFileHeader()
 
 void Foam::twoPointCorrelation::write()
 {
-    if (active_)
+  
+  if (debug) Pout<<"twoPointCorrelation::write "<<name_<<endl;
+  
+    if (active_ && correlationCoeffs_.valid() )
     {
         makeFile();
 
         if (Pstream::master())
         {
+	    if (debug)
+	    {
+	      Pout<<"write correlationCoeffs="<<correlationCoeffs_()<<endl;
+	      Pout<<"using x_="<<x_()<<endl;
+	    }
+	    
             filePtr_()<<obr_.time().value()<<token::TAB;
             for (label k=0; k < pTraits<tensor>::nComponents; k++)
             {
-                for (label i=0; i<np_; i++)
+                for (label i=0; i<correlationCoeffs_().size(); i++)
                 {
                     filePtr_()<<correlationCoeffs_()[i][k]<<token::SPACE;
                 }
@@ -492,7 +519,11 @@ void Foam::twoPointCorrelation::write()
             tensor L=tensor::zero;
 	    for(label l=0; l<correlationCoeffs_().size()-1; l++)
 	    {
-	      L += cmptDivide(0.5*(correlationCoeffs_()[l]+correlationCoeffs_()[l+1])*(x_()[l+1]-x_()[l]), correlationCoeffs_()[0]);
+	      L += 0.5*(correlationCoeffs_()[l]+correlationCoeffs_()[l+1]) * (x_()[l+1]-x_()[l]);
+	    }
+	    if ( mag(correlationCoeffs_()[0]) > SMALL )
+	    {
+	      L=cmptDivide( L, correlationCoeffs_()[0]);
 	    }
             for (label k=0; k < pTraits<tensor>::nComponents; k++)
             {
@@ -502,10 +533,12 @@ void Foam::twoPointCorrelation::write()
             filePtr_()<<endl;
         }
     }
+    
 }
 
 void Foam::twoPointCorrelation::createInterpolators()
 {
+    Info << "Building interpolators for twoPointCorrelation "<<name_  << endl;
     if (debug) Pout << "createInterpolators " << name_  << endl;
     
     const fvMesh& mesh=static_cast<const fvMesh&>(obr_);
@@ -545,18 +578,20 @@ void Foam::twoPointCorrelation::createInterpolators()
 
     combineSampledSets(masterSampledSets_, indexSets_);
 
-    if (Pstream::master())
+    bool reset=false;
+    if (!correlationCoeffs_.valid())
     {
-      bool reset=false;
-      if (!correlationCoeffs_.valid())
-	  reset=true;
-      else if (correlationCoeffs_().size()!=np_) 
-      {
-	Info << "Reset averaging because parameters became incompatible to previous averaging."<<endl;
-	reset=true;
-      }
+      reset=true;
+    }
+    else if (correlationCoeffs_().size()!=np_) 
+    {
+      Info << "Reset averaging because parameters became incompatible to previous averaging."<<endl;
+      reset=true;
+    }
 
-      if (reset) resetAveraging();
+    if (reset) 
+    {
+      resetAveraging();
     }
 
 }

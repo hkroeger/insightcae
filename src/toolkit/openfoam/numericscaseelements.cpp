@@ -790,7 +790,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  grad["default"]="faceLimited leastSquares 1";
+  grad["default"]="Gauss linear"; //"faceLimited leastSquares 1"; // limiter gives artifacts ("schlieren") near (above and below) waterline
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

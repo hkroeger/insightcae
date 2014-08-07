@@ -365,8 +365,8 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleFoam";
   
-  controlDict.getList("libs").push_back( OFDictData::data("\"libnumericsFunctionObjects.so\"") );  
-  controlDict.getList("libs").push_back( OFDictData::data("\"liblocalLimitedSnGrad.so\"") );  
+  controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
@@ -725,9 +725,16 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="interFoam";
 
   controlDict["adjustTimeStep"]=true;
-  controlDict["maxCo"]=0.5;
-  controlDict["maxAlphaCo"]=50.;
+  controlDict["maxCo"]=0.4;
+  controlDict["maxAlphaCo"]=0.2;
   controlDict["maxDeltaT"]=1.0;
+
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  OFDictData::list fol;
+  fol.push_back("\"libnumericsFunctionObjects.so\"");
+  fqmc["functionObjectLibs"]= fol;
+  controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
   
   // ============ setup fvSolution ================================
   
@@ -783,7 +790,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  grad["default"]="cellLimited leastSquares 1";
+  grad["default"]="faceLimited leastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -791,16 +798,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf="cellLimited leastSquares 1";
   else 
     suf="grad(U)";
-  div["div(rho*phi,U)"]		= "Gauss linearUpwind "+suf;
-  div["div(rhoPhi,U)"]		= "Gauss linearUpwind "+suf; // for interPhaseChangeFoam
+  div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwind "+suf;
+  div["div(rhoPhi,U)"]		= "Gauss localBlended upwind linearUpwind "+suf; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
-  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
+  div["div(phi,epsilon)"]	= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
+  div["div(phi,omega)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
+  div["div(phi,R)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
   div["div(R)"]			= "Gauss linear";
   if (OFversion()>=210)
     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
@@ -808,13 +814,14 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["default"]="Gauss linear limited 0.66";
+  laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.333";
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="pointLinear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="limited 0.66";
+  snGrad["default"]="localLimited UBlendingFactor 1";
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
@@ -859,6 +866,9 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
+
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
 
 //   controlDict["maxCo"]=0.5;
 //   controlDict["maxAlphaCo"]=50.;
@@ -907,7 +917,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=1.0;
-  SOL["maxCo"]=0.5;
+  SOL["maxCo"]=0.4;
   SOL["maxAlphaCo"]=0.2;
   SOL["rDeltaTSmoothingCoeff"]=0.05;
   SOL["rDeltaTDampingCoeff"]=0.5;
@@ -927,17 +937,17 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   //grad["default"]="cellLimited leastSquares 1";
   //grad["grad(U)"]="cellLimited leastSquares 1";
   
-  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-  std::string suf;
-  if (OFversion()==160) 
-    suf="cellLimited leastSquares 1";
-  else 
-    suf="grad(U)";
-  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
-  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
+//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+//   std::string suf;
+//   if (OFversion()==160) 
+//     suf="cellLimited leastSquares 1";
+//   else 
+//     suf="grad(U)";
+//   div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+//   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
+//   div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
+//   div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
+//   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
 
 }
 
@@ -966,14 +976,14 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   
   // ============ setup fvSchemes ================================
   
-  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
-  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-  std::string suf;
-  if (OFversion()==160) 
-    suf="cellLimited leastSquares 1";
-  else 
-    suf="grad(U)";
-  div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
+//   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+//   std::string suf;
+//   if (OFversion()==160) 
+//     suf="cellLimited leastSquares 1";
+//   else 
+//     suf="grad(U)";
+//   div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
 
 }
 

@@ -735,6 +735,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fol.push_back("\"libnumericsFunctionObjects.so\"");
   fqmc["functionObjectLibs"]= fol;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
+
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
   
   // ============ setup fvSolution ================================
   
@@ -790,7 +794,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  grad["default"]="Gauss linear"; //"faceLimited leastSquares 1"; // limiter gives artifacts ("schlieren") near (above and below) waterline
+  grad["default"]="localCellLimited leastSquares UBlendingFactor"; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -866,9 +870,6 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
-
-  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
-  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
 
 //   controlDict["maxCo"]=0.5;
 //   controlDict["maxAlphaCo"]=50.;

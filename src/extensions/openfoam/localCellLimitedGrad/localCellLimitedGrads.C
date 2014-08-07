@@ -43,17 +43,37 @@ namespace fv
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#ifdef OF16ext
+#define LABELULIST unallocLabelList
+#else
+#define LABELULIST labelUList
+#endif
+
 template<>
 Foam::tmp<Foam::volVectorField>
-Foam::fv::localCellLimitedGrad<Foam::scalar>::calcGrad
+Foam::fv::localCellLimitedGrad<Foam::scalar>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volScalarField& vsf,
+    const volScalarField& vsf
+#ifdef OF16ext
+#else
+    ,
     const word& name
+#endif
 ) const
 {
     const fvMesh& mesh = vsf.mesh();
 
-    tmp<volVectorField> tGrad = basicGradScheme_().calcGrad(vsf, name);
+    tmp<volVectorField> tGrad = basicGradScheme_().
+#ifdef OF16ext
+    grad(vsf);
+#else
+    calcGrad(vsf, name);
+#endif
 
 //     if (k_ < SMALL)
 //     {
@@ -62,8 +82,8 @@ Foam::fv::localCellLimitedGrad<Foam::scalar>::calcGrad
 
     volVectorField& g = tGrad();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
+    const LABELULIST& owner = mesh.owner();
+    const LABELULIST& neighbour = mesh.neighbour();
 
     const volVectorField& C = mesh.C();
     const surfaceVectorField& Cf = mesh.Cf();
@@ -93,7 +113,7 @@ Foam::fv::localCellLimitedGrad<Foam::scalar>::calcGrad
     {
         const fvPatchScalarField& psf = bsf[patchi];
 
-        const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
 
         if (psf.coupled())
         {
@@ -181,7 +201,7 @@ Foam::fv::localCellLimitedGrad<Foam::scalar>::calcGrad
 
     forAll(bsf, patchi)
     {
-        const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
         forAll(pOwner, pFacei)
@@ -216,15 +236,28 @@ Foam::fv::localCellLimitedGrad<Foam::scalar>::calcGrad
 
 template<>
 Foam::tmp<Foam::volTensorField>
-Foam::fv::localCellLimitedGrad<Foam::vector>::calcGrad
+Foam::fv::localCellLimitedGrad<Foam::vector>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volVectorField& vsf,
+    const volVectorField& vsf
+#ifndef OF16ext
+    ,
     const word& name
+#endif
 ) const
 {
     const fvMesh& mesh = vsf.mesh();
 
-    tmp<volTensorField> tGrad = basicGradScheme_().calcGrad(vsf, name);
+    tmp<volTensorField> tGrad = basicGradScheme_().
+#ifdef OF16ext
+    grad(vsf);
+#else
+    calcGrad(vsf, name);
+#endif
 
 //     if (k_ < SMALL)
 //     {
@@ -233,8 +266,8 @@ Foam::fv::localCellLimitedGrad<Foam::vector>::calcGrad
 
     volTensorField& g = tGrad();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
+    const LABELULIST& owner = mesh.owner();
+    const LABELULIST& neighbour = mesh.neighbour();
 
     const volVectorField& C = mesh.C();
     const surfaceVectorField& Cf = mesh.Cf();
@@ -263,7 +296,7 @@ Foam::fv::localCellLimitedGrad<Foam::vector>::calcGrad
     forAll(bsf, patchi)
     {
         const fvPatchVectorField& psf = bsf[patchi];
-        const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
 
         if (psf.coupled())
         {
@@ -352,7 +385,7 @@ Foam::fv::localCellLimitedGrad<Foam::vector>::calcGrad
 
     forAll(bsf, patchi)
     {
-        const labelUList& pOwner = mesh.boundary()[patchi].faceCells();
+        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
         forAll(pOwner, pFacei)
@@ -395,5 +428,6 @@ Foam::fv::localCellLimitedGrad<Foam::vector>::calcGrad
     return tGrad;
 }
 
+#undef LABELULIST
 
 // ************************************************************************* //

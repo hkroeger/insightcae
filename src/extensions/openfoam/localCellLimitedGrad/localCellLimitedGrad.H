@@ -43,7 +43,6 @@ SourceFiles
 #include "gradScheme.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-#include "../../../../../../OpenFOAM/OpenFOAM-2.1.x/src/finiteVolume/finiteVolume/gradSchemes/gradScheme/gradScheme.H"
 
 namespace Foam
 {

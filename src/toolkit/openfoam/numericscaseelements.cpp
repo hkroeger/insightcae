@@ -818,7 +818,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-  interpolation["default"]="pointLinear";
+  interpolation["default"]="linear"; //"pointLinear"; // OF23x: pointLinear creates artifacts at parallel domain borders!
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
   snGrad["default"]="localLimited UBlendingFactor 1";

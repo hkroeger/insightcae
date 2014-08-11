@@ -122,10 +122,19 @@ public:
         <
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
-        > calcGrad
+        > 
+#ifdef OF16ext
+	grad
+#else
+        calcGrad
+#endif
         (
-            const GeometricField<Type, fvPatchField, volMesh>& vsf,
+            const GeometricField<Type, fvPatchField, volMesh>& vsf
+#ifdef OF16ext
+#else
+            ,
             const word& name
+#endif
         ) const;
 };
 
@@ -177,18 +186,34 @@ inline void localCellLimitedGrad<Type>::limitFace
 // * * * * * * * * Template Member Function Specialisations  * * * * * * * * //
 
 template<>
-tmp<volVectorField> localCellLimitedGrad<scalar>::calcGrad
+tmp<volVectorField> localCellLimitedGrad<scalar>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volScalarField& vsf,
+    const volScalarField& vsf
+#ifndef OF16ext
+    ,
     const word& name
+#endif
 ) const;
 
 
 template<>
-tmp<volTensorField> localCellLimitedGrad<vector>::calcGrad
+tmp<volTensorField> localCellLimitedGrad<vector>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volVectorField& vsf,
+    const volVectorField& vsf
+#ifndef OF16ext
+    ,
     const word& name
+#endif
 ) const;
 
 

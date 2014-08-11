@@ -171,9 +171,9 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
   snapCtrls["nRelaxIter"]=5;  
 
   snapCtrls["nFeatureSnapIter"]=10;  
-  snapCtrls["implicitFeatureSnap"]=false;  
+  snapCtrls["implicitFeatureSnap"]=true; //false;  
   snapCtrls["explicitFeatureSnap"]=true;  
-  snapCtrls["multiRegionFeatureSnap"]=false;  
+  snapCtrls["multiRegionFeatureSnap"]=true; //false;  
 
 }
 

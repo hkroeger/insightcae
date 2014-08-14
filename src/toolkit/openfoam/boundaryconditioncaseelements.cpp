@@ -143,7 +143,8 @@ SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictDa
 : BoundaryCondition(c, patchName, boundaryDict),
   className_(className)
 {
-  type_=className;
+  if ( (OFversion()>=230) && (className_=="symmetryPlane")) className_="symmetry";
+  type_=className_;
 }
 
 void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -159,7 +160,6 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
     {
       std::string tname=className_;
-      //if ( (OFversion()>=230) && (tname=="symmetryPlane")) tname="symmetry";
       BC["type"]=OFDictData::data(tname);
     }
   }

@@ -223,8 +223,8 @@ public:
     (velocity, arma::mat, vec3(0,0,0))
     (T, double, 300.0)
     (rho, double, 1025.0)
-    (turbulenceIntensity, double, 0.05)
-    (mixingLength, double, 1.0)
+    (turbulenceIntensity, double, 0.01)
+    (mixingLength, double, 1.0e-3)
     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
   )
   

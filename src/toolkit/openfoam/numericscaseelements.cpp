@@ -367,6 +367,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
   
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
@@ -420,8 +421,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="steadyState";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  grad["default"]="Gauss localCellLimited Gauss pointLinear UBlendingFactor";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
@@ -794,7 +794,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  grad["default"]="localCellLimited leastSquares UBlendingFactor"; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+  grad["default"]="localCellLimited Gauss pointLinear UBlendingFactor"; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -802,8 +802,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf="cellLimited leastSquares 1";
   else 
     suf="grad(U)";
-  div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwind "+suf;
-  div["div(rhoPhi,U)"]		= "Gauss localBlended upwind linearUpwind "+suf; // for interPhaseChangeFoam
+  div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf;
+  div["div(rhoPhi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
   div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
@@ -818,8 +818,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.333";
-  laplacian["laplacian((1|A(U)),pcorr)"]="Gauss linear limited 0.333";
+  laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.66";
+  laplacian["laplacian((1|A(U)),pcorr)"]="Gauss linear limited 0.66";
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");

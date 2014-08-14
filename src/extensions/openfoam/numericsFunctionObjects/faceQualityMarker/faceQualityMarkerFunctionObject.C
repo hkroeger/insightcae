@@ -133,6 +133,40 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
       markFaceSet(faces);
     }
+
+  if (markHighAspectFaces_)
+    {
+/*
+      faceSet faces(mesh_, "aspectFaces", mesh_.nFaces()/100 + 1);
+
+    scalarField openness;
+    scalarField aspectRatio;
+    vector<label> meshD(vector<label>::one);
+    primitiveMeshTools::cellClosedness
+    (
+        *this,
+        meshD,
+        faceAreas,
+        cellVolumes,
+        openness,
+        aspectRatio
+    );
+
+      mesh_.checkFaceAngles(true,
+#ifndef OF16ext
+                            10,
+#endif
+                            &faces);
+      label nFaces=faces.size();
+      reduce(nFaces, sumOp<label>());
+      Info<<"Marking "
+          <<nFaces
+          <<" concave faces."<<endl;
+
+      markFaceSet(faces);
+*/
+    }
+
 }
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -151,6 +185,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markSkewFaces_(dict.lookupOrDefault<bool>("markSkewFaces", true)),
     markWarpedFaces_(dict.lookupOrDefault<bool>("markWarpedFaces", true)),
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", true)),
+    markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
     if (dict.found("blendingFieldNames"))

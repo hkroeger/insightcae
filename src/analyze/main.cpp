@@ -12,9 +12,11 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace insight;
+using namespace boost;
 
 int main(int argc, char *argv[])
 {
@@ -131,6 +133,11 @@ int main(int argc, char *argv[])
 
     boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
     results->writeLatexFile( outpath );
+    
+    if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
+    {
+      Warning("TeX input file was written but could not execute pdflatex successfully.");
+    }
   }
   catch (insight::Exception e)
   {

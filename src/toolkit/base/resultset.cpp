@@ -494,6 +494,11 @@ PlotCurve::PlotCurve()
 {
 }
 
+PlotCurve::PlotCurve(const char* plotcmd)
+: plotcmd_(plotcmd)
+{
+}
+
 PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd)
 : xy_
   (
@@ -547,12 +552,16 @@ void addPlot
     gp<<"plot 0 not lt -1";
     BOOST_FOREACH(const PlotCurve& pc, plc)
     {
-      gp<<", '-' "<<pc.plotcmd_;
+      if (pc.xy_.n_rows>0)
+	gp<<", '-' "<<pc.plotcmd_;
+      else
+	gp<<", "<<pc.plotcmd_;
     }
     gp<<endl;
     BOOST_FOREACH(const PlotCurve& pc, plc)
     {
-      gp.send1d(pc.xy_);
+      if (pc.xy_.n_rows>0)
+	gp.send1d(pc.xy_);
     }
   }
  /*

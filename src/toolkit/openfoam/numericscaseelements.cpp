@@ -413,6 +413,15 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SIMPLE["pRefCell"]=0;
   SIMPLE["pRefValue"]=0.0;
   
+  if (OFversion()>=210)
+  {
+    OFDictData::dict resCtrl;
+    resCtrl["p"]=1e-4;
+    resCtrl["U"]=1e-3;
+    resCtrl["\"(k|epsilon|omega|nuTilda|R)\""]=1e-4;
+    SIMPLE["residualControl"]=resCtrl;
+  }
+  
   // ============ setup fvSchemes ================================
   
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
@@ -421,12 +430,12 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="steadyState";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss localCellLimited Gauss pointLinear UBlendingFactor";
+  grad["default"]="localCellLimited leastSquares UBlendingFactor";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  if (OFversion()<=160) suf=" cellLimited leastSquares 1"; else suf=" grad(U)";
+  if (OFversion()<=160) suf=" localCellLimited leastSquares UBlendingFactor"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV"+suf;
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind"+suf;
@@ -780,7 +789,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=true;
   SOL["nCorrectors"]=2;
-  SOL["nNonOrthogonalCorrectors"]=1;
+  SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
   SOL["cAlpha"]=1.0;
@@ -794,12 +803,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  grad["default"]="localCellLimited Gauss pointLinear UBlendingFactor"; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+  std::string bgrads="leastSquares";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  std::string grads="localCellLimited "+bgrads+" UBlendingFactor";
+  grad["default"]=grads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
   if (OFversion()==160) 
-    suf="cellLimited leastSquares 1";
+    suf=grads;
   else 
     suf="grad(U)";
   div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf;
@@ -915,7 +927,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=true;
   SOL["nCorrectors"]=2;
-  SOL["nNonOrthogonalCorrectors"]=1;
+  SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=1.0;

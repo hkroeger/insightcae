@@ -171,9 +171,9 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
   snapCtrls["nRelaxIter"]=5;  
 
   snapCtrls["nFeatureSnapIter"]=10;  
-  snapCtrls["implicitFeatureSnap"]=true; //false;  
+  snapCtrls["implicitFeatureSnap"]=false;  
   snapCtrls["explicitFeatureSnap"]=true;  
-  snapCtrls["multiRegionFeatureSnap"]=true; //false;  
+  snapCtrls["multiRegionFeatureSnap"]=false;  
 
 }
 
@@ -183,7 +183,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["expansionRatio"]=1.3;
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=1e-5;  
-  layerCtrls["nGrow"]=1;  
+  layerCtrls["nGrow"]=0;  
   layerCtrls["featureAngle"]=30.0;  
 
   layerCtrls["slipFeatureAngle"]=30.0;  

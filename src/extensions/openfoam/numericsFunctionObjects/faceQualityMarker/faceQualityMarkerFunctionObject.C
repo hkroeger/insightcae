@@ -31,6 +31,7 @@ Author
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
 #include "faceSet.H"
+#include "cellSet.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -136,36 +137,42 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
   if (markHighAspectFaces_)
     {
-/*
+
       faceSet faces(mesh_, "aspectFaces", mesh_.nFaces()/100 + 1);
 
-    scalarField openness;
-    scalarField aspectRatio;
-    vector<label> meshD(vector<label>::one);
-    primitiveMeshTools::cellClosedness
-    (
-        *this,
-        meshD,
-        faceAreas,
-        cellVolumes,
-        openness,
-        aspectRatio
-    );
-
+      cellSet cells(mesh_, "nonClosedCells", mesh_.nCells()/100 + 1);
+      cellSet acells(mesh_, "aspectCells", mesh_.nCells()/100 + 1);
+      mesh_.checkClosedCells(true, &cells, &acells, mesh_.geometricD());
+      
+      const labelList& cl=acells.toc();
+      forAll(cl, i)
+      {
+	label ci=cl[i];
+	const labelList &cfs = mesh_.cells()[ci];
+	forAll(cfs,j)
+	  faces.insert(cfs[j]);
+      }
+/*
       mesh_.checkFaceAngles(true,
 #ifndef OF16ext
                             10,
 #endif
                             &faces);
+*/
+
       label nFaces=faces.size();
       reduce(nFaces, sumOp<label>());
       Info<<"Marking "
           <<nFaces
-          <<" concave faces."<<endl;
+          <<" faces of high aspect ratio cells."<<endl;
 
       markFaceSet(faces);
-*/
     }
+    
+  if (debug)
+  {
+    forAll(blendingFactors_, i) blendingFactors_[i].write();  
+  }
 
 }
 

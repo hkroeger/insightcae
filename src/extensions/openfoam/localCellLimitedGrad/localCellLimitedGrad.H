@@ -54,6 +54,68 @@ namespace Foam
 namespace fv
 {
 
+  
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh> >
+surfaceMax
+(
+    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf
+)
+{
+    const fvMesh& mesh = ssf.mesh();
+    
+    tmp<GeometricField<Type, fvPatchField, volMesh> > tvf
+    (
+        new GeometricField<Type, fvPatchField, volMesh>
+        (
+            IOobject
+            (
+                "surfaceMax("+ssf.name()+')',
+                ssf.instance(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensioned<Type>
+            (
+                "0",
+                ssf.dimensions(),
+                pTraits<Type>::zero
+            ),
+            zeroGradientFvPatchField<Type>::typeName
+        )
+    );
+    
+    GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
+
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+
+    const Field<Type>& issf = ssf;
+
+    forAll(owner, facei)
+    {
+        vf[owner[facei]] = max(vf[owner[facei]], issf[facei]);
+        vf[neighbour[facei]] = max(vf[neighbour[facei]], issf[facei]);
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const labelUList& pFaceCells =
+            mesh.boundary()[patchi].faceCells();
+
+        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
+
+        forAll(mesh.boundary()[patchi], facei)
+        {
+            vf[pFaceCells[facei]] = max(vf[pFaceCells[facei]], pssf[facei]);
+        }
+    }
+
+    return tvf;
+}
+
 /*---------------------------------------------------------------------------*\
                        Class localCellLimitedyGrad Declaration
 \*---------------------------------------------------------------------------*/
@@ -99,12 +161,12 @@ class localCellLimitedGrad
 	    );
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
-	      k() = fvc::average(mesh.lookupObject<surfaceScalarField>(kname_)) /*> SMALL ? 1.0 : 1e-3*/;
+	      k() = max(1e-3, surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_)));
 	    }
 	    else
 	    {
-	      WarningIn("localFaceLimitedGrad::getk")
-	      <<"Limit coefficient field "<<kname_<<" not found. Turning limiter everywhere on."
+	      WarningIn("localCellLimitedGrad::getk")
+	      <<"Limit coefficient field "<<kname_<<" not found. Turning limiter everywhere on for this call."
 	      <<endl;
 	    }
 	    

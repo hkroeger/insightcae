@@ -32,6 +32,7 @@ Author
 #include "surfaceFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
+#include "primitiveMeshTools.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -142,8 +143,37 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
       cellSet cells(mesh_, "nonClosedCells", mesh_.nCells()/100 + 1);
       cellSet acells(mesh_, "aspectCells", mesh_.nCells()/100 + 1);
-      mesh_.checkClosedCells(true, &cells, &acells, mesh_.geometricD());
+      /*
+      mesh_.checkClosedCells
+      (
+//	mesh_.faceAreas(),
+//	mesh_.cellVolumes(),
+	true, 
+	&cells, 
+	&acells, 
+	mesh_.geometricD()
+      );
+      */
       
+      scalarField openness;
+      scalarField aspectRatio;
+      primitiveMeshTools::cellClosedness
+      (
+	  mesh_,
+	  mesh_.geometricD(),
+	  mesh_.faceAreas(),
+	  mesh_.cellVolumes(),
+	  openness,
+	  aspectRatio
+      );
+      forAll(openness, cellI)
+      {
+	  if (aspectRatio[cellI] > aspectThreshold_)
+	  {
+	      acells.insert(cellI);
+	  }
+      }
+
       const labelList& cl=acells.toc();
       forAll(cl, i)
       {
@@ -152,13 +182,6 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	forAll(cfs,j)
 	  faces.insert(cfs[j]);
       }
-/*
-      mesh_.checkFaceAngles(true,
-#ifndef OF16ext
-                            10,
-#endif
-                            &faces);
-*/
 
       label nFaces=faces.size();
       reduce(nFaces, sumOp<label>());
@@ -171,7 +194,11 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     
   if (debug)
   {
-    forAll(blendingFactors_, i) blendingFactors_[i].write();  
+    forAll(blendingFactors_, i) 
+    {
+      Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
+      blendingFactors_[i].write();  
+    }
   }
 
 }
@@ -193,17 +220,15 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markWarpedFaces_(dict.lookupOrDefault<bool>("markWarpedFaces", true)),
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", true)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
+    aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
     if (dict.found("blendingFieldNames"))
     	blendingFieldNames_.reset(new wordList(dict.lookup("blendingFieldNames")));
     else
     {
-    	blendingFieldNames_.reset(new wordList(4));
-        blendingFieldNames_()[0]="U";
-        blendingFieldNames_()[1]="k";
-        blendingFieldNames_()[2]="omega";
-        blendingFieldNames_()[3]="epsilon";
+    	blendingFieldNames_.reset(new wordList(1));
+        blendingFieldNames_()[0]="UBlendingFactor";
     }
 }
 
@@ -223,7 +248,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
     blendingFactors_.resize(blendingFieldNames_().size());
     for (label i=0; i<blendingFieldNames_().size(); i++)
     {
-     Info<<"Creating "<<blendingFieldNames_()[i]<<"BlendingFactor"<<endl;
+     Info<<"Creating "<<blendingFieldNames_()[i]<<endl;
      blendingFactors_.set
      (
         i,
@@ -231,7 +256,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
         (
          IOobject
          (
-          blendingFieldNames_()[i]+"BlendingFactor",
+          blendingFieldNames_()[i],
           mesh.time().timeName(),
           mesh,
           IOobject::NO_READ,

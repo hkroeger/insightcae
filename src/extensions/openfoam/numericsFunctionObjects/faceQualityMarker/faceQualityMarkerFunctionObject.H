@@ -71,6 +71,7 @@ class faceQualityMarkerFunctionObject
         Switch markWarpedFaces_;
         Switch markConcaveFaces_;
         Switch markHighAspectFaces_;
+	scalar aspectThreshold_;
 
         const polyMesh& mesh_;
         autoPtr<wordList> blendingFieldNames_;

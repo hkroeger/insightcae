@@ -28,8 +28,11 @@ Author
 \*---------------------------------------------------------------------------*/
 
 #include "faceQualityMarkerFunctionObject.H"
+#include "fvCFD.H"
+#include "fvcSmooth.H"
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
+#include "volFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
 #include "primitiveMeshTools.H"
@@ -69,7 +72,15 @@ void markFaceSet1(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 void Foam::faceQualityMarkerFunctionObject::markFaceSet(const faceSet& faces)
 {
   forAll(blendingFactors_, i)
-   markFaceSet1(faces, blendingFactors_[i]);
+  {
+      markFaceSet1(faces, blendingFactors_[i]);
+
+      // smoothing the field
+      volScalarField avgBlendingFactor( static_cast<const volScalarField&>(fvc::average(blendingFactors_[i])) );
+      fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+      blendingFactors_[i] = fvc::interpolate(avgBlendingFactor);
+  }
+   
 }
 
 void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
@@ -221,6 +232,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", true)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
+    smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
     if (dict.found("blendingFieldNames"))

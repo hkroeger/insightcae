@@ -73,6 +73,8 @@ class faceQualityMarkerFunctionObject
         Switch markHighAspectFaces_;
 	scalar aspectThreshold_;
 
+        scalar smoothingCoeff_;
+
         const polyMesh& mesh_;
         autoPtr<wordList> blendingFieldNames_;
         PtrList<surfaceScalarField> blendingFactors_;

@@ -22,27 +22,26 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fv::cellLimitedGrad
+    Foam::fv::localFaceLimitedGrad
 
 Description
-    cellLimitedGrad gradient scheme applied to a runTime selected base gradient
+    localFaceLimitedGrad gradient scheme applied to a runTime selected base gradient
     scheme.
 
     The scalar limiter based on limiting the extrapolated face values
-    between the maximum and minumum cell and cell neighbour values and is
-    applied to all components of the gradient.
+    between the face-neighbour cell values and is applied to all components
+    of the gradient.
 
 SourceFiles
-    cellLimitedGrad.C
+    localFaceLimitedGrad.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef localCellLimitedGrad_H
-#define localCellLimitedGrad_H
+#ifndef localFaceLimitedGrad_H
+#define localFaceLimitedGrad_H
 
 #include "gradScheme.H"
 #include "surfaceFields.H"
-#include "fvcAverage.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,11 +54,11 @@ namespace fv
 {
 
 /*---------------------------------------------------------------------------*\
-                       Class localCellLimitedyGrad Declaration
+                       Class localFaceLimitedGrad Declaration
 \*---------------------------------------------------------------------------*/
 
 template<class Type>
-class localCellLimitedGrad
+class localFaceLimitedGrad
 :
     public fv::gradScheme<Type>
 {
@@ -67,23 +66,32 @@ class localCellLimitedGrad
 
         tmp<fv::gradScheme<Type> > basicGradScheme_;
 
-        //- Limiter coefficient field name
+        //- Limiter coefficient
         const word kname_;
 
 
     // Private Member Functions
 
+        inline void limitFace
+        (
+            scalar& limiter,
+            const scalar maxDelta,
+            const scalar minDelta,
+            const scalar extrapolate
+        ) const;
+
+
         //- Disallow default bitwise copy construct
-        localCellLimitedGrad(const localCellLimitedGrad&);
+        localFaceLimitedGrad(const localFaceLimitedGrad&);
 
         //- Disallow default bitwise assignment
-        void operator=(const localCellLimitedGrad&);
-
-	tmp<volScalarField> getk(const fvMesh& mesh) const
+        void operator=(const localFaceLimitedGrad&);
+	
+	tmp<surfaceScalarField> getk(const fvMesh& mesh) const
 	{
-	    tmp<volScalarField> k
+	    tmp<surfaceScalarField> k
 	    (
-	      new volScalarField
+	      new surfaceScalarField
 	      (
 		  IOobject
 		    (
@@ -99,7 +107,7 @@ class localCellLimitedGrad
 	    );
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
-	      k() = fvc::average(mesh.lookupObject<surfaceScalarField>(kname_)) /*> SMALL ? 1.0 : 1e-3*/;
+	      k() = mesh.lookupObject<surfaceScalarField>(kname_);
 	    }
 	    else
 	    {
@@ -110,44 +118,39 @@ class localCellLimitedGrad
 	    
 	    return k;
 	}
-	
+
+
 public:
 
     //- RunTime type information
-    TypeName("localCellLimited");
+    TypeName("faceLimited");
 
 
     // Constructors
 
         //- Construct from mesh and schemeData
-        localCellLimitedGrad(const fvMesh& mesh, Istream& schemeData)
+        localFaceLimitedGrad(const fvMesh& mesh, Istream& schemeData)
         :
             gradScheme<Type>(mesh),
             basicGradScheme_(fv::gradScheme<Type>::New(mesh, schemeData)),
             kname_(schemeData)
         {
-//             if (k_ < 0 || k_ > 1)
-//             {
-//                 FatalIOErrorIn
-//                 (
-//                     "localCellLimitedGrad(const fvMesh&, Istream& schemeData)",
-//                     schemeData
-//                 )   << "coefficient = " << k_
-//                     << " should be >= 0 and <= 1"
-//                     << exit(FatalIOError);
-//             }
+	  /*
+            if (k_ < 0 || k_ > 1)
+            {
+                FatalIOErrorIn
+                (
+                    "localFaceLimitedGrad(const fvMesh&, Istream& schemeData)",
+                    schemeData
+                )   << "coefficient = " << k_
+                    << " should be >= 0 and <= 1"
+                    << exit(FatalIOError);
+            }
+            */
         }
 
 
     // Member Functions
-
-        static inline void limitFace
-        (
-            Type& limiter,
-            const Type& maxDelta,
-            const Type& minDelta,
-            const Type& extrapolate
-        );
 
         //- Return the gradient of the given field to the gradScheme::grad
         //  for optional caching
@@ -155,33 +158,27 @@ public:
         <
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
-        > 
-#ifdef OF16ext
-	grad
-#else
-        calcGrad
-#endif
+        > calcGrad
         (
-            const GeometricField<Type, fvPatchField, volMesh>& vsf
-#ifdef OF16ext
-#else
-            ,
+            const GeometricField<Type, fvPatchField, volMesh>& vsf,
             const word& name
-#endif
-        ) const;
+        ) const
+        {
+            return grad(vsf);
+        }
 };
 
 
 // * * * * * * * * * * * * Inline Member Function  * * * * * * * * * * * * * //
 
-template<>
-inline void localCellLimitedGrad<scalar>::limitFace
+template<class Type>
+inline void localFaceLimitedGrad<Type>::limitFace
 (
     scalar& limiter,
-    const scalar& maxDelta,
-    const scalar& minDelta,
-    const scalar& extrapolate
-)
+    const scalar maxDelta,
+    const scalar minDelta,
+    const scalar extrapolate
+) const
 {
     if (extrapolate > maxDelta + VSMALL)
     {
@@ -194,59 +191,21 @@ inline void localCellLimitedGrad<scalar>::limitFace
 }
 
 
-template<class Type>
-inline void localCellLimitedGrad<Type>::limitFace
-(
-    Type& limiter,
-    const Type& maxDelta,
-    const Type& minDelta,
-    const Type& extrapolate
-)
-{
-    for (direction cmpt=0; cmpt<Type::nComponents; cmpt++)
-    {
-        localCellLimitedGrad<scalar>::limitFace
-        (
-            limiter.component(cmpt),
-            maxDelta.component(cmpt),
-            minDelta.component(cmpt),
-            extrapolate.component(cmpt)
-        );
-    }
-}
-
-
 // * * * * * * * * Template Member Function Specialisations  * * * * * * * * //
 
 template<>
-tmp<volVectorField> localCellLimitedGrad<scalar>::
-#ifdef OF16ext
-grad
-#else
-calcGrad
-#endif
+tmp<volVectorField> localFaceLimitedGrad<scalar>::calcGrad
 (
-    const volScalarField& vsf
-#ifndef OF16ext
-    ,
+    const volScalarField& vsf,
     const word& name
-#endif
 ) const;
 
 
 template<>
-tmp<volTensorField> localCellLimitedGrad<vector>::
-#ifdef OF16ext
-grad
-#else
-calcGrad
-#endif
+tmp<volTensorField> localFaceLimitedGrad<vector>::calcGrad
 (
-    const volVectorField& vsf
-#ifndef OF16ext
-    ,
+    const volVectorField& vsf,
     const word& name
-#endif
 ) const;
 
 

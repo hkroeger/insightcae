@@ -146,24 +146,24 @@ calcGrad
 
 //     if (k_ < 1.0)
     {
-      volScalarField k
-      (
-	   IOobject
-            (
-                "gradLimiterCoeff",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh,
-            dimensionedScalar("k", dimless, 1.0)  // limit everywhere
-      );
-      if (mesh.foundObject<volScalarField>(kname_))
-      {
-        k = mesh.lookupObject<volScalarField>(kname_);
-      }      
-        const scalarField maxMinVsf((1.0/min(1., max(1e-3, k)) - 1.0)*(maxVsf - minVsf));
+//       volScalarField k
+//       (
+// 	   IOobject
+//             (
+//                 "gradLimiterCoeff",
+//                 mesh.time().timeName(),
+//                 mesh,
+//                 IOobject::NO_READ,
+//                 IOobject::NO_WRITE
+//             ),
+//             mesh,
+//             dimensionedScalar("k", dimless, 1.0)  // limit everywhere
+//       );
+//       if (mesh.foundObject<volScalarField>(kname_))
+//       {
+//         k = mesh.lookupObject<volScalarField>(kname_);
+//       }      
+        const scalarField maxMinVsf((1.0/min(1., max(1e-3, getk(mesh))) - 1.0)*(maxVsf - minVsf));
         maxVsf += maxMinVsf;
         minVsf -= maxMinVsf;
 
@@ -329,25 +329,25 @@ calcGrad
 
 //     if (k_ < 1.0)
     {
-      volScalarField k
-      (
-	   IOobject
-            (
-                "gradLimiterCoeff",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE
-            ),
-            mesh,
-            dimensionedScalar("k", dimless, 1.0)  // limit everywhere
-      );
-      if (mesh.foundObject<volScalarField>(kname_))
-      {
-        k = mesh.lookupObject<volScalarField>(kname_);
-      }
+//       volScalarField k
+//       (
+// 	   IOobject
+//             (
+//                 "gradLimiterCoeff",
+//                 mesh.time().timeName(),
+//                 mesh,
+//                 IOobject::NO_READ,
+//                 IOobject::NO_WRITE
+//             ),
+//             mesh,
+//             dimensionedScalar("k", dimless, 1.0)  // limit everywhere
+//       );
+//       if (mesh.foundObject<volScalarField>(kname_))
+//       {
+//         k = mesh.lookupObject<volScalarField>(kname_);
+//       }
 
-      const vectorField maxMinVsf((1.0/min(1., max(1e-3, k)) - 1.0)*(maxVsf - minVsf));
+      const vectorField maxMinVsf((1.0/min(1., max(1e-3, getk(mesh))) - 1.0)*(maxVsf - minVsf));
         maxVsf += maxMinVsf;
         minVsf -= maxMinVsf;
 

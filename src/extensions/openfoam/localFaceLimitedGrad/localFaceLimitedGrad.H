@@ -107,12 +107,12 @@ class localFaceLimitedGrad
 	    );
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
-	      k() = mesh.lookupObject<surfaceScalarField>(kname_);
+	      k() = min(1.0, max(1e-3, mesh.lookupObject<surfaceScalarField>(kname_)));
 	    }
 	    else
 	    {
 	      WarningIn("localFaceLimitedGrad::getk")
-	      <<"Limit coefficient field "<<kname_<<" not found. Turning limiter everywhere on."
+	      <<"Limit coefficient field "<<kname_<<" not found. Turning limiter everywhere on for this call."
 	      <<endl;
 	    }
 	    
@@ -123,7 +123,7 @@ class localFaceLimitedGrad
 public:
 
     //- RunTime type information
-    TypeName("faceLimited");
+    TypeName("localFaceLimited");
 
 
     // Constructors

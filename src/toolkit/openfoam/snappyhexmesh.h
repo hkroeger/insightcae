@@ -133,7 +133,7 @@ namespace snappyHexMeshOpts
     (tlayer, double, 0.5)
     (erlayer, double, 1.3)
     (relativeSizes, bool, true)
-    ( nLayerIter, int, 2 )
+    ( nLayerIter, int, 10 )
   )
 };
 

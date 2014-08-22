@@ -64,23 +64,138 @@ void markFaceSet1(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 	{
 	  label pI=mesh.boundaryMesh().whichPatch(fI);
 	  const polyPatch& patch=mesh.boundaryMesh()[pI];
-	  UBlendingFactor[fI-patch.start()]=1.0;
+	  UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
 	}
     }
 }
+
+  
+template<class Type>
+tmp<GeometricField<Type, fvPatchField, volMesh> >
+surfaceMax2
+(
+    const GeometricField<Type, fvsPatchField, surfaceMesh>& ssf
+)
+{
+    const fvMesh& mesh = ssf.mesh();
+    
+    tmp<GeometricField<Type, fvPatchField, volMesh> > tvf
+    (
+        new GeometricField<Type, fvPatchField, volMesh>
+        (
+            IOobject
+            (
+                "surfaceMax("+ssf.name()+')',
+                ssf.instance(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensioned<Type>
+            (
+                "0",
+                ssf.dimensions(),
+                pTraits<Type>::zero
+            ),
+            calculatedFvPatchField<Type>::typeName
+        )
+    );
+    
+    GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
+
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+
+    const Field<Type>& issf = ssf;
+
+    forAll(owner, facei)
+    {
+        vf[owner[facei]] = max(vf[owner[facei]], issf[facei]);
+        vf[neighbour[facei]] = max(vf[neighbour[facei]], issf[facei]);
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const labelUList& pFaceCells =
+            mesh.boundary()[patchi].faceCells();
+
+        const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
+
+        forAll(mesh.boundary()[patchi], facei)
+        {
+            vf[pFaceCells[facei]] = max(vf[pFaceCells[facei]], pssf[facei]);
+        }
+    }
+
+    return tvf;
+}
+
+template<class Type>
+tmp<GeometricField<Type, fvsPatchField, surfaceMesh> >
+surfaceMax3
+(
+    const GeometricField<Type, fvPatchField, volMesh>& vsf
+)
+{
+    const fvMesh& mesh = vsf.mesh();
+    
+    tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > tsf
+    (
+        new GeometricField<Type, fvsPatchField, surfaceMesh>
+        (
+            IOobject
+            (
+                "surfaceMax3("+vsf.name()+')',
+                vsf.instance(),
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensioned<Type>
+            (
+                "0",
+                vsf.dimensions(),
+                pTraits<Type>::zero
+            ),
+            calculatedFvsPatchField<Type>::typeName
+        )
+    );
+    
+    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf();
+
+    const labelUList& owner = mesh.owner();
+    const labelUList& neighbour = mesh.neighbour();
+
+    forAll(sf, facei)
+    {
+        sf[facei]=max(vsf[owner[facei]], vsf[neighbour[facei]]);
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const labelUList& pFaceCells =
+            mesh.boundary()[patchi].faceCells();
+
+        fvsPatchField<Type>& pssf = sf.boundaryField()[patchi];
+
+        forAll(mesh.boundary()[patchi], facei)
+        {
+            pssf[facei] = vsf[pFaceCells[facei]];
+        }
+    }
+
+    return tsf;
+}
+
 
 void Foam::faceQualityMarkerFunctionObject::markFaceSet(const faceSet& faces)
 {
   forAll(blendingFactors_, i)
   {
       markFaceSet1(faces, blendingFactors_[i]);
-
-      // smoothing the field
-      volScalarField avgBlendingFactor( static_cast<const volScalarField&>(fvc::average(blendingFactors_[i])) );
-      fvc::smooth(avgBlendingFactor, smoothingCoeff_);
-      blendingFactors_[i] = fvc::interpolate(avgBlendingFactor);
-  }
-   
+  }   
 }
 
 void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
@@ -177,7 +292,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  openness,
 	  aspectRatio
       );
-      forAll(openness, cellI)
+      forAll(aspectRatio, cellI)
       {
 	  if (aspectRatio[cellI] > aspectThreshold_)
 	  {
@@ -202,15 +317,27 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
       markFaceSet(faces);
     }
-    
-  if (debug)
-  {
-    forAll(blendingFactors_, i) 
+
+    forAll(blendingFactors_, i)
     {
-      Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
-      blendingFactors_[i].write();  
+	// smoothing the field
+	volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(blendingFactors_[i])) );
+	avgBlendingFactor.rename("avg_"+blendingFactors_[i].name());
+	
+	fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+// 	fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
+// 	fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+	
+	blendingFactors_[i] = surfaceMax3(avgBlendingFactor);
+	
+	if (debug)
+	{
+	  Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
+	  avgBlendingFactor.write();  
+	  Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
+	  blendingFactors_[i].write();  
+	}
     }
-  }
 
 }
 
@@ -275,7 +402,8 @@ bool Foam::faceQualityMarkerFunctionObject::start()
           IOobject::NO_WRITE
          ),
          mesh,
-         dimensionedScalar("", dimless, 0.0)
+         dimensionedScalar("", dimless, 0.0),
+	 calculatedFvPatchField<scalar>::typeName
         )
      );
     }

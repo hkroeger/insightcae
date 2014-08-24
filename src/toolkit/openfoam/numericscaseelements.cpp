@@ -821,11 +821,11 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(rhoPhi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
-  div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
-  div["div(phi,epsilon)"]	= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
-  div["div(phi,omega)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
-  div["div(phi,nuTilda)"]	= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
-  div["div(phi,R)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
+  div["div(phi,k)"]		= "Gauss upwind";
+  div["div(phi,epsilon)"]	= "Gauss upwind";
+  div["div(phi,omega)"]		= "Gauss upwind";
+  div["div(phi,nuTilda)"]	= "Gauss upwind";
+  div["div(phi,R)"]		= "Gauss upwind";
   div["div(R)"]			= "Gauss linear";
   if (OFversion()>=210)
     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";

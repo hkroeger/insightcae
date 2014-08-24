@@ -273,6 +273,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
       cellSet acells(mesh_, "aspectCells", mesh_.nCells()/100 + 1);
 
 #if ( defined(OF16ext) || defined(OF21x)  )
+#warning aspect ratio threshold will be ignored in OF16ext and OF21x!
       mesh_.checkClosedCells
       (
 	true, 
@@ -280,7 +281,6 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	&acells
       );
 #else
-#warning aspect ratio threshold will be ignored in OF16ext and OF21x!
       scalarField openness;
       scalarField aspectRatio;
       primitiveMeshTools::cellClosedness

@@ -200,13 +200,14 @@ OFDictData::dict diagonalSolverSetup()
   return d;
 }
 
-OFDictData::dict stdAsymmSolverSetup(double tol, double reltol)
+OFDictData::dict stdAsymmSolverSetup(double tol, double reltol, int minIter)
 {
   OFDictData::dict d;
   d["solver"]="PBiCG";
   d["preconditioner"]="DILU";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
+  if (minIter) d["minIter"]=minIter;
   return d;
 }
 
@@ -255,7 +256,7 @@ OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
   return d;
 }
 
-OFDictData::dict smoothSolverSetup(double tol, double reltol)
+OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
 {
   OFDictData::dict d;
   d["solver"]="smoothSolver";
@@ -263,6 +264,7 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol)
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   d["nSweeps"]=1;
+  if (minIter) d["minIter"]=minIter;
   return d;
 }
 
@@ -368,6 +370,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
   
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
@@ -381,7 +384,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0.1, 1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
 
@@ -437,12 +440,12 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) pref="bounded ";
   if (OFversion()<=160) suf=" localCellLimited leastSquares UBlendingFactor"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
-  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV"+suf;
-  div["div(phi,k)"]	=	pref+"Gauss linearUpwind"+suf;
-  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind"+suf;
-  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind"+suf;
-  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind"+suf;
-  div["div(phi,R)"]	=	pref+"Gauss linearUpwind"+suf;
+  div["div(phi,U)"]	=	pref+"Gauss localBlendedBy UBlendingFactor upwind linearUpwindV"+suf;
+  div["div(phi,k)"]	=	pref+"Gauss upwind";
+  div["div(phi,omega)"]	=	pref+"Gauss upwind";
+  div["div(phi,nuTilda)"]=	pref+"Gauss upwind";
+  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+  div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       
   div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
@@ -490,14 +493,14 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
-  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1, 1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.1);
   
   solvers["pFinal"]=GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0, 1);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
@@ -666,7 +669,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["rho"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0, 1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0);
 
@@ -760,13 +763,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   solvers["U"]=smoothSolverSetup(1e-8, 0);
   solvers["k"]=smoothSolverSetup(1e-8, 0);
-  solvers["omega"]=smoothSolverSetup(1e-12, 0);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0, 1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTilda"]=smoothSolverSetup(1e-8, 0);
   
   solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
-  solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0);
+  solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0, 1);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
@@ -1037,7 +1040,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["h"]=stdAsymmSolverSetup(1e-8, 0.1);
-  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1, 1);
   solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.1);
   
@@ -1045,7 +1048,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["hFinal"]=stdAsymmSolverSetup(1e-8, 0);
-  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0, 1);
   solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 

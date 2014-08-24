@@ -24,6 +24,12 @@
 #include "gradScheme.H"
 #include "surfaceFields.H"
 
+#ifdef OF16ext
+#define LABELULIST unallocLabelList
+#else
+#define LABELULIST labelUList
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -139,10 +145,19 @@ public:
         <
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
-        > calcGrad
-        (
-            const GeometricField<Type, fvPatchField, volMesh>& vsf,
+        > 
+#ifdef OF16ext
+	grad
+#else
+        calcGrad
+#endif
+	(
+            const GeometricField<Type, fvPatchField, volMesh>& vsf
+#ifdef OF16ext
+#else
+            ,
             const word& name
+#endif
         ) const
         {
             return grad(vsf);
@@ -175,20 +190,34 @@ inline void localFaceLimitedGrad<Type>::limitFace
 // * * * * * * * * Template Member Function Specialisations  * * * * * * * * //
 
 template<>
-tmp<volVectorField> localFaceLimitedGrad<scalar>::calcGrad
+tmp<volVectorField> localFaceLimitedGrad<scalar>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volScalarField& vsf,
+    const volScalarField& vsf
+#ifndef OF16ext
+    ,
     const word& name
+#endif
 ) const;
-
 
 template<>
-tmp<volTensorField> localFaceLimitedGrad<vector>::calcGrad
+tmp<volTensorField> localFaceLimitedGrad<vector>::
+#ifdef OF16ext
+grad
+#else
+calcGrad
+#endif
 (
-    const volVectorField& vsf,
+    const volVectorField& vsf
+#ifndef OF16ext
+    ,
     const word& name
+#endif
 ) const;
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

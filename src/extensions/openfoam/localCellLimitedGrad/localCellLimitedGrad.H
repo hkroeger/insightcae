@@ -25,6 +25,12 @@
 #include "surfaceFields.H"
 #include "fvcAverage.H"
 
+#ifdef OF16ext
+#define LABELULIST unallocLabelList
+#else
+#define LABELULIST labelUList
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -70,8 +76,8 @@ surfaceMax
     
     GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
+    const LABELULIST& owner = mesh.owner();
+    const LABELULIST& neighbour = mesh.neighbour();
 
     const Field<Type>& issf = ssf;
 
@@ -83,7 +89,7 @@ surfaceMax
 
     forAll(mesh.boundary(), patchi)
     {
-        const labelUList& pFaceCells =
+        const LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];

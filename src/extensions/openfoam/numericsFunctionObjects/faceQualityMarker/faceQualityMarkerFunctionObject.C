@@ -20,13 +20,24 @@
 
 #include "faceQualityMarkerFunctionObject.H"
 #include "fvCFD.H"
+#ifndef OF16ext
 #include "fvcSmooth.H"
+#endif
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
 #include "volFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
+
+#if (!( defined(OF16ext) || defined(OF21x) ))
 #include "primitiveMeshTools.H"
+#endif
+
+#ifdef OF16ext
+#define LABELULIST unallocLabelList
+#else
+#define LABELULIST labelUList
+#endif
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -95,8 +106,8 @@ surfaceMax2
     
     GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
+    const LABELULIST& owner = mesh.owner();
+    const LABELULIST& neighbour = mesh.neighbour();
 
     const Field<Type>& issf = ssf;
 
@@ -108,7 +119,7 @@ surfaceMax2
 
     forAll(mesh.boundary(), patchi)
     {
-        const labelUList& pFaceCells =
+        const LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
@@ -156,8 +167,8 @@ surfaceMax3
     
     GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf();
 
-    const labelUList& owner = mesh.owner();
-    const labelUList& neighbour = mesh.neighbour();
+    const LABELULIST& owner = mesh.owner();
+    const LABELULIST& neighbour = mesh.neighbour();
 
     forAll(sf, facei)
     {
@@ -166,7 +177,7 @@ surfaceMax3
 
     forAll(mesh.boundary(), patchi)
     {
-        const labelUList& pFaceCells =
+        const LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
         fvsPatchField<Type>& pssf = sf.boundaryField()[patchi];
@@ -260,18 +271,16 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
       cellSet cells(mesh_, "nonClosedCells", mesh_.nCells()/100 + 1);
       cellSet acells(mesh_, "aspectCells", mesh_.nCells()/100 + 1);
-      /*
+
+#if ( defined(OF16ext) || defined(OF21x)  )
       mesh_.checkClosedCells
       (
-//	mesh_.faceAreas(),
-//	mesh_.cellVolumes(),
 	true, 
 	&cells, 
-	&acells, 
-	mesh_.geometricD()
+	&acells
       );
-      */
-      
+#else
+#warning aspect ratio threshold will be ignored in OF16ext and OF21x!
       scalarField openness;
       scalarField aspectRatio;
       primitiveMeshTools::cellClosedness
@@ -290,7 +299,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	      acells.insert(cellI);
 	  }
       }
-
+#endif
       const labelList& cl=acells.toc();
       forAll(cl, i)
       {
@@ -311,6 +320,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
     forAll(blendingFactors_, i)
     {
+#if (!( defined(OF16ext) || defined(OF21x) ))
 	// smoothing the field
 	volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(blendingFactors_[i])) );
 	avgBlendingFactor.rename("avg_"+blendingFactors_[i].name());
@@ -325,6 +335,10 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	{
 	  Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
 	  avgBlendingFactor.write();  
+	}
+#endif
+	if (debug)
+	{
 	  Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
 	  blendingFactors_[i].write();  
 	}

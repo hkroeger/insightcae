@@ -38,11 +38,7 @@ namespace fv
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#ifdef OF16ext
-#define LABELULIST unallocLabelList
-#else
-#define LABELULIST labelUList
-#endif
+
 
 template<>
 Foam::tmp<Foam::volVectorField>

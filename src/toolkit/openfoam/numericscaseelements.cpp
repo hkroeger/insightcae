@@ -614,6 +614,129 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
+potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, Parameters const& p)
+: FVNumerics(c, p),
+  p_(p)
+{
+  c.addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  
+  if (OFversion()<230)
+    throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
+}
+ 
+void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="pimpleFoam";
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["maxCo"]=p_.maxCo();
+  controlDict["maxDeltaT"]=p_.maxDeltaT();
+    
+  controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
+  
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+
+  // ============ setup fvSolution ================================
+  
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+  
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["p_gh"]=GAMGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.1, 1);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.1);
+  solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.1);
+  
+  solvers["p_ghFinal"]=GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
+  solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-14, 0, 1);
+  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0);
+  solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
+
+  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+  PIMPLE["nCorrectors"]=p_.nCorrectors();
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
+  PIMPLE["pRefCell"]=0;
+  PIMPLE["pRefValue"]=0.0;
+  
+  // ============ setup fvSchemes ================================
+  
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+  
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+  
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  grad["default"]="Gauss linear";
+  grad["grad(U)"]="cellLimited leastSquares 1";
+  
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string suf;
+  div["default"]="Gauss linear";
+  
+  if (p_.nOuterCorrectors()>1)
+  {
+    // SIMPLE mode: add underrelaxation
+    OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+    if (OFversion()<210)
+    {
+      relax["p_gh"]=0.3;
+      relax["U"]=0.7;
+      relax["k"]=0.7;
+      relax["omega"]=0.7;
+      relax["epsilon"]=0.7;
+      relax["nuTilda"]=0.7;
+    }
+    else
+    {
+      OFDictData::dict fieldRelax, eqnRelax;
+      fieldRelax["p_gh"]=0.3;
+      eqnRelax["U"]=0.7;
+      eqnRelax["k"]=0.7;
+      eqnRelax["omega"]=0.7;
+      eqnRelax["epsilon"]=0.7;
+      eqnRelax["nuTilda"]=0.7;
+      relax["fields"]=fieldRelax;
+      relax["equations"]=eqnRelax;
+    }
+  }
+  
+
+  div["div(phi,U)"]="Gauss limitedLinearV 1";
+  div["div(phi,k)"]="Gauss limitedLinear 1";
+  div["div(phi,epsilon)"]="Gauss limitedLinear 1";
+  div["div(phi,omega)"]="Gauss limitedLinear 1";
+  div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
+  div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="localLimited UBlendingFactor 1";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p_gh"]="";
+}
+
+
 simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
 : simpleFoamNumerics(c, p),
   p_(p)

@@ -146,6 +146,27 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class potentialFreeSurfaceFoamNumerics
+: public FVNumerics
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (nCorrectors, int, 2)
+    (nOuterCorrectors, int, 1)
+    (nNonOrthogonalCorrectors, int, 0)
+    (deltaT, double, 1.0)
+    (adjustTimeStep, bool, true)
+    (maxCo, double, 0.45)
+    (maxDeltaT, double, 1.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class simpleDyMFoamNumerics
 : public simpleFoamNumerics

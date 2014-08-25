@@ -381,6 +381,19 @@ public:
 };
 
 
+class PotentialFreeSurfaceBC
+: public BoundaryCondition
+{
+public:
+  PotentialFreeSurfaceBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict
+  );
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class MeshMotionBC
 {

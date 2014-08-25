@@ -44,6 +44,7 @@ protected:
 public:
   DXFReader(const boost::filesystem::path& filename, const std::string& layername="0");
   virtual ~DXFReader();
+  virtual void addArc(const DL_ArcData &);
   virtual void addLine(const DL_LineData &);
   virtual void addPolyline(const DL_PolylineData &);
   virtual void addVertex(const DL_VertexData &);

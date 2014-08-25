@@ -38,6 +38,30 @@ DXFReader::~DXFReader()
 {
 }
 
+void DXFReader::addArc(const DL_ArcData &a)
+{
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    gp_Pnt cp(a.cx, a.cy, a.cz);
+    gp_Circ c = gce_MakeCirc( gp_Ax2(cp, gp_Dir(0,0,1)), a.radius );
+    gp_Pnt p0(cp); p0.Translate(gp_Vec(a.radius*::cos(M_PI*a.angle1/180.), a.radius*::sin(M_PI*a.angle1/180.), 0) );
+    gp_Pnt p1(cp); p1.Translate(gp_Vec(a.radius*::cos(M_PI*a.angle2/180.), a.radius*::sin(M_PI*a.angle2/180.), 0) );
+//     Standard_Real Alpha1 = ElCLib::Parameter(c, p0);
+//     Standard_Real Alpha2 = ElCLib::Parameter(c, p1);
+//     Handle(Geom_Circle) C = new Geom_Circle(c);
+//     Handle(Geom_TrimmedCurve) arc = new Geom_TrimmedCurve(C, Alpha1, Alpha2, false);
+    cout<<a.cx<<" "<<a.cy<<" "<<a.cz<<endl;
+    cout<<a.radius<<" "<<a.angle1<<" "<<a.angle2<<endl;
+    cout<<p0.X()<<" "<<p0.Y()<<" "<<p0.Z()<<endl;
+    cout<<p1.X()<<" "<<p1.Y()<<" "<<p1.Z()<<endl;
+    cout<<"added arc"<<endl;
+//     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c, BRepBuilderAPI_MakeVertex(p0), BRepBuilderAPI_MakeVertex(p1)).Edge();
+    TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c, p0, p1).Edge();
+    ls_.Append(e);
+  }
+}
+
 void DXFReader::addLine (const DL_LineData &l)
 {
   DL_Attributes attr=getAttributes();

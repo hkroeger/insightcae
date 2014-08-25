@@ -55,6 +55,8 @@
 #include <gp_Ax3.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
+#include <gp_XYZ.hxx>
+#include <gp_Vec.hxx>
 #include <gp_Elips.hxx>
 #include <gp_Circ.hxx>
 #include <TopoDS.hxx>
@@ -150,9 +152,14 @@
 #include "ShapeAnalysis_Surface.hxx"
 #include "GeomLProp_SLProps.hxx"
 #include "GCPnts_UniformDeflection.hxx"
+#include "gce_MakeCirc.hxx"
 
 #include "HLRBRep_Algo.hxx"
 #include "HLRBRep_HLRToShape.hxx"
+
+#include "ElCLib.hxx"
+#include "Geom_Circle.hxx"
+#include "Geom_TrimmedCurve.hxx"
 
 #include <armadillo>
 

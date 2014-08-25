@@ -1176,6 +1176,15 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
 	BC["type"]=OFDictData::data("waveSurfacePressure");
 	BC["value"]=OFDictData::data("uniform 0");
     }
+    else if ( 
+      ( (field.first=="p") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+	BC["type"]=OFDictData::data("zeroGradient");
+	//BC["value"]=OFDictData::data("uniform 0");
+    }
     else if 
     (
       (

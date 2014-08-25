@@ -618,6 +618,7 @@ potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase&
 : FVNumerics(c, p),
   p_(p)
 {
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   c.addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
   
@@ -632,7 +633,7 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="pimpleFoam";
+  controlDict["application"]="potentialFreeSurfaceFoam";
   controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
@@ -715,11 +716,11 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   }
   
 
-  div["div(phi,U)"]="Gauss limitedLinearV 1";
-  div["div(phi,k)"]="Gauss limitedLinear 1";
-  div["div(phi,epsilon)"]="Gauss limitedLinear 1";
-  div["div(phi,omega)"]="Gauss limitedLinear 1";
-  div["div(phi,nuTilda)"]="Gauss limitedLinear 1";
+  div["div(phi,U)"]="Gauss localBlendedBy UBlendingFactor linearUpwind grad(U) limitedLinearV 1";
+  div["div(phi,k)"]="Gauss linearUpwind grad(k)";
+  div["div(phi,epsilon)"]="Gauss linearUpwind grad(epsilon)";
+  div["div(phi,omega)"]="Gauss linearUpwind grad(omega)";
+  div["div(phi,nuTilda)"]="Gauss linearUpwind grad(nuTilda)";
   div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");

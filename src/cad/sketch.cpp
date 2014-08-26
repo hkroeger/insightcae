@@ -226,7 +226,7 @@ TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& 
   gp_Ax3 ax=pl;
   tr.SetTransformation(ax);
   
-  BRepBuilderAPI_Transform btr(w, tr);
+  BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
 
   return BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape();
 }

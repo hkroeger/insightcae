@@ -69,6 +69,26 @@ DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni)
   cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
 }
 
+DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni, const arma::mat& up)
+: Datum(true, false, true)
+{
+  arma::mat n=ni/norm(ni,2);
+
+  arma::mat vx=cross(up, n); 
+  double m=norm(vx, 2);
+  if (m<1e-6)
+  {
+    throw insight::Exception("normal and upward direction are aligned!");
+  }
+  vx/=m;
+
+  cout<<"p0="<<p0<<endl;
+  cout<<"n="<<n<<endl;
+  cout<<"vx="<<vx<<endl;
+  
+  cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
+}
+
 DatumPlane::DatumPlane
 (
   const SolidModel& m, 

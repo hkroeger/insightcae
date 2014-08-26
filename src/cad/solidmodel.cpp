@@ -802,6 +802,14 @@ Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L)
 {
 }
 
+Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang)
+: SolidModel
+(
+  BRepPrimAPI_MakeRevol( TopoDS::Face(sk), gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang ).Shape()
+)
+{
+}
+
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {

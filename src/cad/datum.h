@@ -64,6 +64,12 @@ public:
   );
   DatumPlane
   (
+    const arma::mat& p0, 
+    const arma::mat& n,
+    const arma::mat& up
+  );
+  DatumPlane
+  (
     const SolidModel& m, 
     FeatureID f
   );

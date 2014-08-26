@@ -212,6 +212,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
 	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2)) ]
+	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >>')' ) 
+	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4)) ]
 	 ;
 	 
 	r_edgeFeaturesExpression = 
@@ -233,8 +235,11 @@ struct ISCADParser
 	r_datumExpression = 
 	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	     |
-	     ( lit("Plane") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+	     ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2)) ]
+	     |
+	     ( lit("SPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2, _3)) ]
 	  ;
 	  
 	r_path = as_string[ 

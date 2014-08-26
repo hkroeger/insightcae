@@ -133,6 +133,7 @@
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <Precision.hxx>
 #include <BRepAlgoAPI_Common.hxx>

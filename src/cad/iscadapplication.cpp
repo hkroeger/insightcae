@@ -329,7 +329,7 @@ public:
     (
       listWidget(), 
       "Export file name", 
-      "", "BREP file (*,brep);;STL file (*.stl)"
+      "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
     );
     if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
   }

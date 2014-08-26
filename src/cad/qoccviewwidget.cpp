@@ -652,9 +652,10 @@ void QoccViewWidget::setReset ()
 /*!
   \brief	This function handles left button down events from the mouse.
 */
-void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers, const QPoint point )
+void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers kb, const QPoint point )
 {
   myStartPoint = point;
+  
   //  else
     {
       switch ( myMode )
@@ -836,7 +837,7 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 				  const QPoint point )
 {
   myCurrentPoint = point;
-
+  
   if ( buttons & Qt::LeftButton  ||
        buttons & Qt::RightButton ||
        buttons & Qt::MidButton )
@@ -885,7 +886,12 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
     }
   else
     {
-      moveEvent( myCurrentPoint );
+      if ( (nFlags & Qt::AltModifier) && (!buttons) )      
+      {
+	myView->Rotation( myCurrentPoint.x(), myCurrentPoint.y() );
+      }
+      else
+	moveEvent( myCurrentPoint );
     }
 }
 /*!
@@ -950,6 +956,18 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     }
   return pick;
 }
+
+// void QoccViewWidget::keyPressEvent(QKeyEvent* e)
+// {
+//     QWidget::keyPressEvent(e);
+//     cout<<"Press"<<endl;
+// }
+// 
+// void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
+// {
+//     QWidget::keyReleaseEvent(e);
+// }
+
 
 bool QoccViewWidget::dump(Standard_CString theFile)
 {

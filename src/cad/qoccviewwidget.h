@@ -144,6 +144,8 @@ protected: // methods
   virtual void mouseReleaseEvent ( QMouseEvent* e );
   virtual void mouseMoveEvent    ( QMouseEvent* e );
   virtual void wheelEvent        ( QWheelEvent* e );
+//   virtual void keyPressEvent     ( QKeyEvent* e );
+//   virtual void keyReleaseEvent   ( QKeyEvent* e );
   
   virtual void leaveEvent		   ( QEvent * );
   

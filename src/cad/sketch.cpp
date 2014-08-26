@@ -21,6 +21,8 @@
 #include "sketch.h"
 #include "base/exception.h"
 
+#include "TColStd_Array1OfInteger.hxx"
+
 namespace insight {
 namespace cad {
 
@@ -99,6 +101,113 @@ void DXFReader::addVertex(const DL_VertexData &pv)
     lp_.reset(new gp_Pnt(p));
   }
 }
+
+void DXFReader::addSpline(const DL_SplineData& sp)
+{
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    cout<<"addSpline"<<endl;
+    spl_deg_=sp.degree;
+    spl_nctrl_=sp.nControl;
+    spl_nknot_=sp.nKnots;
+    splp_.clear();
+    splk_.clear();
+  }
+}
+
+void DXFReader::addKnot(const DL_KnotData& kd)
+{
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    cout<<"addknot"<<endl;
+    splk_.push_back(kd.k);
+    if ((splk_.size()==spl_nknot_) && (splp_.size()==spl_nctrl_)) buildSpline();
+  }
+}
+
+void DXFReader::addControlPoint(const DL_ControlPointData& cp)
+{
+  DL_Attributes attr=getAttributes();
+  if (attr.getLayer()==layername_)
+  {
+    cout<<"addctrlp"<<endl;
+    splp_.push_back(gp_Pnt(cp.x, cp.y, cp.z));
+    if ((splk_.size()==spl_nknot_) && (splp_.size()==spl_nctrl_)) buildSpline();
+  }
+}
+
+void DXFReader::buildSpline()
+{
+  cout<<"building spline"<<endl;
+
+  int np=splp_.size(), nk=splk_.size();
+  TColgp_Array1OfPnt poles(1, np);
+  TColStd_Array1OfReal weights(1, np);
+  int i;
+  for(i=0;i<np;++i)
+  {
+    cout<<i<<" : "<<splp_[i].X()<<" "<<splp_[i].Y()<<" "<<splp_[i].Z()<<endl;
+    poles.SetValue(i+1, splp_[i]);
+  }
+  for(i=0;i<np;++i)
+  {
+    weights.SetValue(i+1, 1);
+  }
+
+  int degree = spl_deg_;
+  int nkr=spl_nknot_; //+degree+1-2*degree;
+  
+  std::vector<int> mult;
+  std::vector<double> u;
+  u.push_back(splk_[0]);
+  mult.push_back(1);
+  for (int i=1; i<splk_.size(); i++)
+  {
+    double cu=splk_[i];
+    double lu=splk_[i-1];
+    if (fabs(cu-lu)<1e-10)
+    {
+      mult.back()++;
+    }
+    else
+    {
+      u.push_back(cu);
+      mult.push_back(1);
+    }
+  }
+
+  TColStd_Array1OfReal UKnots(1, u.size());
+  TColStd_Array1OfInteger UMult(1, mult.size());
+  for(i=0;i<u.size();++i)
+  {
+    cout<<i<<" : "<<u[i]<<endl;
+    UKnots.SetValue(i+1, u[i]);
+  }
+  for(i=0;i<mult.size();++i)
+  {
+    cout<<i<<" : "<<mult[i]<<endl;
+    UMult.SetValue(i+1, mult[i]);
+  }
+//   UMult.SetValue(1,degree+1);
+//   UMult.SetValue(nkr,degree+1);
+
+  Handle_Geom_BSplineCurve c = new Geom_BSplineCurve
+      (
+          poles,
+          weights,
+          UKnots,
+          UMult,
+          degree
+      );
+
+      
+    TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c).Edge();
+    ls_.Append(e);      
+}
+
+
 
 TopoDS_Wire DXFReader::Wire() const
 {

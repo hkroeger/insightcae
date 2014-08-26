@@ -41,6 +41,10 @@ protected:
   TopTools_ListOfShape ls_;
   std::auto_ptr<gp_Pnt> lp_;
   
+  int spl_deg_, spl_nknot_, spl_nctrl_;
+  std::vector<gp_Pnt> splp_;
+  std::vector<double> splk_;
+  
 public:
   DXFReader(const boost::filesystem::path& filename, const std::string& layername="0");
   virtual ~DXFReader();
@@ -48,6 +52,12 @@ public:
   virtual void addLine(const DL_LineData &);
   virtual void addPolyline(const DL_PolylineData &);
   virtual void addVertex(const DL_VertexData &);
+  
+  virtual void addSpline(const DL_SplineData&);
+  virtual void addKnot(const DL_KnotData&);
+  virtual void addControlPoint(const DL_ControlPointData&);
+  void buildSpline();
+  
   TopoDS_Wire Wire() const;
 };
 

@@ -26,6 +26,8 @@
 #include <Graphic3d_NameOfMaterial.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom_Curve.hxx>
+#include <Geom_BezierCurve.hxx>
+#include <Geom_BSplineCurve.hxx>
 #include <GeomAdaptor_Curve.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <Geom2d_Curve.hxx>

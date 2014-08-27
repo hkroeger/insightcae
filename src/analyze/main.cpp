@@ -53,8 +53,11 @@ int main(int argc, char *argv[])
       ("help", "produce help message")
       ("workdir,w", po::value<std::string>(), "execution directory")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
+      ("string,s", po::value<StringList>(), "string variable assignment")
+      ("double,d", po::value<StringList>(), "double variable assignment")
+      ("int,i", po::value<StringList>(), "int variable assignment")
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-      ("input-file,i", po::value< StringList >(),"Specifies input file.")
+      ("input-file,f", po::value< StringList >(),"Specifies input file.")
   ;  
   
   po::positional_options_description p;
@@ -147,11 +150,49 @@ int main(int argc, char *argv[])
 	std::vector<std::string> pair;
 	boost::split(pair, s, boost::is_any_of(":"));
 	bool v=boost::lexical_cast<bool>(pair[1]);
-	cout << "Setting '"<<pair[0]<<"' = "<<v<<endl;
+	cout << "Setting boolean '"<<pair[0]<<"' = "<<v<<endl;
 	parameters.getBool(pair[0])=v;
       }
     }
     
+    if (vm.count("string"))
+    {
+      StringList sets=vm["string"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+	parameters.getString(pair[0])=pair[1];
+      }
+    }
+    
+    if (vm.count("double"))
+    {
+      StringList sets=vm["double"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	double v=boost::lexical_cast<double>(pair[1]);
+	cout << "Setting double '"<<pair[0]<<"' = "<<v<<endl;
+	parameters.getDouble(pair[0])=v;
+      }
+    }
+
+    if (vm.count("int"))
+    {
+      StringList sets=vm["int"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	int v=boost::lexical_cast<int>(pair[1]);
+	cout << "Setting int '"<<pair[0]<<"' = "<<v<<endl;
+	parameters.getInt(pair[0])=v;
+      }
+    }
+
     analysis->setParameters(parameters);
     
     // run analysis

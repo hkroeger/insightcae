@@ -433,7 +433,10 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="steadyState";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="localCellLimited leastSquares UBlendingFactor";
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
+  grad["default"]=grads;
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
@@ -534,7 +537,10 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
+  grad["default"]=grads;
   grad["grad(U)"]="cellLimited leastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
@@ -681,7 +687,10 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
+  grad["default"]=grads;
   grad["grad(U)"]="cellLimited leastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
@@ -930,9 +939,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   //grad["grad("+pname_+")"]="Gauss linear";
-  std::string bgrads="leastSquares";
+  std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  std::string grads="localCellLimited "+bgrads+" UBlendingFactor";
+  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
   grad["default"]=grads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");

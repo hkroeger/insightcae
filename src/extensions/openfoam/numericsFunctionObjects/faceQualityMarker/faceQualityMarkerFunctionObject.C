@@ -29,6 +29,10 @@
 #include "faceSet.H"
 #include "cellSet.H"
 
+#ifndef OF16ext
+#include "polyMeshTetDecomposition.H"
+#endif
+
 #if (!( defined(OF16ext) || defined(OF21x) ))
 #include "primitiveMeshTools.H"
 #endif
@@ -264,6 +268,32 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
       markFaceSet(faces);
     }
 
+   if (markLowQualityTetFaces_)
+    {
+#ifndef OF16ext
+      faceSet faces(mesh_, "concaveFaces", mesh_.nFaces()/100 + 1);
+      
+      polyMeshTetDecomposition::checkFaceTets
+      (
+	  mesh_,
+	  polyMeshTetDecomposition::minTetQuality,
+	  true,
+	  &faces
+      );
+
+      label nFaces=faces.size();
+      reduce(nFaces, sumOp<label>());
+      Info<<"Marking "
+	  <<nFaces
+	  <<" faces with low quality or negative volume "
+	  << "decomposition tets."<<endl;
+      markFaceSet(faces);
+#else
+      WarningIn("faceQualityMarker::updateBlendingFactor()")
+      << "Criterion markLowTetQualityFaces unavailable in OF16ext! Ignored." <<endl;
+#endif
+    }
+    
   if (markHighAspectFaces_)
     {
 
@@ -363,6 +393,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markWarpedFaces_(dict.lookupOrDefault<bool>("markWarpedFaces", false)),
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", false)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
+    markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", false)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))

@@ -271,7 +271,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
    if (markLowQualityTetFaces_)
     {
 #ifndef OF16ext
-      faceSet faces(mesh_, "concaveFaces", mesh_.nFaces()/100 + 1);
+      faceSet faces(mesh_, "lowTetQualityFaces", mesh_.nFaces()/100 + 1);
       
       polyMeshTetDecomposition::checkFaceTets
       (
@@ -393,7 +393,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markWarpedFaces_(dict.lookupOrDefault<bool>("markWarpedFaces", false)),
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", false)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
-    markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", false)),
+    markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))

@@ -232,7 +232,7 @@ OFDictData::dict GAMGSolverSetup(double tol, double reltol)
   d["nPostSweeps"]=2;
   d["cacheAgglomeration"]="on";
   d["agglomerator"]="faceAreaPair";
-  d["nCellsInCoarsestLevel"]=10;
+  d["nCellsInCoarsestLevel"]=500;
   d["mergeLevels"]=1;
   return d;
 }

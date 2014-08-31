@@ -371,6 +371,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
   
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
@@ -433,11 +434,14 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="steadyState";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  
+  std::string bgrads="leastSquares2"; //"Gauss linear";
+//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  
   std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
   grad["default"]=grads;
-  
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+    
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
@@ -884,6 +888,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
   
   // ============ setup fvSolution ================================
   
@@ -938,11 +943,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  //grad["grad("+pname_+")"]="Gauss linear";
-  std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  
+  std::string bgrads="leastSquares2"; //"Gauss linear";
+//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+
   std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
   grad["default"]=grads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

@@ -55,8 +55,8 @@ class faceQualityMarkerFunctionObject
         Switch markHighAspectFaces_;
 	Switch markLowQualityTetFaces_;
 	scalar aspectThreshold_;
-
         scalar smoothingCoeff_;
+        wordList sets_;
 
         const polyMesh& mesh_;
         autoPtr<wordList> blendingFieldNames_;

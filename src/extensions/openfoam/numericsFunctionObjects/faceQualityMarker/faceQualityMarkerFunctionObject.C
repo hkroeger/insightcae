@@ -348,6 +348,23 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
       markFaceSet(faces);
     }
 
+    if (sets_.size())
+    {
+      forAll(sets_, i)
+      {
+        faceSet faces(mesh_, sets_[i]);
+
+        label nFaces=faces.size();
+        reduce(nFaces, sumOp<label>());
+
+        Info<<"Marking "
+            <<nFaces
+            <<" faces from faceSet "<<sets_[i]<<"."<<endl;
+
+        markFaceSet(faces);
+      }
+    }
+
     forAll(blendingFactors_, i)
     {
 #if (!( defined(OF16ext) || defined(OF21x) ))
@@ -404,6 +421,10 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     {
     	blendingFieldNames_.reset(new wordList(1));
         blendingFieldNames_()[0]="UBlendingFactor";
+    }
+    if (dict.found("sets"))
+    {
+        sets_=wordList(dict.lookup("sets"));
     }
 }
 

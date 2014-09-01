@@ -440,8 +440,8 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads;
-  grad["grad(p)"]="Gauss linear";
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+//   grad["grad(p)"]="Gauss linear";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
@@ -545,8 +545,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
-  grad["grad(p)"]="Gauss linear";
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+//   grad["grad(p)"]="Gauss linear";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -695,7 +695,7 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -825,7 +825,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["default"]="Gauss upwind";
@@ -951,8 +951,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
-  grad["grad(p_rgh)"]="Gauss linear";
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+//   grad["grad(p_rgh)"]="Gauss linear";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -1204,7 +1204,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
-  grad["grad(U)"]="cellLimited "+bgrads+" 1";
+  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

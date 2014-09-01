@@ -245,7 +245,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  
 	  scalar val = 1. - min(1., max(0., ( (o - up) / (lo - up))));
 	  
-	  Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
+	  //Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
 	  
 	  forAll(blendingFactors_, i)
 	    markFace(faceI, blendingFactors_[i], val);

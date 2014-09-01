@@ -260,7 +260,7 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
 {
   OFDictData::dict d;
   d["solver"]="smoothSolver";
-  d["smoother"]="GaussSeidel";
+  d["smoother"]="symGaussSeidel";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   d["nSweeps"]=1;
@@ -1030,8 +1030,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
 
-  controlDict["maxAlphaCo"]=5.0;
-  controlDict["maxCo"]=10.0;
+  controlDict["maxAlphaCo"]=0.5;
+  controlDict["maxCo"]=1.0;
  
   // ============ setup fvSolution ================================
   
@@ -1051,8 +1051,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=1.0;
-  SOL["maxCo"]=10.0;
-  SOL["maxAlphaCo"]=5.0;
+  SOL["maxAlphaCo"]=0.5;
+  SOL["maxCo"]=1.0;
   SOL["rDeltaTSmoothingCoeff"]=0.05;
   SOL["rDeltaTDampingCoeff"]=0.5;
   SOL["nAlphaSweepIter"]=0;
@@ -1067,22 +1067,6 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="localEuler rDeltaT";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  //grad["grad(p_rgh)"]="Gauss linear";
-  //grad["default"]="cellLimited leastSquares 1";
-  //grad["grad(U)"]="cellLimited leastSquares 1";
-  
-//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-//   std::string suf;
-//   if (OFversion()==160) 
-//     suf="cellLimited leastSquares 1";
-//   else 
-//     suf="grad(U)";
-//   div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
-//   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
-//   div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
-//   div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
-//   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
-
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)

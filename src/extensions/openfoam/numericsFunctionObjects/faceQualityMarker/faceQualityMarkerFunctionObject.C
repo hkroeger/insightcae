@@ -29,13 +29,13 @@
 #include "volFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
-#include "unitConversion.H"
 
 #ifndef OF16ext
 #include "polyMeshTetDecomposition.H"
 #endif
 
 #if (!( defined(OF16ext) || defined(OF21x) ))
+#include "unitConversion.H"
 #include "primitiveMeshTools.H"
 #endif
 
@@ -222,10 +222,18 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     {
       faceSet faces(mesh_, "nonOrthoFaces", mesh_.nFaces()/100 + 1);
       
+#if (defined(OF16ext)||defined(OF21x))
+      WarningIn("faceQualityMarkerFunctionObject::updateBlendingFactor()")
+	<<"Consideration of non-orthogonality threshold unavailable in OF16ext and OF21x! Using built-in threshold."
+	<<endl;
+      
+      mesh_.checkFaceOrthogonality(true, &faces);
+      label nFaces=faces.size();
+      markFaceSet(faces); 
+#else
       scalar lo=::cos(degToRad(lowerNonOrthThreshold_));
       scalar up=::cos(degToRad(upperNonOrthThreshold_));
       
-//       mesh_.checkFaceOrthogonality(true, &faces);
       tmp<scalarField> tortho = primitiveMeshTools::faceOrthogonality
       (
 	  mesh_,
@@ -251,7 +259,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	    markFace(faceI, blendingFactors_[i], val);
 	}
       }
-
+#endif
       
       reduce(nFaces, sumOp<label>());
       Info<<"Marking "
@@ -458,8 +466,8 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
     smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
-    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 50.0)),
-    upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 70.0)),
+    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 30.0)),
+    upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 60.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {

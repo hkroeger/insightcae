@@ -435,17 +435,18 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   
-  std::string bgrads="leastSquares2"; //"Gauss linear";
-//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+//   std::string bgrads="leastSquares2"; 
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   
-  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
-  grad["default"]=grads;
+  grad["default"]=bgrads;
+  grad["grad(p)"]="Gauss linear";
   grad["grad(U)"]="cellLimited "+bgrads+" 1";
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  if (OFversion()<=160) suf=" localCellLimited leastSquares UBlendingFactor"; else suf=" grad(U)";
+  if (OFversion()<=160) suf=" localCellLimited "+bgrads+" UBlendingFactor"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss localBlendedBy UBlendingFactor upwind linearUpwindV"+suf;
   div["div(phi,k)"]	=	pref+"Gauss upwind";
@@ -543,9 +544,9 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
-  grad["default"]=grads;
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  grad["default"]=bgrads;
+  grad["grad(p)"]="Gauss linear";
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -693,9 +694,8 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
-  grad["default"]=grads;
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  grad["default"]=bgrads;
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -822,8 +822,10 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  grad["default"]=bgrads;
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["default"]="Gauss upwind";
@@ -944,17 +946,18 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   
-  std::string bgrads="leastSquares2"; //"Gauss linear";
-//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-
-  std::string grads=bgrads; //"localCellLimited "+bgrads+" UBlendingFactor";
-  grad["default"]=grads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+//   std::string bgrads="leastSquares2"; 
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  
+  grad["default"]=bgrads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+  grad["grad(p_rgh)"]="Gauss linear";
   grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
   if (OFversion()==160) 
-    suf=grads;
+    suf=bgrads;
   else 
     suf="grad(U)";
   div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf;
@@ -1027,10 +1030,9 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
 
-//   controlDict["maxCo"]=0.5;
-//   controlDict["maxAlphaCo"]=50.;
-//   controlDict["maxDeltaT"]=1.0;
-  
+  controlDict["maxAlphaCo"]=5.0;
+  controlDict["maxCo"]=10.0;
+ 
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
@@ -1039,32 +1041,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   if (OFversion()>=230)
     solvers["\"alpha1.*\""]=stdMULESSolverSetup();
-//   solvers["pcorr"]=GAMGPCGSolverSetup(1e-6, 0.0);
-//   solvers[pname_]=GAMGPCGSolverSetup(1e-7, 0.01);
-//   solvers[pname_+"Final"]=GAMGPCGSolverSetup(1e-7, 0.0);
-//   
-//   solvers["U"]=smoothSolverSetup(1e-8, 0);
-//   solvers["k"]=smoothSolverSetup(1e-8, 0);
-//   solvers["omega"]=smoothSolverSetup(1e-8, 0);
-//   solvers["epsilon"]=smoothSolverSetup(1e-8, 0);
-//   
-//   solvers["UFinal"]=smoothSolverSetup(1e-10, 0);
-//   solvers["kFinal"]=smoothSolverSetup(1e-10, 0);
-//   solvers["omegaFinal"]=smoothSolverSetup(1e-10, 0);
-//   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
 
-//   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-//   if (OFversion()<210)
-//   {
-//     relax["U"]=0.7;
-//   }
-//   else
-//   {
-//     OFDictData::dict /*fieldRelax,*/ eqnRelax;
-//     eqnRelax["U"]=0.7;
-// //     relax["fields"]=fieldRelax;
-//     relax["equations"]=eqnRelax;
-//   }
 
   std::string solutionScheme("PIMPLE");
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
@@ -1074,8 +1051,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=1.0;
-  SOL["maxCo"]=0.4;
-  SOL["maxAlphaCo"]=0.2;
+  SOL["maxCo"]=10.0;
+  SOL["maxAlphaCo"]=5.0;
   SOL["rDeltaTSmoothingCoeff"]=0.05;
   SOL["rDeltaTDampingCoeff"]=0.5;
   SOL["nAlphaSweepIter"]=0;
@@ -1224,8 +1201,10 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     ddt["default"]="Euler";
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
-  grad["grad(U)"]="cellLimited leastSquares 1";
+  std::string bgrads="Gauss linear";
+  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  grad["default"]=bgrads;
+  grad["grad(U)"]="cellLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

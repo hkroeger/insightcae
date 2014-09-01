@@ -54,7 +54,10 @@ class faceQualityMarkerFunctionObject
         Switch markConcaveFaces_;
         Switch markHighAspectFaces_;
 	Switch markLowQualityTetFaces_;
+	Switch smoothMarkerField_;
 	scalar aspectThreshold_;
+	scalar lowerNonOrthThreshold_;
+	scalar upperNonOrthThreshold_;
         scalar smoothingCoeff_;
         wordList sets_;
 

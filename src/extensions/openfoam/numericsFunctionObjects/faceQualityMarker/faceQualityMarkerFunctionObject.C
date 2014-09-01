@@ -19,6 +19,7 @@
  */
 
 #include "faceQualityMarkerFunctionObject.H"
+#include <boost/graph/graph_concepts.hpp>
 #include "fvCFD.H"
 #ifndef OF16ext
 #include "fvcSmooth.H"
@@ -28,6 +29,7 @@
 #include "volFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
+#include "unitConversion.H"
 
 #ifndef OF16ext
 #include "polyMeshTetDecomposition.H"
@@ -57,23 +59,30 @@ namespace Foam
     );
 }
 
+inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value)
+{
+  const fvMesh& mesh=UBlendingFactor.mesh();
+  if (fI<mesh.nInternalFaces())
+    UBlendingFactor[fI]=1.0;
+  else
+    {
+      label pI=mesh.boundaryMesh().whichPatch(fI);
+      const polyPatch& patch=mesh.boundaryMesh()[pI];
+      UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
+    }
+}
+
 void markFaceSet1(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 {
   const labelList& fl=faces.toc();
   const fvMesh& mesh=UBlendingFactor.mesh();
   forAll(fl, i) 
-    {
-      label fI=fl[i];
-      if (fI<mesh.nInternalFaces())
-	UBlendingFactor[fI]=1.0;
-      else
-	{
-	  label pI=mesh.boundaryMesh().whichPatch(fI);
-	  const polyPatch& patch=mesh.boundaryMesh()[pI];
-	  UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
-	}
-    }
+  {
+    label fI=fl[i];
+    markFace(fI, UBlendingFactor, 1.0);
+  }
 }
+
 
   
 template<class Type>
@@ -212,13 +221,42 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
   if (markNonOrthFaces_)
     {
       faceSet faces(mesh_, "nonOrthoFaces", mesh_.nFaces()/100 + 1);
-      mesh_.checkFaceOrthogonality(true, &faces);
-      label nFaces=faces.size();
+      
+      scalar lo=::cos(degToRad(lowerNonOrthThreshold_));
+      scalar up=::cos(degToRad(upperNonOrthThreshold_));
+      
+//       mesh_.checkFaceOrthogonality(true, &faces);
+      tmp<scalarField> tortho = primitiveMeshTools::faceOrthogonality
+      (
+	  mesh_,
+	  mesh_.faceAreas(),
+	  mesh_.cellCentres()
+      );
+      const scalarField& ortho = tortho();
+
+      label nFaces=0;
+      forAll(ortho, faceI)
+      {
+	scalar o=ortho[faceI];
+	
+	if (o < lo )
+	{
+	  nFaces++;
+	  
+	  scalar val = 1. - min(1., max(0., ( (o - up) / (lo - up))));
+	  
+	  Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
+	  
+	  forAll(blendingFactors_, i)
+	    markFace(faceI, blendingFactors_[i], val);
+	}
+      }
+
+      
       reduce(nFaces, sumOp<label>());
       Info<<"Marking "
 	  <<nFaces
 	  <<" non orthogonal faces."<<endl;
-      markFaceSet(faces);
     }
 
   if (markSkewFaces_)
@@ -367,23 +405,30 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 
     forAll(blendingFactors_, i)
     {
+        if (smoothMarkerField_)
+        {
 #if (!( defined(OF16ext) || defined(OF21x) ))
-	// smoothing the field
-	volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(blendingFactors_[i])) );
-	avgBlendingFactor.rename("avg_"+blendingFactors_[i].name());
+	  // smoothing the field
+	  volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(blendingFactors_[i])) );
+	  avgBlendingFactor.rename("avg_"+blendingFactors_[i].name());
 	
-	fvc::smooth(avgBlendingFactor, smoothingCoeff_);
-// 	fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
-// 	fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+	  fvc::smooth(avgBlendingFactor, smoothingCoeff_);
+// 	  fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
+// 	  fvc::smooth(avgBlendingFactor, smoothingCoeff_);
 	
-	blendingFactors_[i] = surfaceMax3(avgBlendingFactor);
+ 	  blendingFactors_[i] = surfaceMax3(avgBlendingFactor);
 	
-	if (debug)
-	{
-	  Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
-	  avgBlendingFactor.write();  
-	}
+	  if (debug)
+	  {
+	    Info<<"Writing volScalarField "<<avgBlendingFactor.name()<<endl;
+	    avgBlendingFactor.write();  
+	  }
+#else
+          WarningIn("QualityMarkerFunctionObject::updateBlendingFactor()")
+           <<"Smoothing unavailable in OF16ext and OF21x. Omitting."
+           <<endl;
 #endif
+        }
 	if (debug)
 	{
 	  Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
@@ -411,7 +456,10 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", false)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
+    smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
+    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 50.0)),
+    upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 70.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {

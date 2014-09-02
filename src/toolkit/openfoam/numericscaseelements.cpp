@@ -880,17 +880,29 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["maxAlphaCo"]=0.2;
   controlDict["maxDeltaT"]=1.0;
 
-  OFDictData::dict fqmc;
-  fqmc["type"]="faceQualityMarker";
   OFDictData::list fol;
   fol.push_back("\"libnumericsFunctionObjects.so\"");
+
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
   fqmc["functionObjectLibs"]= fol;
+  fqmc["lowerNonOrthThreshold"]=20.0;
+  fqmc["upperNonOrthThreshold"]=60.0;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
+
+  OFDictData::dict ifmc;
+  ifmc["type"]="interfaceMarker";
+  ifmc["functionObjectLibs"]= fol;
+  ifmc["phaseFieldName"]=alphaname_;
+  OFDictData::list bfn;
+  bfn.push_back("interfaceBlendingFactor");
+  ifmc["blendingFieldNames"]=bfn;
+  controlDict.addSubDictIfNonexistent("functions")["ifm"]=ifmc;
 
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
-  controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
+//   controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
   
   // ============ setup fvSolution ================================
   
@@ -960,8 +972,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf=bgrads;
   else 
     suf="grad(U)";
-  div["div(rho*phi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf;
-  div["div(rhoPhi,U)"]		= "Gauss localBlended upwind linearUpwindV "+suf; // for interPhaseChangeFoam
+  div["div(rho*phi,U)"]		= "Gauss localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
+  div["div(rhoPhi,U)"]		= "Gauss localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
   div["div(phi,k)"]		= "Gauss upwind";
@@ -1066,7 +1078,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="localEuler rDeltaT";
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)
@@ -1090,18 +1102,6 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   alphasol["nLimiterIter"]=2;
 
   solvers["alpha1"]=alphasol;
-
-  
-  // ============ setup fvSchemes ================================
-  
-//   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
-//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-//   std::string suf;
-//   if (OFversion()==160) 
-//     suf="cellLimited leastSquares 1";
-//   else 
-//     suf="grad(U)";
-//   div["div(rhoPhi,U)"]="Gauss linearUpwind "+suf; // for interPhaseChangeFoam
 
 }
 

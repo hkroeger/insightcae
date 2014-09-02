@@ -75,7 +75,6 @@ inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value
 void markFaceSet1(const faceSet& faces, surfaceScalarField& UBlendingFactor)
 {
   const labelList& fl=faces.toc();
-  const fvMesh& mesh=UBlendingFactor.mesh();
   forAll(fl, i) 
   {
     label fI=fl[i];
@@ -466,8 +465,8 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
     smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
-    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 30.0)),
-    upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 60.0)),
+    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 50.0)),
+    upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 65.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {

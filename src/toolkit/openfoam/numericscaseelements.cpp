@@ -938,7 +938,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
   }
-
+  
   std::string solutionScheme("PISO");
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
@@ -947,7 +947,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
-  SOL["cAlpha"]=1.0;
+  SOL["cAlpha"]=0.5;
   
   // ============ setup fvSchemes ================================
   
@@ -1012,7 +1012,7 @@ OFDictData::dict stdMULESSolverSetup(double tol, double reltol)
   
   d["nAlphaCorr"]=2;
   d["nAlphaSubCycles"]=1;
-  d["cAlpha"]=1;
+  d["cAlpha"]=0.5;
   d["icAlpha"]=0;
 
   d["MULESCorr"]=true;
@@ -1062,7 +1062,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
-  SOL["cAlpha"]=1.0;
+  SOL["cAlpha"]=0.5;
   SOL["maxAlphaCo"]=0.5;
   SOL["maxCo"]=1.0;
   SOL["rDeltaTSmoothingCoeff"]=0.05;

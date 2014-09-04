@@ -864,7 +864,8 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
   c.addField(alphaname_, FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
 }
 
-
+const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
+const double icAlpha=0.1;
  
 void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -947,7 +948,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
-  SOL["cAlpha"]=0.5;
+  SOL["cAlpha"]=cAlpha;
   
   // ============ setup fvSchemes ================================
   
@@ -1012,8 +1013,8 @@ OFDictData::dict stdMULESSolverSetup(double tol, double reltol)
   
   d["nAlphaCorr"]=2;
   d["nAlphaSubCycles"]=1;
-  d["cAlpha"]=0.5;
-  d["icAlpha"]=0;
+  d["cAlpha"]=cAlpha;
+  d["icAlpha"]=icAlpha;
 
   d["MULESCorr"]=true;
   d["nLimiterIter"]=10;

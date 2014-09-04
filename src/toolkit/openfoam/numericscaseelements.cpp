@@ -1063,7 +1063,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
-  SOL["cAlpha"]=0.5;
+  SOL["cAlpha"]=cAlpha;
   SOL["maxAlphaCo"]=0.5;
   SOL["maxCo"]=1.0;
   SOL["rDeltaTSmoothingCoeff"]=0.05;

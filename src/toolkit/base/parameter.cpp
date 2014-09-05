@@ -63,6 +63,7 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 
 using namespace std;
 using namespace boost;
+using namespace boost::filesystem;
 using namespace rapidxml;
 
 namespace insight 

@@ -441,7 +441,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   grad["default"]=bgrads;
 //   grad["grad(p)"]="Gauss linear";
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
@@ -546,7 +546,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
 //   grad["grad(p)"]="Gauss linear";
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

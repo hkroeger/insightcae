@@ -23,6 +23,9 @@
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
 #include "openfoam/openfoamtools.h"
+#include "base/exception.h"
+#include "boost/format.hpp"
+#include "boost/regex.hpp"
 
 using namespace std;
 using namespace boost;
@@ -292,7 +295,37 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   }
   
   //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
-  ofc.executeCommand(location, "snappyHexMesh", opts, NULL, np);
+  std::vector<std::string> output;
+  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+
+  
+  // Check fraction of extruded faces on wall patches
+  boost::regex re_extrudedfaces("Extruding (.+) out of (.+) faces");
+  boost::match_results<std::string::const_iterator> what;
+  int exfaces=-1, totalfaces=-1;
+  BOOST_FOREACH(const std::string& line, output)
+  {
+    if (boost::regex_match(line, what, re_extrudedfaces))
+    {
+      //cout<< what[1]<<endl;
+      exfaces=lexical_cast<int>(what[1]);
+      totalfaces=lexical_cast<int>(what[2]);
+    }
+  }
+  if (totalfaces>=0)
+  {
+    double exfrac=double(exfaces)/double(totalfaces);
+    if (exfrac<0.9)
+    {
+      std::string msg="Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!";
+      if (p.stopOnBadPrismLayer())
+      {
+	throw insight::Exception(msg);
+      }
+      else
+	insight::Warning(msg);
+    }
+  }
   
   if (is_parallel)
   {

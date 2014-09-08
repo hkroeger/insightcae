@@ -134,6 +134,7 @@ namespace snappyHexMeshOpts
     (erlayer, double, 1.3)
     (relativeSizes, bool, true)
     ( nLayerIter, int, 10 )
+    (stopOnBadPrismLayer, bool, false)
   )
 };
 

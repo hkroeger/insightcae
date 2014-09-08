@@ -11,6 +11,7 @@ set(OF_INCLUDE_DIRS
 set(OF_LIBS finiteVolume LESfilters sampling)
 
 set(INCLUDE_DIRS 
+  ${ARMADILLO_INCLUDE_DIRS}
   ${toolkit_SOURCE_DIR}
   ${testcases_SOURCE_DIR}
   ${refdata_SOURCE_DIR}

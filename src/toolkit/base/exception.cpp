@@ -81,7 +81,23 @@ Exception::operator std::string() const
 
 void Warning(const std::string& msg)
 {
+  std::cout<<"\n\n"
+"================================================================\n"
+"================================================================\n"
+"    WW      WW   AAA   RRRRRR  NN   NN IIIII NN   NN   GGGG     \n"
+"    WW      WW  AAAAA  RR   RR NNN  NN  III  NNN  NN  GG  GG    \n"
+"    WW   W  WW AA   AA RRRRRR  NN N NN  III  NN N NN GG         \n"
+"     WW WWW WW AAAAAAA RR  RR  NN  NNN  III  NN  NNN GG   GG    \n"
+"      WW   WW  AA   AA RR   RR NN   NN IIIII NN   NN  GGGGGG    \n"
+"================================================================\n"
+    <<std::endl;
+    
   std::cout<<msg<<std::endl;
+  
+  std::cout<<std::endl<<
+"================================================================\n"
+"================================================================\n\n"
+    <<std::endl;
 }
 
 }

@@ -36,6 +36,7 @@ Description
 #include "fvCFD.H"
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
+
 #ifdef OF16ext
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
@@ -43,6 +44,7 @@ Description
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
+
 #include "incompressible/RAS/RASModel/RASModel.H"
 
 #include "basicThermo.H"
@@ -92,7 +94,6 @@ void calcIncompressibleTwoPhase
       alpha1*laminarTransport.rho1() 
       +
       (scalar(1) - alpha1)*laminarTransport.rho2();
-
 
     const volSymmTensorField Reff(rho*model->devReff());
 

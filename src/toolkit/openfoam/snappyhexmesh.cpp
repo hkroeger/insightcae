@@ -94,6 +94,26 @@ Feature* Geometry::clone() const
   return new Geometry(p_);
 }
 
+ExplicitFeatureCurve::ExplicitFeatureCurve( Parameters const& p )
+: p_(p)
+{
+}
+
+void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict refdict;
+  refdict["file"]=std::string("\"")+p_.fileName().c_str()+"\"";
+  refdict["level"]=p_.level();
+  sHMDict.subDict("castellatedMeshControls").addListIfNonexistent("features").push_back(refdict);
+
+}
+
+
+Feature* ExplicitFeatureCurve::clone() const
+{
+  return new ExplicitFeatureCurve(p_);
+}
+
 RefinementRegion::RefinementRegion(Parameters const& p)
 : p_(p)
 {

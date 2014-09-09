@@ -1406,4 +1406,37 @@ arma::mat projectedArea
   return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(A.data(), A.size(), 1) ) );
 }
 
+void surfaceFeatureExtract
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& surfaceName
+)
+{
+  OFDictData::dictFile sfeDict;
+  
+  OFDictData::dict opts;
+  
+  opts["extractionMethod"]="extractFromSurface";
+  
+  OFDictData::dict coeffs;
+  coeffs["includedAngle"]=120.0;
+  coeffs["geometricTestOnly"]=true;
+  opts["extractFromSurfaceCoeffs"]=coeffs;
+  
+  opts["writeObj"]=false;
+
+  sfeDict[surfaceName]=opts;
+  
+  // then write to file
+  sfeDict.write( location / "system" / "surfaceFeatureExtractDict" );
+
+  std::vector<std::string> opt;
+//   opts.push_back("-latestTime");
+  //if (overwrite) opts.push_back("-overwrite");
+    
+  cm.executeCommand(location, "surfaceFeatureExtract", opt);
+}
+
+
 }

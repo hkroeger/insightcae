@@ -77,6 +77,28 @@ public:
   Feature* clone() const;
 };
 
+class ExplicitFeatureCurve
+: public Feature
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( fileName, boost::filesystem::path, "" )
+      ( level, int, 4 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  ExplicitFeatureCurve(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+//   virtual void modifyFiles(const OpenFOAMCase& ofc, 
+// 		  const boost::filesystem::path& location) const;
+  
+  Feature* clone() const;
+};
+
 class RefinementRegion
 : public Feature
 {
@@ -126,6 +148,8 @@ public:
 };
 
 }
+
+
 
 namespace snappyHexMeshOpts
 {

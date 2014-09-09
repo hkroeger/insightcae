@@ -396,6 +396,13 @@ arma::mat projectedArea
   const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
 );
 
+void surfaceFeatureExtract
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& surfaceName
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

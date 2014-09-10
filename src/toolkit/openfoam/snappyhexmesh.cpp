@@ -182,7 +182,7 @@ void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
   castellatedCtrls["maxGlobalCells"]=10000000;
   castellatedCtrls["minRefinementCells"]=10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
-  castellatedCtrls["nCellsBetweenLevels"]=2;
+  castellatedCtrls["nCellsBetweenLevels"]=8;
   castellatedCtrls["resolveFeatureAngle"]=30.0;
   castellatedCtrls["allowFreeStandingZoneFaces"]=true;
 }

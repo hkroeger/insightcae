@@ -79,7 +79,16 @@ ParameterSet& ParameterSet::getSubset(const std::string& name)
   if (name==".")
     return *this;
   else
-    return this->get<SubsetParameter>(name)();
+  {
+    try
+    {
+      return this->get<SubsetParameter>(name)();
+    }
+    catch (...)
+    {
+      return this->get<SelectableSubsetParameter>(name)();
+    }
+  }
 }
 
 const ParameterSet& ParameterSet::getSubset(const std::string& name) const
@@ -87,7 +96,16 @@ const ParameterSet& ParameterSet::getSubset(const std::string& name) const
   if (name==".")
     return *this;
   else
-    return this->get<SubsetParameter>(name)();
+  {
+    try
+    {
+      return this->get<SubsetParameter>(name)();
+    }
+    catch (...)
+    {
+      return this->get<SelectableSubsetParameter>(name)();
+    }
+  }
 }
 
 std::string ParameterSet::latexRepresentation() const

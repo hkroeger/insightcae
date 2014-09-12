@@ -891,14 +891,14 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fqmc["upperNonOrthThreshold"]=60.0;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
 
-  OFDictData::dict ifmc;
-  ifmc["type"]="interfaceMarker";
-  ifmc["functionObjectLibs"]= fol;
-  ifmc["phaseFieldName"]=alphaname_;
-  OFDictData::list bfn;
-  bfn.push_back("interfaceBlendingFactor");
-  ifmc["blendingFieldNames"]=bfn;
-  controlDict.addSubDictIfNonexistent("functions")["ifm"]=ifmc;
+//   OFDictData::dict ifmc;
+//   ifmc["type"]="interfaceMarker";
+//   ifmc["functionObjectLibs"]= fol;
+//   ifmc["phaseFieldName"]=alphaname_;
+//   OFDictData::list bfn;
+//   bfn.push_back("interfaceBlendingFactor");
+//   ifmc["blendingFieldNames"]=bfn;
+//   controlDict.addSubDictIfNonexistent("functions")["ifm"]=ifmc;
 
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
@@ -973,10 +973,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf=bgrads;
   else 
     suf="grad(U)";
-  div["div(rho*phi,U)"]		= "Gauss localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
-  div["div(rhoPhi,U)"]		= "Gauss localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
+  div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
+  div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss vanLeer";
-  div["div(phirb,alpha)"]	= "Gauss interfaceCompression";
+  div["div(phirb,alpha)"]	= "Gauss linear"; //interfaceCompression";
   div["div(phi,k)"]		= "Gauss upwind";
   div["div(phi,epsilon)"]	= "Gauss upwind";
   div["div(phi,omega)"]		= "Gauss upwind";

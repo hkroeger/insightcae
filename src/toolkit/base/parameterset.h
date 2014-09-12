@@ -82,7 +82,7 @@ public:
 	else
 	{
 	  typedef T PT;
-	  PT* const pt=static_cast<PT* const>(i->second);
+	  PT* const pt=dynamic_cast<PT* const>(i->second);
 	  if (!pt)
 	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else
@@ -115,7 +115,7 @@ public:
 	else
 	{
 	  typedef T PT;
-	  const PT* const pt=static_cast<const PT* const>(i->second);
+	  const PT* const pt=dynamic_cast<const PT* const>(i->second);
 	  if (!pt)
 	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else

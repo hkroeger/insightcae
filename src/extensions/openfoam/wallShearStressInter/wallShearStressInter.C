@@ -37,7 +37,7 @@ Description
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
-#ifdef OF16ext
+#if defined(OF16ext) || defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
 #else

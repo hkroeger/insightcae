@@ -199,7 +199,13 @@ public:
 class interFoamNumerics
 : public FVNumerics
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+      (implicitPressureCorrection, bool, false)
+  )
+
 protected:
+  Parameters p_;
   std::string pname_;
   std::string alphaname_;
 public:

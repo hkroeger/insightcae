@@ -848,7 +848,8 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
   if (OFversion()<=160)
     pname_="pd";
@@ -877,9 +878,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="interFoam";
 
   controlDict["adjustTimeStep"]=true;
+  controlDict["maxDeltaT"]=1.0;
+
   controlDict["maxCo"]=0.4;
   controlDict["maxAlphaCo"]=0.2;
-  controlDict["maxDeltaT"]=1.0;
+  if (p_.implicitPressureCorrection())
+  {
+    controlDict["maxCo"]=15;
+    controlDict["maxAlphaCo"]=5;
+  }
 
   OFDictData::list fol;
   fol.push_back("\"libnumericsFunctionObjects.so\"");
@@ -926,16 +933,27 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
-  double Urelax=0.7;
+  double Urelax=0.7, prelax=1.0, turbrelax=1.0;
+  if (p_.implicitPressureCorrection())
+  {
+    prelax=0.3;
+    turbrelax=0.7;
+  }
+  
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
   {
     relax["U"]=Urelax;
+    relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    relax["\"(p|pd|p_rgh)\""]=prelax;
   }
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
     eqnRelax["U"]=Urelax;
+    eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    fieldRelax["\"(p|pd|p_rgh)\""]=prelax;
+    
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
   }
@@ -944,11 +962,29 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=true;
-  SOL["nCorrectors"]=2;
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
   SOL["cAlpha"]=cAlpha;
+  SOL["nCorrectors"]=2;
+  SOL["nOuterCorrectors"]=1;
+  
+  if (p_.implicitPressureCorrection())
+  {
+    SOL["nCorrectors"]=1;
+    SOL["nOuterCorrectors"]=25;
+    
+    OFDictData::dict tol;
+    tol["tolerance"]=1e-3;
+    tol["relTol"]=0.0;
+    
+    OFDictData::dict residualControl;
+    residualControl["\"(p|p_rgh|pd)\""]=tol;
+    residualControl["U"]=tol;
+    residualControl["\"(k|epsilon|omega|nuTilda)\""]=tol;
+    
+    SOL["residualControl"]=residualControl;
+  }
   
   // ============ setup fvSchemes ================================
   

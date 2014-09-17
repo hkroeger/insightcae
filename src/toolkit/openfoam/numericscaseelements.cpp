@@ -884,7 +884,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["maxAlphaCo"]=0.2;
   if (p_.implicitPressureCorrection())
   {
-    controlDict["maxCo"]=15;
+    controlDict["maxCo"]=10;
     controlDict["maxAlphaCo"]=5;
   }
 

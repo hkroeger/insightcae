@@ -20,8 +20,15 @@
 
 #include "sketch.h"
 #include "base/exception.h"
+#include "boost/algorithm/string.hpp"
+#include "boost/format.hpp"
 
 #include "TColStd_Array1OfInteger.hxx"
+
+using namespace boost;
+using namespace boost::filesystem;
+using namespace boost::algorithm;
+
 
 namespace insight {
 namespace cad {
@@ -82,9 +89,36 @@ void DXFReader::addPolyline(const DL_PolylineData &pl)
   DL_Attributes attr=getAttributes();
   if (attr.getLayer()==layername_)
   {
-    lp_.reset();
+    pl_.reset(new Polyline(*this));
+    pl_->closed=false;
+    
+    pl_->lp.reset();
+    
+    if (pl.flags & 1)
+    {
+      cout<<"closed polyline!"<<endl;
+      pl_->p0.reset();
+      pl_->closed=true;
+    }
   }
 }
+
+DXFReader::Polyline::Polyline(DXFReader& r)
+: reader(r)
+{
+}
+
+
+DXFReader::Polyline::~Polyline()
+{
+    if ( closed )
+    {
+      cout<<"added closing line"<<endl;
+      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp, *p0).Edge();
+      reader.ls_.Append(e);
+    }
+}
+
 
 void DXFReader::addVertex(const DL_VertexData &pv)
 {
@@ -92,13 +126,19 @@ void DXFReader::addVertex(const DL_VertexData &pv)
   if (attr.getLayer()==layername_)
   {
     gp_Pnt p(pv.x, pv.y, pv.z);
-    if (lp_.get())
+    if (!pl_->p0.get())
+    {
+      pl_->p0.reset(new gp_Pnt(p));
+    }
+    
+    if (pl_->lp.get())
     {
       cout<<"added line"<<endl;
-      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp_, p).Edge();
+      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
       ls_.Append(e);
+      
     }
-    lp_.reset(new gp_Pnt(p));
+    pl_->lp.reset(new gp_Pnt(p));
   }
 }
 
@@ -211,15 +251,37 @@ void DXFReader::buildSpline()
 
 TopoDS_Wire DXFReader::Wire() const
 {
+  pl_.reset(); // Finalize
+  
   BRepBuilderAPI_MakeWire wb;
   wb.Add(ls_);
   return wb.Wire();
 }
 
-TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername)
+TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
 {
   if (!pl.providesPlanarReference())
     throw insight::Exception("Sketch: Planar reference required!");
+  
+  boost::filesystem::path filename = fn;
+  std::string layername = ln;
+  
+  std::string ext=fn.extension().string();
+  boost::algorithm::to_lower(ext);
+  cout<<ext<<endl;
+  
+  if (ext==".fcstd")
+  {
+    filename=boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+    layername="0";
+    
+    std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
+    cout<<"CMD=\""<<cmd<<"\"";
+    if ( ::system( cmd.c_str() ) )
+    {
+      throw insight::Exception("Conversion from FreeCAD part with sketch to dxf failed!");
+    }
+  }
   
   TopoDS_Wire w = DXFReader(filename, layername).Wire();
   gp_Trsf tr;

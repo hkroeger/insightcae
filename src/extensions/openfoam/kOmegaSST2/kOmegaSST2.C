@@ -285,14 +285,14 @@ kOmegaSST2::kOmegaSST2
      dimensionedScalar("Utau", dimVelocity, 0.0)
      )
 {
-    nut_ =
-        a1_*k_
-       /max
-        (
-            a1_*(omega_ + omegaSmall_),
-            F2()*sqrt(2.0)*mag(symm(fvc::grad(U_)))
-        );
-    nut_.correctBoundaryConditions();
+//     nut_ =
+//         a1_*k_
+//        /max
+//         (
+//             a1_*(omega_ + omegaSmall_),
+//             F2()*sqrt(2.0)*mag(symm(fvc::grad(U_)))
+//         );
+//     nut_.correctBoundaryConditions();
 
     //correct();
 

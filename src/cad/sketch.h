@@ -39,7 +39,19 @@ class DXFReader
 protected:
   std::string layername_;
   TopTools_ListOfShape ls_;
-  std::auto_ptr<gp_Pnt> lp_;
+  
+  struct Polyline
+  {
+    DXFReader& reader;
+    
+    Polyline(DXFReader&);
+    ~Polyline();
+    
+    bool closed;
+    std::auto_ptr<gp_Pnt> lp, p0;
+  };
+  
+  mutable std::auto_ptr<Polyline> pl_;
   
   int spl_deg_, spl_nknot_, spl_nctrl_;
   std::vector<gp_Pnt> splp_;

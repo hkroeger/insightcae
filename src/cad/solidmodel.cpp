@@ -794,19 +794,51 @@ Sphere::Sphere(const arma::mat& p, double D)
 {
 }
 
-Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L)
-: SolidModel
-(
-  BRepPrimAPI_MakePrism( TopoDS::Face(sk), to_Vec(L) ).Shape()
-)
+TopoDS_Shape makeExtrusion(const SolidModel& sk, const arma::mat& L, bool centered)
+{
+  if (!centered)
+  {
+    return BRepPrimAPI_MakePrism( TopoDS::Face(sk), to_Vec(L), centered ).Shape();
+  }
+  else
+  {
+    gp_Trsf trsf;
+    trsf.SetTranslation(to_Vec(-0.5*L));
+    return BRepPrimAPI_MakePrism
+    ( 
+     TopoDS::Face( BRepBuilderAPI_Transform(sk, trsf).Shape() ), 
+      to_Vec(L) 
+    ).Shape();
+  }
+}
+
+Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L, bool centered)
+: SolidModel(makeExtrusion(sk, L, centered))
 {
 }
 
-Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang)
-: SolidModel
-(
-  BRepPrimAPI_MakeRevol( TopoDS::Face(sk), gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang ).Shape()
-)
+TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
+{
+  if (!centered)
+  {
+    return BRepPrimAPI_MakeRevol( TopoDS::Face(sk), gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang, centered ).Shape();
+  }
+  else
+  {
+    gp_Trsf trsf;
+    gp_Vec ax=to_Vec(axis);
+    ax.Normalize();
+    trsf.SetRotation(gp_Ax1(to_Pnt(p0), ax), -0.5*ang);
+    return BRepPrimAPI_MakeRevol
+    ( 
+      TopoDS::Face( BRepBuilderAPI_Transform(sk, trsf).Shape() ), 
+      gp_Ax1(to_Pnt(p0), gp_Dir(ax)), ang
+    ).Shape();
+  }
+}
+
+Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
+: SolidModel(makeRevolution(sk, p0, axis, ang, centered))
 {
 }
 

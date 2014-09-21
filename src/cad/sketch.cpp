@@ -276,7 +276,7 @@ TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& 
     layername="0";
     
     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-    cout<<"CMD=\""<<cmd<<"\"";
+    cout<<"CMD=\""<<cmd<<"\""<<endl;
     if ( ::system( cmd.c_str() ) )
     {
       throw insight::Exception("Conversion from FreeCAD part with sketch to dxf failed!");

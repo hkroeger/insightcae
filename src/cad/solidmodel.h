@@ -577,14 +577,14 @@ class Extrusion
 : public SolidModel
 {
 public:
-  Extrusion(const SolidModel& sk, const arma::mat& L);
+  Extrusion(const SolidModel& sk, const arma::mat& L, bool centered=false);
 };
 
 class Revolution
 : public SolidModel
 {
 public:
-  Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle);
+  Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
 };
 
 // =================== Boolean operations ======================

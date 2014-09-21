@@ -210,10 +210,10 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
-	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' ) 
-	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2)) ]
-	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >>')' ) 
-	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4)) ]
+	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2, _3)) ]
+	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4, _5)) ]
 	 ;
 	 
 	r_edgeFeaturesExpression = 

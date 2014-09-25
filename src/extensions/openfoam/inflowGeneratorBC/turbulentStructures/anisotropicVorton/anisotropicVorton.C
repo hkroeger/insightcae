@@ -156,10 +156,11 @@ anisotropicVorton::anisotropicVorton
           printf ("converged to minimum at\n");
         }
 
-      printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
+      printf ("%5d %10.3e %10.3e %10.3e f() = %7.3f size = %.3f\n", 
               iter,
               gsl_vector_get (s->x, 0), 
               gsl_vector_get (s->x, 1), 
+              gsl_vector_get (s->x, 2), 
               s->fval, size);
     }
   while (status == GSL_CONTINUE && iter < 100);

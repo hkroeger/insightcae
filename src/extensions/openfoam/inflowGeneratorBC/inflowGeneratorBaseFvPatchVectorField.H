@@ -242,8 +242,6 @@ protected:
      */
     Field<scalar> c_;
     
-    autoPtr<tensorField> Lund_;
-    
     label curTimeIndex_;
 
     virtual void writeStateVisualization

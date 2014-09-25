@@ -76,9 +76,10 @@ gaussianSpot::gaussianSpot
   epsilon_(s)
 {}
 
-gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v,  const tensor& Leig,
-  label creaface)
-: turbulentStructure(r, loc, initialDelta, v, Leig, creaface),
+gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v,  const symmTensor& L, scalar minL,
+  label creaface,
+      const symmTensor& R)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
   epsilon_(pTraits<vector>::zero)
 {
 }
@@ -113,7 +114,10 @@ vector gaussianSpot::fluctuation(const StructureParameters& pa, const vector& x)
 //       if ((delta_x&e2)<0.0) f[1]*=-1.0;
 //       if ((delta_x&e3)<0.0) f[2]*=-1.0;
 
-      return cmptMultiply(epsilon_, f) / sqrt( 0.0820292 );
+      return LundScaled
+      (
+	cmptMultiply(epsilon_, f) / sqrt( 0.0820292 )
+      );
     }
   else
     return pTraits<vector>::zero;

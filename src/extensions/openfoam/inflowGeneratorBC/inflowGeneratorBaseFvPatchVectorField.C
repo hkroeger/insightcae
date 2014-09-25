@@ -341,22 +341,6 @@ vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label f
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-
-  
-  if (!Lund_.valid())
-  {
-    tensorField LT(size(), tensor::zero);
-    
-    LT.replace(tensor::XX, sqrt(R_.component(symmTensor::XX)));
-    LT.replace(tensor::YX, R_.component(symmTensor::XY)/(SMALL+LT.component(tensor::XX)));
-    LT.replace(tensor::ZX, R_.component(symmTensor::XZ)/(SMALL+LT.component(tensor::XX)));
-    LT.replace(tensor::YY, sqrt(R_.component(symmTensor::YY)-sqr(LT.component(tensor::YX))));
-    LT.replace(tensor::ZY, (R_.component(symmTensor::YZ) - LT.component(tensor::YX)*LT.component(tensor::ZX) )/(SMALL+LT.component(tensor::YY)));
-    LT.replace(tensor::ZZ, sqrt(R_.component(symmTensor::ZZ) - sqr(LT.component(tensor::ZX))-sqr(LT.component(tensor::ZY))));
-    
-    Lund_.reset(new tensorField(LT));
-  }
-
   
   if (this->updated())
   {
@@ -367,12 +351,6 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
   {
     vectorField fluctuations=continueFluctuationProcess(this->db().time().value());
     
-    fluctuations = Lund_() & fluctuations;
-    
-    if (debug>=3)
-    { 
-      Pout<<" Lund-transf. fluct.: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
-    }
     if (this->db().time().outputTime()) writeStateVisualization(0, fluctuations);
     
     vectorField turbField = Umean_ + fluctuations;
@@ -380,22 +358,9 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     scalar meanflux = gSum(Umean_ & patch().Sf());
     scalar turbflux = gSum(turbField & patch().Sf());
     scalar rescale = meanflux/turbflux;
-//     scalar rescale=1.0;
-//     turbField.component(vector::X) = pos(turbField&patch().Sf()) * turbField.component(vector::X);
-//     scalar finalflux = gSum((rescale*turbField) & patch().Sf());
-//     Info<<meanflux<<", "<<turbflux<<", "<<finalflux<<endl;
     Info<<" Inflow generator ["<<patch().name()<<"]: scaling turbulent fluctuations by "<< rescale << " to ensure constant flux across boundary."<<endl;
-
-//     scalar meanflux = gSum(Umean_ & patch().Sf());
-//     scalar turbflux = gSum(turbField & patch().Sf());
-//     vector addvel = vector((turbflux-meanflux) / gSum(patch().magSf()), 0, 0);
-//     scalar finalflux = gSum((turbField+addvel) & patch().Sf());
-//     Info<<meanflux<<", "<<turbflux<<", "<<addvel<<", "<<finalflux<<endl;
-//     Info<<"adding velocity "<< addvel << " to ensure constant flux across boundary."<<endl;
     
-    
-    
-    fixedValueFvPatchField<vector>::operator==( turbField * rescale /*+addvel*/);
+    fixedValueFvPatchField<vector>::operator==( turbField * rescale );
     curTimeIndex_ = this->db().time().timeIndex();
   }
 

@@ -51,7 +51,8 @@ public:
   inline vector c3() const { return es_.z(); }
   inline tensor Leig() const { return es_; }
   scalar Lalong(const vector& x) const;
-  
+
+  static scalar Lalong(const vector& x, const vector& L1, const vector& L2, const vector& L3);  
   static tensor eigenSystem(const symmTensor& L);
 };
 
@@ -85,6 +86,16 @@ protected:
    */
   label creaFace_;
   
+  /**
+   * principal components of prescribed Reynolds Stresses
+   */
+  vector Rp_;
+  
+  /**
+   * principal directions of prescribed Reynolds Stresses
+   */
+  vector er1_, er2_, er3_;
+  
 public:    
 
     /**
@@ -106,8 +117,9 @@ public:
       const point& p, 
       const vector& initialDelta, 
       const vector& v, 
-      const tensor& Leig,
-      label creaface
+      const symmTensor& L, scalar minL,
+      label creaface,
+      const symmTensor& R
     );
 
     /**
@@ -159,6 +171,29 @@ public:
     
     friend Ostream& operator<<(Ostream&, const turbulentStructure&);
     friend Istream& operator>>(Istream&, turbulentStructure&);
+    
+    static tensor Lund(const symmTensor& R);
+    
+    inline symmTensor R() const 
+    { 
+      tensor t(er1_, er2_, er3_);
+      return symm(t & diagTensor(Rp_[0], Rp_[1], Rp_[2]) & t.T()); 
+    }
+    
+    inline vector LundScaled(const vector& uPrime) const
+    {
+      return Lund( R() ) & uPrime;
+    }
+    
+    inline scalar Lalong(const vector& x) const
+    {
+      return ESAnalyze::Lalong(x, L1_, L2_, L3_);
+    }
+    
+    inline scalar vol() const
+    {
+      return mag(L1_)*mag(L2_)*mag(L3_);
+    }
 };
 
 

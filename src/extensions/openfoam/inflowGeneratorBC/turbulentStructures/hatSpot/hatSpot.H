@@ -74,8 +74,9 @@ public:
     // Constructors
     hatSpot();
     hatSpot(Istream&);
-    hatSpot(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const tensor& Leig,
-  label creaface);
+    hatSpot(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
+  label creaface,
+      const symmTensor& R);
     hatSpot(const hatSpot& p);
     
     ~hatSpot();

@@ -59,20 +59,27 @@ protected:
      */
     Field<TurbulentStructure> vortons_; 
     
-    boost::shared_ptr<scalarField> tau_;
-    boost::shared_ptr<scalarField> crTimes_;
+    /**
+     * per face: time value for next creation of a spot
+     */
+    scalarField crTimes_;
+    
+    /**
+     * per face: extension of last generated spot along the patch normal direction
+     */
+    scalarField lLalong_;
     
     /**
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
     
-    /**
-     * clipped length scale field
-     */
-    PtrList<ESAnalyze> esa_;
+//     /**
+//      * clipped length scale field
+//      */
+//     PtrList<ESAnalyze> esa_;
         
-    void computeTau();
+//     void computeTau();
     
     virtual void writeStateVisualization
     (  

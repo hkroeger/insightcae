@@ -99,10 +99,11 @@ bool ESAnalyze::clip(scalar minL)
 
 scalar ESAnalyze::Lalong(const vector& x) const
 {
-  vector L1=c1();
-  vector L2=c2();
-  vector L3=c3();
+  return Lalong(x, c1(), c2(), c3());
+}
 
+scalar ESAnalyze::Lalong(const vector& x, const vector& L1, const vector& L2, const vector& L3)
+{
   vector e=x/mag(x);
   diagTensor Alpha(mag(L1), mag(L2), mag(L3));
   tensor Q( L1/Alpha.xx(), L2/Alpha.yy(), L3/Alpha.zz() );
@@ -136,15 +137,27 @@ turbulentStructure::turbulentStructure
   const point& p, 
   const vector& initialDelta, 
   const vector& v, 
-  const tensor& Leig,
-  label creaface
+  const symmTensor& L, scalar minL,
+  label creaface,
+  const symmTensor& R
 )
 : velocity_(v),
   creaFace_(creaface)
 {  
-  L1_=Leig.x();
-  L2_=Leig.y();
-  L3_=Leig.z();
+  ESAnalyze es(L);
+  es.clip(minL);
+  L1_=es.c1();
+  L2_=es.c2();
+  L3_=es.c3();
+  
+  ESAnalyze ea(R);
+  Rp_[0]=mag(ea.c1());
+  Rp_[1]=mag(ea.c2());
+  Rp_[2]=mag(ea.c3());
+
+  er1_=ea.c1()/Rp_[0];
+  er2_=ea.c2()/Rp_[1];
+  er3_=ea.c3()/Rp_[2];
 
   initialPositioning(p, initialDelta);
 }
@@ -156,7 +169,11 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
   L2_(o.L2_),
   L3_(o.L3_),
   startPoint_(o.startPoint_),
-  creaFace_(o.creaFace_)
+  creaFace_(o.creaFace_),
+  Rp_(o.Rp_),
+  er1_(o.er1_),
+  er2_(o.er2_),
+  er3_(o.er3_)
 {
 }
 
@@ -207,8 +224,27 @@ void turbulentStructure::operator=(const turbulentStructure& rhs)
   startPoint_=rhs.startPoint_;
   footPoint_=rhs.footPoint_;
   creaFace_=rhs.creaFace_;
+  Rp_=rhs.Rp_;
+  er1_=rhs.er1_;
+  er2_=rhs.er2_;
+  er3_=rhs.er3_;
   
 }
+
+tensor turbulentStructure::Lund(const symmTensor& R)
+{
+    tensor LT = tensor::zero;
+    
+    LT.xx()=R.xx();
+    LT.yx()=R.xy()/(SMALL+LT.xx());
+    LT.zx()=R.xz()/(SMALL+LT.xx());
+    LT.yy()=sqrt(R.yy()-sqr(LT.yx()));
+    LT.zy()=(R.yz() - LT.yx()*LT.zx() )/(SMALL+LT.yy());
+    LT.zz()=sqrt(R.zz() - sqr(LT.zx()) - sqr(LT.zy()));
+    
+    return LT;
+}
+
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
 {
@@ -220,6 +256,10 @@ Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
   s<<ht.startPoint_<<endl;
   s<<ht.footPoint_<<endl;
   s<<ht.creaFace_<<endl;
+  s<<ht.Rp_<<endl;
+  s<<ht.er1_<<endl;
+  s<<ht.er2_<<endl;
+  s<<ht.er3_<<endl;
   return s;
 }
 
@@ -234,6 +274,11 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     point fp(s);
     label nf=readLabel(s);
     
+    vector Rp(s);
+    vector er1(s);
+    vector er2(s);
+    vector er3(s);
+    
     ht.setLocation(loc);
     ht.velocity_=v;
     ht.L1_=L1;
@@ -242,8 +287,13 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     ht.startPoint_=sp;
     ht.footPoint_=fp;
     ht.creaFace_=nf;
+    ht.Rp_=Rp;
+    ht.er1_=er1;
+    ht.er2_=er2;
+    ht.er3_=er3;
     
     return s;
 }
+
 
 }

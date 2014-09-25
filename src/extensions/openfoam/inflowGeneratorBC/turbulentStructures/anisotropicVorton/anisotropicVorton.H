@@ -18,15 +18,9 @@
  *
  */
 
-#ifndef homogeneousTurbulenceVorton_H
-#define homogeneousTurbulenceVorton_H
+#ifndef anisotropicVorton_H
+#define anisotropicVorton_H
 
-#include "scalar.H"
-#include "vector.H"
-#include "boostRandomGen.H"
-#include "IOdictionary.H"
-#include "Istream.H"
-#include "Ostream.H"
 #include "turbulentStructure.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -34,16 +28,16 @@
 namespace Foam
 {
 
-class homogeneousTurbulenceVorton;
+class anisotropicVorton;
 
-Ostream& operator<<(Ostream&, const homogeneousTurbulenceVorton&);
-Istream& operator>>(Istream&, homogeneousTurbulenceVorton&);
+Ostream& operator<<(Ostream&, const anisotropicVorton&);
+Istream& operator>>(Istream&, anisotropicVorton&);
 
 /*---------------------------------------------------------------------------*\
-                           Class homogeneousTurbulenceVorton Declaration
+                           Class anisotropicVorton Declaration
 \*---------------------------------------------------------------------------*/
 
-class homogeneousTurbulenceVorton
+class anisotropicVorton
 : public turbulentStructure
 {
 
@@ -52,13 +46,6 @@ public:
     class StructureParameters
     {
     public:
-        scalar eta_;  // Kolmogorov length
-        scalar Cl_;
-        scalar Ceta_;
-
-        scalar C_2;
-        scalar C_3;
-
         StructureParameters();
         StructureParameters(const dictionary&);
 
@@ -79,33 +66,41 @@ public:
 	scalar calcInfluenceLength(const vector& L);
     };
 
-private:
-    vector omegav_;
+protected:
+    vector epsilon_;
 
 public:
 
     // Constructors
-    homogeneousTurbulenceVorton();
-    homogeneousTurbulenceVorton(Istream&);
-    homogeneousTurbulenceVorton(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v,  const tensor& Leig,
+    anisotropicVorton();
+    anisotropicVorton(Istream&);
+    anisotropicVorton(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
   label creaface,
       const symmTensor& R);
-    homogeneousTurbulenceVorton(const homogeneousTurbulenceVorton&);
-
-    ~homogeneousTurbulenceVorton();
+    anisotropicVorton(const anisotropicVorton& p);
+    
+    ~anisotropicVorton();
+    
 
     vector fluctuation(const StructureParameters& pa, const vector&) const;
+    
+    // Check
 
+    // Edit
     void randomize(BoostRandomGen&);
-    void operator=(const homogeneousTurbulenceVorton&);
-    bool operator!=(const homogeneousTurbulenceVorton&) const;
 
-    static autoPtr<homogeneousTurbulenceVorton> New(Istream&);
-    autoPtr<homogeneousTurbulenceVorton> clone() const;
+    void operator=(const anisotropicVorton&);
+    bool operator!=(const anisotropicVorton&) const;
+
+    // Required for storage in SLList
+    static autoPtr<anisotropicVorton> New(Istream& s);
+    autoPtr<anisotropicVorton> clone() const;
+
+    // Friend Functions
 
     // Friend Operators
-    friend Ostream& operator<<(Ostream&, const homogeneousTurbulenceVorton&);
-    friend Istream& operator>>(Istream&, homogeneousTurbulenceVorton&);
+    friend Ostream& operator<<(Ostream&, const anisotropicVorton&);
+    friend Istream& operator>>(Istream&, anisotropicVorton&);
 };
 
 

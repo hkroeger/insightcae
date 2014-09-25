@@ -18,20 +18,20 @@
  *
  */
 
-#include "decayingTurbulenceSpot.H"
+#include "anisotropicVorton.H"
 
 namespace Foam
 {
   
-decayingTurbulenceSpot::StructureParameters::StructureParameters()
+anisotropicVorton::StructureParameters::StructureParameters()
 {
 }
 
-decayingTurbulenceSpot::StructureParameters::StructureParameters(const dictionary&)
+anisotropicVorton::StructureParameters::StructureParameters(const dictionary&)
 {
 }
 
-void decayingTurbulenceSpot::StructureParameters::autoMap
+void anisotropicVorton::StructureParameters::autoMap
 (
     const fvPatchFieldMapper&
 )
@@ -39,7 +39,7 @@ void decayingTurbulenceSpot::StructureParameters::autoMap
 }
 
 //- Reverse map the given fvPatchField onto this fvPatchField
-void decayingTurbulenceSpot::StructureParameters::rmap
+void anisotropicVorton::StructureParameters::rmap
 (
     const fvPatchField<vector>&,
     const labelList&
@@ -47,12 +47,12 @@ void decayingTurbulenceSpot::StructureParameters::rmap
 {
 }
 
-void decayingTurbulenceSpot::StructureParameters::write(Ostream&) const
+void anisotropicVorton::StructureParameters::write(Ostream&) const
 {
 }
 
 /*
-scalar decayingTurbulenceSpot::calcInfluenceLength(const Parameters& p)
+scalar anisotropicVorton::calcInfluenceLength(const Parameters& p)
 {
 #warning Please check the factor!
     return (4./3.)*p.L_;
@@ -63,12 +63,12 @@ scalar decayingTurbulenceSpot::calcInfluenceLength(const Parameters& p)
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-decayingTurbulenceSpot::decayingTurbulenceSpot()
+anisotropicVorton::anisotropicVorton()
 : turbulentStructure(),
   epsilon_(pTraits<vector>::zero)
 {}
 
-decayingTurbulenceSpot::decayingTurbulenceSpot
+anisotropicVorton::anisotropicVorton
 (
     Istream& s
 )
@@ -76,55 +76,41 @@ decayingTurbulenceSpot::decayingTurbulenceSpot
   epsilon_(s)
 {}
 
-decayingTurbulenceSpot::decayingTurbulenceSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v,  const symmTensor& L, scalar minL,
+anisotropicVorton::anisotropicVorton(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
   label creaface,
       const symmTensor& R)
-: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface,
+      R),
   epsilon_(pTraits<vector>::zero)
 {
 }
 
 
-decayingTurbulenceSpot::decayingTurbulenceSpot(const decayingTurbulenceSpot& o)
+anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
 : turbulentStructure(o),
   epsilon_(o.epsilon_)
 {}
 
-vector decayingTurbulenceSpot::fluctuation(const StructureParameters& pa, const vector& x) const
+vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vector& x) const
 {
     vector delta_x = x - location();
 
     scalar l1=mag(L1_), l2=mag(L2_), l3=mag(L3_);
-    scalar l0Sq=sqr(l1);
-    scalar l1Sq=sqr(l2);
-    scalar l2Sq=sqr(l3);
     vector e1=L1_/l1, e2=L2_/l2, e3=L3_/l3;
-    double Xx=mag(delta_x&e1);
-    double Yy=mag(delta_x&e2);
-    double Zz=mag(delta_x&e3);
-    
     if 
         (
-            (Xx  < l1) &&
-            (Yy  < l2) &&
-            (Zz  < l3)
+            (mag(delta_x&e1)  < (l1 / 2.0)) &&
+            (mag(delta_x&e2)  < (l2 / 2.0)) &&
+            (mag(delta_x&e3)  < (l3 / 2.0))
         )
     {
       vector f=
-           ( exp(-0.25*Xx*Xx*(2.+M_PI/l0Sq)-0.25*Yy*Yy*(2.+M_PI/l1Sq)-0.25*Zz*Zz*(2.+M_PI/l2Sq)) )
-          *pow(M_PI, 9./2.)
-          *sqrt(2.+M_PI/l0Sq)
-	  *sqrt(2.+M_PI/l1Sq)
-	  *sqrt(2.+M_PI/l2Sq)
-	  *(1./8./l0Sq/l1Sq/l2Sq)
+           (1.0 - 2.0*mag(delta_x&e1)  / l1 )
+          *(1.0 - 2.0*mag(delta_x&e2)  / l2 )
+          *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
-      return LundScaled
-      (
-	cmptMultiply(epsilon_, f) 
-	/ 
-	sqrt( 2445.22*sqrt((M_PI+2.*l0Sq)*(M_PI+2.*l1Sq)*(M_PI+2.*l2Sq)) / pow(l0Sq*l1Sq*l2Sq,3) )
-      );
+      return cmptMultiply(epsilon_, f) / sqrt( 1./81. );
     }
   else
     return pTraits<vector>::zero;
@@ -132,13 +118,13 @@ vector decayingTurbulenceSpot::fluctuation(const StructureParameters& pa, const 
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
 
-autoPtr<decayingTurbulenceSpot> decayingTurbulenceSpot::New(Istream& s)
+autoPtr<anisotropicVorton> anisotropicVorton::New(Istream& s)
 {
-    return autoPtr<decayingTurbulenceSpot>(new decayingTurbulenceSpot(s));
+    return autoPtr<anisotropicVorton>(new anisotropicVorton(s));
 }
 
 
-void decayingTurbulenceSpot::randomize(BoostRandomGen& rand)
+void anisotropicVorton::randomize(BoostRandomGen& rand)
 {
   //epsilon_ = 2.0*(rand.vector01() - 0.5*vector::one);
   epsilon_.x() = 2.0*(rand() - 0.5);
@@ -149,15 +135,15 @@ void decayingTurbulenceSpot::randomize(BoostRandomGen& rand)
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
 
-decayingTurbulenceSpot::~decayingTurbulenceSpot()
+anisotropicVorton::~anisotropicVorton()
 {}
 
 
-autoPtr<decayingTurbulenceSpot> decayingTurbulenceSpot::clone() const
+autoPtr<anisotropicVorton> anisotropicVorton::clone() const
 {
-    return autoPtr<decayingTurbulenceSpot>
+    return autoPtr<anisotropicVorton>
         (
-            new decayingTurbulenceSpot(*this)
+            new anisotropicVorton(*this)
         );
 }
 
@@ -166,12 +152,12 @@ autoPtr<decayingTurbulenceSpot> decayingTurbulenceSpot::clone() const
 
 // * * * * * * * * * * * * * * * Member Operators  * * * * * * * * * * * * * //
 
-void decayingTurbulenceSpot::operator=(const decayingTurbulenceSpot& rhs)
+void anisotropicVorton::operator=(const anisotropicVorton& rhs)
 {
     // Check for assignment to self
     if (this == &rhs)
     {
-        FatalErrorIn("decayingTurbulenceSpot::operator=(const decayingTurbulenceSpot&)")
+        FatalErrorIn("anisotropicVorton::operator=(const anisotropicVorton&)")
             << "Attempted assignment to self"
             << abort(FatalError);
     }
@@ -180,7 +166,7 @@ void decayingTurbulenceSpot::operator=(const decayingTurbulenceSpot& rhs)
     epsilon_=rhs.epsilon_;
 }
 
-bool decayingTurbulenceSpot::operator!=(const decayingTurbulenceSpot& o) const
+bool anisotropicVorton::operator!=(const anisotropicVorton& o) const
 {
     return 
         (location()!=o.location())
@@ -188,14 +174,14 @@ bool decayingTurbulenceSpot::operator!=(const decayingTurbulenceSpot& o) const
         (epsilon_!=o.epsilon_);
 }
 
-Ostream& operator<<(Ostream& s, const decayingTurbulenceSpot& ht)
+Ostream& operator<<(Ostream& s, const anisotropicVorton& ht)
 {
     s << *static_cast<const turbulentStructure*>(&ht);
     s<<ht.epsilon_<<endl;
     return s;
 }
 
-Istream& operator>>(Istream& s, decayingTurbulenceSpot& ht)
+Istream& operator>>(Istream& s, anisotropicVorton& ht)
 {
     s >> *static_cast<turbulentStructure*>(&ht);
     vector eps(s);

@@ -76,9 +76,17 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v, const tensor& Leig,
-  label creaface)
-: turbulentStructure(r, loc, initialDelta, v, Leig, creaface),
+hatSpot::hatSpot
+(
+ BoostRandomGen& r, 
+ const vector& loc, 
+ const vector& initialDelta, 
+ const vector& v, 
+ const symmTensor& L, scalar minL,
+ label creaface,
+      const symmTensor& R
+)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
   epsilon_(pTraits<vector>::zero)
 {
 }
@@ -108,7 +116,7 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
           *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
-      return cmptMultiply(epsilon_, f) / sqrt( 1./81. );
+      return LundScaled ( cmptMultiply(epsilon_, f) / sqrt( 1./81. ) );
     }
   else
     return pTraits<vector>::zero;

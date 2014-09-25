@@ -78,22 +78,6 @@ anisotropicVorton::anisotropicVorton
   epsilon_(readScalar(s))
 {}
 
-anisotropicVorton::anisotropicVorton
-(
-  BoostRandomGen& r, 
-  const vector& loc,
-  const vector& initialDelta, 
-  const vector& v, 
-  const symmTensor& L, 
-  scalar minL,
-  label creaface,
-  const symmTensor& R
-)
-: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
-  epsilon_(0.0)
-{
-}
-
 double anisovf(const gsl_vector *v, void *params)
 {
   scalar rx=gsl_vector_get(v, 0), ry=gsl_vector_get(v, 1), rz=gsl_vector_get(v, 2), Lx=gsl_vector_get(v, 3), Ly=gsl_vector_get(v,4), Lz=gsl_vector_get(v,5);
@@ -112,9 +96,20 @@ double anisovf(const gsl_vector *v, void *params)
   return sqr(R[0]-R11) + sqr(R[1]-R22) + sqr(R[2]-R33);
 }
 
-anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
-: turbulentStructure(o),
-  epsilon_(o.epsilon_)
+
+anisotropicVorton::anisotropicVorton
+(
+  BoostRandomGen& r, 
+  const vector& loc,
+  const vector& initialDelta, 
+  const vector& v, 
+  const symmTensor& L, 
+  scalar minL,
+  label creaface,
+  const symmTensor& R
+)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
+  epsilon_(0.0)
 {
   double k0=1.0, C1=1.0;
   double par[5] = {Rp_[0], Rp_[1], Rp_[2], k0, C1};
@@ -178,8 +173,16 @@ anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
   
   gsl_vector_free(x);
   gsl_vector_free(ss);
-  gsl_multimin_fminimizer_free (s);
- 
+  gsl_multimin_fminimizer_free (s);  
+}
+
+anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
+: turbulentStructure(o),
+  epsilon_(o.epsilon_),
+  rx_(o.rx_),
+  ry_(o.ry_),
+  rz_(o.rz_)
+{ 
 }
 
 vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vector& x) const

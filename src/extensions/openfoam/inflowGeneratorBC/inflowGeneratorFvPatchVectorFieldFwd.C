@@ -135,6 +135,29 @@ addToRunTimeSelectionTable
     patchMapper                                                         
 );
 
+typedef inflowGeneratorFvPatchVectorField<anisotropicVorton> inflowGeneratorFvPatchVectorFieldanisotropicVorton;
+defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldanisotropicVorton, "inflowGenerator<anisotropicVorton>", 0); 
+addToRunTimeSelectionTable                                          
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldanisotropicVorton,                        
+    patch                                                               
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldanisotropicVorton,                        
+    dictionary                                                          
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFieldanisotropicVorton,                        
+    patchMapper                                                         
+);
+
 // typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton;
 // defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton, "inflowGenerator<homogeneousTurbulenceVorton>", 0); 
 // addToRunTimeSelectionTable                                          

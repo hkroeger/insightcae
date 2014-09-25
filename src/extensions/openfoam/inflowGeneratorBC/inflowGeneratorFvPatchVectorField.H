@@ -29,6 +29,7 @@
 #include "hatSpot.H"
 #include "gaussianSpot.H"
 #include "decayingTurbulenceSpot.H"
+#include "anisotropicVorton.H"
 #include "SLList.H"
 
 #include "indexedOctree.H"

@@ -251,8 +251,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     inflowGeneratorBaseFvPatchVectorField(p, iF, dict),
-    crTimes_(this->db().time().value()),
-    lLalong_(0.0),
+    crTimes_(this->size(), this->db().time().value()),
+    lLalong_(this->size(), 0.0),
     structureParameters_(dict)
 {
     if (dict.found("vortons"))

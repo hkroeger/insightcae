@@ -1000,6 +1000,7 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 			    ("inflowGenerator<hatSpot>")
 			    ("inflowGenerator<gaussianSpot>")
 			    ("inflowGenerator<decayingTurbulenceSpot>")
+			    ("inflowGenerator<anisotropicVorton>")
 			    ("modalTurbulence")
 			    , 
 		      "Type of inflow generator"))

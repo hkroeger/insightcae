@@ -67,16 +67,26 @@ public:
     };
 
 protected:
-    vector epsilon_;
+    scalar epsilon_;
+    scalar rx_, ry_, rz_;
 
 public:
 
     // Constructors
     anisotropicVorton();
     anisotropicVorton(Istream&);
-    anisotropicVorton(BoostRandomGen&, const point& p, const vector& initialDelta, const vector& v, const symmTensor& L, scalar minL,
-  label creaface,
-      const symmTensor& R);
+    anisotropicVorton
+    (
+      BoostRandomGen&, 
+      const point& p, 
+      const vector& initialDelta, 
+      const vector& v, 
+      const symmTensor& L, 
+      scalar minL,
+      label creaface,
+      const symmTensor& R
+    );
+    
     anisotropicVorton(const anisotropicVorton& p);
     
     ~anisotropicVorton();

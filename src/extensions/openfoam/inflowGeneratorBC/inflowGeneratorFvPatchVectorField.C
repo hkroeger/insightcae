@@ -252,7 +252,7 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 :
     inflowGeneratorBaseFvPatchVectorField(p, iF, dict),
     crTimes_(this->size(), this->db().time().value()),
-    lLalong_(this->size(), 0.0),
+    lLalong_(this->size(), -1.0),
     structureParameters_(dict)
 {
     if (dict.found("vortons"))
@@ -512,7 +512,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       nclip2++;
     }
     
-    scalar horiz = t + 0.5*lLalong_[fi]/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+    scalar horiz = t + 0.5*max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
 //     scalar Lhoriz = mag(Umean) * this->db().time().deltaT().value();
 
       // if creation time is within the current time step then create structure now
@@ -536,13 +536,18 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
         R_[fi]
       );
       
+      bool isFirstDummy=(lLalong_[fi]<0.0);
+      
       lLalong_[fi]=snew.Lalong( patch().nf()()[fi] );
       
       snew.randomize(ranGen_);
       
-      // append new structure to the end of the list
-      vortons_.resize(vortons_.size()+1);
-      vortons_[vortons_.size()-1]=snew;
+      if (!isFirstDummy)
+      {
+	// append new structure to the end of the list
+	vortons_.resize(vortons_.size()+1);
+	vortons_[vortons_.size()-1]=snew;
+      }
       
       if (debug>=2) Info<<"."<<pf<<" "<<flush;
       n_generated++;
@@ -617,7 +622,6 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       "globalPatch_globalizedFluctuations", 
       globalPatch_().points(), 
       globalPatch_(),
-      
       "u",
       gfluc,
       false,

@@ -177,7 +177,7 @@ public:
     inline symmTensor R() const 
     { 
       tensor t(er1_, er2_, er3_);
-      return symm(t & diagTensor(Rp_[0], Rp_[1], Rp_[2]) & t.T()); 
+      return symm( t.T() & diagTensor(Rp_[0], Rp_[1], Rp_[2]) & t ); 
     }
     
     inline vector LundScaled(const vector& uPrime) const

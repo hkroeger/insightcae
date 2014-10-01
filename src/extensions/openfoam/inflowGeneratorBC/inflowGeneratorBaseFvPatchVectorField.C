@@ -172,7 +172,7 @@ void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
     scalar t=dt*scalar(i-1);
     
     ProcessStepInfo info;
-    vectorField u( continueFluctuationProcess(t, &info) );
+    vectorField u=continueFluctuationProcess(t, &info);
     N_total+=info.n_generated;
     V += gSum( (-patch().Sf()&Umean()) * dt );
     
@@ -184,7 +184,7 @@ void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
 //     N = alpha*N + beta*scalar(info.n_induced);
     uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
     
-    Info<<"Averages: uMean="
+    Info<<"i="<<i<<": Averages: uMean="
 	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
 	<<" \t R^2="
 	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
@@ -302,6 +302,13 @@ void inflowGeneratorBaseFvPatchVectorField::rmap
     R_.rmap(tiptf.R_, addr);
     L_.rmap(tiptf.L_, addr);
     c_.rmap(tiptf.c_, addr);
+}
+
+void inflowGeneratorBaseFvPatchVectorField::setParameters(const vectorField& umean, const symmTensorField& R, const symmTensorField& L)
+{
+  Umean_=umean;
+  R_=R;
+  L_=L;
 }
 
 

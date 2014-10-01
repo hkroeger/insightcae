@@ -48,7 +48,9 @@ tensor ESAnalyze::eigenSystem(const symmTensor& L)
   arma::vec eigval;
   arma::mat eigvec;
   eig_sym(eigval, eigvec, mL);
-  //std::cout<<eigval<<eigvec<<std::endl;
+  
+ 
+//   std::cout<<"eval="<<eigval<<"evec="<<eigvec<<"diag1="<< (eigvec.t()*mL*eigvec)<<"diag2="<< (eigvec*mL*eigvec.t()) <<std::endl; // only diag1 is right!
   
   return tensor
   (
@@ -155,9 +157,9 @@ turbulentStructure::turbulentStructure
   Rp_[1]=mag(ea.c2());
   Rp_[2]=mag(ea.c3());
 
-  er1_=ea.c1()/Rp_[0];
-  er2_=ea.c2()/Rp_[1];
-  er3_=ea.c3()/Rp_[2];
+  er1_=ea.c1(); er1_/=SMALL+mag(er1_);
+  er2_=ea.c2(); er2_/=SMALL+mag(er2_);
+  er3_=ea.c3(); er3_/=SMALL+mag(er3_);
 
   initialPositioning(p, initialDelta);
 }

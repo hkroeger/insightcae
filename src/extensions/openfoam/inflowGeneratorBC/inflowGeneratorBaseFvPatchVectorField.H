@@ -319,12 +319,20 @@ public:
 	);
 	
 	// Member functions
-	inline Field<vector>& Umean() { return Umean_; }
-	inline Field<symmTensor>& R() { return R_; }
-	inline Field<symmTensor>& L() { return L_; }
 	inline const Field<vector>& Umean() const { return Umean_; }
 	inline const Field<symmTensor>& R() const { return R_; }
 	inline const Field<symmTensor>& L() const { return L_; }
+	inline Field<vector>& Umean()  { return Umean_; }
+	inline Field<symmTensor>& R()  { return R_; }
+	inline Field<symmTensor>& L()  { return L_; }
+
+	virtual void setParameters
+	(
+	  const vectorField& umean,
+	  const symmTensorField& R,
+	  const symmTensorField& L
+	);
+
 	
 	/**
 	 * return the max edge lengths for all faces

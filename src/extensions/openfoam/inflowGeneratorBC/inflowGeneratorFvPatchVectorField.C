@@ -524,7 +524,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       point pf = randomFacePosition(fi); ;
       
       scalar minL=2.*maxEdgeL[fi];
-      
+
       TurbulentStructure snew
       (
 	ranGen_, 

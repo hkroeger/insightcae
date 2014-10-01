@@ -542,15 +542,20 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       snew.randomize(ranGen_);
       
-      if (!isFirstDummy)
+      if (isFirstDummy)
       {
+	crTimes_[fi]=t;
+      }
+      else
+      {
+      
 	// append new structure to the end of the list
 	vortons_.resize(vortons_.size()+1);
 	vortons_[vortons_.size()-1]=snew;
-      }
       
-      if (debug>=2) Info<<"."<<pf<<" "<<flush;
-      n_generated++;
+	if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	n_generated++;
+      }
       
       scalar rnum=ranGen_();
       scalar tau=snew.vol()/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );

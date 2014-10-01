@@ -69,6 +69,8 @@ public:
 protected:
     scalar epsilon_;
     scalar rx_, ry_, rz_;
+    scalar sx_, sy_, sz_;
+    scalar k0_, C1_;
 
 public:
 

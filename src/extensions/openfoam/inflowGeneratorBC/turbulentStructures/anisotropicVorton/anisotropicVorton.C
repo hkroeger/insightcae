@@ -70,7 +70,12 @@ anisotropicVorton::anisotropicVorton()
   epsilon_(0.0),
   rx_(1.0),
   ry_(1.0),
-  rz_(1.0)
+  rz_(1.0),
+  sx_(1.0),
+  sy_(1.0),
+  sz_(1.0),
+  k0_(1.0),
+  C1_(1.0)
 {}
 
 anisotropicVorton::anisotropicVorton
@@ -79,9 +84,14 @@ anisotropicVorton::anisotropicVorton
 )
 : turbulentStructure(s),
   epsilon_(readScalar(s)),
-  rx_(1.0),
-  ry_(1.0),
-  rz_(1.0)
+  rx_(readScalar(s)),
+  ry_(readScalar(s)),
+  rz_(readScalar(s)),
+  sx_(readScalar(s)),
+  sy_(readScalar(s)),
+  sz_(readScalar(s)),
+  k0_(readScalar(s)),
+  C1_(readScalar(s))
 {}
 
 double anisovf(const gsl_vector *v, void *params)
@@ -90,24 +100,29 @@ double anisovf(const gsl_vector *v, void *params)
     rx=gsl_vector_get(v, 0), 
     ry=gsl_vector_get(v, 1), 
     rz=gsl_vector_get(v, 2), 
-    Lx=gsl_vector_get(v, 3), 
-    Ly=gsl_vector_get(v, 4), 
-    Lz=gsl_vector_get(v, 5);
+    sx=gsl_vector_get(v, 3), 
+    sy=gsl_vector_get(v, 4), 
+    sz=gsl_vector_get(v, 5),
+    C1=gsl_vector_get(v, 6),
+    k0=max(SMALL, gsl_vector_get(v, 7));
     
   double *par = static_cast<double*>(params);
   scalar R11=par[0], R22=par[1], R33=par[2];
-  scalar k0=par[3];
-  scalar C1=par[4];
+  scalar Lx=par[3], Ly=par[4], Lz=par[5];
   
-  scalar f=23.*pow(k0,7)*pow(M_PI,7./2.)/(64.*sqrt(2.)*C1);
-  vector R
+  vector R = 23.*pow(k0,7)*pow(M_PI,7./2.)/(64.*sqrt(2.)*C1) *
+  vector
   ( 
-    Lx*sqr(sqr(Ly)*ry-sqr(Lz)*rz)/Ly/Lz,
-    Ly*sqr(sqr(Lx)*rx-sqr(Lz)*rz)/Lx/Lz,
-    Lz*sqr(sqr(Lx)*rx-sqr(Ly)*ry)/Lx/Ly
+    sx*sqr(sqr(sy)*ry-sqr(sz)*rz)/sy/sz,
+    sy*sqr(sqr(sx)*rx-sqr(sz)*rz)/sx/sz,
+    sz*sqr(sqr(sx)*rx-sqr(sy)*ry)/sx/sy
   );
   
-  return sqr(R[0]-R11) + sqr(R[1]-R22) + sqr(R[2]-R33);
+  vector L = (16.*sqrt(2.*M_PI)/(23.*k0)) * vector(sx, sy, sz);
+  
+  return 
+      sqr(R[0]-R11) 	+ sqr(R[1]-R22) 	+ sqr(R[2]-R33) 
+    + sqr(L[0]-Lx) 	+ sqr(L[1]-Ly) 		+ sqr(L[2]-Lz);
 }
 
 
@@ -123,10 +138,17 @@ anisotropicVorton::anisotropicVorton
   const symmTensor& R
 )
 : turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
-  epsilon_(0.0)
+  epsilon_(0.0),
+  rx_(1.0),
+  ry_(1.0),
+  rz_(1.0),
+  sx_(1.0),
+  sy_(1.0),
+  sz_(1.0),
+  k0_(1.0),
+  C1_(1.0)
 {
-  double k0=1.0, C1=1.0;
-  double par[5] = {Rp_[0], Rp_[1], Rp_[2], k0, C1};
+  double par[6] = {Rp_[0], Rp_[1], Rp_[2], mag(L1_), mag(L2_), mag(L3_)};
 
   const gsl_multimin_fminimizer_type *T = 
     gsl_multimin_fminimizer_nmsimplex2;
@@ -137,21 +159,22 @@ anisotropicVorton::anisotropicVorton
   int iter = 0;
   int status;
   double size;
-
+  int np=8;
+  
   /* Starting point */
-  x = gsl_vector_alloc (6);
+  x = gsl_vector_alloc (np);
   gsl_vector_set_all (x, 1.0);
 
   /* Set initial step sizes to 1 */
-  ss = gsl_vector_alloc (6);
+  ss = gsl_vector_alloc (np);
   gsl_vector_set_all (ss, 1.0);
 
   /* Initialize method and iterate */
-  minex_func.n = 6;
+  minex_func.n = np;
   minex_func.f = anisovf;
   minex_func.params = par;
 
-  s = gsl_multimin_fminimizer_alloc (T, 6);
+  s = gsl_multimin_fminimizer_alloc (T, np);
   gsl_multimin_fminimizer_set (s, &minex_func, x, ss);
 
   do
@@ -182,11 +205,13 @@ anisotropicVorton::anisotropicVorton
   rx_=gsl_vector_get(s->x, 0);
   ry_=gsl_vector_get(s->x, 1);
   rz_=gsl_vector_get(s->x, 2);
-  L1_=er1_*gsl_vector_get(s->x, 3);
-  L2_=er2_*gsl_vector_get(s->x, 4);
-  L3_=er3_*gsl_vector_get(s->x, 5);
+  sx_=gsl_vector_get(s->x, 3);
+  sy_=gsl_vector_get(s->x, 4);
+  sz_=gsl_vector_get(s->x, 5);
+  C1_=gsl_vector_get(s->x, 6);
+  k0_=gsl_vector_get(s->x, 7);
   
-  Info<<"@"<<Rp_<<": \t"<<rx_<<" "<<ry_<<" "<<rz_<<" / \t"<<L1_<<" "<<L2_<<" "<<L3_<<" \tafter #"<<iter<<endl;
+  Info<<"@"<<Rp_<<": \t"<<rx_<<" "<<ry_<<" "<<rz_<<" / \t"<<sx_<<" "<<sy_<<" "<<sz_<<" / \t"<<k0_<<" "<<C1_<<" \t #"<<iter<<endl;
   
   gsl_vector_free(x);
   gsl_vector_free(ss);
@@ -198,16 +223,19 @@ anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
   epsilon_(o.epsilon_),
   rx_(o.rx_),
   ry_(o.ry_),
-  rz_(o.rz_)
+  rz_(o.rz_),
+  sx_(o.sx_),
+  sy_(o.sy_),
+  sz_(o.sz_),
+  k0_(o.k0_),
+  C1_(o.C1_)
 { 
 }
 
 vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vector& x) const
 {
-    double k0=1.0, C1=1.0;
-
     vector delta_x = x - location();
-    scalar Lx=mag(L1_), Ly=mag(L2_), Lz=mag(L3_);
+//     scalar Lx=mag(L1_), Ly=mag(L2_), Lz=mag(L3_);
     
     double Xx=delta_x&er1_;
     double Yy=delta_x&er2_;
@@ -221,22 +249,22 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
 //         )
 //     {
       scalar f=
-	  sqrt(1./C1) 
-	* exp( -0.25*sqr(k0)*( sqr(Xx/Lx) + sqr(Yy/Ly) + sqr(Zz/Lz)) ) 
-	* pow(k0,7) 
+	  sqrt(1./C1_) 
+	* exp( -0.25*sqr(k0_)*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) ) 
+	* pow(k0_,7) 
 	* M_PI 
-	* ( sqr(k0*Ly*Lz*Xx) + sqr(Lx)*( sqr(k0*Lz*Yy) + sqr(Ly)*( -10.*sqr(Lz)+sqr(k0*Zz) ) ) );
+	* ( sqr(k0_*sy_*sz_*Xx) + sqr(sx_)*( sqr(k0_*sz_*Yy) + sqr(sy_)*( -10.*sqr(sz_)+sqr(k0_*Zz) ) ) );
 	
       vector u
       (
-	-(sqr(Ly)*ry_ - sqr(Lz)*rz_)*Yy*Zz / (16.*sqr(Lx)   * pow(Ly,4) * pow(Lz,4)),
-	 (sqr(Lx)*rx_ - sqr(Lz)*rz_)*Xx*Zz / (16.*pow(Lx,4) * sqr(Ly)   * pow(Lz,4)),
-	-(sqr(Lx)*rx_ - sqr(Ly)*ry_)*Xx*Yy / (16.*pow(Lx,4) * pow(Ly,4) * sqr(Lz)  )
+	-(sqr(sy_)*ry_ - sqr(sz_)*rz_)*Yy*Zz / (16.*sqr(sx_)   * pow(sy_,4) * pow(sz_,4)),
+	 (sqr(sx_)*rx_ - sqr(sz_)*rz_)*Xx*Zz / (16.*pow(sx_,4) * sqr(sy_)   * pow(sz_,4)),
+	-(sqr(sx_)*rx_ - sqr(sy_)*ry_)*Xx*Yy / (16.*pow(sx_,4) * pow(sy_,4) * sqr(sz_)  )
       );
 
-      u=transform( tensor(er1_, er2_, er3_).T(), f*epsilon_*u);
-//       Info<<Rp_<<": "<<u<<endl;
-      return u;
+      vector ut=transform( tensor(er1_, er2_, er3_).T(), f*epsilon_*u);
+//       Info<<Rp_<<": "<<u<<" "<<ut<<endl;
+      return ut;
 //     }
 //   else
 //     return pTraits<vector>::zero;
@@ -291,6 +319,11 @@ void anisotropicVorton::operator=(const anisotropicVorton& rhs)
     rx_=rhs.rx_;
     ry_=rhs.ry_;
     rz_=rhs.rz_;
+    sx_=rhs.sx_;
+    sy_=rhs.sy_;
+    sz_=rhs.sz_;
+    k0_=rhs.k0_;
+    C1_=rhs.C1_;
 }
 
 bool anisotropicVorton::operator!=(const anisotropicVorton& o) const
@@ -304,7 +337,17 @@ bool anisotropicVorton::operator!=(const anisotropicVorton& o) const
 	||
         (ry_!=o.ry_)
 	||
-        (rz_!=o.rz_);
+        (rz_!=o.rz_)
+	||
+        (sx_!=o.sx_)
+	||
+        (sy_!=o.sy_)
+	||
+        (sz_!=o.sz_)
+	||
+        (k0_!=o.k0_)
+	||
+        (C1_!=o.C1_);
 }
 
 Ostream& operator<<(Ostream& s, const anisotropicVorton& ht)
@@ -314,17 +357,26 @@ Ostream& operator<<(Ostream& s, const anisotropicVorton& ht)
     s<<ht.rx_<<endl;
     s<<ht.ry_<<endl;
     s<<ht.rz_<<endl;
+    s<<ht.sx_<<endl;
+    s<<ht.sy_<<endl;
+    s<<ht.sz_<<endl;
+    s<<ht.k0_<<endl;
+    s<<ht.C1_<<endl;
     return s;
 }
 
 Istream& operator>>(Istream& s, anisotropicVorton& ht)
 {
     s >> *static_cast<turbulentStructure*>(&ht);
-    scalar eps=readScalar(s);
-    ht.epsilon_=eps;
+    ht.epsilon_=readScalar(s);
     ht.rx_=readScalar(s);
     ht.ry_=readScalar(s);
     ht.rz_=readScalar(s);
+    ht.sx_=readScalar(s);
+    ht.sy_=readScalar(s);
+    ht.sz_=readScalar(s);
+    ht.k0_=readScalar(s);
+    ht.C1_=readScalar(s);
     return s;
 }
 

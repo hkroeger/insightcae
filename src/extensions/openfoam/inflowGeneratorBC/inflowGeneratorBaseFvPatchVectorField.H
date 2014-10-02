@@ -258,7 +258,7 @@ protected:
     mutable FaceSearcher boundaryTree_;
     
 public:
-    virtual void computeConditioningFactor();
+    virtual void computeConditioningFactor(int writeInterval=1000);
 
     //- Runtime type information
     TypeName("inflowGeneratorBase");

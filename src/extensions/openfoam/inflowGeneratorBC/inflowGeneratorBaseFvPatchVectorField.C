@@ -154,7 +154,7 @@ globalPatch::globalPatch(const polyPatch& patch)
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 
 
-void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
+void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor(int writeInterval)
 {
 
   vectorField uMean(size(), vector::zero);
@@ -190,7 +190,7 @@ void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
 	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
 	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
 		    
-    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
+    if (i%writeInterval==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
   }
   
   FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);

@@ -103,7 +103,7 @@ double anisovf(const gsl_vector *v, void *params)
     sx=gsl_vector_get(v, 3), 
     sy=gsl_vector_get(v, 4), 
     sz=gsl_vector_get(v, 5),
-    C1=gsl_vector_get(v, 6),
+    C1=max(SMALL, gsl_vector_get(v, 6)),
     k0=max(SMALL, gsl_vector_get(v, 7));
     
   if (mag(sx)<SMALL) sx=SMALL;
@@ -125,8 +125,8 @@ double anisovf(const gsl_vector *v, void *params)
   vector L = (16.*sqrt(2.*M_PI)/(23.*k0)) * vector(sx, sy, sz);
   
   return 
-      sqr(R[0]-sqr(R11)) + sqr(R[1]-sqr(R22)) 	+ sqr(R[2]-sqr(R33)) 
-    + sqr(L[0]-Lx) 	 + sqr(L[1]-Ly) 		+ sqr(L[2]-Lz);
+      sqr(R[0]-R11) 	 + sqr(R[1]-R22) 	+ sqr(R[2]-R33) 
+    + sqr(L[0]-Lx) 	 + sqr(L[1]-Ly) 	+ sqr(L[2]-Lz);
 }
 
 
@@ -214,6 +214,8 @@ anisotropicVorton::anisotropicVorton
   sz_=gsl_vector_get(s->x, 5);
   C1_=gsl_vector_get(s->x, 6);
   k0_=gsl_vector_get(s->x, 7);
+
+  C1_=std::max(SMALL, C1_);
   k0_=std::max(SMALL, k0_);
 
   if (mag(sx_)<SMALL) sx_=SMALL;
@@ -250,13 +252,14 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
     double Yy=delta_x&er2_;
     double Zz=delta_x&er3_;
     
-    if 
-        (
-            (mag(Xx)  < 2.*mag(L1_)) &&
-            (mag(Yy)  < 2.*mag(L2_)) &&
-            (mag(Zz)  < 2.*mag(L3_))
-        )
+//     if 
+//         (
+//             (mag(Xx)  < 2.*mag(L1_)) &&
+//             (mag(Yy)  < 2.*mag(L2_)) &&
+//             (mag(Zz)  < 2.*mag(L3_))
+//         )
     {
+
       scalar f=
 	  sqrt(1./C1_) 
 	* exp( -0.25*sqr(k0_)*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) ) 
@@ -271,12 +274,12 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
 	-(sqr(sx_)*rx_ - sqr(sy_)*ry_)*Xx*Yy / (16.*pow(sx_,4) * pow(sy_,4) * sqr(sz_)  )
       );
 
-      vector ut=transform( tensor(er1_, er2_, er3_), f*epsilon_*u);
+      vector ut=transform( tensor(er1_, er2_, er3_).T(), f*epsilon_*u);
 //       Info<<Rp_<<": "<<u<<" "<<ut<<endl;
       return ut;
     }
-  else
-    return pTraits<vector>::zero;
+//   else
+//     return pTraits<vector>::zero;
 }
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //

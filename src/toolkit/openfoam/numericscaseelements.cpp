@@ -1079,9 +1079,12 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
+  
+  double maxCo=10.0, maxAlphaCo=5.0;
+  bool momentumPredictor=false;
 
-  controlDict["maxAlphaCo"]=0.5;
-  controlDict["maxCo"]=1.0;
+  controlDict["maxAlphaCo"]=maxAlphaCo;
+  controlDict["maxCo"]=maxCo;
  
   // ============ setup fvSolution ================================
   
@@ -1095,14 +1098,14 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   std::string solutionScheme("PIMPLE");
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
-  SOL["momentumPredictor"]=true;
+  SOL["momentumPredictor"]=momentumPredictor;
   SOL["nCorrectors"]=2;
   SOL["nNonOrthogonalCorrectors"]=0;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=cAlpha;
-  SOL["maxAlphaCo"]=0.5;
-  SOL["maxCo"]=1.0;
+  SOL["maxAlphaCo"]=maxAlphaCo;
+  SOL["maxCo"]=maxCo;
   SOL["rDeltaTSmoothingCoeff"]=0.05;
   SOL["rDeltaTDampingCoeff"]=0.5;
   SOL["nAlphaSweepIter"]=0;

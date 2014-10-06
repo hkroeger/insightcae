@@ -12,7 +12,7 @@ link_directories(${OCC_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} dxflib)
-set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
+# set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
@@ -53,7 +53,7 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 SET(cad_INTERFACES "cad.i")
 SET(CMAKE_SWIG_FLAGS "")
 SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES CPLUSPLUS ON)
-SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-includeall")
+# SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-includeall")
 SWIG_ADD_MODULE(cad python ${cad_INTERFACES} ${insightcad_SOURCES})
 SWIG_LINK_LIBRARIES(cad toolkit dxflib ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES})
 set_target_properties(${SWIG_MODULE_cad_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)

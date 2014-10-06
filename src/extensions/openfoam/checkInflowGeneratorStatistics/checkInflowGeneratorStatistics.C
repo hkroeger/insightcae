@@ -47,9 +47,9 @@ using namespace insight;
 int main(int argc, char *argv[])
 {
 #ifdef OF16ext
-  argList::validOptions.insert("writeInterval", "");
+  argList::validOptions.insert("writeInterval", "number of time steps between output");
 #else
-  argList::addOption("writeInterval", "");
+  argList::addOption("writeInterval", "number of time steps between output");
 #endif
   
 #   include "setRootCase.H"

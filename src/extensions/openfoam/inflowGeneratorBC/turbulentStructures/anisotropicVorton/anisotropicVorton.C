@@ -94,39 +94,65 @@ anisotropicVorton::anisotropicVorton
   C1_(readScalar(s))
 {}
 
-double anisovf(const gsl_vector *v, void *params)
+void calcS
+(
+//   double k0,
+ double Lx, double Ly, double Lz,
+ double &sx, double &sy, double &sz
+)
 {
-  scalar 
-    rx=gsl_vector_get(v, 0), 
-    ry=gsl_vector_get(v, 1), 
-    rz=gsl_vector_get(v, 2), 
-    sx=gsl_vector_get(v, 3), 
-    sy=gsl_vector_get(v, 4), 
-    sz=gsl_vector_get(v, 5),
-    C1=max(SMALL, gsl_vector_get(v, 6)),
-    k0=max(SMALL, gsl_vector_get(v, 7));
-    
+  double c=sqrt(M_PI);
+  
+  sx=Lx/c;
+  sy=Ly/c;
+  sz=Lz/c;
+  
   if (mag(sx)<SMALL) sx=SMALL;
   if (mag(sy)<SMALL) sy=SMALL;
   if (mag(sz)<SMALL) sz=SMALL;
+}
+
+double anisovf(const gsl_vector *v, void *params)
+{
+  scalar sx, sy, sz,
+  
+    rx=gsl_vector_get(v, 0), 
+    ry=gsl_vector_get(v, 1), 
+    rz=gsl_vector_get(v, 2),
+    Ly=gsl_vector_get(v, 3),
+    Lz=gsl_vector_get(v, 4)/*,
+    C1=max(SMALL, gsl_vector_get(v, 3)),
+    k0=max(SMALL, gsl_vector_get(v, 4))*/;
+    
     
   double *par = static_cast<double*>(params);
   scalar R11=par[0], R22=par[1], R33=par[2];
-  scalar Lx=par[3], Ly=par[4], Lz=par[5];
+  scalar Lx=par[3]/*, Ly=par[4], Lz=par[5]*/;
   
-  vector R = 23.*pow(k0,7)*pow(M_PI,7./2.)/(192.*sqrt(2.)*C1) *
-  vector
-  ( 
-    sx*sqr(sqr(sy)*ry-sqr(sz)*rz)/sy/sz,
-    sy*sqr(sqr(sx)*rx-sqr(sz)*rz)/sx/sz,
-    sz*sqr(sqr(sx)*rx-sqr(sy)*ry)/sx/sy
-  );
+  calcS(/*k0, */Lx, Ly, Lz, sx, sy, sz);
   
-  vector L = (16.*sqrt(2.*M_PI)/(23.*k0)) * vector(sx, sy, sz);
+//   vector R = 23.*pow(k0,7)*pow(M_PI,7./2.)/(192.*sqrt(2.)*C1) *
+//   vector
+//   ( 
+//     sx*sqr(sqr(sy)*ry-sqr(sz)*rz)/sy/sz,
+//     sy*sqr(sqr(sx)*rx-sqr(sz)*rz)/sx/sz,
+//     sz*sqr(sqr(sx)*rx-sqr(sy)*ry)/sx/sy
+//   );
+  
+  vector R= (pow(M_PI, 3./2.)/12.)*
+  vector 
+  (
+    sx*sqr(ry*sqr(sy)-rz*sqr(sz))/sy/sz,
+    sy*sqr(rx*sqr(sx)-rz*sqr(sz))/sx/sz,
+    sz*sqr(rx*sqr(sx)-ry*sqr(sy))/sx/sy
+  );  
+  
+//   vector L = (16.*sqrt(2.*M_PI)/(23.*k0)) * vector(sx, sy, sz);
+  Info/*<<k0<<" "<<C1*/<<" "<<rx<<" "<<ry<<" "<<rz<<" "<<sx<<" "<<sy<<" "<<sz<<" Lx,Ly,Lz="<<Lx<<","<<Ly<<","<<Lz<<", R="<<R<<endl;
   
   return 
       sqr(R[0]-R11) 	 + sqr(R[1]-R22) 	+ sqr(R[2]-R33) 
-    + sqr(L[0]-Lx) 	 + sqr(L[1]-Ly) 	+ sqr(L[2]-Lz);
+    + sqr(Ly-Lx) 	 + sqr(Lz-Lx) /*	+ sqr(L[2]-Lz)*/;
 }
 
 
@@ -148,11 +174,18 @@ anisotropicVorton::anisotropicVorton
   rz_(1.0),
   sx_(1.0),
   sy_(1.0),
-  sz_(1.0),
+  sz_(1.0)/*,
   k0_(1.0),
-  C1_(1.0)
+  C1_(1.0)*/
 {
-  double par[6] = {Rp_[0], Rp_[1], Rp_[2], mag(L1_), mag(L2_), mag(L3_)};
+  
+  //reinterpret length scales as aligned with eigensystem of Reynolds Stresses
+  double Lx=mag(L1_);/*, Lz=mag(L3_);
+  
+  double Ly = Lx*Lz*sqrt(Rp_[1]) / ( Lz*sqrt(Rp_[0]) + Lx*sqrt(Rp_[2]) );*/
+  
+  
+  double par[] = {Rp_[0], Rp_[1], Rp_[2], Lx};
 
   const gsl_multimin_fminimizer_type *T = 
     gsl_multimin_fminimizer_nmsimplex2;
@@ -163,15 +196,20 @@ anisotropicVorton::anisotropicVorton
   int iter = 0;
   int status;
   double size;
-  int np=8;
+  int np=5;
   
   /* Starting point */
   x = gsl_vector_alloc (np);
   gsl_vector_set_all (x, 1.0);
+  gsl_vector_set(x, 0, rx_);
+  gsl_vector_set(x, 1, ry_);
+  gsl_vector_set(x, 2, rz_);
+  gsl_vector_set(x, 3, Lx*0.1);
+  gsl_vector_set(x, 4, Lx*0.1);
 
   /* Set initial step sizes to 1 */
   ss = gsl_vector_alloc (np);
-  gsl_vector_set_all (ss, 1.0);
+  gsl_vector_set_all (ss, 0.01);
 
   /* Initialize method and iterate */
   minex_func.n = np;
@@ -190,7 +228,7 @@ anisotropicVorton::anisotropicVorton
         break;
 
       size = gsl_multimin_fminimizer_size (s);
-      status = gsl_multimin_test_size (size, 1e-2);
+      status = gsl_multimin_test_size (size, 1e-6);
 
 //       if (status == GSL_SUCCESS)
 //         {
@@ -204,29 +242,38 @@ anisotropicVorton::anisotropicVorton
 //               gsl_vector_get (s->x, 2), 
 //               s->fval, size);
     }
-  while (status == GSL_CONTINUE && iter < 1000);
+  while (status == GSL_CONTINUE && iter < 2000);
   
+  int i=0;
   rx_=gsl_vector_get(s->x, 0);
   ry_=gsl_vector_get(s->x, 1);
   rz_=gsl_vector_get(s->x, 2);
-  sx_=gsl_vector_get(s->x, 3);
-  sy_=gsl_vector_get(s->x, 4);
-  sz_=gsl_vector_get(s->x, 5);
-  C1_=gsl_vector_get(s->x, 6);
-  k0_=gsl_vector_get(s->x, 7);
+  double Ly=gsl_vector_get(s->x, 3);
+  double Lz=gsl_vector_get(s->x, 4);
+//   sy_=gsl_vector_get(s->x, i++);
+//   sz_=gsl_vector_get(s->x, i++);
+//   C1_=gsl_vector_get(s->x, 3);
+//   k0_=gsl_vector_get(s->x, 4);
+// 
+//   C1_=std::max(SMALL, C1_);
+//   k0_=std::max(SMALL, k0_);
 
-  C1_=std::max(SMALL, C1_);
-  k0_=std::max(SMALL, k0_);
+  L1_=er1_*Lx;
+  L2_=er2_*Ly;
+  L3_=er3_*Lz;
 
-  if (mag(sx_)<SMALL) sx_=SMALL;
-  if (mag(sy_)<SMALL) sy_=SMALL;
-  if (mag(sz_)<SMALL) sz_=SMALL;
+  calcS(/*k0_,  */mag(L1_), mag(L2_), mag(L3_), sx_, sy_, sz_);
   
-//   Info<<"@"<<Rp_<<": \t"<<rx_<<" "<<ry_<<" "<<rz_<<" / \t"<<sx_<<" "<<sy_<<" "<<sz_<<" / \t"<<k0_<<" "<<C1_<<" \t #"<<iter<<endl;
+   Info<<"@"<<Rp_<<";"<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<": \t"
+    <<rx_<<" "<<ry_<<" "<<rz_<<" / \t"
+    <<sx_<<" "<<sy_<<" "<<sz_<<" / \t"
+    <<k0_<<" "<<C1_<<
+    " \t err="<<anisovf(s->x, par)<<" #"<<iter<<endl;
   
   gsl_vector_free(x);
   gsl_vector_free(ss);
   gsl_multimin_fminimizer_free (s);  
+  
 }
 
 anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
@@ -260,21 +307,31 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
 //         )
     {
 
-      scalar f=
-	  sqrt(1./C1_) 
-	* exp( -0.25*sqr(k0_)*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) ) 
-	* pow(k0_,7) 
-	* M_PI 
-	* ( sqr(k0_*sy_*sz_*Xx) + sqr(sx_)*( sqr(k0_*sz_*Yy) + sqr(sy_)*( -10.*sqr(sz_)+sqr(k0_*Zz) ) ) );
-	
-      vector u
-      (
-	-(sqr(sy_)*ry_ - sqr(sz_)*rz_)*Yy*Zz / (16.*sqr(sx_)   * pow(sy_,4) * pow(sz_,4)),
-	 (sqr(sx_)*rx_ - sqr(sz_)*rz_)*Xx*Zz / (16.*pow(sx_,4) * sqr(sy_)   * pow(sz_,4)),
-	-(sqr(sx_)*rx_ - sqr(sy_)*ry_)*Xx*Yy / (16.*pow(sx_,4) * pow(sy_,4) * sqr(sz_)  )
-      );
+//       scalar f=
+// 	  sqrt(1./C1_) 
+// 	* exp( -0.25*sqr(k0_)*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) ) 
+// 	* pow(k0_,7) 
+// 	* M_PI 
+// 	* ( sqr(k0_*sy_*sz_*Xx) + sqr(sx_)*( sqr(k0_*sz_*Yy) + sqr(sy_)*( -10.*sqr(sz_)+sqr(k0_*Zz) ) ) );
+// 	
+//       vector u
+//       (
+// 	-(sqr(sy_)*ry_ - sqr(sz_)*rz_)*Yy*Zz / (16.*sqr(sx_)   * pow(sy_,4) * pow(sz_,4)),
+// 	 (sqr(sx_)*rx_ - sqr(sz_)*rz_)*Xx*Zz / (16.*pow(sx_,4) * sqr(sy_)   * pow(sz_,4)),
+// 	-(sqr(sx_)*rx_ - sqr(sy_)*ry_)*Xx*Yy / (16.*pow(sx_,4) * pow(sy_,4) * sqr(sz_)  )
+//       );
+      
+      vector u =
+       exp( -0.5*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) )
+       * 
+       vector
+       (
+	 (ry_/sqr(sz_) - rz_/sqr(sy_))*Yy*Zz,
+	 (rz_/sqr(sx_) - rx_/sqr(sz_))*Xx*Zz,
+	 (rx_/sqr(sy_) - ry_/sqr(sx_))*Xx*Yy
+       );
 
-      vector ut=transform( tensor(er1_, er2_, er3_).T(), f*epsilon_*u);
+      vector ut=transform( tensor(er1_, er2_, er3_).T(), epsilon_*u);
 //       Info<<Rp_<<": "<<u<<" "<<ut<<endl;
       return ut;
     }

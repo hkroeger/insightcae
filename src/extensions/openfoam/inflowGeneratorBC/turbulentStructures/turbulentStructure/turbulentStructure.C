@@ -49,14 +49,15 @@ tensor ESAnalyze::eigenSystem(const symmTensor& L)
   arma::mat eigvec;
   eig_sym(eigval, eigvec, mL);
   
+  arma::uvec idx=arma::sort_index(eigval, "descend");
  
 //   std::cout<<"eval="<<eigval<<"evec="<<eigvec<<"diag1="<< (eigvec.t()*mL*eigvec)<<"diag2="<< (eigvec*mL*eigvec.t()) <<std::endl; // only diag1 is right!
   
   return tensor
   (
-   vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * eigval(0),
-   vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1),
-   vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2)
+   vector(eigvec.col(idx(0))(0), eigvec.col(idx(0))(1), eigvec.col(idx(0))(2)) * eigval(idx(0)),
+   vector(eigvec.col(idx(1))(0), eigvec.col(idx(1))(1), eigvec.col(idx(1))(2)) * eigval(idx(1)),
+   vector(eigvec.col(idx(2))(0), eigvec.col(idx(2))(1), eigvec.col(idx(2))(2)) * eigval(idx(2))
   );
 }
 
@@ -147,6 +148,7 @@ turbulentStructure::turbulentStructure
   creaFace_(creaface)
 {  
   ESAnalyze es(L);
+
   es.clip(minL);
   L1_=es.c1();
   L2_=es.c2();
@@ -156,7 +158,7 @@ turbulentStructure::turbulentStructure
   Rp_[0]=mag(ea.c1());
   Rp_[1]=mag(ea.c2());
   Rp_[2]=mag(ea.c3());
-
+  
   er1_=ea.c1(); er1_/=SMALL+mag(er1_);
   er2_=ea.c2(); er2_/=SMALL+mag(er2_);
   er3_=ea.c3(); er3_/=SMALL+mag(er3_);

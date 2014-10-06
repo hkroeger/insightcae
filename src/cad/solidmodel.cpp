@@ -29,6 +29,8 @@
 
 #include "dxfwriter.h"
 
+#include "gp_Cylinder.hxx"
+
 using namespace std;
 using namespace boost;
 
@@ -62,56 +64,67 @@ void Filter::initialize(const SolidModel& m)
   model_=&m;
 }
 
-ANDFilter::ANDFilter(const Filter& f1, const Filter& f2)
+AND::AND(const Filter& f1, const Filter& f2)
 : Filter(),
   f1_(f1.clone()), f2_(f2.clone())
 {
 }
-void ANDFilter::initialize(const SolidModel& m)
+
+void AND::initialize(const SolidModel& m)
 {
   f1_->initialize(m);
   f2_->initialize(m);
 }
 
-bool ANDFilter::checkMatch(FeatureID feature) const
+bool AND::checkMatch(FeatureID feature) const
 {
   return f1_->checkMatch(feature) && f2_->checkMatch(feature);
 }
 
-Filter* ANDFilter::clone() const
+Filter* AND::clone() const
 {
-  return new ANDFilter(*f1_, *f2_);
+  return new AND(*f1_, *f2_);
 }
 
-NOTFilter::NOTFilter(const Filter& f1)
+NOT::NOT(const Filter& f1)
 : Filter(),
   f1_(f1.clone())
 {
 }
-void NOTFilter::initialize(const SolidModel& m)
+void NOT::initialize(const SolidModel& m)
 {
   f1_->initialize(m);
 }
 
-bool NOTFilter::checkMatch(FeatureID feature) const
+bool NOT::checkMatch(FeatureID feature) const
 {
   return !f1_->checkMatch(feature);
 }
 
-Filter* NOTFilter::clone() const
+Filter* NOT::clone() const
 {
-  return new NOTFilter(*f1_);
+  return new NOT(*f1_);
 }
 
-ANDFilter operator&&(const Filter& f1, const Filter& f2)
+AND Filter::operator&&(const Filter& f2)
 {
-  return ANDFilter(f1, f2);
+  return AND(*this, f2);
 }
 
-NOTFilter operator!(const Filter& f1)
+NOT Filter::operator!()
 {
-  return NOTFilter(f1);
+  return NOT(*this);
 }
+
+// ANDFilter operator&&(const Filter& f1, const Filter& f2)
+// {
+//   return ANDFilter(f1, f2);
+// }
+// 
+// NOTFilter operator!(const Filter& f1)
+// {
+//   return NOTFilter(f1);
+// }
 
 
 edgeTopology::edgeTopology(GeomAbs_CurveType ct)
@@ -127,6 +140,66 @@ bool edgeTopology::checkMatch(FeatureID feature) const
 Filter* edgeTopology::clone() const
 {
   return new edgeTopology(ct_);
+}
+
+faceTopology::faceTopology(GeomAbs_SurfaceType ct)
+: ct_(ct)
+{
+}
+
+bool faceTopology::checkMatch(FeatureID feature) const
+{
+  return model_->faceType(feature) == ct_;
+}
+
+Filter* faceTopology::clone() const
+{
+  return new faceTopology(ct_);
+}
+
+cylFaceOrientation::cylFaceOrientation(bool io)
+: io_(io)
+{
+}
+
+bool cylFaceOrientation::checkMatch(FeatureID feature) const
+{
+  if (model_->faceType(feature)==GeomAbs_Cylinder)
+  {
+      GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(feature)));
+      gp_Cylinder icyl=adapt.Cylinder();
+      gp_Ax1 iax=icyl.Axis();
+      BRepGProp_Face prop(model_->face(feature));
+      double u1,u2,v1,v2;
+      prop.Bounds(u1, u2, v1, v2);
+      double u = (u1+u2)/2;
+      double v = (v1+v2)/2;
+      gp_Vec vec;
+      gp_Pnt pnt;
+      prop.Normal(u,v,pnt,vec);
+      vec.Normalize();
+      gp_XYZ dp=pnt.XYZ()-icyl.Location().XYZ();
+      gp_XYZ ax=iax.Direction().XYZ();
+      ax.Normalize();
+      gp_XYZ dr=dp-ax.Multiplied(dp.Dot(ax));
+      dr.Normalize();
+      
+      if (io_)
+      {
+	if (! (fabs(vec.XYZ().Dot(dr) + 1.) < 1e-6) ) return true;
+      }
+      else
+      {
+	if (! (fabs(vec.XYZ().Dot(dr) - 1.) < 1e-6) ) return true;
+      }
+  }
+  else
+    return false;
+}
+
+Filter* cylFaceOrientation::clone() const
+{
+  return new cylFaceOrientation(io_);
 }
 
 everything::everything()
@@ -394,6 +467,19 @@ FeatureSet SolidModel::query_edges(const Filter& filter) const
   return res;
 }
 
+FeatureSet SolidModel::query_faces(const Filter& filter) const
+{
+  std::auto_ptr<Filter> f(filter.clone());
+  
+  f->initialize(*this);
+  FeatureSet res;
+  for (int i=1; i<=fmap_.Extent(); i++)
+  {
+    if (f->checkMatch(i)) res.insert(i);
+  }
+  return res;
+}
+
 void SolidModel::saveAs(const boost::filesystem::path& filename) const
 {
   std::string ext=filename.extension().string();
@@ -556,7 +642,48 @@ QuantityComputer<arma::mat>* edgeCoG::clone() const
 {
   return new edgeCoG();
 }
+
+
+faceNormal::faceNormal() 
+{}
+
+faceNormal::~faceNormal()
+{}
   
+arma::mat faceNormal::evaluate(FeatureID fi)
+{
+  return model_->faceNormal(fi);
+}
+  
+QuantityComputer<arma::mat>* faceNormal::clone() const 
+{
+  return new faceNormal();
+}
+  
+  
+cylRadius::cylRadius() 
+{}
+
+cylRadius::~cylRadius()
+{}
+  
+double cylRadius::evaluate(FeatureID fi)
+{
+  if (model_->faceType(fi)==GeomAbs_Cylinder)
+  {
+      GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(fi)));
+      gp_Cylinder icyl=adapt.Cylinder();
+      return icyl.Radius();
+  }
+  else return -1.0;
+}
+  
+QuantityComputer<double>* cylRadius::clone() const 
+{
+  return new cylRadius();
+}
+
+
 void SolidModel::nameFeatures()
 {
   fmap_.Clear();

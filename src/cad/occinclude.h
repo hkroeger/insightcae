@@ -30,6 +30,7 @@
 #include <Geom_BSplineCurve.hxx>
 #include <GeomAdaptor_Curve.hxx>
 #include <GeomAbs_CurveType.hxx>
+#include <GeomAbs_SurfaceType.hxx>
 #include <Geom2d_Curve.hxx>
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>

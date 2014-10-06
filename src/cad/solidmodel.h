@@ -59,6 +59,8 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 
 class SolidModel;
 class Sketch;
+class AND;
+class NOT;
 
 class Filter
 {
@@ -75,42 +77,47 @@ public:
   virtual bool checkMatch(FeatureID feature) const =0;
   
   virtual Filter* clone() const =0;
+  
+  AND operator&&(const Filter& f2);
+  NOT operator!();
+
 };
+
 
 inline Filter* new_clone(const Filter& f)
 {
   return f.clone();
 }
 
-class ANDFilter
+class AND
 : public Filter
 {
 protected:
   boost::shared_ptr<Filter> f1_;
   boost::shared_ptr<Filter> f2_;
 public:
-  ANDFilter(const Filter& f1, const Filter& f2);
+  AND(const Filter& f1, const Filter& f2);
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const;
   
   virtual Filter* clone() const;
 };
 
-class NOTFilter
+class NOT
 : public Filter
 {
 protected:
   boost::shared_ptr<Filter> f1_;
 public:
-  NOTFilter(const Filter& f1);
+  NOT(const Filter& f1);
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const;
   
   virtual Filter* clone() const;
 };
 
-ANDFilter operator&&(const Filter& f1, const Filter& f2);
-NOTFilter operator!(const Filter& f1);
+// ANDFilter operator&&(const Filter& f1, const Filter& f2);
+// NOTFilter operator!(const Filter& f1);
 
 class edgeTopology
 : public Filter
@@ -120,6 +127,35 @@ protected:
   
 public:
   edgeTopology(GeomAbs_CurveType ct);
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual Filter* clone() const;
+};
+
+class faceTopology
+: public Filter
+{
+protected:
+  GeomAbs_SurfaceType ct_;
+  
+public:
+  faceTopology(GeomAbs_SurfaceType ct);
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual Filter* clone() const;
+};
+
+class cylFaceOrientation
+: public Filter
+{
+protected:
+  bool io_;
+  
+public:
+  /**
+   * @param io inside:true, outside: false
+   */
+  cylFaceOrientation(bool io);
   virtual bool checkMatch(FeatureID feature) const;
   
   virtual Filter* clone() const;
@@ -225,6 +261,11 @@ public:
   virtual T evaluate(FeatureID) =0;  
   virtual QuantityComputer* clone() const =0;
 };
+
+#ifdef SWIG
+%template(doubleQuantityComputer) QuantityComputer<double>;
+%template(matQuantityComputer) QuantityComputer<arma::mat>;
+#endif
 
 template<class T>
 class constantQuantity
@@ -392,6 +433,30 @@ public:
   virtual QuantityComputer<arma::mat>* clone() const;
 };
 
+class faceNormal
+: public QuantityComputer<arma::mat>
+{
+public:
+  faceNormal();
+  ~faceNormal();
+  
+  virtual arma::mat evaluate(FeatureID fi);
+  
+  virtual QuantityComputer<arma::mat>* clone() const;
+};
+
+class cylRadius
+: public QuantityComputer<double>
+{
+public:
+  cylRadius();
+  ~cylRadius();
+  
+  virtual double evaluate(FeatureID fi);
+  
+  virtual QuantityComputer<double>* clone() const;
+};
+
 #define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
 template <class T1, class T2>\
 class RELATION_QTY_FILTER_NAME\
@@ -519,6 +584,7 @@ public:
   FeatureSet allFaces() const;
   
   FeatureSet query_edges(const Filter& filter) const;
+  FeatureSet query_faces(const Filter& filter) const;
   
   void saveAs(const boost::filesystem::path& filename) const;
   

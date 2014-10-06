@@ -90,6 +90,8 @@ using std::iostream;
 #include <gp_Pln.hxx>
 #include <gp_Lin.hxx>
 #include <gp_Dir.hxx>
+#include <gp_XYZ.hxx>
+#include <gp_Cylinder.hxx>
 #include <Graphic2d_Array1OfVertex.hxx>
 #include <Graphic2d_Buffer.hxx>
 #include <Graphic2d_CircleMarker.hxx>

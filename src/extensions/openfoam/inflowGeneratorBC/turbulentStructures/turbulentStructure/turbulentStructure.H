@@ -190,9 +190,9 @@ public:
       return ESAnalyze::Lalong(x, L1_, L2_, L3_);
     }
     
-    inline scalar vol() const
+    inline scalar vol(scalar minL) const
     {
-      return mag(L1_)*mag(L2_)*mag(L3_);
+      return Foam::max(minL,mag(L1_)) * Foam::max(minL,mag(L2_)) * Foam::max(minL,mag(L3_));
     }
 };
 

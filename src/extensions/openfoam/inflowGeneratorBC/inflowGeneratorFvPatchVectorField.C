@@ -558,7 +558,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       }
       
       scalar rnum=ranGen_();
-      scalar tau=snew.vol()/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+      scalar tau=snew.vol(minL)/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
       crTimes_[fi] += 2.0*rnum*tau/*(*tau_)[fi]*/;
       
       //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;

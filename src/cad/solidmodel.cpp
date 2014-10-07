@@ -480,6 +480,48 @@ FeatureSet SolidModel::query_faces(const Filter& filter) const
   return res;
 }
 
+FeatureSet SolidModel::verticesOfEdge(const FeatureID& e) const
+{
+  FeatureSet vertices;
+  vertices.insert(vmap_.FindIndex(TopExp::FirstVertex(edge(e))));
+  vertices.insert(vmap_.FindIndex(TopExp::LastVertex(edge(e))));
+  return vertices;
+}
+
+FeatureSet SolidModel::verticesOfEdges(const FeatureSet& es) const
+{
+  FeatureSet vertices;
+  BOOST_FOREACH(FeatureID i, es)
+  {
+    FeatureSet j=verticesOfEdge(i);
+    vertices.insert(j.begin(), j.end());
+  }
+  return vertices;
+}
+
+FeatureSet SolidModel::verticesOfFace(const FeatureID& f) const
+{
+  FeatureSet vertices;
+  for (TopExp_Explorer ex(face(f), TopAbs_VERTEX); ex.More(); ex.Next())
+  {
+    vertices.insert(vmap_.FindIndex(TopoDS::Vertex(ex.Current())));
+  }
+  return vertices;
+}
+
+FeatureSet SolidModel::verticesOfFaces(const FeatureSet& fs) const
+{
+  FeatureSet vertices;
+  BOOST_FOREACH(FeatureID i, fs)
+  {
+    FeatureSet j=verticesOfFace(i);
+    vertices.insert(j.begin(), j.end());
+  }
+  return vertices;
+}
+
+
+
 void SolidModel::saveAs(const boost::filesystem::path& filename) const
 {
   std::string ext=filename.extension().string();

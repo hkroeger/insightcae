@@ -260,6 +260,7 @@ public:
   }
   virtual T evaluate(FeatureID) =0;  
   virtual QuantityComputer* clone() const =0;
+
 };
 
 #ifdef SWIG
@@ -498,6 +499,7 @@ RELATION_QTY_FILTER(less, (value1<value2));
 RELATION_QTY_FILTER(lessequal, (value1<=value2));
 RELATION_QTY_FILTER(equal, (value1==value2));
 
+
 #define RELATION_QTY_FILTER_OPERATOR(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
 template <class T1, class T2> \
 RELATION_QTY_FILTER_NAME<T1, T2> RELATION_QTY_FILTER_OP(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2) \
@@ -521,6 +523,11 @@ RELATION_QTY_FILTER_OPERATOR(greaterequal, operator>= );
 RELATION_QTY_FILTER_OPERATOR(less, operator< );
 RELATION_QTY_FILTER_OPERATOR(lessequal, operator<= );
 RELATION_QTY_FILTER_OPERATOR(equal, operator== );
+
+#ifdef SWIG
+%template(greaterDouble) greater<double, double>;
+%template(equalDouble) equal<double, double>;
+#endif
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
@@ -586,6 +593,12 @@ public:
   FeatureSet query_edges(const Filter& filter) const;
   FeatureSet query_faces(const Filter& filter) const;
   
+  FeatureSet verticesOfEdge(const FeatureID& e) const;
+  FeatureSet verticesOfEdges(const FeatureSet& es) const;
+  
+  FeatureSet verticesOfFace(const FeatureID& f) const;
+  FeatureSet verticesOfFaces(const FeatureSet& fs) const;
+
   void saveAs(const boost::filesystem::path& filename) const;
   
   operator const TopoDS_Shape& () const;

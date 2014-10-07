@@ -139,16 +139,24 @@ double anisovf(const gsl_vector *v, void *params)
 //     sz*sqr(sqr(sx)*rx-sqr(sy)*ry)/sx/sy
 //   );
   
-  vector R= (pow(M_PI, 3./2.)/12.)*
-  vector 
-  (
-    sx*sqr(ry*sqr(sy)-rz*sqr(sz))/sy/sz,
-    sy*sqr(rx*sqr(sx)-rz*sqr(sz))/sx/sz,
-    sz*sqr(rx*sqr(sx)-ry*sqr(sy))/sx/sy
-  );  
+//   vector R= (pow(M_PI, 3./2.)/12.)*
+//   vector 
+//   (
+//     sx*sqr(ry*sqr(sy)-rz*sqr(sz))/sy/sz,
+//     sy*sqr(rx*sqr(sx)-rz*sqr(sz))/sx/sz,
+//     sz*sqr(rx*sqr(sx)-ry*sqr(sy))/sx/sy
+//   );  
+  
+    vector R=
+      vector
+      (
+	sqr(sqr(Ly)*ry-sqr(Lz)*rz)/sqr(Ly)/sqr(Lz),
+	sqr(sqr(Lx)*rx-sqr(Lz)*rz)/sqr(Lx)/sqr(Lz),
+	sqr(sqr(Lx)*rx-sqr(Ly)*ry)/sqr(Lx)/sqr(Ly)
+      )/12.;
   
 //   vector L = (16.*sqrt(2.*M_PI)/(23.*k0)) * vector(sx, sy, sz);
-  Info/*<<k0<<" "<<C1*/<<" "<<rx<<" "<<ry<<" "<<rz<<" "<<sx<<" "<<sy<<" "<<sz<<" Lx,Ly,Lz="<<Lx<<","<<Ly<<","<<Lz<<", R="<<R<<endl;
+//   Info/*<<k0<<" "<<C1*/<<" "<<rx<<" "<<ry<<" "<<rz<<" "<<sx<<" "<<sy<<" "<<sz<<" Lx,Ly,Lz="<<Lx<<","<<Ly<<","<<Lz<<", R="<<R<<endl;
   
   return 
       sqr(R[0]-R11) 	 + sqr(R[1]-R22) 	+ sqr(R[2]-R33) 
@@ -299,44 +307,30 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
     double Yy=delta_x&er2_;
     double Zz=delta_x&er3_;
     
-//     if 
-//         (
-//             (mag(Xx)  < 2.*mag(L1_)) &&
-//             (mag(Yy)  < 2.*mag(L2_)) &&
-//             (mag(Zz)  < 2.*mag(L3_))
-//         )
+    if 
+        (
+            (mag(Xx)  < 2.*mag(L1_)) &&
+            (mag(Yy)  < 2.*mag(L2_)) &&
+            (mag(Zz)  < 2.*mag(L3_))
+        )
     {
-
-//       scalar f=
-// 	  sqrt(1./C1_) 
-// 	* exp( -0.25*sqr(k0_)*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) ) 
-// 	* pow(k0_,7) 
-// 	* M_PI 
-// 	* ( sqr(k0_*sy_*sz_*Xx) + sqr(sx_)*( sqr(k0_*sz_*Yy) + sqr(sy_)*( -10.*sqr(sz_)+sqr(k0_*Zz) ) ) );
-// 	
-//       vector u
-//       (
-// 	-(sqr(sy_)*ry_ - sqr(sz_)*rz_)*Yy*Zz / (16.*sqr(sx_)   * pow(sy_,4) * pow(sz_,4)),
-// 	 (sqr(sx_)*rx_ - sqr(sz_)*rz_)*Xx*Zz / (16.*pow(sx_,4) * sqr(sy_)   * pow(sz_,4)),
-// 	-(sqr(sx_)*rx_ - sqr(sy_)*ry_)*Xx*Yy / (16.*pow(sx_,4) * pow(sy_,4) * sqr(sz_)  )
-//       );
       
       vector u =
-       exp( -0.5*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_)) )
+       exp( -0.5*( sqr(Xx/sx_) + sqr(Yy/sy_) + sqr(Zz/sz_) ) )
        * 
        vector
        (
-	 (ry_/sqr(sz_) - rz_/sqr(sy_))*Yy*Zz,
-	 (rz_/sqr(sx_) - rx_/sqr(sz_))*Xx*Zz,
-	 (rx_/sqr(sy_) - ry_/sqr(sx_))*Xx*Yy
+	 (ry_*sqr(sy_) - rz_*sqr(sz_))*Yy*Zz/sqr(sy_)/sqr(sz_),
+	 (rz_*sqr(sz_) - rx_*sqr(sx_))*Xx*Zz/sqr(sx_)/sqr(sz_),
+	 (rx_*sqr(sx_) - ry_*sqr(sy_))*Xx*Yy/sqr(sx_)/sqr(sy_)
        );
 
       vector ut=transform( tensor(er1_, er2_, er3_).T(), epsilon_*u);
-//       Info<<Rp_<<": "<<u<<" "<<ut<<endl;
+
       return ut;
     }
-//   else
-//     return pTraits<vector>::zero;
+  else
+    return pTraits<vector>::zero;
 }
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //

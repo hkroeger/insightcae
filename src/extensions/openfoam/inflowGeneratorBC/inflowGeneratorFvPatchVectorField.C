@@ -512,7 +512,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       nclip2++;
     }
     
-    scalar horiz = t + 0.5*max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+    scalar horiz = t + max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
 //     scalar Lhoriz = mag(Umean) * this->db().time().deltaT().value();
 
       // if creation time is within the current time step then create structure now

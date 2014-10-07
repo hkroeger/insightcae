@@ -179,10 +179,10 @@ void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor(int writeI
     scalar alpha = scalar(i - 1)/scalar(i);
     scalar beta = 1.0/scalar(i);
     
-    uPrime2Mean += sqr(uMean);
+//     uPrime2Mean += sqr(uMean);
     uMean = alpha*uMean + beta*u;
 //     N = alpha*N + beta*scalar(info.n_induced);
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) /*- sqr(uMean)*/; //uMean shoudl be zero
     
     Info<<"i="<<i<<": Averages: uMean="
 	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())

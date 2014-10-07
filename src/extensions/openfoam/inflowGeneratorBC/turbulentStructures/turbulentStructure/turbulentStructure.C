@@ -201,7 +201,11 @@ scalar turbulentStructure::travelledDistance() const
 scalar turbulentStructure::passedThrough() const
 {
   //Info<<"dist="<<travelledDistance()<<endl<< Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_))) <<endl;
-  return travelledDistance() > Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+//   return travelledDistance() > 4.0*Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+  vector dir=footPoint_-startPoint_;
+  dir/=SMALL+mag(dir);
+  scalar daft=(location()-footPoint_)&dir;
+  return daft > 2.0*Lalong(dir);
 }
 
 

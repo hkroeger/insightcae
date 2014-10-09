@@ -262,7 +262,7 @@ void modalTurbulenceFvPatchVectorField::createModes()
   
   const scalarField& dw=ywall.boundaryField()[patch().index()];
   scalarField delta_x= 2.*(patch().Cf() - ppatch.faceCellCentres()) & patch().nf();
-  scalarField delta_max_edge(maxEdgeLengths());
+  scalarField delta_max_edge(edgeLengths(true));
   scalarField delta_max=max(delta_max_edge, delta_x);
   scalarField lcut=2.*min
   (

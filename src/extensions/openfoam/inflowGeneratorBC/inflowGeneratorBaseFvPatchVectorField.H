@@ -337,7 +337,7 @@ public:
 	/**
 	 * return the max edge lengths for all faces
 	 */
-	tmp<scalarField> maxEdgeLengths() const;
+	tmp<scalarField> edgeLengths(bool maxL=false) const;
 
 	inline vector averageMeanVelocity() const
 	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }

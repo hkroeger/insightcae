@@ -312,10 +312,10 @@ void inflowGeneratorBaseFvPatchVectorField::setParameters(const vectorField& ume
 }
 
 
-tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::maxEdgeLengths() const
+tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::edgeLengths(bool maxL) const
 {
-  tmp<scalarField> res(new scalarField(size(), 0.0));
-  scalarField& delta_max_edge = res();
+  tmp<scalarField> res(new scalarField(size(), maxL?0.0:1e10));
+  scalarField& delta_edge = res();
   
   const polyPatch& ppatch = patch().patch();
 
@@ -326,7 +326,10 @@ tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::maxEdgeLengths() const
     forAll(ppatch.edgeFaces()[ei], j)
     {
       label fi = ppatch.edgeFaces()[ei][j];
-      delta_max_edge[fi] = max(delta_max_edge[fi], this_edge_len);
+      if (maxL)
+	delta_edge[fi] = max(delta_edge[fi], this_edge_len);
+      else
+	delta_edge[fi] = min(delta_edge[fi], this_edge_len);
     }
   }
   

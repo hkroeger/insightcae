@@ -429,55 +429,12 @@ point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(
 template<class TurbulentStructure>
 tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(scalar t, ProcessStepInfo *info)
 {
-
-//   {
-//     label nclip1=0;
-//     bool init_needed=false;
-//     
-//     if (size() != esa_.size())
-//     {
-//       scalarField maxEdgeL(maxEdgeLengths());
-//       
-//       esa_.setSize(size());
-//       forAll(*this, fi)
-//       {
-// 	scalar minL=2.*maxEdgeL[fi];
-// 	esa_.set(fi, new ESAnalyze(L_[fi]));
-// 	if (esa_[fi].clip(minL)) nclip1++;	
-//       }
-//       init_needed=true;
-//     }
-//     
-//     reduce(init_needed, orOp<bool>());
-//     
-//     if (init_needed)
-//     {
-//       reduce(nclip1, sumOp<label>());
-//       
-//       if (nclip1)
-// 	Info<<" Inflow generator ["<<patch().name()<<"]: Extended local length scale to minimum length "<<nclip1<<" time(s)."<<endl;
-//     }
-//   }
-
-
-//   if (!tau_.get())
-//   {
-//     computeTau();
-//   }
   
   if (!globalPatch_.valid())
   {
     globalPatch_.reset(new globalPatch(this->patch().patch()));
   }
-  
-//   if (!crTimes_.get())
-//   {
-//     Info<<"reset crTimes"<<endl;
-//     crTimes_.reset(new scalarField(size(), this->db().time().value()));
-// //     scalar rnum=ranGen_();
-// //     forAll((*crTimes_), fi)
-// //       (*crTimes_)[fi] += (1.0 - 2.0*rnum)*(*tau_)[fi];
-//   }
+
   
   /**
     * ==================== Generation of new turbulent structures ========================
@@ -496,7 +453,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   vector Umean;
   if (uniformConvection_) Umean=averageMeanVelocity();
   
-  scalarField maxEdgeL(maxEdgeLengths());
+  scalarField edgeL(edgeLengths(true));
       
   forAll(*this, fi)
   {
@@ -523,7 +480,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     {
       point pf = randomFacePosition(fi); ;
       
-      scalar minL=2.*maxEdgeL[fi];
+      scalar minL=edgeL[fi]/2.;
 
       TurbulentStructure snew
       (
@@ -538,7 +495,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       bool isFirstDummy=(lLalong_[fi]<0.0);
       
-      lLalong_[fi]=snew.Lalong( patch().nf()()[fi] );
+      lLalong_[fi]=max(minL, snew.Lalong( patch().nf()()[fi] ));
       
       snew.randomize(ranGen_);
       
@@ -549,12 +506,15 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       else
       {
       
-	// append new structure to the end of the list
-	vortons_.resize(vortons_.size()+1);
-	vortons_[vortons_.size()-1]=snew;
-      
-	if (debug>=2) Info<<"."<<pf<<" "<<flush;
-	n_generated++;
+	if (!snew.noFluctuation())
+	{
+	  // append new structure to the end of the list
+	  vortons_.resize(vortons_.size()+1);
+	  vortons_[vortons_.size()-1]=snew;
+
+	  if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	  n_generated++;
+	}
       }
       
       scalar rnum=ranGen_();
@@ -567,6 +527,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (debug>=2) Info<<endl;
   }
   
+
   reduce(nclip2, sumOp<label>());
   
   if (nclip2)

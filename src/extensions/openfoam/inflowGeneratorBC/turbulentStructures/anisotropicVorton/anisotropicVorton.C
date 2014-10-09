@@ -82,17 +82,19 @@ anisotropicVorton::anisotropicVorton
 (
     Istream& s
 )
-: turbulentStructure(s),
-  epsilon_(readScalar(s)),
-  rx_(readScalar(s)),
-  ry_(readScalar(s)),
-  rz_(readScalar(s)),
-  sx_(readScalar(s)),
-  sy_(readScalar(s)),
-  sz_(readScalar(s)),
-  k0_(readScalar(s)),
-  C1_(readScalar(s))
-{}
+// : turbulentStructure(s),
+//   epsilon_(readScalar(s)),
+//   rx_(readScalar(s)),
+//   ry_(readScalar(s)),
+//   rz_(readScalar(s)),
+//   sx_(readScalar(s)),
+//   sy_(readScalar(s)),
+//   sz_(readScalar(s)),
+//   k0_(readScalar(s)),
+//   C1_(readScalar(s))
+{
+  s>>(*this);
+}
 
 void calcS
 (
@@ -186,9 +188,8 @@ anisotropicVorton::anisotropicVorton
   k0_(1.0),
   C1_(1.0)*/
 {
-  
   //reinterpret length scales as aligned with eigensystem of Reynolds Stresses
-  double Lx=mag(L1_);/*, Lz=mag(L3_);
+  double Lx=Foam::max(minL, mag(L1_));/*, Lz=mag(L3_);
   
   double Ly = Lx*Lz*sqrt(Rp_[1]) / ( Lz*sqrt(Rp_[0]) + Lx*sqrt(Rp_[2]) );*/
   
@@ -252,7 +253,6 @@ anisotropicVorton::anisotropicVorton
     }
   while (status == GSL_CONTINUE && iter < 2000);
   
-  int i=0;
   rx_=gsl_vector_get(s->x, 0);
   ry_=gsl_vector_get(s->x, 1);
   rz_=gsl_vector_get(s->x, 2);
@@ -272,7 +272,7 @@ anisotropicVorton::anisotropicVorton
 
   calcS(/*k0_,  */mag(L1_), mag(L2_), mag(L3_), sx_, sy_, sz_);
   
-   Info<<"@"<<Rp_<<";"<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<": \t"
+  Info<<"@"<<Rp_<<";"<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<": \t"
     <<rx_<<" "<<ry_<<" "<<rz_<<" / \t"
     <<sx_<<" "<<sy_<<" "<<sz_<<" / \t"
     <<k0_<<" "<<C1_<<
@@ -282,6 +282,10 @@ anisotropicVorton::anisotropicVorton
   gsl_vector_free(ss);
   gsl_multimin_fminimizer_free (s);  
   
+  if (mag(mag(er1_)-1.0)>1e-6)
+      {
+	Info<<Rp_<<" er="<<er1_<<er2_<<er3_<<endl;
+      }
 }
 
 anisotropicVorton::anisotropicVorton(const anisotropicVorton& o)
@@ -326,6 +330,7 @@ vector anisotropicVorton::fluctuation(const StructureParameters& pa, const vecto
        );
 
       vector ut=transform( tensor(er1_, er2_, er3_).T(), epsilon_*u);
+//       if (mag(ut)>1e3) Info<<ut<<er1_<<er2_<<er3_<<endl;
 
       return ut;
     }
@@ -392,6 +397,8 @@ void anisotropicVorton::operator=(const anisotropicVorton& rhs)
 bool anisotropicVorton::operator!=(const anisotropicVorton& o) const
 {
     return 
+//     turbulentStructure::operator!=(o)
+// ||
         (location()!=o.location())
         ||
         (epsilon_!=o.epsilon_)
@@ -415,7 +422,7 @@ bool anisotropicVorton::operator!=(const anisotropicVorton& o) const
 
 Ostream& operator<<(Ostream& s, const anisotropicVorton& ht)
 {
-    s << *static_cast<const turbulentStructure*>(&ht);
+    s << static_cast<const turbulentStructure&>(ht);
     s<<ht.epsilon_<<endl;
     s<<ht.rx_<<endl;
     s<<ht.ry_<<endl;
@@ -430,7 +437,7 @@ Ostream& operator<<(Ostream& s, const anisotropicVorton& ht)
 
 Istream& operator>>(Istream& s, anisotropicVorton& ht)
 {
-    s >> *static_cast<turbulentStructure*>(&ht);
+    s >> static_cast<turbulentStructure&>(ht);
     ht.epsilon_=readScalar(s);
     ht.rx_=readScalar(s);
     ht.ry_=readScalar(s);

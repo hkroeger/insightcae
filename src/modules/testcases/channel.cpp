@@ -402,6 +402,7 @@ void ChannelBase::createCase
     .set_writeFormat("ascii")
     .set_decompositionMethod("simple")
     .set_deltaT(1e-3)
+    .set_hasCyclics(true)
   ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )

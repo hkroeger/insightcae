@@ -543,7 +543,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  if ( (OFversion()>=220) && !(p_.hasCyclics())) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
 //   grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";

@@ -136,6 +136,7 @@ public:
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)
+    (hasCyclics, bool, false)
   )
 
 protected:

@@ -53,11 +53,19 @@ tensor ESAnalyze::eigenSystem(const symmTensor& L)
  
 //   std::cout<<"eval="<<eigval<<"evec="<<eigvec<<"diag1="<< (eigvec.t()*mL*eigvec)<<"diag2="<< (eigvec*mL*eigvec.t()) <<std::endl; // only diag1 is right!
   
+  vector e1(eigvec.col(idx(0))(0), eigvec.col(idx(0))(1), eigvec.col(idx(0))(2));
+  vector e2(eigvec.col(idx(1))(0), eigvec.col(idx(1))(1), eigvec.col(idx(1))(2));
+  vector e3(eigvec.col(idx(2))(0), eigvec.col(idx(2))(1), eigvec.col(idx(2))(2));
+  
+  e1/=mag(e1)+SMALL;
+  e2/=mag(e2)+SMALL;
+  e3/=mag(e3)+SMALL;
+  
   return tensor
   (
-   vector(eigvec.col(idx(0))(0), eigvec.col(idx(0))(1), eigvec.col(idx(0))(2)) * eigval(idx(0)),
-   vector(eigvec.col(idx(1))(0), eigvec.col(idx(1))(1), eigvec.col(idx(1))(2)) * eigval(idx(1)),
-   vector(eigvec.col(idx(2))(0), eigvec.col(idx(2))(1), eigvec.col(idx(2))(2)) * eigval(idx(2))
+   e1 * eigval(idx(0)),
+   e2 * eigval(idx(1)),
+   e3 * eigval(idx(2))
   );
 }
 
@@ -115,6 +123,8 @@ scalar ESAnalyze::Lalong(const vector& x, const vector& L1, const vector& L2, co
 }
 
 
+
+
 turbulentStructure::turbulentStructure()
 : point(pTraits<point>::zero),
   velocity_(pTraits<point>::zero),
@@ -122,12 +132,16 @@ turbulentStructure::turbulentStructure()
   L2_(pTraits<vector>::zero),
   L3_(pTraits<vector>::zero),
   startPoint_(pTraits<point>::zero),
-  creaFace_(-1)
+  footPoint_(pTraits<point>::zero),
+  creaFace_(-1),
+  Rp_(vector::zero),
+  er1_(pTraits<vector>::zero),
+  er2_(pTraits<vector>::zero),
+  er3_(pTraits<vector>::zero)
 {
 }
 
 turbulentStructure::turbulentStructure(Istream& is)
-: creaFace_(-1)
 {
   is >> *this;
 }
@@ -159,9 +173,18 @@ turbulentStructure::turbulentStructure
   Rp_[1]=mag(ea.c2());
   Rp_[2]=mag(ea.c3());
   
-  er1_=ea.c1(); er1_/=SMALL+mag(er1_);
-  er2_=ea.c2(); er2_/=SMALL+mag(er2_);
-  er3_=ea.c3(); er3_/=SMALL+mag(er3_);
+  if (mag(Rp_)<SMALL)
+  {
+    er1_=vector(1,0,0);
+    er2_=vector(0,1,0);
+    er3_=vector(0,0,1);
+  }
+  else
+  {
+    er1_=ea.c1(); er1_/=SMALL+mag(er1_);
+    er2_=ea.c2(); er2_/=SMALL+mag(er2_);
+    er3_=ea.c3(); er3_/=SMALL+mag(er3_);
+  }
 
   initialPositioning(p, initialDelta);
 }
@@ -173,6 +196,7 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
   L2_(o.L2_),
   L3_(o.L3_),
   startPoint_(o.startPoint_),
+  footPoint_(o.footPoint_),
   creaFace_(o.creaFace_),
   Rp_(o.Rp_),
   er1_(o.er1_),
@@ -236,7 +260,7 @@ void turbulentStructure::operator=(const turbulentStructure& rhs)
   er1_=rhs.er1_;
   er2_=rhs.er2_;
   er3_=rhs.er3_;
-  
+
 }
 
 tensor turbulentStructure::Lund(const symmTensor& R)
@@ -273,7 +297,8 @@ Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
 
 Istream& operator>>(Istream& s, turbulentStructure& ht)
 {
-    vector loc(s);
+  s >> static_cast<point&>(ht);
+  
     vector v(s);
     vector L1(s);
     vector L2(s);
@@ -287,7 +312,6 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     vector er2(s);
     vector er3(s);
     
-    ht.setLocation(loc);
     ht.velocity_=v;
     ht.L1_=L1;
     ht.L2_=L2;

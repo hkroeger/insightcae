@@ -194,6 +194,12 @@ public:
     {
       return Foam::max(minL,mag(L1_)) * Foam::max(minL,mag(L2_)) * Foam::max(minL,mag(L3_));
     }
+    
+    inline bool noFluctuation() const
+    {
+      return (mag(Rp_)<SMALL);
+    }
+    
 };
 
 

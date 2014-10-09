@@ -538,7 +538,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
       bool isFirstDummy=(lLalong_[fi]<0.0);
       
-      lLalong_[fi]=snew.Lalong( patch().nf()()[fi] );
+      lLalong_[fi]=max(minL, snew.Lalong( patch().nf()()[fi] ));
       
       snew.randomize(ranGen_);
       
@@ -549,12 +549,15 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       else
       {
       
-	// append new structure to the end of the list
-	vortons_.resize(vortons_.size()+1);
-	vortons_[vortons_.size()-1]=snew;
-      
-	if (debug>=2) Info<<"."<<pf<<" "<<flush;
-	n_generated++;
+	if (!snew.noFluctuation())
+	{
+	  // append new structure to the end of the list
+	  vortons_.resize(vortons_.size()+1);
+	  vortons_[vortons_.size()-1]=snew;
+
+	  if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	  n_generated++;
+	}
       }
       
       scalar rnum=ranGen_();
@@ -567,6 +570,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     if (debug>=2) Info<<endl;
   }
   
+
   reduce(nclip2, sumOp<label>());
   
   if (nclip2)

@@ -28,7 +28,7 @@
 #include <boost/iterator/counting_iterator.hpp>
 
 #include "dxfwriter.h"
-
+#include "featurefilter.h"
 #include "gp_Cylinder.hxx"
 
 using namespace std;
@@ -38,238 +38,6 @@ namespace insight
 {
 namespace cad 
 {
-
-std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
-{
-  os<<fs.size()<<" {";
-  BOOST_FOREACH(int fi, fs)
-  {
-    os<<" "<<fi;
-  }
-  os<<" }";
-  return os;
-}
-
-Filter::Filter()
-: model_(NULL)
-{
-}
-
-Filter::~Filter()
-{
-}
-
-void Filter::initialize(const SolidModel& m)
-{
-  model_=&m;
-}
-
-AND::AND(const Filter& f1, const Filter& f2)
-: Filter(),
-  f1_(f1.clone()), f2_(f2.clone())
-{
-}
-
-void AND::initialize(const SolidModel& m)
-{
-  f1_->initialize(m);
-  f2_->initialize(m);
-}
-
-bool AND::checkMatch(FeatureID feature) const
-{
-  return f1_->checkMatch(feature) && f2_->checkMatch(feature);
-}
-
-Filter::Ptr AND::clone() const
-{
-  return Filter::Ptr(new AND(*f1_, *f2_));
-}
-
-NOT::NOT(const Filter& f1)
-: Filter(),
-  f1_(f1.clone())
-{
-}
-void NOT::initialize(const SolidModel& m)
-{
-  f1_->initialize(m);
-}
-
-bool NOT::checkMatch(FeatureID feature) const
-{
-  return !f1_->checkMatch(feature);
-}
-
-Filter::Ptr NOT::clone() const
-{
-  return Filter::Ptr(new NOT(*f1_));
-}
-
-Filter::Ptr Filter::operator&&(const Filter& f2)
-{
-  return Filter::Ptr(new AND(*this, f2));
-}
-
-Filter::Ptr Filter::operator!()
-{
-  return Filter::Ptr(new NOT(*this));
-}
-
-// ANDFilter operator&&(const Filter& f1, const Filter& f2)
-// {
-//   return ANDFilter(f1, f2);
-// }
-// 
-// NOTFilter operator!(const Filter& f1)
-// {
-//   return NOTFilter(f1);
-// }
-
-
-edgeTopology::edgeTopology(GeomAbs_CurveType ct)
-: ct_(ct)
-{
-}
-
-bool edgeTopology::checkMatch(FeatureID feature) const
-{
-  return model_->edgeType(feature) == ct_;
-}
-
-Filter::Ptr edgeTopology::clone() const
-{
-  return Filter::Ptr(new edgeTopology(ct_));
-}
-
-faceTopology::faceTopology(GeomAbs_SurfaceType ct)
-: ct_(ct)
-{
-}
-
-bool faceTopology::checkMatch(FeatureID feature) const
-{
-  return model_->faceType(feature) == ct_;
-}
-
-Filter::Ptr faceTopology::clone() const
-{
-  return Filter::Ptr(new faceTopology(ct_));
-}
-
-cylFaceOrientation::cylFaceOrientation(bool io)
-: io_(io)
-{
-}
-
-bool cylFaceOrientation::checkMatch(FeatureID feature) const
-{
-  if (model_->faceType(feature)==GeomAbs_Cylinder)
-  {
-      GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(feature)));
-      gp_Cylinder icyl=adapt.Cylinder();
-      gp_Ax1 iax=icyl.Axis();
-      BRepGProp_Face prop(model_->face(feature));
-      double u1,u2,v1,v2;
-      prop.Bounds(u1, u2, v1, v2);
-      double u = (u1+u2)/2;
-      double v = (v1+v2)/2;
-      gp_Vec vec;
-      gp_Pnt pnt;
-      prop.Normal(u,v,pnt,vec);
-      vec.Normalize();
-      gp_XYZ dp=pnt.XYZ()-icyl.Location().XYZ();
-      gp_XYZ ax=iax.Direction().XYZ();
-      ax.Normalize();
-      gp_XYZ dr=dp-ax.Multiplied(dp.Dot(ax));
-      dr.Normalize();
-      
-      if (io_)
-      {
-	if (! (fabs(vec.XYZ().Dot(dr) + 1.) < 1e-6) ) return true;
-      }
-      else
-      {
-	if (! (fabs(vec.XYZ().Dot(dr) - 1.) < 1e-6) ) return true;
-      }
-  }
-  else
-    return false;
-}
-
-Filter::Ptr cylFaceOrientation::clone() const
-{
-  return Filter::Ptr(new cylFaceOrientation(io_));
-}
-
-everything::everything()
-{}
-
-bool everything::checkMatch(FeatureID feature) const
-{
-  return true;
-}
-  
-Filter::Ptr everything::clone() const
-{
-  return Filter::Ptr(new everything());
-}
-
-template<> coincident<Edge>::coincident(const SolidModel& m)
-: m_(m),
-  f_(m.allEdges())
-{
-}
-
-template<>
-bool coincident<Edge>::checkMatch(FeatureID feature) const
-{
-  bool match=false;
-  
-  BOOST_FOREACH(int f, f_)
-  {
-    TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-    TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
-    match |= isPartOf(e2, e1);
-  }
-  
-  return match;
-}
-
-template<> coincident<Face>::coincident(const SolidModel& m)
-: m_(m),
-  f_(m.allFaces())
-{
-}
-
-template<>
-bool coincident<Face>::checkMatch(FeatureID feature) const
-{
-  bool match=false;
-  
-  BOOST_FOREACH(int f, f_)
-  {
-    TopoDS_Face e1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face e2=TopoDS::Face(m_.face(f));
-    match |= isPartOf(e2, e1);
-  }
-  
-  return match;
-}
-
-
-
-template<>
-bool secant<Edge>::checkMatch(FeatureID feature) const
-{
-  TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-
-  TopoDS_Vertex v0=TopExp::FirstVertex(e1);
-  TopoDS_Vertex v1=TopExp::LastVertex(e1);
-  arma::mat v = Vector( BRep_Tool::Pnt(v0).XYZ() - BRep_Tool::Pnt(v1).XYZ() );
-  
-  return (1.0 - fabs(arma::dot( arma::normalise(v), arma::normalise(dir_) ))) < 1e-10;
-}
 
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m)
@@ -454,7 +222,7 @@ FeatureSet SolidModel::allFaces() const
   );
 }
 
-FeatureSet SolidModel::query_edges(const Filter::Ptr& f) const
+FeatureSet SolidModel::query_edges(const FilterPtr& f) const
 {
 //   Filter::Ptr f(filter.clone());
   
@@ -467,7 +235,7 @@ FeatureSet SolidModel::query_edges(const Filter::Ptr& f) const
   return res;
 }
 
-FeatureSet SolidModel::query_faces(const Filter::Ptr& f) const
+FeatureSet SolidModel::query_faces(const FilterPtr& f) const
 {
 //   Filter::Ptr f(filter.clone());
   

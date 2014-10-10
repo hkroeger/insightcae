@@ -46,7 +46,7 @@ double dot(const vector& v1, const vector& v2)
   return arma::as_scalar(arma::dot(v1,v2));
 }
 
-FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f)
+FeatureSet queryEdges(const SolidModel& m, const FilterPtr& f)
 {
   using namespace std;
   using namespace insight::cad;

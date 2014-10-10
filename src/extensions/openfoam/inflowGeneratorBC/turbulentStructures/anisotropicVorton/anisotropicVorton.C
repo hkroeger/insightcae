@@ -120,16 +120,16 @@ double anisovf(const gsl_vector *v, void *params)
   
     rx=gsl_vector_get(v, 0), 
     ry=gsl_vector_get(v, 1), 
-    rz=gsl_vector_get(v, 2),
+    rz=gsl_vector_get(v, 2)/*,
     Ly=gsl_vector_get(v, 3),
-    Lz=gsl_vector_get(v, 4)/*,
+    Lz=gsl_vector_get(v, 4),
     C1=max(SMALL, gsl_vector_get(v, 3)),
     k0=max(SMALL, gsl_vector_get(v, 4))*/;
     
     
   double *par = static_cast<double*>(params);
   scalar R11=par[0], R22=par[1], R33=par[2];
-  scalar Lx=par[3]/*, Ly=par[4], Lz=par[5]*/;
+  scalar Lx=par[3], Ly=par[4], Lz=par[5];
   
   calcS(/*k0, */Lx, Ly, Lz, sx, sy, sz);
   
@@ -162,7 +162,7 @@ double anisovf(const gsl_vector *v, void *params)
   
   return 
       sqr(R[0]-R11) 	 + sqr(R[1]-R22) 	+ sqr(R[2]-R33) 
-    + sqr(Ly-Lx) 	 + sqr(Lz-Lx) /*	+ sqr(L[2]-Lz)*/;
+    /*+ sqr(Ly-Lx) 	 + sqr(Lz-Lx) 	+ sqr(L[2]-Lz)*/;
 }
 
 
@@ -189,12 +189,12 @@ anisotropicVorton::anisotropicVorton
   C1_(1.0)*/
 {
   //reinterpret length scales as aligned with eigensystem of Reynolds Stresses
-  double Lx=Foam::max(minL, mag(L1_));/*, Lz=mag(L3_);
+  double Lx=Foam::max(minL, mag(L1_)), Lz=mag(L3_);
   
-  double Ly = Lx*Lz*sqrt(Rp_[1]) / ( Lz*sqrt(Rp_[0]) + Lx*sqrt(Rp_[2]) );*/
+  double Ly = Lx*Lz*sqrt(Rp_[1]) / ( Lz*sqrt(Rp_[0]) + Lx*sqrt(Rp_[2]) );
   
   
-  double par[] = {Rp_[0], Rp_[1], Rp_[2], Lx};
+  double par[] = {Rp_[0], Rp_[1], Rp_[2], Lx, Ly, Lz};
 
   const gsl_multimin_fminimizer_type *T = 
     gsl_multimin_fminimizer_nmsimplex2;
@@ -205,7 +205,7 @@ anisotropicVorton::anisotropicVorton
   int iter = 0;
   int status;
   double size;
-  int np=5;
+  int np=3;
   
   /* Starting point */
   x = gsl_vector_alloc (np);
@@ -213,8 +213,8 @@ anisotropicVorton::anisotropicVorton
   gsl_vector_set(x, 0, rx_);
   gsl_vector_set(x, 1, ry_);
   gsl_vector_set(x, 2, rz_);
-  gsl_vector_set(x, 3, Lx*0.1);
-  gsl_vector_set(x, 4, Lx*0.1);
+//   gsl_vector_set(x, 3, Lx*0.1);
+//   gsl_vector_set(x, 4, Lx*0.1);
 
   /* Set initial step sizes to 1 */
   ss = gsl_vector_alloc (np);
@@ -256,8 +256,8 @@ anisotropicVorton::anisotropicVorton
   rx_=gsl_vector_get(s->x, 0);
   ry_=gsl_vector_get(s->x, 1);
   rz_=gsl_vector_get(s->x, 2);
-  double Ly=gsl_vector_get(s->x, 3);
-  double Lz=gsl_vector_get(s->x, 4);
+//   double Ly=Foam::max(minL, gsl_vector_get(s->x, 3));
+//   double Lz=Foam::max(minL, gsl_vector_get(s->x, 4));
 //   sy_=gsl_vector_get(s->x, i++);
 //   sz_=gsl_vector_get(s->x, i++);
 //   C1_=gsl_vector_get(s->x, 3);
@@ -272,11 +272,13 @@ anisotropicVorton::anisotropicVorton
 
   calcS(/*k0_,  */mag(L1_), mag(L2_), mag(L3_), sx_, sy_, sz_);
   
-  Info<<"@"<<Rp_<<";"<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<": \t"
-    <<rx_<<" "<<ry_<<" "<<rz_<<" / \t"
-    <<sx_<<" "<<sy_<<" "<<sz_<<" / \t"
-    <<k0_<<" "<<C1_<<
-    " \t err="<<anisovf(s->x, par)<<" #"<<iter<<endl;
+//   scalar err=anisovf(s->x, par);
+//   if (err>0.1)
+//   Info<<"@"<<Rp_<<";"<<mag(L1_)<<" "<<mag(L2_)<<" "<<mag(L3_)<<": \t"
+//     <<rx_<<" "<<ry_<<" "<<rz_<<" / \t"
+//     <<sx_<<" "<<sy_<<" "<<sz_<<" / \t"
+//     <<k0_<<" "<<C1_<<
+//     " \t err="<<err<<" #"<<iter<<endl;
   
   gsl_vector_free(x);
   gsl_vector_free(ss);

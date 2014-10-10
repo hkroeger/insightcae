@@ -453,78 +453,84 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   vector Umean;
   if (uniformConvection_) Umean=averageMeanVelocity();
   
-  scalarField edgeL(edgeLengths(true));
+  scalarField edgeL(edgeLengths(false));
+//   Info<<"minEdgel="<<min(edgeL)<<endl;
       
+  scalar maxR=max(mag(R_));
+  
   forAll(*this, fi)
   {
-    vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
-    
-//     scalar Lalong=esa_[fi].Lalong(in_dir);
-    
-    if (!uniformConvection_) Umean=Umean_[fi];
-    
-    if ((Umean&in_dir) < SMALL)
+    if (mag(R_[fi])>1e-3*maxR)
     {
-      Umean += in_dir*(-(Umean&in_dir)+SMALL);
-      nclip2++;
-    }
-    
-    scalar horiz = t + max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
-//     scalar Lhoriz = mag(Umean) * this->db().time().deltaT().value();
-
-      // if creation time is within the current time step then create structure now
-//       if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
-    
-    while ( (horiz - crTimes_[fi]) > /*dt*/ 0.0 )
-//     while ( Lahead[fi] < Lhoriz )
-    {
-      point pf = randomFacePosition(fi); ;
+      vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
       
-      scalar minL=edgeL[fi]/2.;
-
-      TurbulentStructure snew
-      (
-	ranGen_, 
-	pf, 
-	-Umean*( crTimes_[fi] - t ), 
-	Umean, 
-	L_[fi], minL,
-	fi,
-        R_[fi]
-      );
+  //     scalar Lalong=esa_[fi].Lalong(in_dir);
       
-      bool isFirstDummy=(lLalong_[fi]<0.0);
+      if (!uniformConvection_) Umean=Umean_[fi];
       
-      lLalong_[fi]=max(minL, snew.Lalong( patch().nf()()[fi] ));
-      
-      snew.randomize(ranGen_);
-      
-      if (isFirstDummy)
+      if ((Umean&in_dir) < SMALL)
       {
-	crTimes_[fi]=t;
+	Umean += in_dir*(-(Umean&in_dir)+SMALL);
+	nclip2++;
       }
-      else
-      {
       
-	if (!snew.noFluctuation())
+      scalar horiz = t + max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+  //     scalar Lhoriz = mag(Umean) * this->db().time().deltaT().value();
+
+	// if creation time is within the current time step then create structure now
+  //       if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
+      
+      while ( (horiz - crTimes_[fi]) > /*dt*/ 0.0 )
+  //     while ( Lahead[fi] < Lhoriz )
+      {
+	point pf = randomFacePosition(fi); ;
+	
+	scalar minL=edgeL[fi]/2.;
+
+	TurbulentStructure snew
+	(
+	  ranGen_, 
+	  pf, 
+	  -Umean*( crTimes_[fi] - t ), 
+	  Umean, 
+	  L_[fi], minL,
+	  fi,
+	  R_[fi]
+	);
+	
+	bool isFirstDummy=(lLalong_[fi]<0.0);
+	
+	lLalong_[fi]=max(minL, snew.Lalong( patch().nf()()[fi] ));
+	
+	snew.randomize(ranGen_);
+	
+	if (isFirstDummy)
 	{
-	  // append new structure to the end of the list
-	  vortons_.resize(vortons_.size()+1);
-	  vortons_[vortons_.size()-1]=snew;
-
-	  if (debug>=2) Info<<"."<<pf<<" "<<flush;
-	  n_generated++;
+	  crTimes_[fi]=t;
 	}
+	else
+	{
+	
+	  if (!snew.noFluctuation())
+	  {
+	    // append new structure to the end of the list
+	    vortons_.resize(vortons_.size()+1);
+	    vortons_[vortons_.size()-1]=snew;
+
+	    if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	    n_generated++;
+	  }
+	}
+	
+	scalar rnum=ranGen_();
+	scalar tau=snew.vol(minL)/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+	crTimes_[fi] += 2.0*rnum*tau/*(*tau_)[fi]*/;
+	
+	//Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
       }
       
-      scalar rnum=ranGen_();
-      scalar tau=snew.vol(minL)/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
-      crTimes_[fi] += 2.0*rnum*tau/*(*tau_)[fi]*/;
-      
-      //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
+      if (debug>=2) Info<<endl;
     }
-    
-    if (debug>=2) Info<<endl;
   }
   
 

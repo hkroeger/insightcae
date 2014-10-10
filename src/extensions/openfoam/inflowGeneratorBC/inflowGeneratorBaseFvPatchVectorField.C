@@ -314,7 +314,7 @@ void inflowGeneratorBaseFvPatchVectorField::setParameters(const vectorField& ume
 
 tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::edgeLengths(bool maxL) const
 {
-  tmp<scalarField> res(new scalarField(size(), maxL?0.0:1e10));
+  tmp<scalarField> res(new scalarField(size(), maxL?0.0:GREAT));
   scalarField& delta_edge = res();
   
   const polyPatch& ppatch = patch().patch();

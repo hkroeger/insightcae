@@ -36,7 +36,6 @@
 #include "feature.h"
 #include "occinclude.h"
 
-
 namespace insight 
 {
 namespace cad 
@@ -534,6 +533,8 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(greaterDouble) greater<double, double>;
 %template(equalDouble) equal<double, double>;
 #endif*/
+
+FilterPtr parseFilterExpr(const std::istream& stream);
 
 }
 }

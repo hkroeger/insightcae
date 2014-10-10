@@ -30,6 +30,29 @@
 
 #include "gp_Cylinder.hxx"
 
+#define BOOST_SPIRIT_USE_PHOENIX_V3
+
+#include "boost/filesystem.hpp"
+#include <boost/fusion/include/std_pair.hpp>
+#include "boost/tuple/tuple.hpp"
+#include "boost/fusion/tuple.hpp"
+#include <boost/fusion/adapted/boost_tuple.hpp>
+#include "boost/variant.hpp"
+#include "boost/ptr_container/ptr_map.hpp"
+#include "boost/ptr_container/ptr_vector.hpp"
+#include "boost/spirit/include/qi.hpp"
+#include "boost/variant/recursive_variant.hpp"
+#include "boost/spirit/repository/include/qi_confix.hpp"
+#include <boost/spirit/include/qi_eol.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/phoenix/function.hpp>
+#include <boost/phoenix/function/adapt_callable.hpp>
+#include <boost/spirit/include/qi_no_case.hpp>
+#include <boost/spirit/home/classic/utility/distinct.hpp>
+#include <boost/fusion/adapted.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma.hpp>
+
 using namespace std;
 using namespace boost;
 
@@ -269,6 +292,52 @@ bool secant<Edge>::checkMatch(FeatureID feature) const
   arma::mat v = Vector( BRep_Tool::Pnt(v0).XYZ() - BRep_Tool::Pnt(v1).XYZ() );
   
   return (1.0 - fabs(arma::dot( arma::normalise(v), arma::normalise(dir_) ))) < 1e-10;
+}
+
+
+namespace qi = boost::spirit::qi;
+namespace repo = boost::spirit::repository;
+namespace phx   = boost::phoenix;
+
+// template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+// struct FeatureFilterExprParser
+//   : qi::grammar<Iterator, Skipper>
+// {
+// 
+//     FilterPtr filter_;
+// 
+//     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
+//     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
+// 
+//     qi::rule<Iterator, Skipper> r_filter;
+// 
+// 
+//     FeatureFilterExprParser()
+//         : FeatureFilterExprParser::base_type(r_filter),
+//           filter_()
+//     {
+// 
+//         using namespace qi;
+//         using namespace phx;
+//         using namespace insight::cad;
+// 
+//         r_filter =  *( r_assignment | r_modelstep | r_loadmodel )
+//                     >> -( lit("@post")  >> *r_postproc);
+// 
+// 
+//         on_error<fail>(r_model,
+//                        phx::ref(std::cout)
+//                        << "Error! Expecting "
+//                        << qi::_4
+//                        << " here: '"
+//                        << phx::construct<std::string>(qi::_3, qi::_2)
+//                        << "'\n"
+//                       );
+//     }  
+//     
+// };
+FilterPtr parseFilterExpr(const std::istream& stream)
+{
 }
 
 }

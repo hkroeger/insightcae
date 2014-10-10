@@ -47,6 +47,7 @@ class SolidModel;
 class Sketch;
 class AND;
 class NOT;
+class OR;
 
 class Filter
 {
@@ -82,6 +83,20 @@ protected:
   FilterPtr f2_;
 public:
   AND(const Filter& f1, const Filter& f2);
+  virtual void initialize(const SolidModel& m);
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual FilterPtr clone() const;
+};
+
+class OR
+: public Filter
+{
+protected:
+  FilterPtr f1_;
+  FilterPtr f2_;
+public:
+  OR(const Filter& f1, const Filter& f2);
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const;
   

@@ -87,6 +87,7 @@ void Filter::initialize(const SolidModel& m)
   model_=&m;
 }
 
+
 AND::AND(const Filter& f1, const Filter& f2)
 : Filter(),
   f1_(f1.clone()), f2_(f2.clone())
@@ -108,6 +109,32 @@ FilterPtr AND::clone() const
 {
   return FilterPtr(new AND(*f1_, *f2_));
 }
+
+
+
+OR::OR(const Filter& f1, const Filter& f2)
+: Filter(),
+  f1_(f1.clone()), f2_(f2.clone())
+{
+}
+
+void OR::initialize(const SolidModel& m)
+{
+  f1_->initialize(m);
+  f2_->initialize(m);
+}
+
+bool OR::checkMatch(FeatureID feature) const
+{
+  return f1_->checkMatch(feature) || f2_->checkMatch(feature);
+}
+
+FilterPtr OR::clone() const
+{
+  return FilterPtr(new OR(*f1_, *f2_));
+}
+
+
 
 NOT::NOT(const Filter& f1)
 : Filter(),
@@ -299,45 +326,87 @@ namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
 
-// template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-// struct FeatureFilterExprParser
-//   : qi::grammar<Iterator, Skipper>
-// {
-// 
-//     FilterPtr filter_;
-// 
-//     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
-//     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
-// 
-//     qi::rule<Iterator, Skipper> r_filter;
-// 
-// 
-//     FeatureFilterExprParser()
-//         : FeatureFilterExprParser::base_type(r_filter),
-//           filter_()
-//     {
-// 
-//         using namespace qi;
-//         using namespace phx;
-//         using namespace insight::cad;
-// 
-//         r_filter =  *( r_assignment | r_modelstep | r_loadmodel )
-//                     >> -( lit("@post")  >> *r_postproc);
-// 
-// 
-//         on_error<fail>(r_model,
-//                        phx::ref(std::cout)
-//                        << "Error! Expecting "
-//                        << qi::_4
-//                        << " here: '"
-//                        << phx::construct<std::string>(qi::_3, qi::_2)
-//                        << "'\n"
-//                       );
-//     }  
-//     
-// };
-FilterPtr parseFilterExpr(const std::istream& stream)
+template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
+struct FeatureFilterExprParser
+  : qi::grammar<Iterator, FilterPtr()/*, Skipper*/>
 {
+
+
+    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter_primary, r_filter_and, r_filter_or;
+    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter;
+
+    FeatureFilterExprParser()
+        : FeatureFilterExprParser::base_type(r_filter)
+    {
+
+        using namespace qi;
+        using namespace phx;
+        using namespace insight::cad;
+
+        r_filter =  r_filter_or.alias();
+
+	r_filter_or = 
+	  ( r_filter_and >> "||" >> r_filter_and ) [ _val = phx::construct<FilterPtr>(new_<OR>(*_1, *_2)) ] 
+	  | r_filter_and [ _val = _1 ]
+	  ;
+	
+	r_filter_and =
+	  ( r_filter_primary >> "&&" >> r_filter_primary ) [ _val=phx::construct<FilterPtr>(new_<AND>(*_1, *_2)) ]
+	  | r_filter_primary [ _val = _1 ]
+	  ;
+	  
+	r_filter_primary =
+	  ( '(' >> r_filter >> ')' ) [_val=_1]
+	  | 
+	  ( '!' >> r_filter_primary ) [_val=phx::construct<FilterPtr>(new_<NOT>(*_1))]
+	  ;
+	  
+        on_error<fail>(r_filter,
+                       phx::ref(std::cout)
+                       << "Error! Expecting "
+                       << qi::_4
+                       << " here: '"
+                       << phx::construct<std::string>(qi::_3, qi::_2)
+                       << "'\n"
+                      );
+    }  
+    
+};
+
+
+FilterPtr parseFilterExpr(const std::istream& in)
+{
+  FeatureFilterExprParser<std::string::iterator> parser;
+//   skip_grammar<Iterator> skip;
+  
+  std::string contents_raw;
+  in.seekg(0, std::ios::end);
+  contents_raw.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents_raw[0], contents_raw.size());
+  
+  std::string::iterator first=contents_raw.begin();
+  std::string::iterator last=contents_raw.end();
+  
+  FilterPtr result;
+  bool r = qi::phrase_parse
+  (
+      first, 
+      last,
+      parser,
+      qi::space,
+      result
+  );
+  
+//   ModelStepsWriter writer;
+//   parser.model_.modelstepSymbols.for_each(writer);
+
+  if (first != last) // fail if we did not get a full match
+      return FilterPtr();
+  
+//   model = parser.model_;
+  
+  return result;
 }
 
 }

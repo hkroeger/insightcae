@@ -76,8 +76,10 @@
 #include "solidmodel.h"
 #include "datum.h"
 #include "sketch.h"
+#include "meshing.h"
 %}
 
 %include "solidmodel.h"
 %include "datum.h"
 %include "sketch.h"
+%include "meshing.h"

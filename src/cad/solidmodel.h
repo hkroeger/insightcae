@@ -76,15 +76,15 @@ public:
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const =0;
   
-  virtual Filter* clone() const =0;
+  virtual Filter::Ptr clone() const =0;
   
-  AND operator&&(const Filter& f2);
-  NOT operator!();
+  Filter::Ptr operator&&(const Filter& f2);
+  Filter::Ptr operator!();
 
 };
 
 
-inline Filter* new_clone(const Filter& f)
+inline Filter::Ptr new_clone(const Filter& f)
 {
   return f.clone();
 }
@@ -93,27 +93,27 @@ class AND
 : public Filter
 {
 protected:
-  boost::shared_ptr<Filter> f1_;
-  boost::shared_ptr<Filter> f2_;
+  Filter::Ptr f1_;
+  Filter::Ptr f2_;
 public:
   AND(const Filter& f1, const Filter& f2);
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 class NOT
 : public Filter
 {
 protected:
-  boost::shared_ptr<Filter> f1_;
+  Filter::Ptr f1_;
 public:
   NOT(const Filter& f1);
   virtual void initialize(const SolidModel& m);
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 // ANDFilter operator&&(const Filter& f1, const Filter& f2);
@@ -129,7 +129,7 @@ public:
   edgeTopology(GeomAbs_CurveType ct);
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 class faceTopology
@@ -142,7 +142,7 @@ public:
   faceTopology(GeomAbs_SurfaceType ct);
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 class cylFaceOrientation
@@ -158,7 +158,7 @@ public:
   cylFaceOrientation(bool io);
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 class everything
@@ -169,7 +169,7 @@ public:
   everything();
   virtual bool checkMatch(FeatureID feature) const;
   
-  virtual Filter* clone() const;
+  virtual Filter::Ptr clone() const;
 };
 
 enum EntityType { Edge, Face};
@@ -199,9 +199,9 @@ public:
     throw insight::Exception("coincident filter: not implemented!");
   }
 
-  Filter* clone() const
+  Filter::Ptr clone() const
   {
-    return new coincident(m_, f_);
+    return Filter::Ptr(new coincident(m_, f_));
   }
     
 };
@@ -230,9 +230,9 @@ public:
     throw insight::Exception("secant filter: not implemented!");
   }
 
-  Filter* clone() const
+  Filter::Ptr clone() const
   {
-    return new secant(dir_);
+    return Filter::Ptr(new secant(dir_));
   }
     
 };
@@ -243,6 +243,9 @@ template<> bool secant<Edge>::checkMatch(FeatureID feature) const;
 template<class T>
 class QuantityComputer
 {
+public:
+  typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
+  
 protected:
   const SolidModel* model_;
   
@@ -259,13 +262,23 @@ public:
     model_=&m;
   }
   virtual T evaluate(FeatureID) =0;  
-  virtual QuantityComputer* clone() const =0;
+  virtual QuantityComputer::Ptr clone() const =0;
+
+  typename QuantityComputer<T>::Ptr operator+(const typename QuantityComputer<T>::Ptr& other) const;
+  typename QuantityComputer<T>::Ptr operator+(const T& constant) const;
+  
+  Filter::Ptr operator==(const typename QuantityComputer<T>::Ptr& other) const;
+  Filter::Ptr operator==(const T& constant) const
+  {
+    cout<<"comopare"<<endl;
+    return Filter::Ptr();
+  }
 };
 
-#ifdef SWIG
-%template(doubleQuantityComputer) QuantityComputer<double>;
-%template(matQuantityComputer) QuantityComputer<arma::mat>;
-#endif
+// #ifdef SWIG
+// %template(doubleQuantityComputer) QuantityComputer<double>;
+// %template(matQuantityComputer) QuantityComputer<arma::mat>;
+// #endif
 
 template<class T>
 class constantQuantity
@@ -278,9 +291,16 @@ public:
   : refValue_(refValue)
   {}
   virtual T evaluate(FeatureID) { return refValue_; };
-  virtual QuantityComputer<T>* clone() const { return new constantQuantity<T>(refValue_); };
+  virtual typename QuantityComputer<T>::Ptr clone() const { return typename QuantityComputer<T>::Ptr(new constantQuantity<T>(refValue_)); };
+  
 };
 
+#ifdef SWIG
+%template(doubleConstantQuantity) constantQuantity<double>;
+%template(matConstantQuantity) constantQuantity<arma::mat>;
+#endif
+
+/*
 #define UNARY_FUNCTION_QTC(OPERATED_QTC_NAME, OPERATED_QTC_OP) \
 template<class T> \
 class OPERATED_QTC_NAME \
@@ -307,7 +327,7 @@ public:\
     return value;\
   }\
   \
-  virtual QuantityComputer<T>* clone() const { return new OPERATED_QTC_NAME(*qtc_); };\
+  virtual QuantityComputer<T>::Ptr clone() const { return QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
 };
 
 #define UNARY_FUNCTION_QTC_RET(OPERATED_QTC_NAME, OPERATED_QTC_OP, RETURN_T) \
@@ -336,7 +356,7 @@ public:\
     return rvalue;\
   }\
   \
-  virtual QuantityComputer<RETURN_T>* clone() const { return new OPERATED_QTC_NAME(*qtc_); };\
+  virtual QuantityComputer<RETURN_T>::Ptr clone() const { return QuantityComputer<RETURN_T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
 };
 
 #define BINARY_FUNCTION_QTC(OPERATED_QTC_NAME, OPERATED_QTC_OP, RESULT_T) \
@@ -368,7 +388,8 @@ public:\
     return value;\
   }\
   \
-  virtual QuantityComputer< typename RESULT_T<T1,T2>::type >* clone() const { return new OPERATED_QTC_NAME(*qtc1_, *qtc2_); };\
+  virtual QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr clone() const \
+   { return QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr(new OPERATED_QTC_NAME(*qtc1_, *qtc2_)); };\
 };
 
 #define BINARY_FUNCTION_QTC_OP(OPERATED_QTC_NAME, OPERATED_QTC_OP) \
@@ -419,7 +440,7 @@ BINARY_FUNCTION_QTC_OP(divided, operator/ );
 BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 BINARY_FUNCTION_QTC_OP(added, operator+ );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
-BINARY_FUNCTION_QTC_OP(subtracted, operator- );
+BINARY_FUNCTION_QTC_OP(subtracted, operator- );*/
 
 class edgeCoG
 : public QuantityComputer<arma::mat>
@@ -430,7 +451,7 @@ public:
   
   virtual arma::mat evaluate(FeatureID ei);
   
-  virtual QuantityComputer<arma::mat>* clone() const;
+  virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
 class faceNormal
@@ -442,7 +463,7 @@ public:
   
   virtual arma::mat evaluate(FeatureID fi);
   
-  virtual QuantityComputer<arma::mat>* clone() const;
+  virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
 class cylRadius
@@ -454,49 +475,50 @@ public:
   
   virtual double evaluate(FeatureID fi);
   
-  virtual QuantityComputer<double>* clone() const;
+  virtual QuantityComputer<double>::Ptr clone() const;
 };
 
-#define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
-template <class T1, class T2>\
-class RELATION_QTY_FILTER_NAME\
-: public Filter\
-{\
-protected:\
-  boost::shared_ptr<QuantityComputer<T1> > qtc1_;\
-  boost::shared_ptr<QuantityComputer<T2> > qtc2_;\
-  \
-public:\
-  RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\
-  : qtc1_(qtc1.clone()),\
-    qtc2_(qtc2.clone())\
-  {}\
-  \
-  virtual void initialize(const SolidModel& m)\
-  {\
-    Filter::initialize(m);\
-    qtc1_->initialize(m);\
-    qtc2_->initialize(m);\
-  }\
-  virtual bool checkMatch(FeatureID f) const\
-  {\
-    T1 value1 = qtc1_->evaluate(f);\
-    T2 value2 = qtc2_->evaluate(f);\
-    bool result = (RELATION_QTY_FILTER_OP);\
-    return result;\
-  }\
-  \
-  virtual Filter* clone() const\
-  {\
-    return new RELATION_QTY_FILTER_NAME(*qtc1_, *qtc2_);\
-  }\
-};
-
-RELATION_QTY_FILTER(greater, (value1>value2));
-RELATION_QTY_FILTER(greaterequal, (value1>=value2));
-RELATION_QTY_FILTER(less, (value1<value2));
-RELATION_QTY_FILTER(lessequal, (value1<=value2));
-RELATION_QTY_FILTER(equal, (value1==value2));
+// #define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
+// template <class T1, class T2>\
+// class RELATION_QTY_FILTER_NAME\
+// : public Filter\
+// {\
+// protected:\
+//   boost::shared_ptr<QuantityComputer<T1> > qtc1_;\
+//   boost::shared_ptr<QuantityComputer<T2> > qtc2_;\
+//   \
+// public:\
+//   RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\
+//   : qtc1_(qtc1.clone()),\
+//     qtc2_(qtc2.clone())\
+//   {}\
+//   \
+//   virtual void initialize(const SolidModel& m)\
+//   {\
+//     Filter::initialize(m);\
+//     qtc1_->initialize(m);\
+//     qtc2_->initialize(m);\
+//   }\
+//   virtual bool checkMatch(FeatureID f) const\
+//   {\
+//     T1 value1 = qtc1_->evaluate(f);\
+//     T2 value2 = qtc2_->evaluate(f);\
+//     bool result = (RELATION_QTY_FILTER_OP);\
+//     return result;\
+//   }\
+//   \
+//   virtual Filter* clone() const\
+//   {\
+//     return new RELATION_QTY_FILTER_NAME(*qtc1_, *qtc2_);\
+//   }\
+// };
+// 
+// RELATION_QTY_FILTER(greater, (value1>value2));
+// RELATION_QTY_FILTER(greaterequal, (value1>=value2));
+// RELATION_QTY_FILTER(less, (value1<value2));
+// RELATION_QTY_FILTER(lessequal, (value1<=value2));
+// RELATION_QTY_FILTER(equal, (value1==value2));
+/*
 
 #define RELATION_QTY_FILTER_OPERATOR(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
 template <class T1, class T2> \
@@ -521,6 +543,11 @@ RELATION_QTY_FILTER_OPERATOR(greaterequal, operator>= );
 RELATION_QTY_FILTER_OPERATOR(less, operator< );
 RELATION_QTY_FILTER_OPERATOR(lessequal, operator<= );
 RELATION_QTY_FILTER_OPERATOR(equal, operator== );
+
+#ifdef SWIG
+%template(greaterDouble) greater<double, double>;
+%template(equalDouble) equal<double, double>;
+#endif*/
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
@@ -583,9 +610,15 @@ public:
   FeatureSet allEdges() const;
   FeatureSet allFaces() const;
   
-  FeatureSet query_edges(const Filter& filter) const;
-  FeatureSet query_faces(const Filter& filter) const;
+  FeatureSet query_edges(const Filter::Ptr& filter) const;
+  FeatureSet query_faces(const Filter::Ptr& filter) const;
   
+  FeatureSet verticesOfEdge(const FeatureID& e) const;
+  FeatureSet verticesOfEdges(const FeatureSet& es) const;
+  
+  FeatureSet verticesOfFace(const FeatureID& f) const;
+  FeatureSet verticesOfFaces(const FeatureSet& fs) const;
+
   void saveAs(const boost::filesystem::path& filename) const;
   
   operator const TopoDS_Shape& () const;

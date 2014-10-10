@@ -143,8 +143,8 @@ struct ISCADParser
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(model_->vectorSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, _1, _2) ]
-	  |
+// 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, _1, _2) ]
+// 	  |
 	  ( r_identifier >> '='  >> r_datumExpression >> ';') [ phx::bind(model_->datumSymbols.add, _1, _2) ]
 	  ;
 	  
@@ -206,31 +206,31 @@ struct ISCADParser
 	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
 			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4, _5)) ]
-	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
-	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
+// 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+// 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
+// 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+// 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
 	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2, _3)) ]
 	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4, _5)) ]
 	 ;
 	 
-	r_edgeFeaturesExpression = 
-	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	     | (
-	     ( lit("edgesFrom") >> 
-		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
-	     )
-	  ;
-	  
-	r_edgeFilterExpression = 
-	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
-	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
-	 | ( lit("coincidentWith") >> r_edgeFeaturesExpression >> lit("from") >> r_solidmodel_expression ) 
-	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
-	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(_1)) ]
-	 ;
+// 	r_edgeFeaturesExpression = 
+// 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
+// 	     | (
+// 	     ( lit("edgesFrom") >> 
+// 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
+// 	     )
+// 	  ;
+// 	  
+// 	r_edgeFilterExpression = 
+// 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
+// 	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
+// 	 | ( lit("coincidentWith") >> r_edgeFeaturesExpression >> lit("from") >> r_solidmodel_expression ) 
+// 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
+// 	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(_1)) ]
+// 	 ;
 	 
 	r_datumExpression = 
 	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
@@ -335,8 +335,8 @@ struct ISCADParser
     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<Iterator, FeatureSet(), Skipper> r_edgeFeaturesExpression;
-    qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
+//     qi::rule<Iterator, FeatureSet(), Skipper> r_edgeFeaturesExpression;
+//     qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
     qi::rule<Iterator, datum(), Skipper> r_datumExpression;
     
     qi::rule<Iterator, Skipper> r_model;

@@ -50,7 +50,7 @@ FeatureSet queryEdges(const SolidModel& m, const Filter::Ptr& f)
 {
   using namespace std;
   using namespace insight::cad;
-  return m.query_edges(*f);
+  return m.query_edges(f);
 }
 
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)

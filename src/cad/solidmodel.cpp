@@ -81,9 +81,9 @@ bool AND::checkMatch(FeatureID feature) const
   return f1_->checkMatch(feature) && f2_->checkMatch(feature);
 }
 
-Filter* AND::clone() const
+Filter::Ptr AND::clone() const
 {
-  return new AND(*f1_, *f2_);
+  return Filter::Ptr(new AND(*f1_, *f2_));
 }
 
 NOT::NOT(const Filter& f1)
@@ -101,19 +101,19 @@ bool NOT::checkMatch(FeatureID feature) const
   return !f1_->checkMatch(feature);
 }
 
-Filter* NOT::clone() const
+Filter::Ptr NOT::clone() const
 {
-  return new NOT(*f1_);
+  return Filter::Ptr(new NOT(*f1_));
 }
 
-AND Filter::operator&&(const Filter& f2)
+Filter::Ptr Filter::operator&&(const Filter& f2)
 {
-  return AND(*this, f2);
+  return Filter::Ptr(new AND(*this, f2));
 }
 
-NOT Filter::operator!()
+Filter::Ptr Filter::operator!()
 {
-  return NOT(*this);
+  return Filter::Ptr(new NOT(*this));
 }
 
 // ANDFilter operator&&(const Filter& f1, const Filter& f2)
@@ -137,9 +137,9 @@ bool edgeTopology::checkMatch(FeatureID feature) const
   return model_->edgeType(feature) == ct_;
 }
 
-Filter* edgeTopology::clone() const
+Filter::Ptr edgeTopology::clone() const
 {
-  return new edgeTopology(ct_);
+  return Filter::Ptr(new edgeTopology(ct_));
 }
 
 faceTopology::faceTopology(GeomAbs_SurfaceType ct)
@@ -152,9 +152,9 @@ bool faceTopology::checkMatch(FeatureID feature) const
   return model_->faceType(feature) == ct_;
 }
 
-Filter* faceTopology::clone() const
+Filter::Ptr faceTopology::clone() const
 {
-  return new faceTopology(ct_);
+  return Filter::Ptr(new faceTopology(ct_));
 }
 
 cylFaceOrientation::cylFaceOrientation(bool io)
@@ -197,9 +197,9 @@ bool cylFaceOrientation::checkMatch(FeatureID feature) const
     return false;
 }
 
-Filter* cylFaceOrientation::clone() const
+Filter::Ptr cylFaceOrientation::clone() const
 {
-  return new cylFaceOrientation(io_);
+  return Filter::Ptr(new cylFaceOrientation(io_));
 }
 
 everything::everything()
@@ -210,9 +210,9 @@ bool everything::checkMatch(FeatureID feature) const
   return true;
 }
   
-Filter* everything::clone() const
+Filter::Ptr everything::clone() const
 {
-  return new everything();
+  return Filter::Ptr(new everything());
 }
 
 template<> coincident<Edge>::coincident(const SolidModel& m)
@@ -454,9 +454,9 @@ FeatureSet SolidModel::allFaces() const
   );
 }
 
-FeatureSet SolidModel::query_edges(const Filter& filter) const
+FeatureSet SolidModel::query_edges(const Filter::Ptr& f) const
 {
-  std::auto_ptr<Filter> f(filter.clone());
+//   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
   FeatureSet res;
@@ -467,9 +467,9 @@ FeatureSet SolidModel::query_edges(const Filter& filter) const
   return res;
 }
 
-FeatureSet SolidModel::query_faces(const Filter& filter) const
+FeatureSet SolidModel::query_faces(const Filter::Ptr& f) const
 {
-  std::auto_ptr<Filter> f(filter.clone());
+//   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
   FeatureSet res;
@@ -680,9 +680,9 @@ arma::mat edgeCoG::evaluate(FeatureID ei)
   return model_->edgeCoG(ei);
 }
   
-QuantityComputer<arma::mat>* edgeCoG::clone() const 
+QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const 
 {
-  return new edgeCoG();
+  return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
 }
 
 
@@ -697,9 +697,9 @@ arma::mat faceNormal::evaluate(FeatureID fi)
   return model_->faceNormal(fi);
 }
   
-QuantityComputer<arma::mat>* faceNormal::clone() const 
+QuantityComputer<arma::mat>::Ptr faceNormal::clone() const 
 {
-  return new faceNormal();
+  return QuantityComputer<arma::mat>::Ptr(new faceNormal());
 }
   
   
@@ -720,9 +720,9 @@ double cylRadius::evaluate(FeatureID fi)
   else return -1.0;
 }
   
-QuantityComputer<double>* cylRadius::clone() const 
+QuantityComputer<double>::Ptr cylRadius::clone() const 
 {
-  return new cylRadius();
+  return QuantityComputer<double>::Ptr(new cylRadius());
 }
 
 

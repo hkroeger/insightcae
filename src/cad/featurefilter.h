@@ -275,6 +275,9 @@ public:
   }
 };
 
+typedef QuantityComputer<double> scalarQuantityComputer;
+typedef QuantityComputer<arma::mat> matQuantityComputer;
+
 // #ifdef SWIG
 // %template(doubleQuantityComputer) QuantityComputer<double>;
 // %template(matQuantityComputer) QuantityComputer<arma::mat>;
@@ -300,7 +303,7 @@ public:
 %template(matConstantQuantity) constantQuantity<arma::mat>;
 #endif
 
-/*
+
 #define UNARY_FUNCTION_QTC(OPERATED_QTC_NAME, OPERATED_QTC_OP) \
 template<class T> \
 class OPERATED_QTC_NAME \
@@ -327,7 +330,7 @@ public:\
     return value;\
   }\
   \
-  virtual QuantityComputer<T>::Ptr clone() const { return QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
+  virtual typename QuantityComputer<T>::Ptr clone() const { return QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
 };
 
 #define UNARY_FUNCTION_QTC_RET(OPERATED_QTC_NAME, OPERATED_QTC_OP, RETURN_T) \
@@ -388,26 +391,26 @@ public:\
     return value;\
   }\
   \
-  virtual QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr clone() const \
-   { return QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr(new OPERATED_QTC_NAME(*qtc1_, *qtc2_)); };\
+  virtual typename QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr clone() const \
+   { return typename QuantityComputer< typename RESULT_T<T1,T2>::type >::Ptr(new OPERATED_QTC_NAME(*qtc1_, *qtc2_)); };\
 };
 
-#define BINARY_FUNCTION_QTC_OP(OPERATED_QTC_NAME, OPERATED_QTC_OP) \
-template<class T1, class T2> \
-OPERATED_QTC_NAME<T1,T2> OPERATED_QTC_OP(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2) \
-{ \
-  return OPERATED_QTC_NAME<T1,T2>::type >(qtc1, qtc2); \
-} \
-template<class T1, class T2> \
-OPERATED_QTC_NAME<typename boost::enable_if<boost::is_arithmetic<T1>, T1 >::type, T2> OPERATED_QTC_OP(const T1& qt1, const QuantityComputer<T2>& qtc2) \
-{ \
-  return OPERATED_QTC_NAME<T1, T2>(constantQuantity<T1>(qt1), qtc2); \
-} \
-template<class T1, class T2> \
-OPERATED_QTC_NAME<T1, typename boost::enable_if<boost::is_arithmetic<T2>, T2 >::type> OPERATED_QTC_OP(const QuantityComputer<T1>& qtc1, const T2& qt2) \
-{ \
-  return OPERATED_QTC_NAME<T1, T2>(qtc1, constantQuantity<T2>(qt2)); \
-}
+// #define BINARY_FUNCTION_QTC_OP(OPERATED_QTC_NAME, OPERATED_QTC_OP) \
+// template<class T1, class T2> \
+// OPERATED_QTC_NAME<T1,T2> OPERATED_QTC_OP(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2) \
+// { \
+//   return OPERATED_QTC_NAME<T1,T2>::type >(qtc1, qtc2); \
+// } \
+// template<class T1, class T2> \
+// OPERATED_QTC_NAME<typename boost::enable_if<boost::is_arithmetic<T1>, T1 >::type, T2> OPERATED_QTC_OP(const T1& qt1, const QuantityComputer<T2>& qtc2) \
+// { \
+//   return OPERATED_QTC_NAME<T1, T2>(constantQuantity<T1>(qt1), qtc2); \
+// } \
+// template<class T1, class T2> \
+// OPERATED_QTC_NAME<T1, typename boost::enable_if<boost::is_arithmetic<T2>, T2 >::type> OPERATED_QTC_OP(const QuantityComputer<T1>& qtc1, const T2& qt2) \
+// { \
+//   return OPERATED_QTC_NAME<T1, T2>(qtc1, constantQuantity<T2>(qt2)); \
+// }
 
 template<class T1, class T2> struct MultiplyResult {};
 template<> struct MultiplyResult<arma::mat, arma::mat> { typedef arma::mat type; };
@@ -429,18 +432,18 @@ template<> struct SubtractionResult<arma::mat, arma::mat> { typedef arma::mat ty
 template<> struct SubtractionResult<double, double> { typedef double type; };
 
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
-UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
 UNARY_FUNCTION_QTC(cos, (cos(value)) );
+UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 
 BINARY_FUNCTION_QTC(multiplied, (value1*value2), MultiplyResult );
-BINARY_FUNCTION_QTC_OP(multiplied, operator* );
+// BINARY_FUNCTION_QTC_OP(multiplied, operator* );
 BINARY_FUNCTION_QTC(divided, (value1/value2), DivisionResult );
-BINARY_FUNCTION_QTC_OP(divided, operator/ );
+// BINARY_FUNCTION_QTC_OP(divided, operator/ );
 BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
-BINARY_FUNCTION_QTC_OP(added, operator+ );
+// BINARY_FUNCTION_QTC_OP(added, operator+ );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
-BINARY_FUNCTION_QTC_OP(subtracted, operator- );*/
+// BINARY_FUNCTION_QTC_OP(subtracted, operator- );
 
 class edgeCoG
 : public QuantityComputer<arma::mat>
@@ -478,46 +481,86 @@ public:
   virtual QuantityComputer<double>::Ptr clone() const;
 };
 
-// #define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
-// template <class T1, class T2>\
-// class RELATION_QTY_FILTER_NAME\
-// : public Filter\
-// {\
-// protected:\
-//   boost::shared_ptr<QuantityComputer<T1> > qtc1_;\
-//   boost::shared_ptr<QuantityComputer<T2> > qtc2_;\
-//   \
-// public:\
-//   RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\
-//   : qtc1_(qtc1.clone()),\
-//     qtc2_(qtc2.clone())\
-//   {}\
-//   \
-//   virtual void initialize(const SolidModel& m)\
-//   {\
-//     Filter::initialize(m);\
-//     qtc1_->initialize(m);\
-//     qtc2_->initialize(m);\
-//   }\
-//   virtual bool checkMatch(FeatureID f) const\
-//   {\
-//     T1 value1 = qtc1_->evaluate(f);\
-//     T2 value2 = qtc2_->evaluate(f);\
-//     bool result = (RELATION_QTY_FILTER_OP);\
-//     return result;\
-//   }\
-//   \
-//   virtual Filter* clone() const\
-//   {\
-//     return new RELATION_QTY_FILTER_NAME(*qtc1_, *qtc2_);\
-//   }\
-// };
-// 
-// RELATION_QTY_FILTER(greater, (value1>value2));
-// RELATION_QTY_FILTER(greaterequal, (value1>=value2));
-// RELATION_QTY_FILTER(less, (value1<value2));
-// RELATION_QTY_FILTER(lessequal, (value1<=value2));
-// RELATION_QTY_FILTER(equal, (value1==value2));
+#define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
+template <class T1, class T2>\
+class RELATION_QTY_FILTER_NAME\
+: public Filter\
+{\
+protected:\
+  boost::shared_ptr<QuantityComputer<T1> > qtc1_;\
+  boost::shared_ptr<QuantityComputer<T2> > qtc2_;\
+  \
+public:\
+  RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\
+  : qtc1_(qtc1.clone()),\
+    qtc2_(qtc2.clone())\
+  {}\
+  \
+  virtual void initialize(const SolidModel& m)\
+  {\
+    Filter::initialize(m);\
+    qtc1_->initialize(m);\
+    qtc2_->initialize(m);\
+  }\
+  virtual bool checkMatch(FeatureID f) const\
+  {\
+    T1 value1 = qtc1_->evaluate(f);\
+    T2 value2 = qtc2_->evaluate(f);\
+    bool result = (RELATION_QTY_FILTER_OP);\
+    return result;\
+  }\
+  \
+  virtual FilterPtr clone() const\
+  {\
+    return FilterPtr(new RELATION_QTY_FILTER_NAME(*qtc1_, *qtc2_));\
+  }\
+};
+
+RELATION_QTY_FILTER(greater, (value1>value2));
+RELATION_QTY_FILTER(greaterequal, (value1>=value2));
+RELATION_QTY_FILTER(less, (value1<value2));
+RELATION_QTY_FILTER(lessequal, (value1<=value2));
+RELATION_QTY_FILTER(equal, (value1==value2));
+
+template <class T>
+class approximatelyEqual
+: public Filter
+{
+protected:
+  boost::shared_ptr<QuantityComputer<T> > qtc1_;
+  boost::shared_ptr<QuantityComputer<T> > qtc2_;
+  double tol_;
+  
+public:
+  approximatelyEqual(const QuantityComputer<T>& qtc1, const QuantityComputer<T>& qtc2, double tol)
+  : qtc1_(qtc1.clone()),
+    qtc2_(qtc2.clone()),
+    tol_(tol)
+  {}
+  
+  virtual void initialize(const SolidModel& m)
+  {
+    Filter::initialize(m);
+    qtc1_->initialize(m);
+    qtc2_->initialize(m);
+  }
+  
+  virtual bool checkMatch(FeatureID f) const
+  {
+    T value1 = qtc1_->evaluate(f);
+    T value2 = qtc2_->evaluate(f);
+    
+    T atol=tol_*value2;
+    bool result = ( fabs(value1-value2) < atol );
+    return result;
+  }
+  
+  virtual FilterPtr clone() const
+  {
+    return FilterPtr(new approximatelyEqual(*qtc1_, *qtc2_, tol_));
+  }
+};
+
 /*
 
 #define RELATION_QTY_FILTER_OPERATOR(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
@@ -549,7 +592,8 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
-FilterPtr parseFilterExpr(const std::istream& stream);
+FilterPtr parseEdgeFilterExpr(std::istream& stream);
+FilterPtr parseFaceFilterExpr(std::istream& stream);
 
 }
 }

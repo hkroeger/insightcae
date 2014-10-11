@@ -235,6 +235,13 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
   return res;
 }
 
+FeatureSet SolidModel::query_edges(const string& queryexpr) const
+{
+  std::istringstream is(queryexpr);
+  return query_edges(parseEdgeFilterExpr(is));
+}
+
+
 FeatureSet SolidModel::query_faces(const FilterPtr& f) const
 {
 //   Filter::Ptr f(filter.clone());
@@ -247,6 +254,13 @@ FeatureSet SolidModel::query_faces(const FilterPtr& f) const
   }
   return res;
 }
+
+FeatureSet SolidModel::query_faces(const string& queryexpr) const
+{
+  std::istringstream is(queryexpr);
+  return query_faces(parseFaceFilterExpr(is));
+}
+
 
 FeatureSet SolidModel::verticesOfEdge(const FeatureID& e) const
 {

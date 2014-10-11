@@ -109,7 +109,9 @@ public:
   FeatureSet allFaces() const;
   
   FeatureSet query_edges(const FilterPtr& filter) const;
+  FeatureSet query_edges(const std::string& queryexpr) const;
   FeatureSet query_faces(const FilterPtr& filter) const;
+  FeatureSet query_faces(const std::string& queryexpr) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;
   FeatureSet verticesOfEdges(const FeatureSet& es) const;

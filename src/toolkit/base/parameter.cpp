@@ -203,7 +203,11 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
       {
 	abspath = boost::filesystem::absolute(inputfilepath / abspath);
       }
+#if BOOST_VERSION < 104800
+#warning Conversion into canonical paths disabled!
+#else
       abspath=boost::filesystem::canonical(abspath);
+#endif
     }
     cout<<"path="<<abspath<<endl;
     value_=abspath;

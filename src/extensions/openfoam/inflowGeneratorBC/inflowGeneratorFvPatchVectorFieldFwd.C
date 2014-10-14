@@ -158,6 +158,30 @@ addToRunTimeSelectionTable
     patchMapper                                                         
 );
 
+
+typedef inflowGeneratorFvPatchVectorField<decayingTurbulenceVorton> inflowGeneratorFvPatchVectorFielddecayingTurbulenceVorton;
+defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFielddecayingTurbulenceVorton, "inflowGenerator<decayingTurbulenceVorton>", 0); 
+addToRunTimeSelectionTable                                          
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFielddecayingTurbulenceVorton,                        
+    patch                                                               
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFielddecayingTurbulenceVorton,                        
+    dictionary                                                          
+);                                                                      
+                                                                        
+addToRunTimeSelectionTable                                              
+(                                                                       
+    fvPatchVectorField,                                                 
+    inflowGeneratorFvPatchVectorFielddecayingTurbulenceVorton,                        
+    patchMapper                                                         
+);
+
 // typedef inflowGeneratorFvPatchVectorField<homogeneousTurbulenceVorton> inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton;
 // defineTemplateTypeNameAndDebugWithName(inflowGeneratorFvPatchVectorFieldhomogeneousTurbulenceVorton, "inflowGenerator<homogeneousTurbulenceVorton>", 0); 
 // addToRunTimeSelectionTable                                          

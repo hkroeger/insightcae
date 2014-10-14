@@ -114,7 +114,7 @@ vector decayingTurbulenceVorton::fluctuation(const StructureParameters& pa, cons
 
       return LundScaled
       (
-	f / ( 3.*M_PI )
+	f / sqrt( 1./(3.*M_PI) )
       );
     }
   else
@@ -190,8 +190,7 @@ Ostream& operator<<(Ostream& s, const decayingTurbulenceVorton& ht)
 Istream& operator>>(Istream& s, decayingTurbulenceVorton& ht)
 {
     s >> *static_cast<turbulentStructure*>(&ht);
-    vector eps(s);
-    ht.epsilon_=eps;
+    s >> ht.epsilon_;
     return s;
 }
 

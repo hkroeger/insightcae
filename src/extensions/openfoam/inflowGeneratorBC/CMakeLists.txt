@@ -37,8 +37,8 @@ add_subdirectory(turbulentStructures/turbulentStructure)
 add_subdirectory(turbulentStructures/hatSpot)
 add_subdirectory(turbulentStructures/gaussianSpot)
 add_subdirectory(turbulentStructures/decayingTurbulenceSpot)
+add_subdirectory(turbulentStructures/decayingTurbulenceVorton)
 add_subdirectory(turbulentStructures/anisotropicVorton)
 # add_subdirectory(turbulentStructures/homogeneousTurbulenceVorton)
 
 setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")
-

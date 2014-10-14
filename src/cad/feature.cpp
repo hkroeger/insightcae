@@ -18,51 +18,44 @@
  *
  */
 
-#ifndef INSIGHT_CAD_FEATURE_H
-#define INSIGHT_CAD_FEATURE_H
+#include "feature.h"
+#include "solidmodel.h"
 
-#include <set>
-#include <memory>
-#include "boost/concept_check.hpp"
-
-#include "base/linearalgebra.h"
-#include "occinclude.h"
-
-namespace boost
-{
-  
-template <>
-struct is_arithmetic<arma::mat> 
-: public true_type
-{
-};
-
-}
+using namespace std;
+using namespace boost;
 
 namespace insight 
 {
 namespace cad 
 {
-
-class SolidModel;
-
-typedef int FeatureID;
-
-class FeatureSet
-: public std::set<FeatureID>
+  
+FeatureSet::FeatureSet(const SolidModel& m, TopAbs_ShapeEnum shape)
+: model_(m),
+  shape_(shape)
 {
-  const SolidModel& model_;
-  TopAbs_ShapeEnum shape_;
-  
-public:
-  FeatureSet(const SolidModel& m, TopAbs_ShapeEnum shape);
-  
-  void safe_union(const FeatureSet& o);
-  
-  std::auto_ptr<FeatureSet> clone() const;
-};
-
-}
 }
 
-#endif
+void FeatureSet::safe_union(const FeatureSet& o)
+{
+  if (o.shape_!=shape_)
+    throw insight::Exception("incompatible shape type between feature sets!");
+  else if (!(o.model_==model_))
+    throw insight::Exception("feature sets belong to different models!");
+  else
+  {
+    insert(o.begin(), o.end());
+  }
+}
+
+
+std::auto_ptr<FeatureSet> FeatureSet::clone() const
+{
+  std::auto_ptr<FeatureSet> nfs(new FeatureSet(model_, shape_));
+  nfs->insert(begin(), end());
+  return nfs;
+}
+
+
+  
+}
+}

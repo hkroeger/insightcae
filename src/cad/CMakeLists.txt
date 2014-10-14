@@ -3,7 +3,7 @@ project(insightcad)
 find_package(OpenCasCade REQUIRED)
 find_package(OpenGL)
 
-set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp meshing.cpp featurefilter.cpp)
+set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp meshing.cpp featurefilter.cpp feature.cpp)
 
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})

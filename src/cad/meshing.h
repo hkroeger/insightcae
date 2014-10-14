@@ -21,6 +21,7 @@
 #ifndef INSIGHT_CAD_MESHING_H
 #define INSIGHT_CAD_MESHING_H
 
+#include "boost/ptr_container/ptr_map.hpp"
 #include "solidmodel.h"
 
 namespace insight {
@@ -29,7 +30,7 @@ namespace cad {
 class GmshCase
 {
 public:
-  typedef std::map<std::string, FeatureSet> NamedFeatureSet;
+  typedef boost::ptr_map<std::string, FeatureSet> NamedFeatureSet;
   
 private:
   const SolidModel& part_;

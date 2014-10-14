@@ -36,12 +36,28 @@ GmshCase::GmshCase(const insight::cad::SolidModel& part, double Lmax, double Lmi
 
 void GmshCase::nameEdges(const std::string& name, const FeatureSet& edges)
 {
-  namedEdges_[name].insert(edges.begin(), edges.end());
+  NamedFeatureSet::iterator i=namedEdges_.find(name);
+  if (i!=namedEdges_.end())
+  {
+    i->second->safe_union(edges);
+  }
+  else 
+  {
+    namedEdges_.insert(name, edges.clone()); // .insert(edges.begin(), edges.end());
+  }
 }
 
 void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
 {
-  namedFaces_[name].insert(faces.begin(), faces.end());
+  NamedFeatureSet::iterator i=namedFaces_.find(name);
+  if (i!=namedEdges_.end())
+  {
+    i->second->safe_union(faces);
+  }
+  else 
+  {
+    namedFaces_.insert(name, faces.clone());
+  }
 }
 
 void GmshCase::setEdgeLen(const std::string& en, double L)
@@ -49,7 +65,7 @@ void GmshCase::setEdgeLen(const std::string& en, double L)
   std::ostringstream oss;
   oss<<"Characteristic Length{";
   
-  const FeatureSet& fs = namedEdges_.find(en)->second;
+  const FeatureSet& fs = *(namedEdges_.find(en)->second);
   FeatureSet vs = part_.verticesOfEdges(fs);
   
   for (FeatureSet::const_iterator i=vs.begin(); i!=vs.end(); i++)
@@ -66,7 +82,7 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
   std::ostringstream oss;
   oss<<"Characteristic Length{";
   
-  const FeatureSet& fs = namedFaces_.find(fn)->second;
+  const FeatureSet& fs = *(namedFaces_.find(fn)->second);
   FeatureSet vs = part_.verticesOfFaces(fs);
   
   for (FeatureSet::const_iterator i=vs.begin(); i!=vs.end(); i++)
@@ -116,9 +132,9 @@ void GmshCase::doMeshing
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedEdges_)
   {
     f<<"Physical Line(\""<< ne.first <<"\") = {";
-    for (FeatureSet::const_iterator j=ne.second.begin(); j!=ne.second.end(); j++)
+    for (FeatureSet::const_iterator j=ne.second->begin(); j!=ne.second->end(); j++)
     {
-      if (j!=ne.second.begin()) f<<",";
+      if (j!=ne.second->begin()) f<<",";
       f<<*j;
     }
     f<<"};\n";
@@ -127,9 +143,9 @@ void GmshCase::doMeshing
   BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedFaces_)
   {
     f<<"Physical Surface(\""<< nf.first <<"\") = {";
-    for (FeatureSet::const_iterator j=nf.second.begin(); j!=nf.second.end(); j++)
+    for (FeatureSet::const_iterator j=nf.second->begin(); j!=nf.second->end(); j++)
     {
-      if (j!=nf.second.begin()) f<<",";
+      if (j!=nf.second->begin()) f<<",";
       f<<*j;
     }
     f<<"};\n";

@@ -82,6 +82,8 @@ public:
   inline void unsetLeaf() const { isleaf_=false; }
   
   SolidModel& operator=(const SolidModel& o);
+  
+  bool operator==(const SolidModel& o) const;
 
   void nameFeatures();
   

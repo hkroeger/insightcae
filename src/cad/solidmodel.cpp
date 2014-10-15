@@ -214,7 +214,7 @@ arma::mat SolidModel::faceNormal(FeatureID i) const
 
 FeatureSet SolidModel::allEdges() const
 {
-  FeatureSet f(*this, TopAbs_EDGE);
+  FeatureSet f(*this, Edge);
   f.insert(
     boost::counting_iterator<int>( 1 ), 
     boost::counting_iterator<int>( emap_.Extent()+1 ) 
@@ -224,7 +224,7 @@ FeatureSet SolidModel::allEdges() const
 
 FeatureSet SolidModel::allFaces() const
 {
-  FeatureSet f(*this, TopAbs_EDGE);
+  FeatureSet f(*this, Edge);
   f.insert(
     boost::counting_iterator<int>( 1 ), 
     boost::counting_iterator<int>( fmap_.Extent()+1 ) 
@@ -237,7 +237,7 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
 //   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
-  FeatureSet res(*this, TopAbs_EDGE);
+  FeatureSet res(*this, Edge);
   for (int i=1; i<=emap_.Extent(); i++)
   {
     if (f->checkMatch(i)) res.insert(i);
@@ -257,7 +257,7 @@ FeatureSet SolidModel::query_faces(const FilterPtr& f) const
 //   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
-  FeatureSet res(*this, TopAbs_FACE);
+  FeatureSet res(*this, Face);
   for (int i=1; i<=fmap_.Extent(); i++)
   {
     if (f->checkMatch(i)) res.insert(i);
@@ -274,7 +274,7 @@ FeatureSet SolidModel::query_faces(const string& queryexpr) const
 
 FeatureSet SolidModel::verticesOfEdge(const FeatureID& e) const
 {
-  FeatureSet vertices(*this, TopAbs_VERTEX);
+  FeatureSet vertices(*this, Vertex);
   vertices.insert(vmap_.FindIndex(TopExp::FirstVertex(edge(e))));
   vertices.insert(vmap_.FindIndex(TopExp::LastVertex(edge(e))));
   return vertices;
@@ -282,7 +282,7 @@ FeatureSet SolidModel::verticesOfEdge(const FeatureID& e) const
 
 FeatureSet SolidModel::verticesOfEdges(const FeatureSet& es) const
 {
-  FeatureSet vertices(*this, TopAbs_VERTEX);
+  FeatureSet vertices(*this, Vertex);
   BOOST_FOREACH(FeatureID i, es)
   {
     FeatureSet j=verticesOfEdge(i);
@@ -293,7 +293,7 @@ FeatureSet SolidModel::verticesOfEdges(const FeatureSet& es) const
 
 FeatureSet SolidModel::verticesOfFace(const FeatureID& f) const
 {
-  FeatureSet vertices(*this, TopAbs_VERTEX);
+  FeatureSet vertices(*this, Vertex);
   for (TopExp_Explorer ex(face(f), TopAbs_VERTEX); ex.More(); ex.Next())
   {
     vertices.insert(vmap_.FindIndex(TopoDS::Vertex(ex.Current())));
@@ -303,7 +303,7 @@ FeatureSet SolidModel::verticesOfFace(const FeatureID& f) const
 
 FeatureSet SolidModel::verticesOfFaces(const FeatureSet& fs) const
 {
-  FeatureSet vertices(*this, TopAbs_VERTEX);
+  FeatureSet vertices(*this, Vertex);
   BOOST_FOREACH(FeatureID i, fs)
   {
     FeatureSet j=verticesOfFace(i);

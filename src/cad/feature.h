@@ -24,6 +24,7 @@
 #include <set>
 #include <memory>
 #include "boost/concept_check.hpp"
+#include "boost/shared_ptr.hpp"
 
 #include "base/linearalgebra.h"
 #include "occinclude.h"
@@ -43,6 +44,10 @@ namespace insight
 {
 namespace cad 
 {
+  
+enum EntityType { Vertex, Edge, Face};
+
+
 
 class SolidModel;
 
@@ -52,15 +57,22 @@ class FeatureSet
 : public std::set<FeatureID>
 {
   const SolidModel& model_;
-  TopAbs_ShapeEnum shape_;
+  EntityType shape_;
   
 public:
-  FeatureSet(const SolidModel& m, TopAbs_ShapeEnum shape);
+  FeatureSet(const FeatureSet& o);
+  FeatureSet(const SolidModel& m, EntityType shape);
   
   void safe_union(const FeatureSet& o);
   
+  operator TopAbs_ShapeEnum () const;
+
+  inline const SolidModel& model() const { return model_; }
+  
   std::auto_ptr<FeatureSet> clone() const;
 };
+
+typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
 
 }
 }

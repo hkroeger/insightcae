@@ -24,6 +24,7 @@
 #include <base/exception.h>
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include "featurefilter.h"
 #include "solidmodel.h"
@@ -267,8 +268,7 @@ FilterPtr everything::clone() const
 }
 
 template<> coincident<Edge>::coincident(const SolidModel& m)
-: m_(m),
-  f_(m.allEdges())
+: f_(m.allEdges())
 {
 }
 
@@ -280,7 +280,7 @@ bool coincident<Edge>::checkMatch(FeatureID feature) const
   BOOST_FOREACH(int f, f_)
   {
     TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-    TopoDS_Edge e2=TopoDS::Edge(m_.edge(f));
+    TopoDS_Edge e2=TopoDS::Edge(f_.model().edge(f));
     match |= isPartOf(e2, e1);
   }
   
@@ -288,8 +288,7 @@ bool coincident<Edge>::checkMatch(FeatureID feature) const
 }
 
 template<> coincident<Face>::coincident(const SolidModel& m)
-: m_(m),
-  f_(m.allFaces())
+: f_(m.allFaces())
 {
 }
 
@@ -301,7 +300,7 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   BOOST_FOREACH(int f, f_)
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face e2=TopoDS::Face(m_.face(f));
+    TopoDS_Face e2=TopoDS::Face(f_.model().face(f));
     match |= isPartOf(e2, e1);
   }
   
@@ -330,6 +329,21 @@ namespace phx   = boost::phoenix;
 using namespace qi;
 using namespace phx;
 using namespace insight::cad;
+
+typedef std::vector<FeatureSet> FeatureSetList;
+
+FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
+{
+  if (id>=fl.size())
+    throw insight::Exception
+    (
+      "Feature set #"+lexical_cast<std::string>(id)
+     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+    );
+  
+  return FeatureSetPtr(new FeatureSet(fl.at(id)));
+}
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
   
 template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
 struct FeatureFilterExprParser
@@ -337,6 +351,8 @@ struct FeatureFilterExprParser
 {
 
 public:
+    qi::rule<Iterator, std::string()> r_identifier;
+    qi::rule<Iterator, FeatureSetPtr()> r_featureset;
     qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter_primary, r_filter_and, r_filter_or;
     qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter;
     qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_qty_comparison;
@@ -345,18 +361,18 @@ public:
     qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter_functions;
     qi::rule<Iterator, scalarQuantityComputer::Ptr()/*, Skipper*/> r_scalar_qty_functions;
     qi::rule<Iterator, matQuantityComputer::Ptr()/*, Skipper*/> r_mat_qty_functions;
+    
+    const FeatureSetList& externalFeatureSets_;
 
     FeatureFilterExprParser
     (
-      qi::rule<Iterator, FilterPtr()/*, Skipper*/> filter_functions,
-      qi::rule<Iterator, scalarQuantityComputer::Ptr()/*, Skipper*/> scalar_qty_functions,
-      qi::rule<Iterator, matQuantityComputer::Ptr()/*, Skipper*/> mat_qty_functions
+      const FeatureSetList& extsets
     )
     : FeatureFilterExprParser::base_type(r_filter),
-      r_filter_functions(filter_functions),
-      r_scalar_qty_functions(scalar_qty_functions),
-      r_mat_qty_functions(mat_qty_functions)
+      externalFeatureSets_(extsets)
     {
+	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+	r_featureset = lexeme[ '%' >> int_ ] [ phx::construct<FeatureSetPtr>(lookupFeatureSet_(externalFeatureSets_, _1)) ];
 
         r_filter =  r_filter_or.alias();
 
@@ -451,9 +467,10 @@ struct EdgeFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
 
-  EdgeFeatureFilterExprParser()
-  : FeatureFilterExprParser<Iterator>
-  (
+  EdgeFeatureFilterExprParser(const FeatureSetList& extsets)
+  : FeatureFilterExprParser<Iterator>(extsets)
+  {
+    FeatureFilterExprParser<Iterator>::r_filter_functions =
 	( lit("isLine") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Line)) ]
 	|
 	( lit("isCircle") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Circle)) ]
@@ -469,12 +486,10 @@ struct EdgeFeatureFilterExprParser
 	( lit("isBSplineCurve") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BSplineCurve)) ]
 	|
 	( lit("isOtherCurve") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_OtherCurve)) ]
-      ,
-      qi::rule<Iterator, scalarQuantityComputer::Ptr()/*, Skipper*/>()
-      ,
-      qi::rule<Iterator, matQuantityComputer::Ptr()/*, Skipper*/>()
-  )
-  {
+	|
+	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ _val = phx::construct<FilterPtr>(new_<coincidentEdge>(*_1)) ]
+	  ;
   }
 };
 
@@ -484,9 +499,10 @@ struct FaceFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
 
-  FaceFeatureFilterExprParser()
-  : FeatureFilterExprParser<Iterator>
-  (
+  FaceFeatureFilterExprParser(const FeatureSetList& extsets)
+  : FeatureFilterExprParser<Iterator>(extsets)
+  {
+    FeatureFilterExprParser<Iterator>::r_filter_functions = 
 	( lit("isPlane") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Plane)) ]
 	|
 	( lit("isCylinder") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cylinder)) ]
@@ -508,21 +524,14 @@ struct FaceFeatureFilterExprParser
 	( lit("isOffsetSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
 	|
 	( lit("isOtherSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
-      ,
-      (
-	( lit("cylRadius") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
-      )
-      ,
-      qi::rule<Iterator, matQuantityComputer::Ptr()/*, Skipper*/>()
-  )
-  {
+      ;
   }
 };
 
 template<class Parser>
-FilterPtr parseFilterExpr(std::istream& in)
+FilterPtr parseFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
 {
-  Parser parser;
+  Parser parser(refs);
 //   skip_grammar<Iterator> skip;
   
   std::string contents_raw;
@@ -558,14 +567,14 @@ FilterPtr parseFilterExpr(std::istream& in)
   return result;
 }
 
-FilterPtr parseEdgeFilterExpr(std::istream& in)
+FilterPtr parseEdgeFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
 {
-  return parseFilterExpr<EdgeFeatureFilterExprParser<std::string::iterator> >(in);
+  return parseFilterExpr<EdgeFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
-FilterPtr parseFaceFilterExpr(std::istream& in)
+FilterPtr parseFaceFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
 {
-  return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in);
+  return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
 }

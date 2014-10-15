@@ -24,6 +24,7 @@
 #include <set>
 #include <map>
 #include <vector>
+// #include <iostream>
 
 #include "boost/shared_ptr.hpp"
 #include "boost/concept_check.hpp"
@@ -172,26 +173,22 @@ public:
   virtual FilterPtr clone() const;
 };
 
-enum EntityType { Edge, Face};
-
 template<EntityType T>
 class coincident
 : public Filter
 {
 protected:
-  const SolidModel& m_;
   FeatureSet f_;
   
 public:
   coincident(const SolidModel& m)
-  : m_(m)
+  : f_(m, T)
   {
     throw insight::Exception("coincident filter: not implemented!");
   }
 
-  coincident(const SolidModel& m, FeatureSet f)
-  : m_(m),
-    f_(f)
+  coincident(FeatureSet f)
+  : f_(f)
   {}
 
   bool checkMatch(FeatureID feature) const
@@ -201,7 +198,7 @@ public:
 
   FilterPtr clone() const
   {
-    return FilterPtr(new coincident(m_, f_));
+    return FilterPtr(new coincident(f_));
   }
     
 };
@@ -211,6 +208,9 @@ template<> coincident<Edge>::coincident(const SolidModel& m);
 template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
 template<> coincident<Face>::coincident(const SolidModel& m);
 template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
+
+typedef coincident<Edge> coincidentEdge;
+typedef coincident<Face> coincidentFace;
 
 template<EntityType T>
 class secant
@@ -592,8 +592,8 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
-FilterPtr parseEdgeFilterExpr(std::istream& stream);
-FilterPtr parseFaceFilterExpr(std::istream& stream);
+FilterPtr parseEdgeFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>() );
+FilterPtr parseFaceFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>());
 
 }
 }

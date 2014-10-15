@@ -20,6 +20,7 @@
 
 #include "feature.h"
 #include "solidmodel.h"
+#include "boost/lexical_cast.hpp"
 
 using namespace std;
 using namespace boost;
@@ -29,11 +30,28 @@ namespace insight
 namespace cad 
 {
   
-FeatureSet::FeatureSet(const SolidModel& m, TopAbs_ShapeEnum shape)
+FeatureSet::FeatureSet(const FeatureSet& o)
+: model_(o.model_),
+  shape_(o.shape_)
+{
+  insert(o.begin(), o.end());
+}
+
+  
+FeatureSet::FeatureSet(const SolidModel& m, EntityType shape)
 : model_(m),
   shape_(shape)
 {
 }
+
+FeatureSet::operator TopAbs_ShapeEnum () const
+{
+  if (shape_==Edge) return TopAbs_EDGE;
+  else if (shape_==Face) return TopAbs_FACE;
+  else if (shape_==Vertex) return TopAbs_VERTEX;
+  else throw insight::Exception("Unknown EntityType:"+lexical_cast<std::string>(shape_));
+}
+
 
 void FeatureSet::safe_union(const FeatureSet& o)
 {

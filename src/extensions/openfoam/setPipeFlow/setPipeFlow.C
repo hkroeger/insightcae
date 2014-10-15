@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
+//     scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
     vector Ubulk(IStringStream(args.additionalArgs()[0])());
     point center(0, 0, 0);
 

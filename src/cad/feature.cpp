@@ -21,6 +21,7 @@
 #include "feature.h"
 #include "solidmodel.h"
 #include "boost/lexical_cast.hpp"
+#include "boost/foreach.hpp"
 
 using namespace std;
 using namespace boost;
@@ -71,6 +72,16 @@ std::auto_ptr<FeatureSet> FeatureSet::clone() const
   std::auto_ptr<FeatureSet> nfs(new FeatureSet(model_, shape_));
   nfs->insert(begin(), end());
   return nfs;
+}
+
+void FeatureSet::write() const
+{
+  std::cout<<'[';
+  BOOST_FOREACH(FeatureID i, *this)
+  {
+    std::cout<<" "<<i;
+  }
+  std::cout<<" ]"<<std::endl;
 }
 
 

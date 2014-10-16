@@ -345,22 +345,22 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
   
-template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
+template <typename Iterator, typename Skipper = qi::space_type >
 struct FeatureFilterExprParser
-: qi::grammar<Iterator, FilterPtr()/*, Skipper*/>
+: qi::grammar<Iterator, FilterPtr(), Skipper>
 {
 
 public:
-    qi::rule<Iterator, std::string()> r_identifier;
-    qi::rule<Iterator, FeatureSetPtr()> r_featureset;
-    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter_primary, r_filter_and, r_filter_or;
-    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter;
-    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_qty_comparison;
-    qi::rule<Iterator, scalarQuantityComputer::Ptr()/*, Skipper*/> r_scalar_qty_expression, r_scalar_primary, r_scalar_term;
+    qi::rule<Iterator, std::string(), Skipper> r_identifier;
+    qi::rule<Iterator, FeatureSetPtr(), Skipper> r_featureset;
+    qi::rule<Iterator, FilterPtr(), Skipper> r_filter_primary, r_filter_and, r_filter_or;
+    qi::rule<Iterator, FilterPtr(), Skipper> r_filter;
+    qi::rule<Iterator, FilterPtr(), Skipper> r_qty_comparison;
+    qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_expression, r_scalar_primary, r_scalar_term;
     
-    qi::rule<Iterator, FilterPtr()/*, Skipper*/> r_filter_functions;
-    qi::rule<Iterator, scalarQuantityComputer::Ptr()/*, Skipper*/> r_scalar_qty_functions;
-    qi::rule<Iterator, matQuantityComputer::Ptr()/*, Skipper*/> r_mat_qty_functions;
+    qi::rule<Iterator, FilterPtr(), Skipper> r_filter_functions;
+    qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_functions;
+    qi::rule<Iterator, matQuantityComputer::Ptr(), Skipper> r_mat_qty_functions;
     
     const FeatureSetList& externalFeatureSets_;
 
@@ -372,17 +372,17 @@ public:
       externalFeatureSets_(extsets)
     {
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-	r_featureset = lexeme[ '%' >> int_ ] [ phx::construct<FeatureSetPtr>(lookupFeatureSet_(externalFeatureSets_, _1)) ];
+	r_featureset = lexeme[ '%' >> int_ ] [ _val = phx::construct<FeatureSetPtr>(lookupFeatureSet_(externalFeatureSets_, _1)) ];
 
         r_filter =  r_filter_or.alias();
 
 	r_filter_or = 
-	  ( r_filter_and >> "||" >> r_filter_and ) [ _val = phx::construct<FilterPtr>(new_<OR>(*_1, *_2)) ] 
+	  ( r_filter_and >> lit("||") > r_filter_and ) [ _val = phx::construct<FilterPtr>(new_<OR>(*_1, *_2)) ] 
 	  | r_filter_and [ _val = _1 ]
 	  ;
 	
 	r_filter_and =
-	  ( r_filter_primary >> "&&" >> r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<AND>(*_1, *_2)) ]
+	  ( r_filter_primary >> lit("&&") > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<AND>(*_1, *_2)) ]
 	  | r_filter_primary [ _val = _1 ]
 	  ;
 	  
@@ -391,41 +391,41 @@ public:
 	  |
 	  ( r_qty_comparison ) [ _val = _1 ]
 	  |
-	  ( '(' >> r_filter >> ')' ) [ _val = _1 ]
+	  ( '(' > r_filter > ')' ) [ _val = _1 ]
 	  | 
-	  ( '!' >> r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<NOT>(*_1)) ]
+	  ( '!' > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<NOT>(*_1)) ]
 	  ;
 	  
 	r_qty_comparison = 
-	  ( r_scalar_qty_expression >> "==" >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<equal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit("==") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<equal<double, double> >(*_1, *_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> "~" >> r_scalar_qty_expression >> ( ( '{' >> double_ >> '}' ) | attr(1e-2) ) ) 
+	  ( r_scalar_qty_expression >> '~' >> r_scalar_qty_expression >> ( ( '{' >> double_ >> '}' ) | attr(1e-2) ) ) 
 	    [ _val = phx::construct<FilterPtr>(new_<approximatelyEqual<double> >(*_1, *_2, _3)) ]
 	  |
-	  ( r_scalar_qty_expression >> ">" >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greater<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> '>' >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greater<double, double> >(*_1, *_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> ">=" >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greaterequal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit(">=") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greaterequal<double, double> >(*_1, *_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> "<" >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<less<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> '<' >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<less<double, double> >(*_1, *_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> "<=" >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<lessequal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit("<=") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<lessequal<double, double> >(*_1, *_2)) ]
 	  ;
 	  
 	r_scalar_qty_expression =
+	  r_scalar_term [ _val = _1 ]
+	  |
 	  ( r_scalar_term >> '+' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*_1, *_2)) ]
 	  | 
 	  ( r_scalar_term >> '-' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*_1, *_2)) ]
-	  |
-	  r_scalar_term [ _val = _1 ]
 	  ;
 	
 	r_scalar_term =
 	(
+	  r_scalar_primary [ _val = _1 ]
+	  |
 	  ( r_scalar_primary >> '*' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*_1, *_2)) ]
 	  | 
 	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*_1, *_2)) ]
-	  |
-	  r_scalar_primary [ _val = _1 ]
 	) /*| (
 	  r_vector_primary >> '&' >> r_vector_primary
 	) [_val = dot_(_1, _2) ]*/
@@ -525,12 +525,17 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isOtherSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
       ;
+      
+      FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
+	( lit("cylRadius") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
+      ;
   }
 };
 
 template<class Parser>
 FilterPtr parseFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
 {
+try {
   Parser parser(refs);
 //   skip_grammar<Iterator> skip;
   
@@ -565,6 +570,13 @@ FilterPtr parseFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
 //   model = parser.model_;
   
   return result;
+}
+catch (insight::Exception e)
+{
+  std::cerr<<"Exception occurred: "<<e<<std::endl;
+  throw e;
+}
+
 }
 
 FilterPtr parseEdgeFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)

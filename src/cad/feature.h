@@ -48,7 +48,6 @@ namespace cad
 enum EntityType { Vertex, Edge, Face};
 
 
-
 class SolidModel;
 
 typedef int FeatureID;
@@ -70,6 +69,8 @@ public:
   inline const SolidModel& model() const { return model_; }
   
   std::auto_ptr<FeatureSet> clone() const;
+  
+  void write() const;
 };
 
 typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;

@@ -89,6 +89,10 @@ void Filter::initialize(const SolidModel& m)
   model_=&m;
 }
 
+void Filter::firstPass(FeatureID feature)
+{
+}
+
 
 AND::AND(const Filter& f1, const Filter& f2)
 : Filter(),
@@ -320,6 +324,42 @@ bool secant<Edge>::checkMatch(FeatureID feature) const
   
   return (1.0 - fabs(arma::dot( arma::normalise(v), arma::normalise(dir_) ))) < 1e-10;
 }
+
+
+
+maximal::maximal(const scalarQuantityComputer& qtc, int rank)
+: qtc_(qtc.clone()),
+  rank_(rank)
+{
+}
+
+void maximal::initialize(const SolidModel& m)
+{
+  Filter::initialize(m);
+  qtc_->initialize(m);
+}
+
+void maximal::firstPass(FeatureID feature)
+{
+  ranking_[qtc_->evaluate(feature)]=feature;
+}
+
+bool maximal::checkMatch(FeatureID feature) const
+{
+  int j=0;
+  for (std::map<double, FeatureID>::const_iterator i=ranking_.begin(); i!=ranking_.end(); i++)
+  {
+    if (i->second==feature) break;
+    j++;
+  }
+  return j == feature;
+}
+
+FilterPtr maximal::clone() const
+{
+  return FilterPtr(new maximal(*qtc_, rank_));
+}
+
 
 
 namespace qi = boost::spirit::qi;

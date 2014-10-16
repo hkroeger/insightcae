@@ -237,6 +237,10 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
 //   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
+  for (int i=1; i<=emap_.Extent(); i++)
+  {
+    f->firstPass(i);
+  }
   FeatureSet res(*this, Edge);
   for (int i=1; i<=emap_.Extent(); i++)
   {
@@ -257,6 +261,10 @@ FeatureSet SolidModel::query_faces(const FilterPtr& f) const
 //   Filter::Ptr f(filter.clone());
   
   f->initialize(*this);
+  for (int i=1; i<=fmap_.Extent(); i++)
+  {
+    f->firstPass(i);
+  }
   FeatureSet res(*this, Face);
   for (int i=1; i<=fmap_.Extent(); i++)
   {

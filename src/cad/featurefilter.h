@@ -60,6 +60,7 @@ public:
   virtual ~Filter();
   
   virtual void initialize(const SolidModel& m);
+  virtual void firstPass(FeatureID feature);
   virtual bool checkMatch(FeatureID feature) const =0;
   
   virtual boost::shared_ptr<Filter> clone() const =0;
@@ -161,6 +162,7 @@ public:
   
   virtual FilterPtr clone() const;
 };
+
 
 class everything
 : public Filter
@@ -559,6 +561,23 @@ public:
   {
     return FilterPtr(new approximatelyEqual(*qtc1_, *qtc2_, tol_));
   }
+};
+
+class maximal
+: public Filter
+{
+protected:
+  int rank_;
+  boost::shared_ptr<scalarQuantityComputer> qtc_;
+  std::map<double, FeatureID> ranking_;
+  
+public:
+  maximal(const scalarQuantityComputer& qtc, int rank=0);
+  virtual void firstPass(FeatureID feature);
+  virtual void initialize(const SolidModel& m);
+  virtual bool checkMatch(FeatureID feature) const;
+  
+  virtual FilterPtr clone() const;
 };
 
 /*

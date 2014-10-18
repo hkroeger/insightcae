@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -37,9 +37,9 @@
 #include "feature.h"
 #include "occinclude.h"
 
-namespace insight 
+namespace insight
 {
-namespace cad 
+namespace cad
 {
 
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
@@ -52,21 +52,21 @@ class OR;
 
 class Filter
 {
-  
+
 protected:
-  const SolidModel* model_;
+    const SolidModel* model_;
 public:
-  Filter();
-  virtual ~Filter();
-  
-  virtual void initialize(const SolidModel& m);
-  virtual void firstPass(FeatureID feature);
-  virtual bool checkMatch(FeatureID feature) const =0;
-  
-  virtual boost::shared_ptr<Filter> clone() const =0;
-  
-  boost::shared_ptr<Filter> operator&&(const Filter& f2);
-  boost::shared_ptr<Filter> operator!();
+    Filter();
+    virtual ~Filter();
+
+    virtual void initialize(const SolidModel& m);
+    virtual void firstPass(FeatureID feature);
+    virtual bool checkMatch(FeatureID feature) const =0;
+
+    virtual boost::shared_ptr<Filter> clone() const =0;
+
+    boost::shared_ptr<Filter> operator&&(const Filter& f2);
+    boost::shared_ptr<Filter> operator!();
 
 };
 
@@ -74,135 +74,135 @@ typedef boost::shared_ptr<Filter> FilterPtr;
 
 inline FilterPtr new_clone(const Filter& f)
 {
-  return f.clone();
+    return f.clone();
 }
 
 class AND
-: public Filter
+    : public Filter
 {
 protected:
-  FilterPtr f1_;
-  FilterPtr f2_;
+    FilterPtr f1_;
+    FilterPtr f2_;
 public:
-  AND(const Filter& f1, const Filter& f2);
-  virtual void initialize(const SolidModel& m);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    AND(const Filter& f1, const Filter& f2);
+    virtual void initialize(const SolidModel& m);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 class OR
-: public Filter
+    : public Filter
 {
 protected:
-  FilterPtr f1_;
-  FilterPtr f2_;
+    FilterPtr f1_;
+    FilterPtr f2_;
 public:
-  OR(const Filter& f1, const Filter& f2);
-  virtual void initialize(const SolidModel& m);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    OR(const Filter& f1, const Filter& f2);
+    virtual void initialize(const SolidModel& m);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 class NOT
-: public Filter
+    : public Filter
 {
 protected:
-  FilterPtr f1_;
+    FilterPtr f1_;
 public:
-  NOT(const Filter& f1);
-  virtual void initialize(const SolidModel& m);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    NOT(const Filter& f1);
+    virtual void initialize(const SolidModel& m);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 // ANDFilter operator&&(const Filter& f1, const Filter& f2);
 // NOTFilter operator!(const Filter& f1);
 
 class edgeTopology
-: public Filter
+    : public Filter
 {
 protected:
-  GeomAbs_CurveType ct_;
-  
+    GeomAbs_CurveType ct_;
+
 public:
-  edgeTopology(GeomAbs_CurveType ct);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    edgeTopology(GeomAbs_CurveType ct);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 class faceTopology
-: public Filter
+    : public Filter
 {
 protected:
-  GeomAbs_SurfaceType ct_;
-  
+    GeomAbs_SurfaceType ct_;
+
 public:
-  faceTopology(GeomAbs_SurfaceType ct);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    faceTopology(GeomAbs_SurfaceType ct);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 class cylFaceOrientation
-: public Filter
+    : public Filter
 {
 protected:
-  bool io_;
-  
+    bool io_;
+
 public:
-  /**
-   * @param io inside:true, outside: false
-   */
-  cylFaceOrientation(bool io);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    /**
+     * @param io inside:true, outside: false
+     */
+    cylFaceOrientation(bool io);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 
 class everything
-: public Filter
+    : public Filter
 {
-  
+
 public:
-  everything();
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    everything();
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
 template<EntityType T>
 class coincident
-: public Filter
+    : public Filter
 {
 protected:
-  FeatureSet f_;
-  
+    FeatureSet f_;
+
 public:
-  coincident(const SolidModel& m)
-  : f_(m, T)
-  {
-    throw insight::Exception("coincident filter: not implemented!");
-  }
+    coincident(const SolidModel& m)
+        : f_(m, T)
+    {
+        throw insight::Exception("coincident filter: not implemented!");
+    }
 
-  coincident(FeatureSet f)
-  : f_(f)
-  {}
+    coincident(FeatureSet f)
+        : f_(f)
+    {}
 
-  bool checkMatch(FeatureID feature) const
-  {
-    throw insight::Exception("coincident filter: not implemented!");
-  }
+    bool checkMatch(FeatureID feature) const
+    {
+        throw insight::Exception("coincident filter: not implemented!");
+    }
 
-  FilterPtr clone() const
-  {
-    return FilterPtr(new coincident(f_));
-  }
-    
+    FilterPtr clone() const
+    {
+        return FilterPtr(new coincident(f_));
+    }
+
 };
 
 
@@ -216,27 +216,27 @@ typedef coincident<Face> coincidentFace;
 
 template<EntityType T>
 class secant
-: public Filter
+    : public Filter
 {
 protected:
-  arma::mat dir_;
-  
+    arma::mat dir_;
+
 public:
-  secant(const arma::mat& dir)
-  : dir_(dir)
-  {
-  }
+    secant(const arma::mat& dir)
+        : dir_(dir)
+    {
+    }
 
-  bool checkMatch(FeatureID feature) const
-  {
-    throw insight::Exception("secant filter: not implemented!");
-  }
+    bool checkMatch(FeatureID feature) const
+    {
+        throw insight::Exception("secant filter: not implemented!");
+    }
 
-  FilterPtr clone() const
-  {
-    return FilterPtr(new secant(dir_));
-  }
-    
+    FilterPtr clone() const
+    {
+        return FilterPtr(new secant(dir_));
+    }
+
 };
 
 template<> bool secant<Edge>::checkMatch(FeatureID feature) const;
@@ -246,35 +246,41 @@ template<class T>
 class QuantityComputer
 {
 public:
-  typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
-  
-protected:
-  const SolidModel* model_;
-  
-public:
-  QuantityComputer()
-  : model_(NULL)
-  {}
-  
-  virtual ~QuantityComputer()
-  {}
-  
-  virtual void initialize(const SolidModel& m)
-  {
-    model_=&m;
-  }
-  virtual T evaluate(FeatureID) =0;  
-  virtual QuantityComputer::Ptr clone() const =0;
+    typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
 
-  typename QuantityComputer<T>::Ptr operator+(const typename QuantityComputer<T>::Ptr& other) const;
-  typename QuantityComputer<T>::Ptr operator+(const T& constant) const;
-  
-  FilterPtr operator==(const typename QuantityComputer<T>::Ptr& other) const;
-  FilterPtr operator==(const T& constant) const
-  {
-    cout<<"comopare"<<endl;
-    return FilterPtr();
-  }
+protected:
+    const SolidModel* model_;
+
+public:
+    QuantityComputer()
+        : model_(NULL)
+    {}
+
+    virtual ~QuantityComputer()
+    {}
+
+    virtual void initialize(const SolidModel& m)
+    {
+        model_=&m;
+    }
+
+    virtual bool isValidForFeature(FeatureID) const
+    {
+      return true;
+    }
+    
+    virtual T evaluate(FeatureID) =0;
+    virtual QuantityComputer::Ptr clone() const =0;
+
+    typename QuantityComputer<T>::Ptr operator+(const typename QuantityComputer<T>::Ptr& other) const;
+    typename QuantityComputer<T>::Ptr operator+(const T& constant) const;
+
+    FilterPtr operator==(const typename QuantityComputer<T>::Ptr& other) const;
+    FilterPtr operator==(const T& constant) const
+    {
+        cout<<"comopare"<<endl;
+        return FilterPtr();
+    }
 };
 
 typedef QuantityComputer<double> scalarQuantityComputer;
@@ -287,17 +293,21 @@ typedef QuantityComputer<arma::mat> matQuantityComputer;
 
 template<class T>
 class constantQuantity
-: public QuantityComputer<T>
+    : public QuantityComputer<T>
 {
 protected:
-  T refValue_;
+    T refValue_;
 public:
-  constantQuantity(const T& refValue)
-  : refValue_(refValue)
-  {}
-  virtual T evaluate(FeatureID) { return refValue_; };
-  virtual typename QuantityComputer<T>::Ptr clone() const { return typename QuantityComputer<T>::Ptr(new constantQuantity<T>(refValue_)); };
-  
+    constantQuantity(const T& refValue)
+        : refValue_(refValue)
+    {}
+    virtual T evaluate(FeatureID) {
+        return refValue_;
+    };
+    virtual typename QuantityComputer<T>::Ptr clone() const {
+        return typename QuantityComputer<T>::Ptr(new constantQuantity<T>(refValue_));
+    };
+
 };
 
 #ifdef SWIG
@@ -325,6 +335,9 @@ public:\
     QuantityComputer<T>::initialize(m);\
     qtc_->initialize(m);\
   }\
+  virtual bool isValidForFeature(FeatureID f) const \
+  { return qtc_->isValidForFeature(f); } \
+  \
   virtual T evaluate(FeatureID f)\
   {\
     T value = qtc_->evaluate(f);\
@@ -354,6 +367,9 @@ public:\
     QuantityComputer<RETURN_T>::initialize(m);\
     qtc_->initialize(m);\
   }\
+  virtual bool isValidForFeature(FeatureID f) const \
+  { return qtc_->isValidForFeature(f); } \
+  \
   virtual RETURN_T evaluate(FeatureID f)\
   {\
     T value = qtc_->evaluate(f);\
@@ -385,6 +401,9 @@ public:\
     qtc1_->initialize(m);\
     qtc2_->initialize(m);\
   }\
+  virtual bool isValidForFeature(FeatureID f) const \
+  { return qtc1_->isValidForFeature(f) && qtc2_->isValidForFeature(f); } \
+  \
   virtual typename RESULT_T<T1,T2>::type evaluate(FeatureID f)\
   {\
     T1 value1 = qtc1_->evaluate(f);\
@@ -415,23 +434,50 @@ public:\
 // }
 
 template<class T1, class T2> struct MultiplyResult {};
-template<> struct MultiplyResult<arma::mat, arma::mat> { typedef arma::mat type; };
-template<> struct MultiplyResult<double, arma::mat> { typedef arma::mat type; };
-template<> struct MultiplyResult<arma::mat, double> { typedef arma::mat type; };
-template<> struct MultiplyResult<double, double> { typedef double type; };
+template<> struct MultiplyResult<arma::mat, arma::mat> {
+    typedef arma::mat type;
+};
+template<> struct MultiplyResult<double, arma::mat> {
+    typedef arma::mat type;
+};
+template<> struct MultiplyResult<arma::mat, double> {
+    typedef arma::mat type;
+};
+template<> struct MultiplyResult<double, double> {
+    typedef double type;
+};
 
 template<class T1, class T2> struct DivisionResult {};
-template<> struct DivisionResult<arma::mat, arma::mat> { typedef arma::mat type; };
-template<> struct DivisionResult<arma::mat, double> { typedef arma::mat type; };
-template<> struct DivisionResult<double, double> { typedef double type; };
+template<> struct DivisionResult<arma::mat, arma::mat> {
+    typedef arma::mat type;
+};
+template<> struct DivisionResult<arma::mat, double> {
+    typedef arma::mat type;
+};
+template<> struct DivisionResult<double, double> {
+    typedef double type;
+};
 
 template<class T1, class T2> struct AdditionResult {};
-template<> struct AdditionResult<arma::mat, arma::mat> { typedef arma::mat type; };
-template<> struct AdditionResult<double, double> { typedef double type; };
+template<> struct AdditionResult<arma::mat, arma::mat> {
+    typedef arma::mat type;
+};
+template<> struct AdditionResult<double, double> {
+    typedef double type;
+};
 
 template<class T1, class T2> struct SubtractionResult {};
-template<> struct SubtractionResult<arma::mat, arma::mat> { typedef arma::mat type; };
-template<> struct SubtractionResult<double, double> { typedef double type; };
+template<> struct SubtractionResult<arma::mat, arma::mat> {
+    typedef arma::mat type;
+};
+template<> struct SubtractionResult<double, double> {
+    typedef double type;
+};
+
+template<class T1, class T2> struct DotResult {};
+template<> struct DotResult<arma::mat, arma::mat> {
+    typedef double type;
+};
 
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
@@ -446,41 +492,45 @@ BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 // BINARY_FUNCTION_QTC_OP(added, operator+ );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
+BINARY_FUNCTION_QTC(dotted, (dot(value1,value2)), DotResult );
+BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1)/norm(value2))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (abs(acos(dot(value1,value2)/norm(value1)/norm(value2)))), DotResult );
 
 class edgeCoG
-: public QuantityComputer<arma::mat>
+    : public QuantityComputer<arma::mat>
 {
 public:
-  edgeCoG();
-  ~edgeCoG();
-  
-  virtual arma::mat evaluate(FeatureID ei);
-  
-  virtual QuantityComputer<arma::mat>::Ptr clone() const;
+    edgeCoG();
+    virtual ~edgeCoG();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
-class faceNormal
+class faceNormalVector
 : public QuantityComputer<arma::mat>
 {
 public:
-  faceNormal();
-  ~faceNormal();
-  
-  virtual arma::mat evaluate(FeatureID fi);
-  
-  virtual QuantityComputer<arma::mat>::Ptr clone() const;
+    faceNormalVector();
+    virtual ~faceNormalVector();
+
+    virtual arma::mat evaluate(FeatureID fi);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
 class cylRadius
-: public QuantityComputer<double>
+    : public QuantityComputer<double>
 {
 public:
-  cylRadius();
-  ~cylRadius();
-  
-  virtual double evaluate(FeatureID fi);
-  
-  virtual QuantityComputer<double>::Ptr clone() const;
+    cylRadius();
+    virtual ~cylRadius();
+
+    virtual bool isValidForFeature(FeatureID) const;
+    virtual double evaluate(FeatureID fi);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
 };
 
 #define RELATION_QTY_FILTER(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \
@@ -526,60 +576,68 @@ RELATION_QTY_FILTER(equal, (value1==value2));
 
 template <class T>
 class approximatelyEqual
-: public Filter
+    : public Filter
 {
 protected:
-  boost::shared_ptr<QuantityComputer<T> > qtc1_;
-  boost::shared_ptr<QuantityComputer<T> > qtc2_;
-  double tol_;
-  
+    boost::shared_ptr<QuantityComputer<T> > qtc1_;
+    boost::shared_ptr<QuantityComputer<T> > qtc2_;
+    double tol_;
+
 public:
-  approximatelyEqual(const QuantityComputer<T>& qtc1, const QuantityComputer<T>& qtc2, double tol)
-  : qtc1_(qtc1.clone()),
-    qtc2_(qtc2.clone()),
-    tol_(tol)
-  {}
-  
-  virtual void initialize(const SolidModel& m)
-  {
-    Filter::initialize(m);
-    qtc1_->initialize(m);
-    qtc2_->initialize(m);
-  }
-  
-  virtual bool checkMatch(FeatureID f) const
-  {
-    T value1 = qtc1_->evaluate(f);
-    T value2 = qtc2_->evaluate(f);
-    
-    T atol=tol_*value2;
-    bool result = ( fabs(value1-value2) < atol );
-    return result;
-  }
-  
-  virtual FilterPtr clone() const
-  {
-    return FilterPtr(new approximatelyEqual(*qtc1_, *qtc2_, tol_));
-  }
+    approximatelyEqual(const QuantityComputer<T>& qtc1, const QuantityComputer<T>& qtc2, double tol)
+        : qtc1_(qtc1.clone()),
+          qtc2_(qtc2.clone()),
+          tol_(tol)
+    {}
+
+    virtual void initialize(const SolidModel& m)
+    {
+        Filter::initialize(m);
+        qtc1_->initialize(m);
+        qtc2_->initialize(m);
+    }
+
+    virtual bool checkMatch(FeatureID f) const
+    {
+        T value1 = qtc1_->evaluate(f);
+        T value2 = qtc2_->evaluate(f);
+
+        T atol=tol_*value2;
+        bool result = ( fabs(value1-value2) < atol );
+        return result;
+    }
+
+    virtual FilterPtr clone() const
+    {
+        return FilterPtr(new approximatelyEqual(*qtc1_, *qtc2_, tol_));
+    }
 };
 
 class maximal
-: public Filter
+    : public Filter
 {
 protected:
-  int rank_;
-  boost::shared_ptr<scalarQuantityComputer> qtc_;
-  std::map<double, FeatureID> ranking_;
-  
+    int rank_;
+    boost::shared_ptr<scalarQuantityComputer> qtc_;
+    std::map<double, std::set<FeatureID> > ranking_;
+
 public:
-  maximal(const scalarQuantityComputer& qtc, int rank=0);
-  virtual void firstPass(FeatureID feature);
-  virtual void initialize(const SolidModel& m);
-  virtual bool checkMatch(FeatureID feature) const;
-  
-  virtual FilterPtr clone() const;
+    maximal(const scalarQuantityComputer& qtc, int rank=0);
+    virtual void firstPass(FeatureID feature);
+    virtual void initialize(const SolidModel& m);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
 };
 
+class minimal
+    : public maximal
+{
+public:
+    minimal(const scalarQuantityComputer& qtc, int rank=0);
+    virtual void firstPass(FeatureID feature);
+    virtual FilterPtr clone() const;
+};
 /*
 
 #define RELATION_QTY_FILTER_OPERATOR(RELATION_QTY_FILTER_NAME, RELATION_QTY_FILTER_OP) \

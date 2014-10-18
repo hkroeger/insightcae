@@ -469,62 +469,6 @@ SolidModel::View SolidModel::createView
   
 }
 
-edgeCoG::edgeCoG() 
-{}
-
-edgeCoG::~edgeCoG()
-{}
-  
-arma::mat edgeCoG::evaluate(FeatureID ei)
-{
-  return model_->edgeCoG(ei);
-}
-  
-QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const 
-{
-  return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
-}
-
-
-faceNormal::faceNormal() 
-{}
-
-faceNormal::~faceNormal()
-{}
-  
-arma::mat faceNormal::evaluate(FeatureID fi)
-{
-  return model_->faceNormal(fi);
-}
-  
-QuantityComputer<arma::mat>::Ptr faceNormal::clone() const 
-{
-  return QuantityComputer<arma::mat>::Ptr(new faceNormal());
-}
-  
-  
-cylRadius::cylRadius() 
-{}
-
-cylRadius::~cylRadius()
-{}
-  
-double cylRadius::evaluate(FeatureID fi)
-{
-  if (model_->faceType(fi)==GeomAbs_Cylinder)
-  {
-      GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(fi)));
-      gp_Cylinder icyl=adapt.Cylinder();
-      return icyl.Radius();
-  }
-  else return -1.0;
-}
-  
-QuantityComputer<double>::Ptr cylRadius::clone() const 
-{
-  return QuantityComputer<double>::Ptr(new cylRadius());
-}
-
 
 void SolidModel::nameFeatures()
 {

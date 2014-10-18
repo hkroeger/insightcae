@@ -21,6 +21,7 @@
 #include "geotest.h"
 
 #include <memory>
+#include "base/linearalgebra.h"
 #include <base/exception.h>
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
@@ -271,6 +272,69 @@ FilterPtr everything::clone() const
   return FilterPtr(new everything());
 }
 
+
+edgeCoG::edgeCoG() 
+{}
+
+edgeCoG::~edgeCoG()
+{}
+  
+arma::mat edgeCoG::evaluate(FeatureID ei)
+{
+  return model_->edgeCoG(ei);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
+}
+
+
+faceNormalVector::faceNormalVector() 
+{}
+
+faceNormalVector::~faceNormalVector()
+{}
+  
+arma::mat faceNormalVector::evaluate(FeatureID fi)
+{
+  return model_->faceNormal(fi);
+}
+  
+QuantityComputer<arma::mat>::Ptr faceNormalVector::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new faceNormalVector());
+}
+  
+  
+cylRadius::cylRadius() 
+{}
+
+cylRadius::~cylRadius()
+{}
+
+bool cylRadius::isValidForFeature(FeatureID f) const
+{
+  return model_->faceType(f) == GeomAbs_Cylinder;
+}
+  
+double cylRadius::evaluate(FeatureID fi)
+{
+  if (model_->faceType(fi)==GeomAbs_Cylinder)
+  {
+      GeomAdaptor_Surface adapt(BRep_Tool::Surface(model_->face(fi)));
+      gp_Cylinder icyl=adapt.Cylinder();
+      return icyl.Radius();
+  }
+  else return -1.0;
+}
+  
+QuantityComputer<double>::Ptr cylRadius::clone() const 
+{
+  return QuantityComputer<double>::Ptr(new cylRadius());
+}
+
+
 template<> coincident<Edge>::coincident(const SolidModel& m)
 : f_(m.allEdges())
 {
@@ -341,18 +405,19 @@ void maximal::initialize(const SolidModel& m)
 
 void maximal::firstPass(FeatureID feature)
 {
-  ranking_[qtc_->evaluate(feature)]=feature;
+  if (qtc_->isValidForFeature(feature))
+    ranking_[-qtc_->evaluate(feature)].insert(feature);
 }
 
 bool maximal::checkMatch(FeatureID feature) const
 {
   int j=0;
-  for (std::map<double, FeatureID>::const_iterator i=ranking_.begin(); i!=ranking_.end(); i++)
+  for (std::map<double, std::set<FeatureID> >::const_iterator i=ranking_.begin(); i!=ranking_.end(); i++)
   {
-    if (i->second==feature) break;
+    if ((i->second.find(feature)!=i->second.end()) && (j==rank_)) return true;
     j++;
   }
-  return j == feature;
+  return false;
 }
 
 FilterPtr maximal::clone() const
@@ -360,6 +425,20 @@ FilterPtr maximal::clone() const
   return FilterPtr(new maximal(*qtc_, rank_));
 }
 
+minimal::minimal(const scalarQuantityComputer& qtc, int rank)
+: maximal(qtc, rank)
+{}
+
+void minimal::firstPass(FeatureID feature)
+{
+  if (qtc_->isValidForFeature(feature))
+    ranking_[qtc_->evaluate(feature)].insert(feature);
+}
+
+FilterPtr minimal::clone() const
+{
+  return FilterPtr(new minimal(*qtc_, rank_));
+}
 
 
 namespace qi = boost::spirit::qi;
@@ -384,7 +463,9 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
   return FeatureSetPtr(new FeatureSet(fl.at(id)));
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
-  
+
+BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec3_, vec3, 3);
+
 template <typename Iterator, typename Skipper = qi::space_type >
 struct FeatureFilterExprParser
 : qi::grammar<Iterator, FilterPtr(), Skipper>
@@ -397,6 +478,7 @@ public:
     qi::rule<Iterator, FilterPtr(), Skipper> r_filter;
     qi::rule<Iterator, FilterPtr(), Skipper> r_qty_comparison;
     qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_expression, r_scalar_primary, r_scalar_term;
+    qi::rule<Iterator, matQuantityComputer::Ptr(), Skipper> r_mat_qty_expression, r_mat_primary, r_mat_term;
     
     qi::rule<Iterator, FilterPtr(), Skipper> r_filter_functions;
     qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_functions;
@@ -429,6 +511,12 @@ public:
 	r_filter_primary =
 	  ( r_filter_functions ) [ _val = _1 ]
 	  |
+	  ( lit("maximal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
+	    [ _val = phx::construct<FilterPtr>(new_<maximal>(*_1, _2)) ]
+	  |
+	  ( lit("minimal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
+	    [ _val = phx::construct<FilterPtr>(new_<minimal>(*_1, _2)) ]
+	  |
 	  ( r_qty_comparison ) [ _val = _1 ]
 	  |
 	  ( '(' > r_filter > ')' ) [ _val = _1 ]
@@ -460,25 +548,63 @@ public:
 	  ;
 	
 	r_scalar_term =
-	(
 	  r_scalar_primary [ _val = _1 ]
 	  |
 	  ( r_scalar_primary >> '*' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*_1, *_2)) ]
 	  | 
 	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*_1, *_2)) ]
-	) /*| (
-	  r_vector_primary >> '&' >> r_vector_primary
-	) [_val = dot_(_1, _2) ]*/
+	  |
+	  ( r_mat_primary >> '&' >> r_mat_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*_1, *_2)) ]
 	  ;
 	  
 	r_scalar_primary =
 	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  |*/ double_ [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(_1)) ]
 	  | r_scalar_qty_functions [ _val = _1 ]
+	  | ( lit("angle") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
+	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*_1, *_2)) ]
+	  | ( lit("angleMag") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
+	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*_1, *_2)) ]
 	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ _val = _1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
 	  ;
 	  
+	r_mat_qty_expression =
+	  r_mat_term [ _val = _1 ]
+	  |
+	  ( r_mat_term >> '+' >> r_mat_term ) 
+	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<added<arma::mat,arma::mat> >(*_1, *_2)) ]
+	  | 
+	  ( r_mat_term >> '-' >> r_mat_term ) 
+	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<subtracted<arma::mat,arma::mat> >(*_1, *_2)) ]
+	  ;
+	
+	r_mat_term =
+	(
+	  r_mat_primary [ _val = _1 ]
+	  |
+	  ( r_mat_primary >> '*' >> r_mat_primary ) 
+	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<multiplied<arma::mat,arma::mat> >(*_1, *_2)) ]
+	  | 
+	  ( r_mat_primary >> '/' >> r_mat_primary ) 
+	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<divided<arma::mat,arma::mat> >(*_1, *_2)) ]
+	) /*| (
+	  r_vector_primary >> '&' >> r_vector_primary
+	) [_val = dot_(_1, _2) ]*/
+	  ;
+	  
+	r_mat_primary =
+	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	  |*/ 
+	  ( '[' >> double_ >> ',' >> double_ >> ',' >> double_ >> ']' ) 
+	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<constantQuantity<arma::mat> >(vec3_(_1,_2,_3))) ]
+	  | 
+	  r_mat_qty_functions [ _val = _1 ]
+	  | 
+	  ( '(' >> r_mat_qty_expression >> ')' ) [ _val = _1 ]
+// 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
+	  ;
+
       BOOST_SPIRIT_DEBUG_NODE(r_filter);
       BOOST_SPIRIT_DEBUG_NODE(r_filter_or);
       BOOST_SPIRIT_DEBUG_NODE(r_filter_and);
@@ -565,10 +691,15 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isOtherSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
       ;
-      
+
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
 	( lit("cylRadius") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
       ;
+      
+      FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+        ( lit("normal") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
+      ;
+    
   }
 };
 

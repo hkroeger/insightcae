@@ -66,6 +66,37 @@ void FeatureSet::safe_union(const FeatureSet& o)
   }
 }
 
+FeatureSet FeatureSet::query(const FilterPtr& f) const
+{
+  switch (shape_)
+  {
+    case Edge:
+      return model_.query_edges_subset(*this, f);
+      break;
+    case Face:
+      return model_.query_faces_subset(*this, f);
+      break;
+    default:
+      throw insight::Exception("Unknown feature type");
+  }
+}
+
+FeatureSet FeatureSet::query(const std::string& queryexpr) const
+{
+  std::istringstream is(queryexpr);
+  switch (shape_)
+  {
+    case Edge:
+      return model_.query_edges_subset(*this, parseEdgeFilterExpr(is));
+      break;
+    case Face:
+      return model_.query_faces_subset(*this, parseFaceFilterExpr(is));
+      break;
+    default:
+      throw insight::Exception("Unknown feature type");
+  }
+}
+
 
 std::auto_ptr<FeatureSet> FeatureSet::clone() const
 {

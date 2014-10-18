@@ -235,18 +235,7 @@ FeatureSet SolidModel::allFaces() const
 FeatureSet SolidModel::query_edges(const FilterPtr& f) const
 {
 //   Filter::Ptr f(filter.clone());
-  
-  f->initialize(*this);
-  for (int i=1; i<=emap_.Extent(); i++)
-  {
-    f->firstPass(i);
-  }
-  FeatureSet res(*this, Edge);
-  for (int i=1; i<=emap_.Extent(); i++)
-  {
-    if (f->checkMatch(i)) res.insert(i);
-  }
-  return res;
+  return query_edges_subset(allEdges(), f);
 }
 
 FeatureSet SolidModel::query_edges(const string& queryexpr) const
@@ -255,28 +244,51 @@ FeatureSet SolidModel::query_edges(const string& queryexpr) const
   return query_edges(parseEdgeFilterExpr(is));
 }
 
-
-FeatureSet SolidModel::query_faces(const FilterPtr& f) const
+FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr& f) const
 {
-//   Filter::Ptr f(filter.clone());
-  
   f->initialize(*this);
-  for (int i=1; i<=fmap_.Extent(); i++)
+  //for (int i=1; i<=emap_.Extent(); i++)
+  BOOST_FOREACH(int i, fs)
   {
     f->firstPass(i);
   }
-  FeatureSet res(*this, Face);
-  for (int i=1; i<=fmap_.Extent(); i++)
+  FeatureSet res(*this, Edge);
+  //for (int i=1; i<=emap_.Extent(); i++)
+  BOOST_FOREACH(int i, fs)
   {
     if (f->checkMatch(i)) res.insert(i);
   }
   return res;
 }
 
+
+FeatureSet SolidModel::query_faces(const FilterPtr& f) const
+{
+  return query_faces_subset(allFaces(), f);
+}
+
 FeatureSet SolidModel::query_faces(const string& queryexpr) const
 {
   std::istringstream is(queryexpr);
   return query_faces(parseFaceFilterExpr(is));
+}
+
+
+FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const FilterPtr& f) const
+{
+//   Filter::Ptr f(filter.clone());
+  
+  f->initialize(*this);
+  BOOST_FOREACH(int i, fs)
+  {
+    f->firstPass(i);
+  }
+  FeatureSet res(*this, Face);
+  BOOST_FOREACH(int i, fs)
+  {
+    if (f->checkMatch(i)) res.insert(i);
+  }
+  return res;
 }
 
 

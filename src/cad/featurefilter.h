@@ -42,7 +42,6 @@ namespace insight
 namespace cad
 {
 
-std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 
 class SolidModel;
 class Sketch;
@@ -50,27 +49,6 @@ class AND;
 class NOT;
 class OR;
 
-class Filter
-{
-
-protected:
-    const SolidModel* model_;
-public:
-    Filter();
-    virtual ~Filter();
-
-    virtual void initialize(const SolidModel& m);
-    virtual void firstPass(FeatureID feature);
-    virtual bool checkMatch(FeatureID feature) const =0;
-
-    virtual boost::shared_ptr<Filter> clone() const =0;
-
-    boost::shared_ptr<Filter> operator&&(const Filter& f2);
-    boost::shared_ptr<Filter> operator!();
-
-};
-
-typedef boost::shared_ptr<Filter> FilterPtr;
 
 inline FilterPtr new_clone(const Filter& f)
 {
@@ -483,6 +461,9 @@ UNARY_FUNCTION_QTC(transposed, (trans(value)) );
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
 UNARY_FUNCTION_QTC(cos, (cos(value)) );
 UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
+UNARY_FUNCTION_QTC_RET(compX, (value(0)), double);
+UNARY_FUNCTION_QTC_RET(compY, (value(1)), double);
+UNARY_FUNCTION_QTC_RET(compZ, (value(2)), double);
 
 BINARY_FUNCTION_QTC(multiplied, (value1*value2), MultiplyResult );
 // BINARY_FUNCTION_QTC_OP(multiplied, operator* );
@@ -502,6 +483,18 @@ class edgeCoG
 public:
     edgeCoG();
     virtual ~edgeCoG();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class faceCoG
+    : public QuantityComputer<arma::mat>
+{
+public:
+    faceCoG();
+    virtual ~faceCoG();
 
     virtual arma::mat evaluate(FeatureID ei);
 

@@ -52,6 +52,32 @@ class SolidModel;
 
 typedef int FeatureID;
 
+class Filter
+{
+
+protected:
+    const SolidModel* model_;
+public:
+    Filter();
+    virtual ~Filter();
+
+    virtual void initialize(const SolidModel& m);
+    virtual void firstPass(FeatureID feature);
+    virtual bool checkMatch(FeatureID feature) const =0;
+
+    virtual boost::shared_ptr<Filter> clone() const =0;
+
+    boost::shared_ptr<Filter> operator&&(const Filter& f2);
+    boost::shared_ptr<Filter> operator!();
+
+};
+
+typedef boost::shared_ptr<Filter> FilterPtr;
+
+class FeatureSet;
+
+std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
+
 class FeatureSet
 : public std::set<FeatureID>
 {
@@ -67,6 +93,9 @@ public:
   operator TopAbs_ShapeEnum () const;
 
   inline const SolidModel& model() const { return model_; }
+  
+  FeatureSet query(const FilterPtr& f) const;
+  FeatureSet query(const std::string& queryexpr) const;
   
   std::auto_ptr<FeatureSet> clone() const;
   

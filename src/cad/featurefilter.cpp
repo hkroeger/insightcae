@@ -289,6 +289,22 @@ QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const
   return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
 }
 
+faceCoG::faceCoG() 
+{}
+
+faceCoG::~faceCoG()
+{}
+  
+arma::mat faceCoG::evaluate(FeatureID ei)
+{
+  return model_->faceCoG(ei);
+}
+  
+QuantityComputer<arma::mat>::Ptr faceCoG::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new faceCoG());
+}
+
 
 faceNormalVector::faceNormalVector() 
 {}
@@ -567,6 +583,9 @@ public:
 	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*_1, *_2)) ]
 	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ _val = _1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
+	  | ( r_mat_primary >> '.' >> 'x' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compX<arma::mat> >(*_1)) ]
+	  | ( r_mat_primary >> '.' >> 'y' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compY<arma::mat> >(*_1)) ]
+	  | ( r_mat_primary >> '.' >> 'z' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compZ<arma::mat> >(*_1)) ]
 	  ;
 	  
 	r_mat_qty_expression =
@@ -698,6 +717,8 @@ struct FaceFeatureFilterExprParser
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
         ( lit("normal") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
+        |
+        ( lit("faceCoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
       ;
     
   }

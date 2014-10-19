@@ -577,6 +577,8 @@ public:
 	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  |*/ double_ [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(_1)) ]
 	  | r_scalar_qty_functions [ _val = _1 ]
+	  | ( lit("mag") >> '(' >> r_scalar_qty_expression >> ')' ) 
+	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*_1)) ]
 	  | ( lit("angle") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
 	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*_1, *_2)) ]
 	  | ( lit("angleMag") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
@@ -624,15 +626,15 @@ public:
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
 	  ;
 
-      BOOST_SPIRIT_DEBUG_NODE(r_filter);
-      BOOST_SPIRIT_DEBUG_NODE(r_filter_or);
-      BOOST_SPIRIT_DEBUG_NODE(r_filter_and);
-      BOOST_SPIRIT_DEBUG_NODE(r_filter_primary);
-      
-      BOOST_SPIRIT_DEBUG_NODE(r_qty_comparison);
-      BOOST_SPIRIT_DEBUG_NODE(r_scalar_qty_expression);
-      BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-      BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
+//       BOOST_SPIRIT_DEBUG_NODE(r_filter);
+//       BOOST_SPIRIT_DEBUG_NODE(r_filter_or);
+//       BOOST_SPIRIT_DEBUG_NODE(r_filter_and);
+//       BOOST_SPIRIT_DEBUG_NODE(r_filter_primary);
+//       
+//       BOOST_SPIRIT_DEBUG_NODE(r_qty_comparison);
+//       BOOST_SPIRIT_DEBUG_NODE(r_scalar_qty_expression);
+//       BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
+//       BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
 
       on_error<fail>(r_filter,
                        phx::ref(std::cout)

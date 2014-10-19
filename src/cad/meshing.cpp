@@ -50,7 +50,7 @@ void GmshCase::nameEdges(const std::string& name, const FeatureSet& edges)
 void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
 {
   NamedFeatureSet::iterator i=namedFaces_.find(name);
-  if (i!=namedEdges_.end())
+  if (i!=namedFaces_.end())
   {
     i->second->safe_union(faces);
   }

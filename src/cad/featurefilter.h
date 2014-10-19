@@ -460,6 +460,7 @@ template<> struct DotResult<arma::mat, arma::mat> {
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
 UNARY_FUNCTION_QTC(cos, (cos(value)) );
+UNARY_FUNCTION_QTC_RET(mag, (fabs(value)), double);
 UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 UNARY_FUNCTION_QTC_RET(compX, (value(0)), double);
 UNARY_FUNCTION_QTC_RET(compY, (value(1)), double);
@@ -475,7 +476,7 @@ BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
 BINARY_FUNCTION_QTC(dotted, (dot(value1,value2)), DotResult );
 BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1)/norm(value2))), DotResult );
-BINARY_FUNCTION_QTC(angleMag, (abs(acos(dot(value1,value2)/norm(value1)/norm(value2)))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (acos(abs(dot(value1,value2)/norm(value1)/norm(value2)))), DotResult );
 
 class edgeCoG
     : public QuantityComputer<arma::mat>

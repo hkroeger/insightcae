@@ -18,8 +18,7 @@
  *
  */
  
-%include <std_string.i>
-%include <std_vector.i>
+%include "common.i"
 
 %module(directors="1") toolkit
 

@@ -50,7 +50,7 @@ protected:
 public:
   declareType("ResultElement");
   
-  ResultElement(const ResultElementConstrP& par);
+  ResultElement(const ResultElement::ResultElementConstrP& par);
   virtual ~ResultElement();
   
   inline const std::string& shortDescription() const { return shortDescription_; }
@@ -73,7 +73,7 @@ protected:
   boost::filesystem::path imagePath_;
 public:
   declareType("Image");
-  Image(const ResultElementConstrP& par);
+  Image(const ResultElement::ResultElementConstrP& par);
   Image(const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
   
   inline const boost::filesystem::path& imagePath() const { return imagePath_; }
@@ -94,12 +94,12 @@ protected:
   
 public:
   
-  NumericalResult(const ResultElementConstrP& par)
+  NumericalResult(const ResultElement::ResultElementConstrP& par)
   : ResultElement(par)
   {}
 
   NumericalResult(const T& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit)
-  : ResultElement(ResultElementConstrP(shortDesc, longDesc, unit)),
+  : ResultElement(ResultElement::ResultElementConstrP(shortDesc, longDesc, unit)),
     value_(value)
   {}
   
@@ -117,7 +117,7 @@ protected:
 public:
   declareType("Comment");
   
-  Comment(const ResultElementConstrP& par);
+  Comment(const ResultElement::ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
   virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
@@ -129,7 +129,7 @@ class ScalarResult
 public:
   declareType("ScalarResult");
   
-  ScalarResult(const ResultElementConstrP& par);
+  ScalarResult(const ResultElement::ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
   virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
@@ -150,7 +150,7 @@ protected:
 public:
   declareType("TabularResult");
   
-  TabularResult(const ResultElementConstrP& par);
+  TabularResult(const ResultElement::ResultElementConstrP& par);
   
   TabularResult
   (
@@ -200,7 +200,7 @@ protected:
 public:
   declareType("AttributeTableResult");
   
-  AttributeTableResult(const ResultElementConstrP& par);
+  AttributeTableResult(const ResultElement::ResultElementConstrP& par);
   
   AttributeTableResult
   (

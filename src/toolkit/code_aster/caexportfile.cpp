@@ -34,6 +34,8 @@ CAExportFile::CAExportFile(const boost::filesystem::path& commFile, std::string 
   version_(version),
   commFile_(commFile)
 {
+  setMessFile("output.mess");
+  setRMedFile("results.med");
 }
 
 CAExportFile::~CAExportFile()

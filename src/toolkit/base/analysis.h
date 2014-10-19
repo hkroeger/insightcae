@@ -144,7 +144,7 @@ public:
   AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer=NULL);
   
   void operator()();
-  void cancel(); // { analysis_.cancel(); }
+//   void cancel(); // { analysis_.cancel(); }
 };
 
 class AnalysisLibraryLoader

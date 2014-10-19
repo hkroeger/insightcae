@@ -30,6 +30,7 @@
 #include "base/analysis.h"
 
 #include "code_aster/caexportfile.h"
+#include "code_aster/codeasterrun.h"
 %}
 
 // %feature("director") Analysis;
@@ -40,3 +41,4 @@
 %include "base/analysis.h"
 
 %include "code_aster/caexportfile.h"
+%include "code_aster/codeasterrun.h"

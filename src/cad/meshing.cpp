@@ -100,7 +100,11 @@ void GmshCase::doMeshing
   const boost::filesystem::path& outputMeshFile
 )
 {
-  boost::filesystem::path inputFile = boost::filesystem::unique_path("%%%%-%%%%-%%%%.geo");
+//   boost::filesystem::path inputFile = boost::filesystem::unique_path("%%%%-%%%%-%%%%.geo");
+  boost::filesystem::path tmpWorkDir = boost::filesystem::unique_path();
+  create_directories(tmpWorkDir);
+  boost::filesystem::path inputFile = tmpWorkDir / (outputMeshFile.stem().string() + ".geo");
+  boost::filesystem::path geomFile = tmpWorkDir / (outputMeshFile.stem().string() + ".brep");
   
   int otype=-1;
   std::string ext=outputMeshFile.extension().string();
@@ -119,10 +123,9 @@ void GmshCase::doMeshing
   //"Mesh.HighOrderOptimize = 5;\n"
   ;
   
-  boost::filesystem::path geomFile = boost::filesystem::unique_path("%%%%-%%%%-%%%%.brep");
   part_.saveAs(geomFile.string());
   
-  f<<"Merge \""<< geomFile.string() <<"\";\n";
+  f<<"Merge \""<< absolute(geomFile).string() <<"\";\n";
 
   BOOST_FOREACH(const std::string& o, options_)
   {
@@ -172,8 +175,9 @@ void GmshCase::doMeshing
   if (r)
     throw insight::Exception("Execution of gmsh failed!");
   
-  boost::filesystem::remove(inputFile);
-  boost::filesystem::remove(geomFile);
+//   boost::filesystem::remove(inputFile);
+//   boost::filesystem::remove(geomFile);
+  boost::filesystem::remove_all(tmpWorkDir);
   
 }
 

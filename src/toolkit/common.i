@@ -1,6 +1,7 @@
 %include <std_string.i>
 %include <std_vector.i>
 
+
 %typemap(typecheck) arma::mat& {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
@@ -15,6 +16,27 @@
         }
     }
     $1 = &vIn;
+}
+
+%typemap(out) arma::mat {
+    PyObject *o = PyList_New($1.n_rows);
+    for (int i=0; i<$1.n_rows; i++)
+    {
+      if ($1.n_cols==1)
+      {
+	PyList_SetItem(o, i, PyFloat_FromDouble($1(i)));
+      }
+      else
+      {
+	PyObject *o2=PyList_New($1.n_cols);
+	for (int j=0; j<$1.n_cols; j++)
+	{
+	PyList_SetItem(o2, j, PyFloat_FromDouble($1(i,j)));
+	}
+	PyList_SetItem(o, i, o2);
+      }
+    }
+    $result=o;
 }
 
 %typemap(typecheck) boost::filesystem::path& {

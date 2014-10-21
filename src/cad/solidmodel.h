@@ -124,6 +124,7 @@ public:
   FeatureSet verticesOfFaces(const FeatureSet& fs) const;
 
   void saveAs(const boost::filesystem::path& filename) const;
+  void exportSTL(const boost::filesystem::path& filename, double abstol) const;
   
   operator const TopoDS_Shape& () const;
   

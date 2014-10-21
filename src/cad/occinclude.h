@@ -105,6 +105,7 @@
 #include <ShapeFix_Edge.hxx>
 #include <ShapeFix_Face.hxx>
 #include <ShapeFix_Shape.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Wireframe.hxx>
 #include <BRepMesh.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>

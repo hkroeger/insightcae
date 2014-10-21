@@ -374,6 +374,22 @@ void SolidModel::saveAs(const boost::filesystem::path& filename) const
   }
 }
 
+void SolidModel::exportSTL(const boost::filesystem::path& filename, double abstol) const
+{
+  TopoDS_Shape os=shape_;
+  
+  ShapeFix_ShapeTolerance sf;
+  sf.SetTolerance(os, abstol);
+  
+  BRepMesh_IncrementalMesh binc(os, abstol);
+  
+  StlAPI_Writer stlwriter;
+
+  stlwriter.ASCIIMode() = false;
+  stlwriter.RelativeMode()=false;
+  stlwriter.SetDeflection(abstol);
+  stlwriter.Write(shape_, filename.c_str());
+}
 
 
 SolidModel::operator const TopoDS_Shape& () const 

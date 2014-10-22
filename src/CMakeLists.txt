@@ -5,6 +5,8 @@ OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
 OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
 OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
+OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit
+and related tools (requires SWIG)" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 

@@ -7,7 +7,7 @@
 }
 
 %typemap(in) arma::mat& (arma::mat vIn) {
-    int iLen = PySequence_Length($input); 
+    size_t iLen = PySequence_Length($input); 
     vIn.set_size(iLen);
     for(unsigned int i = 0; i < iLen; i++) {
         PyObject *o = PySequence_GetItem($input, i);
@@ -20,7 +20,7 @@
 
 %typemap(out) arma::mat {
     PyObject *o = PyList_New($1.n_rows);
-    for (int i=0; i<$1.n_rows; i++)
+    for (unsigned int i=0; i<$1.n_rows; i++)
     {
       if ($1.n_cols==1)
       {
@@ -29,7 +29,7 @@
       else
       {
 	PyObject *o2=PyList_New($1.n_cols);
-	for (int j=0; j<$1.n_cols; j++)
+	for (unsigned int j=0; j<$1.n_cols; j++)
 	{
 	PyList_SetItem(o2, j, PyFloat_FromDouble($1(i,j)));
 	}

@@ -574,14 +574,14 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
       double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=3.*pow(uprime, 2)/2.;
+      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(k);
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
       double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=3.*pow(uprime, 2)/2.;
+      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       double omega=sqrt(k)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(omega);

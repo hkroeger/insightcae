@@ -121,7 +121,7 @@ double evalPolynomial(double x, const arma::mat& coeffs)
   double y=0;
   for (int k=0; k<coeffs.n_elem; k++)
   {
-    int p=coeffs.n_elem-k;
+    int p=coeffs.n_elem-k-1;
     y+=coeffs(k)*pow(x,p);
   }
   return y;

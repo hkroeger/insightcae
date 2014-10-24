@@ -104,7 +104,11 @@ try:
             disp.LookupTable.VectorMode="Component"
         disp.Representation = 'Surface'
         disp.ColorArrayName=arrayName
-        disp.ColorAttributeType=arrayType
+        try:
+         disp.ColorAttributeType=arrayType
+        except:
+         # ceases to exists from paraview 4.2 onwards
+         pass
            
         t=title
         if title is None:

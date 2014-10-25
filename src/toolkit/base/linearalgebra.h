@@ -152,7 +152,7 @@ arma::mat sortedByCol(const arma::mat&m, int c);
  */
 class Interpolator
 {
-  arma::mat first, last;
+  arma::mat xy_, first, last;
   gsl_interp_accel *acc;
   std::vector<gsl_spline*> spline ;
   
@@ -179,6 +179,8 @@ public:
    * and return matrix with x as first column
    */
   arma::mat xy(const arma::mat& x) const;
+  
+  inline const arma::mat& rawdata() const { return xy_; }
 };
 
 }

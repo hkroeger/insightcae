@@ -327,6 +327,7 @@ Interpolator::Interpolator(const arma::mat& xy_us)
   {
     //uvec indices = sort_index(xy_us.col(0));
     arma::mat xy = sortedByCol(xy_us, 0);
+    xy_=xy;
   
     if (xy.n_cols<2)
       throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");

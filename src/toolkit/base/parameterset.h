@@ -147,6 +147,7 @@ public:
     inline double& getDouble(const std::string& name) { return this->get<DoubleParameter>(name)(); }
     inline bool& getBool(const std::string& name) { return this->get<BoolParameter>(name)(); }
     inline std::string& getString(const std::string& name) { return this->get<StringParameter>(name)(); }
+    inline arma::mat& getVector(const std::string& name) { return this->get<VectorParameter>(name)(); }
     inline boost::filesystem::path& getPath(const std::string& name) 
     { return this->get<PathParameter>(name)(); }
     ParameterSet& getSubset(const std::string& name);
@@ -155,6 +156,7 @@ public:
     inline const double& getDouble(const std::string& name) const { return this->get<DoubleParameter>(name)(); }
     inline const bool& getBool(const std::string& name) const { return this->get<BoolParameter>(name)(); }
     inline const std::string& getString(const std::string& name) const { return this->get<StringParameter>(name)(); }
+    inline const arma::mat& getVector(const std::string& name) const { return this->get<VectorParameter>(name)(); }
     inline const boost::filesystem::path& getPath(const std::string& name) const
     { return this->get<PathParameter>(name)(); }
     const ParameterSet& getSubset(const std::string& name) const;

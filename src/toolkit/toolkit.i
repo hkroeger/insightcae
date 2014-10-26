@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
- 
+
 %include "common.i"
 
 %module(directors="1") toolkit
@@ -31,6 +31,16 @@
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
+%}
+
+%typemap(out) int& getInt %{
+  $result = PyInt_FromLong(*$1);
+%}
+%typemap(out) bool& getBool %{
+  $result = PyBool_FromLong(*$1);
+%}
+%typemap(out) double& getDouble %{
+  $result = PyFloat_FromDouble(*$1);
 %}
 
 // %feature("director") Analysis;

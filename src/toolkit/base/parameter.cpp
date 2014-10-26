@@ -222,7 +222,7 @@ DirectoryParameter::DirectoryParameter(const std::string& description)
 : PathParameter(".", description)
 {}
 
-DirectoryParameter::DirectoryParameter(boost::filesystem::path value, const std::string& description)
+DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description)
 : PathParameter(value, description)
 {}
 
@@ -269,7 +269,7 @@ SelectionParameter::SelectionParameter( const std::string& description)
 {
 }
 
-SelectionParameter::SelectionParameter(int value, const SelectionParameter::ItemList& items, const std::string& description)
+SelectionParameter::SelectionParameter(const int& value, const SelectionParameter::ItemList& items, const std::string& description)
 : SimpleParameter< int , IntName>(value, description),
   items_(items)
 {

@@ -138,7 +138,7 @@ public:
   : Parameter(description)
   {}
 
-  SimpleParameter(T value, const std::string& description)
+  SimpleParameter(const T& value, const std::string& description)
   : Parameter(description),
     value_(value)
   {}
@@ -202,6 +202,15 @@ typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 
+#ifdef SWIG
+%template(DoubleParameter) SimpleParameter<double, DoubleName>;
+%template(IntParameter) SimpleParameter<int, IntName>;
+%template(BoolParameter) SimpleParameter<bool, BoolName>;
+%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
+%template(StringParameter) SimpleParameter<std::string, StringName>;
+%template(PathParameter) SimpleParameter<boost::filesystem::path, PathName>;
+#endif
+
 template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const;
 
@@ -216,7 +225,7 @@ public:
   declareType("directory");
   
   DirectoryParameter(const std::string& description);
-  DirectoryParameter(boost::filesystem::path value, const std::string& description);
+  DirectoryParameter(const boost::filesystem::path& value, const std::string& description);
   virtual std::string latexRepresentation() const;
   virtual Parameter* clone() const;
   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -239,7 +248,7 @@ public:
   declareType("selection");
   
   SelectionParameter(const std::string& description);
-  SelectionParameter(int value, const ItemList& items, const std::string& description);
+  SelectionParameter(const int& value, const ItemList& items, const std::string& description);
   SelectionParameter(const std::string& key, const ItemList& items, const std::string& description);
   virtual ~SelectionParameter();
   

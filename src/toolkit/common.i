@@ -1,6 +1,45 @@
 %include <std_string.i>
 %include <std_vector.i>
+%include <boost_shared_ptr.i>
 
+%typemap(typecheck) insight::ParameterSet::EntryList& 
+{
+    $1 = PySequence_Check($input) ? 1 : 0;
+}
+
+
+%typemap(in) insight::ParameterSet::EntryList& (insight::ParameterSet::EntryList vIn) 
+{
+    size_t iLen = PySequence_Length($input); 
+    vIn.clear();
+    for(unsigned int i = 0; i < iLen; i++) 
+    {
+        PyObject *o = PySequence_GetItem($input, i);
+        
+        std::string n;
+	insight::Parameter* p;
+	
+	n = PyString_AsString
+	(
+	  PyTuple_GetItem(o, 0)
+	);
+	int res1 = SWIG_ConvertPtr
+	( 
+	  PyTuple_GetItem(o, 1), 
+	  &p,
+	  SWIGTYPE_p_insight__Parameter, 1 
+	);
+	
+	std::cout<<"res="<<res1<<std::endl;
+	if (res1!=-1) //(!SWIG_IsOK(res1)) 
+	{
+	  std::cout<<n<<": OK"<<std::endl;
+	  vIn.push_back( insight::ParameterSet::SingleEntry(n, p->clone()) );
+	}
+    }
+    std::cout<<"size="<<vIn.size()<<std::endl;
+    $1 = &vIn;
+}
 
 %typemap(typecheck) arma::mat& {
     $1 = PySequence_Check($input) ? 1 : 0;
@@ -32,6 +71,27 @@
 	for (unsigned int j=0; j<$1.n_cols; j++)
 	{
 	PyList_SetItem(o2, j, PyFloat_FromDouble($1(i,j)));
+	}
+	PyList_SetItem(o, i, o2);
+      }
+    }
+    $result=o;
+}
+
+%typemap(out) arma::mat& {
+    PyObject *o = PyList_New($1->n_rows);
+    for (unsigned int i=0; i<$1->n_rows; i++)
+    {
+      if ($1->n_cols==1)
+      {
+	PyList_SetItem(o, i, PyFloat_FromDouble((*$1)(i)));
+      }
+      else
+      {
+	PyObject *o2=PyList_New($1->n_cols);
+	for (unsigned int j=0; j<$1->n_cols; j++)
+	{
+	PyList_SetItem(o2, j, PyFloat_FromDouble((*$1)(i,j)));
 	}
 	PyList_SetItem(o, i, o2);
       }

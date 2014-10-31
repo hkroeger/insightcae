@@ -75,6 +75,10 @@ ParameterSet ParameterStudy::defaultParameters() const
   return dfp;
 }
 
+void ParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+{
+  // reserved for derived classes
+}
 
 void ParameterStudy::generateInstances
 (
@@ -106,6 +110,7 @@ void ParameterStudy::generateInstances
     //append instance
     ResultSetPtr emptyresset( new ResultSet(*newp, name_, "Computation instance "+n.str()) );
     AnalysisPtr newinst(baseAnalysis_->clone());
+    modifyInstanceParameters(n.str(), newp);
     newinst->setParameters(*newp);
     path ep=executionPath()/n.str();
     newinst->setExecutionPath( ep );

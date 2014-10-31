@@ -71,6 +71,7 @@ public:
     const std::vector<std::string>* headers = NULL
   ) const;
   
+  virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
   virtual void setupQueue();
   virtual void processQueue(insight::ProgressDisplayer* displayer);
   virtual ResultSetPtr evaluateRuns();

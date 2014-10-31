@@ -87,7 +87,8 @@ public:
       const OpenFOAMAnalysis& baseAnalysis, 
       const RangeParameterList& varp
     );
-    
+
+    virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
 
     virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);

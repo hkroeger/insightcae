@@ -318,6 +318,23 @@ OpenFOAMParameterStudy::OpenFOAMParameterStudy
 {
 }
 
+void OpenFOAMParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+{
+  boost::filesystem::path oldmf = boost::filesystem::absolute(newp->get<PathParameter>("run/mapFrom")());
+  boost::filesystem::path newmf = "";
+  if (oldmf!="")
+  {
+    newmf = oldmf / subcase_name;
+    if (!boost::filesystem::exists(newmf)) 
+    {
+      insight::Warning("No matching subcase exists in "+oldmf.string()+" for mapping of subcase "+subcase_name+"! Omitting.");
+      newmf="";
+    }
+  }
+  newp->get<PathParameter>("run/mapFrom")() = newmf;
+}
+
+
 ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
 {
   // generate the mesh in the top level case first

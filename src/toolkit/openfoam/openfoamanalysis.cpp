@@ -320,10 +320,11 @@ OpenFOAMParameterStudy::OpenFOAMParameterStudy
 
 void OpenFOAMParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
 {
-  boost::filesystem::path oldmf = boost::filesystem::absolute(newp->get<PathParameter>("run/mapFrom")());
+  boost::filesystem::path oldmf = newp->get<PathParameter>("run/mapFrom")();
   boost::filesystem::path newmf = "";
   if (oldmf!="")
   {
+    oldmf=boost::filesystem::absolute(oldmf);
     newmf = oldmf / subcase_name;
     if (!boost::filesystem::exists(newmf)) 
     {

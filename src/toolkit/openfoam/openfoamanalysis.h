@@ -66,7 +66,9 @@ public:
      */
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
     
+    virtual void initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p);
+    virtual void finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
     
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
     

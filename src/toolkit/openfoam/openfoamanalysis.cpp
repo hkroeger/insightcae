@@ -170,24 +170,11 @@ void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm, const Paramete
 {
 }
 
-void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  SolverOutputAnalyzer analyzer(*displayer);
-  
-  string solverName;
   int np=readDecomposeParDict(executionPath());
-  
-  {
-    OFDictData::dict controlDict;
-    std::ifstream cdf( (executionPath()/"system"/"controlDict").c_str() );
-    readOpenFOAMDict(cdf, controlDict);
-    solverName=controlDict.getString("application");
-  }
-
-  
   bool is_parallel = np>1;
   
-  std::cout<<"Executing application "<<solverName<<std::endl;
   path mapFromPath=p.getPath("run/mapFrom");
   
   if ((cm.OFversion()>=230) && (mapFromPath!=""))
@@ -218,9 +205,33 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   {
     cout<<"case in "<<executionPath()<<": output timestep are already there, skipping initialization."<<endl;
   }
+}
+
+void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p)
+{
+  SolverOutputAnalyzer analyzer(*displayer);
+  
+  string solverName;
+  int np=readDecomposeParDict(executionPath());
+  
+  {
+    OFDictData::dict controlDict;
+    std::ifstream cdf( (executionPath()/"system"/"controlDict").c_str() );
+    readOpenFOAMDict(cdf, controlDict);
+    solverName=controlDict.getString("application");
+  }
+
+  
+  std::cout<<"Executing application "<<solverName<<std::endl;
   
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   
+}
+
+void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  int np=readDecomposeParDict(executionPath());
+  bool is_parallel = np>1;
   if (is_parallel)
   {
     cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
@@ -294,9 +305,12 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
     
   if (!p.getBool("run/evaluateonly"))
   {
+    initializeSolverRun(runCase, p);
     runSolver(displayer, runCase, p);
   }
   
+  finalizeSolverRun(runCase, p);
+
   return evaluateResults(runCase, p);
 }
 

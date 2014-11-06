@@ -94,6 +94,26 @@ Feature* Geometry::clone() const
   return new Geometry(p_);
 }
 
+PatchLayers::PatchLayers(const PatchLayers::Parameters& p)
+: p_(p)
+{
+}
+
+
+void PatchLayers::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict layerdict;
+  layerdict["nSurfaceLayers"]=p_.nLayers();
+  sHMDict.subDict("addLayersControls").subDict("layers")[p_.name()]=layerdict;
+}
+
+
+Feature* PatchLayers::clone() const
+{
+  return new PatchLayers(p_);
+}
+
+
 ExplicitFeatureCurve::ExplicitFeatureCurve( Parameters const& p )
 : p_(p)
 {

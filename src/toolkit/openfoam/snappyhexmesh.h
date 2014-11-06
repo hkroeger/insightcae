@@ -77,6 +77,28 @@ public:
   Feature* clone() const;
 };
 
+
+class PatchLayers
+: public Feature
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( name, std::string, "" )
+      ( nLayers, int, 2 )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  PatchLayers(Parameters const& p = Parameters() );
+  
+  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  
+  Feature* clone() const;
+};
+
+
 class ExplicitFeatureCurve
 : public Feature
 {

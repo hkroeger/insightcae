@@ -194,6 +194,15 @@ kOmegaSST2::kOmegaSST2
             0.09
         )
     ),
+    cc_
+    (
+      Switch::lookupOrAddToDict
+      (
+	  "curvatureCorrection",
+	  coeffDict_,
+	  false   // unvalidated yet, switch off by default
+      )
+    ),
     a1_
     (
         dimensioned<scalar>::lookupOrAddToDict
@@ -201,6 +210,33 @@ kOmegaSST2::kOmegaSST2
             "a1",
             coeffDict_,
             0.31
+        )
+    ),
+    cr1_ // this class and next two was added by me (model coefficients)
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "cr1",
+            coeffDict_,
+            1.0
+        )
+    ),
+    cr2_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "cr2",
+            coeffDict_,
+            2.0
+        )
+    ),
+    cr3_
+    (
+        dimensioned<scalar>::lookupOrAddToDict
+        (
+            "cr3",
+            coeffDict_,
+            1.0
         )
     ),
     c1_
@@ -384,6 +420,10 @@ bool kOmegaSST2::read()
         betaStar_.readIfPresent(coeffDict());
         a1_.readIfPresent(coeffDict());
         c1_.readIfPresent(coeffDict());
+	cc_.readIfPresent("curvatureCorrection", coeffDict());
+	cr1_.readIfPresent(coeffDict());
+	cr2_.readIfPresent(coeffDict());
+	cr3_.readIfPresent(coeffDict());
 
         return true;
     }
@@ -410,7 +450,8 @@ void kOmegaSST2::correct()
 
     volScalarField S2 = magSqr(symm(fvc::grad(U_)));
     volScalarField G("RASModel::G", nut_*2*S2);
-
+    
+    
     // Update omega and G at the wall
 	
     const fvPatchList& patches = mesh_.boundary();
@@ -438,6 +479,81 @@ void kOmegaSST2::correct()
 	
     omega_.boundaryField().updateCoeffs();
 
+    volScalarField Frot
+    (
+      IOobject
+      (
+	  "Frot",
+	  runTime_.timeName(),
+	  mesh_,
+	  IOobject::NO_READ,
+	  IOobject::AUTO_WRITE
+      ),
+      mesh_,
+      dimensionedScalar("", dimless, 1.0)
+    );
+    
+    if (cc_)
+    {
+      //CC>>>
+      //CC>>>>
+      tmp<volTensorField> tgradU = fvc::grad(U_);    
+      tmp<volTensorField> tSkew = skew(tgradU()); //Was added by me (antisymmetric part of the StressTensor)
+      tmp<volSymmTensorField> tSymm = symm(tgradU()); //Was added by me (symmetric part of the StressTensor)
+      volScalarField symInnerProduct = 2. * tSymm() && tSymm();
+      volScalarField asymInnerProduct = max(2. * tSkew() && tSkew(), dimensionedScalar("1e-16", dimensionSet(0, 0, -2, 0, 0), 1e-10) );
+      volScalarField rStar = sqrt(symInnerProduct/asymInnerProduct);
+      //CC<<<<
+      volScalarField D = sqrt(max(asymInnerProduct, 0.09*omega_*omega_)); //Possibly wrong. Don't know what Omega is used in equation
+      
+      tmp<volSymmTensorField> divS = 
+	  fvc::ddt(tSymm()) 
+	+ fvc::div(phi_, tSymm()); //Was added by me (Substantional Derivative of the StressTensor symmetric part)
+	
+      volScalarField rT = tSkew().component(0)*tSymm().component(0)*divS().component(0) +
+			      tSkew().component(0)*tSymm().component(1)*divS().component(1) +
+			      tSkew().component(0)*tSymm().component(2)*divS().component(2) +
+			      tSkew().component(3)*tSymm().component(0)*divS().component(3) +
+			      tSkew().component(3)*tSymm().component(1)*divS().component(4) +
+			      tSkew().component(3)*tSymm().component(2)*divS().component(5) +
+			      tSkew().component(6)*tSymm().component(0)*divS().component(6) +
+			      tSkew().component(6)*tSymm().component(1)*divS().component(7) +
+			      tSkew().component(6)*tSymm().component(2)*divS().component(8) +
+			      tSkew().component(1)*tSymm().component(3)*divS().component(0) +
+			      tSkew().component(1)*tSymm().component(4)*divS().component(1) +
+			      tSkew().component(1)*tSymm().component(5)*divS().component(2) +
+			      tSkew().component(4)*tSymm().component(3)*divS().component(3) +
+			      tSkew().component(4)*tSymm().component(4)*divS().component(4) +
+			      tSkew().component(4)*tSymm().component(5)*divS().component(5) +
+			      tSkew().component(7)*tSymm().component(3)*divS().component(6) +
+			      tSkew().component(7)*tSymm().component(4)*divS().component(7) +
+			      tSkew().component(7)*tSymm().component(5)*divS().component(8) +
+			      tSkew().component(2)*tSymm().component(6)*divS().component(0) +
+			      tSkew().component(2)*tSymm().component(7)*divS().component(1) +
+			      tSkew().component(2)*tSymm().component(8)*divS().component(2) +
+			      tSkew().component(7)*tSymm().component(6)*divS().component(3) +
+			      tSkew().component(7)*tSymm().component(7)*divS().component(4) +
+			      tSkew().component(7)*tSymm().component(8)*divS().component(5) +
+			      tSkew().component(8)*tSymm().component(6)*divS().component(6) +
+			      tSkew().component(8)*tSymm().component(7)*divS().component(7) +
+			      tSkew().component(8)*tSymm().component(8)*divS().component(8);
+      divS.clear();
+      tSkew.clear();
+      tSymm.clear();
+      volScalarField rTilda = 2. * rT/sqrt(asymInnerProduct)/D/D/D;
+      Frot=max(min((scalar(1) + cr1_)*2*rStar/(scalar(1)+rStar)*(scalar(1)-cr3_*atan(cr2_*rTilda))-cr1_, scalar(1.25)), scalar(0));
+      
+      if(runTime_.outputTime())
+      {
+	  Frot.write();
+      }
+      rStar.clear();
+      rTilda.clear();
+      rT.clear();
+      D.clear();
+    }
+    //CC<<<<<<
+    
     volScalarField CDkOmega =
         (2*alphaOmega2_)*(fvc::grad(k_) & fvc::grad(omega_))/omega_;
 
@@ -451,7 +567,7 @@ void kOmegaSST2::correct()
       + fvm::SuSp(-fvc::div(phi_), omega_)
       - fvm::laplacian(DomegaEff(F1), omega_)
      ==
-        gamma(F1)*G/max(nut_, nutSmall_)
+        Frot*gamma(F1)*G/max(nut_, nutSmall_)  // CC: Frot*
       - fvm::Sp(beta(F1)*omega_, omega_)
       - fvm::SuSp
         (
@@ -479,7 +595,7 @@ void kOmegaSST2::correct()
       + fvm::SuSp(-fvc::div(phi_), k_)
       - fvm::laplacian(DkEff(F1), k_)
      ==
-        min(G, c1_*betaStar_*k_*omega_)
+        Frot*min(G, c1_*betaStar_*k_*omega_) // CC:Frot
       - fvm::Sp(betaStar_*omega_, k_)
     );
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess
+import os, sys, subprocess, pprint, re
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -9,6 +9,9 @@ parser.add_option("-s", "--statefile", dest="statefile", metavar='FILE', default
 parser.add_option("-b", "--batch", dest="batch",
 		  action='store_true',
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-l", "--list", dest="list",
+		  action='store_true',
+                  help="list available state files and exit, search first in current dir then in insight shared dir")
 
 (opts, args) = parser.parse_args()
 
@@ -64,6 +67,16 @@ for curtime in times:
   return fn
         
 
+searchdirs=map(lambda d: os.path.join(d, 'paraview'), [os.environ['INSIGHT_USERSHAREDDIR']]+os.environ['INSIGHT_GLOBALSHAREDDIRS'].split())
+
+if opts.list:
+  avail=[]
+  for d in searchdirs+['.']:
+    if os.path.exists(d):
+      avail+=filter(re.compile("^.*\\.pvsm$").search, os.listdir(d))
+  pprint.pprint(avail)
+  sys.exit(0)
+
 statefile=None
 
 if (os.path.exists("default.pvsm")):
@@ -71,9 +84,8 @@ if (os.path.exists("default.pvsm")):
   
 if (opts.statefile!=""):
   if not os.path.exists(opts.statefile):
-    for d in [os.environ['INSIGHT_USERSHAREDDIR']]+os.environ['INSIGHT_GLOBALSHAREDDIRS'].split():
-      sf=os.path.join(d, 'paraview', os.path.splitext(opts.statefile)[0]+".pvsm")
-      print "check", sf
+    for d in searchdirs:
+      sf=os.path.join(d, os.path.splitext(opts.statefile)[0]+".pvsm")
       if os.path.exists(sf):
 	statefile=sf
 	break

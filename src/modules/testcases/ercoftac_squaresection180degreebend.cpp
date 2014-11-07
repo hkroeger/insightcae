@@ -20,10 +20,12 @@
 #include "ercoftac_squaresection180degreebend.h"
 
 #include "openfoam/numericscaseelements.h"
+#include "openfoam/boundaryconditioncaseelements.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
 
 #include "channel.h"
+#include "refdata.h"
 
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
@@ -78,17 +80,22 @@ insight::ParameterSet ERCOFTAC_SquareSection180DegreeBend::defaultParameters() c
       .convert_to_container<ParameterSet::EntryList>()
   );
   
-  return p;}
+  return p;
+  
+}
 
 void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData(const insight::ParameterSet& p)
 {
-  PSDBL(p, "mesh", nh);
+  PSINT(p, "mesh", nh);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "geometry", LoutByD); 
+  
+  in_="inlet";
+  out_="outlet";
 
   D_=88.9;
   LinByD_=1.0;
-  HeByD_=3.337;
+  HeByD_=3.357;
   nu_=1.72e-5;
   Wb_=11.0;
   
@@ -110,7 +117,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
     Lin=D_*LinByD_,
     R=HeByD_*D_;
   
-  PSDBL(p, "mesh", nh);
+  PSINT(p, "mesh", nh);
   
   // create local variables from ParameterSet
   path dir = executionPath();
@@ -148,24 +155,25 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
   
   int nh2=nh/2;
   
-  double grads[]={1./grady_, grady_};
+  double grads[]={grady_, 1./grady_};
   for (int i=0; i<2; i++)
   {
     arma::mat vH0=vec3(double(i)*0.5*D_, 0, 0);
     arma::mat vH1=vec3(double(i+1)*0.5*D_, 0, 0);
-    
+
+    // inlet extension
     {
       Block& bl = bmd->addBlock
       (  
 	new Block(P_8(
-	  (pts[0])+vH0, (pts[1])+vH0, (pts[5])+vH0, (pts[5])+vH0,
+	  (pts[0])+vH0, (pts[1])+vH0, (pts[5])+vH0, (pts[4])+vH0,
 	  (pts[0])+vH1, (pts[1])+vH1, (pts[5])+vH1, (pts[4])+vH1
 	  ),
 	  naxi_, nh2, nh2,
 	  list_of<double>(1.)(1./grady_)(grads[i])
 	)
       );
-//       in.addFace(bl.face("1265"));
+      in.addFace(bl.face("0473"));
     }
 
     {
@@ -179,11 +187,74 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
 	  list_of<double>(1.)(grady_)(grads[i])
 	)
       );
-//       in.addFace(bl.face("1265"));
+      in.addFace(bl.face("0473"));
+    }
+
+    // channel bend
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	  (pts[9])+vH0, (pts[10])+vH0, (pts[2])+vH0, (pts[1])+vH0,
+	  (pts[9])+vH1, (pts[10])+vH1, (pts[2])+vH1, (pts[1])+vH1
+	  ),
+	  nbend_, nh2, nh2,
+	  list_of<double>(1.)(grady_)(grads[i])
+	)
+      );
+    }
+
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	  (pts[1])+vH0, (pts[2])+vH0, (pts[6])+vH0, (pts[5])+vH0,
+	  (pts[1])+vH1, (pts[2])+vH1, (pts[6])+vH1, (pts[5])+vH1
+	  ),
+	  nbend_, nh2, nh2,
+	  list_of<double>(1.)(1./grady_)(grads[i])
+	)
+      );
+    }
+
+    // outlet extension
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	  (pts[3])+vH0, (pts[2])+vH0, (pts[10])+vH0, (pts[11])+vH0,
+	  (pts[3])+vH1, (pts[2])+vH1, (pts[10])+vH1, (pts[11])+vH1
+	  ),
+	  naxo_, nh2, nh2,
+	  list_of<double>(1.)(1./grady_)(grads[i])
+	)
+      );
+      out.addFace(bl.face("0473"));
+    }
+
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(P_8(
+	  (pts[7])+vH0, (pts[6])+vH0, (pts[2])+vH0, (pts[3])+vH0,
+	  (pts[7])+vH1, (pts[6])+vH1, (pts[2])+vH1, (pts[3])+vH1
+	  ),
+	  naxo_, nh2, nh2,
+	  list_of<double>(1.)(grady_)(grads[i])
+	)
+      );
+     out.addFace(bl.face("0473"));
     }
     
   }
-  
+
+  for (int i=0; i<3; i++)
+  {
+    arma::mat vH=vec3(double(i)*0.5*D_, 0, 0);
+    bmd->addEdge(new ArcEdge(vH+pts[1], vH+pts[2], vH+vec3(-0.5*D_,0,R)));
+    bmd->addEdge(new ArcEdge(vH+pts[5], vH+pts[6], vH+vec3(-0.5*D_,0,R+0.5*D_)));
+    bmd->addEdge(new ArcEdge(vH+pts[9], vH+pts[10], vH+vec3(-0.5*D_,0,R-0.5*D_)));
+  }
   
   cm.insert(bmd.release());
 
@@ -193,7 +264,74 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
 
 void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
+  path dir = executionPath();
 
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert( new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+  ) );
+  
+  arma::mat udata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/umean_vs_x_y");
+  arma::mat vdata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/vmean_vs_x_y");
+  arma::mat wdata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/wmean_vs_x_y");
+  arma::mat kdata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/tke_vs_x_y");
+  arma::mat edata=refdatalib.getProfile("ERCOFTAC_SX180Bend", "in/epsilon_vs_x_y");
+  // all point locations are the same!
+  
+  double ztol=1e-3*0.1*D_;
+  double zin=LinByD_*D_*1e-3;
+  arma::mat xyz( arma::join_rows( arma::join_rows( 
+    udata.col(0)-0.5*1e-3*D_, -udata.col(1)), -(zin+0.5*ztol)*arma::ones(udata.n_rows,1) 
+  ));
+
+  // Mirror
+  arma::mat xyz2(xyz);
+  xyz2.col(0)=0.5*1e-3*D_-(xyz.col(0)+0.5*1e-3*D_);
+  xyz=join_cols(xyz, xyz2);
+  
+  //make two layers for proper interpolation
+  arma::mat xyz3(xyz);
+  xyz3.col(2)+=ztol;
+  xyz=join_cols(xyz, xyz3);
+  
+  arma::mat uvw(arma::join_rows(arma::join_rows( udata.col(2), vdata.col(2) ), wdata.col(2)));
+  arma::mat uvw2(uvw);
+  uvw2.col(0)*=-1;
+  uvw=join_cols(uvw, uvw2);
+  arma::mat uvw3(uvw);
+  uvw=join_cols(uvw, uvw3);
+
+  arma::mat tke=join_cols(kdata.col(2),kdata.col(2));
+  tke=join_cols(tke, tke);
+  
+  arma::mat epsilon=join_cols(edata.col(2), edata.col(2));
+  epsilon=join_cols(epsilon, epsilon);
+
+  // clip k smaller threshold
+  double thr=1e-10;
+  for (int j=0; j<tke.n_rows; j++)
+  {
+    if (tke(j)<thr) tke(j)=thr;
+    if (epsilon(j)<thr) epsilon(j)=thr;
+  }
+  
+  cm.insert(new ExptDataInletBC(cm, in_, boundaryDict, ExptDataInletBC::Parameters()
+    .set_points(xyz)
+    .set_velocity(uvw)
+    .set_TKE(tke)
+    .set_epsilon(epsilon)
+  ));
+  
+  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0)
+  ));
+  
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
+  
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
+  
+  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 

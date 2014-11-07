@@ -688,6 +688,7 @@ void ExptDataInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
       BC["offset"]=OFDictData::vector3(vec3(0,0,0));
       BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
       
 //       OFDictData::dictFile& Udict=dictionaries.addDictionaryIfNonexistent(prefix+"/0/U");
 //       Udict.isSequential=true;
@@ -741,6 +742,7 @@ void ExptDataInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
       BC["offset"]=0.0;
       BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
       addDataDict(dictionaries, prefix, "k", p_.TKE());
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
@@ -748,6 +750,7 @@ void ExptDataInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
       BC["offset"]=0.0;
       BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
       addDataDict(dictionaries, prefix, "omega", p_.epsilon()/(0.09*p_.TKE()));
     }
     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
@@ -755,6 +758,7 @@ void ExptDataInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
       BC["offset"]=0.0;
       BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
       addDataDict(dictionaries, prefix, "epsilon", p_.epsilon());
     }
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )

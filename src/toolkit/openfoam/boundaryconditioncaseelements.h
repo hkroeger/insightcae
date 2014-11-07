@@ -245,6 +245,33 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class ExptDataInletBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (points, arma::mat, vec3(0,0,0))
+    (velocity, arma::mat, vec3(0,0,0))
+    (TKE, arma::mat, arma::ones(1)*1e-3)
+    (epsilon, arma::mat, arma::ones(1)*1e-3)
+    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  ExptDataInletBC
+  (
+    OpenFOAMCase& c,
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
 class CompressibleInletBC
 : public VelocityInletBC
 {

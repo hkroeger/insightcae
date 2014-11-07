@@ -188,6 +188,7 @@ struct dictFile
   std::string className;
   int dictVersion;
   int OFversion;
+  bool isSequential;
   
   dictFile();
   
@@ -338,6 +339,8 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
 
 void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
+
+void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
 
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
 

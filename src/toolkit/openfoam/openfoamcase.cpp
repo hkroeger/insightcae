@@ -291,7 +291,8 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::
 	
 	{
 	  std::ofstream f(dictpath.c_str());
-	  writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
+	  //writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
+	  i->second->write(dictpath);
 	}
       }
 }

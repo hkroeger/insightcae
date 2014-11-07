@@ -142,6 +142,13 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["runTimeModifiable"]=true;
   controlDict.addListIfNonexistent("libs");
   controlDict.addSubDictIfNonexistent("functions");
+
+  controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );  
+
+  OFDictData::dict wonow;
+  wonow["type"]="writeData";
+  wonow["fileName"]="\"wnow\"";
+  controlDict.addSubDictIfNonexistent("functions")["writeData"]=wonow;
   
   OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
   fvSolution.addSubDictIfNonexistent("solvers");

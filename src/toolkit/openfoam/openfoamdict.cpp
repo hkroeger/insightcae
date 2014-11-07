@@ -142,6 +142,25 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
     out << ")" << endl;
 }
 
+void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
+{
+    out<<"FoamFile"<<endl
+       <<"{"<<endl
+       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" format      ascii;"<<endl
+       <<" class       "+d.className+";"<<endl
+       <<" object      " << objname << ";"<<endl
+       <<"}"<<endl;
+
+    for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
+    {
+      out<< i->second;
+//       const OFDictData::data* o=&(i->second);
+      //if (!boost::get<OFDictData::dict>(o)) out<<";";
+      out << "\n";
+    }
+}
+
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName)
 {
   return (bd.find(patchName)!=bd.end());
@@ -237,7 +256,8 @@ void dict::write(std::ostream& os, int indentLevel) const
 OFDictData::dictFile::dictFile()
 : className("dictionary"),
   dictVersion(2),
-  OFversion(-1)
+  OFversion(-1),
+  isSequential(false)
 {
 }
 
@@ -250,7 +270,10 @@ void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
   
   {
     std::ofstream f(dictPath.c_str());
-    writeOpenFOAMDict(f, *this, boost::filesystem::basename(dictPath));
+    if (isSequential)
+      writeOpenFOAMSequentialDict(f, *this, boost::filesystem::basename(dictPath));
+    else
+      writeOpenFOAMDict(f, *this, boost::filesystem::basename(dictPath));
   }
 }
 

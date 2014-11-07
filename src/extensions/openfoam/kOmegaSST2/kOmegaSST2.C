@@ -28,7 +28,7 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "fixedInternalValueFvPatchFields.H"
 #include "backwardsCompatibilityWallFunctions.H"
-
+#include "gaussConvectionScheme.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -504,11 +504,19 @@ void kOmegaSST2::correct()
       volScalarField asymInnerProduct = max(2. * tSkew() && tSkew(), dimensionedScalar("1e-16", dimensionSet(0, 0, -2, 0, 0), 1e-10) );
       volScalarField rStar = sqrt(symInnerProduct/asymInnerProduct);
       //CC<<<<
-      volScalarField D = sqrt(max(asymInnerProduct, 0.09*omega_*omega_)); //Possibly wrong. Don't know what Omega is used in equation
+      volScalarField D = 
+	sqrt(max(asymInnerProduct, 0.09*omega_*omega_)); //Possibly wrong. Don't know what Omega is used in equation
+      D=max(D, dimensionedScalar("1e-16", D.dimensions(), 1e-10) );
       
+      linear<symmTensor> lis(mesh_);
       tmp<volSymmTensorField> divS = 
 	  fvc::ddt(tSymm()) 
-	+ fvc::div(phi_, tSymm()); //Was added by me (Substantional Derivative of the StressTensor symmetric part)
+	+ fv::gaussConvectionScheme<symmTensor>
+	(
+	  mesh_, 
+	  phi_, 
+	  tmp<surfaceInterpolationScheme<symmTensor> > (lis)
+	).fvcDiv(phi_, tSymm()); //Was added by me (Substantional Derivative of the StressTensor symmetric part)
 	
       volScalarField rT = tSkew().component(0)*tSymm().component(0)*divS().component(0) +
 			      tSkew().component(0)*tSymm().component(1)*divS().component(1) +
@@ -541,7 +549,24 @@ void kOmegaSST2::correct()
       tSkew.clear();
       tSymm.clear();
       volScalarField rTilda = 2. * rT/sqrt(asymInnerProduct)/D/D/D;
-      Frot=max(min((scalar(1) + cr1_)*2*rStar/(scalar(1)+rStar)*(scalar(1)-cr3_*atan(cr2_*rTilda))-cr1_, scalar(1.25)), scalar(0));
+      Frot=
+      max
+      (
+	min
+	(
+	  
+	  (1.0 + cr1_)*2.0*rStar
+	  /
+	  (1.0 + rStar)
+	  *
+	  (1.0 - cr3_*atan(cr2_*rTilda))
+	  -
+	  cr1_,
+     
+	  1.25
+	),        
+	0.0
+      );
       
       if(runTime_.outputTime())
       {

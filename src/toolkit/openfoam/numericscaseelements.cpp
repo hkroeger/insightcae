@@ -457,7 +457,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]	=	pref+"Gauss upwind";
   div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
   div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
   div["div(phi,R)"]	=	pref+"Gauss linearUpwind "+suf;
@@ -739,7 +739,7 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   div["div(phi,U)"]="Gauss localBlendedBy UBlendingFactor linearUpwind grad(U) limitedLinearV 1";
   div["div(phi,k)"]="Gauss linearUpwind grad(k)";
   div["div(phi,epsilon)"]="Gauss linearUpwind grad(epsilon)";
-  div["div(phi,omega)"]="Gauss linearUpwind grad(omega)";
+  div["div(phi,omega)"]="Gauss upwind";
   div["div(phi,nuTilda)"]="Gauss linearUpwind grad(nuTilda)";
   div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
@@ -1024,7 +1024,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
   div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]		= "Gauss upwind";
   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
   div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
   div["div(R)"]			= "Gauss linear";

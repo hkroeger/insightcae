@@ -26,6 +26,7 @@
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace boost;
@@ -913,9 +914,16 @@ void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
-  if ( (fieldname == "k") || (fieldname == "omega") )
+  if (fieldname == "k")
   {
-    BC["type"]=OFDictData::data("zeroGradient");
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+str(format("%g") % 1e-10);
+    return true;
+  }
+  else if ( fieldname == "omega")
+  {
+    BC["type"]=OFDictData::data("omegaWallFunction");
+    BC["value"]="uniform "+str(format("%g") % 1e-10);
     return true;
   }
   return false;

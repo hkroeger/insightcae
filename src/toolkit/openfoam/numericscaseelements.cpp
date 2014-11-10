@@ -455,12 +455,12 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=220) pref="bounded ";
   if (OFversion()<=160) suf=" localCellLimited "+bgrads+" UBlendingFactor"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
-  div["div(phi,U)"]	=	pref+"Gauss localBlendedBy UBlendingFactor upwind linearUpwindV"+suf;
-  div["div(phi,k)"]	=	pref+"Gauss upwind";
-  div["div(phi,omega)"]	=	pref+"Gauss upwind";
-  div["div(phi,nuTilda)"]=	pref+"Gauss upwind";
-  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
-  div["div(phi,R)"]	=	pref+"Gauss upwind";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
+  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,R)"]	=	pref+"Gauss linearUpwind "+suf;
   div["div(R)"]="Gauss linear";
       
   div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
@@ -1022,11 +1022,11 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
   div["div(phi,alpha)"]		= "Gauss localBlendedBy UBlendingFactor upwind vanLeer";
   div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
-  div["div(phi,k)"]		= "Gauss upwind";
-  div["div(phi,epsilon)"]	= "Gauss upwind";
-  div["div(phi,omega)"]		= "Gauss upwind";
-  div["div(phi,nuTilda)"]	= "Gauss upwind";
-  div["div(phi,R)"]		= "Gauss upwind";
+  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
+  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
   div["div(R)"]			= "Gauss linear";
   if (OFversion()>=210)
     div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";

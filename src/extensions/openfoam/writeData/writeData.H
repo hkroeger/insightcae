@@ -46,6 +46,7 @@ SourceFiles
 #define writeData_H
 //~ 
 #include "NamedEnum.H"
+#include "pointField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -133,13 +134,16 @@ public:
         //- Execute, check existence of abort file and take action
         virtual void write();
 
-        //- Update for changes of mesh - does nothing
-        virtual void updateMesh(const mapPolyMesh&)
-        {}
+          //- Update for changes of mesh
+        virtual void updateMesh(const mapPolyMesh& mpm);
 
-        //- Update for changes of mesh - does nothing
-        virtual void movePoints(const polyMesh&)
-        {}
+        //- Update for changes of mesh
+#if defined(OF16ext) || defined(OF21x)
+        virtual void movePoints(const pointField& pf);
+#else
+        virtual void movePoints(const polyMesh& mesh);
+#endif
+
 };
 
 

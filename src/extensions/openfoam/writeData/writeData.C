@@ -99,7 +99,11 @@ void Foam::writeData::execute()
 
     if (write)
     {
+#if defined(OF16ext) || defined(OF21x)
+        const_cast<Time&>(obr_.time()).writeNow();
+#else
         const_cast<Time&>(obr_.time()).writeOnce();
+#endif
         Info<< "USER REQUESTED DATA WRITE AT (timeIndex="
             << obr_.time().timeIndex()
             << ")"

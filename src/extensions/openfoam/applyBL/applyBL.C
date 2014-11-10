@@ -49,29 +49,32 @@ static const scalar kappa(0.41);
 
 int main(int argc, char *argv[])
 {
-    argList::addNote
-    (
-        "apply a simplified boundary-layer model to the velocity and\n"
-        "turbulence fields based on the 1/7th power-law."
-    );
+//     argList::addNote
+//     (
+//         "apply a simplified boundary-layer model to the velocity and\n"
+//         "turbulence fields based on the 1/7th power-law."
+//     );
 
-    argList::addOption
-    (
-        "ybl",
-        "scalar",
-        "specify the boundary-layer thickness"
-    );
-    argList::addOption
-    (
-        "Cbl",
-        "scalar",
-        "boundary-layer thickness as Cbl * mean distance to wall"
-    );
-    argList::addBoolOption
-    (
-        "writenut",
-        "write nut field"
-    );
+    argList::validOptions.insert("ybl", "specify the boundary-layer thickness");
+//     argList::addOption
+//     (
+//         "ybl",
+//         "scalar",
+//         "specify the boundary-layer thickness"
+//     );
+    argList::validOptions.insert("Cbl", "boundary-layer thickness as Cbl * mean distance to wall");
+//     argList::addOption
+//     (
+//         "Cbl",
+//         "scalar",
+//         "boundary-layer thickness as Cbl * mean distance to wall"
+//     );
+    argList::validOptions.insert("writenut", "");
+//     argList::addBoolOption
+//     (
+//         "writenut",
+//         "write nut field"
+//     );
 
     #include "setRootCase.H"
 
@@ -95,7 +98,24 @@ int main(int argc, char *argv[])
     #include "createTime.H"
     #include "createMesh.H"
     #include "createFields.H"
-    #include "createPhi.H"
+    
+    Info<< "Reading/calculating face flux field phi\n" << endl;
+
+    autoPtr<surfaceScalarField> phiPtr
+    (
+      new surfaceScalarField
+      (
+	  IOobject
+	  (
+	      "phi",
+	      runTime.timeName(),
+	      mesh,
+	      IOobject::READ_IF_PRESENT,
+	      IOobject::AUTO_WRITE
+	  ),
+	  linearInterpolate(U) & mesh.Sf()
+      )
+    );
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -134,6 +154,8 @@ int main(int argc, char *argv[])
 
     Info<< "Writing U\n" << endl;
     U.write();
+    
+    phiPtr.clear();
 
     // Update/re-write phi
     #include "createPhi.H"
@@ -170,7 +192,7 @@ int main(int argc, char *argv[])
         // Turbulence k
         tmp<volScalarField> tk = turbulence->k();
         volScalarField& k = tk();
-        scalar ck0 = pow025(Cmu)*kappa;
+        scalar ck0 = ::pow(Cmu, 0.25)*kappa;
         k = (1 - mask)*k + mask*sqr(nut/(ck0*min(y, ybl)));
 
         // do not correct BC - operation may use inconsistent fields wrt these

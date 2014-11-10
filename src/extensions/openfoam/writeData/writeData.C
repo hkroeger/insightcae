@@ -113,6 +113,14 @@ void Foam::writeData::execute()
     }
 }
 
+#if defined(OF16ext) || defined(OF21x)
+void Foam::writeData::movePoints(const pointField& pf)
+#else
+void Foam::writeData::movePoints(const polyMesh& mesh)
+#endif
+{
+}
+
 
 void Foam::writeData::end()
 {

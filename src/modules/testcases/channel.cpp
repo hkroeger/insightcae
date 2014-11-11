@@ -952,15 +952,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
   if (p.getBool("run/perturbU"))
   {
     PSDBL(p, "operation", Re_tau);
-    /*
-    setFields(cm, executionPath(), 
-	      list_of<setFieldOps::FieldValueSpec>
-		("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
-	      ptr_vector<setFieldOps::setFieldOperator>()
-    );
-    cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
-    cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*Ubulk_)) );
-    */
+
     cm.executeCommand(executionPath(), "perturbU", 
 		      list_of<string>
 		      (lexical_cast<string>(Re_tau))

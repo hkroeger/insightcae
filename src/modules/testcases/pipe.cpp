@@ -132,6 +132,17 @@ ParameterSet PipeBase::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
+      ("run", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Execution parameters"
+      ))
+
       ("evaluation", new SubsetParameter
 	(
 	  ParameterSet
@@ -352,7 +363,6 @@ void PipeBase::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
 
   
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters() ) );
   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
     .set_name("plane")
     .set_basePoint(vec3(0,1e-6,1e-6))
@@ -687,6 +697,10 @@ void PipeCyclic::createCase
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+        .set_hasCyclics(true)
+  ));
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
@@ -700,23 +714,16 @@ void PipeCyclic::createCase
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  PSDBL(p, "operation", Re_tau);
-  
-  /*
-  setFields(cm, executionPath(), 
-	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
-	    ptr_vector<setFieldOps::setFieldOperator>()
-  );
-  cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
-  cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*calcUbulk(p))) );
-  */
-  
-  cm.executeCommand(executionPath(), "perturbU", 
-		    list_of<string>
-		    (lexical_cast<string>(Re_tau))
-		    ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
-		   );
+  if (p.getBool("run/perturbU"))
+  {
+    PSDBL(p, "operation", Re_tau);
+    
+    cm.executeCommand(executionPath(), "perturbU", 
+		      list_of<string>
+		      (lexical_cast<string>(Re_tau))
+		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+		    );
+  }
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
@@ -807,7 +814,10 @@ void PipeInflow::createCase
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
-      
+
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+  ));
+
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(vec3(Ubulk_, 0, 0))
     .set_turbulenceIntensity(0.05)

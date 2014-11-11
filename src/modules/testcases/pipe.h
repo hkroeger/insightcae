@@ -48,8 +48,8 @@ public:
   
 protected:
   std::string cycl_in_, cycl_out_;
-  double Lc_;
-  int nc_, nr_;
+  double Lc_, rbuf_;
+  int nc_, nr_, ncir_, nax_, nrbuf_;
   double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   
 public:

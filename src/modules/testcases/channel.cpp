@@ -184,7 +184,6 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
-  //PSINT(p, "mesh", nax);
   PSINT(p, "mesh", nh);
   PSBOOL(p, "mesh", fixbuf);
   

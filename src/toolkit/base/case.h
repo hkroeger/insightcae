@@ -32,9 +32,10 @@ namespace insight
 
 struct TemporaryCaseDir
 {
+  bool keep_;
   boost::filesystem::path dir;
   
-  TemporaryCaseDir();
+  TemporaryCaseDir(bool keep=false);
   ~TemporaryCaseDir();
 };
   

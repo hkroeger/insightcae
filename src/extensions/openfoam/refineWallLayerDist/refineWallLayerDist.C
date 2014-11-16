@@ -173,9 +173,9 @@ int main(int argc, char *argv[])
 		
 		scalar weight= dist/e.mag(mesh.points());
 		
-		if (weight>0.75)
+		if (weight>0.95)
 		{
-		  weight=0.75;
+		  weight=0.95;
 		  limited++;
 		}
 
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
     
     if (limited>0)
     {
-      Info<<"Limited weight to 0.75 on "<<limited<<" edges."<<endl;
+      Info<<"Limited weight to 0.95 on "<<limited<<" edges."<<endl;
     }
 
     allCutEdges.shrink();

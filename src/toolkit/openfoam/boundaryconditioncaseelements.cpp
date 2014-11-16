@@ -273,6 +273,7 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
     bndDict["type"]="cyclicAMI";
     bndDict["neighbourPatch"]= p_.shadowPatch();
     bndDict["matchTolerance"]= 0.001;
+    bndDict["lowWeightCorrection"]=0.1;
     //bndDict["transform"]= "rotational";    
   }
   else
@@ -327,6 +328,7 @@ void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
     bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre());
     bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
     bndDict["rotationAngle"]=p_.rotationAngle();
+    bndDict["lowWeightCorrection"]=0.1;
   }
   else
   {

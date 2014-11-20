@@ -1438,5 +1438,38 @@ void surfaceFeatureExtract
   cm.executeCommand(location, "surfaceFeatureExtract", opt);
 }
 
+void extrude2DMesh
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location, 
+  const std::string& sourcePatchName,
+  const std::string& backPatchName,
+  double dist
+)
+{
+  OFDictData::dictFile extrDict;
+  
+  extrDict["constructFrom"]="patch";
+  extrDict["sourceCase"]="\""+location.string()+"\"";
+  extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  extrDict["exposedPatchName"]=backPatchName;
+  extrDict["flipNormals"]=false;
+  extrDict["extrudeModel"]="linearNormal";
+  extrDict["nLayers"]=1;
+  extrDict["expansionRatio"]=1.0;
+
+  OFDictData::dict lnc;
+  lnc["thickness"]=dist;
+  extrDict["linearNormalCoeffs"]=lnc;
+
+  extrDict["mergeFaces"]=false;
+  extrDict["mergeTol"]=0;
+  
+  extrDict.write( location / "system" / "extrudeMeshDict" );
+
+  std::vector<std::string> opt;
+  cm.executeCommand(location, "extrudeMesh", opt);
+}
+
 
 }

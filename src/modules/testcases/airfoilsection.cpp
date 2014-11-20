@@ -39,13 +39,75 @@ addToFactoryTable(Analysis, AirfoilSection, NoParameters);
 
 
 AirfoilSection::AirfoilSection(const NoParameters&)
-: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section")
+: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section"),
+  in_("in"), 
+  out_("out"), 
+  up_("up"), 
+  down_("down"), 
+  fb_("frontAndBack"),
+  foil_("foil")
 {
 
 }
 
 void AirfoilSection::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", c);
+  PSDBL(p, "operation", vinf);
+  PSINT(p, "fluid", turbulenceModel);
+  PSDBL(p, "fluid", nu);
+  PSDBL(p, "fluid", rho);
+  
+  path dir = executionPath();
+
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+    .set_purgeWrite(2)
+  )); 
+  
+  cm.insert(new forces(cm, forces::Parameters()
+    .set_name("foilForces")
+    .set_patches( list_of(foil_+".*") )
+    .set_rhoInf(rho)
+    .set_CofR(vec3(0,0,0))
+    ));  
+
+  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters().velocity(vec3(vinf,0,0)) ));
+  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters().pressure(0.0) ));
+   
+  cm.insert(new SimpleBC(cm, up_, boundaryDict, "symmetryPlane" ));
+  cm.insert(new SimpleBC(cm, down_, boundaryDict, "symmetryPlane" ));
+  cm.insert(new SimpleBC(cm, fb_, boundaryDict, "empty" ));
+
+  //   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
+//     .set_name("plane")
+//     .set_basePoint(vec3(0,1e-6,1e-6))
+//     .set_normal(vec3(0,0,1))
+//     .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
+//   ));
+  
+//   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
+//     .set_name("zzzaveraging") // shall be last FO in list
+//     .set_fields(list_of<std::string>("p")("U"))
+//     .set_timeStart(inittime*T_)
+//   ));
+  
+//   cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()
+//     .set_name_prefix("tpc_interior")
+//     .set_R(0.5*D)
+//     .set_x(0.5*L)
+//     .set_axSpan(0.5*L)
+//     .set_tanSpan(M_PI)
+//     .set_timeStart( (inittime+meantime)*T_ )
+//   ));
+//   
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
+  
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
+  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
@@ -77,23 +139,25 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
   double delta=c/double(nc);
   
   std::map<int, Point> pts;
+  double z0=0.5;
   pts = boost::assign::map_list_of   
-      (0, 	vec3(-(LinByc+0.5)*c, -HByc*c, -0.5))
-      (1, 	vec3((LoutByc+0.5)*c, -HByc*c, -0.5))
-      (2, 	vec3((LoutByc+0.5)*c, HByc*c, -0.5))
-      (3, 	vec3(-(LinByc+0.5)*c, HByc*c, -0.5))
+      (0, 	vec3(-(LinByc+0.5)*c, -HByc*c, z0))
+      (1, 	vec3((LoutByc+0.5)*c, -HByc*c, z0))
+      (2, 	vec3((LoutByc+0.5)*c, HByc*c, z0))
+      (3, 	vec3(-(LinByc+0.5)*c, HByc*c, z0))
   ;
   
-  arma::mat PiM=vec3(-(LinByc+0.4)*c, 0.01*c, 0.0001*c);
+  arma::mat PiM=vec3(-(LinByc+0.4)*c, 0.01*c, z0+0.0001*c);
   
   int nx=(pts[1][0]-pts[0][0])/delta;
   int ny=(pts[2][1]-pts[1][1])/delta;
   
-  Patch& in= 	bmd->addPatch("in", new Patch());
-  Patch& out= 	bmd->addPatch("out", new Patch());
-  Patch& up= 	bmd->addPatch("up", new Patch());
-  Patch& down= 	bmd->addPatch("down", new Patch());
-  Patch& frontBack= 	bmd->addPatch("frontBack", new Patch());
+  Patch& in= 	bmd->addPatch(in_, new Patch());
+  Patch& out= 	bmd->addPatch(out_, new Patch());
+  Patch& up= 	bmd->addPatch(up_, new Patch());
+  Patch& down= 	bmd->addPatch(down_, new Patch());
+  Patch& dummy= bmd->addPatch("dummy", new Patch());
+  Patch& fb= 	bmd->addPatch(fb_, new Patch());
   
   arma::mat vH=vec3(0,0,1.);
   
@@ -113,8 +177,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
     out.addFace(bl.face("1265"));
     up.addFace(bl.face("2376"));
     down.addFace(bl.face("0154"));
-    frontBack.addFace(bl.face("0321"));
-    frontBack.addFace(bl.face("4567"));
+    fb.addFace(bl.face("0321"));
+    dummy.addFace(bl.face("4567"));
   }
   
   cm.insert(bmd.release());
@@ -123,14 +187,14 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
   
   path targ_path(dir/"constant"/"triSurface"/"foil.stl");
   create_directories(targ_path.parent_path());
-  STLExtruder(contour, -1.0, 1.0, targ_path);
+  STLExtruder(contour, 0, z0+2.0, targ_path);
   
   cm.executeCommand(dir, "blockMesh");  
 
   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
   
   shm_feats.push_back(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
-    .set_name("foil")
+    .set_name(foil_)
     .set_fileName(targ_path)
     .set_minLevel(lmfoil)
     .set_maxLevel(lxfoil)
@@ -140,7 +204,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
   ));
   
   shm_feats.push_back(new snappyHexMeshFeats::NearSurfaceRefinement( snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
-    .set_name("foil")
+    .set_name(foil_)
     .set_mode("distance")
     .set_level(lmfoil)
     .set_distance(0.1*c)
@@ -156,6 +220,14 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
       .set_tlayer(0.25)
       .set_relativeSizes(true)
       .set_nLayerIter(10)
+  );
+  
+  extrude2DMesh
+  (
+    cm, dir,
+    fb_,
+    fb_,
+    1.0
   );
 }
 
@@ -211,7 +283,19 @@ insight::ParameterSet AirfoilSection::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
-//       ("evaluation", new SubsetParameter
+      ("fluid", new SubsetParameter
+	(
+	  ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("rho",	new DoubleParameter(1.0, "[kg/m^3] Density of the fluid"))
+	    ("nu",	new DoubleParameter(1.5e-5, "[m^2/s] Viscosity of the fluid"))
+	    .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Parameters of the fluid"
+	))
+      
+      //       ("evaluation", new SubsetParameter
 // 	(
 // 	  ParameterSet
 // 	  (

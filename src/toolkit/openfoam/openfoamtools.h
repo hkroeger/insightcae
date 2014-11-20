@@ -403,6 +403,15 @@ void surfaceFeatureExtract
   const std::string& surfaceName
 );
 
+void extrude2DMesh
+(
+  const OpenFOAMCase& c, 
+  const boost::filesystem::path& location, 
+  const std::string& sourcePatchName,
+  const std::string& backPatchName,
+  double dist
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

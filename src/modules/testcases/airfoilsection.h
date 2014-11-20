@@ -57,7 +57,7 @@ public:
 class AirfoilSection 
 : public insight::OpenFOAMAnalysis
 {
-  std::string in_, out_, up_, down_, fb_;
+  std::string in_, out_, up_, down_, fb_, foil_;
 public:
   declareType("Airfoil 2D");
   

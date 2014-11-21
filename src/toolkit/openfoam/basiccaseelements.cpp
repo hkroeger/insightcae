@@ -647,10 +647,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   return false;
 }
 
-defineType(kEpsilon_RASModel);
-addToFactoryTable(turbulenceModel, kEpsilon_RASModel, turbulenceModel::ConstrP);
-
-void kEpsilon_RASModel::addFields()
+void kEpsilonBase_RASModel::addFields()
 {
   OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
   OFcase().addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	list_of(10.0), volField ) );
@@ -665,32 +662,32 @@ void kEpsilon_RASModel::addFields()
   }
 }
 
-kEpsilon_RASModel::kEpsilon_RASModel(OpenFOAMCase& c)
+kEpsilonBase_RASModel::kEpsilonBase_RASModel(OpenFOAMCase& c)
 : RASModel(c)
 {
   addFields();
 }
   
-kEpsilon_RASModel::kEpsilon_RASModel(const turbulenceModel::ConstrP& c)
+kEpsilonBase_RASModel::kEpsilonBase_RASModel(const turbulenceModel::ConstrP& c)
 : RASModel(c)
 {
   addFields();
 }
   
-void kEpsilon_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
-  RASProperties["RASModel"]="kEpsilon";
+  RASProperties["RASModel"]=this->type(); //"kEpsilon";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
   RASProperties["kMin"]=1e-3;
   RASProperties["epsilonMin"]=1e-3;
-  RASProperties.addSubDictIfNonexistent("kEpsilonCoeffs");
+  RASProperties.addSubDictIfNonexistent(type()+"Coeffs");
 }
 
-bool kEpsilon_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
   std::string pref="";
   if (OFcase().isCompressible()) pref="compressible::";
@@ -732,6 +729,17 @@ bool kEpsilon_RASModel::addIntoFieldDictionary(const std::string& fieldname, con
   
   return false;
 }
+
+
+defineType(kEpsilon_RASModel);
+addToFactoryTable(turbulenceModel, kEpsilon_RASModel, turbulenceModel::ConstrP);
+kEpsilon_RASModel::kEpsilon_RASModel(const turbulenceModel::ConstrP& c): kEpsilonBase_RASModel(c) {}
+
+
+defineType(realizablekEpsilon_RASModel);
+addToFactoryTable(turbulenceModel, realizablekEpsilon_RASModel, turbulenceModel::ConstrP);
+realizablekEpsilon_RASModel::realizablekEpsilon_RASModel(const turbulenceModel::ConstrP& c): kEpsilonBase_RASModel(c) {}
+
 
 defineType(SpalartAllmaras_RASModel);
 addToFactoryTable(turbulenceModel, SpalartAllmaras_RASModel, turbulenceModel::ConstrP);

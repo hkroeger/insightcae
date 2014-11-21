@@ -24,7 +24,13 @@
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamcaseelements.h"
 
-namespace insight {
+
+
+
+namespace insight 
+{
+
+
   
 
 class PipeBase 
@@ -122,6 +128,8 @@ public:
 };
 
 
+
+
 class PipeInflow
 : public PipeBase
 {
@@ -155,6 +163,8 @@ public:
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
   
 };
+
+
 
 
 }

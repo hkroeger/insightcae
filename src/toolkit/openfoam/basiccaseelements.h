@@ -346,20 +346,45 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
-class kEpsilon_RASModel
+class kEpsilonBase_RASModel
 : public RASModel
 {
 protected:
   void addFields();
   
 public:
-  declareType("kEpsilon");
+//   declareType("kEpsilon");
   
-  kEpsilon_RASModel(OpenFOAMCase& c);
-  kEpsilon_RASModel(const ConstrP& c);
+  kEpsilonBase_RASModel(OpenFOAMCase& c);
+  kEpsilonBase_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
+
+
+
+
+class kEpsilon_RASModel
+: public kEpsilonBase_RASModel
+{
+public:
+  declareType("kEpsilon");
+  kEpsilon_RASModel(const ConstrP& c);
+};
+
+
+
+
+class realizablekEpsilon_RASModel
+: public kEpsilonBase_RASModel
+{
+public:
+  declareType("realizableKE");
+  realizablekEpsilon_RASModel(const ConstrP& c);
+};
+
+
+
 
 class SpalartAllmaras_RASModel
 : public RASModel

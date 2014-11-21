@@ -1443,24 +1443,35 @@ void extrude2DMesh
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location, 
   const std::string& sourcePatchName,
-  const std::string& backPatchName,
-  double dist
+  bool wedgeInsteadOfPrism
 )
-{
+{  
   OFDictData::dictFile extrDict;
   
   extrDict["constructFrom"]="patch";
   extrDict["sourceCase"]="\""+location.string()+"\"";
   extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
-  extrDict["exposedPatchName"]=backPatchName;
+  extrDict["exposedPatchName"]=sourcePatchName;
   extrDict["flipNormals"]=false;
-  extrDict["extrudeModel"]="linearNormal";
   extrDict["nLayers"]=1;
   extrDict["expansionRatio"]=1.0;
 
-  OFDictData::dict lnc;
-  lnc["thickness"]=dist;
-  extrDict["linearNormalCoeffs"]=lnc;
+  if (wedgeInsteadOfPrism)
+  {
+    extrDict["extrudeModel"]="wedge";
+    OFDictData::dict wc;
+    wc["axisPt"]=OFDictData::vector3(vec3(0,0,0));
+    wc["axis"]=OFDictData::vector3(vec3(-1,0,0));
+    wc["angle"]=5.0;
+    extrDict["wedgeCoeffs"]=wc;
+  }
+  else
+  {
+    extrDict["extrudeModel"]="linearNormal";
+    OFDictData::dict lnc;
+    lnc["thickness"]=1.0;
+    extrDict["linearNormalCoeffs"]=lnc;
+  }
 
   extrDict["mergeFaces"]=false;
   extrDict["mergeTol"]=0;
@@ -1469,6 +1480,13 @@ void extrude2DMesh
 
   std::vector<std::string> opt;
   cm.executeCommand(location, "extrudeMesh", opt);
+
+  if (!wedgeInsteadOfPrism)
+  {
+    opt.clear();
+    opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5)));
+    cm.executeCommand(location, "transformPoints", opt);
+  }
 }
 
 

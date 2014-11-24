@@ -342,7 +342,10 @@ Interpolator::Interpolator(const arma::mat& xy_us)
     for (int i=0; i<nf; i++)
     {
       //cout<<"building interpolator for col "<<i<<endl;
-      spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
+      if (xy.n_rows==2)
+	spline[i] = gsl_spline_alloc (gsl_interp_linear, nrows);
+      else
+	spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
       //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
       gsl_spline_init (spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
     }

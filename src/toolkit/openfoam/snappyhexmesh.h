@@ -179,18 +179,30 @@ namespace snappyHexMeshOpts
     (tlayer, double, 0.5)
     (erlayer, double, 1.3)
     (relativeSizes, bool, true)
-    ( nLayerIter, int, 10 )
+    (nLayerIter, int, 10 )
     (stopOnBadPrismLayer, bool, false)
   )
 };
 
-void snappyHexMesh(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location, 
-		  const OFDictData::list& PiM,
-		  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-		  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
-		  bool overwrite=true
-		  );
+void snappyHexMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location, 
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
+  bool overwrite=true
+);
+
+void cfMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location, 
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
+  bool overwrite=true
+);
 
 }
 

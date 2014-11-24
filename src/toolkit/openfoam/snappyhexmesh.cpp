@@ -35,6 +35,8 @@ using namespace boost::assign;
 namespace insight
 {
   
+enum trimmedMesher {sHM, cfM};
+  
 namespace snappyHexMeshFeats
 {
 
@@ -265,13 +267,15 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
 }
 
 
-void snappyHexMesh(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location,
-		  const OFDictData::list& PiM,
-		  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-		  snappyHexMeshOpts::Parameters const& p,
-		  bool overwrite
-		  )
+void snappyHexMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p,
+  bool overwrite
+)
 {
   using namespace snappyHexMeshFeats;
   
@@ -369,6 +373,102 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
 	insight::Warning(msg);
     }
   }
+  
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
+    ofc.removeProcessorDirectories(location);
+  }
+  
+  
+  //ofc.executeCommand(location, "snappyHexMesh", opts);
+}
+
+
+
+
+void cfMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p,
+  bool overwrite
+)
+{
+  using namespace snappyHexMeshFeats;
+  
+  OFDictData::dictFile meshDict;
+  
+  // setup dict structure
+  meshDict["readTemplate"] = true; // compat with sHM
+  
+
+  BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
+  {
+    feat.modifyFiles(ofc, location);
+    feat.addIntoDictionary(meshDict);
+  }
+  
+  // then write to file
+  boost::filesystem::path dictpath = location / "system" / "meshDict";
+  if (!exists(dictpath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictpath.parent_path());
+  }
+  
+  {
+    std::ofstream f(dictpath.c_str());
+    writeOpenFOAMDict(f, meshDict, boost::filesystem::basename(dictpath));
+  }
+
+  std::vector<std::string> opts;
+//   if (overwrite) opts.push_back("-overwrite");
+        
+  int np=readDecomposeParDict(location);
+  bool is_parallel = (np>1);
+
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "decomposePar");
+  }
+  
+  //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
+  std::vector<std::string> output;
+  ofc.executeCommand(location, "cartesianMesh", opts, &output, np);
+
+  
+//   // Check fraction of extruded faces on wall patches
+//   boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
+//   boost::match_results<std::string::const_iterator> what;
+//   int exfaces=-1, totalfaces=-1;
+//   BOOST_FOREACH(const std::string& line, output)
+//   {
+//     if (boost::regex_match(line, what, re_extrudedfaces))
+//     {
+//       //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
+//       exfaces=lexical_cast<int>(what[1]);
+//       totalfaces=lexical_cast<int>(what[2]);
+//     }
+//   }
+//   if (totalfaces>=0)
+//   {
+//     double exfrac=double(exfaces)/double(totalfaces);
+//     if (exfrac<0.9)
+//     {
+//       std::string msg=
+//       "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
+//       "Please reconsider prism layer thickness and tune number of prism layers!";
+//       
+//       if (p.stopOnBadPrismLayer())
+//       {
+// 	throw insight::Exception(msg);
+//       }
+//       else
+// 	insight::Warning(msg);
+//     }
+//   }
   
   if (is_parallel)
   {

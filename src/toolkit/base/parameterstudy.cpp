@@ -216,29 +216,9 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
     const std::string& n = get<0>(ai);
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
-    /*
-    BOOST_FOREACH( const std::string& parname, varp_ )
-    {
-      double orgval=p.getDouble(parname);
-      p.replace( parname, new DoubleRangeParameter(orgval, 0, 1, p.get<DoubleParameter>(parname).description()) );
-    }
-    
-    force_data.push_back( list_of<double>
-      (h)
-      ( dynamic_cast<ScalarResult*>(&(r->at("ResultantPivotForce")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("VerticalPivotForce")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("PivotForceAngle")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("CavitationMargin")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("minDist")))->value())
-    );
-    
-    std::string newkey="heightProfile (h="+lexical_cast<std::string>(h)+")";
-    
-    results->insert(newkey, r->find("heightProfile")->second->clone() );
-    */
+
     std::string key=n+", "+r->title()+" ("+r->subtitle()+")";
-    results->insert( key, r->clone() );
-    
+    results->insert( key, r->clone() );    
   }
   
   return results;

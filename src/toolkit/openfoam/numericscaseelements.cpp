@@ -867,9 +867,9 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
   if (OFversion()>=230)
     alphaname_="alpha.phase1";
   
-  c.addField(pname_, FieldInfo(scalarField, 	dimPressure, 		list_of(0.0), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField(alphaname_, FieldInfo(scalarField, 	dimless, 		list_of(0.0), volField ) );
+  c.addField(pname_, 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  c.addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
 }
 
 const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise

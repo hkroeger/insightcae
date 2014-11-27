@@ -55,11 +55,6 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict geodict;
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name();
-  if (p_.cellZone()!="")
-  {
-    geodict["cellZone"]=p_.cellZone();
-    geodict["cellZoneInside"]=p_.cellZoneInside();
-  }
   //boost::filesystem::path x; x.f
   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
 
@@ -68,6 +63,12 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   levels.push_back(p_.minLevel());
   levels.push_back(p_.maxLevel());
   castdict["level"]=levels;
+  if (p_.cellZone()!="")
+  {
+    castdict["faceZone"]=p_.cellZone();
+    castdict["cellZone"]=p_.cellZone();
+    castdict["cellZoneInside"]=p_.cellZoneInside();
+  }
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name()]=castdict;
 
   OFDictData::dict layerdict;

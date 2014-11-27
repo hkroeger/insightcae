@@ -93,9 +93,10 @@ public:
     {
       f()
       << ( x0_ + (x1_-x0_)*(double(i+1)/double(n_)) )
-      << token::SPACE
-      << prof()[i]
-      << nl;
+      ;
+      for (int j=0; j<pTraits<T>::nComponents; j++)
+	f()<< token::SPACE << component(prof()[i], j);
+      f() << nl;
     }
   }
 
@@ -185,7 +186,7 @@ void extractProfiles
     ps.cumulateSample(field.internalField(), mesh.C().internalField(), mesh.V());
       
     {
-      autoPtr<OFstream> f(makeFile(mesh, "domain_"+fieldHeader.name()));
+      autoPtr<OFstream> f(makeFile(mesh, "interior_"+fieldHeader.name()));
       ps.write(f());
     }
   }

@@ -1349,22 +1349,24 @@ arma::mat viscousForceProfile
 {
   std::vector<std::string> opts;
   opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back("(viscousForce viscousForceMean)");
+  opts.push_back("-walls");
   opts.push_back("-n");
   opts.push_back(lexical_cast<string>(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
-  cm.executeCommand(location, "viscousForceProfile", opts, &output);
+  cm.executeCommand(location, "binningProfile", opts, &output);
   
-  path pref=location/"postProcessing"/"viscousForceProfile";
+  path pref=location/"postProcessing"/"binningProfile";
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"viscousForceMean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").c_str(), arma::raw_ascii);
   arma::mat vf;
-  vf.load( (lastTimeDir/"viscousForce.dat").c_str(), arma::raw_ascii);
+  vf.load( (lastTimeDir/"walls_viscousForce.dat").c_str(), arma::raw_ascii);
   
-  return arma::mat(join_rows(vfm, vf.col(1)));
+  return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols)));
 }
 
 

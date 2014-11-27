@@ -210,6 +210,15 @@ public:
 
 SolidModel operator-(const SolidModel& m1, const SolidModel& m2);
 
+class BooleanIntersection
+: public SolidModel
+{
+public:
+  BooleanIntersection(const SolidModel& m1, const SolidModel& m2);
+};
+
+SolidModel operator&(const SolidModel& m1, const SolidModel& m2);
+
 // =================== Cosmetic features ======================
 
 class Fillet

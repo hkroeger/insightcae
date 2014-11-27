@@ -809,6 +809,18 @@ SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
   return BooleanSubtract(m1, m2);
 }
 
+BooleanIntersection::BooleanIntersection(const SolidModel& m1, const SolidModel& m2)
+: SolidModel(BRepAlgoAPI_Common(m1, m2).Shape())
+{
+  m1.unsetLeaf();
+  m2.unsetLeaf();
+}
+
+SolidModel operator&(const SolidModel& m1, const SolidModel& m2)
+{
+  return BooleanIntersection(m1, m2);
+}
+
 
 TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, double r)
 {

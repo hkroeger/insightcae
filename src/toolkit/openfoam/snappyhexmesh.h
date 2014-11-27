@@ -62,8 +62,7 @@ public:
       ( scale, arma::mat, vec3(1,1,1) )
       ( translate, arma::mat, vec3(0,0,0) )
       ( rollPitchYaw, arma::mat, vec3(0,0,0) )
-      ( cellZone, std::string, "" )
-      ( cellZoneInside, std::string, "" )
+      ( zoneName, std::string, "" )
   )
 
 protected:

@@ -63,11 +63,11 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   levels.push_back(p_.minLevel());
   levels.push_back(p_.maxLevel());
   castdict["level"]=levels;
-  if (p_.cellZone()!="")
+  if (p_.zoneName()!="")
   {
-    castdict["faceZone"]=p_.cellZone();
-    castdict["cellZone"]=p_.cellZone();
-    castdict["cellZoneInside"]=p_.cellZoneInside();
+    castdict["faceZone"]=p_.zoneName();
+    castdict["cellZone"]=p_.zoneName();
+    castdict["cellZoneInside"]="inside";
   }
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name()]=castdict;
 

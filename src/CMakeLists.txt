@@ -294,6 +294,7 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     TARGET ${NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
+  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} )
 endmacro(install_shared_file)
 
 macro(install_package_script PACKAGENAME)

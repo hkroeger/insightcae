@@ -50,13 +50,19 @@ public:
   virtual void update(const ProgressState& pi);
 };
 
+class SharedPathList 
+: public std::vector<boost::filesystem::path>
+{
+public:
+  SharedPathList();
+};
+
 class Analysis
 {
   
 public:
   declareFactoryTable(Analysis, NoParameters);
   
-  typedef std::vector<boost::filesystem::path> PathList;
   
 protected:
   std::string name_;
@@ -64,7 +70,7 @@ protected:
   DirectoryParameter executionPath_;
   ParameterSetPtr parameters_;
   
-  PathList sharedSearchPath_;
+  SharedPathList sharedSearchPath_;
   void extendSharedSearchPath(const std::string& name);
   
 public:

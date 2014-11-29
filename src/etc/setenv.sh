@@ -6,7 +6,7 @@ export INSIGHT_INSTDIR=$(cd $INSIGHT_BINDIR; cd ..; pwd)
 export INSIGHT_LIBDIR=${INSIGHT_INSTDIR}/lib
 
 export INSIGHT_USERSHAREDDIR=$HOME/.insight/share
-export INSIGHT_GLOBALSHAREDDIRS="$INSIGHT_INSTDIR/share/insight /usr/share/insight"
+export INSIGHT_GLOBALSHAREDDIRS=$INSIGHT_INSTDIR/share/insight:/usr/share/insight
 
 export PATH=$INSIGHT_BINDIR:$PATH
 export LD_LIBRARY_PATH=$INSIGHT_LIBDIR:$LD_LIBRARY_PATH

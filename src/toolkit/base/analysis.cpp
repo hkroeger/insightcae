@@ -132,18 +132,45 @@ void Analysis::cancel()
 {
 }
 
+SharedPathList::SharedPathList()
+{
+  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
+  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
+  
+  if (var_usershareddir) 
+  {
+    push_back(var_usershareddir);
+  }
+  else
+  {
+    char *userdir=getenv("HOME");
+    if (userdir)
+    {
+      push_back( path(userdir)/".insight"/"share" );
+    }
+  }
+  
+  if (var_globalshareddir) 
+  {
+    std::vector<string> globals;
+    split(globals, var_globalshareddir, is_any_of(":"));
+    BOOST_FOREACH(const string& s, globals) push_back(s);
+  }
+  else
+  {
+    push_back( path("/usr/share/insight") );
+  }
+}
+
+
 
 boost::filesystem::path Analysis::getSharedFilePath(const boost::filesystem::path& file)
 {
-  path userSharedDir( path(getenv("HOME"))/".insight"/"share" );
-  path globalSharedDir( path("/usr")/"share"/"insight" );
-  
+
   BOOST_REVERSE_FOREACH( const path& p, sharedSearchPath_)
   {
-    if (exists(userSharedDir/p/file)) 
-      return userSharedDir/p/file;
-    else if (exists(globalSharedDir/p/file)) 
-      return globalSharedDir/p/file;
+    if (exists(p/file)) 
+      return p/file;
   }
   
   // nothing found
@@ -245,18 +272,8 @@ void SynchronisedAnalysisQueue::cancelAll()
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
-  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
-  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
-  
-  std::vector<path> paths;
-  if (var_usershareddir) paths.push_back(var_usershareddir);
-  if (var_globalshareddir) 
-  {
-    std::vector<string> globals;
-    split(globals, var_globalshareddir, is_any_of(" "));
-    BOOST_FOREACH(const string& s, globals) paths.push_back(s);
-  }
-  
+
+  SharedPathList paths;
   BOOST_FOREACH(const path& p, paths)
   {
     if (is_directory(p))
@@ -296,6 +313,10 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	  }
 	}
       }
+    }
+    else
+    {
+      cout<<"Not existing: "<<p<<endl;
     }
   }
 }

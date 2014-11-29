@@ -39,6 +39,9 @@ IF(OF22x_DIR)
   message(STATUS "exe link flags = "  ${OF22x_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF22x_MPI)
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF22x_FOAM_APPBIN)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF22x_FOAM_LIBBIN)
+
   macro (setup_exe_target_OF22x targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -56,6 +59,7 @@ IF(OF22x_DIR)
       ${OF22x_LIB_DIR}/libOpenFOAM.so 
       ${OF22x_LIB_DIR}/${OF22x_MPI}/libPstream.so 
       ${ARGN} ) 
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF22x_FOAM_APPBIN})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -74,6 +78,7 @@ IF(OF22x_DIR)
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF22x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} ${ARGN}) 
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF22x_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

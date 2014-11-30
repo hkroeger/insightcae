@@ -57,6 +57,7 @@ extern const OFDictData::dimensionSet dimless;
 extern const OFDictData::dimensionSet dimKinViscosity;
 extern const OFDictData::dimensionSet dimDynViscosity;
 extern const OFDictData::dimensionSet dimTemperature;
+extern const OFDictData::dimensionSet dimCurrent;
 
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue, FieldGeoType > FieldInfo;
@@ -113,6 +114,7 @@ public:
   inline OpenFOAMCase& OFcase();
   
   int OFversion() const;
+  virtual void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
   
   virtual bool providesBCsForPatch(const std::string& patchName) const;
@@ -171,7 +173,8 @@ public:
     bool isCompressible() const;
     
     boost::shared_ptr<OFdicts> createDictionaries() const;
-    
+    void modifyCaseOnDisk(const boost::filesystem::path& location) const;
+
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
     virtual void createOnDisk(const boost::filesystem::path& location );
     

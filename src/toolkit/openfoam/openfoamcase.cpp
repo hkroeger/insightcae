@@ -156,6 +156,10 @@ int OpenFOAMCaseElement::OFversion() const
   return OFcase().OFversion();
 }
 
+void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
+{
+}
+
 OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name)
 : CaseElement(c, name)
 {
@@ -212,6 +216,7 @@ const OFDictData::dimensionSet dimless = OFDictData::dimension(0, 0, 0, 0, 0, 0,
 const OFDictData::dimensionSet dimKinViscosity = OFDictData::dimension(0, 2, -1, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimDynViscosity = OFDictData::dimension(1, -1, -1, 0, 0, 0, 0);
 const OFDictData::dimensionSet dimTemperature = OFDictData::dimension(0, 0, 0, 1, 0, 0, 0);
+const OFDictData::dimensionSet dimCurrent = OFDictData::dimension(0, 0, 0, 0, 0, 1, 0);
 
 bool OpenFOAMCase::isCompressible() const
 {
@@ -249,15 +254,26 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
        i!=elements_.end(); i++)
        {
 	 const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
-	 cout<<e<<endl;
 	 if (e)
 	 {
-	   cout<<e->name()<<endl;
 	   e->addIntoDictionaries(*dictionaries);
 	 }
        }  
 
   return dictionaries;
+}
+
+void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) const
+{
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+      i!=elements_.end(); i++)
+  {
+    const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
+    if (e)
+    {
+      e->modifyCaseOnDisk(*this, location);
+    }
+  }
 }
 
 
@@ -274,28 +290,20 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::
 
   for (OFdicts::const_iterator i=dictionaries->begin();
       i!=dictionaries->end(); i++)
-      {
-	/*
-	// write to console for debug
-	cout << endl
-	      << i->first << endl 
-	      << "=================" << endl;
-	writeOpenFOAMDict(cout, *i->second, boost::filesystem::basename(i->first));
-	*/
-	// then write to file
-	boost::filesystem::path dictpath = basepath / i->first;
-	if (!exists(dictpath.parent_path())) 
-	{
-	  boost::filesystem::create_directories(dictpath.parent_path());
-	}
-	
-	{
-	  std::ofstream f(dictpath.c_str());
-	  //writeOpenFOAMDict(f, *i->second, boost::filesystem::basename(i->first));
-	  i->second->write(dictpath);
-	}
-      }
+  {
+    boost::filesystem::path dictpath = basepath / i->first;
+    if (!exists(dictpath.parent_path())) 
+    {
+      boost::filesystem::create_directories(dictpath.parent_path());
+    }
+    
+    {
+      std::ofstream f(dictpath.c_str());
+      i->second->write(dictpath);
+    }
+  }
 }
+
 
 bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) const
 {

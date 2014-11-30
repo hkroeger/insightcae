@@ -1445,15 +1445,18 @@ void extrude2DMesh
   const OpenFOAMCase& cm, 
   const boost::filesystem::path& location, 
   const std::string& sourcePatchName,
+  std::string sourcePatchName2,
   bool wedgeInsteadOfPrism
 )
 {  
+  
+  if (sourcePatchName2=="") sourcePatchName2=sourcePatchName;
   OFDictData::dictFile extrDict;
   
   extrDict["constructFrom"]="patch";
   extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
   extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
-  extrDict["exposedPatchName"]=sourcePatchName;
+  extrDict["exposedPatchName"]=sourcePatchName2;
   extrDict["flipNormals"]=false;
   extrDict["nLayers"]=1;
   extrDict["expansionRatio"]=1.0;
@@ -1476,7 +1479,7 @@ void extrude2DMesh
   }
 
   extrDict["mergeFaces"]=false;
-  extrDict["mergeTol"]=0;
+  extrDict["mergeTol"]=1e-6;
   
   extrDict.write( location / "system" / "extrudeMeshDict" );
 

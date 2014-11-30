@@ -418,6 +418,7 @@ void extrude2DMesh
   const OpenFOAMCase& c, 
   const boost::filesystem::path& location, 
   const std::string& sourcePatchName,
+  std::string sourcePatchName2="",
   bool wedgeInsteadOfPrism=false
 );
 

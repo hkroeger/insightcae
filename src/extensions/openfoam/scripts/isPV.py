@@ -67,7 +67,7 @@ for curtime in times:
   return fn
         
 
-searchdirs=map(lambda d: os.path.join(d, 'paraview'), [os.environ['INSIGHT_USERSHAREDDIR']]+os.environ['INSIGHT_GLOBALSHAREDDIRS'].split())
+searchdirs=map(lambda d: os.path.join(d, 'paraview'), [os.environ['INSIGHT_USERSHAREDDIR']]+os.environ['INSIGHT_GLOBALSHAREDDIRS'].split(':'))
 
 if opts.list:
   avail=[]

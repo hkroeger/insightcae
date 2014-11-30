@@ -79,6 +79,8 @@ public:
 class OpenFOAMParameterStudy
 : public ParameterStudy
 {
+protected:
+  bool subcasesRemesh_;
 public:
     declareType("OpenFOAM Parameter Study");
     
@@ -87,7 +89,8 @@ public:
       const std::string& name, 
       const std::string& description, 
       const OpenFOAMAnalysis& baseAnalysis, 
-      const RangeParameterList& varp
+      const RangeParameterList& varp,
+      bool subcasesRemesh=false
     );
 
     virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;

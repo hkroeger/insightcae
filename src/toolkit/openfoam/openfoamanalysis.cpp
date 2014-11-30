@@ -323,12 +323,14 @@ OpenFOAMParameterStudy::OpenFOAMParameterStudy
     const std::string& name, 
     const std::string& description, 
     const OpenFOAMAnalysis& baseAnalysis, 
-    const RangeParameterList& varp
+    const RangeParameterList& varp,
+    bool subcasesRemesh
 )
 : ParameterStudy
   (
     name, description, baseAnalysis, varp
-  )
+  ),
+  subcasesRemesh_(subcasesRemesh)
 {
 }
 
@@ -372,6 +374,7 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
     base_case->setExecutionPath(exep);
     dir = base_case->setupExecutionEnvironment();
 
+    if (!subcasesRemesh_)
     {
       OpenFOAMCase meshCase(ofe);
       if (!meshCase.meshPresentOnDisk(dir))
@@ -382,7 +385,8 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
   }
   
   path old_lp=p.get<PathParameter>("mesh/linkmesh")();
-  p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
+  if (!subcasesRemesh_)
+    p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
   setupQueue();
   p.get<PathParameter>("mesh/linkmesh")() = old_lp;
   

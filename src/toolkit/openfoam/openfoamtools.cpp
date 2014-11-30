@@ -1451,7 +1451,7 @@ void extrude2DMesh
   OFDictData::dictFile extrDict;
   
   extrDict["constructFrom"]="patch";
-  extrDict["sourceCase"]="\""+location.string()+"\"";
+  extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
   extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
   extrDict["exposedPatchName"]=sourcePatchName;
   extrDict["flipNormals"]=false;

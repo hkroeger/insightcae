@@ -69,6 +69,17 @@ public:
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   
 };
+
+class AirfoilSectionPolar 
+: public OpenFOAMParameterStudy
+{
+public:
+    declareType("Airfoil 2D Polar");
+    
+    AirfoilSectionPolar(const NoParameters&);    
+    virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);
+};
+
 }
 
 #endif // INSIGHT_AIRFOILSECTION_H

@@ -432,6 +432,8 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
     ("cd", cd(cd.n_elem-1), "Drag coefficient", "", "");
   ptr_map_insert<ScalarResult>(*results) 
     ("eps", eps(eps.n_elem-1), "Lift-to-drag ratio", "", "");
+  ptr_map_insert<ScalarResult>(*results) 
+    ("cpmin", 0.0, "Minimum pressure", "", "");
     
   addPlot
   (
@@ -449,6 +451,98 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
   return results;
 }
 
+
+defineType(AirfoilSectionPolar);
+addToFactoryTable(Analysis, AirfoilSectionPolar, NoParameters);
+
+AirfoilSectionPolar::AirfoilSectionPolar(const NoParameters&)
+: OpenFOAMParameterStudy
+  (
+    "Polar of Airfoil",
+    "Computes the polar of a 2D airfoil section using CFD",
+    AirfoilSection(NoParameters()),
+    list_of<std::string>("geometry/alpha"),
+    true
+  )
+{
+}
+
+void AirfoilSectionPolar::evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results)
+{
+
+  std::string key="coeffTable";
+  results->insert(key, table("", "", "geometry/alpha", 
+			     list_of<std::string>("cl")("cd")("eps")("cpmin")));
+  const TabularResult& tab = 
+    static_cast<const TabularResult&>(*(results->find(key)->second));
+  
+  arma::mat tabdat=tab.toMat();
+  
+  int order=min(int(tabdat.n_rows)-1, 5);
+  arma::mat cl_coeffs=polynomialRegression(tabdat.col(1), tabdat.col(0), order);
+  arma::mat cd_coeffs=polynomialRegression(tabdat.col(2), tabdat.col(0), order);
+  arma::mat cpmin_coeffs=polynomialRegression(tabdat.col(4), tabdat.col(0), order);
+  
+  cout<<"Regression cl: "<<cl_coeffs<<endl;
+  cout<<"Regression cd: "<<cd_coeffs<<endl;
+  cout<<"Regression cpmin: "<<cpmin_coeffs<<endl;
+  
+  results->insert("RegressionCl", polynomialFitResult(cl_coeffs, "alpha", "Regression Coefficients for cl", ""));
+  results->insert("RegressionCd", polynomialFitResult(cd_coeffs, "alpha", "Regression Coefficients for cd", ""));
+  results->insert("RegressionCpmin", polynomialFitResult(cpmin_coeffs, "alpha", "Regression Coefficients for cpmin", ""));
+
+//   PropellerCurves owc(arma::flipud(cl_coeffs), arma::flipud(cd_coeffs), arma::flipud(cpmin_coeffs));
+//   owc.saveToFile( executionPath()/"airfoilcurves.ist" );
+  
+  arma::mat ralpha = arma::linspace(0.0 /*min(tabdat.col(0))*/, max(tabdat.col(0)), 50);
+  arma::mat raa; raa.resize(ralpha.n_rows, order);
+  for (int j=0; j<order; j++) raa.col(j)=pow(ralpha, j);
+  
+  arma::mat rcl = raa * cl_coeffs;
+  arma::mat rcd = raa * cd_coeffs;
+  arma::mat rcpmin = raa * cpmin_coeffs;
+  
+//   std::cout<<ralpha<<"; "<<rcl<<"; "<<rcd<<std::endl;
+//   arma::mat reta=arma::mat(join_rows(ralpha, (rJ%rKt)/(2.*M_PI*0.1*rKq10)));
+//   reta = arma::mat(reta.rows( find(rKt>0) ));
+//   double maxJ=max(reta.col(0)); // maximum J, where thrust is positive
+  
+  addPlot
+  (
+    results, executionPath(), "chartAirfoilCharacteristics",
+    "alpha / deg", "C_L, C_D",
+    list_of<PlotCurve>
+     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"w p lt 1 lc 1 lw 2 t 'C_L'"))
+     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(2))), 	"w p lt 1 lc 2 lw 2 t 'C_D'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcl)), 	"w l lt 1 lc 1 lw 2 t 'C_L (regr.)'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcd)), 	"w l lt 1 lc 2 lw 2 t 'C_D (regr.)'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcpmin)), 	"w l lt 2 lc 1 lw 1 axes x1y2 t 'C_p,min (regr.)'"))
+    ,
+    "Characteristic chart of propeller coefficients",
+    "set y2tics; set y2label 'C_P';"
+  );
+
+//   std::vector<PlotCurve> curves;
+//   int i=0;
+//   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+//   {
+//     const std::string& n = get<0>(ai);
+//     const PropellerAnalysis& a = dynamic_cast<PropellerAnalysis&>(*get<1>(ai));
+//     const ResultSetPtr& r = get<2>(ai);
+//     
+//     curves.push_back(PlotCurve(a.sigmaVsX(a.p()), str( format(" w l lt 1 lc %d t '%s'") % i % n ) ));
+//     
+//     i++;
+//   }
+//   
+//   addPlot
+//   (
+//     results, executionPath(), "chartSigmaVsX",
+//     "x", "sigma",
+//     curves,
+//     "Cavitation number vs. radius"
+//   );
+}
 
 
 

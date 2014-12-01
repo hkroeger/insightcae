@@ -22,11 +22,13 @@
 #define INSIGHT_LATEXTOOLS_H
 
 #include <string>
+#include "boost/filesystem.hpp"
 
 namespace insight 
 {
 
 std::string cleanSymbols(const std::string& s);
+boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s);
 
 }
 

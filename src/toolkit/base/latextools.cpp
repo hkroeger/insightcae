@@ -24,6 +24,8 @@
 
 #include "boost/algorithm/string.hpp"
 
+using namespace boost;
+
 namespace insight
 {
 
@@ -36,6 +38,13 @@ std::string cleanSymbols(const std::string& s)
   boost::replace_all(result, "[", "{[}");
   boost::replace_all(result, "]", "{]}");
   return result;
+}
+
+boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s)
+{
+  std::string stem=s.stem().string();
+  replace_all(stem, ".", "_");
+  return s.parent_path()/(stem+s.extension().string());
 }
 
 }

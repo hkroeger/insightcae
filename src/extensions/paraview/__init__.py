@@ -188,6 +188,7 @@ try:
 
 	return elev, minZ, maxZ
     
+    # @scale: viewport height will be two times the given value!
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()

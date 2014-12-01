@@ -493,7 +493,10 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
     <<"\\includegraphics[#1]{#2}\\endgroup}\n"
     <<"\\def\\PlotFrame{\\begingroup\n"
     <<"\\catcode`\\_=12\n"
-    <<"\\PlotFrameB}\n";
+    <<"\\PlotFrameB}\n"
+    <<"\\usepackage{hyperref}\n"
+    <<"\\usepackage{fancyhdr}\n"
+    <<"\\pagestyle{fancy}\n";
     
     writeLatexHeaderCode(f);
     
@@ -721,7 +724,7 @@ void Chart::writeLatexHeaderCode(std::ostream& f) const
 
 void Chart::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
-  path chart_file=(outputfilepath/(name+".png")).string();
+  path chart_file=cleanLatexImageFileName(outputfilepath/(name+".png")).string();
   
   generatePlotImage(chart_file);
   

@@ -32,6 +32,9 @@
 #include "boost/date_time.hpp"
 #include <boost/graph/buffer_concepts.hpp>
 #include "boost/filesystem.hpp"
+#include "boost/regex.hpp"
+
+#include "boost/format.hpp"
 
 #include "gnuplot-iostream.h"
 
@@ -76,7 +79,11 @@ void ResultElement::writeLatexHeaderCode(std::ostream& f) const
 {
 }
 
-void ResultElement::writeLatexCode(ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void ResultElement::writeLatexCode(ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+{
+}
+
+void ResultElement::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
 {
 }
 
@@ -101,7 +108,7 @@ void Image::writeLatexHeaderCode(std::ostream& f) const
   f<<"\\usepackage{placeins}\n";
 }
 
-void Image::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
   //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
   f<< 
@@ -131,7 +138,7 @@ Comment::Comment(const std::string& value, const std::string& shortDesc, const s
 {
 }
 
-void Comment::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void Comment::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
   f << value_ <<endl;
 }
@@ -154,7 +161,7 @@ ScalarResult::ScalarResult(const double& value, const string& shortDesc, const s
 : NumericalResult< double >(value, shortDesc, longDesc, unit)
 {}
 
-void ScalarResult::writeLatexCode(ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void ScalarResult::writeLatexCode(ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
   f.setf(ios::fixed,ios::floatfield);
   f.precision(3);
@@ -262,7 +269,7 @@ void TabularResult::writeLatexHeaderCode(ostream& f) const
   f<<"\\usepackage{placeins}\n";
 }
 
-void TabularResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void TabularResult::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
 
   f<<
@@ -319,7 +326,7 @@ AttributeTableResult::AttributeTableResult
 }
   
   
-void AttributeTableResult::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void AttributeTableResult::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
   f<<
   "\\begin{tabular}{lc}\n"
@@ -434,8 +441,15 @@ void ResultSet::writeLatexHeaderCode(std::ostream& f) const
   }  
 }
 
-void ResultSet::writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const
+void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
+  if (level>0)
+  {
+    f << title_ << "\n\n";
+
+    f << subtitle_ << "\n\n";
+  }
+  
   f << latex_subsection(level) << "{Input Parameters}\n";
   
   f<<p_.latexRepresentation();
@@ -445,38 +459,72 @@ void ResultSet::writeLatexCode(std::ostream& f, int level, const boost::filesyst
   {
     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
-    i->second->writeLatexCode(f, level+2, outputfilepath);
+    
+    std::string subelemname=i->first;
+    if (name!="")
+      subelemname=name+"__"+i->first;
+    
+    i->second->writeLatexCode(f, subelemname, level+2, outputfilepath);
+    
     f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
     f << endl;
   }
 }
 
+void ResultSet::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+{
+  path outsubdir(outputdirectory/name);
+  create_directory(outsubdir);
+  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+  {
+    i->second->exportDataToFile(i->first, outsubdir);
+  }
+}
+
+
 void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
 {
-  std::ofstream f(absolute(file).c_str());
-  f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
-  f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
-   <<"\\includegraphics[#1]{#2}\\endgroup}\n"
-   <<"\\def\\PlotFrame{\\begingroup\n"
-   <<"\\catcode`\\_=12\n"
-   <<"\\PlotFrameB}\n";
-   
-  writeLatexHeaderCode(f);
-   
-  f<<
-  "\\begin{document}\n"
-  //"\\title{"<<title_<<"}\n"
-  //"\\subtitle{"<<subtitle_<<"}\n"
-  "\\title{"<<title_<<"\\\\\n"
-  "\\vspace{0.5cm}\\normalsize{"<<subtitle_<<"}}\n"
-  "\\date{"<<date_<<"}\n"
-  "\\author{"<<author_<<"}\n"
-  "\\maketitle\n";
-    
-  writeLatexCode(f, 0, file.parent_path());
+  path filepath(absolute(file));
   
-  f<<
-  "\\end{document}\n";
+  {
+    std::ofstream f(filepath.c_str());
+    f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
+    f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
+    <<"\\includegraphics[#1]{#2}\\endgroup}\n"
+    <<"\\def\\PlotFrame{\\begingroup\n"
+    <<"\\catcode`\\_=12\n"
+    <<"\\PlotFrameB}\n"
+    <<"\\usepackage{hyperref}\n"
+    <<"\\usepackage{fancyhdr}\n"
+    <<"\\pagestyle{fancy}\n";
+    
+    writeLatexHeaderCode(f);
+    
+    f<<
+    "\\begin{document}\n"
+    //"\\title{"<<title_<<"}\n"
+    //"\\subtitle{"<<subtitle_<<"}\n"
+    "\\title{"<<title_<<"\\\\\n"
+    "\\vspace{0.5cm}\\normalsize{"<<subtitle_<<"}}\n"
+    "\\date{"<<date_<<"}\n"
+    "\\author{"<<author_<<"}\n"
+    "\\maketitle\n"
+    "\\tableofcontents\n";
+      
+    writeLatexCode(f, "", 0, filepath.parent_path());
+    
+    f<<
+    "\\end{document}\n";
+  }
+  
+  {
+    path outdir(filepath.parent_path()/"report_data");
+    create_directory(outdir);
+    for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+    {
+      i->second->exportDataToFile(i->first, outdir);
+    }
+  }
 }
 
 ResultElement* ResultSet::clone() const
@@ -514,6 +562,19 @@ PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plotcmd)
 {}
 
 
+std::string PlotCurve::title() const
+{
+  boost::regex re(".*t *'(.*)'.*");
+  boost::smatch str_matches;
+  std::cout<<plotcmd_<<std::endl;
+  if (boost::regex_match(plotcmd_, str_matches, re))
+  {
+    std::cout<<" <> "<<str_matches[1]<<std::endl;
+    return str_matches[1];
+  }
+  else return "";
+}
+  
 void addPlot
 (
   ResultSetPtr& results, 
@@ -526,16 +587,103 @@ void addPlot
   const std::string& addinit
 )
 {
-  std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-  //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
   
+  results->insert(resultelementname,
+    std::auto_ptr<Chart>(new Chart
+    (
+      xlabel, ylabel, plc,
+      shortDescription, "",
+      addinit
+  )));
+  
+//   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
+//   //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
+//   
+//   {
+//     Gnuplot gp;
+//     
+//     //gp<<"set terminal postscript color;";
+//     //gp<<"set output '"<<chart_file_name_i<<"';";
+//     gp<<"set terminal pngcairo; set termoption dash;";
+//     gp<<"set output '"<<chart_file_name<<"';";
+// 
+//     gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
+// 	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
+// 	"set linetype  3 lc rgb '#A52A2A' lw 1;"
+// 	"set linetype  4 lc rgb '#E9967A' lw 1;"
+// 	"set linetype  5 lc rgb '#5F9EA0' lw 1;"
+// 	"set linetype  6 lc rgb '#006400' lw 1;"
+// 	"set linetype  7 lc rgb '#8B008B' lw 1;"
+// 	"set linetype  8 lc rgb '#696969' lw 1;"
+// 	"set linetype  9 lc rgb '#DAA520' lw 1;"
+// 	"set linetype cycle  9;";
+// 
+//     gp<<addinit<<";";
+//     gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
+//     gp<<"plot 0 not lt -1";
+//     BOOST_FOREACH(const PlotCurve& pc, plc)
+//     {
+//       if (pc.xy_.n_rows>0)
+// 	gp<<", '-' "<<pc.plotcmd_;
+//       else
+// 	gp<<", "<<pc.plotcmd_;
+//     }
+//     gp<<endl;
+//     BOOST_FOREACH(const PlotCurve& pc, plc)
+//     {
+//       if (pc.xy_.n_rows>0)
+// 	gp.send1d(pc.xy_);
+//     }
+//   }
+// 
+//   results->insert(resultelementname,
+//     std::auto_ptr<Image>(new Image
+//     (
+//     workdir, chart_file_name, 
+//     shortDescription, ""
+//   )));
+}
+
+
+
+defineType(Chart);
+addToFactoryTable(ResultElement, Chart, ResultElement::ResultElementConstrP);
+
+Chart::Chart(const ResultElement::ResultElementConstrP& par)
+: ResultElement(par)
+{
+}
+
+
+
+
+Chart::Chart
+(
+  const std::string& xlabel,
+  const std::string& ylabel,
+  const PlotCurveList& plc,
+  const std::string& shortDesc, const std::string& longDesc,
+  const std::string& addinit
+)
+: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
+  xlabel_(xlabel),
+  ylabel_(ylabel),
+  plc_(plc),
+  addinit_(addinit)
+{
+}
+
+void Chart::generatePlotImage(const path& imagepath) const
+{
+//   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
+    
   {
     Gnuplot gp;
     
     //gp<<"set terminal postscript color;";
     //gp<<"set output '"<<chart_file_name_i<<"';";
     gp<<"set terminal pngcairo; set termoption dash;";
-    gp<<"set output '"<<chart_file_name<<"';";
+    gp<<"set output '"<<absolute(imagepath).string()<<"';";
 
     gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
 	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
@@ -548,10 +696,10 @@ void addPlot
 	"set linetype  9 lc rgb '#DAA520' lw 1;"
 	"set linetype cycle  9;";
 
-    gp<<addinit<<";";
-    gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
+    gp<<addinit_<<";";
+    gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
     gp<<"plot 0 not lt -1";
-    BOOST_FOREACH(const PlotCurve& pc, plc)
+    BOOST_FOREACH(const PlotCurve& pc, plc_)
     {
       if (pc.xy_.n_rows>0)
 	gp<<", '-' "<<pc.plotcmd_;
@@ -559,28 +707,60 @@ void addPlot
 	gp<<", "<<pc.plotcmd_;
     }
     gp<<endl;
-    BOOST_FOREACH(const PlotCurve& pc, plc)
+    BOOST_FOREACH(const PlotCurve& pc, plc_)
     {
       if (pc.xy_.n_rows>0)
 	gp.send1d(pc.xy_);
     }
   }
- /*
-  std::string cmd="ps2pdf "+chart_file_name_i+" "+chart_file_name; 
-  int ret=::system(cmd.c_str());
-  if (ret || !exists(chart_file_name))
-   throw insight::Exception("Conversion from postscript chart to pdf failed! Command was:\n"+cmd);
-  else
-   remove(chart_file_name_i);
-   */
-  results->insert(resultelementname,
-    std::auto_ptr<Image>(new Image
-    (
-    workdir, chart_file_name, 
-    shortDescription, ""
-  )));
 }
 
+  
+void Chart::writeLatexHeaderCode(std::ostream& f) const
+{
+  f<<"\\usepackage{graphicx}\n";
+  f<<"\\usepackage{placeins}\n";
+}
+
+void Chart::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+{
+  path chart_file=cleanLatexImageFileName(outputfilepath/(name+".png")).string();
+  
+  generatePlotImage(chart_file);
+  
+  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+  f<< 
+  "\n\nSee figure below.\n"
+  "\\begin{figure}[!h]"
+  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, chart_file).c_str() << "}\n"
+  "\\caption{"+cleanSymbols(shortDescription_)+"}\n"
+  "\\end{figure}"
+  "\\FloatBarrier";
+}
+
+void Chart::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+{
+  int curveID=0;
+  BOOST_FOREACH(const PlotCurve& pc, plc_)
+  {
+    std::string suf=pc.title();
+    replace_all(suf, "/", "_");
+    if (suf=="")
+      suf=str(format("curve%d")%curveID);
+    
+    boost::filesystem::path fname(outputdirectory/(name+"__"+suf+".xy"));
+    
+    std::ofstream f(fname.c_str());
+    pc.xy_.save(fname.string(), arma::raw_ascii);
+    curveID++;
+  }
+}
+
+  
+ResultElement* Chart::clone() const
+{
+  return new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_);
+}
 
 
 

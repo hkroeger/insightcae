@@ -58,7 +58,8 @@ public:
   inline const std::string& unit() const { return unit_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
   virtual ResultElement* clone() const =0;
 };
@@ -80,7 +81,7 @@ public:
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -106,6 +107,13 @@ public:
   inline void setValue(const T& value) { value_=value; }
   
   inline const T& value() const { return value_; }
+  
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+  {
+    boost::filesystem::path fname(outputdirectory/(name+".dat"));
+    std::ofstream f(fname.c_str());
+    f<<value_<<std::endl;
+  }
 };
 
 class Comment
@@ -119,7 +127,7 @@ public:
   
   Comment(const ResultElement::ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -131,7 +139,7 @@ public:
   
   ScalarResult(const ResultElement::ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -179,7 +187,7 @@ public:
   
   virtual void writeGnuplotData(std::ostream& f) const;
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -217,7 +225,7 @@ public:
   inline const AttributeNames& names() const { return names_; }
   inline const AttributeValues& values() const { return values_; }
   
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -259,8 +267,9 @@ public:
   inline const ParameterSet& parameters() const { return p_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
 
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
   
   virtual ResultElement* clone() const;
@@ -283,6 +292,8 @@ struct PlotCurve
   PlotCurve(const char* plotcmd);
   PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
+  
+  std::string title() const;
 };
 
 typedef std::vector<PlotCurve> PlotCurveList;
@@ -298,6 +309,36 @@ void addPlot
   const std::string& shortDescription,
   const std::string& addinit = ""
 );
+
+class Chart
+: public ResultElement
+{
+protected:
+  std::string xlabel_;
+  std::string ylabel_;
+  PlotCurveList plc_;
+  std::string addinit_;
+  
+public:
+  declareType("Chart");
+  Chart(const ResultElement::ResultElementConstrP& par);
+  Chart
+  (
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDesc, const std::string& longDesc,
+    const std::string& addinit = ""    
+  );
+  
+  virtual void generatePlotImage(const boost::filesystem::path& imagepath) const;
+  
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+  
+  virtual ResultElement* clone() const;
+};
 
 struct PlotField
 {

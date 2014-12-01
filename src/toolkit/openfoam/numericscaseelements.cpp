@@ -1378,6 +1378,16 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="magneticFoam";
   
+  controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
+  
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
@@ -1432,20 +1442,20 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   
   std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   grad["default"]=bgrads;
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["default"]="none";
       
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["default"]="Gauss linear corrected";
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 0.66";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="corrected";
+  snGrad["default"]="localLimited UBlendingFactor 0.66";
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";

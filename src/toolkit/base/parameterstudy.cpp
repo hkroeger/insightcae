@@ -217,7 +217,7 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
 
-    std::string key=n+", "+r->title()+" ("+r->subtitle()+")";
+    std::string key=n/*+", "+r->title()+" ("+r->subtitle()+")"*/;
     results->insert( key, r->clone() );    
   }
   

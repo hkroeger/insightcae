@@ -364,6 +364,13 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, const insight::Parame
     .set_CofR(vec3(0,0,0))
     ));  
 
+//   cm.insert(new minMaxSurfacePressure(cm, minMaxSurfacePressure::Parameters()
+//       .set_name("minPressure")
+//       .set_patches( list_of("\""+foil_+".*\"") )
+//       .set_nblades(1)
+//       .set_section_radii(list_of(0.0)(1.0))
+//       ));
+
   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters().velocity(vec3(vinf,0,0)) ));
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters().pressure(0.0) ));
    

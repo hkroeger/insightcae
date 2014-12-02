@@ -518,7 +518,7 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   }
   
   {
-    path outdir(filepath.parent_path()/"report_data");
+    path outdir(filepath.parent_path()/("report_data_"+filepath.stem().string()));
     create_directory(outdir);
     for (ResultSet::const_iterator i=begin(); i!=end(); i++)
     {

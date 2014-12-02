@@ -108,11 +108,11 @@ int main(int argc, char *argv[])
 	forAll(order, oi)
 	  {
 	    label fI=order[oi];
-	    
+
 	    A+=patch.magSf()[fI];
 	    if (A>Athreshold)
 	    {
-	      globalMinP = min(p[fI], globalMinP);
+	      globalMinP = pb[fI];
 	      break;
 	    }	      
 	  }

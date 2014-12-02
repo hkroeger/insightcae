@@ -433,6 +433,9 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
 		  / ( 0.5*rho * pow(vinf,2) * Aref );
   arma::mat eps = cl/cd;
   
+  double minPbyrho=minPatchPressure(cm, executionPath(), "foil")(0,1);
+  double cpmin=minPbyrho/(0.5*pow(vinf,2));
+  
   ptr_map_insert<ScalarResult>(*results) 
     ("cl", cl(cl.n_elem-1), "Lift coefficient", "", "");
   ptr_map_insert<ScalarResult>(*results) 
@@ -440,7 +443,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
   ptr_map_insert<ScalarResult>(*results) 
     ("eps", eps(eps.n_elem-1), "Lift-to-drag ratio", "", "");
   ptr_map_insert<ScalarResult>(*results) 
-    ("cpmin", 0.0, "Minimum pressure", "", "");
+    ("cpmin", cpmin, "Minimum pressure", "", "");
     
   addPlot
   (

@@ -1408,6 +1408,38 @@ arma::mat projectedArea
   return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(A.data(), A.size(), 1) ) );
 }
 
+arma::mat minPatchPressure
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& patch,
+  const double& Af,
+  const std::vector<std::string>& addopts
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(patch);
+  opts.push_back(str(format("%g") % Af));
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "minPatchPressure", opts, &output);
+
+  std::vector<double> t, minp;
+  boost::regex re("^Minimum pressure at t=(.+) pmin=(.+)$");
+  BOOST_FOREACH(const std::string & line, output)
+  {
+    boost::match_results<std::string::const_iterator> what;
+    if (boost::regex_match(line, what, re))
+    {
+      t.push_back(lexical_cast<double>(what[1]));
+      minp.push_back(lexical_cast<double>(what[2]));
+    }
+  }
+  
+  return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(minp.data(), minp.size(), 1) ) );
+}
+
 void surfaceFeatureExtract
 (
   const OpenFOAMCase& cm, 

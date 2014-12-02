@@ -266,7 +266,9 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
   if (child)
+  {
     value_->readFromNode(doc, *child, inputfilepath);
+  }
 }
 
 defineType(SelectableSubsetParameter);

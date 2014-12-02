@@ -500,7 +500,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       if (name=="default")
       {
 	cout<<"reading default value"<<endl;
-	defaultValue_.reset(Parameter::lookup(e->name(), ""));
+// 	defaultValue_.reset(Parameter::lookup(e->name(), ""));
 	defaultValue_->readFromNode( name, doc, *child, inputfilepath );
       }
       else
@@ -509,9 +509,9 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 	cout<<"Reading element i="<<i<<endl;
 	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
 	cout<<"now at size="<<size()<<endl;
-	Parameter* curp = Parameter::lookup(e->name(), "");
-	curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
-	value_.replace(i, curp);
+// 	Parameter* curp = Parameter::lookup(e->name(), "");
+	/*curp*/value_[i].readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
+	/*value_.replace(i, curp);*/
       }
     }
   }

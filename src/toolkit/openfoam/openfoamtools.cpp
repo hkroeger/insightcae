@@ -1524,6 +1524,12 @@ void extrude2DMesh
     opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5)));
     cm.executeCommand(location, "transformPoints", opt);
   }
+  else
+  {
+    opt.clear();
+    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2);
+    cm.executeCommand(location, "flattenWedges", opt);
+  }
 }
 
 

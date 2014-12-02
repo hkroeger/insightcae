@@ -448,7 +448,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
   addPlot
   (
     results, executionPath(), "chartCoefficientConvergence",
-    "Iteration", "ca, cl",
+    "Iteration", "C_L, C_D",
     list_of
      (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "w l t 'C_L'" ))
      (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cd)), "w l t 'C_D'" ))
@@ -532,6 +532,16 @@ void AirfoilSectionPolar::evaluateCombinedResults(const ParameterSet& p, ResultS
     "set y2tics; set y2label 'C_P';"
   );
 
+  
+  addPlot
+  (
+    results, executionPath(), "chartPolar",
+    "C_D", "C_L",
+    list_of
+     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "w l" ))
+    ,
+    "Profile polar"
+  );
 //   std::vector<PlotCurve> curves;
 //   int i=0;
 //   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )

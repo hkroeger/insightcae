@@ -343,6 +343,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, const insight::Parame
 {
   // create local variables from ParameterSet
   PSDBL(p, "geometry", c);
+  PSDBL(p, "geometry", alpha);
   PSDBL(p, "operation", vinf);
   PSINT(p, "fluid", turbulenceModel);
   PSDBL(p, "fluid", nu);
@@ -355,6 +356,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, const insight::Parame
 
   cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
     .set_purgeWrite(2)
+    .set_endTime(5000)
   )); 
   
   cm.insert(new forces(cm, forces::Parameters()
@@ -412,6 +414,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm, const insight::Parame
 insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
   PSDBL(p, "geometry", c);
+  PSDBL(p, "geometry", alpha);
   PSDBL(p, "operation", vinf);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "fluid", rho);
@@ -457,6 +460,57 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm,
     "Convergence history of coefficients",
     "set y2tics;set y2label 'C_L/C_D'"
   );
+  
+  std::string init=
+      "cbi=loadOFCase('.')\n"
+      "prepareSnapshots()\n";
+    
+  std::string figname("foilflow"), fname(figname+".png");
+  runPvPython
+  (
+    cm, executionPath(), list_of<std::string>
+    (
+      init+
+"interior=extractInterior(cbi)\n"
+"# create a new 'Slice'\n"
+"slice1 = Slice(Input=interior)\n"
+"slice1.SliceType = 'Plane'\n"
+"slice1.SliceOffsetValues = [0.0]\n"
+"# Properties modified on slice1.SliceType\n"
+"slice1.SliceType.Origin = [0, 0, 0]\n"
+"slice1.SliceType.Normal = [0, 0, 1]\n"
+
+"surfaceVectors1 = SurfaceVectors(Input=slice1)\n"
+"surfaceVectors1.SelectInputVectors = ['POINTS', 'U']\n"
+"# create a new 'Mask Points'\n"
+
+"maskPoints1 = MaskPoints(Input=surfaceVectors1)\n"
+"# Properties modified on maskPoints1\n"
+"maskPoints1.MaximumNumberofPoints = 100\n"
+"maskPoints1.ProportionallyDistributeMaximumNumberOfPoints = 1\n"
+"maskPoints1.RandomSampling = 1\n"
+"# create a new 'Stream Tracer With Custom Source'\n"
+"streamTracerWithCustomSource1 = StreamTracerWithCustomSource(Input=surfaceVectors1,\n"
+" SeedSource=maskPoints1)\n"
+"streamTracerWithCustomSource1.Vectors = ['POINTS', 'U']\n"
+"streamTracerWithCustomSource1.MaximumStreamlineLength = 100\n"
+
+"displayContour(slice1, 'p', arrayType='CELL_DATA', barpos=[0.8,0.25], barorient=1)\n"
+"Show(streamTracerWithCustomSource1)\n"
+"streamTracerWithCustomSource1Display = GetDisplayProperties(streamTracerWithCustomSource1, view=GetActiveView())\n"
+"ColorBy(streamTracerWithCustomSource1Display, None)\n"
+"setCam(["+lexical_cast<std::string>(0.5*c)+",0,1], ["+lexical_cast<std::string>(0.5*c)+",0,0], [0,1,0], "+lexical_cast<std::string>(c)+")\n"
+  
+	"WriteImage('"+fname+"')\n"
+    )
+  );
+
+  results->insert(figname,
+    std::auto_ptr<Image>(new Image
+    (
+    executionPath(), fname, 
+    str(format("Relative velocity (angle of attack %gdeg)")%alpha), ""
+  )));  
   
   return results;
 }

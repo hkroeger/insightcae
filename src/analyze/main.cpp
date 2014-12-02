@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
       ("workdir,w", po::value<std::string>(), "execution directory")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
       ("string,s", po::value<StringList>(), "string variable assignment")
+      ("path,p", po::value<StringList>(), "path variable assignment")
       ("double,d", po::value<StringList>(), "double variable assignment")
       ("int,i", po::value<StringList>(), "int variable assignment")
       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
@@ -164,6 +165,18 @@ int main(int argc, char *argv[])
 	boost::split(pair, s, boost::is_any_of(":"));
 	cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
 	parameters.getString(pair[0])=pair[1];
+      }
+    }
+    
+    if (vm.count("path"))
+    {
+      StringList sets=vm["path"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	cout << "Setting path '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+	parameters.getPath(pair[0])=pair[1];
       }
     }
     

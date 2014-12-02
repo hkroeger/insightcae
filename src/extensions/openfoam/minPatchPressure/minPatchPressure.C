@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	  IStringStream(args.additionalArgs()[0])()
 	);
 	
-    label pI=mesh.boundary().findPatchID(patch);
+    label pI=mesh.boundaryMesh().findPatchID(patch);
     if (pI<0)
     {
       FatalErrorIn("main")

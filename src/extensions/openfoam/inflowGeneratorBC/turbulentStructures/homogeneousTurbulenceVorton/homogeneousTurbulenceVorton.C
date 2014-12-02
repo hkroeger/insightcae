@@ -205,7 +205,7 @@ autoPtr<homogeneousTurbulenceVorton> homogeneousTurbulenceVorton::New(Istream& s
 void homogeneousTurbulenceVorton::randomize(BoostRandomGen& rand)
 {
     omegav_ = 2.0* (vector(rand(), rand(), rand()) - 0.5*pTraits<vector>::one);
-    omegav_/=mag(omegav_);
+    omegav_/=(mag(omegav_)+SMALL);
     for (label i=0; i<3; i++) omegav_[i]=Foam::min(1.0,Foam::max(-1.0, omegav_[i]));
 }
 

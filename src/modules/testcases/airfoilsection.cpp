@@ -43,7 +43,7 @@ arma::mat STLExtruder::tri::normal() const
 {
   arma::mat d1=p[2]-p[0], d2=p[1]-p[0];
   arma::mat n=cross(d1, d2);
-  n/=norm(n);
+  n/=norm(n,2);
   return n;
 }
 

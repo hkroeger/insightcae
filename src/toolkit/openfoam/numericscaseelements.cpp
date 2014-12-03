@@ -290,7 +290,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["writeFormat"]="ascii";
-  controlDict["writeCompression"]="uncompressed";
+  controlDict["writeCompression"]="compressed";
   controlDict["application"]="none";
   controlDict["endTime"]=1000.0;
   controlDict["deltaT"]=1.0;

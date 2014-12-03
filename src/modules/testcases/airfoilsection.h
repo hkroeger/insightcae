@@ -21,38 +21,13 @@
 #define INSIGHT_AIRFOILSECTION_H
 
 #include "openfoam/openfoamanalysis.h"
+#include "base/stltools.h"
 
 #include "boost/filesystem.hpp"
 
 namespace insight 
 {
-  
-class STLExtruder
-{
-  
-  struct tri
-  {
-    arma::mat p[3];
-    arma::mat normal() const;
-  };
-  
-  std::vector<tri> tris_;
-  
-  double z0_, z1_;
-  
-  void addTriPair(const arma::mat& p0, const arma::mat& p1);
-  
-  void writeTris(const boost::filesystem::path& outputfilepath);
-  
-public:
-  STLExtruder
-  (
-    const arma::mat xy_contour,
-    double z0, double z1,
-    const boost::filesystem::path& outputfilepath
-  );
-  
-};
+
 
 class AirfoilSection 
 : public insight::OpenFOAMAnalysis

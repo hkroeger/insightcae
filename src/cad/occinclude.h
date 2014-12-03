@@ -166,6 +166,8 @@
 #include "Geom_Circle.hxx"
 #include "Geom_TrimmedCurve.hxx"
 
+#include "BRepAdaptor_CompCurve.hxx"
+
 #include <armadillo>
 
 inline gp_Pnt to_Pnt(const arma::mat& xyz)

@@ -1510,6 +1510,7 @@ void extrude2DMesh
     extrDict["linearNormalCoeffs"]=lnc;
   }
 
+
   extrDict["mergeFaces"]=false;
   extrDict["mergeTol"]=1e-6;
   
@@ -1532,5 +1533,43 @@ void extrude2DMesh
   }
 }
 
+void rotateMesh
+(
+  const OpenFOAMCase& cm, 
+  const path& location, 
+  const string& sourcePatchName, 
+  int nc,
+  const arma::mat& axis, 
+  const arma::mat& p0  
+)
+{  
+  
+  OFDictData::dictFile extrDict;
+  
+  extrDict["constructFrom"]="patch";
+  extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
+  extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  extrDict["exposedPatchName"]=sourcePatchName;
+  extrDict["flipNormals"]=false;
+  extrDict["nLayers"]=nc;
+  extrDict["expansionRatio"]=1.0;
+
+  extrDict["extrudeModel"]="wedge";
+  OFDictData::dict wc;
+  wc["axisPt"]=OFDictData::vector3(p0);
+  wc["axis"]=OFDictData::vector3(axis);
+  wc["angle"]=360.0;
+  extrDict["wedgeCoeffs"]=wc;
+
+
+  extrDict["mergeFaces"]=true;
+  extrDict["mergeTol"]=1e-6;
+  
+  extrDict.write( location / "system" / "extrudeMeshDict" );
+
+  std::vector<std::string> opt;
+  cm.executeCommand(location, "extrudeMesh", opt);
+
+}
 
 }

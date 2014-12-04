@@ -947,6 +947,8 @@ void runPotentialFoam
   
 }
 
+boost::mutex runPvPython_mtx;
+
 void runPvPython
 (
   const OpenFOAMCase& ofc, 
@@ -954,6 +956,8 @@ void runPvPython
   const std::vector<std::string> pvpython_commands
 )
 {
+  boost::mutex::scoped_lock lock(runPvPython_mtx);
+  
   redi::opstream proc;  
   std::vector<string> args;
   args.push_back("--use-offscreen-rendering");

@@ -26,10 +26,10 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-TemporaryCaseDir::TemporaryCaseDir(bool keep)
+TemporaryCaseDir::TemporaryCaseDir(bool keep, const std::string& prefix)
 : keep_(keep)
 {
-  dir = unique_path();
+  dir = unique_path(prefix+"%%%%%%%");
   create_directories(dir);
 }
 

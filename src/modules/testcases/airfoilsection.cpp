@@ -521,10 +521,21 @@ void AirfoilSectionPolar::evaluateCombinedResults(const ParameterSet& p, ResultS
     results, executionPath(), "chartPolar",
     "C_D", "C_L",
     list_of
-     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "w l" ))
+     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "w l not" ))
     ,
     "Profile polar"
   );
+
+  addPlot
+  (
+    results, executionPath(), "chartSigma",
+    "C_L", "sigma",
+    list_of
+     (PlotCurve( arma::mat(join_rows(tabdat.col(1), tabdat.col(4))), "w l not" ))
+    ,
+    "Minimum pressure vs. lift coefficient"
+  );
+
 //   std::vector<PlotCurve> curves;
 //   int i=0;
 //   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )

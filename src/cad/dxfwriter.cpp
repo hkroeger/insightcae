@@ -78,39 +78,39 @@ DXFWriter::DXFWriter
   dw_->sectionTables();
   dxf_.writeVPort(*dw_);
 
-  dw_->tableLineTypes(25);
-  dxf_.writeLineType(*dw_, DL_LineTypeData("BYBLOCK", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("BYLAYER", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("CONTINUOUS", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("ACAD_ISO02W100", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("ACAD_ISO03W100", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("ACAD_ISO04W100", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("ACAD_ISO05W100", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("BORDER", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("BORDER2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("BORDERX2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("CENTER", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("CENTER2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("CENTERX2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHDOT", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHDOT2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHDOTX2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHED", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHED2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DASHEDX2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DIVIDE", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DIVIDE2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DIVIDEX2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DOT", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DOT2", 0));
-  dxf_.writeLineType(*dw_, DL_LineTypeData("DOTX2", 0));
+  dw_->tableLinetypes(25);
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("BYBLOCK", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("BYLAYER", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("CONTINUOUS", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("ACAD_ISO02W100", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("ACAD_ISO03W100", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("ACAD_ISO04W100", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("ACAD_ISO05W100", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("BORDER", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("BORDER2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("BORDERX2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("CENTER", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("CENTER2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("CENTERX2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHDOT", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHDOT2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHDOTX2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHED", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHED2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DASHEDX2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DIVIDE", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DIVIDE2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DIVIDEX2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DOT", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DOT2", "", 0, 1, 1));
+  dxf_.writeLinetype(*dw_, DL_LinetypeData("DOTX2", "", 0, 1, 1));
   dw_->tableEnd();
 
   int numberOfLayers = 3+2*(layers.size()); // add an extra layer in addition to each defined layer for hidden lines (name=layername+"_HL")
   dw_->tableLayers(numberOfLayers);
-  dxf_.writeLayer(*dw_, DL_LayerData("ANNOTATIONS", 0), DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS") );
-  dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS") );
-  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS") );
+  dxf_.writeLayer(*dw_, DL_LayerData("ANNOTATIONS", 0), DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS", 1) );
+  dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1) );
+  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS", 1) );
   BOOST_FOREACH(const LayerDefinition& ld, layers)
   {
     DL_LayerData ldata(boost::get<0>(ld), 0);
@@ -127,7 +127,8 @@ DXFWriter::DXFWriter
   }
   dw_->tableEnd();
 
-  dxf_.writeStyle(*dw_);
+#warning needs handling!
+//   dxf_.writeStyle(*dw_);
   dxf_.writeView(*dw_);
   dxf_.writeUcs(*dw_);
   dw_->tableAppid(1);
@@ -169,7 +170,7 @@ void DXFWriter::writeLine(const BRepAdaptor_Curve& c, const std::string& layer)
       p0.X(), p0.Y(), 0,
       p1.X(), p1.Y(), 0
     ),
-    DL_Attributes(layer, 256, -1, "BYLAYER")
+    DL_Attributes(layer, 256, -1, "BYLAYER", 1)
   );
 }
 
@@ -232,7 +233,7 @@ void DXFWriter::writeCircle(const BRepAdaptor_Curve& c, const std::string& layer
 	  p.X(), p.Y(), 0,
 	 r
 	),
-	DL_Attributes(layer, 256, -1, "BYLAYER")
+	DL_Attributes(layer, 256, -1, "BYLAYER", 1)
       );
     }
 
@@ -269,7 +270,7 @@ void DXFWriter::writeCircle(const BRepAdaptor_Curve& c, const std::string& layer
 	    p.X(), p.Y(), 0,
 	    r, start_angle, end_angle
 	  ),
-	  DL_Attributes(layer, 256, -1, "BYLAYER")	  
+	  DL_Attributes(layer, 256, -1, "BYLAYER", 1)	  
 	);
     }
 }
@@ -347,7 +348,7 @@ void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& lay
 	p0.X(), p0.Y(), 0,
 	p1.X(), p1.Y(), 0
       ),
-      DL_Attributes(layer, 256, -1, "BYLAYER")
+      DL_Attributes(layer, 256, -1, "BYLAYER", 1.)
     );
   }
 }
@@ -483,7 +484,7 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
 	ratio, 
 	start_angle, end_angle
       ),
-      DL_Attributes(layer, 256, -1, "BYLAYER")
+      DL_Attributes(layer, 256, -1, "BYLAYER", 1)
     );
 }
 
@@ -628,13 +629,13 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel
     string name=v.first;
     addlayers.push_back
     (
-      LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS"), true)
+      LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1.), true)
     );
     if (!v.second.crossSection.IsNull())
     {
       addlayers.push_back
       (
-	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
+	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS", 1.), false)
       );
     }
   }

@@ -109,8 +109,8 @@ struct Model
 
   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
   
-  scalar lookupModelScalar(const std::string& modelname, const::string& scalarname) const;
-  solidmodel lookupModelModelstep(const std::string& modelname, const::string& modelstepname) const;
+  scalar lookupModelScalar(const std::string& modelname, const std::string& scalarname) const;
+  solidmodel lookupModelModelstep(const std::string& modelname, const std::string& modelstepname) const;
 };
 
 Model::Ptr loadModel(const std::string& name);

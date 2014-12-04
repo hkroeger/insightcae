@@ -73,7 +73,7 @@ void writeViews(const boost::filesystem::path& file, const solidmodel& model, co
   }
 }
 
-scalar Model::lookupModelScalar(const std::string& modelname, const::string& scalarname) const
+scalar Model::lookupModelScalar(const std::string& modelname, const std::string& scalarname) const
 {
   const Model::Ptr* pptr=modelSymbols.find(modelname);
   if (pptr)

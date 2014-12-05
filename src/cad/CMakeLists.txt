@@ -44,6 +44,7 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
   ${Boost_LIBRARIES} toolkit 
   ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} 
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
+  ${DXFLIB_LIBRARIES}
   )
 endif()
 

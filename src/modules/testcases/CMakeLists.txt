@@ -10,6 +10,7 @@ set(testcases_SOURCES
   explicitvortex.cpp 
   ercoftac_squaresection180degreebend.cpp 
   airfoilsection.cpp
+  freeshearflow.cpp
   )
 
 include_directories(${toolkit_SOURCE_DIR})

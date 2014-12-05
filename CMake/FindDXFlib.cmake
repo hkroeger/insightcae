@@ -13,7 +13,7 @@
     /usr/local/include/dxflib
   )
 
-  FIND_LIBRARY(DXFLIB_LIBRARY libdxflib.a
+  FIND_LIBRARY(DXFLIB_LIBRARY libdxflib.so
     /usr/lib
     /usr/local/lib
   )
@@ -24,7 +24,7 @@ IF(DXFLIB_LIBRARY)
   GET_FILENAME_COMPONENT(DXFLIB_LIBRARY_DIR ${DXFLIB_LIBRARY} PATH)
   SET(DXFLIB_FOUND TRUE)
   set(DXFLIB_LIBRARIES
-    dxflib
+    ${DXFLIB_LIBRARY}
   )
 ENDIF(DXFLIB_LIBRARY)
 

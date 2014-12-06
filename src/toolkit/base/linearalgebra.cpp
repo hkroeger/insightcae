@@ -321,7 +321,7 @@ arma::mat sortedByCol(const arma::mat&m, int c)
   return xy;
 }
 
-Interpolator::Interpolator(const arma::mat& xy_us)
+Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
 {
   try
   {
@@ -342,7 +342,7 @@ Interpolator::Interpolator(const arma::mat& xy_us)
     for (int i=0; i<nf; i++)
     {
       //cout<<"building interpolator for col "<<i<<endl;
-      if (xy.n_rows==2)
+      if ( (xy.n_rows==2) || force_linear )
 	spline[i] = gsl_spline_alloc (gsl_interp_linear, nrows);
       else
 	spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);

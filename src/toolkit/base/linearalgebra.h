@@ -157,7 +157,7 @@ class Interpolator
   std::vector<gsl_spline*> spline ;
   
 public:
-  Interpolator(const arma::mat& xy);
+  Interpolator(const arma::mat& xy, bool force_linear=false);
   ~Interpolator();
   /**
    * returns a single y-value from column column

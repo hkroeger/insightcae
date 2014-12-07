@@ -64,7 +64,7 @@ insight::ParameterSet FreeShearFlow::defaultParameters() const
 	    ("L",		new DoubleParameter(1.0, "[m] length of domain"))
 	    ("H",		new DoubleParameter(10.0, "[m] total height of domain"))
 	    ("W",		new DoubleParameter(1.0, "[m] total width of domain"))
-	    ("hplate",		new DoubleParameter(0.001, "[m]height of separating plate"))
+	    ("hs",		new DoubleParameter(0.001, "[m] height of splitter plate"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Geometrical properties of the propeller"
@@ -126,7 +126,8 @@ void FreeShearFlow::calcDerivedInputData(const insight::ParameterSet& p)
 
 void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
-/*  PSDBL(p, "geometry", H);
+  PSDBL(p, "geometry", H);
+  PSDBL(p, "geometry", hs);
   PSDBL(p, "geometry", W);
   PSDBL(p, "geometry", L);
   
@@ -140,7 +141,7 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
   
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
-      (0, 	vec3(0.5*L, -0.5*H, -0.5*B))
+      (0, 	vec3(0, -0.5*hs, 0))
       (1, 	vec3(-0.5*L, -0.5*H, -0.5*B))
       (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
       (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
@@ -242,7 +243,7 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
   cm.insert(bmd.release());
 
   cm.createOnDisk(dir);
-  cm.executeCommand(dir, "blockMesh"); */ 
+  cm.executeCommand(dir, "blockMesh"); 
 }
 
 

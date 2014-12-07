@@ -34,6 +34,8 @@
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
 
+#include "base/factory.h"
+
 using namespace std;
 using namespace arma;
 using namespace boost;
@@ -42,6 +44,15 @@ using namespace boost::filesystem;
 
 namespace insight
 {
+  
+  
+defineType(FreeShearFlow);
+addToFactoryTable(Analysis, FreeShearFlow, NoParameters);
+
+FreeShearFlow::FreeShearFlow(const NoParameters&)
+: OpenFOAMAnalysis("Free Shear Flow", "LES of Free Shear Flow")
+{
+}
 
 FreeShearFlow::FreeShearFlow(const std::string& name, const std::string& description)
 : OpenFOAMAnalysis(name, description)
@@ -118,9 +129,9 @@ void FreeShearFlow::calcDerivedInputData(const insight::ParameterSet& p)
   in_upper_="inletA";
   in_lower_="inletB";
   outlet_="outlet";
-  far_="far";
-  cycl_front_="cycl_m";
-  cycl_back_="cylc_p";
+  far_upper_="farA";
+  far_lower_="farB";
+  cycl_prefix_="cycl";
 }
 
 
@@ -130,6 +141,14 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
   PSDBL(p, "geometry", hs);
   PSDBL(p, "geometry", W);
   PSDBL(p, "geometry", L);
+  PSINT(p, "mesh", nx);
+  PSDBL(p, "mesh", gradax);
+  PSDBL(p, "mesh", gradh);
+  
+  double dx=L/double(nx);
+  int nh=std::max(1, int(round(H/dx)));
+  int nhs=std::max(1, int(round(hs/dx)));
+  int nw=std::max(1, int(round(W/dx)));
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -142,99 +161,73 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
       (0, 	vec3(0, -0.5*hs, 0))
-      (1, 	vec3(-0.5*L, -0.5*H, -0.5*B))
-      (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
-      (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
+      (1, 	vec3(L, -0.5*hs, 0))
+      (2, 	vec3(L, 0.5*hs, 0))
+      (3, 	vec3(0, 0.5*hs, 0))
+      (4, 	vec3(0, 0.5*H, 0))
+      (5, 	vec3(L, 0.5*H, 0))
+      (40, 	vec3(0, -0.5*H, 0))
+      (50, 	vec3(L, -0.5*H, 0))
   ;
   
   // create patches
-  Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
-  Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
+  Patch& inu= 	bmd->addPatch(in_upper_, new Patch());
+  Patch& inl= 	bmd->addPatch(in_lower_, new Patch());
+  Patch& out= 	bmd->addPatch(outlet_, new Patch());
+  Patch& faru= 	bmd->addPatch(far_upper_, new Patch("symmetryPlane"));
+  Patch& farl= 	bmd->addPatch(far_lower_, new Patch("symmetryPlane"));
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
   
   string side_type="cyclic";
-  if (p.getBool("mesh/2d")) side_type="empty";
-  Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
+//   if (p.getBool("mesh/2d")) side_type="empty";
+  Patch& cycl_side= 	bmd->addPatch(cycl_prefix_, new Patch(side_type));
   
-  arma::mat vHbuf=vec3(0, 0, 0);
-  arma::mat vH=vec3(0, H, 0);
-  int nh=nh_;
-  
-  if (nhbuf_>0)
-  {
-    vHbuf=vec3(0, hbuf_, 0);
-    vH=vec3(0, H-2.*hbuf_, 0);
-    nh=nh_-nhbuf_;
-    
-    {
-      Block& bl = bmd->addBlock
-      (  
-	new Block(P_8(
-	  pts[0], pts[1], pts[2], pts[3],
-	  (pts[0])+vHbuf, (pts[1])+vHbuf, (pts[2])+vHbuf, (pts[3])+vHbuf
-	  ),
-	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(1.)
-	)
-      );
-      cycl_out.addFace(bl.face("0473"));
-      cycl_in.addFace(bl.face("1265"));
-      cycl_side_0.addFace(bl.face("0154"));
-      cycl_side_1.addFace(bl.face("2376"));
-    }
+  arma::mat vH=vec3(0, 0, W);
 
-    {
-      Block& bl = bmd->addBlock
-      (  
-	new Block(P_8(
-	    (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf,
-	    (pts[0])+vH+2.*vHbuf, (pts[1])+vH+2.*vHbuf, (pts[2])+vH+2.*vHbuf, (pts[3])+vH+2.*vHbuf
-	  ),
-	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(1.)
-	)
-      );
-      cycl_out.addFace(bl.face("0473"));
-      cycl_in.addFace(bl.face("1265"));
-      cycl_side_0.addFace(bl.face("0154"));
-      cycl_side_1.addFace(bl.face("2376"));
-    }
-    
-  }
-
+#define PTS(a,b,c,d) \
+  P_8(pts[a], pts[b], pts[c], pts[d], \
+      pts[a]+vH, pts[b]+vH, pts[c]+vH, pts[d]+vH)
+      
   {
     Block& bl = bmd->addBlock
     (  
-      new Block(P_8(
-	  pts[0]+vHbuf, pts[1]+vHbuf, pts[2]+vHbuf, pts[3]+vHbuf,
-	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf
-	),
-	nax_, nb_, nh,
-	list_of<double>(1.)(1.)(gradh_)
+      new Block(PTS(0,1,2,3),
+	nx, nhs, nw,
+	list_of<double>(gradax)(1.)(1.)
       )
     );
-    cycl_out.addFace(bl.face("0473"));
-    cycl_in.addFace(bl.face("1265"));
-    cycl_side_0.addFace(bl.face("0154"));
-    cycl_side_1.addFace(bl.face("2376"));
+    out.addFace(bl.face("1265"));
+    cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
   }
-
   {
     Block& bl = bmd->addBlock
     (  
-      new Block(P_8(
-	  (pts[0])+0.5*vH+vHbuf, (pts[1])+0.5*vH+vHbuf, (pts[2])+0.5*vH+vHbuf, (pts[3])+0.5*vH+vHbuf,
-	  (pts[0])+vH+vHbuf, (pts[1])+vH+vHbuf, (pts[2])+vH+vHbuf, (pts[3])+vH+vHbuf
-	),
-	nax_, nb_, nh,
-	list_of<double>(1.)(1.)(1./gradh_)
+      new Block(PTS(3,2,5,4),
+	nx, nh, nw,
+	list_of<double>(gradax)(gradh)(1.)
       )
     );
-    cycl_out.addFace(bl.face("0473"));
-    cycl_in.addFace(bl.face("1265"));
-    cycl_side_0.addFace(bl.face("0154"));
-    cycl_side_1.addFace(bl.face("2376"));
+    inu.addFace(bl.face("0473"));
+    out.addFace(bl.face("1265"));
+    cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
+    faru.addFace(bl.face("2376"));
+  }
+  {
+    Block& bl = bmd->addBlock
+    (  
+      new Block(PTS(40,50,1,0),
+	nx, nh, nw,
+	list_of<double>(gradax)(1./gradh)(1.)
+      )
+    );
+    out.addFace(bl.face("1265"));
+    inl.addFace(bl.face("0473"));
+    cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
+    farl.addFace(bl.face("0154"));
   }
 
   cycl_side.appendPatch(cycl_side_0);
@@ -242,14 +235,13 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
   
   cm.insert(bmd.release());
 
-  cm.createOnDisk(dir);
-  cm.executeCommand(dir, "blockMesh"); 
+  cm.createOnDisk(executionPath());
+  cm.executeCommand(executionPath(), "blockMesh"); 
 }
 
 
 void FreeShearFlow::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
-
 }
 
 }

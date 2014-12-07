@@ -29,8 +29,11 @@ class FreeShearFlow
 : public insight::OpenFOAMAnalysis
 {
 protected:
-  std::string in_upper_, in_lower_, outlet_, far_, cycl_front_, cycl_back_;
+  std::string in_upper_, in_lower_, outlet_, far_upper_, far_lower_, cycl_prefix_;
 public:
+  declareType("Free Shear Flow");
+  
+    FreeShearFlow(const NoParameters& );
     FreeShearFlow(const std::string& name, const std::string& description);
     
     virtual insight::ParameterSet defaultParameters() const;

@@ -784,7 +784,8 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
@@ -798,7 +799,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="cavitatingFoam";
+  controlDict["application"]=p_.solverName();
   controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;

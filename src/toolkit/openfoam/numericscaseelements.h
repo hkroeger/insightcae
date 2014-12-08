@@ -191,6 +191,14 @@ class cavitatingFoamNumerics
 : public FVNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+      (solverName, std::string, "cavitatingFoam")
+  )
+
+protected:
+  Parameters p_;
+
+public:
   cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };

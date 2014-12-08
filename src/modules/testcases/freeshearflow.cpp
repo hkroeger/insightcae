@@ -25,6 +25,7 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/snappyhexmesh.h"
+#include "channel.h"
 
 #include <sstream>
 
@@ -126,12 +127,32 @@ insight::ParameterSet FreeShearFlow::defaultParameters() const
 
 void FreeShearFlow::calcDerivedInputData(const insight::ParameterSet& p)
 {
+  PSDBL(p, "geometry", H);
+  PSDBL(p, "geometry", hs);
+  PSDBL(p, "geometry", W);
+  PSDBL(p, "geometry", L);
+
+  PSDBL(p, "operation", v);
+  PSDBL(p, "operation", lambda);
+  PSDBL(p, "fluid", nu);
+
   in_upper_="inletA";
   in_lower_="inletB";
   outlet_="outlet";
   far_upper_="farA";
   far_lower_="farB";
   cycl_prefix_="cycl";
+  
+  double ReA=0.5*H*v/nu;
+  double RetauA=ChannelBase::Retau(ReA);
+  double utauA=RetauA*nu/(0.5*H);
+  std::cout<<"ReA="<<ReA<<", RetauA="<<RetauA<<", utauA="<<utauA<<std::endl;
+  
+  
+  double ReB=0.5*H*v*lambda/nu;
+  double RetauB=ChannelBase::Retau(ReB);
+  double utauB=RetauB*nu/(0.5*H);
+  std::cout<<"ReB="<<ReB<<", RetauB="<<RetauB<<", utauB="<<utauB<<std::endl;
 }
 
 

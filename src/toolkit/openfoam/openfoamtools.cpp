@@ -94,7 +94,7 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
   ofc.executeCommand(location, "setsToZones", args);
 }
 
-void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify, bool ignoremissing)
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify, bool ignoremissing, bool include_zones)
 {
   path source(from/"polyMesh");
   path target(to/"polyMesh");
@@ -104,11 +104,16 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   std::string cmd("ls "); cmd+=source.c_str();
   ::system(cmd.c_str());
   
+  std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
+  if (include_zones)
+  {
+    files.push_back("pointZones");
+    files.push_back("faceZones");
+    files.push_back("cellZones");
+  }
   if (purify)
   {
-    BOOST_FOREACH(const std::string& fname, 
-		  list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
-		  .convert_to_container<std::vector<std::string> >())
+    BOOST_FOREACH(const std::string& fname, files)
     {
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
@@ -854,7 +859,7 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones)
 {
   TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
   if (times.size()>0)
@@ -862,7 +867,7 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
     boost::filesystem::path lastTime = times.rbegin()->second;
     
     if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-    copyPolyMesh(lastTime, location/"constant", true, ignoremissing);
+    copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
     
     BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
     {

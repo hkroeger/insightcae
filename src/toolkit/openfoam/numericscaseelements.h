@@ -193,6 +193,8 @@ class cavitatingFoamNumerics
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
       (solverName, std::string, "cavitatingFoam")
+      (pamb, double, 1e5)
+      (rhoamb, double, 1)
   )
 
 protected:

@@ -787,9 +787,9 @@ cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const
 : FVNumerics(c, p),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5), volField ) );
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb()), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(0.0), volField ) );
+  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb()), volField ) );
 }
  
 void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const

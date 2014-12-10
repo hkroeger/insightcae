@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     dimensionedScalar p0("p0", dimPressure, 1e5);
     p0.value()=readScalar(IStringStream(args.additionalArgs()[0])());
     
-    dimensionedScalar rho("rho", dimDensity, 1e5);
+    dimensionedScalar rho("rho", dimDensity, 1);
     rho.value()=readScalar(IStringStream(args.additionalArgs()[1])());
     
     dimensionedScalar pclip("pclip", dimPressure, 0.0);

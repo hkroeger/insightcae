@@ -493,8 +493,8 @@ void ChannelBase::evaluateAtSection(
     int c=cd["UMean"].col;
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma_ascii);

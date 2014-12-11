@@ -34,6 +34,8 @@ protected:
     double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, ypfac_e_, deltaywall_e_, gradh_, T_;
     int nax_, nlat_;
     
+    double avgStart_, avg2Start_, end_;
+    
     std::string in_, out_, top_, cycl_prefix_;
   
 public:
@@ -72,6 +74,8 @@ public:
    * @Re Reynolds number formulated with running distance x
    */
   static double cf(double Re, double Cplus=5.0);
+  
+  static double integrateDelta2(const arma::mat& uByUinf_vs_y);
 };
 
 }

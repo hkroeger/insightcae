@@ -359,7 +359,8 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
@@ -420,11 +421,11 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+  SIMPLE["nNonOrthogonalCorrectors"]=0;
   SIMPLE["pRefCell"]=0;
   SIMPLE["pRefValue"]=0.0;
   
-  if (OFversion()>=210)
+  if ( (OFversion()>=210) && p_.checkResiduals() )
   {
     OFDictData::dict resCtrl;
     resCtrl["p"]=1e-4;
@@ -444,7 +445,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
 //   std::string bgrads="leastSquares2"; 
   std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  if ( (OFversion()>=220) && !p_.hasCyclics() ) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads;
 //   grad["grad(p)"]="Gauss linear";

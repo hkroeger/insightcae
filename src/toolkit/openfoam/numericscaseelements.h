@@ -118,6 +118,15 @@ class simpleFoamNumerics
 : public FVNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (checkResiduals, bool, true)
+    (hasCyclics, bool, false)
+  )
+
+protected:
+  Parameters p_;
+
+public:
   simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };

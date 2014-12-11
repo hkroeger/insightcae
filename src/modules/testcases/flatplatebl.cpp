@@ -100,18 +100,37 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  "Parameters of the fluid"
 	))
 
-      ("evaluation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(10, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
-	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
-	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Options for statistical evaluation"
-	))
+      ("run", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+// 		    ("iter", 	new IntParameter(30000, "number of outer iterations after which the solver should stop"))
+		    ("regime", 	new SelectableSubsetParameter("steady", 
+			  list_of<SelectableSubsetParameter::SingleSubset>
+			  (
+			    "steady", new ParameterSet
+			    (
+			      list_of<ParameterSet::SingleEntry>
+			      ("iter", 	new IntParameter(1000, "number of outer iterations after which the solver should stop"))
+			      .convert_to_container<ParameterSet::EntryList>()
+			    )
+			  )
+			  (
+			    "unsteady", new ParameterSet
+			    (
+			      list_of<ParameterSet::SingleEntry>
+			      ("inittime",	new DoubleParameter(10, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
+			      ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
+			      ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
+			      .convert_to_container<ParameterSet::EntryList>()
+			    )
+			  ),
+			  "The simulation regime"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Solver parameters"
+      ))
       
       .convert_to_container<ParameterSet::EntryList>()
   );
@@ -181,6 +200,21 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   
   T_=L/uinf_;
   cout<<"T="<<T_<<endl;
+  
+  std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
+  if (regime=="steady")
+  {
+    end_=p.getInt("run/regime/iter");
+    avgStart_=0.98*end_;
+    avg2Start_=end_;
+  } 
+  else if (regime=="unsteady")
+  {
+    double avgStart_=p.getDouble("run/regime/inittime")*T_;
+    double avg2Start_=avgStart_+p.getDouble("run/regime/meantime")*T_;
+    double end_=avg2Start_+p.getDouble("run/regime/mean2time")*T_;
+  }
+
 }
 
 void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
@@ -214,7 +248,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
   // create patches
   Patch& in= 	bmd->addPatch(in_, new Patch());
   Patch& out= 	bmd->addPatch(out_, new Patch());
-  Patch& top= 	bmd->addPatch(top_, new Patch("symmetryPlane"));
+  Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
   
@@ -266,31 +300,45 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
   
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
+//   PSDBL(p, "evaluation", inittime);
+//   PSDBL(p, "evaluation", meantime);
+//   PSDBL(p, "evaluation", mean2time);
   
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
-    .set_maxDeltaT(0.25*T_)
-    .set_writeControl("adjustableRunTime")
-    .set_writeInterval(0.25*T_)
-    .set_endTime( (inittime+meantime+mean2time)*T_ )
-    .set_decompositionMethod("simple")
-    .set_deltaT(1e-3)
-    .set_hasCyclics(true)
-  ) );
+  std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
+  if (regime=="steady")
+  {
+    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+      .set_hasCyclics(true)
+      .set_decompositionMethod("simple")
+      .set_endTime(end_)
+      .set_checkResiduals(false) // don't stop earlier since averaging should be completed
+    ));
+  } 
+  else if (regime=="unsteady")
+  {
+    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+      .set_maxDeltaT(0.25*T_)
+      .set_writeControl("adjustableRunTime")
+      .set_writeInterval(0.25*T_)
+      .set_endTime(end_)
+      .set_decompositionMethod("simple")
+      .set_deltaT(1e-3)
+      .set_hasCyclics(true)
+    ) );
+  }
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
   ));
+  
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
-    .set_timeStart(inittime*T_)
+    .set_timeStart(avgStart_)
   ));
   
 //   if (p.getBool("evaluation/eval2"))
@@ -316,7 +364,10 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));
-  cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+//   cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+  cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
+    .set_pressure(0.0)
+  ));
   if (p.getBool("mesh/2d"))
     cm.insert(new SimpleBC(cm, cycl_prefix_, boundaryDict, "empty") );
   else
@@ -343,21 +394,21 @@ void FlatPlateBL::evaluateAtSection
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
-  
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
+
 
   double xByL= x/L;
   string title="section__xByL_" + str(format("%04.2f") % xByL);
   replace_all(title, ".", "_");
+  
+//   //estimate delta2
+//   double delta2_est = 0.5*FlatPlateBL::cw(uinf_*x/nu)*x;
     
   boost::ptr_vector<sampleOps::set> sets;
   
   sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
     .set_name("radial")
     .set_start( vec3(x, deltaywall_e_, 0.01*W_))
-    .set_end(   vec3(x, H_-deltaywall_e_, 0.01*W_))
+    .set_end(   vec3(x, std::min(delta2e_*5.0, H_-deltaywall_e_), 0.01*W_))
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*W_))
     .set_nd1(1)
@@ -373,17 +424,22 @@ void FlatPlateBL::evaluateAtSection
   arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
     .readSamples(cm, executionPath(), &cd);
 
+  arma::mat y=data.col(0)+deltaywall_e_;
+  
   // Mean velocity profiles
   {
     int c=cd["UMean"].col;
     
-    arma::mat axial(join_rows(data.col(0)+deltaywall_e_, data.col(c)));
-    arma::mat wallnormal(join_rows(data.col(0)+deltaywall_e_, data.col(c+1)));
-    arma::mat spanwise(join_rows(data.col(0)+deltaywall_e_, data.col(c+2)));
+    arma::mat axial(join_rows(y, data.col(c)));
+    arma::mat wallnormal(join_rows(y, data.col(c+1)));
+    arma::mat spanwise(join_rows(y, data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_y_"+title+".txt")).c_str(), arma_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_y_"+title+".txt")).c_str(), arma_ascii);
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    
+    double delta2 = integrateDelta2( join_rows(y, axial.col(1)/uinf_) );
+    cout<<"delta2="<<delta2<<endl;
     
     addPlot
     (
@@ -395,6 +451,24 @@ void FlatPlateBL::evaluateAtSection
       (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
       ,
       "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL),
+      str( format("set logscale x; set xrange [:%g]; set yrange [0:%g];") % (1.5*delta2) % (1.1*uinf_) )
+    );
+  }
+  
+  
+  // L profiles from k/omega
+  if (cd.find("k")!=cd.end())
+  {    
+    arma::mat k=data.col(cd["k"].col);
+    
+    addPlot
+    (
+      results, executionPath(), "chartTKE_"+title,
+      "y", "<k>",
+      list_of
+       (PlotCurve(arma::mat(join_rows(y, k)), "w l lt 2 lc 1 lw 1 not"))
+       ,
+      "Wall normal profile of turbulent kinetic energy at x/L=" + str(format("%g")%xByL),
       "set logscale x"
     );
   }
@@ -479,6 +553,22 @@ double FlatPlateBL::cf(double Rex, double Cplus)
   obj.Cplus=Cplus;
   double gamma=nonlinearSolve1D(obj, 1e-7, 10.);
   return 2.*gamma*gamma;
+}
+
+double FlatPlateBL::integrateDelta2(const arma::mat& uByUinf_vs_y)
+{
+  double delta2=0.0;
+  
+  arma::mat x = uByUinf_vs_y.col(0);
+  arma::mat y = clamp(uByUinf_vs_y.col(1), 0., 1);
+  y = y % (1. - y);
+  
+  for (int i=0; i<uByUinf_vs_y.n_rows-1; i++)
+  {
+    delta2 += 0.5*( y(i) + y(i+1) ) * ( x(i+1) - x(i) );
+  }
+  
+  return delta2;
 }
 
 }

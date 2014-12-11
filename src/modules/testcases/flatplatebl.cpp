@@ -23,12 +23,14 @@
 #include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
+#include "refdata.h"
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/ptr_map_inserter.hpp>
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
 
+using namespace std;
 using namespace arma;
 using namespace boost;
 using namespace boost::assign;
@@ -70,6 +72,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	    ("ypluswall",	new DoubleParameter(0.5, "yPlus of first cell at the wall grid layer at the final station"))
 	    ("dxplus",	new DoubleParameter(60, "lateral mesh spacing at the final station"))
 	    ("dzplus",	new DoubleParameter(15, "streamwise mesh spacing at the final station"))
+	    ("2d",	new BoolParameter(false, "whether to create a two-dimensional grid instead of a three-dimensional one"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -170,8 +173,14 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   cout<<"gradh="<<gradh_<<endl;
   nax_=std::max(1, int(round(L/(dxplus/ypfac_e_))));
   cout<<"nax="<<nax_<<" "<<(dxplus/ypfac_e_)<<endl;
-  nlat_=std::max(1, int(round(W_/(dzplus/ypfac_e_))));
+  if (p.getBool("mesh/2d"))
+    nlat_=1;
+  else
+    nlat_=std::max(1, int(round(W_/(dzplus/ypfac_e_))));
   cout<<"nlat="<<nlat_<<" "<<(dzplus/ypfac_e_)<<endl;
+  
+  T_=L/uinf_;
+  cout<<"T="<<T_<<endl;
 }
 
 void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
@@ -210,7 +219,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
   Patch cycl_side_1=Patch();
   
   std::string side_type="cyclic";
-//   if (p.getBool("mesh/2d")) side_type="empty";
+  if (p.getBool("mesh/2d")) side_type="empty";
   Patch& cycl_side= 	bmd->addPatch(cycl_prefix_, new Patch(side_type));
   
   arma::mat vH=vec3(0, 0, W_);
@@ -229,6 +238,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
     );
     in.addFace(bl.face("0473"));
     out.addFace(bl.face("1265"));
+    top.addFace(bl.face("2376"));
     cycl_side_0.addFace(bl.face("0321"));
     cycl_side_1.addFace(bl.face("4567"));
   }
@@ -245,13 +255,187 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
 
 void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", HBydeltae);
+  PSDBL(p, "geometry", WBydeltae);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_L);
+  PSDBL(p, "fluid", nu);
+  PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "mesh", dxplus);
+  PSDBL(p, "mesh", dzplus);
+  PSINT(p, "mesh", nh);
+  
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
+  
+  path dir = executionPath();
 
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+    .set_maxDeltaT(0.25*T_)
+    .set_writeControl("adjustableRunTime")
+    .set_writeInterval(0.25*T_)
+    .set_endTime( (inittime+meantime+mean2time)*T_ )
+    .set_decompositionMethod("simple")
+    .set_deltaT(1e-3)
+    .set_hasCyclics(true)
+  ) );
+  cm.insert(new extendedForces(cm, extendedForces::Parameters()
+    .set_patches( list_of<string>("walls") )
+  ));
+  cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
+    .set_name("zzzaveraging") // shall be last FO in list
+    .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
+    .set_timeStart(inittime*T_)
+  ));
+  
+//   if (p.getBool("evaluation/eval2"))
+//   {
+//     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
+//       .set_name_prefix("tpc_interior")
+//       .set_R(0.5*H)
+//       .set_x(0.0) // middle x==0!
+//       .set_z(-0.49*B)
+//       .set_axSpan(0.5*L)
+//       .set_tanSpan(0.45*B)
+//       .set_timeStart( (inittime+meantime)*T_ )
+//     ));
+//   }
+
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
+  
+  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
+    .set_velocity(vec3(uinf_,0,0))
+    .set_turbulenceIntensity(0.005)
+    .set_mixingLength(0.1*H_)
+  ) );
+  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0.0)
+  ));
+  cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+  if (p.getBool("mesh/2d"))
+    cm.insert(new SimpleBC(cm, cycl_prefix_, boundaryDict, "empty") );
+  else
+    cm.insert(new CyclicPairBC(cm, cycl_prefix_, boundaryDict) );
+  
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
+  
+  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
+void FlatPlateBL::evaluateAtSection
+(
+  OpenFOAMCase& cm, const ParameterSet& p, 
+  ResultSetPtr results, double x, int i
+)
+{
+  // create local variables from ParameterSet
+  PSDBL(p, "geometry", HBydeltae);
+  PSDBL(p, "geometry", WBydeltae);
+  PSDBL(p, "geometry", L);
+  PSDBL(p, "operation", Re_L);
+  PSDBL(p, "fluid", nu);
+  PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "mesh", dxplus);
+  PSDBL(p, "mesh", dzplus);
+  PSINT(p, "mesh", nh);
+  
+  PSDBL(p, "evaluation", inittime);
+  PSDBL(p, "evaluation", meantime);
+  PSDBL(p, "evaluation", mean2time);
+
+  double xByL= x/L;
+  string title="section__xByL_" + str(format("%04.2f") % xByL);
+  replace_all(title, ".", "_");
+    
+  boost::ptr_vector<sampleOps::set> sets;
+  
+  sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
+    .set_name("radial")
+    .set_start( vec3(x, deltaywall_e_, 0.01*W_))
+    .set_end(   vec3(x, H_-deltaywall_e_, 0.01*W_))
+    .set_dir1(vec3(1,0,0))
+    .set_dir2(vec3(0,0,0.98*W_))
+    .set_nd1(1)
+    .set_nd2(5)
+  ));
+  
+  sample(cm, executionPath(), 
+     list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
+     sets
+  );
+  
+  sampleOps::ColumnDescription cd;
+  arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
+    .readSamples(cm, executionPath(), &cd);
+
+  // Mean velocity profiles
+  {
+    int c=cd["UMean"].col;
+    
+    arma::mat axial(join_rows(data.col(0)+deltaywall_e_, data.col(c)));
+    arma::mat wallnormal(join_rows(data.col(0)+deltaywall_e_, data.col(c+1)));
+    arma::mat spanwise(join_rows(data.col(0)+deltaywall_e_, data.col(c+2)));
+    
+    axial.save( (executionPath()/("umeanaxial_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    spanwise.save( (executionPath()/("umeanspanwise_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    wallnormal.save( (executionPath()/("umeanwallnormal_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    
+    addPlot
+    (
+      results, executionPath(), "chartMeanVelocity_"+title,
+      "y", "<U>",
+      list_of
+      (PlotCurve(axial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
+      (PlotCurve(spanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
+      (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
+      ,
+      "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL),
+      "set logscale x"
+    );
+  }
+}
 
 insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
 {
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  
+  {  
+    // Wall friction coefficient
+    arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+      
+    arma::mat Cf_vs_x(join_rows(
+	wallforce.col(0), 
+	wallforce.col(1)/(0.5*pow(uinf_,2))
+      ));
+    Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
+    
+    arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
 
+    addPlot
+    (
+      results, executionPath(), "chartMeanWallFriction",
+      "x+", "<Cf>",
+      list_of
+	(PlotCurve(Cf_vs_x, "w l lt 1 lc 2 lw 2 t 'CFD'"))
+	(PlotCurve(Cfexp_vs_x, "w p lt 2 lc 2 t 'Wieghardt/Tillmann 1951 (u=17.8m/s)'"))
+	,
+      "Axial profile of wall friction coefficient"
+    );    
+  }
+  
+  evaluateAtSection(cm, p, results, 0.0,  0);
+  evaluateAtSection(cm, p, results, 0.05, 1);
+  evaluateAtSection(cm, p, results, 0.1,  2);
+  evaluateAtSection(cm, p, results, 0.2,  3);
+  evaluateAtSection(cm, p, results, 0.5,  4);
+  evaluateAtSection(cm, p, results, 1.0,  5);
+  
+  return results;
 }
 
 insight::Analysis* FlatPlateBL::clone()

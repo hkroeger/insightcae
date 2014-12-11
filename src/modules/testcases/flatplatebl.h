@@ -31,7 +31,7 @@ class FlatPlateBL
   
 protected:
 
-    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, ypfac_e_, deltaywall_e_, gradh_;
+    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, ypfac_e_, deltaywall_e_, gradh_, T_;
     int nax_, nlat_;
     
     std::string in_, out_, top_, cycl_prefix_;
@@ -46,7 +46,12 @@ public:
   virtual void calcDerivedInputData(const ParameterSet& p);
   virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-  
+
+  virtual void evaluateAtSection
+  (
+    OpenFOAMCase& cm, const ParameterSet& p, 
+    ResultSetPtr results, double x, int i
+  );  
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   
   virtual insight::Analysis* clone();
@@ -67,7 +72,6 @@ public:
    * @Re Reynolds number formulated with running distance x
    */
   static double cf(double Re, double Cplus=5.0);
-
 };
 
 }

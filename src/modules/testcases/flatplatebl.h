@@ -75,7 +75,7 @@ public:
    */
   static double cf(double Re, double Cplus=5.0);
   
-  static double integrateDelta2(const arma::mat& uByUinf_vs_y);
+  static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
 };
 
 }

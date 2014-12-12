@@ -219,6 +219,24 @@ TabularResult::TabularResult
   setTableData(headings, t);
 }
 
+void TabularResult::setCellByName(TabularResult::Row& r, const string& colname, double& value)
+{
+  std::vector<std::string>::const_iterator ii=std::find(headings_.begin(), headings_.end(), colname);
+  if (ii==headings_.end())
+  {
+    std::ostringstream msg;
+    msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
+    BOOST_FOREACH(const std::string& n, headings_)
+    {
+      msg<<n<<endl;
+    }
+    insight::Exception(msg.str());
+  }
+  int i= ii - headings_.begin();
+  r[i]=value;
+}
+
+
 arma::mat TabularResult::toMat() const
 {
   arma::mat res;

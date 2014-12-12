@@ -180,6 +180,12 @@ public:
   
   inline const std::vector<std::string>& headings() const { return headings_; }
   inline const Table& rows() const { return rows_; }
+  inline Row& appendRow() 
+  { 
+    rows_.push_back(Row(headings_.size()));
+    return rows_.back();
+  }
+  void setCellByName(Row& r, const std::string& colname, double& value);
   
   arma::mat toMat() const;
   
@@ -271,6 +277,18 @@ public:
 
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
+  
+  template<class T>
+  inline T& get(const std::string& name)
+  {
+    ResultSet::iterator i=find(name);
+    if (i==end())
+      insight::Exception("ResultSet does not contain element "+name);
+    T* ret=dynamic_cast<T*>(i->second);
+    if (!ret)
+      insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
+    return *ret;
+  }
   
   virtual ResultElement* clone() const;
 };

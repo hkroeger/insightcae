@@ -447,33 +447,38 @@ set::~set()
 {
 }
 
-uniformLine::uniformLine(Parameters const& p )
+line::line(Parameters const& p )
 : set(p),
   p_(p)
 {
 }
 
-void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
   OFDictData::dict sd;
-  sd["type"]="uniform";
+//   sd["type"]="uniform";
+  sd["type"]="polyLine";
   sd["axis"]="distance";
-  sd["start"]=OFDictData::vector3(p_.start());
-  sd["end"]=OFDictData::vector3(p_.end());
-  sd["nPoints"]=p_.np();
+//   sd["start"]=OFDictData::vector3(p_.start());
+//   sd["end"]=OFDictData::vector3(p_.end());
+//   sd["nPoints"]=p_.np();
+  OFDictData::list pl;
+  for (int i=0; i<p_.points().n_rows; i++)
+    pl.push_back(OFDictData::vector3(p_.points().row(i).t()));
+  sd["points"]=pl;
   
   l.push_back(p_.name());
   l.push_back(sd);
 }
 
-set* uniformLine::clone() const
+set* line::clone() const
 {
-  return new uniformLine(p_);
+  return new line(p_);
 }
 
-arma::mat uniformLine::readSamples
+arma::mat line::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
   const std::string& setName,
@@ -550,8 +555,48 @@ arma::mat uniformLine::readSamples
       data=join_cols(data, m);
   }
   
+#warning need to handle x coords
+//   if (data.n_cols>0)
+//   {
+//     arma::mat 
+//       dx=p_.points.col(0) - p_.points(0,0), 
+//       dy=p_.points.col(1) - p_.points(0,1), 
+//       dz=p_.points.col(2) - p_.points(0,2);
+//       
+//     data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
+//   }
+  
   return data;
   
+}
+
+
+uniformLine::uniformLine(const uniformLine::Parameters& p)
+: set(p),
+  l_
+  (
+    line::Parameters()
+      .set_name(p.name())
+      .set_points(linspace(0,1.,p.np())*(p.end()-p.start()).t())
+  ),
+  p_(p)
+{
+
+}
+
+void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  l_.addIntoDictionary(ofc, sampleDict);
+}
+
+set* uniformLine::clone() const
+{
+  return new uniformLine(p_);
+}
+
+arma::mat uniformLine::readSamples(const OpenFOAMCase& ofc, const path& location, const string& setName, ColumnDescription* coldescr)
+{
+  line::readSamples(ofc, location, setName, coldescr);
 }
 
 
@@ -561,6 +606,10 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
 : set(p),
   p_(p)
 {
+  dir_=p_.end()-p_.start();
+  L_=norm(dir_,2);
+  dir_/=L_;
+  x_=linspace(0, L_, p_.np());
 }
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
@@ -569,15 +618,11 @@ void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& o
   
   for (int i=0; i<p_.nc(); i++)
   {
-    OFDictData::dict sd;
-    sd["type"]="uniform";
-    sd["axis"]="distance";
-    sd["start"]=OFDictData::vector3(p_.start());
-    sd["end"]=OFDictData::vector3(rotMatrix(i) * p_.end());
-    sd["nPoints"]=p_.np();
+    arma::mat raddir = rotMatrix(i) * dir_;
+    arma::mat pts=x_ * raddir.t();
     
-    l.push_back(setname(i));
-    l.push_back(sd);
+    line l( line::Parameters().set_points(pts).set_name(setname(i)) );
+    l.addIntoDictionary(ofc, sampleDict);
   }
 }
 
@@ -601,7 +646,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   ColumnDescription cd;
   for (int i=0; i< p_.nc(); i++)
   {
-    arma::mat datai = uniformLine::readSamples(ofc, location, setname(i), &cd);
+    arma::mat datai = line::readSamples(ofc, location, setname(i), &cd);
     arma::mat Ri=rotMatrix(i).t();
     
     BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
@@ -682,14 +727,22 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 
 
 
-linearAveragedUniformLine::linearAveragedUniformLine(Parameters const& p )
+linearAveragedPolyLine::linearAveragedPolyLine(Parameters const& p )
 : set(p),
   p_(p)
 {
-  x_=arma::linspace(0., norm(p_.end()-p_.start(),2), p_.np()); // valid for axis == distance!
+//   dir_=p_.end()-p_.start();
+//   L_=norm(dir_,2);
+//   dir_/=L_;
+    arma::mat 
+      dx=p_.points().col(0) - p_.points()(0,0), 
+      dy=p_.points().col(1) - p_.points()(0,1), 
+      dz=p_.points().col(2) - p_.points()(0,2);
+      
+    x_=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
 }
 
-void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+void linearAveragedPolyLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
@@ -697,26 +750,23 @@ void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDic
     for (int j=0; j<p_.nd2(); j++)
     {
       arma::mat ofs = p_.dir1()*(double(i)/double(max(1,p_.nd1()-1))) + p_.dir2()*(double(j)/double(max(1,p_.nd2()-1)));
-      OFDictData::dict sd;
-      sd["type"]="uniform";
-      sd["axis"]="distance";
-      sd["start"]=OFDictData::vector3(p_.start()+ofs);
-      sd["end"]=OFDictData::vector3(p_.end()+ofs);
-      sd["nPoints"]=p_.np();
-      
-      l.push_back(setname(i, j));
-      l.push_back(sd);
+      arma::mat tp=join_horiz(join_horiz( p_.points().col(0)+ofs(0), p_.points().col(1)+ofs(1)), p_.points().col(2)+ofs(2));
+      line l(line::Parameters()
+	.set_name(setname(i,j))
+	.set_points( tp )
+      );
+      l.addIntoDictionary(ofc, sampleDict);
     }
     
 }
 
-set* linearAveragedUniformLine::clone() const
+set* linearAveragedPolyLine::clone() const
 {
-  return new linearAveragedUniformLine(p_);
+  return new linearAveragedPolyLine(p_);
 }
 
 
-arma::mat linearAveragedUniformLine::readSamples
+arma::mat linearAveragedPolyLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
   ColumnDescription* coldescr
@@ -728,7 +778,7 @@ arma::mat linearAveragedUniformLine::readSamples
   for (int i=0; i<p_.nd1(); i++)
     for (int j=0; j<p_.nd2(); j++)
     {
-      arma::mat ds=uniformLine::readSamples(ofc, location, setname(i, j), &cd);
+      arma::mat ds=line::readSamples(ofc, location, setname(i, j), &cd);
       //cout <<ds<<endl;
       arma::mat datai = Interpolator(ds)(x_);
       
@@ -744,6 +794,44 @@ arma::mat linearAveragedUniformLine::readSamples
   
   return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
   
+}
+
+
+
+linearAveragedUniformLine::linearAveragedUniformLine(Parameters const& p )
+: set(p),
+  p_(p),
+  pl_
+  (
+    linearAveragedPolyLine::Parameters()
+    .set_name(p.name())
+    .set_points( arma::linspace(0.0, 1.0, p_.np()) * (p_.end()-p_.start()).t() )
+    .set_dir1(p.dir1())
+    .set_dir2(p.dir2())
+    .set_nd1(p.nd1())
+    .set_nd2(p.nd2())
+  )
+{
+}
+
+void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  pl_.addIntoDictionary(ofc, sampleDict);
+}
+
+set* linearAveragedUniformLine::clone() const
+{
+  return new linearAveragedUniformLine(p_);
+}
+
+
+arma::mat linearAveragedUniformLine::readSamples
+(
+  const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+  ColumnDescription* coldescr
+) const
+{
+  pl_.readSamples(ofc, location, coldescr);
 }
 
 }

@@ -52,7 +52,8 @@ public:
   virtual void evaluateAtSection
   (
     OpenFOAMCase& cm, const ParameterSet& p, 
-    ResultSetPtr results, double x, int i
+    ResultSetPtr results, double x, int i,
+    const Interpolator& cf
   );  
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   

@@ -381,7 +381,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
 void FlatPlateBL::evaluateAtSection
 (
   OpenFOAMCase& cm, const ParameterSet& p, 
-  ResultSetPtr results, double x, int i
+  ResultSetPtr results, double x, int i,
+  const Interpolator& cfi
 )
 {
   // create local variables from ParameterSet
@@ -409,10 +410,15 @@ void FlatPlateBL::evaluateAtSection
     
   boost::ptr_vector<sampleOps::set> sets;
   
-  sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
+  double 
+    miny=deltaywall_e_,
+    maxy=std::min(delta2e_*10.0, H_-deltaywall_e_);
+    
+  sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name("radial")
-    .set_start( vec3(x, deltaywall_e_, 0.01*W_))
-    .set_end(   vec3(x, std::min(delta2e_*10.0, H_-deltaywall_e_), 0.01*W_))
+//     .set_start( vec3(x, deltaywall_e_, 0.01*W_))
+//     .set_end(   vec3(x, , 0.01*W_))
+    .set_points( log(linspace(exp(miny), exp(maxy), 100))*vec3(0,1,0).t() )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*W_))
     .set_nd1(1)
@@ -429,53 +435,69 @@ void FlatPlateBL::evaluateAtSection
     .readSamples(cm, executionPath(), &cd);
 
   arma::mat y=data.col(0)+deltaywall_e_;
+  double tauw=as_scalar(0.5*cfi(x)*uinf_*uinf_);
+  double utau=sqrt(tauw);
+  table.setCellByName(thisctrow, "tauw", tauw);
+  table.setCellByName(thisctrow, "utau", utau);
+  double ypByy=utau/nu;
+  arma::mat yplus=y*ypByy;
     
   int c=cd["UMean"].col;
-  arma::mat uaxial(join_rows(y, data.col(c)));
-  arma::mat uwallnormal(join_rows(y, data.col(c+1)));
-  arma::mat uspanwise(join_rows(y, data.col(c+2)));
+  arma::mat upaxial(join_rows(yplus, data.col(c)/utau));
+  arma::mat upwallnormal(join_rows(yplus, data.col(c+1)/utau));
+  arma::mat upspanwise(join_rows(yplus, data.col(c+2)/utau));
   
-  arma::mat delta123 = integrateDelta123( join_rows(y, uaxial.col(1)/uinf_) );
+  arma::mat delta123 = integrateDelta123( join_rows(y, data.col(c)/uinf_) );
   cout<<"delta123="<<delta123<<endl;
   table.setCellByName(thisctrow, "delta1", delta123(0));
   table.setCellByName(thisctrow, "delta2", delta123(1));
   table.setCellByName(thisctrow, "delta3", delta123(2));
+  table.setCellByName(thisctrow, "delta1+", delta123(0)*ypByy);
+  table.setCellByName(thisctrow, "delta2+", delta123(1)*ypByy);
+  table.setCellByName(thisctrow, "delta3+", delta123(2)*ypByy);
   
   // Mean velocity profiles
   {
     
-    uaxial.save( (executionPath()/("umeanaxial_vs_y_"+title+".txt")).c_str(), arma_ascii);
-    uspanwise.save( (executionPath()/("umeanspanwise_vs_y_"+title+".txt")).c_str(), arma_ascii);
-    uwallnormal.save( (executionPath()/("umeanwallnormal_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    upaxial.save( (executionPath()/("umeanaxial_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    upspanwise.save( (executionPath()/("umeanspanwise_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    upwallnormal.save( (executionPath()/("umeanwallnormal_vs_y_"+title+".txt")).c_str(), arma_ascii);
     
     double maxU=1.1*uinf_;
     
-    arma::mat delta1c(delta123(0)*ones(2,2));
-    delta1c(0,1)=0.; delta1c(1,1)=maxU;
+    arma::mat delta1pc(delta123(0)*ones(2,2)*ypByy);
+    delta1pc(0,1)=0.; delta1pc(1,1)=maxU;
     
-    arma::mat delta2c(delta123(1)*ones(2,2));
-    delta2c(0,1)=0.; delta2c(1,1)=maxU;
+    arma::mat delta2pc(delta123(1)*ones(2,2)*ypByy);
+    delta2pc(0,1)=0.; delta2pc(1,1)=maxU;
 
-    arma::mat delta3c(delta123(2)*ones(2,2));
-    delta3c(0,1)=0.; delta3c(1,1)=maxU;
+    arma::mat delta3pc(delta123(2)*ones(2,2)*ypByy);
+    delta3pc(0,1)=0.; delta3pc(1,1)=maxU;
+    
+    arma::mat visclayer=linspace(0, 10, 10), loglayer=linspace(30,300,2);
+    visclayer=join_horiz(visclayer, visclayer);
+    loglayer=join_horiz(loglayer, (1./0.41)*log(loglayer)+5.);
 
     addPlot
     (
       results, executionPath(), "chartMeanVelocity_"+title,
       "y", "<U>",
       list_of
-      (PlotCurve(uaxial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
-      (PlotCurve(uspanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
-      (PlotCurve(uwallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
-      (PlotCurve(delta1c, "w l lt 2 lc 4 lw 1 t 'delta_1'"))
-      (PlotCurve(delta2c, "w l lt 3 lc 4 lw 1 t 'delta_2'"))
-      (PlotCurve(delta3c, "w l lt 4 lc 4 lw 1 t 'delta_3'"))
+	(PlotCurve(upaxial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
+	(PlotCurve(upspanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
+	(PlotCurve(upwallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
+	(PlotCurve(delta1pc, "w l lt 2 lc 4 lw 1 t 'delta_1+'"))
+	(PlotCurve(delta2pc, "w l lt 3 lc 4 lw 1 t 'delta_2+'"))
+	(PlotCurve(delta3pc, "w l lt 4 lc 4 lw 1 t 'delta_3+'"))
+	
+	(PlotCurve(visclayer, "w l lt 2 lc 5 lw 2 t 'Viscous Layer'"))
+	(PlotCurve(loglayer, "w l lt 3 lc 5 lw 2 t 'Log Layer'"))
       ,
       "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL),
      
       str( format("set key top left reverse Left; set logscale x; set xrange [:%g]; set yrange [0:%g];") 
-		% (std::max(delta2e_, 10.*delta123(1))) 
-		% (maxU) 
+		% (ypByy*std::max(delta2e_, 10.*delta123(1))) 
+		% (maxU/utau) 
 	 )
       
     );
@@ -512,15 +534,18 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
 
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
   
+  // Wall friction coefficient
+  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+    
+  arma::mat Cf_vs_x(join_rows(
+      wallforce.col(0), 
+      wallforce.col(1)/(0.5*pow(uinf_,2))
+    ));
+  Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
+  
+  Interpolator Cf_vs_x_i(Cf_vs_x);
+
   {  
-    // Wall friction coefficient
-    arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
-      
-    arma::mat Cf_vs_x(join_rows(
-	wallforce.col(0), 
-	wallforce.col(1)/(0.5*pow(uinf_,2))
-      ));
-    Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
     
     arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
 
@@ -539,18 +564,18 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
   results->insert("tableCoefficients",
     std::auto_ptr<TabularResult>(new TabularResult
     (
-      list_of("x/L")("delta1")("delta2")("delta3"),
+      list_of("x/L")("delta1")("delta1+")("delta2")("delta2+")("delta3")("delta3+")("tauw")("utau"),
       arma::mat(),
       "Boundary layer properties along the plate", "", ""
   )));
   
-  evaluateAtSection(cm, p, results, 0.0*L,  0);
-  evaluateAtSection(cm, p, results, 0.05*L, 1);
-  evaluateAtSection(cm, p, results, 0.1*L,  2);
-  evaluateAtSection(cm, p, results, 0.2*L,  3);
-  evaluateAtSection(cm, p, results, 0.5*L,  4);
-  evaluateAtSection(cm, p, results, 0.7*L,  5);
-  evaluateAtSection(cm, p, results, 1.0*L,  6);
+  evaluateAtSection(cm, p, results, 0.0*L,  0, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.05*L, 1, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.1*L,  2, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.2*L,  3, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.5*L,  4, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.7*L,  5, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 1.0*L,  6, Cf_vs_x_i);
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");

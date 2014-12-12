@@ -185,7 +185,7 @@ public:
     rows_.push_back(Row(headings_.size()));
     return rows_.back();
   }
-  void setCellByName(Row& r, const std::string& colname, double& value);
+  void setCellByName(Row& r, const std::string& colname, double value);
   
   arma::mat toMat() const;
   

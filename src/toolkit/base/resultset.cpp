@@ -219,7 +219,7 @@ TabularResult::TabularResult
   setTableData(headings, t);
 }
 
-void TabularResult::setCellByName(TabularResult::Row& r, const string& colname, double& value)
+void TabularResult::setCellByName(TabularResult::Row& r, const string& colname, double value)
 {
   std::vector<std::string>::const_iterator ii=std::find(headings_.begin(), headings_.end(), colname);
   if (ii==headings_.end())

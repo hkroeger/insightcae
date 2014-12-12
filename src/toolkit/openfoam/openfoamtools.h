@@ -239,13 +239,42 @@ struct ColumnInfo
 
 typedef std::map<std::string, ColumnInfo > ColumnDescription;
 
-class uniformLine
+class line
 : public set
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( points, arma::mat, vec3(0,0,0) )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  line(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  /**
+   * reads the sampled data from the files
+   * OF writes different files for scalars, vectors tensors. 
+   * They are all read and combined into a single matrix in the above order by column.
+   * Only the last results in the last time folder is returned
+   */
+  static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       const std::string& setName,
+			       ColumnDescription* coldescr=NULL
+			      );
+};
+
+class uniformLine
+: public set
+{
+  line l_;
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
       ( start, arma::mat, vec3(0,0,0) )
-      ( end, arma::mat, vec3(1,0,0) )
+      ( end, arma::mat, vec3(0,0,0) )
       ( np, int, 100 )
   )
 
@@ -283,6 +312,8 @@ public:
 
 protected:
   Parameters p_;
+  double L_;
+  arma::mat x_, dir_;
 
 public:
   circumferentialAveragedUniformLine(Parameters const& p = Parameters() );
@@ -296,9 +327,38 @@ public:
 			      ) const;
 };
 
+class linearAveragedPolyLine
+: public set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( points, arma::mat, vec3(0,0,0) )
+      ( dir1, arma::mat, vec3(1,0,0) )
+      ( dir2, arma::mat, vec3(0,0,1) )
+      ( nd1, int, 10 )
+      ( nd2, int, 10 )
+  )
+
+protected:
+  Parameters p_;
+  arma::mat x_;
+
+public:
+  linearAveragedPolyLine(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       ColumnDescription* coldescr=NULL
+			      ) const;
+};
+
 class linearAveragedUniformLine
 : public set
 {
+  linearAveragedPolyLine pl_;
+  
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
       ( start, arma::mat, vec3(0,0,0) )
@@ -312,14 +372,12 @@ public:
 
 protected:
   Parameters p_;
-  arma::mat x_;
 
 public:
   linearAveragedUniformLine(Parameters const& p = Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
   virtual set* clone() const;
   
-  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       ColumnDescription* coldescr=NULL
 			      ) const;

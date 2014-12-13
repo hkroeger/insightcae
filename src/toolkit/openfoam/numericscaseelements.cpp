@@ -1134,7 +1134,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: interFoamNumerics(c, p)
+: interFoamNumerics(c, p),
+  p_(p)
 {
 }
  
@@ -1142,6 +1143,11 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 {
   interFoamNumerics::addIntoDictionaries(dictionaries);
   
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]=p_.solverName();
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");

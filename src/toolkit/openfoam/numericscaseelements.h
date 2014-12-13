@@ -249,6 +249,15 @@ class interPhaseChangeFoamNumerics
 : public interFoamNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, interFoamNumerics::Parameters,
+      (solverName, std::string, "interPhaseChangeFoam")
+      (pamb, double, 1e5)
+  )
+
+protected:
+  Parameters p_;
+
+public:
   interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };

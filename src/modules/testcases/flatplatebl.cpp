@@ -210,9 +210,9 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   } 
   else if (regime=="unsteady")
   {
-    double avgStart_=p.getDouble("run/regime/inittime")*T_;
-    double avg2Start_=avgStart_+p.getDouble("run/regime/meantime")*T_;
-    double end_=avg2Start_+p.getDouble("run/regime/mean2time")*T_;
+    avgStart_=p.getDouble("run/regime/inittime")*T_;
+    avg2Start_=avgStart_+p.getDouble("run/regime/meantime")*T_;
+    end_=avg2Start_+p.getDouble("run/regime/mean2time")*T_;
   }
 
 }

@@ -716,19 +716,22 @@ void Chart::generatePlotImage(const path& imagepath) const
 
     gp<<addinit_<<";";
     gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
-    gp<<"plot 0 not lt -1";
-    BOOST_FOREACH(const PlotCurve& pc, plc_)
+    if (plc_.size()>0)
     {
-      if (pc.xy_.n_rows>0)
-	gp<<", '-' "<<pc.plotcmd_;
-      else
-	gp<<", "<<pc.plotcmd_;
-    }
-    gp<<endl;
-    BOOST_FOREACH(const PlotCurve& pc, plc_)
-    {
-      if (pc.xy_.n_rows>0)
-	gp.send1d(pc.xy_);
+      gp<<"plot 0 not lt -1";
+      BOOST_FOREACH(const PlotCurve& pc, plc_)
+      {
+	if (pc.xy_.n_rows>0)
+	  gp<<", '-' "<<pc.plotcmd_;
+	else
+	  gp<<", "<<pc.plotcmd_;
+      }
+      gp<<endl;
+      BOOST_FOREACH(const PlotCurve& pc, plc_)
+      {
+	if (pc.xy_.n_rows>0)
+	  gp.send1d(pc.xy_);
+      }
     }
   }
 }

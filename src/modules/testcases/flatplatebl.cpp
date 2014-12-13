@@ -414,11 +414,14 @@ void FlatPlateBL::evaluateAtSection
     miny=deltaywall_e_,
     maxy=std::min(delta2e_*10.0, H_-deltaywall_e_);
     
+  arma::mat pts=exp(linspace(log(miny), log(maxy), 100))*vec3(0,1,0).t();
+  pts.col(0)+=x;
+  
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name("radial")
 //     .set_start( vec3(x, deltaywall_e_, 0.01*W_))
 //     .set_end(   vec3(x, , 0.01*W_))
-    .set_points( log(linspace(exp(miny), exp(maxy), 100))*vec3(0,1,0).t() )
+    .set_points( pts )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*W_))
     .set_nd1(1)
@@ -431,10 +434,10 @@ void FlatPlateBL::evaluateAtSection
   );
   
   sampleOps::ColumnDescription cd;
-  arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
-    .readSamples(cm, executionPath(), &cd);
-
+  arma::mat data =
+    sampleOps::findSet<sampleOps::linearAveragedPolyLine>(sets, "radial").readSamples(cm, executionPath(), &cd);
   arma::mat y=data.col(0)+deltaywall_e_;
+
   double tauw=as_scalar(0.5*cfi(x)*uinf_*uinf_);
   double utau=sqrt(tauw);
   table.setCellByName(thisctrow, "tauw", tauw);
@@ -569,7 +572,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
       "Boundary layer properties along the plate", "", ""
   )));
   
-  evaluateAtSection(cm, p, results, 0.0*L,  0, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.01*L, 0, Cf_vs_x_i);
   evaluateAtSection(cm, p, results, 0.05*L, 1, Cf_vs_x_i);
   evaluateAtSection(cm, p, results, 0.1*L,  2, Cf_vs_x_i);
   evaluateAtSection(cm, p, results, 0.2*L,  3, Cf_vs_x_i);

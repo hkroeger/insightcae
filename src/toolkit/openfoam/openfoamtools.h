@@ -220,6 +220,8 @@ public:
   
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
   
+  inline const std::string& name() const { return p_.name(); }
+  
   virtual set* clone() const =0;
 };
 
@@ -261,10 +263,9 @@ public:
    * They are all read and combined into a single matrix in the above order by column.
    * Only the last results in the last time folder is returned
    */
-  static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       const std::string& setName,
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
 			       ColumnDescription* coldescr=NULL
-			      );
+			      ) const;
 };
 
 class uniformLine
@@ -292,10 +293,9 @@ public:
    * They are all read and combined into a single matrix in the above order by column.
    * Only the last results in the last time folder is returned
    */
-  static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       const std::string& setName,
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
 			       ColumnDescription* coldescr=NULL
-			      );
+			      ) const;
 };
 
 class circumferentialAveragedUniformLine
@@ -314,6 +314,7 @@ protected:
   Parameters p_;
   double L_;
   arma::mat x_, dir_;
+  boost::ptr_vector<line> lines_;
 
 public:
   circumferentialAveragedUniformLine(Parameters const& p = Parameters() );
@@ -340,11 +341,12 @@ public:
   )
 
 protected:
-  Parameters p_;
+  linearAveragedPolyLine::Parameters p_;
   arma::mat x_;
+  boost::ptr_vector<line> lines_;
 
 public:
-  linearAveragedPolyLine(Parameters const& p = Parameters() );
+  linearAveragedPolyLine(linearAveragedPolyLine::Parameters const& p = linearAveragedPolyLine::Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
   virtual set* clone() const;
   
@@ -371,10 +373,10 @@ public:
   )
 
 protected:
-  Parameters p_;
+  linearAveragedUniformLine::Parameters p_;
 
 public:
-  linearAveragedUniformLine(Parameters const& p = Parameters() );
+  linearAveragedUniformLine(linearAveragedUniformLine::Parameters const& p = linearAveragedUniformLine::Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
   virtual set* clone() const;
   
@@ -382,6 +384,22 @@ public:
 			       ColumnDescription* coldescr=NULL
 			      ) const;
 };
+
+template<class T>
+const T& findSet(const boost::ptr_vector<sampleOps::set>& sets, const std::string& name)
+{
+  const T* ptr=NULL;
+  BOOST_FOREACH(const set& s, sets)
+  {
+    if (s.name()==name)
+    {
+      ptr=dynamic_cast<const T*>(&s);
+      if (ptr!=NULL) return *ptr;
+    }
+  }
+  insight::Exception("Could not find a set with name "+name+" matching the requested type!");
+  return *ptr;
+}
 
 }
 

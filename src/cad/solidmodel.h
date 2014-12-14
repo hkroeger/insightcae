@@ -177,6 +177,13 @@ public:
   Sphere(const arma::mat& p, double D);
 };
 
+// class Halfspace
+// : public SolidModel
+// {
+// public:
+//   Halfspace(const SolidModel& sk, const arma::mat& L, bool centered=false);
+// };
+
 class Extrusion
 : public SolidModel
 {

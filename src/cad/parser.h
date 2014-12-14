@@ -270,6 +270,13 @@ struct ISCADParser
 	r_scalar_primary =
 	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  | double_ [ _val = _1 ]
+	  | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, _1) ]
+	  | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, _1) ]
+	  | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::tan, _1) ]
+	  | ( lit("asin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::asin, _1) ]
+	  | ( lit("acos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::acos, _1) ]
+	  | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan, _1) ]
+	  | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan2, _1, _2) ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
 	  | ('-' >> r_scalar_primary) [_val=-_1]
 	  ;

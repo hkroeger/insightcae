@@ -1153,13 +1153,9 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  OFDictData::dict alphasol = stdAsymmSolverSetup(1e-10, 0.0);
-  alphasol["maxUnboundedness"]=1e-5;
-  alphasol["CoCoeff"]=0;
-  alphasol["maxIter"]=5;
-  alphasol["nLimiterIter"]=2;
-
-  solvers["alpha1"]=alphasol;
+  
+  OFDictData::dict alphasol = stdMULESSolverSetup(1e-10, 0.0);
+  solvers["\"alpha.*\""]=alphasol;
 
 }
 

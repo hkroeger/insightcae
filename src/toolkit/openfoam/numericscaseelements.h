@@ -233,6 +233,7 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   inline const std::string& pressureFieldName() const { return pname_; }
+  inline const std::string& alphaFieldName() const { return alphaname_; }
 };
 
 OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);

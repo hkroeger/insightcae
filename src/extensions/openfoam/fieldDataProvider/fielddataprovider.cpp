@@ -26,22 +26,27 @@ namespace Foam
 template<class T>
 tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& target) const
 {
-  if (timeInstants_[0]>time)
+  if ( (timeInstants_[0]>=time) || (timeInstants_.size()==1) )
+  {
     return atInstant(0, target);
+  }
   else
   {
-    int i;
-    for (i=1; i<timeInstants_.size(); i++)
+    if ( timeInstants_[timeInstants_.size()-1]<=time)
     {
-      if (timeInstants_[i]<=time) break;
-    }
-    if (i==timeInstants_.size()-1) 
       return atInstant(timeInstants_.size()-1, target);
+    }
     else
     {
-      scalar wi=time-timeInstants_[i];
-      scalar wip=timeInstants_[i+1]-time;
-      return ( wi*atInstant(i, target) + wip*atInstant(i+1, target) ) / (wi+wip);
+      int ip;
+      for (ip=1; ip<timeInstants_.size(); ip++)
+      {
+	if (timeInstants_[ip]>=time) break;
+      }
+      scalar wi=time-timeInstants_[ip-1];
+      scalar wip=timeInstants_[ip]-time;
+      Info<<wi<<" "<<wip<<endl;
+      return ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
     }
   }
 }
@@ -112,11 +117,21 @@ void FieldDataProvider<T>::read(Istream& is)
   else if (timekey=="unsteady")
   {
     DynamicList<scalar> times;
-    token t(is);
-    if (t.isFloatScalar())
+    for (token t(is); t.good(); t=token(is))
     {
-      times.append( t.floatScalarToken() );
-      appendInstant(is);
+      Info<<t<<endl;
+      if (t.isNumber())
+      {
+	times.append( t.number() );
+	appendInstant(is);
+	if (is.eof()) break;
+      }
+      else
+      {
+	FatalErrorIn("FieldDataProvider<T>::FieldDataProvider(Istream& is)")
+	  <<"expected time value, got "<<t<<"!"
+	  <<abort(FatalError);
+      }
     }
     times.shrink();
     if (times.size()<=0)
@@ -134,6 +149,8 @@ void FieldDataProvider<T>::read(Istream& is)
      << "choices: steady unsteady" << endl
      << abort(FatalError);
   }
+  
+  Info<<timeInstants_<<endl;
 }
 
 template<class T>
@@ -142,14 +159,19 @@ void FieldDataProvider<T>::write(Ostream& os) const
   os << type() << token::SPACE;
   
   if (timeInstants_.size()==1)
-    os << "steady";
+  {
+    os << "steady" << token::SPACE;
+    writeInstant(0, os);
+  }
   else
+  {
     os << "unsteady";
   
-  for (int i=0; i<timeInstants_.size(); i++)
-  {
-    os<<token::SPACE<<timeInstants_[i]<<token::SPACE;
-    writeInstant(i, os);
+    for (int i=0; i<timeInstants_.size(); i++)
+    {
+      os<<token::SPACE<<timeInstants_[i]<<token::SPACE;
+      writeInstant(i, os);
+    }
   }
 }
 

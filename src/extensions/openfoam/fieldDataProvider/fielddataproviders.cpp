@@ -26,9 +26,13 @@ namespace Foam
 makeFieldDataProvider(scalar);
 makeFieldDataProvider(vector);
 makeFieldDataProvider(symmTensor);
+makeFieldDataProvider(sphericalTensor);
+makeFieldDataProvider(tensor);
 
 makeFieldDataProviderType(uniformField, scalar);
 makeFieldDataProviderType(uniformField, vector);
 makeFieldDataProviderType(uniformField, symmTensor);
+makeFieldDataProviderType(uniformField, sphericalTensor);
+makeFieldDataProviderType(uniformField, tensor);
 
 }

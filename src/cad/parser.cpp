@@ -18,6 +18,8 @@
  *
  */
 
+#undef BOOST_SPIRIT_DEBUG
+
 #include "parser.h"
 #include "boost/locale.hpp"
 #include "boost/algorithm/string.hpp"
@@ -25,6 +27,7 @@
 #include "boost/filesystem.hpp"
 
 #include "dxfwriter.h"
+
 
 using namespace std;
 using namespace boost;
@@ -134,6 +137,25 @@ Model::Ptr loadModel(const std::string& name)
   cout<<"Failed to parse model "<<name<<endl;
   return Model::Ptr();
 }
+
+
+template <typename Iterator>
+struct skip_grammar : public qi::grammar<Iterator>
+{
+        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
+        {
+            skip
+                =   boost::spirit::ascii::space
+                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
+                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+                ;
+        }
+
+        qi::rule<Iterator> skip;
+
+};
+
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser

@@ -15,8 +15,7 @@ link_directories(${DXFLIB_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY})
-# set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
-
+set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 # set(cadtest_SRCS test.cpp)
@@ -64,5 +63,6 @@ IF(SWIG_FOUND)
   SWIG_ADD_MODULE(cad python ${cad_INTERFACES} ${insightcad_SOURCES})
   SWIG_LINK_LIBRARIES(cad toolkit ${DXFLIB_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES})
   set_target_properties(${SWIG_MODULE_cad_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+  set_target_properties(${SWIG_MODULE_cad_REAL_NAME} PROPERTIES COMPILE_FLAGS -g0)
 ENDIF()
 ENDIF()

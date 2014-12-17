@@ -21,7 +21,6 @@
 #ifndef INSIGHT_CAD_PARSER_H
 #define INSIGHT_CAD_PARSER_H
 
-#undef BOOST_SPIRIT_DEBUG
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 
 #include "solidmodel.h"
@@ -57,22 +56,6 @@ namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
 
-template <typename Iterator>
-struct skip_grammar : public qi::grammar<Iterator>
-{
-        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
-        {
-            skip
-                =   boost::spirit::ascii::space
-                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
-                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
-                ;
-        }
-
-        qi::rule<Iterator> skip;
-
-};
 
 typedef double scalar;
 typedef arma::mat vector;
@@ -115,7 +98,6 @@ struct Model
 
 Model::Ptr loadModel(const std::string& name);
 BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 1);
-
 
 
 }

@@ -36,6 +36,8 @@
 
 #include "PatchTools.H"
 
+#include "fielddataprovider.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -230,7 +232,8 @@ protected:
     /**
      * Prescribed reynolds stress tensor
      */
-    Field<symmTensor> R_;
+//     Field<symmTensor> R_;
+    autoPtr<FieldDataProvider<symmTensor> > R_;
     
     /**
      * Prescribed length scale field
@@ -320,10 +323,10 @@ public:
 	
 	// Member functions
 	inline const Field<vector>& Umean() const { return Umean_; }
-	inline const Field<symmTensor>& R() const { return R_; }
+	inline tmp<Field<symmTensor> > R() const { return R_()(this->db().time().timeOutputValue(), patch().Cf()); }
 	inline const Field<symmTensor>& L() const { return L_; }
 	inline Field<vector>& Umean()  { return Umean_; }
-	inline Field<symmTensor>& R()  { return R_; }
+// 	inline Field<symmTensor>& R()  { return R_; }
 	inline Field<symmTensor>& L()  { return L_; }
 
 	virtual void setParameters

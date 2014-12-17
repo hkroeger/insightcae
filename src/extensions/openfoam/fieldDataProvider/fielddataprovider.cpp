@@ -81,6 +81,12 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
   
   
 template<class T>
+FieldDataProvider<T>::FieldDataProvider(const FieldDataProvider<T>& o)
+: timeInstants_(o.timeInstants_)
+{
+}
+
+template<class T>
 FieldDataProvider<T>::FieldDataProvider(Istream& is)
 {
 }
@@ -128,6 +134,31 @@ void FieldDataProvider<T>::read(Istream& is)
   }
 }
 
+template<class T>
+void FieldDataProvider<T>::write(Ostream& os) const
+{
+  os << type() << token::SPACE;
+  
+  if (timeInstants_.size()==1)
+    os << "steady";
+  else
+    os << "unsteady";
+  
+  for (int i=0; i<timeInstants_.size(); i++)
+  {
+    os<<token::SPACE<<timeInstants_[i]<<token::SPACE;
+    writeInstant(i, os);
+  }
+}
+
+template<class T>
+void FieldDataProvider<T>::writeEntry(const word& key, Ostream& os) const
+{
+  os<<key<<token::SPACE;
+  write(os);
+  os<<token::END_STATEMENT<<nl;
+}
+
 template<class T>  
 uniformField<T>::uniformField(Istream& is)
 : FieldDataProvider<T>(is)
@@ -143,6 +174,12 @@ void uniformField<T>::appendInstant(Istream& is)
 }
 
 template<class T>
+void uniformField<T>::writeInstant(int i, Ostream& is) const
+{
+  is << values_[i];
+}
+
+template<class T>
 void uniformField<T>::finishAppendInstances()
 {
   values_.shrink();
@@ -155,5 +192,17 @@ tmp<Field<T> > uniformField<T>::atInstant(int i, const pointField& target) const
   return res;
 }
 
+template<class T>
+uniformField<T>::uniformField(const uniformField<T>& o)
+: FieldDataProvider<T>(o),
+  values_(o.values_)
+{
+}
+  
+template<class T>
+autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
+{
+  return autoPtr<FieldDataProvider<T> >(new uniformField<T>(*this));
+}
 
 }

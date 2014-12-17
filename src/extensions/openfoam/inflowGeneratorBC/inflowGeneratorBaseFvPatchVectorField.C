@@ -205,7 +205,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(p, iF),
     ranGen_(Pstream::myProcNo()),
     Umean_(p.size(), vector::zero),
-    R_(p.size(), symmTensor::zero),
+//     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
     c_(p.size(), 16),
     curTimeIndex_(-1)
@@ -223,7 +223,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
     ranGen_(Pstream::myProcNo()),
     Umean_(ptf.Umean_, mapper),
-    R_(ptf.R_, mapper),
+//     R_(ptf.R_, mapper),
+    R_(ptf.R_().clone()),
     L_(ptf.L_, mapper),
     c_(ptf.c_, mapper),
     curTimeIndex_(ptf.curTimeIndex_)
@@ -241,7 +242,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     ranGen_(Pstream::myProcNo()),
     Umean_("Umean", dict, size()),
     uniformConvection_(dict.lookupOrDefault<Switch>("uniformConvection", false)),
-    R_("R", dict, size()),
+//     R_("R", dict, size()),
+    R_(FieldDataProvider<symmTensor>::New(dict.lookup("R"))),
     L_("L", dict, size()),
     c_("c", dict, size()),
     curTimeIndex_(-1)
@@ -255,7 +257,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
-  R_(ptf.R_),
+//   R_(ptf.R_),
+  R_(ptf.R_().clone()),
   L_(ptf.L_),
   c_(ptf.c_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -269,7 +272,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf, iF),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
-  R_(ptf.R_),
+//   R_(ptf.R_),
+  R_(ptf.R_().clone()),
   L_(ptf.L_),
   c_(ptf.c_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -283,7 +287,7 @@ void inflowGeneratorBaseFvPatchVectorField::autoMap
 {
     fixedValueFvPatchField<vector>::autoMap(m);
     Umean_.autoMap(m);
-    R_.autoMap(m);
+//     R_.autoMap(m);
     L_.autoMap(m);
     c_.autoMap(m);
 }
@@ -299,15 +303,18 @@ void inflowGeneratorBaseFvPatchVectorField::rmap
     const inflowGeneratorBaseFvPatchVectorField& tiptf = 
       refCast<const inflowGeneratorBaseFvPatchVectorField >(ptf);
     Umean_.rmap(tiptf.Umean_, addr);
-    R_.rmap(tiptf.R_, addr);
+//     R_.rmap(tiptf.R_, addr);
     L_.rmap(tiptf.L_, addr);
     c_.rmap(tiptf.c_, addr);
 }
 
 void inflowGeneratorBaseFvPatchVectorField::setParameters(const vectorField& umean, const symmTensorField& R, const symmTensorField& L)
 {
+  FatalErrorIn("inflowGeneratorBaseFvPatchVectorField::setParameters()")
+  <<"yet unsupported"<<abort(FatalError);
+  
   Umean_=umean;
-  R_=R;
+//   R_=R;
   L_=L;
 }
 
@@ -382,7 +389,7 @@ void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
 {
     Umean_.writeEntry("Umean", os);
     os.writeKeyword("uniformConvection") << uniformConvection_ << token::END_STATEMENT << nl;
-    R_.writeEntry("R", os);
+    R_().writeEntry("R", os);
     L_.writeEntry("L", os);
     c_.writeEntry("c", os);
         

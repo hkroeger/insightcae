@@ -36,6 +36,7 @@ protected:
   List<scalar> timeInstants_;
   
   virtual void appendInstant(Istream& is) =0;
+  virtual void writeInstant(int i, Ostream& os) const =0;
   virtual void finishAppendInstances();
   
 public:
@@ -61,6 +62,7 @@ public:
   );
 
     
+  FieldDataProvider(const FieldDataProvider<T>& o);
   FieldDataProvider(Istream& is);
   void read(Istream& is);
   
@@ -69,6 +71,11 @@ public:
 
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const =0;
   tmp<Field<T> > operator()(double time, const pointField& target) const;
+  
+  virtual autoPtr<FieldDataProvider<T> > clone() const =0;
+  
+  void write(Ostream& os) const;
+  void writeEntry(const word& key, Ostream& os) const;
 };
 
 
@@ -80,13 +87,18 @@ class uniformField
   DynamicList<T> values_;
   
   virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
   virtual void finishAppendInstances();
 
 public:
   //- Runtime type information
   TypeName("uniformField");
+  
   uniformField(Istream& is);
+  uniformField(const uniformField<T>& o);
+  
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
 };
 
 

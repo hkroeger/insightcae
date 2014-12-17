@@ -26,7 +26,7 @@ set(INCLUDE_DIRS
   ${Boost_INCLUDE_DIRS}
   ${toolkit_SOURCE_DIR}
   ${CMAKE_CURRENT_LIST_DIR}
-  ${fieldDataProvider_SOURCE_DIR}
+  ${fieldDataProviderOF23x_SOURCE_DIR}
 )
 
 set(LIBS 

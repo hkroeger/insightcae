@@ -456,11 +456,12 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   scalarField edgeL(edgeLengths(false));
 //   Info<<"minEdgel="<<min(edgeL)<<endl;
       
-  scalar maxR=max(mag(R_));
+  symmTensorField Rc=R();
+  scalar maxR=max(mag(Rc));
   
   forAll(*this, fi)
   {
-    if (mag(R_[fi])>1e-3*maxR)
+    if (mag(Rc[fi])>1e-3*maxR)
     {
       vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
       
@@ -495,7 +496,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	  Umean, 
 	  L_[fi], minL,
 	  fi,
-	  R_[fi]
+	  Rc[fi]
 	);
 	
 	bool isFirstDummy=(lLalong_[fi]<0.0);

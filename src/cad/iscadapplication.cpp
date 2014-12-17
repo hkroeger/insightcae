@@ -418,7 +418,7 @@ void ISCADMainWindow::rebuildModel()
   }
 
   clearDerivedData();
-    
+    /*
   std::string code=editor_->toPlainText().toStdString();
   
   parser::model m;
@@ -435,12 +435,19 @@ void ISCADMainWindow::rebuildModel()
       parser,
       skip
   );
+  */
+    
+  std::istringstream is(editor_->toPlainText().toStdString());
+  
+  int failloc=-1;
+  parser::Model::Ptr m;
+  bool r=parseISCADModelStream(is, m, &failloc);
 
-  if (begin != end) // fail if we did not get a full match
+  if (!r) // fail if we did not get a full match
   {
     QTextCursor tmpCursor = editor_->textCursor();
     tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
-    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, int(begin-orgbegin) );
+    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
     editor_->setTextCursor(tmpCursor);
     
     statusBar()->showMessage("Model regeneration failed => Cursor moved to location where parsing stopped!");
@@ -451,8 +458,8 @@ void ISCADMainWindow::rebuildModel()
   }
     
   context_->getContext()->EraseAll();
-  parser.model_->modelstepSymbols.for_each(Transferrer(*this));
-  parser.model_->scalarSymbols.for_each(Transferrer(*this));
-  parser.model_->vectorSymbols.for_each(Transferrer(*this));
+  m->modelstepSymbols.for_each(Transferrer(*this));
+  m->scalarSymbols.for_each(Transferrer(*this));
+  m->vectorSymbols.for_each(Transferrer(*this));
   
 }

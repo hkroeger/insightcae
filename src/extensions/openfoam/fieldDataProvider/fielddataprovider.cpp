@@ -70,7 +70,7 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
 	  << typekey << " for FieldDataProvider "
 	  << nl
 	  << "Valid FieldDataProvider types are:" << nl
-	  << IstreamConstructorTablePtr_->sortedToc() << nl
+	  << IstreamConstructorTablePtr_->toc() << nl
 	  << exit(FatalError);
   }
 
@@ -82,12 +82,14 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
   
 template<class T>
 FieldDataProvider<T>::FieldDataProvider(const FieldDataProvider<T>& o)
-: timeInstants_(o.timeInstants_)
+: refCount(),
+  timeInstants_(o.timeInstants_)
 {
 }
 
 template<class T>
 FieldDataProvider<T>::FieldDataProvider(Istream& is)
+: refCount()
 {
 }
 

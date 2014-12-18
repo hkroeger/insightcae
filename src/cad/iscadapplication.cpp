@@ -455,11 +455,12 @@ void ISCADMainWindow::rebuildModel()
   else
   {
     statusBar()->showMessage("Model regeneration successful.");
+    
+    context_->getContext()->EraseAll();
+    m->modelstepSymbols.for_each(Transferrer(*this));
+    m->scalarSymbols.for_each(Transferrer(*this));
+    m->vectorSymbols.for_each(Transferrer(*this));
   }
     
-  context_->getContext()->EraseAll();
-  m->modelstepSymbols.for_each(Transferrer(*this));
-  m->scalarSymbols.for_each(Transferrer(*this));
-  m->vectorSymbols.for_each(Transferrer(*this));
   
 }

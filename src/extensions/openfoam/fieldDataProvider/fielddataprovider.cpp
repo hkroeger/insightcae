@@ -26,15 +26,17 @@ namespace Foam
 template<class T>
 tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& target) const
 {
+  tmp<Field<T> > res;
   if ( (timeInstants_[0]>=time) || (timeInstants_.size()==1) )
   {
-    return atInstant(0, target);
+    res=atInstant(0, target);
   }
   else
   {
     if ( timeInstants_[timeInstants_.size()-1]<=time)
     {
-      return atInstant(timeInstants_.size()-1, target);
+//       Info<<timeInstants_<<endl;
+      res=atInstant(timeInstants_.size()-1, target);
     }
     else
     {
@@ -45,15 +47,11 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
       }
       scalar wi=time-timeInstants_[ip-1];
       scalar wip=timeInstants_[ip]-time;
-      Info<<wi<<" "<<wip<<endl;
-      return ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
+//       Info<<wi<<" "<<wip<<endl;
+      res=( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
     }
   }
-}
-
-template<class T>
-void FieldDataProvider<T>::finishAppendInstances()
-{
+  return res;
 }
 
 template<class T>
@@ -119,7 +117,7 @@ void FieldDataProvider<T>::read(Istream& is)
     DynamicList<scalar> times;
     for (token t(is); t.good(); t=token(is))
     {
-      Info<<t<<endl;
+//       Info<<t<<endl;
       if (t.isNumber())
       {
 	times.append( t.number() );
@@ -150,13 +148,17 @@ void FieldDataProvider<T>::read(Istream& is)
      << abort(FatalError);
   }
   
-  Info<<timeInstants_<<endl;
+//   Info<<timeInstants_<<endl;
 }
 
 template<class T>
 void FieldDataProvider<T>::write(Ostream& os) const
 {
   os << type() << token::SPACE;
+  
+  writeSup(os);
+  
+  os<<token::SPACE;
   
   if (timeInstants_.size()==1)
   {
@@ -176,12 +178,20 @@ void FieldDataProvider<T>::write(Ostream& os) const
 }
 
 template<class T>
+void FieldDataProvider<T>::writeSup(Ostream& os) const
+{
+}
+
+template<class T>
 void FieldDataProvider<T>::writeEntry(const word& key, Ostream& os) const
 {
   os.writeKeyword(key);
   write(os);
   os<<token::END_STATEMENT<<nl;
 }
+
+
+
 
 template<class T>  
 uniformField<T>::uniformField(Istream& is)
@@ -194,19 +204,13 @@ void uniformField<T>::appendInstant(Istream& is)
 {
   T v;
   is >> v;
-  values_.append(v);
+  values_.push_back(new T(v));
 }
 
 template<class T>
 void uniformField<T>::writeInstant(int i, Ostream& is) const
 {
   is << values_[i];
-}
-
-template<class T>
-void uniformField<T>::finishAppendInstances()
-{
-  values_.shrink();
 }
 
 template<class T>
@@ -228,5 +232,110 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 {
   return autoPtr<FieldDataProvider<T> >(new uniformField<T>(*this));
 }
+
+
+
+template<class T>  
+linearProfile<T>::linearProfile(Istream& is)
+: FieldDataProvider<T>(is)
+{
+}
+
+template<class T>
+void linearProfile<T>::appendInstant(Istream& is)
+{
+  fileName fn;
+  is >> fn;
+  filenames_.push_back(fn);
+  
+  arma::mat xy;
+  fn.expand();
+  xy.load(fn.c_str(), arma::raw_ascii);
+  
+  values_.push_back(new insight::Interpolator(xy, true) );
+}
+
+template<class T>
+void linearProfile<T>::writeInstant(int i, Ostream& is) const
+{
+  is << filenames_[i];
+}
+
+template<class T>
+tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) const
+{
+  tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
+  Field<T>& res=resPtr();
+
+  vector ey = - (ex_ ^ ez_);
+  
+  tensor tt(ex_, ey, ez_);
+//   Info<<ey<<tt<<endl;
+  
+//   labelList cmap(pTraits<T>::nComponents, -1);
+//   for (Map<word>::const_iterator i=cols_.begin(); i!=cols_.end(); i++)
+//   {
+//     for (int tc=0; tc<pTraits<T>::nComponents; tc++)
+//     {
+//       if (pTraits<T>::componentNames[tc]==i())
+//       {
+// 	cmap[i.key()]=tc;
+// 	break;
+//       }
+//     }
+//   }
+//   Info<<"cmap="<<cmap<<endl;
+
+  forAll(target, pi)
+  {
+    const point& p=target[pi];
+    double t = (p-p0_)&ep_;
+    
+    arma::mat q = values_[idx](t);
+//     std::cout<<"q="<<q<<std::endl;
+    
+    for (int c=0; c<q.n_elem; c++)
+    {
+//       std::cout<<c<<" "<<cmap[c]<<" "<<q(cmap[c])<<std::endl;
+      if (cols_.found(c)) //(cmap[c]>=0) // if column is used
+      {
+	setComponent( res[pi], cols_[c] ) = q(c);
+      }
+    }
+    res[pi]=transform(tt, res[pi]);
+  }
+  Info<<"res="<<res<<endl;
+  return resPtr;
+}
+
+template<class T>
+linearProfile<T>::linearProfile(const linearProfile<T>& o)
+: FieldDataProvider<T>(o),
+  p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
+  cols_(o.cols_),
+  filenames_(o.filenames_),
+  values_(o.values_)
+{
+}
+
+template<class T>
+void linearProfile<T>::read(Istream& is)
+{
+  is >> p0_ >> ep_ >> cols_ >> ex_ >> ez_;
+  FieldDataProvider<T>::read(is);
+}
+  
+template<class T>
+void linearProfile<T>::writeSup(Ostream& os) const
+{
+  os << p0_  << token::SPACE << ep_ << token::SPACE << cols_ << token::SPACE << ex_ <<token::SPACE << ez_;
+}
+  
+template<class T>
+autoPtr<FieldDataProvider<T> > linearProfile<T>::clone() const
+{
+  return autoPtr<FieldDataProvider<T> >(new linearProfile<T>(*this));
+}
+
 
 }

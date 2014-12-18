@@ -26,6 +26,9 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
 
+#include "boost/shared_ptr.hpp"
+#include "boost/ptr_container/ptr_vector.hpp"
+
 #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace insight 
@@ -153,8 +156,10 @@ arma::mat sortedByCol(const arma::mat&m, int c);
 class Interpolator
 {
   arma::mat xy_, first, last;
-  gsl_interp_accel *acc;
-  std::vector<gsl_spline*> spline ;
+  boost::shared_ptr<gsl_interp_accel> acc;
+  boost::ptr_vector<gsl_spline> spline ;
+  
+//   Interpolator(const Interpolator&);
   
 public:
   Interpolator(const arma::mat& xy, bool force_linear=false);

@@ -22,6 +22,12 @@
 
 #include "fvCFD.H"
 
+#include "base/linearalgebra.h"
+
+#include <map>
+#include <vector>
+#include "boost/ptr_container/ptr_vector.hpp"
+
 namespace Foam 
 {
 
@@ -37,7 +43,6 @@ protected:
   
   virtual void appendInstant(Istream& is) =0;
   virtual void writeInstant(int i, Ostream& os) const =0;
-  virtual void finishAppendInstances();
   
 public:
   //- Runtime type information
@@ -64,7 +69,6 @@ public:
     
   FieldDataProvider(const FieldDataProvider<T>& o);
   FieldDataProvider(Istream& is);
-  void read(Istream& is);
   
   //- Destructor
   virtual ~FieldDataProvider();
@@ -74,7 +78,10 @@ public:
   
   virtual autoPtr<FieldDataProvider<T> > clone() const =0;
   
-  void write(Ostream& os) const;
+  virtual void read(Istream& is);
+  virtual void write(Ostream& os) const;
+  virtual void writeSup(Ostream& os) const;
+  
   void writeEntry(const word& key, Ostream& os) const;
 };
 
@@ -84,11 +91,10 @@ template<class T>
 class uniformField
 : public FieldDataProvider<T>
 {
-  DynamicList<T> values_;
+  boost::ptr_vector<T> values_;
   
   virtual void appendInstant(Istream& is);
   virtual void writeInstant(int i, Ostream& os) const;
-  virtual void finishAppendInstances();
 
 public:
   //- Runtime type information
@@ -97,6 +103,35 @@ public:
   uniformField(Istream& is);
   uniformField(const uniformField<T>& o);
   
+  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
+
+
+
+template<class T>
+class linearProfile
+: public FieldDataProvider<T>
+{
+  point p0_;
+  vector ep_, ex_, ez_;
+  Map<label> cols_;
+  std::vector<fileName> filenames_;
+  boost::ptr_vector<insight::Interpolator> values_;
+  
+  virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+  //- Runtime type information
+  TypeName("linearProfile");
+  
+  linearProfile(Istream& is);
+  linearProfile(const linearProfile<T>& o);
+
+  virtual void read(Istream& is);
+  virtual void writeSup(Ostream& os) const;
+
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
   virtual autoPtr<FieldDataProvider<T> > clone() const;
 };
@@ -113,7 +148,7 @@ public:
     defineTemplateRunTimeSelectionTable                                       \
     (                                                                         \
         FieldDataProvider<Type>,                                              \
-        Istream                                                            \
+        Istream                                                               \
     );
 
 
@@ -121,7 +156,7 @@ public:
                                                                               \
     defineNamedTemplateTypeNameAndDebug(SS<Type>, 0);                         \
                                                                               \
-    FieldDataProvider<Type>::addIstreamConstructorToTable<SS<Type> >       \
+    FieldDataProvider<Type>::addIstreamConstructorToTable<SS<Type> >          \
         add##SS##Type##ConstructorToTable_;
 
 

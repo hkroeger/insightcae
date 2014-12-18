@@ -19,6 +19,7 @@
 
 #include "fielddataprovider.h"
 #include "addToRunTimeSelectionTable.H"
+#include "transform.H"
 
 namespace Foam
 {

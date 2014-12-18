@@ -50,9 +50,7 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 :
     fixedValueFvPatchField<Type>(p, iF),
     vp_(ptf.vp_().clone())
-{
-//     fvPatchField<Type>::operator==(uniformValue_);
-}
+{}
 
 
 template<class Type>
@@ -65,9 +63,7 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 :
     fixedValueFvPatchField<Type>(p, iF),
     vp_(FieldDataProvider<Type>::New(dict.lookup("source")))
-{
-//     fvPatchField<Type>::operator==(uniformValue_);
-}
+{}
 
 
 template<class Type>
@@ -78,9 +74,7 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 :
     fixedValueFvPatchField<Type>(ptf),
     vp_(ptf.vp_().clone())
-{
-//     fvPatchField<Type>::operator==(uniformValue_);
-}
+{}
 
 
 template<class Type>
@@ -93,7 +87,6 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
     fixedValueFvPatchField<Type>(ptf, iF),
     vp_(ptf.vp_().clone())
 {
-//     fvPatchField<Type>::operator==(uniformValue_);
 }
 
 
@@ -106,7 +99,6 @@ void extendedFixedValueFvPatchField<Type>::autoMap
 )
 {
     this->setSize(m.size());
-//     fvPatchField<Type>::operator==(uniformValue_);
 }
 
 template<class Type>
@@ -129,8 +121,6 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
 {
     fvPatchField<Type>::write(os);
     vp_().writeEntry("source", os);
-//     os.writeKeyword("uniformValue")
-//         << uniformValue_ << token::END_STATEMENT << nl;
     this->writeEntry("value", os);
 }
 

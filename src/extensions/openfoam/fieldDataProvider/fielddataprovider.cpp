@@ -178,7 +178,7 @@ void FieldDataProvider<T>::write(Ostream& os) const
 template<class T>
 void FieldDataProvider<T>::writeEntry(const word& key, Ostream& os) const
 {
-  os<<key<<token::SPACE;
+  os.writeKeyword(key);
   write(os);
   os<<token::END_STATEMENT<<nl;
 }

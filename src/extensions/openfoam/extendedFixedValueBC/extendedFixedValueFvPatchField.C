@@ -131,6 +131,7 @@ void extendedFixedValueFvPatchField<Type>::write(Ostream& os) const
     vp_().writeEntry("source", os);
 //     os.writeKeyword("uniformValue")
 //         << uniformValue_ << token::END_STATEMENT << nl;
+    this->writeEntry("value", os);
 }
 
 

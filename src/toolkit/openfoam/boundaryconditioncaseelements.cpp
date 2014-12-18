@@ -37,6 +37,94 @@ using namespace boost::fusion;
 
 namespace insight
 {
+  
+FieldDataProviderInterface::FieldDataProviderInterface(const ParameterSet& p)
+{
+
+}
+
+
+Parameter* FieldDataProviderInterface::defaultParameter(const arma::mat& reasonable_value)
+{
+  return 
+    new SelectableSubsetParameter
+    (
+      "uniform", 
+      list_of<SelectableSubsetParameter::SingleSubset>
+
+	(
+	  "uniform", new ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("values", new ArrayParameter
+	      (
+		SubsetParameter
+		(
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",	new DoubleParameter(0.0, "time instant"))
+		      ("value",	new VectorParameter(reasonable_value, "value components"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		), 
+		1, 
+		"Temporal sampling points. Create one single instant at arbitrary time for the steady case."
+	      )
+	    )
+	    .convert_to_container<ParameterSet::EntryList>()
+	  )
+	)
+
+	(
+	  "linearProfile", new ParameterSet
+	  (
+	      boost::assign::list_of<ParameterSet::SingleEntry>
+	      ("values", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",		new DoubleParameter(0.0, "time instant"))
+		      ("profile",	new PathParameter("", "text file with profile data. First column shall contain sampling coordinate."))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		  ), 
+		  1, 
+		  "Temporal sampling points"
+		))
+	      ("cmap", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("column",	new IntParameter(0, "column in profile data"))
+		      ("component",	new IntParameter(0, "corresponding component in value"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Mapping of a column"
+		  ), 
+		  1, 
+		  "Profile data column mapping"
+		))
+	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
+	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
+	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
+	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
+	      .convert_to_container<ParameterSet::EntryList>()
+	    )
+	  )
+	,
+	  "Origin of the prescribed value"
+    );
+}
+
 
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),

@@ -84,6 +84,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("Re_L",		new DoubleParameter(1000, "[-] Reynolds number, formulated with final running length"))
+	    ("prof",		FieldDataProviderInterface::defaultParameter(vec3(1,0,0)))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Definition of the operation point under consideration"

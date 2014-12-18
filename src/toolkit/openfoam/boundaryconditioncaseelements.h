@@ -34,6 +34,18 @@
 
 namespace insight 
 {
+  
+  
+class FieldDataProviderInterface
+{
+public:
+protected:
+public:
+  FieldDataProviderInterface(const ParameterSet& p);
+  
+  static Parameter* defaultParameter(const arma::mat& reasonable_value);
+};
+  
 
 /*
  * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 

@@ -284,10 +284,22 @@ std::string to_OF(const arma::mat& v)
 
 OFDictData::list vector3(const arma::mat& v)
 {
-  OFDictData::list l;
-  for (int i=0; i<v.n_rows; i++)
-    l.push_back(v(i));
-  return l;
+  return vector3(v(0), v(1), v(2));
+}
+
+OFDictData::data vectorSpace(const arma::mat& v)
+{
+  if (v.n_elem==1)
+  {
+    return as_scalar(v);
+  }
+  else
+  {
+    OFDictData::list l;
+    for (int i=0; i<v.n_elem; i++)
+      l.push_back(v(i));
+    return l;
+  }
 }
 
 OFDictData::list vector3(double x, double y, double z)

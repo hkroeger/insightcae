@@ -98,7 +98,7 @@ class uniformField
 
 public:
   //- Runtime type information
-  TypeName("uniformField");
+  TypeName("uniform");
   
   uniformField(Istream& is);
   uniformField(const uniformField<T>& o);

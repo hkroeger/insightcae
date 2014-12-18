@@ -104,8 +104,14 @@ FieldDataProvider<T>::~FieldDataProvider()
 template<class T>
 void FieldDataProvider<T>::read(Istream& is)
 {
-  word timekey;
-  is >> timekey;
+  token nexttoken(is);
+  
+  word timekey="steady";
+  if (!nexttoken.isWord())
+    is.putBack(nexttoken); // assume "steady"
+  else
+    timekey=nexttoken.wordToken();
+    
   if (timekey=="steady")
   {
     timeInstants_.setSize(1);

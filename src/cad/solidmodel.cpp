@@ -783,6 +783,55 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 {
 }
 
+
+TopoDS_Shape makeHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P)
+{
+//   BRep_Builder bb;
+//   TopoDS_Compound result;
+//   bb.MakeCompound(result);
+
+  BRepOffsetAPI_ThruSections sb(true);
+  
+  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(sk));
+  
+  double dz=arma::norm(axis, 2);
+  arma::mat ez=axis/norm(axis, 2);
+  double phi=0.0, dphi=2.*dz*M_PI/P;
+  int nstep=std::max( 2, int(ceil(dphi/(M_PI/64.))) );
+  double phi_step=dphi/double(nstep);
+  
+  for (int i=0; i<nstep+1; i++)
+  {
+    double z=phi*P/(2.*M_PI);
+    
+    gp_Trsf t1, t2;
+    t1.SetTranslation( to_Vec(ez).Scaled(z) );
+    t2.SetRotation( gp_Ax1( to_Pnt(p0), to_Vec(ez) ), phi );
+    TopoDS_Wire ttsk = TopoDS::Wire(BRepBuilderAPI_Transform
+      (
+	BRepBuilderAPI_Transform
+	(
+	  ow, 
+	  t1
+	).Shape(),
+        t2
+      ).Shape());
+//     bb.Add(result, ttsk);
+    sb.AddWire(ttsk);
+    
+    phi+=phi_step;
+  }
+  
+//   return result;
+  return sb.Shape();
+}
+
+
+HelicalSweep::HelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P)
+: SolidModel(makeHelicalSweep(sk, p0, axis, P))
+{
+}
+
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {

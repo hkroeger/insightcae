@@ -198,6 +198,13 @@ public:
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
 };
 
+class HelicalSweep
+: public SolidModel
+{
+public:
+  HelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double PtoD);
+};
+
 // =================== Boolean operations ======================
 class BooleanUnion
 : public SolidModel

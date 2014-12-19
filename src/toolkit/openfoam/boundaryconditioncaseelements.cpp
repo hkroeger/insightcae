@@ -37,14 +37,82 @@ using namespace boost::fusion;
 
 namespace insight
 {
-  
-FieldDataProviderInterface::FieldDataProviderInterface(const ParameterSet& p)
-{
 
+FieldData::FieldData(const arma::mat& uniformSteadyValue)
+: p_(defaultParameter(uniformSteadyValue))
+{
+}
+  
+FieldData::FieldData(const SelectableSubsetParameter& p)
+: p_(p.clone())
+{
 }
 
 
-Parameter* FieldDataProviderInterface::defaultParameter(const arma::mat& reasonable_value)
+OFDictData::data FieldData::sourceEntry() const
+{
+  std::ostringstream os;
+  
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    os<<type<<" unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(inst().getVector("value"));
+    }
+  } 
+  else if (type=="linearProfile")
+  {
+    throw insight::Exception("not yet implemented: "+type);
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+  }
+  
+  return os.str();
+}
+
+
+arma::mat FieldData::representativeValue() const
+{
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    arma::mat meanv;
+    int s=0;
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      //os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(
+      arma::mat cv=inst().getVector("value");
+      if (meanv.n_elem==0) meanv=cv; else meanv+=cv;
+    }
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    meanv/=double(s);
+    return meanv;
+  } 
+  else if (type=="linearProfile")
+  {
+    throw insight::Exception("not yet implemented: "+type);
+    return arma::mat();
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+    return arma::mat();
+  }
+}
+
+
+
+Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value)
 {
   return 
     new SelectableSubsetParameter
@@ -154,10 +222,13 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.addListIfNonexistent("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
+
   addIntoFieldDictionaries(dictionaries);
+  
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
-  
   insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
 }
 
@@ -606,11 +677,14 @@ void VelocityInletBC::setField_p(OFDictData::dict& BC) const
 
 void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=OFDictData::data("fixedValue");
-  BC["value"]=OFDictData::data("uniform ( "
-    +lexical_cast<std::string>(p_.velocity()(0))+" "
-    +lexical_cast<std::string>(p_.velocity()(1))+" "
-    +lexical_cast<std::string>(p_.velocity()(2))+" )");
+//   BC["type"]=OFDictData::data("fixedValue");
+//   BC["value"]=OFDictData::data("uniform ( "
+//     +lexical_cast<std::string>(p_.velocity()(0))+" "
+//     +lexical_cast<std::string>(p_.velocity()(1))+" "
+//     +lexical_cast<std::string>(p_.velocity()(2))+" )");
+  BC["type"]=OFDictData::data("extendedFixedValue");
+  BC["source"]=p_.velocity().sourceEntry();
+  BC["value"]=OFDictData::data( "uniform " + OFDictData::to_OF(vec3(0,0,0)) );
 }
 
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -663,14 +737,14 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
       double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(k);
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
       double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       double omega=sqrt(k)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
@@ -678,7 +752,7 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
       double k=3.*pow(uprime, 2)/2.;
       double epsilon=0.09*pow(k, 1.5)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
@@ -692,7 +766,7 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
     {
-      double nutilda=sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
+      double nutilda=sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity().representativeValue(), 2) * p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(nutilda);
     }
@@ -1211,7 +1285,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
   BC["type"]=p_.type();
-  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
+  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity().representativeValue());
   
   BC["c"]="uniform "+str( format("%g") % p_.volexcess());
   double L=p_.mixingLength();
@@ -1220,7 +1294,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
     +lexical_cast<string>(L)+" 0 "
     +lexical_cast<string>(L)+" )";
 
-  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity(),2), 2);
+  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity().representativeValue(),2), 2);
   BC["R"]="uniform ( "
     +lexical_cast<string>(R)+" 0 0 "
     +lexical_cast<string>(R)+" 0 "
@@ -1229,7 +1303,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   if (p_.uniformConvection())
     BC["uniformConvection"]=true;
 
-  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity());
+  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity().representativeValue());
 }
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1289,7 +1363,7 @@ void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& locat
     
     initializers.push_back( p_.initializer()->type() );
     OFDictData::dict d;
-    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity(), iniparams);
+    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity().representativeValue(), iniparams);
     initializers.push_back(d);
     
     // then write to file

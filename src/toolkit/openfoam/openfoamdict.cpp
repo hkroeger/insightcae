@@ -279,7 +279,15 @@ void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
 
 std::string to_OF(const arma::mat& v)
 {
-  return "("+lexical_cast<string>(v(0))+" "+lexical_cast<string>(v(1))+" "+lexical_cast<string>(v(2))+")";
+  std::string ret="(";
+  for (int i=0; i<v.n_elem; i++)
+  {
+    ret+=lexical_cast<string>(v(i));
+    if (i != (v.n_elem-1) )
+      ret+=" ";
+  }
+  ret+=")";
+  return ret;
 }
 
 OFDictData::list vector3(const arma::mat& v)

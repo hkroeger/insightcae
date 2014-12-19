@@ -34,18 +34,52 @@
 
 namespace insight 
 {
-  
-  
-class FieldDataProviderInterface
+
+
+
+
+/**
+ * Interface which wraps different types of prescribing field data on boundaries.
+ * Works together with OpenFOAM class "FieldDataProvider".
+ */
+class FieldData
 {
 public:
-protected:
-public:
-  FieldDataProviderInterface(const ParameterSet& p);
   
+protected:
+  boost::shared_ptr<SelectableSubsetParameter> p_;
+  
+public:
+  /**
+   * sets all parameters for the most simple type of field data description (uniform, steady value)
+   */
+  FieldData(const arma::mat& uniformSteadyValue);
+  
+  /**
+   * takes config from a parameterset
+   */
+  FieldData(const SelectableSubsetParameter& p);
+  
+  /**
+   * returns according dictionary entry for OF
+   */
+  OFDictData::data sourceEntry() const;
+  
+  /**
+   * return some representative value of the prescribed data. 
+   * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
+   */
+  arma::mat representativeValue() const;
+  
+  /**
+   * returns a proper parameterset for this entity
+   * @reasonable_value: the number of components determines the rank of the field
+   */
   static Parameter* defaultParameter(const arma::mat& reasonable_value);
 };
   
+
+
 
 /*
  * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
@@ -228,12 +262,14 @@ public:
 };
 
 
+
+
 class VelocityInletBC
 : public BoundaryCondition
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (velocity, arma::mat, vec3(0,0,0))
+    (velocity, FieldData, FieldData(vec3(0,0,0)) )
     (T, double, 300.0)
     (rho, double, 1025.0)
     (turbulenceIntensity, double, 0.01)
@@ -256,6 +292,9 @@ public:
   virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
+
+
 
 class ExptDataInletBC
 : public BoundaryCondition
@@ -284,6 +323,9 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
+
 class CompressibleInletBC
 : public VelocityInletBC
 {
@@ -306,6 +348,9 @@ public:
   virtual void setField_p(OFDictData::dict& BC) const;
 };
 
+
+
+
 class TurbulentVelocityInletBC
 : public VelocityInletBC
 {
@@ -313,6 +358,7 @@ class TurbulentVelocityInletBC
 public:
   typedef arma::mat CoeffList;
   typedef boost::variant<double, CoeffList> LengthScaleProfile;
+  
   
   struct inflowInitializer
   {
@@ -330,13 +376,7 @@ public:
     static ParameterSet defaultParameters();
   };
   
-//   struct isotropicTurbulenceInflowInitializer
-//   {
-//     double Ubulk;
-//     arma::mat RMS;
-//     
-//     virtual void addToInitializerList(OFDictData::list&) const;
-//   };
+
   
   struct pipeInflowInitializer
   : public inflowInitializer
@@ -352,6 +392,7 @@ public:
     ) const;
   };
 
+  
   struct channelInflowInitializer
   : public inflowInitializer
   {

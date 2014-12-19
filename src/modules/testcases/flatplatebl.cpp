@@ -84,7 +84,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
 	    ("Re_L",		new DoubleParameter(1000, "[-] Reynolds number, formulated with final running length"))
-	    ("prof",		FieldDataProviderInterface::defaultParameter(vec3(1,0,0)))
+	    ("prof",		FieldData::defaultParameter(vec3(1,0,0)))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Definition of the operation point under consideration"
@@ -358,7 +358,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
   
   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(vec3(uinf_,0,0))
+    .set_velocity(FieldData(vec3(uinf_,0,0)))
     .set_turbulenceIntensity(0.005)
     .set_mixingLength(0.1*H_)
   ) );

@@ -223,6 +223,9 @@ struct ISCADParser
 	 | ( '(' >> r_solidmodel_expression [_val=_1] >> ')' )
 	 
          | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
+         
+         | ( lit("Quad") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
          | ( lit("Sketch") > '(' >> r_datumExpression >> ',' >> r_path >> ',' >> r_string >> ')' ) 
 	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
          
@@ -255,8 +258,13 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2, _3)) ]
 	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4, _5)) ]
-	 | ( lit("HelicalSweep") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
-	      [ _val = construct<solidmodel>(new_<HelicalSweep>(*_1, _2, _3, _4)) ]
+	 | ( lit("RotatedHelicalSweep") > '(' 
+		>> r_solidmodel_expression >> ',' 
+		>> r_vectorExpression >> ',' 
+		>> r_vectorExpression >> ',' 
+		>> r_scalarExpression >> 
+		((  ',' >> r_scalarExpression ) | attr(0.0)) >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<RotatedHelicalSweep>(*_1, _2, _3, _4, _5)) ]
 	 ;
 	 
 // 	r_edgeFeaturesExpression = 

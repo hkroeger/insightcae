@@ -138,6 +138,18 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
 
+
+// =================== 2D Primitives ======================
+
+class Quad
+: public SolidModel
+{
+public:
+  Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W);
+  operator const TopoDS_Face& () const;
+};
+
+
 // =================== Primitives ======================
 class Cylinder
 : public SolidModel
@@ -198,11 +210,11 @@ public:
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
 };
 
-class HelicalSweep
+class RotatedHelicalSweep
 : public SolidModel
 {
 public:
-  HelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double PtoD);
+  RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double PtoD, double revoffset=0.0);
 };
 
 // =================== Boolean operations ======================

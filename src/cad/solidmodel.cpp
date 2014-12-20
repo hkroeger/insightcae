@@ -657,6 +657,35 @@ void SolidModel::nameFeatures()
 
 }
 
+TopoDS_Face makeQuad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
+{
+  gp_Pnt 
+    p1(to_Pnt(p0)),
+    p2=p1.Translated(to_Vec(W)),
+    p3=p2.Translated(to_Vec(L)),
+    p4=p1.Translated(to_Vec(L))
+  ;
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+  w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
+  w.Add(BRepBuilderAPI_MakeEdge(p3, p4));
+  w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
+  
+  return BRepBuilderAPI_MakeFace(w.Wire());
+}
+
+Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
+: SolidModel(makeQuad(p0, L, W))
+{
+}
+
+Quad::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel
   (
@@ -784,7 +813,7 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 }
 
 
-TopoDS_Shape makeHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P)
+TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
 {
 //   BRep_Builder bb;
 //   TopoDS_Compound result;
@@ -800,24 +829,32 @@ TopoDS_Shape makeHelicalSweep(const SolidModel& sk, const arma::mat& p0, const a
   int nstep=std::max( 2, int(ceil(dphi/(M_PI/64.))) );
   double phi_step=dphi/double(nstep);
   
+#define TRSF(shape, deltaz, oshape) \
+  {\
+    gp_Trsf t1, t2;\
+    t1.SetTranslation( to_Vec(ez).Scaled(deltaz) );\
+    t2.SetRotation( gp_Ax1( to_Pnt(p0), to_Vec(ez) ), 2.*deltaz*M_PI/P );\
+    oshape = TopoDS::Wire(BRepBuilderAPI_Transform\
+      (\
+	BRepBuilderAPI_Transform\
+	(\
+	  shape, \
+	  t1\
+	).Shape(),\
+        t2\
+      ).Shape());\
+  }
+  
+  TopoDS_Wire firstsec;
+  TRSF(ow, -revoffset, firstsec);
+  
   for (int i=0; i<nstep+1; i++)
   {
     double z=phi*P/(2.*M_PI);
-    
-    gp_Trsf t1, t2;
-    t1.SetTranslation( to_Vec(ez).Scaled(z) );
-    t2.SetRotation( gp_Ax1( to_Pnt(p0), to_Vec(ez) ), phi );
-    TopoDS_Wire ttsk = TopoDS::Wire(BRepBuilderAPI_Transform
-      (
-	BRepBuilderAPI_Transform
-	(
-	  ow, 
-	  t1
-	).Shape(),
-        t2
-      ).Shape());
-//     bb.Add(result, ttsk);
-    sb.AddWire(ttsk);
+    TopoDS_Wire cursec;
+    TRSF(firstsec, z, cursec);
+//     bb.Add(result, cursec);
+    sb.AddWire(cursec);
     
     phi+=phi_step;
   }
@@ -827,8 +864,8 @@ TopoDS_Shape makeHelicalSweep(const SolidModel& sk, const arma::mat& p0, const a
 }
 
 
-HelicalSweep::HelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P)
-: SolidModel(makeHelicalSweep(sk, p0, axis, P))
+RotatedHelicalSweep::RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
+: SolidModel(makeRotatedHelicalSweep(sk, p0, axis, P, revoffset))
 {
 }
 

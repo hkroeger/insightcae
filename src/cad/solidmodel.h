@@ -150,6 +150,15 @@ public:
 };
 
 
+class Circle
+: public SolidModel
+{
+public:
+  Circle(const arma::mat& p0, const arma::mat& n, double D);
+  operator const TopoDS_Face& () const;
+};
+
+
 // =================== Primitives ======================
 class Cylinder
 : public SolidModel
@@ -244,6 +253,20 @@ public:
 };
 
 SolidModel operator&(const SolidModel& m1, const SolidModel& m2);
+
+class Projected
+: public SolidModel
+{
+public:
+  Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
+};
+
+class Split
+: public SolidModel
+{
+public:
+  Split(const SolidModel& source, const SolidModel& target);
+};
 
 // =================== Cosmetic features ======================
 

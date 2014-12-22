@@ -37,6 +37,7 @@
 #include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <BRepTools.hxx>
 #include <TopExp.hxx>
+#include <BRepProj_Projection.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -152,6 +153,7 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 
 #include "GC_MakePlane.hxx"
+#include "GC_MakeCircle.hxx"
 #include "GC_MakeSegment.hxx"
 #include "BRepMesh_FastDiscret.hxx"
 #include "ShapeAnalysis_Curve.hxx"
@@ -168,6 +170,8 @@
 #include "Geom_TrimmedCurve.hxx"
 
 #include "BRepAdaptor_CompCurve.hxx"
+
+#include "GEOMAlgo_Splitter.hxx"
 
 #include <armadillo>
 

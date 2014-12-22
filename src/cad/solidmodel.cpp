@@ -686,6 +686,26 @@ Quad::operator const TopoDS_Face& () const
 }
 
 
+TopoDS_Face makeCircle(const arma::mat& p0, const arma::mat& n, double D)
+{
+  Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0), to_Vec(n), 0.5*D);
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(c));
+  return BRepBuilderAPI_MakeFace(w.Wire());
+}
+
+Circle::Circle(const arma::mat& p0, const arma::mat& n, double D)
+: SolidModel(makeCircle(p0, n, D))
+{
+}
+
+Circle::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel
   (
@@ -905,6 +925,39 @@ BooleanIntersection::BooleanIntersection(const SolidModel& m1, const SolidModel&
 SolidModel operator&(const SolidModel& m1, const SolidModel& m2)
 {
   return BooleanIntersection(m1, m2);
+}
+
+TopoDS_Shape makeProjection
+(
+  const SolidModel& source, 
+  const SolidModel& target, 
+  const arma::mat& dir
+)
+{
+  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source));
+
+  BRepProj_Projection proj(ow, target, to_Vec(dir));
+  
+  return proj.Shape();
+}
+
+Projected::Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir)
+: SolidModel(makeProjection(source, target, dir))
+{
+}
+
+TopoDS_Shape makeSplit(const SolidModel& tool, const SolidModel& target)
+{
+  GEOMAlgo_Splitter spl;
+  spl.AddShape(target);
+  spl.AddTool(tool);
+  spl.Perform();
+  return spl.Shape();
+}
+
+Split::Split(const SolidModel& tool, const SolidModel& target)
+: SolidModel(makeSplit(tool, target))
+{
 }
 
 

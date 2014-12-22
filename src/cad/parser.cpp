@@ -226,6 +226,8 @@ struct ISCADParser
          
          | ( lit("Quad") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
+         | ( lit("Circle") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+	    [ _val = construct<solidmodel>(new_<Circle>(_1, _2, _3)) ]
          | ( lit("Sketch") > '(' >> r_datumExpression >> ',' >> r_path >> ',' >> r_string >> ')' ) 
 	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
          
@@ -265,6 +267,10 @@ struct ISCADParser
 		>> r_scalarExpression >> 
 		((  ',' >> r_scalarExpression ) | attr(0.0)) >> ')' ) 
 	      [ _val = construct<solidmodel>(new_<RotatedHelicalSweep>(*_1, _2, _3, _4, _5)) ]
+	 | ( lit("Projected") > '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Projected>(*_1, *_2, _3)) ]
+	 | ( lit("Split") > '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Split>(*_1, *_2)) ]
 	 ;
 	 
 // 	r_edgeFeaturesExpression = 

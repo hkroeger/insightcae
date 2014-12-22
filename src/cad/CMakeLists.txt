@@ -3,6 +3,7 @@ project(insightcad)
 find_package(OpenCasCade REQUIRED)
 find_package(OpenGL)
 find_package(DXFlib)
+find_package(GEOM)
 
 set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp meshing.cpp featurefilter.cpp feature.cpp)
 
@@ -10,11 +11,13 @@ include_directories(${toolkit_SOURCE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OCC_INCLUDE_DIR})
 include_directories(${DXFLIB_INCLUDE_DIR})
+include_directories(${GEOM_INCLUDE_DIRS})
 link_directories(${OCC_LIBRARY_DIR})
 link_directories(${DXFLIB_LIBRARY_DIR})
+link_directories(${GEOM_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
-target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY})
+target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES})
 set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 

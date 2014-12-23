@@ -86,7 +86,9 @@ struct Model
   struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
   struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
-  struct modelstepSymbolTable : public qi::symbols<char, solidmodel> {} modelstepSymbols;
+  typedef qi::symbols<char, solidmodel> modelstepSymbolTable;
+  modelstepSymbolTable modelstepSymbols;
+//   std::map<std::string, SolidModel::Ptr> modelstepSymbols;
 
   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
 

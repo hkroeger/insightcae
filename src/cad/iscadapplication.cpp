@@ -458,6 +458,13 @@ void ISCADMainWindow::rebuildModel()
     
     context_->getContext()->EraseAll();
     m->modelstepSymbols.for_each(Transferrer(*this));
+   
+//     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
+// 	 i!=m->modelstepSymbols.end(); i++)
+// 	 {
+// 	   cout<<"inserting "<<i->first<<endl;
+// 	   this->addModelStep(i->first, i->second);
+// 	 }
     m->scalarSymbols.for_each(Transferrer(*this));
     m->vectorSymbols.for_each(Transferrer(*this));
   }

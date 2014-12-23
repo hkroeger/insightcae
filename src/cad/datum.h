@@ -33,6 +33,7 @@ class Datum
 {
 public:
   typedef boost::shared_ptr<Datum> Ptr;
+  typedef std::map<std::string, Datum::Ptr> Map;
   
 protected:
   bool providesPointReference_, providesAxisReference_, providesPlanarReference_;

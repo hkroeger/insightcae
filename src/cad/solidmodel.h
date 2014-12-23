@@ -31,6 +31,9 @@
 #include "boost/graph/graph_concepts.hpp"
 #include "boost/filesystem.hpp"
 
+#define BOOST_SPIRIT_USE_PHOENIX_V3
+#include <boost/spirit/include/qi.hpp>
+
 #include "base/linearalgebra.h"
 #include "base/exception.h"
 
@@ -44,6 +47,7 @@ namespace insight
 namespace cad 
 {
 
+class Datum;
 class SolidModel;
 
 
@@ -53,6 +57,7 @@ class SolidModel
 {
 public:
   typedef boost::shared_ptr<SolidModel> Ptr;
+  typedef boost::spirit::qi::symbols<char, SolidModel::Ptr> Map;
   
   struct View
   {
@@ -68,7 +73,11 @@ protected :
   // all the (sub) TopoDS_Shapes in 'shape'
   TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
+  SolidModel::Map providedSubshapes_;
+  std::map<std::string, boost::shared_ptr<Datum> > providedDatums_;
+  
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
+  void setShape(const TopoDS_Shape& shape);
  
 public:
   
@@ -80,6 +89,13 @@ public:
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
+  
+  inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
+    { return providedDatums_; }
+  inline SolidModel::Map providedSubshapes() // "const" caused failure with phx::bind!
+    { return providedSubshapes_; }
+  inline const SolidModel::Ptr providedSubshape(const std::string& name) const
+    { cout<<"subshape: "<<name<<endl; return providedSubshapes().at(name); }
   
   SolidModel& operator=(const SolidModel& o);
   

@@ -89,28 +89,34 @@ TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filena
   }  
 }
 
+void SolidModel::setShape(const TopoDS_Shape& shape)
+{
+  shape_=shape;
+  nameFeatures();
+}
+
+
 SolidModel::SolidModel()
 : isleaf_(true)
 {
 }
 
 SolidModel::SolidModel(const SolidModel& o)
-: isleaf_(true), shape_(o.shape_)
+: isleaf_(true)
 {
-  nameFeatures();
-  cout<<"Copied SolidModel"<<endl;
+  setShape(o.shape_);
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
-: isleaf_(true), shape_(shape)
+: isleaf_(true)
 {
-  nameFeatures();
+  setShape(shape);
 }
 
 SolidModel::SolidModel(const boost::filesystem::path& filepath)
-: isleaf_(true), shape_(loadShapeFromFile(filepath))
+: isleaf_(true)
 {
-  nameFeatures();
+  setShape(loadShapeFromFile(filepath));
 }
 
 SolidModel::~SolidModel()
@@ -119,9 +125,7 @@ SolidModel::~SolidModel()
 
 SolidModel& SolidModel::operator=(const SolidModel& o)
 {
-  shape_=o.shape_;
-  nameFeatures();
-  cout<<"Assigned SolidModel"<<endl;
+  setShape(o.shape_);
   return *this;
 }
 
@@ -657,7 +661,7 @@ void SolidModel::nameFeatures()
 
 }
 
-TopoDS_Face makeQuad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
+Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
 {
   gp_Pnt 
     p1(to_Pnt(p0)),
@@ -672,12 +676,10 @@ TopoDS_Face makeQuad(const arma::mat& p0, const arma::mat& L, const arma::mat& W
   w.Add(BRepBuilderAPI_MakeEdge(p3, p4));
   w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
   
-  return BRepBuilderAPI_MakeFace(w.Wire());
-}
-
-Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
-: SolidModel(makeQuad(p0, L, W))
-{
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
 Quad::operator const TopoDS_Face& () const

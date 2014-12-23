@@ -33,6 +33,22 @@ using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 
+
+// phx::at shall return value reference instead of key/value pair
+namespace boost { namespace phoenix { namespace stl {
+    template <typename This, typename Key, typename Value, typename Compare, typename Allocator, typename Index>
+        struct at_impl::result<This(std::map<Key,Value,Compare,Allocator>&, Index)>
+        {
+            typedef Value & type;
+        };
+    template <typename This, typename Key, typename Value, typename Compare, typename Allocator, typename Index>
+        struct at_impl::result<This(std::map<Key,Value,Compare,Allocator> const&, Index)>
+        {
+            typedef Value const& type;
+        };
+}}}
+
+
 namespace insight {
 namespace cad {
   
@@ -98,6 +114,7 @@ solidmodel Model::lookupModelModelstep(const std::string& modelname, const::stri
   const Model::Ptr* pptr=modelSymbols.find(modelname);
   if (pptr)
   {
+//     solidmodel *sptr=&(*pptr)->modelstepSymbols.find(modelstepname)->second;
     solidmodel *sptr=(*pptr)->modelstepSymbols.find(modelstepname);
     if (sptr)
     {
@@ -138,6 +155,27 @@ Model::Ptr loadModel(const std::string& name)
   return Model::Ptr();
 }
 
+SolidModel::Ptr getProvidedSubshape(SolidModel::Ptr& model, const std::string& name)
+{
+  if (model)
+  {
+    return model->providedSubshape(name);
+  }
+  else
+    return SolidModel::Ptr();
+}
+
+template<class T>
+T lookupMap(const std::map<std::string, T>& map, const std::string& key)
+{
+  typedef std::map<std::string, T > Map;
+  cout<<"lookup "<<key<<" in "<<map.size()<<endl;
+  typename Map::const_iterator i=map.find(key);
+  if (i!=map.end())
+    return T(i->second);
+  else
+    return T();
+}
 
 template <typename Iterator>
 struct skip_grammar : public qi::grammar<Iterator>
@@ -157,6 +195,10 @@ struct skip_grammar : public qi::grammar<Iterator>
 };
 
 
+using namespace qi;
+using namespace phx;
+using namespace insight::cad;
+
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
   : qi::grammar<Iterator, Skipper>
@@ -169,10 +211,6 @@ struct ISCADParser
 	model_(new Model)
     {
       
-	using namespace qi;
-	using namespace phx;
-	using namespace insight::cad;
-	
         r_model =  *( r_assignment | r_modelstep | r_loadmodel ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
@@ -202,7 +240,17 @@ struct ISCADParser
 	   )
 	  ;
 	
-        r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression >> ';' ) [ phx::bind(model_->modelstepSymbols.add, _1, _2) ];
+        r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression > ';' ) 
+	  [ phx::bind(model_->modelstepSymbols.add, _1, _2) ];
+	// this does not work: (nothing inserted)
+// 	  [ phx::insert
+// 	    (
+// 	      model_->modelstepSymbols, 
+// 	      phx::construct<std::pair<std::string, SolidModel::Ptr> >(_1, _2)
+// 	    ) ]
+	// this works:
+// 	  [ phx::ref(model_->modelstepSymbols)[_1] = _2 ]
+	    ;
 	
 	
 	r_solidmodel_expression =
@@ -216,62 +264,80 @@ struct ISCADParser
 	 ;
 	
 	r_solidmodel_primary = 
-	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
-
-	 | ( r_identifier >> '.' > r_identifier ) 
-	    [ _val = phx::bind(&Model::lookupModelModelstep, *model_, _1, _2) ]
-	 | ( '(' >> r_solidmodel_expression [_val=_1] >> ')' )
+// 	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	 ( '(' >> r_solidmodel_expression [_val=_1] > ')' )
 	 
-         | ( lit("import") > '(' >> r_path >> ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
+         | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
          
-         | ( lit("Quad") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+         | ( lit("Quad") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
-         | ( lit("Circle") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+         | ( lit("Circle") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Circle>(_1, _2, _3)) ]
-         | ( lit("Sketch") > '(' >> r_datumExpression >> ',' >> r_path >> ',' >> r_string >> ')' ) 
+         | ( lit("Sketch") > '(' > r_datumExpression > ',' > r_path > ',' > r_string > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
          
-         | ( lit("CircularPattern") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
-	    >> r_vectorExpression >> ','>> r_scalarExpression >> ')' ) 
+         | ( lit("CircularPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
+	    > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<CircularPattern>(*_1, _2, _3, _4)) ]
-         | ( lit("LinearPattern") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
-	    >> r_scalarExpression >> ')' ) 
+         | ( lit("LinearPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
+	    > r_scalarExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<LinearPattern>(*_1, _2, _3)) ]
          
-         | ( lit("Transform") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' 
-	    >> r_vectorExpression >> ')' ) 
+         | ( lit("Transform") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
+	    > r_vectorExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Transform>(*_1, _2, _3)) ]
-         | ( lit("Compound") > '(' >> ( r_solidmodel_expression % ',' ) >> ')' ) 
+         | ( lit("Compound") > '(' > ( r_solidmodel_expression % ',' ) > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Compound>(_1)) ]
 
 	 // Primitives
-	 | ( lit("Sphere") > '(' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+	 | ( lit("Sphere") > '(' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
-	 | ( lit("Cylinder") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> ')' ) 
+	 | ( lit("Cylinder") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Cylinder>(_1, _2, _3)) ]
-	 | ( lit("Box") > '(' >> r_vectorExpression >> ',' >> r_vectorExpression 
-			>> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	 | ( lit("Box") > '(' > r_vectorExpression > ',' > r_vectorExpression 
+			> ',' > r_vectorExpression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4, _5)) ]
 // 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 // 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
 // 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 // 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
-	 | ( lit("Extrusion") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	 | ( lit("Extrusion") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2, _3)) ]
-	 | ( lit("Revolution") > '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_scalarExpression >> -(  ',' >> lit("centered") >> attr(true) ) >> ')' ) 
+	 | ( lit("Revolution") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4, _5)) ]
 	 | ( lit("RotatedHelicalSweep") > '(' 
-		>> r_solidmodel_expression >> ',' 
-		>> r_vectorExpression >> ',' 
-		>> r_vectorExpression >> ',' 
-		>> r_scalarExpression >> 
-		((  ',' >> r_scalarExpression ) | attr(0.0)) >> ')' ) 
+		> r_solidmodel_expression > ',' 
+		> r_vectorExpression > ',' 
+		> r_vectorExpression > ',' 
+		> r_scalarExpression > 
+		((  ',' > r_scalarExpression ) | attr(0.0)) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<RotatedHelicalSweep>(*_1, _2, _3, _4, _5)) ]
-	 | ( lit("Projected") > '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' ) 
+	 | ( lit("Projected") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ',' > r_vectorExpression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Projected>(*_1, *_2, _3)) ]
-	 | ( lit("Split") > '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' ) 
+	 | ( lit("Split") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Split>(*_1, *_2)) ]
+	      
+	 // try identifiers last, since exceptions are generated, if symbols don't exist
+	 | r_solidmodel_subshape
+
+	 |
+	   ( model_->modelstepSymbols ) 
+	      [ _val = _1 ]
+// 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), _1) ]
+// 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, _1) ]
+
+// 	 | ( r_identifier >> '!' > r_identifier ) 
+// 	      [ _val = phx::bind(&Model::lookupModelModelstep, *model_, _1, _2) ]
 	 ;
+	 
+	r_solidmodel_subshape =
+	  ( model_->modelstepSymbols >> '.' ) [_a=_1] 
+	      > 
+	      lazy(phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)))
+//                (*_a).providedSubshapes()
+	      [ _val=_1 ]
+	      ;
+
 	 
 // 	r_edgeFeaturesExpression = 
 // 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
@@ -413,6 +479,7 @@ struct ISCADParser
     qi::rule<Iterator, std::string()> r_string;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
+    qi::rule<Iterator, solidmodel(), locals<SolidModel::Ptr>, Skipper> r_solidmodel_subshape;
     
 };
 

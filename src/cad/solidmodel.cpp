@@ -102,7 +102,9 @@ SolidModel::SolidModel()
 }
 
 SolidModel::SolidModel(const SolidModel& o)
-: isleaf_(true)
+: isleaf_(true),
+  providedSubshapes_(o.providedSubshapes_),
+  providedDatums_(o.providedDatums_)
 {
   setShape(o.shape_);
 }

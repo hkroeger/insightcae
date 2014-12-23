@@ -228,6 +228,7 @@ struct Transferrer
   
   void operator()(std::string sn, insight::cad::SolidModel::Ptr sm)
   {
+    cout<<sn<<" : "<<sm.get()<<endl;
     mw_.addModelStep(sn, sm);
   }
 

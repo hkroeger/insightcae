@@ -318,7 +318,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Split>(*_1, *_2)) ]
 	      
 	 // try identifiers last, since exceptions are generated, if symbols don't exist
-	 | r_solidmodel_subshape
+	 | 
+	    r_solidmodel_subshape [ _val = _1 ]
 
 	 |
 	   ( model_->modelstepSymbols ) 
@@ -331,11 +332,10 @@ struct ISCADParser
 	 ;
 	 
 	r_solidmodel_subshape =
-	  ( model_->modelstepSymbols >> '.' ) [_a=_1] 
+	  ( model_->modelstepSymbols >> '.' ) [ _a = _1 ] 
 	      > 
-	      lazy(phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)))
-//                (*_a).providedSubshapes()
-	      [ _val=_1 ]
+	      lazy( phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)) )
+		[ _val = _1 ]
 	      ;
 
 	 

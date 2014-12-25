@@ -441,7 +441,7 @@ void ISCADMainWindow::rebuildModel()
   std::istringstream is(editor_->toPlainText().toStdString());
   
   int failloc=-1;
-  parser::Model::Ptr m;
+  parser::Model::Ptr m(new Model);
   bool r=parseISCADModelStream(is, m, &failloc);
 
   if (!r) // fail if we did not get a full match

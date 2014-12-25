@@ -94,8 +94,6 @@ public:
     { return providedDatums_; }
   inline SolidModel::Map providedSubshapes() // "const" caused failure with phx::bind!
     { return providedSubshapes_; }
-  inline const SolidModel::Ptr providedSubshape(const std::string& name) const
-    { cout<<"subshape: "<<name<<endl; return providedSubshapes().at(name); }
   
   SolidModel& operator=(const SolidModel& o);
   
@@ -171,6 +169,15 @@ class Circle
 {
 public:
   Circle(const arma::mat& p0, const arma::mat& n, double D);
+  operator const TopoDS_Face& () const;
+};
+
+class RegPoly
+: public SolidModel
+{
+public:
+  RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
+	  const arma::mat& ez = arma::mat());
   operator const TopoDS_Face& () const;
 };
 

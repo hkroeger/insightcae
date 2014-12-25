@@ -53,7 +53,33 @@ namespace insight {
 namespace cad {
   
 namespace parser {  
+
+Model::Model(const ModelSymbols& syms)
+{
+  vectorSymbols.add( "EX", vec3(1,0,0) );
+  vectorSymbols.add( "EY", vec3(0,1,0) );
+  vectorSymbols.add( "EZ", vec3(0,0,1) );
+  datumSymbols.add( "XY", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
+  datumSymbols.add( "XZ", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
+  datumSymbols.add( "YZ", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
   
+  BOOST_FOREACH(const ModelSymbols::value_type& s, syms)
+  {
+    const std::string& name=boost::fusion::at_c<0>(s);
+    cout<<"Insert symbol:"<<name<<endl;
+    if ( const scalar* sv = boost::get<scalar>( &boost::fusion::at_c<1>(s) ) )
+    {
+        scalarSymbols.add(name, *sv);
+	cout<<(*sv)<<endl;
+    }
+    else if ( const vector* vv = boost::get<vector>( &boost::fusion::at_c<1>(s) ) )
+    {
+        vectorSymbols.add(name, *vv);
+	cout<<(*vv)<<endl;
+    }
+  }
+}
+
 // solidmodel import(const boost::filesystem::path& filepath)
 // {
 //   cout << "reading model "<<filepath<<endl;
@@ -92,42 +118,7 @@ void writeViews(const boost::filesystem::path& file, const solidmodel& model, co
   }
 }
 
-scalar Model::lookupModelScalar(const std::string& modelname, const std::string& scalarname) const
-{
-  const Model::Ptr* pptr=modelSymbols.find(modelname);
-  if (pptr)
-  {
-    scalar *sptr=(*pptr)->scalarSymbols.find(scalarname);
-    if (sptr)
-    {
-      return *sptr;
-    }
-    else
-      throw insight::Exception("scalar symbol "+scalarname+" not found in model "+modelname+"!");
-  }
-  else
-    throw insight::Exception("model "+modelname+" not found!");
-}
-
-solidmodel Model::lookupModelModelstep(const std::string& modelname, const::string& modelstepname) const
-{
-  const Model::Ptr* pptr=modelSymbols.find(modelname);
-  if (pptr)
-  {
-//     solidmodel *sptr=&(*pptr)->modelstepSymbols.find(modelstepname)->second;
-    solidmodel *sptr=(*pptr)->modelstepSymbols.find(modelstepname);
-    if (sptr)
-    {
-      return *sptr;
-    }
-    else
-      throw insight::Exception("model step "+modelstepname+" not found in model "+modelname+"!");
-  }
-  else
-    throw insight::Exception("model "+modelname+" not found!");
-}
-  
-Model::Ptr loadModel(const std::string& name)
+boost::filesystem::path sharedModelFilePath(const std::string& name)
 {
   std::vector<std::string> paths;
   const char* e=getenv("ISCAD_MODEL_PATH");
@@ -140,30 +131,55 @@ Model::Ptr loadModel(const std::string& name)
   BOOST_FOREACH(const std::string& ps, paths)
   {
     path p(ps); 
-    p=p/(name+".iscad");
+    p=p/name;
     if (exists(p))
     {
-      Model::Ptr model;
-      if (parseISCADModelFile(p, model))
-      {
-	cout<<"Successfully parsed model "<<p<<endl;
-	return model;
-      }
+      return p;
     }
+  }
+
+  throw insight::Exception("Shared model file "+name+" not found.");
+  return boost::filesystem::path();
+}
+
+Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms)
+{
+  Model::Ptr model(new Model(syms));
+  if (parseISCADModelFile(sharedModelFilePath(name+".iscad"), model))
+  {
+    cout<<"Successfully parsed model "<<name<<endl;
+    return model;
   }
   cout<<"Failed to parse model "<<name<<endl;
   return Model::Ptr();
 }
 
-SolidModel::Ptr getProvidedSubshape(SolidModel::Ptr& model, const std::string& name)
+double lookupTable(const std::string& name, const std::string& keycol, double keyval, const std::string& depcol)
 {
-  if (model)
+  std::ifstream f( (sharedModelFilePath(name+".csv")).c_str() );
+  std::string line;
+  std::vector<std::string> cols;
+  getline(f, line);
+  boost::split(cols, line, boost::is_any_of(";"));
+  int ik=find(cols.begin(), cols.end(), keycol) - cols.begin();
+  int id=find(cols.begin(), cols.end(), depcol) - cols.begin();
+  while (!f.eof())
   {
-    return model->providedSubshape(name);
+    getline(f, line);
+    boost::split(cols, line, boost::is_any_of(";"));
+    double kv=lexical_cast<double>(cols[ik]);
+    if (fabs(kv-keyval)<1e-6)
+    {
+      double dv=lexical_cast<double>(cols[id]);
+      return dv;
+    }
   }
-  else
-    return SolidModel::Ptr();
+  throw insight::Exception(
+      "Table lookup of value "+lexical_cast<std::string>(keyval)+
+      " in column "+keycol+" failed!");
+  return 0.0;
 }
+BOOST_PHOENIX_ADAPT_FUNCTION(double, lookupTable_, lookupTable, 4);
 
 template<class T>
 T lookupMap(const std::map<std::string, T>& map, const std::string& key)
@@ -199,6 +215,22 @@ using namespace qi;
 using namespace phx;
 using namespace insight::cad;
 
+template<class T>
+void addSymbolIfNotPresent(qi::symbols<char, T>& table, 
+			   std::string const& name, T const& value)
+{
+  const T* ptr=table.find(name);
+  if (!ptr)
+  {
+    table.add(name, value);
+    cout<<"Default value for symbol "<<name<<" ("<<value<<") was inserted."<<endl;
+  }
+  else
+  {
+    cout<<"Symbol "<<name<<" was present."<<endl;
+  }
+}
+
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
   : qi::grammar<Iterator, Skipper>
@@ -206,25 +238,37 @@ struct ISCADParser
 
   Model::Ptr model_;
 
-    ISCADParser()
+    ISCADParser(Model::Ptr model)
       : ISCADParser::base_type(r_model),
-	model_(new Model)
+	model_(model)
     {
       
         r_model =  *( r_assignment | r_modelstep | r_loadmodel ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
-	r_loadmodel = ( lit("loadmodel") >> '(' >> r_identifier >> ')' >> ';' ) 
-	  [ phx::bind(model_->modelSymbols.add, _1, loadModel_(_1)) ];
+	r_loadmodel = ( lit("import") >> '(' >> r_identifier >> 
+	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
+// 	   >> -( lit("as") > r_identifier )
+	   >> ';' )
+	  [ phx::bind(model_->modelSymbols.add, _1, loadModel_(_1, _2)) ];
 	
 	r_assignment = 
-	  ( r_identifier >> '='  >> r_scalarExpression >> ';') [ phx::bind(model_->scalarSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
+	   [ phx::bind(model_->scalarSymbols.add, _1, _2) ]
 	  |
-	  ( r_identifier >> '='  >> r_vectorExpression >> ';') [ phx::bind(model_->vectorSymbols.add, _1, _2) ]
+	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
+	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), _1, _2) ]
+	  |
+	  ( r_identifier >> '='  >> r_vectorExpression >> ';') 
+	   [ phx::bind(model_->vectorSymbols.add, _1, _2) ]
+	  |
+	  ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
+	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), _1, _2) ]
 	  |
 // 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, _1, _2) ]
 // 	  |
-	  ( r_identifier >> '='  >> r_datumExpression >> ';') [ phx::bind(model_->datumSymbols.add, _1, _2) ]
+	  ( r_identifier >> '='  >> r_datumExpression >> ';') 
+	   [ phx::bind(model_->datumSymbols.add, _1, _2) ]
 	  ;
 	  
 	r_postproc =
@@ -273,6 +317,10 @@ struct ISCADParser
 	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
          | ( lit("Circle") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Circle>(_1, _2, _3)) ]
+         | ( lit("RegPoly") > '(' > r_vectorExpression > ',' > r_vectorExpression 
+				  > ',' > r_scalarExpression > ',' > r_scalarExpression 
+				  > ( (',' > r_vectorExpression)|attr(arma::mat()) ) > ')' ) 
+	    [ _val = construct<solidmodel>(new_<RegPoly>(_1, _2, _3, _4, _5)) ]
          | ( lit("Sketch") > '(' > r_datumExpression > ',' > r_path > ',' > r_string > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
          
@@ -320,16 +368,23 @@ struct ISCADParser
 	 // try identifiers last, since exceptions are generated, if symbols don't exist
 	 | 
 	    r_solidmodel_subshape [ _val = _1 ]
+	 | 
+	    r_submodel_modelstep [ _val = _1 ]
 
 	 |
-	   ( model_->modelstepSymbols ) 
-	      [ _val = _1 ]
+	   model_->modelstepSymbols [ _val = _1 ]
 // 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), _1) ]
 // 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, _1) ]
 
 // 	 | ( r_identifier >> '!' > r_identifier ) 
 // 	      [ _val = phx::bind(&Model::lookupModelModelstep, *model_, _1, _2) ]
 	 ;
+	 
+	r_submodel_modelstep =
+	  ( model_->modelSymbols >> '.' ) [ _a = _1 ]
+	   > lazy( phx::val(phx::bind(&Model::modelstepSymbols, *_a)) )
+	    [ _val = _1 ]
+	   ;
 	 
 	r_solidmodel_subshape =
 	  ( model_->modelstepSymbols >> '.' ) [ _a = _1 ] 
@@ -401,6 +456,9 @@ struct ISCADParser
 	  | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan, _1) ]
 	  | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan2, _1, _2) ]
 	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  | ( lit("TableLookup") > '(' > r_identifier > ',' 
+		> r_identifier > ',' > r_scalarExpression > ',' > r_identifier > ')' )
+	    [ _val = lookupTable_(_1, _2, _3, _4) ]
 	  | ('-' >> r_scalar_primary) [_val=-_1]
 	  ;
 
@@ -480,6 +538,7 @@ struct ISCADParser
     qi::rule<Iterator, boost::filesystem::path()> r_path;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
     qi::rule<Iterator, solidmodel(), locals<SolidModel::Ptr>, Skipper> r_solidmodel_subshape;
+    qi::rule<Iterator, solidmodel(), locals<Model::Ptr>, Skipper> r_submodel_modelstep;
     
 };
 
@@ -493,7 +552,7 @@ struct ModelStepsWriter
 template <typename Parser, typename Iterator>
 bool parseISCADModel(Iterator first, Iterator last, Model::Ptr& model)
 {
-  Parser parser;
+  Parser parser(model);
   skip_grammar<Iterator> skip;
   
   bool r = qi::phrase_parse(
@@ -509,7 +568,7 @@ bool parseISCADModel(Iterator first, Iterator last, Model::Ptr& model)
   if (first != last) // fail if we did not get a full match
       return false;
   
-  model = parser.model_;
+//   model = parser.model_;
   
   return r;
 }
@@ -551,7 +610,7 @@ bool parseISCADModelStream(std::istream& in, parser::Model::Ptr& m, int* failloc
     
   orgbegin=first;
   
-  ISCADParser<std::string::iterator> parser;
+  ISCADParser<std::string::iterator> parser(m);
   skip_grammar<std::string::iterator> skip;
   
   bool r = qi::phrase_parse(
@@ -570,7 +629,7 @@ bool parseISCADModelStream(std::istream& in, parser::Model::Ptr& m, int* failloc
     return false;
   }
   
-  m = parser.model_;
+//   m = parser.model_;
   
   return r;
 }

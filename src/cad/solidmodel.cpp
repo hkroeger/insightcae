@@ -709,6 +709,32 @@ Circle::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
+		 const arma::mat& ez)
+{
+  double ru=a/::cos(M_PI/ne);
+  arma::mat e0=ez;
+  if (e0.n_elem==0)
+  {
+    e0=cross(n, vec3(1,0,0));
+    if (norm(e0,2)<1e-6) 
+      e0=cross(n, vec3(0,1,0));
+  }
+  int z=round(ne);
+  double delta_phi=2.*M_PI/double(z);
+  BRepBuilderAPI_MakeWire w;
+  for (int i=0; i<z; i++)
+  {
+    arma::mat npm=p0+rotMatrix((0.5+double(i-1))*delta_phi, n)*(ru*e0);
+    arma::mat np=p0+rotMatrix((0.5+double(i))*delta_phi, n)*(ru*e0);
+    w.Add(BRepBuilderAPI_MakeEdge(to_Pnt(npm), to_Pnt(np)));
+  }
+  
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+}
 
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel

@@ -79,11 +79,17 @@ BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
 FeatureSet queryEdges(const SolidModel& m, const FilterPtr& f);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSet, queryEdges_, queryEdges, 2);
 
+typedef boost::variant<scalar, vector>  ModelSymbol;
+typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;
+  
 struct Model
 {
   typedef boost::shared_ptr<Model> Ptr;
   
-  struct scalarSymbolTable : public qi::symbols<char, scalar> {} scalarSymbols;
+  Model(const ModelSymbols& syms = ModelSymbols());
+  
+  typedef qi::symbols<char, scalar> scalarSymbolTable;
+  scalarSymbolTable scalarSymbols;
   struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
   typedef qi::symbols<char, solidmodel> modelstepSymbolTable;
@@ -93,13 +99,10 @@ struct Model
   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
 
   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
-  
-  scalar lookupModelScalar(const std::string& modelname, const std::string& scalarname) const;
-  solidmodel lookupModelModelstep(const std::string& modelname, const std::string& modelstepname) const;
 };
 
-Model::Ptr loadModel(const std::string& name);
-BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 1);
+Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms);
+BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 2);
 
 
 }

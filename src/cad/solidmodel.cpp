@@ -663,6 +663,31 @@ void SolidModel::nameFeatures()
 
 }
 
+Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
+{
+  gp_Pnt 
+    p1(to_Pnt(p0)),
+    p2=p1.Translated(to_Vec(e1)),
+    p3=p1.Translated(to_Vec(e2))
+  ;
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+  w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
+  w.Add(BRepBuilderAPI_MakeEdge(p3, p1));
+  
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+}
+
+Tri::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
 Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
 {
   gp_Pnt 

@@ -56,6 +56,8 @@ namespace parser {
 
 Model::Model(const ModelSymbols& syms)
 {
+  scalarSymbols.add( "M_PI", M_PI );
+  vectorSymbols.add( "O", vec3(0,0,0) );
   vectorSymbols.add( "EX", vec3(1,0,0) );
   vectorSymbols.add( "EY", vec3(0,1,0) );
   vectorSymbols.add( "EZ", vec3(0,0,1) );
@@ -313,6 +315,8 @@ struct ISCADParser
 	 
          | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
          
+         | ( lit("Tri") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
+	    [ _val = construct<solidmodel>(new_<Tri>(_1, _2, _3)) ]
          | ( lit("Quad") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
          | ( lit("Circle") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 

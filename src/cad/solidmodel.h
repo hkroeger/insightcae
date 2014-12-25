@@ -155,6 +155,15 @@ public:
 
 // =================== 2D Primitives ======================
 
+class Tri
+: public SolidModel
+{
+public:
+  Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
+  operator const TopoDS_Face& () const;
+};
+
+
 class Quad
 : public SolidModel
 {

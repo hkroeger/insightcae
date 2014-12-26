@@ -20,6 +20,7 @@
 
 #undef BOOST_SPIRIT_DEBUG
 
+#include "base/analysis.h"
 #include "parser.h"
 #include "boost/locale.hpp"
 #include "boost/algorithm/string.hpp"
@@ -122,18 +123,22 @@ void writeViews(const boost::filesystem::path& file, const solidmodel& model, co
 
 boost::filesystem::path sharedModelFilePath(const std::string& name)
 {
-  std::vector<std::string> paths;
+  std::vector<boost::filesystem::path> paths;
   const char* e=getenv("ISCAD_MODEL_PATH");
   if (e)
   {
     boost::split(paths, e, boost::is_any_of(":"));
   }
-  paths.insert(paths.begin(), ".");
-  
-  BOOST_FOREACH(const std::string& ps, paths)
   {
-    path p(ps); 
-    p=p/name;
+    insight::SharedPathList spl;
+    BOOST_FOREACH(const path& p, spl)
+     paths.push_back(p/"iscad-library");
+  }
+  paths.push_back(".");
+  
+  BOOST_FOREACH(const boost::filesystem::path& ps, paths)
+  {
+    path p(ps/name); 
     if (exists(p))
     {
       return p;
@@ -252,29 +257,36 @@ struct ISCADParser
 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
 // 	   >> -( lit("as") > r_identifier )
 	   >> ';' )
-	  [ phx::bind(model_->modelSymbols.add, _1, loadModel_(_1, _2)) ];
+	  [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_1, qi::_2)) ];
 	
 	r_assignment = 
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
-	   [ phx::bind(model_->scalarSymbols.add, _1, _2) ]
+	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
-	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), _1, _2) ]
+	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') 
-	   [ phx::bind(model_->vectorSymbols.add, _1, _2) ]
+	   [ phx::bind(model_->vectorSymbols.add, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
-	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), _1, _2) ]
+	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), qi::_1, qi::_2) ]
 	  |
-// 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, _1, _2) ]
+// 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
 // 	  |
 	  ( r_identifier >> '='  >> r_datumExpression >> ';') 
-	   [ phx::bind(model_->datumSymbols.add, _1, _2) ]
+	   [ phx::bind(model_->datumSymbols.add, qi::_1, qi::_2) ]
 	  ;
 	  
 	r_postproc =
-	  ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) [ writeViews_(_1, _2, _3) ]
+	  ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) 
+	    [ writeViews_(qi::_1, qi::_2, qi::_3) ]
+	 |
+	  ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
+	    [ phx::bind(&SolidModel::saveAs, *qi::_2, qi::_1) ]
+	 |
+	  ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
+	    [ phx::bind(&SolidModel::exportSTL, *qi::_3, qi::_1, qi::_2) ]
 	  ;
 	  
 	r_viewDef =
@@ -287,122 +299,122 @@ struct ISCADParser
 	  ;
 	
         r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression > ';' ) 
-	  [ phx::bind(model_->modelstepSymbols.add, _1, _2) ];
+	  [ phx::bind(model_->modelstepSymbols.add, qi::_1, qi::_2) ];
 	// this does not work: (nothing inserted)
 // 	  [ phx::insert
 // 	    (
 // 	      model_->modelstepSymbols, 
-// 	      phx::construct<std::pair<std::string, SolidModel::Ptr> >(_1, _2)
+// 	      phx::construct<std::pair<std::string, SolidModel::Ptr> >(qi::_1, qi::_2)
 // 	    ) ]
 	// this works:
-// 	  [ phx::ref(model_->modelstepSymbols)[_1] = _2 ]
+// 	  [ phx::ref(model_->modelstepSymbols)[qi::_1] = qi::_2 ]
 	    ;
 	
 	
 	r_solidmodel_expression =
-	 r_solidmodel_term [_val=_1 ]
-	 >> *( '-' >> r_solidmodel_term [_val=construct<solidmodel>(new_<BooleanSubtract>(*_val, *_1))] )
+	 r_solidmodel_term [_val=qi::_1 ]
+	 >> *( '-' >> r_solidmodel_term [_val=construct<solidmodel>(new_<BooleanSubtract>(*_val, *qi::_1))] )
 	 ;
 	
 	r_solidmodel_term =
-	 r_solidmodel_primary [_val=_1 ]
-	 >> *( '|' >> r_solidmodel_primary [_val=construct<solidmodel>(new_<BooleanUnion>(*_val, *_1))] )
+	 r_solidmodel_primary [_val=qi::_1 ]
+	 >> *( '|' >> r_solidmodel_primary [_val=construct<solidmodel>(new_<BooleanUnion>(*_val, *qi::_1))] )
 	 ;
 	
 	r_solidmodel_primary = 
-// 	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	 ( '(' >> r_solidmodel_expression [_val=_1] > ')' )
+// 	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	 ( '(' >> r_solidmodel_expression [_val=qi::_1] > ')' )
 	 
-         | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(_1)) ]
+         | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(qi::_1)) ]
          
          | ( lit("Tri") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
-	    [ _val = construct<solidmodel>(new_<Tri>(_1, _2, _3)) ]
+	    [ _val = construct<solidmodel>(new_<Tri>(qi::_1, qi::_2, qi::_3)) ]
          | ( lit("Quad") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
-	    [ _val = construct<solidmodel>(new_<Quad>(_1, _2, _3)) ]
+	    [ _val = construct<solidmodel>(new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
          | ( lit("Circle") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
-	    [ _val = construct<solidmodel>(new_<Circle>(_1, _2, _3)) ]
+	    [ _val = construct<solidmodel>(new_<Circle>(qi::_1, qi::_2, qi::_3)) ]
          | ( lit("RegPoly") > '(' > r_vectorExpression > ',' > r_vectorExpression 
 				  > ',' > r_scalarExpression > ',' > r_scalarExpression 
 				  > ( (',' > r_vectorExpression)|attr(arma::mat()) ) > ')' ) 
-	    [ _val = construct<solidmodel>(new_<RegPoly>(_1, _2, _3, _4, _5)) ]
+	    [ _val = construct<solidmodel>(new_<RegPoly>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
          | ( lit("Sketch") > '(' > r_datumExpression > ',' > r_path > ',' > r_string > ')' ) 
-	    [ _val = construct<solidmodel>(new_<Sketch>(*_1, _2, _3)) ]
+	    [ _val = construct<solidmodel>(new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
          
          | ( lit("CircularPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
-	     [ _val = construct<solidmodel>(new_<CircularPattern>(*_1, _2, _3, _4)) ]
+	     [ _val = construct<solidmodel>(new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
          | ( lit("LinearPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_scalarExpression > ')' ) 
-	     [ _val = construct<solidmodel>(new_<LinearPattern>(*_1, _2, _3)) ]
+	     [ _val = construct<solidmodel>(new_<LinearPattern>(*qi::_1, qi::_2, qi::_3)) ]
          
          | ( lit("Transform") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_vectorExpression > ')' ) 
-	     [ _val = construct<solidmodel>(new_<Transform>(*_1, _2, _3)) ]
+	     [ _val = construct<solidmodel>(new_<Transform>(*qi::_1, qi::_2, qi::_3)) ]
          | ( lit("Compound") > '(' > ( r_solidmodel_expression % ',' ) > ')' ) 
-	     [ _val = construct<solidmodel>(new_<Compound>(_1)) ]
+	     [ _val = construct<solidmodel>(new_<Compound>(qi::_1)) ]
 
 	 // Primitives
 	 | ( lit("Sphere") > '(' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Sphere>(_1, _2)) ]
+	      [ _val = construct<solidmodel>(new_<Sphere>(qi::_1, qi::_2)) ]
 	 | ( lit("Cylinder") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Cylinder>(_1, _2, _3)) ]
+	      [ _val = construct<solidmodel>(new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
 	 | ( lit("Box") > '(' > r_vectorExpression > ',' > r_vectorExpression 
 			> ',' > r_vectorExpression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Box>(_1, _2, _3, _4, _5)) ]
+	      [ _val = construct<solidmodel>(new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
 // 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-// 	      [ _val = construct<solidmodel>(new_<Fillet>(*_1, _2, _3)) ]
+// 	      [ _val = construct<solidmodel>(new_<Fillet>(*qi::_1, qi::_2, qi::_3)) ]
 // 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-// 	      [ _val = construct<solidmodel>(new_<Chamfer>(*_1, _2, _3)) ]
+// 	      [ _val = construct<solidmodel>(new_<Chamfer>(*qi::_1, qi::_2, qi::_3)) ]
 	 | ( lit("Extrusion") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Extrusion>(*_1, _2, _3)) ]
+	      [ _val = construct<solidmodel>(new_<Extrusion>(*qi::_1, qi::_2, qi::_3)) ]
 	 | ( lit("Revolution") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Revolution>(*_1, _2, _3, _4, _5)) ]
+	      [ _val = construct<solidmodel>(new_<Revolution>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
 	 | ( lit("RotatedHelicalSweep") > '(' 
 		> r_solidmodel_expression > ',' 
 		> r_vectorExpression > ',' 
 		> r_vectorExpression > ',' 
 		> r_scalarExpression > 
 		((  ',' > r_scalarExpression ) | attr(0.0)) > ')' ) 
-	      [ _val = construct<solidmodel>(new_<RotatedHelicalSweep>(*_1, _2, _3, _4, _5)) ]
+	      [ _val = construct<solidmodel>(new_<RotatedHelicalSweep>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
 	 | ( lit("Projected") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ',' > r_vectorExpression > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Projected>(*_1, *_2, _3)) ]
+	      [ _val = construct<solidmodel>(new_<Projected>(*qi::_1, *qi::_2, qi::_3)) ]
 	 | ( lit("Split") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ')' ) 
-	      [ _val = construct<solidmodel>(new_<Split>(*_1, *_2)) ]
+	      [ _val = construct<solidmodel>(new_<Split>(*qi::_1, *qi::_2)) ]
 	      
 	 // try identifiers last, since exceptions are generated, if symbols don't exist
 	 | 
-	    r_solidmodel_subshape [ _val = _1 ]
+	    r_solidmodel_subshape [ _val = qi::_1 ]
 	 | 
-	    r_submodel_modelstep [ _val = _1 ]
+	    r_submodel_modelstep [ _val = qi::_1 ]
 
 	 |
-	   model_->modelstepSymbols [ _val = _1 ]
-// 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), _1) ]
-// 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, _1) ]
+	   model_->modelstepSymbols [ _val = qi::_1 ]
+// 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), qi::_1) ]
+// 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, qi::_1) ]
 
 // 	 | ( r_identifier >> '!' > r_identifier ) 
-// 	      [ _val = phx::bind(&Model::lookupModelModelstep, *model_, _1, _2) ]
+// 	      [ _val = phx::bind(&Model::lookupModelModelstep, *model_, qi::_1, qi::_2) ]
 	 ;
 	 
 	r_submodel_modelstep =
-	  ( model_->modelSymbols >> '.' ) [ _a = _1 ]
+	  ( model_->modelSymbols >> '.' ) [ _a = qi::_1 ]
 	   > lazy( phx::val(phx::bind(&Model::modelstepSymbols, *_a)) )
-	    [ _val = _1 ]
+	    [ _val = qi::_1 ]
 	   ;
 	 
 	r_solidmodel_subshape =
-	  ( model_->modelstepSymbols >> '.' ) [ _a = _1 ] 
+	  ( model_->modelstepSymbols >> '.' ) [ _a = qi::_1 ] 
 	      > 
 	      lazy( phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)) )
-		[ _val = _1 ]
+		[ _val = qi::_1 ]
 	      ;
 
 	 
 // 	r_edgeFeaturesExpression = 
-// 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = _1 ]
+// 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
 // 	     | (
 // 	     ( lit("edgesFrom") >> 
-// 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*_1, _2) ]
+// 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*qi::_1, qi::_2) ]
 // 	     )
 // 	  ;
 // 	  
@@ -410,18 +422,18 @@ struct ISCADParser
 // 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
 // 	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
 // 	 | ( lit("coincidentWith") >> r_edgeFeaturesExpression >> lit("from") >> r_solidmodel_expression ) 
-// 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*_2, _1)) ]
-// 	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(_1)) ]
+// 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*qi::_2, qi::_1)) ]
+// 	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(qi::_1)) ]
 // 	 ;
 	 
 	r_datumExpression = 
-	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = _1 ]
+	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
 	     |
 	     ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2)) ]
+		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
 	     |
 	     ( lit("SPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(_1, _2, _3)) ]
+		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3)) ]
 	  ;
 	  
 	r_path = as_string[ 
@@ -432,66 +444,66 @@ struct ISCADParser
                          ];
 			 
 	r_scalarExpression = 
-	  r_scalar_term [_val =_1]  >> *(
-	    ( '+' >> r_scalar_term [_val+=_1] )
-	  | ( '-' >> r_scalar_term [_val-=_1] )
+	  r_scalar_term [_val =qi::_1]  >> *(
+	    ( '+' >> r_scalar_term [_val+=qi::_1] )
+	  | ( '-' >> r_scalar_term [_val-=qi::_1] )
 	  )
 	  ;
 	
 	r_scalar_term =
 	(
-	  r_scalar_primary [_val=_1] >> *(
-	    ( '*' >> r_scalar_primary [ _val*=_1 ] )
-	  | ( '/' >> r_scalar_primary [ _val/=_1 ] )
+	  r_scalar_primary [_val=qi::_1] >> *(
+	    ( '*' >> r_scalar_primary [ _val*=qi::_1 ] )
+	  | ( '/' >> r_scalar_primary [ _val/=qi::_1 ] )
 	  )
 	) | (
 	  r_vector_primary >> '&' >> r_vector_primary
-	) [_val = dot_(_1, _2) ]
+	) [_val = dot_(qi::_1, qi::_2) ]
 	  ;
 	  
 	r_scalar_primary =
-	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	  | double_ [ _val = _1 ]
-	  | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, _1) ]
-	  | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, _1) ]
-	  | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::tan, _1) ]
-	  | ( lit("asin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::asin, _1) ]
-	  | ( lit("acos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::acos, _1) ]
-	  | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan, _1) ]
-	  | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan2, _1, _2) ]
-	  | ('(' >> r_scalarExpression >> ')') [_val=_1]
+	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	  | double_ [ _val = qi::_1 ]
+	  | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, qi::_1) ]
+	  | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, qi::_1) ]
+	  | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::tan, qi::_1) ]
+	  | ( lit("asin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::asin, qi::_1) ]
+	  | ( lit("acos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::acos, qi::_1) ]
+	  | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan, qi::_1) ]
+	  | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan2, qi::_1, qi::_2) ]
+	  | ('(' >> r_scalarExpression >> ')') [_val=qi::_1]
 	  | ( lit("TableLookup") > '(' > r_identifier > ',' 
 		> r_identifier > ',' > r_scalarExpression > ',' > r_identifier > ')' )
-	    [ _val = lookupTable_(_1, _2, _3, _4) ]
-	  | ('-' >> r_scalar_primary) [_val=-_1]
+	    [ _val = lookupTable_(qi::_1, qi::_2, qi::_3, qi::_4) ]
+	  | ('-' >> r_scalar_primary) [_val=-qi::_1]
 	  ;
 
 
 	r_vectorExpression =
-	  r_vector_term [_val =_1]  >> *(
-	    ( '+' >> r_vector_term [_val+=_1] )
-	  | ( '-' >> r_vector_term [_val-=_1] )
+	  r_vector_term [_val =qi::_1]  >> *(
+	    ( '+' >> r_vector_term [_val+=qi::_1] )
+	  | ( '-' >> r_vector_term [_val-=qi::_1] )
 	  )
 	  ;
 	
 	r_vector_term =
 	(
-	  r_vector_primary [_val=_1] >> *(
-	    ( '*' >> r_scalar_term [ _val*=_1 ] )
-	  | ( '/' >> r_scalar_term [ _val/=_1 ] )
-	  | ( '^' >> r_vector_primary [ _val=cross_(_val, _1) ] )
+	  r_vector_primary [_val=qi::_1] >> *(
+	    ( '*' >> r_scalar_term [ _val*=qi::_1 ] )
+	  | ( '/' >> r_scalar_term [ _val/=qi::_1 ] )
+	  | ( '^' >> r_vector_primary [ _val=cross_(_val, qi::_1) ] )
 	  )
 	) | (
 	  r_scalar_primary >> '*' >> r_vector_term
-	) [_val=_1*_2]
+	) [_val=qi::_1*qi::_2]
 	;
 	  
 	r_vector_primary =
-	  lexeme[ model_->vectorSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(_1, _2, _3) ] 
-	  //| ( r_vectorExpression >> '\'') [ _val = trans_(_1) ]
-	  | ( '(' >> r_vectorExpression >> ')' ) [_val=_1]
-	  | ( '-' >> r_vector_primary ) [_val=-_1]
+	  lexeme[ model_->vectorSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(qi::_1, qi::_2, qi::_3) ] 
+	  //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]
+	  | ( '(' >> r_vectorExpression >> ')' ) [_val=qi::_1]
+	  | ( '-' >> r_vector_primary ) [_val=-qi::_1]
 	  ;
 
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];

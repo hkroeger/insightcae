@@ -1,23 +1,3 @@
-/*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
- * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- */
-
 #include <cmath>
 #include <iostream>
 
@@ -138,6 +118,7 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
     ( 
      Handle_Graphic3d_GraphicDevice::DownCast( myContext->CurrentViewer()->Device() ),
      (int) hi, (int) lo, Xw_WQ_SAMEQUALITY, Quantity_NOC_BLACK 
+
     );
 #endif // WNT
 	
@@ -326,7 +307,7 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 	}
     }
   
-  onMouseMove( e->buttons(), myKeyboardFlags, e->pos() );
+  onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
 }
 
 /*!
@@ -363,6 +344,44 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
     {
       e->ignore();
     }
+}
+
+void QoccViewWidget::keyPressEvent(QKeyEvent* e)
+{
+  std::cout<<e->modifiers()<<std::endl;
+    if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+    {
+      setMode(CurAction3d_DynamicZooming);
+    }  
+    else if ( ( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+    {
+      setMode(CurAction3d_DynamicPanning);
+    }  
+    else if ( ( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
+    {
+      setMode(CurAction3d_DynamicRotation);
+    }
+    else
+      QWidget::keyPressEvent(e);
+}
+
+void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
+{
+  std::cout<<e->modifiers()<<std::endl;
+    if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
+    {
+      setMode(CurAction3d_Nothing);
+    }  
+    else if ( !( e->modifiers() & PANSHORTCUTKEY ) && (myMode == CurAction3d_DynamicPanning) )
+    {
+      setMode(CurAction3d_Nothing);
+    }  
+    else if ( !( e->modifiers() & ROTATESHORTCUTKEY ) && (myMode == CurAction3d_DynamicRotation) )
+    {
+      setMode(CurAction3d_Nothing);
+    }
+    else
+      QWidget::keyReleaseEvent(e);
 }
 
 /*!
@@ -652,11 +671,23 @@ void QoccViewWidget::setReset ()
 /*!
   \brief	This function handles left button down events from the mouse.
 */
-void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers kb, const QPoint point )
+void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers nFlags, const QPoint point )
 {
   myStartPoint = point;
-  
-  //  else
+
+  if ( nFlags & ZOOMSHORTCUTKEY )
+    {
+      setMode( CurAction3d_DynamicZooming );
+    }
+  else if ( nFlags & PANSHORTCUTKEY )
+    {
+      setMode( CurAction3d_DynamicPanning );
+    }
+  else if ( nFlags & ROTATESHORTCUTKEY )
+    {
+      setMode( CurAction3d_DynamicRotation );
+      myView->StartRotation( point.x(), point.y() );
+    }  else
     {
       switch ( myMode )
         {
@@ -695,6 +726,7 @@ void QoccViewWidget::onLeftButtonDown(  Qt::KeyboardModifiers kb, const QPoint p
 */
 void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers nFlags, const QPoint point )
 {
+/*
   myStartPoint = point;
   if ( nFlags & ZOOMSHORTCUTKEY )
     {
@@ -709,6 +741,7 @@ void QoccViewWidget::onMiddleButtonDown(  Qt::KeyboardModifiers nFlags, const QP
       setMode( CurAction3d_DynamicRotation );
       myView->StartRotation( point.x(), point.y() );
     }
+*/
 }
 
 /*!
@@ -730,13 +763,17 @@ void QoccViewWidget::onRightButtonDown(  Qt::KeyboardModifiers, const QPoint poi
 void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint point )
 {
   myCurrentPoint = point;
-  /*
-  if ( nFlags & CASCADESHORTCUTKEY )
+  
+  if (
+  ( nFlags & ZOOMSHORTCUTKEY )
+  ||( nFlags & PANSHORTCUTKEY )
+  ||( nFlags & ROTATESHORTCUTKEY )
+   )
     {
       // Deactivates dynamic zooming
       setMode( CurAction3d_Nothing );
     }
-    else*/
+    else
     {
       switch( myMode )
 	{
@@ -797,7 +834,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 */
 void QoccViewWidget::onMiddleButtonUp(  Qt::KeyboardModifiers /* nFlags */, const QPoint /* point */ )
 {
-  setMode( CurAction3d_Nothing );
+ // setMode( CurAction3d_Nothing );
 }
 
 /*!
@@ -834,24 +871,46 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 */
 void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 				  Qt::KeyboardModifiers nFlags,
-				  const QPoint point )
+				  const QPoint point,
+     Qt::KeyboardModifiers curFlags )
 {
   myCurrentPoint = point;
+
+// cout<< ( curFlags & ZOOMSHORTCUTKEY )<<" "<< ( curFlags & PANSHORTCUTKEY )<<" "<<( curFlags & ROTATESHORTCUTKEY ) <<curFlags<<myMode<<endl;
   
-  if ( buttons & Qt::LeftButton  ||
-       buttons & Qt::RightButton ||
-       buttons & Qt::MidButton )
+//   if ( buttons & Qt::LeftButton  ||
+//        buttons & Qt::RightButton ||
+//        buttons & Qt::MidButton )
     {
       switch ( myMode )
 	{
 	case CurAction3d_Nothing:
+	  if ( curFlags & ZOOMSHORTCUTKEY )
+	  {
+	    myStartPoint = point;
+	    setMode(CurAction3d_DynamicZooming);
+	  }  
+	  else if ( curFlags & PANSHORTCUTKEY )
+	  {
+	    myStartPoint = point;
+	    setMode(CurAction3d_DynamicPanning);
+	  }  
+	  else if ( curFlags & ROTATESHORTCUTKEY )
+	  {
+	    myStartPoint = point;
+	    setMode(CurAction3d_DynamicRotation);
+	    myView->StartRotation( point.x(), point.y() );
+	  }
 	  break;
 
 	case CurAction3d_Picking:
+	  if ( buttons & Qt::LeftButton)
+	  {
 	  // Shouldn't get here yet
 	  drawRubberBand ( myStartPoint, myCurrentPoint );
 	  dragEvent( myStartPoint, myCurrentPoint, nFlags & MULTISELECTIONKEY );
 	  break;
+	  }
 
 	case CurAction3d_DynamicZooming:
 	  myView->Zoom(	myStartPoint.x(),
@@ -860,16 +919,21 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 			myCurrentPoint.y() );
 	  viewPrecision( true );
 	  myStartPoint = myCurrentPoint;
+	  if ( !(curFlags & ZOOMSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
 	  break;
 
 	case CurAction3d_WindowZooming:
+	  if ( buttons & Qt::LeftButton)
+	  {
 	  drawRubberBand ( myStartPoint, myCurrentPoint );
+	  }
 	  break;
 
 	case CurAction3d_DynamicPanning:
 	  myView->Pan( myCurrentPoint.x() - myStartPoint.x(),
 		       myStartPoint.y() - myCurrentPoint.y() );
 	  myStartPoint = myCurrentPoint;
+	  if ( !(curFlags & PANSHORTCUTKEY) ) setMode(CurAction3d_Nothing);
 	  break;
 
 	case CurAction3d_GlobalPanning:
@@ -877,6 +941,7 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 
 	case CurAction3d_DynamicRotation:
 	  myView->Rotation( myCurrentPoint.x(), myCurrentPoint.y() );
+	  if ( !(curFlags & ROTATESHORTCUTKEY) ) setMode(CurAction3d_Nothing);
 	  break;
 
 	default:
@@ -884,14 +949,9 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 	  break;
 	}
     }
-  else
+//   else
     {
-      if ( (nFlags & Qt::AltModifier) && (!buttons) )      
-      {
-	myView->Rotation( myCurrentPoint.x(), myCurrentPoint.y() );
-      }
-      else
-	moveEvent( myCurrentPoint );
+      moveEvent( myCurrentPoint );
     }
 }
 /*!
@@ -956,18 +1016,6 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     }
   return pick;
 }
-
-// void QoccViewWidget::keyPressEvent(QKeyEvent* e)
-// {
-//     QWidget::keyPressEvent(e);
-//     cout<<"Press"<<endl;
-// }
-// 
-// void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
-// {
-//     QWidget::keyReleaseEvent(e);
-// }
-
 
 bool QoccViewWidget::dump(Standard_CString theFile)
 {

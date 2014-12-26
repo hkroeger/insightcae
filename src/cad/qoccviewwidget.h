@@ -1,23 +1,3 @@
-/*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
- * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- */
-
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
@@ -34,6 +14,7 @@
 //#define CASCADESHORTCUTKEY Qt::ControlModifier 
 #define ZOOMSHORTCUTKEY Qt::ControlModifier 
 #define PANSHORTCUTKEY Qt::ShiftModifier 
+#define ROTATESHORTCUTKEY Qt::AltModifier
 
 #define ValZWMin 1 /** For elastic bean selection */
 
@@ -144,8 +125,8 @@ protected: // methods
   virtual void mouseReleaseEvent ( QMouseEvent* e );
   virtual void mouseMoveEvent    ( QMouseEvent* e );
   virtual void wheelEvent        ( QWheelEvent* e );
-//   virtual void keyPressEvent     ( QKeyEvent* e );
-//   virtual void keyReleaseEvent   ( QKeyEvent* e );
+  virtual void keyPressEvent        ( QKeyEvent* e );
+  virtual void keyReleaseEvent        ( QKeyEvent* e );
   
   virtual void leaveEvent		   ( QEvent * );
   
@@ -197,7 +178,8 @@ private: // methods
     (
      Qt::MouseButtons buttons, 
      Qt::KeyboardModifiers nFlags, 
-     const QPoint point 
+     const QPoint point,
+     Qt::KeyboardModifiers curFlags
      );
   
   AIS_StatusOfPick dragEvent 

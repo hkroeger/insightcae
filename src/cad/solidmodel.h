@@ -255,7 +255,7 @@ class RotatedHelicalSweep
 : public SolidModel
 {
 public:
-  RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double PtoD, double revoffset=0.0);
+  RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
 };
 
 // =================== Boolean operations ======================

@@ -323,7 +323,7 @@ public:\
     return value;\
   }\
   \
-  virtual typename QuantityComputer<T>::Ptr clone() const { return QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
+  virtual typename QuantityComputer<T>::Ptr clone() const { return typename QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
 };
 
 #define UNARY_FUNCTION_QTC_RET(OPERATED_QTC_NAME, OPERATED_QTC_OP, RETURN_T) \
@@ -460,6 +460,7 @@ template<> struct DotResult<arma::mat, arma::mat> {
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
 UNARY_FUNCTION_QTC(cos, (cos(value)) );
+UNARY_FUNCTION_QTC(sqr, (pow(value,2)) );
 UNARY_FUNCTION_QTC_RET(mag, (fabs(value)), double);
 UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 UNARY_FUNCTION_QTC_RET(compX, (value(0)), double);
@@ -488,6 +489,42 @@ public:
     virtual arma::mat evaluate(FeatureID ei);
 
     virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeStart
+    : public QuantityComputer<arma::mat>
+{
+public:
+    edgeStart();
+    virtual ~edgeStart();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeEnd
+    : public QuantityComputer<arma::mat>
+{
+public:
+    edgeEnd();
+    virtual ~edgeEnd();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeLen
+    : public QuantityComputer<double>
+{
+public:
+    edgeLen();
+    virtual ~edgeLen();
+
+    virtual double evaluate(FeatureID ei);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
 };
 
 class faceCoG

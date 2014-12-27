@@ -289,6 +289,66 @@ QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const
   return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
 }
 
+edgeStart::edgeStart() 
+{}
+
+edgeStart::~edgeStart()
+{}
+  
+arma::mat edgeStart::evaluate(FeatureID ei)
+{
+  gp_Pnt p=BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei)));
+  return Vector(p);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeStart::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeStart());
+}
+
+edgeEnd::edgeEnd() 
+{}
+
+edgeEnd::~edgeEnd()
+{}
+  
+arma::mat edgeEnd::evaluate(FeatureID ei)
+{
+  gp_Pnt p=BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei)));
+  return Vector(p);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeEnd::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeEnd());
+}
+
+edgeLen::edgeLen()
+{
+}
+
+edgeLen::~edgeLen()
+{
+}
+
+double edgeLen::evaluate(FeatureID ei)
+{
+  GProp_GProps gpr;
+  TopoDS_Edge e=model_->edge(ei);
+  double l = 0.;
+  if (!e.IsNull() && !BRep_Tool::Degenerated(e)) {
+    BRepGProp::LinearProperties(e, gpr);
+    l = gpr.Mass();
+  }
+  return l;
+}
+
+QuantityComputer< double >::Ptr edgeLen::clone() const
+{
+  return QuantityComputer<double>::Ptr(new edgeLen());
+}
+
+
 faceCoG::faceCoG() 
 {}
 
@@ -527,17 +587,17 @@ public:
 	r_filter_primary =
 	  ( r_filter_functions ) [ _val = _1 ]
 	  |
-	  ( lit("maximal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
+	  ( lit("maximal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
 	    [ _val = phx::construct<FilterPtr>(new_<maximal>(*_1, _2)) ]
 	  |
-	  ( lit("minimal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
+	  ( lit("minimal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
 	    [ _val = phx::construct<FilterPtr>(new_<minimal>(*_1, _2)) ]
 	  |
 	  ( r_qty_comparison ) [ _val = _1 ]
 	  |
-	  ( '(' > r_filter > ')' ) [ _val = _1 ]
+	  ( '(' >> r_filter >> ')' ) [ _val = _1 ]
 	  | 
-	  ( '!' > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<NOT>(*_1)) ]
+	  ( '!' >> r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<NOT>(*_1)) ]
 	  ;
 	  
 	r_qty_comparison = 
@@ -556,11 +616,11 @@ public:
 	  ;
 	  
 	r_scalar_qty_expression =
-	  r_scalar_term [ _val = _1 ]
-	  |
-	  ( r_scalar_term >> '+' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_term >> '+' > r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*_1, *_2)) ]
 	  | 
-	  ( r_scalar_term >> '-' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_term >> '-' > r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*_1, *_2)) ]
+	  |
+	  r_scalar_term [ _val = _1 ]
 	  ;
 	
 	r_scalar_term =
@@ -577,11 +637,13 @@ public:
 	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  |*/ double_ [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(_1)) ]
 	  | r_scalar_qty_functions [ _val = _1 ]
-	  | ( lit("mag") >> '(' >> r_scalar_qty_expression >> ')' ) 
+	  | ( lit("mag") > '(' > r_scalar_qty_expression > ')' ) 
 	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*_1)) ]
-	  | ( lit("angle") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
+	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
+	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*_1)) ]
+	  | ( lit("angle") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
 	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*_1, *_2)) ]
-	  | ( lit("angleMag") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
+	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
 	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*_1, *_2)) ]
 	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ _val = _1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
@@ -677,6 +739,21 @@ struct EdgeFeatureFilterExprParser
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ _val = phx::construct<FilterPtr>(new_<coincidentEdge>(*_1)) ]
 	  ;
+	  
+      FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
+	( lit("edgeLen") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
+      ;
+      
+      FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+//         ( lit("avgTangent") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeAvgTangent>()) ]
+//         |
+        ( lit("edgeCoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeCoG>()) ]
+         |
+        ( lit("edgeStart") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeStart>()) ]
+         |
+        ( lit("edgeEnd") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeEnd>()) ]
+      ;
+    
   }
 };
 

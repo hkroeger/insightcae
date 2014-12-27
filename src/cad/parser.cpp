@@ -313,12 +313,16 @@ struct ISCADParser
 	
 	r_solidmodel_expression =
 	 r_solidmodel_term [_val=qi::_1 ]
-	 >> *( '-' >> r_solidmodel_term [_val=construct<solidmodel>(new_<BooleanSubtract>(*_val, *qi::_1))] )
+	 >> *( '-' >> r_solidmodel_term [ _val = construct<solidmodel>(new_<BooleanSubtract>(*_val, *qi::_1)) ] )
 	 ;
 	
 	r_solidmodel_term =
 	 r_solidmodel_primary [_val=qi::_1 ]
-	 >> *( '|' >> r_solidmodel_primary [_val=construct<solidmodel>(new_<BooleanUnion>(*_val, *qi::_1))] )
+	 >> *( 
+	  ('|' >> r_solidmodel_primary [ _val = construct<solidmodel>(new_<BooleanUnion>(*_val, *qi::_1)) ] )
+	  |
+	  ('&' >> r_solidmodel_primary [ _val = construct<solidmodel>(new_<BooleanIntersection>(*_val, *qi::_1)) ] )
+	 )
 	 ;
 	
 	r_solidmodel_primary = 

@@ -125,6 +125,19 @@ public:
     virtual FilterPtr clone() const;
 };
 
+class faceAdjacentToEdges
+    : public Filter
+{
+protected:
+    FeatureSet edges_;
+
+public:
+    faceAdjacentToEdges(FeatureSet edges);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
 class cylFaceOrientation
     : public Filter
 {
@@ -700,8 +713,8 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
-FilterPtr parseEdgeFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>() );
-FilterPtr parseFaceFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>());
+FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
+FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
 
 }
 }

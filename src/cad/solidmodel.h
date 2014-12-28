@@ -125,10 +125,10 @@ public:
   FeatureSet allFaces() const;
   
   FeatureSet query_edges(const FilterPtr& filter) const;
-  FeatureSet query_edges(const std::string& queryexpr) const;
+  FeatureSet query_edges(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_edges_subset(const FeatureSet& fs, const FilterPtr& filter) const;
   FeatureSet query_faces(const FilterPtr& filter) const;
-  FeatureSet query_faces(const std::string& queryexpr) const;
+  FeatureSet query_faces(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;

@@ -214,6 +214,33 @@ FilterPtr faceTopology::clone() const
   return FilterPtr(new faceTopology(ct_));
 }
 
+faceAdjacentToEdges::faceAdjacentToEdges(FeatureSet edges)
+: edges_(edges)
+{
+}
+
+bool faceAdjacentToEdges::checkMatch(FeatureID feature) const
+{
+  TopoDS_Face f=model_->face(feature);
+  for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BOOST_FOREACH(FeatureID ei, edges_)
+    {
+      TopoDS_Edge e2=edges_.model().edge(ei);
+      if (e.IsSame(e2))
+	return true;
+    }
+  }
+  return false;
+}
+
+FilterPtr faceAdjacentToEdges::clone() const
+{
+  return FilterPtr(new faceAdjacentToEdges(edges_));
+}
+
+
 cylFaceOrientation::cylFaceOrientation(bool io)
 : io_(io)
 {
@@ -525,7 +552,6 @@ using namespace qi;
 using namespace phx;
 using namespace insight::cad;
 
-typedef std::vector<FeatureSet> FeatureSetList;
 
 FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
 {
@@ -536,7 +562,7 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
      +" is not present in list of size "+lexical_cast<std::string>(fl.size())
     );
   
-  return FeatureSetPtr(new FeatureSet(fl.at(id)));
+  return FeatureSetPtr(fl.at(id)->clone());
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
 
@@ -560,7 +586,7 @@ public:
     qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_functions;
     qi::rule<Iterator, matQuantityComputer::Ptr(), Skipper> r_mat_qty_functions;
     
-    const FeatureSetList& externalFeatureSets_;
+    FeatureSetList externalFeatureSets_;
 
     FeatureFilterExprParser
     (
@@ -788,6 +814,9 @@ struct FaceFeatureFilterExprParser
 	( lit("isOffsetSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
 	|
 	( lit("isOtherSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+	|
+	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+	  [ _val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*_1)) ]
       ;
 
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
@@ -804,7 +833,7 @@ struct FaceFeatureFilterExprParser
 };
 
 template<class Parser>
-FilterPtr parseFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
 try {
   Parser parser(refs);
@@ -850,12 +879,12 @@ catch (insight::Exception e)
 
 }
 
-FilterPtr parseEdgeFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
   return parseFilterExpr<EdgeFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
-FilterPtr parseFaceFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseFaceFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
   return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }

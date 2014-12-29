@@ -4,6 +4,7 @@
 {
     $1 = PySequence_Check($input) ? 1 : 0;
 }
+
 %typemap(in) insight::cad::FeatureSetList& (insight::cad::FeatureSetList vIn) 
 {
     size_t iLen = PySequence_Length($input); 

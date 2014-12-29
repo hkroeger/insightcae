@@ -264,6 +264,7 @@ FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr&
   {
     if (f->checkMatch(i)) res.insert(i);
   }
+  cout<<"QUERY_EDGES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -294,6 +295,7 @@ FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const FilterPtr&
   {
     if (f->checkMatch(i)) res.insert(i);
   }
+  cout<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -1053,26 +1055,28 @@ Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
 }
 
 
-TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
+TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
   
   double delta_phi=norm(axis, 2);
+  double phi0=0.0;
+  if (center) phi0=-0.5*delta_phi*double(n-1);
   gp_Ax1 ax(to_Pnt(p0), to_Vec(axis/delta_phi));
   for (int i=0; i<n; i++)
   {
     gp_Trsf tr;
-    tr.SetRotation(ax, delta_phi*double(i));
+    tr.SetRotation(ax, phi0+delta_phi*double(i));
     bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
   }
   
   return result;
 }
   
-CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
-: SolidModel(makePattern(m1, p0, axis, n))
+CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
+: SolidModel(makePattern(m1, p0, axis, n, center))
 {
   m1.unsetLeaf();
 }
@@ -1140,6 +1144,14 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
 {
   m1.unsetLeaf();
 }
+
+Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)
+{
+  gp_Trsf tr;
+  tr.SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
+  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+}
+
 
 TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
 {

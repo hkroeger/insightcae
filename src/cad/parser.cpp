@@ -253,7 +253,7 @@ struct ISCADParser
         r_model =  *( r_assignment | r_modelstep | r_loadmodel ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
-	r_loadmodel = ( lit("import") >> '(' >> r_identifier >> 
+	r_loadmodel = ( lit("load") >> '(' >> r_identifier >> 
 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
 // 	   >> -( lit("as") > r_identifier )
 	   >> ';' )
@@ -345,8 +345,8 @@ struct ISCADParser
 	    [ _val = construct<solidmodel>(new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
          
          | ( lit("CircularPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
-	    > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
-	     [ _val = construct<solidmodel>(new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	    > r_vectorExpression > ',' > r_scalarExpression > -( ',' > lit("centered") > attr(true) ) > ')' ) 
+	     [ _val = construct<solidmodel>(new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
          | ( lit("LinearPattern") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_scalarExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<LinearPattern>(*qi::_1, qi::_2, qi::_3)) ]
@@ -354,6 +354,9 @@ struct ISCADParser
          | ( lit("Transform") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_vectorExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Transform>(*qi::_1, qi::_2, qi::_3)) ]
+         | ( lit("Place") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > 
+	      ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
+	     [ _val = construct<solidmodel>(new_<Place>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
          | ( lit("Compound") > '(' > ( r_solidmodel_expression % ',' ) > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Compound>(qi::_1)) ]
 

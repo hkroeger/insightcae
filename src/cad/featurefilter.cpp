@@ -214,6 +214,23 @@ FilterPtr faceTopology::clone() const
   return FilterPtr(new faceTopology(ct_));
 }
 
+in::in(FeatureSet set)
+: set_(set)
+{
+}
+
+bool in::checkMatch(FeatureID feature) const
+{
+  return set_.find(feature)!=set_.end();
+}
+
+FilterPtr in::clone() const
+{
+  return FilterPtr(new in(set_));
+}
+
+
+
 faceAdjacentToEdges::faceAdjacentToEdges(FeatureSet edges)
 : edges_(edges)
 {
@@ -240,6 +257,43 @@ FilterPtr faceAdjacentToEdges::clone() const
   return FilterPtr(new faceAdjacentToEdges(edges_));
 }
 
+
+faceAdjacentToFaces::faceAdjacentToFaces(FeatureSet faces)
+: faces_(faces)
+{
+}
+
+bool faceAdjacentToFaces::checkMatch(FeatureID feature) const
+{
+  TopoDS_Face f=model_->face(feature);
+  for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BOOST_FOREACH(FeatureID fi, faces_)
+    {
+      bool valid=true;
+      if (*model_==faces_.model())
+	if (fi==feature) valid=false;
+	
+      if (valid)
+      {
+	TopoDS_Face f2=faces_.model().face(fi);
+	for(TopExp_Explorer ex2(f2, TopAbs_EDGE); ex2.More(); ex2.Next())
+	{
+	  TopoDS_Edge e2=TopoDS::Edge(ex2.Current());
+	  if (e.IsSame(e2))
+	    return true;
+	}
+      }
+    }
+  }
+  return false;
+}
+
+FilterPtr faceAdjacentToFaces::clone() const
+{
+  return FilterPtr(new faceAdjacentToFaces(faces_));
+}
 
 cylFaceOrientation::cylFaceOrientation(bool io)
 : io_(io)
@@ -613,6 +667,9 @@ public:
 	r_filter_primary =
 	  ( r_filter_functions ) [ _val = _1 ]
 	  |
+	  ( lit("in") >> '(' > r_featureset > ')' ) 
+	    [ _val = phx::construct<FilterPtr>(new_<in>(*_1)) ]
+	  |
 	  ( lit("maximal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
 	    [ _val = phx::construct<FilterPtr>(new_<maximal>(*_1, _2)) ]
 	  |
@@ -767,17 +824,17 @@ struct EdgeFeatureFilterExprParser
 	  ;
 	  
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
-	( lit("edgeLen") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
+	( lit("len") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
       ;
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
 //         ( lit("avgTangent") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeAvgTangent>()) ]
 //         |
-        ( lit("edgeCoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeCoG>()) ]
+        ( lit("CoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeCoG>()) ]
          |
-        ( lit("edgeStart") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeStart>()) ]
+        ( lit("start") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeStart>()) ]
          |
-        ( lit("edgeEnd") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeEnd>()) ]
+        ( lit("end") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeEnd>()) ]
       ;
     
   }
@@ -817,6 +874,9 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ _val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*_1)) ]
+	|
+	( lit("adjacentToFaces") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+	  [ _val = phx::construct<FilterPtr>(new_<faceAdjacentToFaces>(*_1)) ]
       ;
 
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
@@ -826,7 +886,7 @@ struct FaceFeatureFilterExprParser
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
         ( lit("normal") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
         |
-        ( lit("faceCoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
+        ( lit("CoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
       ;
     
   }

@@ -125,6 +125,19 @@ public:
     virtual FilterPtr clone() const;
 };
 
+class in
+    : public Filter
+{
+protected:
+    FeatureSet set_;
+
+public:
+    in(FeatureSet set);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
 class faceAdjacentToEdges
     : public Filter
 {
@@ -133,6 +146,19 @@ protected:
 
 public:
     faceAdjacentToEdges(FeatureSet edges);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
+class faceAdjacentToFaces
+    : public Filter
+{
+protected:
+    FeatureSet faces_;
+
+public:
+    faceAdjacentToFaces(FeatureSet faces);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

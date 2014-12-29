@@ -326,10 +326,10 @@ public:
 class CircularPattern
 : public SolidModel
 {
-  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
   
 public:
-  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
 };
 
 class LinearPattern
@@ -352,6 +352,13 @@ class Transform
 public:
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
+};
+
+class Place
+: public SolidModel
+{
+public:
+  Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
 };
 
 class Compound

@@ -250,16 +250,20 @@ struct ISCADParser
 	model_(model)
     {
       
-        r_model =  *( r_assignment | r_modelstep | r_loadmodel ) 
+        r_model =  *( r_assignment | r_modelstep /*| r_loadmodel*/ ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
-	r_loadmodel = ( lit("load") >> '(' >> r_identifier >> 
-	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
-// 	   >> -( lit("as") > r_identifier )
-	   >> ';' )
-	  [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_1, qi::_2)) ];
+// 	r_loadmodel = ( lit("load") >> '(' >> r_identifier >> 
+// 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
+// // 	   >> -( lit("as") > r_identifier )
+// 	   >> ';' )
+// 	  [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_1, qi::_2)) ];
 	
 	r_assignment = 
+	  ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
+	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
+	   [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_2, qi::_3)) ]
+	  |
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
 	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
 	  |
@@ -551,7 +555,7 @@ struct ISCADParser
     qi::rule<Iterator, datum(), Skipper> r_datumExpression;
     
     qi::rule<Iterator, Skipper> r_model;
-    qi::rule<Iterator, Skipper> r_loadmodel;
+//     qi::rule<Iterator, Skipper> r_loadmodel;
     qi::rule<Iterator, Skipper> r_assignment;
     qi::rule<Iterator, Skipper> r_postproc;
     qi::rule<Iterator, viewdef(), Skipper> r_viewDef;

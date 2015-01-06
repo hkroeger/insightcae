@@ -111,10 +111,11 @@ ParameterSet PipeBase::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
-	    ("x",	new DoubleParameter(0.5, "Edge length of core block as fraction of diameter"))
-	    ("ypluswall",	new DoubleParameter(0.5, "yPlus at the wall grid layer"))
+	    ("x",	new DoubleParameter(0.33, "Edge length of core block as fraction of diameter"))
+	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
+	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
+	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
+	    ("ypluswall", new DoubleParameter(0.5, "yPlus at the wall grid layer"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -131,6 +132,17 @@ ParameterSet PipeBase::defaultParameters() const
 	  "Definition of the operation point under consideration"
 	))
       
+      ("run", new SubsetParameter	
+	    (
+		  ParameterSet
+		  (
+		    boost::assign::list_of<ParameterSet::SingleEntry>
+		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
+		    .convert_to_container<ParameterSet::EntryList>()
+		  ), 
+		  "Execution parameters"
+      ))
+
       ("evaluation", new SubsetParameter
 	(
 	  ParameterSet
@@ -161,36 +173,44 @@ std::string PipeBase::cyclPrefix() const
 
 void PipeBase::calcDerivedInputData(const ParameterSet& p)
 {
-  PSDBL(p, "mesh", ypluswall);
-  PSDBL(p, "operation", Re_tau);
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
-  PSINT(p, "mesh", nax);
+  PSDBL(p, "operation", Re_tau);
+
+  PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "mesh", dxplus);
+  PSDBL(p, "mesh", dzplus);
   PSDBL(p, "mesh", x);
-  PSDBL(p, "mesh", s);
+  PSBOOL(p, "mesh", fixbuf);
 
-  Lc_ = x*D;
-
-  double Delta=L/double(nax);
-  nc_=D*(M_PI+4.*x)/(8.*Delta/s);
-
-  
-  ywall_ = ypluswall*0.5*D/Re_tau;
-  cout<<"ywall = "<<ywall_<<endl;
-
-  gradr_=(Delta/s) / ywall_;
-  cout<<"Grading = "<<gradr_<<endl;
-  
-  double lr=0.5*D*(1.-sqrt(2.)*x);
-  nr_=max(1, bmd::GradingAnalyzer(gradr_).calc_n(ywall_, lr));
-  cout<<"n_r="<<nr_<<endl;
-  
   // Physics
   Re_=Re(Re_tau);
   Ubulk_=Re_/Re_tau;
   T_=L/Ubulk_;
   nu_=1./Re_tau;
   utau_=Re_tau*nu_/(0.5*D);
+
+  Lc_ = x*D;
+  nax_=int(L*Re_tau/dxplus);  
+  nc_=int(M_PI*D*Re_tau/dzplus) /4;
+  
+  double rc=0.5*D-0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
+
+  ywall_ = ypluswall*0.5*D/Re_tau;
+
+  nrbuf_=0;
+  if (fixbuf>0)
+  {
+    double ypbuf=30.;
+    rbuf_=ypbuf/Re_tau;
+    nrbuf_=std::max(1.0, rbuf_/ywall_);
+
+  }
+  
+  bmd::GradingAnalyzer ga( ywall_, Lc_/double(nc_) );
+  gradr_=ga.grad();
+  cout<<gradr_<<endl;
+  nr_=ga.calc_n(ywall_, rc-rbuf_);
   
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
@@ -219,9 +239,8 @@ void PipeBase::createMesh
   
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
+  PSBOOL(p, "mesh", fixbuf);
 
-  PSINT(p, "mesh", nax);
-    
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
@@ -234,7 +253,8 @@ void PipeBase::createMesh
   
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
-      (11, 	vec3(0, 0.5*D, 0))
+      (12, 	vec3(0, 0.5*D, 0))
+      (11, 	vec3(0, 0.5*D-rbuf_, 0))
       (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
       (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
   ;
@@ -245,6 +265,7 @@ void PipeBase::createMesh
   Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
   Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
   
+  // core block
   {
     arma::mat r0=rotMatrix(0.5*al, ax);
     arma::mat r1=rotMatrix(1.5*al, ax);
@@ -257,32 +278,54 @@ void PipeBase::createMesh
 	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
 	  (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
 	),
-	nc_, nc_, nax
+	nc_, nc_, nax_
       )
     );
     cycl_in.addFace(bl.face("0321"));
     cycl_out.addFace(bl.face("4567"));
   }
 
+  // radial blocks
   for (int i=0; i<4; i++)
   {
     arma::mat r0=rotMatrix(double(i+0.5)*al, ax);
     arma::mat r1=rotMatrix(double(i+1.5)*al, ax);
-    
-    Block& bl = bmd->addBlock
-    (
-      new Block(P_8(
-	  r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
-	  (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
-	),
-	nc_, nr_, nax,
-	list_of<double>(1)(1./gradr_)(1)
-      )
-    );
-    cycl_in.addFace(bl.face("0321"));
-    cycl_out.addFace(bl.face("4567"));
+
+    {    
+      Block& bl = bmd->addBlock
+      (
+	new Block(P_8(
+	    r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
+	    (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
+	  ),
+	  nc_, nr_, nax_,
+	  list_of<double>(1)(1./gradr_)(1)
+	)
+      );
+      cycl_in.addFace(bl.face("0321"));
+      cycl_out.addFace(bl.face("4567"));
+    }
+
+    if (fixbuf)
+    {    
+      Block& bl = bmd->addBlock
+      (
+	new Block(P_8(
+	    r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
+	    (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
+	  ),
+	  nc_, nrbuf_, nax_,
+	  list_of<double>(1)(1)(1)
+	)
+      );
+      cycl_in.addFace(bl.face("0321"));
+      cycl_out.addFace(bl.face("4567"));
+    }
 
     arma::mat rmid=rotMatrix(double(i+1)*al, ax);
+    bmd->addEdge(new ArcEdge(r1*pts[12], r0*pts[12], rmid*pts[12]));
+    bmd->addEdge(new ArcEdge((r1*pts[12])+vL, (r0*pts[12])+vL, (rmid*pts[12])+vL));
+
     bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
     bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
 
@@ -320,7 +363,6 @@ void PipeBase::createCase
   cm.parseBoundaryDict(dir, boundaryDict);
 
   
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters() ) );
   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
     .set_name("plane")
     .set_basePoint(vec3(0,1e-6,1e-6))
@@ -655,6 +697,10 @@ void PipeCyclic::createCase
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
+
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+        .set_hasCyclics(true)
+  ));
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
@@ -668,23 +714,16 @@ void PipeCyclic::createCase
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  PSDBL(p, "operation", Re_tau);
-  
-  /*
-  setFields(cm, executionPath(), 
-	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U ("+lexical_cast<string>(calcUbulk(p))+" 0 0)"),
-	    ptr_vector<setFieldOps::setFieldOperator>()
-  );
-  cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
-  cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*calcUbulk(p))) );
-  */
-  
-  cm.executeCommand(executionPath(), "perturbU", 
-		    list_of<string>
-		    (lexical_cast<string>(Re_tau))
-		    ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
-		   );
+  if (p.getBool("run/perturbU"))
+  {
+    PSDBL(p, "operation", Re_tau);
+    
+    cm.executeCommand(executionPath(), "perturbU", 
+		      list_of<string>
+		      (lexical_cast<string>(Re_tau))
+		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+		    );
+  }
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }
@@ -775,9 +814,12 @@ void PipeInflow::createCase
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
-      
+
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+  ));
+
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(Ubulk_, 0, 0))
+    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())

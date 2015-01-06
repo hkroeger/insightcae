@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  Hannes Kroeger <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_RESULTSET_H
@@ -49,7 +50,7 @@ protected:
 public:
   declareType("ResultElement");
   
-  ResultElement(const ResultElementConstrP& par);
+  ResultElement(const ResultElement::ResultElementConstrP& par);
   virtual ~ResultElement();
   
   inline const std::string& shortDescription() const { return shortDescription_; }
@@ -57,7 +58,8 @@ public:
   inline const std::string& unit() const { return unit_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
   virtual ResultElement* clone() const =0;
 };
@@ -72,14 +74,14 @@ protected:
   boost::filesystem::path imagePath_;
 public:
   declareType("Image");
-  Image(const ResultElementConstrP& par);
+  Image(const ResultElement::ResultElementConstrP& par);
   Image(const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc);
   
   inline const boost::filesystem::path& imagePath() const { return imagePath_; }
   inline void setPath(const boost::filesystem::path& value) { imagePath_=value; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -93,18 +95,25 @@ protected:
   
 public:
   
-  NumericalResult(const ResultElementConstrP& par)
+  NumericalResult(const ResultElement::ResultElementConstrP& par)
   : ResultElement(par)
   {}
 
   NumericalResult(const T& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit)
-  : ResultElement(ResultElementConstrP(shortDesc, longDesc, unit)),
+  : ResultElement(ResultElement::ResultElementConstrP(shortDesc, longDesc, unit)),
     value_(value)
   {}
   
   inline void setValue(const T& value) { value_=value; }
   
   inline const T& value() const { return value_; }
+  
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+  {
+    boost::filesystem::path fname(outputdirectory/(name+".dat"));
+    std::ofstream f(fname.c_str());
+    f<<value_<<std::endl;
+  }
 };
 
 class Comment
@@ -116,9 +125,9 @@ protected:
 public:
   declareType("Comment");
   
-  Comment(const ResultElementConstrP& par);
+  Comment(const ResultElement::ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -128,9 +137,9 @@ class ScalarResult
 public:
   declareType("ScalarResult");
   
-  ScalarResult(const ResultElementConstrP& par);
+  ScalarResult(const ResultElement::ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual ResultElement* clone() const;
 };
 
@@ -149,7 +158,7 @@ protected:
 public:
   declareType("TabularResult");
   
-  TabularResult(const ResultElementConstrP& par);
+  TabularResult(const ResultElement::ResultElementConstrP& par);
   
   TabularResult
   (
@@ -171,6 +180,12 @@ public:
   
   inline const std::vector<std::string>& headings() const { return headings_; }
   inline const Table& rows() const { return rows_; }
+  inline Row& appendRow() 
+  { 
+    rows_.push_back(Row(headings_.size()));
+    return rows_.back();
+  }
+  void setCellByName(Row& r, const std::string& colname, double value);
   
   arma::mat toMat() const;
   
@@ -178,7 +193,7 @@ public:
   
   virtual void writeGnuplotData(std::ostream& f) const;
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -199,7 +214,7 @@ protected:
 public:
   declareType("AttributeTableResult");
   
-  AttributeTableResult(const ResultElementConstrP& par);
+  AttributeTableResult(const ResultElement::ResultElementConstrP& par);
   
   AttributeTableResult
   (
@@ -216,7 +231,7 @@ public:
   inline const AttributeNames& names() const { return names_; }
   inline const AttributeValues& values() const { return values_; }
   
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   
   virtual ResultElement* clone() const;
 };
@@ -258,9 +273,22 @@ public:
   inline const ParameterSet& parameters() const { return p_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
-  virtual void writeLatexCode(std::ostream& f, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
 
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
+  
+  template<class T>
+  inline T& get(const std::string& name)
+  {
+    ResultSet::iterator i=find(name);
+    if (i==end())
+      insight::Exception("ResultSet does not contain element "+name);
+    T* ret=dynamic_cast<T*>(i->second);
+    if (!ret)
+      insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
+    return *ret;
+  }
   
   virtual ResultElement* clone() const;
 };
@@ -279,8 +307,11 @@ struct PlotCurve
   std::string plotcmd_;
   
   PlotCurve();
+  PlotCurve(const char* plotcmd);
   PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
+  
+  std::string title() const;
 };
 
 typedef std::vector<PlotCurve> PlotCurveList;
@@ -296,6 +327,36 @@ void addPlot
   const std::string& shortDescription,
   const std::string& addinit = ""
 );
+
+class Chart
+: public ResultElement
+{
+protected:
+  std::string xlabel_;
+  std::string ylabel_;
+  PlotCurveList plc_;
+  std::string addinit_;
+  
+public:
+  declareType("Chart");
+  Chart(const ResultElement::ResultElementConstrP& par);
+  Chart
+  (
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDesc, const std::string& longDesc,
+    const std::string& addinit = ""    
+  );
+  
+  virtual void generatePlotImage(const boost::filesystem::path& imagepath) const;
+  
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+  
+  virtual ResultElement* clone() const;
+};
 
 struct PlotField
 {

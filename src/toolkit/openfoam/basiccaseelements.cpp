@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "basiccaseelements.h"
@@ -25,6 +26,7 @@
 #include <utility>
 #include "boost/assign.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace boost;
@@ -645,10 +647,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   return false;
 }
 
-defineType(kEpsilon_RASModel);
-addToFactoryTable(turbulenceModel, kEpsilon_RASModel, turbulenceModel::ConstrP);
-
-void kEpsilon_RASModel::addFields()
+void kEpsilonBase_RASModel::addFields()
 {
   OFcase().addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
   OFcase().addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	list_of(10.0), volField ) );
@@ -663,32 +662,32 @@ void kEpsilon_RASModel::addFields()
   }
 }
 
-kEpsilon_RASModel::kEpsilon_RASModel(OpenFOAMCase& c)
+kEpsilonBase_RASModel::kEpsilonBase_RASModel(OpenFOAMCase& c)
 : RASModel(c)
 {
   addFields();
 }
   
-kEpsilon_RASModel::kEpsilon_RASModel(const turbulenceModel::ConstrP& c)
+kEpsilonBase_RASModel::kEpsilonBase_RASModel(const turbulenceModel::ConstrP& c)
 : RASModel(c)
 {
   addFields();
 }
   
-void kEpsilon_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
+void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
   OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
-  RASProperties["RASModel"]="kEpsilon";
+  RASProperties["RASModel"]=this->type(); //"kEpsilon";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
   RASProperties["kMin"]=1e-3;
   RASProperties["epsilonMin"]=1e-3;
-  RASProperties.addSubDictIfNonexistent("kEpsilonCoeffs");
+  RASProperties.addSubDictIfNonexistent(type()+"Coeffs");
 }
 
-bool kEpsilon_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
   std::string pref="";
   if (OFcase().isCompressible()) pref="compressible::";
@@ -730,6 +729,17 @@ bool kEpsilon_RASModel::addIntoFieldDictionary(const std::string& fieldname, con
   
   return false;
 }
+
+
+defineType(kEpsilon_RASModel);
+addToFactoryTable(turbulenceModel, kEpsilon_RASModel, turbulenceModel::ConstrP);
+kEpsilon_RASModel::kEpsilon_RASModel(const turbulenceModel::ConstrP& c): kEpsilonBase_RASModel(c) {}
+
+
+defineType(realizablekEpsilon_RASModel);
+addToFactoryTable(turbulenceModel, realizablekEpsilon_RASModel, turbulenceModel::ConstrP);
+realizablekEpsilon_RASModel::realizablekEpsilon_RASModel(const turbulenceModel::ConstrP& c): kEpsilonBase_RASModel(c) {}
+
 
 defineType(SpalartAllmaras_RASModel);
 addToFactoryTable(turbulenceModel, SpalartAllmaras_RASModel, turbulenceModel::ConstrP);
@@ -912,9 +922,16 @@ void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
 {
-  if ( (fieldname == "k") || (fieldname == "omega") )
+  if (fieldname == "k")
   {
-    BC["type"]=OFDictData::data("zeroGradient");
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+str(format("%g") % 1e-10);
+    return true;
+  }
+  else if ( fieldname == "omega")
+  {
+    BC["type"]=OFDictData::data("omegaWallFunction");
+    BC["value"]="uniform "+str(format("%g") % 1e-10);
     return true;
   }
   return false;

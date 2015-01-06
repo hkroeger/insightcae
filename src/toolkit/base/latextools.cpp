@@ -1,20 +1,20 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2013  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
@@ -23,6 +23,8 @@
 #include <string>
 
 #include "boost/algorithm/string.hpp"
+
+using namespace boost;
 
 namespace insight
 {
@@ -36,6 +38,13 @@ std::string cleanSymbols(const std::string& s)
   boost::replace_all(result, "[", "{[}");
   boost::replace_all(result, "]", "{]}");
   return result;
+}
+
+boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s)
+{
+  std::string stem=s.stem().string();
+  replace_all(stem, ".", "_");
+  return s.parent_path()/(stem+s.extension().string());
 }
 
 }

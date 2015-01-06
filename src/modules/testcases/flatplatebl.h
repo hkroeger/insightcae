@@ -28,6 +28,16 @@ namespace insight {
 class FlatPlateBL 
 : public OpenFOAMAnalysis
 {
+  
+protected:
+
+    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, ypfac_e_, deltaywall_e_, gradh_, T_;
+    int nax_, nlat_;
+    
+    double avgStart_, avg2Start_, end_;
+    
+    std::string in_, out_, top_, cycl_prefix_;
+  
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
@@ -35,14 +45,40 @@ public:
   ~FlatPlateBL();
   
   virtual ParameterSet defaultParameters() const;
-  
+  virtual void calcDerivedInputData(const ParameterSet& p);
   virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-  
+
+  virtual void evaluateAtSection
+  (
+    OpenFOAMCase& cm, const ParameterSet& p, 
+    ResultSetPtr results, double x, int i,
+    const Interpolator& cf
+  );  
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   
   virtual insight::Analysis* clone();
+  
+  /**
+   * solves the function G(Alpha,D) numerically
+   */
+  static double G(double Alpha, double D);
+  
+  /**
+   * computes the friction coefficient of a flat plate
+   * @Re Reynolds number formulated with running length
+   */
+  static double cw(double Re, double Cplus=5.0);
+
+  /**
+   * computes the friction coefficient of a flat plate at station x
+   * @Re Reynolds number formulated with running distance x
+   */
+  static double cf(double Re, double Cplus=5.0);
+  
+  static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
 };
+
 }
 
 #endif // INSIGHT_FLATPLATEBL_H

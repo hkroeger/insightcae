@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  <copyright holder> <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

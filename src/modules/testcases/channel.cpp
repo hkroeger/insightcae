@@ -184,7 +184,6 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
-  //PSINT(p, "mesh", nax);
   PSINT(p, "mesh", nh);
   PSBOOL(p, "mesh", fixbuf);
   
@@ -402,6 +401,7 @@ void ChannelBase::createCase
     .set_writeFormat("ascii")
     .set_decompositionMethod("simple")
     .set_deltaT(1e-3)
+    .set_hasCyclics(true)
   ) );
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
@@ -493,8 +493,8 @@ void ChannelBase::evaluateAtSection(
     int c=cd["UMean"].col;
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma_ascii);
@@ -685,7 +685,7 @@ void ChannelBase::evaluateAtSection(
       list_of
        (PlotCurve( Kp, "w l t 'TKE'" ))
        (PlotCurve( refdata_K, "u 1:2 w l lt 1 lc 1 t 'DNS (Re_tau=180, MKM)'" ))
-       (PlotCurve( refdata_K395, "u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
+       (PlotCurve( refdata_K395, "u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=395, MKM)'" ))
        (PlotCurve( refdata_K590, "u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH)
@@ -952,15 +952,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
   if (p.getBool("run/perturbU"))
   {
     PSDBL(p, "operation", Re_tau);
-    /*
-    setFields(cm, executionPath(), 
-	      list_of<setFieldOps::FieldValueSpec>
-		("volVectorFieldValue U ("+lexical_cast<string>(Ubulk_)+" 0 0)"),
-	      ptr_vector<setFieldOps::setFieldOperator>()
-    );
-    cm.executeCommand(executionPath(), "applyBoundaryLayer", list_of<string>("-ybl")(lexical_cast<string>(0.25)) );
-    cm.executeCommand(executionPath(), "randomizeVelocity", list_of<string>(lexical_cast<string>(0.1*Ubulk_)) );
-    */
+
     cm.executeCommand(executionPath(), "perturbU", 
 		      list_of<string>
 		      (lexical_cast<string>(Re_tau))
@@ -1062,7 +1054,7 @@ void ChannelInflow::createCase
   cm.parseBoundaryDict(executionPath(), boundaryDict);
       
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(Ubulk_, 0, 0))
+    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_volexcess(p.getDouble("inflow/volexcess"))

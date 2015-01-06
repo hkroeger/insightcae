@@ -1,20 +1,20 @@
 /*
- * <one line to give the library's name and an idea of what it does.>
- * Copyright (C) 2013  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
@@ -94,7 +94,7 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
   ofc.executeCommand(location, "setsToZones", args);
 }
 
-void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify, bool ignoremissing)
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify, bool ignoremissing, bool include_zones)
 {
   path source(from/"polyMesh");
   path target(to/"polyMesh");
@@ -104,11 +104,16 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   std::string cmd("ls "); cmd+=source.c_str();
   ::system(cmd.c_str());
   
+  std::vector<std::string> files=list_of<std::string>("boundary")("faces")("neighbour")("owner")("points");
+  if (include_zones)
+  {
+    files.push_back("pointZones");
+    files.push_back("faceZones");
+    files.push_back("cellZones");
+  }
   if (purify)
   {
-    BOOST_FOREACH(const std::string& fname, 
-		  list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
-		  .convert_to_container<std::vector<std::string> >())
+    BOOST_FOREACH(const std::string& fname, files)
     {
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
@@ -442,38 +447,42 @@ set::~set()
 {
 }
 
-uniformLine::uniformLine(Parameters const& p )
+line::line(Parameters const& p )
 : set(p),
   p_(p)
 {
 }
 
-void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
   OFDictData::dict sd;
-  sd["type"]="uniform";
+//   sd["type"]="uniform";
+  sd["type"]="polyLine";
   sd["axis"]="distance";
-  sd["start"]=OFDictData::vector3(p_.start());
-  sd["end"]=OFDictData::vector3(p_.end());
-  sd["nPoints"]=p_.np();
+//   sd["start"]=OFDictData::vector3(p_.start());
+//   sd["end"]=OFDictData::vector3(p_.end());
+//   sd["nPoints"]=p_.np();
+  OFDictData::list pl;
+  for (int i=0; i<p_.points().n_rows; i++)
+    pl.push_back(OFDictData::vector3(p_.points().row(i).t()));
+  sd["points"]=pl;
   
   l.push_back(p_.name());
   l.push_back(sd);
 }
 
-set* uniformLine::clone() const
+set* line::clone() const
 {
-  return new uniformLine(p_);
+  return new line(p_);
 }
 
-arma::mat uniformLine::readSamples
+arma::mat line::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-  const std::string& setName,
   ColumnDescription* coldescr
-)
+) const
 {
   arma::mat data;
   
@@ -499,7 +508,7 @@ arma::mat uniformLine::readSamples
       if ( is_regular_file(itr->status()) )
       {
         std::string fn=itr->path().filename().string();
-	if (starts_with(fn, setName+"_")) files.push_back(fn);
+	if (starts_with(fn, p_.name()+"_")) files.push_back(fn);
       }
     }
       
@@ -545,8 +554,47 @@ arma::mat uniformLine::readSamples
       data=join_cols(data, m);
   }
   
+  if (data.n_cols>0)
+  {
+    arma::mat 
+      dx=p_.points().col(0) - p_.points()(0,0), 
+      dy=p_.points().col(1) - p_.points()(0,1), 
+      dz=p_.points().col(2) - p_.points()(0,2);
+      
+    data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
+  }
+  
   return data;
   
+}
+
+
+uniformLine::uniformLine(const uniformLine::Parameters& p)
+: set(p),
+  l_
+  (
+    line::Parameters()
+      .set_name(p.name())
+      .set_points( linspace(0,1.,p.np())*(p.end()-p.start()).t() + ones(p.np(),1)*p.start().t() )
+  ),
+  p_(p)
+{
+
+}
+
+void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  l_.addIntoDictionary(ofc, sampleDict);
+}
+
+set* uniformLine::clone() const
+{
+  return new uniformLine(p_);
+}
+
+arma::mat uniformLine::readSamples(const OpenFOAMCase& ofc, const path& location, ColumnDescription* coldescr) const
+{
+  return l_.readSamples(ofc, location, coldescr);
 }
 
 
@@ -556,23 +604,27 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
 : set(p),
   p_(p)
 {
+  dir_=p_.end()-p_.start();
+  L_=norm(dir_,2);
+  dir_/=L_;
+  x_=linspace(0, L_, p_.np());
+  for (int i=0; i<p_.nc(); i++)
+  {
+    arma::mat raddir = rotMatrix(i) * dir_;
+    arma::mat pts=x_ * raddir.t();
+    
+    lines_.push_back(new line( line::Parameters().set_points(pts).set_name(setname(i)) ));
+  }
+
 }
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
-  for (int i=0; i<p_.nc(); i++)
+  BOOST_FOREACH(const line& l, lines_)
   {
-    OFDictData::dict sd;
-    sd["type"]="uniform";
-    sd["axis"]="distance";
-    sd["start"]=OFDictData::vector3(p_.start());
-    sd["end"]=OFDictData::vector3(rotMatrix(i) * p_.end());
-    sd["nPoints"]=p_.np();
-    
-    l.push_back(setname(i));
-    l.push_back(sd);
+    l.addIntoDictionary(ofc, sampleDict);
   }
 }
 
@@ -594,10 +646,11 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 {
   arma::mat data;
   ColumnDescription cd;
-  for (int i=0; i< p_.nc(); i++)
+  int i=0;
+  BOOST_FOREACH(const line& l, lines_)
   {
-    arma::mat datai = uniformLine::readSamples(ofc, location, setname(i), &cd);
-    arma::mat Ri=rotMatrix(i).t();
+    arma::mat datai = l.readSamples(ofc, location, &cd);
+    arma::mat Ri=rotMatrix(i++).t();
     
     BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
     {
@@ -643,7 +696,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
     
     //datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
     
-    if (i==0)
+    if (data.n_cols==0)
       data=datai;
     else
       data+=datai;
@@ -677,32 +730,99 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 
 
 
-linearAveragedUniformLine::linearAveragedUniformLine(Parameters const& p )
+linearAveragedPolyLine::linearAveragedPolyLine(linearAveragedPolyLine::Parameters const& p )
 : set(p),
   p_(p)
 {
-  x_=arma::linspace(0., norm(p_.end()-p_.start(),2), p_.np()); // valid for axis == distance!
-}
 
-void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
-{
-  OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  arma::mat 
+    dx=p_.points().col(0) - p_.points()(0,0), 
+    dy=p_.points().col(1) - p_.points()(0,1), 
+    dz=p_.points().col(2) - p_.points()(0,2);
+    
+  x_ = sqrt( pow(dx,2) + pow(dy,2) + pow(dz,2) );
   
   for (int i=0; i<p_.nd1(); i++)
     for (int j=0; j<p_.nd2(); j++)
     {
       arma::mat ofs = p_.dir1()*(double(i)/double(max(1,p_.nd1()-1))) + p_.dir2()*(double(j)/double(max(1,p_.nd2()-1)));
-      OFDictData::dict sd;
-      sd["type"]="uniform";
-      sd["axis"]="distance";
-      sd["start"]=OFDictData::vector3(p_.start()+ofs);
-      sd["end"]=OFDictData::vector3(p_.end()+ofs);
-      sd["nPoints"]=p_.np();
-      
-      l.push_back(setname(i, j));
-      l.push_back(sd);
+      arma::mat tp =
+	join_horiz(join_horiz( 
+	    p_.points().col(0)+ofs(0), 
+	    p_.points().col(1)+ofs(1) ), 
+	    p_.points().col(2)+ofs(2)
+	);
+      lines_.push_back(new line(line::Parameters()
+	.set_name(setname(i,j))
+	.set_points( tp )
+      ));
     }
+}
+
+void linearAveragedPolyLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+//   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
+  
+  BOOST_FOREACH(const line& l, lines_)
+  {
+    l.addIntoDictionary(ofc, sampleDict);
+  }
     
+}
+
+set* linearAveragedPolyLine::clone() const
+{
+  return new linearAveragedPolyLine(p_);
+}
+
+
+arma::mat linearAveragedPolyLine::readSamples
+(
+  const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+  ColumnDescription* coldescr
+) const
+{
+  arma::mat data;
+  
+  ColumnDescription cd;
+  BOOST_FOREACH(const line& l, lines_)
+  {
+    arma::mat ds=l.readSamples(ofc, location, &cd);
+    arma::mat datai = Interpolator(ds)(x_);
+    
+    if (data.n_cols==0)
+      data=datai;
+    else
+      data+=datai;
+  }
+  
+  if (coldescr) *coldescr=cd;
+  
+  return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
+  
+}
+
+
+
+linearAveragedUniformLine::linearAveragedUniformLine(linearAveragedUniformLine::Parameters const& p )
+: set(p),
+  pl_
+  (
+    linearAveragedPolyLine::Parameters()
+    .set_name(p.name())
+    .set_points( arma::linspace(0.0, 1.0, p.np()) * (p.end()-p.start()).t() )
+    .set_dir1(p.dir1())
+    .set_dir2(p.dir2())
+    .set_nd1(p.nd1())
+    .set_nd2(p.nd2())
+  ),
+  p_(p)
+{
+}
+
+void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
+{
+  pl_.addIntoDictionary(ofc, sampleDict);
 }
 
 set* linearAveragedUniformLine::clone() const
@@ -717,29 +837,9 @@ arma::mat linearAveragedUniformLine::readSamples
   ColumnDescription* coldescr
 ) const
 {
-  arma::mat data;
-  
-  ColumnDescription cd;
-  for (int i=0; i<p_.nd1(); i++)
-    for (int j=0; j<p_.nd2(); j++)
-    {
-      arma::mat ds=uniformLine::readSamples(ofc, location, setname(i, j), &cd);
-      //cout <<ds<<endl;
-      arma::mat datai = Interpolator(ds)(x_);
-      
-      //datai.save(p_.name()+"_linearinstance_i"+lexical_cast<string>(i)+"__j"+lexical_cast<string>(j)+".txt", arma::raw_ascii);
-      
-      if ((i==0) && (j==0))
-	data=datai;
-      else
-	data+=datai;
-    }
-  
-  if (coldescr) *coldescr=cd;
-  
-  return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
-  
+  pl_.readSamples(ofc, location, coldescr);
 }
+
 
 }
 
@@ -854,7 +954,7 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones)
 {
   TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
   if (times.size()>0)
@@ -862,7 +962,7 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
     boost::filesystem::path lastTime = times.rbegin()->second;
     
     if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-    copyPolyMesh(lastTime, location/"constant", true, ignoremissing);
+    copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
     
     BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
     {
@@ -947,6 +1047,8 @@ void runPotentialFoam
   
 }
 
+boost::mutex runPvPython_mtx;
+
 void runPvPython
 (
   const OpenFOAMCase& ofc, 
@@ -954,6 +1056,8 @@ void runPvPython
   const std::vector<std::string> pvpython_commands
 )
 {
+  boost::mutex::scoped_lock lock(runPvPython_mtx);
+  
   redi::opstream proc;  
   std::vector<string> args;
   args.push_back("--use-offscreen-rendering");
@@ -1314,7 +1418,7 @@ void currentNumericalSettingsReport
       OFDictData::dict cdict;
       std::ifstream cdf( (location/dictname).c_str() );
       readOpenFOAMDict(cdf, cdict);
-      cout<<cdict<<endl;
+//       cout<<cdict<<endl;
       
       std::ostringstream latexCode;
       latexCode<<"\\begin{verbatim}\n"
@@ -1349,22 +1453,24 @@ arma::mat viscousForceProfile
 {
   std::vector<std::string> opts;
   opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back("(viscousForce viscousForceMean)");
+  opts.push_back("-walls");
   opts.push_back("-n");
   opts.push_back(lexical_cast<string>(n));
   copy(addopts.begin(), addopts.end(), back_inserter(opts));
   
   std::vector<std::string> output;
-  cm.executeCommand(location, "viscousForceProfile", opts, &output);
+  cm.executeCommand(location, "binningProfile", opts, &output);
   
-  path pref=location/"postProcessing"/"viscousForceProfile";
+  path pref=location/"postProcessing"/"binningProfile";
   TimeDirectoryList tdl=listTimeDirectories(pref);
   path lastTimeDir=tdl.rbegin()->second;
   arma::mat vfm;
-  vfm.load( ( lastTimeDir/"viscousForceMean.dat").c_str(), arma::raw_ascii);
+  vfm.load( ( lastTimeDir/"walls_viscousForceMean.dat").c_str(), arma::raw_ascii);
   arma::mat vf;
-  vf.load( (lastTimeDir/"viscousForce.dat").c_str(), arma::raw_ascii);
+  vf.load( (lastTimeDir/"walls_viscousForce.dat").c_str(), arma::raw_ascii);
   
-  return arma::mat(join_rows(vfm, vf.col(1)));
+  return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols-1)));
 }
 
 
@@ -1404,6 +1510,170 @@ arma::mat projectedArea
   }
   
   return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(A.data(), A.size(), 1) ) );
+}
+
+arma::mat minPatchPressure
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& patch,
+  const double& Af,
+  const std::vector<std::string>& addopts
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(patch);
+  opts.push_back(str(format("%g") % Af));
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  
+  std::vector<std::string> output;
+  cm.executeCommand(location, "minPatchPressure", opts, &output);
+
+  std::vector<double> t, minp;
+  boost::regex re("^Minimum pressure at t=(.+) pmin=(.+)$");
+  BOOST_FOREACH(const std::string & line, output)
+  {
+    boost::match_results<std::string::const_iterator> what;
+    if (boost::regex_match(line, what, re))
+    {
+      t.push_back(lexical_cast<double>(what[1]));
+      minp.push_back(lexical_cast<double>(what[2]));
+    }
+  }
+  
+  return arma::mat( join_rows( arma::mat(t.data(), t.size(), 1), arma::mat(minp.data(), minp.size(), 1) ) );
+}
+
+void surfaceFeatureExtract
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& surfaceName
+)
+{
+  OFDictData::dictFile sfeDict;
+  
+  OFDictData::dict opts;
+  
+  opts["extractionMethod"]="extractFromSurface";
+  
+  OFDictData::dict coeffs;
+  coeffs["includedAngle"]=120.0;
+  coeffs["geometricTestOnly"]=true;
+  opts["extractFromSurfaceCoeffs"]=coeffs;
+  
+  opts["writeObj"]=false;
+
+  sfeDict[surfaceName]=opts;
+  
+  // then write to file
+  sfeDict.write( location / "system" / "surfaceFeatureExtractDict" );
+
+  std::vector<std::string> opt;
+//   opts.push_back("-latestTime");
+  //if (overwrite) opts.push_back("-overwrite");
+    
+  cm.executeCommand(location, "surfaceFeatureExtract", opt);
+}
+
+void extrude2DMesh
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location, 
+  const std::string& sourcePatchName,
+  std::string sourcePatchName2,
+  bool wedgeInsteadOfPrism
+)
+{  
+  
+  if (sourcePatchName2=="") sourcePatchName2=sourcePatchName;
+  OFDictData::dictFile extrDict;
+  
+  extrDict["constructFrom"]="patch";
+  extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
+  extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  extrDict["exposedPatchName"]=sourcePatchName2;
+  extrDict["flipNormals"]=false;
+  extrDict["nLayers"]=1;
+  extrDict["expansionRatio"]=1.0;
+
+  if (wedgeInsteadOfPrism)
+  {
+    extrDict["extrudeModel"]="wedge";
+    OFDictData::dict wc;
+    wc["axisPt"]=OFDictData::vector3(vec3(0,0,0));
+    wc["axis"]=OFDictData::vector3(vec3(-1,0,0));
+    wc["angle"]=5.0;
+    extrDict["wedgeCoeffs"]=wc;
+  }
+  else
+  {
+    extrDict["extrudeModel"]="linearNormal";
+    OFDictData::dict lnc;
+    lnc["thickness"]=1.0;
+    extrDict["linearNormalCoeffs"]=lnc;
+  }
+
+
+  extrDict["mergeFaces"]=false;
+  extrDict["mergeTol"]=1e-6;
+  
+  extrDict.write( location / "system" / "extrudeMeshDict" );
+
+  std::vector<std::string> opt;
+  cm.executeCommand(location, "extrudeMesh", opt);
+
+  if (!wedgeInsteadOfPrism)
+  {
+    opt.clear();
+    opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5)));
+    cm.executeCommand(location, "transformPoints", opt);
+  }
+  else
+  {
+    opt.clear();
+    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2);
+    cm.executeCommand(location, "flattenWedges", opt);
+  }
+}
+
+void rotateMesh
+(
+  const OpenFOAMCase& cm, 
+  const path& location, 
+  const string& sourcePatchName, 
+  int nc,
+  const arma::mat& axis, 
+  const arma::mat& p0  
+)
+{  
+  
+  OFDictData::dictFile extrDict;
+  
+  extrDict["constructFrom"]="patch";
+  extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
+  extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  extrDict["exposedPatchName"]=sourcePatchName;
+  extrDict["flipNormals"]=false;
+  extrDict["nLayers"]=nc;
+  extrDict["expansionRatio"]=1.0;
+
+  extrDict["extrudeModel"]="wedge";
+  OFDictData::dict wc;
+  wc["axisPt"]=OFDictData::vector3(p0);
+  wc["axis"]=OFDictData::vector3(axis);
+  wc["angle"]=360.0;
+  extrDict["wedgeCoeffs"]=wc;
+
+
+  extrDict["mergeFaces"]=true;
+  extrDict["mergeTol"]=1e-6;
+  
+  extrDict.write( location / "system" / "extrudeMeshDict" );
+
+  std::vector<std::string> opt;
+  cm.executeCommand(location, "extrudeMesh", opt);
+
 }
 
 }

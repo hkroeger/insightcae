@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "openfoamdict.h"
@@ -141,6 +142,25 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
     out << ")" << endl;
 }
 
+void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
+{
+    out<<"FoamFile"<<endl
+       <<"{"<<endl
+       <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
+       <<" format      ascii;"<<endl
+       <<" class       "+d.className+";"<<endl
+       <<" object      " << objname << ";"<<endl
+       <<"}"<<endl;
+
+    for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
+    {
+      out<< i->second;
+//       const OFDictData::data* o=&(i->second);
+      //if (!boost::get<OFDictData::dict>(o)) out<<";";
+      out << "\n";
+    }
+}
+
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName)
 {
   return (bd.find(patchName)!=bd.end());
@@ -236,7 +256,8 @@ void dict::write(std::ostream& os, int indentLevel) const
 OFDictData::dictFile::dictFile()
 : className("dictionary"),
   dictVersion(2),
-  OFversion(-1)
+  OFversion(-1),
+  isSequential(false)
 {
 }
 
@@ -249,21 +270,44 @@ void OFDictData::dictFile::write(const boost::filesystem::path& dictPath) const
   
   {
     std::ofstream f(dictPath.c_str());
-    writeOpenFOAMDict(f, *this, boost::filesystem::basename(dictPath));
+    if (isSequential)
+      writeOpenFOAMSequentialDict(f, *this, boost::filesystem::basename(dictPath));
+    else
+      writeOpenFOAMDict(f, *this, boost::filesystem::basename(dictPath));
   }
 }
 
 std::string to_OF(const arma::mat& v)
 {
-  return "("+lexical_cast<string>(v(0))+" "+lexical_cast<string>(v(1))+" "+lexical_cast<string>(v(2))+")";
+  std::string ret="(";
+  for (int i=0; i<v.n_elem; i++)
+  {
+    ret+=lexical_cast<string>(v(i));
+    if (i != (v.n_elem-1) )
+      ret+=" ";
+  }
+  ret+=")";
+  return ret;
 }
 
 OFDictData::list vector3(const arma::mat& v)
 {
-  OFDictData::list l;
-  for (int i=0; i<v.n_rows; i++)
-    l.push_back(v(i));
-  return l;
+  return vector3(v(0), v(1), v(2));
+}
+
+OFDictData::data vectorSpace(const arma::mat& v)
+{
+  if (v.n_elem==1)
+  {
+    return as_scalar(v);
+  }
+  else
+  {
+    OFDictData::list l;
+    for (int i=0; i<v.n_elem; i++)
+      l.push_back(v(i));
+    return l;
+  }
 }
 
 OFDictData::list vector3(double x, double y, double z)

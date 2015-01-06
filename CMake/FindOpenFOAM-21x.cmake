@@ -38,6 +38,9 @@ IF(OF21x_DIR)
   message(STATUS "libso link flags = "  ${OF21x_LINKLIBSO})
   message(STATUS "exe link flags = "  ${OF21x_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF21x_MPI)
+  
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF21x_FOAM_APPBIN)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF21x_FOAM_LIBBIN)
 
   macro (setup_exe_target_OF21x targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
@@ -59,6 +62,7 @@ IF(OF21x_DIR)
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF21x_FOAM_APPBIN})
   endmacro()
   
   macro (setup_lib_target_OF21x targetname sources exename includes)
@@ -74,6 +78,7 @@ IF(OF21x_DIR)
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF21x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} ${ARGN}) 
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF21x_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

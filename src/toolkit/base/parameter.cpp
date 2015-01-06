@@ -1,3 +1,22 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #include "parameter.h"
 #include "base/latextools.h"
@@ -44,6 +63,7 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 
 using namespace std;
 using namespace boost;
+using namespace boost::filesystem;
 using namespace rapidxml;
 
 namespace insight 
@@ -183,7 +203,11 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
       {
 	abspath = boost::filesystem::absolute(inputfilepath / abspath);
       }
+#if BOOST_VERSION < 104800
+#warning Conversion into canonical paths disabled!
+#else
       abspath=boost::filesystem::canonical(abspath);
+#endif
     }
     cout<<"path="<<abspath<<endl;
     value_=abspath;
@@ -198,7 +222,7 @@ DirectoryParameter::DirectoryParameter(const std::string& description)
 : PathParameter(".", description)
 {}
 
-DirectoryParameter::DirectoryParameter(boost::filesystem::path value, const std::string& description)
+DirectoryParameter::DirectoryParameter(const boost::filesystem::path& value, const std::string& description)
 : PathParameter(value, description)
 {}
 
@@ -245,7 +269,7 @@ SelectionParameter::SelectionParameter( const std::string& description)
 {
 }
 
-SelectionParameter::SelectionParameter(int value, const SelectionParameter::ItemList& items, const std::string& description)
+SelectionParameter::SelectionParameter(const int& value, const SelectionParameter::ItemList& items, const std::string& description)
 : SimpleParameter< int , IntName>(value, description),
   items_(items)
 {
@@ -476,7 +500,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       if (name=="default")
       {
 	cout<<"reading default value"<<endl;
-	defaultValue_.reset(Parameter::lookup(e->name(), ""));
+// 	defaultValue_.reset(Parameter::lookup(e->name(), ""));
 	defaultValue_->readFromNode( name, doc, *child, inputfilepath );
       }
       else
@@ -485,9 +509,9 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 	cout<<"Reading element i="<<i<<endl;
 	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
 	cout<<"now at size="<<size()<<endl;
-	Parameter* curp = Parameter::lookup(e->name(), "");
-	curp->readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
-	value_.replace(i, curp);
+// 	Parameter* curp = Parameter::lookup(e->name(), "");
+	/*curp*/value_[i].readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
+	/*value_.replace(i, curp);*/
       }
     }
   }

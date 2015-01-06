@@ -1,37 +1,22 @@
- 
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    inflowGeneratorFvPatchVectorField
-
-Description
-
-SourceFiles
-    inflowGeneratorFvPatchVectorField.C
-
-\*---------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #ifndef inflowGeneratorBaseFvPatchVectorField_H
 #define inflowGeneratorBaseFvPatchVectorField_H
@@ -50,6 +35,8 @@ SourceFiles
 #include "treeDataFace.H"
 
 #include "PatchTools.H"
+
+#include "fielddataprovider.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -245,7 +232,8 @@ protected:
     /**
      * Prescribed reynolds stress tensor
      */
-    Field<symmTensor> R_;
+//     Field<symmTensor> R_;
+    autoPtr<FieldDataProvider<symmTensor> > R_;
     
     /**
      * Prescribed length scale field
@@ -256,8 +244,6 @@ protected:
      * Prescribed excess parameter
      */
     Field<scalar> c_;
-    
-    autoPtr<tensorField> Lund_;
     
     label curTimeIndex_;
 
@@ -275,7 +261,7 @@ protected:
     mutable FaceSearcher boundaryTree_;
     
 public:
-    virtual void computeConditioningFactor();
+    virtual void computeConditioningFactor(int writeInterval=1000);
 
     //- Runtime type information
     TypeName("inflowGeneratorBase");
@@ -336,17 +322,25 @@ public:
 	);
 	
 	// Member functions
-	inline Field<vector>& Umean() { return Umean_; }
-	inline Field<symmTensor>& R() { return R_; }
-	inline Field<symmTensor>& L() { return L_; }
 	inline const Field<vector>& Umean() const { return Umean_; }
-	inline const Field<symmTensor>& R() const { return R_; }
+	inline tmp<Field<symmTensor> > R() const { return R_()(this->db().time().timeOutputValue(), patch().Cf()); }
 	inline const Field<symmTensor>& L() const { return L_; }
+	inline Field<vector>& Umean()  { return Umean_; }
+// 	inline Field<symmTensor>& R()  { return R_; }
+	inline Field<symmTensor>& L()  { return L_; }
+
+	virtual void setParameters
+	(
+	  const vectorField& umean,
+	  const symmTensorField& R,
+	  const symmTensorField& L
+	);
+
 	
 	/**
 	 * return the max edge lengths for all faces
 	 */
-	tmp<scalarField> maxEdgeLengths() const;
+	tmp<scalarField> edgeLengths(bool maxL=false) const;
 
 	inline vector averageMeanVelocity() const
 	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }

@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  Hannes Kroeger <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "openfoamanalysis.h"
@@ -169,24 +170,11 @@ void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm, const Paramete
 {
 }
 
-void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
 {
-  SolverOutputAnalyzer analyzer(*displayer);
-  
-  string solverName;
   int np=readDecomposeParDict(executionPath());
-  
-  {
-    OFDictData::dict controlDict;
-    std::ifstream cdf( (executionPath()/"system"/"controlDict").c_str() );
-    readOpenFOAMDict(cdf, controlDict);
-    solverName=controlDict.getString("application");
-  }
-
-  
   bool is_parallel = np>1;
   
-  std::cout<<"Executing application "<<solverName<<std::endl;
   path mapFromPath=p.getPath("run/mapFrom");
   
   if ((cm.OFversion()>=230) && (mapFromPath!=""))
@@ -217,9 +205,33 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   {
     cout<<"case in "<<executionPath()<<": output timestep are already there, skipping initialization."<<endl;
   }
+}
+
+void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p)
+{
+  SolverOutputAnalyzer analyzer(*displayer);
+  
+  string solverName;
+  int np=readDecomposeParDict(executionPath());
+  
+  {
+    OFDictData::dict controlDict;
+    std::ifstream cdf( (executionPath()/"system"/"controlDict").c_str() );
+    readOpenFOAMDict(cdf, controlDict);
+    solverName=controlDict.getString("application");
+  }
+
+  
+  std::cout<<"Executing application "<<solverName<<std::endl;
   
   cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
   
+}
+
+void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
+{
+  int np=readDecomposeParDict(executionPath());
+  bool is_parallel = np>1;
   if (is_parallel)
   {
     cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
@@ -293,9 +305,12 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
     
   if (!p.getBool("run/evaluateonly"))
   {
+    initializeSolverRun(runCase, p);
     runSolver(displayer, runCase, p);
   }
   
+  finalizeSolverRun(runCase, p);
+
   return evaluateResults(runCase, p);
 }
 
@@ -308,14 +323,34 @@ OpenFOAMParameterStudy::OpenFOAMParameterStudy
     const std::string& name, 
     const std::string& description, 
     const OpenFOAMAnalysis& baseAnalysis, 
-    const RangeParameterList& varp
+    const RangeParameterList& varp,
+    bool subcasesRemesh
 )
 : ParameterStudy
   (
     name, description, baseAnalysis, varp
-  )
+  ),
+  subcasesRemesh_(subcasesRemesh)
 {
 }
+
+void OpenFOAMParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+{
+  boost::filesystem::path oldmf = newp->get<PathParameter>("run/mapFrom")();
+  boost::filesystem::path newmf = "";
+  if (oldmf!="")
+  {
+    oldmf=boost::filesystem::absolute(oldmf);
+    newmf = oldmf / subcase_name;
+    if (!boost::filesystem::exists(newmf)) 
+    {
+      insight::Warning("No matching subcase exists in "+oldmf.string()+" for mapping of subcase "+subcase_name+"! Omitting.");
+      newmf="";
+    }
+  }
+  newp->get<PathParameter>("run/mapFrom")() = newmf;
+}
+
 
 ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
 {
@@ -339,6 +374,7 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
     base_case->setExecutionPath(exep);
     dir = base_case->setupExecutionEnvironment();
 
+    if (!subcasesRemesh_)
     {
       OpenFOAMCase meshCase(ofe);
       if (!meshCase.meshPresentOnDisk(dir))
@@ -349,7 +385,8 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
   }
   
   path old_lp=p.get<PathParameter>("mesh/linkmesh")();
-  p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
+  if (!subcasesRemesh_)
+    p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
   setupQueue();
   p.get<PathParameter>("mesh/linkmesh")() = old_lp;
   

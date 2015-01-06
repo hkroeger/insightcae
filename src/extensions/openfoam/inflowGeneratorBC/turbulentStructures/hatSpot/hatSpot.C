@@ -1,35 +1,22 @@
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    hatSpot
-
-Description
-
-Author
-
-\*----------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #include "hatSpot.H"
 
@@ -89,9 +76,17 @@ hatSpot::hatSpot
   epsilon_(s)
 {}
 
-hatSpot::hatSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v, const tensor& Leig,
-  label creaface)
-: turbulentStructure(r, loc, initialDelta, v, Leig, creaface),
+hatSpot::hatSpot
+(
+ BoostRandomGen& r, 
+ const vector& loc, 
+ const vector& initialDelta, 
+ const vector& v, 
+ const symmTensor& L, scalar minL,
+ label creaface,
+      const symmTensor& R
+)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
   epsilon_(pTraits<vector>::zero)
 {
 }
@@ -121,7 +116,7 @@ vector hatSpot::fluctuation(const StructureParameters& pa, const vector& x) cons
           *(1.0 - 2.0*mag(delta_x&e3)  / l3 )
           * pTraits<vector>::one;
 
-      return cmptMultiply(epsilon_, f) / sqrt( 1./81. );
+      return LundScaled ( cmptMultiply(epsilon_, f) / sqrt( 1./81. ) );
     }
   else
     return pTraits<vector>::zero;

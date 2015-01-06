@@ -336,7 +336,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 {
   if (!this->updated())
     {
-      const fvMesh& mesh(patch().boundaryMesh().mesh());
+//       const fvMesh& mesh(patch().boundaryMesh().mesh());
 
       const kOmegaSST2& rasModel 
 	= db().lookupObject<kOmegaSST2>("RASProperties");
@@ -344,8 +344,8 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
       const scalar yPlusLam = rasModel.yPlusLam(kappa_, E_);
       const scalarField& yw = rasModel.y()[patch().index()];
       
-      const scalar Cmu25 = pow(Cmu_, 0.25);
-      const scalar Cmu75 = pow(Cmu_, 0.75);
+//       const scalar Cmu25 = pow(Cmu_, 0.25);
+//       const scalar Cmu75 = pow(Cmu_, 0.75);
       
       volScalarField& G = const_cast<volScalarField&>
 	(db().lookupObject<volScalarField>(GName_));
@@ -354,7 +354,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 	(db().lookupObject<volScalarField>
 	 (dimensionedInternalField().name()));
 
-      const scalarField& k = db().lookupObject<volScalarField>(kName_);
+//       const scalarField& k = db().lookupObject<volScalarField>(kName_);
 
       const scalarField& nuw =
 	patch().lookupPatchField<volScalarField, scalar>(nuName_);

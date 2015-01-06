@@ -1,36 +1,22 @@
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    inflowGeneratorFvPatchVectorField
-
-Description
-
-SourceFiles
-    inflowGeneratorFvPatchVectorField.C
-
-\*---------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #ifndef inflowGeneratorFvPatchVectorField_H
 #define inflowGeneratorFvPatchVectorField_H
@@ -43,6 +29,8 @@ SourceFiles
 #include "hatSpot.H"
 #include "gaussianSpot.H"
 #include "decayingTurbulenceSpot.H"
+#include "decayingTurbulenceVorton.H"
+#include "anisotropicVorton.H"
 #include "SLList.H"
 
 #include "indexedOctree.H"
@@ -73,20 +61,27 @@ protected:
      */
     Field<TurbulentStructure> vortons_; 
     
-    boost::shared_ptr<scalarField> tau_;
-    boost::shared_ptr<scalarField> crTimes_;
+    /**
+     * per face: time value for next creation of a spot
+     */
+    scalarField crTimes_;
+    
+    /**
+     * per face: extension of last generated spot along the patch normal direction
+     */
+    scalarField lLalong_;
     
     /**
      * Additional parameters for the selected turbulent structure
      */
     typename TurbulentStructure::StructureParameters structureParameters_;
     
-    /**
-     * clipped length scale field
-     */
-    PtrList<ESAnalyze> esa_;
+//     /**
+//      * clipped length scale field
+//      */
+//     PtrList<ESAnalyze> esa_;
         
-    void computeTau();
+//     void computeTau();
     
     virtual void writeStateVisualization
     (  

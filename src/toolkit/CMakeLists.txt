@@ -1,3 +1,23 @@
+# 
+# This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+# Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#
+
 project(toolkit)
 #find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
@@ -22,23 +42,27 @@ install(
 
 message(STATUS ${toolkit_HEADERS})
 
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
 IF(SWIG_FOUND)
 INCLUDE(${SWIG_USE_FILE})
 FIND_PACKAGE(PythonLibs)
 INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
 SET(toolkit_INTERFACES "toolkit.i")
 SET(CMAKE_SWIG_FLAGS "")
 SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES CPLUSPLUS ON)
-SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES SWIG_FLAGS "-includeall")
+#SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES SWIG_FLAGS "-builtin")
+SWIG_ADD_MODULE(toolkit python ${toolkit_INTERFACES} ${toolkit_SOURCES})
+SWIG_LINK_LIBRARIES(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${ARMADILLO_LIBRARY} gsl dl)
+set_target_properties(${SWIG_MODULE_toolkit_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
 ENDIF()
-#SWIG_ADD_MODULE(toolkit python ${toolkit_INTERFACES} ${toolkit_SOURCES})
-#SWIG_LINK_LIBRARIES(toolkit ${PYTHON_LIBRARIES})
 
-#SET(SWIG_RUNTIME swigpyrun.h)
-#ADD_CUSTOM_COMMAND(
-#  OUTPUT ${SWIG_RUNTIME}
-#  COMMAND ${SWIG_EXECUTABLE} -python -external-runtime swigpyrun.h
-#  )
-#ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
+SET(SWIG_RUNTIME swigpyrun.h)
+ADD_CUSTOM_COMMAND(
+ OUTPUT ${SWIG_RUNTIME}
+ COMMAND ${SWIG_EXECUTABLE} -python -external-runtime swigpyrun.h
+ )
+ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
+ENDIF()
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

@@ -1,6 +1,6 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,9 +98,9 @@ public:
 
 
 OFDictData::dict diagonalSolverSetup();
-OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0);
+OFDictData::dict stdAsymmSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
 OFDictData::dict stdSymmSolverSetup(double tol=1e-7, double reltol=0.0);
-OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0);
+OFDictData::dict smoothSolverSetup(double tol=1e-7, double reltol=0.0, int minIter=0);
 OFDictData::dict GAMGSolverSetup(double tol=1e-7, double reltol=0.0);
 OFDictData::dict GAMGPCGSolverSetup(double tol=1e-7, double reltol=0.0);
 
@@ -117,6 +117,15 @@ public:
 class simpleFoamNumerics
 : public FVNumerics
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (checkResiduals, bool, true)
+    (hasCyclics, bool, false)
+  )
+
+protected:
+  Parameters p_;
+
 public:
   simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
@@ -136,6 +145,7 @@ public:
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)
+    (hasCyclics, bool, false)
   )
 
 protected:
@@ -146,6 +156,27 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class potentialFreeSurfaceFoamNumerics
+: public FVNumerics
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (nCorrectors, int, 2)
+    (nOuterCorrectors, int, 1)
+    (nNonOrthogonalCorrectors, int, 0)
+    (deltaT, double, 1.0)
+    (adjustTimeStep, bool, true)
+    (maxCo, double, 0.45)
+    (maxDeltaT, double, 1.0)
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 class simpleDyMFoamNumerics
 : public simpleFoamNumerics
@@ -169,6 +200,16 @@ class cavitatingFoamNumerics
 : public FVNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+      (solverName, std::string, "cavitatingFoam")
+      (pamb, double, 1e5)
+      (rhoamb, double, 1)
+  )
+
+protected:
+  Parameters p_;
+
+public:
   cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
@@ -178,7 +219,13 @@ public:
 class interFoamNumerics
 : public FVNumerics
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+      (implicitPressureCorrection, bool, false)
+  )
+
 protected:
+  Parameters p_;
   std::string pname_;
   std::string alphaname_;
 public:
@@ -186,6 +233,7 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   inline const std::string& pressureFieldName() const { return pname_; }
+  inline const std::string& alphaFieldName() const { return alphaname_; }
 };
 
 OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);
@@ -201,6 +249,15 @@ public:
 class interPhaseChangeFoamNumerics
 : public interFoamNumerics
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, interFoamNumerics::Parameters,
+      (solverName, std::string, "interPhaseChangeFoam")
+      (pamb, double, 1e5)
+  )
+
+protected:
+  Parameters p_;
+
 public:
   interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
@@ -246,6 +303,21 @@ public:
 };
 
 
+class magneticFoamNumerics
+: public FVNumerics
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+//     (nCorrectors, int, 2)
+//   )
+// 
+// protected:
+//   Parameters p_;
+// 
+public:
+  magneticFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
 
 }
 

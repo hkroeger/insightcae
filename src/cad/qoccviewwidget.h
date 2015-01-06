@@ -14,6 +14,7 @@
 //#define CASCADESHORTCUTKEY Qt::ControlModifier 
 #define ZOOMSHORTCUTKEY Qt::ControlModifier 
 #define PANSHORTCUTKEY Qt::ShiftModifier 
+#define ROTATESHORTCUTKEY Qt::AltModifier
 
 #define ValZWMin 1 /** For elastic bean selection */
 
@@ -124,6 +125,8 @@ protected: // methods
   virtual void mouseReleaseEvent ( QMouseEvent* e );
   virtual void mouseMoveEvent    ( QMouseEvent* e );
   virtual void wheelEvent        ( QWheelEvent* e );
+  virtual void keyPressEvent        ( QKeyEvent* e );
+  virtual void keyReleaseEvent        ( QKeyEvent* e );
   
   virtual void leaveEvent		   ( QEvent * );
   
@@ -175,7 +178,8 @@ private: // methods
     (
      Qt::MouseButtons buttons, 
      Qt::KeyboardModifiers nFlags, 
-     const QPoint point 
+     const QPoint point,
+     Qt::KeyboardModifiers curFlags
      );
   
   AIS_StatusOfPick dragEvent 

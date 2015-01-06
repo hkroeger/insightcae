@@ -81,7 +81,7 @@ try:
         return GetLookupTableForArray(arrayName, component, **p)
     
     
-    def displayContour(obj, arrayName, minV=None, maxV=None, component=0, LUTName="bluered", 
+    def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
                        title=None, barpos=[0.75, 0.25], barorient=1, arrayType='POINT_DATA'):
         disp = GetDisplayProperties(obj)
         if minV is None or maxV is None:
@@ -103,8 +103,12 @@ try:
             disp.LookupTable.VectorComponent=component
             disp.LookupTable.VectorMode="Component"
         disp.Representation = 'Surface'
-        disp.ColorArrayName=arrayName
-        disp.ColorAttributeType=arrayType
+        try:
+         disp.ColorAttributeType=arrayType
+	 disp.ColorArrayName=arrayName
+        except:
+         # ceases to exists from paraview 4.2 onwards
+         disp.ColorArrayName=(arrayType, arrayName)
            
         t=title
         if title is None:
@@ -121,6 +125,12 @@ try:
         return bar
     
     
+    def extractInterior(cbi):
+        case, blockIndices=cbi        
+        eb=ExtractBlock(Input=case, PruneOutput=1)
+        eb.BlockIndices=[1]
+        return eb
+      
     
     def extractPatches(cbi, patches):
         case, blockIndices=cbi
@@ -178,6 +188,7 @@ try:
 
 	return elev, minZ, maxZ
     
+    # @scale: viewport height will be two times the given value!
     def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()
@@ -191,7 +202,7 @@ try:
         
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
-        active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
+        #active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
 	RenderView1 = GetRenderView()
 	RenderView1.OrientationAxesVisibility = 1
 	RenderView1.CenterAxesVisibility=0

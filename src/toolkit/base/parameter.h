@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_PARAMETER_H
@@ -137,7 +138,7 @@ public:
   : Parameter(description)
   {}
 
-  SimpleParameter(T value, const std::string& description)
+  SimpleParameter(const T& value, const std::string& description)
   : Parameter(description),
     value_(value)
   {}
@@ -201,6 +202,15 @@ typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 
+#ifdef SWIG
+%template(DoubleParameter) SimpleParameter<double, DoubleName>;
+%template(IntParameter) SimpleParameter<int, IntName>;
+%template(BoolParameter) SimpleParameter<bool, BoolName>;
+%template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
+%template(StringParameter) SimpleParameter<std::string, StringName>;
+%template(PathParameter) SimpleParameter<boost::filesystem::path, PathName>;
+#endif
+
 template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const;
 
@@ -215,7 +225,7 @@ public:
   declareType("directory");
   
   DirectoryParameter(const std::string& description);
-  DirectoryParameter(boost::filesystem::path value, const std::string& description);
+  DirectoryParameter(const boost::filesystem::path& value, const std::string& description);
   virtual std::string latexRepresentation() const;
   virtual Parameter* clone() const;
   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -238,7 +248,7 @@ public:
   declareType("selection");
   
   SelectionParameter(const std::string& description);
-  SelectionParameter(int value, const ItemList& items, const std::string& description);
+  SelectionParameter(const int& value, const ItemList& items, const std::string& description);
   SelectionParameter(const std::string& key, const ItemList& items, const std::string& description);
   virtual ~SelectionParameter();
   

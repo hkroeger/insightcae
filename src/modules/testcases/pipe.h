@@ -24,7 +24,13 @@
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamcaseelements.h"
 
-namespace insight {
+
+
+
+namespace insight 
+{
+
+
   
 
 class PipeBase 
@@ -48,8 +54,8 @@ public:
   
 protected:
   std::string cycl_in_, cycl_out_;
-  double Lc_;
-  int nc_, nr_;
+  double Lc_, rbuf_;
+  int nc_, nr_, ncir_, nax_, nrbuf_;
   double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   
 public:
@@ -122,6 +128,8 @@ public:
 };
 
 
+
+
 class PipeInflow
 : public PipeBase
 {
@@ -155,6 +163,8 @@ public:
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
   
 };
+
+
 
 
 }

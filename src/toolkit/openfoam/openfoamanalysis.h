@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  Hannes Kroeger <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_OPENFOAMANALYSIS_H
@@ -65,7 +66,9 @@ public:
      */
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
     
+    virtual void initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p);
+    virtual void finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
     
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
     
@@ -76,6 +79,8 @@ public:
 class OpenFOAMParameterStudy
 : public ParameterStudy
 {
+protected:
+  bool subcasesRemesh_;
 public:
     declareType("OpenFOAM Parameter Study");
     
@@ -84,9 +89,11 @@ public:
       const std::string& name, 
       const std::string& description, 
       const OpenFOAMAnalysis& baseAnalysis, 
-      const RangeParameterList& varp
+      const RangeParameterList& varp,
+      bool subcasesRemesh=false
     );
-    
+
+    virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
 
     virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);

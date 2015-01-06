@@ -2,7 +2,16 @@ project(testcases)
 
 #find_package(OpenCasCade REQUIRED)
 
-set(testcases_SOURCES flatplatebl.cpp decayingturbulence.cpp pipe.cpp channel.cpp explicitvortex.cpp) # channel.cpp)
+set(testcases_SOURCES 
+  flatplatebl.cpp 
+  decayingturbulence.cpp 
+  pipe.cpp 
+  channel.cpp 
+  explicitvortex.cpp 
+  ercoftac_squaresection180degreebend.cpp 
+  airfoilsection.cpp
+  freeshearflow.cpp
+  )
 
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${refdata_SOURCE_DIR})

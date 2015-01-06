@@ -1,10 +1,10 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -12,8 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
@@ -22,6 +23,9 @@
 #include "boost/filesystem.hpp"
 #include "boost/assign.hpp"
 #include "openfoam/openfoamtools.h"
+#include "base/exception.h"
+#include "boost/format.hpp"
+#include "boost/regex.hpp"
 
 using namespace std;
 using namespace boost;
@@ -30,6 +34,8 @@ using namespace boost::assign;
 
 namespace insight
 {
+  
+enum trimmedMesher {sHM, cfM};
   
 namespace snappyHexMeshFeats
 {
@@ -57,6 +63,12 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   levels.push_back(p_.minLevel());
   levels.push_back(p_.maxLevel());
   castdict["level"]=levels;
+  if (p_.zoneName()!="")
+  {
+    castdict["faceZone"]=p_.zoneName();
+    castdict["cellZone"]=p_.zoneName();
+    castdict["cellZoneInside"]="inside";
+  }
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name()]=castdict;
 
   OFDictData::dict layerdict;
@@ -88,6 +100,46 @@ void Geometry::modifyFiles(const OpenFOAMCase& ofc,
 Feature* Geometry::clone() const
 {
   return new Geometry(p_);
+}
+
+PatchLayers::PatchLayers(const PatchLayers::Parameters& p)
+: p_(p)
+{
+}
+
+
+void PatchLayers::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict layerdict;
+  layerdict["nSurfaceLayers"]=p_.nLayers();
+  sHMDict.subDict("addLayersControls").subDict("layers")[p_.name()]=layerdict;
+}
+
+
+Feature* PatchLayers::clone() const
+{
+  return new PatchLayers(p_);
+}
+
+
+ExplicitFeatureCurve::ExplicitFeatureCurve( Parameters const& p )
+: p_(p)
+{
+}
+
+void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict refdict;
+  refdict["file"]=std::string("\"")+p_.fileName().c_str()+"\"";
+  refdict["level"]=p_.level();
+  sHMDict.subDict("castellatedMeshControls").addListIfNonexistent("features").push_back(refdict);
+
+}
+
+
+Feature* ExplicitFeatureCurve::clone() const
+{
+  return new ExplicitFeatureCurve(p_);
 }
 
 RefinementRegion::RefinementRegion(Parameters const& p)
@@ -158,7 +210,7 @@ void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
   castellatedCtrls["maxGlobalCells"]=10000000;
   castellatedCtrls["minRefinementCells"]=10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
-  castellatedCtrls["nCellsBetweenLevels"]=2;
+  castellatedCtrls["nCellsBetweenLevels"]=8;
   castellatedCtrls["resolveFeatureAngle"]=30.0;
   castellatedCtrls["allowFreeStandingZoneFaces"]=true;
 }
@@ -183,7 +235,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["expansionRatio"]=1.3;
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=1e-5;  
-  layerCtrls["nGrow"]=1;  
+  layerCtrls["nGrow"]=0;  
   layerCtrls["featureAngle"]=30.0;  
 
   layerCtrls["slipFeatureAngle"]=30.0;  
@@ -221,13 +273,15 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
 }
 
 
-void snappyHexMesh(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location,
-		  const OFDictData::list& PiM,
-		  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-		  snappyHexMeshOpts::Parameters const& p,
-		  bool overwrite
-		  )
+void snappyHexMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p,
+  bool overwrite
+)
 {
   using namespace snappyHexMeshFeats;
   
@@ -291,7 +345,136 @@ void snappyHexMesh(const OpenFOAMCase& ofc,
   }
   
   //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
-  ofc.executeCommand(location, "snappyHexMesh", opts, NULL, np);
+  std::vector<std::string> output;
+  ofc.executeCommand(location, "snappyHexMesh", opts, &output, np);
+
+  
+  // Check fraction of extruded faces on wall patches
+  boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
+  boost::match_results<std::string::const_iterator> what;
+  int exfaces=-1, totalfaces=-1;
+  BOOST_FOREACH(const std::string& line, output)
+  {
+    if (boost::regex_match(line, what, re_extrudedfaces))
+    {
+      //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
+      exfaces=lexical_cast<int>(what[1]);
+      totalfaces=lexical_cast<int>(what[2]);
+    }
+  }
+  if (totalfaces>=0)
+  {
+    double exfrac=double(exfaces)/double(totalfaces);
+    if (exfrac<0.9)
+    {
+      std::string msg=
+      "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
+      "Please reconsider prism layer thickness and tune number of prism layers!";
+      
+      if (p.stopOnBadPrismLayer())
+      {
+	throw insight::Exception(msg);
+      }
+      else
+	insight::Warning(msg);
+    }
+  }
+  
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
+    ofc.removeProcessorDirectories(location);
+  }
+  
+  
+  //ofc.executeCommand(location, "snappyHexMesh", opts);
+}
+
+
+
+
+void cfMesh
+(
+  const OpenFOAMCase& ofc, 
+  const boost::filesystem::path& location,
+  const OFDictData::list& PiM,
+  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
+  snappyHexMeshOpts::Parameters const& p,
+  bool overwrite
+)
+{
+  using namespace snappyHexMeshFeats;
+  
+  OFDictData::dictFile meshDict;
+  
+  // setup dict structure
+  meshDict["readTemplate"] = true; // compat with sHM
+  
+
+  BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
+  {
+    feat.modifyFiles(ofc, location);
+    feat.addIntoDictionary(meshDict);
+  }
+  
+  // then write to file
+  boost::filesystem::path dictpath = location / "system" / "meshDict";
+  if (!exists(dictpath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictpath.parent_path());
+  }
+  
+  {
+    std::ofstream f(dictpath.c_str());
+    writeOpenFOAMDict(f, meshDict, boost::filesystem::basename(dictpath));
+  }
+
+  std::vector<std::string> opts;
+//   if (overwrite) opts.push_back("-overwrite");
+        
+  int np=readDecomposeParDict(location);
+  bool is_parallel = (np>1);
+
+  if (is_parallel)
+  {
+    ofc.executeCommand(location, "decomposePar");
+  }
+  
+  //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
+  std::vector<std::string> output;
+  ofc.executeCommand(location, "cartesianMesh", opts, &output, np);
+
+  
+//   // Check fraction of extruded faces on wall patches
+//   boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
+//   boost::match_results<std::string::const_iterator> what;
+//   int exfaces=-1, totalfaces=-1;
+//   BOOST_FOREACH(const std::string& line, output)
+//   {
+//     if (boost::regex_match(line, what, re_extrudedfaces))
+//     {
+//       //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
+//       exfaces=lexical_cast<int>(what[1]);
+//       totalfaces=lexical_cast<int>(what[2]);
+//     }
+//   }
+//   if (totalfaces>=0)
+//   {
+//     double exfrac=double(exfaces)/double(totalfaces);
+//     if (exfrac<0.9)
+//     {
+//       std::string msg=
+//       "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
+//       "Please reconsider prism layer thickness and tune number of prism layers!";
+//       
+//       if (p.stopOnBadPrismLayer())
+//       {
+// 	throw insight::Exception(msg);
+//       }
+//       else
+// 	insight::Warning(msg);
+//     }
+//   }
   
   if (is_parallel)
   {

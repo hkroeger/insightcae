@@ -1,10 +1,10 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -12,8 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
@@ -74,6 +75,10 @@ ParameterSet ParameterStudy::defaultParameters() const
   return dfp;
 }
 
+void ParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+{
+  // reserved for derived classes
+}
 
 void ParameterStudy::generateInstances
 (
@@ -105,6 +110,7 @@ void ParameterStudy::generateInstances
     //append instance
     ResultSetPtr emptyresset( new ResultSet(*newp, name_, "Computation instance "+n.str()) );
     AnalysisPtr newinst(baseAnalysis_->clone());
+    modifyInstanceParameters(n.str(), newp);
     newinst->setParameters(*newp);
     path ep=executionPath()/n.str();
     newinst->setExecutionPath( ep );
@@ -210,29 +216,9 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
     const std::string& n = get<0>(ai);
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
-    /*
-    BOOST_FOREACH( const std::string& parname, varp_ )
-    {
-      double orgval=p.getDouble(parname);
-      p.replace( parname, new DoubleRangeParameter(orgval, 0, 1, p.get<DoubleParameter>(parname).description()) );
-    }
-    
-    force_data.push_back( list_of<double>
-      (h)
-      ( dynamic_cast<ScalarResult*>(&(r->at("ResultantPivotForce")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("VerticalPivotForce")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("PivotForceAngle")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("CavitationMargin")))->value()) 
-      ( dynamic_cast<ScalarResult*>(&(r->at("minDist")))->value())
-    );
-    
-    std::string newkey="heightProfile (h="+lexical_cast<std::string>(h)+")";
-    
-    results->insert(newkey, r->find("heightProfile")->second->clone() );
-    */
-    std::string key=n+", "+r->title()+" ("+r->subtitle()+")";
-    results->insert( key, r->clone() );
-    
+
+    std::string key=n/*+", "+r->title()+" ("+r->subtitle()+")"*/;
+    results->insert( key, r->clone() );    
   }
   
   return results;

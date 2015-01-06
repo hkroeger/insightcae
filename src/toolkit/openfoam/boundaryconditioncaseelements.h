@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_BOUNDARYCONDITIONCASEELEMENTS_H
@@ -33,6 +34,52 @@
 
 namespace insight 
 {
+
+
+
+
+/**
+ * Interface which wraps different types of prescribing field data on boundaries.
+ * Works together with OpenFOAM class "FieldDataProvider".
+ */
+class FieldData
+{
+public:
+  
+protected:
+  boost::shared_ptr<SelectableSubsetParameter> p_;
+  
+public:
+  /**
+   * sets all parameters for the most simple type of field data description (uniform, steady value)
+   */
+  FieldData(const arma::mat& uniformSteadyValue);
+  
+  /**
+   * takes config from a parameterset
+   */
+  FieldData(const SelectableSubsetParameter& p);
+  
+  /**
+   * returns according dictionary entry for OF
+   */
+  OFDictData::data sourceEntry() const;
+  
+  /**
+   * return some representative value of the prescribed data. 
+   * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
+   */
+  arma::mat representativeValue() const;
+  
+  /**
+   * returns a proper parameterset for this entity
+   * @reasonable_value: the number of components determines the rank of the field
+   */
+  static Parameter* defaultParameter(const arma::mat& reasonable_value);
+};
+  
+
+
 
 /*
  * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
@@ -215,16 +262,18 @@ public:
 };
 
 
+
+
 class VelocityInletBC
 : public BoundaryCondition
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (velocity, arma::mat, vec3(0,0,0))
+    (velocity, FieldData, FieldData(vec3(0,0,0)) )
     (T, double, 300.0)
     (rho, double, 1025.0)
-    (turbulenceIntensity, double, 0.05)
-    (mixingLength, double, 1.0)
+    (turbulenceIntensity, double, 0.01)
+    (mixingLength, double, 1.0e-3)
     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
   )
   
@@ -243,6 +292,39 @@ public:
   virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
+
+
+
+class ExptDataInletBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (points, arma::mat, vec3(0,0,0))
+    (velocity, arma::mat, vec3(0,0,0))
+    (TKE, arma::mat, arma::ones(1)*1e-3)
+    (epsilon, arma::mat, arma::ones(1)*1e-3)
+    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  ExptDataInletBC
+  (
+    OpenFOAMCase& c,
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
 
 class CompressibleInletBC
 : public VelocityInletBC
@@ -266,6 +348,9 @@ public:
   virtual void setField_p(OFDictData::dict& BC) const;
 };
 
+
+
+
 class TurbulentVelocityInletBC
 : public VelocityInletBC
 {
@@ -273,6 +358,7 @@ class TurbulentVelocityInletBC
 public:
   typedef arma::mat CoeffList;
   typedef boost::variant<double, CoeffList> LengthScaleProfile;
+  
   
   struct inflowInitializer
   {
@@ -290,13 +376,7 @@ public:
     static ParameterSet defaultParameters();
   };
   
-//   struct isotropicTurbulenceInflowInitializer
-//   {
-//     double Ubulk;
-//     arma::mat RMS;
-//     
-//     virtual void addToInitializerList(OFDictData::list&) const;
-//   };
+
   
   struct pipeInflowInitializer
   : public inflowInitializer
@@ -312,6 +392,7 @@ public:
     ) const;
   };
 
+  
   struct channelInflowInitializer
   : public inflowInitializer
   {
@@ -379,6 +460,19 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+
+class PotentialFreeSurfaceBC
+: public BoundaryCondition
+{
+public:
+  PotentialFreeSurfaceBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict
+  );
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
 
 
 class MeshMotionBC

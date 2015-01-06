@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "parameterset.h"
@@ -78,7 +79,16 @@ ParameterSet& ParameterSet::getSubset(const std::string& name)
   if (name==".")
     return *this;
   else
-    return this->get<SubsetParameter>(name)();
+  {
+    try
+    {
+      return this->get<SubsetParameter>(name)();
+    }
+    catch (...)
+    {
+      return this->get<SelectableSubsetParameter>(name)();
+    }
+  }
 }
 
 const ParameterSet& ParameterSet::getSubset(const std::string& name) const
@@ -86,7 +96,16 @@ const ParameterSet& ParameterSet::getSubset(const std::string& name) const
   if (name==".")
     return *this;
   else
-    return this->get<SubsetParameter>(name)();
+  {
+    try
+    {
+      return this->get<SubsetParameter>(name)();
+    }
+    catch (...)
+    {
+      return this->get<SelectableSubsetParameter>(name)();
+    }
+  }
 }
 
 std::string ParameterSet::latexRepresentation() const
@@ -247,7 +266,9 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
   if (child)
+  {
     value_->readFromNode(doc, *child, inputfilepath);
+  }
 }
 
 defineType(SelectableSubsetParameter);

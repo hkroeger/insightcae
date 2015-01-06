@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_OPENFOAMDICT_H
@@ -187,6 +188,7 @@ struct dictFile
   std::string className;
   int dictVersion;
   int OFversion;
+  bool isSequential;
   
   dictFile();
   
@@ -194,7 +196,25 @@ struct dictFile
 };
 
 std::string to_OF(const arma::mat& v);
+
+/**
+ * Return the first three elements of given vector as OFDictData::list
+ * @v: vector data. Only the first three elements are used
+ */
 OFDictData::list vector3(const arma::mat& v);
+
+/**
+ * Return the elements of given vector/matrix as OFDictData::data
+ * @v: vector/tensor data. All elements are concatened and a list is returned for more than one element. A double entry is returned for a 1x1 matrix.
+ */
+OFDictData::data vectorSpace(const arma::mat& v);
+
+/**
+ * Return a vector as OFDictData::list
+ * @x: x-component
+ * @y: y-component
+ * @z: z-component
+ */
 OFDictData::list vector3(double x, double y, double z);
 
 std::ostream& operator<<(std::ostream& os, const dimensionSet& d);
@@ -337,6 +357,8 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
 
 void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
+
+void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
 
 bool patchExists(const OFDictData::dict& bd, const std::string& patchName);
 

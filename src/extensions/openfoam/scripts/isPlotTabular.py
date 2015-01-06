@@ -13,6 +13,15 @@ import matplotlib as mpl
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option("-s", "--skip", dest="skip", metavar='NUM', default=0,
+		  type="int",
+                  help="number of rows to skip in display")
+
+(opts, args) = parser.parse_args()
+
 class Plot(wx.Panel):
     def __init__(self, parent, id = -1, dpi = None, **kwargs):
         wx.Panel.__init__(self, parent, id=id, **kwargs)
@@ -49,7 +58,7 @@ headings=[]
 
 data=np.array([
    map(float, line.replace('(', '').replace(')', '').replace(',', ' ').replace(';', ' ').replace('  ', ' ').split()) 
-   for line in lines[1:]
+   for line in lines[1+opts.skip:]
   ])
 
 app = wx.PySimpleApp()

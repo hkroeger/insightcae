@@ -1,35 +1,22 @@
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    gaussianSpot
-
-Description
-
-Author
-
-\*----------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #include "gaussianSpot.H"
 
@@ -89,9 +76,10 @@ gaussianSpot::gaussianSpot
   epsilon_(s)
 {}
 
-gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v,  const tensor& Leig,
-  label creaface)
-: turbulentStructure(r, loc, initialDelta, v, Leig, creaface),
+gaussianSpot::gaussianSpot(BoostRandomGen& r, const vector& loc, const vector& initialDelta, const vector& v,  const symmTensor& L, scalar minL,
+  label creaface,
+      const symmTensor& R)
+: turbulentStructure(r, loc, initialDelta, v, L, minL, creaface, R),
   epsilon_(pTraits<vector>::zero)
 {
 }
@@ -126,7 +114,10 @@ vector gaussianSpot::fluctuation(const StructureParameters& pa, const vector& x)
 //       if ((delta_x&e2)<0.0) f[1]*=-1.0;
 //       if ((delta_x&e3)<0.0) f[2]*=-1.0;
 
-      return cmptMultiply(epsilon_, f) / sqrt( 0.0820292 );
+      return LundScaled
+      (
+	cmptMultiply(epsilon_, f) / sqrt( 0.0820292 )
+      );
     }
   else
     return pTraits<vector>::zero;

@@ -1,3 +1,22 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #include "inflowGeneratorBaseFvPatchVectorField.H" 
 
@@ -135,7 +154,7 @@ globalPatch::globalPatch(const polyPatch& patch)
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);
 
 
-void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
+void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor(int writeInterval)
 {
 
   vectorField uMean(size(), vector::zero);
@@ -153,25 +172,25 @@ void inflowGeneratorBaseFvPatchVectorField::computeConditioningFactor()
     scalar t=dt*scalar(i-1);
     
     ProcessStepInfo info;
-    vectorField u( continueFluctuationProcess(t, &info) );
+    vectorField u=continueFluctuationProcess(t, &info);
     N_total+=info.n_generated;
     V += gSum( (-patch().Sf()&Umean()) * dt );
     
     scalar alpha = scalar(i - 1)/scalar(i);
     scalar beta = 1.0/scalar(i);
     
-    uPrime2Mean += sqr(uMean);
+//     uPrime2Mean += sqr(uMean);
     uMean = alpha*uMean + beta*u;
 //     N = alpha*N + beta*scalar(info.n_induced);
-    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) - sqr(uMean); //uMean shoudl be zero
+    uPrime2Mean = alpha*uPrime2Mean + beta*sqr(u) /*- sqr(uMean)*/; //uMean shoudl be zero
     
-    Info<<"Averages: uMean="
+    Info<<"i="<<i<<": Averages: uMean="
 	<<gSum(uMean*patch().magSf())/gSum(patch().magSf())
 	<<" \t R^2="
 	<<gSum(uPrime2Mean*patch().magSf())/gSum(patch().magSf())
 	/*<< "\t N="<<N*/<<"\t N_tot="<<N_total<<"\t V="<<V<< endl;
 		    
-    if (i%1000==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
+    if (i%writeInterval==0) writeStateVisualization(i, u, &uMean, &uPrime2Mean);
   }
   
   FatalErrorIn("computeConditioningFactor") << "STOP" << abort(FatalError);
@@ -186,7 +205,7 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(p, iF),
     ranGen_(Pstream::myProcNo()),
     Umean_(p.size(), vector::zero),
-    R_(p.size(), symmTensor::zero),
+//     R_(p.size(), symmTensor::zero),
     L_(p.size(), symmTensor::zero),
     c_(p.size(), 16),
     curTimeIndex_(-1)
@@ -204,7 +223,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     fixedValueFvPatchField<vector>(ptf, p, iF, mapper),
     ranGen_(Pstream::myProcNo()),
     Umean_(ptf.Umean_, mapper),
-    R_(ptf.R_, mapper),
+//     R_(ptf.R_, mapper),
+    R_(ptf.R_().clone()),
     L_(ptf.L_, mapper),
     c_(ptf.c_, mapper),
     curTimeIndex_(ptf.curTimeIndex_)
@@ -222,7 +242,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
     ranGen_(Pstream::myProcNo()),
     Umean_("Umean", dict, size()),
     uniformConvection_(dict.lookupOrDefault<Switch>("uniformConvection", false)),
-    R_("R", dict, size()),
+//     R_("R", dict, size()),
+    R_(FieldDataProvider<symmTensor>::New(dict.lookup("R"))),
     L_("L", dict, size()),
     c_("c", dict, size()),
     curTimeIndex_(-1)
@@ -236,7 +257,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
-  R_(ptf.R_),
+//   R_(ptf.R_),
+  R_(ptf.R_().clone()),
   L_(ptf.L_),
   c_(ptf.c_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -250,7 +272,8 @@ inflowGeneratorBaseFvPatchVectorField::inflowGeneratorBaseFvPatchVectorField
 : fixedValueFvPatchField<vector>(ptf, iF),
   ranGen_(Pstream::myProcNo()),
   Umean_(ptf.Umean_),
-  R_(ptf.R_),
+//   R_(ptf.R_),
+  R_(ptf.R_().clone()),
   L_(ptf.L_),
   c_(ptf.c_),
   curTimeIndex_(ptf.curTimeIndex_)
@@ -264,7 +287,7 @@ void inflowGeneratorBaseFvPatchVectorField::autoMap
 {
     fixedValueFvPatchField<vector>::autoMap(m);
     Umean_.autoMap(m);
-    R_.autoMap(m);
+//     R_.autoMap(m);
     L_.autoMap(m);
     c_.autoMap(m);
 }
@@ -280,16 +303,26 @@ void inflowGeneratorBaseFvPatchVectorField::rmap
     const inflowGeneratorBaseFvPatchVectorField& tiptf = 
       refCast<const inflowGeneratorBaseFvPatchVectorField >(ptf);
     Umean_.rmap(tiptf.Umean_, addr);
-    R_.rmap(tiptf.R_, addr);
+//     R_.rmap(tiptf.R_, addr);
     L_.rmap(tiptf.L_, addr);
     c_.rmap(tiptf.c_, addr);
 }
 
-
-tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::maxEdgeLengths() const
+void inflowGeneratorBaseFvPatchVectorField::setParameters(const vectorField& umean, const symmTensorField& R, const symmTensorField& L)
 {
-  tmp<scalarField> res(new scalarField(size(), 0.0));
-  scalarField& delta_max_edge = res();
+  FatalErrorIn("inflowGeneratorBaseFvPatchVectorField::setParameters()")
+  <<"yet unsupported"<<abort(FatalError);
+  
+  Umean_=umean;
+//   R_=R;
+  L_=L;
+}
+
+
+tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::edgeLengths(bool maxL) const
+{
+  tmp<scalarField> res(new scalarField(size(), maxL?0.0:GREAT));
+  scalarField& delta_edge = res();
   
   const polyPatch& ppatch = patch().patch();
 
@@ -300,7 +333,10 @@ tmp<scalarField> inflowGeneratorBaseFvPatchVectorField::maxEdgeLengths() const
     forAll(ppatch.edgeFaces()[ei], j)
     {
       label fi = ppatch.edgeFaces()[ei][j];
-      delta_max_edge[fi] = max(delta_max_edge[fi], this_edge_len);
+      if (maxL)
+	delta_edge[fi] = max(delta_edge[fi], this_edge_len);
+      else
+	delta_edge[fi] = min(delta_edge[fi], this_edge_len);
     }
   }
   
@@ -322,22 +358,6 @@ vector inflowGeneratorBaseFvPatchVectorField::randomTangentialDeflection(label f
 
 void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
 {
-
-  
-  if (!Lund_.valid())
-  {
-    tensorField LT(size(), tensor::zero);
-    
-    LT.replace(tensor::XX, sqrt(R_.component(symmTensor::XX)));
-    LT.replace(tensor::YX, R_.component(symmTensor::XY)/(SMALL+LT.component(tensor::XX)));
-    LT.replace(tensor::ZX, R_.component(symmTensor::XZ)/(SMALL+LT.component(tensor::XX)));
-    LT.replace(tensor::YY, sqrt(R_.component(symmTensor::YY)-sqr(LT.component(tensor::YX))));
-    LT.replace(tensor::ZY, (R_.component(symmTensor::YZ) - LT.component(tensor::YX)*LT.component(tensor::ZX) )/(SMALL+LT.component(tensor::YY)));
-    LT.replace(tensor::ZZ, sqrt(R_.component(symmTensor::ZZ) - sqr(LT.component(tensor::ZX))-sqr(LT.component(tensor::ZY))));
-    
-    Lund_.reset(new tensorField(LT));
-  }
-
   
   if (this->updated())
   {
@@ -348,12 +368,6 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
   {
     vectorField fluctuations=continueFluctuationProcess(this->db().time().value());
     
-    fluctuations = Lund_() & fluctuations;
-    
-    if (debug>=3)
-    { 
-      Pout<<" Lund-transf. fluct.: min/max/avg = "<<min(fluctuations)<<" / "<<max(fluctuations) << " / "<<average(fluctuations)<<endl;
-    }
     if (this->db().time().outputTime()) writeStateVisualization(0, fluctuations);
     
     vectorField turbField = Umean_ + fluctuations;
@@ -361,22 +375,9 @@ void inflowGeneratorBaseFvPatchVectorField::updateCoeffs()
     scalar meanflux = gSum(Umean_ & patch().Sf());
     scalar turbflux = gSum(turbField & patch().Sf());
     scalar rescale = meanflux/turbflux;
-//     scalar rescale=1.0;
-//     turbField.component(vector::X) = pos(turbField&patch().Sf()) * turbField.component(vector::X);
-//     scalar finalflux = gSum((rescale*turbField) & patch().Sf());
-//     Info<<meanflux<<", "<<turbflux<<", "<<finalflux<<endl;
     Info<<" Inflow generator ["<<patch().name()<<"]: scaling turbulent fluctuations by "<< rescale << " to ensure constant flux across boundary."<<endl;
-
-//     scalar meanflux = gSum(Umean_ & patch().Sf());
-//     scalar turbflux = gSum(turbField & patch().Sf());
-//     vector addvel = vector((turbflux-meanflux) / gSum(patch().magSf()), 0, 0);
-//     scalar finalflux = gSum((turbField+addvel) & patch().Sf());
-//     Info<<meanflux<<", "<<turbflux<<", "<<addvel<<", "<<finalflux<<endl;
-//     Info<<"adding velocity "<< addvel << " to ensure constant flux across boundary."<<endl;
     
-    
-    
-    fixedValueFvPatchField<vector>::operator==( turbField * rescale /*+addvel*/);
+    fixedValueFvPatchField<vector>::operator==( turbField * rescale );
     curTimeIndex_ = this->db().time().timeIndex();
   }
 
@@ -388,7 +389,7 @@ void inflowGeneratorBaseFvPatchVectorField::write(Ostream& os) const
 {
     Umean_.writeEntry("Umean", os);
     os.writeKeyword("uniformConvection") << uniformConvection_ << token::END_STATEMENT << nl;
-    R_.writeEntry("R", os);
+    R_().writeEntry("R", os);
     L_.writeEntry("L", os);
     c_.writeEntry("c", os);
         

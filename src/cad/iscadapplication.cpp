@@ -1,3 +1,23 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
 #include "iscadapplication.h"
 #include "base/exception.h"
 #include "qoccviewercontext.h"
@@ -208,6 +228,7 @@ struct Transferrer
   
   void operator()(std::string sn, insight::cad::SolidModel::Ptr sm)
   {
+    cout<<sn<<" : "<<sm.get()<<endl;
     mw_.addModelStep(sn, sm);
   }
 
@@ -309,7 +330,7 @@ public:
     (
       listWidget(), 
       "Export file name", 
-      "", "BREP file (*,brep);;STL file (*.stl)"
+      "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
     );
     if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
   }
@@ -398,7 +419,7 @@ void ISCADMainWindow::rebuildModel()
   }
 
   clearDerivedData();
-    
+    /*
   std::string code=editor_->toPlainText().toStdString();
   
   parser::model m;
@@ -415,12 +436,19 @@ void ISCADMainWindow::rebuildModel()
       parser,
       skip
   );
+  */
+    
+  std::istringstream is(editor_->toPlainText().toStdString());
+  
+  int failloc=-1;
+  parser::Model::Ptr m(new Model);
+  bool r=parseISCADModelStream(is, m, &failloc);
 
-  if (begin != end) // fail if we did not get a full match
+  if (!r) // fail if we did not get a full match
   {
     QTextCursor tmpCursor = editor_->textCursor();
     tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
-    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, int(begin-orgbegin) );
+    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
     editor_->setTextCursor(tmpCursor);
     
     statusBar()->showMessage("Model regeneration failed => Cursor moved to location where parsing stopped!");
@@ -428,11 +456,19 @@ void ISCADMainWindow::rebuildModel()
   else
   {
     statusBar()->showMessage("Model regeneration successful.");
+    
+    context_->getContext()->EraseAll();
+    m->modelstepSymbols.for_each(Transferrer(*this));
+   
+//     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
+// 	 i!=m->modelstepSymbols.end(); i++)
+// 	 {
+// 	   cout<<"inserting "<<i->first<<endl;
+// 	   this->addModelStep(i->first, i->second);
+// 	 }
+    m->scalarSymbols.for_each(Transferrer(*this));
+    m->vectorSymbols.for_each(Transferrer(*this));
   }
     
-  context_->getContext()->EraseAll();
-  parser.model_->modelstepSymbols.for_each(Transferrer(*this));
-  parser.model_->scalarSymbols.for_each(Transferrer(*this));
-  parser.model_->vectorSymbols.for_each(Transferrer(*this));
   
 }

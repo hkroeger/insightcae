@@ -1,10 +1,10 @@
 /*
- * <one line to give the program's name and a brief idea of what it does.>
- * Copyright (C) 2014  hannes <email>
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -12,8 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
 
@@ -64,6 +65,26 @@ DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni)
     m=norm(vx, 2);
   }
   vx/=m;
+  
+  cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
+}
+
+DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni, const arma::mat& up)
+: Datum(true, false, true)
+{
+  arma::mat n=ni/norm(ni,2);
+
+  arma::mat vx=cross(up, n); 
+  double m=norm(vx, 2);
+  if (m<1e-6)
+  {
+    throw insight::Exception("normal and upward direction are aligned!");
+  }
+  vx/=m;
+
+  cout<<"p0="<<p0<<endl;
+  cout<<"n="<<n<<endl;
+  cout<<"vx="<<vx<<endl;
   
   cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
 }

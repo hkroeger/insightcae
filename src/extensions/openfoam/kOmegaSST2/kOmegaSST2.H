@@ -116,8 +116,12 @@ class kOmegaSST2
 
             dimensionedScalar betaStar_;
 
+	    Switch cc_;
             dimensionedScalar a1_;
-            dimensionedScalar c1_;
+            dimensionedScalar cr1_;
+            dimensionedScalar cr2_;
+            dimensionedScalar cr3_;
+	    dimensionedScalar c1_;
 
             //- Small nut value used to avoid divide by zero
             dimensionedScalar nutSmall_;

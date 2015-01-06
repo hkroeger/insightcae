@@ -1,10 +1,43 @@
 project(insight)
 
+INCLUDE(InstallRequiredSystemLibraries)
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
+SET(CPACK_PACKAGE_NAME "insightcae")
+SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
+SET(CPACK_PACKAGE_CONTACT "hannes@kroegeronline.net")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a workbench for Computer-Aided Engineering")
+#SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ReadMe.txt")
+#SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/Copyright.txt")
+SET(CPACK_PACKAGE_VERSION_MAJOR "1")
+SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+# IF(WIN32 AND NOT UNIX)
+#   # There is a bug in NSI that does not handle full unix paths properly. Make
+#   # sure there is at least one set of four (4) backlasshes.
+#   SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
+#   SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
+#   SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
+#   SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
+#   SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
+#   SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
+#   SET(CPACK_NSIS_MODIFY_PATH ON)
+# ELSE(WIN32 AND NOT UNIX)
+#   SET(CPACK_STRIP_FILES "bin/MyExecutable")
+#   SET(CPACK_SOURCE_STRIP_FILES "")
+# ENDIF(WIN32 AND NOT UNIX)
+# SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+SET(CPACK_GENERATOR "TGZ;DEB")
+set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+INCLUDE(CPack)
+
 OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
 OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
 OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
+OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit
+and related tools (requires SWIG)" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
@@ -23,6 +56,8 @@ FIND_PACKAGE(SWIG)
 #     #-std=c++0x
 #     # Other flags
 # )
+
+SET(CMAKE_CXX_FLAGS "-fpermissive")
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"
@@ -241,6 +276,7 @@ macro(install_script NAME SCRIPTFILE)
     TARGET ${NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
+  install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin)
 endmacro(install_script)
 
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
@@ -258,6 +294,7 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     TARGET ${NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
+  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} )
 endmacro(install_shared_file)
 
 macro(install_package_script PACKAGENAME)
@@ -332,3 +369,4 @@ add_subdirectory(extensions/openfoam)
 add_subdirectory(extensions/python)
 add_subdirectory(extensions/paraview)
 add_subdirectory(extensions/code_aster)
+add_subdirectory(extensions/taskjuggler)

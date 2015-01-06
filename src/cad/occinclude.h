@@ -1,3 +1,23 @@
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
 #ifndef OCC_INCLUDE
 #define OCC_INCLUDE
 
@@ -6,19 +26,24 @@
 #include <Graphic3d_NameOfMaterial.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom_Curve.hxx>
+#include <Geom_BezierCurve.hxx>
+#include <Geom_BSplineCurve.hxx>
 #include <GeomAdaptor_Curve.hxx>
 #include <GeomAbs_CurveType.hxx>
+#include <GeomAbs_SurfaceType.hxx>
 #include <Geom2d_Curve.hxx>
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <BRepTools.hxx>
 #include <TopExp.hxx>
+#include <BRepProj_Projection.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepBuilderAPI_MakeShell.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
+#include <BRepOffsetAPI_ThruSections.hxx>
 #include <BRepOffsetAPI_Sewing.hxx>
 #include <BRepLProp_SLProps.hxx>
 #include <BRepAdaptor_Surface.hxx>
@@ -35,6 +60,8 @@
 #include <gp_Ax3.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Pln.hxx>
+#include <gp_XYZ.hxx>
+#include <gp_Vec.hxx>
 #include <gp_Elips.hxx>
 #include <gp_Circ.hxx>
 #include <TopoDS.hxx>
@@ -80,6 +107,7 @@
 #include <ShapeFix_Edge.hxx>
 #include <ShapeFix_Face.hxx>
 #include <ShapeFix_Shape.hxx>
+#include <ShapeFix_ShapeTolerance.hxx>
 #include <ShapeFix_Wireframe.hxx>
 #include <BRepMesh.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
@@ -109,6 +137,7 @@
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <BRepPrimAPI_MakeTorus.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <Precision.hxx>
 #include <BRepAlgoAPI_Common.hxx>
@@ -124,15 +153,25 @@
 #include <BRepBuilderAPI_MakeWire.hxx>
 
 #include "GC_MakePlane.hxx"
+#include "GC_MakeCircle.hxx"
 #include "GC_MakeSegment.hxx"
 #include "BRepMesh_FastDiscret.hxx"
 #include "ShapeAnalysis_Curve.hxx"
 #include "ShapeAnalysis_Surface.hxx"
 #include "GeomLProp_SLProps.hxx"
 #include "GCPnts_UniformDeflection.hxx"
+#include "gce_MakeCirc.hxx"
 
 #include "HLRBRep_Algo.hxx"
 #include "HLRBRep_HLRToShape.hxx"
+
+#include "ElCLib.hxx"
+#include "Geom_Circle.hxx"
+#include "Geom_TrimmedCurve.hxx"
+
+#include "BRepAdaptor_CompCurve.hxx"
+
+#include "GEOMAlgo_Splitter.hxx"
 
 #include <armadillo>
 

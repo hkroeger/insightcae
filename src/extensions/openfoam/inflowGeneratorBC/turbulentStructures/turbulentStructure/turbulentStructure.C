@@ -1,35 +1,22 @@
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    turbulentStructure
-
-Description
-
-Author
-
-\*----------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "turbulentStructure.H"
@@ -61,13 +48,24 @@ tensor ESAnalyze::eigenSystem(const symmTensor& L)
   arma::vec eigval;
   arma::mat eigvec;
   eig_sym(eigval, eigvec, mL);
-  //std::cout<<eigval<<eigvec<<std::endl;
+  
+  arma::uvec idx=arma::sort_index(eigval, "descend");
+ 
+//   std::cout<<"eval="<<eigval<<"evec="<<eigvec<<"diag1="<< (eigvec.t()*mL*eigvec)<<"diag2="<< (eigvec*mL*eigvec.t()) <<std::endl; // only diag1 is right!
+  
+  vector e1(eigvec.col(idx(0))(0), eigvec.col(idx(0))(1), eigvec.col(idx(0))(2));
+  vector e2(eigvec.col(idx(1))(0), eigvec.col(idx(1))(1), eigvec.col(idx(1))(2));
+  vector e3(eigvec.col(idx(2))(0), eigvec.col(idx(2))(1), eigvec.col(idx(2))(2));
+  
+  e1/=mag(e1)+SMALL;
+  e2/=mag(e2)+SMALL;
+  e3/=mag(e3)+SMALL;
   
   return tensor
   (
-   vector(eigvec.col(0)(0), eigvec.col(0)(1), eigvec.col(0)(2)) * eigval(0),
-   vector(eigvec.col(1)(0), eigvec.col(1)(1), eigvec.col(1)(2)) * eigval(1),
-   vector(eigvec.col(2)(0), eigvec.col(2)(1), eigvec.col(2)(2)) * eigval(2)
+   e1 * eigval(idx(0)),
+   e2 * eigval(idx(1)),
+   e3 * eigval(idx(2))
   );
 }
 
@@ -112,16 +110,19 @@ bool ESAnalyze::clip(scalar minL)
 
 scalar ESAnalyze::Lalong(const vector& x) const
 {
-  vector L1=c1();
-  vector L2=c2();
-  vector L3=c3();
+  return Lalong(x, c1(), c2(), c3());
+}
 
+scalar ESAnalyze::Lalong(const vector& x, const vector& L1, const vector& L2, const vector& L3)
+{
   vector e=x/mag(x);
   diagTensor Alpha(mag(L1), mag(L2), mag(L3));
   tensor Q( L1/Alpha.xx(), L2/Alpha.yy(), L3/Alpha.zz() );
   //Info<<"RES="<<(e & ((Q.T()&Alpha&Q) & e))<<endl;
   return e & (Q.T()&Alpha&Q) & e;
 }
+
+
 
 
 turbulentStructure::turbulentStructure()
@@ -131,12 +132,16 @@ turbulentStructure::turbulentStructure()
   L2_(pTraits<vector>::zero),
   L3_(pTraits<vector>::zero),
   startPoint_(pTraits<point>::zero),
-  creaFace_(-1)
+  footPoint_(pTraits<point>::zero),
+  creaFace_(-1),
+  Rp_(vector::zero),
+  er1_(pTraits<vector>::zero),
+  er2_(pTraits<vector>::zero),
+  er3_(pTraits<vector>::zero)
 {
 }
 
 turbulentStructure::turbulentStructure(Istream& is)
-: creaFace_(-1)
 {
   is >> *this;
 }
@@ -149,15 +154,37 @@ turbulentStructure::turbulentStructure
   const point& p, 
   const vector& initialDelta, 
   const vector& v, 
-  const tensor& Leig,
-  label creaface
+  const symmTensor& L, scalar minL,
+  label creaface,
+  const symmTensor& R
 )
 : velocity_(v),
   creaFace_(creaface)
 {  
-  L1_=Leig.x();
-  L2_=Leig.y();
-  L3_=Leig.z();
+  ESAnalyze es(L);
+
+  es.clip(minL);
+  L1_=es.c1();
+  L2_=es.c2();
+  L3_=es.c3();
+  
+  ESAnalyze ea(R);
+  Rp_[0]=mag(ea.c1());
+  Rp_[1]=mag(ea.c2());
+  Rp_[2]=mag(ea.c3());
+  
+  if (mag(Rp_)<SMALL)
+  {
+    er1_=vector(1,0,0);
+    er2_=vector(0,1,0);
+    er3_=vector(0,0,1);
+  }
+  else
+  {
+    er1_=ea.c1(); er1_/=SMALL+mag(er1_);
+    er2_=ea.c2(); er2_/=SMALL+mag(er2_);
+    er3_=ea.c3(); er3_/=SMALL+mag(er3_);
+  }
 
   initialPositioning(p, initialDelta);
 }
@@ -169,7 +196,12 @@ turbulentStructure::turbulentStructure(const turbulentStructure& o)
   L2_(o.L2_),
   L3_(o.L3_),
   startPoint_(o.startPoint_),
-  creaFace_(o.creaFace_)
+  footPoint_(o.footPoint_),
+  creaFace_(o.creaFace_),
+  Rp_(o.Rp_),
+  er1_(o.er1_),
+  er2_(o.er2_),
+  er3_(o.er3_)
 {
 }
 
@@ -193,7 +225,11 @@ scalar turbulentStructure::travelledDistance() const
 scalar turbulentStructure::passedThrough() const
 {
   //Info<<"dist="<<travelledDistance()<<endl<< Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_))) <<endl;
-  return travelledDistance() > Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+//   return travelledDistance() > 4.0*Foam::max(mag(L1_), Foam::max(mag(L2_), mag(L3_)));
+  vector dir=footPoint_-startPoint_;
+  dir/=SMALL+mag(dir);
+  scalar daft=(location()-footPoint_)&dir;
+  return daft > 2.0*Lalong(dir);
 }
 
 
@@ -220,8 +256,27 @@ void turbulentStructure::operator=(const turbulentStructure& rhs)
   startPoint_=rhs.startPoint_;
   footPoint_=rhs.footPoint_;
   creaFace_=rhs.creaFace_;
-  
+  Rp_=rhs.Rp_;
+  er1_=rhs.er1_;
+  er2_=rhs.er2_;
+  er3_=rhs.er3_;
+
 }
+
+tensor turbulentStructure::Lund(const symmTensor& R)
+{
+    tensor LT = tensor::zero;
+    
+    LT.xx()=R.xx();
+    LT.yx()=R.xy()/(SMALL+LT.xx());
+    LT.zx()=R.xz()/(SMALL+LT.xx());
+    LT.yy()=sqrt(R.yy()-sqr(LT.yx()));
+    LT.zy()=(R.yz() - LT.yx()*LT.zx() )/(SMALL+LT.yy());
+    LT.zz()=sqrt(R.zz() - sqr(LT.zx()) - sqr(LT.zy()));
+    
+    return LT;
+}
+
 
 Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
 {
@@ -233,12 +288,17 @@ Ostream& operator<<(Ostream& s, const turbulentStructure& ht)
   s<<ht.startPoint_<<endl;
   s<<ht.footPoint_<<endl;
   s<<ht.creaFace_<<endl;
+  s<<ht.Rp_<<endl;
+  s<<ht.er1_<<endl;
+  s<<ht.er2_<<endl;
+  s<<ht.er3_<<endl;
   return s;
 }
 
 Istream& operator>>(Istream& s, turbulentStructure& ht)
 {
-    vector loc(s);
+  s >> static_cast<point&>(ht);
+  
     vector v(s);
     vector L1(s);
     vector L2(s);
@@ -247,7 +307,11 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     point fp(s);
     label nf=readLabel(s);
     
-    ht.setLocation(loc);
+    vector Rp(s);
+    vector er1(s);
+    vector er2(s);
+    vector er3(s);
+    
     ht.velocity_=v;
     ht.L1_=L1;
     ht.L2_=L2;
@@ -255,8 +319,13 @@ Istream& operator>>(Istream& s, turbulentStructure& ht)
     ht.startPoint_=sp;
     ht.footPoint_=fp;
     ht.creaFace_=nf;
+    ht.Rp_=Rp;
+    ht.er1_=er1;
+    ht.er2_=er2;
+    ht.er3_=er3;
     
     return s;
 }
+
 
 }

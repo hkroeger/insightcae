@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_BASICCASEELEMENTS_H
@@ -345,20 +346,45 @@ public:
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
 
-class kEpsilon_RASModel
+class kEpsilonBase_RASModel
 : public RASModel
 {
 protected:
   void addFields();
   
 public:
-  declareType("kEpsilon");
+//   declareType("kEpsilon");
   
-  kEpsilon_RASModel(OpenFOAMCase& c);
-  kEpsilon_RASModel(const ConstrP& c);
+  kEpsilonBase_RASModel(OpenFOAMCase& c);
+  kEpsilonBase_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
 };
+
+
+
+
+class kEpsilon_RASModel
+: public kEpsilonBase_RASModel
+{
+public:
+  declareType("kEpsilon");
+  kEpsilon_RASModel(const ConstrP& c);
+};
+
+
+
+
+class realizablekEpsilon_RASModel
+: public kEpsilonBase_RASModel
+{
+public:
+  declareType("realizableKE");
+  realizablekEpsilon_RASModel(const ConstrP& c);
+};
+
+
+
 
 class SpalartAllmaras_RASModel
 : public RASModel

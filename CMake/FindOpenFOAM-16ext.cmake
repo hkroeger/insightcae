@@ -3,8 +3,6 @@
 #
 # OF16ext_FOUND          - system has OpenFOAM-1.6-ext installed
 
-
-
 FIND_PATH(OF16ext_DIR NAMES etc/bashrc
   HINTS
   $ENV{HOME}/OpenFOAM/OpenFOAM-1.6-ext
@@ -24,6 +22,8 @@ IF(OF16ext_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-MESQUITE_LIB_DIR OUTPUT_VARIABLE OF16ext_MESQUITE_LIB_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-PARMETIS_LIB_DIR OUTPUT_VARIABLE OF16ext_PARMETIS_LIB_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-SCOTCH_LIB_DIR OUTPUT_VARIABLE OF16ext_SCOTCH_LIB_DIR)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF16ext_FOAM_APPBIN)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_LIBBIN)
 
   set(OF16ext_LIBSRC_DIR "${OF16ext_DIR}/src")
   set(OF16ext_LIB_DIR "${OF16ext_DIR}/lib/${OF16ext_WM_OPTIONS}")
@@ -37,15 +37,6 @@ IF(OF16ext_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_MPI_LIBBIN)
 
   macro (setup_exe_target_OF16ext targetname sources exename includes)
-    #message(STATUS "target " ${targetname} ": includes=" ${includes})
-#     link_directories(${OF16ext_LIB_DIR} 
-#       ${OF16ext_FOAM_MPI_LIBBIN} 
-#       ${OF16ext_METIS_LIB_DIR} 
-#       ${OF16ext_PARMETIS_LIB_DIR}
-#       ${OF16ext_SCOTCH_LIB_DIR}
-#       ${OF16ext_MESQUITE_LIB_DIR}
-#       )
-    #SET(LIB_SEARCHFLAGS "-L${OF16ext_LIB_DIR} -L${OF16ext_FOAM_MPI_LIBBIN} -L${OF16ext_METIS_LIB_DIR} -L${OF16ext_PARMETIS_LIB_DIR} -L${OF16ext_SCOTCH_LIB_DIR} -L${OF16ext_MESQUITE_LIB_DIR}")
     add_executable(${targetname} ${sources})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
@@ -59,21 +50,14 @@ IF(OF16ext_DIR)
       ${OF16ext_PARMETIS_LIB_DIR}/libparmetis.so
       ${OF16ext_SCOTCH_LIB_DIR}/libscotch.so
       ${OF16ext_MESQUITE_LIB_DIR}/libmesquite.so
-      ${ARGN}) 
+      ${ARGN})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF16ext_FOAM_APPBIN})
   endmacro()
   
   macro (setup_lib_target_OF16ext targetname sources exename includes)
-    #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
     
     SET(LIB_SEARCHFLAGS "-L${OF16ext_LIB_DIR} -L${OF16ext_FOAM_MPI_LIBBIN} -L${OF16ext_METIS_LIB_DIR} -L${OF16ext_PARMETIS_LIB_DIR} -L${OF16ext_SCOTCH_LIB_DIR} -L${OF16ext_MESQUITE_LIB_DIR}")
-#     link_directories(${OF16ext_LIB_DIR} 
-#       ${OF16ext_FOAM_MPI_LIBBIN} 
-#       ${OF16ext_METIS_LIB_DIR} 
-#       ${OF16ext_PARMETIS_LIB_DIR}
-#       ${OF16ext_SCOTCH_LIB_DIR}
-#       ${OF16ext_MESQUITE_LIB_DIR}
-#       )
     add_library(${targetname} SHARED ${sources})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
@@ -81,6 +65,7 @@ IF(OF16ext_DIR)
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-1.6-ext)
     target_link_libraries(${targetname} ${ARGN}) 
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

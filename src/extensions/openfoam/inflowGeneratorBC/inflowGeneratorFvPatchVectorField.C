@@ -1,42 +1,22 @@
-/*---------------------------------------------------------------------------*\
-  =========                 |
-  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
-   \\    /   O peration     |
-    \\  /    A nd           | Copyright held by original author
-     \\/     M anipulation  |
--------------------------------------------------------------------------------
-License
-    This file is part of OpenFOAM.
-
-    OpenFOAM is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the
-    Free Software Foundation; either version 2 of the License, or (at your
-    option) any later version.
-
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-
-Class
-    inflowGeneratorFvPatchVectorField
-
-Description
-    Generates turbulent fluctuations using Nikolai Kornev's method of turbulent 
-    spots.
-
-    Parallelisation is archieved by holding the vorton list on the master
-    processor and distribute the modified list on each timestep to all
-    slave processors.
-
-SourceFiles
-
-
-\*---------------------------------------------------------------------------*/
+/*
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 #include "inflowGeneratorFvPatchVectorField.H"
 #include "transform.H"
@@ -256,8 +236,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 :
     inflowGeneratorBaseFvPatchVectorField(ptf, p, iF, mapper),
     vortons_(filterVortons(ptf, mapper, ptf.vortons_)),
-    tau_(ptf.tau_?new scalarField(*(ptf.tau_), mapper):NULL),
-    crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_), mapper):NULL),
+    crTimes_(ptf.crTimes_, mapper),
+    lLalong_(ptf.lLalong_, mapper),
     structureParameters_(ptf.structureParameters_)
 {
 }
@@ -271,6 +251,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 :
     inflowGeneratorBaseFvPatchVectorField(p, iF, dict),
+    crTimes_(this->size(), this->db().time().value()),
+    lLalong_(this->size(), -1.0),
     structureParameters_(dict)
 {
     if (dict.found("vortons"))
@@ -280,11 +262,20 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
     }
     if (dict.found("crTimes"))
     {
-      crTimes_.reset
+      crTimes_=scalarField
       (
-	new scalarField("crTimes", 
-			dict, 
-			this->size())
+	"crTimes", 
+	dict, 
+	this->size()
+      );
+    }
+    if (dict.found("lLalong"))
+    {
+      crTimes_=scalarField
+      (
+	"lLalong", 
+	dict, 
+	this->size()
       );
     }
 }
@@ -296,8 +287,9 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 : inflowGeneratorBaseFvPatchVectorField(ptf),
   vortons_(ptf.vortons_),
-  tau_(ptf.tau_?new scalarField(*(ptf.tau_)):NULL),
-  crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_)):NULL),
+//   tau_(ptf.tau_?new scalarField(*(ptf.tau_)):NULL),
+  crTimes_(ptf.crTimes_),
+  lLalong_(ptf.lLalong_),
   structureParameters_(ptf.structureParameters_)
 {}
 
@@ -309,8 +301,8 @@ inflowGeneratorFvPatchVectorField<TurbulentStructure>::inflowGeneratorFvPatchVec
 )
 : inflowGeneratorBaseFvPatchVectorField(ptf, iF),
   vortons_(ptf.vortons_),
-  tau_(ptf.tau_?new scalarField(*(ptf.tau_)):NULL),
-  crTimes_(ptf.crTimes_?new scalarField(*(ptf.crTimes_)):NULL),
+  crTimes_(ptf.crTimes_),
+  lLalong_(ptf.lLalong_),
   structureParameters_(ptf.structureParameters_)
 {}
 
@@ -325,8 +317,9 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::autoMap
 )
 {
     inflowGeneratorBaseFvPatchVectorField::autoMap(m);
-    if (tau_) tau_->autoMap(m);
-    if (crTimes_) crTimes_->autoMap(m);
+//     if (tau_) tau_->autoMap(m);
+    crTimes_.autoMap(m);
+    lLalong_.autoMap(m);
     structureParameters_.autoMap(m);
 }
 
@@ -360,17 +353,19 @@ void inflowGeneratorFvPatchVectorField<TurbulentStructure>::rmap
       if (debug) Info<<"Vorton list now at size "<<vortons_.size()<<endl;
     }
       
-    if (tiptf.tau_)
-    {
-      if (!tau_) tau_.reset(new scalarField(size(), 0.0));
-      tau_->rmap(*(tiptf.tau_), addr);
-    }
+//     if (tiptf.tau_)
+//     {
+//       if (!tau_) tau_.reset(new scalarField(size(), 0.0));
+//       tau_->rmap(*(tiptf.tau_), addr);
+//     }
     
-    if (tiptf.crTimes_) 
-    {
-      if (!crTimes_) crTimes_.reset(new scalarField(size(), 0.0));
-      crTimes_->rmap(*(tiptf.crTimes_), addr);
-    }
+//     if (tiptf.crTimes_) 
+//     {
+//       if (!crTimes_) crTimes_.reset(new scalarField(size(), 0.0));
+//       crTimes_->rmap(*(tiptf.crTimes_), addr);
+//     }
+    crTimes_.rmap(tiptf.crTimes_, addr);
+    lLalong_.rmap(tiptf.lLalong_, addr);
     
     structureParameters_.rmap(ptf, addr);
 }
@@ -407,82 +402,39 @@ point inflowGeneratorFvPatchVectorField<TurbulentStructure>::randomFacePosition(
   return pts[t[0]]*u + pts[t[1]]*v + pts[t[2]]*(1.-u-v); // compute location from u and v
 }
 
-template<class TurbulentStructure>
-void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
-{
-  tau_.reset(new scalarField(size(), 0.0));
-  
-  vector Umean=vector::zero;
-  if (uniformConvection_) Umean=averageMeanVelocity();
-  
-  forAll(*this, fi)
-  {
-    if (!uniformConvection_) Umean=Umean_[fi];
-    
-    // get (already clipped) length scales
-    scalar L1=mag(esa_[fi].c1()), L2=mag(esa_[fi].c2()), L3=mag(esa_[fi].c3());
-    
-    (*tau_)[fi] = L1*L2*L3 / (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
-  }
-
-  Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
-  Info<<"Max spots per timestep: "<<(this->db().time().deltaTValue() / min(*tau_))<<endl;
-}
+// template<class TurbulentStructure>
+// void inflowGeneratorFvPatchVectorField<TurbulentStructure>::computeTau()
+// {
+//   tau_.reset(new scalarField(size(), 0.0));
+//   
+//   vector Umean=vector::zero;
+//   if (uniformConvection_) Umean=averageMeanVelocity();
+//   
+//   forAll(*this, fi)
+//   {
+//     if (!uniformConvection_) Umean=Umean_[fi];
+//     
+//     // get (already clipped) length scales
+//     scalar L1=mag(esa_[fi].c1()), L2=mag(esa_[fi].c2()), L3=mag(esa_[fi].c3());
+//     
+//     (*tau_)[fi] = L1*L2*L3 / (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+//   }
+// 
+//   Info<<"Average tau = "<<average(*tau_)<<" / min="<<min(*tau_)<<" / max="<<max(*tau_)<<endl;
+//   Info<<"Max spots per timestep: "<<(this->db().time().deltaTValue() / min(*tau_))<<endl;
+// }
 
 
 
 template<class TurbulentStructure>
 tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continueFluctuationProcess(scalar t, ProcessStepInfo *info)
 {
-
-  {
-    label nclip1=0;
-    bool init_needed=false;
-    
-    if (size() != esa_.size())
-    {
-      scalarField maxEdgeL(maxEdgeLengths());
-      
-      esa_.setSize(size());
-      forAll(*this, fi)
-      {
-	scalar minL=2.*maxEdgeL[fi];
-	esa_.set(fi, new ESAnalyze(L_[fi]));
-	if (esa_[fi].clip(minL)) nclip1++;	
-      }
-      init_needed=true;
-    }
-    
-    reduce(init_needed, orOp<bool>());
-    
-    if (init_needed)
-    {
-      reduce(nclip1, sumOp<label>());
-      
-      if (nclip1)
-	Info<<" Inflow generator ["<<patch().name()<<"]: Extended local length scale to minimum length "<<nclip1<<" time(s)."<<endl;
-    }
-  }
-
-
-  if (!tau_.get())
-  {
-    computeTau();
-  }
   
   if (!globalPatch_.valid())
   {
     globalPatch_.reset(new globalPatch(this->patch().patch()));
   }
-  
-  if (!crTimes_.get())
-  {
-    Info<<"reset crTimes"<<endl;
-    crTimes_.reset(new scalarField(size(), this->db().time().value()));
-    scalar rnum=ranGen_();
-    forAll((*crTimes_), fi)
-      (*crTimes_)[fi] += (1.0 - 2.0*rnum)*(*tau_)[fi];
-  }
+
   
   /**
     * ==================== Generation of new turbulent structures ========================
@@ -501,48 +453,88 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   vector Umean;
   if (uniformConvection_) Umean=averageMeanVelocity();
   
+  scalarField edgeL(edgeLengths(false));
+//   Info<<"minEdgel="<<min(edgeL)<<endl;
+      
+  symmTensorField Rc=R();
+  scalar maxR=max(mag(Rc));
+  
   forAll(*this, fi)
   {
-    vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
-    
-    scalar Lalong=esa_[fi].Lalong(in_dir);
-    
-    if (!uniformConvection_) Umean=Umean_[fi];
-    
-    if ((Umean&in_dir) < SMALL)
+    if (mag(Rc[fi])>1e-3*maxR)
     {
-      Umean += in_dir*(-(Umean&in_dir)+SMALL);
-      nclip2++;
-    }
-    
-    scalar horiz = t + 0.5*Lalong/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+      vector in_dir = -patch().Sf()[fi]/patch().magSf()[fi];
+      
+  //     scalar Lalong=esa_[fi].Lalong(in_dir);
+      
+      if (!uniformConvection_) Umean=Umean_[fi];
+      
+      if ((Umean&in_dir) < SMALL)
+      {
+	Umean += in_dir*(-(Umean&in_dir)+SMALL);
+	nclip2++;
+      }
+      
+      scalar horiz = t + max(0.0, lLalong_[fi])/(SMALL+mag(Umean)) + this->db().time().deltaT().value();
+  //     scalar Lhoriz = mag(Umean) * this->db().time().deltaT().value();
 
-      // if creation time is within the current time step then create structure now
-//       if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
-    
-    while ( (horiz - (*crTimes_)[fi]) > /*dt*/ 0.0 )
-    {
-      point pf = randomFacePosition(fi); ;
+	// if creation time is within the current time step then create structure now
+  //       if (debug>=2) Info<<fi<<" cf="<<patch().Cf()[fi]<<" : umean="<<Umean<<"/L="<<L_[fi]<<" Ldiag="<<L<<" Lmax="<<Lmax<<" "<<flush;
       
-      TurbulentStructure snew(ranGen_, pf, -Umean*( (*crTimes_)[fi] - t ), Umean, esa_[fi].Leig(), fi);
-      snew.randomize(ranGen_);
+      while ( (horiz - crTimes_[fi]) > /*dt*/ 0.0 )
+  //     while ( Lahead[fi] < Lhoriz )
+      {
+	point pf = randomFacePosition(fi); ;
+	
+	scalar minL=edgeL[fi]/2.;
+
+	TurbulentStructure snew
+	(
+	  ranGen_, 
+	  pf, 
+	  -Umean*( crTimes_[fi] - t ), 
+	  Umean, 
+	  L_[fi], minL,
+	  fi,
+	  Rc[fi]
+	);
+	
+	bool isFirstDummy=(lLalong_[fi]<0.0);
+	
+	lLalong_[fi]=max(minL, snew.Lalong( patch().nf()()[fi] ));
+	
+	snew.randomize(ranGen_);
+	
+	if (isFirstDummy)
+	{
+	  crTimes_[fi]=t;
+	}
+	else
+	{
+	
+	  if (!snew.noFluctuation())
+	  {
+	    // append new structure to the end of the list
+	    vortons_.resize(vortons_.size()+1);
+	    vortons_[vortons_.size()-1]=snew;
+
+	    if (debug>=2) Info<<"."<<pf<<" "<<flush;
+	    n_generated++;
+	  }
+	}
+	
+	scalar rnum=ranGen_();
+	scalar tau=snew.vol(minL)/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+	crTimes_[fi] += 2.0*rnum*tau/*(*tau_)[fi]*/;
+	
+	//Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
+      }
       
-      // append new structure to the end of the list
-      vortons_.resize(vortons_.size()+1);
-      vortons_[vortons_.size()-1]=snew;
-      
-      if (debug>=2) Info<<"."<<pf<<" "<<flush;
-      n_generated++;
-      
-      scalar rnum=ranGen_();
-      (*crTimes_)[fi] += 2.0*rnum*(*tau_)[fi];
-      
-      //Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
+      if (debug>=2) Info<<endl;
     }
-    
-    if (debug>=2) Info<<endl;
   }
   
+
   reduce(nclip2, sumOp<label>());
   
   if (nclip2)
@@ -603,7 +595,6 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       "globalPatch_globalizedFluctuations", 
       globalPatch_().points(), 
       globalPatch_(),
-      
       "u",
       gfluc,
       false,
@@ -671,10 +662,8 @@ template<class TurbulentStructure>
 void inflowGeneratorFvPatchVectorField<TurbulentStructure>::write(Ostream& os) const
 {
     structureParameters_.write(os);
-    if (crTimes_.get())
-    {
-        crTimes_->writeEntry("crTimes", os);
-    }
+    crTimes_.writeEntry("crTimes", os);
+    lLalong_.writeEntry("lLalong", os);
     os.writeKeyword("vortons") << vortons_ << token::END_STATEMENT <<nl;
     
     inflowGeneratorBaseFvPatchVectorField::write(os);

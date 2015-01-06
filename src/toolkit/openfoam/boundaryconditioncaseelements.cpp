@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #include "boundaryconditioncaseelements.h"
@@ -36,6 +37,162 @@ using namespace boost::fusion;
 
 namespace insight
 {
+
+FieldData::FieldData(const arma::mat& uniformSteadyValue)
+: p_(defaultParameter(uniformSteadyValue))
+{
+}
+  
+FieldData::FieldData(const SelectableSubsetParameter& p)
+: p_(p.clone())
+{
+}
+
+
+OFDictData::data FieldData::sourceEntry() const
+{
+  std::ostringstream os;
+  
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    os<<type<<" unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(inst().getVector("value"));
+    }
+  } 
+  else if (type=="linearProfile")
+  {
+    throw insight::Exception("not yet implemented: "+type);
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+  }
+  
+  return os.str();
+}
+
+
+arma::mat FieldData::representativeValue() const
+{
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    arma::mat meanv;
+    int s=0;
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      //os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(
+      arma::mat cv=inst().getVector("value");
+      if (meanv.n_elem==0) meanv=cv; else meanv+=cv;
+    }
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    meanv/=double(s);
+    return meanv;
+  } 
+  else if (type=="linearProfile")
+  {
+    throw insight::Exception("not yet implemented: "+type);
+    return arma::mat();
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+    return arma::mat();
+  }
+}
+
+
+
+Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value)
+{
+  return 
+    new SelectableSubsetParameter
+    (
+      "uniform", 
+      list_of<SelectableSubsetParameter::SingleSubset>
+
+	(
+	  "uniform", new ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("values", new ArrayParameter
+	      (
+		SubsetParameter
+		(
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",	new DoubleParameter(0.0, "time instant"))
+		      ("value",	new VectorParameter(reasonable_value, "value components"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		), 
+		1, 
+		"Temporal sampling points. Create one single instant at arbitrary time for the steady case."
+	      )
+	    )
+	    .convert_to_container<ParameterSet::EntryList>()
+	  )
+	)
+
+	(
+	  "linearProfile", new ParameterSet
+	  (
+	      boost::assign::list_of<ParameterSet::SingleEntry>
+	      ("values", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",		new DoubleParameter(0.0, "time instant"))
+		      ("profile",	new PathParameter("", "text file with profile data. First column shall contain sampling coordinate."))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		  ), 
+		  1, 
+		  "Temporal sampling points"
+		))
+	      ("cmap", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("column",	new IntParameter(0, "column in profile data"))
+		      ("component",	new IntParameter(0, "corresponding component in value"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Mapping of a column"
+		  ), 
+		  1, 
+		  "Profile data column mapping"
+		))
+	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
+	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
+	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
+	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
+	      .convert_to_container<ParameterSet::EntryList>()
+	    )
+	  )
+	,
+	  "Origin of the prescribed value"
+    );
+}
+
 
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
@@ -65,10 +222,13 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.addListIfNonexistent("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
+
   addIntoFieldDictionaries(dictionaries);
+  
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
-  
   insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
 }
 
@@ -143,7 +303,8 @@ SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictDa
 : BoundaryCondition(c, patchName, boundaryDict),
   className_(className)
 {
-  type_=className;
+  if ( (OFversion()>=230) && (className_=="symmetryPlane")) className_="symmetry";
+  type_=className_;
 }
 
 void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -159,7 +320,6 @@ void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
     {
       std::string tname=className_;
-      //if ( (OFversion()>=230) && (tname=="symmetryPlane")) tname="symmetry";
       BC["type"]=OFDictData::data(tname);
     }
   }
@@ -272,6 +432,7 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
     bndDict["type"]="cyclicAMI";
     bndDict["neighbourPatch"]= p_.shadowPatch();
     bndDict["matchTolerance"]= 0.001;
+    bndDict["lowWeightCorrection"]=0.1;
     //bndDict["transform"]= "rotational";    
   }
   else
@@ -326,6 +487,7 @@ void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
     bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre());
     bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
     bndDict["rotationAngle"]=p_.rotationAngle();
+    bndDict["lowWeightCorrection"]=0.1;
   }
   else
   {
@@ -515,11 +677,14 @@ void VelocityInletBC::setField_p(OFDictData::dict& BC) const
 
 void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=OFDictData::data("fixedValue");
-  BC["value"]=OFDictData::data("uniform ( "
-    +lexical_cast<std::string>(p_.velocity()(0))+" "
-    +lexical_cast<std::string>(p_.velocity()(1))+" "
-    +lexical_cast<std::string>(p_.velocity()(2))+" )");
+//   BC["type"]=OFDictData::data("fixedValue");
+//   BC["value"]=OFDictData::data("uniform ( "
+//     +lexical_cast<std::string>(p_.velocity()(0))+" "
+//     +lexical_cast<std::string>(p_.velocity()(1))+" "
+//     +lexical_cast<std::string>(p_.velocity()(2))+" )");
+  BC["type"]=OFDictData::data("extendedFixedValue");
+  BC["source"]=p_.velocity().sourceEntry();
+  BC["value"]=OFDictData::data( "uniform " + OFDictData::to_OF(vec3(0,0,0)) );
 }
 
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -572,22 +737,22 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=3.*pow(uprime, 2)/2.;
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
+      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(k);
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=3.*pow(uprime, 2)/2.;
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
+      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
       double omega=sqrt(k)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(omega);
     }
     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
+      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity().representativeValue(), 2);
       double k=3.*pow(uprime, 2)/2.;
       double epsilon=0.09*pow(k, 1.5)/p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
@@ -601,7 +766,7 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
     {
-      double nutilda=sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
+      double nutilda=sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity().representativeValue(), 2) * p_.mixingLength();
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]="uniform "+lexical_cast<string>(nutilda);
     }
@@ -624,6 +789,176 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
   }
 }
+
+
+ExptDataInletBC::ExptDataInletBC
+(
+  OpenFOAMCase& c, 
+  const string& patchName, 
+  const OFDictData::dict& boundaryDict,
+  const ExptDataInletBC::Parameters& p
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const
+{
+  OFDictData::dictFile& Udict=dictionaries.addDictionaryIfNonexistent(prefix+"/0/"+fieldname);
+  Udict.isSequential=true;
+  
+  if (data.n_cols==1)
+    Udict["a"]=0.0;
+  else if (data.n_cols==3)
+    Udict["a"]=OFDictData::vector3(vec3(0,0,0));
+  else
+    throw insight::Exception("Unhandled number of components: "+lexical_cast<std::string>(data.n_cols));
+  
+  OFDictData::list vals;
+  for (int r=0; r<data.n_rows; r++)
+  {
+    if (data.n_cols==1)
+      vals.push_back(data(r));
+    else if (data.n_cols==3)
+      vals.push_back(OFDictData::vector3(data.row(r).t()));
+  }
+  Udict["b"]=vals;
+}
+
+void ExptDataInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
+  
+  std::string prefix="constant/boundaryData/"+patchName_;
+  
+  OFDictData::dictFile& ptsdict=dictionaries.addDictionaryIfNonexistent(prefix+"/points");
+  ptsdict.isSequential=true;
+  OFDictData::list pts;
+  const arma::mat& ptdat=p_.points();
+  for (int r=0; r<ptdat.n_rows; r++)
+    pts.push_back(OFDictData::vector3(ptdat.row(r).t()));
+  ptsdict["a"]=pts;
+  
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+      
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
+      BC["offset"]=OFDictData::vector3(vec3(0,0,0));
+      BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
+      
+//       OFDictData::dictFile& Udict=dictionaries.addDictionaryIfNonexistent(prefix+"/0/U");
+//       Udict.isSequential=true;
+//       Udict["a"]=OFDictData::vector3(vec3(0,0,0));
+//       
+//       OFDictData::list vals;
+//       const arma::mat& Udat=p_.velocity();
+//       cout<<Udat<<endl;
+//       for (int r=0; r<Udat.n_rows; r++)
+// 	vals.push_back(OFDictData::vector3(Udat.row(r).t()));
+//       Udict["b"]=vals;
+      addDataDict(dictionaries, prefix, "U", p_.velocity());
+    }
+    
+    else if ( 
+      (field.first=="p") && (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+//     else if ( 
+//       (field.first=="T") 
+//       && 
+//       (get<0>(field.second)==scalarField) 
+//     )
+//     {
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]="uniform "+lexical_cast<string>(p_.T());
+//     }    
+    else if ( 
+      ( (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      if (OFversion()>=210)
+	BC["type"]=OFDictData::data("fixedFluxPressure");
+      else
+	BC["type"]=OFDictData::data("buoyantPressure");
+//       BC["type"]=OFDictData::data("calculated");
+//       BC["value"]=OFDictData::data("uniform 0");
+    }
+    
+//     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+//     {
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+//     }
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
+      BC["offset"]=0.0;
+      BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
+      addDataDict(dictionaries, prefix, "k", p_.TKE());
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
+      BC["offset"]=0.0;
+      BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
+      addDataDict(dictionaries, prefix, "omega", p_.epsilon()/(0.09*p_.TKE()));
+    }
+    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
+      BC["offset"]=0.0;
+      BC["setAverage"]=false;
+      BC["perturb"]=1e-3;
+      addDataDict(dictionaries, prefix, "epsilon", p_.epsilon());
+    }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      double nutilda=1e-10; //sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(nutilda);
+    }
+//     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
+//     {
+//       BC["type"]=OFDictData::data("timeVaryingMappedFixedValue");
+//       BC["offset"]=0.0;
+//       BC["setAverage"]=false;
+// //       addDataDict(dictionaries, prefix, "nuTilda", p_.epsilon());
+//     }
+    else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ))
+	{
+	  BC["type"]=OFDictData::data("zeroGradient");
+	}
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+    }
+  }
+}
+
+
 
 CompressibleInletBC::CompressibleInletBC
 (
@@ -950,7 +1285,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
   BC["type"]=p_.type();
-  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
+  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity().representativeValue());
   
   BC["c"]="uniform "+str( format("%g") % p_.volexcess());
   double L=p_.mixingLength();
@@ -959,7 +1294,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
     +lexical_cast<string>(L)+" 0 "
     +lexical_cast<string>(L)+" )";
 
-  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity(),2), 2);
+  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity().representativeValue(),2), 2);
   BC["R"]="uniform ( "
     +lexical_cast<string>(R)+" 0 0 "
     +lexical_cast<string>(R)+" 0 "
@@ -968,7 +1303,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   if (p_.uniformConvection())
     BC["uniformConvection"]=true;
 
-  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity());
+  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity().representativeValue());
 }
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -999,6 +1334,8 @@ ParameterSet TurbulentVelocityInletBC::defaultParameters()
 			    ("inflowGenerator<hatSpot>")
 			    ("inflowGenerator<gaussianSpot>")
 			    ("inflowGenerator<decayingTurbulenceSpot>")
+			    ("inflowGenerator<decayingTurbulenceVorton>")
+			    ("inflowGenerator<anisotropicVorton>")
 			    ("modalTurbulence")
 			    , 
 		      "Type of inflow generator"))
@@ -1026,7 +1363,7 @@ void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& locat
     
     initializers.push_back( p_.initializer()->type() );
     OFDictData::dict d;
-    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity(), iniparams);
+    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity().representativeValue(), iniparams);
     initializers.push_back(d);
     
     // then write to file
@@ -1100,6 +1437,89 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     {
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if 
+    (
+      (
+	(field.first=="k") ||
+	(field.first=="epsilon") ||
+	(field.first=="omega") ||
+	(field.first=="nut") ||
+	(field.first=="nuSgs") ||
+	(field.first=="nuTilda")
+      )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+/*	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
+	  ))
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+	{
+	  BC["type"]=OFDictData::data("zeroGradient");
+	}
+	  
+    }
+  }
+}
+
+PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict
+)
+: BoundaryCondition(c, patchName, boundaryDict)
+{
+}
+
+void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  //p_.phasefractions()->addIntoDictionaries(dictionaries);
+
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+      
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("pressureInletOutletParSlipVelocity");
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]="zeroGradient";
+    }
+    else if ( 
+      ( (field.first=="p_gh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+	BC["type"]=OFDictData::data("waveSurfacePressure");
+	BC["value"]=OFDictData::data("uniform 0");
+    }
+    else if ( 
+      ( (field.first=="p") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+	BC["type"]=OFDictData::data("zeroGradient");
+	//BC["value"]=OFDictData::data("uniform 0");
     }
     else if 
     (

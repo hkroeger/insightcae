@@ -1,21 +1,22 @@
 /*
-    <one line to give the library's name and an idea of what it does.>
-    Copyright (C) 2013  hannes <email>
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-*/
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
 
 
 #ifndef INSIGHT_PARAMETERSET_H
@@ -81,7 +82,7 @@ public:
 	else
 	{
 	  typedef T PT;
-	  PT* const pt=static_cast<PT* const>(i->second);
+	  PT* const pt=dynamic_cast<PT* const>(i->second);
 	  if (!pt)
 	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else
@@ -114,7 +115,7 @@ public:
 	else
 	{
 	  typedef T PT;
-	  const PT* const pt=static_cast<const PT* const>(i->second);
+	  const PT* const pt=dynamic_cast<const PT* const>(i->second);
 	  if (!pt)
 	    throw insight::Exception("Parameter "+name+" not of requested type!");
 	  else
@@ -146,6 +147,7 @@ public:
     inline double& getDouble(const std::string& name) { return this->get<DoubleParameter>(name)(); }
     inline bool& getBool(const std::string& name) { return this->get<BoolParameter>(name)(); }
     inline std::string& getString(const std::string& name) { return this->get<StringParameter>(name)(); }
+    inline arma::mat& getVector(const std::string& name) { return this->get<VectorParameter>(name)(); }
     inline boost::filesystem::path& getPath(const std::string& name) 
     { return this->get<PathParameter>(name)(); }
     ParameterSet& getSubset(const std::string& name);
@@ -154,6 +156,7 @@ public:
     inline const double& getDouble(const std::string& name) const { return this->get<DoubleParameter>(name)(); }
     inline const bool& getBool(const std::string& name) const { return this->get<BoolParameter>(name)(); }
     inline const std::string& getString(const std::string& name) const { return this->get<StringParameter>(name)(); }
+    inline const arma::mat& getVector(const std::string& name) const { return this->get<VectorParameter>(name)(); }
     inline const boost::filesystem::path& getPath(const std::string& name) const
     { return this->get<PathParameter>(name)(); }
     const ParameterSet& getSubset(const std::string& name) const;

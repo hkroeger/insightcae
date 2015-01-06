@@ -656,7 +656,10 @@ arma::mat FlatPlateBL::integrateDelta123(const arma::mat& uByUinf_vs_y)
   arma::mat delta(zeros(3));
   
   arma::mat x = uByUinf_vs_y.col(0);
-  arma::mat y = clamp(uByUinf_vs_y.col(1), 0., 1);
+  arma::mat y = uByUinf_vs_y.col(1);
+  for (int i=0; i<y.n_elem; i++) y(i)=std::max(0., std::min(1., y(i)));
+  //arma::mat y = clamp(uByUinf_vs_y.col(1), 0., 1);
+
   arma::mat y1, y2, y3;
   y1 = (1. - y);
   y2 = y % (1. - y);

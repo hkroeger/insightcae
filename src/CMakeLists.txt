@@ -48,8 +48,10 @@ find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
+find_package(GSL REQUIRED)
 #FIND_PACKAGE(SWIG REQUIRED)
 FIND_PACKAGE(SWIG)
+
 
 # ADD_DEFINITIONS(
 #     -std=c++11 # Or -std=c++0x
@@ -71,6 +73,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
+include_directories(${GSL_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 

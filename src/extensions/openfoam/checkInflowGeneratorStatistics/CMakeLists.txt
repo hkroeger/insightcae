@@ -18,6 +18,7 @@ set(INCLUDE_DIRS
   ${inflowGeneratorBCOF23x_SOURCE_DIR}
   ${fieldDataProviderOF23x_SOURCE_DIR}
   ${insight_INCLUDE_DIR}
+  ${GSL_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
 )
 

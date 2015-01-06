@@ -197,7 +197,7 @@ anisotropicVorton::anisotropicVorton
   double par[] = {Rp_[0], Rp_[1], Rp_[2], Lx, Ly, Lz};
 
   const gsl_multimin_fminimizer_type *T = 
-    gsl_multimin_fminimizer_nmsimplex2;
+    gsl_multimin_fminimizer_nmsimplex;
   gsl_multimin_fminimizer *s = NULL;
   gsl_vector *ss, *x;
   gsl_multimin_function minex_func;

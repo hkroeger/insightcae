@@ -219,15 +219,16 @@ protected:
     BoostRandomGen ranGen_;
     
     /**
-     * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
-     */
-    Field<vector> Umean_;
-    
-    /**
      * If set to true, the average of the mean velocity field will be used for spot convection
      * otherwise, the local mean velue will be used
      */
     Switch uniformConvection_;
+    
+    /**
+     * Prescribed mean velocity field on which the turbulent fluctuations will be superimposed.
+     */
+//     Field<vector> Umean_;
+    autoPtr<FieldDataProvider<vector> >  Umean_;
     
     /**
      * Prescribed reynolds stress tensor
@@ -238,12 +239,14 @@ protected:
     /**
      * Prescribed length scale field
      */
-    Field<symmTensor> L_;
+//     Field<symmTensor> L_;
+    autoPtr<FieldDataProvider<symmTensor> > L_;
     
     /**
      * Prescribed excess parameter
      */
-    Field<scalar> c_;
+//     Field<scalar> c_;
+    autoPtr<FieldDataProvider<scalar> >  c_;
     
     label curTimeIndex_;
 
@@ -322,12 +325,13 @@ public:
 	);
 	
 	// Member functions
-	inline const Field<vector>& Umean() const { return Umean_; }
+	inline const Field<vector>& Umean() const { return Umean_()(this->db().time().timeOutputValue(), patch().Cf()); }
 	inline tmp<Field<symmTensor> > R() const { return R_()(this->db().time().timeOutputValue(), patch().Cf()); }
-	inline const Field<symmTensor>& L() const { return L_; }
-	inline Field<vector>& Umean()  { return Umean_; }
+	inline const Field<symmTensor>& L() const { return L_()(this->db().time().timeOutputValue(), patch().Cf()); }
+	inline const Field<scalar>& c() const { return c_()(this->db().time().timeOutputValue(), patch().Cf()); }
+// 	inline Field<vector>& Umean()  { return Umean_; }
 // 	inline Field<symmTensor>& R()  { return R_; }
-	inline Field<symmTensor>& L()  { return L_; }
+// 	inline Field<symmTensor>& L()  { return L_; }
 
 	virtual void setParameters
 	(
@@ -343,7 +347,7 @@ public:
 	tmp<scalarField> edgeLengths(bool maxL=false) const;
 
 	inline vector averageMeanVelocity() const
-	{ return gSum(Umean_*patch().magSf())/gSum(patch().magSf()); }
+	{ return gSum(Umean()*patch().magSf())/gSum(patch().magSf()); }
 
         // Evaluation functions
 

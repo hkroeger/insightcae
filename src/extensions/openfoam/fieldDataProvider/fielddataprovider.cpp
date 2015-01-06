@@ -20,6 +20,12 @@
 #include "fielddataprovider.h"
 #include "addToRunTimeSelectionTable.H"
 #include "transform.H"
+#include "base/linearalgebra.h"
+
+#include "boost/foreach.hpp"
+
+using namespace boost;
+using namespace insight;
 
 namespace Foam
 {
@@ -241,7 +247,6 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 }
 
 
-
 template<class T>  
 linearProfile<T>::linearProfile(Istream& is)
 : FieldDataProvider<T>(is)
@@ -274,29 +279,14 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
   Field<T>& res=resPtr();
 
-  vector ey = - (ex_ ^ ez_);
+//   vector ey = - (ex_ ^ ez_);
+//   tensor tt(ex_, ey, ez_);
+// //   Info<<ey<<tt<<endl;
   
-  tensor tt(ex_, ey, ez_);
-//   Info<<ey<<tt<<endl;
-  
-//   labelList cmap(pTraits<T>::nComponents, -1);
-//   for (Map<word>::const_iterator i=cols_.begin(); i!=cols_.end(); i++)
-//   {
-//     for (int tc=0; tc<pTraits<T>::nComponents; tc++)
-//     {
-//       if (pTraits<T>::componentNames[tc]==i())
-//       {
-// 	cmap[i.key()]=tc;
-// 	break;
-//       }
-//     }
-//   }
-//   Info<<"cmap="<<cmap<<endl;
 
   forAll(target, pi)
   {
-    const point& p=target[pi];
-    double t = (p-p0_)&ep_;
+    double t = base_.t(target[pi]);
     
     arma::mat q = values_[idx](t);
 //     std::cout<<"q="<<q<<std::endl;
@@ -309,7 +299,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
 	setComponent( res[pi], cols_[c] ) = q(c);
       }
     }
-    res[pi]=transform(tt, res[pi]);
+    res[pi]=base_(res[pi]); //transform(tt, res[pi]);
   }
   Info<<"res="<<res<<endl;
   return resPtr;
@@ -318,7 +308,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
 template<class T>
 linearProfile<T>::linearProfile(const linearProfile<T>& o)
 : FieldDataProvider<T>(o),
-  p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
+  base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
   cols_(o.cols_),
   filenames_(o.filenames_),
   values_(o.values_)
@@ -328,14 +318,16 @@ linearProfile<T>::linearProfile(const linearProfile<T>& o)
 template<class T>
 void linearProfile<T>::read(Istream& is)
 {
-  is >> p0_ >> ep_ >> cols_ >> ex_ >> ez_;
+  base_.read(is);
+  is >> cols_;
   FieldDataProvider<T>::read(is);
 }
   
 template<class T>
 void linearProfile<T>::writeSup(Ostream& os) const
 {
-  os << p0_  << token::SPACE << ep_ << token::SPACE << cols_ << token::SPACE << ex_ <<token::SPACE << ez_;
+  base_.writeSup(os);
+  os << token::SPACE << cols_;
 }
   
 template<class T>
@@ -344,5 +336,106 @@ autoPtr<FieldDataProvider<T> > linearProfile<T>::clone() const
   return autoPtr<FieldDataProvider<T> >(new linearProfile<T>(*this));
 }
 
+
+
+
+template<class T>  
+fittedProfile<T>::fittedProfile(Istream& is)
+: FieldDataProvider<T>(is)
+{
+}
+
+template<class T>
+void fittedProfile<T>::appendInstant(Istream& is)
+{
+  std::vector<arma::mat> ccoeffs;
+  for (int c=0; c<pTraits<T>::nComponents; c++)
+  {
+    token ct(is);
+    if (ct.pToken()!=token::BEGIN_SQR)
+      FatalErrorIn("appendInstant") << "Expected "<<token::BEGIN_SQR << abort(FatalError);
+    std::vector<double> coeff;
+    do
+    {
+      token nt(is);
+      if (!nt.isNumber())
+	FatalErrorIn("appendInstant") << "Expected number, got "<<nt<< abort(FatalError);
+      coeff.push_back(nt.number());
+      {
+	token nt2(is);
+	if (nt2.isPunctuation() && (nt2.pToken()==token::END_SQR))
+	  break;
+	else
+	  is.putBack(nt2);
+      }
+    } while (!is.eof());
+    
+    ccoeffs.push_back(arma::mat(coeff));
+  }
+  
+  coeffs_.push_back(ccoeffs);
+}
+
+template<class T>
+void fittedProfile<T>::writeInstant(int i, Ostream& is) const
+{
+  const std::vector<arma::mat>& ccoeffs=coeffs_[i];
+  BOOST_FOREACH(const arma::mat& c, ccoeffs)
+  {
+    is << token::BEGIN_SQR << token::SPACE;
+    for (int j=0; j<c.n_elem; j++)
+      is << c(j) << token::SPACE;
+    is << token::END_SQR << token::SPACE;
+  }
+}
+
+template<class T>
+tmp<Field<T> > fittedProfile<T>::atInstant(int idx, const pointField& target) const
+{
+  tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
+  Field<T>& res=resPtr();  
+
+  forAll(target, pi)
+  {
+    double t = base_.t(target[pi]);
+    
+    for (int c=0; c<pTraits<T>::nComponents; c++)
+    {
+      arma::mat coeff = coeffs_[idx][c];
+      setComponent( res[pi], c )=evalPolynomial(t, coeff);
+    }
+    
+    res[pi]=base_(res[pi]); //transform(tt, res[pi]);
+  }
+  Info<<"res="<<res<<endl;
+  return resPtr;
+}
+
+template<class T>
+fittedProfile<T>::fittedProfile(const fittedProfile<T>& o)
+: FieldDataProvider<T>(o),
+  base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
+  coeffs_(o.coeffs_)
+{
+}
+
+template<class T>
+void fittedProfile<T>::read(Istream& is)
+{
+  base_.read(is);
+  FieldDataProvider<T>::read(is);
+}
+  
+template<class T>
+void fittedProfile<T>::writeSup(Ostream& os) const
+{
+  base_.writeSup(os);
+}
+  
+template<class T>
+autoPtr<FieldDataProvider<T> > fittedProfile<T>::clone() const
+{
+  return autoPtr<FieldDataProvider<T> >(new fittedProfile<T>(*this));
+}
 
 }

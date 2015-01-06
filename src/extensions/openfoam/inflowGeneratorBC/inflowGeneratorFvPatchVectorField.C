@@ -449,14 +449,19 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
   if (debug) Info<<"Generating new spots"<<endl;
   
   label nclip2=0;
+  
   //scalar dt=this->db().time().deltaT().value();
+  vectorField Um(Umean());
+  symmTensorField Rc(R());
+  symmTensorField Lc(L());
+  scalarField cc(c());
+  
   vector Umean;
   if (uniformConvection_) Umean=averageMeanVelocity();
   
   scalarField edgeL(edgeLengths(false));
 //   Info<<"minEdgel="<<min(edgeL)<<endl;
       
-  symmTensorField Rc=R();
   scalar maxR=max(mag(Rc));
   
   forAll(*this, fi)
@@ -467,7 +472,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
       
   //     scalar Lalong=esa_[fi].Lalong(in_dir);
       
-      if (!uniformConvection_) Umean=Umean_[fi];
+      if (!uniformConvection_) Umean=Um[fi];
       
       if ((Umean&in_dir) < SMALL)
       {
@@ -494,7 +499,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	  pf, 
 	  -Umean*( crTimes_[fi] - t ), 
 	  Umean, 
-	  L_[fi], minL,
+	  Lc[fi], minL,
 	  fi,
 	  Rc[fi]
 	);
@@ -524,7 +529,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
 	}
 	
 	scalar rnum=ranGen_();
-	scalar tau=snew.vol(minL)/ (c_[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
+	scalar tau=snew.vol(minL)/ (cc[fi] * patch().magSf()[fi] * (mag(Umean)+SMALL) );
 	crTimes_[fi] += 2.0*rnum*tau/*(*tau_)[fi]*/;
 	
 	//Info<<(*crTimes_)[fi]<<" "<<rnum<<" "<<(*tau_)[fi]<<" "<<horiz<<endl;
@@ -547,7 +552,7 @@ tmp<vectorField> inflowGeneratorFvPatchVectorField<TurbulentStructure>::continue
     * ==================== Generation of turbulent fluctuations ========================
     */
   scalarField cglob(globalPatch_->size(), 0.0);
-  globalPatch_->insertLocalFaceValues(c_, cglob);
+  globalPatch_->insertLocalFaceValues(cc, cglob);
 
   reduce(cglob, sumOp<scalarField>());
 

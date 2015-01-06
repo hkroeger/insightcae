@@ -39,5 +39,6 @@ makeFieldDataProvider(tensor);
 
 makeProviders(uniformField);
 makeProviders(linearProfile);
+makeProviders(fittedProfile);
 
 }

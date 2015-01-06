@@ -28,6 +28,8 @@
 #include <vector>
 #include "boost/ptr_container/ptr_vector.hpp"
 
+#include "vectorspacebase.h"
+
 namespace Foam 
 {
 
@@ -109,12 +111,17 @@ public:
 
 
 
+
+
+
+
 template<class T>
 class linearProfile
 : public FieldDataProvider<T>
 {
-  point p0_;
-  vector ep_, ex_, ez_;
+//   point p0_;
+//   vector ep_, ex_, ez_;
+  VectorSpaceBase base_;
   Map<label> cols_;
   std::vector<fileName> filenames_;
   boost::ptr_vector<insight::Interpolator> values_;
@@ -137,6 +144,29 @@ public:
 };
 
 
+template<class T>
+class fittedProfile
+: public FieldDataProvider<T>
+{
+  VectorSpaceBase base_;
+  std::vector< std::vector<arma::mat> > coeffs_;
+  
+  virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+  //- Runtime type information
+  TypeName("fittedProfile");
+  
+  fittedProfile(Istream& is);
+  fittedProfile(const fittedProfile<T>& o);
+
+  virtual void read(Istream& is);
+  virtual void writeSup(Ostream& os) const;
+
+  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
 
 
 }

@@ -359,8 +359,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
   
   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
     .set_velocity(FieldData(vec3(uinf_,0,0)))
-    .set_turbulenceIntensity(0.005)
-    .set_mixingLength(0.1*H_)
+    .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
   ) );
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)

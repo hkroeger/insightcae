@@ -2,6 +2,7 @@ set(PRJ fieldDataProvider)
 
 set(SRC 
  fielddataproviders.cpp
+ vectorspacebase.cpp
 )
 
 set(OF_INCLUDE_DIRS

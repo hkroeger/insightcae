@@ -1018,7 +1018,22 @@ ChannelInflow::ChannelInflow(const NoParameters& nop)
 ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::defaultParameters().entries());
+  
+  std::auto_ptr<SubsetParameter> inflowparams(TurbulentVelocityInletBC::defaultParameters());
+  
+  (*inflowparams)().extend
+  (
+      boost::assign::list_of<ParameterSet::SingleEntry>
+      ("umean", FieldData::defaultParameter(vec3(1,0,0)))
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+  
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    ("inflow", inflowparams.release())
+    .convert_to_container<ParameterSet::EntryList>()
+  );
 
   return p;
 }
@@ -1055,12 +1070,12 @@ void ChannelInflow::createCase
       
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
-    .set_turbulenceIntensity(0.05)
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_volexcess(p.getDouble("inflow/volexcess"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
-    //.set_mixingLength(0.1*D)
-    .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
+#warning to be corrected
+    .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2*H))
+//     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
@@ -1200,7 +1215,7 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
-  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
+//   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }

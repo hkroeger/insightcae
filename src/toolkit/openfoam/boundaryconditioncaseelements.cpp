@@ -72,7 +72,36 @@ OFDictData::data FieldData::sourceEntry() const
   } 
   else if (type=="linearProfile")
   {
-    throw insight::Exception("not yet implemented: "+type);
+    os<<" "
+      <<type
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("p0"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ep"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ex"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ez"));
+
+    os<<" (";
+    const ArrayParameter& cmap = (*p_)().get<ArrayParameter>("cmap");
+    for (int s=0; s<cmap.size(); s++)
+    {
+      const SubsetParameter& cm=dynamic_cast<const SubsetParameter&>(cmap[s]);
+      os<<" "<<cm().getInt("component")<<" "<<cm().getInt("column");
+    }
+    os<<")";
+    
+    os<<" "
+      <<"unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      os << " " << inst().getDouble("time") 
+	<< " \"" << inst().getPath("value")<<"\"";
+    }
   }
   else if (type=="fittedProfile")
   {

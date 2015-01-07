@@ -20,12 +20,13 @@
 
 %include "common.i"
 
-%module TestcaseModules
+%module(directors="1") TestcaseModules
+
+%import(module="toolkit") "toolkit.i"
 
 %{
 #include "channel.h"
 #include "pipe.h"
-
 using namespace insight;
 %}
 

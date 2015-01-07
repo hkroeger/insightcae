@@ -31,6 +31,7 @@
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
+using namespace insight;
 %}
 
 %typemap(out) int& getInt %{

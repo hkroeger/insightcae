@@ -39,6 +39,8 @@
 #include "datum.h"
 #include "sketch.h"
 #include "meshing.h"
+using namespace insight;
+using namespace insight::cad;
 %}
 
 %include "feature.h"

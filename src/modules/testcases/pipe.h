@@ -24,9 +24,6 @@
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/openfoamcaseelements.h"
 
-
-
-
 namespace insight 
 {
 
@@ -59,7 +56,9 @@ protected:
   double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   
 public:
+#ifndef SWIG
   declareType("Pipe Flow Test Case");
+#endif
   
   PipeBase(const NoParameters&);
   ~PipeBase();
@@ -106,7 +105,9 @@ class PipeCyclic
 : public PipeBase
 {
 public:
+#ifndef SWIG
   declareType("Pipe Flow Test Case (Axial Cyclic)");
+#endif
   
   PipeCyclic(const NoParameters&);
   
@@ -134,12 +135,16 @@ class PipeInflow
 : public PipeBase
 {
   
+#ifndef SWIG
   const static int ntpc_ = 4;
   const static char* tpc_names_[ntpc_]; 
   const static double tpc_xlocs_[ntpc_];
+#endif
   
 public:
+#ifndef SWIG
   declareType("Pipe Flow Test Case (Inflow Generator)");
+#endif
   
   PipeInflow(const NoParameters&);
   

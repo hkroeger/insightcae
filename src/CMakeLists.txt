@@ -47,10 +47,13 @@ find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
 find_package(Armadillo REQUIRED)
-find_package(PythonLibs 2.7 REQUIRED)
 find_package(GSL REQUIRED)
-#FIND_PACKAGE(SWIG REQUIRED)
-FIND_PACKAGE(SWIG)
+
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  find_package(PythonLibs 2.7 REQUIRED)
+  FIND_PACKAGE(SWIG REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
+ENDIF()
 
 
 # ADD_DEFINITIONS(
@@ -75,7 +78,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${PYTHON_INCLUDE_DIRS})
 
 #SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-needed -Wl,--no-as-needed") 
 
@@ -343,7 +345,33 @@ list (APPEND ${VARNAME}
 set (${VARNAME} ${${VARNAME}} PARENT_SCOPE)
 endmacro()
 
-
+macro (add_pybindings TARGETNAME IFFILES LIBS)
+  IF(INSIGHT_BUILD_PYTHONBINDINGS)
+    INCLUDE(${SWIG_USE_FILE})
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+    set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+    SET(${TARGETNAME}_INTERFACES ${IFFILES})
+    SET(CMAKE_SWIG_FLAGS "")
+    SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES CPLUSPLUS ON)
+#     set(INCS "")
+#     foreach (_src ${INCLUDEDIRS})
+#      set(INCS "${INCS} -I${_src}")
+#     endforeach()
+#     message(STATUS ${INCS})
+#     SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES SWIG_FLAGS ${INCS})
+    #SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES SWIG_FLAGS "-builtin")
+    SWIG_ADD_MODULE(${TARGETNAME} python ${${TARGETNAME}_INTERFACES})
+    SWIG_LINK_LIBRARIES(${TARGETNAME} ${LIBS})
+    set_target_properties(${SWIG_MODULE_${TARGETNAME}_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
+    
+#     SET(SWIG_RUNTIME swigpyrun.h)
+#     ADD_CUSTOM_COMMAND(
+#     OUTPUT ${SWIG_RUNTIME}
+#     COMMAND ${SWIG_EXECUTABLE} -python -external-runtime swigpyrun.h
+#     )
+#     ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
+  ENDIF()
+endmacro()
 
 add_subdirectory(refdata)
 

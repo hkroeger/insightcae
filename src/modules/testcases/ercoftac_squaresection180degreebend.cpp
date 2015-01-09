@@ -27,8 +27,7 @@
 #include "channel.h"
 #include "refdata.h"
 
-#include "boost/filesystem.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 
 using namespace boost;
 using namespace boost::assign;
@@ -147,7 +146,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
       (9, 	vec3(-0.5*D_, -R+0.5*D_,   0.0))
       (10, 	vec3(-0.5*D_,  R-0.5*D_,   0.0))
       (11, 	vec3(-0.5*D_,  R-0.5*D_, -Lout))
-      ;
+      .convert_to_container<std::map<int, Point> >();
   
   // create patches
   Patch& in= 	bmd->addPatch(in_, new Patch());

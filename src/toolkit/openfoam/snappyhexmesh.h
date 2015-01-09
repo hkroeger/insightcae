@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 #include "openfoam/openfoamcase.h"
 #include "progrock/cppx/collections/options_boosted.h"

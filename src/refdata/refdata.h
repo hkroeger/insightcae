@@ -24,7 +24,7 @@
 
 #include <base/linearalgebra.h>
 #include <map>
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 class _ts;
 

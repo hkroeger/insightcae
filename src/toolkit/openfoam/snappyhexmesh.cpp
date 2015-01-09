@@ -20,12 +20,9 @@
 
 #include "snappyhexmesh.h"
 
-#include "boost/filesystem.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
-#include "boost/format.hpp"
-#include "boost/regex.hpp"
 
 using namespace std;
 using namespace boost;

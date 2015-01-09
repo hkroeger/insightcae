@@ -56,13 +56,13 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
 ENDIF()
 
 
-# ADD_DEFINITIONS(
-#     -std=c++11 # Or -std=c++0x
-#     #-std=c++0x
-#     # Other flags
-# )
+ADD_DEFINITIONS(
+    -std=c++11 # Or -std=c++0x
+    #-std=c++0x
+    # Other flags
+)
 
-SET(CMAKE_CXX_FLAGS "-fpermissive")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"

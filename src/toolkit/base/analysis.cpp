@@ -26,9 +26,7 @@
 #include <cstdlib>
 #include <dlfcn.h>
 
-#include "boost/filesystem.hpp"
-#include "boost/thread.hpp"
-#include "boost/foreach.hpp"
+#include "base/boost_include.h"
 
 using namespace std;
 using namespace boost;

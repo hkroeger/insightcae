@@ -25,11 +25,7 @@
 #include <map>
 #include <vector>
 
-#include "boost/shared_ptr.hpp"
-#include "boost/concept_check.hpp"
-#include "boost/utility.hpp"
-#include "boost/graph/graph_concepts.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>

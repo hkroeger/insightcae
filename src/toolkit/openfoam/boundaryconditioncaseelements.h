@@ -269,6 +269,8 @@ public:
 };
 
 
+
+
 typedef boost::fusion::tuple<double, double> uniformIntensityAndLengthScale;
 
 enum oneEqnValueType { nuTilda, RS };
@@ -276,6 +278,9 @@ typedef boost::fusion::tuple<oneEqnValueType, FieldData> oneEqn;
 
 enum twoEqnValueType { kEpsilon, kOmega, REpsilon, RSL };
 typedef boost::fusion::tuple<twoEqnValueType, FieldData, FieldData> twoEqn;
+
+
+
 
 class TurbulenceSpecification
 : public boost::variant<
@@ -295,6 +300,9 @@ public:
     void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
     void setDirichletBC_R(OFDictData::dict& BC, double U) const;
 };
+
+
+
 
 class VelocityInletBC
 : public BoundaryCondition
@@ -319,6 +327,7 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
@@ -441,12 +450,96 @@ public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
     (type, std::string, "inflowGenerator<hatSpot>")
     (uniformConvection, bool, false)
+//     (turbulence, boost::shared_ptr<SubsetParameter>, boost::shared_ptr<SubsetParameter>(defaultParameters()) )
 //     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
 //     (delta, double, 1.0)
-    (volexcess, FieldData, FieldData(16.0) )
-    (lengthScale, FieldData, FieldData(1.0) )
+//     (volexcess, FieldData, FieldData(16.0) )
+//     (lengthScale, FieldData, FieldData(1.0) )
   )
-    
+
+  struct SParam : public ParameterSet
+  {
+    double pa;
+    struct paInserter
+    {
+      paInserter(SParam* s)
+      {
+	s->pa=2;
+      }
+    } paInserter_Impl = paInserter(this);
+
+  };
+  
+// #define STR(N) #N
+//   
+// #define INSERT_DEFINTION_SimpleParameter(r, data, paramQuadruple) \
+//  ( STR(BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple)), \
+//    new BOOST_PP_TUPLE_ELEM(5,2,paramQuadruple) \
+//    (\
+//       BOOST_PP_TUPLE_ELEM(5,3,paramQuadruple), \
+//       BOOST_PP_TUPLE_ELEM(5,4,paramQuadruple)) \
+//       )
+// 
+// #define SDECLARE_SimpleParameter(r, data, paramQuadruple) \
+//  BOOST_PP_TUPLE_ELEM(5,1,paramQuadruple) BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple);
+// 
+//  
+//  #define CPPXi_ADD_PARENTHESIS(r, n, elem, data) \
+//     (elem)
+//     
+//  #define CPPXi_PARENTHESIZE_ELEMENTS_AUX( r, _, seq ) \
+//     BOOST_PARAMETER_FOR_EACH_R( \
+//         r, 5, seq, _, CPPXi_ADD_PARENTHESIS \
+//         )
+// 
+// #define CPPXi_PARENTHESIZE_ELEMENTS( seq ) \
+//     BOOST_PP_SEQ_FOR_EACH( \
+//         CPPXi_PARENTHESIZE_ELEMENTS_AUX, _, (seq) \
+//     )
+//     
+// /*  class name : public ParameterSet {\
+//    name##Creator() { \
+//   BOOST_PP_SEQ_FOR_EACH(                                                  \
+//         DECLARE_Parameter, _, parameters                              \
+//         )  } }; */\
+// #define IS_DECLARE_ParameterSet( name, parameters )                     \
+//         struct S##name {\
+//         ) };
+        
+        
+//   IS_DECLARE_ParameterSet(PParameter,
+//       (uniformConvection, bool, BoolParameter, false, "Whether to use a uniform convection velocity instead of the local mean velocity" )
+//       (volexcess, double, DoubleParameter, 16.0, "Volumetric overlapping of spots" )
+//   );
+   void test() {
+     SParam spp;
+     spp.pa=3.;
+  }
+//   DEFINE_SubsetParameter	
+//   (
+//       DEFINE_ParameterSet
+//       (
+// 	("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+// 	("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
+// 	(
+// 	  "type", new SelectionParameter(0, 
+// 	    list_of<string>
+// 	    ("inflowGenerator<hatSpot>")
+// 	    ("inflowGenerator<gaussianSpot>")
+// 	    ("inflowGenerator<decayingTurbulenceSpot>")
+// 	    ("inflowGenerator<decayingTurbulenceVorton>")
+// 	    ("inflowGenerator<anisotropicVorton>")
+// 	    ("modalTurbulence")
+// 	  , 
+// 	  "Type of inflow generator")
+// 	)
+// 	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
+// 	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
+// 	.convert_to_container<ParameterSet::EntryList>()
+//       ), 
+//       "Inflow generator parameters"
+//   )
+  
 protected:
   Parameters p_;
 
@@ -458,6 +551,7 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+  
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;

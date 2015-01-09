@@ -244,6 +244,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
       (1, 	vec3(L, 0., 0))
       (2, 	vec3(L, H_, 0))
       (3, 	vec3(0, H_, 0))
+      .convert_to_container<std::map<int, Point> >()
   ;
   
   // create patches

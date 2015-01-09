@@ -189,6 +189,7 @@ void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm, const insight::Paramet
       (5, 	vec3(L, 0.5*H, 0))
       (40, 	vec3(0, -0.5*H, 0))
       (50, 	vec3(L, -0.5*H, 0))
+      .convert_to_container<std::map<int, Point> >()
   ;
   
   // create patches

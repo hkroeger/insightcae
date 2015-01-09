@@ -208,6 +208,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm, const insight::Pa
       (1, 	vec3(0, -0.5*H, 0.5*H))
       (2, 	vec3(0, 0.5*H, 0.5*H))
       (3, 	vec3(0, 0.5*H, -0.5*H))
+      .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);

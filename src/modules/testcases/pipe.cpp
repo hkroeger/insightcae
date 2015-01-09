@@ -257,6 +257,7 @@ void PipeBase::createMesh
       (11, 	vec3(0, 0.5*D-rbuf_, 0))
       (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
       (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
+      .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
@@ -839,7 +840,7 @@ void PipeInflow::createCase
     .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
-    .set_volexcess(p.getDouble("inflow/volexcess"))
+//     .set_volexcess(p.getDouble("inflow/volexcess"))
 #warning to be corrected
     .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2))
 //     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))

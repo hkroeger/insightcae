@@ -883,6 +883,7 @@ VelocityInletBC::VelocityInletBC
 {
 }
 
+
 void VelocityInletBC::setField_p(OFDictData::dict& BC) const
 {
   BC["type"]=OFDictData::data("zeroGradient");
@@ -1482,33 +1483,34 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=p_.type();
-  BC["Umean"]=p_.velocity().sourceEntry();
-  BC["c"]=p_.volexcess().sourceEntry();
-  
-  if (const uniformIntensityAndLengthScale *uil =get<uniformIntensityAndLengthScale>(&p_.turbulence()))
-  {
-    double I=get<0>(*uil), L=get<1>(*uil), U=norm(p_.velocity().representativeValue(),2);
-    BC["L"]="uniform ( "
-      +lexical_cast<string>(L)+" 0 0 "
-      +lexical_cast<string>(L)+" 0 "
-      +lexical_cast<string>(L)+" )";
-
-    double R=pow(I*U, 2);
-    BC["R"]="uniform ( "
-      +lexical_cast<string>(R)+" 0 0 "
-      +lexical_cast<string>(R)+" 0 "
-      +lexical_cast<string>(R)+" )";
-  }
-  else
-  {
-    throw insight::Exception("Unsupported kind of turbulence specification for turbulent inflow generator: BC data cannot be extracted");
-  }
-    
-  if (p_.uniformConvection())
-    BC["uniformConvection"]=true;
-
-  BC["value"]="uniform (0 0 0)";
+#warning need to implement
+//   BC["type"]=p_.type();
+//   BC["Umean"]=p_.velocity().sourceEntry();
+//   BC["c"]=p_.volexcess().sourceEntry();
+//   
+//   if (const uniformIntensityAndLengthScale *uil =get<uniformIntensityAndLengthScale>(&p_.turbulence()))
+//   {
+//     double I=get<0>(*uil), L=get<1>(*uil), U=norm(p_.velocity().representativeValue(),2);
+//     BC["L"]="uniform ( "
+//       +lexical_cast<string>(L)+" 0 0 "
+//       +lexical_cast<string>(L)+" 0 "
+//       +lexical_cast<string>(L)+" )";
+// 
+//     double R=pow(I*U, 2);
+//     BC["R"]="uniform ( "
+//       +lexical_cast<string>(R)+" 0 0 "
+//       +lexical_cast<string>(R)+" 0 "
+//       +lexical_cast<string>(R)+" )";
+//   }
+//   else
+//   {
+//     throw insight::Exception("Unsupported kind of turbulence specification for turbulent inflow generator: BC data cannot be extracted");
+//   }
+//     
+//   if (p_.uniformConvection())
+//     BC["uniformConvection"]=true;
+// 
+//   BC["value"]="uniform (0 0 0)";
 }
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1546,7 +1548,7 @@ SubsetParameter* TurbulentVelocityInletBC::defaultParameters()
 	.convert_to_container<ParameterSet::EntryList>()
       ), 
       "Inflow generator parameters"
-);
+  );
 }
 
 

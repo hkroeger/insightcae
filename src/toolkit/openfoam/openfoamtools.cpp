@@ -22,14 +22,7 @@
 #include "openfoam/openfoamcaseelements.h"
 #include "base/analysis.h"
 #include "base/linearalgebra.h"
-
-#include "boost/filesystem.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
-#include "boost/assign.hpp"
-#include <boost/tokenizer.hpp>
-#include "boost/regex.hpp"
-#include "boost/foreach.hpp"
-#include <boost/graph/graph_concepts.hpp>
+#include "base/boost_include.h"
 
 #include <map>
 #include <cmath>
@@ -1626,13 +1619,13 @@ void extrude2DMesh
   if (!wedgeInsteadOfPrism)
   {
     opt.clear();
-    opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5)));
+    opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5))).convert_to_container<std::vector<std::string> >();
     cm.executeCommand(location, "transformPoints", opt);
   }
   else
   {
     opt.clear();
-    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2);
+    opt=list_of<std::string> (OFDictData::to_OF(vec3(0,0,0))) (sourcePatchName) (sourcePatchName2).convert_to_container<std::vector<std::string> >();
     cm.executeCommand(location, "flattenWedges", opt);
   }
 }

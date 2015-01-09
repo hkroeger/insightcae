@@ -27,14 +27,8 @@
 #include "datum.h"
 #include "sketch.h"
 
-#include "boost/filesystem.hpp"
-#include <boost/fusion/include/std_pair.hpp>
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
-#include <boost/fusion/adapted/boost_tuple.hpp>
-#include "boost/variant.hpp"
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
+#include "base/boost_include.h"
+
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
@@ -44,7 +38,6 @@
 #include <boost/phoenix/function/adapt_callable.hpp>
 #include <boost/spirit/include/qi_no_case.hpp>
 #include <boost/spirit/home/classic/utility/distinct.hpp>
-#include <boost/fusion/adapted.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 

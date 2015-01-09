@@ -28,8 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 #include "boost/gil/gil_all.hpp"
 
 namespace insight 

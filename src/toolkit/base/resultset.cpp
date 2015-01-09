@@ -24,17 +24,7 @@
 
 #include <fstream>
 
-//#include "boost/gil/gil_all.hpp"
-//#include "boost/gil/extension/io/jpeg_io.hpp"
-#include "boost/lexical_cast.hpp"
-#include "boost/foreach.hpp"
-#include "boost/assign.hpp"
-#include "boost/date_time.hpp"
-#include <boost/graph/buffer_concepts.hpp>
-#include "boost/filesystem.hpp"
-#include "boost/regex.hpp"
-
-#include "boost/format.hpp"
+#include "base/boost_include.h"
 
 #include "gnuplot-iostream.h"
 

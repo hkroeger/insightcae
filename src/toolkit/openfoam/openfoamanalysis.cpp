@@ -23,11 +23,7 @@
 #include "openfoamtools.h"
 #include "openfoamcaseelements.h"
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/ptr_map_inserter.hpp>
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 using namespace boost;
 using namespace boost::assign;

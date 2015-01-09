@@ -30,17 +30,10 @@
 #include <functional>
 #include <string>
 
-#include <boost/fusion/include/std_pair.hpp>
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
-#include "boost/variant.hpp"
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
+#include "base/boost_include.h"
 #include "boost/spirit/include/qi.hpp"
-#include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
-#include "boost/filesystem.hpp"
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"

@@ -18,8 +18,7 @@
  *
  */
 
-#include "boost/filesystem.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 #include "base/exception.h"
@@ -27,10 +26,6 @@
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamdict.h"
 
-
-#include "boost/lexical_cast.hpp"
-#include "boost/regex.hpp"
-#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace boost;

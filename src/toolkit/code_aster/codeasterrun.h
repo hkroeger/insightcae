@@ -23,8 +23,7 @@
 
 #include "base/softwareenvironment.h"
 
-#include "boost/filesystem/path.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 
 namespace insight 
 {

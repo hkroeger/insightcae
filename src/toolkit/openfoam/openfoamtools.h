@@ -25,8 +25,7 @@
 #include <vector>
 #include <float.h>
 
-#include "boost/filesystem.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"

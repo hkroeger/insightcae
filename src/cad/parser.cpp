@@ -23,9 +23,7 @@
 #include "base/analysis.h"
 #include "parser.h"
 #include "boost/locale.hpp"
-#include "boost/algorithm/string.hpp"
-#include "boost/foreach.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 #include "dxfwriter.h"
 

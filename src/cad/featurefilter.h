@@ -26,11 +26,7 @@
 #include <vector>
 // #include <iostream>
 
-#include "boost/shared_ptr.hpp"
-#include "boost/concept_check.hpp"
-#include "boost/utility.hpp"
-#include "boost/graph/graph_concepts.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"

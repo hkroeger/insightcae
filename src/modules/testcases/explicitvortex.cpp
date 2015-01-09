@@ -157,6 +157,7 @@ void ExplicitVortex::createMesh
       (5, 	vec3( Lx/2., -Ly/2.,  Lz/2.))
       (6, 	vec3( Lx/2.,  Ly/2.,  Lz/2.))
       (7, 	vec3(-Lx/2.,  Ly/2.,  Lz/2.))
+      .convert_to_container<std::map<int, Point> >()
   ;
 
   

@@ -21,9 +21,8 @@
 #ifndef INSIGHT_CAD_DXFWRITER_H
 #define INSIGHT_CAD_DXFWRITER_H
 
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 #include "dxflib/dl_dxf.h"
-#include "boost/assign.hpp"
 #include "occinclude.h"
 #include "solidmodel.h"
 

@@ -269,6 +269,7 @@ void ChannelBase::createMesh
       (1, 	vec3(-0.5*L, -0.5*H, -0.5*B))
       (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
       (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
+      .convert_to_container<std::map<int, Point> >()
   ;
   
   // create patches
@@ -1071,10 +1072,11 @@ void ChannelInflow::createCase
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
     .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
-    .set_volexcess(p.getDouble("inflow/volexcess"))
+//     .set_volexcess(p.getDouble("inflow/volexcess"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
 #warning to be corrected
-    .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2*H))
+//     .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2*H))
+//     .set_turbulence(p.getSubset("inflow"))
 //     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));
   

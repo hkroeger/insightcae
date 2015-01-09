@@ -86,7 +86,7 @@ void Analysis::setExecutionPath(boost::filesystem::path& exePath)
 
 void Analysis::setParameters(const ParameterSet& p)
 {
-  parameters_.reset(p.clone());
+  parameters_.reset(p.cloneParameterSet());
 }
 
 path Analysis::executionPath() const

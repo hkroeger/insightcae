@@ -71,6 +71,7 @@ protected:
 public:
   declareType("Parameter");
   
+  Parameter();
   Parameter(const std::string& description);
   virtual ~Parameter();
   

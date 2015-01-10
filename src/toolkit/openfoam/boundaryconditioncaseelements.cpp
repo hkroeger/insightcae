@@ -1473,7 +1473,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   OpenFOAMCase& c,
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  Parameters const& p
+  ParameterSet const& p
 )
 : VelocityInletBC(c, patchName, boundaryDict, VelocityInletBC::Parameters()),
   p_(p)
@@ -1483,7 +1483,9 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=p_.type;
+  Parameters p = Parameters::makeInSync(p_);
+  
+  BC["type"]=p.type;
 #warning need to implement
 //   BC["type"]=p_.type();
 //   BC["Umean"]=p_.velocity().sourceEntry();

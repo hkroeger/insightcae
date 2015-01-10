@@ -382,6 +382,8 @@ struct wrap_ptr : public InserterBase
     PARAMCLASSNAME(const PARAMCLASSNAME& o) : insight::ParameterSet::Ptr(o) {} \
     static PARAMCLASSNAME makeWithDefaults() \
      { PARAMCLASSNAME np; np.createInParameterSet(); return np; } \
+    static PARAMCLASSNAME makeInSync(const ParameterSet& o) \
+     { PARAMCLASSNAME np=makeWithDefaults(); np.syncFromOther(o); return np; } \
     operator const insight::ParameterSet&() { return *this; } \
 
 #define ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME) \

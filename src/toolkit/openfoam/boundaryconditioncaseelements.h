@@ -510,7 +510,7 @@ public:
   )
   
 protected:
-  Parameters p_;
+  ParameterSet p_;
 
 public:
   TurbulentVelocityInletBC
@@ -518,7 +518,7 @@ public:
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters::makeWithDefaults()
+    ParameterSet const& p = *Parameters::makeWithDefaults()
   );
   
   virtual void setField_U(OFDictData::dict& BC) const;

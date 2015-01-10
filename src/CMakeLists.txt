@@ -374,6 +374,7 @@ macro (add_pybindings TARGETNAME IFFILES LIBS)
 endmacro()
 
 add_subdirectory(refdata)
+add_subdirectory(test)
 
 IF(INSIGHT_BUILD_TOOLKIT)
   add_subdirectory(toolkit)

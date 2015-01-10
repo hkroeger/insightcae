@@ -456,64 +456,126 @@ public:
 //     (volexcess, FieldData, FieldData(16.0) )
 //     (lengthScale, FieldData, FieldData(1.0) )
   )
+  
+struct TopInserterBase
+{
+  std::vector<InserterBase*> inserters_;
+  virtual void syncFromOther(const ParameterSet& o) =0;
+};
 
-  struct SParam : public ParameterSet
+struct InserterBase
+{
+  virtual void syncFromOther(const ParameterSet&) =0;
+};
+
+#define ISP_BEGIN_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+  struct PARAMCLASSNAME : public ParameterSet::Ptr, public TopInserterBase \
+  { \
+    PARAMCLASSNAME() : ParameterSet::Ptr(new ParameterSet()) {} \
+    virtual void syncFromOther(const ParameterSet& o) {\
+     BOOST_FOREACH(InserterBase* ins, inserters_) {\
+      ins->syncFromOther(o);\
+     }\
+    } \
+    PARAMCLASSNAME* parent() { return this; } \
+
+#define ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+  }
+
+#define ISP_DEFINE_SIMPLEPARAMETER(PARAMCLASSNAME, TYPE, NAME, PTYPE, CONSTR) \
+    TYPE NAME; \
+    struct NAME##Inserter : public InserterBase \
+    {\
+      NAME##Inserter(PARAMCLASSNAME& s) { \
+        std::string key(#NAME); \
+	s->insert(key, new PTYPE CONSTR ); \
+	s.parent()->inserters_.push_back(this); \
+      } \
+      virtual void syncFromOther(const ParameterSet&) { std::cout<<#NAME<<std::endl; } \
+    } Impl_##NAME##Inserter = NAME##Inserter(*this) \
+  
+ 
+#define ISP_BEGIN_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME) \
+struct SUBCLASSNAME : public wrap_ptr<SubsetParameter, TopInserterBase> { \
+
+
+#define ISP_END_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR) \
+} NAME; \
+   struct NAME##Inserter : public InserterBase { \
+     NAME##Inserter(PARAMCLASSNAME& s) \
+     { \
+       std::string key(#NAME); \
+       s.NAME.reset(new SubsetParameter(DESCR), &s); \
+       s->insert(key, s.NAME.get()); \
+	s.parent()->inserters_.push_back(this); \
+     } \
+     virtual void syncFromOther(const ParameterSet&) { std::cout<<#NAME<<std::endl; } \
+   } Impl_##NAME##Inserter = NAME##Inserter(*this) \
+   
+  template<class T, class T2>
+  struct wrap_ptr
   {
-    double pa;
-    struct paInserter
-    {
-      paInserter(SParam* s)
-      {
-	s->pa=2;
-      }
-    } paInserter_Impl = paInserter(this);
-
+    T* ps_;
+    T2* parent_;
+    inline T* get() { return ps_; }
+    inline T* operator*() { return ps_; }
+    inline T* operator->() const { return ps_; }
+    inline void reset(T* p, T2* parent) { ps_=p; parent_=parent; }
+    inline T2* parent() { return parent_->parent(); }
   };
   
-// #define STR(N) #N
-//   
-// #define INSERT_DEFINTION_SimpleParameter(r, data, paramQuadruple) \
-//  ( STR(BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple)), \
-//    new BOOST_PP_TUPLE_ELEM(5,2,paramQuadruple) \
-//    (\
-//       BOOST_PP_TUPLE_ELEM(5,3,paramQuadruple), \
-//       BOOST_PP_TUPLE_ELEM(5,4,paramQuadruple)) \
-//       )
-// 
-// #define SDECLARE_SimpleParameter(r, data, paramQuadruple) \
-//  BOOST_PP_TUPLE_ELEM(5,1,paramQuadruple) BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple);
-// 
-//  
-//  #define CPPXi_ADD_PARENTHESIS(r, n, elem, data) \
-//     (elem)
-//     
-//  #define CPPXi_PARENTHESIZE_ELEMENTS_AUX( r, _, seq ) \
-//     BOOST_PARAMETER_FOR_EACH_R( \
-//         r, 5, seq, _, CPPXi_ADD_PARENTHESIS \
-//         )
-// 
-// #define CPPXi_PARENTHESIZE_ELEMENTS( seq ) \
-//     BOOST_PP_SEQ_FOR_EACH( \
-//         CPPXi_PARENTHESIZE_ELEMENTS_AUX, _, (seq) \
-//     )
-//     
-// /*  class name : public ParameterSet {\
-//    name##Creator() { \
-//   BOOST_PP_SEQ_FOR_EACH(                                                  \
-//         DECLARE_Parameter, _, parameters                              \
-//         )  } }; */\
-// #define IS_DECLARE_ParameterSet( name, parameters )                     \
-//         struct S##name {\
-//         ) };
-        
-        
-//   IS_DECLARE_ParameterSet(PParameter,
-//       (uniformConvection, bool, BoolParameter, false, "Whether to use a uniform convection velocity instead of the local mean velocity" )
-//       (volexcess, double, DoubleParameter, 16.0, "Volumetric overlapping of spots" )
-//   );
+  ISP_BEGIN_DEFINE_PARAMETERSET(SParam)
+    
+    ISP_DEFINE_SIMPLEPARAMETER(SParam, double, pa, DoubleParameter, (1.2, "Test"));
+    ISP_DEFINE_SIMPLEPARAMETER(SParam, bool, pb, BoolParameter, (true, "Test"));
+
+    ISP_BEGIN_DEFINE_SUBSETPARAMETER(SParam, Ssub)
+      
+      ISP_BEGIN_DEFINE_SUBSETPARAMETER(Ssub, Ssubsub)
+	
+	ISP_DEFINE_SIMPLEPARAMETER(Ssubsub, 
+			      boost::filesystem::path, path, 
+			      PathParameter, ("/home", "Test"));
+	
+      ISP_END_DEFINE_SUBSETPARAMETER(Ssub, Ssubsub, subsub, "another sub");
+      
+      ISP_DEFINE_SIMPLEPARAMETER(Ssub, 
+			     boost::filesystem::path, path, 
+			     PathParameter, ("/home", "Test"));
+      
+      ISP_DEFINE_SIMPLEPARAMETER(Ssub, 
+			     double, pa, 
+			     DoubleParameter, (1.5, "Test"));
+      
+      ISP_DEFINE_SIMPLEPARAMETER(Ssub, 
+			     std::string, sel, 
+			     SelectionParameter, 
+			     (
+				0, 
+				boost::assign::list_of<std::string>
+				("inflowGenerator<hatSpot>")
+				("inflowGenerator<gaussianSpot>")
+				("inflowGenerator<decayingTurbulenceSpot>")
+				("inflowGenerator<decayingTurbulenceVorton>")
+				("inflowGenerator<anisotropicVorton>")
+				("modalTurbulence"), 
+				"Type of inflow generator"
+			     )
+			    );
+      
+    ISP_END_DEFINE_SUBSETPARAMETER(SParam, Ssub, sub, "blubb");
+    
+  ISP_END_DEFINE_PARAMETERSET(SParam);
+
    void test() {
+     ParameterSet p;
      SParam spp;
-     spp.pa=3.;
+     spp.syncFromOther(p);
+     spp.pa=1.;
+     spp.pb=false;
+     spp.sub.pa=1.0;
+     spp.sub.path.c_str();
+     spp.sub.subsub.path.c_str();
   }
 //   DEFINE_SubsetParameter	
 //   (

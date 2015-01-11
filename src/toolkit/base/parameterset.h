@@ -379,6 +379,10 @@ struct wrap_ptr : public InserterBase
   struct PARAMCLASSNAME : public insight::ParameterSet::Ptr, public insight::TopInserterBase \
   { \
     PARAMCLASSNAME() : insight::ParameterSet::Ptr(new insight::ParameterSet()) {} \
+    PARAMCLASSNAME(const PARAMCLASSNAME& o) : insight::ParameterSet::Ptr(o) {} \
+    static PARAMCLASSNAME makeWithDefaults() \
+     { PARAMCLASSNAME np; np.createInParameterSet(); return np; } \
+    operator const insight::ParameterSet&() { return *this; } \
 
 #define ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
   };
@@ -429,6 +433,25 @@ struct SUBCLASSNAME : public insight::wrap_ptr<insight::SubsetParameter> { \
  ISP_BEGIN_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR) \
  BODY \
  ISP_END_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME); \
-   
+
+ 
+ 
+//=========================================================================
+// Array - Parameter
+// #define ISP_DEFINE_ARRAYPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY) \
+// struct SUBCLASSNAME : public insight::wrap_ptr<insight::ArrayParameter> { \
+//  SUBCLASSNAME(PARAMCLASSNAME* p) : insight::wrap_ptr<insight::ArrayParameter>(p, std::string(#NAME)+"/") {\
+//       p->inserters().push_back(this); \
+//     }\
+//      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet();\
+//        std::cout<<"init ARRAYPARAMETER "<<#NAME<<std::endl; \
+//        std::string key(#NAME); \
+//        reset(new insight::SubsetParameter(DESCR)); \
+//        (*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, get()); \
+//      } else std::cout<<"no"<<std::endl; } \
+//      virtual void syncFromOther(const insight::ParameterSet&) {} \
+// BODY\
+// } NAME = SUBCLASSNAME(this); \
+
 
 #endif // INSIGHT_PARAMETERSET_H

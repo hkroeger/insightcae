@@ -447,15 +447,15 @@ public:
 //     ) const;
 //   };
 
-  CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
-    (type, std::string, "inflowGenerator<hatSpot>")
-    (uniformConvection, bool, false)
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
+//     (type, std::string, "inflowGenerator<hatSpot>")
+//     (uniformConvection, bool, false)
 //     (turbulence, boost::shared_ptr<SubsetParameter>, boost::shared_ptr<SubsetParameter>(defaultParameters()) )
 //     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
 //     (delta, double, 1.0)
 //     (volexcess, FieldData, FieldData(16.0) )
 //     (lengthScale, FieldData, FieldData(1.0) )
-  )
+//   )
  
 
 //   DEFINE_SubsetParameter	
@@ -482,6 +482,32 @@ public:
 //       ), 
 //       "Inflow generator parameters"
 //   )
+
+  ISP_DEFINE_PARAMETERSET
+  (
+    Parameters,
+    ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+    ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
+    ISP_DEFINE_SIMPLEPARAMETER
+    (
+      Parameters, int, type, 
+      SelectionParameter, 
+      (
+	0, 
+	boost::assign::list_of<std::string>
+	("inflowGenerator<hatSpot>")
+	("inflowGenerator<gaussianSpot>")
+	("inflowGenerator<decayingTurbulenceSpot>")
+	("inflowGenerator<decayingTurbulenceVorton>")
+	("inflowGenerator<anisotropicVorton>")
+	("modalTurbulence"), 
+	"Type of inflow generator"
+      )
+    )
+    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, R, PathParameter, ("", "Path to profile with Reynolds Stresses"))
+    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, L, PathParameter, ("", "Path to profile with integral length scale"))
+    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, umean, PathParameter, ("", "Path to profile with mean velocity"))
+  )
   
 protected:
   Parameters p_;
@@ -492,7 +518,7 @@ public:
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
+    Parameters const& p = Parameters::makeWithDefaults()
   );
   
   virtual void setField_U(OFDictData::dict& BC) const;

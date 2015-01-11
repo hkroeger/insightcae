@@ -153,9 +153,9 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, const insight::Pa
   */
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1e-5) ));
   
-  cm.insert(new TurbulentVelocityInletBC(cm, inlet_, boundaryDict, TurbulentVelocityInletBC::Parameters()
+  cm.insert(new TurbulentVelocityInletBC(cm, inlet_, boundaryDict/*, TurbulentVelocityInletBC::Parameters()
     .set_velocity(FieldData(vec3(U, 0, 0)))
-    .set_turbulence(uniformIntensityAndLengthScale(0.05,0.1*H))
+    .set_turbulence(uniformIntensityAndLengthScale(0.05,0.1*H))*/
   ));
   
   cm.insert(new PressureOutletBC(cm, outlet_, boundaryDict, PressureOutletBC::Parameters()

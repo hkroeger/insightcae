@@ -286,6 +286,149 @@ public:
 };
 
 
+
+
+ 
+struct InserterBase
+{
+  volatile bool created_;
+  std::string name_;
+  InserterBase* parent_;
+  
+  InserterBase(InserterBase* parent, const std::string& name) 
+  : created_(false), name_(name), parent_(parent) 
+  {}
+  
+  virtual std::string fq_name() 
+  { 
+    if (parent()) 
+      return parent()->fq_name()+name_; 
+    else 
+      return name_; 
+  }
+  virtual void createInParameterSet() =0;
+  virtual void createParentInParameterSet() 
+  { 
+    if (parent()) 
+    { 
+      std::cout<<name_<<"CIPS"<<std::endl; 
+      parent()->createInParameterSet();
+    } 
+    else 
+      std::cout<<name_<<" : NOP"<<std::endl; 
+  }
+  
+  virtual void syncFromOther(const ParameterSet&) =0;
+  virtual InserterBase* parent() { return parent_; };
+  virtual InserterBase* topParent() { parent()->topParent(); };
+  virtual std::vector<InserterBase*>& inserters() { return topParent()->inserters(); };
+};
+
+
+
+
+struct TopInserterBase : public InserterBase
+{
+  std::vector<InserterBase*> inserters_;
+  TopInserterBase() : InserterBase(NULL, "") {}
+  virtual void createInParameterSet() 
+  {
+    if (!created_) { created_=true;
+      std::cout<<"TOP"<<std::endl;
+      BOOST_FOREACH(InserterBase* ins, inserters_)
+      {
+	ins->createInParameterSet();
+      }
+    }
+  };
+  virtual void syncFromOther(const ParameterSet& o) 
+  {
+    BOOST_FOREACH(InserterBase* ins, inserters_) 
+    {
+      ins->syncFromOther(o);
+    }
+  }
+  virtual InserterBase* parent() { return NULL; };
+  virtual InserterBase* topParent() { return this; };
+  virtual std::string fq_name() { return ""; }
+  virtual std::vector<InserterBase*>& inserters() { return inserters_; };
+};
+
+
+
+
+template<class T>
+struct wrap_ptr : public InserterBase
+{
+  T* ps_;
+  wrap_ptr(InserterBase* p, const std::string& name) : InserterBase(p, name) {}
+  inline T* get() { return ps_; }
+  inline T* operator*() { return ps_; }
+  inline T* operator->() const { return ps_; }
+  inline void reset(T* p) { ps_=p; }
+  virtual void syncFromOther(const ParameterSet&) { }
+  virtual void createInParameterSet() { createParentInParameterSet(); }
+};
+
+
 }
+
+
+
+#define ISP_BEGIN_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+  struct PARAMCLASSNAME : public insight::ParameterSet::Ptr, public insight::TopInserterBase \
+  { \
+    PARAMCLASSNAME() : insight::ParameterSet::Ptr(new insight::ParameterSet()) {} \
+
+#define ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+  };
+
+#define ISP_DEFINE_PARAMETERSET(PARAMCLASSNAME, BODY) \
+ ISP_BEGIN_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+ BODY \
+ ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME);\
+ 
+#define ISP_DEFINE_SIMPLEPARAMETER(PARAMCLASSNAME, TYPE, NAME, PTYPE, CONSTR) \
+    TYPE NAME; \
+    struct NAME##Inserter : public insight::InserterBase \
+    {\
+      NAME##Inserter(PARAMCLASSNAME& s) : insight::InserterBase(&s, #NAME) {\
+       s.inserters().push_back(this);\
+      } \
+      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet(); \
+        std::cout<<"init SIMPLEPARAMETER "<<#NAME<<std::endl; \
+        std::string key(#NAME); \
+	(*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, new PTYPE CONSTR ); \
+      }  else std::cout<<"no"<<std::endl; } \
+      virtual void syncFromOther(const insight::ParameterSet& o) { \
+       std::cout<<"sync: "<<fq_name()<<" <= "<<o.get<PTYPE>(fq_name())()<<" (now "\
+        <<(*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME<<std::endl; \
+        (*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME = o.get<PTYPE>(fq_name())(); \
+      } \
+    } Impl_##NAME##Inserter = NAME##Inserter(*this); \
+  
+ 
+#define ISP_BEGIN_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR) \
+struct SUBCLASSNAME : public insight::wrap_ptr<insight::SubsetParameter> { \
+ SUBCLASSNAME(PARAMCLASSNAME* p) : insight::wrap_ptr<insight::SubsetParameter>(p, std::string(#NAME)+"/") {\
+      p->inserters().push_back(this); \
+    }\
+     virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet();\
+       std::cout<<"init SUBSETPARAMETER "<<#NAME<<std::endl; \
+       std::string key(#NAME); \
+       reset(new insight::SubsetParameter(DESCR)); \
+       (*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, get()); \
+     } else std::cout<<"no"<<std::endl; } \
+     virtual void syncFromOther(const insight::ParameterSet&) {} \
+
+
+#define ISP_END_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME) \
+} NAME = SUBCLASSNAME(this); \
+
+#define ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY) \
+ ISP_BEGIN_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR) \
+ BODY \
+ ISP_END_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME); \
+   
 
 #endif // INSIGHT_PARAMETERSET_H

@@ -20,40 +20,6 @@ using namespace insight;
 // BODY\
 // } NAME = SUBCLASSNAME(this); \
 
-#define ISP_DEFINE_SELECTABLESUBSET(SUBSELKEY, BODY) \
- ISP_DEFINE_PARAMETERSET(SUBSELKEY, BODY)
-
-#define ISP_INSERT_KEY(r,DATA,KEY) KEY,
-
-#define ISP_CREATE_DEF(r,DATA,KEY) \
- std::cout<<"make "<<BOOST_PP_STRINGIZE(KEY)<<std::endl;\
- defs.push_back(insight::SelectableSubsetParameter::SingleSubset(BOOST_PP_STRINGIZE(KEY), KEY::makeWithDefaults()->cloneParameterSet()));
-
-#define ISP_DEFINE_SELECTABLESUBSETPARAMETER(PARAMCLASSNAME, NAME, KEYS, DEFAULTKEY, DEFS, DESCR) \
- DEFS \
- typedef boost::variant< BOOST_PP_SEQ_FOR_EACH(ISP_INSERT_KEY, _, KEYS) void*> NAME##_value_type; \
- NAME##_value_type NAME; \
- \
-    struct NAME##Inserter : public insight::InserterBase \
-    {\
-      NAME##Inserter(PARAMCLASSNAME& s) : insight::InserterBase(&s, #NAME) {\
-       s.inserters().push_back(this);\
-      } \
-      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet(); \
-        std::cout<<"init SELSUBSETPARAMETER "<<#NAME<<std::endl; \
-        std::string key(#NAME); \
-        insight::SelectableSubsetParameter::SubsetList defs;\
-        BOOST_PP_SEQ_FOR_EACH(ISP_CREATE_DEF, _, KEYS) \
-	(*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, new insight::SelectableSubsetParameter(\
-	 #DEFAULTKEY, defs, DESCR) );\
-	 std::cout<<"inserted"<<std::endl;\
-      }  else std::cout<<"no"<<std::endl; } \
-      virtual void syncFromOther(const insight::ParameterSet& o) { \
-       std::cout<<"sync: "<<fq_name()<<std::endl; /*" <= "<<o.get<PTYPE>(fq_name())()<<" (now "\
-        <<(*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME<<std::endl; \
-        (*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME = o.get<PTYPE>(fq_name())();*/ \
-      } \
-    } Impl_##NAME##Inserter = NAME##Inserter(*this); \
 
 struct Test_TurbulentVelocityInletBC
 {
@@ -88,13 +54,15 @@ struct Test_TurbulentVelocityInletBC
     ISP_DEFINE_SELECTABLESUBSETPARAMETER
     (
       Parameters,
-      R, (uniform)(linearProfile), uniform,
+      R, 
+      (uniform)(linearProfile), 
+      uniform,
      
       ISP_DEFINE_SELECTABLESUBSET(uniform,
-	ISP_DEFINE_SIMPLEPARAMETER(uniform, bool, test, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+	ISP_DEFINE_SIMPLEPARAMETER(uniform, double, R_v1, DoubleParameter, (4.5, "Whether to use a uniform convection velocity instead of the local mean velocity"))
       )
       ISP_DEFINE_SELECTABLESUBSET(linearProfile,
-	ISP_DEFINE_SIMPLEPARAMETER(linearProfile, bool, test2, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+	ISP_DEFINE_SIMPLEPARAMETER(linearProfile, bool, R_v2, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
       ),
       "R properties"
     )
@@ -109,7 +77,10 @@ int main()
      Test_TurbulentVelocityInletBC::Parameters spp =
       Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
 
-     spp->saveToFile("test_spp.ist");
+//      spp->saveToFile("test_spp.ist");
+     spp->readFromFile("test_spp.ist");
+     spp.syncFromOther(spp);
+     
      ParameterSet p(*spp);
      p.saveToFile("test_p.ist");
      

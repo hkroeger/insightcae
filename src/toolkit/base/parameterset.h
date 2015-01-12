@@ -384,7 +384,7 @@ struct wrap_ptr : public InserterBase
      { PARAMCLASSNAME np; np.createInParameterSet(); return np; } \
     static PARAMCLASSNAME makeInSync(const ParameterSet& o) \
      { PARAMCLASSNAME np=makeWithDefaults(); np.syncFromOther(o); return np; } \
-    operator const insight::ParameterSet&() { return *this; } \
+    operator const insight::ParameterSet&() { return *get(); } \
 
 #define ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
   };
@@ -437,7 +437,46 @@ struct SUBCLASSNAME : public insight::wrap_ptr<insight::SubsetParameter> { \
  ISP_END_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME); \
 
  
+#define ISP_DEFINE_SELECTABLESUBSET(SUBSELKEY, BODY) \
+ ISP_DEFINE_PARAMETERSET(SUBSELKEY, BODY)
+
+#define ISP_INSERT_KEY(r,DATA,KEY) KEY,
+
+#define ISP_CREATE_DEF(r,DATA,KEY) \
+ std::cout<<"make "<<BOOST_PP_STRINGIZE(KEY)<<std::endl;\
+ defs.push_back(insight::SelectableSubsetParameter::SingleSubset(BOOST_PP_STRINGIZE(KEY), KEY::makeWithDefaults()->cloneParameterSet()));
  
+#define ISP_SUBSET_CHECK_AND_ASSIGN(r,D,KEY) \
+if (o.get<insight::SelectableSubsetParameter>(fq_name()).selection()==BOOST_PP_STRINGIZE(KEY)) { \
+  (*dynamic_cast<BOOST_PP_TUPLE_ELEM(2,1,D)*>(parent())).BOOST_PP_TUPLE_ELEM(2,0,D) =\
+   KEY::makeInSync(o.get<insight::SelectableSubsetParameter>(fq_name())()); } \
+
+
+#define ISP_DEFINE_SELECTABLESUBSETPARAMETER(PARAMCLASSNAME, NAME, KEYS, DEFAULTKEY, DEFS, DESCR) \
+ DEFS \
+ typedef boost::variant< BOOST_PP_SEQ_FOR_EACH(ISP_INSERT_KEY, _, KEYS) void*> NAME##_value_type; \
+ NAME##_value_type NAME; \
+ \
+    struct NAME##Inserter : public insight::InserterBase \
+    {\
+      NAME##Inserter(PARAMCLASSNAME& s) : insight::InserterBase(&s, #NAME) {\
+       s.inserters().push_back(this);\
+      } \
+      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet(); \
+        std::cout<<"init SELSUBSETPARAMETER "<<#NAME<<std::endl; \
+        std::string key(#NAME); \
+        insight::SelectableSubsetParameter::SubsetList defs;\
+        BOOST_PP_SEQ_FOR_EACH(ISP_CREATE_DEF, _, KEYS) \
+	(*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, new insight::SelectableSubsetParameter(\
+	 #DEFAULTKEY, defs, DESCR) );\
+	 std::cout<<"inserted"<<std::endl;\
+      }  else std::cout<<"no"<<std::endl; } \
+      virtual void syncFromOther(const insight::ParameterSet& o) { \
+       std::cout<<"sync: "<<fq_name()<<std::endl; \
+       BOOST_PP_SEQ_FOR_EACH(ISP_SUBSET_CHECK_AND_ASSIGN, (NAME,PARAMCLASSNAME), KEYS) \
+      } \
+    } Impl_##NAME##Inserter = NAME##Inserter(*this); \
+
 //=========================================================================
 // Array - Parameter
 // #define ISP_DEFINE_ARRAYPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY) \

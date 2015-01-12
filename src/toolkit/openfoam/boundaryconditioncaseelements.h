@@ -518,14 +518,16 @@ public:
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    ParameterSet const& p = *Parameters::makeWithDefaults()
+    ParameterSet const& p = Parameters::makeWithDefaults()
   );
   
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
 
-  static SubsetParameter* defaultParameters();
+//   inline static ParameterSet defaultParameters()
+//    { return Parameters::makeWithDefaults(); }
+  static ParameterSet defaultParameters();
 };
 
 

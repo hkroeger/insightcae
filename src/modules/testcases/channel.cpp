@@ -1020,7 +1020,7 @@ ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
   
-  std::auto_ptr<SubsetParameter> inflowparams(TurbulentVelocityInletBC::defaultParameters());
+  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
   (*inflowparams)().extend
   (

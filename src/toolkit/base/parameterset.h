@@ -390,12 +390,21 @@ struct wrap_ptr : public InserterBase
   };
 
 #define ISP_DEFINE_PARAMETERSET(PARAMCLASSNAME, BODY) \
- ISP_BEGIN_DEFINE_PARAMETERSET(PARAMCLASSNAME) \
+  struct PARAMCLASSNAME : public insight::ParameterSet::Ptr, public insight::TopInserterBase \
+  { \
+    PARAMCLASSNAME() : insight::ParameterSet::Ptr(new insight::ParameterSet()) {} \
+    PARAMCLASSNAME(const PARAMCLASSNAME& o) : insight::ParameterSet::Ptr(o) {} \
+    static PARAMCLASSNAME makeWithDefaults() \
+     { PARAMCLASSNAME np; np.createInParameterSet(); return np; } \
+    static PARAMCLASSNAME makeInSync(const ParameterSet& o) \
+     { PARAMCLASSNAME np=makeWithDefaults(); np.syncFromOther(o); return np; } \
+    operator const insight::ParameterSet&() { return *get(); } \
  BODY \
- ISP_END_DEFINE_PARAMETERSET(PARAMCLASSNAME);\
+  };
  
 #define ISP_DEFINE_SIMPLEPARAMETER(PARAMCLASSNAME, TYPE, NAME, PTYPE, CONSTR) \
-    TYPE NAME; \
+    typedef TYPE NAME##_value_type; \
+    NAME##_value_type NAME; \
     struct NAME##Inserter : public insight::InserterBase \
     {\
       NAME##Inserter(PARAMCLASSNAME& s) : insight::InserterBase(&s, #NAME) {\
@@ -454,7 +463,7 @@ if (o.get<insight::SelectableSubsetParameter>(fq_name()).selection()==BOOST_PP_S
 
 #define ISP_DEFINE_SELECTABLESUBSETPARAMETER(PARAMCLASSNAME, NAME, KEYS, DEFAULTKEY, DEFS, DESCR) \
  DEFS \
- typedef boost::variant< BOOST_PP_SEQ_FOR_EACH(ISP_INSERT_KEY, _, KEYS) void*> NAME##_value_type; \
+ typedef boost::variant< BOOST_PP_SEQ_FOR_EACH(ISP_INSERT_KEY, _, KEYS) void*> BOOST_PP_CAT(NAME,_value_type); \
  NAME##_value_type NAME; \
  \
     struct NAME##Inserter : public insight::InserterBase \

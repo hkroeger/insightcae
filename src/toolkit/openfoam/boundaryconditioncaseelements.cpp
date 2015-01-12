@@ -1525,12 +1525,28 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 }
 
 
-SubsetParameter* TurbulentVelocityInletBC::defaultParameters()
+ParameterSet TurbulentVelocityInletBC::defaultParameters()
 {
-  return new SubsetParameter	
+  return ParameterSet
   (
-      Parameters::makeWithDefaults(), 
-      "Inflow generator parameters"
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+    ("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
+    (
+      "type", new SelectionParameter(0,
+	list_of<string>
+	("inflowGenerator<hatSpot>")
+	("inflowGenerator<gaussianSpot>")
+	("inflowGenerator<decayingTurbulenceSpot>")
+	("inflowGenerator<decayingTurbulenceVorton>")
+	("inflowGenerator<anisotropicVorton>")
+	("modalTurbulence")
+      ,
+      "Type of inflow generator")
+    )
+    ("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
+    ("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
+    .convert_to_container<ParameterSet::EntryList>()
   );
 }
 

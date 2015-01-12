@@ -783,7 +783,7 @@ ParameterSet PipeInflow::defaultParameters() const
 {
   ParameterSet p(PipeBase::defaultParameters());
 
-  std::auto_ptr<SubsetParameter> inflowparams(TurbulentVelocityInletBC::defaultParameters());
+  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
   
   (*inflowparams)().extend
   (

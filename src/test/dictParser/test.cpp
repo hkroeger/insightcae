@@ -5,20 +5,32 @@
 using namespace std;
 using namespace insight;
 
-// #define ISP_DEFINE_SELECTABLESUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY) \
-// struct SUBCLASSNAME : public insight::wrap_ptr<insight::SelectableSubsetParameter> { \
-//  SUBCLASSNAME(PARAMCLASSNAME* p) : insight::wrap_ptr<insight::SelectableSubsetParameter>(p, std::string(#NAME)+"/") {\
-//       p->inserters().push_back(this); \
-//     }\
-//      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet();\
-//        std::cout<<"init SELECTABLESUBSETPARAMETER "<<#NAME<<std::endl; \
-//        std::string key(#NAME); \
-//        reset(new insight::SubsetParameter(DESCR)); \
-//        (*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, get()); \
-//      } else std::cout<<"no"<<std::endl; } \
-//      virtual void syncFromOther(const insight::ParameterSet&) {} \
-// BODY\
-// } NAME = SUBCLASSNAME(this); \
+
+#define ISP_DEFINE_ARRAYPARAMETER(PARAMCLASSNAME, NAME, DEFAULTDEF, DEFAULTSIZE, DESC) \
+    ISP_BEGIN_DEFINE_PARAMETERSET(BOOST_PP_CAT(NAME,_default)) \
+    DEFAULTDEF \
+    ISP_END_DEFINE_PARAMETERSET(BOOST_PP_CAT(NAME,_default)) \
+    typedef std::vector<NAME##_default::value_value_type> NAME##_value_type; \
+    NAME##_value_type NAME; \
+    struct NAME##Inserter : public insight::InserterBase \
+    {\
+      NAME##Inserter(PARAMCLASSNAME& s) : insight::InserterBase(&s, #NAME) {\
+       s.inserters().push_back(this);\
+      } \
+      virtual void createInParameterSet() { if (!created_) { created_=true; createParentInParameterSet(); \
+        std::cout<<"init SIMPLEPARAMETER "<<#NAME<<std::endl; \
+        std::string key(#NAME); \
+        ParameterSet defps = NAME##_default::makeWithDefaults(); \
+        Parameter *defp=dynamic_cast<Parameter*>(&defps.at("value"));\
+        std::cout<<defp<<std::endl;\
+	(*dynamic_cast<PARAMCLASSNAME*>(parent()))->insert(key, new insight::ArrayParameter(*defp, DEFAULTSIZE, DESC) ); \
+      }  else std::cout<<"no"<<std::endl; } \
+      virtual void syncFromOther(const insight::ParameterSet& o) { \
+       std::cout<<"sync: "<<fq_name()<<" <= "<<std::endl; /*o.get<PTYPE>(fq_name())()<<" (now "\
+        <<(*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME<<std::endl; \
+        (*dynamic_cast<PARAMCLASSNAME*>(parent())).NAME = o.get<PTYPE>(fq_name())();*/ \
+      } \
+    } Impl_##NAME##Inserter = NAME##Inserter(*this); \
 
 
 struct Test_TurbulentVelocityInletBC
@@ -33,37 +45,64 @@ struct Test_TurbulentVelocityInletBC
   ISP_DEFINE_PARAMETERSET
   (
     Parameters,
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
-    ISP_DEFINE_SIMPLEPARAMETER
-    (
-      Parameters, int, type, 
-      SelectionParameter, 
-      (
-	0, 
-	boost::assign::list_of<std::string>
-	("inflowGenerator<hatSpot>")
-	("inflowGenerator<gaussianSpot>")
-	("inflowGenerator<decayingTurbulenceSpot>")
-	("inflowGenerator<decayingTurbulenceVorton>")
-	("inflowGenerator<anisotropicVorton>")
-	("modalTurbulence"), 
-	"Type of inflow generator"
-      )
-    )
+//     ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+//     ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
+//     ISP_DEFINE_SIMPLEPARAMETER
+//     (
+//       Parameters, int, type, 
+//       SelectionParameter, 
+//       (
+// 	0, 
+// 	boost::assign::list_of<std::string>
+// 	("inflowGenerator<hatSpot>")
+// 	("inflowGenerator<gaussianSpot>")
+// 	("inflowGenerator<decayingTurbulenceSpot>")
+// 	("inflowGenerator<decayingTurbulenceVorton>")
+// 	("inflowGenerator<anisotropicVorton>")
+// 	("modalTurbulence"), 
+// 	"Type of inflow generator"
+//       )
+//     )
+
+// 	ISP_DEFINE_ARRAYPARAMETER
+// 	(
+// 	  Parameters, 
+// 	  values,
+// // 	  ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY)
+// 	  ISP_DEFINE_SIMPLEPARAMETER(values_default, double, value, DoubleParameter, (3.0, "default value")),
+// 	  3,
+// 	  "blabla"
+// 	)
+
     ISP_DEFINE_SELECTABLESUBSETPARAMETER
     (
       Parameters,
       R, 
-      (uniform)(linearProfile), 
-      uniform,
+      (uniform)(linearProfile)(fittedProfile), // selection
+      uniform, // default
      
       ISP_DEFINE_SELECTABLESUBSET(uniform,
+	ISP_DEFINE_ARRAYPARAMETER
+	(
+	  uniform, 
+	  values,
+// 	  ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY)
+	  ISP_DEFINE_SIMPLEPARAMETER(values_default, double, value, DoubleParameter, (3.0, "default value")),
+	  3,
+	  "blabla"
+	)
 	ISP_DEFINE_SIMPLEPARAMETER(uniform, double, R_v1, DoubleParameter, (4.5, "Whether to use a uniform convection velocity instead of the local mean velocity"))
       )
+      
       ISP_DEFINE_SELECTABLESUBSET(linearProfile,
 	ISP_DEFINE_SIMPLEPARAMETER(linearProfile, bool, R_v2, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-      ),
+      )
+      
+      ISP_DEFINE_SELECTABLESUBSET(fittedProfile,
+	ISP_DEFINE_SIMPLEPARAMETER(fittedProfile, bool, R_v3, BoolParameter, (true, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+      )
+      ,
+     
       "R properties"
     )
   )
@@ -77,8 +116,8 @@ int main()
      Test_TurbulentVelocityInletBC::Parameters spp =
       Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
 
-//      spp->saveToFile("test_spp.ist");
-     spp->readFromFile("test_spp.ist");
+     spp->saveToFile("test_spp.ist");
+//      spp->readFromFile("test_spp.ist");
      spp.syncFromOther(spp);
      
      ParameterSet p(*spp);
@@ -88,9 +127,9 @@ int main()
          
      cout<<"sync from other:"<<endl;
      
-     cout<<"BEFORE SYNC: "<<spp.volexcess<<endl;
+//      cout<<"BEFORE SYNC: "<<spp.testarray.size()<<endl;
      spp.syncFromOther(p);
-     cout<<"AFTER SYNC: "<<spp.volexcess<<endl;
+//      cout<<"AFTER SYNC: "<<spp.testarray.size()<<endl;
 
 //      spp.pa=1.;
 //      spp.pb=false;

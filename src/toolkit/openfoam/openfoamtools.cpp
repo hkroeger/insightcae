@@ -1370,7 +1370,7 @@ arma::mat viscousForceProfile
   arma::mat vf;
   vf.load( (lastTimeDir/"walls_viscousForce.dat").c_str(), arma::raw_ascii);
   
-  return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols)));
+  return arma::mat(join_rows(vfm, vf.cols(1, vf.n_cols-1)));
 }
 
 

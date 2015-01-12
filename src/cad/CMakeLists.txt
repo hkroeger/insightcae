@@ -12,9 +12,10 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OCC_INCLUDE_DIR})
 include_directories(${DXFLIB_INCLUDE_DIR})
 include_directories(${GEOM_INCLUDE_DIRS})
-link_directories(${OCC_LIBRARY_DIR})
-link_directories(${DXFLIB_LIBRARY_DIR})
-link_directories(${GEOM_LIBRARY_DIR})
+
+#link_directories(${OCC_LIBRARY_DIR})
+#link_directories(${DXFLIB_LIBRARY_DIR})
+#link_directories(${GEOM_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES})

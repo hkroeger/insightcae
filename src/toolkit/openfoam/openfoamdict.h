@@ -30,17 +30,10 @@
 #include <functional>
 #include <string>
 
-#include <boost/fusion/include/std_pair.hpp>
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
-#include "boost/variant.hpp"
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
+#include "base/boost_include.h"
 #include "boost/spirit/include/qi.hpp"
-#include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
 #include <boost/spirit/include/qi_eol.hpp>
-#include "boost/filesystem.hpp"
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
@@ -196,7 +189,25 @@ struct dictFile
 };
 
 std::string to_OF(const arma::mat& v);
+
+/**
+ * Return the first three elements of given vector as OFDictData::list
+ * @v: vector data. Only the first three elements are used
+ */
 OFDictData::list vector3(const arma::mat& v);
+
+/**
+ * Return the elements of given vector/matrix as OFDictData::data
+ * @v: vector/tensor data. All elements are concatened and a list is returned for more than one element. A double entry is returned for a 1x1 matrix.
+ */
+OFDictData::data vectorSpace(const arma::mat& v);
+
+/**
+ * Return a vector as OFDictData::list
+ * @x: x-component
+ * @y: y-component
+ * @z: z-component
+ */
 OFDictData::list vector3(double x, double y, double z);
 
 std::ostream& operator<<(std::ostream& os, const dimensionSet& d);

@@ -359,7 +359,8 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
   c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
@@ -420,11 +421,11 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
+  SIMPLE["nNonOrthogonalCorrectors"]=0;
   SIMPLE["pRefCell"]=0;
   SIMPLE["pRefValue"]=0.0;
   
-  if (OFversion()>=210)
+  if ( (OFversion()>=210) && p_.checkResiduals() )
   {
     OFDictData::dict resCtrl;
     resCtrl["p"]=1e-4;
@@ -444,7 +445,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
 //   std::string bgrads="leastSquares2"; 
   std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+  if ( (OFversion()>=220) && !p_.hasCyclics() ) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads;
 //   grad["grad(p)"]="Gauss linear";
@@ -784,11 +785,12 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(1e5), volField ) );
+  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb()), volField ) );
   c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(0.0), volField ) );
+  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb()), volField ) );
 }
  
 void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -798,7 +800,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="cavitatingFoam";
+  controlDict["application"]=p_.solverName();
   controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
@@ -1132,7 +1134,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: interFoamNumerics(c, p)
+: interFoamNumerics(c, p),
+  p_(p)
 {
 }
  
@@ -1140,18 +1143,19 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 {
   interFoamNumerics::addIntoDictionaries(dictionaries);
   
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]=p_.solverName();
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  OFDictData::dict alphasol = stdAsymmSolverSetup(1e-10, 0.0);
-  alphasol["maxUnboundedness"]=1e-5;
-  alphasol["CoCoeff"]=0;
-  alphasol["maxIter"]=5;
-  alphasol["nLimiterIter"]=2;
-
-  solvers["alpha1"]=alphasol;
+  
+  OFDictData::dict alphasol = stdMULESSolverSetup(1e-10, 0.0);
+  solvers["\"alpha.*\""]=alphasol;
 
 }
 

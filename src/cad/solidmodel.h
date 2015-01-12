@@ -25,11 +25,10 @@
 #include <map>
 #include <vector>
 
-#include "boost/shared_ptr.hpp"
-#include "boost/concept_check.hpp"
-#include "boost/utility.hpp"
-#include "boost/graph/graph_concepts.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
+
+#define BOOST_SPIRIT_USE_PHOENIX_V3
+#include <boost/spirit/include/qi.hpp>
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
@@ -44,6 +43,7 @@ namespace insight
 namespace cad 
 {
 
+class Datum;
 class SolidModel;
 
 
@@ -53,6 +53,7 @@ class SolidModel
 {
 public:
   typedef boost::shared_ptr<SolidModel> Ptr;
+  typedef boost::spirit::qi::symbols<char, SolidModel::Ptr> Map;
   
   struct View
   {
@@ -68,7 +69,11 @@ protected :
   // all the (sub) TopoDS_Shapes in 'shape'
   TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
+  SolidModel::Map providedSubshapes_;
+  std::map<std::string, boost::shared_ptr<Datum> > providedDatums_;
+  
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
+  void setShape(const TopoDS_Shape& shape);
  
 public:
   
@@ -80,6 +85,11 @@ public:
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
+  
+  inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
+    { return providedDatums_; }
+  inline SolidModel::Map providedSubshapes() // "const" caused failure with phx::bind!
+    { return providedSubshapes_; }
   
   SolidModel& operator=(const SolidModel& o);
   
@@ -111,10 +121,10 @@ public:
   FeatureSet allFaces() const;
   
   FeatureSet query_edges(const FilterPtr& filter) const;
-  FeatureSet query_edges(const std::string& queryexpr) const;
+  FeatureSet query_edges(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_edges_subset(const FeatureSet& fs, const FilterPtr& filter) const;
   FeatureSet query_faces(const FilterPtr& filter) const;
-  FeatureSet query_faces(const std::string& queryexpr) const;
+  FeatureSet query_faces(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;
@@ -137,6 +147,45 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
+
+
+// =================== 2D Primitives ======================
+
+class Tri
+: public SolidModel
+{
+public:
+  Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
+  operator const TopoDS_Face& () const;
+};
+
+
+class Quad
+: public SolidModel
+{
+public:
+  Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W);
+  operator const TopoDS_Face& () const;
+};
+
+
+class Circle
+: public SolidModel
+{
+public:
+  Circle(const arma::mat& p0, const arma::mat& n, double D);
+  operator const TopoDS_Face& () const;
+};
+
+class RegPoly
+: public SolidModel
+{
+public:
+  RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
+	  const arma::mat& ez = arma::mat());
+  operator const TopoDS_Face& () const;
+};
+
 
 // =================== Primitives ======================
 class Cylinder
@@ -177,6 +226,13 @@ public:
   Sphere(const arma::mat& p, double D);
 };
 
+// class Halfspace
+// : public SolidModel
+// {
+// public:
+//   Halfspace(const SolidModel& sk, const arma::mat& L, bool centered=false);
+// };
+
 class Extrusion
 : public SolidModel
 {
@@ -189,6 +245,13 @@ class Revolution
 {
 public:
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
+};
+
+class RotatedHelicalSweep
+: public SolidModel
+{
+public:
+  RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
 };
 
 // =================== Boolean operations ======================
@@ -219,6 +282,20 @@ public:
 
 SolidModel operator&(const SolidModel& m1, const SolidModel& m2);
 
+class Projected
+: public SolidModel
+{
+public:
+  Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
+};
+
+class Split
+: public SolidModel
+{
+public:
+  Split(const SolidModel& source, const SolidModel& target);
+};
+
 // =================== Cosmetic features ======================
 
 class Fillet
@@ -245,10 +322,10 @@ public:
 class CircularPattern
 : public SolidModel
 {
-  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
   
 public:
-  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n);
+  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
 };
 
 class LinearPattern
@@ -271,6 +348,13 @@ class Transform
 public:
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
+};
+
+class Place
+: public SolidModel
+{
+public:
+  Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
 };
 
 class Compound

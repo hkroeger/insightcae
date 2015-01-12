@@ -35,6 +35,59 @@
 namespace insight 
 {
 
+
+
+
+/**
+ * Interface which wraps different types of prescribing field data on boundaries.
+ * Works together with OpenFOAM class "FieldDataProvider".
+ */
+class FieldData
+{
+public:
+  
+protected:
+  boost::shared_ptr<SelectableSubsetParameter> p_;
+  
+public:
+  /**
+   * sets all parameters for the most simple type of field data description (uniform, steady scalar value)
+   */
+  FieldData(double uniformSteadyValue);
+  
+  /**
+   * sets all parameters for the most simple type of field data description (uniform, steady value)
+   */
+  FieldData(const arma::mat& uniformSteadyValue);
+  
+  /**
+   * takes config from a parameterset
+   */
+  FieldData(const SelectableSubsetParameter& p);
+  
+  /**
+   * returns according dictionary entry for OF
+   */
+  OFDictData::data sourceEntry() const;
+  
+  void setDirichletBC(OFDictData::dict& BC) const;
+  
+  /**
+   * return some representative value of the prescribed data. 
+   * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
+   */
+  arma::mat representativeValue() const;
+  
+  /**
+   * returns a proper parameterset for this entity
+   * @reasonable_value: the number of components determines the rank of the field
+   */
+  static Parameter* defaultParameter(const arma::mat& reasonable_value, const std::string& description="Origin of the prescribed value");
+};
+  
+
+
+
 /*
  * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
  * needs to know proper BC's for all fields on the given patch
@@ -216,16 +269,50 @@ public:
 };
 
 
+
+
+typedef boost::fusion::tuple<double, double> uniformIntensityAndLengthScale;
+
+enum oneEqnValueType { nuTilda, RS };
+typedef boost::fusion::tuple<oneEqnValueType, FieldData> oneEqn;
+
+enum twoEqnValueType { kEpsilon, kOmega, REpsilon, RSL };
+typedef boost::fusion::tuple<twoEqnValueType, FieldData, FieldData> twoEqn;
+
+
+
+
+class TurbulenceSpecification
+: public boost::variant<
+    uniformIntensityAndLengthScale,
+    oneEqn,
+    twoEqn
+    >
+{
+public:
+    TurbulenceSpecification(const uniformIntensityAndLengthScale& uil);
+    TurbulenceSpecification(const oneEqn&);
+    TurbulenceSpecification(const twoEqn&);
+    
+    void setDirichletBC_k(OFDictData::dict& BC, double U) const;
+    void setDirichletBC_omega(OFDictData::dict& BC, double U) const;
+    void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const;
+    void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
+    void setDirichletBC_R(OFDictData::dict& BC, double U) const;
+};
+
+
+
+
 class VelocityInletBC
 : public BoundaryCondition
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (velocity, arma::mat, vec3(0,0,0))
-    (T, double, 300.0)
-    (rho, double, 1025.0)
-    (turbulenceIntensity, double, 0.01)
-    (mixingLength, double, 1.0e-3)
+    (velocity, FieldData, FieldData(vec3(0,0,0)) )
+    (T, FieldData, FieldData(300.0) )
+    (rho, FieldData, FieldData(1025.0) )
+    (turbulence, TurbulenceSpecification, TurbulenceSpecification(uniformIntensityAndLengthScale(0.01, 1e-3)) )
     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
   )
   
@@ -240,10 +327,14 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
+
+
 
 class ExptDataInletBC
 : public BoundaryCondition
@@ -272,6 +363,9 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+
+
+
 class CompressibleInletBC
 : public VelocityInletBC
 {
@@ -294,76 +388,158 @@ public:
   virtual void setField_p(OFDictData::dict& BC) const;
 };
 
+
+
+
 class TurbulentVelocityInletBC
 : public VelocityInletBC
 {
 
 public:
-  typedef arma::mat CoeffList;
-  typedef boost::variant<double, CoeffList> LengthScaleProfile;
-  
-  struct inflowInitializer
-  {
-    typedef boost::shared_ptr<inflowInitializer> Ptr;
-    
-    virtual ~inflowInitializer();
-    virtual std::string type() const =0;
-    virtual void addToInitializerList
-    (
-      OFDictData::dict& initdict, 
-      const std::string& patchName,
-      const arma::mat& Ubulk,
-      const ParameterSet& params
-    ) const;
-    static ParameterSet defaultParameters();
-  };
-  
-//   struct isotropicTurbulenceInflowInitializer
+//   typedef arma::mat CoeffList;
+//   typedef boost::variant<double, CoeffList> LengthScaleProfile;
+//   
+//   
+//   struct inflowInitializer
 //   {
-//     double Ubulk;
-//     arma::mat RMS;
+//     typedef boost::shared_ptr<inflowInitializer> Ptr;
 //     
-//     virtual void addToInitializerList(OFDictData::list&) const;
+//     virtual ~inflowInitializer();
+//     virtual std::string type() const =0;
+//     virtual void addToInitializerList
+//     (
+//       OFDictData::dict& initdict, 
+//       const std::string& patchName,
+//       const arma::mat& Ubulk,
+//       const ParameterSet& params
+//     ) const;
+//     static ParameterSet defaultParameters();
 //   };
-  
-  struct pipeInflowInitializer
-  : public inflowInitializer
-  {
-    pipeInflowInitializer();
-    virtual std::string type() const;
-    virtual void addToInitializerList
-    (
-      OFDictData::dict& initdict, 
-      const std::string& patchName, 
-      const arma::mat& Ubulk,
-      const ParameterSet& params
-    ) const;
-  };
-
-  struct channelInflowInitializer
-  : public inflowInitializer
-  {
-    channelInflowInitializer();
-    virtual std::string type() const;
-    virtual void addToInitializerList
-    (
-      OFDictData::dict& initdict, 
-      const std::string& patchName, 
-      const arma::mat& Ubulk,
-      const ParameterSet& params
-    ) const;
-  };
+//   
+// 
+//   
+//   struct pipeInflowInitializer
+//   : public inflowInitializer
+//   {
+//     pipeInflowInitializer();
+//     virtual std::string type() const;
+//     virtual void addToInitializerList
+//     (
+//       OFDictData::dict& initdict, 
+//       const std::string& patchName, 
+//       const arma::mat& Ubulk,
+//       const ParameterSet& params
+//     ) const;
+//   };
+// 
+//   
+//   struct channelInflowInitializer
+//   : public inflowInitializer
+//   {
+//     channelInflowInitializer();
+//     virtual std::string type() const;
+//     virtual void addToInitializerList
+//     (
+//       OFDictData::dict& initdict, 
+//       const std::string& patchName, 
+//       const arma::mat& Ubulk,
+//       const ParameterSet& params
+//     ) const;
+//   };
 
   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
     (type, std::string, "inflowGenerator<hatSpot>")
     (uniformConvection, bool, false)
-    (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
-    (delta, double, 1.0)
-    (volexcess, double, 16.0)
-    (longLengthScale, LengthScaleProfile, 1.0)
-    (latLengthScale, LengthScaleProfile, 1.0)
+//     (turbulence, boost::shared_ptr<SubsetParameter>, boost::shared_ptr<SubsetParameter>(defaultParameters()) )
+//     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
+//     (delta, double, 1.0)
+//     (volexcess, FieldData, FieldData(16.0) )
+//     (lengthScale, FieldData, FieldData(1.0) )
   )
-    
+
+  struct SParam : public ParameterSet
+  {
+    double pa;
+    struct paInserter
+    {
+      paInserter(SParam* s)
+      {
+	s->pa=2;
+      }
+    } paInserter_Impl = paInserter(this);
+
+  };
+  
+// #define STR(N) #N
+//   
+// #define INSERT_DEFINTION_SimpleParameter(r, data, paramQuadruple) \
+//  ( STR(BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple)), \
+//    new BOOST_PP_TUPLE_ELEM(5,2,paramQuadruple) \
+//    (\
+//       BOOST_PP_TUPLE_ELEM(5,3,paramQuadruple), \
+//       BOOST_PP_TUPLE_ELEM(5,4,paramQuadruple)) \
+//       )
+// 
+// #define SDECLARE_SimpleParameter(r, data, paramQuadruple) \
+//  BOOST_PP_TUPLE_ELEM(5,1,paramQuadruple) BOOST_PP_TUPLE_ELEM(5,0,paramQuadruple);
+// 
+//  
+//  #define CPPXi_ADD_PARENTHESIS(r, n, elem, data) \
+//     (elem)
+//     
+//  #define CPPXi_PARENTHESIZE_ELEMENTS_AUX( r, _, seq ) \
+//     BOOST_PARAMETER_FOR_EACH_R( \
+//         r, 5, seq, _, CPPXi_ADD_PARENTHESIS \
+//         )
+// 
+// #define CPPXi_PARENTHESIZE_ELEMENTS( seq ) \
+//     BOOST_PP_SEQ_FOR_EACH( \
+//         CPPXi_PARENTHESIZE_ELEMENTS_AUX, _, (seq) \
+//     )
+//     
+// /*  class name : public ParameterSet {\
+//    name##Creator() { \
+//   BOOST_PP_SEQ_FOR_EACH(                                                  \
+//         DECLARE_Parameter, _, parameters                              \
+//         )  } }; */\
+// #define IS_DECLARE_ParameterSet( name, parameters )                     \
+//         struct S##name {\
+//         ) };
+        
+        
+//   IS_DECLARE_ParameterSet(PParameter,
+//       (uniformConvection, bool, BoolParameter, false, "Whether to use a uniform convection velocity instead of the local mean velocity" )
+//       (volexcess, double, DoubleParameter, 16.0, "Volumetric overlapping of spots" )
+//   );
+   void test() {
+     SParam spp;
+     spp.pa=3.;
+  }
+//   DEFINE_SubsetParameter	
+//   (
+//       DEFINE_ParameterSet
+//       (
+// 	("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+// 	("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
+// 	(
+// 	  "type", new SelectionParameter(0, 
+// 	    list_of<string>
+// 	    ("inflowGenerator<hatSpot>")
+// 	    ("inflowGenerator<gaussianSpot>")
+// 	    ("inflowGenerator<decayingTurbulenceSpot>")
+// 	    ("inflowGenerator<decayingTurbulenceVorton>")
+// 	    ("inflowGenerator<anisotropicVorton>")
+// 	    ("modalTurbulence")
+// 	  , 
+// 	  "Type of inflow generator")
+// 	)
+// 	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
+// 	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
+// 	.convert_to_container<ParameterSet::EntryList>()
+//       ), 
+//       "Inflow generator parameters"
+//   )
+  
 protected:
   Parameters p_;
 
@@ -375,11 +551,12 @@ public:
     const OFDictData::dict& boundaryDict, 
     Parameters const& p = Parameters()
   );
+  
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-  virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
+//   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
 
-  static ParameterSet defaultParameters();
+  static SubsetParameter* defaultParameters();
 };
 
 

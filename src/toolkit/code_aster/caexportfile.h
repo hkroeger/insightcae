@@ -21,7 +21,7 @@
 #ifndef INSIGHT_CAEXPORTFILE_H
 #define INSIGHT_CAEXPORTFILE_H
 
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 #include <vector>
 #include <map>
 

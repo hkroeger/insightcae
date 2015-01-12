@@ -103,6 +103,7 @@ public:
 };
 
 typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
+typedef std::vector<FeatureSetPtr> FeatureSetList;
 
 }
 }

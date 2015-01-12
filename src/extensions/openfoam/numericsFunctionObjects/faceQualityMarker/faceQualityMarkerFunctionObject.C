@@ -29,6 +29,7 @@
 #include "volFields.H"
 #include "faceSet.H"
 #include "cellSet.H"
+#include "emptyFvPatch.H"
 
 #ifndef OF16ext
 #include "polyMeshTetDecomposition.H"
@@ -68,7 +69,9 @@ inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value
     {
       label pI=mesh.boundaryMesh().whichPatch(fI);
       const polyPatch& patch=mesh.boundaryMesh()[pI];
-      UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
+//       Info<<pI<<" "<<patch.start()<<" "<<fI<<endl;
+      if (!isA<emptyFvPatch>(mesh.boundary()[pI]))
+	UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
     }
 }
 

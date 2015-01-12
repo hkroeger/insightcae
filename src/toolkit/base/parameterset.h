@@ -52,6 +52,7 @@ public:
 
 public:
     ParameterSet();
+    ParameterSet(const ParameterSet& o);
     ParameterSet(const EntryList& entries);
     virtual ~ParameterSet();
 
@@ -183,7 +184,7 @@ public:
     
     virtual std::string latexRepresentation() const;
 
-    virtual ParameterSet* clone() const;
+    virtual ParameterSet* cloneParameterSet() const;
 
     virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const;
@@ -205,25 +206,31 @@ typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 
 
 class SubsetParameter
-: public Parameter
+: public Parameter,
+  public ParameterSet //boost::shared_ptr<ParameterSet>
 {
 public:
   typedef boost::shared_ptr<SubsetParameter> Ptr;
   typedef ParameterSet value_type;
   
-protected:
-  boost::shared_ptr<ParameterSet> value_;
+// protected:
+//   boost::shared_ptr<ParameterSet> value_;
   
 public:
   declareType("subset");
   
+  SubsetParameter();
   SubsetParameter(const std::string& description);
   SubsetParameter(const ParameterSet& defaultValue, const std::string& description);
   
-  inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
+  inline void setParameterSet(const ParameterSet& paramset) 
+  { 
+//     /*value_.*/this->reset(paramset.clone()); 
+    this->setParameterSet(paramset);
+  }
   void merge(const SubsetParameter& other);
-  inline ParameterSet& operator()() { return *value_; }
-  inline const ParameterSet& operator()() const { return *value_; }
+  inline ParameterSet& operator()() { return /**value_*/ static_cast<ParameterSet&>(*this); }
+  inline const ParameterSet& operator()() const { return /**value_*/static_cast<const ParameterSet&>(*this); }
   
   virtual std::string latexRepresentation() const;
   

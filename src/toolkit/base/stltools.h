@@ -23,7 +23,7 @@
 
 #include "base/linearalgebra.h"
 
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 namespace insight 
 {

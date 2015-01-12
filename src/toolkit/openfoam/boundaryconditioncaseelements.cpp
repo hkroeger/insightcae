@@ -38,6 +38,259 @@ using namespace boost::fusion;
 namespace insight
 {
 
+FieldData::FieldData(double uniformSteadyValue)
+: p_(defaultParameter(uniformSteadyValue*arma::ones(1)))
+{
+}
+  
+FieldData::FieldData(const arma::mat& uniformSteadyValue)
+: p_(defaultParameter(uniformSteadyValue))
+{
+}
+  
+FieldData::FieldData(const SelectableSubsetParameter& p)
+: p_(p.clone())
+{
+}
+
+
+OFDictData::data FieldData::sourceEntry() const
+{
+  std::ostringstream os;
+  
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    os<<type<<" unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(inst().getVector("value"));
+    }
+  } 
+  else if (type=="linearProfile")
+  {
+    os<<" "
+      <<type
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("p0"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ep"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ex"))
+      <<" "
+      <<OFDictData::to_OF((*p_)().getVector("ez"));
+
+    os<<" (";
+    const ArrayParameter& cmap = (*p_)().get<ArrayParameter>("cmap");
+    for (int s=0; s<cmap.size(); s++)
+    {
+      const SubsetParameter& cm=dynamic_cast<const SubsetParameter&>(cmap[s]);
+      os<<" "<<cm().getInt("component")<<" "<<cm().getInt("column");
+    }
+    os<<")";
+    
+    os<<" "
+      <<"unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      os << " " << inst().getDouble("time") 
+	<< " \"" << inst().getPath("value")<<"\"";
+    }
+  }
+  else if (type=="fittedProfile")
+  {
+    os<<type<<" unsteady";
+    
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (int s=0; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      const ArrayParameter& comp_coeffs = inst().get<ArrayParameter>("coeffs");
+      os << " " << inst().getDouble("time");
+      for (int k=0; k<comp_coeffs.size(); k++)
+      {
+	const VectorParameter& coeffs=dynamic_cast<const VectorParameter&>(comp_coeffs[k]);
+	os << " [";
+	for (int cc=0; cc<coeffs().n_elem; cc++)
+	  os<<" "<< str( format("%g") % coeffs()[cc] );
+	os<<" ]";
+      }
+    }
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+  }
+  
+  return os.str();
+}
+
+void FieldData::setDirichletBC(OFDictData::dict& BC) const
+{
+  BC["type"]=OFDictData::data("extendedFixedValue");
+  BC["source"]=sourceEntry();
+//   BC["value"]=OFDictData::data( "uniform " + OFDictData::to_OF(vec3(0,0,0)) );
+}
+
+
+
+arma::mat FieldData::representativeValue() const
+{
+  std::string type = p_->selection();
+  if (type=="uniform")
+  {
+    arma::mat meanv;
+    int s=0;
+    const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
+    for (; s<insts.size(); s++)
+    {
+      const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
+      //os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(
+      arma::mat cv=inst().getVector("value");
+      if (meanv.n_elem==0) meanv=cv; else meanv+=cv;
+    }
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    meanv/=double(s);
+    return meanv;
+  } 
+  else if (type=="linearProfile")
+  {
+    throw insight::Exception("not yet implemented: "+type);
+    return arma::mat();
+  }
+  else
+  {
+    throw insight::Exception("Unknown field data description type: "+type);
+    return arma::mat();
+  }
+}
+
+
+
+Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value, const std::string& description)
+{
+  return 
+    new SelectableSubsetParameter
+    (
+      "uniform", 
+      list_of<SelectableSubsetParameter::SingleSubset>
+
+	(
+	  "uniform", new ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    ("values", new ArrayParameter
+	      (
+		SubsetParameter
+		(
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",	new DoubleParameter(0.0, "time instant"))
+		      ("value",	new VectorParameter(reasonable_value, "value components"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		), 
+		1, 
+		"Temporal sampling points. Create one single instant at arbitrary time for the steady case."
+	      )
+	    )
+	    .convert_to_container<ParameterSet::EntryList>()
+	  )
+	)
+
+	(
+	  "linearProfile", new ParameterSet
+	  (
+	      boost::assign::list_of<ParameterSet::SingleEntry>
+	      ("values", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",		new DoubleParameter(0.0, "time instant"))
+		      ("profile",	new PathParameter("", "text file with profile data. First column shall contain sampling coordinate."))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value and time instant of the sampling point"
+		  ), 
+		  1, 
+		  "Temporal sampling points"
+		))
+	      ("cmap", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("column",	new IntParameter(0, "column in profile data"))
+		      ("component",	new IntParameter(0, "corresponding component in value"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Mapping of a column"
+		  ), 
+		  1, 
+		  "Profile data column mapping"
+		))
+	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
+	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
+	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
+	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
+	      .convert_to_container<ParameterSet::EntryList>()
+	    )
+	  )
+
+	(
+	  "fittedProfile", new ParameterSet
+	  (
+	      boost::assign::list_of<ParameterSet::SingleEntry>
+	      ("values", new ArrayParameter
+		(
+		  SubsetParameter
+		  (
+		    ParameterSet
+		    (
+		      boost::assign::list_of<ParameterSet::SingleEntry>
+		      ("time",		new DoubleParameter(0.0, "time instant"))
+		      ("coeffs",	new ArrayParameter
+			(
+			  VectorParameter(arma::ones(1), "Polynomial coefficients, highest order term first"),
+			  reasonable_value.n_elem,
+			  "Polynomial coefficients for components"
+			)
+		      )
+		      .convert_to_container<ParameterSet::EntryList>()
+		    ), 
+		    "Field value definitions and time instant of the sampling point"
+		  ), 
+		  1, 
+		  "Temporal sampling points"
+		)
+	      )
+	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
+	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
+	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
+	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
+	      .convert_to_container<ParameterSet::EntryList>()
+	    )
+	  )
+	,
+	description
+    );
+}
+
+
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
   patchName_(patchName),
@@ -66,10 +319,13 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.addListIfNonexistent("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
+
   addIntoFieldDictionaries(dictionaries);
+  
   OFDictData::dict bndsubd;
   addOptionsToBoundaryDict(bndsubd);
-  
   insertIntoBoundaryDict(dictionaries, patchName_, bndsubd);
 }
 
@@ -499,6 +755,122 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+TurbulenceSpecification::TurbulenceSpecification(const uniformIntensityAndLengthScale& uil)
+: boost::variant<
+    uniformIntensityAndLengthScale,
+    oneEqn,
+    twoEqn
+    >(uil)
+{}
+
+TurbulenceSpecification::TurbulenceSpecification(const oneEqn& oe)
+: boost::variant<
+    uniformIntensityAndLengthScale,
+    oneEqn,
+    twoEqn
+    >(oe)
+{}
+
+
+TurbulenceSpecification::TurbulenceSpecification(const twoEqn& te)
+: boost::variant<
+    uniformIntensityAndLengthScale,
+    oneEqn,
+    twoEqn
+    >(te)
+{}
+
+
+
+void TurbulenceSpecification::setDirichletBC_k(OFDictData::dict& BC, double U) const
+{
+  if (const uniformIntensityAndLengthScale* uil = get<uniformIntensityAndLengthScale>(this))
+  {
+    double I=get<0>(*uil), L=get<1>(*uil);
+    
+    double uprime=I*U;
+    double k=max(1e-6, 3.*pow(uprime, 2)/2.);
+    BC["type"]="fixedValue";
+    BC["value"]="uniform "+lexical_cast<string>(k);
+  }
+  else
+  {
+    throw insight::Exception("Unsupported kind of turbulence specification for selected turbulence model: BC for k cannot be deduced.");
+  }
+}
+
+void TurbulenceSpecification::setDirichletBC_omega(OFDictData::dict& BC, double U) const
+{
+  if (const uniformIntensityAndLengthScale* uil = get<uniformIntensityAndLengthScale>(this))
+  {
+    double I=get<0>(*uil), L=get<1>(*uil);
+    
+    double uprime=I*U;
+    double k=max(1e-6, 3.*pow(uprime, 2)/2.);
+    double omega=sqrt(k)/L;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(omega);
+  }
+  else
+  {
+    throw insight::Exception("Unsupported kind of turbulence specification for selected turbulence model: BC for omega cannot be deduced.");
+  }
+}
+
+void TurbulenceSpecification::setDirichletBC_epsilon(OFDictData::dict& BC, double U) const
+{
+  if (const uniformIntensityAndLengthScale* uil = get<uniformIntensityAndLengthScale>(this))
+  {
+    double I=get<0>(*uil), L=get<1>(*uil);
+    
+    double uprime=I*U;
+    double k=3.*pow(uprime, 2)/2.;
+    double epsilon=0.09*pow(k, 1.5)/L;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(epsilon);
+  }
+  else
+  {
+    throw insight::Exception("Unsupported kind of turbulence specification for selected turbulence model: BC for epsilon cannot be deduced.");
+  }
+}
+
+
+void TurbulenceSpecification::setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const
+{
+  if (const uniformIntensityAndLengthScale* uil = get<uniformIntensityAndLengthScale>(this))
+  {
+    double I=get<0>(*uil), L=get<1>(*uil);
+    
+    double nutilda=sqrt(1.5)*I * U * L;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(nutilda);
+  }
+  else
+  {
+    throw insight::Exception("Unsupported kind of turbulence specification for selected turbulence model: BC for epsilon cannot be deduced.");
+  }
+}
+
+void TurbulenceSpecification::setDirichletBC_R(OFDictData::dict& BC, double U) const
+{
+  if (const uniformIntensityAndLengthScale* uil = get<uniformIntensityAndLengthScale>(this))
+  {
+    double I=get<0>(*uil), L=get<1>(*uil);
+    
+    double uprime=I*U;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
+  }
+  else
+  {
+    throw insight::Exception("Unsupported kind of turbulence specification for selected turbulence model: BC for R cannot be deduced.");
+  }
+}
+
+
+
+
 VelocityInletBC::VelocityInletBC
 (
   OpenFOAMCase& c, 
@@ -511,6 +883,7 @@ VelocityInletBC::VelocityInletBC
 {
 }
 
+
 void VelocityInletBC::setField_p(OFDictData::dict& BC) const
 {
   BC["type"]=OFDictData::data("zeroGradient");
@@ -518,11 +891,7 @@ void VelocityInletBC::setField_p(OFDictData::dict& BC) const
 
 void VelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=OFDictData::data("fixedValue");
-  BC["value"]=OFDictData::data("uniform ( "
-    +lexical_cast<std::string>(p_.velocity()(0))+" "
-    +lexical_cast<std::string>(p_.velocity()(1))+" "
-    +lexical_cast<std::string>(p_.velocity()(2))+" )");
+  p_.velocity().setDirichletBC(BC);
 }
 
 void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -551,8 +920,9 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       (get<0>(field.second)==scalarField) 
     )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(p_.T());
+      p_.T().setDirichletBC(BC);
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]="uniform "+lexical_cast<string>(p_.T());
     }    
     else if ( 
       ( (field.first=="pd") || (field.first=="p_rgh") )
@@ -570,43 +940,34 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+//       BC["type"]=OFDictData::data("fixedValue");
+//       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+      p_.rho().setDirichletBC(BC);
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(k);
+      p_.turbulence().setDirichletBC_k( BC, arma::norm(p_.velocity().representativeValue(), 2) );
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=max(1e-6, 3.*pow(uprime, 2)/2.);
-      double omega=sqrt(k)/p_.mixingLength();
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(omega);
+      p_.turbulence().setDirichletBC_omega( BC, arma::norm(p_.velocity().representativeValue(), 2) );
     }
     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
     {
-      double uprime=p_.turbulenceIntensity()* arma::norm(p_.velocity(), 2);
-      double k=3.*pow(uprime, 2)/2.;
-      double epsilon=0.09*pow(k, 1.5)/p_.mixingLength();
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(epsilon);
+      p_.turbulence().setDirichletBC_epsilon( BC, arma::norm(p_.velocity().representativeValue(), 2) );
     }
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
     {
-      double nutilda=1e-10; //sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(nutilda);
+      BC["type"]=OFDictData::data("calculated");
+      BC["value"]="uniform "+lexical_cast<string>(1e-10);
     }
     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
     {
-      double nutilda=sqrt(1.5)*p_.turbulenceIntensity() * arma::norm(p_.velocity(), 2) * p_.mixingLength();
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform "+lexical_cast<string>(nutilda);
+      p_.turbulence().setDirichletBC_nuTilda( BC, arma::norm(p_.velocity().representativeValue(), 2) );      
+    }
+    else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
+    {
+      p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );
     }
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
@@ -816,296 +1177,296 @@ void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
 }
 
 
-TurbulentVelocityInletBC::inflowInitializer::~inflowInitializer()
-{
-}
-
-void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
-(
-  OFDictData::dict& d, 
-  const std::string& patchName,
-  const arma::mat& Ubulk,
-  const ParameterSet& params
-) const
-{
-  d["patchName"]=patchName;
-  
-  std::string MeanVelocityModel = params.get<SelectableSubsetParameter>("meanvelocity").selection();
-  std::string ReynoldsStressModel = params.get<SelectableSubsetParameter>("reystress").selection();
-  std::string LengthScaleModel = params.get<SelectableSubsetParameter>("lengthscale").selection();
-  const ParameterSet& MeanVelocityModelParams = params.get<SelectableSubsetParameter>("meanvelocity")();
-  const ParameterSet& LengthScaleModelParams = params.get<SelectableSubsetParameter>("lengthscale")();
-  const ParameterSet& ReynoldsStressModelParams = params.get<SelectableSubsetParameter>("reystress")();
-  
-  d["MeanVelocityModel"]=MeanVelocityModel;
-  OFDictData::dict cd;
-  if (MeanVelocityModel=="PowerLawMeanVelocity")
-  {
-    cd["n"]=MeanVelocityModelParams.getDouble("n");
-  }
-  else if (MeanVelocityModel=="TabulatedMeanVelocity")
-  {
-    cd["fileNameX"]="\""+MeanVelocityModelParams.getString("fileNameX")+"\"";
-    cd["fileNameY"]="\""+MeanVelocityModelParams.getString("fileNameY")+"\"";
-    cd["fileNameZ"]="\""+MeanVelocityModelParams.getString("fileNameZ")+"\"";
-  }
-  else if (MeanVelocityModel=="DNSMeanVelocity")
-  {
-    cd["datasetName"]="\""+MeanVelocityModelParams.getString("datasetName")+"\"";
-    cd["xCompName"]="\""+MeanVelocityModelParams.getString("xCompName")+"\"";
-    cd["yCompName"]="\""+MeanVelocityModelParams.getString("yCompName")+"\"";
-    cd["zCompName"]="\""+MeanVelocityModelParams.getString("zCompName")+"\"";
-  }
-  else throw insight::Exception("Unsupported MeanVelocityModel: "+MeanVelocityModel);
-  d[MeanVelocityModel+"Coeffs"]=cd;
-  
-  d["LengthScaleModel"]=LengthScaleModel;
-  OFDictData::dict lcd;
-  if (LengthScaleModel=="FittedIsotropicLengthScaleModel")
-  {
-    arma::mat coeff=LengthScaleModelParams.get<VectorParameter>("Lcoeff")();
-    lcd["c0"]=coeff(0);
-    lcd["c1"]=coeff(1);
-    lcd["c2"]=coeff(2);
-    lcd["c3"]=coeff(3);
-  }
-  else if (LengthScaleModel=="FittedAnisotropicLengthScaleModel")
-  {
-    arma::mat Llongcoeff=LengthScaleModelParams.get<VectorParameter>("Llongcoeff")();
-    arma::mat Lwallcoeff=LengthScaleModelParams.get<VectorParameter>("Lwallcoeff")();
-    arma::mat Llatcoeff=LengthScaleModelParams.get<VectorParameter>("Llatcoeff")();
-    OFDictData::dict csd;
-    csd["c0"]=Llongcoeff(0);
-    csd["c1"]=Llongcoeff(1);
-    csd["c2"]=Llongcoeff(2);
-    csd["c3"]=Llongcoeff(3);
-    lcd["x"]=csd;
-    csd["c0"]=Lwallcoeff(0);
-    csd["c1"]=Lwallcoeff(1);
-    csd["c2"]=Lwallcoeff(2);
-    csd["c3"]=Lwallcoeff(3);
-    lcd["y"]=csd;
-    csd["c0"]=Llatcoeff(0);
-    csd["c1"]=Llatcoeff(1);
-    csd["c2"]=Llatcoeff(2);
-    csd["c3"]=Llatcoeff(3);
-    lcd["z"]=csd;
-  }
-  else throw insight::Exception("Unsupported LengthScaleModel: "+LengthScaleModel);
-  d[LengthScaleModel+"Coeffs"]=lcd;
-
-  d["ReynoldsStressModel"]=ReynoldsStressModel;
-  OFDictData::dict rcd;
-  if (ReynoldsStressModel=="DNSReynoldsStresses")
-  {
-    rcd["datasetName"]="\""+ReynoldsStressModelParams.getString("datasetName")+"\"";
-    rcd["xCompName"]="\""+ReynoldsStressModelParams.getString("xCompName")+"\"";
-    rcd["yCompName"]="\""+ReynoldsStressModelParams.getString("yCompName")+"\"";
-    rcd["zCompName"]="\""+ReynoldsStressModelParams.getString("zCompName")+"\"";
-  }
-  else if (ReynoldsStressModel=="TabulatedKReynoldsStresses")
-  {
-    rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
-  }
-  else if (ReynoldsStressModel=="WallLayerReynoldsStresses")
-  {
-    //rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
-  }
-  else throw insight::Exception("Unsupported ReynoldsStressModel: "+ReynoldsStressModel);
-  d[ReynoldsStressModel+"Coeffs"]=rcd;
-  
-}
-
-ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
-{
-  arma::mat Clong, Clat;
-  Clong << 0.78102065<<-0.30801496<<0.18299657<<3.73012118;
-  Clat << 0.84107675<<-0.63386837<<0.62172817<<0.7780003;  
-  
-  return ParameterSet
-  (
-      boost::assign::list_of<ParameterSet::SingleEntry>
-      (
-	"inflow", new SubsetParameter
-	(
-	  ParameterSet( list_of<ParameterSet::SingleEntry>
-	  // Mean velocity
-	  (
-	    "meanvelocity",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "PowerLawMeanVelocity", 
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"PowerLawMeanVelocity", new ParameterSet
-		(
-		  list_of<ParameterSet::SingleEntry>
-		  ("n", new DoubleParameter(7., "denominator of exponent 1/n of mean velocity power law"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"TabulatedMeanVelocity", new ParameterSet
-		(
-		  list_of<ParameterSet::SingleEntry>
-		  ("fileNameX", new PathParameter("umeanaxial_vs_yp.txt", "name of the ascii file containing the profile of mean axial velocity"))
-		  ("fileNameY", new PathParameter("umeanwallnormal_vs_yp.txt", "name of the ascii file containing the profile of mean wall normal velocity"))
-		  ("fileNameZ", new PathParameter("umeanspanwise_vs_yp.txt", "name of the ascii file containing the profile of mean spanwise velocity"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"DNSMeanVelocity", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("datasetName", new StringParameter("MKM_Channel", "name of DNS dataset"))
-		  ("xCompName", new StringParameter("590/umean_vs_yp", "Name of x-velocity profile in dataset"))
-		  ("yCompName", new StringParameter("590/vmean_vs_yp", "Name of y-velocity profile in dataset"))
-		  ("zCompName", new StringParameter("590/wmean_vs_yp", "Name of z-velocity profile in dataset"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
+// TurbulentVelocityInletBC::inflowInitializer::~inflowInitializer()
+// {
+// }
+// 
+// void TurbulentVelocityInletBC::inflowInitializer::addToInitializerList
+// (
+//   OFDictData::dict& d, 
+//   const std::string& patchName,
+//   const arma::mat& Ubulk,
+//   const ParameterSet& params
+// ) const
+// {
+//   d["patchName"]=patchName;
+//   
+//   std::string MeanVelocityModel = params.get<SelectableSubsetParameter>("meanvelocity").selection();
+//   std::string ReynoldsStressModel = params.get<SelectableSubsetParameter>("reystress").selection();
+//   std::string LengthScaleModel = params.get<SelectableSubsetParameter>("lengthscale").selection();
+//   const ParameterSet& MeanVelocityModelParams = params.get<SelectableSubsetParameter>("meanvelocity")();
+//   const ParameterSet& LengthScaleModelParams = params.get<SelectableSubsetParameter>("lengthscale")();
+//   const ParameterSet& ReynoldsStressModelParams = params.get<SelectableSubsetParameter>("reystress")();
+//   
+//   d["MeanVelocityModel"]=MeanVelocityModel;
+//   OFDictData::dict cd;
+//   if (MeanVelocityModel=="PowerLawMeanVelocity")
+//   {
+//     cd["n"]=MeanVelocityModelParams.getDouble("n");
+//   }
+//   else if (MeanVelocityModel=="TabulatedMeanVelocity")
+//   {
+//     cd["fileNameX"]="\""+MeanVelocityModelParams.getString("fileNameX")+"\"";
+//     cd["fileNameY"]="\""+MeanVelocityModelParams.getString("fileNameY")+"\"";
+//     cd["fileNameZ"]="\""+MeanVelocityModelParams.getString("fileNameZ")+"\"";
+//   }
+//   else if (MeanVelocityModel=="DNSMeanVelocity")
+//   {
+//     cd["datasetName"]="\""+MeanVelocityModelParams.getString("datasetName")+"\"";
+//     cd["xCompName"]="\""+MeanVelocityModelParams.getString("xCompName")+"\"";
+//     cd["yCompName"]="\""+MeanVelocityModelParams.getString("yCompName")+"\"";
+//     cd["zCompName"]="\""+MeanVelocityModelParams.getString("zCompName")+"\"";
+//   }
+//   else throw insight::Exception("Unsupported MeanVelocityModel: "+MeanVelocityModel);
+//   d[MeanVelocityModel+"Coeffs"]=cd;
+//   
+//   d["LengthScaleModel"]=LengthScaleModel;
+//   OFDictData::dict lcd;
+//   if (LengthScaleModel=="FittedIsotropicLengthScaleModel")
+//   {
+//     arma::mat coeff=LengthScaleModelParams.get<VectorParameter>("Lcoeff")();
+//     lcd["c0"]=coeff(0);
+//     lcd["c1"]=coeff(1);
+//     lcd["c2"]=coeff(2);
+//     lcd["c3"]=coeff(3);
+//   }
+//   else if (LengthScaleModel=="FittedAnisotropicLengthScaleModel")
+//   {
+//     arma::mat Llongcoeff=LengthScaleModelParams.get<VectorParameter>("Llongcoeff")();
+//     arma::mat Lwallcoeff=LengthScaleModelParams.get<VectorParameter>("Lwallcoeff")();
+//     arma::mat Llatcoeff=LengthScaleModelParams.get<VectorParameter>("Llatcoeff")();
+//     OFDictData::dict csd;
+//     csd["c0"]=Llongcoeff(0);
+//     csd["c1"]=Llongcoeff(1);
+//     csd["c2"]=Llongcoeff(2);
+//     csd["c3"]=Llongcoeff(3);
+//     lcd["x"]=csd;
+//     csd["c0"]=Lwallcoeff(0);
+//     csd["c1"]=Lwallcoeff(1);
+//     csd["c2"]=Lwallcoeff(2);
+//     csd["c3"]=Lwallcoeff(3);
+//     lcd["y"]=csd;
+//     csd["c0"]=Llatcoeff(0);
+//     csd["c1"]=Llatcoeff(1);
+//     csd["c2"]=Llatcoeff(2);
+//     csd["c3"]=Llatcoeff(3);
+//     lcd["z"]=csd;
+//   }
+//   else throw insight::Exception("Unsupported LengthScaleModel: "+LengthScaleModel);
+//   d[LengthScaleModel+"Coeffs"]=lcd;
+// 
+//   d["ReynoldsStressModel"]=ReynoldsStressModel;
+//   OFDictData::dict rcd;
+//   if (ReynoldsStressModel=="DNSReynoldsStresses")
+//   {
+//     rcd["datasetName"]="\""+ReynoldsStressModelParams.getString("datasetName")+"\"";
+//     rcd["xCompName"]="\""+ReynoldsStressModelParams.getString("xCompName")+"\"";
+//     rcd["yCompName"]="\""+ReynoldsStressModelParams.getString("yCompName")+"\"";
+//     rcd["zCompName"]="\""+ReynoldsStressModelParams.getString("zCompName")+"\"";
+//   }
+//   else if (ReynoldsStressModel=="TabulatedKReynoldsStresses")
+//   {
+//     rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
+//   }
+//   else if (ReynoldsStressModel=="WallLayerReynoldsStresses")
+//   {
+//     //rcd["fileName"]="\""+ReynoldsStressModelParams.getPath("fileName").string()+"\"";
+//   }
+//   else throw insight::Exception("Unsupported ReynoldsStressModel: "+ReynoldsStressModel);
+//   d[ReynoldsStressModel+"Coeffs"]=rcd;
+//   
+// }
+// 
+// ParameterSet TurbulentVelocityInletBC::inflowInitializer::defaultParameters()
+// {
+//   arma::mat Clong, Clat;
+//   Clong << 0.78102065<<-0.30801496<<0.18299657<<3.73012118;
+//   Clat << 0.84107675<<-0.63386837<<0.62172817<<0.7780003;  
+//   
+//   return ParameterSet
+//   (
+//       boost::assign::list_of<ParameterSet::SingleEntry>
+//       (
+// 	"inflow", new SubsetParameter
+// 	(
+// 	  ParameterSet( list_of<ParameterSet::SingleEntry>
+// 	  // Mean velocity
+// 	  (
+// 	    "meanvelocity",
+// 	    
+// 	    new SelectableSubsetParameter
+// 	    (
+// 	      
+// 	      "PowerLawMeanVelocity", 
+// 	      list_of<SelectableSubsetParameter::SingleSubset>
 // 	      (
-// 		"TabulatedMeanVelocity", new ParameterSet
+// 		"PowerLawMeanVelocity", new ParameterSet
 // 		(
-// 		  boost::assign::list_of<ParameterSet::SingleEntry>
-// 		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
+// 		  list_of<ParameterSet::SingleEntry>
+// 		  ("n", new DoubleParameter(7., "denominator of exponent 1/n of mean velocity power law"))
 // 		  .convert_to_container<ParameterSet::EntryList>()
 // 		)
 // 	      )
-	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the mean inflow velocity"
-	    )
-	  )
-
-	  // RMS
-	  (
-	    "reystress",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "WallLayerReynoldsStresses",  // default selection
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"WallLayerReynoldsStresses", new ParameterSet
-		(
-		  ParameterSet::EntryList()
-		)
-	      )
-	      (
-		"DNSReynoldsStresses", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("datasetName", new StringParameter("MKM_Channel", "name of the DNS dataset"))
-		  ("xCompName", new StringParameter("590/Ruu_vs_yp", "Name of Rxx profile in dataset"))
-		  ("yCompName", new StringParameter("590/Rvv_vs_yp", "Name of Ryy profile in dataset"))
-		  ("zCompName", new StringParameter("590/Rww_vs_yp", "Name of Rzz profile in dataset"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"TabulatedKReynoldsStresses", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("fileName", new PathParameter("Kp_vs_ydelta.txt", "name of the ascii file containing the profile of TKE"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the reynolds stresses"
-	    )
-	  )
-	  
-	  // length scale
-	  (
-	    "lengthscale",
-	    
-	    new SelectableSubsetParameter
-	    (
-	      
-	      "FittedIsotropicLengthScaleModel",  // default selection
-	      list_of<SelectableSubsetParameter::SingleSubset>
-	      (
-		"FittedIsotropicLengthScaleModel", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("Lcoeff",	new VectorParameter(Clong, "Coefficients of isotropic length scale profile fit"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      (
-		"FittedAnisotropicLengthScaleModel", new ParameterSet
-		(
-		  boost::assign::list_of<ParameterSet::SingleEntry>
-		  ("Llongcoeff",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
-		  ("Lwallcoeff",	new VectorParameter(Clat, "Coefficients of wall-normal length scale profile fit"))
-		  ("Llatcoeff",		new VectorParameter(Clat, "Coefficients of lateral length scale profile fit"))
-		  .convert_to_container<ParameterSet::EntryList>()
-		)
-	      )
-	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
-	     
-	      "Definition of the length scale"
-	    )
-	  )
-
-	  .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the inflow boundary condition"
-	)
-      )
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-}
-
-TurbulentVelocityInletBC::pipeInflowInitializer::pipeInflowInitializer()
-{
-}
-
-std::string TurbulentVelocityInletBC::pipeInflowInitializer::type() const
-{
-  return "pipeFlow";
-}
-
-void TurbulentVelocityInletBC::pipeInflowInitializer::addToInitializerList
-(
-  OFDictData::dict& d, 
-  const std::string& patchName,
-  const arma::mat& Ubulk,
-  const ParameterSet& params
-) const
-{
-  d["Ubulk"]=arma::norm(Ubulk, 2);
-  inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
-}
-
-TurbulentVelocityInletBC::channelInflowInitializer::channelInflowInitializer()
-{
-}
-
-std::string TurbulentVelocityInletBC::channelInflowInitializer::type() const
-{
-  return "channelFlow";
-}
-
-void TurbulentVelocityInletBC::channelInflowInitializer::addToInitializerList
-(
-  OFDictData::dict& d, 
-  const std::string& patchName,
-  const arma::mat& Ubulk,
-  const ParameterSet& params
-) const
-{
-  d["Ubulk"]=arma::norm(Ubulk, 2);
-  d["vertical"]=OFDictData::to_OF(vec3(0,1,0));
-  inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
-}
+// 	      (
+// 		"TabulatedMeanVelocity", new ParameterSet
+// 		(
+// 		  list_of<ParameterSet::SingleEntry>
+// 		  ("fileNameX", new PathParameter("umeanaxial_vs_yp.txt", "name of the ascii file containing the profile of mean axial velocity"))
+// 		  ("fileNameY", new PathParameter("umeanwallnormal_vs_yp.txt", "name of the ascii file containing the profile of mean wall normal velocity"))
+// 		  ("fileNameZ", new PathParameter("umeanspanwise_vs_yp.txt", "name of the ascii file containing the profile of mean spanwise velocity"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// 	      (
+// 		"DNSMeanVelocity", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("datasetName", new StringParameter("MKM_Channel", "name of DNS dataset"))
+// 		  ("xCompName", new StringParameter("590/umean_vs_yp", "Name of x-velocity profile in dataset"))
+// 		  ("yCompName", new StringParameter("590/vmean_vs_yp", "Name of y-velocity profile in dataset"))
+// 		  ("zCompName", new StringParameter("590/wmean_vs_yp", "Name of z-velocity profile in dataset"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// // 	      (
+// // 		"TabulatedMeanVelocity", new ParameterSet
+// // 		(
+// // 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// // 		  ("tablefile", new PathParameter("meanvelocity.txt", "file with tabular data of mean velocity"))
+// // 		  .convert_to_container<ParameterSet::EntryList>()
+// // 		)
+// // 	      )
+// 	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+// 	     
+// 	      "Definition of the mean inflow velocity"
+// 	    )
+// 	  )
+// 
+// 	  // RMS
+// 	  (
+// 	    "reystress",
+// 	    
+// 	    new SelectableSubsetParameter
+// 	    (
+// 	      
+// 	      "WallLayerReynoldsStresses",  // default selection
+// 	      list_of<SelectableSubsetParameter::SingleSubset>
+// 	      (
+// 		"WallLayerReynoldsStresses", new ParameterSet
+// 		(
+// 		  ParameterSet::EntryList()
+// 		)
+// 	      )
+// 	      (
+// 		"DNSReynoldsStresses", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("datasetName", new StringParameter("MKM_Channel", "name of the DNS dataset"))
+// 		  ("xCompName", new StringParameter("590/Ruu_vs_yp", "Name of Rxx profile in dataset"))
+// 		  ("yCompName", new StringParameter("590/Rvv_vs_yp", "Name of Ryy profile in dataset"))
+// 		  ("zCompName", new StringParameter("590/Rww_vs_yp", "Name of Rzz profile in dataset"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// 	      (
+// 		"TabulatedKReynoldsStresses", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("fileName", new PathParameter("Kp_vs_ydelta.txt", "name of the ascii file containing the profile of TKE"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// 	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+// 	     
+// 	      "Definition of the reynolds stresses"
+// 	    )
+// 	  )
+// 	  
+// 	  // length scale
+// 	  (
+// 	    "lengthscale",
+// 	    
+// 	    new SelectableSubsetParameter
+// 	    (
+// 	      
+// 	      "FittedIsotropicLengthScaleModel",  // default selection
+// 	      list_of<SelectableSubsetParameter::SingleSubset>
+// 	      (
+// 		"FittedIsotropicLengthScaleModel", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("Lcoeff",	new VectorParameter(Clong, "Coefficients of isotropic length scale profile fit"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// 	      (
+// 		"FittedAnisotropicLengthScaleModel", new ParameterSet
+// 		(
+// 		  boost::assign::list_of<ParameterSet::SingleEntry>
+// 		  ("Llongcoeff",	new VectorParameter(Clong, "Coefficients of longitudinal length scale profile fit"))
+// 		  ("Lwallcoeff",	new VectorParameter(Clat, "Coefficients of wall-normal length scale profile fit"))
+// 		  ("Llatcoeff",		new VectorParameter(Clat, "Coefficients of lateral length scale profile fit"))
+// 		  .convert_to_container<ParameterSet::EntryList>()
+// 		)
+// 	      )
+// 	      .convert_to_container<SelectableSubsetParameter::SubsetList>(),
+// 	     
+// 	      "Definition of the length scale"
+// 	    )
+// 	  )
+// 
+// 	  .convert_to_container<ParameterSet::EntryList>()
+// 	  ), 
+// 	  "Definition of the inflow boundary condition"
+// 	)
+//       )
+//       
+//       .convert_to_container<ParameterSet::EntryList>()
+//   );
+// }
+// 
+// TurbulentVelocityInletBC::pipeInflowInitializer::pipeInflowInitializer()
+// {
+// }
+// 
+// std::string TurbulentVelocityInletBC::pipeInflowInitializer::type() const
+// {
+//   return "pipeFlow";
+// }
+// 
+// void TurbulentVelocityInletBC::pipeInflowInitializer::addToInitializerList
+// (
+//   OFDictData::dict& d, 
+//   const std::string& patchName,
+//   const arma::mat& Ubulk,
+//   const ParameterSet& params
+// ) const
+// {
+//   d["Ubulk"]=arma::norm(Ubulk, 2);
+//   inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
+// }
+// 
+// TurbulentVelocityInletBC::channelInflowInitializer::channelInflowInitializer()
+// {
+// }
+// 
+// std::string TurbulentVelocityInletBC::channelInflowInitializer::type() const
+// {
+//   return "channelFlow";
+// }
+// 
+// void TurbulentVelocityInletBC::channelInflowInitializer::addToInitializerList
+// (
+//   OFDictData::dict& d, 
+//   const std::string& patchName,
+//   const arma::mat& Ubulk,
+//   const ParameterSet& params
+// ) const
+// {
+//   d["Ubulk"]=arma::norm(Ubulk, 2);
+//   d["vertical"]=OFDictData::to_OF(vec3(0,1,0));
+//   inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
+// }
 
 TurbulentVelocityInletBC::TurbulentVelocityInletBC
 (
@@ -1122,26 +1483,34 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 
 void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
 {
-  BC["type"]=p_.type();
-  BC["Umean"]="uniform "+OFDictData::to_OF(p_.velocity());
-  
-  BC["c"]="uniform "+str( format("%g") % p_.volexcess());
-  double L=p_.mixingLength();
-  BC["L"]="uniform ( "
-    +lexical_cast<string>(L)+" 0 0 "
-    +lexical_cast<string>(L)+" 0 "
-    +lexical_cast<string>(L)+" )";
-
-  double R=pow(p_.turbulenceIntensity()*norm(p_.velocity(),2), 2);
-  BC["R"]="uniform ( "
-    +lexical_cast<string>(R)+" 0 0 "
-    +lexical_cast<string>(R)+" 0 "
-    +lexical_cast<string>(R)+" )";
-    
-  if (p_.uniformConvection())
-    BC["uniformConvection"]=true;
-
-  BC["value"]="uniform "+OFDictData::to_OF(p_.velocity());
+#warning need to implement
+//   BC["type"]=p_.type();
+//   BC["Umean"]=p_.velocity().sourceEntry();
+//   BC["c"]=p_.volexcess().sourceEntry();
+//   
+//   if (const uniformIntensityAndLengthScale *uil =get<uniformIntensityAndLengthScale>(&p_.turbulence()))
+//   {
+//     double I=get<0>(*uil), L=get<1>(*uil), U=norm(p_.velocity().representativeValue(),2);
+//     BC["L"]="uniform ( "
+//       +lexical_cast<string>(L)+" 0 0 "
+//       +lexical_cast<string>(L)+" 0 "
+//       +lexical_cast<string>(L)+" )";
+// 
+//     double R=pow(I*U, 2);
+//     BC["R"]="uniform ( "
+//       +lexical_cast<string>(R)+" 0 0 "
+//       +lexical_cast<string>(R)+" 0 "
+//       +lexical_cast<string>(R)+" )";
+//   }
+//   else
+//   {
+//     throw insight::Exception("Unsupported kind of turbulence specification for turbulent inflow generator: BC data cannot be extracted");
+//   }
+//     
+//   if (p_.uniformConvection())
+//     BC["uniformConvection"]=true;
+// 
+//   BC["value"]="uniform (0 0 0)";
 }
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1153,63 +1522,55 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 }
 
 
-ParameterSet TurbulentVelocityInletBC::defaultParameters()
+SubsetParameter* TurbulentVelocityInletBC::defaultParameters()
 {
-  ParameterSet p
+  return new SubsetParameter	
   (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      
-      ("inflow", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-		    ("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
-		    ("type", new SelectionParameter(0, 
-			    list_of<string>
-			    ("inflowGenerator<hatSpot>")
-			    ("inflowGenerator<gaussianSpot>")
-			    ("inflowGenerator<decayingTurbulenceSpot>")
-			    ("inflowGenerator<decayingTurbulenceVorton>")
-			    ("inflowGenerator<anisotropicVorton>")
-			    ("modalTurbulence")
-			    , 
-		      "Type of inflow generator"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Inflow generator parameters"
-      ))
-
-      .convert_to_container<ParameterSet::EntryList>()
+      ParameterSet
+      (
+	boost::assign::list_of<ParameterSet::SingleEntry>
+	("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+	("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
+	(
+	  "type", new SelectionParameter(0, 
+	    list_of<string>
+	    ("inflowGenerator<hatSpot>")
+	    ("inflowGenerator<gaussianSpot>")
+	    ("inflowGenerator<decayingTurbulenceSpot>")
+	    ("inflowGenerator<decayingTurbulenceVorton>")
+	    ("inflowGenerator<anisotropicVorton>")
+	    ("modalTurbulence")
+	  , 
+	  "Type of inflow generator")
+	)
+	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
+	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
+	.convert_to_container<ParameterSet::EntryList>()
+      ), 
+      "Inflow generator parameters"
   );
-  
-  p.extend(TurbulentVelocityInletBC::inflowInitializer::defaultParameters().entries());
-  
-  return p;
 }
 
 
-void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const
-{
-  if (p_.initializer())
-  {
-    OFDictData::dictFile inflowProperties;
-    
-    OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
-    
-    initializers.push_back( p_.initializer()->type() );
-    OFDictData::dict d;
-    p_.initializer()->addToInitializerList(d, patchName_, p_.velocity(), iniparams);
-    initializers.push_back(d);
-    
-    // then write to file
-    inflowProperties.write( location / "constant" / "inflowProperties" );
-    
-    OFcase().executeCommand(location, "initInflowGenerator");
-  }
-}
+// void TurbulentVelocityInletBC::initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const
+// {
+//   if (p_.initializer())
+//   {
+//     OFDictData::dictFile inflowProperties;
+//     
+//     OFDictData::list& initializers = inflowProperties.addListIfNonexistent("initializers");
+//     
+//     initializers.push_back( p_.initializer()->type() );
+//     OFDictData::dict d;
+//     p_.initializer()->addToInitializerList(d, patchName_, p_.velocity().representativeValue(), iniparams);
+//     initializers.push_back(d);
+//     
+//     // then write to file
+//     inflowProperties.write( location / "constant" / "inflowProperties" );
+//     
+//     OFcase().executeCommand(location, "initInflowGenerator");
+//   }
+// }
   
 PressureOutletBC::PressureOutletBC
 (

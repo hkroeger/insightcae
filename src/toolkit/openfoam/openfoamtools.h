@@ -25,8 +25,7 @@
 #include <vector>
 #include <float.h>
 
-#include "boost/filesystem.hpp"
-#include "boost/assign.hpp"
+#include "base/boost_include.h"
 
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
@@ -48,7 +47,8 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
  * "to" is created, if nonexistent
  * Copy only basic mesh description, if "purify" is set
  */
-void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, bool purify=false, bool ignoremissing=false);
+void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, 
+		  bool purify=false, bool ignoremissing=false, bool include_zones=false);
 
 void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to);
 
@@ -219,6 +219,8 @@ public:
   
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
   
+  inline const std::string& name() const { return p_.name(); }
+  
   virtual set* clone() const =0;
 };
 
@@ -238,13 +240,41 @@ struct ColumnInfo
 
 typedef std::map<std::string, ColumnInfo > ColumnDescription;
 
-class uniformLine
+class line
 : public set
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( points, arma::mat, vec3(0,0,0) )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  line(Parameters const& p = Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  /**
+   * reads the sampled data from the files
+   * OF writes different files for scalars, vectors tensors. 
+   * They are all read and combined into a single matrix in the above order by column.
+   * Only the last results in the last time folder is returned
+   */
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
+			       ColumnDescription* coldescr=NULL
+			      ) const;
+};
+
+class uniformLine
+: public set
+{
+  line l_;
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
       ( start, arma::mat, vec3(0,0,0) )
-      ( end, arma::mat, vec3(1,0,0) )
+      ( end, arma::mat, vec3(0,0,0) )
       ( np, int, 100 )
   )
 
@@ -262,10 +292,9 @@ public:
    * They are all read and combined into a single matrix in the above order by column.
    * Only the last results in the last time folder is returned
    */
-  static arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       const std::string& setName,
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
 			       ColumnDescription* coldescr=NULL
-			      );
+			      ) const;
 };
 
 class circumferentialAveragedUniformLine
@@ -282,6 +311,9 @@ public:
 
 protected:
   Parameters p_;
+  double L_;
+  arma::mat x_, dir_;
+  boost::ptr_vector<line> lines_;
 
 public:
   circumferentialAveragedUniformLine(Parameters const& p = Parameters() );
@@ -295,9 +327,39 @@ public:
 			      ) const;
 };
 
+class linearAveragedPolyLine
+: public set
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
+      ( points, arma::mat, vec3(0,0,0) )
+      ( dir1, arma::mat, vec3(1,0,0) )
+      ( dir2, arma::mat, vec3(0,0,1) )
+      ( nd1, int, 10 )
+      ( nd2, int, 10 )
+  )
+
+protected:
+  linearAveragedPolyLine::Parameters p_;
+  arma::mat x_;
+  boost::ptr_vector<line> lines_;
+
+public:
+  linearAveragedPolyLine(linearAveragedPolyLine::Parameters const& p = linearAveragedPolyLine::Parameters() );
+  virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  virtual set* clone() const;
+  
+  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
+  arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
+			       ColumnDescription* coldescr=NULL
+			      ) const;
+};
+
 class linearAveragedUniformLine
 : public set
 {
+  linearAveragedPolyLine pl_;
+  
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
       ( start, arma::mat, vec3(0,0,0) )
@@ -310,19 +372,33 @@ public:
   )
 
 protected:
-  Parameters p_;
-  arma::mat x_;
+  linearAveragedUniformLine::Parameters p_;
 
 public:
-  linearAveragedUniformLine(Parameters const& p = Parameters() );
+  linearAveragedUniformLine(linearAveragedUniformLine::Parameters const& p = linearAveragedUniformLine::Parameters() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
   virtual set* clone() const;
   
-  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       ColumnDescription* coldescr=NULL
 			      ) const;
 };
+
+template<class T>
+const T& findSet(const boost::ptr_vector<sampleOps::set>& sets, const std::string& name)
+{
+  const T* ptr=NULL;
+  BOOST_FOREACH(const set& s, sets)
+  {
+    if (s.name()==name)
+    {
+      ptr=dynamic_cast<const T*>(&s);
+      if (ptr!=NULL) return *ptr;
+    }
+  }
+  insight::Exception("Could not find a set with name "+name+" matching the requested type!");
+  return *ptr;
+}
 
 }
 
@@ -347,7 +423,7 @@ void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& 
 
 void mapFields(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target, bool parallelTarget=false);
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false);
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false, bool include_zones=false);
 
 void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);
 

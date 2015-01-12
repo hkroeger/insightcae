@@ -19,8 +19,7 @@
  */
 
 #include <QtGui/QApplication>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/operations.hpp>
+#include "base/boost_include.h"
 #include "workbench.h"
 
 #include "base/linearalgebra.h"

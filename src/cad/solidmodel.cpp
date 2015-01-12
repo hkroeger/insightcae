@@ -89,28 +89,36 @@ TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filena
   }  
 }
 
+void SolidModel::setShape(const TopoDS_Shape& shape)
+{
+  shape_=shape;
+  nameFeatures();
+}
+
+
 SolidModel::SolidModel()
 : isleaf_(true)
 {
 }
 
 SolidModel::SolidModel(const SolidModel& o)
-: isleaf_(true), shape_(o.shape_)
+: isleaf_(true),
+  providedSubshapes_(o.providedSubshapes_),
+  providedDatums_(o.providedDatums_)
 {
-  nameFeatures();
-  cout<<"Copied SolidModel"<<endl;
+  setShape(o.shape_);
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
-: isleaf_(true), shape_(shape)
+: isleaf_(true)
 {
-  nameFeatures();
+  setShape(shape);
 }
 
 SolidModel::SolidModel(const boost::filesystem::path& filepath)
-: isleaf_(true), shape_(loadShapeFromFile(filepath))
+: isleaf_(true)
 {
-  nameFeatures();
+  setShape(loadShapeFromFile(filepath));
 }
 
 SolidModel::~SolidModel()
@@ -119,9 +127,7 @@ SolidModel::~SolidModel()
 
 SolidModel& SolidModel::operator=(const SolidModel& o)
 {
-  shape_=o.shape_;
-  nameFeatures();
-  cout<<"Assigned SolidModel"<<endl;
+  setShape(o.shape_);
   return *this;
 }
 
@@ -238,10 +244,10 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
   return query_edges_subset(allEdges(), f);
 }
 
-FeatureSet SolidModel::query_edges(const string& queryexpr) const
+FeatureSet SolidModel::query_edges(const string& queryexpr, const FeatureSetList& refs) const
 {
   std::istringstream is(queryexpr);
-  return query_edges(parseEdgeFilterExpr(is));
+  return query_edges(parseEdgeFilterExpr(is, refs));
 }
 
 FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr& f) const
@@ -258,6 +264,7 @@ FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr&
   {
     if (f->checkMatch(i)) res.insert(i);
   }
+  cout<<"QUERY_EDGES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -267,10 +274,10 @@ FeatureSet SolidModel::query_faces(const FilterPtr& f) const
   return query_faces_subset(allFaces(), f);
 }
 
-FeatureSet SolidModel::query_faces(const string& queryexpr) const
+FeatureSet SolidModel::query_faces(const string& queryexpr, const FeatureSetList& refs) const
 {
   std::istringstream is(queryexpr);
-  return query_faces(parseFaceFilterExpr(is));
+  return query_faces(parseFaceFilterExpr(is, refs));
 }
 
 
@@ -288,6 +295,7 @@ FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const FilterPtr&
   {
     if (f->checkMatch(i)) res.insert(i);
   }
+  cout<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;
 }
 
@@ -657,6 +665,104 @@ void SolidModel::nameFeatures()
 
 }
 
+Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
+{
+  gp_Pnt 
+    p1(to_Pnt(p0)),
+    p2=p1.Translated(to_Vec(e1)),
+    p3=p1.Translated(to_Vec(e2))
+  ;
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+  w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
+  w.Add(BRepBuilderAPI_MakeEdge(p3, p1));
+  
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+}
+
+Tri::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
+Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
+{
+  gp_Pnt 
+    p1(to_Pnt(p0)),
+    p2=p1.Translated(to_Vec(W)),
+    p3=p2.Translated(to_Vec(L)),
+    p4=p1.Translated(to_Vec(L))
+  ;
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(p1, p2));
+  w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
+  w.Add(BRepBuilderAPI_MakeEdge(p3, p4));
+  w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
+  
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+}
+
+Quad::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
+TopoDS_Face makeCircle(const arma::mat& p0, const arma::mat& n, double D)
+{
+  Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0), to_Vec(n), 0.5*D);
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(c));
+  return BRepBuilderAPI_MakeFace(w.Wire());
+}
+
+Circle::Circle(const arma::mat& p0, const arma::mat& n, double D)
+: SolidModel(makeCircle(p0, n, D))
+{
+}
+
+Circle::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
+		 const arma::mat& ez)
+{
+  double ru=a/::cos(M_PI/ne);
+  arma::mat e0=ez;
+  if (e0.n_elem==0)
+  {
+    e0=cross(n, vec3(1,0,0));
+    if (norm(e0,2)<1e-6) 
+      e0=cross(n, vec3(0,1,0));
+  }
+  int z=round(ne);
+  double delta_phi=2.*M_PI/double(z);
+  BRepBuilderAPI_MakeWire w;
+  for (int i=0; i<z; i++)
+  {
+    arma::mat npm=p0+rotMatrix((0.5+double(i-1))*delta_phi, n)*(ru*e0);
+    arma::mat np=p0+rotMatrix((0.5+double(i))*delta_phi, n)*(ru*e0);
+    w.Add(BRepBuilderAPI_MakeEdge(to_Pnt(npm), to_Pnt(np)));
+  }
+  
+//   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+}
+
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel
   (
@@ -783,6 +889,63 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 {
 }
 
+
+TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
+{
+//   BRep_Builder bb;
+//   TopoDS_Compound result;
+//   bb.MakeCompound(result);
+
+  BRepOffsetAPI_ThruSections sb(true);
+  
+  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(sk));
+  
+  double dz=arma::norm(axis, 2);
+  arma::mat ez=axis/norm(axis, 2);
+  double phi=0.0, dphi=2.*dz*M_PI/P;
+  int nstep=std::max( 2, int(ceil(dphi/(M_PI/64.))) );
+  double phi_step=dphi/double(nstep);
+  
+#define TRSF(shape, deltaz, oshape) \
+  {\
+    gp_Trsf t1, t2;\
+    t1.SetTranslation( to_Vec(ez).Scaled(deltaz) );\
+    t2.SetRotation( gp_Ax1( to_Pnt(p0), to_Vec(ez) ), 2.*deltaz*M_PI/P );\
+    oshape = TopoDS::Wire(BRepBuilderAPI_Transform\
+      (\
+	BRepBuilderAPI_Transform\
+	(\
+	  shape, \
+	  t1\
+	).Shape(),\
+        t2\
+      ).Shape());\
+  }
+  
+  TopoDS_Wire firstsec;
+  TRSF(ow, -revoffset, firstsec);
+  
+  for (int i=0; i<nstep+1; i++)
+  {
+    double z=phi*P/(2.*M_PI);
+    TopoDS_Wire cursec;
+    TRSF(firstsec, z, cursec);
+//     bb.Add(result, cursec);
+    sb.AddWire(cursec);
+    
+    phi+=phi_step;
+  }
+  
+//   return result;
+  return sb.Shape();
+}
+
+
+RotatedHelicalSweep::RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
+: SolidModel(makeRotatedHelicalSweep(sk, p0, axis, P, revoffset))
+{
+}
+
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
@@ -819,6 +982,39 @@ BooleanIntersection::BooleanIntersection(const SolidModel& m1, const SolidModel&
 SolidModel operator&(const SolidModel& m1, const SolidModel& m2)
 {
   return BooleanIntersection(m1, m2);
+}
+
+TopoDS_Shape makeProjection
+(
+  const SolidModel& source, 
+  const SolidModel& target, 
+  const arma::mat& dir
+)
+{
+  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source));
+
+  BRepProj_Projection proj(ow, target, to_Vec(dir));
+  
+  return proj.Shape();
+}
+
+Projected::Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir)
+: SolidModel(makeProjection(source, target, dir))
+{
+}
+
+TopoDS_Shape makeSplit(const SolidModel& tool, const SolidModel& target)
+{
+  GEOMAlgo_Splitter spl;
+  spl.AddShape(target);
+  spl.AddTool(tool);
+  spl.Perform();
+  return spl.Shape();
+}
+
+Split::Split(const SolidModel& tool, const SolidModel& target)
+: SolidModel(makeSplit(tool, target))
+{
 }
 
 
@@ -859,26 +1055,28 @@ Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
 }
 
 
-TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
+TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
   
   double delta_phi=norm(axis, 2);
+  double phi0=0.0;
+  if (center) phi0=-0.5*delta_phi*double(n-1);
   gp_Ax1 ax(to_Pnt(p0), to_Vec(axis/delta_phi));
   for (int i=0; i<n; i++)
   {
     gp_Trsf tr;
-    tr.SetRotation(ax, delta_phi*double(i));
+    tr.SetRotation(ax, phi0+delta_phi*double(i));
     bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
   }
   
   return result;
 }
   
-CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n)
-: SolidModel(makePattern(m1, p0, axis, n))
+CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
+: SolidModel(makePattern(m1, p0, axis, n, center))
 {
   m1.unsetLeaf();
 }
@@ -946,6 +1144,14 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
 {
   m1.unsetLeaf();
 }
+
+Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)
+{
+  gp_Trsf tr;
+  tr.SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
+  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+}
+
 
 TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
 {

@@ -257,6 +257,7 @@ void PipeBase::createMesh
       (11, 	vec3(0, 0.5*D-rbuf_, 0))
       (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
       (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
+      .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
@@ -781,7 +782,24 @@ PipeInflow::PipeInflow(const NoParameters& nop)
 ParameterSet PipeInflow::defaultParameters() const
 {
   ParameterSet p(PipeBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::defaultParameters().entries()); 
+
+  std::auto_ptr<SubsetParameter> inflowparams(TurbulentVelocityInletBC::defaultParameters());
+  
+  (*inflowparams)().extend
+  (
+      boost::assign::list_of<ParameterSet::SingleEntry>
+      ("umean", FieldData::defaultParameter(vec3(1,0,0)))
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+  
+  
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    ("inflow", inflowparams.release())
+    .convert_to_container<ParameterSet::EntryList>()
+  );
+    
   return p;
 }
 
@@ -819,12 +837,13 @@ void PipeInflow::createCase
   ));
 
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(Ubulk_, 0, 0))
-    .set_turbulenceIntensity(0.05)
+    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
-    .set_volexcess(p.getDouble("inflow/volexcess"))
-    .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
+//     .set_volexcess(p.getDouble("inflow/volexcess"))
+#warning to be corrected
+    .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2))
+//     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))
   ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
@@ -973,7 +992,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
-  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
+//   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }

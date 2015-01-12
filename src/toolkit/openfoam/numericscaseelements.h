@@ -118,6 +118,15 @@ class simpleFoamNumerics
 : public FVNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (checkResiduals, bool, true)
+    (hasCyclics, bool, false)
+  )
+
+protected:
+  Parameters p_;
+
+public:
   simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
@@ -191,6 +200,16 @@ class cavitatingFoamNumerics
 : public FVNumerics
 {
 public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+      (solverName, std::string, "cavitatingFoam")
+      (pamb, double, 1e5)
+      (rhoamb, double, 1)
+  )
+
+protected:
+  Parameters p_;
+
+public:
   cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
@@ -214,6 +233,7 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   inline const std::string& pressureFieldName() const { return pname_; }
+  inline const std::string& alphaFieldName() const { return alphaname_; }
 };
 
 OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);
@@ -229,6 +249,15 @@ public:
 class interPhaseChangeFoamNumerics
 : public interFoamNumerics
 {
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, interFoamNumerics::Parameters,
+      (solverName, std::string, "interPhaseChangeFoam")
+      (pamb, double, 1e5)
+  )
+
+protected:
+  Parameters p_;
+
 public:
   interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters());
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;

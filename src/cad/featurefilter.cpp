@@ -33,16 +33,9 @@
 #include "gp_Cylinder.hxx"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
-#define BOOST_SPIRIT_DEBUG
+// #define BOOST_SPIRIT_DEBUG
 
-#include "boost/filesystem.hpp"
-#include <boost/fusion/include/std_pair.hpp>
-#include "boost/tuple/tuple.hpp"
-#include "boost/fusion/tuple.hpp"
-#include <boost/fusion/adapted/boost_tuple.hpp>
-#include "boost/variant.hpp"
-#include "boost/ptr_container/ptr_map.hpp"
-#include "boost/ptr_container/ptr_vector.hpp"
+#include "base/boost_include.h"
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
@@ -214,6 +207,87 @@ FilterPtr faceTopology::clone() const
   return FilterPtr(new faceTopology(ct_));
 }
 
+in::in(FeatureSet set)
+: set_(set)
+{
+}
+
+bool in::checkMatch(FeatureID feature) const
+{
+  return set_.find(feature)!=set_.end();
+}
+
+FilterPtr in::clone() const
+{
+  return FilterPtr(new in(set_));
+}
+
+
+
+faceAdjacentToEdges::faceAdjacentToEdges(FeatureSet edges)
+: edges_(edges)
+{
+}
+
+bool faceAdjacentToEdges::checkMatch(FeatureID feature) const
+{
+  TopoDS_Face f=model_->face(feature);
+  for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BOOST_FOREACH(FeatureID ei, edges_)
+    {
+      TopoDS_Edge e2=edges_.model().edge(ei);
+      if (e.IsSame(e2))
+	return true;
+    }
+  }
+  return false;
+}
+
+FilterPtr faceAdjacentToEdges::clone() const
+{
+  return FilterPtr(new faceAdjacentToEdges(edges_));
+}
+
+
+faceAdjacentToFaces::faceAdjacentToFaces(FeatureSet faces)
+: faces_(faces)
+{
+}
+
+bool faceAdjacentToFaces::checkMatch(FeatureID feature) const
+{
+  TopoDS_Face f=model_->face(feature);
+  for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BOOST_FOREACH(FeatureID fi, faces_)
+    {
+      bool valid=true;
+      if (*model_==faces_.model())
+	if (fi==feature) valid=false;
+	
+      if (valid)
+      {
+	TopoDS_Face f2=faces_.model().face(fi);
+	for(TopExp_Explorer ex2(f2, TopAbs_EDGE); ex2.More(); ex2.Next())
+	{
+	  TopoDS_Edge e2=TopoDS::Edge(ex2.Current());
+	  if (e.IsSame(e2))
+	    return true;
+	}
+      }
+    }
+  }
+  return false;
+}
+
+FilterPtr faceAdjacentToFaces::clone() const
+{
+  return FilterPtr(new faceAdjacentToFaces(faces_));
+}
+
 cylFaceOrientation::cylFaceOrientation(bool io)
 : io_(io)
 {
@@ -288,6 +362,66 @@ QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const
 {
   return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
 }
+
+edgeStart::edgeStart() 
+{}
+
+edgeStart::~edgeStart()
+{}
+  
+arma::mat edgeStart::evaluate(FeatureID ei)
+{
+  gp_Pnt p=BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei)));
+  return Vector(p);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeStart::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeStart());
+}
+
+edgeEnd::edgeEnd() 
+{}
+
+edgeEnd::~edgeEnd()
+{}
+  
+arma::mat edgeEnd::evaluate(FeatureID ei)
+{
+  gp_Pnt p=BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei)));
+  return Vector(p);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeEnd::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeEnd());
+}
+
+edgeLen::edgeLen()
+{
+}
+
+edgeLen::~edgeLen()
+{
+}
+
+double edgeLen::evaluate(FeatureID ei)
+{
+  GProp_GProps gpr;
+  TopoDS_Edge e=model_->edge(ei);
+  double l = 0.;
+  if (!e.IsNull() && !BRep_Tool::Degenerated(e)) {
+    BRepGProp::LinearProperties(e, gpr);
+    l = gpr.Mass();
+  }
+  return l;
+}
+
+QuantityComputer< double >::Ptr edgeLen::clone() const
+{
+  return QuantityComputer<double>::Ptr(new edgeLen());
+}
+
 
 faceCoG::faceCoG() 
 {}
@@ -465,7 +599,6 @@ using namespace qi;
 using namespace phx;
 using namespace insight::cad;
 
-typedef std::vector<FeatureSet> FeatureSetList;
 
 FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
 {
@@ -476,7 +609,7 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
      +" is not present in list of size "+lexical_cast<std::string>(fl.size())
     );
   
-  return FeatureSetPtr(new FeatureSet(fl.at(id)));
+  return FeatureSetPtr(fl.at(id)->clone());
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
 
@@ -500,7 +633,7 @@ public:
     qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_functions;
     qi::rule<Iterator, matQuantityComputer::Ptr(), Skipper> r_mat_qty_functions;
     
-    const FeatureSetList& externalFeatureSets_;
+    FeatureSetList externalFeatureSets_;
 
     FeatureFilterExprParser
     (
@@ -510,105 +643,110 @@ public:
       externalFeatureSets_(extsets)
     {
 	r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-	r_featureset = lexeme[ '%' >> int_ ] [ _val = phx::construct<FeatureSetPtr>(lookupFeatureSet_(externalFeatureSets_, _1)) ];
+	r_featureset = lexeme[ '%' >> qi::int_ ] [ qi::_val = phx::construct<FeatureSetPtr>(lookupFeatureSet_(externalFeatureSets_, qi::_1)) ];
 
         r_filter =  r_filter_or.alias();
 
 	r_filter_or = 
-	  ( r_filter_and >> lit("||") > r_filter_and ) [ _val = phx::construct<FilterPtr>(new_<OR>(*_1, *_2)) ] 
-	  | r_filter_and [ _val = _1 ]
+	  ( r_filter_and >> lit("||") > r_filter_and ) [ _val = phx::construct<FilterPtr>(new_<OR>(*qi::_1, *qi::_2)) ] 
+	  | r_filter_and [ qi::_val = qi::_1 ]
 	  ;
 	
 	r_filter_and =
-	  ( r_filter_primary >> lit("&&") > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<AND>(*_1, *_2)) ]
-	  | r_filter_primary [ _val = _1 ]
+	  ( r_filter_primary >> lit("&&") > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<AND>(*qi::_1, *qi::_2)) ]
+	  | r_filter_primary [ qi::_val = qi::_1 ]
 	  ;
 	  
 	r_filter_primary =
-	  ( r_filter_functions ) [ _val = _1 ]
+	  ( r_filter_functions ) [ qi::_val = qi::_1 ]
 	  |
-	  ( lit("maximal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
-	    [ _val = phx::construct<FilterPtr>(new_<maximal>(*_1, _2)) ]
+	  ( lit("in") >> '(' > r_featureset > ')' ) 
+	    [ qi::_val = phx::construct<FilterPtr>(new_<in>(*qi::_1)) ]
 	  |
-	  ( lit("minimal") >> '(' >> r_scalar_qty_expression >> ( ( ',' >> int_ ) | attr(0) ) >> ')' ) 
-	    [ _val = phx::construct<FilterPtr>(new_<minimal>(*_1, _2)) ]
+	  ( lit("maximal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
+	    [ qi::_val = phx::construct<FilterPtr>(new_<maximal>(*qi::_1, qi::_2)) ]
 	  |
-	  ( r_qty_comparison ) [ _val = _1 ]
+	  ( lit("minimal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
+	    [ qi::_val = phx::construct<FilterPtr>(new_<minimal>(*qi::_1, qi::_2)) ]
 	  |
-	  ( '(' > r_filter > ')' ) [ _val = _1 ]
+	  ( r_qty_comparison ) [ qi::_val = qi::_1 ]
+	  |
+	  ( '(' >> r_filter >> ')' ) [ qi::_val = qi::_1 ]
 	  | 
-	  ( '!' > r_filter_primary ) [ _val = phx::construct<FilterPtr>(new_<NOT>(*_1)) ]
+	  ( '!' >> r_filter_primary ) [ qi::_val = phx::construct<FilterPtr>(new_<NOT>(*qi::_1)) ]
 	  ;
 	  
 	r_qty_comparison = 
-	  ( r_scalar_qty_expression >> lit("==") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<equal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit("==") >> r_scalar_qty_expression ) [ qi::_val = phx::construct<FilterPtr>(new_<equal<double, double> >(*qi::_1, *qi::_2)) ]
 	  |
 	  ( r_scalar_qty_expression >> '~' >> r_scalar_qty_expression >> ( ( '{' >> double_ >> '}' ) | attr(1e-2) ) ) 
-	    [ _val = phx::construct<FilterPtr>(new_<approximatelyEqual<double> >(*_1, *_2, _3)) ]
+	    [ qi::_val = phx::construct<FilterPtr>(new_<approximatelyEqual<double> >(*qi::_1, *qi::_2, qi::_3)) ]
 	  |
-	  ( r_scalar_qty_expression >> '>' >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greater<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> '>' >> r_scalar_qty_expression ) [ qi::_val = phx::construct<FilterPtr>(new_<greater<double, double> >(*qi::_1, *qi::_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> lit(">=") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<greaterequal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit(">=") >> r_scalar_qty_expression ) [ qi::_val = phx::construct<FilterPtr>(new_<greaterequal<double, double> >(*qi::_1, *qi::_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> '<' >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<less<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> '<' >> r_scalar_qty_expression ) [ qi::_val = phx::construct<FilterPtr>(new_<less<double, double> >(*qi::_1, *qi::_2)) ]
 	  |
-	  ( r_scalar_qty_expression >> lit("<=") >> r_scalar_qty_expression ) [ _val = phx::construct<FilterPtr>(new_<lessequal<double, double> >(*_1, *_2)) ]
+	  ( r_scalar_qty_expression >> lit("<=") >> r_scalar_qty_expression ) [ qi::_val = phx::construct<FilterPtr>(new_<lessequal<double, double> >(*qi::_1, *qi::_2)) ]
 	  ;
 	  
 	r_scalar_qty_expression =
-	  r_scalar_term [ _val = _1 ]
-	  |
-	  ( r_scalar_term >> '+' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_term >> '+' > r_scalar_term ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*qi::_1, *qi::_2)) ]
 	  | 
-	  ( r_scalar_term >> '-' >> r_scalar_term ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_term >> '-' > r_scalar_term ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*qi::_1, *qi::_2)) ]
+	  |
+	  r_scalar_term [ qi::_val = qi::_1 ]
 	  ;
 	
 	r_scalar_term =
-	  r_scalar_primary [ _val = _1 ]
+	  r_scalar_primary [ qi::_val = qi::_1 ]
 	  |
-	  ( r_scalar_primary >> '*' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_primary >> '*' >> r_scalar_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*qi::_1, *qi::_2)) ]
 	  | 
-	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*_1, *_2)) ]
+	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*qi::_1, *qi::_2)) ]
 	  |
-	  ( r_mat_primary >> '&' >> r_mat_primary ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*_1, *_2)) ]
+	  ( r_mat_primary >> '&' >> r_mat_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  ;
 	  
 	r_scalar_primary =
 	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
-	  |*/ double_ [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(_1)) ]
-	  | r_scalar_qty_functions [ _val = _1 ]
-	  | ( lit("mag") >> '(' >> r_scalar_qty_expression >> ')' ) 
-	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*_1)) ]
-	  | ( lit("angle") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
-	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*_1, *_2)) ]
-	  | ( lit("angleMag") >> '(' >> r_mat_qty_expression >> ',' >> r_mat_qty_expression >> ')' ) 
-	   [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*_1, *_2)) ]
-	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ _val = _1 ]
+	  |*/ double_ [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(qi::_1)) ]
+	  | r_scalar_qty_functions [ qi::_val = qi::_1 ]
+	  | ( lit("mag") > '(' > r_scalar_qty_expression > ')' ) 
+	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*qi::_1)) ]
+	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
+	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*qi::_1)) ]
+	  | ( lit("angle") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
+	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
+	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
+	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
+	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ qi::_val = qi::_1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
-	  | ( r_mat_primary >> '.' >> 'x' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compX<arma::mat> >(*_1)) ]
-	  | ( r_mat_primary >> '.' >> 'y' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compY<arma::mat> >(*_1)) ]
-	  | ( r_mat_primary >> '.' >> 'z' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compZ<arma::mat> >(*_1)) ]
+	  | ( r_mat_primary >> '.' >> 'x' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compX<arma::mat> >(*qi::_1)) ]
+	  | ( r_mat_primary >> '.' >> 'y' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compY<arma::mat> >(*qi::_1)) ]
+	  | ( r_mat_primary >> '.' >> 'z' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compZ<arma::mat> >(*qi::_1)) ]
 	  ;
 	  
 	r_mat_qty_expression =
-	  r_mat_term [ _val = _1 ]
+	  r_mat_term [ qi::_val = qi::_1 ]
 	  |
 	  ( r_mat_term >> '+' >> r_mat_term ) 
-	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<added<arma::mat,arma::mat> >(*_1, *_2)) ]
+	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<added<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  | 
 	  ( r_mat_term >> '-' >> r_mat_term ) 
-	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<subtracted<arma::mat,arma::mat> >(*_1, *_2)) ]
+	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<subtracted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  ;
 	
 	r_mat_term =
 	(
-	  r_mat_primary [ _val = _1 ]
+	  r_mat_primary [ qi::_val = qi::_1 ]
 	  |
 	  ( r_mat_primary >> '*' >> r_mat_primary ) 
-	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<multiplied<arma::mat,arma::mat> >(*_1, *_2)) ]
+	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<multiplied<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  | 
 	  ( r_mat_primary >> '/' >> r_mat_primary ) 
-	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<divided<arma::mat,arma::mat> >(*_1, *_2)) ]
+	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<divided<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	) /*| (
 	  r_vector_primary >> '&' >> r_vector_primary
 	) [_val = dot_(_1, _2) ]*/
@@ -618,12 +756,12 @@ public:
 	  /*lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = _1 ]
 	  |*/ 
 	  ( '[' >> double_ >> ',' >> double_ >> ',' >> double_ >> ']' ) 
-	    [ _val = phx::construct<matQuantityComputer::Ptr>(new_<constantQuantity<arma::mat> >(vec3_(_1,_2,_3))) ]
+	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<constantQuantity<arma::mat> >(vec3_(qi::_1,qi::_2,qi::_3))) ]
 	  | 
-	  r_mat_qty_functions [ _val = _1 ]
+	  r_mat_qty_functions [ qi::_val = qi::_1 ]
 	  | 
-	  ( '(' >> r_mat_qty_expression >> ')' ) [ _val = _1 ]
-// 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
+	  ( '(' >> r_mat_qty_expression >> ')' ) [ qi::_val = qi::_1 ]
+// 	  | ('-' >> r_scalar_primary) [ qi::_val = -qi::_1 ]
 	  ;
 
 //       BOOST_SPIRIT_DEBUG_NODE(r_filter);
@@ -658,25 +796,40 @@ struct EdgeFeatureFilterExprParser
   : FeatureFilterExprParser<Iterator>(extsets)
   {
     FeatureFilterExprParser<Iterator>::r_filter_functions =
-	( lit("isLine") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Line)) ]
+	( lit("isLine") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Line)) ]
 	|
-	( lit("isCircle") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Circle)) ]
+	( lit("isCircle") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Circle)) ]
 	|
-	( lit("isEllipse") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Ellipse)) ]
+	( lit("isEllipse") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Ellipse)) ]
 	|
-	( lit("isHyperbola") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Hyperbola)) ]
+	( lit("isHyperbola") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Hyperbola)) ]
 	|
-	( lit("isParabola") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Parabola)) ]
+	( lit("isParabola") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_Parabola)) ]
 	|
-	( lit("isBezierCurve") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BezierCurve)) ]
+	( lit("isBezierCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BezierCurve)) ]
 	|
-	( lit("isBSplineCurve") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BSplineCurve)) ]
+	( lit("isBSplineCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BSplineCurve)) ]
 	|
-	( lit("isOtherCurve") ) [ _val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_OtherCurve)) ]
+	( lit("isOtherCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_OtherCurve)) ]
 	|
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
-	  [ _val = phx::construct<FilterPtr>(new_<coincidentEdge>(*_1)) ]
+	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
 	  ;
+	  
+      FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
+	( lit("len") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
+      ;
+      
+      FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+//         ( lit("avgTangent") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeAvgTangent>()) ]
+//         |
+        ( lit("CoG") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeCoG>()) ]
+         |
+        ( lit("start") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeStart>()) ]
+         |
+        ( lit("end") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeEnd>()) ]
+      ;
+    
   }
 };
 
@@ -690,44 +843,50 @@ struct FaceFeatureFilterExprParser
   : FeatureFilterExprParser<Iterator>(extsets)
   {
     FeatureFilterExprParser<Iterator>::r_filter_functions = 
-	( lit("isPlane") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Plane)) ]
+	( lit("isPlane") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Plane)) ]
 	|
-	( lit("isCylinder") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cylinder)) ]
+	( lit("isCylinder") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cylinder)) ]
 	|
-	( lit("isCone") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cone)) ]
+	( lit("isCone") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cone)) ]
 	|
-	( lit("isSphere") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Sphere)) ]
+	( lit("isSphere") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Sphere)) ]
 	|
-	( lit("isTorus") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Torus)) ]
+	( lit("isTorus") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Torus)) ]
 	|
-	( lit("isBezierSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BezierSurface)) ]
+	( lit("isBezierSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BezierSurface)) ]
 	|
-	( lit("isBSplineSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BSplineSurface)) ]
+	( lit("isBSplineSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BSplineSurface)) ]
 	|
-	( lit("isSurfaceOfRevolution") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfRevolution)) ]
+	( lit("isSurfaceOfRevolution") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfRevolution)) ]
 	|
-	( lit("isSurfaceOfExtrusion") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfExtrusion)) ]
+	( lit("isSurfaceOfExtrusion") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfExtrusion)) ]
 	|
-	( lit("isOffsetSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
+	( lit("isOffsetSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
 	|
-	( lit("isOtherSurface") ) [ _val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+	( lit("isOtherSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+	|
+	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]
+	|
+	( lit("adjacentToFaces") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToFaces>(*qi::_1)) ]
       ;
 
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
-	( lit("cylRadius") ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
+	( lit("cylRadius") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
       ;
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
-        ( lit("normal") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
+        ( lit("normal") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
         |
-        ( lit("faceCoG") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
+        ( lit("CoG") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
       ;
     
   }
 };
 
 template<class Parser>
-FilterPtr parseFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
 try {
   Parser parser(refs);
@@ -773,12 +932,12 @@ catch (insight::Exception e)
 
 }
 
-FilterPtr parseEdgeFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
   return parseFilterExpr<EdgeFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
-FilterPtr parseFaceFilterExpr(std::istream& in, const std::vector<FeatureSet>& refs)
+FilterPtr parseFaceFilterExpr(std::istream& in, const FeatureSetList& refs)
 {
   return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }

@@ -72,6 +72,10 @@ namespace insight
 defineType(Parameter);
 defineFactoryTable(Parameter, std::string);
 
+Parameter::Parameter()
+{
+}
+
 Parameter::Parameter(const std::string& description)
 : description_(description)
 {

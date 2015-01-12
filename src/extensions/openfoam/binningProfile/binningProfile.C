@@ -71,7 +71,7 @@ public:
       
       int ib=floor(double(n_-1)*(x-x0_)/(x1_-x0_)); // bin index
       
-      //int i=max(0, min(n-2, ib));
+//       ib=max(0, min(n_-1, ib));
       if ( (ib>=0) && (ib<=n_-2) )
       {
 	profile_[ib]+=weights[ib]*f[j];
@@ -157,10 +157,10 @@ void extractProfiles
     forAll(mesh.boundary(), patchI)
       if (isA<wallFvPatch>(mesh.boundary()[patchI]))
       {
-	x0=min(x0, min(mesh.boundary()[patchI].Cf()&axis));
-	x1=max(x1, max(mesh.boundary()[patchI].Cf()&axis));
+	x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
+	x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
       }
-      
+      Info<<x0<<" "<<x1<<endl;
     profileSampler<T> ps(p0, axis, x0, x1, n);
     
     forAll(mesh.boundary(), patchI)
@@ -178,8 +178,8 @@ void extractProfiles
   if (sampleInterior)
   {
     scalar 
-      x0=min(mesh.C().internalField()&axis), 
-      x1=max(mesh.C().internalField()&axis);
+      x0=min(mesh.points()&axis), 
+      x1=max(mesh.points()&axis);
           
     profileSampler<T> ps(p0, axis, x0, x1, n);
     
@@ -198,18 +198,18 @@ void extractProfiles
     word name="patches";
     forAllConstIter(labelHashSet, samplePatches, iter)
     {
-      label pI = iter.key();
-      name += "_"+mesh.boundary()[pI].name();
-      x0=min(x0, min(mesh.boundary()[pI].Cf()&axis));
-      x1=max(x1, max(mesh.boundary()[pI].Cf()&axis));
+      label patchI = iter.key();
+      name += "_"+mesh.boundary()[patchI].name();
+      x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
+      x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
     }
       
     profileSampler<T> ps(p0, axis, x0, x1, n);
     
     forAllConstIter(labelHashSet, samplePatches, iter)
     {
-      label pI = iter.key();
-      ps.cumulateSample(field.boundaryField()[pI], mesh.boundary()[pI].Cf(), mesh.boundary()[pI].magSf());
+      label patchI = iter.key();
+      ps.cumulateSample(field.boundaryField()[patchI], mesh.boundary()[patchI].Cf(), mesh.boundary()[patchI].magSf());
     }
       
     {

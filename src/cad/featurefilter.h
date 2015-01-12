@@ -26,11 +26,7 @@
 #include <vector>
 // #include <iostream>
 
-#include "boost/shared_ptr.hpp"
-#include "boost/concept_check.hpp"
-#include "boost/utility.hpp"
-#include "boost/graph/graph_concepts.hpp"
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
@@ -120,6 +116,45 @@ protected:
 
 public:
     faceTopology(GeomAbs_SurfaceType ct);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
+class in
+    : public Filter
+{
+protected:
+    FeatureSet set_;
+
+public:
+    in(FeatureSet set);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
+class faceAdjacentToEdges
+    : public Filter
+{
+protected:
+    FeatureSet edges_;
+
+public:
+    faceAdjacentToEdges(FeatureSet edges);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
+class faceAdjacentToFaces
+    : public Filter
+{
+protected:
+    FeatureSet faces_;
+
+public:
+    faceAdjacentToFaces(FeatureSet faces);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;
@@ -323,7 +358,7 @@ public:\
     return value;\
   }\
   \
-  virtual typename QuantityComputer<T>::Ptr clone() const { return QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
+  virtual typename QuantityComputer<T>::Ptr clone() const { return typename QuantityComputer<T>::Ptr(new OPERATED_QTC_NAME(*qtc_)); };\
 };
 
 #define UNARY_FUNCTION_QTC_RET(OPERATED_QTC_NAME, OPERATED_QTC_OP, RETURN_T) \
@@ -460,6 +495,7 @@ template<> struct DotResult<arma::mat, arma::mat> {
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
 UNARY_FUNCTION_QTC(sin, (sin(value)) );
 UNARY_FUNCTION_QTC(cos, (cos(value)) );
+UNARY_FUNCTION_QTC(sqr, (pow(value,2)) );
 UNARY_FUNCTION_QTC_RET(mag, (fabs(value)), double);
 UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 UNARY_FUNCTION_QTC_RET(compX, (value(0)), double);
@@ -488,6 +524,42 @@ public:
     virtual arma::mat evaluate(FeatureID ei);
 
     virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeStart
+    : public QuantityComputer<arma::mat>
+{
+public:
+    edgeStart();
+    virtual ~edgeStart();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeEnd
+    : public QuantityComputer<arma::mat>
+{
+public:
+    edgeEnd();
+    virtual ~edgeEnd();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class edgeLen
+    : public QuantityComputer<double>
+{
+public:
+    edgeLen();
+    virtual ~edgeLen();
+
+    virtual double evaluate(FeatureID ei);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
 };
 
 class faceCoG
@@ -663,8 +735,8 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
-FilterPtr parseEdgeFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>() );
-FilterPtr parseFaceFilterExpr(std::istream& stream, const std::vector<FeatureSet>& refs=std::vector<FeatureSet>());
+FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
+FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
 
 }
 }

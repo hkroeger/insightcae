@@ -154,9 +154,8 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, const insight::Pa
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1e-5) ));
   
   cm.insert(new TurbulentVelocityInletBC(cm, inlet_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(U, 0, 0))
-    .set_turbulenceIntensity(0.05)
-    .set_mixingLength(0.1*H)
+    .set_velocity(FieldData(vec3(U, 0, 0)))
+    .set_turbulence(uniformIntensityAndLengthScale(0.05,0.1*H))
   ));
   
   cm.insert(new PressureOutletBC(cm, outlet_, boundaryDict, PressureOutletBC::Parameters()
@@ -209,6 +208,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm, const insight::Pa
       (1, 	vec3(0, -0.5*H, 0.5*H))
       (2, 	vec3(0, 0.5*H, 0.5*H))
       (3, 	vec3(0, 0.5*H, -0.5*H))
+      .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);

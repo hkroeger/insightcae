@@ -26,12 +26,12 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 message(${toolkit_HEADERS})
 
 #include_directories(${CMAKE_SOURCE_DIR})
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR} )
 include_directories(${toolkit_SOURCE_DIR})
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
-target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} gsl dl)
+target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
 
 install(TARGETS toolkit LIBRARY DESTINATION lib)
 install(
@@ -42,27 +42,6 @@ install(
 
 message(STATUS ${toolkit_HEADERS})
 
-IF(INSIGHT_BUILD_PYTHONBINDINGS)
-IF(SWIG_FOUND)
-INCLUDE(${SWIG_USE_FILE})
-FIND_PACKAGE(PythonLibs)
-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
-set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
-SET(toolkit_INTERFACES "toolkit.i")
-SET(CMAKE_SWIG_FLAGS "")
-SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES CPLUSPLUS ON)
-#SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES SWIG_FLAGS "-builtin")
-SWIG_ADD_MODULE(toolkit python ${toolkit_INTERFACES} ${toolkit_SOURCES})
-SWIG_LINK_LIBRARIES(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${ARMADILLO_LIBRARY} gsl dl)
-set_target_properties(${SWIG_MODULE_toolkit_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
-ENDIF()
-
-SET(SWIG_RUNTIME swigpyrun.h)
-ADD_CUSTOM_COMMAND(
- OUTPUT ${SWIG_RUNTIME}
- COMMAND ${SWIG_EXECUTABLE} -python -external-runtime swigpyrun.h
- )
-ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
-ENDIF()
+add_pybindings(toolkit "toolkit.i" toolkit)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

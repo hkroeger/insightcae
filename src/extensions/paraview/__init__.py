@@ -202,7 +202,7 @@ try:
         
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
-        active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
+        #active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
 	RenderView1 = GetRenderView()
 	RenderView1.OrientationAxesVisibility = 1
 	RenderView1.CenterAxesVisibility=0

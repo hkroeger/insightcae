@@ -3,6 +3,7 @@ project(insightcad)
 find_package(OpenCasCade REQUIRED)
 find_package(OpenGL)
 find_package(DXFlib)
+find_package(GEOM)
 
 set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp meshing.cpp featurefilter.cpp feature.cpp)
 
@@ -10,13 +11,14 @@ include_directories(${toolkit_SOURCE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OCC_INCLUDE_DIR})
 include_directories(${DXFLIB_INCLUDE_DIR})
+include_directories(${GEOM_INCLUDE_DIRS})
 link_directories(${OCC_LIBRARY_DIR})
 link_directories(${DXFLIB_LIBRARY_DIR})
+link_directories(${GEOM_LIBRARY_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
-target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY})
-# set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
-
+target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES})
+set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 # set(cadtest_SRCS test.cpp)
@@ -32,7 +34,7 @@ find_package(Qwt REQUIRED)
 set(CMAKE_AUTOMOC ON)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-# include_directories(${toolkit_SOURCE_DIR})
+include_directories(${toolkit_SOURCE_DIR})
 # link_directories(${toolkit_BIN_DIR})
 
 SET(iscad_FORMS ) #newanalysisdlg.ui analysisform.ui)
@@ -44,24 +46,9 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
   ${Boost_LIBRARIES} toolkit 
   ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} 
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
+  ${DXFLIB_LIBRARIES}
   )
 endif()
 
-IF(INSIGHT_BUILD_PYTHONBINDINGS)
-IF(SWIG_FOUND)
-  INCLUDE(${SWIG_USE_FILE})
-  set(CMAKE_SWIG_OUTDIR ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
-  FIND_PACKAGE(PythonLibs)
-  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
-  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-  SET(cad_INTERFACES "cad.i")
-  SET(CMAKE_SWIG_FLAGS "")
-  SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES CPLUSPLUS ON)
-#  SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-builtin")
-  SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-I${toolkit_SOURCE_DIR}")
-  # SET_SOURCE_FILES_PROPERTIES(${cad_INTERFACES} PROPERTIES SWIG_FLAGS "-includeall")
-  SWIG_ADD_MODULE(cad python ${cad_INTERFACES} ${insightcad_SOURCES})
-  SWIG_LINK_LIBRARIES(cad toolkit ${DXFLIB_LIBRARIES} ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES})
-  set_target_properties(${SWIG_MODULE_cad_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
-ENDIF()
-ENDIF()
+add_pybindings(cad "cad.i" insightcad)
+

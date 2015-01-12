@@ -269,6 +269,7 @@ void ChannelBase::createMesh
       (1, 	vec3(-0.5*L, -0.5*H, -0.5*B))
       (2, 	vec3(-0.5*L, -0.5*H, 0.5*B))
       (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
+      .convert_to_container<std::map<int, Point> >()
   ;
   
   // create patches
@@ -493,8 +494,8 @@ void ChannelBase::evaluateAtSection(
     int c=cd["UMean"].col;
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma_ascii);
@@ -1018,7 +1019,22 @@ ChannelInflow::ChannelInflow(const NoParameters& nop)
 ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
-  p.extend(TurbulentVelocityInletBC::defaultParameters().entries());
+  
+  std::auto_ptr<SubsetParameter> inflowparams(TurbulentVelocityInletBC::defaultParameters());
+  
+  (*inflowparams)().extend
+  (
+      boost::assign::list_of<ParameterSet::SingleEntry>
+      ("umean", FieldData::defaultParameter(vec3(1,0,0)))
+      .convert_to_container<ParameterSet::EntryList>()
+  );
+  
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    ("inflow", inflowparams.release())
+    .convert_to_container<ParameterSet::EntryList>()
+  );
 
   return p;
 }
@@ -1054,13 +1070,14 @@ void ChannelInflow::createCase
   cm.parseBoundaryDict(executionPath(), boundaryDict);
       
   cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(vec3(Ubulk_, 0, 0))
-    .set_turbulenceIntensity(0.05)
+    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
     .set_uniformConvection(p.getBool("inflow/uniformConvection"))
-    .set_volexcess(p.getDouble("inflow/volexcess"))
+//     .set_volexcess(p.getDouble("inflow/volexcess"))
     .set_type(p.get<SelectionParameter>("inflow/type").selection())
-    //.set_mixingLength(0.1*D)
-    .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
+#warning to be corrected
+//     .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2*H))
+//     .set_turbulence(p.getSubset("inflow"))
+//     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))
   ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
@@ -1200,7 +1217,7 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
 	    ptr_vector<setFieldOps::setFieldOperator>()
   );
   
-  cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
+//   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
   OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
 }

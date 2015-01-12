@@ -38,6 +38,11 @@ ParameterSet::ParameterSet()
 {
 }
 
+ParameterSet::ParameterSet(const ParameterSet& o)
+: boost::ptr_map<std::string, Parameter>(o.clone())
+{
+}
+
 ParameterSet::ParameterSet(const EntryList& entries)
 {
   extend(entries);
@@ -127,7 +132,7 @@ std::string ParameterSet::latexRepresentation() const
   return result;
 }
 
-ParameterSet* ParameterSet::clone() const
+ParameterSet* ParameterSet::cloneParameterSet() const
 {
   ParameterSet *np=new ParameterSet;
   for (ParameterSet::const_iterator i=begin(); i!=end(); i++)
@@ -223,6 +228,10 @@ defineType(SubsetParameter);
 addToFactoryTable(Parameter, SubsetParameter, std::string);
 
 
+SubsetParameter::SubsetParameter()
+{
+}
+
 SubsetParameter::SubsetParameter(const std::string& description)
 : Parameter(description)
 {
@@ -230,24 +239,24 @@ SubsetParameter::SubsetParameter(const std::string& description)
 
 SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::string& description)
 : Parameter(description),
-  value_(defaultValue.clone())
+  ParameterSet(defaultValue.entries())
 {
 }
 
 void SubsetParameter::merge(const SubsetParameter& other)
 {
-  value_->extend(other.value_->entries());
+  this->extend(other.entries());
 }
 
 std::string SubsetParameter::latexRepresentation() const
 {
-  return value_->latexRepresentation();
+  return this->latexRepresentation();
 }
 
 
 Parameter* SubsetParameter::clone() const
 {
-  return new SubsetParameter(*value_, description_);
+  return new SubsetParameter(*this, description_);
 }
 
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -256,7 +265,7 @@ rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rap
   std::cout<<"appending subset "<<name<<std::endl;
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-  value_->appendToNode(doc, *child, inputfilepath);
+  ParameterSet::appendToNode(doc, *child, inputfilepath);
   return child;
 }
 
@@ -267,7 +276,7 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
   xml_node<>* child = findNode(node, name);
   if (child)
   {
-    value_->readFromNode(doc, *child, inputfilepath);
+    ParameterSet::readFromNode(doc, *child, inputfilepath);
   }
 }
 
@@ -302,7 +311,7 @@ Parameter* SelectableSubsetParameter::clone () const
   for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
   {
     std::string key(i->first);
-    np->value_.insert(key, i->second->clone());
+    np->value_.insert(key, i->second->cloneParameterSet());
   }
   return np; 
 }

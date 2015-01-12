@@ -28,7 +28,7 @@
 #include "dxflib/dl_creationadapter.h"
 #include "dxflib/dl_dxf.h"
 
-#include "boost/filesystem.hpp"
+#include "base/boost_include.h"
 
 namespace insight {
 namespace cad {

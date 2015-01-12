@@ -24,17 +24,7 @@
 
 #include <fstream>
 
-//#include "boost/gil/gil_all.hpp"
-//#include "boost/gil/extension/io/jpeg_io.hpp"
-#include "boost/lexical_cast.hpp"
-#include "boost/foreach.hpp"
-#include "boost/assign.hpp"
-#include "boost/date_time.hpp"
-#include <boost/graph/buffer_concepts.hpp>
-#include "boost/filesystem.hpp"
-#include "boost/regex.hpp"
-
-#include "boost/format.hpp"
+#include "base/boost_include.h"
 
 #include "gnuplot-iostream.h"
 
@@ -218,6 +208,24 @@ TabularResult::TabularResult
   }
   setTableData(headings, t);
 }
+
+void TabularResult::setCellByName(TabularResult::Row& r, const string& colname, double value)
+{
+  std::vector<std::string>::const_iterator ii=std::find(headings_.begin(), headings_.end(), colname);
+  if (ii==headings_.end())
+  {
+    std::ostringstream msg;
+    msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
+    BOOST_FOREACH(const std::string& n, headings_)
+    {
+      msg<<n<<endl;
+    }
+    insight::Exception(msg.str());
+  }
+  int i= ii - headings_.begin();
+  r[i]=value;
+}
+
 
 arma::mat TabularResult::toMat() const
 {
@@ -698,19 +706,22 @@ void Chart::generatePlotImage(const path& imagepath) const
 
     gp<<addinit_<<";";
     gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
-    gp<<"plot 0 not lt -1";
-    BOOST_FOREACH(const PlotCurve& pc, plc_)
+    if (plc_.size()>0)
     {
-      if (pc.xy_.n_rows>0)
-	gp<<", '-' "<<pc.plotcmd_;
-      else
-	gp<<", "<<pc.plotcmd_;
-    }
-    gp<<endl;
-    BOOST_FOREACH(const PlotCurve& pc, plc_)
-    {
-      if (pc.xy_.n_rows>0)
-	gp.send1d(pc.xy_);
+      gp<<"plot 0 not lt -1";
+      BOOST_FOREACH(const PlotCurve& pc, plc_)
+      {
+	if (pc.xy_.n_rows>0)
+	  gp<<", '-' "<<pc.plotcmd_;
+	else
+	  gp<<", "<<pc.plotcmd_;
+      }
+      gp<<endl;
+      BOOST_FOREACH(const PlotCurve& pc, plc_)
+      {
+	if (pc.xy_.n_rows>0)
+	  gp.send1d(pc.xy_);
+      }
     }
   }
 }

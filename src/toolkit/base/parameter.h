@@ -32,16 +32,13 @@
 #include <typeinfo>
 #include <set>
 
-#include "boost/filesystem.hpp"
-#include "boost/variant.hpp"
+#include "base/boost_include.h"
 #include <boost/noncopyable.hpp>
 #include <boost/concept_check.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
+#include "boost/version.hpp"
 
 #include "rapidxml/rapidxml.hpp"
 
-#include "boost/version.hpp"
 
 namespace boost 
 { 
@@ -74,6 +71,7 @@ protected:
 public:
   declareType("Parameter");
   
+  Parameter();
   Parameter(const std::string& description);
   virtual ~Parameter();
   

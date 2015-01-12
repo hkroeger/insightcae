@@ -999,7 +999,7 @@ namespace redi
         {
         case 0 :
           // this is the new process, exec command
-          ::execl(shell_path, "sh", "-c", command.c_str(), (char*)NULL);
+          ::execl(shell_path, "sh", "-c", command.c_str(), /*(char*)*/NULL);
 
           // can only reach this point if exec() failed
 

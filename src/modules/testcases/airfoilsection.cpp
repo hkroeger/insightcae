@@ -181,6 +181,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm, const insight::Parame
       (1, 	vec3((LoutByc+0.5)*c, -HByc*c, z0))
       (2, 	vec3((LoutByc+0.5)*c, HByc*c, z0))
       (3, 	vec3(-(LinByc+0.5)*c, HByc*c, z0))
+      .convert_to_container<std::map<int, Point> >()
   ;
   
   arma::mat PiM=vec3(-(LinByc+0.4)*c, 0.01*c, z0+0.0001*h);

@@ -92,7 +92,7 @@ void ParameterStudy::generateInstances
   {
     // Put it all together
     std::ostringstream n; n<<"subcase";
-    ParameterSetPtr newp(templ.clone());
+    ParameterSetPtr newp(templ.cloneParameterSet());
     for (int j=0; j<varp_.size(); j++)
     {
       // Replace RangeParameter by actual single value

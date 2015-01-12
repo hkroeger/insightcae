@@ -110,9 +110,11 @@ protected:
   double hbuf_;
   
 public:
+#ifndef SWIG
   declareType("Channel Flow Test Case");
+#endif
   
-  ChannelBase(const NoParameters&);
+  ChannelBase(const NoParameters& = NoParameters());
   ~ChannelBase();
   
   virtual ParameterSet defaultParameters() const;
@@ -150,7 +152,9 @@ class ChannelCyclic
 : public ChannelBase
 {
 public:
+#ifndef SWIG
   declareType("Channel Flow Test Case (Axial Cyclic)");
+#endif
   
   ChannelCyclic(const NoParameters&);
   
@@ -177,12 +181,16 @@ class ChannelInflow
 : public ChannelBase
 {
   
+#ifndef SWIG
   const static int ntpc_ = 4;
   const static char* tpc_names_[ntpc_]; 
   const static double tpc_xlocs_[ntpc_];
+#endif
   
 public:
+#ifndef SWIG
   declareType("Channel Flow Test Case (Inflow Generator)");
+#endif
   
   ChannelInflow(const NoParameters&);
   

@@ -321,7 +321,7 @@ arma::mat sortedByCol(const arma::mat&m, int c)
   return xy;
 }
 
-Interpolator::Interpolator(const arma::mat& xy_us)
+Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
 {
   try
   {
@@ -333,21 +333,22 @@ Interpolator::Interpolator(const arma::mat& xy_us)
       throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
     if (xy.n_rows<2)
       throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
-    spline.resize(xy.n_cols-1);
+//     spline.resize(xy.n_cols-1);
+    spline.clear();
     
     int nf=xy.n_cols-1;
     int nrows=xy.n_rows;
     
-    acc = gsl_interp_accel_alloc ();
+    acc.reset( gsl_interp_accel_alloc () );
     for (int i=0; i<nf; i++)
     {
       //cout<<"building interpolator for col "<<i<<endl;
-      if (xy.n_rows==2)
-	spline[i] = gsl_spline_alloc (gsl_interp_linear, nrows);
+      if ( (xy.n_rows==2) || force_linear )
+	spline.push_back( gsl_spline_alloc (gsl_interp_linear, nrows) );
       else
-	spline[i] = gsl_spline_alloc (gsl_interp_cspline, nrows);
+	spline.push_back( gsl_spline_alloc (gsl_interp_cspline, nrows) );
       //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
-      gsl_spline_init (spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+      gsl_spline_init (&spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
     }
     
     first=xy.row(0);
@@ -363,16 +364,16 @@ Interpolator::Interpolator(const arma::mat& xy_us)
 
 Interpolator::~Interpolator()
 {
-  for (int i=0; i<spline.size(); i++)
-    gsl_spline_free (spline[i]);
-  gsl_interp_accel_free (acc);
+//   for (int i=0; i<spline.size(); i++)
+//     gsl_spline_free (spline[i]);
+//   gsl_interp_accel_free (acc);
 }
 
 double Interpolator::y(double x, int col) const
 {
   if (x<first(0)) return first(col+1);
   if (x>last(0)) return last(col+1);
-  double v=gsl_spline_eval (spline[col], x, acc);
+  double v=gsl_spline_eval (&(spline[col]), x, &(*acc));
   return v;
 }
 

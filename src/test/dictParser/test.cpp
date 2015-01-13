@@ -33,81 +33,81 @@ using namespace insight;
     } Impl_##NAME##Inserter = NAME##Inserter(*this); \
 
 
-struct Test_TurbulentVelocityInletBC
-{
-// 	boost::assign::list_of<ParameterSet::SingleEntry>
-// 	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
-// 	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
-// 	.convert_to_container<ParameterSet::EntryList>()
-//       ), 
-//       "Inflow generator parameters"
-      
-  ISP_DEFINE_PARAMETERSET
-  (
-    Parameters,
-//     ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-//     ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
-//     ISP_DEFINE_SIMPLEPARAMETER
+// struct Test_TurbulentVelocityInletBC
+// {
+// // 	boost::assign::list_of<ParameterSet::SingleEntry>
+// // 	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
+// // 	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
+// // 	.convert_to_container<ParameterSet::EntryList>()
+// //       ), 
+// //       "Inflow generator parameters"
+//       
+//   ISP_DEFINE_PARAMETERSET
+//   (
+//     Parameters,
+// //     ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+// //     ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
+// //     ISP_DEFINE_SIMPLEPARAMETER
+// //     (
+// //       Parameters, int, type, 
+// //       SelectionParameter, 
+// //       (
+// // 	0, 
+// // 	boost::assign::list_of<std::string>
+// // 	("inflowGenerator<hatSpot>")
+// // 	("inflowGenerator<gaussianSpot>")
+// // 	("inflowGenerator<decayingTurbulenceSpot>")
+// // 	("inflowGenerator<decayingTurbulenceVorton>")
+// // 	("inflowGenerator<anisotropicVorton>")
+// // 	("modalTurbulence"), 
+// // 	"Type of inflow generator"
+// //       )
+// //     )
+// 
+// // 	ISP_DEFINE_ARRAYPARAMETER
+// // 	(
+// // 	  Parameters, 
+// // 	  values,
+// // // 	  ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY)
+// // 	  ISP_DEFINE_SIMPLEPARAMETER(values_default, double, value, DoubleParameter, (3.0, "default value")),
+// // 	  3,
+// // 	  "blabla"
+// // 	)
+// 
+//     ISP_DEFINE_SELECTABLESUBSETPARAMETER
 //     (
-//       Parameters, int, type, 
-//       SelectionParameter, 
-//       (
-// 	0, 
-// 	boost::assign::list_of<std::string>
-// 	("inflowGenerator<hatSpot>")
-// 	("inflowGenerator<gaussianSpot>")
-// 	("inflowGenerator<decayingTurbulenceSpot>")
-// 	("inflowGenerator<decayingTurbulenceVorton>")
-// 	("inflowGenerator<anisotropicVorton>")
-// 	("modalTurbulence"), 
-// 	"Type of inflow generator"
-//       )
-//     )
-
+//       Parameters,
+//       R, 
+//       (uniform)(linearProfile)(fittedProfile), // selection
+//       uniform, // default
+//      
+//       ISP_DEFINE_SELECTABLESUBSET(uniform,
 // 	ISP_DEFINE_ARRAYPARAMETER
 // 	(
-// 	  Parameters, 
+// 	  uniform, 
 // 	  values,
 // // 	  ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY)
 // 	  ISP_DEFINE_SIMPLEPARAMETER(values_default, double, value, DoubleParameter, (3.0, "default value")),
 // 	  3,
 // 	  "blabla"
 // 	)
-
-    ISP_DEFINE_SELECTABLESUBSETPARAMETER
-    (
-      Parameters,
-      R, 
-      (uniform)(linearProfile)(fittedProfile), // selection
-      uniform, // default
-     
-      ISP_DEFINE_SELECTABLESUBSET(uniform,
-	ISP_DEFINE_ARRAYPARAMETER
-	(
-	  uniform, 
-	  values,
-// 	  ISP_DEFINE_SUBSETPARAMETER(PARAMCLASSNAME, SUBCLASSNAME, NAME, DESCR, BODY)
-	  ISP_DEFINE_SIMPLEPARAMETER(values_default, double, value, DoubleParameter, (3.0, "default value")),
-	  3,
-	  "blabla"
-	)
-	ISP_DEFINE_SIMPLEPARAMETER(uniform, double, R_v1, DoubleParameter, (4.5, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-      )
-      
-      ISP_DEFINE_SELECTABLESUBSET(linearProfile,
-	ISP_DEFINE_SIMPLEPARAMETER(linearProfile, bool, R_v2, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-      )
-      
-      ISP_DEFINE_SELECTABLESUBSET(fittedProfile,
-	ISP_DEFINE_SIMPLEPARAMETER(fittedProfile, bool, R_v3, BoolParameter, (true, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-      )
-      ,
-     
-      "R properties"
-    )
-  )
-  
-};
+// 	ISP_DEFINE_SIMPLEPARAMETER(uniform, double, R_v1, DoubleParameter, (4.5, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+//       )
+//       
+//       ISP_DEFINE_SELECTABLESUBSET(linearProfile,
+// 	ISP_DEFINE_SIMPLEPARAMETER(linearProfile, bool, R_v2, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+//       )
+//       
+//       ISP_DEFINE_SELECTABLESUBSET(fittedProfile,
+// 	ISP_DEFINE_SIMPLEPARAMETER(fittedProfile, bool, R_v3, BoolParameter, (true, "Whether to use a uniform convection velocity instead of the local mean velocity"))
+//       )
+//       ,
+//      
+//       "R properties"
+//     )
+//   )
+//   
+// };
 
 int main()
 {

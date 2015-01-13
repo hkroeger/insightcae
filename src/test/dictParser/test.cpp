@@ -111,36 +111,33 @@ struct Test_TurbulentVelocityInletBC
 
 int main()
 {
-  try
-  {
-     Test_TurbulentVelocityInletBC::Parameters spp =
-      Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
-
-     spp->saveToFile("test_spp.ist");
-//      spp->readFromFile("test_spp.ist");
-     spp.syncFromOther(spp);
-     
-     ParameterSet p(*spp);
-     p.saveToFile("test_p.ist");
-     
-     cout<<"created"<<endl;
-         
-     cout<<"sync from other:"<<endl;
-     
-//      cout<<"BEFORE SYNC: "<<spp.testarray.size()<<endl;
-     spp.syncFromOther(p);
-//      cout<<"AFTER SYNC: "<<spp.testarray.size()<<endl;
-
-//      spp.pa=1.;
-//      spp.pb=false;
-//      spp.sub.pa=1.0;
-//      spp.sub.path.c_str();
-//      spp.sub.subsub.path.c_str();
-  }
-  catch (insight::Exception e)
-  {
-    cout<<e<<endl;
-  }
+//   try
+//   {
+//      Test_TurbulentVelocityInletBC::Parameters spp =
+//       Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
+// 
+//      spp->saveToFile("test_spp.ist");
+//      ParameterSet p(*spp);
+//      p.saveToFile("test_p.ist");
+//      
+//      cout<<"created"<<endl;
+//          
+//      cout<<"sync from other:"<<endl;
+//      
+//      cout<<"BEFORE SYNC: "<<spp.volexcess<<endl;
+//      spp.syncFromOther(p);
+//      cout<<"AFTER SYNC: "<<spp.volexcess<<endl;
+// 
+// //      spp.pa=1.;
+// //      spp.pb=false;
+// //      spp.sub.pa=1.0;
+// //      spp.sub.path.c_str();
+// //      spp.sub.subsub.path.c_str();
+//   }
+//   catch (insight::Exception e)
+//   {
+//     cout<<e<<endl;
+//   }
  /*
  OFDictData::dict dictdata;
  std::ifstream f("transportProperties");

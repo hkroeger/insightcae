@@ -98,6 +98,11 @@ accountreport projectcashflowExport "cashflow" {
 	cd=cd+relativedelta(months=1)
 	self.accounts["cost_depre"][i+j]+=afa
 	
+  def insertDormantEquity(self, doe):
+    start, value = doe
+    i=self.findPeriodIdx(start)
+    self.accounts["fund_stock"][i]+=value
+	
   def LiqGuV(self, year, beginliq=0.):
     start=datetime(year,1,1)
     si=self.findPeriodIdx(start)
@@ -298,6 +303,7 @@ taskreport "milestones" {
   def readData(self, fname="milestones.csv"):
     self.investments={}
     self.loans={}
+    self.does={}
     
     rows=csv.reader(open(fname, 'r'), delimiter=';')
     dater=rows.next()
@@ -315,6 +321,9 @@ taskreport "milestones" {
 	  i_p_a=float(vals[2])
 	  nmonth=int(vals[3])
 	  self.loans[r[0]]=(start,value,i_p_a,nmonth)
+	elif (vals[0]=='doe'):
+	  value=float(vals[1])
+	  self.does[r[0]]=(start,value)
       except:
 	pass
     print self
@@ -349,6 +358,9 @@ def postprocTJ(acc, events, fromyear, nyear):
   for name, inv in events.investments.items():
     print "Inserting investment ", name
     acc.insertInvest(inv)
+  for name, doe in events.does.items():
+    print "Inserting dormant equity ", name
+    acc.insertDormantEquity(doe)
 
   sumcols=[dict()]*nyear
   liq=0

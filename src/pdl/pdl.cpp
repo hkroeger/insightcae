@@ -74,6 +74,8 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 
+#include <armadillo>
+
 using namespace std;
 
 namespace qi = boost::spirit::qi;
@@ -83,19 +85,6 @@ namespace phx   = boost::phoenix;
 using namespace qi;
 using namespace phx;
 using namespace boost;
-
-/* Basic rules */
-template <typename Iterator, typename Skipper = qi::space_type >
-qi::rule<Iterator, std::string(), Skipper> stringRule()
-{
-  return as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
-}
-
-template <typename Iterator, typename Skipper = qi::space_type >
-qi::rule<Iterator, std::string(), Skipper> identifierRule()
-{
-  return lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-}
 
 
 /* Basic data structures */
@@ -107,7 +96,7 @@ public:
   /* c++
   written by writeCppHeader:
   
-   typdef xxx name_type;  // cppTypeDecl: return statement
+   typdef xxx name_type;  // cppTypeDecl: return statement, cppType: xxx
    name_type name;
    
   */ 
@@ -134,7 +123,7 @@ struct PDLParserRuleset
   typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
   typedef boost::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
-  qi::rule<Iterator, std::string(), Skipper> r_identifier;
+  qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_description_string;
   qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
   qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
   
@@ -143,11 +132,14 @@ struct PDLParserRuleset
   
   PDLParserRuleset()
   {  
+    r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
+    r_description_string = (r_string | attr(""));
+    r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+    
     r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
     
-    r_identifier = identifierRule<Iterator, Skipper>().copy();
     
-    r_parametersetentry = r_identifier > r_parameterdata;
+    r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
     r_parameterset = *( r_parametersetentry );
     
     BOOST_SPIRIT_DEBUG_NODE(r_identifier);
@@ -190,8 +182,41 @@ struct DoubleParameterParser
     (
       "double",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-	( qi::double_ >> stringRule<Iterator, Skipper>().copy() ) 
+	( qi::double_ >> ruleset.r_description_string ) 
 	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
+    );
+  }
+};
+
+struct VectorParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    arma::mat value;
+    std::string description;
+    
+    Data(const arma::mat& v, const std::string& d)
+    : value(v), description(d) 
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string&) const
+    {
+      return "arma::mat";
+    }
+    
+  };
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "vector",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( "(" >> *double_ >> ")" >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
       ))
     );
   }
@@ -223,7 +248,40 @@ struct IntParameterParser
     (
       "int",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-	( qi::int_ >> stringRule<Iterator,Skipper>().copy() ) 
+	( qi::int_ >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
+    );
+  }
+};
+
+struct PathParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    boost::filesystem::path value;
+    std::string description;
+    
+    Data(const boost::filesystem::path& v, const std::string& d)
+    : value(v), description(d) 
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string&) const
+    {
+      return "boost::filesystem::path";
+    }
+
+  };
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "path",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( ruleset.r_string >> ruleset.r_description_string ) 
 	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
       ))
     );
@@ -262,7 +320,69 @@ struct SubsetParameterParser
     (
       "set",
      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-      ( "{" > ruleset.r_parameterset > "}" > stringRule<Iterator,Skipper>().copy() ) 
+      ( "{" > ruleset.r_parameterset > "}" >> ruleset.r_description_string ) 
+       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+     ))
+    );
+  }
+};
+
+struct SelectableSubsetParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    typedef boost::fusion::vector2<std::string, ParserDataBase::Ptr> SubsetData;
+    typedef std::vector<SubsetData> SubsetListData;
+    
+    SubsetListData value;
+    std::string description;
+    
+    Data(const SubsetListData& v, const std::string& d)
+    : value(v), description(d) 
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string& name) const
+    {
+      std::ostringstream os;
+      os<<"boost::variant<";
+      std::string comma="";
+      BOOST_FOREACH(const SubsetData& pe, value)
+      {
+	os<<comma<< (name+"_"+boost::fusion::get<0>(pe)+"_type");
+	comma=",";
+      }
+      os<<">";
+      return os.str();
+    }
+    
+    virtual std::string cppTypeDecl(const std::string& name) const
+    {
+      std::ostringstream os;
+      BOOST_FOREACH(const SubsetData& pe, value)
+      {
+	std::string tname=(name+"_"+boost::fusion::get<0>(pe));
+	ParserDataBase::Ptr pd=boost::fusion::get<1>(pe);
+	os<<pd->cppTypeDecl(tname)<<endl;
+      } 
+      return 
+	os.str()+"\n"
+	+ParserDataBase::cppTypeDecl(name);
+    }
+    
+  };
+  
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "selectablesubset",
+     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      ( lit("{{") >> 
+	  *(ruleset.r_identifier >> ruleset.r_parameterdata) 
+	>> lit("}}") >> ruleset.r_description_string ) 
        [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
      ))
     );
@@ -304,7 +424,7 @@ struct ArrayParameterParser
     (
       "array",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-	( "[" > ruleset.r_parameterdata >> "]" >> "*" >> int_ >> stringRule<Iterator,Skipper>().copy() ) 
+	( '[' >> ruleset.r_parameterdata >> ']' >> '*' >> int_ >> ruleset.r_description_string ) 
 	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2, qi::_3)) ]
       ))	
     );
@@ -324,9 +444,12 @@ public:
   : PDLParser::base_type(rules.r_parameterset)
   {
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
+    VectorParameterParser::insertrule<Iterator, Skipper>(rules);
+    PathParameterParser::insertrule<Iterator, Skipper>(rules);
     IntParameterParser::insertrule<Iterator, Skipper>(rules);
     SubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
+    SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     cout<<"ok2"<<endl;
     
     rules.init();
@@ -373,10 +496,12 @@ int main(int argc, char *argv[])
   
   cout<<"Parsing done"<<endl;
   
-  BOOST_FOREACH(ParameterSetEntry& pe, result)
   {
-    cout<<pe.first<<endl;
-    pe.second->writeCppHeader(cout, pe.first);
+    std::ofstream f("test.h");
+    BOOST_FOREACH(ParameterSetEntry& pe, result)
+    {
+      pe.second->writeCppHeader(f, pe.first);
+    }
   }
   
   return 0;

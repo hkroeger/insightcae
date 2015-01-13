@@ -173,6 +173,72 @@ arma::mat FieldData::representativeValue() const
 }
 
 
+/* BEGIN PARAMETERSET DEFINITION
+
+{{
+
+ uniform 
+ { 
+   values array "values description"
+   [
+    {
+     time double "time description"
+     value vector (1 0 0) "value description"
+    }
+   ]*1 
+ }
+
+ linearProfile 
+ { 
+   values array "values description"
+   [
+    {
+     time double "time description"
+     profile path "profile description"
+    }
+   ]*1 
+   
+   cmap array "cmap description"
+   [
+    {
+     column int "column id"
+     component int "component id"
+    }
+   ]*1
+   
+   p0 vector (0 0 0) "Origin of sampling axis"
+   ep vector (1 0 0) "Direction of sampling axis"
+   ex vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+ fittedProfile 
+ { 
+   values array "values description"
+   [
+    {
+     time double "time description"
+     coeffs vector "profile description"
+    }
+   ]*1 
+   
+   cmap array "cmap description"
+   [
+    {
+     column int "column id"
+     component int "component id"
+    }
+   ]*1
+   
+   p0 vector (0 0 0) "Origin of sampling axis"
+   ep vector (1 0 0) "Direction of sampling axis"
+   ex vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+}}
+  
+} END PARAMETERSET */
 
 Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value, const std::string& description)
 {

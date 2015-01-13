@@ -55,6 +55,11 @@ using namespace insight;
       } \
     } Impl_##NAME##Inserter = NAME##Inserter(*this); \
 
+    
+    union bla {
+       struct eins { double x; } e;
+       struct zwei { int y; } z;
+    };
 struct Test_TurbulentVelocityInletBC
 {
 // 	boost::assign::list_of<ParameterSet::SingleEntry>
@@ -104,33 +109,33 @@ struct Test_TurbulentVelocityInletBC
 
 int main()
 {
-  try
-  {
-     Test_TurbulentVelocityInletBC::Parameters spp =
-      Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
-
-     spp->saveToFile("test_spp.ist");
-     ParameterSet p(*spp);
-     p.saveToFile("test_p.ist");
-     
-     cout<<"created"<<endl;
-         
-     cout<<"sync from other:"<<endl;
-     
-     cout<<"BEFORE SYNC: "<<spp.volexcess<<endl;
-     spp.syncFromOther(p);
-     cout<<"AFTER SYNC: "<<spp.volexcess<<endl;
-
-//      spp.pa=1.;
-//      spp.pb=false;
-//      spp.sub.pa=1.0;
-//      spp.sub.path.c_str();
-//      spp.sub.subsub.path.c_str();
-  }
-  catch (insight::Exception e)
-  {
-    cout<<e<<endl;
-  }
+//   try
+//   {
+//      Test_TurbulentVelocityInletBC::Parameters spp =
+//       Test_TurbulentVelocityInletBC::Parameters::makeWithDefaults();
+// 
+//      spp->saveToFile("test_spp.ist");
+//      ParameterSet p(*spp);
+//      p.saveToFile("test_p.ist");
+//      
+//      cout<<"created"<<endl;
+//          
+//      cout<<"sync from other:"<<endl;
+//      
+//      cout<<"BEFORE SYNC: "<<spp.volexcess<<endl;
+//      spp.syncFromOther(p);
+//      cout<<"AFTER SYNC: "<<spp.volexcess<<endl;
+// 
+// //      spp.pa=1.;
+// //      spp.pb=false;
+// //      spp.sub.pa=1.0;
+// //      spp.sub.path.c_str();
+// //      spp.sub.subsub.path.c_str();
+//   }
+//   catch (insight::Exception e)
+//   {
+//     cout<<e<<endl;
+//   }
  /*
  OFDictData::dict dictdata;
  std::ifstream f("transportProperties");

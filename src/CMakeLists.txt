@@ -373,6 +373,7 @@ macro (add_pybindings TARGETNAME IFFILES LIBS)
   ENDIF()
 endmacro()
 
+add_subdirectory(pdl)
 add_subdirectory(refdata)
 add_subdirectory(test)
 

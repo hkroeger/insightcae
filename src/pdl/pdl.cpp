@@ -104,40 +104,61 @@ class ParserDataBase
 public:
   typedef boost::shared_ptr<ParserDataBase> Ptr;
   
-  virtual void writeCppHeader(std::ostream& os, const std::string& name) const =0;
+  /* c++
+  written by writeCppHeader:
+  
+   typdef xxx name_type;  // cppTypeDecl: return statement
+   name_type name;
+   
+  */ 
+  virtual std::string cppType(const std::string& name) const =0;
+  virtual std::string cppTypeName(const std::string& name) const { return name+"_type"; }
+  virtual std::string cppTypeDecl(const std::string& name) const 
+  {
+    return std::string("typedef ")+cppType(name)+" "+cppTypeName(name)+";";
+  }
+  
+  virtual void writeCppHeader(std::ostream& os, const std::string& name) const
+  {
+    os<<cppTypeDecl(name)<<endl;
+    os<<cppTypeName(name)+" "<<name<<";"<<endl;
+  }
 };
 
 typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
 typedef std::vector< ParameterSetEntry > ParameterSetData;
 
-
 template <typename Iterator, typename Skipper = qi::space_type >
-struct ParameterDescriptionLanguageParserRuleset
+struct PDLParserRuleset
 {
   typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
+  typedef boost::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
   qi::rule<Iterator, std::string(), Skipper> r_identifier;
   qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
   qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
   
-  std::vector< ParameterDataRule > parameterDataRules;
-  qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> r_parameterdata;
+  qi::symbols<char, ParameterDataRulePtr> parameterDataRules;
+  qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
   
-  void init()
-  {
-    r_parameterdata=parameterDataRules[0].copy();
-    for (int i=1; i<parameterDataRules.size(); i++)
-      r_parameterdata = r_parameterdata.copy() | parameterDataRules[i];
+  PDLParserRuleset()
+  {  
+    r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
     
-    r_identifier = identifierRule<Iterator, Skipper>();
+    r_identifier = identifierRule<Iterator, Skipper>().copy();
     
-    r_parametersetentry = r_identifier >> r_parameterdata;
+    r_parametersetentry = r_identifier > r_parameterdata;
     r_parameterset = *( r_parametersetentry );
     
     BOOST_SPIRIT_DEBUG_NODE(r_identifier);
     BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
     BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
     BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+    cout<<"ok1"<<endl;
+  }
+  
+  void init()
+  {
   }
   
 };
@@ -155,18 +176,23 @@ struct DoubleParameterParser
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
     
-    virtual void writeCppHeader(std::ostream& os, const std::string& name) const
+    virtual std::string cppType(const std::string&) const
     {
-      os<<"double "<<name<<";"<<endl;
+      return "double";
     }
+    
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
-  inline static void insertrule(ParameterDescriptionLanguageParserRuleset<Iterator,Skipper>& ruleset)
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
-    ruleset.parameterDataRules.push_back( 
-      ( lit("double") >> qi::double_ >> stringRule<Iterator, Skipper>().copy() ) 
-      [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+    ruleset.parameterDataRules.add
+    (
+      "double",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( qi::double_ >> stringRule<Iterator, Skipper>().copy() ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
     );
   }
 };
@@ -182,19 +208,24 @@ struct IntParameterParser
     Data(int v, const std::string& d)
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
-
-    virtual void writeCppHeader(std::ostream& os, const std::string& name) const
+    
+    virtual std::string cppType(const std::string&) const
     {
-      os<<"int "<<name<<";"<<endl;
+      return "int";
     }
+
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
-  inline static void insertrule(ParameterDescriptionLanguageParserRuleset<Iterator,Skipper>& ruleset)
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
-    ruleset.parameterDataRules.push_back(
-      ( lit("int") >> qi::int_ >> stringRule<Iterator,Skipper>().copy() ) 
-      [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+    ruleset.parameterDataRules.add
+    (
+      "int",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( qi::int_ >> stringRule<Iterator,Skipper>().copy() ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
     );
   }
 };
@@ -210,45 +241,93 @@ struct SubsetParameterParser
     Data(const ParameterSetData& v, const std::string& d)
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
-
-    virtual void writeCppHeader(std::ostream& os, const std::string& name) const
+    
+    virtual std::string cppType(const std::string&) const
     {
+      std::ostringstream os;
       os<<"struct {"<<endl;
       BOOST_FOREACH(const ParameterSetEntry& pe, value)
       {
-	pe.second->writeCppHeader(cout, pe.first);
+	pe.second->writeCppHeader(os, pe.first);
       }
-      os<<"} "<<name<<";"<<endl;
+      os<<"}";
+      return os.str();
     }
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
-  inline static void insertrule(ParameterDescriptionLanguageParserRuleset<Iterator,Skipper>& ruleset)
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
-    ruleset.parameterDataRules.push_back( 
-      ( "{" >> ruleset.r_parameterset >> "}" >> stringRule<Iterator,Skipper>().copy() ) 
-      [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+    ruleset.parameterDataRules.add
+    (
+      "set",
+     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+      ( "{" > ruleset.r_parameterset > "}" > stringRule<Iterator,Skipper>().copy() ) 
+       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+     ))
     );
   }
 };
 
 
+struct ArrayParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    ParserDataBase::Ptr value;
+    int num;
+    std::string description;
+    
+    Data(ParserDataBase::Ptr v, int n, const std::string& d)
+    : value(v), num(n), description(d) 
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string& name) const
+    {
+      return "std::vector<"+value->cppTypeName(name+"_default")+">";
+    }
+    
+    virtual std::string cppTypeDecl(const std::string& name) const
+    {
+      return 
+	value->cppTypeDecl(name+"_default")
+	+"\n"
+	+ParserDataBase::cppTypeDecl(name);
+    }
+  };
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "array",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( "[" > ruleset.r_parameterdata >> "]" >> "*" >> int_ >> stringRule<Iterator,Skipper>().copy() ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2, qi::_3)) ]
+      ))	
+    );
+  }
+};
 
 template <typename Iterator, typename Skipper = qi::space_type >
-struct ParameterDescriptionLanguageParser
+struct PDLParser
 : qi::grammar<Iterator, ParameterSetData(), Skipper>
 {
 
 public:
   
-  ParameterDescriptionLanguageParserRuleset<Iterator,Skipper> rules;
+  PDLParserRuleset<Iterator,Skipper> rules;
     
-  ParameterDescriptionLanguageParser()
-  : ParameterDescriptionLanguageParser::base_type(rules.r_parameterset)
+  PDLParser()
+  : PDLParser::base_type(rules.r_parameterset)
   {
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
     IntParameterParser::insertrule<Iterator, Skipper>(rules);
     SubsetParameterParser::insertrule<Iterator, Skipper>(rules);
+    ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
+    cout<<"ok2"<<endl;
     
     rules.init();
 
@@ -269,7 +348,7 @@ int main(int argc, char *argv[])
 {
   std::ifstream in(argv[1]);
 
-  ParameterDescriptionLanguageParser<std::string::iterator> parser;
+  PDLParser<std::string::iterator> parser;
   //   skip_grammar<Iterator> skip;
     
   std::string contents_raw;
@@ -292,8 +371,11 @@ int main(int argc, char *argv[])
       result
   );
   
+  cout<<"Parsing done"<<endl;
+  
   BOOST_FOREACH(ParameterSetEntry& pe, result)
   {
+    cout<<pe.first<<endl;
     pe.second->writeCppHeader(cout, pe.first);
   }
   

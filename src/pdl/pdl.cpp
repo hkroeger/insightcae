@@ -34,6 +34,7 @@
 #include "boost/lexical_cast.hpp"
 #include <boost/algorithm/string.hpp>
 #include "boost/date_time.hpp"
+#include <boost/algorithm/string/join.hpp>
 
 #include "boost/concept_check.hpp"
 #include "boost/utility.hpp"
@@ -93,6 +94,10 @@ class ParserDataBase
 public:
   typedef boost::shared_ptr<ParserDataBase> Ptr;
   
+  std::string description;
+
+  ParserDataBase(const std::string& d) : description(d) {}
+  
   /* c++
   written by writeCppHeader:
   
@@ -101,7 +106,9 @@ public:
    
   */ 
   virtual void cppAddHeader(std::set<std::string>& headers) const {};
+  virtual std::string cppParamType(const std::string& name) const =0;
   virtual std::string cppType(const std::string& name) const =0;
+  virtual std::string cppValueRep(const std::string& name) const =0;
   virtual std::string cppTypeName(const std::string& name) const { return name+"_type"; }
   virtual std::string cppTypeDecl(const std::string& name) const 
   {
@@ -113,6 +120,44 @@ public:
     os<<cppTypeDecl(name)<<endl;
     os<<cppTypeName(name)+" "<<name<<";"<<endl;
   }
+  
+  /*
+  written by writeCppSetStatement:
+  
+    .. ( ParameterSet &p)
+   ...
+   {
+     // SetStatement
+     p.get<TYPE>(PREFIX+)() = VALUE;
+   }
+  */
+    virtual void cppWriteCreateStatement(std::ostream& os, 
+				      const std::string& psvarname,
+				      std::vector<std::string> prefixes, 
+				      const std::string& name, const std::string& sbase="(*this)") const
+    {
+      prefixes.push_back(name);
+      std::string 
+       p_fq_name=boost::algorithm::join(prefixes, "/"),
+       s_fq_name=boost::algorithm::join(prefixes, ".");
+       
+      os<<"{ std::string key(\""<<name<<"\"); ";
+      // sbase<<"."<<s_fq_name
+      os<<psvarname<<".insert(key, new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")); }"<<endl;
+    }
+
+    virtual void cppWriteSetStatement(std::ostream& os, 
+				      const std::string& psvarname,
+				      std::vector<std::string> prefixes, 
+				      const std::string& name, const std::string& sbase="(*this)") const
+    {
+      prefixes.push_back(name);
+      std::string 
+       p_fq_name=boost::algorithm::join(prefixes, "/"),
+       s_fq_name=boost::algorithm::join(prefixes, ".");
+      os<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\")() = "<<sbase<<"."<<s_fq_name<<";"<<endl;
+    }
+    
 };
 
 typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
@@ -163,17 +208,17 @@ struct DoubleParameterParser
   : public ParserDataBase
   {
     double value;
-    std::string description;
     
     Data(double v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual std::string cppType(const std::string&) const
     {
       return "double";
     }
-    
+    virtual std::string cppParamType(const std::string& name) const { return "insight::DoubleParameter"; };   
+    virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -196,10 +241,9 @@ struct VectorParameterParser
   : public ParserDataBase
   {
     arma::mat value;
-    std::string description;
     
     Data(const arma::mat& v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
@@ -210,6 +254,20 @@ struct VectorParameterParser
     virtual std::string cppType(const std::string&) const
     {
       return "arma::mat";
+    }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::VectorParameter"; }; 
+    
+    virtual std::string cppValueRep(const std::string& name) const 
+    { 
+      std::ostringstream os;
+      os<<"arma::mat(boost::assign::list_of";
+      for (int i=0; i<value.n_elem; i++)
+      {
+	os<<"("<<value(i)<<")";
+      }
+      os<<".convert_to_container<std::vector<double> >())";
+      return os.str();
     }
     
   };
@@ -234,10 +292,9 @@ struct IntParameterParser
   : public ParserDataBase
   {
     int value;
-    std::string description;
     
     Data(int v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual std::string cppType(const std::string&) const
@@ -245,6 +302,8 @@ struct IntParameterParser
       return "int";
     }
 
+    virtual std::string cppParamType(const std::string& name) const { return "insight::IntParameter"; };   
+    virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -267,10 +326,9 @@ struct PathParameterParser
   : public ParserDataBase
   {
     boost::filesystem::path value;
-    std::string description;
     
     Data(const boost::filesystem::path& v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set< std::string >& headers) const
@@ -282,6 +340,9 @@ struct PathParameterParser
     {
       return "boost::filesystem::path";
     }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::PathParameter"; };   
+    virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
 
   };
   
@@ -305,10 +366,9 @@ struct SubsetParameterParser
   : public ParserDataBase
   {
     ParameterSetData value;
-    std::string description;
     
     Data(const ParameterSetData& v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set< std::string >& headers) const
@@ -331,6 +391,66 @@ struct SubsetParameterParser
       os<<"};";
       return os.str();
     }
+    virtual std::string cppValueRep(const std::string& name) const { return "#error"; }
+    
+    virtual std::string cppParamType(const std::string& name) const { return "insight::SubsetParameter"; };   
+
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& psvarname, 
+				      std::vector< std::string > prefixes, 
+				      const std::string& name, const std::string& sbase="(*this)") const
+    {
+      prefixes.push_back(name);
+      std::string 
+       p_fq_name=boost::algorithm::join(prefixes, "/"),
+       fq_name=boost::algorithm::join(prefixes, "."),
+       s_fq_name=boost::algorithm::join(prefixes, "_");
+
+      os<<"{ std::string key(\""<<name<<"\"); ";
+      os<<psvarname<<".insert(key, new "<<cppParamType(name)<<"(\""<<description<<"\")); }"<<endl;
+      
+      os
+	<<cppParamType(name)<<"& "<<s_fq_name
+	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
+      os<<"{"<<endl;
+      BOOST_FOREACH(const ParameterSetEntry& pe, value)
+      {
+	pe.second->cppWriteCreateStatement
+	(
+	  os, 
+	  s_fq_name,
+	  prefixes, 
+	  pe.first
+	);
+      }
+      os<<"}"<<endl;
+    }
+    
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& psvarname, 
+				      std::vector< std::string > prefixes, 
+				      const std::string& name, const std::string& sbase="(*this)") const
+    {
+      prefixes.push_back(name);
+      std::string 
+       p_fq_name=boost::algorithm::join(prefixes, "/"),
+       fq_name=boost::algorithm::join(prefixes, "."),
+       s_fq_name=boost::algorithm::join(prefixes, "_");
+      os
+	<<cppParamType(name)<<"& "<<s_fq_name
+	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
+      os<<"{"<<endl;
+      BOOST_FOREACH(const ParameterSetEntry& pe, value)
+      {
+	pe.second->cppWriteSetStatement
+	(
+	  os, 
+	  s_fq_name,
+	  prefixes, 
+	  pe.first
+	);
+      }
+      os<<"}"<<endl;
+    }
+    
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -356,10 +476,9 @@ struct SelectableSubsetParameterParser
     typedef std::vector<SubsetData> SubsetListData;
     
     SubsetListData value;
-    std::string description;
     
     Data(const SubsetListData& v, const std::string& d)
-    : value(v), description(d) 
+    : ParserDataBase(d), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
@@ -384,6 +503,7 @@ struct SelectableSubsetParameterParser
       os<<">";
       return os.str();
     }
+    virtual std::string cppValueRep(const std::string& name) const { return "#error"; }
     
     virtual std::string cppTypeDecl(const std::string& name) const
     {
@@ -397,6 +517,34 @@ struct SelectableSubsetParameterParser
       return 
 	os.str()+"\n"
 	+ParserDataBase::cppTypeDecl(name);
+    }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::SelectableSubsetParameter"; };   
+
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& psvarname, 
+				      std::vector< std::string > prefixes, 
+				      const std::string& name, const std::string& sbase="(*this)") const
+    {
+//       prefixes.push_back(name);
+//       std::string 
+//        p_fq_name=boost::algorithm::join(prefixes, "/"),
+//        fq_name=boost::algorithm::join(prefixes, "."),
+//        s_fq_name=boost::algorithm::join(prefixes, "_");
+//       os
+// 	<<cppParamType(name)<<"& "<<s_fq_name
+// 	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
+//       os<<"{"<<endl;
+//       BOOST_FOREACH(const SubsetData& pe, value)
+//       {
+// 	pe.second->cppWriteSetStatement
+// 	(
+// 	  os, 
+// 	  s_fq_name,
+// 	  prefixes, 
+// 	  pe.first
+// 	);
+//       }
+//       os<<"}"<<endl;
     }
     
   };
@@ -426,10 +574,9 @@ struct ArrayParameterParser
   {
     ParserDataBase::Ptr value;
     int num;
-    std::string description;
     
     Data(ParserDataBase::Ptr v, int n, const std::string& d)
-    : value(v), num(n), description(d) 
+    : ParserDataBase(d), value(v), num(n)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
@@ -437,6 +584,8 @@ struct ArrayParameterParser
       headers.insert("<vector>");
       value->cppAddHeader(headers);
     };
+
+    virtual std::string cppValueRep(const std::string& name) const { return "#error"; }
 
     virtual std::string cppType(const std::string& name) const
     {
@@ -450,6 +599,8 @@ struct ArrayParameterParser
 	+"\n"
 	+ParserDataBase::cppTypeDecl(name);
     }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::ArrayParameter"; };   
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -468,7 +619,7 @@ struct ArrayParameterParser
 
 template <typename Iterator, typename Skipper = qi::space_type >
 struct PDLParser
-: qi::grammar<Iterator, ParameterSetData(), Skipper>
+: qi::grammar< Iterator, ParameterSetData(), Skipper >
 {
 
 public:
@@ -504,7 +655,8 @@ public:
 
 int main(int argc, char *argv[])
 {
-  std::ifstream in(argv[1]);
+  boost::filesystem::path inf(argv[1]);
+  std::ifstream in(inf.c_str());
 
   PDLParser<std::string::iterator> parser;
   //   skip_grammar<Iterator> skip;
@@ -532,20 +684,78 @@ int main(int argc, char *argv[])
   cout<<"Parsing done"<<endl;
   
   {
-    std::ofstream f("test.h");
-    std::set<std::string> headers;
-    BOOST_FOREACH(ParameterSetEntry& pe, result)
+    std::string name=inf.stem().string();
+    
+    
     {
-      pe.second->cppAddHeader(headers);
+      std::ofstream f(name+"_headers.h");
+      std::set<std::string> headers;
+      BOOST_FOREACH(const ParameterSetEntry& pe, result)
+      {
+	pe.second->cppAddHeader(headers);
+      }
+//       result->cppAddHeader(headers);
+      BOOST_FOREACH(const std::string& h, headers)
+      {
+	f<<"#include "<<h<<endl;
+      }
     }
-    BOOST_FOREACH(const std::string& h, headers)
     {
-      f<<"#include "<<h<<endl;
-    }
-    f<<endl;
-    BOOST_FOREACH(ParameterSetEntry& pe, result)
-    {
-      pe.second->writeCppHeader(f, pe.first);
+      std::ofstream f(name+".h");
+      
+      f<<"struct "<<name<<" : public insight::ParameterSet"<<endl;
+      f<<"{"<<endl;
+      
+      BOOST_FOREACH(const ParameterSetEntry& pe, result)
+      {
+	pe.second->writeCppHeader(f, pe.first);
+      }
+      
+      f
+      <<name<<"()"<<endl
+      <<"{"<<endl;
+      f<<"}"<<endl
+      ;
+      
+      //get from other ParameterSet
+      f
+      <<name<<"(const insight::ParameterSet& p)"<<endl
+      <<"{ }"<<endl
+      ;
+      
+      //set into other ParameterSet
+      f
+      <<"void set(insight::ParameterSet& p)"<<endl
+      <<"{"<<endl;
+      BOOST_FOREACH(const ParameterSetEntry& pe, result)
+      {
+	pe.second->cppWriteSetStatement
+	(
+	  f, 
+	  "p",
+	  std::vector<std::string>(), 
+	  pe.first
+	);
+      }
+      f
+      <<"}"<<endl
+      ;
+      
+      f<<"static ParameterSet makeDefault() {"<<endl;
+      f<<"ParameterSet p;"<<endl;
+      BOOST_FOREACH(const ParameterSetEntry& pe, result)
+      {
+	pe.second->cppWriteCreateStatement
+	(
+	  f, 
+	  "p",
+	  std::vector<std::string>(), 
+	  pe.first
+	);
+      }      
+      f<<"return p;"<<endl<<"}"<<endl;
+      f
+      <<"};"<<endl;
     }
   }
   

@@ -100,6 +100,7 @@ public:
    name_type name;
    
   */ 
+  virtual void cppAddHeader(std::set<std::string>& headers) const {};
   virtual std::string cppType(const std::string& name) const =0;
   virtual std::string cppTypeName(const std::string& name) const { return name+"_type"; }
   virtual std::string cppTypeDecl(const std::string& name) const 
@@ -201,6 +202,11 @@ struct VectorParameterParser
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
     
+    virtual void cppAddHeader(std::set<std::string>& headers) const 
+    {
+      headers.insert("<armadillo>");
+    };
+    
     virtual std::string cppType(const std::string&) const
     {
       return "arma::mat";
@@ -267,6 +273,11 @@ struct PathParameterParser
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
     
+    virtual void cppAddHeader(std::set< std::string >& headers) const
+    {
+      headers.insert("<boost/filesystem.hpp>");
+    }
+    
     virtual std::string cppType(const std::string&) const
     {
       return "boost::filesystem::path";
@@ -300,15 +311,24 @@ struct SubsetParameterParser
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
     
-    virtual std::string cppType(const std::string&) const
+    virtual void cppAddHeader(std::set< std::string >& headers) const
+    {
+      BOOST_FOREACH(const ParameterSetEntry& pe, value)
+      {
+	pe.second->cppAddHeader(headers);
+      }
+    }
+    
+    virtual std::string cppType(const std::string&) const { return ""; }
+    virtual std::string cppTypeDecl(const std::string& name) const
     {
       std::ostringstream os;
-      os<<"struct {"<<endl;
+      os<<"struct "<<cppTypeName(name)<<"\n{"<<endl;
       BOOST_FOREACH(const ParameterSetEntry& pe, value)
       {
 	pe.second->writeCppHeader(os, pe.first);
       }
-      os<<"}";
+      os<<"};";
       return os.str();
     }
   };
@@ -341,6 +361,15 @@ struct SelectableSubsetParameterParser
     Data(const SubsetListData& v, const std::string& d)
     : value(v), description(d) 
     {std::cout<<d<<std::endl;}
+    
+    virtual void cppAddHeader(std::set<std::string>& headers) const 
+    {
+      headers.insert("<boost/variant.hpp>");
+      BOOST_FOREACH(const SubsetData& pe, value)
+      {
+	boost::fusion::get<1>(pe)->cppAddHeader(headers);
+      }
+    };
     
     virtual std::string cppType(const std::string& name) const
     {
@@ -403,6 +432,12 @@ struct ArrayParameterParser
     : value(v), num(n), description(d) 
     {std::cout<<d<<std::endl;}
     
+    virtual void cppAddHeader(std::set<std::string>& headers) const 
+    {
+      headers.insert("<vector>");
+      value->cppAddHeader(headers);
+    };
+
     virtual std::string cppType(const std::string& name) const
     {
       return "std::vector<"+value->cppTypeName(name+"_default")+">";
@@ -498,6 +533,16 @@ int main(int argc, char *argv[])
   
   {
     std::ofstream f("test.h");
+    std::set<std::string> headers;
+    BOOST_FOREACH(ParameterSetEntry& pe, result)
+    {
+      pe.second->cppAddHeader(headers);
+    }
+    BOOST_FOREACH(const std::string& h, headers)
+    {
+      f<<"#include "<<h<<endl;
+    }
+    f<<endl;
     BOOST_FOREACH(ParameterSetEntry& pe, result)
     {
       pe.second->writeCppHeader(f, pe.first);

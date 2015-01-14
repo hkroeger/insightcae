@@ -250,7 +250,7 @@ void SubsetParameter::merge(const SubsetParameter& other)
 
 std::string SubsetParameter::latexRepresentation() const
 {
-  return this->latexRepresentation();
+  return ParameterSet::latexRepresentation();
 }
 
 

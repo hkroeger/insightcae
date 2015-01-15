@@ -29,6 +29,8 @@
 #include "base/resultset.h"
 #include "base/analysis.h"
 
+#include "openfoam/blockmesh.h"
+
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
 using namespace insight;
@@ -50,6 +52,8 @@ using namespace insight;
 %include "base/parameterset.h"
 %include "base/resultset.h"
 %include "base/analysis.h"
+
+%include "openfoam/blockmesh.h"
 
 %include "code_aster/caexportfile.h"
 %include "code_aster/codeasterrun.h"

@@ -131,19 +131,21 @@ public:
      p.get<TYPE>(PREFIX+)() = VALUE;
    }
   */
-    virtual void cppWriteCreateStatement(std::ostream& os, 
-				      const std::string& psvarname,
-				      std::vector<std::string> prefixes, 
-				      const std::string& name, const std::string& sbase="(*this)") const
+  
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
     {
-      prefixes.push_back(name);
-      std::string 
-       p_fq_name=boost::algorithm::join(prefixes, "/"),
-       s_fq_name=boost::algorithm::join(prefixes, ".");
-       
-      os<<"{ std::string key(\""<<name<<"\"); ";
-      // sbase<<"."<<s_fq_name
-      os<<psvarname<<".insert(key, new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")); }"<<endl;
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"("
+	  "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")"
+	  "); ";
+    }
+    
+    virtual void cppWriteInsertStatement(std::ostream& os, const std::string& psvarname, const std::string& name) const
+    {
+      os<<"{ ";
+      os<<"std::string key(\""<<name<<"\"); ";
+      this->cppWriteCreateStatement(os, name);
+      os<<psvarname<<".insert(key, "<<name<<"); ";
+      os<<"}"<<endl;
     }
 
     virtual void cppWriteSetStatement(std::ostream& os, 
@@ -395,30 +397,18 @@ struct SubsetParameterParser
     
     virtual std::string cppParamType(const std::string& name) const { return "insight::SubsetParameter"; };   
 
-    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& psvarname, 
-				      std::vector< std::string > prefixes, 
-				      const std::string& name, const std::string& sbase="(*this)") const
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
     {
-      prefixes.push_back(name);
-      std::string 
-       p_fq_name=boost::algorithm::join(prefixes, "/"),
-       fq_name=boost::algorithm::join(prefixes, "."),
-       s_fq_name=boost::algorithm::join(prefixes, "_");
 
-      os<<"{ std::string key(\""<<name<<"\"); ";
-      os<<psvarname<<".insert(key, new "<<cppParamType(name)<<"(\""<<description<<"\")); }"<<endl;
-      
-      os
-	<<cppParamType(name)<<"& "<<s_fq_name
-	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;      
+//       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
       os<<"{"<<endl;
       BOOST_FOREACH(const ParameterSetEntry& pe, value)
       {
-	pe.second->cppWriteCreateStatement
+	pe.second->cppWriteInsertStatement
 	(
 	  os, 
-	  s_fq_name,
-	  prefixes, 
+	  "(*"+name+")()",
 	  pe.first
 	);
       }
@@ -521,6 +511,28 @@ struct SelectableSubsetParameterParser
 
     virtual std::string cppParamType(const std::string& name) const { return "insight::SelectableSubsetParameter"; };   
 
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+    {
+     
+      os<<"{"<<endl;
+      BOOST_FOREACH(const SubsetData& sd, value)
+      {
+	os<<"SubsetList "<<name<<"_selection;"<<endl;
+	
+	os<<"{"<<endl;
+	const std::string& sel_name=boost::fusion::get<0>(sd);
+	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
+	pd->cppWriteCreateStatement
+	(
+	  os, sel_name
+	);
+	os<<name<<"_selection.push_back(SingleSubset(\""<<sel_name<<"\", "<<sel_name<<".release()));"<<endl;
+	os<<"}"<<endl;
+      }
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > value(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;      
+      os<<"}"<<endl;
+    }
+    
     virtual void cppWriteSetStatement(std::ostream& os, const std::string& psvarname, 
 				      std::vector< std::string > prefixes, 
 				      const std::string& name, const std::string& sbase="(*this)") const
@@ -601,6 +613,29 @@ struct ArrayParameterParser
     }
 
     virtual std::string cppParamType(const std::string& name) const { return "insight::ArrayParameter"; };   
+
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+    {
+
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;      
+      
+      os<<"{"<<endl;
+      value->cppWriteCreateStatement
+      (
+	os, name+"_default_value"
+      );
+      os<<name<<"->setDefaultValue(*"<<name<<"_default_value.release());"<<endl;
+      os<<"for (int i=0; i<"<<num<<"; i++) "<<name<<"->appendEmpty();"<<endl;
+      os<<"}"<<endl;
+    }
+    
+    virtual void cppWriteSetStatement(
+      std::ostream& os, 
+      const std::string& psvarname, 
+      std::vector< std::string > prefixes, const std::string& name, const std::string& sbase = "(*this)") const
+      {
+      }
+    
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -745,11 +780,10 @@ int main(int argc, char *argv[])
       f<<"ParameterSet p;"<<endl;
       BOOST_FOREACH(const ParameterSetEntry& pe, result)
       {
-	pe.second->cppWriteCreateStatement
+	pe.second->cppWriteInsertStatement
 	(
 	  f, 
 	  "p",
-	  std::vector<std::string>(), 
 	  pe.first
 	);
       }      

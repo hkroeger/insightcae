@@ -465,10 +465,11 @@ struct SelectableSubsetParameterParser
     typedef boost::fusion::vector2<std::string, ParserDataBase::Ptr> SubsetData;
     typedef std::vector<SubsetData> SubsetListData;
     
+    std::string default_sel;
     SubsetListData value;
     
-    Data(const SubsetListData& v, const std::string& d)
-    : ParserDataBase(d), value(v)
+    Data(const SubsetListData& v, const std::string& ds, const std::string& d)
+    : ParserDataBase(d), default_sel(ds), value(v)
     {std::cout<<d<<std::endl;}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
@@ -514,22 +515,23 @@ struct SelectableSubsetParameterParser
     virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
     {
      
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
       os<<"{"<<endl;
+      os<<"insight::SelectableSubsetParameter::SubsetList "<<name<<"_selection;"<<endl;
       BOOST_FOREACH(const SubsetData& sd, value)
       {
-	os<<"SubsetList "<<name<<"_selection;"<<endl;
-	
-	os<<"{"<<endl;
 	const std::string& sel_name=boost::fusion::get<0>(sd);
 	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
+	
+	os<<"{"<<endl;
 	pd->cppWriteCreateStatement
 	(
 	  os, sel_name
 	);
-	os<<name<<"_selection.push_back(SingleSubset(\""<<sel_name<<"\", "<<sel_name<<".release()));"<<endl;
+	os<<name<<"_selection.push_back(insight::SelectableSubsetParameter::SingleSubset(\""<<sel_name<<"\", "<<sel_name<<".release()));"<<endl;
 	os<<"}"<<endl;
       }
-      os<<"std::auto_ptr< "<<cppParamType(name)<<" > value(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;      
+      os<<name<<".reset(new "<<cppParamType(name)<<"(\""<<default_sel<<"\", "<<name<<"_selection, \""<<description<<"\")); "<<endl;      
       os<<"}"<<endl;
     }
     
@@ -571,8 +573,8 @@ struct SelectableSubsetParameterParser
      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
       ( lit("{{") >> 
 	  *(ruleset.r_identifier >> ruleset.r_parameterdata) 
-	>> lit("}}") >> ruleset.r_description_string ) 
-       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+	>> lit("}}") >> ruleset.r_identifier >> ruleset.r_description_string ) 
+       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2, qi::_3)) ]
      ))
     );
   }

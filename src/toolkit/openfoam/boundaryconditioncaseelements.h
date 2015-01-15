@@ -307,7 +307,11 @@ public:
 class VelocityInletBC
 : public BoundaryCondition
 {
+ 
 public:
+
+
+
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (velocity, FieldData, FieldData(vec3(0,0,0)) )
     (T, FieldData, FieldData(300.0) )
@@ -396,121 +400,78 @@ class TurbulentVelocityInletBC
 {
 
 public:
-//   typedef arma::mat CoeffList;
-//   typedef boost::variant<double, CoeffList> LengthScaleProfile;
-//   
-//   
-//   struct inflowInitializer
-//   {
-//     typedef boost::shared_ptr<inflowInitializer> Ptr;
-//     
-//     virtual ~inflowInitializer();
-//     virtual std::string type() const =0;
-//     virtual void addToInitializerList
-//     (
-//       OFDictData::dict& initdict, 
-//       const std::string& patchName,
-//       const arma::mat& Ubulk,
-//       const ParameterSet& params
-//     ) const;
-//     static ParameterSet defaultParameters();
-//   };
-//   
-// 
-//   
-//   struct pipeInflowInitializer
-//   : public inflowInitializer
-//   {
-//     pipeInflowInitializer();
-//     virtual std::string type() const;
-//     virtual void addToInitializerList
-//     (
-//       OFDictData::dict& initdict, 
-//       const std::string& patchName, 
-//       const arma::mat& Ubulk,
-//       const ParameterSet& params
-//     ) const;
-//   };
-// 
-//   
-//   struct channelInflowInitializer
-//   : public inflowInitializer
-//   {
-//     channelInflowInitializer();
-//     virtual std::string type() const;
-//     virtual void addToInitializerList
-//     (
-//       OFDictData::dict& initdict, 
-//       const std::string& patchName, 
-//       const arma::mat& Ubulk,
-//       const ParameterSet& params
-//     ) const;
-//   };
+#include "TurbulentVelocityInletBC__Parameters.h"
+/*
+PARAMETERSET>>> TurbulentVelocityInletBC Parameters
 
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
-//     (type, std::string, "inflowGenerator<hatSpot>")
-//     (uniformConvection, bool, false)
-//     (turbulence, boost::shared_ptr<SubsetParameter>, boost::shared_ptr<SubsetParameter>(defaultParameters()) )
-//     (initializer, inflowInitializer::Ptr, inflowInitializer::Ptr())
-//     (delta, double, 1.0)
-//     (volexcess, FieldData, FieldData(16.0) )
-//     (lengthScale, FieldData, FieldData(1.0) )
-//   )
- 
+umean=selectablesubset {{
 
-//   DEFINE_SubsetParameter	
-//   (
-//       DEFINE_ParameterSet
-//       (
-// 	("uniformConvection", new BoolParameter(false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-// 	("volexcess", new DoubleParameter(16.0, "Volumetric overlapping of spots"))
-// 	(
-// 	  "type", new SelectionParameter(0, 
-// 	    list_of<string>
-// 	    ("inflowGenerator<hatSpot>")
-// 	    ("inflowGenerator<gaussianSpot>")
-// 	    ("inflowGenerator<decayingTurbulenceSpot>")
-// 	    ("inflowGenerator<decayingTurbulenceVorton>")
-// 	    ("inflowGenerator<anisotropicVorton>")
-// 	    ("modalTurbulence")
-// 	  , 
-// 	  "Type of inflow generator")
-// 	)
-// 	("L", FieldData::defaultParameter(vec3(1,1,1), "Origin of the prescribed integral length scale field"))
-// 	("R", FieldData::defaultParameter(arma::zeros(6), "Origin of the prescribed reynolds stress field"))
-// 	.convert_to_container<ParameterSet::EntryList>()
-//       ), 
-//       "Inflow generator parameters"
-//   )
+ uniform 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "time description"
+     value=vector (1 0 0) "value description"
+    } "desc"
+   ] * 1  "values1 description"
+ }
 
-  ISP_DEFINE_PARAMETERSET
-  (
-    Parameters,
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, bool, uniformConvection, BoolParameter, (false, "Whether to use a uniform convection velocity instead of the local mean velocity"))
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, double, volexcess, DoubleParameter, (2.0, "Volumetric overlapping of spots"))
-    ISP_DEFINE_SIMPLEPARAMETER
-    (
-      Parameters, int, type, 
-      SelectionParameter, 
-      (
-	0, 
-	boost::assign::list_of<std::string>
-	("inflowGenerator<hatSpot>")
-	("inflowGenerator<gaussianSpot>")
-	("inflowGenerator<decayingTurbulenceSpot>")
-	("inflowGenerator<decayingTurbulenceVorton>")
-	("inflowGenerator<anisotropicVorton>")
-	("modalTurbulence"), 
-	"Type of inflow generator"
-      )
-    )
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, R, PathParameter, ("", "Path to profile with Reynolds Stresses"))
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, L, PathParameter, ("", "Path to profile with integral length scale"))
-    ISP_DEFINE_SIMPLEPARAMETER(Parameters, boost::filesystem::path, umean, PathParameter, ("", "Path to profile with mean velocity"))
-  )
+ linearProfile 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "time description"
+     profile=path "/home/hannes/blubb.txt" "profile description"
+    }
+   ] * 1  "values2 description"
+   
+   cmap=array
+   [
+    set {
+     column=int 0 "column id"
+     component=int 0 "component id"
+    }
+   ] * 1 "cmap description"
+   
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis"
+   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+ fittedProfile 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "time description"
+     coeffs=vector (1 1) "profile description"
+    }
+   ] * 1  "values3 description"
+   
+   cmap=array
+   [
+    set {
+     column=int 0 "column id"
+     component=int 0 "component id"
+    }
+   ] * 1 "cmap2 description"
+   
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis"
+   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+}} linearProfile "desc"
+<<<PARAMETERSET
+*/
+
   
 protected:
-  ParameterSet p_;
+  Parameters p_;
 
 public:
   TurbulentVelocityInletBC
@@ -518,7 +479,7 @@ public:
     OpenFOAMCase& c,
     const std::string& patchName, 
     const OFDictData::dict& boundaryDict, 
-    ParameterSet const& p = Parameters::makeWithDefaults()
+    ParameterSet const& p = Parameters::makeDefault()
   );
   
   virtual void setField_U(OFDictData::dict& BC) const;

@@ -35,6 +35,7 @@
 #include <boost/algorithm/string.hpp>
 #include "boost/date_time.hpp"
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/regex.hpp>
 
 #include "boost/concept_check.hpp"
 #include "boost/utility.hpp"
@@ -721,11 +722,14 @@ int main(int argc, char *argv[])
   cout<<"Parsing done"<<endl;
   
   {
-    std::string name=inf.stem().string();
+    std::string bname=inf.stem().string();
+    std::vector<std::string> parts;
+    boost::algorithm::split_regex(parts, bname, boost::regex("__") );
+    std::string name=parts[1];
     
     
     {
-      std::ofstream f(name+"_headers.h");
+      std::ofstream f(bname+"_headers.h");
       std::set<std::string> headers;
       BOOST_FOREACH(const ParameterSetEntry& pe, result)
       {
@@ -738,7 +742,7 @@ int main(int argc, char *argv[])
       }
     }
     {
-      std::ofstream f(name+".h");
+      std::ofstream f(bname+".h");
       
       f<<"struct "<<name<<" : public insight::ParameterSet"<<endl;
       f<<"{"<<endl;

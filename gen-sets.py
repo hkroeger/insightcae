@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
 #awk 'sub(/^PARAMETERSET>>> /,""){f=1} /<<<PARAMETERSET/{f=0} f' $*
-import sys, re
+import sys, re, os
 re_start=re.compile("^PARAMETERSET>>> *([^ ]+) *([^ ]+)$")
 re_end=re.compile("^<<<PARAMETERSET")
 
-f=open(sys.argv[1], "r")
+filename=sys.argv[1]
+pdlexe=sys.argv[2]
+basename=os.path.splitext(os.path.basename(sys.argv[1]))[0]
+f=open(filename, "r")
 inside=False
 out=None
 
+print "Scanning", filename, "for PDL definitions"
+generated=[]
 for l in f.readlines():
   #print l
   
@@ -25,7 +30,11 @@ for l in f.readlines():
     if not m is None:
       prefix=m.group(1)
       classname=m.group(2).rstrip()
-      outfname=prefix+"__"+classname+".pdl"
+      outfname=basename+"__"+prefix+"__"+classname+".pdl"
       print "Generating", outfname
+      generated.append(outfname)
       out=open(outfname, "w")
       inside=True
+      
+for f in generated:
+  os.system("\"%s\" \"%s\""%(pdlexe, f))

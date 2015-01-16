@@ -62,7 +62,7 @@ ADD_DEFINITIONS(
     # Other flags
 )
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-deprecated")
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"
@@ -372,6 +372,24 @@ macro (add_pybindings TARGETNAME IFFILES LIBS)
 #     ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
   ENDIF()
 endmacro()
+
+macro (add_PDL TARGETNAME HEADERS)
+  foreach (_hdr ${HEADERS})
+    get_filename_component(BN ${_hdr} NAME_WE)
+    message(STATUS ${_hdr} ${BN})
+    list (APPEND ${TARGETNAME}_TIMESTAMPS ${_hdr}_pdl.timestamp)
+    ADD_CUSTOM_COMMAND( OUTPUT ${_hdr}_pdl.timestamp
+			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"
+			#COMMAND ${CMAKE_BINARY_DIR}/bin/pdl ${BN}__*.pdl
+			COMMAND touch ${_hdr}_pdl.timestamp
+			DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${_hdr}
+			COMMENT "Generating source code from PDL in header ${_hdr}" )
+			
+  endforeach()
+  ADD_CUSTOM_TARGET( ${TARGETNAME}_PDLGenerator DEPENDS ${${TARGETNAME}_TIMESTAMPS}
+		    COMMENT "Checking if PDL re-generation is required" )
+  ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
+endmacro(add_PDL)
 
 add_subdirectory(pdl)
 add_subdirectory(refdata)

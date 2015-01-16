@@ -6,8 +6,8 @@ set(CMAKE_AUTOMOC ON)
 #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${toolkit_SOURCE_DIR})
-link_directories(${toolkit_BIN_DIR})
+# include_directories(${toolkit_SOURCE_DIR})
+# link_directories(${toolkit_BIN_DIR})
 
 set(workbench_SRCS resultelementwrapper.cpp graphprogressdisplayer.cpp parameterwrapper.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui)

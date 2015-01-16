@@ -25,24 +25,17 @@ file(GLOB_RECURSE toolkit_SOURCES "*.cpp")
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 message(${toolkit_HEADERS})
 
-ADD_CUSTOM_COMMAND( OUTPUT TurbulentVelocityInletBC__Parameters.h
-                    COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py ${CMAKE_CURRENT_SOURCE_DIR}/openfoam/boundaryconditioncaseelements.h
-                    COMMAND ${CMAKE_BINARY_DIR}/bin/pdl TurbulentVelocityInletBC__Parameters.pdl
-                    DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${CMAKE_CURRENT_SOURCE_DIR}/openfoam/boundaryconditioncaseelements.h
-                    COMMENT "Generating source code from PDL in header" )
-                    
-ADD_CUSTOM_TARGET( RunGenerator DEPENDS TurbulentVelocityInletBC__Parameters.h 
-                   COMMENT "Checking if re-generation is required" )
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-                    
-#include_directories(${CMAKE_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR} )
-include_directories(${toolkit_SOURCE_DIR})
-
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
-ADD_DEPENDENCIES( toolkit RunGenerator )
+
+target_include_directories(toolkit 
+  PUBLIC ${Boost_INCLUDE_DIR} 
+  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+
+add_PDL(toolkit "${toolkit_HEADERS}")
 
 install(TARGETS toolkit LIBRARY DESTINATION lib)
 install(

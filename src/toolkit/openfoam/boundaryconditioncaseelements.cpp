@@ -942,7 +942,7 @@ VelocityInletBC::VelocityInletBC
   OpenFOAMCase& c, 
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  const ParameterSet& p
+  Parameters const& p
 )
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
@@ -1542,7 +1542,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   ParameterSet const& p
 )
 : VelocityInletBC(c, patchName, boundaryDict, VelocityInletBC::Parameters()),
-  p_.set(p)
+  p_(p)
 {
 }
 

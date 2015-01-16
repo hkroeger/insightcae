@@ -693,111 +693,117 @@ public:
 
 int main(int argc, char *argv[])
 {
-  boost::filesystem::path inf(argv[1]);
-  std::ifstream in(inf.c_str());
-
-  PDLParser<std::string::iterator> parser;
-  //   skip_grammar<Iterator> skip;
-    
-  std::string contents_raw;
-  in.seekg(0, std::ios::end);
-  contents_raw.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents_raw[0], contents_raw.size());
-  cout<<contents_raw<<endl;
-  
-  std::string::iterator first=contents_raw.begin();
-  std::string::iterator last=contents_raw.end();
-  
-  ParameterSetData result;
-  bool r = qi::phrase_parse
-  (
-      first, 
-      last,
-      parser,
-      qi::space,
-      result
-  );
-  
-  cout<<"Parsing done"<<endl;
-  
+  for (int k=1; k<argc; k++)
   {
-    std::string bname=inf.stem().string();
-    std::vector<std::string> parts;
-    boost::algorithm::split_regex(parts, bname, boost::regex("__") );
-    std::string name=parts[1];
+    boost::filesystem::path inf(argv[k]);
+    cout<<"Processing PDL "<<inf<<endl;
     
+    std::ifstream in(inf.c_str());
+    
+    if (!in.good()) exit(-1);
+
+    PDLParser<std::string::iterator> parser;
+    //   skip_grammar<Iterator> skip;
+      
+    std::string contents_raw;
+    in.seekg(0, std::ios::end);
+    contents_raw.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents_raw[0], contents_raw.size());
+    cout<<contents_raw<<endl;
+    
+    std::string::iterator first=contents_raw.begin();
+    std::string::iterator last=contents_raw.end();
+    
+    ParameterSetData result;
+    bool r = qi::phrase_parse
+    (
+	first, 
+	last,
+	parser,
+	qi::space,
+	result
+    );
+    
+    cout<<"Parsing done"<<endl;
     
     {
-      std::ofstream f(bname+"_headers.h");
-      std::set<std::string> headers;
-      BOOST_FOREACH(const ParameterSetEntry& pe, result)
+      std::string bname=inf.stem().string();
+      std::vector<std::string> parts;
+      boost::algorithm::split_regex(parts, bname, boost::regex("__") );
+      std::string name=parts[2];
+      
+      
       {
-	pe.second->cppAddHeader(headers);
+	std::ofstream f(bname+"_headers.h");
+	std::set<std::string> headers;
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  pe.second->cppAddHeader(headers);
+	}
+  //       result->cppAddHeader(headers);
+	BOOST_FOREACH(const std::string& h, headers)
+	{
+	  f<<"#include "<<h<<endl;
+	}
       }
-//       result->cppAddHeader(headers);
-      BOOST_FOREACH(const std::string& h, headers)
       {
-	f<<"#include "<<h<<endl;
+	std::ofstream f(bname+".h");
+	
+	f<<"struct "<<name<<" : public insight::ParameterSet"<<endl;
+	f<<"{"<<endl;
+	
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  pe.second->writeCppHeader(f, pe.first);
+	}
+	
+	f
+	<<name<<"()"<<endl
+	<<"{"<<endl;
+	f<<"}"<<endl
+	;
+	
+	//get from other ParameterSet
+	f
+	<<name<<"(const insight::ParameterSet& p)"<<endl
+	<<"{ }"<<endl
+	;
+	
+	//set into other ParameterSet
+	f
+	<<"void set(insight::ParameterSet& p)"<<endl
+	<<"{"<<endl;
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  pe.second->cppWriteSetStatement
+	  (
+	    f, 
+	    "p",
+	    std::vector<std::string>(), 
+	    pe.first
+	  );
+	}
+	f
+	<<"}"<<endl
+	;
+	
+	f<<"static ParameterSet makeDefault() {"<<endl;
+	f<<"ParameterSet p;"<<endl;
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  pe.second->cppWriteInsertStatement
+	  (
+	    f, 
+	    "p",
+	    pe.first
+	  );
+	}      
+	f<<"return p;"<<endl<<"}"<<endl;
+	f
+	<<"};"<<endl;
       }
-    }
-    {
-      std::ofstream f(bname+".h");
-      
-      f<<"struct "<<name<<" : public insight::ParameterSet"<<endl;
-      f<<"{"<<endl;
-      
-      BOOST_FOREACH(const ParameterSetEntry& pe, result)
-      {
-	pe.second->writeCppHeader(f, pe.first);
-      }
-      
-      f
-      <<name<<"()"<<endl
-      <<"{"<<endl;
-      f<<"}"<<endl
-      ;
-      
-      //get from other ParameterSet
-      f
-      <<name<<"(const insight::ParameterSet& p)"<<endl
-      <<"{ }"<<endl
-      ;
-      
-      //set into other ParameterSet
-      f
-      <<"void set(insight::ParameterSet& p)"<<endl
-      <<"{"<<endl;
-      BOOST_FOREACH(const ParameterSetEntry& pe, result)
-      {
-	pe.second->cppWriteSetStatement
-	(
-	  f, 
-	  "p",
-	  std::vector<std::string>(), 
-	  pe.first
-	);
-      }
-      f
-      <<"}"<<endl
-      ;
-      
-      f<<"static ParameterSet makeDefault() {"<<endl;
-      f<<"ParameterSet p;"<<endl;
-      BOOST_FOREACH(const ParameterSetEntry& pe, result)
-      {
-	pe.second->cppWriteInsertStatement
-	(
-	  f, 
-	  "p",
-	  pe.first
-	);
-      }      
-      f<<"return p;"<<endl<<"}"<<endl;
-      f
-      <<"};"<<endl;
     }
   }
-  
   return 0;
 }

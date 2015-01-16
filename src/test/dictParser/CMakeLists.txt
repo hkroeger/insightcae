@@ -1,7 +1,6 @@
 project(test_dictParser)
 
-include_directories(${toolkit_SOURCE_DIR})
-link_directories(${toolkit_BIN_DIR})
+# link_directories(${toolkit_BIN_DIR})
 
 set(test_dictParser_SOURCES test.cpp)
 

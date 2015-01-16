@@ -511,8 +511,8 @@ BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
 BINARY_FUNCTION_QTC(dotted, (dot(value1,value2)), DotResult );
-BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1)/norm(value2))), DotResult );
-BINARY_FUNCTION_QTC(angleMag, (acos(abs(dot(value1,value2)/norm(value1)/norm(value2)))), DotResult );
+BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1,2)/norm(value2,2))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (acos(abs(dot(value1,value2)/norm(value1,2)/norm(value2,2)))), DotResult );
 
 class edgeCoG
     : public QuantityComputer<arma::mat>

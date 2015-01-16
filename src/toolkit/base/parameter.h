@@ -327,6 +327,7 @@ public:
   inline Parameter& operator[](int i) { return value_[i]; }
   inline const Parameter& operator[](int i) const { return value_[i]; }
   inline int size() const { return value_.size(); }
+  inline void clear() { value_.clear(); }
   
   virtual std::string latexRepresentation() const;
   

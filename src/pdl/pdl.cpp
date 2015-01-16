@@ -88,7 +88,11 @@ using namespace qi;
 using namespace phx;
 using namespace boost;
 
-
+std::string extendtype(const std::string& pref, const std::string& app)
+{
+  if (pref=="") return app;
+  else return pref+"::"+app;
+}
 /* Basic data structures */
 class ParserDataBase
 {
@@ -149,16 +153,11 @@ public:
       os<<"}"<<endl;
     }
 
-    virtual void cppWriteSetStatement(std::ostream& os, 
-				      const std::string& psvarname,
-				      std::vector<std::string> prefixes, 
-				      const std::string& name, const std::string& sbase="(*this)") const
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& typepref
+    ) const
     {
-      prefixes.push_back(name);
-      std::string 
-       p_fq_name=boost::algorithm::join(prefixes, "/"),
-       s_fq_name=boost::algorithm::join(prefixes, ".");
-      os<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\")() = "<<sbase<<"."<<s_fq_name<<";"<<endl;
+      os<<varname<<"() = "<<staticname<<";"<<endl;
     }
     
 };
@@ -416,30 +415,24 @@ struct SubsetParameterParser
       os<<"}"<<endl;
     }
     
-    virtual void cppWriteSetStatement(std::ostream& os, const std::string& psvarname, 
-				      std::vector< std::string > prefixes, 
-				      const std::string& name, const std::string& sbase="(*this)") const
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& thisscope) const
     {
-      prefixes.push_back(name);
-      std::string 
-       p_fq_name=boost::algorithm::join(prefixes, "/"),
-       fq_name=boost::algorithm::join(prefixes, "."),
-       s_fq_name=boost::algorithm::join(prefixes, "_");
-      os
-	<<cppParamType(name)<<"& "<<s_fq_name
-	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
-      os<<"{"<<endl;
+      std::string myscope=extendtype(thisscope, cppTypeName(name));
       BOOST_FOREACH(const ParameterSetEntry& pe, value)
       {
-	pe.second->cppWriteSetStatement
-	(
-	  os, 
-	  s_fq_name,
-	  prefixes, 
-	  pe.first
-	);
+	std::string subname=pe.first;
+	os<<"{"<<endl;
+	  os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+	  os<<"const "
+	    <<extendtype(myscope, pe.second->cppTypeName(subname))
+	    <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
+	  pe.second->cppWriteSetStatement
+	  (
+	    os, subname, subname, subname+"_static", myscope
+	  );
+	os<<"}"<<endl;
       }
-      os<<"}"<<endl;
     }
     
   };
@@ -536,30 +529,33 @@ struct SelectableSubsetParameterParser
       os<<"}"<<endl;
     }
     
-    virtual void cppWriteSetStatement(std::ostream& os, const std::string& psvarname, 
-				      std::vector< std::string > prefixes, 
-				      const std::string& name, const std::string& sbase="(*this)") const
+    virtual void cppWriteSetStatement
+    (
+      std::ostream& os, 
+      const std::string& name, 
+      const std::string& varname, 
+      const std::string& staticname, 
+      const std::string& thisscope
+    ) const
     {
-//       prefixes.push_back(name);
-//       std::string 
-//        p_fq_name=boost::algorithm::join(prefixes, "/"),
-//        fq_name=boost::algorithm::join(prefixes, "."),
-//        s_fq_name=boost::algorithm::join(prefixes, "_");
-//       os
-// 	<<cppParamType(name)<<"& "<<s_fq_name
-// 	<<" = "<<psvarname<<".get< "<<cppParamType(name)<<" > (\""<<name<<"\");"<<endl;
-//       os<<"{"<<endl;
-//       BOOST_FOREACH(const SubsetData& pe, value)
-//       {
-// 	pe.second->cppWriteSetStatement
-// 	(
-// 	  os, 
-// 	  s_fq_name,
-// 	  prefixes, 
-// 	  pe.first
-// 	);
-//       }
-//       os<<"}"<<endl;
+
+      os<<"{"<<endl;
+      
+      BOOST_FOREACH(const SubsetData& sd, value)
+      {
+	const std::string& sel_name=boost::fusion::get<0>(sd);
+	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
+	
+	os<<"if ( "<<varname<<".selection() == \""<<sel_name<<"\" ) {"<<endl;
+	os
+	<<"ParameterSet& "<<name<<"_param = "<<name<<"();"<<endl;
+	os<<"const "
+	<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
+	<<"& "<<name<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >("<< staticname <<");"<<endl;
+	pd->cppWriteSetStatement(os, name+"_"+sel_name, name+"_param", name+"_static", thisscope);
+	os<<"}"<<endl;
+      }
+      os<<"}"<<endl;
     }
     
   };
@@ -632,12 +628,22 @@ struct ArrayParameterParser
       os<<"}"<<endl;
     }
     
-    virtual void cppWriteSetStatement(
-      std::ostream& os, 
-      const std::string& psvarname, 
-      std::vector< std::string > prefixes, const std::string& name, const std::string& sbase = "(*this)") const
-      {
-      }
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, 
+				      const std::string& staticname, const std::string& thisscope) const
+    {
+      os<<varname<<".clear();"<<endl;
+      os<<"for(int k=0; k<"<<staticname<<".size(); k++)"<<endl;
+      os<<"{"<<endl;
+      os<<varname<<".appendEmpty();"<<endl;
+      
+      os<<value->cppParamType(name+"_default")<<"& "<<varname
+	<<"_cur = dynamic_cast< "<< value->cppParamType(name+"_default") <<"& >("<<varname<<"[k]);"<<endl;
+      os<<"const "<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+      
+      value->cppWriteSetStatement(os, name+"_default", name+"_cur", name+"_cur_static", thisscope);
+      
+      os<<"}"<<endl;
+    }
     
   };
   
@@ -731,7 +737,9 @@ int main(int argc, char *argv[])
       std::string bname=inf.stem().string();
       std::vector<std::string> parts;
       boost::algorithm::split_regex(parts, bname, boost::regex("__") );
-      std::string name=parts[2];
+      std::string name=bname;
+      if (parts.size()==3)
+	name=parts[2];
       
       
       {
@@ -750,7 +758,7 @@ int main(int argc, char *argv[])
       {
 	std::ofstream f(bname+".h");
 	
-	f<<"struct "<<name<<" : public insight::ParameterSet"<<endl;
+	f<<"struct "<<name<<endl;
 	f<<"{"<<endl;
 	
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
@@ -776,13 +784,15 @@ int main(int argc, char *argv[])
 	<<"{"<<endl;
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
+	  std::string subname=pe.first;
+	  f<<"{"<<endl;
+	  f<<pe.second->cppParamType(subname)<<"& "<<subname<<" = p.get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+	  f<<"const "<<pe.second->cppTypeName(subname)<<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
 	  pe.second->cppWriteSetStatement
 	  (
-	    f, 
-	    "p",
-	    std::vector<std::string>(), 
-	    pe.first
+	    f, subname, subname, subname+"_static", ""
 	  );
+	  f<<"}"<<endl;
 	}
 	f
 	<<"}"<<endl

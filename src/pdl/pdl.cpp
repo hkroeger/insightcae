@@ -160,6 +160,13 @@ public:
       os<<varname<<"() = "<<staticname<<";"<<endl;
     }
     
+    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& typepref
+    ) const
+    {
+      os<<staticname<<" = "<<varname<<"();"<<endl;
+    }
+    
 };
 
 typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
@@ -435,6 +442,25 @@ struct SubsetParameterParser
       }
     }
     
+    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& thisscope) const
+    {
+      std::string myscope=extendtype(thisscope, cppTypeName(name));
+      BOOST_FOREACH(const ParameterSetEntry& pe, value)
+      {
+	std::string subname=pe.first;
+	os<<"{"<<endl;
+	  os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+	  os<<extendtype(myscope, pe.second->cppTypeName(subname))
+	    <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
+	  pe.second->cppWriteGetStatement
+	  (
+	    os, subname, subname, subname+"_static", myscope
+	  );
+	os<<"}"<<endl;
+      }
+    }
+    
   };
   
   template <typename Iterator, typename Skipper = qi::space_type >
@@ -545,19 +571,51 @@ struct SelectableSubsetParameterParser
       {
 	const std::string& sel_name=boost::fusion::get<0>(sd);
 	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
-	
-	os<<"if ( "<<varname<<".selection() == \""<<sel_name<<"\" ) {"<<endl;
-	os
-	<<"ParameterSet& "<<name<<"_param = "<<name<<"();"<<endl;
+	std::string seliname=name+"_"+sel_name;
+	#warning error somewhere here
+	os<<"if ( ";
 	os<<"const "
 	<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
-	<<"& "<<name<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >("<< staticname <<");"<<endl;
-	pd->cppWriteSetStatement(os, name+"_"+sel_name, name+"_param", name+"_static", thisscope);
+	<<"* "<<seliname<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >(&"<< staticname <<")"
+	<<") {"<<endl;
+	os<<varname<<".selection() = \""<<sel_name<<"\";"<<endl;
+	os<<"ParameterSet& "<<seliname<<"_param = "<<name<<"();"<<endl;
+	pd->cppWriteSetStatement(os, seliname, seliname+"_param", "(*"+seliname+"_static)", thisscope);
 	os<<"}"<<endl;
       }
       os<<"}"<<endl;
     }
-    
+
+    virtual void cppWriteGetStatement
+    (
+      std::ostream& os, 
+      const std::string& name, 
+      const std::string& varname, 
+      const std::string& staticname, 
+      const std::string& thisscope
+    ) const
+    {
+
+      os<<"{"<<endl;
+      
+      BOOST_FOREACH(const SubsetData& sd, value)
+      {
+	const std::string& sel_name=boost::fusion::get<0>(sd);
+	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
+	std::string seliname=name+"_"+sel_name;
+	
+	os<<"if ( "<<varname<<".selection() == \""<<sel_name<<"\" ) {"<<endl;
+	
+	os<<"const ParameterSet& "<<seliname<<"_param = "<<name<<"();"<<endl;
+	
+	os<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
+	<<"& "<<seliname<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >("<< staticname <<");"<<endl;
+	
+	pd->cppWriteGetStatement(os, seliname, seliname+"_param", seliname+"_static", thisscope);
+	os<<"}"<<endl;
+      }
+      os<<"}"<<endl;
+    }
   };
   
   
@@ -641,6 +699,21 @@ struct ArrayParameterParser
       os<<"const "<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
       
       value->cppWriteSetStatement(os, name+"_default", name+"_cur", name+"_cur_static", thisscope);
+      
+      os<<"}"<<endl;
+    }
+    
+    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, 
+				      const std::string& staticname, const std::string& thisscope) const
+    {
+      os<<staticname<<".resize("<<varname<<".size());"<<endl;
+      os<<"for(int k=0; k<"<<varname<<".size(); k++)"<<endl;
+      os<<"{"<<endl;
+      os<<"const "<<value->cppParamType(name+"_default")<<"& "<<varname
+	<<"_cur = dynamic_cast<const "<< value->cppParamType(name+"_default") <<"& >("<<varname<<"[k]);"<<endl;
+      os<<extendtype(thisscope, value->cppTypeName(name+"_default"))<<"& "<<varname<<"_cur_static = "<<staticname<<"[k];"<<endl;
+      
+      value->cppWriteGetStatement(os, name+"_default", name+"_cur", name+"_cur_static", thisscope);
       
       os<<"}"<<endl;
     }
@@ -775,12 +848,12 @@ int main(int argc, char *argv[])
 	//get from other ParameterSet
 	f
 	<<name<<"(const insight::ParameterSet& p)"<<endl
-	<<"{ }"<<endl
+	<<"{ get(p); }"<<endl
 	;
 	
 	//set into other ParameterSet
 	f
-	<<"void set(insight::ParameterSet& p)"<<endl
+	<<"void set(insight::ParameterSet& p) const"<<endl
 	<<"{"<<endl;
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
@@ -789,6 +862,26 @@ int main(int argc, char *argv[])
 	  f<<pe.second->cppParamType(subname)<<"& "<<subname<<" = p.get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
 	  f<<"const "<<pe.second->cppTypeName(subname)<<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
 	  pe.second->cppWriteSetStatement
+	  (
+	    f, subname, subname, subname+"_static", ""
+	  );
+	  f<<"}"<<endl;
+	}
+	f
+	<<"}"<<endl
+	;
+	
+	//from other ParameterSet into current static data
+	f
+	<<"void get(const insight::ParameterSet& p)"<<endl
+	<<"{"<<endl;
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  std::string subname=pe.first;
+	  f<<"{"<<endl;
+	  f<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = p.get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+	  f<<pe.second->cppTypeName(subname)<<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
+	  pe.second->cppWriteGetStatement
 	  (
 	    f, subname, subname, subname+"_static", ""
 	  );

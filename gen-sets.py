@@ -15,9 +15,9 @@ out=None
 
 print "Scanning", filename, "for PDL definitions"
 generated=[]
-expanded=set([])
+expanded_glob=set([])
 
-def copy(l, out):
+def copy(l, out, expanded):
   m=re.match(re_include, l)
   if not m is None:
     fn=m.group(1)
@@ -26,7 +26,8 @@ def copy(l, out):
     else:
       expanded.add(fn)
       sf=open(fn, 'r')
-      for sl in sf.readlines(): copy(sl, out)
+      for sl in sf.readlines(): copy(sl, out, expanded)
+      expanded.remove(fn)
   else:
     out.write(l);
   
@@ -39,7 +40,7 @@ for l in f.readlines():
       inside=False
       
   if inside:
-    copy(l, out)
+    copy(l, out, expanded_glob)
     
   if not inside:
     m=re.search(re_start, l)    

@@ -1020,14 +1020,14 @@ ParameterSet ChannelInflow::defaultParameters() const
 {
   ParameterSet p(ChannelBase::defaultParameters());
   
-  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::defaultParameters(), "Inflow BC"));
+  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::Parameters::makeDefault(), "Inflow BC"));
   
-  (*inflowparams)().extend
-  (
-      boost::assign::list_of<ParameterSet::SingleEntry>
-      ("umean", FieldData::defaultParameter(vec3(1,0,0)))
-      .convert_to_container<ParameterSet::EntryList>()
-  );
+//   (*inflowparams)().extend
+//   (
+//       boost::assign::list_of<ParameterSet::SingleEntry>
+//       ("umean", FieldData::defaultParameter(vec3(1,0,0)))
+//       .convert_to_container<ParameterSet::EntryList>()
+//   );
   
   p.extend
   (

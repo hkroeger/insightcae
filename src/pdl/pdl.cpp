@@ -216,6 +216,39 @@ struct PDLParserRuleset
 };
 
 /* specialized data structures */
+struct BoolParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    bool value;
+    
+    Data(bool v, const std::string& d)
+    : ParserDataBase(d), value(v)
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string&) const
+    {
+      return "bool";
+    }
+    virtual std::string cppParamType(const std::string& name) const { return "insight::BoolParameter"; };   
+    virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
+  };
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "bool",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( qi::bool_ >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
+    );
+  }
+};
+
 struct DoubleParameterParser
 {
   struct Data
@@ -369,6 +402,79 @@ struct PathParameterParser
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
 	( ruleset.r_string >> ruleset.r_description_string ) 
 	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
+    );
+  }
+};
+
+struct SelectionParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    std::vector<std::string> selections;
+    std::string selection;
+    
+    Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d)
+    : ParserDataBase(d), selections(sels), selection(sel)
+    {std::cout<<d<<std::endl;}
+    
+    virtual std::string cppType(const std::string&) const { return "#error"; }
+    virtual std::string cppTypeDecl(const std::string& name) const
+    {
+      std::ostringstream os;
+      os<<"enum "<<cppTypeName(name)<<"\n{"<<endl;
+      std::string comma="";
+      BOOST_FOREACH(const std::string& s, selections)
+      {
+	os<<comma<<s<<endl;
+	comma=",";
+      }
+      os<<"};";
+      return os.str();
+    }
+    virtual std::string cppValueRep(const std::string& name) const { return "#error"; }
+    
+    virtual std::string cppParamType(const std::string& name) const { return "insight::SelectionParameter"; };   
+
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+    {
+
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
+//       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
+      os<<"{"<<endl;
+      os<<"insight::SelectionParameter::ItemList items;"<<endl;
+      BOOST_FOREACH(const std::string& s, selections)
+      {
+	os<<"items.push_back(\""<<s<<"\");"<<endl;
+      }
+      os<<name<<".reset(new "<<cppParamType(name)<<"(\""<< selection <<"\", items, \""<<description<<"\")); "<<endl;
+      os<<"}"<<endl;
+    }
+    
+    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& thisscope) const
+    {
+      os<<varname<<"() = int("<< staticname <<");"<<endl;
+    }
+    
+    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
+      const std::string& thisscope) const
+    {
+      os<<staticname<<"="<<extendtype(thisscope, cppTypeName(name))<<"("<<varname<<"());"<<endl;
+    }
+    
+  };
+  
+  template <typename Iterator, typename Skipper = qi::space_type >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "selection",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( "(" >> *(ruleset.r_identifier) >> ")" >> ruleset.r_identifier >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2, qi::_3)) ]
       ))
     );
   }
@@ -577,7 +683,6 @@ struct SelectableSubsetParameterParser
 	const std::string& sel_name=boost::fusion::get<0>(sd);
 	ParserDataBase::Ptr pd=boost::fusion::get<1>(sd); // should be a set
 	std::string seliname=name+"_"+sel_name;
-	#warning error somewhere here
 	os<<"if ( ";
 	os<<"const "
 	<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
@@ -751,11 +856,13 @@ public:
   PDLParser()
   : PDLParser::base_type(rules.r_parameterset)
   {
+    BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
     VectorParameterParser::insertrule<Iterator, Skipper>(rules);
     PathParameterParser::insertrule<Iterator, Skipper>(rules);
     IntParameterParser::insertrule<Iterator, Skipper>(rules);
     SubsetParameterParser::insertrule<Iterator, Skipper>(rules);
+    SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     cout<<"ok2"<<endl;

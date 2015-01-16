@@ -77,8 +77,8 @@ fielddata=selectablesubset {{
    cmap=array
    [
     set {
-     column=int 0 "Column id"
-     component=int 0 "Component id"
+     column=int 0 "Column ID"
+     component=int 0 "Component ID"
     }
    ] * 1 "Mapping of tabular columns to vector components"
    
@@ -93,18 +93,18 @@ fielddata=selectablesubset {{
    values=array
    [
     set {
-     time=double 0 "time description"
-     coeffs=vector (1 1) "profile description"
-    }
-   ] * 1  "values3 description"
+     time=double 0 "Time instant"
+     coeffs=vector (1 1) "Coefficients of profile polynomial"
+    } "Time instant data"
+   ] * 1  "Array of time instants"
    
    cmap=array
    [
     set {
-     column=int 0 "column id"
-     component=int 0 "component id"
+     column=int 0 "Column ID"
+     component=int 0 "Component ID"
     }
-   ] * 1 "cmap2 description"
+   ] * 1 "Mapping of tabular columns to vector components"
    
    p0=vector (0 0 0) "Origin of sampling axis"
    ep=vector (1 0 0) "Direction of sampling axis"
@@ -112,7 +112,7 @@ fielddata=selectablesubset {{
    ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
  }
 
-}} uniform "desc"
+}} uniform "Specification of field value"
 <<<PARAMETERSET
 */
 
@@ -495,10 +495,28 @@ public:
 #include "boundaryconditioncaseelements__TurbulentVelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
-
+uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
+volexcess=double 2.0 "Volumetric overlapping of spots"
+type=selection ( 
+  hatSpot 
+  gaussianSpot
+  decayingTurbulenceSpot
+  decayingTurbulenceVorton
+  anisotropicVorton
+  modalTurbulence
+  ) anisotropicVorton "Type of inflow generator"
+  
 umean=set {
 #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
 } "Mean velocity specification"
+
+R=set {
+#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+} "Reynolds stresses specification"
+
+L=set {
+#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+} "Length scale specification"
 
 <<<PARAMETERSET
 */
@@ -522,7 +540,7 @@ public:
 
 //   inline static ParameterSet defaultParameters()
 //    { return Parameters::makeWithDefaults(); }
-  static ParameterSet defaultParameters();
+//   inline static ParameterSet defaultParameters();
 };
 
 

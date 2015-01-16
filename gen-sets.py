@@ -4,6 +4,7 @@
 import sys, re, os
 re_start=re.compile("^PARAMETERSET>>> *([^ ]+) *([^ ]+)$")
 re_end=re.compile("^<<<PARAMETERSET")
+re_include=re.compile("^ *#include *\\\"(.*)\\\" *$")
 
 filename=sys.argv[1]
 pdlexe=sys.argv[2]
@@ -14,6 +15,21 @@ out=None
 
 print "Scanning", filename, "for PDL definitions"
 generated=[]
+expanded=set([])
+
+def copy(l, out):
+  m=re.match(re_include, l)
+  if not m is None:
+    fn=m.group(1)
+    if fn in expanded:
+      raise Exception("Circular dependency detected: File "+fn+" has already been expanded!");
+    else:
+      expanded.add(fn)
+      sf=open(fn, 'r')
+      for sl in sf.readlines(): copy(sl, out)
+  else:
+    out.write(l);
+  
 for l in f.readlines():
   #print l
   
@@ -23,7 +39,7 @@ for l in f.readlines():
       inside=False
       
   if inside:
-    out.write(l);
+    copy(l, out)
     
   if not inside:
     m=re.search(re_start, l)    
@@ -35,6 +51,7 @@ for l in f.readlines():
       generated.append(outfname)
       out=open(outfname, "w")
       inside=True
+      
       
 for f in generated:
   os.system("\"%s\" \"%s\""%(pdlexe, f))

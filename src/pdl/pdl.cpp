@@ -173,6 +173,9 @@ typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
 typedef std::vector< ParameterSetEntry > ParameterSetData;
 
 template <typename Iterator, typename Skipper = qi::space_type >
+struct PDLParser;
+
+template <typename Iterator, typename Skipper = qi::space_type >
 struct PDLParserRuleset
 {
   typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
@@ -185,28 +188,30 @@ struct PDLParserRuleset
   qi::symbols<char, ParameterDataRulePtr> parameterDataRules;
   qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
   
-  PDLParserRuleset()
-  {  
-    r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
-    r_description_string = (r_string | attr(""));
-    r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-    
-    r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
-    
-    
-    r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
-    r_parameterset = *( r_parametersetentry );
-    
-    BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-    BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
-    BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
-    BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
-    cout<<"ok1"<<endl;
-  }
+  PDLParserRuleset();
+//   {  
+//     r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
+//     r_description_string = (r_string | attr(""));
+//     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+//     
+//     r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
+//     
+//     
+//     r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
+//     r_parameterset = *( r_parametersetentry );
+//     
+//     BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+//     BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
+//     BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
+//     BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+//     cout<<"ok1"<<endl;
+//   }
   
   void init()
   {
   }
+  
+  void addIncludeRule();
   
 };
 
@@ -734,7 +739,7 @@ struct ArrayParameterParser
   }
 };
 
-template <typename Iterator, typename Skipper = qi::space_type >
+template <typename Iterator, typename Skipper>
 struct PDLParser
 : qi::grammar< Iterator, ParameterSetData(), Skipper >
 {
@@ -768,6 +773,34 @@ public:
   }
     
 };
+
+template <typename Iterator, typename Skipper>
+PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
+{  
+  r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
+  r_description_string = (r_string | attr(""));
+  r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+  
+  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
+  
+//   parameterDataRules.add
+//   (
+//     "include",
+//     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+//       ( "(" >> r_string >> ")" >> ruleset.r_description_string ) 
+//       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
+//     ))
+//   );
+    
+  r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
+  r_parameterset = *( r_parametersetentry );
+  
+  BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+  BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
+  BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
+  BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+  cout<<"ok1"<<endl;
+}
 
 
 int main(int argc, char *argv[])

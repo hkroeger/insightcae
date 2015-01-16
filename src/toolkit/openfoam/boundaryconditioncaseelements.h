@@ -45,7 +45,77 @@ namespace insight
 class FieldData
 {
 public:
+
+#include "boundaryconditioncaseelements__FieldData__Parameters.h"
   
+/*
+PARAMETERSET>>> FieldData Parameters
+
+fielddata=selectablesubset {{
+
+ uniform 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "Time instant"
+     value=vector (1 0 0) "Field value"
+    } "Time instant data"
+   ] * 1  "Array of time instants"
+ }
+
+ linearProfile 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "Time instant"
+     profile=path "profile.dat" "Path to file with tabulated profile for this time instant"
+    } "Time instant data"
+   ] * 1  "Array of time instants"
+   
+   cmap=array
+   [
+    set {
+     column=int 0 "Column id"
+     component=int 0 "Component id"
+    }
+   ] * 1 "Mapping of tabular columns to vector components"
+   
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis"
+   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+ fittedProfile 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "time description"
+     coeffs=vector (1 1) "profile description"
+    }
+   ] * 1  "values3 description"
+   
+   cmap=array
+   [
+    set {
+     column=int 0 "column id"
+     component=int 0 "component id"
+    }
+   ] * 1 "cmap2 description"
+   
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis"
+   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
+}} uniform "desc"
+<<<PARAMETERSET
+*/
+
 protected:
   boost::shared_ptr<SelectableSubsetParameter> p_;
   
@@ -421,72 +491,15 @@ class TurbulentVelocityInletBC
 {
 
 public:
+  
 #include "boundaryconditioncaseelements__TurbulentVelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
 
-umean=selectablesubset {{
+umean=set {
+#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+} "Mean velocity specification"
 
- uniform 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "time description"
-     value=vector (1 0 0) "value description"
-    } "desc"
-   ] * 1  "values1 description"
- }
-
- linearProfile 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "time description"
-     profile=path "/home/hannes/blubb.txt" "profile description"
-    }
-   ] * 1  "values2 description"
-   
-   cmap=array
-   [
-    set {
-     column=int 0 "column id"
-     component=int 0 "component id"
-    }
-   ] * 1 "cmap description"
-   
-   p0=vector (0 0 0) "Origin of sampling axis"
-   ep=vector (1 0 0) "Direction of sampling axis"
-   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
-   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
- }
-
- fittedProfile 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "time description"
-     coeffs=vector (1 1) "profile description"
-    }
-   ] * 1  "values3 description"
-   
-   cmap=array
-   [
-    set {
-     column=int 0 "column id"
-     component=int 0 "component id"
-    }
-   ] * 1 "cmap2 description"
-   
-   p0=vector (0 0 0) "Origin of sampling axis"
-   ep=vector (1 0 0) "Direction of sampling axis"
-   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
-   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
- }
-
-}} linearProfile "desc"
 <<<PARAMETERSET
 */
 

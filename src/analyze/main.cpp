@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
       ("help", "produce help message")
       ("workdir,w", po::value<std::string>(), "execution directory")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
+      ("selection,l", po::value<StringList>(), "selection variable assignment")
       ("string,s", po::value<StringList>(), "string variable assignment")
       ("path,p", po::value<StringList>(), "path variable assignment")
       ("double,d", po::value<StringList>(), "double variable assignment")
@@ -165,6 +166,18 @@ int main(int argc, char *argv[])
 	boost::split(pair, s, boost::is_any_of(":"));
 	cout << "Setting string '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
 	parameters.getString(pair[0])=pair[1];
+      }
+    }
+    
+    if (vm.count("selection"))
+    {
+      StringList sets=vm["selection"].as<StringList>();
+      BOOST_FOREACH(const string& s, sets)
+      {
+	std::vector<std::string> pair;
+	boost::split(pair, s, boost::is_any_of(":"));
+	cout << "Setting selection '"<<pair[0]<<"' = \""<<pair[1]<<"\""<<endl;
+	parameters.get<SelectionParameter>(pair[0]).setSelection(pair[1]);
       }
     }
     

@@ -829,7 +829,17 @@ GradingAnalyzer::GradingAnalyzer(double delta0, double L, int n)
   } obj;
   obj.n=n;
   obj.Lbydelta0=L/delta0;
-  grad_=nonlinearSolve1D(obj, 0.0001, 10000);
+  try
+  {
+   grad_=nonlinearSolve1D(obj, 0.0001, 1000000);
+  }
+  catch (insight::Exception e)
+  {
+    std::ostringstream os;
+    os<<"Could not determine grading to get minimum cell length "<<delta0<<" on edge of length "<<L<<" discretized with "<<n<<" cells."<<std::endl;
+    os<<"(Only gradings between "<<0.0001<<" and "<<100000<<" were considered)"<<std::endl;
+    throw insight::Exception(os.str());
+  }
 }
 
 #include <gsl/gsl_errno.h>

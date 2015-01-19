@@ -547,6 +547,7 @@ arma::mat line::readSamples
       data=join_cols(data, m);
   }
   
+  arma::mat rdata;
   if (data.n_cols>0)
   {
     arma::mat 
@@ -554,10 +555,15 @@ arma::mat line::readSamples
       dy=p_.points().col(1) - p_.points()(0,1), 
       dz=p_.points().col(2) - p_.points()(0,2);
       
-    data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
+//     data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
+      rdata=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
+      arma::mat idata=Interpolator(data)(arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows));
+//       std::cout<<data<<idata<<endl;
+      rdata=join_horiz( rdata, idata );
   }
   
-  return data;
+//   return data;
+  return rdata;
   
 }
 

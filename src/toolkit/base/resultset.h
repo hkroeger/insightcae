@@ -186,6 +186,8 @@ public:
   }
   void setCellByName(Row& r, const std::string& colname, double value);
   
+  arma::mat getColByName(const std::string& colname) const;
+  
   arma::mat toMat() const;
   
   inline void setTableData(const std::vector<std::string>& headings, const Table& rows) { headings_=headings; rows_=rows; }

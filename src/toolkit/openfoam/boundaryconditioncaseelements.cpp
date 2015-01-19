@@ -153,29 +153,83 @@ void FieldData::setDirichletBC(OFDictData::dict& BC) const
 
 
 
-arma::mat FieldData::representativeValue() const
+double FieldData::representativeValueMag() const
 {
   if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
   {
-    arma::mat meanv;
+    double meanv=0.0;
     int s=0;
     BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
     {
-      arma::mat cv=inst.value;
-      if (meanv.n_elem==0) meanv=cv; else meanv+=cv;
+      meanv+=pow(norm(inst.value, 2), 2);
+      s++;
     }
     if (s==0)
       throw insight::Exception("Invalid data: no time instants prescribed!");
     meanv/=double(s);
-    return meanv;
+    return sqrt(meanv);
   } 
+  else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
+  {
+    double avg=0.0;
+    int s=0;
+    BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+    {
+      arma::mat xy;
+      xy.load(inst.profile.c_str(), arma::raw_ascii);
+      arma::mat I=integrate(xy);
+      double avg_inst=0.0;
+      BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+      {
+	avg_inst+=pow(I(cm.column),2);
+      }
+      avg+=avg_inst;
+      s++;
+    }    
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    avg/=double(s);
+    return sqrt(avg);
+  }
   else
   {
     throw insight::Exception("not yet implemented!");
-    return arma::mat();
+    return 0.0;
   }
 }
 
+double FieldData::maxValueMag() const
+{
+  double maxv=-DBL_MAX;
+  if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
+  {
+    BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
+    {
+      maxv=std::max(maxv, norm(inst.value, 2));
+    }
+  } 
+  else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
+  {
+    BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+    {
+      arma::mat xy;
+      xy.load(inst.profile.c_str(), arma::raw_ascii);
+      arma::mat mag_inst(arma::zeros(xy.n_rows));
+      int i=0;
+      BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+      {
+	mag_inst(i++) += pow(xy(i, 1+cm.column),2);
+      }
+      maxv=std::max(maxv, sqrt(mag_inst).max());
+    }    
+  }
+  else
+  {
+    throw insight::Exception("not yet implemented!");
+    return 0.0;
+  }
+  return maxv;
+}
 
 
 
@@ -840,15 +894,15 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      p_.turbulence().setDirichletBC_k( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+      p_.turbulence().setDirichletBC_k( BC, p_.velocity().representativeValueMag() );
     }
     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
     {
-      p_.turbulence().setDirichletBC_omega( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+      p_.turbulence().setDirichletBC_omega( BC, p_.velocity().representativeValueMag() );
     }
     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
     {
-      p_.turbulence().setDirichletBC_epsilon( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+      p_.turbulence().setDirichletBC_epsilon( BC, p_.velocity().representativeValueMag() );
     }
     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
     {
@@ -857,11 +911,11 @@ void VelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
     {
-      p_.turbulence().setDirichletBC_nuTilda( BC, arma::norm(p_.velocity().representativeValue(), 2) );      
+      p_.turbulence().setDirichletBC_nuTilda( BC, p_.velocity().representativeValueMag() );      
     }
     else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
     {
-      p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+      p_.turbulence().setDirichletBC_R( BC, p_.velocity().representativeValueMag() );
     }
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
@@ -1388,13 +1442,22 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   ParameterSet ps=Parameters::makeDefault();
   p_.set(ps);
   
-  BC["type"]= inflowGenerator_types[p_.type];
-  BC["Umean"]=FieldData(ps.getSubset("umean")).sourceEntry();
-  BC["c"]=FieldData(p_.volexcess).sourceEntry();
-  BC["uniformConvection"]=p_.uniformConvection;
-  BC["R"]=FieldData(ps.getSubset("R")).sourceEntry();
-  BC["L"]=FieldData(ps.getSubset("L")).sourceEntry();
-  BC["value"]="uniform (0 0 0)";
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+    FieldData(ps.getSubset("umean")).setDirichletBC(BC);
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    BC["type"]= inflowGenerator_types[tu->type];
+    BC["Umean"]=FieldData(ps.getSubset("umean")).sourceEntry();
+    BC["c"]=FieldData(tu->volexcess).sourceEntry();
+    BC["uniformConvection"]=tu->uniformConvection;
+    BC["R"]=FieldData(ps.get<SelectableSubsetParameter>("turbulence")().getSubset("R")).sourceEntry();
+    BC["L"]=FieldData(ps.get<SelectableSubsetParameter>("turbulence")().getSubset("L")).sourceEntry();
+    BC["value"]="uniform (0 0 0)";
+  }
 }
 
 void TurbulentVelocityInletBC::setField_p(OFDictData::dict& BC) const
@@ -1402,10 +1465,104 @@ void TurbulentVelocityInletBC::setField_p(OFDictData::dict& BC) const
   BC["type"]=OFDictData::data("zeroGradient");
 }
 
+void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC) const
+{
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+
+    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    
+    double uprime=tu->intensity*U;
+    double k=max(1e-6, 3.*pow(uprime, 2)/2.);
+    BC["type"]="fixedValue";
+    BC["value"]="uniform "+lexical_cast<string>(k);
+    
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    // set some small sgs energy
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 1e-5";
+  }
+}
+
+void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC) const
+{
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+
+    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    
+    double uprime = tu->intensity*U;
+    double k = max(1e-6, 3.*pow(uprime, 2)/2.);
+    double omega = sqrt(k) / tu->lengthScale;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(omega);
+    
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    throw insight::Exception("Requested BC for field omega while inflow generator was selected!");
+  }
+}
+
+void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC) const
+{
+
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+
+    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    
+    double uprime = tu->intensity*U;
+    double k=3.*pow(uprime, 2)/2.;
+    double epsilon=0.09*pow(k, 1.5)/tu->lengthScale;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(epsilon);
+    
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    throw insight::Exception("Requested BC for field epsilon while inflow generator was selected!");
+  }
+
+}
+
+void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC) const
+{
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+
+    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    
+    double uprime = tu->intensity*U;
+    double nutilda=sqrt(1.5)* uprime * tu->lengthScale;
+    BC["type"]=OFDictData::data("fixedValue");
+    BC["value"]="uniform "+lexical_cast<string>(nutilda);
+    
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    throw insight::Exception("Requested BC for field nuTilda while inflow generator was selected!");
+  }
+
+}
+
+
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-  controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
+  
+  if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))  
+    controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
 //   p_.phasefractions()->addIntoDictionaries(dictionaries);
@@ -1457,27 +1614,25 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 //     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-//       p_.turbulence().setDirichletBC_k( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-      BC["type"]="fixedValue";
-      BC["value"]="uniform 1e-5";
+      setField_k(BC);
     }
-//     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
-//     {
-//       p_.turbulence().setDirichletBC_omega( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-//     }
-//     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
-//     {
-//       p_.turbulence().setDirichletBC_epsilon( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-//     }
-//     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
-//     {
-//       BC["type"]=OFDictData::data("calculated");
-//       BC["value"]="uniform "+lexical_cast<string>(1e-10);
-//     }
-//     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
-//     {
-//       p_.turbulence().setDirichletBC_nuTilda( BC, arma::norm(p_.velocity().representativeValue(), 2) );      
-//     }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      setField_omega(BC);
+    }
+    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+    {
+      setField_epsilon(BC);
+    }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("calculated");
+      BC["value"]="uniform "+lexical_cast<string>(1e-10);
+    }
+    else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
+    {
+      setField_nuTilda(BC);
+    }
 //     else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
 //     {
 //       p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );

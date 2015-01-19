@@ -188,6 +188,8 @@ public:
   inline const arma::mat& rawdata() const { return xy_; }
 };
 
+arma::mat integrate(const arma::mat& xy);
+
 }
 
 #endif // INSIGHT_LINEARALGEBRA_H

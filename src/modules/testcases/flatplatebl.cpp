@@ -55,9 +55,9 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("HBydeltae",		new DoubleParameter(10.0, "Domain height above plate, divided by final BL thickness"))
-	    ("WBydeltae",		new DoubleParameter(10.0, "Domain height above plate, divided by final BL thickness"))
-	    ("L",		new DoubleParameter(12.0, "[m] Length of the domain"))
+	    ("HBydeltae",		new DoubleParameter(60.0, "Domain height above plate, divided by final BL thickness"))
+	    ("WBydeltae",		new DoubleParameter(20.0, "Domain height above plate, divided by final BL thickness"))
+	    ("L",		new DoubleParameter(5.0, "[m] Length of the domain"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Geometrical properties of the domain"
@@ -68,27 +68,27 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	  ParameterSet
 	  (
 	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nh",	new IntParameter(20, "# cells in vertical direction"))
-	    ("ypluswall",	new DoubleParameter(0.5, "yPlus of first cell at the wall grid layer at the final station"))
-	    ("dxplus",	new DoubleParameter(60, "lateral mesh spacing at the final station"))
-	    ("dzplus",	new DoubleParameter(15, "streamwise mesh spacing at the final station"))
-	    ("2d",	new BoolParameter(false, "whether to create a two-dimensional grid instead of a three-dimensional one"))
+	    ("nh",	new IntParameter(50, "# cells in vertical direction"))
+	    ("ypluswall",	new DoubleParameter(1, "yPlus of first cell at the wall grid layer at the final station"))
+	    ("dxplus",	new DoubleParameter(1000, "lateral mesh spacing at the final station"))
+	    ("dzplus",	new DoubleParameter(1000, "streamwise mesh spacing at the final station"))
+	    ("2d",	new BoolParameter(true, "whether to create a two-dimensional grid instead of a three-dimensional one"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
 	))
       
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Re_L",		new DoubleParameter(1000, "[-] Reynolds number, formulated with final running length"))
-	    ("prof",		FieldData::defaultParameter(vec3(1,0,0)))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
+//       ("operation", new SubsetParameter
+// 	(
+// 	  ParameterSet
+// 	  (
+// 	    boost::assign::list_of<ParameterSet::SingleEntry>
+// 	    ("Re_L",		new DoubleParameter(1000, "[-] Reynolds number, formulated with final running length"))
+// 	    ("prof",		FieldData::defaultParameter(vec3(1,0,0)))
+// 	    .convert_to_container<ParameterSet::EntryList>()
+// 	  ), 
+// 	  "Definition of the operation point under consideration"
+// 	))
       
       ("fluid", new SubsetParameter
 	(
@@ -135,6 +135,21 @@ ParameterSet FlatPlateBL::defaultParameters() const
       
       .convert_to_container<ParameterSet::EntryList>()
   );
+
+  std::auto_ptr<SubsetParameter> inflowparams
+  (
+    new SubsetParameter
+    (
+      TurbulentVelocityInletBC::Parameters::makeDefault(), 
+      "Inflow BC"
+    )
+  );
+  p.extend
+  (
+    boost::assign::list_of<ParameterSet::SingleEntry>
+    ("inflow", inflowparams.release())
+    .convert_to_container<ParameterSet::EntryList>()
+  );
   
   return p;
 }
@@ -159,7 +174,6 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
@@ -171,7 +185,10 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   top_="top";
   cycl_prefix_="cyclic";
   
-  Cw_=FlatPlateBL::cw(Re_L);
+  uinf_=FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
+  Re_L_=uinf_*L/nu;
+  
+  Cw_=FlatPlateBL::cw(Re_L_);
   cout<<"cw="<<Cw_<<endl;
   delta2e_ = 0.5*Cw_*L;
   cout<<"delta2e="<<delta2e_<<endl;
@@ -179,13 +196,13 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
   cout<<"H="<<H_<<endl;
   W_=WBydeltae*delta2e_;
   cout<<"W="<<W_<<endl;
-  Re_theta2e_=Re_L*(delta2e_/L);
+  Re_theta2e_=Re_L_*(delta2e_/L);
   cout<<"Re_theta2e="<<Re_theta2e_<<endl;
-  uinf_=Re_L*nu/L;
-  cout<<"uinf="<<uinf_<<endl;
+//   uinf_=Re_L*nu/L;
+//   cout<<"uinf="<<uinf_<<endl;
   
-  cout<<"cf_e="<<cf(Re_L)<<endl;
-  ypfac_e_=sqrt(cf(Re_L)/2.)*uinf_/nu;
+  cout<<"cf_e="<<cf(Re_L_)<<endl;
+  ypfac_e_=sqrt(cf(Re_L_)/2.)*uinf_/nu;
   cout<<"ypfac="<<ypfac_e_<<endl;
   deltaywall_e_=ypluswall/ypfac_e_;
   cout<<"deltaywall_e="<<deltaywall_e_<<endl;
@@ -223,7 +240,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_L);
+//   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
@@ -295,7 +312,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_L);
+//   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
@@ -358,10 +375,11 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
 
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
   
-  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(FieldData(vec3(uinf_,0,0)))
-    .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
-  ) );
+//   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
+//     .set_velocity(FieldData(vec3(uinf_,0,0)))
+//     .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
+//   ) );
+  cm.insert(new TurbulentVelocityInletBC(cm, in_, boundaryDict, TurbulentVelocityInletBC::Parameters(p.getSubset("inflow")) ));
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));
@@ -390,7 +408,7 @@ void FlatPlateBL::evaluateAtSection
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_L);
+//   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
@@ -532,7 +550,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_L);
+//   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSINT(p, "mesh", nh);
 
@@ -586,7 +604,8 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
     arma::mat delta2exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta2_vs_x");
     arma::mat delta3exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta3_vs_x");
     
-    arma::mat ctd=results->get<TabularResult>("tableCoefficients").toMat();
+    const insight::TabularResult& tabres=results->get<TabularResult>("tableCoefficients");
+    arma::mat ctd=tabres.toMat();
     addPlot
     (
       results, executionPath(), "chartDelta",
@@ -596,9 +615,9 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), ctd.col(1))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), ctd.col(2))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), ctd.col(3))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
 	,
       "Axial profile of wall friction coefficient",
       "set key top left reverse Left"

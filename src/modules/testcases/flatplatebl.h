@@ -31,7 +31,7 @@ class FlatPlateBL
   
 protected:
 
-    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, ypfac_e_, deltaywall_e_, gradh_, T_;
+    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_e_, deltaywall_e_, gradh_, T_;
     int nax_, nlat_;
     
     double avgStart_, avg2Start_, end_;

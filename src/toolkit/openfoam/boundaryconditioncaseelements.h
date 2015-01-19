@@ -138,10 +138,15 @@ public:
   void setDirichletBC(OFDictData::dict& BC) const;
   
   /**
-   * return some representative value of the prescribed data. 
+   * return some representative (average) value of the prescribed data. 
    * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
    */
-  arma::mat representativeValue() const;
+  double representativeValueMag() const;
+
+  /**
+   * return the maximum magnitude of the value throughout all precribed times
+   */
+  double maxValueMag() const;
   
   /**
    * returns a proper parameterset for this entity
@@ -490,8 +495,25 @@ public:
   static const std::vector<std::string> inflowGenerator_types;
 
 #include "boundaryconditioncaseelements__TurbulentVelocityInletBC__Parameters.h"
+  
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
+
+umean=set {
+#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+} "Mean velocity specification"
+
+turbulence = selectablesubset {{
+
+uniformIntensityAndLengthScale
+set {
+ intensity = double 0.05 "Turbulence intensity as fraction of mean velocity"
+ lengthScale = double 0.1 "[m] Turbulence length scale"
+}
+
+inflowGenerator
+set {
+
 uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
 volexcess=double 2.0 "Volumetric overlapping of spots"
 type=selection ( 
@@ -503,10 +525,6 @@ type=selection (
   modalTurbulence
   ) anisotropicVorton "Type of inflow generator"
   
-umean=set {
-#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
-} "Mean velocity specification"
-
 R=set {
 #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
 } "Reynolds stresses specification"
@@ -514,6 +532,10 @@ R=set {
 L=set {
 #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
 } "Length scale specification"
+
+}
+
+}} uniformIntensityAndLengthScale "Properties of turbulence"
 
 <<<PARAMETERSET
 */
@@ -533,6 +555,10 @@ public:
   
   virtual void setField_U(OFDictData::dict& BC) const;
   virtual void setField_p(OFDictData::dict& BC) const;
+  virtual void setField_k(OFDictData::dict& BC) const;
+  virtual void setField_epsilon(OFDictData::dict& BC) const;
+  virtual void setField_omega(OFDictData::dict& BC) const;
+  virtual void setField_nuTilda(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;

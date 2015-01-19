@@ -63,7 +63,20 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
 :
     fixedValueFvPatchField<Type>(p, iF),
     vp_(FieldDataProvider<Type>::New(dict.lookup("source")))
-{}
+{
+  if (dict.found("value"))
+  {
+      fvPatchField<Type>::operator==(Field<Type>("value", dict, p.size()));
+  }
+  else
+  {
+      // Note: we use evaluate() here to trigger updateCoeffs followed
+      //       by re-setting of fvatchfield::updated_ flag. This is
+      //       so if first use is in the next time step it retriggers
+      //       a new update.
+      this->evaluate(Pstream::blocking);
+  }
+}
 
 
 template<class Type>

@@ -399,5 +399,20 @@ arma::mat Interpolator::xy(const arma::mat& x) const
 {
   return arma::mat(join_rows(x, operator()(x)));
 }
+
+arma::mat integrate(const arma::mat& xy)
+{
+  arma::mat integ(zeros(xy.n_cols-1));
   
+  arma::mat x = xy.col(0);
+  arma::mat y = xy.cols(1, xy.n_cols-1);
+
+  for (int i=0; i<xy.n_rows-1; i++)
+  {
+    integ += 0.5*( y(i) + y(i+1) ) * ( x(i+1) - x(i) );
+  }
+  
+  return integ;
+}
+
 }

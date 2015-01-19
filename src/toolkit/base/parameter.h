@@ -252,6 +252,7 @@ public:
   
   inline ItemList& items() { return items_; };
   virtual const ItemList& items() const;
+  inline void setSelection(const std::string& sel) { value_=selection_id(sel); }
   inline const std::string& selection() const { return items_[value_]; }
   inline int selection_id(const std::string& key) const { return  std::find(items_.begin(), items_.end(), key) - items_.begin(); }
 

@@ -430,11 +430,12 @@ void FlatPlateBL::evaluateAtSection
   boost::ptr_vector<sampleOps::set> sets;
   
   double 
-    miny=deltaywall_e_,
+    miny=0.99*deltaywall_e_,
     maxy=std::min(delta2e_*10.0, H_-deltaywall_e_);
     
-  arma::mat pts=exp(linspace(log(miny), log(maxy), 100))*vec3(0,1,0).t();
+  arma::mat pts=exp(linspace(log(miny), log(maxy), 101))*vec3(0,1,0).t();
   pts.col(0)+=x;
+  pts.col(2)+=0.01*W_;
   
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name("radial")

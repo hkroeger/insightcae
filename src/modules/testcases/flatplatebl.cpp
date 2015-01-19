@@ -417,7 +417,7 @@ void FlatPlateBL::evaluateAtSection
 
 
   double xByL= x/L;
-  string title="section__xByL_" + str(format("%04.2f") % xByL);
+  string title="section__xByL_" + str(format("%04.1f") % xByL);
   replace_all(title, ".", "_");
   
   TabularResult& table = results->get<TabularResult>("tableCoefficients");
@@ -598,7 +598,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
   evaluateAtSection(cm, p, results, 0.2*L,  3, Cf_vs_x_i);
   evaluateAtSection(cm, p, results, 0.5*L,  4, Cf_vs_x_i);
   evaluateAtSection(cm, p, results, 0.7*L,  5, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 1.0*L,  6, Cf_vs_x_i);
+  evaluateAtSection(cm, p, results, 0.99*L,  6, Cf_vs_x_i);
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");

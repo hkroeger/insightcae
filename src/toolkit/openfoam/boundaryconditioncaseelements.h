@@ -559,6 +559,7 @@ public:
   virtual void setField_epsilon(OFDictData::dict& BC) const;
   virtual void setField_omega(OFDictData::dict& BC) const;
   virtual void setField_nuTilda(OFDictData::dict& BC) const;
+  virtual void setField_R(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;

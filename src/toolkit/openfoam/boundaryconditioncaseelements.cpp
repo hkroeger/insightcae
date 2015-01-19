@@ -1556,6 +1556,27 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC) const
 
 }
 
+void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC) const
+{
+  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
+  {
+
+    double U=FieldData( ParameterSet(p_).getSubset("umean") ).representativeValueMag();
+    
+    double uprime=tu->intensity*U;
+    double kBy3=max(1e-6, pow(uprime, 2)/2.);
+    BC["type"]="fixedValue";
+    BC["value"]="uniform ("+str(format("%g 0 0 %g 0 %g") % kBy3 % kBy3 % kBy3 )+")";
+    
+  }
+  else if (Parameters::turbulence_inflowGenerator_type* tu 
+	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
+  {
+    throw insight::Exception("Requested BC for field R while inflow generator was selected!");
+  }
+}
+
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
@@ -1633,10 +1654,10 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     {
       setField_nuTilda(BC);
     }
-//     else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
-//     {
-//       p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-//     }
+    else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
+    {
+      setField_R(BC);
+    }
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
       BC["type"]="zeroGradient";

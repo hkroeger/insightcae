@@ -393,6 +393,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["R"]=smoothSolverSetup(1e-8, 0.1);
   solvers["omega"]=smoothSolverSetup(1e-12, 0.1, 1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
@@ -403,6 +404,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["p"]=0.3;
     relax["U"]=0.7;
     relax["k"]=0.7;
+    relax["R"]=0.1;
     relax["omega"]=0.7;
     relax["epsilon"]=0.7;
     relax["nuTilda"]=0.7;
@@ -413,6 +415,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     fieldRelax["p"]=0.3;
     eqnRelax["U"]=0.7;
     eqnRelax["k"]=0.7;
+    eqnRelax["R"]=0.1;
     eqnRelax["omega"]=0.7;
     eqnRelax["epsilon"]=0.7;
     eqnRelax["nuTilda"]=0.7;
@@ -461,7 +464,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,omega)"]	=	pref+"Gauss upwind";
   div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
   div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,R)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       
   div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";

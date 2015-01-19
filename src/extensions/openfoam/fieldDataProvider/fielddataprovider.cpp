@@ -289,11 +289,11 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
     double t = base_.t(target[pi]);
     
     arma::mat q = values_[idx](t);
-//     std::cout<<"q="<<q<<std::endl;
     
+//     Info<<cols_<<endl;
+//     std::cout<<q<<std::endl;
     for (int c=0; c<q.n_elem; c++)
     {
-//       std::cout<<c<<" "<<cmap[c]<<" "<<q(cmap[c])<<std::endl;
       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
       {
 	setComponent( res[pi], cols_[c] ) = q(c);
@@ -301,7 +301,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
     }
     res[pi]=base_(res[pi]); //transform(tt, res[pi]);
   }
-  Info<<"res="<<res<<endl;
+//    Info<<"res="<<res<<endl;
   return resPtr;
 }
 
@@ -407,7 +407,7 @@ tmp<Field<T> > fittedProfile<T>::atInstant(int idx, const pointField& target) co
     
     res[pi]=base_(res[pi]); //transform(tt, res[pi]);
   }
-  Info<<"res="<<res<<endl;
+//   Info<<"res="<<res<<endl;
   return resPtr;
 }
 

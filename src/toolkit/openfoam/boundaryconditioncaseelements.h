@@ -375,27 +375,27 @@ class VelocityInletBC
  
 public:
 
-#include "boundaryconditioncaseelements__VelocityInletBC__Parameters2.h"
-/*
-PARAMETERSET>>> VelocityInletBC Parameters2
-
-umean=selectablesubset {{
-
- uniform 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "time description"
-     value=vector (1 0 0) "value description"
-    } "desc"
-   ] * 1  "values1 description"
- }
-
-
-}} uniform "desc"
-<<<PARAMETERSET
-*/
+// #include "boundaryconditioncaseelements__VelocityInletBC__Parameters2.h"
+// /*
+// PARAMETERSET>>> VelocityInletBC Parameters2
+// 
+// umean=selectablesubset {{
+// 
+//  uniform 
+//  set { 
+//    values=array
+//    [
+//     set {
+//      time=double 0 "time description"
+//      value=vector (1 0 0) "value description"
+//     } "desc"
+//    ] * 1  "values1 description"
+//  }
+// 
+// 
+// }} uniform "desc"
+// <<<PARAMETERSET
+// */
 
 
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,

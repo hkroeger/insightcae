@@ -116,7 +116,7 @@ protected:
   /**
    * if applied value falls below this tolerance, recursive search will be stopped
    */
-  static const scalar tol_ = 1e-3;
+  static constexpr const scalar tol_ = 1e-3;
   
   void recursiveapply
   (
@@ -325,10 +325,10 @@ public:
 	);
 	
 	// Member functions
-	inline const Field<vector>& Umean() const { return Umean_()(this->db().time().timeOutputValue(), patch().Cf()); }
+	inline tmp<Field<vector> > Umean() const { return Umean_()(this->db().time().timeOutputValue(), patch().Cf()); }
 	inline tmp<Field<symmTensor> > R() const { return R_()(this->db().time().timeOutputValue(), patch().Cf()); }
-	inline const Field<symmTensor>& L() const { return L_()(this->db().time().timeOutputValue(), patch().Cf()); }
-	inline const Field<scalar>& c() const { return c_()(this->db().time().timeOutputValue(), patch().Cf()); }
+	inline tmp<Field<symmTensor> > L() const { return L_()(this->db().time().timeOutputValue(), patch().Cf()); }
+	inline tmp<Field<scalar> > c() const { return c_()(this->db().time().timeOutputValue(), patch().Cf()); }
 // 	inline Field<vector>& Umean()  { return Umean_; }
 // 	inline Field<symmTensor>& R()  { return R_; }
 // 	inline Field<symmTensor>& L()  { return L_; }

@@ -836,15 +836,7 @@ void PipeInflow::createCase
   cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
   ));
 
-  cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict/*, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
-    .set_uniformConvection(p.getBool("inflow/uniformConvection"))
-    .set_type(p.get<SelectionParameter>("inflow/type").selection())
-//     .set_volexcess(p.getDouble("inflow/volexcess"))
-#warning to be corrected
-    .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2))
-//     .set_initializer(TurbulentVelocityInletBC::pipeInflowInitializer::Ptr(new TurbulentVelocityInletBC::pipeInflowInitializer()))*/
-  ));
+  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)

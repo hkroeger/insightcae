@@ -1069,16 +1069,7 @@ void ChannelInflow::createCase
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(executionPath(), boundaryDict);
       
-  cm.insert(new TurbulentVelocityInletBC(cm, cycl_in_, boundaryDict/*, TurbulentVelocityInletBC::Parameters()
-    .set_velocity(FieldData(vec3(Ubulk_, 0, 0)))
-    .set_uniformConvection(p.getBool("inflow/uniformConvection"))
-//     .set_volexcess(p.getDouble("inflow/volexcess"))
-    .set_type(p.get<SelectionParameter>("inflow/type").selection())
-#warning to be corrected
-//     .set_turbulence(uniformIntensityAndLengthScale(0.05, 0.2*H))
-//     .set_turbulence(p.getSubset("inflow"))
-//     .set_initializer(TurbulentVelocityInletBC::channelInflowInitializer::Ptr(new TurbulentVelocityInletBC::channelInflowInitializer()))*/
-  ));
+  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)

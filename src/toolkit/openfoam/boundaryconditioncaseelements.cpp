@@ -68,21 +68,16 @@ OFDictData::data FieldData::sourceEntry() const
 {
   std::ostringstream os;
   
-//   std::string type = p_->selection();
   if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) ) //(type=="uniform")
   {
     os<<" uniform unsteady";
     
-//     const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
-//     for (int s=0; s<insts.size(); s++)
     BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
     {
-//       const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
-//       os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(inst().getVector("value"));
       os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
     }
-  } 
-//   else if (type=="linearProfile")
+  }
+  
   else if 
     (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
   {
@@ -96,31 +91,21 @@ OFDictData::data FieldData::sourceEntry() const
       <<OFDictData::to_OF(fd->ez);
 
     os<<" (";
-//     const ArrayParameter& cmap = (*p_)().get<ArrayParameter>("cmap");
-//     for (int s=0; s<cmap.size(); s++)
     BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
     {
-//       const SubsetParameter& cm=dynamic_cast<const SubsetParameter&>(cmap[s]);
-//       os<<" "<<cm().getInt("component")<<" "<<cm().getInt("column");
-      os<<" "<<cm.component<<" "<<cm.column;
+      os<<" "<<cm.column<<" "<<cm.component;
     }
     os<<")";
     
     os<<" "
       <<"unsteady";
     
-//     const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
-//     for (int s=0; s<insts.size(); s++)
     BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
     {
-//       const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
-//       os << " " << inst().getDouble("time") 
-// 	<< " \"" << inst().getPath("value")<<"\"";
-      os << " " << inst.time << " \"" << inst.profile <<"\"";
-      
+      os << " " << inst.time << " " << inst.profile;
     }
   }
-//   else if (type=="fittedProfile")
+  
   else if 
     (const Parameters::fielddata_fittedProfile_type *fd = boost::get<Parameters::fielddata_fittedProfile_type>(&p_.fielddata) )
   {
@@ -134,23 +119,17 @@ OFDictData::data FieldData::sourceEntry() const
       <<OFDictData::to_OF(fd->ez)
       <<" "
       <<"unsteady";
-
     
-//     const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
-//     for (int s=0; s<insts.size(); s++)
     BOOST_FOREACH(const Parameters::fielddata_fittedProfile_type::values_default_type& inst, fd->values)
     {
-//       const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
-//       const ArrayParameter& comp_coeffs = inst().get<ArrayParameter>("coeffs");
-      os << " " << inst.time; //inst().getDouble("time");
-//       for (int k=0; k<comp_coeffs.size(); k++)
+      os << " " << inst.time;
+
       BOOST_FOREACH
       (
 	const Parameters::fielddata_fittedProfile_type::values_default_type::component_coeffs_default_type& coeffs, 
 	inst.component_coeffs
       )
       {
-// 	const VectorParameter& coeffs=dynamic_cast<const VectorParameter&>(comp_coeffs[k]);
 	os << " [";
 	for (size_t cc=0; cc<coeffs.n_elem; cc++)
 	  os<<" "<< str( format("%g") % coeffs[cc] );
@@ -170,26 +149,19 @@ void FieldData::setDirichletBC(OFDictData::dict& BC) const
 {
   BC["type"]=OFDictData::data("extendedFixedValue");
   BC["source"]=sourceEntry();
-//   BC["value"]=OFDictData::data( "uniform " + OFDictData::to_OF(vec3(0,0,0)) );
 }
 
 
 
 arma::mat FieldData::representativeValue() const
 {
-//   std::string type = p_->selection();
-//   if (type=="uniform")
   if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
   {
     arma::mat meanv;
     int s=0;
-//     const ArrayParameter& insts = (*p_)().get<ArrayParameter>("values");
-//     for (; s<insts.size(); s++)
     BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
     {
-//       const SubsetParameter& inst=dynamic_cast<const SubsetParameter&>(insts[s]);
-      //os << " " << inst().getDouble("time") << " " << OFDictData::to_OF(
-      arma::mat cv=inst.value; //inst().getVector("value");
+      arma::mat cv=inst.value;
       if (meanv.n_elem==0) meanv=cv; else meanv+=cv;
     }
     if (s==0)
@@ -210,119 +182,6 @@ arma::mat FieldData::representativeValue() const
 Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value, const std::string& description)
 {
   return Parameters::makeDefault().get<SubsetParameter>("fielddata").clone();
-  /*
-  return 
-    new SelectableSubsetParameter
-    (
-      "uniform", 
-      list_of<SelectableSubsetParameter::SingleSubset>
-
-	(
-	  "uniform", new ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("values", new ArrayParameter
-	      (
-		SubsetParameter
-		(
-		    ParameterSet
-		    (
-		      boost::assign::list_of<ParameterSet::SingleEntry>
-		      ("time",	new DoubleParameter(0.0, "time instant"))
-		      ("value",	new VectorParameter(reasonable_value, "value components"))
-		      .convert_to_container<ParameterSet::EntryList>()
-		    ), 
-		    "Field value and time instant of the sampling point"
-		), 
-		1, 
-		"Temporal sampling points. Create one single instant at arbitrary time for the steady case."
-	      )
-	    )
-	    .convert_to_container<ParameterSet::EntryList>()
-	  )
-	)
-
-	(
-	  "linearProfile", new ParameterSet
-	  (
-	      boost::assign::list_of<ParameterSet::SingleEntry>
-	      ("values", new ArrayParameter
-		(
-		  SubsetParameter
-		  (
-		    ParameterSet
-		    (
-		      boost::assign::list_of<ParameterSet::SingleEntry>
-		      ("time",		new DoubleParameter(0.0, "time instant"))
-		      ("profile",	new PathParameter("", "text file with profile data. First column shall contain sampling coordinate."))
-		      .convert_to_container<ParameterSet::EntryList>()
-		    ), 
-		    "Field value and time instant of the sampling point"
-		  ), 
-		  1, 
-		  "Temporal sampling points"
-		))
-	      ("cmap", new ArrayParameter
-		(
-		  SubsetParameter
-		  (
-		    ParameterSet
-		    (
-		      boost::assign::list_of<ParameterSet::SingleEntry>
-		      ("column",	new IntParameter(0, "column in profile data"))
-		      ("component",	new IntParameter(0, "corresponding component in value"))
-		      .convert_to_container<ParameterSet::EntryList>()
-		    ), 
-		    "Mapping of a column"
-		  ), 
-		  1, 
-		  "Profile data column mapping"
-		))
-	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
-	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
-	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
-	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
-	      .convert_to_container<ParameterSet::EntryList>()
-	    )
-	  )
-
-	(
-	  "fittedProfile", new ParameterSet
-	  (
-	      boost::assign::list_of<ParameterSet::SingleEntry>
-	      ("values", new ArrayParameter
-		(
-		  SubsetParameter
-		  (
-		    ParameterSet
-		    (
-		      boost::assign::list_of<ParameterSet::SingleEntry>
-		      ("time",		new DoubleParameter(0.0, "time instant"))
-		      ("coeffs",	new ArrayParameter
-			(
-			  VectorParameter(arma::ones(1), "Polynomial coefficients, highest order term first"),
-			  reasonable_value.n_elem,
-			  "Polynomial coefficients for components"
-			)
-		      )
-		      .convert_to_container<ParameterSet::EntryList>()
-		    ), 
-		    "Field value definitions and time instant of the sampling point"
-		  ), 
-		  1, 
-		  "Temporal sampling points"
-		)
-	      )
-	      ("p0", new VectorParameter(vec3(0,0,0), "Origin of sampling axis"))
-	      ("ep", new VectorParameter(vec3(0,0,1), "Direction of sampling axis"))
-	      ("ex", new VectorParameter(vec3(1,0,0), "X-Axis direction of basis in profile data"))
-	      ("ez", new VectorParameter(vec3(0,0,1), "Z-Axis direction of basis in profile data"))
-	      .convert_to_container<ParameterSet::EntryList>()
-	    )
-	  )
-	,
-	description
-    );*/
 }
 
 
@@ -1535,34 +1394,7 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   BC["uniformConvection"]=p_.uniformConvection;
   BC["R"]=FieldData(ps.getSubset("R")).sourceEntry();
   BC["L"]=FieldData(ps.getSubset("L")).sourceEntry();
-//     
-//   BC["type"]=p_.type();
-//   BC["Umean"]=p_.velocity().sourceEntry();
-//   BC["c"]=p_.volexcess().sourceEntry();
-//   
-//   if (const uniformIntensityAndLengthScale *uil =get<uniformIntensityAndLengthScale>(&p_.turbulence()))
-//   {
-//     double I=get<0>(*uil), L=get<1>(*uil), U=norm(p_.velocity().representativeValue(),2);
-//     BC["L"]="uniform ( "
-//       +lexical_cast<string>(L)+" 0 0 "
-//       +lexical_cast<string>(L)+" 0 "
-//       +lexical_cast<string>(L)+" )";
-// 
-//     double R=pow(I*U, 2);
-//     BC["R"]="uniform ( "
-//       +lexical_cast<string>(R)+" 0 0 "
-//       +lexical_cast<string>(R)+" 0 "
-//       +lexical_cast<string>(R)+" )";
-//   }
-//   else
-//   {
-//     throw insight::Exception("Unsupported kind of turbulence specification for turbulent inflow generator: BC data cannot be extracted");
-//   }
-//     
-//   if (p_.uniformConvection())
-//     BC["uniformConvection"]=true;
-// 
-//   BC["value"]="uniform (0 0 0)";
+  BC["value"]="uniform (0 0 0)";
 }
 
 void TurbulentVelocityInletBC::setField_p(OFDictData::dict& BC) const
@@ -1574,9 +1406,9 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 {
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
-/*
+
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
-  p_.phasefractions()->addIntoDictionaries(dictionaries);
+//   p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
@@ -1593,79 +1425,81 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     {
       setField_p(BC);
     }
-    else if ( 
-      (field.first=="T") 
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      p_.T().setDirichletBC(BC);
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]="uniform "+lexical_cast<string>(p_.T());
-    }    
-    else if ( 
-      ( (field.first=="pd") || (field.first=="p_rgh") )
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      if (OFversion()>=210)
-	BC["type"]=OFDictData::data("fixedFluxPressure");
-      else
-	BC["type"]=OFDictData::data("buoyantPressure");
-//       BC["type"]=OFDictData::data("calculated");
-//       BC["value"]=OFDictData::data("uniform 0");
-    }
+//     else if ( 
+//       (field.first=="T") 
+//       && 
+//       (get<0>(field.second)==scalarField) 
+//     )
+//     {
+//       p_.T().setDirichletBC(BC);
+// //       BC["type"]=OFDictData::data("fixedValue");
+// //       BC["value"]="uniform "+lexical_cast<string>(p_.T());
+//     }    
+//     else if ( 
+//       ( (field.first=="pd") || (field.first=="p_rgh") )
+//       && 
+//       (get<0>(field.second)==scalarField) 
+//     )
+//     {
+//       if (OFversion()>=210)
+// 	BC["type"]=OFDictData::data("fixedFluxPressure");
+//       else
+// 	BC["type"]=OFDictData::data("buoyantPressure");
+// //       BC["type"]=OFDictData::data("calculated");
+// //       BC["value"]=OFDictData::data("uniform 0");
+//     }
     
-    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
-    {
-//       BC["type"]=OFDictData::data("fixedValue");
-//       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
-      p_.rho().setDirichletBC(BC);
-    }
+//     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+//     {
+// //       BC["type"]=OFDictData::data("fixedValue");
+// //       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+//       p_.rho().setDirichletBC(BC);
+//     }
     else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      p_.turbulence().setDirichletBC_k( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+//       p_.turbulence().setDirichletBC_k( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+      BC["type"]="fixedValue";
+      BC["value"]="uniform 1e-5";
     }
-    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
-    {
-      p_.turbulence().setDirichletBC_omega( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-    }
-    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
-    {
-      p_.turbulence().setDirichletBC_epsilon( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-    }
-    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("calculated");
-      BC["value"]="uniform "+lexical_cast<string>(1e-10);
-    }
-    else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
-    {
-      p_.turbulence().setDirichletBC_nuTilda( BC, arma::norm(p_.velocity().representativeValue(), 2) );      
-    }
-    else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
-    {
-      p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );
-    }
+//     else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+//     {
+//       p_.turbulence().setDirichletBC_omega( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+//     }
+//     else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+//     {
+//       p_.turbulence().setDirichletBC_epsilon( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+//     }
+//     else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+//     {
+//       BC["type"]=OFDictData::data("calculated");
+//       BC["value"]="uniform "+lexical_cast<string>(1e-10);
+//     }
+//     else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
+//     {
+//       p_.turbulence().setDirichletBC_nuTilda( BC, arma::norm(p_.velocity().representativeValue(), 2) );      
+//     }
+//     else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
+//     {
+//       p_.turbulence().setDirichletBC_R( BC, arma::norm(p_.velocity().representativeValue(), 2) );
+//     }
     else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]="uniform 1e-10";
+      BC["type"]="zeroGradient";
+//       BC["value"]="uniform 1e-10";
     }
     else
     {
       if (!(
 	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
-	  ||
-	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+// 	  ||
+// 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
 	{
 	  BC["type"]=OFDictData::data("zeroGradient");
 	}
 	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
     }
-  }*/
+  }
 }
 
 

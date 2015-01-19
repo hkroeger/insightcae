@@ -39,8 +39,6 @@ using namespace boost;
 
 namespace Foam 
 {
-
-  
   
 autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(const polyPatch& patch)
 {
@@ -147,8 +145,6 @@ globalPatch::globalPatch(const polyPatch& patch)
     procOfs_[j]=procOfs_[j-1] + nfaces[j-1];
   }
 }
-
-
 
 
 defineTypeNameAndDebug(inflowGeneratorBaseFvPatchVectorField, 0);

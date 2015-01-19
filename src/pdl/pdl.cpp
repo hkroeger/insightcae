@@ -718,10 +718,13 @@ struct SelectableSubsetParameterParser
 	
 	os<<"const ParameterSet& "<<seliname<<"_param = "<<name<<"();"<<endl;
 	
-	os<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
-	<<"& "<<seliname<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >("<< staticname <<");"<<endl;
+// 	os<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))
+// 	<<"& "<<seliname<<"_static = boost::get< "<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" >("<< staticname <<");"<<endl;
+	os<<extendtype(thisscope, pd->cppTypeName(name+"_"+sel_name))<<" "<<seliname<<"_static;";
 	
 	pd->cppWriteGetStatement(os, seliname, seliname+"_param", seliname+"_static", thisscope);
+	os<<staticname<<" = "<<seliname<<"_static;";
+	
 	os<<"}"<<endl;
       }
       os<<"}"<<endl;
@@ -1043,6 +1046,10 @@ int main(int argc, char *argv[])
 	  );
 	}      
 	f<<"return p;"<<endl<<"}"<<endl;
+	
+	f<<"operator ParameterSet() const"<<endl;
+	f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
+	
 	f
 	<<"};"<<endl;
       }

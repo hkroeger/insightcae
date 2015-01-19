@@ -228,9 +228,13 @@ int main(int argc, char *argv[])
     boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
     results->writeLatexFile( outpath );
     
-    if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
+    for (int i=0; i<2; i++)
     {
-      Warning("TeX input file was written but could not execute pdflatex successfully.");
+      if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
+      {
+	Warning("TeX input file was written but could not execute pdflatex successfully.");
+	break;
+      }
     }
   }
   catch (insight::Exception e)

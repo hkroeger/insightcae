@@ -670,7 +670,7 @@ template<std::size_t> struct int_{}; // compile-time counter
 
 template <typename Tuple, std::size_t I>
 void std_tuple_formatcode_helper(std::ostream &stream, const Tuple *, int_<I>) {
-	std_tuple_formatcode_helper(stream, (const Tuple *)(0), int_<I-1>());
+	std_tuple_formatcode_helper(stream, static_cast<const Tuple *>(0), int_<I-1>());
 	stream << " ";
 	BinfmtSender<typename std::tuple_element<I, Tuple>::type>::send(stream);
 }
@@ -685,7 +685,7 @@ struct BinfmtSender<std::tuple<Args...> > {
 	typedef typename std::tuple<Args...> Tuple;
 
 	static void send(std::ostream &stream) {
-		std_tuple_formatcode_helper(stream, (const Tuple *)(0), int_<sizeof...(Args)-1>());
+		std_tuple_formatcode_helper(stream, static_cast<const Tuple *>(0), int_<sizeof...(Args)-1>());
 	}
 };
 

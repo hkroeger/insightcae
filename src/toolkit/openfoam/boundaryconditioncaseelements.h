@@ -94,17 +94,12 @@ fielddata=selectablesubset {{
    [
     set {
      time=double 0 "Time instant"
-     coeffs=vector (1 1) "Coefficients of profile polynomial"
+     component_coeffs=array
+      [
+       vector (1 1) "Coefficients of profile polynomial"
+      ] * 3 "Sets of polynomial coefficients for each tensor component"
     } "Time instant data"
    ] * 1  "Array of time instants"
-   
-   cmap=array
-   [
-    set {
-     column=int 0 "Column ID"
-     component=int 0 "Component ID"
-    }
-   ] * 1 "Mapping of tabular columns to vector components"
    
    p0=vector (0 0 0) "Origin of sampling axis"
    ep=vector (1 0 0) "Direction of sampling axis"
@@ -117,7 +112,7 @@ fielddata=selectablesubset {{
 */
 
 protected:
-  boost::shared_ptr<SelectableSubsetParameter> p_;
+  Parameters p_;
   
 public:
   /**
@@ -133,7 +128,7 @@ public:
   /**
    * takes config from a parameterset
    */
-  FieldData(const SelectableSubsetParameter& p);
+  FieldData(const ParameterSet& p);
   
   /**
    * returns according dictionary entry for OF
@@ -487,11 +482,13 @@ public:
 
 
 class TurbulentVelocityInletBC
-: public VelocityInletBC
+: public BoundaryCondition
 {
 
 public:
   
+  static const std::vector<std::string> inflowGenerator_types;
+
 #include "boundaryconditioncaseelements__TurbulentVelocityInletBC__Parameters.h"
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
@@ -535,7 +532,9 @@ public:
   );
   
   virtual void setField_U(OFDictData::dict& BC) const;
+  virtual void setField_p(OFDictData::dict& BC) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
 
 //   inline static ParameterSet defaultParameters()

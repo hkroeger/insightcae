@@ -198,6 +198,8 @@ accountreport projectcashflowExport "cashflow" {
 	+[cashflow]
 	+[liq]
 	)
+      
+      
 
     res="\\begin{tabular}{lrrrrrrrrrrrr}\\\\\n"
     res+="Monat "+start.strftime("%Y")+" ".join(["& %d"%(m+1) for m in range(0,12)])+"\\\\\n"
@@ -279,7 +281,7 @@ accountreport projectcashflowExport "cashflow" {
 
     cols3["Betriebsergebnis"]="& \\E{%.0f} & %.0f\\%% "%(result, per(1e2*result,totalrev))
     
-    return (res, res2, liq, cols3)
+    return (res, res2, liq, cols, cols2, cols3)
 
 
 
@@ -330,18 +332,20 @@ taskreport "milestones" {
 
 
 
-def runTJ(tjpfile, m4files=[]):
+def runTJ(tjpfile, m4files=[], skipTJ=False):
   acc=Accounts()
   events=Milestones()
-  
-  acc.writeAccountTJI("accounts.tji")
-  events.writeEventTJI("events.tji")
 
   ok=True
-  for m4file in m4files:
-    tjifile=os.path.splitext(m4file)[0]+".tji"
-    ok=ok and (os.system("m4 %s > %s"%(m4file, tjifile))==0)
-  ok=ok and (os.system("tj3 "+tjpfile)==0)
+  
+  if not skipTJ:
+    acc.writeAccountTJI("accounts.tji")
+    events.writeEventTJI("events.tji")
+
+    for m4file in m4files:
+      tjifile=os.path.splitext(m4file)[0]+".tji"
+      ok=ok and (os.system("m4 %s > %s"%(m4file, tjifile))==0)
+    ok=ok and (os.system("tj3 "+tjpfile)==0)
   
   if ok:
     acc.readData()
@@ -362,13 +366,51 @@ def postprocTJ(acc, events, fromyear, nyear):
     print "Inserting dormant equity ", name
     acc.insertDormantEquity(doe)
 
+  colsguv=[list()]*nyear
+  colsliq=[list()]*nyear
   sumcols=[dict()]*nyear
   liq=0
   for iy in range(0,nyear):
     y=fromyear+iy
-    r1, r2, liq, sumcols[iy]=acc.LiqGuV(y, liq)
+    r1, r2, liq, colsguv[iy], colsliq[iy], sumcols[iy]=acc.LiqGuV(y, liq)
     open("guv%d.tex"%y, "w").write(r1)
     open("liq%d.tex"%y, "w").write(r2)
+    
+  import matplotlib.pyplot as plt
+  cl=['r','g','b']
+  
+  def plot1(cols, row, fname):
+    plt.figure()
+    for iy in range(0,nyear):
+      plt.bar([12*iy+1], [sum([1e-3*cols[iy][j][row] for j in range(0,12)])], label="Jahr %d"%(iy+1), color=cl[iy], width=12)
+      plt.bar(range(12*iy+1, 12*(iy+1)+1), [1e-3*cols[iy][j][row] for j in range(0,12)], color=cl[iy])
+    plt.legend()
+    plt.xlim((1,36))
+    plt.xlabel("Monat")
+    plt.ylabel("Tsd.EUR")
+    plt.savefig(fname)
+    
+  plot1(colsguv, 2, "umsaetze.png")    
+  plot1(colsguv, 3, "materialausgaben.png")    
+  plot1(colsguv, 4, "personalausgaben.png")    
+  plot1(colsguv, 5, "abschreibungen.png")    
+  plot1(colsguv, 6, "zinsausgaben.png")    
+  plot1(colsguv, 7, "sonstigeausgaben.png")    
+  plot1(colsguv, -4, "betriebsergebnis.png")
+  plot1(colsguv, -3, "zuschuesse.png")
+
+  plot1(colsliq, -8, "investitionen.png")    
+  plot1(colsliq, -7, "tilgungen.png")    
+  
+  plt.figure()
+  for iy in range(0,nyear):
+    plt.plot(range(12*iy+1, 12*(iy+1)+1), [1e-3*colsliq[iy][j][-1] for j in range(0,12)], cl[iy]+'o-', label="Jahr %d"%(iy+1))
+  plt.legend()
+  plt.grid()
+  plt.xlim((1,36))
+  plt.xlabel("Monat")
+  plt.ylabel("Liquiditaet [Tsd.EUR]")
+  plt.savefig("liquiditaet.png")
 
   unisumcols={}
   for sc in sumcols:

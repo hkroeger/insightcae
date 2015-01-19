@@ -800,7 +800,7 @@ struct ArrayParameterParser
 				      const std::string& staticname, const std::string& thisscope) const
     {
       os<<varname<<".clear();"<<endl;
-      os<<"for(int k=0; k<"<<staticname<<".size(); k++)"<<endl;
+      os<<"for(size_t k=0; k<"<<staticname<<".size(); k++)"<<endl;
       os<<"{"<<endl;
       os<<varname<<".appendEmpty();"<<endl;
       

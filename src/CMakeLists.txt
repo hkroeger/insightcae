@@ -377,11 +377,11 @@ macro (add_PDL TARGETNAME HEADERS)
   foreach (_hdr ${HEADERS})
     get_filename_component(BN ${_hdr} NAME_WE)
     message(STATUS ${_hdr} ${BN})
-    list (APPEND ${TARGETNAME}_TIMESTAMPS ${_hdr}_pdl.timestamp)
-    ADD_CUSTOM_COMMAND( OUTPUT ${_hdr}_pdl.timestamp
+    list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
+    ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
 			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"
 			#COMMAND ${CMAKE_BINARY_DIR}/bin/pdl ${BN}__*.pdl
-			COMMAND touch ${_hdr}_pdl.timestamp
+			COMMAND touch ${BN}_pdl.timestamp
 			DEPENDS pdl ${CMAKE_SOURCE_DIR}/gen-sets.py ${_hdr}
 			COMMENT "Generating source code from PDL in header ${_hdr}" )
 			

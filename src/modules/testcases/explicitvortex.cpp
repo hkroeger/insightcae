@@ -119,12 +119,12 @@ ParameterSet ExplicitVortex::defaultParameters() const
 
 void ExplicitVortex::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
+  const ParameterSet& p=*parameters_;
   
   PSDBL(p, "geometry", Lx);
   PSDBL(p, "geometry", Ly);
@@ -196,10 +196,10 @@ void ExplicitVortex::createMesh
 
 void ExplicitVortex::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "fluid", nu);
   PSINT(p, "fluid", turbulenceModel);
@@ -219,16 +219,17 @@ void ExplicitVortex::createCase
   insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
-void ExplicitVortex::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void ExplicitVortex::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
   dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("U") = stdAsymmSolverSetup(1e-7, 0.01);  
   dicts->lookupDict("system/fvSolution").subDict("solvers").subDict("p") = stdSymmSolverSetup(1e-7, 0.01);
 
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
 }
 
-void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", vcx);
   PSDBL(p, "geometry", vcy);
   PSDBL(p, "operation", Gamma);
@@ -239,15 +240,15 @@ void ExplicitVortex::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterS
     ("("+lexical_cast<std::string>(vcx)+" "+lexical_cast<std::string>(vcy)+" 0)")
   );  
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
 
-ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr ExplicitVortex::evaluateResults(OpenFOAMCase& cm)
 {
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
 
-  PSDBL(p, "geometry", Lz);
+  PSDBL(p(), "geometry", Lz);
   
   std::string init=
       "cbi=loadOFCase('.')\n"

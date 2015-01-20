@@ -124,22 +124,22 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 {
   path p=Analysis::setupExecutionEnvironment();
-  calcDerivedInputData(*parameters_);
+  calcDerivedInputData();
   return p;
 }
 
-void OpenFOAMAnalysis::calcDerivedInputData(const ParameterSet& p)
+void OpenFOAMAnalysis::calcDerivedInputData()
 {
 }
 
-void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
   dicts=cm.createDictionaries();
 }
 
-void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSINT(p, "run", np);
+  PSINT(p(), "run", np);
 //   PSDBL(p, "run", deltaT);
 //   PSDBL(p, "run", endTime);
 // 
@@ -157,21 +157,21 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& 
   setDecomposeParDict(*dicts, np, method);
 }
 
-void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
   cm.createOnDisk(executionPath(), dicts);
 }
 
-void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
 }
 
-void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
 {
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
   
-  path mapFromPath=p.getPath("run/mapFrom");
+  path mapFromPath=p().getPath("run/mapFrom");
   
   if ((cm.OFversion()>=230) && (mapFromPath!=""))
   {
@@ -193,7 +193,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm, const ParameterSet&
     }
     else
     {
-      if (p.getBool("run/potentialinit"))
+      if (p().getBool("run/potentialinit"))
 	runPotentialFoam(cm, executionPath(), &stopFlag_, np);
     }
   }
@@ -203,7 +203,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm, const ParameterSet&
   }
 }
 
-void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
 {
   SolverOutputAnalyzer analyzer(*displayer);
   
@@ -224,7 +224,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm,
   
 }
 
-void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p)
+void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 {
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
@@ -234,9 +234,9 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p
   }
 }
 
-ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
-  ResultSetPtr results(new ResultSet(p, name_, "Result Report"));
+  ResultSetPtr results(new ResultSet(p(), name_, "Result Report"));
   
   meshQualityReport(cm, executionPath(), results);
   currentNumericalSettingsReport(cm, executionPath(), results);
@@ -271,14 +271,13 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
       OpenFOAMCase meshCase(ofe);
       if (!meshCase.meshPresentOnDisk(dir))
       {
-	cout<<p.getPath("mesh/linkmesh")<<endl;
 	if (!p.getPath("mesh/linkmesh").empty())
 	{
 	  linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant");
 	}
 	else
 	{
-	  createMesh(meshCase, p);
+	  createMesh(meshCase);
 	}
       }
       else
@@ -286,28 +285,28 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
     }
   }
 
-  createCase(runCase, p);
+  createCase(runCase);
   boost::shared_ptr<OFdicts> dicts;
-  createDictsInMemory(runCase, p, dicts);
-  applyCustomOptions(runCase, p, dicts);
+  createDictsInMemory(runCase, dicts);
+  applyCustomOptions(runCase, dicts);
   
   if (!runCase.outputTimesPresentOnDisk(dir))
   {
-    writeDictsToDisk(runCase, p, dicts);
-    applyCustomPreprocessing(runCase, p);
+    writeDictsToDisk(runCase, dicts);
+    applyCustomPreprocessing(runCase);
   }
   else
     cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation."<<endl;    
     
   if (!p.getBool("run/evaluateonly"))
   {
-    initializeSolverRun(runCase, p);
-    runSolver(displayer, runCase, p);
+    initializeSolverRun(runCase);
+    runSolver(displayer, runCase);
   }
   
-  finalizeSolverRun(runCase, p);
+  finalizeSolverRun(runCase);
 
-  return evaluateResults(runCase, p);
+  return evaluateResults(runCase);
 }
 
 
@@ -374,7 +373,7 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
     {
       OpenFOAMCase meshCase(ofe);
       if (!meshCase.meshPresentOnDisk(dir))
-	base_case->createMesh(meshCase, p);
+	base_case->createMesh(meshCase);
       else
 	cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
     }
@@ -389,12 +388,12 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
   processQueue(displayer);
   ResultSetPtr results = evaluateRuns();
 
-  evaluateCombinedResults(p, results);
+  evaluateCombinedResults(results);
   
   return results;
 }
 
-void OpenFOAMParameterStudy::evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results)
+void OpenFOAMParameterStudy::evaluateCombinedResults(ResultSetPtr& results)
 {
 }
 

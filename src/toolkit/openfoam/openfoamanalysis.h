@@ -48,29 +48,29 @@ public:
     virtual insight::ParameterSet defaultParameters() const;
     virtual boost::filesystem::path setupExecutionEnvironment();
     
-    virtual void calcDerivedInputData(const ParameterSet& p);
-    virtual void createMesh(OpenFOAMCase& cm, const ParameterSet& p) =0;
-    virtual void createCase(OpenFOAMCase& cm, const ParameterSet& p) =0;
+    virtual void calcDerivedInputData();
+    virtual void createMesh(OpenFOAMCase& cm) =0;
+    virtual void createCase(OpenFOAMCase& cm) =0;
     
-    virtual void createDictsInMemory(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    virtual void createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
     
     /**
      * Customize dictionaries before they get written to disk
      */
-    virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
     
-    virtual void writeDictsToDisk(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    virtual void writeDictsToDisk(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
     
     /**
      * Do modifications to the case when it has been created on disk
      */
-    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
     
-    virtual void initializeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
-    virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm, const ParameterSet& p);
-    virtual void finalizeSolverRun(OpenFOAMCase& cm, const ParameterSet& p);
+    virtual void initializeSolverRun(OpenFOAMCase& cm);
+    virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);
+    virtual void finalizeSolverRun(OpenFOAMCase& cm);
     
-    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+    virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
     
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
 };
@@ -96,7 +96,7 @@ public:
     virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
 
-    virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);
+    virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 
 }

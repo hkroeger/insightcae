@@ -38,10 +38,11 @@ public:
   
   AirfoilSection(const NoParameters&);
     
-  virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-  virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
   virtual insight::ParameterSet defaultParameters() const;
-  virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+
+  virtual void createCase(insight::OpenFOAMCase& cm);
+  virtual void createMesh(insight::OpenFOAMCase& cm);
+  virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
   
 };
 
@@ -52,7 +53,7 @@ public:
     declareType("Airfoil 2D Polar");
     
     AirfoilSectionPolar(const NoParameters&);    
-    virtual void evaluateCombinedResults(const ParameterSet& p, ResultSetPtr& results);
+    virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 
 }

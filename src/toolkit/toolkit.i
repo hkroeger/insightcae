@@ -30,6 +30,10 @@
 #include "base/analysis.h"
 
 #include "openfoam/blockmesh.h"
+#include "openfoam/openfoamcase.h"
+#include "openfoam/openfoamdict.h"
+//#include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamanalysis.h"
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
@@ -54,6 +58,10 @@ using namespace insight;
 %include "base/analysis.h"
 
 %include "openfoam/blockmesh.h"
+%include "openfoam/openfoamcase.h"
+%include "openfoam/openfoamdict.h"
+//%include "openfoam/openfoamtools.h"
+%include "openfoam/openfoamanalysis.h"
 
 %include "code_aster/caexportfile.h"
 %include "code_aster/codeasterrun.h"

@@ -27,8 +27,10 @@
 %{
 #include "channel.h"
 #include "pipe.h"
+#include "flatplatebl.h"
 using namespace insight;
 %}
 
 %include "channel.h"
 %include "pipe.h"
+%include "flatplatebl.h"

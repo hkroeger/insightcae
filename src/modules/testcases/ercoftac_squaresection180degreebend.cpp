@@ -83,8 +83,9 @@ insight::ParameterSet ERCOFTAC_SquareSection180DegreeBend::defaultParameters() c
   
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData(const insight::ParameterSet& p)
+void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData()
 {
+  const ParameterSet& p=*parameters_;
   PSINT(p, "mesh", nh);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "geometry", LoutByD); 
@@ -108,15 +109,15 @@ void ERCOFTAC_SquareSection180DegreeBend::calcDerivedInputData(const insight::Pa
   nbend_=M_PI*HeByD_*D_/delta_center;
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm)
 {
-  PSDBL(p, "geometry", LoutByD); 
+  PSDBL(p(), "geometry", LoutByD); 
   double 
     Lout=D_*LoutByD, 
     Lin=D_*LinByD_,
     R=HeByD_*D_;
   
-  PSINT(p, "mesh", nh);
+  PSINT(p(), "mesh", nh);
   
   // create local variables from ParameterSet
   path dir = executionPath();
@@ -261,7 +262,7 @@ void ERCOFTAC_SquareSection180DegreeBend::createMesh(insight::OpenFOAMCase& cm, 
   cm.executeCommand(dir, "blockMesh");
 }
 
-void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
 {
   path dir = executionPath();
 
@@ -330,13 +331,13 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm, 
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, p().get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 
 
 
-insight::ResultSetPtr ERCOFTAC_SquareSection180DegreeBend::evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+insight::ResultSetPtr ERCOFTAC_SquareSection180DegreeBend::evaluateResults(insight::OpenFOAMCase& cm)
 {
 
 }

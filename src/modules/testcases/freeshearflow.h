@@ -37,9 +37,10 @@ public:
     FreeShearFlow(const std::string& name, const std::string& description);
     
     virtual insight::ParameterSet defaultParameters() const;
-    virtual void calcDerivedInputData(const insight::ParameterSet& p);
-    virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-    virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+    
+    virtual void calcDerivedInputData();
+    virtual void createMesh(insight::OpenFOAMCase& cm);
+    virtual void createCase(insight::OpenFOAMCase& cm);
 };
 
 }

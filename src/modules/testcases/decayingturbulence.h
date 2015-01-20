@@ -36,16 +36,16 @@ public:
     DecayingTurbulence(const NoParameters&);
     ~DecayingTurbulence();
     
-    int calcnh(const ParameterSet& p) const;
-    double calcT(const ParameterSet& p) const;    
+    int calcnh() const;
+    double calcT() const;    
     
     ParameterSet defaultParameters() const;
     
-    virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-    virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+    virtual void createCase(insight::OpenFOAMCase& cm);
+    virtual void createMesh(insight::OpenFOAMCase& cm);
     
-    virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
-    virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
+    virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
+    virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
 };
 
 }

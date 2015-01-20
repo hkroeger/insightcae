@@ -66,7 +66,7 @@ public:
   virtual ParameterSet defaultParameters() const;
   
   std::string cyclPrefix() const;
-  virtual void calcDerivedInputData(const ParameterSet& p);
+  virtual void calcDerivedInputData();
 //   virtual double calcLc(const ParameterSet& p) const;
 //   virtual int calcnc(const ParameterSet& p) const;
 //   virtual int calcnr(const ParameterSet& p) const;
@@ -79,22 +79,20 @@ public:
 
   virtual void createMesh
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
   
   virtual void createCase
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
 
   virtual void evaluateAtSection(
-    OpenFOAMCase& cm, const ParameterSet& p, 
+    OpenFOAMCase& cm, 
     ResultSetPtr results, double x, int i
   );
 
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
   
 };
 
@@ -113,18 +111,16 @@ public:
   
   virtual void createMesh
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );  
   
   virtual void createCase
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
 
-  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
   
 };
 
@@ -152,20 +148,18 @@ public:
   
   virtual void createMesh
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );  
   
   virtual void createCase
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
 
-  ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+  ResultSetPtr evaluateResults(OpenFOAMCase& cm);
 
-  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
   
 };
 

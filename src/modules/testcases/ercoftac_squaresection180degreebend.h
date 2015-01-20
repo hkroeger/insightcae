@@ -41,10 +41,10 @@ public:
   
     ERCOFTAC_SquareSection180DegreeBend(const NoParameters&);
     virtual insight::ParameterSet defaultParameters() const;
-    virtual void calcDerivedInputData(const insight::ParameterSet& p);
-    virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-    virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-    virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+    virtual void calcDerivedInputData();
+    virtual void createMesh(insight::OpenFOAMCase& cm);
+    virtual void createCase(insight::OpenFOAMCase& cm);
+    virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
 };
 }
 

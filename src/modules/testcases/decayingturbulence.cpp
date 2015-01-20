@@ -102,16 +102,17 @@ ParameterSet DecayingTurbulence::defaultParameters() const
   return p;
 }
 
-double DecayingTurbulence::calcT(const ParameterSet& p) const
+double DecayingTurbulence::calcT() const
 {
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", U);
+  PSDBL(p(), "geometry", L);
+  PSDBL(p(), "operation", U);
   return L/U;
 }
 
 
-void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
  // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
@@ -123,7 +124,7 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, const insight::Pa
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  double T=calcT(p);
+  double T=calcT();
   cout << "Flow-through time T="<<T<<endl;
   cm.insert(new pimpleFoamNumerics(cm) );
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
@@ -168,8 +169,9 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm, const insight::Pa
 }
 
 
-int DecayingTurbulence::calcnh(const ParameterSet& p) const
+int DecayingTurbulence::calcnh() const
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
 
@@ -180,17 +182,18 @@ int DecayingTurbulence::calcnh(const ParameterSet& p) const
   return H/(Delta/s);
 }
 
-void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
 {
   // create local variables from ParameterSet
   path dir = executionPath();
+  const ParameterSet& p=*parameters_;
   
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
 
   PSINT(p, "mesh", nax);
   
-  int nh=calcnh(p);
+  int nh=calcnh();
     
   cm.insert(new MeshingNumerics(cm));
   
@@ -243,7 +246,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm, const insight::Pa
   cm.executeCommand(dir, "blockMesh");  
 }
 
-void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
   /*
   setFields(cm, executionPath(), 
@@ -254,12 +257,12 @@ void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm, const Parame
   
   cm.get<TurbulentVelocityInletBC>(inlet_+"BC")->initInflowBC(executionPath());
   */
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
   /*
@@ -268,7 +271,7 @@ void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet
     controlDict["application"]="channelFoam";
   }
   */
-  controlDict["endTime"]=10.0*calcT(p);
+  controlDict["endTime"]=10.0*calcT();
 }
 
 }

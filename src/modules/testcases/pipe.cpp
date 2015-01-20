@@ -171,8 +171,9 @@ std::string PipeBase::cyclPrefix() const
   return namePrefix;
 }
 
-void PipeBase::calcDerivedInputData(const ParameterSet& p)
+void PipeBase::calcDerivedInputData()
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -230,12 +231,12 @@ void PipeBase::calcDerivedInputData(const ParameterSet& p)
 
 void PipeBase::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
+  const ParameterSet& p=*parameters_;
   
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -345,10 +346,10 @@ void PipeBase::createMesh
 
 void PipeBase::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -394,10 +395,11 @@ void PipeBase::createCase
 }
 
 void PipeBase::evaluateAtSection(
-  OpenFOAMCase& cm, const ParameterSet& p, 
+  OpenFOAMCase& cm, 
   ResultSetPtr results, double x, int i
 )
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -585,18 +587,19 @@ void PipeBase::evaluateAtSection(
 }
 
   
-ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
 /*  
   boost::ptr_vector<sampleOps::set> sets;*/
   
   //double x=L*0.5;
-  evaluateAtSection(cm, p, results, 0.5*L, 0);
+  evaluateAtSection(cm, results, 0.5*L, 0);
 
   const RadialTPCArray* tpcs=cm.get<RadialTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
@@ -671,20 +674,19 @@ PipeCyclic::PipeCyclic(const NoParameters& nop)
 
 void PipeCyclic::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
-  PipeBase::createMesh(cm, p);
+  PipeBase::createMesh(cm);
   convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void PipeCyclic::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -705,7 +707,7 @@ void PipeCyclic::createCase
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
-  PipeBase::createCase(cm, p);
+  PipeBase::createCase(cm);
   
   cm.insert(new PressureGradientSource(cm, PressureGradientSource::Parameters()
 					    .set_Ubar(vec3(Ubulk_, 0, 0))
@@ -713,11 +715,11 @@ void PipeCyclic::createCase
 
 }
 
-void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
-  if (p.getBool("run/perturbU"))
+  if (p().getBool("run/perturbU"))
   {
-    PSDBL(p, "operation", Re_tau);
+    PSDBL(p(), "operation", Re_tau);
     
     cm.executeCommand(executionPath(), "perturbU", 
 		      list_of<string>
@@ -726,16 +728,17 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
 		    );
   }
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
 
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
   int np=decomposeParDict.getInt("numberOfSubdomains");
@@ -805,20 +808,19 @@ ParameterSet PipeInflow::defaultParameters() const
 
 void PipeInflow::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
-  PipeBase::createMesh(cm, p);
+  PipeBase::createMesh(cm);
   //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void PipeInflow::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -843,7 +845,7 @@ void PipeInflow::createCase
     .set_fixMeanValue(true)
   ));
   
-  PipeBase::createCase(cm, p);
+  PipeBase::createCase(cm);
   
   for (int i=0; i<ntpc_; i++)
   {
@@ -859,16 +861,17 @@ void PipeInflow::createCase
   
 }
 
-ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   for (int i=0; i<ntpc_; i++)
   {
-    evaluateAtSection(cm, p, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
+    evaluateAtSection(cm, results, (tpc_xlocs_[i]+1e-6)*L, i+1);
     
     const RadialTPCArray* tpcs=cm.get<RadialTPCArray>( string(tpc_names_[i])+"TPCArray");
     if (!tpcs)
@@ -975,7 +978,7 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p
   return results;
 }
 
-void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
   
   setFields(cm, executionPath(), 
@@ -986,16 +989,17 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& 
   
 //   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
 
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;

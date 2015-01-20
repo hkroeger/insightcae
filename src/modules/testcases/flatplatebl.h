@@ -45,17 +45,17 @@ public:
   ~FlatPlateBL();
   
   virtual ParameterSet defaultParameters() const;
-  virtual void calcDerivedInputData(const ParameterSet& p);
-  virtual void createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
-  virtual void createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+  virtual void calcDerivedInputData();
+  virtual void createCase(insight::OpenFOAMCase& cm);
+  virtual void createMesh(insight::OpenFOAMCase& cm);
 
   virtual void evaluateAtSection
   (
-    OpenFOAMCase& cm, const ParameterSet& p, 
+    OpenFOAMCase& cm, 
     ResultSetPtr results, double x, int i,
     const Interpolator& cf
   );  
-  virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p);
+  virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
   
   virtual insight::Analysis* clone();
   

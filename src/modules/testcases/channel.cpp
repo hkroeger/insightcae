@@ -174,8 +174,10 @@ std::string ChannelBase::cyclPrefix() const
   return namePrefix;
 }
 
-void ChannelBase::calcDerivedInputData(const ParameterSet& p)
+void ChannelBase::calcDerivedInputData()
 {
+  const ParameterSet& p=*parameters_;
+  
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", L);
@@ -241,12 +243,12 @@ void ChannelBase::calcDerivedInputData(const ParameterSet& p)
 
 void ChannelBase::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
+  const ParameterSet& p=*parameters_;
   
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
@@ -374,10 +376,11 @@ void ChannelBase::createMesh
 
 void ChannelBase::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {
+  const ParameterSet& p=*parameters_;
+
   // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
@@ -438,19 +441,21 @@ void ChannelBase::createCase
 
 }
 
-void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  OpenFOAMAnalysis::applyCustomOptions(cm, p, dicts);
+  OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
 //   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["maxDeltaT"]=0.5*T_;
 }
 
 void ChannelBase::evaluateAtSection(
-  OpenFOAMCase& cm, const ParameterSet& p, 
+  OpenFOAMCase& cm, 
   ResultSetPtr results, double x, int i
 )
 {
+  const ParameterSet& p=*parameters_;
+
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
@@ -747,16 +752,17 @@ void ChannelBase::evaluateAtSection(
   }
 }
 
-ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
-  evaluateAtSection(cm, p, results, 0.0, 0);
+  evaluateAtSection(cm, results, 0.0, 0);
 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
@@ -894,20 +900,19 @@ ParameterSet ChannelCyclic::defaultParameters() const
 
 void ChannelCyclic::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
-  ChannelBase::createMesh(cm, p);
+  ChannelBase::createMesh(cm);
   convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void ChannelCyclic::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
@@ -925,7 +930,7 @@ void ChannelCyclic::createCase
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   
-  ChannelBase::createCase(cm, p);
+  ChannelBase::createCase(cm);
   
   {
     std::vector<arma::mat> pl;
@@ -948,8 +953,10 @@ void ChannelCyclic::createCase
 
 }
 
-void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
+
   if (p.getBool("run/perturbU"))
   {
     PSDBL(p, "operation", Re_tau);
@@ -960,16 +967,17 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
 		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
 		    );
   }
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
 
-  ChannelBase::applyCustomOptions(cm, p, dicts);
+  ChannelBase::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
   int np=decomposeParDict.getInt("numberOfSubdomains");
@@ -1041,20 +1049,19 @@ ParameterSet ChannelInflow::defaultParameters() const
 
 void ChannelInflow::createMesh
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
-  ChannelBase::createMesh(cm, p);
+  ChannelBase::createMesh(cm);
   //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
 }
 
 void ChannelInflow::createCase
 (
-  OpenFOAMCase& cm,
-  const ParameterSet& p
+  OpenFOAMCase& cm
 )
 {  
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
@@ -1076,7 +1083,7 @@ void ChannelInflow::createCase
     .set_fixMeanValue(true)
   ));
   
-  ChannelBase::createCase(cm, p);
+  ChannelBase::createCase(cm);
   
   if (p.getBool("evaluation/eval2"))
   {
@@ -1096,14 +1103,15 @@ void ChannelInflow::createCase
   
 }
 
-ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet& p)
+ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   
-  ResultSetPtr results = ChannelBase::evaluateResults(cm, p);
+  ResultSetPtr results = ChannelBase::evaluateResults(cm);
   
   // ============= Longitudinal profile of Velocity an RMS ================
   int nr=10;
@@ -1179,7 +1187,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
     
   for (int i=0; i<ntpc_; i++)
   {
-    evaluateAtSection(cm, p, results, ((-0.5+tpc_xlocs_[i])+1e-6)*L, i+1);
+    evaluateAtSection(cm, results, ((-0.5+tpc_xlocs_[i])+1e-6)*L, i+1);
     
     const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
     
@@ -1199,7 +1207,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm, const ParameterSet
   return results;
 }
 
-void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p)
+void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
   
   setFields(cm, executionPath(), 
@@ -1210,16 +1218,16 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSe
   
 //   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
   
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm, p);
+  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void ChannelInflow::applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts)
+void ChannelInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
+  PSDBL(p(), "evaluation", inittime);
+  PSDBL(p(), "evaluation", meantime);
+  PSDBL(p(), "evaluation", mean2time);
 
-  ChannelBase::applyCustomOptions(cm, p, dicts);
+  ChannelBase::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;

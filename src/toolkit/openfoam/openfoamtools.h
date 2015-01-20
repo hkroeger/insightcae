@@ -63,12 +63,13 @@ namespace setFieldOps
   
 //typedef boost::tuple<std::string, std::string, FieldValue> FieldValueSpec;
 typedef std::string FieldValueSpec;
+typedef std::vector<FieldValueSpec> FieldValueSpecList;
 
 class setFieldOperator
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( fieldValues, std::vector<FieldValueSpec>, std::vector<FieldValueSpec>() )
+      ( fieldValues, FieldValueSpecList, FieldValueSpecList() )
   )
 
 protected:

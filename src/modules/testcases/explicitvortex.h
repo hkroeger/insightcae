@@ -37,20 +37,18 @@ public:
 
   virtual void createMesh
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
   
   virtual void createCase
   (
-    OpenFOAMCase& cm,
-    const ParameterSet& p
+    OpenFOAMCase& cm
   );
   
-  virtual void applyCustomOptions(OpenFOAMCase& cm, const ParameterSet& p, boost::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm, const ParameterSet& p);
+  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
   
-  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm, const ParameterSet& p);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
 };
 
 }

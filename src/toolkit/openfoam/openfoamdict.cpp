@@ -30,6 +30,132 @@ namespace insight
 {
 
 
+namespace qi = boost::spirit::qi;
+namespace repo = boost::spirit::repository;
+
+template <typename Iterator>
+struct skip_grammar : public qi::grammar<Iterator>
+{
+        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
+        {
+            skip
+                =   boost::spirit::ascii::space
+                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
+                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+                ;
+        }
+
+        qi::rule<Iterator> skip;
+
+};
+
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+struct OpenFOAMDictParser
+  : qi::grammar<Iterator, OFDictData::dict(), Skipper>
+{
+    OpenFOAMDictParser()
+      : OpenFOAMDictParser::base_type(rquery)
+    {
+      using namespace qi;
+      
+        rquery =  *( rpair );
+        rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
+        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
+	rstring = '"' >> *(~qi::char_('"')) >> '"';
+	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
+	qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
+	rentry = ( strict_double | qi::int_ |  rdimensionedData | rlist | rstring | ridentifier );
+	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
+        rsubdict = qi::lit('{')
+	      >> *(rpair) >> qi::lit('}');
+        rlist = /*b*qi::char_("0-9") >> */ qi::lit('(')
+	      >> *(rentry) >> qi::lit(')');
+
+    }
+    
+    qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
+    qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
+    qi::rule<Iterator, std::string()> ridentifier;
+    qi::rule<Iterator, std::string()> rstring;
+    qi::rule<Iterator, std::string()> rraw;
+    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
+    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
+    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
+    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
+    
+};
+
+
+
+
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+struct OpenFOAMBoundaryDictParser
+  : qi::grammar<Iterator, OFDictData::dict(), Skipper>
+{
+    OpenFOAMBoundaryDictParser()
+      : OpenFOAMBoundaryDictParser::base_type(rquery)
+    {
+      using namespace qi;
+      
+        rquery =  rpair >> 
+        *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9')) 
+	>> qi::lit('(') >> *(rpair) >> qi::lit(')');
+        rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
+        ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
+	rstring = '"' >> *(~qi::char_('"')) >> '"';
+	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
+	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
+	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
+        rsubdict = qi::lit('{')
+	      >> *(rpair) >> qi::lit('}');
+        rlist = /*qi::char_("0-9") >>*/
+	      *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9'))
+	      >> qi::lit('(')
+	      >> *(rentry) >> qi::lit(')');
+/*
+	BOOST_SPIRIT_DEBUG_NODE(rquery);
+	BOOST_SPIRIT_DEBUG_NODE(rpair);   
+	BOOST_SPIRIT_DEBUG_NODE(ridentifier);
+	BOOST_SPIRIT_DEBUG_NODE(rstring);
+	BOOST_SPIRIT_DEBUG_NODE(rraw);
+	BOOST_SPIRIT_DEBUG_NODE(rentry);
+	BOOST_SPIRIT_DEBUG_NODE(rsubdict);
+	BOOST_SPIRIT_DEBUG_NODE(rlist);
+*/
+    }
+    
+    qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
+    qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
+    qi::rule<Iterator, std::string()> ridentifier;
+    qi::rule<Iterator, std::string()> rstring;
+    qi::rule<Iterator, std::string()> rraw;
+    qi::rule<Iterator, OFDictData::data(), Skipper> rentry;
+    qi::rule<Iterator, OFDictData::dimensionedData(), Skipper> rdimensionedData;
+    qi::rule<Iterator, OFDictData::dict(), Skipper> rsubdict;
+    qi::rule<Iterator, OFDictData::list(), Skipper> rlist;
+    
+};
+
+template <typename Parser, typename Result, typename Iterator>
+bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
+{
+  Parser parser;
+  skip_grammar<Iterator> skip;
+  
+     bool r = qi::phrase_parse(
+        first,
+        last,
+        parser,
+	skip,
+	d
+    );
+     
+    if (first != last) // fail if we did not get a full match
+        return false;
+    
+    return r;
+}
+
 void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
 {
     std::string contents;

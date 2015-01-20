@@ -167,9 +167,10 @@ FlatPlateBL::~FlatPlateBL()
 
 }
 
-void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
+void FlatPlateBL::calcDerivedInputData()
 {
-  insight::OpenFOAMAnalysis::calcDerivedInputData(p);
+  insight::OpenFOAMAnalysis::calcDerivedInputData();
+  const ParameterSet& p=*parameters_;
   
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
@@ -235,8 +236,10 @@ void FlatPlateBL::calcDerivedInputData(const ParameterSet& p)
 
 }
 
-void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
+  
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
@@ -306,8 +309,9 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm, const insight::Parameter
 }
 
 
-void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
@@ -399,11 +403,12 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm, const insight::Parameter
 
 void FlatPlateBL::evaluateAtSection
 (
-  OpenFOAMCase& cm, const ParameterSet& p, 
+  OpenFOAMCase& cm,
   ResultSetPtr results, double x, int i,
   const Interpolator& cfi
 )
 {
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
@@ -545,8 +550,9 @@ void FlatPlateBL::evaluateAtSection
   }
 }
 
-insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, const insight::ParameterSet& p)
+insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 {
+  const ParameterSet& p=*parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
@@ -555,7 +561,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
   PSDBL(p, "fluid", nu);
   PSINT(p, "mesh", nh);
 
-  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm, p);
+  ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
   // Wall friction coefficient
   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
@@ -592,13 +598,13 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm, co
       "Boundary layer properties along the plate", "", ""
   )));
   
-  evaluateAtSection(cm, p, results, 0.01*L, 0, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.05*L, 1, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.1*L,  2, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.2*L,  3, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.5*L,  4, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.7*L,  5, Cf_vs_x_i);
-  evaluateAtSection(cm, p, results, 0.99*L,  6, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.01*L, 0, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.05*L, 1, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.1*L,  2, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.2*L,  3, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.5*L,  4, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.7*L,  5, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.99*L,  6, Cf_vs_x_i);
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");

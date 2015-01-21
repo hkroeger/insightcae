@@ -244,8 +244,8 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   return results;
 }
 
-ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
-{  
+void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
+{
   const ParameterSet& p = *parameters_;
   
   PSSTR(p, "run", machine);
@@ -255,11 +255,7 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   ofe.setExecutionMachine(machine);
   
   path dir = setupExecutionEnvironment();
-  
-//   calcDerivedInputData(p);
 
-  OpenFOAMCase runCase(ofe);
-  
   if (p.getBool("run/evaluateonly"))
     cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
 
@@ -297,7 +293,25 @@ ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
   }
   else
     cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation."<<endl;    
-    
+
+}
+
+
+ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
+{  
+  const ParameterSet& p = *parameters_;
+  
+  PSSTR(p, "run", machine);
+  PSSTR(p, "run", OFEname);
+  
+  OFEnvironment ofe = OFEs::get(OFEname);
+  ofe.setExecutionMachine(machine);
+
+  OpenFOAMCase runCase(ofe);
+  createCaseOnDisk(runCase);
+  
+  path dir = executionPath();
+  
   if (!p.getBool("run/evaluateonly"))
   {
     initializeSolverRun(runCase);

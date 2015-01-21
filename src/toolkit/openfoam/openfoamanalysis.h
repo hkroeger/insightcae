@@ -72,6 +72,11 @@ public:
     
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
     
+    /**
+     * integrate all steps before the actual run
+     */
+    virtual void createCaseOnDisk(OpenFOAMCase& cm);
+    
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 

@@ -401,7 +401,9 @@ void FlatPlateBL::evaluateAtSection
 (
   OpenFOAMCase& cm,
   ResultSetPtr results, double x, int i,
-  const Interpolator& cfi
+  const Interpolator& cfi,
+  const std::string& UMeanName,
+  const std::string& RFieldName
 )
 {
   const ParameterSet& p=*parameters_;
@@ -450,7 +452,7 @@ void FlatPlateBL::evaluateAtSection
   ));
   
   sample(cm, executionPath(), 
-     list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
+     list_of<std::string>("p")(UMeanName)(RFieldName)("k")("omega")("epsilon")("nut"),
      sets
   );
   
@@ -466,7 +468,7 @@ void FlatPlateBL::evaluateAtSection
   double ypByy=utau/nu;
   arma::mat yplus=y*ypByy;
     
-  int c=cd["UMean"].col;
+  int c=cd[UMeanName].col;
   arma::mat upaxial(join_rows(yplus, data.col(c)/utau));
   arma::mat upwallnormal(join_rows(yplus, data.col(c+1)/utau));
   arma::mat upspanwise(join_rows(yplus, data.col(c+2)/utau));
@@ -482,10 +484,10 @@ void FlatPlateBL::evaluateAtSection
   
   // Mean velocity profiles
   {
-    
-    upaxial.save( (executionPath()/("umeanaxial_vs_y_"+title+".txt")).c_str(), arma_ascii);
-    upspanwise.save( (executionPath()/("umeanspanwise_vs_y_"+title+".txt")).c_str(), arma_ascii);
-    upwallnormal.save( (executionPath()/("umeanwallnormal_vs_y_"+title+".txt")).c_str(), arma_ascii);
+    {
+      arma::mat up=join_horiz(yplus, join_horiz(upaxial.col(1), join_horiz(upwallnormal.col(1), upspanwise.col(1))));
+      up.save( (executionPath()/("umeanplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
+    }
     
     double maxU=1.1*uinf_;
     
@@ -505,7 +507,7 @@ void FlatPlateBL::evaluateAtSection
     addPlot
     (
       results, executionPath(), "chartMeanVelocity_"+title,
-      "y", "<U>",
+      "y+", "<U+>",
       list_of
 	(PlotCurve(upaxial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
 	(PlotCurve(upspanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
@@ -526,7 +528,36 @@ void FlatPlateBL::evaluateAtSection
       
     );
   }
-  
+
+  // Reynolds stress profiles
+  c=cd[RFieldName].col;
+  arma::mat Rpuu(join_rows(yplus, data.col(c)/pow(utau,2)));
+  arma::mat Rpvv(join_rows(yplus, data.col(c+3)/pow(utau,2)));
+  arma::mat Rpww(join_rows(yplus, data.col(c+5)/pow(utau,2)));
+  {
+    arma::mat Rp=join_horiz(yplus, join_horiz(Rpuu.col(1), join_horiz(Rpvv.col(1), Rpww.col(1))));
+    Rp.save( (executionPath()/("Rplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
+    
+    double maxRp=1.1*Rp.cols(1,3).max();
+    
+    addPlot
+    (
+      results, executionPath(), "chartReynoldsStress_"+title,
+      "y+", "<R+>",
+      list_of
+	(PlotCurve(Rpuu, "w l lt 1 lc 1 lw 4 t 'Axial'"))
+	(PlotCurve(Rpvv, "w l lt 1 lc 2 lw 4 t 'Wall normal'"))
+	(PlotCurve(Rpww, "w l lt 1 lc 3 lw 4 t 'Spanwise'"))
+      ,
+      "Wall normal profiles of Reynolds stresses at x/L=" + str(format("%g")%xByL),
+     
+      str( format("set xrange [:%g]; set yrange [0:%g];") 
+		% (ypByy*std::max(delta2e_, 10.*delta123(1))) 
+		% (maxRp) 
+	 )
+      
+    );
+  }
   
   // L profiles from k/omega
   if (cd.find("k")!=cd.end())
@@ -558,6 +589,16 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   PSINT(p, "mesh", nh);
 
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  
+  std::string RFieldName="UPrime2Mean";
+  std::string UMeanName="UMean";
+  if ( const RASModel *rm = cm.get<RASModel>(".*") )
+  {
+    std::cout<<"Case included RASModel "<<rm->name()<<". Computing R field"<<std::endl;
+    cm.executeCommand( executionPath(), "R", list_of("-latestTime") );
+    RFieldName="R";
+    UMeanName="U";
+  }
   
   // Wall friction coefficient
   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
@@ -594,13 +635,13 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       "Boundary layer properties along the plate", "", ""
   )));
   
-  evaluateAtSection(cm, results, 0.01*L, 0, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.05*L, 1, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.1*L,  2, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.2*L,  3, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.5*L,  4, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.7*L,  5, Cf_vs_x_i);
-  evaluateAtSection(cm, results, 0.99*L,  6, Cf_vs_x_i);
+  evaluateAtSection(cm, results, 0.01*L, 0, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.05*L, 1, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.1*L,  2, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.2*L,  3, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.5*L,  4, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.7*L,  5, Cf_vs_x_i, UMeanName, RFieldName);
+  evaluateAtSection(cm, results, 0.99*L,  6, Cf_vs_x_i, UMeanName, RFieldName);
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");

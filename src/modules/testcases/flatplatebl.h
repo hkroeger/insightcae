@@ -52,7 +52,9 @@ public:
   (
     OpenFOAMCase& cm, 
     ResultSetPtr results, double x, int i,
-    const Interpolator& cf
+    const Interpolator& cf,
+    const std::string& UMeanName,
+    const std::string& RFieldName
   );  
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
   

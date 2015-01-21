@@ -15,7 +15,7 @@
             
                 scalarField &refomegaboundary = omega_.boundaryField()[i];	
                 			  
-                scalarField &refGboundary = G.boundaryField()[i];	
+//                 scalarField &refGboundary = G.boundaryField()[i];	
                 			  
                 scalarField magUboundary = mag(U_.boundaryField()[i].snGrad());	
                 	

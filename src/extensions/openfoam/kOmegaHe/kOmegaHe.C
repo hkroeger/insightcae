@@ -272,7 +272,11 @@ kOmegaHe::kOmegaHe
     Cmix ( 1.5 ),
     Ctau ( 6.0 )
 {
-    printCoeffs();
+  nonlinear_=calcNonLinearPart(fvc::grad(U));
+  nut_=Cmu_ * k_ * tau_;
+  R_= ((2.0/3.0)*I*k_)- 2*nuEff()*symm(fvc::grad(U)) + symm(nonlinear_);
+  
+  printCoeffs();
 }
 
 
@@ -296,6 +300,8 @@ tmp<volSymmTensorField> kOmegaHe::devReff() const
         )
     );
 }
+
+// ((2.0/3.0)*I*k_)- 2*nuEff()*S_ + symm(nonLinearPart)
 
 tmp<fvVectorMatrix> kOmegaHe::divDevReff(volVectorField& U) const
 {
@@ -356,26 +362,17 @@ bool kOmegaHe::read()
     }
 }
 
-
-void kOmegaHe::correct()
+tmp<volTensorField> kOmegaHe::calcNonLinearPart(const volTensorField& gradU)
 {
-    RASModel::correct();
-
-    if (!turbulence_)
-    {
-        return;
-    }
-
-    volTensorField         gradU =  fvc::grad(U_)();
-    volSymmTensorField     S_    =  symm(gradU); // dimensioned
     volTensorField         W_    =  skew(gradU);
+    volSymmTensorField     S_    =  symm(gradU); // dimensioned
     
     volScalarField     tau1 = 1.0/(omega_*betastar);
     volScalarField     tau2 = Ctau*sqrt(nu() /(betastar*k_*omega_));
-    volScalarField     tau = max(tau1, tau2);
+    tau_ = max(tau1, tau2);
     
-    volSymmTensorField S = tau*S_; // non-dim
-    volTensorField     W = tau*W_;
+    volSymmTensorField S = tau_*S_; // non-dim
+    volTensorField     W = tau_*W_;
     
 
     //!Invariants are traces of S*S , S*S*S, W*W, S*W*W , ... , not the double inner products
@@ -446,18 +443,46 @@ void kOmegaHe::correct()
     
     
     
-    volScalarField      Cmu = -0.5 * ( beta1  + nlCoeff*IIw*beta6 );
-                        nut_ = Cmu * k_ * tau;
-                        
-    volSymmTensorField  linearPart = 2.0 * nut_ * S_ ;
-    volTensorField      nonLinearPart =
-    k_*nlCoeff*
+
+//     volTensorField      nonLinearPart =
+//     k_*nlCoeff*
+//     (
+//         beta3*(WW-1.0/3.0*IIw*I) 
+//       + beta4*(SW-WS) 
+//       + beta6*(SWW + WWS - IIw*S -2.0/3.0*IV*I) 
+//       + beta9*(WSWW-WWSW)
+//     );
+
+    Cmu_ = -0.5 * ( beta1  + nlCoeff*IIw*beta6 );
+    
+    return tmp<volTensorField>(new volTensorField
     (
-        beta3*(WW-1.0/3.0*IIw*I) 
-      + beta4*(SW-WS) 
-      + beta6*(SWW + WWS - IIw*S -2.0/3.0*IV*I) 
-      + beta9*(WSWW-WWSW)
-    );
+      k_*nlCoeff*
+      (
+	  beta3*(WW-1.0/3.0*IIw*I) 
+	+ beta4*(SW-WS) 
+	+ beta6*(SWW + WWS - IIw*S -2.0/3.0*IV*I) 
+	+ beta9*(WSWW-WWSW)
+      )      
+    ));
+}
+
+void kOmegaHe::correct()
+{
+    RASModel::correct();
+
+    if (!turbulence_)
+    {
+        return;
+    }
+    
+    volTensorField         gradU =  fvc::grad(U_)();
+    volSymmTensorField     S_    =  symm(gradU); // dimensioned
+    
+    nut_ = Cmu_ * k_ * tau_;
+			
+    volSymmTensorField  linearPart = 2.0 * nut_ * S_ ;
+    volTensorField      nonLinearPart = calcNonLinearPart(gradU);
     
     volSphericalTensorField kpart = (2.0/3.0)*I*k_;
         
@@ -522,8 +547,8 @@ void kOmegaHe::correct()
 
     nonlinear_ = nonLinearPart; // symm(nonlineara)
     
-    Cmu = -0.5 * ( beta1 + nlCoeff*IIw*beta6 );
-    nut_ = Cmu * k_ * tau;
+//     Cmu = -0.5 * ( beta1 + nlCoeff*IIw*beta6 );
+    nut_ = Cmu_ * k_ * tau_;
     
     
     //~ volScalarField nonlin = magSqr(fvc::div(nonlinear_));

@@ -108,7 +108,8 @@ class kOmegaHe
         scalar Ctau;    
 
 
-
+	tmp<volTensorField> calcNonLinearPart(const volTensorField& gradU);
+      
 public:
 
     //- Runtime type information

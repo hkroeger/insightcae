@@ -1177,6 +1177,16 @@ int readDecomposeParDict(const boost::filesystem::path& ofcloc)
   return decomposeParDict.getInt("numberOfSubdomains");
 }
 
+std::string readTurbulenceModelName(const boost::filesystem::path& ofcloc)
+{
+  OFDictData::dict RASPropertiesDict;
+  std::ifstream cdf( (ofcloc/"constant"/"RASProperties").c_str() );
+  readOpenFOAMDict(cdf, RASPropertiesDict);
+  //cout<<decomposeParDict<<endl;
+  return RASPropertiesDict.getString("RASModel");
+}
+
+
 struct MeshQualityInfo
 {
   std::string time;

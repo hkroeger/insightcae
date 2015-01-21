@@ -444,6 +444,7 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
 
 int readDecomposeParDict(const boost::filesystem::path& ofcloc);
+std::string readTurbulenceModelName(const boost::filesystem::path& ofcloc);
 
 void meshQualityReport(const OpenFOAMCase& cm, 
 		       const boost::filesystem::path& location, 

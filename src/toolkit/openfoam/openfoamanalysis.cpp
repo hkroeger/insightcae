@@ -173,6 +173,21 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   
   path mapFromPath=p().getPath("run/mapFrom");
   
+  if (mapFromPath!="")
+  {
+    if (const RASModel* rm=cm.get<RASModel>(".*"))
+    {
+      // check, if turbulence model is compatible in source case
+      // run "createTurbulenceFields" on source case, if not
+      std::string omodel=readTurbulenceModelName(mapFromPath);
+      if (rm->type()!=omodel)
+      {
+	OpenFOAMCase oc(cm.ofe());
+	oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+      }
+    }
+  }
+  
   if ((cm.OFversion()>=230) && (mapFromPath!=""))
   {
     // parallelTarget option is not present in OF2.3.x

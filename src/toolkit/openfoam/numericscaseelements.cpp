@@ -404,7 +404,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     relax["p"]=0.3;
     relax["U"]=0.7;
     relax["k"]=0.7;
-    relax["R"]=0.1;
+    relax["R"]=0.7;
     relax["omega"]=0.7;
     relax["epsilon"]=0.7;
     relax["nuTilda"]=0.7;
@@ -415,7 +415,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     fieldRelax["p"]=0.3;
     eqnRelax["U"]=0.7;
     eqnRelax["k"]=0.7;
-    eqnRelax["R"]=0.1;
+    eqnRelax["R"]=0.7;
     eqnRelax["omega"]=0.7;
     eqnRelax["epsilon"]=0.7;
     eqnRelax["nuTilda"]=0.7;
@@ -463,7 +463,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
   div["div(phi,omega)"]	=	pref+"Gauss upwind";
   div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       

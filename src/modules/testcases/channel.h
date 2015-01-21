@@ -110,9 +110,7 @@ protected:
   double hbuf_;
   
 public:
-#ifndef SWIG
   declareType("Channel Flow Test Case");
-#endif
   
   ChannelBase(const NoParameters& p = NoParameters());
   ~ChannelBase();
@@ -150,9 +148,7 @@ class ChannelCyclic
 : public ChannelBase
 {
 public:
-#ifndef SWIG
   declareType("Channel Flow Test Case (Axial Cyclic)");
-#endif
   
   ChannelCyclic(const NoParameters& p = NoParameters() );
   
@@ -184,9 +180,7 @@ class ChannelInflow
 #endif
   
 public:
-#ifndef SWIG
   declareType("Channel Flow Test Case (Inflow Generator)");
-#endif
   
   ChannelInflow(const NoParameters& p = NoParameters() );
   

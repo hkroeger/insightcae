@@ -56,9 +56,7 @@ protected:
   double nu_, gradr_, ywall_, Re_, Ubulk_, T_, utau_;
   
 public:
-#ifndef SWIG
   declareType("Pipe Flow Test Case");
-#endif
   
   PipeBase(const NoParameters& p = NoParameters() );
   ~PipeBase();
@@ -103,9 +101,7 @@ class PipeCyclic
 : public PipeBase
 {
 public:
-#ifndef SWIG
   declareType("Pipe Flow Test Case (Axial Cyclic)");
-#endif
   
   PipeCyclic(const NoParameters& p = NoParameters() );
   
@@ -138,9 +134,7 @@ class PipeInflow
 #endif
   
 public:
-#ifndef SWIG
   declareType("Pipe Flow Test Case (Inflow Generator)");
-#endif
   
   PipeInflow(const NoParameters& p = NoParameters() );
   

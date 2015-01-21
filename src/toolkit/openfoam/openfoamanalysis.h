@@ -35,7 +35,7 @@ class turbulenceModel;
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name);
 
 class OpenFOAMAnalysis
-: public insight::Analysis
+: public Analysis
 {
 protected:
     bool stopFlag_;
@@ -72,7 +72,7 @@ public:
     
     virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
     
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer);
+    virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 
 

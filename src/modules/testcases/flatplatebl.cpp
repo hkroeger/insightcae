@@ -162,10 +162,6 @@ FlatPlateBL::FlatPlateBL(const NoParameters&)
   )
 {}
 
-FlatPlateBL::~FlatPlateBL()
-{
-
-}
 
 void FlatPlateBL::calcDerivedInputData()
 {

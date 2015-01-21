@@ -39,12 +39,9 @@ protected:
     std::string in_, out_, top_, cycl_prefix_;
   
 public:
-#ifndef SWIG
   declareType("Flat Plate Boundary Layer Test Case");
-#endif
   
   FlatPlateBL(const NoParameters& p = NoParameters());
-  ~FlatPlateBL();
   
   virtual ParameterSet defaultParameters() const;
   virtual void calcDerivedInputData();

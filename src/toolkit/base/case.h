@@ -62,11 +62,15 @@ public:
     template<class T>
     T* get(const std::string& name)
     {
+      boost::regex re_name(name);
       T* res=NULL;
       BOOST_FOREACH(CaseElement& el, elements_)
       {
-	if (el.name() == name)
-	  res=static_cast<T*>(&el);
+	if ( boost::regex_match(el.name(), re_name) )
+	{
+	  res=dynamic_cast<T*>(&el);
+	  if (res) break;
+	}
       }
       return res;
     }
@@ -74,11 +78,15 @@ public:
     template<class T>
     const T* get(const std::string& name) const
     {
+      boost::regex re_name(name);
       const T* res=NULL;
       BOOST_FOREACH(const CaseElement& el, elements_)
       {
-	if (el.name() == name)
-	  res=static_cast<const T*>(&el);
+	if ( boost::regex_match(el.name(), re_name) )
+	{
+	  res=dynamic_cast<const T*>(&el);
+	  if (res) break;
+	}
       }
       return res;
     }

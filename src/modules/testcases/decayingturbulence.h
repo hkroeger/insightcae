@@ -33,7 +33,7 @@ protected:
 public:
     declareType("Decaying Turbulence Test Case");
     
-    DecayingTurbulence(const NoParameters&);
+    DecayingTurbulence(const NoParameters& p = NoParameters() );
     ~DecayingTurbulence();
     
     int calcnh() const;

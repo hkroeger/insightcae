@@ -36,7 +36,7 @@ class AirfoilSection
 public:
   declareType("Airfoil 2D");
   
-  AirfoilSection(const NoParameters&);
+  AirfoilSection(const NoParameters& p = NoParameters() );
     
   virtual insight::ParameterSet defaultParameters() const;
 

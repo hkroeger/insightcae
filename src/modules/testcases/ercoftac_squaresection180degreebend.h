@@ -39,7 +39,7 @@ class ERCOFTAC_SquareSection180DegreeBend
 public:
   declareType("ERCOFTAC Square Section 180 Degree Bend");
   
-    ERCOFTAC_SquareSection180DegreeBend(const NoParameters&);
+    ERCOFTAC_SquareSection180DegreeBend(const NoParameters& p = NoParameters() );
     virtual insight::ParameterSet defaultParameters() const;
     virtual void calcDerivedInputData();
     virtual void createMesh(insight::OpenFOAMCase& cm);

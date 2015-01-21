@@ -30,7 +30,7 @@ class ExplicitVortex
 public:
   declareType("Explicit Vortex");
   
-  ExplicitVortex(const NoParameters&);
+  ExplicitVortex(const NoParameters& p = NoParameters() );
   ~ExplicitVortex();
   
   virtual ParameterSet defaultParameters() const;

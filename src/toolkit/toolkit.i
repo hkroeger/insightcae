@@ -33,6 +33,7 @@
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
 //#include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamanalysis.h"
 
 #include "code_aster/caexportfile.h"
@@ -61,6 +62,7 @@ using namespace insight;
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
 //%include "openfoam/openfoamtools.h"
+%include "openfoam/openfoamcaseelements.h"
 %include "openfoam/openfoamanalysis.h"
 
 %include "code_aster/caexportfile.h"

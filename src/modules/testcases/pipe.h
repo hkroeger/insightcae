@@ -60,7 +60,7 @@ public:
   declareType("Pipe Flow Test Case");
 #endif
   
-  PipeBase(const NoParameters&);
+  PipeBase(const NoParameters& p = NoParameters() );
   ~PipeBase();
   
   virtual ParameterSet defaultParameters() const;
@@ -107,7 +107,7 @@ public:
   declareType("Pipe Flow Test Case (Axial Cyclic)");
 #endif
   
-  PipeCyclic(const NoParameters&);
+  PipeCyclic(const NoParameters& p = NoParameters() );
   
   virtual void createMesh
   (
@@ -142,7 +142,7 @@ public:
   declareType("Pipe Flow Test Case (Inflow Generator)");
 #endif
   
-  PipeInflow(const NoParameters&);
+  PipeInflow(const NoParameters& p = NoParameters() );
   
   ParameterSet defaultParameters() const;
   

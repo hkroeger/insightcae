@@ -114,7 +114,7 @@ public:
   declareType("Channel Flow Test Case");
 #endif
   
-  ChannelBase(const NoParameters& = NoParameters());
+  ChannelBase(const NoParameters& p = NoParameters());
   ~ChannelBase();
   
   virtual ParameterSet defaultParameters() const;
@@ -154,7 +154,7 @@ public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
 #endif
   
-  ChannelCyclic(const NoParameters&);
+  ChannelCyclic(const NoParameters& p = NoParameters() );
   
   virtual ParameterSet defaultParameters() const;
 
@@ -188,7 +188,7 @@ public:
   declareType("Channel Flow Test Case (Inflow Generator)");
 #endif
   
-  ChannelInflow(const NoParameters&);
+  ChannelInflow(const NoParameters& p = NoParameters() );
   
   virtual ParameterSet defaultParameters() const;
 

@@ -588,7 +588,7 @@ void FlatPlateBL::evaluateAtSection
     arma::mat Rp=join_horiz(yplus, join_horiz(Rpuu.col(1), join_horiz(Rpvv.col(1), Rpww.col(1))));
     Rp.save( (executionPath()/("Rplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
     
-    double maxRp=1.1*Rp.cols(1,3).max();
+    double maxRp=1.1*as_scalar(arma::max(Rp.cols(1,3)));
     
     addPlot
     (

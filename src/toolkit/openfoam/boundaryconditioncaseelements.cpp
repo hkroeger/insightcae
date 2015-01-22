@@ -220,7 +220,7 @@ double FieldData::maxValueMag() const
       {
 	mag_inst(i++) += pow(xy(i, 1+cm.column),2);
       }
-      maxv=std::max(maxv, sqrt(mag_inst).max());
+      maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
     }    
   }
   else

@@ -525,6 +525,13 @@ void rotateMesh
   const arma::mat& p0
 );
 
+void createBaffles
+(
+  const OpenFOAMCase& c, 
+  const boost::filesystem::path& location, 
+  const std::string& faceZoneName
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

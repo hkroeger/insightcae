@@ -36,7 +36,18 @@ namespace insight
 class OpenFOAMCase;
 class OFdicts;
 
-void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& method);
+/**
+ * create a setDecomposeParDict
+ * @poX,@poY,@poZ: define the preference of coordinate directions for decomposition 
+ * (relevant for methods simple and hierarchical). 
+ * If <0, direction will not be decomposed.
+ * Number of decompositions along direction will be ordered according to value of po?
+ */
+void setDecomposeParDict
+(
+  OFdicts& dictionaries, int np, const std::string& method,
+  int poX=1, int poY=1, int poZ=1
+);
 
 /**
  Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
@@ -121,6 +132,8 @@ public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
     (checkResiduals, bool, true)
     (hasCyclics, bool, false)
+    (pinternal, double, 0.0)
+    (Uinternal, arma::mat, vec3(0,0,0))
   )
 
 protected:
@@ -146,6 +159,8 @@ public:
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)
     (hasCyclics, bool, false)
+    (pinternal, double, 0.0)
+    (Uinternal, arma::mat, vec3(0,0,0))
   )
 
 protected:

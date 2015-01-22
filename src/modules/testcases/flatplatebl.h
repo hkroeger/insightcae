@@ -31,12 +31,14 @@ class FlatPlateBL
   
 protected:
 
-    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_e_, deltaywall_e_, gradh_, T_;
-    int nax_, nlat_;
+    double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_e_, deltaywall_e_, gradh_, T_, dtrip_;
+    int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;
     
-    std::string in_, out_, top_, cycl_prefix_;
+    std::string in_, out_, top_, cycl_prefix_, approach_, trip_;
+    inline std::string tripMaster() const { return trip_+"_master"; }
+    inline std::string tripSlave() const { return trip_+"_slave"; }
   
 public:
   declareType("Flat Plate Boundary Layer Test Case");

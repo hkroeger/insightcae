@@ -87,7 +87,11 @@ std::vector<int> combinefactors(int n, const std::vector<int>& facs)
   return nf;
 }
 
-void setDecomposeParDict(OFdicts& dictionaries, int np, const std::string& method)
+void setDecomposeParDict
+(
+  OFdicts& dictionaries, int np, const std::string& method, 
+  int poX, int poY, int poZ
+)
 {
   OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
   
@@ -362,8 +366,8 @@ simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
 : FVNumerics(c, p),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal()), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal().begin(), p_.Uinternal().end()), volField ) );
 }
  
 void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -488,8 +492,8 @@ pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
 : FVNumerics(c, p),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal()), volField ) );
+  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal().begin(), p_.Uinternal().end()), volField ) );
 }
  
 void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const

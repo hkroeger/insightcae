@@ -73,6 +73,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	    ("dxplus",	new DoubleParameter(1000, "lateral mesh spacing at the final station"))
 	    ("dzplus",	new DoubleParameter(1000, "streamwise mesh spacing at the final station"))
 	    ("2d",	new BoolParameter(true, "whether to create a two-dimensional grid instead of a three-dimensional one"))
+	    ("tripwire",new BoolParameter(true, "whether to create a trip wire by declaring internal faces as walls"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -181,9 +182,14 @@ void FlatPlateBL::calcDerivedInputData()
   out_="outlet";
   top_="top";
   cycl_prefix_="cyclic";
+  approach_="approach";
+  trip_="trip";
   
   uinf_=FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
   Re_L_=uinf_*L/nu;
+  
+  dtrip_=1000.*nu/uinf_; // Re(d_tripwire)=1000
+  std::cout<<"dtrip="<<dtrip_<<std::endl;
   
   Cw_=FlatPlateBL::cw(Re_L_);
   cout<<"cw="<<Cw_<<endl;
@@ -207,6 +213,8 @@ void FlatPlateBL::calcDerivedInputData()
   cout<<"gradh="<<gradh_<<endl;
   nax_=std::max(1, int(round(L/(dxplus/ypfac_e_))));
   cout<<"nax="<<nax_<<" "<<(dxplus/ypfac_e_)<<endl;
+  naxi_=std::max(1, int(round(0.1*L/(dxplus/ypfac_e_))));
+  cout<<"naxi="<<naxi_<<endl;
   if (p.getBool("mesh/2d"))
     nlat_=1;
   else
@@ -245,6 +253,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
+  PSBOOL(p, "mesh", tripwire);
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -260,10 +269,14 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       (1, 	vec3(L, 0., 0))
       (2, 	vec3(L, H_, 0))
       (3, 	vec3(0, H_, 0))
+      
+      (4, 	vec3(-0.1*L, 0., 0))
+      (5, 	vec3(-0.1*L, H_, 0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
   // create patches
+  Patch& approach= bmd->addPatch(approach_, new Patch());
   Patch& in= 	bmd->addPatch(in_, new Patch());
   Patch& out= 	bmd->addPatch(out_, new Patch());
   Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
@@ -283,12 +296,29 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   {
     Block& bl = bmd->addBlock
     (  
+      new Block(PTS(4,0,3,5),
+	naxi_, nh, nlat_,
+	list_of<double>(1.)(gradh_)(1.),
+	approach_
+      )
+    );
+    in.addFace(bl.face("0473"));
+    approach.addFace(bl.face("0154"));
+//     out.addFace(bl.face("1265"));
+    top.addFace(bl.face("2376"));
+    cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
+  }
+
+  {
+    Block& bl = bmd->addBlock
+    (  
       new Block(PTS(0,1,2,3),
 	nax_, nh, nlat_,
 	list_of<double>(1.)(gradh_)(1.)
       )
     );
-    in.addFace(bl.face("0473"));
+//     in.addFace(bl.face("0473"));
     out.addFace(bl.face("1265"));
     top.addFace(bl.face("2376"));
     cycl_side_0.addFace(bl.face("0321"));
@@ -301,7 +331,23 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   cm.insert(bmd.release());
 
   cm.createOnDisk(executionPath());
-  cm.executeCommand(executionPath(), "blockMesh"); 
+  cm.executeCommand(executionPath(), "blockMesh");
+  
+  if (tripwire)
+  {
+    setSet
+    (
+      cm, executionPath(),
+      list_of
+      ( str( format("faceSet %s new boxToFace (-1e-10 %g -1e10) (1e-10 %g 1e10)") % trip_ % dtrip_ % (2.*dtrip_) ) )
+    );
+    
+    cm.executeCommand(executionPath(), "setsToZones", list_of("-noFlipMap") );
+    
+    createBaffles(cm, executionPath(), trip_);
+    
+    resetMeshToLatestTimestep(cm, executionPath());
+  }
 }
 
 
@@ -327,7 +373,9 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
-
+  
+  double Umax=FieldData( p.getSubset("inflow").getSubset("umean")).maxValueMag();
+  
   std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
   if (regime=="steady")
   {
@@ -336,6 +384,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_decompositionMethod("simple")
       .set_endTime(end_)
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
+      .set_Uinternal(vec3(Umax,0,0))
     ));
   } 
   else if (regime=="unsteady")
@@ -348,6 +397,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_decompositionMethod("simple")
       .set_deltaT(1e-3)
       .set_hasCyclics(true)
+      .set_Uinternal(vec3(Umax,0,0))
     ) );
   }
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
@@ -383,7 +433,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));
-//   cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+  cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
     .set_pressure(0.0)
   ));

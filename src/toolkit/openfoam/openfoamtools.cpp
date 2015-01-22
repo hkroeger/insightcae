@@ -1685,4 +1685,37 @@ void rotateMesh
 
 }
 
+
+
+
+void createBaffles
+(
+  const OpenFOAMCase& cm,
+  const boost::filesystem::path& location, 
+  const std::string& faceZoneName
+)
+{
+  OFDictData::dictFile cbd;
+  cbd["internalFacesOnly"]=true;
+  
+  OFDictData::dict bsd;
+  bsd["type"]="faceZone";
+  bsd["zoneName"]=faceZoneName;
+  
+  OFDictData::dict ppd;
+  ppd["type"]="wall";
+  bsd["patchPairs"]=ppd;
+  
+  OFDictData::dict baffles;
+  baffles[faceZoneName]=bsd;
+  
+  cbd["baffles"]=baffles;
+  
+  cbd.write( location / "system" / "createBafflesDict" );
+
+  std::vector<std::string> opt;
+  cm.executeCommand(location, "createBaffles", opt);
+}
+
+
 }

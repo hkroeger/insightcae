@@ -71,8 +71,8 @@ std::vector<int> combinefactors
   const std::tuple<int,int,int>& po
 )
 {
-  cout<<"GOT:"<<endl;
-  BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
+//   cout<<"GOT:"<<endl;
+//   BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
   
   // count locked directions (without decomposition)
   int n_lock=0;
@@ -88,7 +88,7 @@ std::vector<int> combinefactors
   // bring factors into descending order
   sort(facs.begin(), facs.end());
   std::reverse(facs.begin(), facs.end());
-  BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
+//   BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
   
   // get initial number which was factored
   double totprod=1.0;
@@ -99,7 +99,7 @@ std::vector<int> combinefactors
     (double(std::get<0>(po))/potot)
     (double(std::get<1>(po))/potot)
     (double(std::get<2>(po))/potot);
-  BOOST_FOREACH(double f, pof) cout<<f<<" "; cout<<endl;
+//   BOOST_FOREACH(double f, pof) cout<<f<<" "; cout<<endl;
   
   std::vector<std::size_t> pof_sorti(pof.size());
   std::iota(pof_sorti.begin(), pof_sorti.end(), 0);
@@ -107,7 +107,7 @@ std::vector<int> combinefactors
   {
       return pof[left] > pof[right];
   });
-  BOOST_FOREACH(int f, pof_sorti) cout<<f<<" "; cout<<endl;
+//   BOOST_FOREACH(int f, pof_sorti) cout<<f<<" "; cout<<endl;
   
   std::vector<int> nf(3);
   int j=0;
@@ -115,10 +115,10 @@ std::vector<int> combinefactors
   for (int i=0; i<3; i++)
   {
     int dir_idx=pof_sorti[i];
-    cout<<"cumulating for "<<dir_idx<<endl;
+//     cout<<"cumulating for "<<dir_idx<<endl;
     double req_frac=pof[dir_idx];
     int cf=facs[j++];
-    cout<<"cf="<<(log(cf)/log(totprod))<<endl;
+//     cout<<"cf="<<(log(cf)/log(totprod))<<endl;
     while (j<facs.size()-(2-i) && (cf>=0.0) && ( (log(cf)/log(totprod)) < req_frac) )
     {
 //       double frac=double(cf)/totprod;
@@ -127,17 +127,17 @@ std::vector<int> combinefactors
 //       else
       {
 	cf*=facs[j++];
-	cout<<"inc: "<<cf<<endl;
-	cout<<"cf(*)="<<(log(cf)/log(totprod))<<endl;
+// 	cout<<"inc: "<<cf<<endl;
+// 	cout<<"cf(*)="<<(log(cf)/log(totprod))<<endl;
       }
     }
-    cout<<cf<<endl;
+//     cout<<cf<<endl;
     nf[dir_idx]=cf;
   }
   
-  cout<<"combined"<<endl;
-    BOOST_FOREACH(int i, nf)
-      cout <<" > "<<i<<endl;
+//   cout<<"combined"<<endl;
+//     BOOST_FOREACH(int i, nf)
+//       cout <<" > "<<i<<endl;
       
   return nf;
 }

@@ -364,6 +364,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
+  PSINT(p, "run", np);
   
 //   PSDBL(p, "evaluation", inittime);
 //   PSDBL(p, "evaluation", meantime);
@@ -385,6 +386,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_endTime(end_)
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(Umax,0,0))
+      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_np(np)
     ));
   } 
   else if (regime=="unsteady")
@@ -398,6 +401,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_deltaT(1e-3)
       .set_hasCyclics(true)
       .set_Uinternal(vec3(Umax,0,0))
+      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_np(np)
     ) );
   }
   cm.insert(new extendedForces(cm, extendedForces::Parameters()

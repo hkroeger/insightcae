@@ -46,8 +46,11 @@ class OFdicts;
 void setDecomposeParDict
 (
   OFdicts& dictionaries, int np, const std::string& method,
-  int poX=1, int poY=1, int poZ=1
+  const std::tuple<int,int,int>& po = std::make_tuple(1,1,1)
 );
+
+
+typedef std::tuple<int, int, int> DecompositionWeights;
 
 /**
  Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
@@ -58,6 +61,7 @@ class FVNumerics
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (np, int, 1)
+    (decompWeights, DecompositionWeights, std::make_tuple(1,1,1))
     (writeControl, std::string, "timeStep")
     (writeInterval, double, 100.0)
     (writeFormat, std::string, "binary")

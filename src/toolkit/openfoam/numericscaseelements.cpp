@@ -39,6 +39,8 @@ namespace insight
 
 std::vector<int> factors(int n)
 {
+  // do a prime factorization of n
+  
   std::vector<int> facs;
   int z = 2;
 
@@ -59,43 +61,97 @@ std::vector<int> factors(int n)
   {
       facs.push_back( n );
   }
-  cout<<"factored "<<facs.size()<<endl;
-  BOOST_FOREACH(int i, facs)
-    cout <<" > "<<i<<endl;
+
   return facs;
 }
 
-std::vector<int> combinefactors(int n, const std::vector<int>& facs)
+std::vector<int> combinefactors
+(
+  std::vector<int> facs,
+  const std::tuple<int,int,int>& po
+)
 {
-  std::vector<int> nf;
-  int j=0;
-  int numf=facs.size();
-
-  for (int i=0; i<n; i++)
+  cout<<"GOT:"<<endl;
+  BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
+  
+  // count locked directions (without decomposition)
+  int n_lock=0;
+  if (std::get<0>(po)<=0.0) n_lock++;
+  if (std::get<1>(po)<=0.0) n_lock++;
+  if (std::get<2>(po)<=0.0) n_lock++;
+// if (n_lock==0) *static_cast<int*>(0)=23;
+  // if less than 3 factors or directions are locked: extend with ones
+  int n_add=std::max(3-int(facs.size()), n_lock);
+  for (int k=0;k<n_add;k++)
+    facs.push_back(1);
+  
+  // bring factors into descending order
+  sort(facs.begin(), facs.end());
+  std::reverse(facs.begin(), facs.end());
+  BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
+  
+  // get initial number which was factored
+  double totprod=1.0;
+  BOOST_FOREACH(int f, facs) totprod*=double(f);
+  
+  double potot=std::get<0>(po)+std::get<1>(po)+std::get<2>(po);
+  std::vector<double> pof = list_of 
+    (double(std::get<0>(po))/potot)
+    (double(std::get<1>(po))/potot)
+    (double(std::get<2>(po))/potot);
+  BOOST_FOREACH(double f, pof) cout<<f<<" "; cout<<endl;
+  
+  std::vector<std::size_t> pof_sorti(pof.size());
+  std::iota(pof_sorti.begin(), pof_sorti.end(), 0);
+  std::sort(pof_sorti.begin(), pof_sorti.end(), [&pof](std::size_t left, std::size_t right)
   {
-    int cf=1;
-    while (j<(numf-n+i+1))
+      return pof[left] > pof[right];
+  });
+  BOOST_FOREACH(int f, pof_sorti) cout<<f<<" "; cout<<endl;
+  
+  std::vector<int> nf(3);
+  int j=0;
+  
+  for (int i=0; i<3; i++)
+  {
+    int dir_idx=pof_sorti[i];
+    cout<<"cumulating for "<<dir_idx<<endl;
+    double req_frac=pof[dir_idx];
+    int cf=facs[j++];
+    cout<<"cf="<<(log(cf)/log(totprod))<<endl;
+    while (j<facs.size()-(2-i) && (cf>=0.0) && ( (log(cf)/log(totprod)) < req_frac) )
     {
-      cf*=facs[j];
-      j++;
+//       double frac=double(cf)/totprod;
+//       if ( frac<req_frac )
+// 	break;
+//       else
+      {
+	cf*=facs[j++];
+	cout<<"inc: "<<cf<<endl;
+	cout<<"cf(*)="<<(log(cf)/log(totprod))<<endl;
+      }
     }
-    nf.push_back(cf);
+    cout<<cf<<endl;
+    nf[dir_idx]=cf;
   }
+  
   cout<<"combined"<<endl;
     BOOST_FOREACH(int i, nf)
       cout <<" > "<<i<<endl;
+      
   return nf;
 }
 
 void setDecomposeParDict
 (
   OFdicts& dictionaries, int np, const std::string& method, 
-  int poX, int poY, int poZ
+  const std::tuple<int,int,int>& po
 )
 {
   OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
-  
-  std::vector<int> ns=combinefactors(3, factors(np));
+ 
+// #warning hack for testing
+  std::vector<int> ns=combinefactors(factors(np), po);
   cout<<"decomp "<<np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
   decomposeParDict["numberOfSubdomains"]=np;
   
@@ -167,7 +223,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fvSchemes.addSubDictIfNonexistent("snGradSchemes");
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
 
-  setDecomposeParDict(dictionaries, p_.np(), p_.decompositionMethod());
+  setDecomposeParDict( dictionaries, p_.np(), p_.decompositionMethod(), p_.decompWeights() );
 }
 
 FaNumerics::FaNumerics(OpenFOAMCase& c)
@@ -359,7 +415,7 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   
-  setDecomposeParDict(dictionaries, p_.np(), "hierarchical");
+  setDecomposeParDict(dictionaries, p_.np(), "hierarchical", p_.decompWeights() );
 }
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)

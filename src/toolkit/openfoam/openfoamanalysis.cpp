@@ -155,9 +155,10 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OF
     {
       insight::Warning
       (
-	"decomposeParDict does not contain proper number of processors! "
+	"decomposeParDict does not contain proper number of processors!\n"
 	+str(format("(%d != %d)") % cnp % np) 
-	+" It will be recreated but the directional preferences cannot be taken into account!"
+	+"\nIt will be recreated but the directional preferences cannot be taken into account.\n"
+	"Correct this by setting the np parameter in FVNumerics during case creation properly."
       );
       setDecomposeParDict(*dicts, np, "scotch");
     }

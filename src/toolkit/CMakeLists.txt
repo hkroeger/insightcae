@@ -30,7 +30,9 @@ add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
 
 target_include_directories(toolkit 
-  PUBLIC ${Boost_INCLUDE_DIR} 
+  PUBLIC ${Boost_INCLUDE_DIR}
+  PUBLIC ${ARMADILLO_INCLUDE_DIRS}
+  PUBLIC ${GSL_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   )

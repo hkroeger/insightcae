@@ -20,6 +20,13 @@ include_directories(${GEOM_INCLUDE_DIRS})
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES})
 set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
+target_include_directories(insightcad
+  PUBLIC ${toolkit_SOURCE_DIR}
+  PUBLIC ${Boost_INCLUDE_DIRS}
+  PUBLIC ${OCC_INCLUDE_DIR}
+  PUBLIC ${DXFLIB_INCLUDE_DIR}
+  PUBLIC ${GEOM_INCLUDE_DIRS}
+  )
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 # set(cadtest_SRCS test.cpp)

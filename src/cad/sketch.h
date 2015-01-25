@@ -76,7 +76,7 @@ public:
 class Sketch
 : public SolidModel
 {
-  TopoDS_Shape makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
+//   TopoDS_Shape makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
 
 public:
   Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");

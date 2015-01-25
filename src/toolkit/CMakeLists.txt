@@ -23,7 +23,6 @@ project(toolkit)
 
 file(GLOB_RECURSE toolkit_SOURCES "*.cpp")
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
-message(${toolkit_HEADERS})
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})

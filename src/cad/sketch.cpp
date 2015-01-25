@@ -258,7 +258,12 @@ TopoDS_Wire DXFReader::Wire() const
   return wb.Wire();
 }
 
-TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
+// TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
+// {
+// }
+
+Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
+// : SolidModel(makeSketch(pl, fn, ln))
 {
   if (!pl.providesPlanarReference())
     throw insight::Exception("Sketch: Planar reference required!");
@@ -284,18 +289,15 @@ TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& 
   }
   
   TopoDS_Wire w = DXFReader(filename, layername).Wire();
+  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w)));
+  
   gp_Trsf tr;
   gp_Ax3 ax=pl;
   tr.SetTransformation(ax);
   
   BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
 
-  return BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape();
-}
-
-Sketch::Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername)
-: SolidModel(makeSketch(pl, filename, layername))
-{
+  setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
 }
 
 Sketch::operator const TopoDS_Face& () const

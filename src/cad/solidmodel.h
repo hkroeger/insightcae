@@ -195,6 +195,13 @@ public:
   Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
 };
 
+class Shoulder
+: public SolidModel
+{
+public:
+  Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax);
+};
+
 class Box
 : public SolidModel
 {

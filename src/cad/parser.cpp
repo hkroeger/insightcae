@@ -367,6 +367,9 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Sphere>(qi::_1, qi::_2)) ]
 	 | ( lit("Cylinder") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
+	 | ( lit("Shoulder") > '(' > r_vectorExpression > ',' > r_vectorExpression > 
+			       ',' > r_scalarExpression > ((',' > r_scalarExpression)|attr(1e6)) > ')' ) 
+	      [ _val = construct<solidmodel>(new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
 	 | ( lit("Box") > '(' > r_vectorExpression > ',' > r_vectorExpression 
 			> ',' > r_vectorExpression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]

@@ -781,6 +781,35 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
   cout<<"Cylinder created"<<endl;
 }
 
+Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax)
+{
+  TopoDS_Face xsec_o=BRepBuilderAPI_MakeFace
+  (
+    BRepBuilderAPI_MakeWire
+    (
+      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0), to_Vec(dir) ), 0.5*Dmax ))
+    )
+  );
+  TopoDS_Face xsec=BRepBuilderAPI_MakeFace
+  (
+    xsec_o,
+    BRepBuilderAPI_MakeWire
+    (
+      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0), to_Vec(dir) ), 0.5*d ))
+    )
+  );
+  
+  setShape
+  (
+    BRepPrimAPI_MakePrism
+    ( 
+      xsec, 
+//       gp_Dir(to_Vec(dir)), false 
+      to_Vec(dir)*1e6
+    )
+  ); // semi-infinite prism
+}
+
 TopoDS_Shape Box::makeBox
 (
   const arma::mat& p0, 
@@ -845,7 +874,7 @@ TopoDS_Shape makeExtrusion(const SolidModel& sk, const arma::mat& L, bool center
 {
   if (!centered)
   {
-    return BRepPrimAPI_MakePrism( TopoDS::Face(sk), to_Vec(L), centered ).Shape();
+    return BRepPrimAPI_MakePrism( sk, to_Vec(L), centered ).Shape();
   }
   else
   {
@@ -853,7 +882,7 @@ TopoDS_Shape makeExtrusion(const SolidModel& sk, const arma::mat& L, bool center
     trsf.SetTranslation(to_Vec(-0.5*L));
     return BRepPrimAPI_MakePrism
     ( 
-     TopoDS::Face( BRepBuilderAPI_Transform(sk, trsf).Shape() ), 
+      BRepBuilderAPI_Transform(sk, trsf).Shape(), 
       to_Vec(L) 
     ).Shape();
   }
@@ -868,7 +897,7 @@ TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arm
 {
   if (!centered)
   {
-    return BRepPrimAPI_MakeRevol( TopoDS::Face(sk), gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang, centered ).Shape();
+    return BRepPrimAPI_MakeRevol( sk, gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang, centered ).Shape();
   }
   else
   {
@@ -878,7 +907,7 @@ TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arm
     trsf.SetRotation(gp_Ax1(to_Pnt(p0), ax), -0.5*ang);
     return BRepPrimAPI_MakeRevol
     ( 
-      TopoDS::Face( BRepBuilderAPI_Transform(sk, trsf).Shape() ), 
+      BRepBuilderAPI_Transform(sk, trsf).Shape(), 
       gp_Ax1(to_Pnt(p0), gp_Dir(ax)), ang
     ).Shape();
   }

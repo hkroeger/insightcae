@@ -88,6 +88,23 @@ using namespace qi;
 using namespace phx;
 using namespace boost;
 
+template <typename Iterator>
+struct skip_grammar : public qi::grammar<Iterator>
+{
+        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
+        {
+            skip
+                =   boost::spirit::ascii::space
+                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+                ;
+        }
+
+        qi::rule<Iterator> skip;
+
+};
+
+
 std::string extendtype(const std::string& pref, const std::string& app)
 {
   if (pref=="") return app;
@@ -172,10 +189,10 @@ public:
 typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
 typedef std::vector< ParameterSetEntry > ParameterSetData;
 
-template <typename Iterator, typename Skipper = qi::space_type >
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParser;
 
-template <typename Iterator, typename Skipper = qi::space_type >
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
 {
   typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
@@ -235,7 +252,7 @@ struct BoolParameterParser
     virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -268,7 +285,7 @@ struct DoubleParameterParser
     virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -319,7 +336,7 @@ struct VectorParameterParser
     
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -353,7 +370,7 @@ struct IntParameterParser
     virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -393,7 +410,7 @@ struct PathParameterParser
 
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -466,7 +483,7 @@ struct SelectionParameterParser
     
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -574,7 +591,7 @@ struct SubsetParameterParser
     
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -732,7 +749,7 @@ struct SelectableSubsetParameterParser
   };
   
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -833,7 +850,7 @@ struct ArrayParameterParser
     
   };
   
-  template <typename Iterator, typename Skipper = qi::space_type >
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
   inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
   {
     ruleset.parameterDataRules.add
@@ -925,7 +942,7 @@ int main(int argc, char *argv[])
     if (!in.good()) exit(-1);
 
     PDLParser<std::string::iterator> parser;
-    //   skip_grammar<Iterator> skip;
+    skip_grammar<std::string::iterator> skip;
       
     std::string contents_raw;
     in.seekg(0, std::ios::end);
@@ -943,7 +960,7 @@ int main(int argc, char *argv[])
 	first, 
 	last,
 	parser,
-	qi::space,
+	skip,
 	result
     );
     

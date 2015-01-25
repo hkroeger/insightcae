@@ -66,6 +66,7 @@ public:
      */
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
     
+    virtual void mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel);
     virtual void initializeSolverRun(OpenFOAMCase& cm);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);
     virtual void finalizeSolverRun(OpenFOAMCase& cm);

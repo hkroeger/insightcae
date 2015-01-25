@@ -174,6 +174,24 @@ void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
 }
 
+void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel)
+{
+  if (const RASModel* rm=cm.get<RASModel>(".*"))
+  {
+    // check, if turbulence model is compatible in source case
+    // run "createTurbulenceFields" on source case, if not
+    std::string omodel=readTurbulenceModelName(mapFromPath);
+    if (rm->type()!=omodel)
+    {
+      OpenFOAMCase oc(cm.ofe());
+      oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+    }
+  }
+  
+  mapFields(cm, mapFromPath, executionPath(), is_parallel);
+}
+
+
 void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
 {
   int np=readDecomposeParDict(executionPath());
@@ -181,25 +199,25 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   
   path mapFromPath=p().getPath("run/mapFrom");
   
-  if (mapFromPath!="")
-  {
-    if (const RASModel* rm=cm.get<RASModel>(".*"))
-    {
-      // check, if turbulence model is compatible in source case
-      // run "createTurbulenceFields" on source case, if not
-      std::string omodel=readTurbulenceModelName(mapFromPath);
-      if (rm->type()!=omodel)
-      {
-	OpenFOAMCase oc(cm.ofe());
-	oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
-      }
-    }
-  }
+//   if (mapFromPath!="")
+//   {
+//     if (const RASModel* rm=cm.get<RASModel>(".*"))
+//     {
+//       // check, if turbulence model is compatible in source case
+//       // run "createTurbulenceFields" on source case, if not
+//       std::string omodel=readTurbulenceModelName(mapFromPath);
+//       if (rm->type()!=omodel)
+//       {
+// 	OpenFOAMCase oc(cm.ofe());
+// 	oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+//       }
+//     }
+//   }
   
   if ((cm.OFversion()>=230) && (mapFromPath!=""))
   {
     // parallelTarget option is not present in OF2.3.x
-    mapFields(cm, mapFromPath, executionPath(), false);
+    mapFromOther(cm, mapFromPath, false);
   }
 
   if (is_parallel)
@@ -210,9 +228,9 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   
   if (!cm.outputTimesPresentOnDisk(executionPath()))
   {
-    if ( (!(cm.OFversion()>=230)) && (mapFromPath!=""))
+    if ( (!(cm.OFversion()>=230)) && (mapFromPath!="") )
     {
-      mapFields(cm, mapFromPath, executionPath(), is_parallel);
+      mapFromOther(cm, mapFromPath, is_parallel);
     }
     else
     {

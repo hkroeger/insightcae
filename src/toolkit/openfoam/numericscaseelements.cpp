@@ -932,6 +932,9 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
   if (OFversion()>=230)
     alphaname_="alpha.phase1";
   
+  // create pressure field to enable mapping from single phase cases
+  c.addField("p", 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  
   c.addField(pname_, 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
   c.addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
   c.addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );

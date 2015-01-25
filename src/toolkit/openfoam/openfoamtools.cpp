@@ -946,9 +946,11 @@ void mapFields
 //     args.push_back("mapNearest");
 //   }
 
+  std::string execname="mapFields";
+//   if (targetcase.OFversion()>=220) execname="mapFields22";
   targetcase.executeCommand
   (
-    target, "mapFields", args
+    target, execname, args
   );
 }
 
@@ -1165,6 +1167,14 @@ arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<
   }
   
   return arma::mat(data.data(), colnames.size(), data.size()/colnames.size()).t();
+}
+
+std::string readSolverName(const boost::filesystem::path& ofcloc)
+{
+  OFDictData::dict controlDict;
+  std::ifstream cdf( (ofcloc/"system"/"controlDict").c_str() );
+  readOpenFOAMDict(cdf, controlDict);
+  return controlDict.getString("application");
 }
 
 

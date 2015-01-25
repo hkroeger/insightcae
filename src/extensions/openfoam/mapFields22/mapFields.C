@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     fileName rootDirTarget(args.rootPath());
     fileName caseDirTarget(args.globalCaseName());
 
-    const fileName casePath = args.additionalArgs()[1];
+    const fileName casePath = args.additionalArgs()[0];
     const fileName rootDirSource = casePath.path();
     const fileName caseDirSource = casePath.name();
 

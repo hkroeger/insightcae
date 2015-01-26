@@ -80,6 +80,7 @@ public:
   static double cf(double Re, double Cplus=5.0);
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
+  static double searchDelta99(const arma::mat& uByUinf_vs_y);
 };
 
 }

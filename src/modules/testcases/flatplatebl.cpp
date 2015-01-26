@@ -531,14 +531,18 @@ void FlatPlateBL::evaluateAtSection
   arma::mat upwallnormal(join_rows(yplus, data.col(c+1)/utau));
   arma::mat upspanwise(join_rows(yplus, data.col(c+2)/utau));
   
-  arma::mat delta123 = integrateDelta123( join_rows(y, data.col(c)/uinf_) );
+  arma::mat uByUinf=join_rows(y, data.col(c)/uinf_);
+  arma::mat delta123 = integrateDelta123( uByUinf );
   cout<<"delta123="<<delta123<<endl;
+  double delta99 = searchDelta99( uByUinf );
   table.setCellByName(thisctrow, "delta1", delta123(0));
   table.setCellByName(thisctrow, "delta2", delta123(1));
   table.setCellByName(thisctrow, "delta3", delta123(2));
+  table.setCellByName(thisctrow, "delta99", delta99 );
   table.setCellByName(thisctrow, "delta1+", delta123(0)*ypByy);
   table.setCellByName(thisctrow, "delta2+", delta123(1)*ypByy);
   table.setCellByName(thisctrow, "delta3+", delta123(2)*ypByy);
+  table.setCellByName(thisctrow, "delta99+", delta99*ypByy );
   
   // Mean velocity profiles
   {
@@ -558,6 +562,9 @@ void FlatPlateBL::evaluateAtSection
     arma::mat delta3pc(delta123(2)*ones(2,2)*ypByy);
     delta3pc(0,1)=0.; delta3pc(1,1)=maxU;
     
+    arma::mat delta99pc(delta99*ones(2,2)*ypByy);
+    delta99pc(0,1)=0.; delta99pc(1,1)=maxU;
+    
     arma::mat visclayer=linspace(0, 10, 10), loglayer=linspace(30,300,2);
     visclayer=join_horiz(visclayer, visclayer);
     loglayer=join_horiz(loglayer, (1./0.41)*log(loglayer)+5.);
@@ -573,6 +580,7 @@ void FlatPlateBL::evaluateAtSection
 	(PlotCurve(delta1pc, "w l lt 2 lc 4 lw 1 t 'delta_1+'"))
 	(PlotCurve(delta2pc, "w l lt 3 lc 4 lw 1 t 'delta_2+'"))
 	(PlotCurve(delta3pc, "w l lt 4 lc 4 lw 1 t 'delta_3+'"))
+	(PlotCurve(delta99pc, "w l lt 5 lc 4 lw 1 t 'delta_99+'"))
 	
 	(PlotCurve(visclayer, "w l lt 2 lc 5 lw 2 t 'Viscous Layer'"))
 	(PlotCurve(loglayer, "w l lt 3 lc 5 lw 2 t 'Log Layer'"))
@@ -720,6 +728,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
 	,
       "Axial profile of wall friction coefficient",
       "set key top left reverse Left"
@@ -802,5 +811,16 @@ arma::mat FlatPlateBL::integrateDelta123(const arma::mat& uByUinf_vs_y)
   
   return delta;
 }
+
+double FlatPlateBL::searchDelta99(const arma::mat& uByUinf_vs_y)
+{
+  int i=0;
+  for (i=0; i<uByUinf_vs_y.n_rows; i++)
+  {
+    if (uByUinf_vs_y(i,1)>=0.99) break;
+  }
+  return uByUinf_vs_y(i,0);
+}
+
 
 }

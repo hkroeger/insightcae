@@ -438,7 +438,10 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));
-  cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
+  
+  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
+    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
+  
   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
     .set_pressure(0.0)
   ));
@@ -593,7 +596,7 @@ void FlatPlateBL::evaluateAtSection
     arma::mat Rp=join_horiz(yplus, join_horiz(Rpuu.col(1), join_horiz(Rpvv.col(1), Rpww.col(1))));
     Rp.save( (executionPath()/("Rplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
     
-    double maxRp=1.1*as_scalar(arma::max(Rp.cols(1,3)));
+    double maxRp=1.1*as_scalar(arma::max(arma::max(Rp.cols(1,3))));
     
     addPlot
     (

@@ -55,14 +55,14 @@ namespace parser {
 
 Model::Model(const ModelSymbols& syms)
 {
-  scalarSymbols.add( "M_PI", M_PI );
-  vectorSymbols.add( "O", vec3(0,0,0) );
-  vectorSymbols.add( "EX", vec3(1,0,0) );
-  vectorSymbols.add( "EY", vec3(0,1,0) );
-  vectorSymbols.add( "EZ", vec3(0,0,1) );
-  datumSymbols.add( "XY", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
-  datumSymbols.add( "XZ", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
-  datumSymbols.add( "YZ", Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
+  scalarSymbols.add	( "M_PI", 	M_PI );
+  vectorSymbols.add	( "O", 		vec3(0,0,0) );
+  vectorSymbols.add	( "EX", 	vec3(1,0,0) );
+  vectorSymbols.add	( "EY", 	vec3(0,1,0) );
+  vectorSymbols.add	( "EZ", 	vec3(0,0,1) );
+  datumSymbols.add	( "XY", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
+  datumSymbols.add	( "XZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
+  datumSymbols.add	( "YZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
   
   BOOST_FOREACH(const ModelSymbols::value_type& s, syms)
   {
@@ -92,11 +92,11 @@ double dot(const vector& v1, const vector& v2)
   return arma::as_scalar(arma::dot(v1,v2));
 }
 
-FeatureSet queryEdges(const SolidModel& m, const FilterPtr& f)
+FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of)
 {
   using namespace std;
   using namespace insight::cad;
-  return m.query_edges(f);
+  return FeatureSetPtr(m.query_edges(filterexpr, of).clone());
 }
 
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
@@ -274,8 +274,8 @@ struct ISCADParser
 	  ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
 	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), qi::_1, qi::_2) ]
 	  |
-// 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
-// 	  |
+	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
+	  |
 	  ( r_identifier >> '='  >> r_datumExpression >> ';') 
 	   [ phx::bind(model_->datumSymbols.add, qi::_1, qi::_2) ]
 	  ;
@@ -373,8 +373,8 @@ struct ISCADParser
 	 | ( lit("Box") > '(' > r_vectorExpression > ',' > r_vectorExpression 
 			> ',' > r_vectorExpression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
-// 	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
-// 	      [ _val = construct<solidmodel>(new_<Fillet>(*qi::_1, qi::_2, qi::_3)) ]
+	 | ( lit("Fillet") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Fillet>(*qi::_1, *qi::_2, qi::_3)) ]
 // 	 | ( lit("Chamfer") > '(' >> r_solidmodel_expression >> ',' >> r_edgeFeaturesExpression >> ',' >> r_scalarExpression >> ')' ) 
 // 	      [ _val = construct<solidmodel>(new_<Chamfer>(*qi::_1, qi::_2, qi::_3)) ]
 	 | ( lit("Extrusion") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
@@ -422,13 +422,13 @@ struct ISCADParser
 	      ;
 
 	 
-// 	r_edgeFeaturesExpression = 
-// 	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
-// 	     | (
-// 	     ( lit("edgesFrom") >> 
-// 		r_solidmodel_expression >> lit("where") >> r_edgeFilterExpression ) [ _val = queryEdges_(*qi::_1, qi::_2) ]
-// 	     )
-// 	  ;
+	r_edgeFeaturesExpression = 
+	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	     | (
+	     ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
+	      [ _val = queryEdges_(*qi::_1, qi::_2, qi::_3) ]
+	     )
+	  ;
 // 	  
 // 	r_edgeFilterExpression = 
 // 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
@@ -551,7 +551,7 @@ struct ISCADParser
     qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
     
-//     qi::rule<Iterator, FeatureSet(), Skipper> r_edgeFeaturesExpression;
+    qi::rule<Iterator, FeatureSetPtr(), Skipper> r_edgeFeaturesExpression;
 //     qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
     qi::rule<Iterator, datum(), Skipper> r_datumExpression;
     

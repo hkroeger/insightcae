@@ -533,8 +533,10 @@ void FlatPlateBL::evaluateAtSection
   
   arma::mat uByUinf=join_rows(y, data.col(c)/uinf_);
   arma::mat delta123 = integrateDelta123( uByUinf );
-  cout<<"delta123="<<delta123<<endl;
   double delta99 = searchDelta99( uByUinf );
+
+  cout<<"delta123="<<delta123<<"delta99="<<delta99<<endl;
+
   table.setCellByName(thisctrow, "delta1", delta123(0));
   table.setCellByName(thisctrow, "delta2", delta123(1));
   table.setCellByName(thisctrow, "delta3", delta123(2));
@@ -696,7 +698,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   results->insert("tableCoefficients",
     std::auto_ptr<TabularResult>(new TabularResult
     (
-      list_of("x/L")("delta1")("delta1+")("delta2")("delta2+")("delta3")("delta3+")("tauw")("utau"),
+      list_of("x/L")("delta1")("delta1+")("delta2")("delta2+")("delta3")("delta3+")("delta99")("delta99+")("tauw")("utau"),
       arma::mat(),
       "Boundary layer properties along the plate", "", ""
   )));
@@ -728,11 +730,25 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
 	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
-	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
 	,
-      "Axial profile of wall friction coefficient",
+      "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
     );
+
+    addPlot
+    (
+      results, executionPath(), "chartDelta99",
+      "x [m]", "delta [m]",
+      list_of
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L*ctd.col(0), tabres.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
+	,
+      "Axial profile of boundary layer thickness",
+      "set key top left reverse Left"
+    );
+
   }
   
   return results;

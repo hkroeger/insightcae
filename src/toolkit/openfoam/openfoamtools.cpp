@@ -809,7 +809,9 @@ linearAveragedUniformLine::linearAveragedUniformLine(linearAveragedUniformLine::
   (
     linearAveragedPolyLine::Parameters()
     .set_name(p.name())
-    .set_points( arma::linspace(0.0, 1.0, p.np()) * (p.end()-p.start()).t() )
+    .set_points( arma::linspace(0.0, 1.0, p.np()) * (p.end()-p.start()).t() 
+      + join_horiz( join_horiz( ones(p.np())*p.start()(0), ones(p.np())*p.start()(1) ), ones(p.np())*p.start()(2)) // Arghhh&%$$..
+     )
     .set_dir1(p.dir1())
     .set_dir2(p.dir2())
     .set_nd1(p.nd1())

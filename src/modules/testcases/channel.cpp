@@ -462,7 +462,7 @@ void ChannelBase::evaluateAtSection(
   PSDBL(p, "operation", Re_tau);
   
   double xByH= (x/L + 0.5)*L/H;
-  string title="section__xByH_" + str(format("%07.3f") % xByH);
+  string title="section__xByH_" + str(format("%04.2f") % xByH);
   replace_all(title, ".", "_");
     
   boost::ptr_vector<sampleOps::set> sets;
@@ -486,6 +486,10 @@ void ChannelBase::evaluateAtSection(
   sampleOps::ColumnDescription cd;
   arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
     .readSamples(cm, executionPath(), &cd);
+    
+    cout<<data<<endl;
+    BOOST_FOREACH(const sampleOps::ColumnDescription::value_type& c, cd)
+     cout<<c.first<<" "<<c.second.col<<endl;
       
   arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
   arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
@@ -762,7 +766,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
-  evaluateAtSection(cm, results, 0.0, 0);
+  evaluateAtSection(cm, results, 1e-3, 0);
 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)

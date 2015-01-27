@@ -550,7 +550,7 @@ bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldnam
   if (fieldname == "k")
   {
     BC["type"]="fixedValue";
-    BC["value"]="uniform 0";
+    BC["value"]="uniform 1e-10";
     return true;
   }
   else if (fieldname == "nuSgs")

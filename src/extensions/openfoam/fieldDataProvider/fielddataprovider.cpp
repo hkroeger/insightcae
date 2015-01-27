@@ -175,7 +175,7 @@ void FieldDataProvider<T>::write(Ostream& os) const
   
   if (timeInstants_.size()==1)
   {
-    os << "steady" << token::SPACE;
+    //os << "steady" << token::SPACE;
     writeInstant(0, os);
   }
   else
@@ -258,7 +258,7 @@ void nonuniformField<T>::appendInstant(Istream& is)
 template<class T>
 void nonuniformField<T>::writeInstant(int i, Ostream& os) const
 {
-  os << values_[i];
+  values_[i].UList<T>::writeEntry(os);
 }
 
   

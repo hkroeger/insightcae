@@ -796,7 +796,7 @@ arma::mat linearAveragedPolyLine::readSamples
   }
   
   if (coldescr) *coldescr=cd;
-  
+
   return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
   
 }
@@ -810,7 +810,7 @@ linearAveragedUniformLine::linearAveragedUniformLine(linearAveragedUniformLine::
     linearAveragedPolyLine::Parameters()
     .set_name(p.name())
     .set_points( arma::linspace(0.0, 1.0, p.np()) * (p.end()-p.start()).t() 
-      + join_horiz( join_horiz( ones(p.np())*p.start()(0), ones(p.np())*p.start()(1) ), ones(p.np())*p.start()(2)) // Arghhh&%$$..
+      + ones(p.np(),1)*p.start().t()
      )
     .set_dir1(p.dir1())
     .set_dir2(p.dir2())
@@ -838,7 +838,7 @@ arma::mat linearAveragedUniformLine::readSamples
   ColumnDescription* coldescr
 ) const
 {
-  pl_.readSamples(ofc, location, coldescr);
+  return pl_.readSamples(ofc, location, coldescr);
 }
 
 

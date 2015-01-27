@@ -247,6 +247,48 @@ autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 }
 
 
+
+
+template<class T>
+void nonuniformField<T>::appendInstant(Istream& is)
+{
+  values_.push_back(new Field<T>(is));
+}
+
+template<class T>
+void nonuniformField<T>::writeInstant(int i, Ostream& os) const
+{
+  os << values_[i];
+}
+
+  
+template<class T>
+nonuniformField<T>::nonuniformField(Istream& is)
+: FieldDataProvider<T>(is)
+{}
+  
+template<class T>
+nonuniformField<T>::nonuniformField(const uniformField<T>& o)
+: FieldDataProvider<T>(o),
+  values_(o.values_)
+{
+}
+  
+template<class T>
+tmp<Field<T> > nonuniformField<T>::atInstant(int i, const pointField& target) const
+{
+  tmp<Field<T> > res(new Field<T>(values_[i]));
+  return res;
+}
+
+template<class T>
+autoPtr<FieldDataProvider<T> > nonuniformField<T>::clone() const
+{
+  return autoPtr<FieldDataProvider<T> >(new nonuniformField<T>(*this));
+}
+
+
+
 template<class T>  
 linearProfile<T>::linearProfile(Istream& is)
 : FieldDataProvider<T>(is)

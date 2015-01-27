@@ -38,6 +38,7 @@ makeFieldDataProvider(sphericalTensor);
 makeFieldDataProvider(tensor);
 
 makeProviders(uniformField);
+makeProviders(nonuniformField);
 makeProviders(linearProfile);
 makeProviders(fittedProfile);
 

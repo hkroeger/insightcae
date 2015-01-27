@@ -112,6 +112,28 @@ public:
 
 
 
+template<class T>
+class nonuniformField
+: public FieldDataProvider<T>
+{
+  boost::ptr_vector<Field<T> > values_;
+  
+  virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+  //- Runtime type information
+  TypeName("nonuniform");
+  
+  nonuniformField(Istream& is);
+  nonuniformField(const uniformField<T>& o);
+  
+  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
+
+
+
 
 
 

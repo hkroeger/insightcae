@@ -69,8 +69,8 @@ BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs);
 BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
 
-FeatureSet queryEdges(const SolidModel& m, const FilterPtr& f);
-BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSet, queryEdges_, queryEdges, 2);
+FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdges_, queryEdges, 3);
 
 typedef boost::variant<scalar, vector>  ModelSymbol;
 typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;
@@ -89,7 +89,7 @@ struct Model
   modelstepSymbolTable modelstepSymbols;
 //   std::map<std::string, SolidModel::Ptr> modelstepSymbols;
 
-  struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSet> {} edgeFeatureSymbols;
+  struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSetPtr> {} edgeFeatureSymbols;
 
   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
 };

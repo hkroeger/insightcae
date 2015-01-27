@@ -211,9 +211,14 @@ void FlatPlateBL::calcDerivedInputData()
   cout<<"deltaywall_e="<<deltaywall_e_<<endl;
   gradh_=bmd::GradingAnalyzer(deltaywall_e_, H_, nh).grad();
   cout<<"gradh="<<gradh_<<endl;
-  nax_=std::max(1, int(round(L/(dxplus/ypfac_e_))));
+  double deltax=(dxplus/ypfac_e_);
+  gradax_=deltax/dtrip_;
+//   nax_=std::max(1, int(round(L/deltax)));
+  nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, L);
   cout<<"nax="<<nax_<<" "<<(dxplus/ypfac_e_)<<endl;
-  naxi_=std::max(1, int(round(0.1*L/(dxplus/ypfac_e_))));
+  gradaxi_=gradax_;
+//   naxi_=std::max(1, int(round(0.1*L/deltax)));
+  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, 0.1*L);
   cout<<"naxi="<<naxi_<<endl;
   if (p.getBool("mesh/2d"))
     nlat_=1;
@@ -298,7 +303,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     (  
       new Block(PTS(4,0,3,5),
 	naxi_, nh, nlat_,
-	list_of<double>(1.)(gradh_)(1.),
+	list_of<double>(1./gradaxi_)(gradh_)(1.),
 	approach_
       )
     );
@@ -315,7 +320,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     (  
       new Block(PTS(0,1,2,3),
 	nax_, nh, nlat_,
-	list_of<double>(1.)(gradh_)(1.)
+	list_of<double>(gradax_)(gradh_)(1.)
       )
     );
 //     in.addFace(bl.face("0473"));

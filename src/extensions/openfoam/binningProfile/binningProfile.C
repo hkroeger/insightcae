@@ -85,18 +85,26 @@ public:
     return tmp<Field<T> >(profile_/cumWeights_);
   }
   
+  bool validBin(label i) const
+  {
+    return mag(cumWeights_[i])>SMALL;
+  }
+  
   void write(Ostream& f) const
   {
     tmp<Field<T> > prof=(*this)();
     
     for (int i=0; i<n_-1; i++)
     {
-      f()
-      << ( x0_ + (x1_-x0_)*(double(i+1)/double(n_)) )
-      ;
-      for (int j=0; j<pTraits<T>::nComponents; j++)
-	f()<< token::SPACE << component(prof()[i], j);
-      f() << nl;
+      if (validBin(i))
+      {
+	f()
+	<< ( x0_ + (x1_-x0_)*(double(i+1)/double(n_)) )
+	;
+	for (int j=0; j<pTraits<T>::nComponents; j++)
+	  f()<< token::SPACE << component(prof()[i], j);
+	f() << nl;
+      }
     }
   }
 

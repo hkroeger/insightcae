@@ -840,7 +840,7 @@ double FlatPlateBL::searchDelta99(const arma::mat& uByUinf_vs_y)
   {
     if (uByUinf_vs_y(i,1)>=0.99) break;
   }
-  return uByUinf_vs_y(i,0);
+  return uByUinf_vs_y(std::min(i, int(uByUinf_vs_y.n_rows-1)),0);
 }
 
 

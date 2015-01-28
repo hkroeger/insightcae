@@ -484,8 +484,8 @@ void ChannelBase::evaluateAtSection(
   );
   
   sampleOps::ColumnDescription cd;
-  arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
-    .readSamples(cm, executionPath(), &cd);
+  arma::mat data = dynamic_cast<sampleOps::linearAveragedUniformLine*>(&sets[0])
+    ->readSamples(cm, executionPath(), &cd);
     
     cout<<data<<endl;
     BOOST_FOREACH(const sampleOps::ColumnDescription::value_type& c, cd)

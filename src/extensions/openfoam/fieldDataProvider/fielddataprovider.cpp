@@ -175,7 +175,7 @@ void FieldDataProvider<T>::write(Ostream& os) const
   
   if (timeInstants_.size()==1)
   {
-    os << "steady" << token::SPACE;
+    //os << "steady" << token::SPACE;
     writeInstant(0, os);
   }
   else

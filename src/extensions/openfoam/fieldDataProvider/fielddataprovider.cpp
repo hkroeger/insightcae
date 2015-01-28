@@ -258,7 +258,7 @@ void nonuniformField<T>::appendInstant(Istream& is)
 template<class T>
 void nonuniformField<T>::writeInstant(int i, Ostream& os) const
 {
-  os << values_[i];
+  values_[i].UList<T>::writeEntry(os);
 }
 
   

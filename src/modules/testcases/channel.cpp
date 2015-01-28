@@ -41,6 +41,33 @@ using namespace boost::filesystem;
 namespace insight
 {
 
+arma::mat interiorPressureFluctuationProfile
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const arma::mat& axis, int n,
+  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(OFDictData::to_OF(axis));
+  opts.push_back("(pPrime2Mean)");
+  opts.push_back("-interior");
+  opts.push_back("-n");
+  opts.push_back(lexical_cast<string>(n));
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  std::vector<std::string> output;
+  cm.executeCommand(location, "binningProfile", opts, &output);
+  
+  path pref=location/"postProcessing"/"binningProfile";
+  TimeDirectoryList tdl=listTimeDirectories(pref);
+  path lastTimeDir=tdl.rbegin()->second;
+  arma::mat vfm;
+  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").c_str(), arma::raw_ascii);
+  
+  return vfm;
+}
+
 
 defineType(ChannelBase);
 
@@ -506,9 +533,9 @@ void ChannelBase::evaluateAtSection(
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
     arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
-    axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma_ascii);
-    spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma_ascii);
-    wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma_ascii);
+    axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
@@ -544,7 +571,7 @@ void ChannelBase::evaluateAtSection(
     arma::mat Lt=Lt1;
     for (int i=0; i<Lt2.n_rows; i++) Lt(i)=min(Lt(i), Lt2(i));
     arma::mat Ltp(join_rows(ydelta, Lt));
-    Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma_ascii);
+    Ltp.save( (executionPath()/("LdeltaRANS_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
     struct cfm : public RegressionModel
     {
@@ -686,7 +713,7 @@ void ChannelBase::evaluateAtSection(
     K /= pow(utau_, 2); // K => K+
     
     arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
-    Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma_ascii);
+    Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
@@ -792,7 +819,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       wallforce.col(0)*Re_tau, 
       wallforce.col(1)/(0.5*pow(Ubulk_,2))
     ));
-    Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").c_str(), arma_ascii);
+    Cf_vs_xp.save( (executionPath()/"Cf_vs_xp.txt").c_str(), arma::raw_ascii);
     
     arma::mat Cftheo_vs_xp=zeros(2,2);
     Cftheo_vs_xp(0,0)=Cf_vs_xp(0,0);
@@ -1116,6 +1143,29 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
   PSDBL(p, "operation", Re_tau);
   
   ResultSetPtr results = ChannelBase::evaluateResults(cm);
+  
+  {
+    
+   // Pressure fluctuations
+   arma::mat pPrime=interiorPressureFluctuationProfile(cm, executionPath(), vec3(1,0,0), nax_);
+    
+   arma::mat pPrime2_vs_xp(join_rows(
+      pPrime.col(0)*Re_tau, 
+      pPrime.col(1)
+    ));
+    pPrime2_vs_xp.save( (executionPath()/"pPrime2_vs_xp.txt").c_str(), raw_ascii);
+    
+    addPlot
+    (
+      results, executionPath(), "chartMeanpPrime2",
+      "x+", "<pPrime^2>",
+      list_of
+	(PlotCurve(pPrime2_vs_xp, "w l lt 1 lc 2 lw 2 not"))
+	,
+      "Axial profile of pressure fluctuation",
+      "set logscale y;"
+    );    
+  }
   
   // ============= Longitudinal profile of Velocity an RMS ================
   int nr=10;

@@ -1,12 +1,5 @@
 
 add_subdirectory(FEMDisplacementBC)
-IF (INSIGHT_BUILD_TOOLKIT)
-  IF (NOT INSIGHT_OLD_BOOST_COMPAT)
-   add_subdirectory(inflowGeneratorBC)
-#    add_subdirectory(initInflowGenerator)
-   add_subdirectory(checkInflowGeneratorStatistics)
-  ENDIF()
-ENDIF()
 add_subdirectory(scripts)
 add_subdirectory(simpleDyMFoam)
 add_subdirectory(convertPressure)

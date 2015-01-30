@@ -982,13 +982,43 @@ void runPotentialFoam
   int np
 )
 {
+  path control(boost::filesystem::absolute(location)/"system"/"controlDict");
+  path controlBackup(control); controlBackup.replace_extension(".potf");
   path fvSol(boost::filesystem::absolute(location)/"system"/"fvSolution");
   path fvSolBackup(fvSol); fvSolBackup.replace_extension(".potf");
   path fvSch(boost::filesystem::absolute(location)/"system"/"fvSchemes");
   path fvSchBackup(fvSch); fvSchBackup.replace_extension(".potf");
+  path fvOpt(boost::filesystem::absolute(location)/"system"/"fvOptions");
+  path fvOptBackup(fvOpt); controlBackup.replace_extension(".potf");
   
+  if (exists(control)) copy_file(control, controlBackup, copy_option::overwrite_if_exists);
   if (exists(fvSol)) copy_file(fvSol, fvSolBackup, copy_option::overwrite_if_exists);
   if (exists(fvSch)) copy_file(fvSch, fvSchBackup, copy_option::overwrite_if_exists);
+  if (exists(fvOpt)) 
+  {
+   copy_file(fvOpt, fvOptBackup, copy_option::overwrite_if_exists);
+   remove(fvOpt);
+  }
+  
+  OFDictData::dictFile controlDict;
+  controlDict["deltaT"]=1.0;
+  controlDict["startFrom"]="latestTime";
+  controlDict["startTime"]=0.0;
+  controlDict["stopAt"]="endTime";
+  controlDict["endTime"]=1.0;
+  controlDict["writeControl"]="timeStep";
+  controlDict["writeInterval"]=1;
+  controlDict["purgeWrite"]=0;
+  controlDict["writeFormat"]="ascii";
+  controlDict["writePrecision"]=8;
+  controlDict["writeCompression"]="compressed";
+  controlDict["timeFormat"]="general";
+  controlDict["timePrecision"]=6;
+  controlDict["runTimeModifiable"]=true;
+  OFDictData::list l;
+  l.push_back("\"libextendedFixedValueBC.so\"");
+  controlDict.addListIfNonexistent("libs")=l;
+  //controlDict.addSubDictIfNonexistent("functions");
   
   OFDictData::dictFile fvSolution;
   OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
@@ -1030,6 +1060,11 @@ void runPotentialFoam
   
   // then write to file
   {
+    std::ofstream f(control.c_str());
+    writeOpenFOAMDict(f, controlDict, boost::filesystem::basename(control));
+    f.close();
+  }
+  {
     std::ofstream f(fvSol.c_str());
     writeOpenFOAMDict(f, fvSolution, boost::filesystem::basename(fvSol));
     f.close();
@@ -1045,8 +1080,10 @@ void runPotentialFoam
   cm.runSolver(location, analyzer, "potentialFoam", stopFlagPtr, np, 
 			 list_of<std::string>("-noFunctionObjects"));
 
-  if (exists(fvSol)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
-  if (exists(fvSch)) copy_file(fvSchBackup, fvSch, copy_option::overwrite_if_exists);
+  if (exists(controlBackup)) copy_file(controlBackup, control, copy_option::overwrite_if_exists);
+  if (exists(fvSolBackup)) copy_file(fvSolBackup, fvSol, copy_option::overwrite_if_exists);
+  if (exists(fvSchBackup)) copy_file(fvSchBackup, fvSch, copy_option::overwrite_if_exists);
+  if (exists(fvOptBackup)) copy_file(fvOptBackup, fvOpt, copy_option::overwrite_if_exists);
   
 }
 

@@ -113,6 +113,11 @@ int main(int argc, char *argv[])
       to_p()=from_p()*rho;
       to_p()+=p0;
       to_p()=max(pclip, to_p());
+
+      forAll(to_p().boundaryField(), pI)
+      {
+       to_p().boundaryField()[pI]==max(pclip.value(), from_p().boundaryField()[pI]*rho.value()+p0.value());
+      }
     }
     else
       FatalErrorIn("main")

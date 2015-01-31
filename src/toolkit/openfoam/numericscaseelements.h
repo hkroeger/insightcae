@@ -64,7 +64,7 @@ public:
     (decompWeights, DecompositionWeights, std::make_tuple(1,1,1))
     (writeControl, std::string, "timeStep")
     (writeInterval, double, 100.0)
-    (writeFormat, std::string, "binary")
+    (writeFormat, std::string, "ascii")
     (purgeWrite, int, 10)
     (deltaT, double, 1.0)
     (endTime, double, 1000.0)

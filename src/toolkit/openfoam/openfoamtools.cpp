@@ -989,7 +989,7 @@ void runPotentialFoam
   path fvSch(boost::filesystem::absolute(location)/"system"/"fvSchemes");
   path fvSchBackup(fvSch); fvSchBackup.replace_extension(".potf");
   path fvOpt(boost::filesystem::absolute(location)/"system"/"fvOptions");
-  path fvOptBackup(fvOpt); controlBackup.replace_extension(".potf");
+  path fvOptBackup(fvOpt); fvOptBackup.replace_extension(".potf");
   
   if (exists(control)) copy_file(control, controlBackup, copy_option::overwrite_if_exists);
   if (exists(fvSol)) copy_file(fvSol, fvSolBackup, copy_option::overwrite_if_exists);

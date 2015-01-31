@@ -110,13 +110,16 @@ int main(int argc, char *argv[])
     {
       Info<<"Converting values into real pressure values."<<endl;
       // need to be converted into real pressure
+      /*
       to_p()=from_p()*rho;
       to_p()+=p0;
       to_p()=max(pclip, to_p());
+*/
+       to_p()=max(pclip, from_p()*rho+p0);
 
       forAll(to_p().boundaryField(), pI)
       {
-       to_p().boundaryField()[pI]==max(pclip.value(), from_p().boundaryField()[pI]*rho.value()+p0.value());
+        to_p().boundaryField()[pI]==max(pclip.value(), to_p().boundaryField()[pI]);
       }
     }
     else

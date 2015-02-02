@@ -344,7 +344,10 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     (
       cm, executionPath(),
       list_of
-      ( str( format("faceSet %s new boxToFace (-1e-10 %g -1e10) (1e-10 %g 1e10)") % trip_ % dtrip_ % (2.*dtrip_) ) )
+      ( str( format("cellSet dummy new boxToCell (-1e-10 %g -1e10) (%g %g 1e10)") % dtrip_ % dtrip_ % (2.*dtrip_) ) )
+      ( str( format("faceSet %s new cellToFace dummy all") % trip_ ) )
+      ( str( format("faceSet %s delete cellToFace dummy both") % trip_ ) )
+      ( "cellSet dummy remove" )
     );
     
     cm.executeCommand(executionPath(), "setsToZones", list_of("-noFlipMap") );

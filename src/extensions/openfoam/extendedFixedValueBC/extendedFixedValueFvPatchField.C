@@ -45,10 +45,10 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
     const extendedFixedValueFvPatchField<Type>& ptf,
     const fvPatch& p,
     const DimensionedField<Type, volMesh>& iF,
-    const fvPatchFieldMapper&
+    const fvPatchFieldMapper& mapper
 )
 :
-    fixedValueFvPatchField<Type>(p, iF),
+    fixedValueFvPatchField<Type>(ptf, p, iF, mapper),
     vp_(ptf.vp_().clone())
 {}
 
@@ -111,8 +111,23 @@ void extendedFixedValueFvPatchField<Type>::autoMap
     const fvPatchFieldMapper& m
 )
 {
-    this->setSize(m.size());
+    fixedValueFvPatchField<Type>::autoMap(m);
 }
+
+template<class Type>
+void extendedFixedValueFvPatchField<Type>::rmap
+(
+    const fvPatchField<Type>& ptf,
+    const labelList& addr
+)
+{
+    fixedValueFvPatchField<Type>::rmap(ptf, addr);
+/*
+    const extendedFixedValueFvPatchField<Type>& tiptf =
+        refCast<const extendedFixedValueFvPatchField<Type> >(ptf);
+*/
+}
+
 
 template<class Type>
 void extendedFixedValueFvPatchField<Type>::updateCoeffs()
@@ -121,7 +136,6 @@ void extendedFixedValueFvPatchField<Type>::updateCoeffs()
     {
         return;
     }
-    
     fvPatchField<Type>::operator==( vp_()(this->db().time().timeOutputValue(), this->patch().Cf()) );    
     
     fixedValueFvPatchField<Type>::updateCoeffs();

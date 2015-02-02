@@ -123,6 +123,14 @@ public:
                 const fvPatchFieldMapper&
             );
 
+        
+            //- Reverse map the given fvPatchField onto this fvPatchField
+            virtual void rmap
+            (
+                const fvPatchField<Type>&,
+                const labelList&
+            );
+
         // Evaluation functions
 
             //- Update the coefficients associated with the patch field

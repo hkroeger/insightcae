@@ -36,14 +36,14 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
   tmp<Field<T> > res;
   if ( (timeInstants_[0]>=time) || (timeInstants_.size()==1) )
   {
-    res=atInstant(0, target);
+    res = atInstant(0, target);
   }
   else
   {
     if ( timeInstants_[timeInstants_.size()-1]<=time)
     {
 //       Info<<timeInstants_<<endl;
-      res=atInstant(timeInstants_.size()-1, target);
+      res = atInstant(timeInstants_.size()-1, target);
     }
     else
     {
@@ -55,7 +55,7 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
       scalar wi=time-timeInstants_[ip-1];
       scalar wip=timeInstants_[ip]-time;
 //       Info<<wi<<" "<<wip<<endl;
-      res=( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
+      res = ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
     }
   }
   return res;
@@ -229,7 +229,8 @@ void uniformField<T>::writeInstant(int i, Ostream& is) const
 template<class T>
 tmp<Field<T> > uniformField<T>::atInstant(int i, const pointField& target) const
 {
-  tmp<Field<T> > res(new Field<T>(target.size(), values_[i]));
+  tmp<Field<T> > res(new Field<T>(target.size()));
+  res()=values_[i];
   return res;
 }
 

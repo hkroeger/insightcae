@@ -29,3 +29,5 @@ target_link_libraries(testcases ${testcases_LIBS})
 install(TARGETS testcases LIBRARY DESTINATION lib)
 
 add_pybindings(TestcaseModules "testcasemodules.i" testcases)
+
+install_script(isCreateChannelProfiles isCreateChannelProfiles.py)

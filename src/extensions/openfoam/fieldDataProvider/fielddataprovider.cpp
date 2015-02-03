@@ -42,7 +42,6 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
   {
     if ( timeInstants_[timeInstants_.size()-1]<=time)
     {
-//       Info<<timeInstants_<<endl;
       res = atInstant(timeInstants_.size()-1, target);
     }
     else
@@ -54,10 +53,10 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
       }
       scalar wi=time-timeInstants_[ip-1];
       scalar wip=timeInstants_[ip]-time;
-//       Info<<wi<<" "<<wip<<endl;
       res = ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
     }
   }
+//   Info<<"RETURN="<<res()<<endl;
   return res;
 }
 
@@ -332,6 +331,8 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
     double t = base_.t(target[pi]);
     
     arma::mat q = values_[idx](t);
+    
+//     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
     
 //     Info<<cols_<<endl;
 //     std::cout<<q<<std::endl;

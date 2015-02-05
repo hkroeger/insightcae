@@ -74,6 +74,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	    ("dzplus",	new DoubleParameter(1000, "streamwise mesh spacing at the final station"))
 	    ("2d",	new BoolParameter(true, "whether to create a two-dimensional grid instead of a three-dimensional one"))
 	    ("tripwire",new BoolParameter(true, "whether to create a trip wire by declaring internal faces as walls"))
+	    ("gradaxi",	new DoubleParameter(50, "grading from tripwire towards inlet boundary"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -216,7 +217,8 @@ void FlatPlateBL::calcDerivedInputData()
 //   nax_=std::max(1, int(round(L/deltax)));
   nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, L);
   cout<<"nax="<<nax_<<" "<<(dxplus/ypfac_e_)<<endl;
-  gradaxi_=gradax_;
+
+  gradaxi_=p.getDouble("mesh/gradaxi");
 //   naxi_=std::max(1, int(round(0.1*L/deltax)));
   naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, 0.1*L);
   cout<<"naxi="<<naxi_<<endl;

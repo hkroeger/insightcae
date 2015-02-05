@@ -5,20 +5,24 @@
 
 
 
-FIND_PATH(OF23x_DIR NAMES etc/bashrc
+#FIND_PATH(OF23x_DIR NAMES etc/bashrc
+FIND_FILE(OF23x_BASHRC NAMES bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.x
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.0
-  /opt/OpenFOAM/OpenFOAM-2.3.x
-  /opt/OpenFOAM/OpenFOAM-2.3.0
-  /opt/openfoam230
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.x/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.3.0/etc
+  /opt/OpenFOAM/OpenFOAM-2.3.x/etc
+  /opt/OpenFOAM/OpenFOAM-2.3.0/etc
+  /opt/openfoam230/etc
 )
-message(STATUS ${OF23x_DIR})
+
+message(STATUS ${OF23x_BASHRC})
 
 SET(OF23x_FOUND FALSE)
 
-IF(OF23x_DIR)
-  set(OF23x_BASHRC "${OF23x_DIR}/etc/bashrc")
+IF(OF23x_BASHRC)
+  #set(OF23x_BASHRC "${OF23x_DIR}/etc/bashrc")
+  GET_FILENAME_COMPONENT(OF23x_ETC_DIR ${OF23x_BASHRC} PATH)
+  GET_FILENAME_COMPONENT(OF23x_DIR ${OF23x_ETC_DIR} PATH)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-WM_PROJECT_VERSION OUTPUT_VARIABLE OF23x_WM_PROJECT_VERSION)
   
@@ -85,5 +89,5 @@ IF(OF23x_DIR)
   endmacro()
   
   SET(OF23x_FOUND TRUE)
-ENDIF(OF23x_DIR)
+ENDIF(OF23x_BASHRC)
 

@@ -3,16 +3,19 @@
 #
 # OF16ext_FOUND          - system has OpenFOAM-1.6-ext installed
 
-FIND_PATH(OF16ext_DIR NAMES etc/bashrc
+#FIND_PATH(OF16ext_DIR NAMES etc/bashrc
+FIND_FILE(OF16ext_BASHRC NAMES bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-1.6-ext
-  /opt/OpenFOAM/OpenFOAM-1.6-ext
+  $ENV{HOME}/OpenFOAM/OpenFOAM-1.6-ext/etc
+  /opt/OpenFOAM/OpenFOAM-1.6-ext/etc
 )
-message(STATUS ${OF16ext_DIR})
+message(STATUS ${OF16ext_BASHRC})
 
 SET(OF16ext_FOUND FALSE)
-IF(OF16ext_DIR)
-  set(OF16ext_BASHRC "${OF16ext_DIR}/etc/bashrc")
+IF(OF16ext_BASHRC)
+  #set(OF16ext_BASHRC "${OF16ext_DIR}/etc/bashrc")
+  GET_FILENAME_COMPONENT(OF16ext_ETC_DIR ${OF16ext_BASHRC} PATH)
+  GET_FILENAME_COMPONENT(OF16ext_DIR ${OF16ext_ETC_DIR} PATH)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF16ext_CXX_FLAGS)
   set(OF16ext_CXX_FLAGS "${OF16ext_CXX_FLAGS} -DOF16ext")
@@ -71,4 +74,4 @@ IF(OF16ext_DIR)
   endmacro()
   
   SET(OF16ext_FOUND TRUE)
-ENDIF(OF16ext_DIR)
+ENDIF(OF16ext_BASHRC)

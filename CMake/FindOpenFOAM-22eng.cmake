@@ -5,19 +5,22 @@
 
 
 
-FIND_PATH(OF22eng_DIR NAMES etc/bashrc
+#FIND_PATH(OF22eng_DIR NAMES etc/bashrc
+FIND_FILE(OF22eng_BASHRC NAMES bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition-beta
-  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition
-  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition-beta
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition-beta/etc
+  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition/etc
+  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition-beta/etc
 )
-message(STATUS ${OF22eng_DIR})
+message(STATUS ${OF22eng_BASHRC})
 
 SET(OF22eng_FOUND FALSE)
 
-IF(OF22eng_DIR)
-  set(OF22eng_BASHRC "${OF22eng_DIR}/etc/bashrc")
+IF(OF22eng_BASHRC)
+  #set(OF22eng_BASHRC "${OF22eng_DIR}/etc/bashrc")
+  GET_FILENAME_COMPONENT(OF22eng_ETC_DIR ${OF22eng_BASHRC} PATH)
+  GET_FILENAME_COMPONENT(OF22eng_DIR ${OF22eng_ETC_DIR} PATH)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF22eng_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF22eng_CXX_FLAGS)
   set(OF22eng_CXX_FLAGS "${OF22eng_CXX_FLAGS} -DOF22eng")
@@ -82,5 +85,5 @@ IF(OF22eng_DIR)
   endmacro()
   
   SET(OF22eng_FOUND TRUE)
-ENDIF(OF22eng_DIR)
+ENDIF(OF22eng_BASHRC)
 

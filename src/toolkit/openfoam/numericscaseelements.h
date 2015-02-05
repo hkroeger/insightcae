@@ -255,7 +255,7 @@ public:
   inline const std::string& alphaFieldName() const { return alphaname_; }
 };
 
-OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);
+OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0, bool LTS=false);
 
 class LTSInterFoamNumerics
 : public interFoamNumerics

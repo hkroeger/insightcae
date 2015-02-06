@@ -1214,6 +1214,19 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=p_.solverName();
 
+  // ============ setup controlDict ================================
+
+  controlDict["adjustTimeStep"]=true;
+  controlDict["maxDeltaT"]=1.0;
+
+  controlDict["maxCo"]=0.4;
+  controlDict["maxAlphaCo"]=0.2;
+  if (p_.implicitPressureCorrection())
+  {
+    controlDict["maxCo"]=5;
+    controlDict["maxAlphaCo"]=2.5;
+  }
+
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");

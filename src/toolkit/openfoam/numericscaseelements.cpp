@@ -187,6 +187,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["endTime"]=p_.endTime();
   controlDict["deltaT"]=p_.deltaT();
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
@@ -560,7 +562,6 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="pimpleFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
   
@@ -716,7 +717,6 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="potentialFreeSurfaceFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
     
@@ -864,7 +864,6 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=p_.solverName();
-  controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
   
@@ -952,9 +951,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="interFoam";
 
-  controlDict["adjustTimeStep"]=true;
   controlDict["maxDeltaT"]=1.0;
-
   controlDict["maxCo"]=0.4;
   controlDict["maxAlphaCo"]=0.2;
   if (p_.implicitPressureCorrection())
@@ -1121,24 +1118,25 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired[alphaname_]="";
 }
 
-OFDictData::dict stdMULESSolverSetup(double tol, double reltol)
+OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
 {
   OFDictData::dict d;
   
-  d["nAlphaCorr"]=2;
+  d["nAlphaCorr"]=1;
   d["nAlphaSubCycles"]=1;
   d["cAlpha"]=cAlpha;
   d["icAlpha"]=icAlpha;
 
   d["MULESCorr"]=true;
   d["nLimiterIter"]=10;
-  d["alphaApplyPrevCorr"]=true;
+  d["alphaApplyPrevCorr"]=LTS;
 
   d["solver"]="smoothSolver";
   d["smoother"]="symGaussSeidel";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   d["minIter"]=1;
+  d["maxIter"]=100;
 
   return d;
 }
@@ -1170,7 +1168,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
   if (OFversion()>=230)
-    solvers["\"alpha1.*\""]=stdMULESSolverSetup();
+    solvers["\"alpha1.*\""]=stdMULESSolverSetup(1e-8, 0.0, true);
 
 
   std::string solutionScheme("PIMPLE");
@@ -1233,7 +1231,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
-  OFDictData::dict alphasol = stdMULESSolverSetup(1e-10, 0.0);
+  OFDictData::dict alphasol = stdMULESSolverSetup(1e-10, 0.0, false);
   solvers["\"alpha.*\""]=alphasol;
 
 }
@@ -1260,7 +1258,6 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="reactingFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
   

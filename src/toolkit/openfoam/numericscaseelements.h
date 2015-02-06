@@ -67,6 +67,7 @@ public:
     (writeFormat, std::string, "ascii")
     (purgeWrite, int, 10)
     (deltaT, double, 1.0)
+    (adjustTimeStep, bool, true)
     (endTime, double, 1000.0)
     (decompositionMethod, std::string, "scotch")
   )
@@ -158,7 +159,6 @@ public:
     (nOuterCorrectors, int, 1)
     (nNonOrthogonalCorrectors, int, 0)
     (deltaT, double, 1.0)
-    (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)
@@ -184,7 +184,6 @@ public:
     (nOuterCorrectors, int, 1)
     (nNonOrthogonalCorrectors, int, 0)
     (deltaT, double, 1.0)
-    (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
   )
@@ -255,7 +254,7 @@ public:
   inline const std::string& alphaFieldName() const { return alphaname_; }
 };
 
-OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0);
+OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0, bool LTS=false);
 
 class LTSInterFoamNumerics
 : public interFoamNumerics
@@ -291,7 +290,6 @@ public:
     (nOuterCorrectors, int, 1)
     (nNonOrthogonalCorrectors, int, 0)
     (deltaT, double, 1.0)
-    (adjustTimeStep, bool, true)
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)

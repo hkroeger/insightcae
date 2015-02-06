@@ -187,6 +187,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["endTime"]=p_.endTime();
   controlDict["deltaT"]=p_.deltaT();
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
@@ -560,7 +562,6 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="pimpleFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
   
@@ -716,7 +717,6 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="potentialFreeSurfaceFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
     
@@ -864,7 +864,6 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=p_.solverName();
-  controlDict["adjustTimeStep"]=true;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
   
@@ -952,9 +951,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="interFoam";
 
-  controlDict["adjustTimeStep"]=true;
   controlDict["maxDeltaT"]=1.0;
-
   controlDict["maxCo"]=0.4;
   controlDict["maxAlphaCo"]=0.2;
   if (p_.implicitPressureCorrection())
@@ -1248,7 +1245,6 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="reactingFoam";
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
   controlDict["maxCo"]=p_.maxCo();
   controlDict["maxDeltaT"]=p_.maxDeltaT();
   

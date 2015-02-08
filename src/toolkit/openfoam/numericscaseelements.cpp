@@ -1010,7 +1010,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (p_.implicitPressureCorrection())
   {
     prelax=0.3;
-    turbrelax=0.7;
+    turbrelax=0.9;
   }
   
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -1023,9 +1023,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
-    eqnRelax["U"]=Urelax;
+    eqnRelax["\"U.*\""]=Urelax;
     eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
-    fieldRelax["\"(p|pd|p_rgh)\""]=prelax;
+    fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
     
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
@@ -1035,7 +1035,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=true;
-  SOL["nNonOrthogonalCorrectors"]=0;
+  SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
   SOL["cAlpha"]=cAlpha;
@@ -1045,15 +1045,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (p_.implicitPressureCorrection())
   {
     SOL["nCorrectors"]=1;
-    SOL["nOuterCorrectors"]=25;
+    SOL["nOuterCorrectors"]=50;
     
     OFDictData::dict tol;
-    tol["tolerance"]=1e-3;
+    tol["tolerance"]=1e-4;
     tol["relTol"]=0.0;
     
     OFDictData::dict residualControl;
-    residualControl["\"(p|p_rgh|pd)\""]=tol;
-    residualControl["U"]=tol;
+    residualControl["\"(p|p_rgh|pd).*\""]=tol;
+    residualControl["\"U.*\""]=tol;
     residualControl["\"(k|epsilon|omega|nuTilda)\""]=tol;
     
     SOL["residualControl"]=residualControl;

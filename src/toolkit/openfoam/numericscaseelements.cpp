@@ -1214,7 +1214,6 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   // ============ setup controlDict ================================
 
-  controlDict["adjustTimeStep"]=true;
   controlDict["maxDeltaT"]=1.0;
 
   controlDict["maxCo"]=0.4;

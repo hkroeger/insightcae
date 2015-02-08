@@ -216,8 +216,10 @@ AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, Pro
 
 void AnalysisWorkerThread::operator()()
 {
-  while (!queue_->isEmpty())
+  try
   {
+   while (!queue_->isEmpty())
+   {
     AnalysisInstance ai=queue_->dequeue();
     
     // run analysis and transfer results into given ResultSet object
@@ -226,6 +228,11 @@ void AnalysisWorkerThread::operator()()
     
     // Make sure we can be interrupted
     boost::this_thread::interruption_point();
+   }
+  }
+  catch (insight::Exception e)
+  {
+   std::cerr<<"Exception occurred:"<<std::endl<<e<<std::endl;
   }
 }
 
@@ -294,14 +301,14 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	      std::string type;
 	      path location;
 	      f>>type>>location;
-	      cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
+	      //cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
 	      
 	      if (type=="library")
 	      {
 		void *handle = dlopen(location.c_str(), /*RTLD_NOW|RTLD_GLOBAL*/RTLD_LAZY|RTLD_NODELETE);
 		if (!handle)
 		{
-		  std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+		  std::cout<<"Omitted "<<itr->path()<<": Could not load module library "<<location<<": " << dlerror() << std::endl;
 		}
 		else
 		  handles_.push_back(handle);
@@ -314,7 +321,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
     }
     else
     {
-      cout<<"Not existing: "<<p<<endl;
+      //cout<<"Not existing: "<<p<<endl;
     }
   }
 }

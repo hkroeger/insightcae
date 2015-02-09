@@ -381,6 +381,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Extrusion>(*qi::_1, qi::_2, qi::_3)) ]
 	 | ( lit("Revolution") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_scalarExpression > -(  ',' > lit("centered") > attr(true) ) > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Revolution>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+	 | ( lit("Sweep") > '(' > (r_solidmodel_expression % ',' ) > ')' ) 
+	      [ _val = construct<solidmodel>(new_<Sweep>(qi::_1)) ]
 	 | ( lit("RotatedHelicalSweep") > '(' 
 		> r_solidmodel_expression > ',' 
 		> r_vectorExpression > ',' 

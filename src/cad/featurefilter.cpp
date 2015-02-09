@@ -363,6 +363,24 @@ QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const
   return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
 }
 
+edgeMidTangent::edgeMidTangent() 
+{}
+
+edgeMidTangent::~edgeMidTangent()
+{}
+  
+arma::mat edgeMidTangent::evaluate(FeatureID ei)
+{
+// #error Implement me!
+//   return model_->edgeMidTangent(ei);
+  return vec3(0,0,0);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeMidTangent::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeMidTangent());
+}
+
 edgeStart::edgeStart() 
 {}
 

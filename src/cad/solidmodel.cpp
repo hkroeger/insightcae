@@ -918,6 +918,18 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 {
 }
 
+Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
+{
+  BRepOffsetAPI_ThruSections sb(true);
+ 
+  BOOST_FOREACH(const SolidModel::Ptr& skp, secs)
+  {
+    TopoDS_Wire cursec=BRepTools::OuterWire(TopoDS::Face(*skp));
+    sb.AddWire(cursec);
+  }
+  
+  setShape(sb.Shape());
+}
 
 TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
 {

@@ -364,6 +364,14 @@ public:
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
 };
 
+class Mirror
+: public SolidModel
+{
+  
+public:
+  Mirror(const SolidModel& m1, const Datum& pl);
+};
+
 class Place
 : public SolidModel
 {

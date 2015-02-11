@@ -533,6 +533,18 @@ void createBaffles
   const std::string& faceZoneName
 );
 
+
+/**
+  * return bounding box of model
+  * first col: min point
+  * second col: max point
+  */
+arma::mat STLBndBox
+(
+  const OFEnvironment& ofe, 
+  const boost::filesystem::path& path
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

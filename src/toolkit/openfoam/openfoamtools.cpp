@@ -1766,5 +1766,32 @@ void createBaffles
   cm.executeCommand(location, "createBaffles", opt);
 }
 
+arma::mat STLBndBox
+(
+  const OFEnvironment& ofe,
+  const boost::filesystem::path& path
+)
+{
+  std::vector<std::string> output;
+  OpenFOAMCase(ofe).executeCommand(path.parent_path(), "surfaceCheck", list_of(path.string()), &output);
+  
+  boost::regex re_bb("^Bounding Box : \\((.+) (.+) (.+)\\) \\((.+) (.+) (.+)\\)$");
+  boost::match_results<std::string::const_iterator> what;
+  
+  BOOST_FOREACH(const std::string& l, output)
+  {
+    if (boost::regex_match(l, what, re_bb))
+    {
+      return join_horiz
+      (
+	vec3(lexical_cast<double>(what[1]), lexical_cast<double>(what[2]), lexical_cast<double>(what[3])),
+	vec3(lexical_cast<double>(what[4]), lexical_cast<double>(what[5]), lexical_cast<double>(what[6]))
+      );
+    }
+  }
+  
+  throw insight::Exception("No bounding box information found in output!");
+  return arma::mat();
+}
 
 }

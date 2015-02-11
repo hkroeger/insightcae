@@ -526,6 +526,18 @@ public:
     virtual QuantityComputer<arma::mat>::Ptr clone() const;
 };
 
+class edgeMidTangent
+    : public QuantityComputer<arma::mat>
+{
+public:
+    edgeMidTangent();
+    virtual ~edgeMidTangent();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
 class edgeStart
     : public QuantityComputer<arma::mat>
 {

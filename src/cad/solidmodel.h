@@ -254,6 +254,13 @@ public:
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
 };
 
+class Sweep
+: public SolidModel
+{
+public:
+  Sweep(const std::vector<SolidModel::Ptr>& secs);
+};
+
 class RotatedHelicalSweep
 : public SolidModel
 {
@@ -355,6 +362,14 @@ class Transform
 public:
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
+};
+
+class Mirror
+: public SolidModel
+{
+  
+public:
+  Mirror(const SolidModel& m1, const Datum& pl);
 };
 
 class Place

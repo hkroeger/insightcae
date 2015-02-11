@@ -918,6 +918,18 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 {
 }
 
+Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
+{
+  BRepOffsetAPI_ThruSections sb(true);
+ 
+  BOOST_FOREACH(const SolidModel::Ptr& skp, secs)
+  {
+    TopoDS_Wire cursec=BRepTools::OuterWire(TopoDS::Face(*skp));
+    sb.AddWire(cursec);
+  }
+  
+  setShape(sb.Shape());
+}
 
 TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
 {
@@ -1172,6 +1184,17 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
 : SolidModel(makeTransform(m1, trsf))
 {
   m1.unsetLeaf();
+}
+
+Mirror::Mirror(const SolidModel& m1, const Datum& pl)
+{
+  gp_Trsf tr;
+
+  if (!pl.providesPlanarReference())
+    throw insight::Exception("Mirror: planar reference required!");
+  
+  tr.SetMirror(static_cast<gp_Ax3>(pl).Ax2());  
+  setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
 
 Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)

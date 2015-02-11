@@ -356,6 +356,8 @@ struct ISCADParser
          | ( lit("Transform") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' 
 	    > r_vectorExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Transform>(*qi::_1, qi::_2, qi::_3)) ]
+         | ( lit("Mirror") > '(' > r_solidmodel_expression > ',' > r_datumExpression > ')' ) 
+	     [ _val = construct<solidmodel>(new_<Mirror>(*qi::_1, *qi::_2)) ]
          | ( lit("Place") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > 
 	      ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
 	     [ _val = construct<solidmodel>(new_<Place>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]

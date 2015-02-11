@@ -1186,6 +1186,17 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
   m1.unsetLeaf();
 }
 
+Mirror::Mirror(const SolidModel& m1, const Datum& pl)
+{
+  gp_Trsf tr;
+
+  if (!pl.providesPlanarReference())
+    throw insight::Exception("Mirror: planar reference required!");
+  
+  tr.SetMirror(static_cast<gp_Ax3>(pl).Ax2());  
+  setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
+}
+
 Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)
 {
   gp_Trsf tr;

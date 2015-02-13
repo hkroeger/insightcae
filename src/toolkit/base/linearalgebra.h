@@ -165,18 +165,31 @@ public:
   Interpolator(const arma::mat& xy, bool force_linear=false);
   ~Interpolator();
   /**
-   * returns a single y-value from column column
+   * returns a single y-value from column col
    */
   double y(double x, int col=0) const;
+  /**
+   * returns a single dy/dx-value from column col
+   */
+  double dydx(double x, int col=0) const;
   /**
    * interpolates all y values (row vector) at x
    */
   arma::mat operator()(double x) const;
   /**
+   * interpolates all y values (row vector) at x
+   */
+  arma::mat dydxs(double x) const;
+  /**
    * interpolates all y values (row vector) 
    * at multiple locations given in x
    */
   arma::mat operator()(const arma::mat& x) const;
+  /**
+   * computes all derivative values (row vector) 
+   * at multiple locations given in x
+   */
+  arma::mat dydxs(const arma::mat& x) const;
 
   /**
    * interpolates all y values (row vector) 

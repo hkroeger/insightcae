@@ -377,11 +377,27 @@ double Interpolator::y(double x, int col) const
   return v;
 }
 
+double Interpolator::dydx(double x, int col) const
+{
+  if (x<first(0)) return dydx(first(0), col);
+  if (x>last(0)) return dydx(last(0), col);
+  double v=gsl_spline_eval_deriv (&(spline[col]), x, &(*acc));
+  return v;
+}
+
 arma::mat Interpolator::operator()(double x) const
 {
   arma::mat result=zeros(1, spline.size());
   for (int i=0; i<spline.size(); i++)
     result(0,i)=y(x, i);
+  return result;
+}
+
+arma::mat Interpolator::dydxs(double x) const
+{
+  arma::mat result=zeros(1, spline.size());
+  for (int i=0; i<spline.size(); i++)
+    result(0,i)=dydx(x, i);
   return result;
 }
 
@@ -391,6 +407,16 @@ arma::mat Interpolator::operator()(const arma::mat& x) const
   for (int j=0; j<x.n_rows; j++)
   {
     result.row(j) = this->operator()(x(j));
+  }
+  return result;
+}
+
+arma::mat Interpolator::dydxs(const arma::mat& x) const
+{
+  arma::mat result=zeros(x.n_rows, spline.size());
+  for (int j=0; j<x.n_rows; j++)
+  {
+    result.row(j) = this->dydxs(x(j));
   }
   return result;
 }

@@ -289,6 +289,12 @@ struct ISCADParser
 	 |
 	  ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	    [ phx::bind(&SolidModel::exportSTL, *qi::_3, qi::_1, qi::_2) ]
+	 |
+	  ( lit("exportFreeShipSurface") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
+	    [ phx::bind(&writeFreeShipSurface, *qi::_2, qi::_1) ]
+	 |
+	  ( lit("writeHydrostatics") >> '(' >> r_path >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' ) 
+	    [ phx::bind(&writeHydrostaticReport, *qi::_2, qi::_3, qi::_4, qi::_1) ]
 	  ;
 	  
 	r_viewDef =
@@ -396,6 +402,8 @@ struct ISCADParser
 	      [ _val = construct<solidmodel>(new_<Projected>(*qi::_1, *qi::_2, qi::_3)) ]
 	 | ( lit("Split") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ')' ) 
 	      [ _val = construct<solidmodel>(new_<Split>(*qi::_1, *qi::_2)) ]
+	 | ( lit("Cutaway") > '(' > r_solidmodel_expression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
+	      [ _val = construct<solidmodel>(new_<Cutaway>(*qi::_1, qi::_2, qi::_3)) ]
 	      
 	 // try identifiers last, since exceptions are generated, if symbols don't exist
 	 | 

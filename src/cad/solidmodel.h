@@ -74,6 +74,7 @@ protected :
   
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void setShape(const TopoDS_Shape& shape);
+  
  
 public:
   
@@ -107,6 +108,7 @@ public:
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
   arma::mat modelCoG() const;
+  double modelVolume() const;
   
   /**
    * return bounding box of model
@@ -386,6 +388,13 @@ class Compound
   
 public:
   Compound(const std::vector<SolidModel::Ptr>& m1);
+};
+
+class Cutaway
+: public SolidModel
+{
+public:
+  Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n);
 };
 
 }

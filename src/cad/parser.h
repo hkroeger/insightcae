@@ -26,6 +26,7 @@
 #include "solidmodel.h"
 #include "datum.h"
 #include "sketch.h"
+#include "freeship_interface.h"
 
 #include "base/boost_include.h"
 

@@ -179,6 +179,13 @@ arma::mat SolidModel::modelCoG() const
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
 
+double SolidModel::modelVolume() const
+{
+  GProp_GProps props;
+  BRepGProp::LinearProperties(shape_, props);
+  return props.Mass();
+}
+
 arma::mat SolidModel::modelBndBox(double deflection) const
 {
   if (deflection>0)
@@ -1227,6 +1234,25 @@ Compound::Compound(const std::vector<SolidModel::Ptr>& m1)
   {
     p->unsetLeaf();
   }
+}
+
+Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n)
+{
+  arma::mat bb=model.modelBndBox();
+  double L=10.*norm(bb.col(1)-bb.col(0), 2);
+  
+  arma::mat ex=cross(n, vec3(1,0,0));
+  if (norm(ex,2)<1e-8)
+    ex=cross(n, vec3(0,1,0));
+  ex/=norm(ex,2);
+  
+  arma::mat ey=cross(n,ex);
+  ey/=norm(ey,2);
+  
+  Quad q(p0-0.5*L*(ex+ey), L*ex, L*ey);
+  this->setShape(q);
+  TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
+  this->setShape(BRepAlgoAPI_Cut(model, airspace));
 }
 
 }

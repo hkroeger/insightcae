@@ -1204,6 +1204,15 @@ Mirror::Mirror(const SolidModel& m1, const Datum& pl)
   setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
 
+
+Place::Place(const SolidModel& m, const gp_Ax2& cs)
+{
+  gp_Trsf tr;
+  tr.SetTransformation(gp_Ax3(cs));
+  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+}
+
+
 Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)
 {
   gp_Trsf tr;

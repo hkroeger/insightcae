@@ -42,6 +42,78 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/assert.hpp>
+#include <boost/mpl/bool.hpp>
+#include <boost/utility/enable_if.hpp>
+
+namespace mapkey_parser
+{
+  BOOST_SPIRIT_TERMINAL(mapkey);
+  
+//   namespace tag { struct mapkey{}; } // tag identifying placeholder
+//   typedef unspecified<tag::mapkey> mapkey_type;
+//   mapkey_type const mapkey = {};   // placeholder itself
+}
+
+namespace boost { namespace spirit
+{
+    // We want custom_parser::iter_pos to be usable as a terminal only,
+    // and only for parser expressions (qi::domain).
+    template <>
+    struct use_terminal<qi::domain, mapkey_parser::tag::mapkey>
+      : mpl::true_
+    {};
+}}
+
+namespace mapkey_parser
+{
+    template<class T>
+    struct mapkey_parser
+      : boost::spirit::qi::primitive_parser<mapkey_parser<T> >
+    {
+        typedef std::map<std::string, T>& RefMap;
+	
+	const RefMap& map_;
+	
+	mapkey_parser(const RefMap& map)
+	: map_(map)
+	{}
+	
+        // Define the attribute type exposed by this parser component
+        template <typename Context, typename Iterator>
+        struct attribute
+        {
+            typedef std::string type;
+        };
+ 
+        // This function is called during the actual parsing process
+        template <typename Iterator, typename Context, typename Skipper, typename Attribute>
+        bool parse(Iterator& first, Iterator const& last, Context&, Skipper const& skipper, Attribute& attr) const
+        {
+            boost::spirit::qi::skip_over(first, last, skipper);
+	    std::string key(first, last);
+
+	    typename std::map<std::string, T>::const_iterator it=map_.find(key);
+            if (it!=map_.end())
+            {
+                boost::spirit::traits::assign_to(key, attr);
+                return true;
+            }
+            return false;
+        }
+ 
+        // This function is called during error handling to create
+        // a human readable string for the error context.
+        template <typename Context>
+        boost::spirit::info what(Context&) const
+        {
+            return boost::spirit::info("mapkey");
+        }
+    };
+}
+
+
 namespace insight {
 namespace cad {
 namespace parser {
@@ -75,9 +147,12 @@ BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdges_, queryEdges, 3);
 
 typedef boost::variant<scalar, vector>  ModelSymbol;
 typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;
-  
+
+
 struct Model
 {
+  gp_Ax3 placement_;
+  
   typedef boost::shared_ptr<Model> Ptr;
   
   Model(const ModelSymbols& syms = ModelSymbols());

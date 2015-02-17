@@ -378,6 +378,7 @@ class Place
 : public SolidModel
 {
 public:
+  Place(const SolidModel& m, const gp_Ax2& cs);
   Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
 };
 

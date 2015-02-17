@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pprint import pprint
 
 class Parameter:
   def __init__(self, ptype, ppath, pval):
@@ -37,12 +38,15 @@ def readParameters(fn='params.in'):
     if ':' in pv:
       ptype,ppath = pv.split(':')
       params[ppath]=Parameter(ptype,ppath,value)
+  pprint(params)
   return params
 
 def writeQuality(qs, fn='results.out'):
   fo=open(fn, 'w')
-  for name,value in qs.items():
-    fo.write('%g %s\n'%(value, name))
+  #for name,value in qs.items():
+  for name in sorted(qs.keys()):
+    print '%s = %g'%(name, qs[name])
+    fo.write('%g %s\n'%(qs[name], name))
   fo.close()
 
 def writeFail(fn='results.out'):

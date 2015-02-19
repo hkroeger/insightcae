@@ -55,7 +55,8 @@ namespace parser {
 
 Model::Model(const ModelSymbols& syms)
 {
-  scalarSymbols.add	( "M_PI", 	M_PI );
+//   scalarSymbols.add	( "M_PI", 	M_PI );
+  addScalarSymbol("M_PI", M_PI);
   vectorSymbols.add	( "O", 		vec3(0,0,0) );
   vectorSymbols.add	( "EX", 	vec3(1,0,0) );
   vectorSymbols.add	( "EY", 	vec3(0,1,0) );
@@ -70,7 +71,8 @@ Model::Model(const ModelSymbols& syms)
     cout<<"Insert symbol:"<<name<<endl;
     if ( const scalar* sv = boost::get<scalar>( &boost::fusion::at_c<1>(s) ) )
     {
-        scalarSymbols.add(name, *sv);
+        //scalarSymbols.add(name, *sv);
+        addScalarSymbol(name, *sv);
 	cout<<(*sv)<<endl;
     }
     else if ( const vector* vv = boost::get<vector>( &boost::fusion::at_c<1>(s) ) )
@@ -190,10 +192,13 @@ template<class T>
 T lookupMap(const std::map<std::string, T>& map, const std::string& key)
 {
   typedef std::map<std::string, T > Map;
-  cout<<"lookup "<<key<<" in "<<map.size()<<endl;
   typename Map::const_iterator i=map.find(key);
+//   cout<<"lookup >"<<key<<"< in "<<map.size()<<endl;
   if (i!=map.end())
+  {
+//     cout<<"got: "<<i->second<<endl;
     return T(i->second);
+  }
   else
     return T();
 }
@@ -263,10 +268,11 @@ struct ISCADParser
 	   [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_2, qi::_3)) ]
 	  |
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
-	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
-	  |
-	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
-	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), qi::_1, qi::_2) ]
+// 	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addScalarSymbol, model_, qi::_1, qi::_2) ]
+// 	  |
+// 	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
+// 	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') 
 	   [ phx::bind(model_->vectorSymbols.add, qi::_1, qi::_2) ]
@@ -486,7 +492,9 @@ struct ISCADParser
 	  ;
 	  
 	r_scalar_primary =
-	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+// 	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	  ( lexeme[ model_->scalarSymbolNames() /*>> !(alnum | '_')*/ ] )
+	    [ _val = phx::bind(&Model::lookupScalarSymbol, model_, qi::_1) ]
 	  | double_ [ _val = qi::_1 ]
 	  | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, qi::_1) ]
 	  | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, qi::_1) ]

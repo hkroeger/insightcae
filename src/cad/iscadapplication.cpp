@@ -466,7 +466,9 @@ void ISCADMainWindow::rebuildModel()
 // 	   cout<<"inserting "<<i->first<<endl;
 // 	   this->addModelStep(i->first, i->second);
 // 	 }
-    m->scalarSymbols.for_each(Transferrer(*this));
+//     m->scalarSymbols.for_each(Transferrer(*this));
+    BOOST_FOREACH(const Model::scalarSymbolTable::value_type& v, m->scalarSymbols())
+    { addVariable(v.first, v.second); }
     m->vectorSymbols.for_each(Transferrer(*this));
   }
     

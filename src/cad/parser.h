@@ -72,11 +72,10 @@ namespace mapkey_parser
     struct mapkey_parser
       : boost::spirit::qi::primitive_parser<mapkey_parser<T> >
     {
-        typedef std::map<std::string, T>& RefMap;
 	
-	const RefMap& map_;
+	const std::map<std::string, T>& map_;
 	
-	mapkey_parser(const RefMap& map)
+	mapkey_parser(const std::map<std::string, T>& map)
 	: map_(map)
 	{}
 	
@@ -92,16 +91,39 @@ namespace mapkey_parser
         bool parse(Iterator& first, Iterator const& last, Context&, Skipper const& skipper, Attribute& attr) const
         {
             boost::spirit::qi::skip_over(first, last, skipper);
-	    std::string key(first, last);
+	    
+	    Iterator cur=first, match=first;
+	    bool matched=false;
+	    cur++;
+	    while (cur!=last)
+	    {
+	      std::string key(first, cur);
 
-	    typename std::map<std::string, T>::const_iterator it=map_.find(key);
-            if (it!=map_.end())
-            {
-                boost::spirit::traits::assign_to(key, attr);
-                return true;
-            }
-            return false;
+	      typename std::map<std::string, T>::const_iterator it=map_.find(key);
+	      if (it!=map_.end())
+	      {
+// 		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
+		  match=cur;
+		  matched=true;
+	      }
+// 	      else std::cout<<"NOK=>"<<key<<"<"<<std::endl;
+	      cur++;
+	    }
+	    
+	    if (matched)
+	    {
+	      std::string key(first, match);
+	      boost::spirit::traits::assign_to(key.begin(), key.end(), attr);
+	      first=match;
+	      return true;
+	    }
+	    else
+	    {
+// 	      std::cout<<"NOK!"<<std::endl;
+	      return false;
+	    }
         }
+        
  
         // This function is called during error handling to create
         // a human readable string for the error context.
@@ -149,16 +171,42 @@ typedef boost::variant<scalar, vector>  ModelSymbol;
 typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;
 
 
-struct Model
+class Model
 {
-  gp_Ax3 placement_;
+public:
+  typedef std::map<std::string, scalar> scalarSymbolTable;
   
+protected:
+  gp_Ax3 placement_;
+  scalarSymbolTable scalarSymbols_;
+  
+public:
   typedef boost::shared_ptr<Model> Ptr;
   
   Model(const ModelSymbols& syms = ModelSymbols());
   
-  typedef qi::symbols<char, scalar> scalarSymbolTable;
-  scalarSymbolTable scalarSymbols;
+//   typedef qi::symbols<char, scalar> scalarSymbolTable;
+//   scalarSymbolTable scalarSymbols;
+  inline mapkey_parser::mapkey_parser<scalar> scalarSymbolNames() const 
+  {
+    return mapkey_parser::mapkey_parser<scalar>(scalarSymbols_); 
+  }
+  inline void addScalarSymbol(const std::string& name, const scalar& value)
+  {
+    scalarSymbols_[name]=value;
+  }
+  inline scalar lookupScalarSymbol(const std::string& name) const
+  {
+    cout<<"lookup: >"<<name<<"<"<<endl;
+    scalarSymbolTable::const_iterator it=scalarSymbols_.find(name);
+    if (it==scalarSymbols_.end())
+      throw insight::Exception("Could not lookup scalar symbol "+name);
+    cout<<"got: "<<it->second<<endl;
+    return it->second;
+  }
+  const std::map<std::string, scalar>& scalarSymbols() const { return scalarSymbols_; }
+  
+  
   struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
   typedef qi::symbols<char, solidmodel> modelstepSymbolTable;

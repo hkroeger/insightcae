@@ -467,14 +467,14 @@ struct ISCADParser
 	 ;
 	 
 	r_submodel_modelstep =
-	  ( model_->modelSymbolNames() >> lit('.') ) [ _a =  phx::bind(&Model::lookupModelSymbol, model_, qi::_1) ]
-	   > /*lazy(phx::val(phx::bind(&Model::modelstepSymbolNames, *_a)))*/ r_identifier
-	    [ _val =  phx::bind(&Model::lookupModelstepSymbol, *_a, qi::_1) ]
+	  qi::lexeme[ model_->modelSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelSymbol, model_, qi::_1) ]
+	   >> lit('.') > /*lazy(phx::val(phx::bind(&Model::modelstepSymbolNames, *_a)))*/ 
+	   r_identifier [ _val =  phx::bind(&Model::lookupModelstepSymbol, *_a, qi::_1) ]
 	   ;
 	 
 	r_solidmodel_subshape =
-	  ( model_->modelstepSymbolNames() >> lit('.') ) [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
-	      > 
+	  qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	      >> lit('.') > 
 	      lazy( phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)) )
 		[ _val = qi::_1 ]
 	      ;

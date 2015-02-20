@@ -110,7 +110,7 @@ namespace mapkey_parser
 	      typename std::map<std::string, T>::const_iterator it=map_->find(key);
 	      if (it!=map_->end())
 	      {
-// 		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
+ 		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
 		  match=cur;
 		  matched=true;
 	      }
@@ -121,13 +121,14 @@ namespace mapkey_parser
 	    if (matched)
 	    {
 	      std::string key(first, match);
-	      boost::spirit::traits::assign_to(key.begin(), key.end(), attr);
+	      boost::spirit::traits::assign_to(std::string(first, match), attr);
 	      first=match;
+	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
 	      return true;
 	    }
 	    else
 	    {
-// 	      std::cout<<"NOK!"<<std::endl;
+	      std::cout<<"NOK!"<<std::endl;
 	      return false;
 	    }
         }

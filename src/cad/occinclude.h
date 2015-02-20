@@ -55,6 +55,7 @@
 #include <BRepGProp.hxx>
 #include <BRepGProp_Face.hxx>
 #include <Geom_Surface.hxx>
+#include <Geom_Plane.hxx>
 #include <TopExp.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Ax3.hxx>
@@ -170,6 +171,9 @@
 #include "Geom_TrimmedCurve.hxx"
 
 #include "BRepAdaptor_CompCurve.hxx"
+
+#include <AIS_InteractiveContext.hxx>
+#include <AIS_InteractiveObject.hxx>
 
 #include "GEOMAlgo_Splitter.hxx"
 

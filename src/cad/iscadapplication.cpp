@@ -96,6 +96,19 @@ ModelStepList::ModelStepList(QWidget* parent)
   );
 }
 
+DatumList::DatumList(QWidget* parent)
+: QListWidget(parent)
+{
+  setContextMenuPolicy(Qt::CustomContextMenu);
+  connect
+  (
+    this,
+    SIGNAL(customContextMenuRequested(const QPoint &)),
+    this,
+    SLOT(showContextMenuForWidget(const QPoint &))
+  );
+}
+
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags)
 {  
@@ -115,6 +128,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   modelsteplist_=new ModelStepList;
   connect(modelsteplist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onModelStepItemChanged(QListWidgetItem*)));
   spl2->addWidget(modelsteplist_);
+  datumlist_=new DatumList;
+  connect(datumlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onDatumItemChanged(QListWidgetItem*)));
+  spl2->addWidget(datumlist_);
   spl->addWidget(spl2);
   
   QList<int> sizes;
@@ -195,6 +211,7 @@ void ISCADMainWindow::clearDerivedData()
 {
   context_->getContext()->EraseAll();
   modelsteplist_->clear();
+  datumlist_->clear();
   variablelist_->clear();
 }
 
@@ -372,10 +389,130 @@ void ModelStepList::showContextMenuForWidget(const QPoint &p)
   }
 }
   
+class QDatumItem
+: public QListWidgetItem
+{
+  Datum::Ptr smp_;
+  QoccViewerContext* context_;
+  Handle_AIS_Shape ais_;
+    
+public:
+  ViewState state_;
+
+  QDatumItem(const std::string& name, Datum::Ptr smp, QoccViewerContext* context, 
+		 const ViewState& state, QListWidget* view = 0)
+  : QListWidgetItem(QString::fromStdString(name), view),
+    context_(context),
+    state_(state)
+  {
+    setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+    reset(smp);
+  }
+  
+  void reset(Datum::Ptr smp)
+  {
+    smp_=smp;
+    if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+    ais_=static_cast<Handle_AIS_InteractiveObject>(*smp_);
+    context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+    updateDisplay();
+  }
+  
+  void wireframe()
+  {
+    state_.shading=0;
+    updateDisplay();
+  }
+
+  void shaded()
+  {
+    state_.shading=1;
+    updateDisplay();
+  }
+  
+  void randomizeColor()
+  {
+    state_.randomizeColor();
+    updateDisplay();
+  }
+  
+  void updateDisplay()
+  {
+    state_.visible = (checkState()==Qt::Checked);
+    
+    if (state_.visible)
+    {
+      context_->getContext()->Display(ais_);
+      context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+      context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+    }
+    else
+    {
+      context_->getContext()->Erase(ais_);
+    }
+  }
+  
+//   void exportShape()
+//   {
+//     QString fn=QFileDialog::getSaveFileName
+//     (
+//       listWidget(), 
+//       "Export file name", 
+//       "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
+//     );
+//     if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
+//   }
+//  
+public slots:
+  void showContextMenu(const QPoint& gpos) // this is a slot
+  {
+      // for QAbstractScrollArea and derived classes you would use:
+      // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
+
+      QMenu myMenu;
+      myMenu.addAction("Shaded");
+      myMenu.addAction("Wireframe");
+      myMenu.addAction("Randomize Color");
+//       myMenu.addAction("Export...");
+      // ...
+
+      QAction* selectedItem = myMenu.exec(gpos);
+      if (selectedItem)
+      {
+	  if (selectedItem->text()=="Shaded") shaded();
+	  if (selectedItem->text()=="Wireframe") wireframe();
+	  if (selectedItem->text()=="Randomize Color") randomizeColor();
+// 	  if (selectedItem->text()=="Export...") exportShape();
+      }
+      else
+      {
+	  // nothing was chosen
+      }
+  }
+};
+
+void DatumList::showContextMenuForWidget(const QPoint &p)
+{
+  QDatumItem * mi=dynamic_cast<QDatumItem*>(itemAt(p));
+  if (mi)
+  {
+    mi->showContextMenu(this->mapToGlobal(p));
+  }
+}
+  
 
 void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
 {
   QModelStepItem* mi=dynamic_cast<QModelStepItem*>(item);
+  if (mi)
+  {
+    mi->updateDisplay();
+  }
+}
+
+void ISCADMainWindow::onDatumItemChanged(QListWidgetItem * item)
+{
+  QDatumItem* mi=dynamic_cast<QDatumItem*>(item);
   if (mi)
   {
     mi->updateDisplay();
@@ -394,6 +531,20 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModel::Ptr
   }
   
   modelsteplist_->addItem(new QModelStepItem(sn, sm, context_, vd));
+}
+
+void ISCADMainWindow::addDatum(std::string sn, insight::cad::Datum::Ptr sm)
+{ 
+  ViewState vd;
+  vd.visible=false;
+//   if (sm->isleaf()) vd.visible=true; else vd.visible=false;
+  
+  if (checked_datums_.find(sn)!=checked_datums_.end())
+  {
+    vd=checked_datums_.find(sn)->second;
+  }
+  
+  datumlist_->addItem(new QDatumItem(sn, sm, context_, vd));
 }
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar sv)
@@ -461,6 +612,8 @@ void ISCADMainWindow::rebuildModel()
 //     m->modelstepSymbols.for_each(Transferrer(*this));
     BOOST_FOREACH(const Model::modelstepSymbolTable::value_type& v, m->modelstepSymbols())
     { addModelStep(v.first, v.second); }
+    BOOST_FOREACH(const Model::datumSymbolTable::value_type& v, m->datumSymbols())
+    { addDatum(v.first, v.second); }
    
 //     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
 // 	 i!=m->modelstepSymbols.end(); i++)

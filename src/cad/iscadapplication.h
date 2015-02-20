@@ -59,6 +59,18 @@ protected slots:
   void showContextMenuForWidget(const QPoint &);
 };
 
+class DatumList
+: public QListWidget
+{
+  Q_OBJECT
+  
+public:
+  DatumList(QWidget* parent = 0);
+  
+protected slots:
+  void showContextMenuForWidget(const QPoint &);
+};
+
 struct ViewState
 {
   int shading;
@@ -87,12 +99,14 @@ protected:
 
 protected slots:
   void onModelStepItemChanged(QListWidgetItem * item);
+  void onDatumItemChanged(QListWidgetItem * item);
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
   
   // insert model step
   void addModelStep(std::string sn, insight::cad::SolidModel::Ptr sm);
+  void addDatum(std::string sn, insight::cad::Datum::Ptr dm);
   void addVariable(std::string sn, insight::cad::parser::scalar sv);
   void addVariable(std::string sn, insight::cad::parser::vector vv);
   
@@ -109,10 +123,11 @@ protected:
   QoccViewerContext* context_;
   QoccViewWidget* viewer_;
   QListWidget* modelsteplist_;
+  QListWidget* datumlist_;
   QListWidget* variablelist_;
   QTextEdit* editor_;
   
-  std::map<std::string, ViewState> checked_modelsteps_;
+  std::map<std::string, ViewState> checked_modelsteps_, checked_datums_;
 
 };
 

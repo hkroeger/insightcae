@@ -24,6 +24,7 @@
 #include "parser.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
+#include "boost/make_shared.hpp"
 
 #include "dxfwriter.h"
 
@@ -265,6 +266,8 @@ void addSymbolIfNotPresent(qi::symbols<char, T>& table,
   }
 }
 
+
+
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
   : qi::grammar<Iterator, Skipper>
@@ -332,6 +335,11 @@ struct ISCADParser
 	 |
 	  ( lit("writeHydrostatics") >> '(' >> r_path >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' ) 
 	    [ phx::bind(&writeHydrostaticReport, *qi::_2, qi::_3, qi::_4, qi::_1) ]
+	 |
+	  ( lit("SolidProperties") >> '(' >> r_identifier >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
+	    [ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
+			phx::construct<EvaluationPtr>(new_<SolidProperties>(*qi::_2))) 
+	    ]
 	  ;
 	  
 	r_viewDef =

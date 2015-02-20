@@ -26,6 +26,7 @@
 #include "solidmodel.h"
 #include "datum.h"
 #include "sketch.h"
+#include "evaluation.h"
 #include "freeship_interface.h"
 
 #include "base/boost_include.h"
@@ -182,12 +183,14 @@ class Model
 {
 public:
   typedef boost::shared_ptr<Model> Ptr;
+  
   typedef std::map<std::string, scalar> 	scalarSymbolTable;
   typedef std::map<std::string, vector> 	vectorSymbolTable;
   typedef std::map<std::string, datum> 		datumSymbolTable;
   typedef std::map<std::string, solidmodel> 	modelstepSymbolTable;
   typedef std::map<std::string, FeatureSetPtr> 	edgeFeatureSymbolTable;
   typedef std::map<std::string, Model::Ptr> 	modelSymbolTable;
+  typedef std::map<std::string, EvaluationPtr> 	evaluationSymbolTable;
   
 protected:
   gp_Ax3 placement_;
@@ -197,6 +200,7 @@ protected:
   modelstepSymbolTable		modelstepSymbols_;
   edgeFeatureSymbolTable	edgeFeatureSymbols_;
   modelSymbolTable		modelSymbols_;
+  evaluationSymbolTable		evaluationSymbols_;
   
 public:
   
@@ -208,6 +212,7 @@ public:
   mapkey_parser::mapkey_parser<solidmodel> modelstepSymbolNames() const;
   mapkey_parser::mapkey_parser<FeatureSetPtr> edgeFeatureSymbolNames() const;
   mapkey_parser::mapkey_parser<Model::Ptr> modelSymbolNames() const;
+  mapkey_parser::mapkey_parser<EvaluationPtr> evaluationSymbolNames() const;
 
     
   inline void addScalarSymbol(const std::string& name, const scalar& value)
@@ -243,6 +248,10 @@ public:
   inline void addModelSymbol(const std::string& name, const Model::Ptr& value)
   {
     modelSymbols_[name]=value;
+  }
+  inline void addEvaluationSymbol(const std::string& name, const EvaluationPtr& value)
+  {
+    evaluationSymbols_[name]=value;
   }
   
   inline scalar lookupScalarSymbol(const std::string& name) const
@@ -287,6 +296,13 @@ public:
       throw insight::Exception("Could not lookup model symbol "+name);
     return it->second;
   }
+  inline EvaluationPtr lookupEvaluationSymbol(const std::string& name) const
+  {
+    evaluationSymbolTable::const_iterator it=evaluationSymbols_.find(name);
+    if (it==evaluationSymbols_.end())
+      throw insight::Exception("Could not lookup evaluation symbol "+name);
+    return it->second;
+  }
   
   const std::map<std::string, scalar>& scalarSymbols() const { return scalarSymbols_; }
   const std::map<std::string, vector>& vectorSymbols() const { return vectorSymbols_; }
@@ -294,6 +310,7 @@ public:
   const std::map<std::string, solidmodel>& modelstepSymbols() const { return modelstepSymbols_; }  
   const std::map<std::string, FeatureSetPtr>& edgeFeatureSymbols() const { return edgeFeatureSymbols_; }  
   const std::map<std::string, Model::Ptr>& modelSymbols() const { return modelSymbols_; }  
+  const std::map<std::string, EvaluationPtr>& evaluationSymbols() const { return evaluationSymbols_; }  
   
 //   struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
 //   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;

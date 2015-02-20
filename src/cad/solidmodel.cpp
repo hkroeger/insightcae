@@ -166,7 +166,7 @@ arma::mat SolidModel::edgeCoG(FeatureID i) const
 arma::mat SolidModel::faceCoG(FeatureID i) const
 {
   GProp_GProps props;
-  BRepGProp::LinearProperties(face(i), props);
+  BRepGProp::SurfaceProperties(face(i), props);
   gp_Pnt cog = props.CentreOfMass();
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
@@ -174,7 +174,7 @@ arma::mat SolidModel::faceCoG(FeatureID i) const
 arma::mat SolidModel::modelCoG() const
 {
   GProp_GProps props;
-  BRepGProp::LinearProperties(shape_, props);
+  BRepGProp::VolumeProperties(shape_, props);
   gp_Pnt cog = props.CentreOfMass();
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
@@ -182,7 +182,7 @@ arma::mat SolidModel::modelCoG() const
 double SolidModel::modelVolume() const
 {
   GProp_GProps props;
-  BRepGProp::LinearProperties(shape_, props);
+  BRepGProp::VolumeProperties(shape_, props);
   return props.Mass();
 }
 

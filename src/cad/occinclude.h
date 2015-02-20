@@ -169,6 +169,7 @@
 #include "ElCLib.hxx"
 #include "Geom_Circle.hxx"
 #include "Geom_TrimmedCurve.hxx"
+#include "Geom_CartesianPoint.hxx"
 
 #include "BRepAdaptor_CompCurve.hxx"
 

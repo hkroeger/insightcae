@@ -458,7 +458,9 @@ void ISCADMainWindow::rebuildModel()
     statusBar()->showMessage("Model regeneration successful.");
     
     context_->getContext()->EraseAll();
-    m->modelstepSymbols.for_each(Transferrer(*this));
+//     m->modelstepSymbols.for_each(Transferrer(*this));
+    BOOST_FOREACH(const Model::modelstepSymbolTable::value_type& v, m->modelstepSymbols())
+    { addModelStep(v.first, v.second); }
    
 //     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
 // 	 i!=m->modelstepSymbols.end(); i++)
@@ -469,7 +471,9 @@ void ISCADMainWindow::rebuildModel()
 //     m->scalarSymbols.for_each(Transferrer(*this));
     BOOST_FOREACH(const Model::scalarSymbolTable::value_type& v, m->scalarSymbols())
     { addVariable(v.first, v.second); }
-    m->vectorSymbols.for_each(Transferrer(*this));
+    BOOST_FOREACH(const Model::vectorSymbolTable::value_type& v, m->vectorSymbols())
+    { addVariable(v.first, v.second); }
+//     m->vectorSymbols.for_each(Transferrer(*this));
   }
     
   

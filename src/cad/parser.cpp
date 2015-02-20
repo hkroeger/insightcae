@@ -57,13 +57,13 @@ Model::Model(const ModelSymbols& syms)
 {
 //   scalarSymbols.add	( "M_PI", 	M_PI );
   addScalarSymbol("M_PI", M_PI);
-  vectorSymbols.add	( "O", 		vec3(0,0,0) );
-  vectorSymbols.add	( "EX", 	vec3(1,0,0) );
-  vectorSymbols.add	( "EY", 	vec3(0,1,0) );
-  vectorSymbols.add	( "EZ", 	vec3(0,0,1) );
-  datumSymbols.add	( "XY", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
-  datumSymbols.add	( "XZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
-  datumSymbols.add	( "YZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
+  addVectorSymbol( "O", 		vec3(0,0,0) );
+  addVectorSymbol( "EX", 	vec3(1,0,0) );
+  addVectorSymbol( "EY", 	vec3(0,1,0) );
+  addVectorSymbol( "EZ", 	vec3(0,0,1) );
+  addDatumSymbol( "XY", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
+  addDatumSymbol( "XZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
+  addDatumSymbol( "YZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
   
   BOOST_FOREACH(const ModelSymbols::value_type& s, syms)
   {
@@ -77,12 +77,36 @@ Model::Model(const ModelSymbols& syms)
     }
     else if ( const vector* vv = boost::get<vector>( &boost::fusion::at_c<1>(s) ) )
     {
-        vectorSymbols.add(name, *vv);
+        addVectorSymbol(name, *vv);
 	cout<<(*vv)<<endl;
     }
   }
 }
 
+mapkey_parser::mapkey_parser<scalar> Model::scalarSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<scalar>(scalarSymbols_); 
+}
+mapkey_parser::mapkey_parser<vector> Model::vectorSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<vector>(vectorSymbols_); 
+}
+mapkey_parser::mapkey_parser<datum> Model::datumSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<datum>(datumSymbols_); 
+}
+mapkey_parser::mapkey_parser<solidmodel> Model::modelstepSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<solidmodel>(modelstepSymbols_); 
+}
+mapkey_parser::mapkey_parser<FeatureSetPtr> Model::edgeFeatureSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<FeatureSetPtr>(edgeFeatureSymbols_); 
+}
+mapkey_parser::mapkey_parser<Model::Ptr> Model::modelSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<Model::Ptr>(modelSymbols_); 
+}
 // solidmodel import(const boost::filesystem::path& filepath)
 // {
 //   cout << "reading model "<<filepath<<endl;
@@ -265,25 +289,32 @@ struct ISCADParser
 	r_assignment = 
 	  ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
-	   [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_2, qi::_3)) ]
+// 	   [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_2, qi::_3)) ]
+	   [ phx::bind(&Model::addModelSymbol, model_, qi::_1, loadModel_(qi::_2, qi::_3)) ]
 	  |
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
 // 	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addScalarSymbol, model_, qi::_1, qi::_2) ]
-// 	  |
-// 	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
+	  |
+	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
 // 	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addScalarSymbolIfNotPresent, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') 
-	   [ phx::bind(model_->vectorSymbols.add, qi::_1, qi::_2) ]
+// 	   [ phx::bind(model_->vectorSymbols.add, qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addVectorSymbol, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
-	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), qi::_1, qi::_2) ]
+// 	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addVectorSymbolIfNotPresent, model_, qi::_1, qi::_2) ]
 	  |
-	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
+	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') 
+// 	   [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addEdgeFeatureSymbol, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_datumExpression >> ';') 
-	   [ phx::bind(model_->datumSymbols.add, qi::_1, qi::_2) ]
+// 	   [ phx::bind(model_->datumSymbols.add, qi::_1, qi::_2) ]
+	   [ phx::bind(&Model::addDatumSymbol, model_, qi::_1, qi::_2) ]
 	  ;
 	  
 	r_postproc =
@@ -313,7 +344,8 @@ struct ISCADParser
 	  ;
 	
         r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression > ';' ) 
-	  [ phx::bind(model_->modelstepSymbols.add, qi::_1, qi::_2) ];
+// 	  [ phx::bind(model_->modelstepSymbols.add, qi::_1, qi::_2) ];
+	  [ phx::bind(&Model::addModelstepSymbol, model_, qi::_1, qi::_2) ]
 	// this does not work: (nothing inserted)
 // 	  [ phx::insert
 // 	    (
@@ -418,7 +450,7 @@ struct ISCADParser
 	    r_submodel_modelstep [ _val = qi::_1 ]
 
 	 |
-	   model_->modelstepSymbols [ _val = qi::_1 ]
+	   qi::lexeme [ model_->modelstepSymbolNames() ] [ _val =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ]
 // 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), qi::_1) ]
 // 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, qi::_1) ]
 
@@ -427,13 +459,13 @@ struct ISCADParser
 	 ;
 	 
 	r_submodel_modelstep =
-	  ( model_->modelSymbols >> '.' ) [ _a = qi::_1 ]
-	   > lazy( phx::val(phx::bind(&Model::modelstepSymbols, *_a)) )
-	    [ _val = qi::_1 ]
+	  ( model_->modelSymbolNames() >> lit('.') ) [ _a =  phx::bind(&Model::lookupModelSymbol, model_, qi::_1) ]
+	   > /*lazy(phx::val(phx::bind(&Model::modelstepSymbolNames, *_a)))*/ r_identifier
+	    [ _val =  phx::bind(&Model::lookupModelstepSymbol, *_a, qi::_1) ]
 	   ;
 	 
 	r_solidmodel_subshape =
-	  ( model_->modelstepSymbols >> '.' ) [ _a = qi::_1 ] 
+	  ( model_->modelstepSymbolNames() >> lit('.') ) [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
 	      > 
 	      lazy( phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)) )
 		[ _val = qi::_1 ]
@@ -441,7 +473,7 @@ struct ISCADParser
 
 	 
 	r_edgeFeaturesExpression = 
-	     lexeme[ model_->edgeFeatureSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	     qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
 	     | (
 	     ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
 	      [ _val = queryEdges_(*qi::_1, qi::_2, qi::_3) ]
@@ -457,7 +489,7 @@ struct ISCADParser
 // 	 ;
 	 
 	r_datumExpression = 
-	     lexeme[ model_->datumSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	     qi::lexeme[model_->datumSymbolNames()] [ _val =  phx::bind(&Model::lookupDatumSymbol, model_, qi::_1) ]
 	     |
 	     ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
@@ -493,7 +525,7 @@ struct ISCADParser
 	  
 	r_scalar_primary =
 // 	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
-	  ( lexeme[ model_->scalarSymbolNames() /*>> !(alnum | '_')*/ ] )
+	  qi::lexeme[model_->scalarSymbolNames()]
 	    [ _val = phx::bind(&Model::lookupScalarSymbol, model_, qi::_1) ]
 	  | double_ [ _val = qi::_1 ]
 	  | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, qi::_1) ]
@@ -531,7 +563,7 @@ struct ISCADParser
 	;
 	  
 	r_vector_primary =
-	  lexeme[ model_->vectorSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
+	  qi::lexeme[model_->vectorSymbolNames()] [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
 	  | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(qi::_1, qi::_2, qi::_3) ] 
 	  //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]
 	  | ( '(' >> r_vectorExpression >> ')' ) [_val=qi::_1]

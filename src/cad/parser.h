@@ -73,10 +73,14 @@ namespace mapkey_parser
       : boost::spirit::qi::primitive_parser<mapkey_parser<T> >
     {
 	
-	const std::map<std::string, T>& map_;
+	const std::map<std::string, T>* map_;
+	
+	mapkey_parser()
+	: map_(NULL)
+	{}
 	
 	mapkey_parser(const std::map<std::string, T>& map)
-	: map_(map)
+	: map_(&map)
 	{}
 	
         // Define the attribute type exposed by this parser component
@@ -90,6 +94,9 @@ namespace mapkey_parser
         template <typename Iterator, typename Context, typename Skipper, typename Attribute>
         bool parse(Iterator& first, Iterator const& last, Context&, Skipper const& skipper, Attribute& attr) const
         {
+	  if (!map_)
+	    throw insight::Exception("Attempt to use unallocated map parser wrapper!");
+	  
             boost::spirit::qi::skip_over(first, last, skipper);
 	    
 	    Iterator cur=first, match=first;
@@ -99,8 +106,8 @@ namespace mapkey_parser
 	    {
 	      std::string key(first, cur);
 
-	      typename std::map<std::string, T>::const_iterator it=map_.find(key);
-	      if (it!=map_.end())
+	      typename std::map<std::string, T>::const_iterator it=map_->find(key);
+	      if (it!=map_->end())
 	      {
 // 		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
 		  match=cur;
@@ -174,48 +181,129 @@ typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymb
 class Model
 {
 public:
-  typedef std::map<std::string, scalar> scalarSymbolTable;
+  typedef boost::shared_ptr<Model> Ptr;
+  typedef std::map<std::string, scalar> 	scalarSymbolTable;
+  typedef std::map<std::string, vector> 	vectorSymbolTable;
+  typedef std::map<std::string, datum> 		datumSymbolTable;
+  typedef std::map<std::string, solidmodel> 	modelstepSymbolTable;
+  typedef std::map<std::string, FeatureSetPtr> 	edgeFeatureSymbolTable;
+  typedef std::map<std::string, Model::Ptr> 	modelSymbolTable;
   
 protected:
   gp_Ax3 placement_;
-  scalarSymbolTable scalarSymbols_;
+  scalarSymbolTable 		scalarSymbols_;
+  vectorSymbolTable 		vectorSymbols_;
+  datumSymbolTable 		datumSymbols_;
+  modelstepSymbolTable		modelstepSymbols_;
+  edgeFeatureSymbolTable	edgeFeatureSymbols_;
+  modelSymbolTable		modelSymbols_;
   
 public:
-  typedef boost::shared_ptr<Model> Ptr;
   
   Model(const ModelSymbols& syms = ModelSymbols());
-  
-//   typedef qi::symbols<char, scalar> scalarSymbolTable;
-//   scalarSymbolTable scalarSymbols;
-  inline mapkey_parser::mapkey_parser<scalar> scalarSymbolNames() const 
-  {
-    return mapkey_parser::mapkey_parser<scalar>(scalarSymbols_); 
-  }
+
+  mapkey_parser::mapkey_parser<scalar> scalarSymbolNames() const;
+  mapkey_parser::mapkey_parser<vector> vectorSymbolNames() const;
+  mapkey_parser::mapkey_parser<datum> datumSymbolNames() const;
+  mapkey_parser::mapkey_parser<solidmodel> modelstepSymbolNames() const;
+  mapkey_parser::mapkey_parser<FeatureSetPtr> edgeFeatureSymbolNames() const;
+  mapkey_parser::mapkey_parser<Model::Ptr> modelSymbolNames() const;
+
+    
   inline void addScalarSymbol(const std::string& name, const scalar& value)
   {
     scalarSymbols_[name]=value;
   }
+  inline void addScalarSymbolIfNotPresent(const std::string& name, const scalar& value)
+  {
+    if (scalarSymbols_.find(name)==scalarSymbols_.end())
+      scalarSymbols_[name]=value;
+  }
+  inline void addVectorSymbol(const std::string& name, const vector& value)
+  {
+    vectorSymbols_[name]=value;
+  }
+  inline void addVectorSymbolIfNotPresent(const std::string& name, const vector& value)
+  {
+    if (vectorSymbols_.find(name)==vectorSymbols_.end())
+      vectorSymbols_[name]=value;
+  }
+  inline void addDatumSymbol(const std::string& name, const datum& value)
+  {
+    datumSymbols_[name]=value;
+  }
+  inline void addModelstepSymbol(const std::string& name, const solidmodel& value)
+  {
+    modelstepSymbols_[name]=value;
+  }
+  inline void addEdgeFeatureSymbol(const std::string& name, const FeatureSetPtr& value)
+  {
+    edgeFeatureSymbols_[name]=value;
+  }
+  inline void addModelSymbol(const std::string& name, const Model::Ptr& value)
+  {
+    modelSymbols_[name]=value;
+  }
+  
   inline scalar lookupScalarSymbol(const std::string& name) const
   {
-    cout<<"lookup: >"<<name<<"<"<<endl;
     scalarSymbolTable::const_iterator it=scalarSymbols_.find(name);
     if (it==scalarSymbols_.end())
       throw insight::Exception("Could not lookup scalar symbol "+name);
-    cout<<"got: "<<it->second<<endl;
     return it->second;
   }
+  inline vector lookupVectorSymbol(const std::string& name) const
+  {
+    vectorSymbolTable::const_iterator it=vectorSymbols_.find(name);
+    if (it==vectorSymbols_.end())
+      throw insight::Exception("Could not lookup vector symbol "+name);
+    return it->second;
+  }
+  inline datum lookupDatumSymbol(const std::string& name) const
+  {
+    datumSymbolTable::const_iterator it=datumSymbols_.find(name);
+    if (it==datumSymbols_.end())
+      throw insight::Exception("Could not lookup datum symbol "+name);
+    return it->second;
+  }
+  inline solidmodel lookupModelstepSymbol(const std::string& name) const
+  {
+    modelstepSymbolTable::const_iterator it=modelstepSymbols_.find(name);
+    if (it==modelstepSymbols_.end())
+      throw insight::Exception("Could not lookup model step symbol "+name);
+    return it->second;
+  }
+  inline FeatureSetPtr lookupEdgeFeatureSymbol(const std::string& name) const
+  {
+    edgeFeatureSymbolTable::const_iterator it=edgeFeatureSymbols_.find(name);
+    if (it==edgeFeatureSymbols_.end())
+      throw insight::Exception("Could not lookup edge feature symbol "+name);
+    return it->second;
+  }
+  inline Model::Ptr lookupModelSymbol(const std::string& name) const
+  {
+    modelSymbolTable::const_iterator it=modelSymbols_.find(name);
+    if (it==modelSymbols_.end())
+      throw insight::Exception("Could not lookup model symbol "+name);
+    return it->second;
+  }
+  
   const std::map<std::string, scalar>& scalarSymbols() const { return scalarSymbols_; }
+  const std::map<std::string, vector>& vectorSymbols() const { return vectorSymbols_; }
+  const std::map<std::string, datum>& datumSymbols() const { return datumSymbols_; }
+  const std::map<std::string, solidmodel>& modelstepSymbols() const { return modelstepSymbols_; }  
+  const std::map<std::string, FeatureSetPtr>& edgeFeatureSymbols() const { return edgeFeatureSymbols_; }  
+  const std::map<std::string, Model::Ptr>& modelSymbols() const { return modelSymbols_; }  
   
-  
-  struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
-  struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
-  typedef qi::symbols<char, solidmodel> modelstepSymbolTable;
-  modelstepSymbolTable modelstepSymbols;
-//   std::map<std::string, SolidModel::Ptr> modelstepSymbols;
-
-  struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSetPtr> {} edgeFeatureSymbols;
-
-  struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
+//   struct vectorSymbolTable : public qi::symbols<char, vector> {} vectorSymbols;
+//   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
+//   typedef qi::symbols<char, solidmodel> modelstepSymbolTable;
+//   modelstepSymbolTable modelstepSymbols;
+// //   std::map<std::string, SolidModel::Ptr> modelstepSymbols;
+// 
+//   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSetPtr> {} edgeFeatureSymbols;
+// 
+//   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
 };
 
 Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms);

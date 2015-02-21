@@ -195,6 +195,13 @@ public:
   operator const TopoDS_Face& () const;
 };
 
+class SplineSurface
+: public SolidModel
+{
+public:
+  SplineSurface(const std::vector<std::vector<arma::mat> >& pts);
+  operator const TopoDS_Face& () const;
+};
 
 // =================== Primitives ======================
 class Cylinder

@@ -36,6 +36,7 @@
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
 #include <GeomAPI_PointsToBSpline.hxx>
+#include <GeomAPI_PointsToBSplineSurface.hxx>
 #include <BRepTools.hxx>
 #include <TopExp.hxx>
 #include <BRepProj_Projection.hxx>
@@ -51,6 +52,7 @@
 #include <Poly_Triangulation.hxx>
 #include <Poly_Array1OfTriangle.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
+#include <TColgp_Array2OfPnt.hxx>
 #include <Poly_Triangle.hxx>
 #include <GProp_GProps.hxx>
 #include <BRepGProp.hxx>

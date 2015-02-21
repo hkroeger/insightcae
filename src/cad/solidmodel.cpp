@@ -781,6 +781,34 @@ RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a,
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
+SplineSurface::SplineSurface(const std::vector< std::vector< arma::mat> >& pts)
+{
+  int nx=pts.size();
+  if (nx<2)
+    throw insight::Exception("SplineSurface: not enough rows of point specified!");
+  int ny=pts[0].size();
+  if (ny<2)
+    throw insight::Exception("SplineSurface: not enough cols of point specified!");
+  
+  TColgp_Array2OfPnt pts_col(1, nx, 1, ny);
+  for (int j=0; j<nx; j++) 
+  {
+    if (pts[j].size()!=ny)
+      throw insight::Exception("SplineSurface: all rows need to have an equal number of points!");
+    for (int k=0; k<ny; k++)
+      pts_col.SetValue(j+1, k+1, to_Pnt(pts[j][k]));
+  }
+  GeomAPI_PointsToBSplineSurface spfbuilder(pts_col);
+  Handle_Geom_BSplineSurface srf=spfbuilder.Surface();
+  setShape(BRepBuilderAPI_MakeFace(srf, true));
+}
+
+SplineSurface::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel
   (

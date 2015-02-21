@@ -385,7 +385,7 @@ struct ISCADParser
 	 
          | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(qi::_1)) ]
          
-         | ( lit("Spline") > '(' > r_vectorExpression % ',' >> ')' ) 
+         | ( lit("SplineCurve") > '(' > r_vectorExpression % ',' >> ')' ) 
 	    [ _val = construct<solidmodel>(new_<Spline>(qi::_1)) ]
 	    
          | ( lit("Tri") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
@@ -398,6 +398,10 @@ struct ISCADParser
 				  > ',' > r_scalarExpression > ',' > r_scalarExpression 
 				  > ( (',' > r_vectorExpression)|attr(arma::mat()) ) > ')' ) 
 	    [ _val = construct<solidmodel>(new_<RegPoly>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+         | ( lit("SplineSurface") > '(' >> 
+	      ( ( '(' >> ( r_vectorExpression % ',' ) >> ')' ) % ',' )
+	      >> ')' ) 
+	    [ _val = construct<solidmodel>(new_<SplineSurface>(qi::_1)) ]
          | ( lit("Sketch") > '(' > r_datumExpression > ',' > r_path > ',' > r_string > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
          

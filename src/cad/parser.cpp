@@ -56,7 +56,6 @@ namespace parser {
 
 Model::Model(const ModelSymbols& syms)
 {
-//   scalarSymbols.add	( "M_PI", 	M_PI );
   addScalarSymbol("M_PI", M_PI);
   addVectorSymbol( "O", 		vec3(0,0,0) );
   addVectorSymbol( "EX", 	vec3(1,0,0) );
@@ -72,7 +71,6 @@ Model::Model(const ModelSymbols& syms)
     cout<<"Insert symbol:"<<name<<endl;
     if ( const scalar* sv = boost::get<scalar>( &boost::fusion::at_c<1>(s) ) )
     {
-        //scalarSymbols.add(name, *sv);
         addScalarSymbol(name, *sv);
 	cout<<(*sv)<<endl;
     }
@@ -283,40 +281,27 @@ struct ISCADParser
         r_model =  *( r_assignment | r_modelstep /*| r_loadmodel*/ ) 
 		  >> -( lit("@post")  >> *r_postproc);
 	
-// 	r_loadmodel = ( lit("load") >> '(' >> r_identifier >> 
-// 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' 
-// // 	   >> -( lit("as") > r_identifier )
-// 	   >> ';' )
-// 	  [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_1, qi::_2)) ];
-	
 	r_assignment = 
 	  ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
 	  *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
-// 	   [ phx::bind(model_->modelSymbols.add, qi::_1, loadModel_(qi::_2, qi::_3)) ]
 	   [ phx::bind(&Model::addModelSymbol, model_, qi::_1, loadModel_(qi::_2, qi::_3)) ]
 	  |
 	  ( r_identifier >> '='  >> r_scalarExpression >> ';') 
-// 	   [ phx::bind(model_->scalarSymbols.add, qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addScalarSymbol, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> lit("?=")  >> r_scalarExpression >> ';') 
-// 	   [ phx::bind(addSymbolIfNotPresent<double>, phx::ref(model_->scalarSymbols), qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addScalarSymbolIfNotPresent, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_vectorExpression >> ';') 
-// 	   [ phx::bind(model_->vectorSymbols.add, qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addVectorSymbol, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
-// 	   [ phx::bind(addSymbolIfNotPresent<vector>, phx::ref(model_->vectorSymbols), qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addVectorSymbolIfNotPresent, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') 
-// 	   [ phx::bind(model_->edgeFeatureSymbols.add, qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addEdgeFeatureSymbol, model_, qi::_1, qi::_2) ]
 	  |
 	  ( r_identifier >> '='  >> r_datumExpression >> ';') 
-// 	   [ phx::bind(model_->datumSymbols.add, qi::_1, qi::_2) ]
 	   [ phx::bind(&Model::addDatumSymbol, model_, qi::_1, qi::_2) ]
 	  ;
 	  
@@ -352,16 +337,7 @@ struct ISCADParser
 	  ;
 	
         r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression > ';' ) 
-// 	  [ phx::bind(model_->modelstepSymbols.add, qi::_1, qi::_2) ];
 	  [ phx::bind(&Model::addModelstepSymbol, model_, qi::_1, qi::_2) ]
-	// this does not work: (nothing inserted)
-// 	  [ phx::insert
-// 	    (
-// 	      model_->modelstepSymbols, 
-// 	      phx::construct<std::pair<std::string, SolidModel::Ptr> >(qi::_1, qi::_2)
-// 	    ) ]
-	// this works:
-// 	  [ phx::ref(model_->modelstepSymbols)[qi::_1] = qi::_2 ]
 	    ;
 	
 	
@@ -380,8 +356,7 @@ struct ISCADParser
 	 ;
 	
 	r_solidmodel_primary = 
-// 	 lexeme[ model_->modelstepSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
-	 ( '(' >> r_solidmodel_expression [_val=qi::_1] > ')' )
+	 ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )
 	 
          | ( lit("import") > '(' > r_path > ')' ) [ _val = construct<solidmodel>(new_<SolidModel>(qi::_1)) ]
          
@@ -466,11 +441,6 @@ struct ISCADParser
 
 	 |
 	   qi::lexeme [ model_->modelstepSymbolNames() ] [ _val =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ]
-// 	      [ _val = phx::at(phx::ref(model_->modelstepSymbols), qi::_1) ]
-// 	      [ _val = phx::bind(&lookupMap<SolidModel::Ptr>, model_->modelstepSymbols, qi::_1) ]
-
-// 	 | ( r_identifier >> '!' > r_identifier ) 
-// 	      [ _val = phx::bind(&Model::lookupModelModelstep, *model_, qi::_1, qi::_2) ]
 	 ;
 	 
 	r_submodel_modelstep =

@@ -35,9 +35,9 @@ void SolidProperties::write(std::ostream&) const
 {
 }
 
-SolidProperties::operator const Handle_AIS_InteractiveObject () const
+AIS_InteractiveObject* SolidProperties::createAISRepr() const
 {
-  return Handle_AIS_InteractiveObject(new AIS_Point(new Geom_CartesianPoint(to_Pnt(cog_))));
+  return new AIS_Point(new Geom_CartesianPoint(to_Pnt(cog_)));
 }
 
   

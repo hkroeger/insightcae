@@ -33,7 +33,7 @@ class Evaluation
 {
 public:
   virtual void write(std::ostream&) const =0;
-  virtual operator const Handle_AIS_InteractiveObject () const =0;
+  virtual AIS_InteractiveObject* createAISRepr() const =0;
 };
 
 typedef boost::shared_ptr<Evaluation> EvaluationPtr;
@@ -47,7 +47,7 @@ public:
   SolidProperties(const SolidModel& model);
   
   virtual void write(std::ostream&) const;
-  virtual operator const Handle_AIS_InteractiveObject () const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
 }

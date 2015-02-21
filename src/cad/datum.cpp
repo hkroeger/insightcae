@@ -54,10 +54,10 @@ Datum::operator const gp_Ax3 () const
   return gp_Ax3();
 }
 
-Datum::operator const Handle_AIS_InteractiveObject () const
+AIS_InteractiveObject* Datum::createAISRepr() const
 {
   throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
-  return Handle_AIS_InteractiveObject();
+  return NULL;
 }
   
 DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni)
@@ -131,9 +131,10 @@ DatumPlane::operator const gp_Ax3 () const
   return cs_;
 }
 
-DatumPlane::operator const Handle_AIS_InteractiveObject () const
+// DatumPlane::operator const Handle_AIS_InteractiveObject () const
+AIS_InteractiveObject* DatumPlane::createAISRepr() const
 {
-  return Handle_AIS_InteractiveObject(new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_))));
+  return new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_)));
 }
 
 }

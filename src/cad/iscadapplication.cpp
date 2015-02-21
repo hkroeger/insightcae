@@ -164,7 +164,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 
   gb=new QGroupBox("Evaluation reports");
   vbox = new QVBoxLayout;
-  evaluationlist_=new DatumList;
+  evaluationlist_=new EvaluationList;
   connect(evaluationlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onEvaluationItemChanged(QListWidgetItem*)));
   vbox->addWidget(evaluationlist_);
   gb->setLayout(vbox);
@@ -434,7 +434,7 @@ class QDatumItem
 {
   Datum::Ptr smp_;
   QoccViewerContext* context_;
-  Handle_AIS_Shape ais_;
+  Handle_AIS_InteractiveObject ais_;
     
 public:
   ViewState state_;
@@ -453,7 +453,7 @@ public:
   {
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
-    ais_=static_cast<Handle_AIS_InteractiveObject>(*smp_);
+    ais_=smp_->createAISRepr();
     context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
     updateDisplay();
   }
@@ -546,7 +546,7 @@ class QEvaluationItem
 {
   EvaluationPtr smp_;
   QoccViewerContext* context_;
-  Handle_AIS_Shape ais_;
+  Handle_AIS_InteractiveObject ais_;
     
 public:
   ViewState state_;
@@ -565,7 +565,7 @@ public:
   {
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
-    ais_=static_cast<Handle_AIS_InteractiveObject>(*smp_);
+    ais_=smp_->createAISRepr();
     context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
     updateDisplay();
   }
@@ -740,6 +740,24 @@ void ISCADMainWindow::rebuildModel()
     if (qmsi)
     {
       checked_modelsteps_[qmsi->text().toStdString()]=qmsi->state_;
+    }
+  }
+
+  for (int i=0; i<datumlist_->count(); i++)
+  {
+    QDatumItem *qmsi=dynamic_cast<QDatumItem*>(datumlist_->item(i));
+    if (qmsi)
+    {
+      checked_datums_[qmsi->text().toStdString()]=qmsi->state_;
+    }
+  }
+
+  for (int i=0; i<evaluationlist_->count(); i++)
+  {
+    QEvaluationItem *qmsi=dynamic_cast<QEvaluationItem*>(evaluationlist_->item(i));
+    if (qmsi)
+    {
+      checked_evaluations_[qmsi->text().toStdString()]=qmsi->state_;
     }
   }
 

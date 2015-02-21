@@ -51,7 +51,7 @@ public:
   inline bool providesPlanarReference() const { return providesPlanarReference_; }
   virtual operator const gp_Ax3 () const;
 
-  virtual operator const Handle_AIS_InteractiveObject () const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
 
 };
 
@@ -81,7 +81,7 @@ public:
   virtual operator const gp_Pnt () const;
   virtual operator const gp_Ax3 () const;
 
-  virtual operator const Handle_AIS_InteractiveObject () const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
 }

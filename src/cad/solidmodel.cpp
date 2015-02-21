@@ -672,6 +672,17 @@ void SolidModel::nameFeatures()
 
 }
 
+
+Spline::Spline(const std::vector< arma::mat >& pts)
+{
+  TColgp_Array1OfPnt pts_col(1, pts.size());
+  for (int j=0; j<pts.size(); j++) pts_col.SetValue(j+1, to_Pnt(pts[j]));
+  GeomAPI_PointsToBSpline splbuilder(pts_col);
+  Handle_Geom_BSplineCurve crv=splbuilder.Curve();
+  setShape(BRepBuilderAPI_MakeEdge(crv, crv->FirstParameter(), crv->LastParameter()));
+}
+
+
 Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
 {
   gp_Pnt 
@@ -881,7 +892,7 @@ TopoDS_Shape makeExtrusion(const SolidModel& sk, const arma::mat& L, bool center
 {
   if (!centered)
   {
-    return BRepPrimAPI_MakePrism( sk, to_Vec(L), centered ).Shape();
+    return BRepPrimAPI_MakePrism( sk, to_Vec(L) ).Shape();
   }
   else
   {
@@ -931,7 +942,24 @@ Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
  
   BOOST_FOREACH(const SolidModel::Ptr& skp, secs)
   {
-    TopoDS_Wire cursec=BRepTools::OuterWire(TopoDS::Face(*skp));
+    TopoDS_Wire cursec;
+    TopoDS_Shape cs=*skp;
+    if (cs.ShapeType()==TopAbs_FACE)
+     cursec=BRepTools::OuterWire(TopoDS::Face(cs));
+    else if (cs.ShapeType()==TopAbs_WIRE)
+    {
+     cursec=TopoDS::Wire(cs);
+    }
+    else if (cs.ShapeType()==TopAbs_EDGE)
+    {
+     BRepBuilderAPI_MakeWire w;
+     w.Add(TopoDS::Edge(cs));
+     cursec=w.Wire();
+    }
+    else
+    {
+      throw insight::Exception("Incompatible section shape for Sweep!");
+    }
     sb.AddWire(cursec);
   }
   

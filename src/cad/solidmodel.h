@@ -150,6 +150,13 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 };
 
+// =================== 1D Primitives ======================
+class Spline
+: public SolidModel
+{
+public:
+  Spline(const std::vector<arma::mat>& pts);
+};
 
 // =================== 2D Primitives ======================
 

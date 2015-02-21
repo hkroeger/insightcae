@@ -123,12 +123,12 @@ namespace mapkey_parser
 	      std::string key(first, match);
 	      boost::spirit::traits::assign_to(std::string(first, match), attr);
 	      first=match;
-	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
+// 	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
 	      return true;
 	    }
 	    else
 	    {
-	      std::cout<<"NOK!"<<std::endl;
+// 	      std::cout<<"NOK!"<<std::endl;
 	      return false;
 	    }
         }

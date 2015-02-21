@@ -35,6 +35,7 @@
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
+#include <GeomAPI_PointsToBSpline.hxx>
 #include <BRepTools.hxx>
 #include <TopExp.hxx>
 #include <BRepProj_Projection.hxx>

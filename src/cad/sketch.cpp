@@ -297,11 +297,16 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
   
   BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
 
-  setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+  if (w.Closed())
+    setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+  else
+    setShape(TopoDS::Wire(btr.Shape()));
 }
 
 Sketch::operator const TopoDS_Face& () const
 {
+  if (!shape_.ShapeType()==TopAbs_FACE)
+    throw insight::Exception("Shape is not a face: presumably, original wire was not closed");
   return TopoDS::Face(shape_);
 }
 

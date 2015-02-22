@@ -362,6 +362,8 @@ struct ISCADParser
          
          | ( lit("SplineCurve") > '(' > r_vectorExpression % ',' >> ')' ) 
 	    [ _val = construct<solidmodel>(new_<Spline>(qi::_1)) ]
+	 | ( lit("Wire") > '(' >> r_edgeFeaturesExpression >> ')' ) 
+	      [ _val = construct<solidmodel>(new_<Wire>(*qi::_1)) ]
 	    
          | ( lit("Tri") > '(' > r_vectorExpression > ',' > r_vectorExpression > ',' > r_vectorExpression > ')' ) 
 	    [ _val = construct<solidmodel>(new_<Tri>(qi::_1, qi::_2, qi::_3)) ]

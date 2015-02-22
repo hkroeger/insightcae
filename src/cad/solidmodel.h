@@ -158,6 +158,13 @@ public:
   Spline(const std::vector<arma::mat>& pts);
 };
 
+class Wire
+: public SolidModel
+{
+public:
+  Wire(const FeatureSet& edges);
+};
+
 // =================== 2D Primitives ======================
 
 class Tri

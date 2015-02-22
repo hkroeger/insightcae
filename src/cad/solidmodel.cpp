@@ -682,6 +682,16 @@ Spline::Spline(const std::vector< arma::mat >& pts)
   setShape(BRepBuilderAPI_MakeEdge(crv, crv->FirstParameter(), crv->LastParameter()));
 }
 
+Wire::Wire(const FeatureSet& edges)
+{
+  BRepBuilderAPI_MakeWire wb;
+  BOOST_FOREACH(const FeatureID& fi, edges)
+  {
+    wb.Add(edges.model().edge(fi));
+  }
+  setShape(wb.Wire());
+}
+
 
 Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
 {
@@ -966,7 +976,21 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 
 Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
 {
-  BRepOffsetAPI_ThruSections sb(true);
+  if (secs.size()<2)
+    throw insight::Exception("Insufficient number of sections given!");
+  
+  bool create_solid=false;
+  {
+    TopoDS_Shape cs0=*secs[0];
+    if (cs0.ShapeType()==TopAbs_FACE)
+      create_solid=true;
+    else if (cs0.ShapeType()==TopAbs_WIRE)
+    {
+      create_solid=TopoDS::Wire(cs0).Closed();
+    }
+  }
+  
+  BRepOffsetAPI_ThruSections sb(create_solid);
  
   BOOST_FOREACH(const SolidModel::Ptr& skp, secs)
   {

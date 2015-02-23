@@ -32,6 +32,7 @@
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
+#include "base/factory.h"
 
 #include "occinclude.h"
 
@@ -52,6 +53,9 @@ std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 class SolidModel
 {
 public:
+  declareFactoryTable(SolidModel, NoParameters); 
+  declareType("SolidModel");
+  
   typedef boost::shared_ptr<SolidModel> Ptr;
   typedef boost::spirit::qi::symbols<char, SolidModel::Ptr> Map;
   
@@ -78,7 +82,7 @@ protected :
  
 public:
   
-  SolidModel();
+  SolidModel(const NoParameters& nop = NoParameters());
   SolidModel(const SolidModel& o);
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
@@ -151,17 +155,21 @@ public:
 };
 
 // =================== 1D Primitives ======================
-class Spline
+class SplineCurve
 : public SolidModel
 {
 public:
-  Spline(const std::vector<arma::mat>& pts);
+  declareType("SplineCurve");
+  SplineCurve(const NoParameters& nop = NoParameters());
+  SplineCurve(const std::vector<arma::mat>& pts);
 };
 
 class Wire
 : public SolidModel
 {
 public:
+  declareType("Wire");
+  Wire(const NoParameters& nop = NoParameters());
   Wire(const FeatureSet& edges);
 };
 
@@ -171,6 +179,8 @@ class Tri
 : public SolidModel
 {
 public:
+  declareType("Tri");
+  Tri(const NoParameters& nop = NoParameters());
   Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
   operator const TopoDS_Face& () const;
 };
@@ -180,6 +190,8 @@ class Quad
 : public SolidModel
 {
 public:
+  declareType("Quad");
+  Quad(const NoParameters& nop = NoParameters());
   Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W);
   operator const TopoDS_Face& () const;
 };
@@ -189,6 +201,8 @@ class Circle
 : public SolidModel
 {
 public:
+  declareType("Circle");
+  Circle(const NoParameters& nop = NoParameters());
   Circle(const arma::mat& p0, const arma::mat& n, double D);
   operator const TopoDS_Face& () const;
 };
@@ -197,6 +211,8 @@ class RegPoly
 : public SolidModel
 {
 public:
+  declareType("RegPoly");
+  RegPoly(const NoParameters& nop = NoParameters());
   RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
 	  const arma::mat& ez = arma::mat());
   operator const TopoDS_Face& () const;
@@ -206,6 +222,8 @@ class SplineSurface
 : public SolidModel
 {
 public:
+  declareType("SplineSurface");
+  SplineSurface(const NoParameters& nop = NoParameters());
   SplineSurface(const std::vector<std::vector<arma::mat> >& pts);
   operator const TopoDS_Face& () const;
 };
@@ -215,6 +233,8 @@ class Cylinder
 : public SolidModel
 {
 public:
+  declareType("Cylinder");
+  Cylinder(const NoParameters& nop = NoParameters());
   Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
 };
 
@@ -222,6 +242,8 @@ class Shoulder
 : public SolidModel
 {
 public:
+  declareType("Shoulder");
+  Shoulder(const NoParameters& nop = NoParameters());
   Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax);
 };
 
@@ -239,6 +261,8 @@ protected:
   );
   
 public:
+  declareType("Box");
+  Box(const NoParameters& nop = NoParameters());
   Box
   (
     const arma::mat& p0, 
@@ -253,6 +277,8 @@ class Sphere
 : public SolidModel
 {
 public:
+  declareType("Sphere");
+  Sphere(const NoParameters& nop = NoParameters());
   Sphere(const arma::mat& p, double D);
 };
 
@@ -267,6 +293,8 @@ class Extrusion
 : public SolidModel
 {
 public:
+  declareType("Extrusion");
+  Extrusion(const NoParameters& nop = NoParameters());
   Extrusion(const SolidModel& sk, const arma::mat& L, bool centered=false);
 };
 
@@ -274,6 +302,8 @@ class Revolution
 : public SolidModel
 {
 public:
+  declareType("Revolution");
+  Revolution(const NoParameters& nop = NoParameters());
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
 };
 
@@ -281,6 +311,8 @@ class Sweep
 : public SolidModel
 {
 public:
+  declareType("Sweep");
+  Sweep(const NoParameters& nop = NoParameters());
   Sweep(const std::vector<SolidModel::Ptr>& secs);
 };
 
@@ -288,6 +320,8 @@ class RotatedHelicalSweep
 : public SolidModel
 {
 public:
+  declareType("RotatedHelicalSweep");
+  RotatedHelicalSweep(const NoParameters& nop = NoParameters());
   RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
 };
 
@@ -296,6 +330,8 @@ class BooleanUnion
 : public SolidModel
 {
 public:
+  declareType("BooleanUnion");
+  BooleanUnion(const NoParameters& nop = NoParameters());
   BooleanUnion(const SolidModel& m1, const SolidModel& m2);
 };
 
@@ -305,6 +341,8 @@ class BooleanSubtract
 : public SolidModel
 {
 public:
+  declareType("BooleanSubtract");
+  BooleanSubtract(const NoParameters& nop = NoParameters());
   BooleanSubtract(const SolidModel& m1, const SolidModel& m2);
 };
 
@@ -314,6 +352,8 @@ class BooleanIntersection
 : public SolidModel
 {
 public:
+  declareType("BooleanIntersection");
+  BooleanIntersection(const NoParameters& nop = NoParameters());
   BooleanIntersection(const SolidModel& m1, const SolidModel& m2);
 };
 
@@ -323,6 +363,8 @@ class Projected
 : public SolidModel
 {
 public:
+  declareType("Projected");
+  Projected(const NoParameters& nop = NoParameters());
   Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
 };
 
@@ -330,6 +372,8 @@ class Split
 : public SolidModel
 {
 public:
+  declareType("Split");
+  Split(const NoParameters& nop = NoParameters());
   Split(const SolidModel& source, const SolidModel& target);
 };
 
@@ -341,6 +385,8 @@ class Fillet
   TopoDS_Shape makeFillets(const SolidModel& m1, const FeatureSet& edges, double r);
   
 public:
+  declareType("Fillet");
+  Fillet(const NoParameters& nop = NoParameters());
   Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
 };
 
@@ -350,6 +396,8 @@ class Chamfer
   TopoDS_Shape makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l);
   
 public:
+  declareType("Chamfer");
+  Chamfer(const NoParameters& nop = NoParameters());
   Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
 };
 
@@ -362,6 +410,8 @@ class CircularPattern
   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
   
 public:
+  declareType("CircularPattern");
+  CircularPattern(const NoParameters& nop = NoParameters());
   CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
 };
 
@@ -371,6 +421,8 @@ class LinearPattern
   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& axis, int n);
   
 public:
+  declareType("LinearPattern");
+  LinearPattern(const NoParameters& nop = NoParameters());
   LinearPattern(const SolidModel& m1, const arma::mat& axis, int n);
 };
 
@@ -383,6 +435,8 @@ class Transform
   TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
   
 public:
+  declareType("Transform");
+  Transform(const NoParameters& nop = NoParameters());
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
 };
@@ -392,6 +446,8 @@ class Mirror
 {
   
 public:
+  declareType("Mirror");
+  Mirror(const NoParameters& nop = NoParameters());
   Mirror(const SolidModel& m1, const Datum& pl);
 };
 
@@ -399,6 +455,8 @@ class Place
 : public SolidModel
 {
 public:
+  declareType("Place");
+  Place(const NoParameters& nop = NoParameters());
   Place(const SolidModel& m, const gp_Ax2& cs);
   Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
 };
@@ -409,6 +467,8 @@ class Compound
   TopoDS_Shape makeCompound(const std::vector<SolidModel::Ptr>& m1);
   
 public:
+  declareType("Compound");
+  Compound(const NoParameters& nop = NoParameters());
   Compound(const std::vector<SolidModel::Ptr>& m1);
 };
 
@@ -416,6 +476,8 @@ class Cutaway
 : public SolidModel
 {
 public:
+  declareType("Cutaway");
+  Cutaway(const NoParameters& nop = NoParameters());
   Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n);
 };
 

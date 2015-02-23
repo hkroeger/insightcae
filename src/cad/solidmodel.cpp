@@ -48,6 +48,10 @@ std::ostream& operator<<(std::ostream& os, const SolidModel& m)
   return os;
 }
 
+defineType(SolidModel);
+defineFactoryTable(SolidModel, NoParameters);
+addToFactoryTable(SolidModel, SolidModel, NoParameters);
+
 TopoDS_Shape SolidModel::loadShapeFromFile(const boost::filesystem::path& filename)
 {
   cout<<"Reading "<<filename<<endl;
@@ -96,7 +100,7 @@ void SolidModel::setShape(const TopoDS_Shape& shape)
 }
 
 
-SolidModel::SolidModel()
+SolidModel::SolidModel(const NoParameters&)
 : isleaf_(true)
 {
 }
@@ -673,7 +677,14 @@ void SolidModel::nameFeatures()
 }
 
 
-Spline::Spline(const std::vector< arma::mat >& pts)
+defineType(SplineCurve);
+addToFactoryTable(SolidModel, SplineCurve, NoParameters);
+
+SplineCurve::SplineCurve(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+SplineCurve::SplineCurve(const std::vector< arma::mat >& pts)
 {
   TColgp_Array1OfPnt pts_col(1, pts.size());
   for (int j=0; j<pts.size(); j++) pts_col.SetValue(j+1, to_Pnt(pts[j]));
@@ -681,6 +692,17 @@ Spline::Spline(const std::vector< arma::mat >& pts)
   Handle_Geom_BSplineCurve crv=splbuilder.Curve();
   setShape(BRepBuilderAPI_MakeEdge(crv, crv->FirstParameter(), crv->LastParameter()));
 }
+
+
+
+defineType(Wire);
+addToFactoryTable(SolidModel, Wire, NoParameters);
+
+Wire::Wire(const NoParameters& nop): SolidModel(nop)
+{
+
+}
+
 
 Wire::Wire(const FeatureSet& edges)
 {
@@ -692,6 +714,13 @@ Wire::Wire(const FeatureSet& edges)
   setShape(wb.Wire());
 }
 
+
+
+defineType(Tri);
+addToFactoryTable(SolidModel, Tri, NoParameters);
+
+Tri::Tri(const NoParameters& nop): SolidModel(nop)
+{}
 
 Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
 {
@@ -716,6 +745,14 @@ Tri::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape_);
 }
+
+
+
+defineType(Quad);
+addToFactoryTable(SolidModel, Quad, NoParameters);
+
+Quad::Quad(const NoParameters& nop): SolidModel(nop)
+{}
 
 
 Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
@@ -745,6 +782,15 @@ Quad::operator const TopoDS_Face& () const
 }
 
 
+
+defineType(Circle);
+addToFactoryTable(SolidModel, Circle, NoParameters);
+
+Circle::Circle(const NoParameters& nop): SolidModel(nop)
+{
+}
+
+
 TopoDS_Face makeCircle(const arma::mat& p0, const arma::mat& n, double D)
 {
   Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0), to_Vec(n), 0.5*D);
@@ -763,6 +809,15 @@ Circle::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape_);
 }
+
+
+
+defineType(RegPoly);
+addToFactoryTable(SolidModel, RegPoly, NoParameters);
+
+RegPoly::RegPoly(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
 		 const arma::mat& ez)
@@ -790,6 +845,15 @@ RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a,
   
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
+
+
+
+defineType(SplineSurface);
+addToFactoryTable(SolidModel, SplineSurface, NoParameters);
+
+SplineSurface::SplineSurface(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 SplineSurface::SplineSurface(const std::vector< std::vector< arma::mat> >& pts)
 {
@@ -819,6 +883,14 @@ SplineSurface::operator const TopoDS_Face& () const
 }
 
 
+
+defineType(Cylinder);
+addToFactoryTable(SolidModel, Cylinder, NoParameters);
+
+Cylinder::Cylinder(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 : SolidModel
   (
@@ -836,6 +908,15 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
 {
   cout<<"Cylinder created"<<endl;
 }
+
+
+
+defineType(Shoulder);
+addToFactoryTable(SolidModel, Shoulder, NoParameters);
+
+Shoulder::Shoulder(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax)
 {
@@ -865,6 +946,15 @@ Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double D
     )
   ); // semi-infinite prism
 }
+
+
+
+defineType(Box);
+addToFactoryTable(SolidModel, Box, NoParameters);
+
+Box::Box(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape Box::makeBox
 (
@@ -913,6 +1003,15 @@ Box::Box
 : SolidModel(makeBox(p0, L1, L2, L3, centered))
 {
 }
+
+
+
+defineType(Sphere);
+addToFactoryTable(SolidModel, Sphere, NoParameters);
+
+Sphere::Sphere(const NoParameters& nop): SolidModel(nop)
+{}
+
   
 Sphere::Sphere(const arma::mat& p, double D)
 : SolidModel
@@ -925,6 +1024,15 @@ Sphere::Sphere(const arma::mat& p, double D)
   )
 {
 }
+
+
+
+defineType(Extrusion);
+addToFactoryTable(SolidModel, Extrusion, NoParameters);
+
+Extrusion::Extrusion(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape makeExtrusion(const SolidModel& sk, const arma::mat& L, bool centered)
 {
@@ -948,6 +1056,16 @@ Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L, bool centered)
 : SolidModel(makeExtrusion(sk, L, centered))
 {
 }
+
+
+
+
+defineType(Revolution);
+addToFactoryTable(SolidModel, Revolution, NoParameters);
+
+Revolution::Revolution(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
 {
@@ -973,6 +1091,15 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 : SolidModel(makeRevolution(sk, p0, axis, ang, centered))
 {
 }
+
+
+
+defineType(Sweep);
+addToFactoryTable(SolidModel, Sweep, NoParameters);
+
+Sweep::Sweep(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
 {
@@ -1017,6 +1144,16 @@ Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
   
   setShape(sb.Shape());
 }
+
+
+
+
+defineType(RotatedHelicalSweep);
+addToFactoryTable(SolidModel, RotatedHelicalSweep, NoParameters);
+
+RotatedHelicalSweep::RotatedHelicalSweep(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
 {
@@ -1074,6 +1211,15 @@ RotatedHelicalSweep::RotatedHelicalSweep(const SolidModel& sk, const arma::mat& 
 {
 }
 
+
+
+defineType(BooleanUnion);
+addToFactoryTable(SolidModel, BooleanUnion, NoParameters);
+
+BooleanUnion::BooleanUnion(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
@@ -1088,6 +1234,15 @@ SolidModel operator|(const SolidModel& m1, const SolidModel& m2)
 }
 
 
+
+
+defineType(BooleanSubtract);
+addToFactoryTable(SolidModel, BooleanSubtract, NoParameters);
+
+BooleanSubtract::BooleanSubtract(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 BooleanSubtract::BooleanSubtract(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Cut(m1, m2).Shape())
 {
@@ -1100,6 +1255,15 @@ SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
   return BooleanSubtract(m1, m2);
 }
 
+
+
+defineType(BooleanIntersection);
+addToFactoryTable(SolidModel, BooleanIntersection, NoParameters);
+
+BooleanIntersection::BooleanIntersection(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 BooleanIntersection::BooleanIntersection(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Common(m1, m2).Shape())
 {
@@ -1111,6 +1275,16 @@ SolidModel operator&(const SolidModel& m1, const SolidModel& m2)
 {
   return BooleanIntersection(m1, m2);
 }
+
+
+
+
+defineType(Projected);
+addToFactoryTable(SolidModel, Projected, NoParameters);
+
+Projected::Projected(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape makeProjection
 (
@@ -1131,6 +1305,16 @@ Projected::Projected(const SolidModel& source, const SolidModel& target, const a
 {
 }
 
+
+
+
+defineType(Split);
+addToFactoryTable(SolidModel, Split, NoParameters);
+
+Split::Split(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 TopoDS_Shape makeSplit(const SolidModel& tool, const SolidModel& target)
 {
   GEOMAlgo_Splitter spl;
@@ -1144,6 +1328,15 @@ Split::Split(const SolidModel& tool, const SolidModel& target)
 : SolidModel(makeSplit(tool, target))
 {
 }
+
+
+
+defineType(Fillet);
+addToFactoryTable(SolidModel, Fillet, NoParameters);
+
+Fillet::Fillet(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 
 TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, double r)
@@ -1163,6 +1356,16 @@ Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
   m1.unsetLeaf();
 }
 
+
+
+
+defineType(Chamfer);
+addToFactoryTable(SolidModel, Chamfer, NoParameters);
+
+Chamfer::Chamfer(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l)
 {
   BRepFilletAPI_MakeChamfer fb(m1);
@@ -1181,6 +1384,15 @@ Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
 {
   m1.unsetLeaf();
 }
+
+
+
+
+defineType(CircularPattern);
+addToFactoryTable(SolidModel, CircularPattern, NoParameters);
+
+CircularPattern::CircularPattern(const NoParameters& nop): SolidModel(nop)
+{}
 
 
 TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
@@ -1209,6 +1421,16 @@ CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, cons
   m1.unsetLeaf();
 }
 
+
+
+
+defineType(LinearPattern);
+addToFactoryTable(SolidModel, LinearPattern, NoParameters);
+
+LinearPattern::LinearPattern(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 TopoDS_Shape LinearPattern::makePattern(const SolidModel& m1, const arma::mat& axis, int n)
 {
   BRep_Builder bb;
@@ -1233,6 +1455,16 @@ LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
 {
   m1.unsetLeaf();
 }
+
+
+
+
+defineType(Transform);
+addToFactoryTable(SolidModel, Transform, NoParameters);
+
+Transform::Transform(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
 {
@@ -1273,6 +1505,16 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
   m1.unsetLeaf();
 }
 
+
+
+
+defineType(Mirror);
+addToFactoryTable(SolidModel, Mirror, NoParameters);
+
+Mirror::Mirror(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 Mirror::Mirror(const SolidModel& m1, const Datum& pl)
 {
   gp_Trsf tr;
@@ -1283,6 +1525,15 @@ Mirror::Mirror(const SolidModel& m1, const Datum& pl)
   tr.SetMirror(static_cast<gp_Ax3>(pl).Ax2());  
   setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
+
+
+
+
+defineType(Place);
+addToFactoryTable(SolidModel, Place, NoParameters);
+
+Place::Place(const NoParameters& nop): SolidModel(nop)
+{}
 
 
 Place::Place(const SolidModel& m, const gp_Ax2& cs)
@@ -1299,6 +1550,15 @@ Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, cons
   tr.SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
   setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
 }
+
+
+
+
+defineType(Compound);
+addToFactoryTable(SolidModel, Compound, NoParameters);
+
+Compound::Compound(const NoParameters& nop): SolidModel(nop)
+{}
 
 
 TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
@@ -1324,6 +1584,16 @@ Compound::Compound(const std::vector<SolidModel::Ptr>& m1)
     p->unsetLeaf();
   }
 }
+
+
+
+
+defineType(Cutaway);
+addToFactoryTable(SolidModel, Cutaway, NoParameters);
+
+Cutaway::Cutaway(const NoParameters& nop): SolidModel(nop)
+{}
+
 
 Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n)
 {

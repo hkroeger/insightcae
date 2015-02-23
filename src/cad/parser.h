@@ -23,7 +23,7 @@
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 
-#include "solidmodel.h"
+// #include "solidmodel.h"
 #include "datum.h"
 #include "sketch.h"
 #include "evaluation.h"
@@ -157,7 +157,7 @@ namespace phx   = boost::phoenix;
 typedef double scalar;
 typedef arma::mat vector;
 typedef Datum::Ptr datum;
-typedef SolidModel::Ptr solidmodel;
+typedef SolidModelPtr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
@@ -317,7 +317,7 @@ public:
 //   struct datumSymbolTable : public qi::symbols<char, datum> {} datumSymbols;
 //   typedef qi::symbols<char, solidmodel> modelstepSymbolTable;
 //   modelstepSymbolTable modelstepSymbols;
-// //   std::map<std::string, SolidModel::Ptr> modelstepSymbols;
+// //   std::map<std::string, SolidModelPtr> modelstepSymbols;
 // 
 //   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSetPtr> {} edgeFeatureSymbols;
 // 
@@ -327,6 +327,48 @@ public:
 Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms);
 BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 2);
 
+
+class SoidModelPtr;
+
+
+template <typename Iterator>
+struct skip_grammar : public qi::grammar<Iterator>
+{
+        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
+        {
+            skip
+                =   boost::spirit::ascii::space
+                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
+                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+                ;
+        }
+
+        qi::rule<Iterator> skip;
+
+};
+
+template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+struct ISCADParserRuleset
+{
+    qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
+    qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
+    
+    qi::rule<Iterator, FeatureSetPtr(), Skipper> r_edgeFeaturesExpression;
+    qi::rule<Iterator, datum(), Skipper> r_datumExpression;
+    
+    qi::rule<Iterator, Skipper> r_model;
+    qi::rule<Iterator, Skipper> r_assignment;
+    qi::rule<Iterator, Skipper> r_postproc;
+    qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
+    qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
+    qi::rule<Iterator, std::string()> r_identifier;
+    qi::rule<Iterator, std::string()> r_string;
+    qi::rule<Iterator, boost::filesystem::path()> r_path;
+    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
+    qi::rule<Iterator, solidmodel(), boost::spirit::qi::locals<SolidModelPtr>, Skipper> r_solidmodel_subshape;
+    qi::rule<Iterator, solidmodel(), boost::spirit::qi::locals<Model::Ptr>, Skipper> r_submodel_modelstep;
+};
 
 }
 

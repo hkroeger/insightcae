@@ -35,7 +35,7 @@ namespace insight
 {
   
 class ResultElement
-: boost::noncopyable
+: public boost::noncopyable
 {
 public:
   typedef boost::tuple<const std::string&, const std::string&, const std::string&> ResultElementConstrP;

@@ -289,7 +289,7 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
   }
   
   TopoDS_Wire w = DXFReader(filename, layername).Wire();
-  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w)));
+  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w)));
   
   gp_Trsf tr;
   gp_Ax3 ax=pl;

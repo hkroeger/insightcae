@@ -26,6 +26,7 @@
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
 
+#include "solidmodel.h"
 #include "dxfwriter.h"
 
 
@@ -225,23 +226,6 @@ T lookupMap(const std::map<std::string, T>& map, const std::string& key)
   else
     return T();
 }
-
-template <typename Iterator>
-struct skip_grammar : public qi::grammar<Iterator>
-{
-        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
-        {
-            skip
-                =   boost::spirit::ascii::space
-                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
-                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
-                ;
-        }
-
-        qi::rule<Iterator> skip;
-
-};
 
 
 using namespace qi;
@@ -604,7 +588,7 @@ struct ISCADParser
     qi::rule<Iterator, std::string()> r_string;
     qi::rule<Iterator, boost::filesystem::path()> r_path;
     qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-    qi::rule<Iterator, solidmodel(), locals<SolidModel::Ptr>, Skipper> r_solidmodel_subshape;
+    qi::rule<Iterator, solidmodel(), locals<SolidModelPtr>, Skipper> r_solidmodel_subshape;
     qi::rule<Iterator, solidmodel(), locals<Model::Ptr>, Skipper> r_submodel_modelstep;
     
 };
@@ -613,7 +597,7 @@ struct ISCADParser
 struct ModelStepsWriter
 //: public std::map<std::string, T>
 {
-    void operator() (std::string s, SolidModel::Ptr ct);
+    void operator() (std::string s, SolidModelPtr ct);
 };
 
 template <typename Parser, typename Iterator>
@@ -650,7 +634,7 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, parser::Model::Ptr& 
   return parseISCADModelStream(f, m);
 }
 
-void ModelStepsWriter::operator() (std::string s, SolidModel::Ptr ct)
+void ModelStepsWriter::operator() (std::string s, SolidModelPtr ct)
 {
   //std::string s(ws.begin(), ws.end());
   //cout<<s<<endl<<ct<<endl;

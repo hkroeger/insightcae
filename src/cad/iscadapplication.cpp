@@ -283,7 +283,7 @@ struct Transferrer
   {
   }
   
-  void operator()(std::string sn, insight::cad::SolidModel::Ptr sm)
+  void operator()(std::string sn, insight::cad::SolidModelPtr sm)
   {
     cout<<sn<<" : "<<sm.get()<<endl;
     mw_.addModelStep(sn, sm);
@@ -321,14 +321,14 @@ void ViewState::randomizeColor()
 class QModelStepItem
 : public QListWidgetItem
 {
-  SolidModel::Ptr smp_;
+  SolidModelPtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_Shape ais_;
     
 public:
   ViewState state_;
 
-  QModelStepItem(const std::string& name, SolidModel::Ptr smp, QoccViewerContext* context, 
+  QModelStepItem(const std::string& name, SolidModelPtr smp, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0)
   : QListWidgetItem(QString::fromStdString(name), view),
     context_(context),
@@ -338,7 +338,7 @@ public:
     reset(smp);
   }
   
-  void reset(SolidModel::Ptr smp)
+  void reset(SolidModelPtr smp)
   {
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
@@ -679,7 +679,7 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
-void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModel::Ptr sm)
+void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModelPtr sm)
 { 
   ViewState vd;
   

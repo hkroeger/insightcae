@@ -736,7 +736,7 @@ Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
   w.Add(BRepBuilderAPI_MakeEdge(p3, p1));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w.Wire())));
   
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
@@ -771,7 +771,7 @@ Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
   w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w.Wire())));
   
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
@@ -841,7 +841,7 @@ RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a,
   }
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w.Wire())));
+  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w.Wire())));
   
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
@@ -1101,7 +1101,7 @@ Sweep::Sweep(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
+Sweep::Sweep(const std::vector<SolidModelPtr>& secs)
 {
   if (secs.size()<2)
     throw insight::Exception("Insufficient number of sections given!");
@@ -1119,7 +1119,7 @@ Sweep::Sweep(const std::vector<SolidModel::Ptr>& secs)
   
   BRepOffsetAPI_ThruSections sb(create_solid);
  
-  BOOST_FOREACH(const SolidModel::Ptr& skp, secs)
+  BOOST_FOREACH(const SolidModelPtr& skp, secs)
   {
     TopoDS_Wire cursec;
     TopoDS_Shape cs=*skp;
@@ -1561,13 +1561,13 @@ Compound::Compound(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
+TopoDS_Shape Compound::makeCompound(const std::vector<SolidModelPtr>& m1)
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
   
-  BOOST_FOREACH(const SolidModel::Ptr& p, m1)
+  BOOST_FOREACH(const SolidModelPtr& p, m1)
   {
     bb.Add(result, *p);
   }
@@ -1576,10 +1576,10 @@ TopoDS_Shape Compound::makeCompound(const std::vector<SolidModel::Ptr>& m1)
 }
 
 
-Compound::Compound(const std::vector<SolidModel::Ptr>& m1)
+Compound::Compound(const std::vector<SolidModelPtr>& m1)
 : SolidModel(makeCompound(m1))
 {
-  BOOST_FOREACH(const SolidModel::Ptr& p, m1)
+  BOOST_FOREACH(const SolidModelPtr& p, m1)
   {
     p->unsetLeaf();
   }

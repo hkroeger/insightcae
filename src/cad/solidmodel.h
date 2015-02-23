@@ -27,6 +27,8 @@
 
 #include "base/boost_include.h"
 
+
+// #include "parser.h"
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
 
@@ -50,14 +52,18 @@ class SolidModel;
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
+class SolidModel;
+
+typedef boost::shared_ptr<SolidModel> SolidModelPtr;
+
 class SolidModel
 {
 public:
   declareFactoryTable(SolidModel, NoParameters); 
-  declareType("SolidModel");
+
   
-  typedef boost::shared_ptr<SolidModel> Ptr;
-  typedef boost::spirit::qi::symbols<char, SolidModel::Ptr> Map;
+//   typedef boost::shared_ptr<SolidModel> Ptr;
+  typedef boost::spirit::qi::symbols<char, SolidModelPtr> Map;
   
   struct View
   {
@@ -81,6 +87,7 @@ protected :
   
  
 public:
+  declareType("SolidModel");
   
   SolidModel(const NoParameters& nop = NoParameters());
   SolidModel(const SolidModel& o);
@@ -152,7 +159,13 @@ public:
   ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
+
+//   template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+//   virtual void insertrule(parser::ISCADParserRuleset<Iterator,Skipper>& ruleset)
+//   {}
+
 };
+
 
 // =================== 1D Primitives ======================
 class SplineCurve
@@ -313,7 +326,7 @@ class Sweep
 public:
   declareType("Sweep");
   Sweep(const NoParameters& nop = NoParameters());
-  Sweep(const std::vector<SolidModel::Ptr>& secs);
+  Sweep(const std::vector<SolidModelPtr>& secs);
 };
 
 class RotatedHelicalSweep
@@ -464,12 +477,12 @@ public:
 class Compound
 : public SolidModel
 {
-  TopoDS_Shape makeCompound(const std::vector<SolidModel::Ptr>& m1);
+  TopoDS_Shape makeCompound(const std::vector<SolidModelPtr>& m1);
   
 public:
   declareType("Compound");
   Compound(const NoParameters& nop = NoParameters());
-  Compound(const std::vector<SolidModel::Ptr>& m1);
+  Compound(const std::vector<SolidModelPtr>& m1);
 };
 
 class Cutaway

@@ -252,11 +252,21 @@ void addSymbolIfNotPresent(qi::symbols<char, T>& table,
   }
 }
 
+skip_grammar::skip_grammar()
+: skip_grammar::base_type(skip, "PL/0")
+{
+    skip
+	=   boost::spirit::ascii::space
+	| repo::confix("/*", "*/")[*(qi::char_ - "*/")]
+	| repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+	| repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+	;
+}
 
 
-template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+// template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParser
-  : qi::grammar<Iterator, Skipper>
+  : qi::grammar<std::string::iterator, skip_grammar>
 {
 
   Model::Ptr model_;
@@ -574,26 +584,23 @@ struct ISCADParser
             );
     }
     
-//     qi::rule<Iterator, int(), Skipper> r_int_primary, r_int_term, r_intExpression;
-    qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
-    qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
+    qi::rule<std::string::iterator, scalar(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
+    qi::rule<std::string::iterator, vector(), skip_grammar> r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<Iterator, FeatureSetPtr(), Skipper> r_edgeFeaturesExpression;
-//     qi::rule<Iterator, Filter::Ptr(), Skipper> r_edgeFilterExpression;
-    qi::rule<Iterator, datum(), Skipper> r_datumExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_edgeFeaturesExpression;
+    qi::rule<std::string::iterator, datum(), skip_grammar> r_datumExpression;
     
-    qi::rule<Iterator, Skipper> r_model;
-//     qi::rule<Iterator, Skipper> r_loadmodel;
-    qi::rule<Iterator, Skipper> r_assignment;
-    qi::rule<Iterator, Skipper> r_postproc;
-    qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
-    qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
-    qi::rule<Iterator, std::string()> r_identifier;
-    qi::rule<Iterator, std::string()> r_string;
-    qi::rule<Iterator, boost::filesystem::path()> r_path;
-    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-    qi::rule<Iterator, solidmodel(), locals<SolidModelPtr>, Skipper> r_solidmodel_subshape;
-    qi::rule<Iterator, solidmodel(), locals<Model::Ptr>, Skipper> r_submodel_modelstep;
+    qi::rule<std::string::iterator, skip_grammar> r_model;
+    qi::rule<std::string::iterator, skip_grammar> r_assignment;
+    qi::rule<std::string::iterator, skip_grammar> r_postproc;
+    qi::rule<std::string::iterator, viewdef(), skip_grammar> r_viewDef;
+    qi::rule<std::string::iterator, modelstep(), skip_grammar> r_modelstep;
+    qi::rule<std::string::iterator, std::string()> r_identifier;
+    qi::rule<std::string::iterator, std::string()> r_string;
+    qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
+    qi::rule<std::string::iterator, solidmodel(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
+    qi::rule<std::string::iterator, solidmodel(), locals<SolidModelPtr>, skip_grammar> r_solidmodel_subshape;
+    qi::rule<std::string::iterator, solidmodel(), locals<Model::Ptr>, skip_grammar> r_submodel_modelstep;
     
 };
 
@@ -604,11 +611,11 @@ struct ModelStepsWriter
     void operator() (std::string s, SolidModelPtr ct);
 };
 
-template <typename Parser, typename Iterator>
-bool parseISCADModel(Iterator first, Iterator last, Model::Ptr& model)
+// template <typename Parser, typename Iterator>
+bool parseISCADModel(std::string::iterator first, std::string::iterator last, Model::Ptr& model)
 {
-  Parser parser(model);
-  skip_grammar<Iterator> skip;
+  ISCADParser parser(model);
+  skip_grammar/*<Iterator>*/ skip;
   
   bool r = qi::phrase_parse(
       first,
@@ -665,8 +672,8 @@ bool parseISCADModelStream(std::istream& in, parser::Model::Ptr& m, int* failloc
     
   orgbegin=first;
   
-  ISCADParser<std::string::iterator> parser(m);
-  skip_grammar<std::string::iterator> skip;
+  ISCADParser/*<std::string::iterator>*/ parser(m);
+  skip_grammar/*<std::string::iterator>*/ skip;
   
   bool r = qi::phrase_parse(
       first,

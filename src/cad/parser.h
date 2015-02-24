@@ -329,43 +329,34 @@ BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 2);
 class SoidModelPtr;
 
 
-template <typename Iterator>
-struct skip_grammar : public qi::grammar<Iterator>
+// template <typename Iterator>
+struct skip_grammar 
+: public qi::grammar<std::string::iterator>
 {
-        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
-        {
-            skip
-                =   boost::spirit::ascii::space
-                | repo::confix("/*", "*/")[*(qi::char_ - "*/")]
-                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
-                ;
-        }
-
-        qi::rule<Iterator> skip;
-
+  qi::rule<std::string::iterator> skip;
+  skip_grammar();
 };
 
-template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+// template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct ISCADParserRuleset
 {
-    qi::rule<Iterator, scalar(), Skipper> r_scalar_primary, r_scalar_term, r_scalarExpression;
-    qi::rule<Iterator, vector(), Skipper> r_vector_primary, r_vector_term, r_vectorExpression;
+    qi::rule<std::string::iterator, scalar(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
+    qi::rule<std::string::iterator, vector(), skip_grammar> r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<Iterator, FeatureSetPtr(), Skipper> r_edgeFeaturesExpression;
-    qi::rule<Iterator, datum(), Skipper> r_datumExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_edgeFeaturesExpression;
+    qi::rule<std::string::iterator, datum(), skip_grammar> r_datumExpression;
     
-    qi::rule<Iterator, Skipper> r_model;
-    qi::rule<Iterator, Skipper> r_assignment;
-    qi::rule<Iterator, Skipper> r_postproc;
-    qi::rule<Iterator, viewdef(), Skipper> r_viewDef;
-    qi::rule<Iterator, modelstep(), Skipper> r_modelstep;
-    qi::rule<Iterator, std::string()> r_identifier;
-    qi::rule<Iterator, std::string()> r_string;
-    qi::rule<Iterator, boost::filesystem::path()> r_path;
-    qi::rule<Iterator, solidmodel(), Skipper> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-    qi::rule<Iterator, solidmodel(), boost::spirit::qi::locals<SolidModelPtr>, Skipper> r_solidmodel_subshape;
-    qi::rule<Iterator, solidmodel(), boost::spirit::qi::locals<Model::Ptr>, Skipper> r_submodel_modelstep;
+    qi::rule<std::string::iterator, skip_grammar> r_model;
+    qi::rule<std::string::iterator, skip_grammar> r_assignment;
+    qi::rule<std::string::iterator, skip_grammar> r_postproc;
+    qi::rule<std::string::iterator, viewdef(), skip_grammar> r_viewDef;
+    qi::rule<std::string::iterator, modelstep(), skip_grammar> r_modelstep;
+    qi::rule<std::string::iterator, std::string()> r_identifier;
+    qi::rule<std::string::iterator, std::string()> r_string;
+    qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
+    qi::rule<std::string::iterator, solidmodel(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
+    qi::rule<std::string::iterator, solidmodel(), boost::spirit::qi::locals<SolidModelPtr>, skip_grammar> r_solidmodel_subshape;
+    qi::rule<std::string::iterator, solidmodel(), boost::spirit::qi::locals<Model::Ptr>, skip_grammar> r_submodel_modelstep;
 };
 
 }

@@ -42,7 +42,7 @@
 #include "feature.h"
 #include "featurefilter.h"
 
-// #include "parser.h"
+#include "parser.h"
 
 namespace insight 
 {
@@ -160,7 +160,7 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
-//   template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+//   template <typename Iterator, typename Skipper = parser::skip_grammar<Iterator> >
 //   virtual void insertrule(parser::ISCADParserRuleset<Iterator,Skipper>& ruleset)
 //   {}
 

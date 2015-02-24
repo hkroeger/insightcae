@@ -21,6 +21,12 @@
 
 #include "openfoamdict.h"
 
+#define BOOST_SPIRIT_DEBUG
+
+#include "boost/spirit/include/qi.hpp"
+#include "boost/spirit/repository/include/qi_confix.hpp"
+#include <boost/spirit/include/qi_eol.hpp>
+
 #include "boost/lexical_cast.hpp"
 
 using namespace std;

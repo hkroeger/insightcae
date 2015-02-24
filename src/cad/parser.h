@@ -337,9 +337,14 @@ struct skip_grammar
   skip_grammar();
 };
 
-// template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-struct ISCADParserRuleset
+struct ISCADParser
+  : qi::grammar<std::string::iterator, skip_grammar>
 {
+    typedef qi::rule<std::string::iterator, solidmodel(), skip_grammar> ModelstepRule;
+    typedef boost::shared_ptr<ModelstepRule> ModelstepRulePtr;
+
+    Model::Ptr model_;
+
     qi::rule<std::string::iterator, scalar(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<std::string::iterator, vector(), skip_grammar> r_vector_primary, r_vector_term, r_vectorExpression;
     
@@ -350,13 +355,18 @@ struct ISCADParserRuleset
     qi::rule<std::string::iterator, skip_grammar> r_assignment;
     qi::rule<std::string::iterator, skip_grammar> r_postproc;
     qi::rule<std::string::iterator, viewdef(), skip_grammar> r_viewDef;
-    qi::rule<std::string::iterator, modelstep(), skip_grammar> r_modelstep;
+    qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
+    qi::rule<std::string::iterator, solidmodel(), skip_grammar, qi::locals<ModelstepRulePtr> > r_modelstepFunction;
+    ModelstepRule r_modelstep;
     qi::rule<std::string::iterator, std::string()> r_identifier;
     qi::rule<std::string::iterator, std::string()> r_string;
     qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
     qi::rule<std::string::iterator, solidmodel(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-    qi::rule<std::string::iterator, solidmodel(), boost::spirit::qi::locals<SolidModelPtr>, skip_grammar> r_solidmodel_subshape;
-    qi::rule<std::string::iterator, solidmodel(), boost::spirit::qi::locals<Model::Ptr>, skip_grammar> r_submodel_modelstep;
+    qi::rule<std::string::iterator, solidmodel(), qi::locals<SolidModelPtr>, skip_grammar> r_solidmodel_subshape;
+    qi::rule<std::string::iterator, solidmodel(), qi::locals<Model::Ptr>, skip_grammar> r_submodel_modelstep;
+    
+
+    ISCADParser(Model::Ptr model);
 };
 
 }

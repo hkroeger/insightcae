@@ -33,8 +33,14 @@
 #include "featurefilter.h"
 #include "gp_Cylinder.hxx"
 
+namespace qi = boost::spirit::qi;
+namespace repo = boost::spirit::repository;
+namespace phx   = boost::phoenix;
+
 using namespace std;
 using namespace boost;
+
+
 
 namespace insight 
 {
@@ -257,7 +263,7 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
   return query_edges_subset(allEdges(), f);
 }
 
-FeatureSet SolidModel::query_edges(const string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_edges(const std::string& queryexpr, const FeatureSetList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_edges(parseEdgeFilterExpr(is, refs));
@@ -679,6 +685,31 @@ void SolidModel::nameFeatures()
 }
 
 
+
+
+defineType(Import);
+addToFactoryTable(SolidModel, Import, NoParameters);
+
+Import::Import(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+Import::Import(const filesystem::path& filepath)
+: SolidModel(filepath)
+{}
+
+void Import::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "import",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+      ( '(' > ruleset.r_path > ')' ) [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Import>(qi::_1)) ]
+    ))
+  );
+}
+
+
 defineType(SplineCurve);
 addToFactoryTable(SolidModel, SplineCurve, NoParameters);
 
@@ -695,6 +726,19 @@ SplineCurve::SplineCurve(const std::vector< arma::mat >& pts)
   setShape(BRepBuilderAPI_MakeEdge(crv, crv->FirstParameter(), crv->LastParameter()));
 }
 
+void SplineCurve::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "SplineCurve",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_vectorExpression % ',' >> ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<SplineCurve>(qi::_1)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Wire);
@@ -716,7 +760,19 @@ Wire::Wire(const FeatureSet& edges)
   setShape(wb.Wire());
 }
 
+void Wire::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Wire",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' >> ruleset.r_edgeFeaturesExpression >> ')' ) 
+	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Wire>(*qi::_1)) ]
+      
+    ))
+  );
+}
 
 defineType(Tri);
 addToFactoryTable(SolidModel, Tri, NoParameters);
@@ -748,7 +804,19 @@ Tri::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+void Tri::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Tri",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Tri>(qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 defineType(Quad);
 addToFactoryTable(SolidModel, Quad, NoParameters);
@@ -783,7 +851,19 @@ Quad::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+void Quad::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Quad",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 defineType(Circle);
 addToFactoryTable(SolidModel, Circle, NoParameters);
@@ -812,7 +892,19 @@ Circle::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+void Circle::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Circle",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Circle>(qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 defineType(RegPoly);
 addToFactoryTable(SolidModel, RegPoly, NoParameters);
@@ -848,7 +940,21 @@ RegPoly::RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a,
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
+void RegPoly::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "RegPoly",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
+			      > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression 
+			      > ( (',' > ruleset.r_vectorExpression)|qi::attr(arma::mat()) ) > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<RegPoly>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      
+    ))
+  );
+}
 
 defineType(SplineSurface);
 addToFactoryTable(SolidModel, SplineSurface, NoParameters);
@@ -884,7 +990,21 @@ SplineSurface::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+void SplineSurface::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "SplineSurface",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' >> 
+	  ( ( '(' >> ( ruleset.r_vectorExpression % ',' ) >> ')' ) % ',' )
+	  >> ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<SplineSurface>(qi::_1)) ]
+      
+    ))
+  );
+}
 
 defineType(Cylinder);
 addToFactoryTable(SolidModel, Cylinder, NoParameters);
@@ -911,7 +1031,19 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
   cout<<"Cylinder created"<<endl;
 }
 
+void Cylinder::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Cylinder",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 defineType(Shoulder);
 addToFactoryTable(SolidModel, Shoulder, NoParameters);
@@ -949,7 +1081,20 @@ Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double D
   ); // semi-infinite prism
 }
 
+void Shoulder::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Shoulder",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > 
+			    ',' > ruleset.r_scalarExpression > ((',' > ruleset.r_scalarExpression)|qi::attr(1e6)) > ')' )
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+      
+    ))
+  );
+}
 
 defineType(Box);
 addToFactoryTable(SolidModel, Box, NoParameters);
@@ -1006,7 +1151,20 @@ Box::Box
 {
 }
 
+void Box::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Box",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
+		    > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      
+    ))
+  );
+}
 
 defineType(Sphere);
 addToFactoryTable(SolidModel, Sphere, NoParameters);
@@ -1027,7 +1185,19 @@ Sphere::Sphere(const arma::mat& p, double D)
 {
 }
 
+void Sphere::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Sphere",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sphere>(qi::_1, qi::_2)) ]
+      
+    ))
+  );
+}
 
 defineType(Extrusion);
 addToFactoryTable(SolidModel, Extrusion, NoParameters);
@@ -1059,7 +1229,19 @@ Extrusion::Extrusion(const SolidModel& sk, const arma::mat& L, bool centered)
 {
 }
 
+void Extrusion::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Extrusion",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Extrusion>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Revolution);
@@ -1094,7 +1276,20 @@ Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::ma
 {
 }
 
+void Revolution::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Revolution",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
+	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Revolution>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      
+    ))
+  );
+}
 
 defineType(Sweep);
 addToFactoryTable(SolidModel, Sweep, NoParameters);
@@ -1147,7 +1342,19 @@ Sweep::Sweep(const std::vector<SolidModelPtr>& secs)
   setShape(sb.Shape());
 }
 
+void Sweep::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Sweep",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > (ruleset.r_solidmodel_expression % ',' ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sweep>(qi::_1)) ]
+      
+    ))
+  );
+}
 
 
 defineType(RotatedHelicalSweep);
@@ -1213,7 +1420,24 @@ RotatedHelicalSweep::RotatedHelicalSweep(const SolidModel& sk, const arma::mat& 
 {
 }
 
+void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "RotatedHelicalSweep",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' 
+	    > ruleset.r_solidmodel_expression > ',' 
+	    > ruleset.r_vectorExpression > ',' 
+	    > ruleset.r_vectorExpression > ',' 
+	    > ruleset.r_scalarExpression > 
+	    ((  ',' > ruleset.r_scalarExpression ) | qi::attr(0.0)) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<RotatedHelicalSweep>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      
+    ))
+  );
+}
 
 defineType(BooleanUnion);
 addToFactoryTable(SolidModel, BooleanUnion, NoParameters);
@@ -1235,7 +1459,18 @@ SolidModel operator|(const SolidModel& m1, const SolidModel& m2)
   return BooleanUnion(m1, m2);
 }
 
-
+void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
+{
+//   ruleset.modelstepFunctionRules.add
+//   (
+//     "",	
+//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+// 
+//     
+//       
+//     ))
+//   );
+}
 
 
 defineType(BooleanSubtract);
@@ -1257,7 +1492,18 @@ SolidModel operator-(const SolidModel& m1, const SolidModel& m2)
   return BooleanSubtract(m1, m2);
 }
 
-
+void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
+{
+//   ruleset.modelstepFunctionRules.add
+//   (
+//     "",	
+//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+// 
+//     
+//       
+//     ))
+//   );
+}
 
 defineType(BooleanIntersection);
 addToFactoryTable(SolidModel, BooleanIntersection, NoParameters);
@@ -1278,7 +1524,18 @@ SolidModel operator&(const SolidModel& m1, const SolidModel& m2)
   return BooleanIntersection(m1, m2);
 }
 
-
+void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
+{
+//   ruleset.modelstepFunctionRules.add
+//   (
+//     "",	
+//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+// 
+//     
+//       
+//     ))
+//   );
+}
 
 
 defineType(Projected);
@@ -1307,7 +1564,19 @@ Projected::Projected(const SolidModel& source, const SolidModel& target, const a
 {
 }
 
+void Projected::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Projected",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Projected>(*qi::_1, *qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Split);
@@ -1331,7 +1600,19 @@ Split::Split(const SolidModel& tool, const SolidModel& target)
 {
 }
 
+void Split::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Split",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Split>(*qi::_1, *qi::_2)) ]
+      
+    ))
+  );
+}
 
 defineType(Fillet);
 addToFactoryTable(SolidModel, Fillet, NoParameters);
@@ -1358,7 +1639,19 @@ Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
   m1.unsetLeaf();
 }
 
+void Fillet::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Fillet",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Fillet>(*qi::_1, *qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Chamfer);
@@ -1387,7 +1680,19 @@ Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
   m1.unsetLeaf();
 }
 
+void Chamfer::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Chamfer",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Chamfer>(*qi::_1, *qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(CircularPattern);
@@ -1423,7 +1728,20 @@ CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, cons
   m1.unsetLeaf();
 }
 
+void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "CircularPattern",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
+	> ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > -( ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      
+    ))
+  );
+}
 
 
 defineType(LinearPattern);
@@ -1458,7 +1776,20 @@ LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
   m1.unsetLeaf();
 }
 
+void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "LinearPattern",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
+	> ruleset.r_scalarExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<LinearPattern>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Transform);
@@ -1507,7 +1838,20 @@ Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
   m1.unsetLeaf();
 }
 
+void Transform::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Transform",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
+	> ruleset.r_vectorExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Transform>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Mirror);
@@ -1528,7 +1872,19 @@ Mirror::Mirror(const SolidModel& m1, const Datum& pl)
   setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
 
+void Mirror::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Mirror",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Mirror>(*qi::_1, *qi::_2)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Place);
@@ -1553,7 +1909,20 @@ Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, cons
   setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
 }
 
+void Place::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Place",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > 
+	  ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Place>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Compound);
@@ -1587,7 +1956,19 @@ Compound::Compound(const std::vector<SolidModelPtr>& m1)
   }
 }
 
+void Compound::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Compound",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ( ruleset.r_solidmodel_expression % ',' ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Compound>(qi::_1)) ]
+      
+    ))
+  );
+}
 
 
 defineType(Cutaway);
@@ -1614,6 +1995,20 @@ Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& 
   this->setShape(q);
   TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
   this->setShape(BRepAlgoAPI_Cut(model, airspace));
+}
+
+void Cutaway::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Cutaway",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Cutaway>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
 }
 
 }

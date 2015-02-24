@@ -29,7 +29,7 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 
-#define SIGN(x) ((x)<0.0?-1.0:1.0)
+// #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace insight 
 {

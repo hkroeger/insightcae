@@ -31,6 +31,10 @@ using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
 
+namespace qi = boost::spirit::qi;
+namespace repo = boost::spirit::repository;
+namespace phx   = boost::phoenix;
+
 
 namespace insight {
 namespace cad {
@@ -310,6 +314,20 @@ Sketch::operator const TopoDS_Face& () const
   if (!shape_.ShapeType()==TopAbs_FACE)
     throw insight::Exception("Shape is not a face: presumably, original wire was not closed");
   return TopoDS::Face(shape_);
+}
+
+void Sketch::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Sketch",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_datumExpression > ',' > ruleset.r_path > ',' > ruleset.r_string > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
 }
 
 }

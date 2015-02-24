@@ -20,14 +20,18 @@
 
 #undef BOOST_SPIRIT_DEBUG
 
+#include "solidmodel.h"
+#include "dxfwriter.h"
+#include "datum.h"
+#include "sketch.h"
+#include "evaluation.h"
+#include "freeship_interface.h"
+
 #include "base/analysis.h"
 #include "parser.h"
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
-
-#include "solidmodel.h"
-#include "dxfwriter.h"
 
 
 using namespace std;
@@ -62,9 +66,9 @@ Model::Model(const ModelSymbols& syms)
   addVectorSymbol( "EX", 	vec3(1,0,0) );
   addVectorSymbol( "EY", 	vec3(0,1,0) );
   addVectorSymbol( "EZ", 	vec3(0,0,1) );
-  addDatumSymbol( "XY", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
-  addDatumSymbol( "XZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
-  addDatumSymbol( "YZ", 	Datum::Ptr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
+  addDatumSymbol( "XY", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
+  addDatumSymbol( "XZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
+  addDatumSymbol( "YZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
   
   BOOST_FOREACH(const ModelSymbols::value_type& s, syms)
   {
@@ -463,10 +467,10 @@ struct ISCADParser
 	     qi::lexeme[model_->datumSymbolNames()] [ _val =  phx::bind(&Model::lookupDatumSymbol, model_, qi::_1) ]
 	     |
 	     ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
+		[ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
 	     |
 	     ( lit("SPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
-		[ _val = construct<Datum::Ptr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3)) ]
+		[ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3)) ]
 	  ;
 	  
 	r_path = as_string[ 

@@ -28,7 +28,7 @@
 #include <QTextEdit>
 #include <QListWidget>
 
-
+#include "occinclude.h"
 #include "parser.h"
 
 class ISCADApplication
@@ -119,7 +119,7 @@ public:
   
   // insert model step
   void addModelStep(std::string sn, insight::cad::SolidModelPtr sm);
-  void addDatum(std::string sn, insight::cad::Datum::Ptr dm);
+  void addDatum(std::string sn, insight::cad::DatumPtr dm);
   void addEvaluation(std::string sn, insight::cad::EvaluationPtr em);
   void addVariable(std::string sn, insight::cad::parser::scalar sv);
   void addVariable(std::string sn, insight::cad::parser::vector vv);

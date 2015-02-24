@@ -21,19 +21,21 @@
 #ifndef INSIGHT_CAD_DATUM_H
 #define INSIGHT_CAD_DATUM_H
 
+#include <map>
+
 #include "base/linearalgebra.h"
 
 #include "occinclude.h"
-#include "solidmodel.h"
+// #include "solidmodel.h"
+#include "cadtypes.h"
 
 namespace insight {
 namespace cad {
-  
+
 class Datum
 {
 public:
-  typedef boost::shared_ptr<Datum> Ptr;
-  typedef std::map<std::string, Datum::Ptr> Map;
+  typedef std::map<std::string, DatumPtr> Map;
   
 protected:
   bool providesPointReference_, providesAxisReference_, providesPlanarReference_;

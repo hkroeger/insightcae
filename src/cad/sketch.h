@@ -23,7 +23,9 @@
 
 #include "base/linearalgebra.h"
 #include "occinclude.h"
-#include "datum.h"
+
+#include "cadtypes.h"
+#include "solidmodel.h"
 
 #include "dxflib/dl_creationadapter.h"
 #include "dxflib/dl_dxf.h"

@@ -29,6 +29,8 @@
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
+#include "cadtypes.h"
+
 namespace boost
 {
   
@@ -48,9 +50,8 @@ namespace cad
 enum EntityType { Vertex, Edge, Face};
 
 
-class SolidModel;
+// class SolidModel;
 
-typedef int FeatureID;
 
 class Filter
 {
@@ -72,9 +73,8 @@ public:
 
 };
 
-typedef boost::shared_ptr<Filter> FilterPtr;
 
-class FeatureSet;
+// class FeatureSet;
 
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 
@@ -102,8 +102,6 @@ public:
   void write() const;
 };
 
-typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
-typedef std::vector<FeatureSetPtr> FeatureSetList;
 
 }
 }

@@ -18,8 +18,8 @@
  *
  */
 
-#include "feature.h"
 #include "solidmodel.h"
+#include "feature.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
 

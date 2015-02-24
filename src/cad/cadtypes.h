@@ -18,29 +18,30 @@
  *
  */
 
-#include "evaluation.h"
-#include "solidmodel.h"
-
-#include "AIS_Point.hxx"
+#ifndef INSIGHT_CAD_CADTYPES_H
+#define INSIGHT_CAD_CADTYPES_H
 
 namespace insight {
 namespace cad {
 
-SolidProperties::SolidProperties(const SolidModel& model)
-{
-  cog_=model.modelCoG();
-  cout<<"CoG="<<cog_<<endl;
+class SolidModel;
+class Datum;
+class FeatureSet;
+class Filter;
+class Evaluation;
+
+typedef boost::shared_ptr<SolidModel> SolidModelPtr;
+typedef boost::shared_ptr<Datum> DatumPtr;
+typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
+typedef boost::shared_ptr<Evaluation> EvaluationPtr;
+
+typedef int FeatureID;
+typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
+typedef std::vector<FeatureSetPtr> FeatureSetList;
+
+typedef boost::shared_ptr<Filter> FilterPtr;
+
+}
 }
 
-void SolidProperties::write(std::ostream&) const
-{
-}
-
-AIS_InteractiveObject* SolidProperties::createAISRepr() const
-{
-  return new AIS_Point(new Geom_CartesianPoint(to_Pnt(cog_)));
-}
-
-  
-}
-}
+#endif

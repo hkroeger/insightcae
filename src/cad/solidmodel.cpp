@@ -19,10 +19,12 @@
  */
 
 #include "geotest.h"
-#include "sketch.h"
 
 #include <memory>
 #include "solidmodel.h"
+#include "datum.h"
+#include "sketch.h"
+
 #include <base/exception.h>
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>

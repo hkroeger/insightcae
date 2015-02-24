@@ -18,6 +18,7 @@
  *
  */
 
+#include "solidmodel.h"
 #include "datum.h"
 
 #include "AIS_Plane.hxx"

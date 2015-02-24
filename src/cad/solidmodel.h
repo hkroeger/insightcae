@@ -28,7 +28,6 @@
 #include "base/boost_include.h"
 
 
-// #include "parser.h"
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
 
@@ -38,23 +37,24 @@
 
 #include "occinclude.h"
 
+#include "cadtypes.h"
+
 #include "feature.h"
 #include "featurefilter.h"
+
+// #include "parser.h"
 
 namespace insight 
 {
 namespace cad 
 {
 
-class Datum;
-class SolidModel;
+// class Datum;
+// class SolidModel;
 
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
-class SolidModel;
-
-typedef boost::shared_ptr<SolidModel> SolidModelPtr;
 
 class SolidModel
 {

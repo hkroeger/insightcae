@@ -20,6 +20,11 @@
 
 #include "iscadapplication.h"
 #include "base/exception.h"
+#include "base/linearalgebra.h"
+#include "solidmodel.h"
+#include "datum.h"
+#include "evaluation.h"
+
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
 #include <iostream>
@@ -432,14 +437,14 @@ void ModelStepList::showContextMenuForWidget(const QPoint &p)
 class QDatumItem
 : public QListWidgetItem
 {
-  Datum::Ptr smp_;
+  DatumPtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_InteractiveObject ais_;
     
 public:
   ViewState state_;
 
-  QDatumItem(const std::string& name, Datum::Ptr smp, QoccViewerContext* context, 
+  QDatumItem(const std::string& name, DatumPtr smp, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0)
   : QListWidgetItem(QString::fromStdString(name), view),
     context_(context),
@@ -449,7 +454,7 @@ public:
     reset(smp);
   }
   
-  void reset(Datum::Ptr smp)
+  void reset(DatumPtr smp)
   {
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
@@ -693,7 +698,7 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModelPtr s
   modelsteplist_->addItem(new QModelStepItem(sn, sm, context_, vd));
 }
 
-void ISCADMainWindow::addDatum(std::string sn, insight::cad::Datum::Ptr sm)
+void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
 { 
   ViewState vd;
   vd.visible=false;

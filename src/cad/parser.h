@@ -23,13 +23,9 @@
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 
-// #include "solidmodel.h"
-#include "datum.h"
-#include "sketch.h"
-#include "evaluation.h"
-#include "freeship_interface.h"
-
 #include "base/boost_include.h"
+#include "base/exception.h"
+#include "base/linearalgebra.h"
 
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
@@ -47,6 +43,8 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/utility/enable_if.hpp>
+
+#include "cadtypes.h"
 
 namespace mapkey_parser
 {
@@ -156,8 +154,8 @@ namespace phx   = boost::phoenix;
 
 typedef double scalar;
 typedef arma::mat vector;
-typedef Datum::Ptr datum;
-typedef SolidModelPtr solidmodel;
+typedef insight::cad::DatumPtr datum;
+typedef insight::cad::SolidModelPtr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 

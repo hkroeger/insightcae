@@ -24,7 +24,7 @@
 #include "base/linearalgebra.h"
 
 #include "occinclude.h"
-#include "solidmodel.h"
+#include "cadtypes.h"
 
 namespace insight {
 namespace cad {
@@ -36,7 +36,6 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const =0;
 };
 
-typedef boost::shared_ptr<Evaluation> EvaluationPtr;
 
 class SolidProperties
 : public Evaluation

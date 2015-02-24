@@ -160,9 +160,8 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
-//   template <typename Iterator, typename Skipper = parser::skip_grammar<Iterator> >
-//   virtual void insertrule(parser::ISCADParserRuleset<Iterator,Skipper>& ruleset)
-//   {}
+  virtual void insertrule(parser::ISCADParserRuleset& ruleset)
+  {}
 
 };
 

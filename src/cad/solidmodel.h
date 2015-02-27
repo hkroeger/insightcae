@@ -160,8 +160,21 @@ public:
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const
-  {}
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  virtual bool isSingleEdge() const;
+  virtual bool isSingleOpenWire() const;
+  virtual bool isSingleClosedWire() const;
+  virtual bool isSingleWire() const;
+  virtual bool isSingleFace() const;
+  virtual bool isSingleVolume() const;
+
+  virtual TopoDS_Edge asSingleEdge() const;
+  virtual TopoDS_Wire asSingleOpenWire() const;
+  virtual TopoDS_Wire asSingleClosedWire() const;
+  virtual TopoDS_Wire asSingleWire() const;
+  virtual TopoDS_Face asSingleFace() const;
+  virtual TopoDS_Shape asSingleVolume() const;
 
 };
 
@@ -184,6 +197,7 @@ public:
   SplineCurve(const NoParameters& nop = NoParameters());
   SplineCurve(const std::vector<arma::mat>& pts);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleEdge() const { return true; };
 };
 
 class Wire
@@ -194,12 +208,23 @@ public:
   Wire(const NoParameters& nop = NoParameters());
   Wire(const FeatureSet& edges);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleCloseWire() const;
+  virtual bool isSingleOpenWire() const;
 };
 
 // =================== 2D Primitives ======================
 
-class Tri
+class SingleFaceFeature
 : public SolidModel
+{
+public:
+  virtual bool isSingleCloseWire() const;
+  virtual TopoDS_Wire asSingleClosedWire() const;
+  virtual bool isSingleFace() const;
+};
+
+class Tri
+: public SingleFaceFeature
 {
 public:
   declareType("Tri");
@@ -207,11 +232,12 @@ public:
   Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
   operator const TopoDS_Face& () const;
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
 };
 
 
 class Quad
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
   declareType("Quad");
@@ -223,7 +249,7 @@ public:
 
 
 class Circle
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
   declareType("Circle");
@@ -234,7 +260,7 @@ public:
 };
 
 class RegPoly
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
   declareType("RegPoly");
@@ -246,7 +272,7 @@ public:
 };
 
 class SplineSurface
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
   declareType("SplineSurface");
@@ -256,9 +282,29 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+class BoundedFlatFace
+: public SingleFaceFeature
+{
+public:
+  declareType("BoundedFlatFace");
+  BoundedFlatFace(const NoParameters& nop=NoParameters());
+  BoundedFlatFace(const std::vector<SolidModelPtr>& edges);
+  BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
+  operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
 // =================== Primitives ======================
-class Cylinder
+
+class SingleVolumeFeature
 : public SolidModel
+{
+public:
+  virtual bool isSingleVolume() const;
+};
+
+class Cylinder
+: public SingleVolumeFeature
 {
 public:
   declareType("Cylinder");
@@ -268,7 +314,7 @@ public:
 };
 
 class Shoulder
-: public SolidModel
+: public SingleVolumeFeature
 {
 public:
   declareType("Shoulder");
@@ -278,7 +324,7 @@ public:
 };
 
 class Box
-: public SolidModel
+: public SingleVolumeFeature
 {
 protected:
   TopoDS_Shape makeBox
@@ -305,7 +351,7 @@ public:
 };
 
 class Sphere
-: public SolidModel
+: public SingleVolumeFeature
 {
 public:
   declareType("Sphere");
@@ -358,6 +404,16 @@ public:
   declareType("RotatedHelicalSweep");
   RotatedHelicalSweep(const NoParameters& nop = NoParameters());
   RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class StitchedSolid
+: public SolidModel
+{
+public:
+  declareType("StitchedSolid");
+  StitchedSolid(const NoParameters& nop = NoParameters());
+  StitchedSolid(const std::vector<SolidModelPtr>& faces);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

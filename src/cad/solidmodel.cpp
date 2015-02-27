@@ -33,6 +33,9 @@
 #include "featurefilter.h"
 #include "gp_Cylinder.hxx"
 
+#include <BRepLib_FindSurface.hxx>
+#include <BRepCheck_Shell.hxx>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -524,6 +527,92 @@ SolidModel::View SolidModel::createView
   
 }
 
+void SolidModel::insertrule(parser::ISCADParser& ruleset) const
+{
+}
+
+bool SolidModel::isSingleEdge() const
+{
+  return false;
+}
+
+bool SolidModel::isSingleFace() const
+{
+  return false;
+}
+
+bool SolidModel::isSingleOpenWire() const
+{
+  return false;
+}
+
+bool SolidModel::isSingleClosedWire() const
+{
+  return false;
+}
+
+bool SolidModel::isSingleWire() const
+{
+  return isSingleOpenWire() || isSingleClosedWire();
+}
+
+
+bool SolidModel::isSingleVolume() const
+{
+  return false;
+}
+
+TopoDS_Edge SolidModel::asSingleEdge() const
+{
+  if (!isSingleEdge())
+    throw insight::Exception("Feature "+type()+" does not provide a single edge!");
+  else
+    return TopoDS::Edge(shape_);
+}
+
+TopoDS_Face SolidModel::asSingleFace() const
+{
+  if (!isSingleFace())
+    throw insight::Exception("Feature "+type()+" does not provide a single face!");
+  else
+    return TopoDS::Face(shape_);
+}
+
+TopoDS_Wire SolidModel::asSingleOpenWire() const
+{
+  if (!isSingleOpenWire())
+    throw insight::Exception("Feature "+type()+" does not provide a single open wire!");
+  else
+  {
+    return asSingleWire();
+  }
+}
+
+TopoDS_Wire SolidModel::asSingleClosedWire() const
+{
+  if (!isSingleClosedWire())
+    throw insight::Exception("Feature "+type()+" does not provide a single closed wire!");
+  else
+  {
+    return asSingleWire();
+  }
+}
+
+TopoDS_Wire SolidModel::asSingleWire() const
+{
+  if (isSingleWire())
+    return TopoDS::Wire(shape_);
+}
+
+
+TopoDS_Shape SolidModel::asSingleVolume() const
+{
+  if (!isSingleVolume())
+    throw insight::Exception("Feature "+type()+" does not provide a single volume!");
+  else
+    return shape_;
+}
+
 
 void SolidModel::nameFeatures()
 {
@@ -774,10 +863,37 @@ void Wire::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+bool Wire::isSingleCloseWire() const
+{
+  return TopoDS::Wire(shape_).Closed();
+}
+
+bool Wire::isSingleOpenWire() const
+{
+  return !isSingleCloseWire();
+}
+
+bool SingleFaceFeature::isSingleFace() const
+{
+  return true;
+}
+
+bool SingleFaceFeature::isSingleCloseWire() const
+{
+  return true;
+}
+
+TopoDS_Wire SingleFaceFeature::asSingleClosedWire() const
+{
+  return BRepTools::OuterWire(TopoDS::Face(shape_));;
+}
+
+
+
 defineType(Tri);
 addToFactoryTable(SolidModel, Tri, NoParameters);
 
-Tri::Tri(const NoParameters& nop): SolidModel(nop)
+Tri::Tri(const NoParameters&)
 {}
 
 Tri::Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2)
@@ -818,10 +934,11 @@ void Tri::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
 defineType(Quad);
 addToFactoryTable(SolidModel, Quad, NoParameters);
 
-Quad::Quad(const NoParameters& nop): SolidModel(nop)
+Quad::Quad(const NoParameters&)
 {}
 
 
@@ -858,7 +975,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
     "Quad",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
 	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
@@ -868,7 +985,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
 defineType(Circle);
 addToFactoryTable(SolidModel, Circle, NoParameters);
 
-Circle::Circle(const NoParameters& nop): SolidModel(nop)
+Circle::Circle(const NoParameters&)
 {
 }
 
@@ -883,8 +1000,8 @@ TopoDS_Face makeCircle(const arma::mat& p0, const arma::mat& n, double D)
 }
 
 Circle::Circle(const arma::mat& p0, const arma::mat& n, double D)
-: SolidModel(makeCircle(p0, n, D))
 {
+  setShape(makeCircle(p0, n, D));
 }
 
 Circle::operator const TopoDS_Face& () const
@@ -909,7 +1026,7 @@ void Circle::insertrule(parser::ISCADParser& ruleset) const
 defineType(RegPoly);
 addToFactoryTable(SolidModel, RegPoly, NoParameters);
 
-RegPoly::RegPoly(const NoParameters& nop): SolidModel(nop)
+RegPoly::RegPoly(const NoParameters&)
 {}
 
 
@@ -959,7 +1076,7 @@ void RegPoly::insertrule(parser::ISCADParser& ruleset) const
 defineType(SplineSurface);
 addToFactoryTable(SolidModel, SplineSurface, NoParameters);
 
-SplineSurface::SplineSurface(const NoParameters& nop): SolidModel(nop)
+SplineSurface::SplineSurface(const NoParameters&)
 {}
 
 
@@ -1006,15 +1123,124 @@ void SplineSurface::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+defineType(BoundedFlatFace);
+addToFactoryTable(SolidModel, BoundedFlatFace, NoParameters);
+
+
+BoundedFlatFace::BoundedFlatFace(const NoParameters&)
+{}
+
+BoundedFlatFace::BoundedFlatFace(const std::vector<SolidModelPtr>& edges)
+{
+  TopTools_ListOfShape edgs;
+  
+  int n_ok=0, n_nok=0;
+  BOOST_FOREACH(const SolidModelPtr& m, edges)
+  {
+    if (m->isSingleEdge())
+    {
+      TopoDS_Edge e=m->asSingleEdge();
+      edgs.Append(e);
+      n_ok++;
+    }
+    else if (m->isSingleWire())
+    {
+      TopoDS_Wire wire=m->asSingleWire();
+      for (TopExp_Explorer ex(wire, TopAbs_EDGE); ex.More(); ex.Next())
+      {
+	TopoDS_Edge e=TopoDS::Edge(ex.Current());
+	edgs.Append(e);
+      }
+      n_ok++;
+    }
+    else n_nok++;
+  }
+
+  if (n_ok==0)
+    throw insight::Exception("No valid edge given!");
+  if (n_nok>0)
+    insight::Warning(str(format("Only %d out of %d given edges were valid!") % n_ok % (n_ok+n_nok)));
+
+  BRepBuilderAPI_MakeWire w;
+  w.Add(edgs);
+  
+  BRepBuilderAPI_MakeFace fb(w.Wire(), true);
+  if (!fb.IsDone())
+    throw insight::Exception("Failed to generate planar face!");
+  
+  ShapeFix_Face FixShape;
+  FixShape.Init(fb.Face());
+  FixShape.Perform();
+  
+  setShape(FixShape.Face());
+}
+
+BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
+{
+  TopTools_ListOfShape edgs;
+  BOOST_FOREACH(const FeatureSetPtr& m, edges)
+  {
+    BOOST_FOREACH(const FeatureID& fi, *m)
+    {
+      edgs.Append(m->model().edge(fi));
+    }
+  }
+  
+  BRepBuilderAPI_MakeWire w;
+  w.Add(edgs);
+
+  BRepBuilderAPI_MakeFace fb(w.Wire(), true);
+  if (!fb.IsDone())
+    throw insight::Exception("Failed to generate planar face!");
+
+  ShapeFix_Face FixShape;
+  FixShape.Init(fb.Face());
+  FixShape.Perform();
+  
+  setShape(FixShape.Face());
+}
+
+BoundedFlatFace::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
+void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "BoundedFlatFace",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<BoundedFlatFace>(qi::_1)) ]
+    |
+    ( '(' >> ( ruleset.r_edgeFeaturesExpression % ',' ) >> ')' )
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<BoundedFlatFace>(qi::_1)) ]
+      
+    ))
+  );
+}
+
+
+bool SingleVolumeFeature::isSingleVolume() const
+{
+  return true;
+}
+
+
 defineType(Cylinder);
 addToFactoryTable(SolidModel, Cylinder, NoParameters);
 
-Cylinder::Cylinder(const NoParameters& nop): SolidModel(nop)
+Cylinder::Cylinder(const NoParameters&)
 {}
 
 
 Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
-: SolidModel
+{
+  setShape
   (
     BRepPrimAPI_MakeCylinder
     (
@@ -1026,9 +1252,7 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
       0.5*D, 
       norm(p2-p1, 2)
     ).Shape()
-  )
-{
-  cout<<"Cylinder created"<<endl;
+  );
 }
 
 void Cylinder::insertrule(parser::ISCADParser& ruleset) const
@@ -1048,7 +1272,7 @@ void Cylinder::insertrule(parser::ISCADParser& ruleset) const
 defineType(Shoulder);
 addToFactoryTable(SolidModel, Shoulder, NoParameters);
 
-Shoulder::Shoulder(const NoParameters& nop): SolidModel(nop)
+Shoulder::Shoulder(const NoParameters&)
 {}
 
 
@@ -1099,7 +1323,7 @@ void Shoulder::insertrule(parser::ISCADParser& ruleset) const
 defineType(Box);
 addToFactoryTable(SolidModel, Box, NoParameters);
 
-Box::Box(const NoParameters& nop): SolidModel(nop)
+Box::Box(const NoParameters&)
 {}
 
 
@@ -1147,8 +1371,8 @@ Box::Box
   const arma::mat& L3,
   bool centered
 )
-: SolidModel(makeBox(p0, L1, L2, L3, centered))
-{
+{ 
+  setShape(makeBox(p0, L1, L2, L3, centered));
 }
 
 void Box::insertrule(parser::ISCADParser& ruleset) const
@@ -1169,20 +1393,20 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
 defineType(Sphere);
 addToFactoryTable(SolidModel, Sphere, NoParameters);
 
-Sphere::Sphere(const NoParameters& nop): SolidModel(nop)
+Sphere::Sphere(const NoParameters&)
 {}
 
   
 Sphere::Sphere(const arma::mat& p, double D)
-: SolidModel
+{
+  setShape
   (
     BRepPrimAPI_MakeSphere
     (
       gp_Pnt(p(0),p(1),p(2)),
       0.5*D
     ).Shape()
-  )
-{
+  );
 }
 
 void Sphere::insertrule(parser::ISCADParser& ruleset) const
@@ -1349,7 +1573,7 @@ void Sweep::insertrule(parser::ISCADParser& ruleset) const
     "Sweep",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > (ruleset.r_solidmodel_expression % ',' ) > ')' ) 
+    ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sweep>(qi::_1)) ]
       
     ))
@@ -1438,6 +1662,64 @@ void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset) const
     ))
   );
 }
+
+
+defineType(StitchedSolid);
+addToFactoryTable(SolidModel, StitchedSolid, NoParameters);
+
+StitchedSolid::StitchedSolid(const NoParameters&)
+{}
+
+
+StitchedSolid::StitchedSolid(const std::vector< SolidModelPtr >& faces)
+{
+  BRepBuilderAPI_Sewing sew(1e-3);
+  
+//   TopoDS_Compound aRes;
+//   BRep_Builder aBuilder;
+//   aBuilder.MakeCompound(aRes);
+
+  BOOST_FOREACH(const SolidModelPtr& m, faces)
+  {
+    sew.Add(*m);
+//     aBuilder.Add(aRes, bladeFace_[s]);
+  }
+
+  sew.Perform();
+  sew.Dump();
+  
+  TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
+  BRepCheck_Shell acheck(sshell);
+  
+    if (acheck.Closed(Standard_False) != BRepCheck_NoError)
+    throw insight::Exception("Could not create a closed shell (B)!");
+
+  if (acheck.Orientation(Standard_False) != BRepCheck_NoError)
+    throw insight::Exception("Orientation Error!");
+  
+  BRepBuilderAPI_MakeSolid solidmaker(sshell);
+  
+  if (!solidmaker.IsDone())
+    throw insight::Exception("Creation of solid failed!");
+
+  setShape(solidmaker.Solid());
+}
+
+void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "StitchedSolid",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression % ',' > ')' )
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedSolid>(qi::_1)) ]
+      
+    ))
+  );
+}
+
+
 
 defineType(BooleanUnion);
 addToFactoryTable(SolidModel, BooleanUnion, NoParameters);

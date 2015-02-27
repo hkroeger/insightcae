@@ -108,7 +108,7 @@ namespace mapkey_parser
 	      typename std::map<std::string, T>::const_iterator it=map_->find(key);
 	      if (it!=map_->end())
 	      {
- 		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
+//  		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
 		  match=cur;
 		  matched=true;
 	      }

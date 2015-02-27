@@ -350,7 +350,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
       )
       ;
 
-    r_modelstepFunction %= omit[ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
+    r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
     
     r_solidmodel_primary = 
       ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )

@@ -268,6 +268,13 @@ TopoDS_Wire DXFReader::Wire() const
 // {
 // }
 
+defineType(Sketch);
+addToFactoryTable(SolidModel, Sketch, NoParameters);
+
+Sketch::Sketch(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
 // : SolidModel(makeSketch(pl, fn, ln))
 {

@@ -326,7 +326,8 @@ void addPlot
   const std::string& ylabel,
   const PlotCurveList& plc,
   const std::string& shortDescription,
-  const std::string& addinit = ""
+  const std::string& addinit = "",
+  const std::string& watermarktext = ""
 );
 
 class Chart

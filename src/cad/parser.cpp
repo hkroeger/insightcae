@@ -468,6 +468,8 @@ ISCADParser::ISCADParser(Model::Ptr model)
       qi::lexeme[model_->scalarSymbolNames()]
 	[ _val = phx::bind(&Model::lookupScalarSymbol, model_, qi::_1) ]
       | double_ [ _val = qi::_1 ]
+      | ( lit("pow") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::pow, qi::_1, qi::_2) ]
+      | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sqrt, qi::_1) ]
       | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, qi::_1) ]
       | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, qi::_1) ]
       | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::tan, qi::_1) ]

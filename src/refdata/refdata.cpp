@@ -78,7 +78,7 @@ ReferenceDataLibrary::ReferenceDataLibrary()
         if (exists(mod))
 	{
 	  datasets_[itr->path().filename().string()]=mod;
-	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+// 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
 	}
       }
     }

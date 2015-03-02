@@ -342,21 +342,25 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   
   if (tripwire)
   {
-    setSet
-    (
-      cm, executionPath(),
-      list_of
-      ( str( format("cellSet dummy new boxToCell (-1e-10 %g -1e10) (%g %g 1e10)") % dtrip_ % dtrip_ % (2.*dtrip_) ) )
-      ( str( format("faceSet %s new cellToFace dummy all") % trip_ ) )
-      ( str( format("faceSet %s delete cellToFace dummy both") % trip_ ) )
-      ( "cellSet dummy remove" )
-    );
+    int n=3;
+    double w=W_/double(2*n);
+    std::vector<std::string> cmds;
+    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") % trip_ % dtrip_ % dtrip_ ) );
+    for (int i=0; i<n; i++)
+    {
+      double w0=double(2*i)*w;
+      double w12=double(2*i+1)*w;
+      cmds.push_back( str( format("cellSet %s add boxToCell (-1e-10 %g %g) (%g %g %g)") % trip_ 
+	% dtrip_ % w0 % dtrip_ % (2.*dtrip_) % w12 ) );
+    }
+    cmds.push_back( str( format("cellSet %s invert") % trip_ ) );
     
-    cm.executeCommand(executionPath(), "setsToZones", list_of("-noFlipMap") );
+    setSet(cm, executionPath(), cmds);
     
-    createBaffles(cm, executionPath(), trip_);
-    
-    resetMeshToLatestTimestep(cm, executionPath());
+//     cm.executeCommand(executionPath(), "setsToZones", list_of("-noFlipMap") );
+//     createBaffles(cm, executionPath(), trip_);
+//     resetMeshToLatestTimestep(cm, executionPath());
+    removeCellSetFromMesh(cm, executionPath(), trip_);
   }
 }
 

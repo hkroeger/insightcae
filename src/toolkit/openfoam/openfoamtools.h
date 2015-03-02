@@ -558,6 +558,14 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
 );
 
+void removeCellSetFromMesh
+(
+  const OpenFOAMCase& c, 
+  const boost::filesystem::path& location, 
+  const std::string& cellSetName
+);
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

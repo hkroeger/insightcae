@@ -1834,4 +1834,18 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   return std::pair<arma::mat,arma::mat>(mi, ma);
 }
 
+void removeCellSetFromMesh
+(
+  const OpenFOAMCase& cm,
+  const path& location,
+  const string& cellSetName
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(cellSetName);
+  opts.push_back("-overwrite");
+
+  cm.executeCommand(location, "subsetMesh", opts);
+}
+
 }

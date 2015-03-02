@@ -13,7 +13,7 @@ target_include_directories(refdata
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   )
-target_link_libraries(refdata ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${ARMADILLO_LIBRARY})
+target_link_libraries(refdata ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY}) #${PYTHON_LIBRARIES}
 
 install(TARGETS refdata LIBRARY DESTINATION lib)
 install(

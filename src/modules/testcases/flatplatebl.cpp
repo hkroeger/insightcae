@@ -342,24 +342,29 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   
   if (tripwire)
   {
-    int n=3;
+    int n=4;
     double w=W_/double(2*n);
+    double Ltrip=3.*dtrip_;
+    
     std::vector<std::string> cmds;
-    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") % trip_ % dtrip_ % dtrip_ ) );
+    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") 
+	% trip_ 
+	% Ltrip % /*dtrip_ */0.0
+    ) );
     for (int i=0; i<n; i++)
     {
-      double w0=double(2*i)*w;
-      double w12=double(2*i+1)*w;
-      cmds.push_back( str( format("cellSet %s add boxToCell (-1e-10 %g %g) (%g %g %g)") % trip_ 
-	% dtrip_ % w0 % dtrip_ % (2.*dtrip_) % w12 ) );
+      double w0=(double(2*i)+0.5)*w;
+      double w12=(double(2*i+1)+0.5)*w;
+      cmds.push_back( str( format("cellSet %s add boxToCell (%g %g %g) (%g %g %g)") 
+	% trip_ 
+	% (-1e-10)	% /*dtrip_*/0.0 	% w0 
+	% Ltrip 	% (/*2.**/dtrip_) 	% w12 
+      ) );
     }
     cmds.push_back( str( format("cellSet %s invert") % trip_ ) );
     
     setSet(cm, executionPath(), cmds);
     
-//     cm.executeCommand(executionPath(), "setsToZones", list_of("-noFlipMap") );
-//     createBaffles(cm, executionPath(), trip_);
-//     resetMeshToLatestTimestep(cm, executionPath());
     removeCellSetFromMesh(cm, executionPath(), trip_);
   }
 }
@@ -368,21 +373,17 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 {
   const ParameterSet& p=*parameters_;
+
   // create local variables from ParameterSet
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
-//   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
   PSINT(p, "run", np);
-  
-//   PSDBL(p, "evaluation", inittime);
-//   PSDBL(p, "evaluation", meantime);
-//   PSDBL(p, "evaluation", mean2time);
   
   path dir = executionPath();
 

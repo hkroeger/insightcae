@@ -58,6 +58,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	    ("HBydeltae",		new DoubleParameter(60.0, "Domain height above plate, divided by final BL thickness"))
 	    ("WBydeltae",		new DoubleParameter(20.0, "Domain height above plate, divided by final BL thickness"))
 	    ("L",		new DoubleParameter(5.0, "[m] Length of the domain"))
+	    ("LapByL",		new DoubleParameter(0.1, "Length of the approach zone, divided by length of plate"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Geometrical properties of the domain"
@@ -173,6 +174,7 @@ void FlatPlateBL::calcDerivedInputData()
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
+  PSDBL(p, "geometry", LapByL);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
   PSDBL(p, "mesh", dxplus);
@@ -220,7 +222,7 @@ void FlatPlateBL::calcDerivedInputData()
 
   gradaxi_=p.getDouble("mesh/gradaxi");
 //   naxi_=std::max(1, int(round(0.1*L/deltax)));
-  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, 0.1*L);
+  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, LapByL*L);
   cout<<"naxi="<<naxi_<<endl;
   if (p.getBool("mesh/2d"))
     nlat_=1;
@@ -254,6 +256,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   PSDBL(p, "geometry", HBydeltae);
   PSDBL(p, "geometry", WBydeltae);
   PSDBL(p, "geometry", L);
+  PSDBL(p, "geometry", LapByL);
 //   PSDBL(p, "operation", Re_L);
   PSDBL(p, "fluid", nu);
   PSDBL(p, "mesh", ypluswall);
@@ -277,8 +280,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       (2, 	vec3(L, H_, 0))
       (3, 	vec3(0, H_, 0))
       
-      (4, 	vec3(-0.1*L, 0., 0))
-      (5, 	vec3(-0.1*L, H_, 0))
+      (4, 	vec3(-LapByL*L, 0., 0))
+      (5, 	vec3(-LapByL*L, H_, 0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
@@ -449,8 +452,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
     .set_pressure(0.0)
   ));
   
-  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
-    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
+//  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
+//    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
   
   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
     .set_pressure(0.0)

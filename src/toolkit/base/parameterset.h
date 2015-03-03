@@ -57,7 +57,17 @@ public:
     virtual ~ParameterSet();
 
     EntryList entries() const;
+    
+    /**
+     * insert values from entries, that are not present.
+     * Do not overwrite entries!
+     */
     void extend(const EntryList& entries);
+    
+    /**
+     * insert values from other, overwrite where possible.
+     */
+    void merge(const ParameterSet& other);
     
     template<class T>
     T& get(const std::string& name)
@@ -228,7 +238,7 @@ public:
 //     /*value_.*/this->reset(paramset.clone()); 
     this->setParameterSet(paramset);
   }
-  void merge(const SubsetParameter& other);
+//   void merge(const SubsetParameter& other);
   inline ParameterSet& operator()() { return /**value_*/ static_cast<ParameterSet&>(*this); }
   inline const ParameterSet& operator()() const { return /**value_*/static_cast<const ParameterSet&>(*this); }
   

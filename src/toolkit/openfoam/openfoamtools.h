@@ -545,6 +545,27 @@ arma::mat STLBndBox
   const boost::filesystem::path& path
 );
 
+/**
+ * return extrema in specified zone
+ * @return pair of min and max, first col time, others one col per component
+ */
+std::pair<arma::mat, arma::mat> zoneExtrema
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string fieldName,
+  const std::string zoneName,
+  const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime") 
+);
+
+void removeCellSetFromMesh
+(
+  const OpenFOAMCase& c, 
+  const boost::filesystem::path& location, 
+  const std::string& cellSetName
+);
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

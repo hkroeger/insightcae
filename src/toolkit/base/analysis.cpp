@@ -305,7 +305,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	      
 	      if (type=="library")
 	      {
-		void *handle = dlopen(location.c_str(), /*RTLD_NOW|RTLD_GLOBAL*/RTLD_LAZY|RTLD_NODELETE);
+		void *handle = dlopen(location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/);
 		if (!handle)
 		{
 		  std::cout<<"Omitted "<<itr->path()<<": Could not load module library "<<location<<": " << dlerror() << std::endl;

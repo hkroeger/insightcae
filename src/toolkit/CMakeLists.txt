@@ -26,7 +26,7 @@ file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
-target_link_libraries(toolkit ${Boost_LIBRARIES} ${PYTHON_LIBRARY} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
+target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
 
 target_include_directories(toolkit 
   PUBLIC ${Boost_INCLUDE_DIR}

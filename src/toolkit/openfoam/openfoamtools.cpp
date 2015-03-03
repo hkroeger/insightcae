@@ -1794,4 +1794,58 @@ arma::mat STLBndBox
   return arma::mat();
 }
 
+std::pair<arma::mat, arma::mat> zoneExtrema
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string fieldName,
+  const std::string zoneName,
+  const std::vector<std::string>& addopts
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(fieldName);
+  opts.push_back(zoneName);
+  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+
+  std::vector<std::string> output;
+  cm.executeCommand(location, "zoneExtrema", opts, &output);
+  
+  boost::regex re_vec("^@t=(.+) : min / max \\[(.+)\\]= (.+) (.+) (.+) / (.+) (.+) (.+)$");
+  boost::match_results<std::string::const_iterator> what;
+  
+  arma::mat mi, ma;
+  
+  BOOST_FOREACH(const std::string& l, output)
+  {
+    if (boost::regex_match(l, what, re_vec))
+    {
+      double t=lexical_cast<double>(what[1]);
+      arma::mat mir, mar;
+      mir<<t<<lexical_cast<double>(what[3])<<lexical_cast<double>(what[4])<<lexical_cast<double>(what[5])<<endr;
+      mar<<t<<lexical_cast<double>(what[6])<<lexical_cast<double>(what[7])<<lexical_cast<double>(what[8])<<endr;
+      if (mi.n_rows==0) mi=mir; else mi=join_vert(mi, mir);
+      if (ma.n_rows==0) ma=mar; else ma=join_vert(ma, mar);
+    }
+  }
+  
+  cout<<mi<<ma<<endl;
+  
+  return std::pair<arma::mat,arma::mat>(mi, ma);
+}
+
+void removeCellSetFromMesh
+(
+  const OpenFOAMCase& cm,
+  const path& location,
+  const string& cellSetName
+)
+{
+  std::vector<std::string> opts;
+  opts.push_back(cellSetName);
+  opts.push_back("-overwrite");
+
+  cm.executeCommand(location, "subsetMesh", opts);
+}
+
 }

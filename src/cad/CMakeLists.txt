@@ -5,7 +5,19 @@ find_package(OpenGL)
 find_package(DXFlib)
 find_package(GEOM)
 
-set(insightcad_SOURCES dxfwriter.cpp parser.cpp datum.cpp sketch.cpp geotest.cpp solidmodel.cpp meshing.cpp featurefilter.cpp feature.cpp freeship_interface.cpp)
+set(insightcad_SOURCES 
+  dxfwriter.cpp 
+  parser.cpp 
+  datum.cpp 
+  sketch.cpp 
+  geotest.cpp 
+  solidmodel.cpp 
+  meshing.cpp 
+  featurefilter.cpp 
+  feature.cpp 
+  freeship_interface.cpp
+  evaluation.cpp
+)
 
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})

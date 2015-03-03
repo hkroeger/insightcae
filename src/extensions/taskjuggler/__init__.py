@@ -342,8 +342,8 @@ def runTJ(tjpfile, m4files=[], skipTJ=False):
     acc.writeAccountTJI("accounts.tji")
     events.writeEventTJI("events.tji")
 
-    for m4file in m4files:
-      tjifile=os.path.splitext(m4file)[0]+".tji"
+    for m4file,tjifile in m4files:
+      #tjifile=os.path.splitext(m4file)[0]+".tji"
       ok=ok and (os.system("m4 %s > %s"%(m4file, tjifile))==0)
     ok=ok and (os.system("tj3 "+tjpfile)==0)
   

@@ -60,6 +60,14 @@ void addWrapperToWidget(insight::ParameterSet& pset, QWidget *widget, QWidget *s
 defineType(ParameterWrapper);
 defineFactoryTable(ParameterWrapper, ParameterWrapper::ConstrP);
 
+
+void ParameterWrapper::focusInEvent(QFocusEvent* e)
+{
+    QWidget::focusInEvent(e);
+    std::cout<<p_.description()<<std::endl;
+}
+
+
 ParameterWrapper::ParameterWrapper(const ConstrP& p)
 : QWidget(get<0>(p)),
   name_(get<1>(p)),

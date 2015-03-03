@@ -21,19 +21,21 @@
 #ifndef INSIGHT_CAD_DATUM_H
 #define INSIGHT_CAD_DATUM_H
 
+#include <map>
+
 #include "base/linearalgebra.h"
 
 #include "occinclude.h"
-#include "solidmodel.h"
+// #include "solidmodel.h"
+#include "cadtypes.h"
 
 namespace insight {
 namespace cad {
-  
+
 class Datum
 {
 public:
-  typedef boost::shared_ptr<Datum> Ptr;
-  typedef std::map<std::string, Datum::Ptr> Map;
+  typedef std::map<std::string, DatumPtr> Map;
   
 protected:
   bool providesPointReference_, providesAxisReference_, providesPlanarReference_;
@@ -50,6 +52,9 @@ public:
 
   inline bool providesPlanarReference() const { return providesPlanarReference_; }
   virtual operator const gp_Ax3 () const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
+
 };
 
 class DatumPlane
@@ -77,6 +82,8 @@ public:
   
   virtual operator const gp_Pnt () const;
   virtual operator const gp_Ax3 () const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
 }

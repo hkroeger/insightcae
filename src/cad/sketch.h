@@ -23,7 +23,9 @@
 
 #include "base/linearalgebra.h"
 #include "occinclude.h"
-#include "datum.h"
+
+#include "cadtypes.h"
+#include "solidmodel.h"
 
 #include "dxflib/dl_creationadapter.h"
 #include "dxflib/dl_dxf.h"
@@ -79,8 +81,11 @@ class Sketch
 //   TopoDS_Shape makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
 
 public:
+  declareType("Sketch");
+  Sketch(const NoParameters& nop = NoParameters());
   Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
   operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 }

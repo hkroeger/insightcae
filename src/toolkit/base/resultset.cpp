@@ -609,16 +609,21 @@ void addPlot
   const std::string& ylabel,
   const PlotCurveList& plc,
   const std::string& shortDescription,
-  const std::string& addinit
+  const std::string& addinit,
+  const std::string& watermarktext
 )
 {
-  
+  std::string precmd=addinit+";";
+  if (watermarktext!="")
+  {
+    precmd+="set label \""+watermarktext+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
+  }
   results->insert(resultelementname,
     std::auto_ptr<Chart>(new Chart
     (
       xlabel, ylabel, plc,
       shortDescription, "",
-      addinit
+      precmd
   )));
   
 //   std::string chart_file_name=(workdir/(resultelementname+".png")).string();

@@ -33,6 +33,7 @@
 
 %module(directors="1") cad
 %{
+#include "base/factory.h"
 #include "feature.h"
 #include "featurefilter.h"
 #include "solidmodel.h"
@@ -43,6 +44,7 @@ using namespace insight;
 using namespace insight::cad;
 %}
 
+%include "base/factory.h"
 %include "feature.h"
 %include "featurefilter.h"
 %include "solidmodel.h"

@@ -656,7 +656,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     /*if (OFversion()>=220)
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
-      div["div(phi,U)"]="Gauss linear";
+      div["div(phi,U)"]="Gauss limitedLinearV 0.1";
     div["div(phi,k)"]="Gauss linear";
     div["div(phi,nuTilda)"]="Gauss linear";
   }

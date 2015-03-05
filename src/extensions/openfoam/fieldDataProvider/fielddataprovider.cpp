@@ -427,7 +427,7 @@ void fittedProfile<T>::writeInstant(int i, Ostream& is) const
   BOOST_FOREACH(const arma::mat& c, ccoeffs)
   {
     is << token::BEGIN_SQR << token::SPACE;
-    for (int j=0; j<c.n_elem; j++)
+    for (unsigned int j=0; j<c.n_elem; j++)
       is << c(j) << token::SPACE;
     is << token::END_SQR << token::SPACE;
   }

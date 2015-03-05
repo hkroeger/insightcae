@@ -144,7 +144,7 @@ public:
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 
-arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5);
+arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
 arma::mat sortedByCol(const arma::mat&m, int c);
 

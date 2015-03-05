@@ -468,7 +468,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
     smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
-    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 50.0)),
+    lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 45.0)),
     upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 65.0)),
     smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))

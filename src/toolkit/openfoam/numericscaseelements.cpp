@@ -966,7 +966,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
   fqmc["functionObjectLibs"]= fol;
-  fqmc["lowerNonOrthThreshold"]=20.0;
+  fqmc["lowerNonOrthThreshold"]=45.0;
   fqmc["upperNonOrthThreshold"]=60.0;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
 

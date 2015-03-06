@@ -150,20 +150,23 @@ const ParameterSet& ParameterSet::getSubset(const std::string& name) const
 
 std::string ParameterSet::latexRepresentation() const
 {
-  std::string result= 
-  "\\begin{enumerate}\n";
-  for(const_iterator i=begin(); i!=end(); i++)
+  std::string result="";
+  if (size()>0)
   {
-    result+=
-    "\\item "
-      +cleanSymbols(i->second->description())
-      +"\\\\\n"
-      +"\\textbf{"+cleanSymbols(i->first)+"} = "
-      +i->second->latexRepresentation()
-      +"\n";
+    result= 
+    "\\begin{enumerate}\n";
+    for(const_iterator i=begin(); i!=end(); i++)
+    {
+      result+=
+      "\\item "
+	+cleanSymbols(i->second->description())
+	+"\\\\\n"
+	+"\\textbf{"+cleanSymbols(i->first)+"} = "
+	+i->second->latexRepresentation()
+	+"\n";
+    }
+    result+="\\end{enumerate}\n";
   }
-  result+="\\end{enumerate}\n";
- 
   return result;
 }
 

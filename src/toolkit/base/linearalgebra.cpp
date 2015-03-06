@@ -297,24 +297,25 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
   {
     int n_raw=timeProfs.n_rows;
     int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );
-    int window_ofs=0;
+    int window_ofs=window;
     if (centerwindow) window_ofs=window/2;
     int n_avg=n_raw-window;
     
     arma::mat result=zeros(n_avg, timeProfs.n_cols);
     
-    for (int i=window_ofs; i<n_avg; i++)
+    for (int i=window_ofs; i<n_avg+window_ofs; i++)
     {
-      int from=i-window_ofs, to=from+window-window_ofs;
-      //cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
+      int ri=i-window_ofs;
+      int from=i-window_ofs, to=from+window;
+      cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
       int j0=0;
       if (first_col_is_time)
       {
 	j0=1;
-	result(i,0)=timeProfs(to, 0); // copy time
+	result(ri,0)=timeProfs(i, 0); // copy time
       }
       for (int j=j0; j<timeProfs.n_cols; j++)
-	result(i, j)=mean(timeProfs.rows(from, to).col(j));
+	result(ri, j)=mean(timeProfs.rows(from, to).col(j));
     }
     
     return result;

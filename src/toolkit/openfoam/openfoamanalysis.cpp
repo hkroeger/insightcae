@@ -280,7 +280,7 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   ResultSetPtr results(new ResultSet(p(), name_, "Result Report"));
   
   meshQualityReport(cm, executionPath(), results);
-  currentNumericalSettingsReport(cm, executionPath(), results);
+//   currentNumericalSettingsReport(cm, executionPath(), results);
   
   return results;
 }

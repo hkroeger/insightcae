@@ -1017,15 +1017,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()<210)
   {
     relax["U"]=Urelax;
-    relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
-    relax["\"(p|pd|p_rgh)\""]=prelax;
+    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (prelax<1.) relax["\"(p|pd|p_rgh)\""]=prelax;
   }
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
     eqnRelax["\"U.*\""]=Urelax;
-    eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
-    fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
+    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (prelax<1.) fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
     
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;

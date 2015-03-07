@@ -95,20 +95,20 @@ void ParameterSet::merge(const ParameterSet& p)
     {
       if (p)
       {
-	cout<<"merging subdict "<<key<<endl;
+// 	cout<<"merging subdict "<<key<<endl;
 	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
 	myp->merge(*p);
 	delete p;
       }
       else
       {
-	cout<<"replacing"<<key<<endl;
+// 	cout<<"replacing"<<key<<endl;
 	replace(key, boost::get<1>(i)); // take ownership of objects in given list!
       }
     }
     else 
     {
-      cout<<"inserting "<<key<<endl;
+//       cout<<"inserting "<<key<<endl;
       insert(key, boost::get<1>(i)); // take ownership of objects in given list!
     }
   }

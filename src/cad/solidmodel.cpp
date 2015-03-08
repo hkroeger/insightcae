@@ -2276,6 +2276,7 @@ Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& 
   Quad q(p0-0.5*L*(ex+ey), L*ex, L*ey);
   this->setShape(q);
   TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
+  providedSubshapes_.add("CutSurface", SolidModelPtr(new BooleanIntersection(model, TopoDS::Face(q))));
   this->setShape(BRepAlgoAPI_Cut(model, airspace));
 }
 

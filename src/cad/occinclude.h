@@ -55,6 +55,7 @@
 #include <TColgp_Array2OfPnt.hxx>
 #include <Poly_Triangle.hxx>
 #include <GProp_GProps.hxx>
+#include <GProp_PrincipalProps.hxx>
 #include <BRepGProp.hxx>
 #include <BRepGProp_Face.hxx>
 #include <Geom_Surface.hxx>
@@ -178,6 +179,9 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_InteractiveObject.hxx>
+#include <AIS_ConnectedInteractive.hxx>
+#include <AIS_MultipleConnectedInteractive.hxx>
+#include <AIS_LengthDimension.hxx>
 
 #include "GEOMAlgo_Splitter.hxx"
 

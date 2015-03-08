@@ -396,6 +396,41 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
       markFaceSet(faces);
     }
 
+    if (markVelocityPeaks_)
+    {
+const label procI = Pstream::myProcNo();
+
+const volVectorField& U = mesh_.lookupObject<volVectorField>("U");
+volScalarField magField=mag(U);
+
+                labelList maxIs(Pstream::nProcs());
+                scalarList maxVs(Pstream::nProcs());
+                List<vector> maxCs(Pstream::nProcs());
+
+                label maxProcI = findMax(magField);
+                maxVs[procI] = magField[maxProcI];
+                maxCs[procI] = U.mesh().C()[maxProcI];
+
+                Pstream::gatherList(maxVs);
+                Pstream::gatherList(maxCs);
+                Pstream::scatterList(maxVs);
+                Pstream::scatterList(maxCs);
+
+                    label maxI = findMax(maxVs);
+                    scalar maxValue = maxVs[maxI];
+                    const vector& maxC = maxCs[maxI];
+
+        faceSet faces(mesh_, "dummy", 1);
+	if (maxI==procI)
+{
+ const cell& c=mesh_.cells()[maxProcI];
+forAll(c, i) faces.insert(c[i]);
+}
+        Pout<<"Marking "<<faces.size()<<" faces of velocity peak cell on proc #"<<maxI<<"."<<endl;
+        markFaceSet(faces);
+    }
+
+
     if (sets_.size())
     {
       forAll(sets_, i)
@@ -466,6 +501,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markConcaveFaces_(dict.lookupOrDefault<bool>("markConcaveFaces", false)),
     markHighAspectFaces_(dict.lookupOrDefault<bool>("markHighAspectFaces", true)),
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
+    markVelocityPeaks_(dict.lookupOrDefault<bool>("markVelocityPeaks", false)),
     smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 45.0)),

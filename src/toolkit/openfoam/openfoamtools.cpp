@@ -1782,7 +1782,7 @@ arma::mat STLBndBox
   {
     if (boost::regex_match(l, what, re_bb))
     {
-      return join_horiz
+      return join_rows
       (
 	vec3(lexical_cast<double>(what[1]), lexical_cast<double>(what[2]), lexical_cast<double>(what[3])),
 	vec3(lexical_cast<double>(what[4]), lexical_cast<double>(what[5]), lexical_cast<double>(what[6]))
@@ -1824,8 +1824,8 @@ std::pair<arma::mat, arma::mat> zoneExtrema
       arma::mat mir, mar;
       mir<<t<<lexical_cast<double>(what[3])<<lexical_cast<double>(what[4])<<lexical_cast<double>(what[5])<<endr;
       mar<<t<<lexical_cast<double>(what[6])<<lexical_cast<double>(what[7])<<lexical_cast<double>(what[8])<<endr;
-      if (mi.n_rows==0) mi=mir; else mi=join_vert(mi, mir);
-      if (ma.n_rows==0) ma=mar; else ma=join_vert(ma, mar);
+      if (mi.n_rows==0) mi=mir; else mi=join_cols(mi, mir);
+      if (ma.n_rows==0) ma=mar; else ma=join_cols(ma, mar);
     }
   }
   

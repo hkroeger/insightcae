@@ -567,7 +567,7 @@ void FlatPlateBL::evaluateAtSection
   // Mean velocity profiles
   {
     {
-      arma::mat up=join_horiz(yplus, join_horiz(upaxial.col(1), join_horiz(upwallnormal.col(1), upspanwise.col(1))));
+      arma::mat up=join_rows(yplus, join_rows(upaxial.col(1), join_rows(upwallnormal.col(1), upspanwise.col(1))));
       up.save( (executionPath()/("umeanplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
     }
     
@@ -586,8 +586,8 @@ void FlatPlateBL::evaluateAtSection
     delta99pc(0,1)=0.; delta99pc(1,1)=maxU;
     
     arma::mat visclayer=linspace(0, 10, 10), loglayer=linspace(30,300,2);
-    visclayer=join_horiz(visclayer, visclayer);
-    loglayer=join_horiz(loglayer, (1./0.41)*log(loglayer)+5.);
+    visclayer=join_rows(visclayer, visclayer);
+    loglayer=join_rows(loglayer, (1./0.41)*log(loglayer)+5.);
 
     addPlot
     (
@@ -621,7 +621,7 @@ void FlatPlateBL::evaluateAtSection
   arma::mat Rpvv(join_rows(yplus, data.col(c+3)/pow(utau,2)));
   arma::mat Rpww(join_rows(yplus, data.col(c+5)/pow(utau,2)));
   {
-    arma::mat Rp=join_horiz(yplus, join_horiz(Rpuu.col(1), join_horiz(Rpvv.col(1), Rpww.col(1))));
+    arma::mat Rp=join_rows(yplus, join_rows(Rpuu.col(1), join_rows(Rpvv.col(1), Rpww.col(1))));
     Rp.save( (executionPath()/("Rplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
     
     double maxRp=1.1*as_scalar(arma::max(arma::max(Rp.cols(1,3))));

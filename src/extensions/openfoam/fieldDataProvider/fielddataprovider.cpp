@@ -414,7 +414,7 @@ void fittedProfile<T>::appendInstant(Istream& is)
       }
     } while (!is.eof());
     
-    ccoeffs.push_back(arma::mat(coeff));
+    ccoeffs.push_back(arma::mat(coeff.data(), coeff.size(), 1));
   }
   
   coeffs_.push_back(ccoeffs);

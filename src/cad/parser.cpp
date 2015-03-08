@@ -320,6 +320,15 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
 		    phx::construct<EvaluationPtr>(new_<SolidProperties>(*qi::_2))) 
 	]
+      |
+      ( lit("Hydrostatics") >> '(' 
+	  >> r_identifier >> ',' 
+	  >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' 
+	  >> r_vectorExpression >> ',' >> r_vectorExpression
+	  >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
+	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
+		    phx::construct<EvaluationPtr>(new_<Hydrostatics>(*qi::_6, qi::_2, qi::_3, qi::_4, qi::_5))) 
+	]
       ;
       
     r_viewDef =

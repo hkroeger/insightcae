@@ -49,6 +49,40 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
+class Hydrostatics
+: public Evaluation
+{
+  /**
+   * displaced volume
+   */
+  double V_;
+  
+  /**
+   * centre of buoyancy
+   */
+  arma::mat B_;
+  
+  /**
+   * centre of gravity
+   */
+  arma::mat G_;
+  
+  /**
+   * metacentre
+   */
+  arma::mat M_;
+  
+public:
+  Hydrostatics
+  (
+    const SolidModel& model, 
+    const arma::mat& psurf, const arma::mat& nsurf,
+    const arma::mat& elong, const arma::mat& evert
+  );
+  
+  virtual void write(std::ostream&) const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
 }
 }
 

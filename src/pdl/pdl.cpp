@@ -397,6 +397,47 @@ struct IntParameterParser
   }
 };
 
+struct StringParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    std::string value;
+    
+    Data(const std::string& v, const std::string& d)
+    : ParserDataBase(d), value(v)
+    {std::cout<<d<<std::endl;}
+    
+    virtual void cppAddHeader(std::set< std::string >& headers) const
+    {
+      headers.insert("<string>");
+    }
+    
+    virtual std::string cppType(const std::string&) const
+    {
+      return "std::string";
+    }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::StringParameter"; };   
+    virtual std::string cppValueRep(const std::string& name) const { return "\""+boost::lexical_cast<std::string>(value)+"\""; }
+
+  };
+  
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "string",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( ruleset.r_string >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+      ))
+    );
+  }
+};
+
+
 struct PathParameterParser
 {
   struct Data
@@ -892,6 +933,7 @@ public:
     BoolParameterParser::insertrule<Iterator, Skipper>(rules);
     DoubleParameterParser::insertrule<Iterator, Skipper>(rules);
     VectorParameterParser::insertrule<Iterator, Skipper>(rules);
+    StringParameterParser::insertrule<Iterator, Skipper>(rules);
     PathParameterParser::insertrule<Iterator, Skipper>(rules);
     IntParameterParser::insertrule<Iterator, Skipper>(rules);
     SubsetParameterParser::insertrule<Iterator, Skipper>(rules);

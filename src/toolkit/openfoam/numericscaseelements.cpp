@@ -656,7 +656,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     /*if (OFversion()>=220)
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
-      div["div(phi,U)"]="Gauss linear";
+      div["div(phi,U)"]="Gauss filteredLinear";
     div["div(phi,k)"]="Gauss linear";
     div["div(phi,nuTilda)"]="Gauss linear";
   }
@@ -966,7 +966,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict fqmc;
   fqmc["type"]="faceQualityMarker";
   fqmc["functionObjectLibs"]= fol;
-  fqmc["lowerNonOrthThreshold"]=20.0;
+  fqmc["lowerNonOrthThreshold"]=45.0;
   fqmc["upperNonOrthThreshold"]=60.0;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
 
@@ -1017,15 +1017,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()<210)
   {
     relax["U"]=Urelax;
-    relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
-    relax["\"(p|pd|p_rgh)\""]=prelax;
+    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (prelax<1.) relax["\"(p|pd|p_rgh)\""]=prelax;
   }
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
     eqnRelax["\"U.*\""]=Urelax;
-    eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
-    fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
+    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (prelax<1.) fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
     
     relax["fields"]=fieldRelax;
     relax["equations"]=eqnRelax;
@@ -1211,6 +1211,18 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]=p_.solverName();
+
+  // ============ setup controlDict ================================
+
+  controlDict["maxDeltaT"]=1.0;
+
+  controlDict["maxCo"]=0.4;
+  controlDict["maxAlphaCo"]=0.2;
+  if (p_.implicitPressureCorrection())
+  {
+    controlDict["maxCo"]=5;
+    controlDict["maxAlphaCo"]=2.5;
+  }
 
   // ============ setup fvSolution ================================
   

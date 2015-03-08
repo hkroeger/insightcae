@@ -100,6 +100,14 @@ void AND::initialize(const SolidModel& m)
   f2_->initialize(m);
 }
 
+void AND::firstPass(FeatureID feature)
+{
+  Filter::firstPass(feature);
+  f1_->firstPass(feature);
+  f2_->firstPass(feature);
+}
+
+
 bool AND::checkMatch(FeatureID feature) const
 {
   return f1_->checkMatch(feature) && f2_->checkMatch(feature);
@@ -124,8 +132,16 @@ void OR::initialize(const SolidModel& m)
   f2_->initialize(m);
 }
 
+void OR::firstPass(FeatureID feature)
+{
+  Filter::firstPass(feature);
+  f1_->firstPass(feature);
+  f2_->firstPass(feature);
+}
+
 bool OR::checkMatch(FeatureID feature) const
 {
+//   cout<<feature<<" -> "<<f1_->checkMatch(feature) <<"||"<< f2_->checkMatch(feature)<<endl;
   return f1_->checkMatch(feature) || f2_->checkMatch(feature);
 }
 
@@ -361,6 +377,24 @@ arma::mat edgeCoG::evaluate(FeatureID ei)
 QuantityComputer<arma::mat>::Ptr edgeCoG::clone() const 
 {
   return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
+}
+
+edgeMidTangent::edgeMidTangent() 
+{}
+
+edgeMidTangent::~edgeMidTangent()
+{}
+  
+arma::mat edgeMidTangent::evaluate(FeatureID ei)
+{
+// #error Implement me!
+//   return model_->edgeMidTangent(ei);
+  return vec3(0,0,0);
+}
+  
+QuantityComputer<arma::mat>::Ptr edgeMidTangent::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeMidTangent());
 }
 
 edgeStart::edgeStart() 

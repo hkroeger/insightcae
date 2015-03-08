@@ -23,11 +23,17 @@
 #include "boost/algorithm/string.hpp"
 #include "boost/format.hpp"
 
+#include "datum.h"
+
 #include "TColStd_Array1OfInteger.hxx"
 
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
+
+namespace qi = boost::spirit::qi;
+namespace repo = boost::spirit::repository;
+namespace phx   = boost::phoenix;
 
 
 namespace insight {
@@ -262,6 +268,13 @@ TopoDS_Wire DXFReader::Wire() const
 // {
 // }
 
+defineType(Sketch);
+addToFactoryTable(SolidModel, Sketch, NoParameters);
+
+Sketch::Sketch(const NoParameters& nop): SolidModel(nop)
+{}
+
+
 Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
 // : SolidModel(makeSketch(pl, fn, ln))
 {
@@ -289,7 +302,7 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
   }
   
   TopoDS_Wire w = DXFReader(filename, layername).Wire();
-  providedSubshapes_.add("OuterWire", SolidModel::Ptr(new SolidModel(w)));
+  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w)));
   
   gp_Trsf tr;
   gp_Ax3 ax=pl;
@@ -297,12 +310,31 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
   
   BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
 
-  setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+  if (w.Closed())
+    setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+  else
+    setShape(TopoDS::Wire(btr.Shape()));
 }
 
 Sketch::operator const TopoDS_Face& () const
 {
+  if (!shape_.ShapeType()==TopAbs_FACE)
+    throw insight::Exception("Shape is not a face: presumably, original wire was not closed");
   return TopoDS::Face(shape_);
+}
+
+void Sketch::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Sketch",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_datumExpression > ',' > ruleset.r_path > ',' > ruleset.r_string > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
+      
+    ))
+  );
 }
 
 }

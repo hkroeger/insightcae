@@ -63,6 +63,7 @@ void magnet::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::p
     list_of
     ("cellSet "+p_.name()+" new zoneToCell "+p_.name())
     ("faceSet "+p_.name()+" new cellToFace "+p_.name()+" all")
+    ("faceSet "+p_.name()+" delete boundaryToFace")
   );
   cm.executeCommand(location, "setsToZones", list_of("-noFlipMap"));
 }

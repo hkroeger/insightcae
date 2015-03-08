@@ -35,6 +35,8 @@
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
+#include <GeomAPI_PointsToBSpline.hxx>
+#include <GeomAPI_PointsToBSplineSurface.hxx>
 #include <BRepTools.hxx>
 #include <TopExp.hxx>
 #include <BRepProj_Projection.hxx>
@@ -50,11 +52,14 @@
 #include <Poly_Triangulation.hxx>
 #include <Poly_Array1OfTriangle.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
+#include <TColgp_Array2OfPnt.hxx>
 #include <Poly_Triangle.hxx>
 #include <GProp_GProps.hxx>
+#include <GProp_PrincipalProps.hxx>
 #include <BRepGProp.hxx>
 #include <BRepGProp_Face.hxx>
 #include <Geom_Surface.hxx>
+#include <Geom_Plane.hxx>
 #include <TopExp.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Ax3.hxx>
@@ -168,8 +173,15 @@
 #include "ElCLib.hxx"
 #include "Geom_Circle.hxx"
 #include "Geom_TrimmedCurve.hxx"
+#include "Geom_CartesianPoint.hxx"
 
 #include "BRepAdaptor_CompCurve.hxx"
+
+#include <AIS_InteractiveContext.hxx>
+#include <AIS_InteractiveObject.hxx>
+#include <AIS_ConnectedInteractive.hxx>
+#include <AIS_MultipleConnectedInteractive.hxx>
+#include <AIS_LengthDimension.hxx>
 
 #include "GEOMAlgo_Splitter.hxx"
 

@@ -35,7 +35,7 @@ namespace insight
 {
   
 class ResultElement
-: boost::noncopyable
+: public boost::noncopyable
 {
 public:
   typedef boost::tuple<const std::string&, const std::string&, const std::string&> ResultElementConstrP;
@@ -326,7 +326,8 @@ void addPlot
   const std::string& ylabel,
   const PlotCurveList& plc,
   const std::string& shortDescription,
-  const std::string& addinit = ""
+  const std::string& addinit = "",
+  const std::string& watermarktext = ""
 );
 
 class Chart

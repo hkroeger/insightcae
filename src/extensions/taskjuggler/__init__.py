@@ -112,6 +112,7 @@ accountreport projectcashflowExport "cashflow" {
     cols3={}
     
     liq=beginliq
+    operrescum=0.0
     for m in range(0,12):
       i=si+m
       
@@ -132,8 +133,11 @@ accountreport projectcashflowExport "cashflow" {
       sumccoo=sum(ccoo)
       sumo=sum(cco)+sumccoo
       operres=sumi-sumo
+      operrescum+=operres
       grants=self.accounts["in_grant"][i]
-      tax=max(0.0, 0.15*operres)
+      tax=0.0
+      if m+1==12: 
+	tax=max(0.0, 0.35*operrescum)
       finalres=operres+grants-tax
       
       cols.append(
@@ -261,6 +265,9 @@ accountreport projectcashflowExport "cashflow" {
     cost_other=sum([cols[m][7] for m in range(0,12)])
     cost_tot=cost_mat+cost_staff+cost_depre+cost_inter+cost_other
     result=totalrev-cost_tot
+    grants=sum([cols[m][-3] for m in range(0,12)])
+    taxes=sum([cols[m][-2] for m in range(0,12)])
+    finalres=result+grants-taxes
 
     cols3["Umsatzerlöse"]="& \\E{%.0f} &"%rev
     cols3["Sonstige Erträge"]="& \\E{%.0f} &"%otherrev
@@ -280,6 +287,11 @@ accountreport projectcashflowExport "cashflow" {
     cols3["Betriebsaufwand"]="& \\E{%.0f} & %.0f\\%% "%(cost_tot, per(1e2*cost_tot,totalrev))
 
     cols3["Betriebsergebnis"]="& \\E{%.0f} & %.0f\\%% "%(result, per(1e2*result,totalrev))
+
+    cols3["Öffentl. Zuschüsse"]="& \\E{%.0f} & %.0f\\%% "%(grants, per(1e2*grants,totalrev))
+    cols3["Steuern auf Erträge"]="& \\E{%.0f} & %.0f\\%% "%(taxes, per(1e2*taxes,totalrev))
+
+    cols3["Ausgew. Betriebsergebnis"]="& \\E{%.0f} & %.0f\\%% "%(finalres, per(1e2*finalres,totalrev))
     
     return (res, res2, liq, cols, cols2, cols3)
 
@@ -342,8 +354,8 @@ def runTJ(tjpfile, m4files=[], skipTJ=False):
     acc.writeAccountTJI("accounts.tji")
     events.writeEventTJI("events.tji")
 
-    for m4file in m4files:
-      tjifile=os.path.splitext(m4file)[0]+".tji"
+    for m4file,tjifile in m4files:
+      #tjifile=os.path.splitext(m4file)[0]+".tji"
       ok=ok and (os.system("m4 %s > %s"%(m4file, tjifile))==0)
     ok=ok and (os.system("tj3 "+tjpfile)==0)
   
@@ -438,7 +450,13 @@ def postprocTJ(acc, events, fromyear, nyear):
     "- sonst. Aufwand",
     "Betriebsaufwand",
     None,
-    "Betriebsergebnis"]:
+    "Betriebsergebnis",
+    None,
+    "Öffentl. Zuschüsse",
+    "Steuern auf Erträge",
+    None,
+    "Ausgew. Betriebsergebnis"    
+    ]:
     if rn is None:
       f.write("\\hline\n")
     else:

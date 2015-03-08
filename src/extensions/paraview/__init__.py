@@ -80,9 +80,23 @@ try:
         #print p
         return GetLookupTableForArray(arrayName, component, **p)
     
+    def displaySolid(obj):
+        disp = GetDisplayProperties(obj)
+        disp.LookupTable=None
+        try:
+         disp.ColorAttributeType=None
+	 disp.ColorArrayName=None
+        except:
+         # ceases to exists from paraview 4.2 onwards
+         disp.ColorArrayName=(None, None)
+	disp.Representation = 'Surface'
+	disp.DiffuseColor = [0, 1, 1]
     
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
-                       title=None, barpos=[0.75, 0.25], barorient=1, arrayType='POINT_DATA'):
+                       title=None, 
+                       barpos=[0.75, 0.25], 
+                       barsize=[0,0],
+                       barorient=1, arrayType='POINT_DATA'):
         disp = GetDisplayProperties(obj)
         if minV is None or maxV is None:
 	  if (arrayType=='POINT_DATA'):
@@ -116,11 +130,13 @@ try:
         bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
                               Title=t, #(arrayName if title is None else title),
-                              #Position=barpos, 
-                              #Orientation=barorient,
+                              Position=barpos, 
+                              Position2=barsize, #[barpos[0]+barsize[0], barpos[1]+barsize[1]], 
+                              Orientation=barorient,
                               TitleFontSize=14, LabelFontSize=12,
                               TitleColor=[0,0,0], LabelColor=[0,0,0]
                               )
+	bar.ComponentTitle=""
         GetRenderView().Representations.append(bar)
         return bar
     

@@ -287,27 +287,43 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   return x_l;
 }
 
-arma::mat movingAverage(const arma::mat& timeProfs, double fraction)
+arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
-  if ( (timeProfs.n_rows>0) && (timeProfs.n_cols>2) )
+  if (first_col_is_time && timeProfs.n_cols<2)
+    throw insight::Exception("movingAverage: first column specified as time but only dataset with "
+      +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
+  
+  if (timeProfs.n_rows>0)
   {
     int n_raw=timeProfs.n_rows;
-    int window=std::min(n_raw, std::max(1, int( double(n_raw)*fraction )) );
+    int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );
+    int window_ofs=window;
+    if (centerwindow) window_ofs=window/2;
     int n_avg=n_raw-window;
     
     arma::mat result=zeros(n_avg, timeProfs.n_cols);
     
-    for (int i=0; i<n_avg; i++)
+    for (int i=window_ofs; i<n_avg+window_ofs; i++)
     {
-      int from=i, to=from+window;
-      //cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
-      result(i,0)=timeProfs(to, 0); // copy time
-      for (int j=1; j<timeProfs.n_cols; j++)
-	result(i, j)=mean(timeProfs.rows(from, to).col(j));
+      int ri=i-window_ofs;
+      int from=i-window_ofs, to=from+window;
+      cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
+      int j0=0;
+      if (first_col_is_time)
+      {
+	j0=1;
+	result(ri,0)=timeProfs(i, 0); // copy time
+      }
+      for (int j=j0; j<timeProfs.n_cols; j++)
+	result(ri, j)=mean(timeProfs.rows(from, to).col(j));
     }
+    
     return result;
+    
   } else 
+  {
     return timeProfs;
+  }
 }
 
 arma::mat sortedByCol(const arma::mat&m, int c)
@@ -377,11 +393,27 @@ double Interpolator::y(double x, int col) const
   return v;
 }
 
+double Interpolator::dydx(double x, int col) const
+{
+  if (x<first(0)) return dydx(first(0), col);
+  if (x>last(0)) return dydx(last(0), col);
+  double v=gsl_spline_eval_deriv (&(spline[col]), x, &(*acc));
+  return v;
+}
+
 arma::mat Interpolator::operator()(double x) const
 {
   arma::mat result=zeros(1, spline.size());
   for (int i=0; i<spline.size(); i++)
     result(0,i)=y(x, i);
+  return result;
+}
+
+arma::mat Interpolator::dydxs(double x) const
+{
+  arma::mat result=zeros(1, spline.size());
+  for (int i=0; i<spline.size(); i++)
+    result(0,i)=dydx(x, i);
   return result;
 }
 
@@ -391,6 +423,16 @@ arma::mat Interpolator::operator()(const arma::mat& x) const
   for (int j=0; j<x.n_rows; j++)
   {
     result.row(j) = this->operator()(x(j));
+  }
+  return result;
+}
+
+arma::mat Interpolator::dydxs(const arma::mat& x) const
+{
+  arma::mat result=zeros(x.n_rows, spline.size());
+  for (int j=0; j<x.n_rows; j++)
+  {
+    result.row(j) = this->dydxs(x(j));
   }
   return result;
 }

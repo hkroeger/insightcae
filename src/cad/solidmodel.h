@@ -27,33 +27,43 @@
 
 #include "base/boost_include.h"
 
+
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"
+#include "base/factory.h"
 
 #include "occinclude.h"
 
+#include "cadtypes.h"
+
 #include "feature.h"
 #include "featurefilter.h"
+
+#include "parser.h"
 
 namespace insight 
 {
 namespace cad 
 {
 
-class Datum;
-class SolidModel;
+// class Datum;
+// class SolidModel;
 
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
+
 class SolidModel
 {
 public:
-  typedef boost::shared_ptr<SolidModel> Ptr;
-  typedef boost::spirit::qi::symbols<char, SolidModel::Ptr> Map;
+  declareFactoryTable(SolidModel, NoParameters); 
+
+  
+//   typedef boost::shared_ptr<SolidModel> Ptr;
+  typedef boost::spirit::qi::symbols<char, SolidModelPtr> Map;
   
   struct View
   {
@@ -74,10 +84,12 @@ protected :
   
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void setShape(const TopoDS_Shape& shape);
+  
  
 public:
+  declareType("SolidModel");
   
-  SolidModel();
+  SolidModel(const NoParameters& nop = NoParameters());
   SolidModel(const SolidModel& o);
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
@@ -107,6 +119,7 @@ public:
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
   arma::mat modelCoG() const;
+  double modelVolume() const;
   
   /**
    * return bounding box of model
@@ -146,64 +159,172 @@ public:
   ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const SolidModel& m);
+
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  virtual bool isSingleEdge() const;
+  virtual bool isSingleOpenWire() const;
+  virtual bool isSingleClosedWire() const;
+  virtual bool isSingleWire() const;
+  virtual bool isSingleFace() const;
+  virtual bool isSingleVolume() const;
+
+  virtual TopoDS_Edge asSingleEdge() const;
+  virtual TopoDS_Wire asSingleOpenWire() const;
+  virtual TopoDS_Wire asSingleClosedWire() const;
+  virtual TopoDS_Wire asSingleWire() const;
+  virtual TopoDS_Face asSingleFace() const;
+  virtual TopoDS_Shape asSingleVolume() const;
+
 };
 
-
-// =================== 2D Primitives ======================
-
-class Tri
+class Import
 : public SolidModel
 {
 public:
+  declareType("Import");
+  Import(const NoParameters& nop = NoParameters());
+  Import(const boost::filesystem::path& filepath);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+// =================== 1D Primitives ======================
+class SplineCurve
+: public SolidModel
+{
+public:
+  declareType("SplineCurve");
+  SplineCurve(const NoParameters& nop = NoParameters());
+  SplineCurve(const std::vector<arma::mat>& pts);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleEdge() const { return true; };
+};
+
+class Wire
+: public SolidModel
+{
+public:
+  declareType("Wire");
+  Wire(const NoParameters& nop = NoParameters());
+  Wire(const FeatureSet& edges);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleCloseWire() const;
+  virtual bool isSingleOpenWire() const;
+};
+
+// =================== 2D Primitives ======================
+
+class SingleFaceFeature
+: public SolidModel
+{
+public:
+  virtual bool isSingleCloseWire() const;
+  virtual TopoDS_Wire asSingleClosedWire() const;
+  virtual bool isSingleFace() const;
+};
+
+class Tri
+: public SingleFaceFeature
+{
+public:
+  declareType("Tri");
+  Tri(const NoParameters& nop = NoParameters());
   Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
   operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
 };
 
 
 class Quad
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
+  declareType("Quad");
+  Quad(const NoParameters& nop = NoParameters());
   Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W);
   operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 
 class Circle
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
+  declareType("Circle");
+  Circle(const NoParameters& nop = NoParameters());
   Circle(const arma::mat& p0, const arma::mat& n, double D);
   operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class RegPoly
-: public SolidModel
+: public SingleFaceFeature
 {
 public:
+  declareType("RegPoly");
+  RegPoly(const NoParameters& nop = NoParameters());
   RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
 	  const arma::mat& ez = arma::mat());
   operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+class SplineSurface
+: public SingleFaceFeature
+{
+public:
+  declareType("SplineSurface");
+  SplineSurface(const NoParameters& nop = NoParameters());
+  SplineSurface(const std::vector<std::vector<arma::mat> >& pts);
+  operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class BoundedFlatFace
+: public SingleFaceFeature
+{
+public:
+  declareType("BoundedFlatFace");
+  BoundedFlatFace(const NoParameters& nop=NoParameters());
+  BoundedFlatFace(const std::vector<SolidModelPtr>& edges);
+  BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
+  operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
 
 // =================== Primitives ======================
-class Cylinder
+
+class SingleVolumeFeature
 : public SolidModel
 {
 public:
+  virtual bool isSingleVolume() const;
+};
+
+class Cylinder
+: public SingleVolumeFeature
+{
+public:
+  declareType("Cylinder");
+  Cylinder(const NoParameters& nop = NoParameters());
   Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Shoulder
-: public SolidModel
+: public SingleVolumeFeature
 {
 public:
+  declareType("Shoulder");
+  Shoulder(const NoParameters& nop = NoParameters());
   Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Box
-: public SolidModel
+: public SingleVolumeFeature
 {
 protected:
   TopoDS_Shape makeBox
@@ -216,6 +337,8 @@ protected:
   );
   
 public:
+  declareType("Box");
+  Box(const NoParameters& nop = NoParameters());
   Box
   (
     const arma::mat& p0, 
@@ -224,13 +347,17 @@ public:
     const arma::mat& L3,
     bool centered=false
   );
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Sphere
-: public SolidModel
+: public SingleVolumeFeature
 {
 public:
+  declareType("Sphere");
+  Sphere(const NoParameters& nop = NoParameters());
   Sphere(const arma::mat& p, double D);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 // class Halfspace
@@ -244,21 +371,50 @@ class Extrusion
 : public SolidModel
 {
 public:
+  declareType("Extrusion");
+  Extrusion(const NoParameters& nop = NoParameters());
   Extrusion(const SolidModel& sk, const arma::mat& L, bool centered=false);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Revolution
 : public SolidModel
 {
 public:
+  declareType("Revolution");
+  Revolution(const NoParameters& nop = NoParameters());
   Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Sweep
+: public SolidModel
+{
+public:
+  declareType("Sweep");
+  Sweep(const NoParameters& nop = NoParameters());
+  Sweep(const std::vector<SolidModelPtr>& secs);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class RotatedHelicalSweep
 : public SolidModel
 {
 public:
+  declareType("RotatedHelicalSweep");
+  RotatedHelicalSweep(const NoParameters& nop = NoParameters());
   RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class StitchedSolid
+: public SolidModel
+{
+public:
+  declareType("StitchedSolid");
+  StitchedSolid(const NoParameters& nop = NoParameters());
+  StitchedSolid(const std::vector<SolidModelPtr>& faces);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 // =================== Boolean operations ======================
@@ -266,7 +422,10 @@ class BooleanUnion
 : public SolidModel
 {
 public:
+  declareType("BooleanUnion");
+  BooleanUnion(const NoParameters& nop = NoParameters());
   BooleanUnion(const SolidModel& m1, const SolidModel& m2);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 SolidModel operator|(const SolidModel& m1, const SolidModel& m2);
@@ -275,7 +434,10 @@ class BooleanSubtract
 : public SolidModel
 {
 public:
+  declareType("BooleanSubtract");
+  BooleanSubtract(const NoParameters& nop = NoParameters());
   BooleanSubtract(const SolidModel& m1, const SolidModel& m2);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 SolidModel operator-(const SolidModel& m1, const SolidModel& m2);
@@ -284,7 +446,10 @@ class BooleanIntersection
 : public SolidModel
 {
 public:
+  declareType("BooleanIntersection");
+  BooleanIntersection(const NoParameters& nop = NoParameters());
   BooleanIntersection(const SolidModel& m1, const SolidModel& m2);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 SolidModel operator&(const SolidModel& m1, const SolidModel& m2);
@@ -293,14 +458,20 @@ class Projected
 : public SolidModel
 {
 public:
+  declareType("Projected");
+  Projected(const NoParameters& nop = NoParameters());
   Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Split
 : public SolidModel
 {
 public:
+  declareType("Split");
+  Split(const NoParameters& nop = NoParameters());
   Split(const SolidModel& source, const SolidModel& target);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 // =================== Cosmetic features ======================
@@ -311,7 +482,10 @@ class Fillet
   TopoDS_Shape makeFillets(const SolidModel& m1, const FeatureSet& edges, double r);
   
 public:
+  declareType("Fillet");
+  Fillet(const NoParameters& nop = NoParameters());
   Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Chamfer
@@ -320,7 +494,10 @@ class Chamfer
   TopoDS_Shape makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l);
   
 public:
+  declareType("Chamfer");
+  Chamfer(const NoParameters& nop = NoParameters());
   Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 
@@ -332,7 +509,10 @@ class CircularPattern
   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
   
 public:
+  declareType("CircularPattern");
+  CircularPattern(const NoParameters& nop = NoParameters());
   CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class LinearPattern
@@ -341,7 +521,10 @@ class LinearPattern
   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& axis, int n);
   
 public:
+  declareType("LinearPattern");
+  LinearPattern(const NoParameters& nop = NoParameters());
   LinearPattern(const SolidModel& m1, const arma::mat& axis, int n);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 // =================== Modifier features ======================
@@ -353,24 +536,55 @@ class Transform
   TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
   
 public:
+  declareType("Transform");
+  Transform(const NoParameters& nop = NoParameters());
   Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Mirror
+: public SolidModel
+{
+  
+public:
+  declareType("Mirror");
+  Mirror(const NoParameters& nop = NoParameters());
+  Mirror(const SolidModel& m1, const Datum& pl);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Place
 : public SolidModel
 {
 public:
+  declareType("Place");
+  Place(const NoParameters& nop = NoParameters());
+  Place(const SolidModel& m, const gp_Ax2& cs);
   Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 class Compound
 : public SolidModel
 {
-  TopoDS_Shape makeCompound(const std::vector<SolidModel::Ptr>& m1);
+  TopoDS_Shape makeCompound(const std::vector<SolidModelPtr>& m1);
   
 public:
-  Compound(const std::vector<SolidModel::Ptr>& m1);
+  declareType("Compound");
+  Compound(const NoParameters& nop = NoParameters());
+  Compound(const std::vector<SolidModelPtr>& m1);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Cutaway
+: public SolidModel
+{
+public:
+  declareType("Cutaway");
+  Cutaway(const NoParameters& nop = NoParameters());
+  Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 }

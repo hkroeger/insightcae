@@ -280,7 +280,7 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   ResultSetPtr results(new ResultSet(p(), name_, "Result Report"));
   
   meshQualityReport(cm, executionPath(), results);
-  currentNumericalSettingsReport(cm, executionPath(), results);
+//   currentNumericalSettingsReport(cm, executionPath(), results);
   
   return results;
 }
@@ -420,7 +420,19 @@ ResultSetPtr OpenFOAMParameterStudy::operator()(ProgressDisplayer* displayer)
     ofe.setExecutionMachine(machine);
     
     path exep=executionPath();
-    base_case->setParameters(p);
+    
+    // Generate a valid parameterset with actual values for mesh mesh genration
+    // use first value from each range
+    ParameterSet defp(p);
+    for (int j=0; j<varp_.size(); j++)
+    {
+      // Replace RangeParameter by first actual single value
+      const DoubleRangeParameter& rp = p.get<DoubleRangeParameter>(varp_[j]);
+      DoubleParameter* dp=rp.toDoubleParameter(rp.values().begin());
+      defp.replace(varp_[j], dp);
+    }
+    base_case->setParameters(defp);
+    
     base_case->setExecutionPath(exep);
     dir = base_case->setupExecutionEnvironment();
 

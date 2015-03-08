@@ -78,7 +78,7 @@ ReferenceDataLibrary::ReferenceDataLibrary()
         if (exists(mod))
 	{
 	  datasets_[itr->path().filename().string()]=mod;
-	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+// 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
 	}
       }
     }
@@ -126,8 +126,9 @@ arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const
 
       std::ostringstream cmd;
       cmd<<
-	  "import imp;"
-	  "mod=imp.load_source('mod', "<<i->second<<");"
+	  "import sys; sys.path+=['"<<getenv("HOME")<<"']; import Referenzdaten."<< dataSetName <<" as mod;"
+// 	  "import imp;"
+// 	  "mod=imp.load_source('mod', "<<i->second<<");"
 	  "result=mod.getProfile('"<<path<<"')";
       cout<<cmd.str()<<endl;
 

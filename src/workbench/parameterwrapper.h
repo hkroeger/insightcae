@@ -54,6 +54,8 @@ protected:
   QString name_;
   insight::Parameter& p_;
   
+  virtual void focusInEvent( QFocusEvent* );
+  
 public:
   declareType("ParameterWrapper");
   ParameterWrapper(const ConstrP& p);

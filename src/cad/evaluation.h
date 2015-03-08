@@ -18,75 +18,72 @@
  *
  */
 
-#ifndef INSIGHT_CAD_DATUM_H
-#define INSIGHT_CAD_DATUM_H
-
-#include <map>
+#ifndef INSIGHT_CAD_EVALUATION_H
+#define INSIGHT_CAD_EVALUATION_H
 
 #include "base/linearalgebra.h"
 
 #include "occinclude.h"
-// #include "solidmodel.h"
 #include "cadtypes.h"
 
 namespace insight {
 namespace cad {
-
-class Datum
+  
+class Evaluation
 {
 public:
-  typedef std::map<std::string, DatumPtr> Map;
-  
-protected:
-  bool providesPointReference_, providesAxisReference_, providesPlanarReference_;
-  
-public:
-  Datum(bool point, bool axis, bool planar);
-  virtual ~Datum();
-  
-  inline bool providesPointReference() const { return providesPointReference_; }
-  virtual operator const gp_Pnt () const;
-  
-  inline bool providesAxisReference() const { return providesAxisReference_; }
-  virtual operator const gp_Ax1 () const;
-
-  inline bool providesPlanarReference() const { return providesPlanarReference_; }
-  virtual operator const gp_Ax3 () const;
-
-  virtual AIS_InteractiveObject* createAISRepr() const;
-
+  virtual void write(std::ostream&) const =0;
+  virtual AIS_InteractiveObject* createAISRepr() const =0;
 };
 
-class DatumPlane
-: public Datum
+
+class SolidProperties
+: public Evaluation
 {
-  gp_Ax3 cs_;
+  arma::mat cog_;
   
 public:
-  DatumPlane
-  (
-    const arma::mat& p0, 
-    const arma::mat& n
-  );
-  DatumPlane
-  (
-    const arma::mat& p0, 
-    const arma::mat& n,
-    const arma::mat& up
-  );
-  DatumPlane
-  (
-    const SolidModel& m, 
-    FeatureID f
-  );
+  SolidProperties(const SolidModel& model);
   
-  virtual operator const gp_Pnt () const;
-  virtual operator const gp_Ax3 () const;
-
+  virtual void write(std::ostream&) const;
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
+class Hydrostatics
+: public Evaluation
+{
+  /**
+   * displaced volume
+   */
+  double V_;
+  
+  /**
+   * centre of buoyancy
+   */
+  arma::mat B_;
+  
+  /**
+   * centre of gravity
+   */
+  arma::mat G_;
+  
+  /**
+   * metacentre
+   */
+  arma::mat M_;
+  
+public:
+  Hydrostatics
+  (
+    const SolidModel& model, 
+    const arma::mat& psurf, const arma::mat& nsurf,
+    const arma::mat& elong, const arma::mat& evert
+  );
+  
+  virtual void write(std::ostream&) const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
 }
 }
 
-#endif // INSIGHT_CAD_DATUM_H
+#endif

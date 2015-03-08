@@ -128,6 +128,7 @@ public:
     void enqueue(const AnalysisInstance& data);
     // Get data from the queue. Wait for data if not available
     AnalysisInstance dequeue();
+    inline int n_instances() const { return m_queue.size(); }
     
     inline void clear() { m_queue=std::queue<AnalysisInstance>(); processed_.clear(); }
     inline bool isEmpty() { return m_queue.size()==0; }

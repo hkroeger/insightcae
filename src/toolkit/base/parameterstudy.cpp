@@ -188,9 +188,10 @@ void ParameterStudy::setupQueue()
 void ParameterStudy::processQueue(insight::ProgressDisplayer* displayer)
 {
   const ParameterSet& p = *parameters_;
-
+  int nt = std::min( p.getInt("run/numthread"), queue_.n_instances() );
+  
   boost::ptr_vector<AnalysisWorkerThread> threads;
-  for (int i=0; i<p.getInt("run/numthread"); i++)
+  for (int i=0; i<nt; i++)
   {
     threads.push_back(new AnalysisWorkerThread(&queue_, displayer));
   }

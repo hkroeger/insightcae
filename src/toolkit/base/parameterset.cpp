@@ -70,12 +70,47 @@ void ParameterSet::extend(const EntryList& entries)
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
     if (p && this->contains(key))
     {
-      cout<<"merging subdict "<<key<<endl;
-      SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
-      myp->merge(*p);
-      delete p;
+	cout<<"merging subdict "<<key<<endl;
+	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
+	myp->extend(p->entries());
+	delete p;
     }
-    else insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+    else 
+    {
+      cout<<"inserting "<<key<<endl;
+    // insert does not replace!
+      insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+    }
+  }
+}
+
+void ParameterSet::merge(const ParameterSet& p)
+{
+  EntryList entries=p.entries();
+  BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
+  {
+    std::string key(boost::get<0>(i));
+    SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
+    if (this->contains(key))
+    {
+      if (p)
+      {
+// 	cout<<"merging subdict "<<key<<endl;
+	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
+	myp->merge(*p);
+	delete p;
+      }
+      else
+      {
+// 	cout<<"replacing"<<key<<endl;
+	replace(key, boost::get<1>(i)); // take ownership of objects in given list!
+      }
+    }
+    else 
+    {
+//       cout<<"inserting "<<key<<endl;
+      insert(key, boost::get<1>(i)); // take ownership of objects in given list!
+    }
   }
 }
 
@@ -115,20 +150,23 @@ const ParameterSet& ParameterSet::getSubset(const std::string& name) const
 
 std::string ParameterSet::latexRepresentation() const
 {
-  std::string result= 
-  "\\begin{enumerate}\n";
-  for(const_iterator i=begin(); i!=end(); i++)
+  std::string result="";
+  if (size()>0)
   {
-    result+=
-    "\\item "
-      +cleanSymbols(i->second->description())
-      +"\\\\\n"
-      +"{\\bf "+cleanSymbols(i->first)+"} = "
-      +i->second->latexRepresentation()
-      +"\n";
+    result= 
+    "\\begin{enumerate}\n";
+    for(const_iterator i=begin(); i!=end(); i++)
+    {
+      result+=
+      "\\item "
+	+cleanSymbols(i->second->description())
+	+"\\\\\n"
+	+"\\textbf{"+cleanSymbols(i->first)+"} = "
+	+i->second->latexRepresentation()
+	+"\n";
+    }
+    result+="\\end{enumerate}\n";
   }
-  result+="\\end{enumerate}\n";
- 
   return result;
 }
 
@@ -243,10 +281,10 @@ SubsetParameter::SubsetParameter(const ParameterSet& defaultValue, const std::st
 {
 }
 
-void SubsetParameter::merge(const SubsetParameter& other)
-{
-  this->extend(other.entries());
-}
+// void SubsetParameter::merge(const SubsetParameter& other)
+// {
+//   this->merge(other);
+// }
 
 std::string SubsetParameter::latexRepresentation() const
 {
@@ -301,7 +339,11 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
 
 std::string SelectableSubsetParameter::latexRepresentation() const
 {
-  return "(Not implemented)";
+//  return "(Not implemented)";
+  std::ostringstream os;
+  os<<"selected as ``"<<selection_<<"''\\\\"<<endl;
+  os<<operator()().latexRepresentation();
+  return os.str();
 }
 
 Parameter* SelectableSubsetParameter::clone () const

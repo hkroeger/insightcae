@@ -29,7 +29,7 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 
-#define SIGN(x) ((x)<0.0?-1.0:1.0)
+// #define SIGN(x) ((x)<0.0?-1.0:1.0)
 
 namespace insight 
 {
@@ -144,7 +144,7 @@ public:
 
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 
-arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5);
+arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 
 arma::mat sortedByCol(const arma::mat&m, int c);
 
@@ -165,18 +165,31 @@ public:
   Interpolator(const arma::mat& xy, bool force_linear=false);
   ~Interpolator();
   /**
-   * returns a single y-value from column column
+   * returns a single y-value from column col
    */
   double y(double x, int col=0) const;
+  /**
+   * returns a single dy/dx-value from column col
+   */
+  double dydx(double x, int col=0) const;
   /**
    * interpolates all y values (row vector) at x
    */
   arma::mat operator()(double x) const;
   /**
+   * interpolates all y values (row vector) at x
+   */
+  arma::mat dydxs(double x) const;
+  /**
    * interpolates all y values (row vector) 
    * at multiple locations given in x
    */
   arma::mat operator()(const arma::mat& x) const;
+  /**
+   * computes all derivative values (row vector) 
+   * at multiple locations given in x
+   */
+  arma::mat dydxs(const arma::mat& x) const;
 
   /**
    * interpolates all y values (row vector) 

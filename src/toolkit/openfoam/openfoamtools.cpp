@@ -559,7 +559,7 @@ arma::mat line::readSamples
       rdata=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
       arma::mat idata=Interpolator(data)(arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows));
 //       std::cout<<data<<idata<<endl;
-      rdata=join_horiz( rdata, idata );
+      rdata=join_rows( rdata, idata );
   }
   
 //   return data;
@@ -746,7 +746,7 @@ linearAveragedPolyLine::linearAveragedPolyLine(linearAveragedPolyLine::Parameter
     {
       arma::mat ofs = p_.dir1()*(double(i)/double(max(1,p_.nd1()-1))) + p_.dir2()*(double(j)/double(max(1,p_.nd2()-1)));
       arma::mat tp =
-	join_horiz(join_horiz( 
+	join_rows(join_rows( 
 	    p_.points().col(0)+ofs(0), 
 	    p_.points().col(1)+ofs(1) ), 
 	    p_.points().col(2)+ofs(2)

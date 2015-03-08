@@ -78,6 +78,15 @@
 
 #include <armadillo>
 
+arma::mat vec2mat(const std::vector<double>& vals)
+{
+ arma::mat m = arma::zeros(vals.size());
+ for (size_t i=0; i<vals.size(); i++) m(i)=vals[i];
+ return m;
+}
+
+BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec2mat_, vec2mat, 1);
+
 using namespace std;
 
 namespace qi = boost::spirit::qi;
@@ -299,6 +308,8 @@ struct DoubleParameterParser
   }
 };
 
+
+
 struct VectorParameterParser
 {
   struct Data
@@ -330,7 +341,7 @@ struct VectorParameterParser
       {
 	os<<"("<<value(i)<<")";
       }
-      os<<".convert_to_container<std::vector<double> >())";
+      os<<".convert_to_container<std::vector<double> >().data(), "<<value.n_elem<<", 1)";
       return os.str();
     }
     
@@ -344,7 +355,9 @@ struct VectorParameterParser
       "vector",
       typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
 	( "(" >> *double_ >> ")" >> ruleset.r_description_string ) 
-	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(
+           new_<Data>(vec2mat_(qi::_1), qi::_2)
+          ) ]
       ))
     );
   }

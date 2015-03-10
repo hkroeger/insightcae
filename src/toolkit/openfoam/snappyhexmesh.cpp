@@ -75,8 +75,9 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
       OFDictData::list rrl;
       rrl.push_back(boost::get<1>(rr));
       rrl.push_back(boost::get<2>(rr));
-      ld["levels"]=rrl;
-      rrd[p_.name()+"_"+boost::get<0>(rr)] = ld;
+      ld["level"]=rrl;
+      //rrd[p_.name()+"_"+boost::get<0>(rr)] = ld;
+      rrd[boost::get<0>(rr)] = ld;
     }
     castdict["regions"]=rrd;
   }

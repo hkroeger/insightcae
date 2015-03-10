@@ -1155,7 +1155,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
   
-  double maxCo=10.0, maxAlphaCo=5.0;
+  //double maxCo=10.0, maxAlphaCo=5.0;
+  double maxCo=0.5, maxAlphaCo=0.5;
   bool momentumPredictor=false;
 
   controlDict["maxAlphaCo"]=maxAlphaCo;

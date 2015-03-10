@@ -86,6 +86,12 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p_.nLayers();
   sHMDict.subDict("addLayersControls").subDict("layers")["\""+p_.name()+".*\""]=layerdict;
+  BOOST_FOREACH(const RegionRefinement& rr, p_.regionRefinements())
+  {
+   OFDictData::dict layerdict;
+   layerdict["nSurfaceLayers"]=0;
+   sHMDict.subDict("addLayersControls").subDict("layers")[p_.name()+"_"+boost::get<0>(rr)]=layerdict;
+  }
 
 }
 

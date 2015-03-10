@@ -627,6 +627,7 @@ SuctionInletBC::SuctionInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -713,6 +714,7 @@ MassflowBC::MassflowBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -915,6 +917,7 @@ VelocityInletBC::VelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 
@@ -1034,6 +1037,7 @@ ExptDataInletBC::ExptDataInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const
@@ -1202,6 +1206,7 @@ CompressibleInletBC::CompressibleInletBC
 : VelocityInletBC(c, patchName, boundaryDict, p),
   p_(p)
 {
+ type_="patch";
 }
 
 void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
@@ -1512,6 +1517,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types = boost::assign::list_of
@@ -1822,6 +1828,7 @@ PressureOutletBC::PressureOutletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1917,6 +1924,7 @@ PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
 )
 : BoundaryCondition(c, patchName, boundaryDict)
 {
+ type_="patch";
 }
 
 void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) const

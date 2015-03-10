@@ -703,6 +703,92 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   }
 }
 
+MassflowBC::MassflowBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const Parameters& p
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("flowRateInletVelocity");
+      BC["rho"]=p_.rhoName();
+      BC["massFlowRate"]=p_.massflow();
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(p_.T());
+    }
+    else if ( 
+      ( (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      if (OFversion()>=210)
+	BC["type"]=OFDictData::data("fixedFluxPressure");
+      else
+	BC["type"]=OFDictData::data("buoyantPressure");
+//       BC["type"]=OFDictData::data("calculated");
+//       BC["value"]=OFDictData::data("uniform 0");
+    }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if 
+    ( 
+      (
+	(field.first=="k") ||
+	(field.first=="epsilon") ||
+	(field.first=="omega") ||
+	(field.first=="nut") ||
+	(field.first=="nuSgs") ||
+	(field.first=="nuTilda")
+      )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ))
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+      {
+	BC["type"]=OFDictData::data("zeroGradient");
+      }
+    }
+  }
+}
+
 TurbulenceSpecification::TurbulenceSpecification(const uniformIntensityAndLengthScale& uil)
 : boost::variant<
     uniformIntensityAndLengthScale,

@@ -53,6 +53,9 @@ class Geometry
 : public Feature
 {
 public:
+  typedef boost::tuple<std::string,int,int> RegionRefinement;
+  typedef std::vector<RegionRefinement> RegionRefinementList;
+  
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
       ( name, std::string, "" )
       ( fileName, boost::filesystem::path, "" )
@@ -62,6 +65,7 @@ public:
       ( scale, arma::mat, vec3(1,1,1) )
       ( translate, arma::mat, vec3(0,0,0) )
       ( rollPitchYaw, arma::mat, vec3(0,0,0) )
+      ( regionRefinements, RegionRefinementList, RegionRefinementList() )
       ( zoneName, std::string, "" )
   )
 

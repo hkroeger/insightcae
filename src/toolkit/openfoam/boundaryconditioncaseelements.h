@@ -338,6 +338,35 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+class MassflowBC
+: public BoundaryCondition
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (massflow, double, 1.0)
+    (rho, double, 1025.0)
+    (T, double, 300.0)
+    (gamma, double, 1.0)
+    (phiName, std::string, "phi")
+    (psiName, std::string, "none")
+    (rhoName, std::string, "none")
+    (UName, std::string, "U")
+    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  MassflowBC
+  (
+    OpenFOAMCase& c, 
+    const std::string& patchName, 
+    const OFDictData::dict& boundaryDict, 
+    Parameters const& p = Parameters()
+  );
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
 
 
 

@@ -949,7 +949,7 @@ void mapFields
 //   }
 
   std::string execname="mapFields";
-//   if (targetcase.OFversion()>=220) execname="mapFields22";
+  if (targetcase.OFversion()>=220) execname="mapFields22";
   targetcase.executeCommand
   (
     target, execname, args

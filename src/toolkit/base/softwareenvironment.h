@@ -77,7 +77,7 @@ public:
       
       if (machine=="")
       {
-	argv.insert(argv.begin(), "-c");
+	argv.insert(argv.begin(), "-lc");
 	argv.insert(argv.begin(), "bash");
       }
       else if (boost::starts_with(machine, "qrsh-wrap"))

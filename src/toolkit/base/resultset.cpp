@@ -714,7 +714,7 @@ void Chart::generatePlotImage(const path& imagepath) const
     //gp<<"set output '"<<chart_file_name_i<<"';";
     gp<<"set terminal pngcairo; set termoption dash;";
     gp<<"set output '"<<absolute(imagepath).string()<<"';";
-
+/*
     gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
 	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
 	"set linetype  3 lc rgb '#A52A2A' lw 1;"
@@ -725,7 +725,7 @@ void Chart::generatePlotImage(const path& imagepath) const
 	"set linetype  8 lc rgb '#696969' lw 1;"
 	"set linetype  9 lc rgb '#DAA520' lw 1;"
 	"set linetype cycle  9;";
-
+*/
     gp<<addinit_<<";";
     gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
     if (plc_.size()>0)

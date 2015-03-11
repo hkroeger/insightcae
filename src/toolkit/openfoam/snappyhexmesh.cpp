@@ -77,7 +77,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict geodict;
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name();
-  //boost::filesystem::path x; x.f
+    //boost::filesystem::path x; x.f
   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
 
   OFDictData::dict castdict;
@@ -91,11 +91,32 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
     castdict["cellZone"]=p_.zoneName();
     castdict["cellZoneInside"]="inside";
   }
+  if (p_.regionRefinements().size()>0)
+  {
+    OFDictData::dict rrd;
+    BOOST_FOREACH(const RegionRefinement& rr, p_.regionRefinements())
+    {
+      OFDictData::dict ld;
+      OFDictData::list rrl;
+      rrl.push_back(boost::get<1>(rr));
+      rrl.push_back(boost::get<2>(rr));
+      ld["level"]=rrl;
+      //rrd[p_.name()+"_"+boost::get<0>(rr)] = ld;
+      rrd[boost::get<0>(rr)] = ld;
+    }
+    castdict["regions"]=rrd;
+  }
   sHMDict.subDict("castellatedMeshControls").subDict("refinementSurfaces")[p_.name()]=castdict;
 
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p_.nLayers();
   sHMDict.subDict("addLayersControls").subDict("layers")["\""+p_.name()+".*\""]=layerdict;
+  BOOST_FOREACH(const RegionRefinement& rr, p_.regionRefinements())
+  {
+   OFDictData::dict layerdict;
+   layerdict["nSurfaceLayers"]=0;
+   sHMDict.subDict("addLayersControls").subDict("layers")[p_.name()+"_"+boost::get<0>(rr)]=layerdict;
+  }
 
 }
 

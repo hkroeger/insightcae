@@ -862,6 +862,11 @@ double f_calc_n(double n, void* ga)
 
 int GradingAnalyzer::calc_n(double delta0, double L) const
 {
+
+ if (delta0>L) return 1;
+
+ if ( (1.+grad_)*delta0 > L) return 2;
+
   int i, times, status;
   gsl_function f;
   gsl_root_fsolver *workspace_f;

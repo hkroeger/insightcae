@@ -1070,7 +1070,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
 //   std::string bgrads="leastSquares2"; 
   std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+ // if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
 //   grad["grad(p_rgh)"]="Gauss linear";
@@ -1155,7 +1155,8 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="LTSInterFoam";
   
-  double maxCo=10.0, maxAlphaCo=5.0;
+  //double maxCo=10.0, maxAlphaCo=5.0;
+  double maxCo=0.5, maxAlphaCo=0.5;
   bool momentumPredictor=false;
 
   controlDict["maxAlphaCo"]=maxAlphaCo;
@@ -1168,7 +1169,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
   if (OFversion()>=230)
-    solvers["\"alpha1.*\""]=stdMULESSolverSetup(1e-8, 0.0, true);
+    solvers["\"alpha.*\""]=stdMULESSolverSetup(1e-8, 0.0, true);
 
 
   std::string solutionScheme("PIMPLE");

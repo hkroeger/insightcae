@@ -77,11 +77,15 @@ class Geometry
   public ExternalGeometryFile
 {
 public:
+  typedef boost::tuple<std::string,int,int> RegionRefinement;
+  typedef std::vector<RegionRefinement> RegionRefinementList;
+  
   CPPX_DEFINE_OPTIONCLASS(Parameters, ExternalGeometryFile::Parameters,
       ( name, std::string, "" )
       ( minLevel, int, 0 )
       ( maxLevel, int, 4 )
       ( nLayers, int, 2 )
+      ( regionRefinements, RegionRefinementList, RegionRefinementList() )
       ( zoneName, std::string, "" )
   )
 

@@ -627,6 +627,7 @@ SuctionInletBC::SuctionInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -666,6 +667,93 @@ void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["psi"]=OFDictData::data(p_.psiName());
       BC["gamma"]=OFDictData::data(p_.gamma());
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
+    }
+    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
+    }
+    else if 
+    ( 
+      (
+	(field.first=="k") ||
+	(field.first=="epsilon") ||
+	(field.first=="omega") ||
+	(field.first=="nut") ||
+	(field.first=="nuSgs") ||
+	(field.first=="nuTilda")
+      )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("zeroGradient");
+    }
+    else
+    {
+      if (!(
+	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ))
+	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+      {
+	BC["type"]=OFDictData::data("zeroGradient");
+      }
+    }
+  }
+}
+
+MassflowBC::MassflowBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const Parameters& p
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+ type_="patch";
+}
+
+void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  p_.phasefractions()->addIntoDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    {
+      BC["type"]=OFDictData::data("flowRateInletVelocity");
+      BC["rho"]=p_.rhoName();
+      BC["massFlowRate"]=p_.massflow();
+      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+    }
+    else if ( 
+      (field.first=="T") 
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform "+lexical_cast<string>(p_.T());
+    }
+    else if ( 
+      ( (field.first=="pd") || (field.first=="p_rgh") )
+      && 
+      (get<0>(field.second)==scalarField) 
+    )
+    {
+      if (OFversion()>=210)
+	BC["type"]=OFDictData::data("fixedFluxPressure");
+      else
+	BC["type"]=OFDictData::data("buoyantPressure");
+//       BC["type"]=OFDictData::data("calculated");
+//       BC["value"]=OFDictData::data("uniform 0");
     }
     else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
     {
@@ -829,6 +917,7 @@ VelocityInletBC::VelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 
@@ -948,6 +1037,7 @@ ExptDataInletBC::ExptDataInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const
@@ -1116,6 +1206,7 @@ CompressibleInletBC::CompressibleInletBC
 : VelocityInletBC(c, patchName, boundaryDict, p),
   p_(p)
 {
+ type_="patch";
 }
 
 void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
@@ -1426,6 +1517,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types = boost::assign::list_of
@@ -1736,6 +1828,7 @@ PressureOutletBC::PressureOutletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
+ type_="patch";
 }
 
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1831,6 +1924,7 @@ PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
 )
 : BoundaryCondition(c, patchName, boundaryDict)
 {
+ type_="patch";
 }
 
 void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) const

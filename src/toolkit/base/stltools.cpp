@@ -80,6 +80,19 @@ void STLExtruder::writeTris(const boost::filesystem::path& outputfilepath)
 }
 
 
+void STLExtruder::addTriTB(const arma::mat& p0, const arma::mat& p1, const arma::mat& p2)
+{
+  tri t;
+  t.p[0]=vec3(p0[0], p0[1], z0_);
+  t.p[1]=vec3(p1[0], p1[1], z0_);
+  t.p[2]=vec3(p2[0], p2[1], z0_);
+  tris_.push_back(t);
+  t.p[0]=vec3(p0[0], p0[1], z1_);
+  t.p[1]=vec3(p1[0], p1[1], z1_);
+  t.p[2]=vec3(p2[0], p2[1], z1_);
+  tris_.push_back(t);
+
+}
 
 
 STLExtruder::STLExtruder
@@ -95,6 +108,10 @@ STLExtruder::STLExtruder
   for (int i=1; i<xy_contour.n_rows; i++)
   {    
     addTriPair(xy_contour.row(i-1), xy_contour.row(i));
+    if (i>1)
+    {
+      addTriTB(xy_contour.row(0), xy_contour.row(i-1), xy_contour.row(i));
+    }
   }
   
   writeTris(outputfilepath);

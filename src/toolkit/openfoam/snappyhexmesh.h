@@ -30,6 +30,29 @@
 #include "progrock/cppx/collections/options_boosted.h"
 
 namespace insight {
+  
+class ExternalGeometryFile
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+      ( fileName, boost::filesystem::path, "" )
+      ( scale, arma::mat, vec3(1,1,1) )
+      ( translate, arma::mat, vec3(0,0,0) )
+      ( rollPitchYaw, arma::mat, vec3(0,0,0) )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  ExternalGeometryFile( const Parameters& p = Parameters() );
+  
+  virtual void putIntoConstantTrisurface
+  (
+    const OpenFOAMCase& ofc,
+    const boost::filesystem::path& location
+  ) const;
+};
 
 namespace snappyHexMeshFeats
 {
@@ -50,18 +73,15 @@ inline Feature* new_clone(const Feature& op)
 
 
 class Geometry
-: public Feature
+: public Feature,
+  public ExternalGeometryFile
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+  CPPX_DEFINE_OPTIONCLASS(Parameters, ExternalGeometryFile::Parameters,
       ( name, std::string, "" )
-      ( fileName, boost::filesystem::path, "" )
       ( minLevel, int, 0 )
       ( maxLevel, int, 4 )
       ( nLayers, int, 2 )
-      ( scale, arma::mat, vec3(1,1,1) )
-      ( translate, arma::mat, vec3(0,0,0) )
-      ( rollPitchYaw, arma::mat, vec3(0,0,0) )
       ( zoneName, std::string, "" )
   )
 
@@ -161,6 +181,25 @@ public:
   Feature* clone() const;
 };
 
+
+class RefinementGeometry
+: public RefinementRegion
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
+      ( fileName, boost::filesystem::path, "" )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  RefinementGeometry(Parameters const& p = Parameters() );
+  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
+  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  Feature* clone() const;
+};
+
 class NearSurfaceRefinement
 : public RefinementRegion
 {
@@ -195,15 +234,7 @@ void snappyHexMesh
   bool overwrite=true
 );
 
-void cfMesh
-(
-  const OpenFOAMCase& ofc, 
-  const boost::filesystem::path& location, 
-  const OFDictData::list& PiM,
-  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
-  bool overwrite=true
-);
+
 
 }
 

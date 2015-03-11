@@ -43,6 +43,7 @@ class STLExtruder
   double z0_, z1_;
   
   void addTriPair(const arma::mat& p0, const arma::mat& p1);
+  void addTriTB(const arma::mat& p0, const arma::mat& p1, const arma::mat& p2);
   
   void writeTris(const boost::filesystem::path& outputfilepath);
   

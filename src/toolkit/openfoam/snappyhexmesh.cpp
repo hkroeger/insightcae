@@ -33,6 +33,30 @@ namespace insight
 {
   
 enum trimmedMesher {sHM, cfM};
+
+ExternalGeometryFile::ExternalGeometryFile(const ExternalGeometryFile::Parameters& p)
+: p_(p)
+{}
+
+
+void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
+{
+  boost::filesystem::path from(p_.fileName());
+  boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName().filename());
+  
+  if (!exists(to.parent_path()))
+    create_directories(to.parent_path());
+
+  ofc.executeCommand(location, "surfaceTransformPoints",
+    list_of<std::string>
+    (absolute(from).string())
+    (absolute(to).string())
+    ("-scale")(OFDictData::to_OF(p_.scale()))
+    ("-translate")(OFDictData::to_OF(p_.translate()))
+    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw()))
+  );
+}
+
   
 namespace snappyHexMeshFeats
 {
@@ -43,7 +67,8 @@ void Feature::modifyFiles(const OpenFOAMCase& ofc,
 }
 
 Geometry::Geometry( Parameters const& p )
-: p_(p)
+: ExternalGeometryFile(p),
+  p_(p)
 {
 }
 
@@ -77,21 +102,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
 void Geometry::modifyFiles(const OpenFOAMCase& ofc, 
 	      const boost::filesystem::path& location) const
 {
-  boost::filesystem::path from(p_.fileName());
-  boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName().filename());
-  if (!exists(to.parent_path()))
-    create_directories(to.parent_path());
-  //copy_file(from, to);
-  ofc.executeCommand(location, "surfaceTransformPoints",
-    list_of<std::string>
-    (absolute(from).string())
-    (absolute(to).string())
-    ("-scale")(OFDictData::to_OF(p_.scale()))
-//     ("("+lexical_cast<std::string>(p_.scale()(0))+" "+lexical_cast<std::string>(p_.scale()(1))+" "+lexical_cast<std::string>(p_.scale()(2))+")")
-    ("-translate")(OFDictData::to_OF(p_.translate()))
-    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw()))
-//     ("("+lexical_cast<std::string>(p_.rollPitchYaw()(0))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(1))+" "+lexical_cast<std::string>(p_.rollPitchYaw()(2))+")")
-  );
+  ExternalGeometryFile::putIntoConstantTrisurface(ofc, location);
 }
 
 Feature* Geometry::clone() const
@@ -180,6 +191,42 @@ Feature* RefinementBox::clone() const
 {
   return new RefinementBox(p_);
 }
+
+RefinementGeometry::RefinementGeometry(const RefinementGeometry::Parameters& p)
+: RefinementRegion(p),
+  p_(p)
+{}
+
+void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
+{
+  OFDictData::dict geodict;
+  if (setGeometrySubdict(geodict))
+    sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
+
+  OFDictData::dict castdict;
+  castdict["mode"]=p_.mode();
+  OFDictData::list level;
+  level.push_back(p_.distance());
+  level.push_back(p_.level());
+  OFDictData::list levels;
+  levels.push_back(level);
+  castdict["levels"]=levels;
+  sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
+}
+bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict) const
+{
+  geodict["type"]="triSurfaceMesh";
+  geodict["name"]=p_.name();
+//   //boost::filesystem::path x; x.f
+//   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
+}
+
+Feature* RefinementGeometry::clone() const
+{
+  return new RefinementGeometry(p_);
+}
+
+
 
 NearSurfaceRefinement::NearSurfaceRefinement(const RefinementRegion::Parameters& p)
 : RefinementRegion(p)
@@ -388,99 +435,5 @@ void snappyHexMesh
 }
 
 
-
-
-void cfMesh
-(
-  const OpenFOAMCase& ofc, 
-  const boost::filesystem::path& location,
-  const OFDictData::list& PiM,
-  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-  snappyHexMeshOpts::Parameters const& p,
-  bool overwrite
-)
-{
-  using namespace snappyHexMeshFeats;
-  
-  OFDictData::dictFile meshDict;
-  
-  // setup dict structure
-  meshDict["readTemplate"] = true; // compat with sHM
-  
-
-  BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
-  {
-    feat.modifyFiles(ofc, location);
-    feat.addIntoDictionary(meshDict);
-  }
-  
-  // then write to file
-  boost::filesystem::path dictpath = location / "system" / "meshDict";
-  if (!exists(dictpath.parent_path())) 
-  {
-    boost::filesystem::create_directories(dictpath.parent_path());
-  }
-  
-  {
-    std::ofstream f(dictpath.c_str());
-    writeOpenFOAMDict(f, meshDict, boost::filesystem::basename(dictpath));
-  }
-
-  std::vector<std::string> opts;
-//   if (overwrite) opts.push_back("-overwrite");
-        
-  int np=readDecomposeParDict(location);
-  bool is_parallel = (np>1);
-
-  if (is_parallel)
-  {
-    ofc.executeCommand(location, "decomposePar");
-  }
-  
-  //cm.runSolver(executionPath(), analyzer, solverName, &stopFlag_, np);
-  std::vector<std::string> output;
-  ofc.executeCommand(location, "cartesianMesh", opts, &output, np);
-
-  
-//   // Check fraction of extruded faces on wall patches
-//   boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
-//   boost::match_results<std::string::const_iterator> what;
-//   int exfaces=-1, totalfaces=-1;
-//   BOOST_FOREACH(const std::string& line, output)
-//   {
-//     if (boost::regex_match(line, what, re_extrudedfaces))
-//     {
-//       //cout<< "\""<<line<<"\""<<what[1]<<", "<<what[2]<<endl;
-//       exfaces=lexical_cast<int>(what[1]);
-//       totalfaces=lexical_cast<int>(what[2]);
-//     }
-//   }
-//   if (totalfaces>=0)
-//   {
-//     double exfrac=double(exfaces)/double(totalfaces);
-//     if (exfrac<0.9)
-//     {
-//       std::string msg=
-//       "Prism layer covering is only "+str(format("%g")%(100.*exfrac))+"\% (<90%)!\n"
-//       "Please reconsider prism layer thickness and tune number of prism layers!";
-//       
-//       if (p.stopOnBadPrismLayer())
-//       {
-// 	throw insight::Exception(msg);
-//       }
-//       else
-// 	insight::Warning(msg);
-//     }
-//   }
-  
-  if (is_parallel)
-  {
-    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
-    ofc.removeProcessorDirectories(location);
-  }
-  
-  
-  //ofc.executeCommand(location, "snappyHexMesh", opts);
-}
   
 }

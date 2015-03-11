@@ -1085,8 +1085,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     suf="grad(U)";
   div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
   div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
-  div["div(phi,alpha)"]		= "Gauss localBlendedBy UBlendingFactor upwind vanLeer";
-  div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
+//   div["div(phi,alpha)"]		= "Gauss localBlendedBy UBlendingFactor upwind vanLeer";
+//   div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
+  div["div(phi,alpha)"]		= "Gauss vanLeer";
+  div["div(phirb,alpha)"]	= "Gauss linear"; //interfaceCompression";
   div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
   div["div(phi,omega)"]		= "Gauss upwind";
@@ -1156,7 +1158,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="LTSInterFoam";
   
   //double maxCo=10.0, maxAlphaCo=5.0;
-  double maxCo=0.5, maxAlphaCo=0.5;
+  double maxCo=10.0, maxAlphaCo=2.0;
   bool momentumPredictor=false;
 
   controlDict["maxAlphaCo"]=maxAlphaCo;

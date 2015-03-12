@@ -1006,7 +1006,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
-  double Urelax=0.7, prelax=1.0, turbrelax=1.0;
+  double Urelax=0.7, prelax=1.0, turbrelax=0.95;
   if (p_.implicitPressureCorrection())
   {
     prelax=0.3;
@@ -1017,14 +1017,14 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()<210)
   {
     relax["U"]=Urelax;
-    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (turbrelax<1.) relax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
     if (prelax<1.) relax["\"(p|pd|p_rgh)\""]=prelax;
   }
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
     eqnRelax["\"U.*\""]=Urelax;
-    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda)\""]=turbrelax;
+    if (turbrelax<1.) eqnRelax["\"(k|omega|epsilon|nuTilda).*\""]=turbrelax;
     if (prelax<1.) fieldRelax["\"(p|pd|p_rgh).*\""]=prelax;
     
     relax["fields"]=fieldRelax;

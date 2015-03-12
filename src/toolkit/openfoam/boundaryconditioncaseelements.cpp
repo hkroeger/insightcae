@@ -605,9 +605,12 @@ bool uniformPhases::addIntoFieldDictionary(const std::string& fieldname, const F
     (get<0>(fieldinfo)==scalarField) 
   )
   {
-    BC["type"]="fixedValue";
     std::ostringstream entry;
     entry << "uniform "<<f.find(fieldname)->second;
+//     BC["type"]="fixedValue";
+//     BC["value"]=entry.str();
+    BC["type"]="inletOutlet";
+    BC["inletValue"]=entry.str();
     BC["value"]=entry.str();
     return true;
   }
@@ -722,6 +725,7 @@ void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   p_.phasefractions()->addIntoDictionaries(dictionaries);
   
+  double velocity=1.0; // required for turbulence quantities. No better idea yet...
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
@@ -760,21 +764,35 @@ void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       BC["type"]=OFDictData::data("fixedValue");
       BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
     }
-    else if 
-    ( 
-      (
-	(field.first=="k") ||
-	(field.first=="epsilon") ||
-	(field.first=="omega") ||
-	(field.first=="nut") ||
-	(field.first=="nuSgs") ||
-	(field.first=="nuTilda")
-      )
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
+    else if ( (field.first=="k") && (get<0>(field.second)==scalarField) )
     {
-      BC["type"]=OFDictData::data("zeroGradient");
+      p_.turbulence().setDirichletBC_k( BC, velocity );
+    }
+    else if ( (field.first=="omega") && (get<0>(field.second)==scalarField) )
+    {
+      p_.turbulence().setDirichletBC_omega( BC, velocity );
+    }
+    else if ( (field.first=="epsilon") && (get<0>(field.second)==scalarField) )
+    {
+      p_.turbulence().setDirichletBC_epsilon( BC, velocity );
+    }
+    else if ( (field.first=="nut") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("calculated");
+      BC["value"]="uniform "+lexical_cast<string>(1e-10);
+    }
+    else if ( (field.first=="nuTilda") && (get<0>(field.second)==scalarField) )
+    {
+      p_.turbulence().setDirichletBC_nuTilda( BC, velocity );      
+    }
+    else if ( (field.first=="R") && (get<0>(field.second)==symmTensorField) )
+    {
+      p_.turbulence().setDirichletBC_R( BC, velocity );
+    }
+    else if ( (field.first=="nuSgs") && (get<0>(field.second)==scalarField) )
+    {
+      BC["type"]=OFDictData::data("fixedValue");
+      BC["value"]="uniform 1e-10";
     }
     else
     {
@@ -826,7 +844,10 @@ void TurbulenceSpecification::setDirichletBC_k(OFDictData::dict& BC, double U) c
     
     double uprime=I*U;
     double k=max(1e-6, 3.*pow(uprime, 2)/2.);
-    BC["type"]="fixedValue";
+//     BC["type"]="fixedValue";
+//     BC["value"]="uniform "+lexical_cast<string>(k);
+    BC["type"]="inletOutlet";
+    BC["inletValue"]="uniform "+lexical_cast<string>(k);
     BC["value"]="uniform "+lexical_cast<string>(k);
   }
   else
@@ -844,7 +865,10 @@ void TurbulenceSpecification::setDirichletBC_omega(OFDictData::dict& BC, double 
     double uprime=I*U;
     double k=max(1e-6, 3.*pow(uprime, 2)/2.);
     double omega=sqrt(k)/L;
-    BC["type"]=OFDictData::data("fixedValue");
+//     BC["type"]=OFDictData::data("fixedValue");
+//     BC["value"]="uniform "+lexical_cast<string>(omega);
+    BC["type"]=OFDictData::data("inletOutlet");
+    BC["inletValue"]="uniform "+lexical_cast<string>(omega);
     BC["value"]="uniform "+lexical_cast<string>(omega);
   }
   else
@@ -862,7 +886,10 @@ void TurbulenceSpecification::setDirichletBC_epsilon(OFDictData::dict& BC, doubl
     double uprime=I*U;
     double k=3.*pow(uprime, 2)/2.;
     double epsilon=0.09*pow(k, 1.5)/L;
-    BC["type"]=OFDictData::data("fixedValue");
+//     BC["type"]=OFDictData::data("fixedValue");
+//     BC["value"]="uniform "+lexical_cast<string>(epsilon);
+    BC["type"]=OFDictData::data("inletOutlet");
+    BC["inletValue"]="uniform "+lexical_cast<string>(epsilon);
     BC["value"]="uniform "+lexical_cast<string>(epsilon);
   }
   else
@@ -879,7 +906,10 @@ void TurbulenceSpecification::setDirichletBC_nuTilda(OFDictData::dict& BC, doubl
     double I=get<0>(*uil), L=get<1>(*uil);
     
     double nutilda=sqrt(1.5)*I * U * L;
-    BC["type"]=OFDictData::data("fixedValue");
+//     BC["type"]=OFDictData::data("fixedValue");
+//     BC["value"]="uniform "+lexical_cast<string>(nutilda);
+    BC["type"]=OFDictData::data("inletOutlet");
+    BC["inletValue"]="uniform "+lexical_cast<string>(nutilda);
     BC["value"]="uniform "+lexical_cast<string>(nutilda);
   }
   else
@@ -895,7 +925,10 @@ void TurbulenceSpecification::setDirichletBC_R(OFDictData::dict& BC, double U) c
     double I=get<0>(*uil), L=get<1>(*uil);
     
     double uprime=I*U;
-    BC["type"]=OFDictData::data("fixedValue");
+//     BC["type"]=OFDictData::data("fixedValue");
+//     BC["value"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
+    BC["type"]=OFDictData::data("inletOutlet");
+    BC["inletValue"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
     BC["value"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
   }
   else

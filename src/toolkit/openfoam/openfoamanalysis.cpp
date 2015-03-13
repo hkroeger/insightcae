@@ -271,7 +271,10 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
   bool is_parallel = np>1;
   if (is_parallel)
   {
-    cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+    if (exists(executionPath()/"processor0"))
+      cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+    else
+      insight::Warning("A parallel run is configured, but not processor directory is present!\nProceeding anyway.");
   }
 }
 

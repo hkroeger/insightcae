@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
   desc.add_options()
       ("help", "produce help message")
       ("workdir,w", po::value<std::string>(), "execution directory")
+      ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
       ("selection,l", po::value<StringList>(), "selection variable assignment")
       ("string,s", po::value<StringList>(), "string variable assignment")
@@ -219,6 +220,10 @@ int main(int argc, char *argv[])
       }
     }
 
+    if (vm.count("savecfg"))
+    {
+      parameters.saveToFile( dir/ vm["workdir"].as<std::string>() );
+    }
     analysis->setParameters(parameters);
     
     // run analysis

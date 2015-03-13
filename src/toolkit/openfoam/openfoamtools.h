@@ -422,7 +422,15 @@ void convertPatchPairToCyclic
 
 void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target);
 
-void mapFields(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target, bool parallelTarget=false);
+
+void mapFields
+(
+  const OpenFOAMCase& targetcase, 
+  const boost::filesystem::path& source, 
+  const boost::filesystem::path& target, 
+  bool parallelTarget=false,
+  const std::vector<std::string>& fields = std::vector<std::string>()
+);
 
 void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false, bool include_zones=false);
 

@@ -232,6 +232,8 @@ public:
       return fields_;
     }
     
+    std::vector<std::string> fieldNames() const;
+    
     inline FieldInfo& field(const std::string& fname)
     {
       return fields_.find(fname)->second;

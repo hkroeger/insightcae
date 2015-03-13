@@ -188,7 +188,7 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
     }
   }
   
-  mapFields(cm, mapFromPath, executionPath(), is_parallel);
+  mapFields(cm, mapFromPath, executionPath(), is_parallel, cm.fieldNames());
 }
 
 

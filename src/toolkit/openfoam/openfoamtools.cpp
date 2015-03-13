@@ -918,7 +918,8 @@ void mapFields
   const OpenFOAMCase& targetcase, 
   const boost::filesystem::path& source, 
   const boost::filesystem::path& target,
-  bool parallelTarget
+  bool parallelTarget,
+  const std::vector<std::string>& fields
 )
 {
   path mfdPath=target / "system" / "mapFieldsDict";
@@ -931,7 +932,7 @@ void mapFields
   }
   else
   {
-    cout<<"A mapFieldsDict is existing. It will be used."<<endl;
+    insight::Warning("A mapFieldsDict is existing. It will be used.");
   }
 
   std::vector<string> args =
@@ -942,6 +943,20 @@ void mapFields
   if (parallelTarget) 
     args.push_back("-parallelTarget");
   
+  if (targetcase.OFversion()>=230 && fields.size()>0)
+  {
+    std::ostringstream os;
+    os<<"(";
+    BOOST_FOREACH(const std::string& fn, fields)
+    {
+      os<<" "<<fn;
+    }
+    os<<" )";
+    
+    args.push_back("-fields");
+    args.push_back(os.str());
+  }
+  
 //   if (targetcase.OFversion()>=230)
 //   {
 //     args.push_back("-mapMethod");
@@ -949,7 +964,7 @@ void mapFields
 //   }
 
   std::string execname="mapFields";
-  if (targetcase.OFversion()>=220) execname="mapFields22";
+//   if (targetcase.OFversion()>=220) execname="mapFields22";
   targetcase.executeCommand
   (
     target, execname, args

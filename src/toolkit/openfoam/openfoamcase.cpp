@@ -340,6 +340,17 @@ void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& lo
   }  
 }
 
+std::vector< string > OpenFOAMCase::fieldNames() const
+{
+  std::vector<std::string> fns;
+  BOOST_FOREACH(const FieldList::value_type& v, fields_)
+  {
+    fns.push_back(v.first);
+  }
+  return fns;
+}
+
+
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
   env_(env)

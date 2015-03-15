@@ -1183,14 +1183,14 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
     );
 }
 
-arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers, int num)
+
+
+
+arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers)
 {
-  if (num<0)
-    throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
-  
-  boost::filesystem::path file=filetemplate.parent_path() 
-    / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
-    
+//   boost::filesystem::path file=filetemplate.parent_path() 
+//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
+
   cout << "Reading "<<file<<endl;
     
   std::ifstream f(file.c_str());
@@ -1221,6 +1221,132 @@ arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<
   }
   
   return arma::mat(data.data(), colnames.size(), data.size()/colnames.size()).t();
+}
+
+typedef std::map<std::string, int> ColumnDescription;
+
+bool equal_columns(const ColumnDescription& c1, const ColumnDescription& c2)
+{
+  bool ok = (c1.size()==c2.size());
+  BOOST_FOREACH(const ColumnDescription::value_type& c1e, c1)
+  {
+//     cout<<"col="<<c1e.first<<" ("<<c1e.second<<") >>> ";
+    ColumnDescription::const_iterator i2=c2.find(c1e.first);
+    if (i2 == c2.end()) { ok=false; /*cout<<"not found"<<endl;*/ }
+    else { ok = ok && (c1e.second == i2->second); /*cout<<i2->second<<endl;*/ }
+  }
+  return ok;
+}
+
+std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, ColumnDescription* headers)
+{
+//   if (num<0)
+//     throw insight::Exception("readParaviewCSV: Reading and combining all files is not yet supported!");
+//   
+//   boost::filesystem::path file=filetemplate.parent_path() 
+//     / (filetemplate.filename().stem().string() + lexical_cast<string>(num) + filetemplate.filename().extension().string());
+// 
+  
+//   ColumnDescription header;
+//   std::vector<arma::mat> result;
+  
+  typedef std::map<std::string, std::vector< arma::mat> > AllData;
+  AllData alldata;
+  
+  boost::regex fname_pattern(filetemplate.filename().stem().string() + "[0-9]+" + filetemplate.filename().extension().string());
+  directory_iterator end_itr; // default construction yields past-the-end
+  for ( directory_iterator itr( filetemplate.parent_path() );
+	itr != end_itr; ++itr )
+  {
+    if ( is_regular_file(itr->status()) )
+    {
+//       cout<<"file: "<<itr->path().filename().string()<<endl;
+      if ( boost::regex_match( itr->path().filename().string(), fname_pattern ) )
+      {
+// 	cout<<"OK"<<endl;
+	std::map<std::string, int> thisheaders;
+	arma::mat r = readParaviewCSV(itr->path().c_str(), &thisheaders);
+// 	cout<< (r.n_rows) <<" & "<<thisheaders.size()<<endl;
+	if ( (thisheaders.size()>0) && (r.n_rows>0))
+	{
+	  if (alldata.size()==0)
+	  {
+	    // insert all cols
+	    BOOST_FOREACH(const ColumnDescription::value_type& cd, thisheaders)
+	    {
+	      alldata[cd.first].push_back(r.col(cd.second));
+	    }
+	  }
+	  else
+	  {
+	    std::set<std::string> vc;
+	    BOOST_FOREACH(const AllData::value_type& adt, alldata) vc.insert(adt.first);
+	    BOOST_FOREACH(const ColumnDescription::value_type& cdt, thisheaders)
+	    {
+	      AllData::iterator j=alldata.find(cdt.first); // try to find each column of this CSV in alldata
+	      if (j!=alldata.end()) // if present, append
+	      {
+// 		cout<<"append "<<cdt.first<<endl;
+		j->second.push_back(r.col(cdt.second));
+		vc.erase(vc.find(cdt.first));
+	      }
+	    }
+	    // remove all cols, that are not present
+	    BOOST_FOREACH(const std::string& vci, vc)
+	    {
+// 	      cout<<"Remove "<<vci<<endl;
+	      alldata.erase(alldata.find(vci));
+	    }
+	  }
+// 	  if (result.size()==0)
+// 	  {
+// 	    header=thisheaders;
+// 	  }
+// 	  else
+// 	  {
+// 	    if (!equal_columns(header, thisheaders))
+// 	    {
+// 	      throw insight::Exception("incompatible file columns!");
+// 	    }
+// 	  }
+// 	  result.push_back(r);
+	}
+      } /*else { cout<<"NO"<<endl; }*/
+    }
+  }
+
+//   if (headers) *headers=header;
+//   return result;
+
+  int np=0;
+  if (alldata.size()>0) np=alldata.begin()->second.size();
+
+  std::vector<arma::mat> result(np);
+  
+  if (headers)
+  {
+    int j=0;
+    BOOST_FOREACH(const AllData::value_type& cv, alldata)
+    {
+      (*headers)[cv.first]=j++;
+    }
+  }
+  
+  BOOST_FOREACH(const AllData::value_type& cv, alldata)
+  {
+    const std::vector< arma::mat>& profs=cv.second;
+    int k=0;
+    BOOST_FOREACH(const arma::mat& col, profs)
+    {
+      arma::mat& cumprof=result[k++];
+      if (cumprof.n_cols==0) 
+	cumprof=col;
+      else
+	cumprof=join_rows(cumprof, col); // append column
+    }
+  }
+  
+  return result;
 }
 
 std::string readSolverName(const boost::filesystem::path& ofcloc)

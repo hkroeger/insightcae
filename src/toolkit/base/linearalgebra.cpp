@@ -307,7 +307,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     {
       int ri=i-window_ofs;
       int from=i-window_ofs, to=from+window;
-      cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
+//       cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
       int j0=0;
       if (first_col_is_time)
       {

@@ -449,7 +449,8 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 			);
 
 
-arma::mat readParaviewCSV(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers=NULL, int num=-1);
+arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers);
+std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers);
 
 std::string readSolverName(const boost::filesystem::path& ofcloc);
 int readDecomposeParDict(const boost::filesystem::path& ofcloc);

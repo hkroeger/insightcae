@@ -185,12 +185,16 @@ try:
 	    alphaname=fn
 	    break
 	  
-        surf=Contour(Input=case, ContourBy=alphaname, Isosurfaces=[0.5])
+        surf0=Contour(Input=case, ContourBy=alphaname, Isosurfaces=[0.5])
         #elev=Elevation(Input=surf, 
                        #LowPoint=[0,0,minZ], 
                        #HighPoint=[0,0,maxZ], 
                        #ScalarRange=[minZ, maxZ]
                        #)
+                       
+	surf = GenerateSurfaceNormals(Input=surf0)
+	surf.ComputeCellNormals = 1
+	
         Show(surf)
         if minZ is None or maxZ is None:
 	  mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()

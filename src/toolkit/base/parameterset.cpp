@@ -70,14 +70,14 @@ void ParameterSet::extend(const EntryList& entries)
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
     if (p && this->contains(key))
     {
-	cout<<"merging subdict "<<key<<endl;
+// 	cout<<"merging subdict "<<key<<endl;
 	SubsetParameter *myp = dynamic_cast<SubsetParameter*>( this->find(key)->second );
 	myp->extend(p->entries());
 	delete p;
     }
     else 
     {
-      cout<<"inserting "<<key<<endl;
+//       cout<<"inserting "<<key<<endl;
     // insert does not replace!
       insert(key, boost::get<1>(i)); // take ownership of objects in given list!
     }
@@ -201,7 +201,7 @@ void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
 
 void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
 {
-  std::cout<<"Writing parameterset to file "<<file<<std::endl;
+//   std::cout<<"Writing parameterset to file "<<file<<std::endl;
   
   xml_document<> doc;
   
@@ -300,7 +300,7 @@ Parameter* SubsetParameter::clone() const
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const
 {
-  std::cout<<"appending subset "<<name<<std::endl;
+//   std::cout<<"appending subset "<<name<<std::endl;
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
   ParameterSet::appendToNode(doc, *child, inputfilepath);

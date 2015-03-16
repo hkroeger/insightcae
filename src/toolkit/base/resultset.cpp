@@ -429,7 +429,14 @@ ResultSet::ResultSet
     author_=*author;
   else
   {
-    author_=getenv("USER");
+    char  *iu=getenv("INSIGHT_REPORT_AUTHOR");
+    if (iu) author_=iu;
+    else
+    {
+      char* iua=getenv("USER");
+      if (iua) author_=iua;
+      else author_="";
+    }
   }
 }
 

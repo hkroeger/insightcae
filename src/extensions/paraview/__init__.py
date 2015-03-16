@@ -184,6 +184,7 @@ try:
 	  if fn.startswith("alpha"):
 	    alphaname=fn
 	    break
+	print "alphaname=", alphaname
 	  
         surf0=Contour(Input=case, ContourBy=alphaname, Isosurfaces=[0.5])
         #elev=Elevation(Input=surf, 
@@ -191,11 +192,12 @@ try:
                        #HighPoint=[0,0,maxZ], 
                        #ScalarRange=[minZ, maxZ]
                        #)
-                       
-	surf = GenerateSurfaceNormals(Input=surf0)
+	extractSurface1 = ExtractSurface(Input=surf0)
+	surf = GenerateSurfaceNormals(Input=extractSurface1)
 	surf.ComputeCellNormals = 1
 	
         Show(surf)
+        surf.UpdatePipeline()
         if minZ is None or maxZ is None:
 	  mima=surf.GetDataInformation().DataInformation.GetBounds() #elev.PointData.GetArray('Elevation').GetRange()
 	  if minZ is None: minZ=mima[4]

@@ -506,7 +506,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 45.0)),
     upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 65.0)),
-    smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.75)),
+    smoothingCoeff_(dict.lookupOrDefault<scalar>("smoothingCoeff", 0.25)),
     mesh_(time_.lookupObject<polyMesh>(regionName_))
 {
     if (dict.found("blendingFieldNames"))

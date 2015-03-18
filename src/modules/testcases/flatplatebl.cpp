@@ -686,6 +686,44 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     UMeanName="U";
   }
   
+  {
+    cm.executeCommand(executionPath(), "Lambda2", list_of("-latestTime"));
+    
+    double lambda2=1e5;
+    
+    std::string name="figVortexStructures";
+    std::string fname=name+".png";
+    runPvPython
+    (
+      cm, executionPath(), list_of<std::string>
+      (
+	"cbi=loadOFCase('.')\n"
+	+str(format("L=%g\n")%L)+
+	"prepareSnapshots()\n"
+
+	"eb=extractPatches(cbi, '^(wall|approach|oldInternalFaces)')\n"
+	"Show(eb)\n"
+	"displayContour(eb, 'viscousForce', arrayType='CELL_DATA', barpos=[0.75,0.15], barorient=0)\n"
+
+	"interior=extractInterior(cbi)\n"
+	"contour1 = Contour(Input=interior)\n"
+	"contour1.PointMergeMethod = 'Uniform Binning'\n"
+	"contour1.ContourBy = ['POINTS', 'Lambda2']\n"
+	+str(format("contour1.Isosurfaces = [%g]\n")%lambda2)+
+	"displaySolid(contour1)\n"
+
+	"setCam([-L,0.15*L,0.15*L], [0.5*L,0,0], [0,1,0], 0.1*L)\n"
+	"WriteImage('"+fname+"')\n"
+      )
+    );
+    results->insert(name,
+      std::auto_ptr<Image>(new Image
+      (
+      executionPath(), fname, 
+      str(format("Vortex structures, vizualized as isosurfaces of $\\lambda_2=%g$")%(-lambda2)), ""
+    )));  
+  }
+
   // Wall friction coefficient
   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
     
@@ -768,6 +806,8 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     );
 
   }
+  
+  
   
   return results;
 }

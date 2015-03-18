@@ -95,7 +95,7 @@ try:
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
                        title=None, 
                        barpos=[0.75, 0.25], 
-                       barsize=[0,0],
+                       barsize=None,
                        barorient=1, arrayType='POINT_DATA'):
         disp = GetDisplayProperties(obj)
         if minV is None or maxV is None:
@@ -127,7 +127,18 @@ try:
         t=title
         if title is None:
            t=arrayName 
-        bar = CreateScalarBar(
+        bar=None
+        if (barsize is None):
+	  bar = CreateScalarBar(
+                              LookupTable=disp.LookupTable, 
+                              Title=t, #(arrayName if title is None else title),
+                              Position=barpos, 
+                              Orientation=barorient,
+                              TitleFontSize=14, LabelFontSize=12,
+                              TitleColor=[0,0,0], LabelColor=[0,0,0]
+                              )
+	else:
+	  bar = CreateScalarBar(
                               LookupTable=disp.LookupTable, 
                               Title=t, #(arrayName if title is None else title),
                               Position=barpos, 

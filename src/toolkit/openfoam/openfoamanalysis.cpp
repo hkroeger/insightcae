@@ -168,6 +168,7 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OF
 void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
   cm.createOnDisk(executionPath(), dicts);
+  cm.modifyCaseOnDisk(executionPath());
 }
 
 void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm)

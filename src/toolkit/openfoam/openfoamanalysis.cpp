@@ -106,6 +106,19 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 	  "Parameters of the fluid"
 	))
       
+      ("eval", new SubsetParameter
+	(
+	  ParameterSet
+	  (
+	    boost::assign::list_of<ParameterSet::SingleEntry>
+	    
+	    ("reportdicts",	new BoolParameter(true, "Include dictionaries into report"))
+	    
+	    .convert_to_container<ParameterSet::EntryList>()
+	  ), 
+	  "Parameters for evaluation after solver run"
+	))
+
 //       ("run", new SubsetParameter	
 // 	    (
 // 		  ParameterSet
@@ -283,7 +296,11 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   ResultSetPtr results(new ResultSet(p(), name_, "Result Report"));
   
   meshQualityReport(cm, executionPath(), results);
-//   currentNumericalSettingsReport(cm, executionPath(), results);
+  
+  if (p().getBool("eval/reportdicts"))
+  {
+    currentNumericalSettingsReport(cm, executionPath(), results);
+  }
   
   return results;
 }

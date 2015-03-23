@@ -73,9 +73,24 @@ ParameterSet FlatPlateBL::defaultParameters() const
 	    ("ypluswall",	new DoubleParameter(1, "yPlus of first cell at the wall grid layer at the final station"))
 	    ("dxplus",	new DoubleParameter(1000, "lateral mesh spacing at the final station"))
 	    ("dzplus",	new DoubleParameter(1000, "streamwise mesh spacing at the final station"))
-	    ("2d",	new BoolParameter(true, "whether to create a two-dimensional grid instead of a three-dimensional one"))
-	    ("tripwire",new BoolParameter(true, "whether to create a trip wire by declaring internal faces as walls"))
-	    ("gradaxi",	new DoubleParameter(50, "grading from tripwire towards inlet boundary"))
+	    ("2d",	new BoolParameter(true, "select method of transition enforcement"))
+	    
+	    ("tripping", 	new SelectableSubsetParameter("none", 
+		  list_of<SelectableSubsetParameter::SingleSubset>
+		  (
+		    "none", new ParameterSet(ParameterSet::EntryList())
+		  )
+		  (
+		    "blocks", new ParameterSet
+		    (
+		      list_of<ParameterSet::SingleEntry>
+		      ("n", 	new IntParameter(4, "number evenly distributed tripping block across plate width"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    )
+		  ),
+		  "Refinement of the primary wave zone"))
+
+	    ("gradaxi",	new DoubleParameter(50, "grading from plate beginning towards inlet boundary"))
 	    .convert_to_container<ParameterSet::EntryList>()
 	  ), 
 	  "Properties of the computational mesh"
@@ -263,7 +278,6 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
-  PSBOOL(p, "mesh", tripwire);
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -343,9 +357,10 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   cm.createOnDisk(executionPath());
   cm.executeCommand(executionPath(), "blockMesh");
   
-  if (tripwire)
+  const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
+  if (tp.selection()=="blocks")
   {
-    int n=4;
+    int n=tp().getInt("n");
     double w=W_/double(2*n);
     double Ltrip=3.*dtrip_;
     

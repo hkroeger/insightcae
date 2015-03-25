@@ -41,6 +41,9 @@ namespace insight
   
 defineType(FlatPlateBL);
 addToFactoryTable(Analysis, FlatPlateBL, NoParameters);
+
+const std::vector<double> FlatPlateBL::sec_locs_ 
+ = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.99);
   
 ParameterSet FlatPlateBL::defaultParameters() const
 {
@@ -84,7 +87,10 @@ ParameterSet FlatPlateBL::defaultParameters() const
 		    "blocks", new ParameterSet
 		    (
 		      list_of<ParameterSet::SingleEntry>
-		      ("n", 	new IntParameter(4, "number evenly distributed tripping block across plate width"))
+// 		      ("n", 	new IntParameter(4, "number evenly distributed tripping block across plate width"))
+		      ("wbyh",  new DoubleParameter(6, "width of the blocks"))
+		      ("lbyh", 	new DoubleParameter(3, "length of the blocks"))
+		      ("Reh", 	new DoubleParameter(1000, "Reynolds number (formulated with height) of the tripping box"))
 		      .convert_to_container<ParameterSet::EntryList>()
 		    )
 		  ),
@@ -360,14 +366,20 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
   if (tp.selection()=="blocks")
   {
-    int n=tp().getInt("n");
-    double w=W_/double(2*n);
-    double Ltrip=3.*dtrip_;
+//     int n=tp().getInt("n");
+    double Reh=tp().getDouble("Reh");
+    double wbyh=tp().getDouble("wbyh");
+    double lbyh=tp().getDouble("lbyh");
+    
+    double dtrip=Reh*nu/uinf_;
+    double w=wbyh*dtrip; //W_/double(2*n);
+    int n=floor(W_/w/2.);
+    double Ltrip=lbyh*dtrip; //3.*dtrip;
     
     std::vector<std::string> cmds;
     cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") 
 	% trip_ 
-	% Ltrip % /*dtrip_ */0.0
+	% Ltrip % /*dtrip */0.0
     ) );
     for (int i=0; i<n; i++)
     {
@@ -375,8 +387,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       double w12=(double(2*i+1)+0.5)*w;
       cmds.push_back( str( format("cellSet %s add boxToCell (%g %g %g) (%g %g %g)") 
 	% trip_ 
-	% (-1e-10)	% /*dtrip_*/0.0 	% w0 
-	% Ltrip 	% (/*2.**/dtrip_) 	% w12 
+	% (-1e-10)	% /*dtrip*/0.0 	% w0 
+	% Ltrip 	% (/*2.**/dtrip) 	% w12 
       ) );
     }
     cmds.push_back( str( format("cellSet %s invert") % trip_ ) );
@@ -448,6 +460,18 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
     .set_timeStart(avgStart_)
   ));
   
+//   std::vector<arma::mat> plocs;
+//   for(size_t i=0; i<sec_locs_.size(); i++)
+//   {
+//     plocs.push_back(vec3(sec_locs_[i]*L, 0.5*W_, ));
+//   }
+//   cm.insert(new probes(cm, probes::Parameters()
+//     .set_fields( list_of("U")("p") )
+//     .set_probeLocations( list_of 
+//       vec3()
+//     )
+//   ));
+  
 //   if (p.getBool("evaluation/eval2"))
 //   {
 //     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
@@ -474,6 +498,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   
 //  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
 //    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
+  //  leave approach as wall to produce laminar BL upstream
   
   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
     .set_pressure(0.0)
@@ -774,13 +799,8 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       "Boundary layer properties along the plate", "", ""
   )));
   
-  evaluateAtSection(cm, results, 0.01*L, 0, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.05*L, 1, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.1*L,  2, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.2*L,  3, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.5*L,  4, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.7*L,  5, Cf_vs_x_i, UMeanName, RFieldName);
-  evaluateAtSection(cm, results, 0.99*L,  6, Cf_vs_x_i, UMeanName, RFieldName);
+  for (size_t i=0; i<sec_locs_.size(); i++)
+    evaluateAtSection(cm, results, sec_locs_[i]*L, i, Cf_vs_x_i, UMeanName, RFieldName);
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");

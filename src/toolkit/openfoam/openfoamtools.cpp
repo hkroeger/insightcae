@@ -1136,51 +1136,80 @@ void runPvPython
 }
 
 arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-		    const std::string& fieldName, const std::string& patchName,
+		    const std::string& fieldName, const std::string& patchNamePattern,
 		   const std::vector<std::string>& addopts
 			)
 {
-  std::vector<std::string> opts;
-  opts.push_back(fieldName);
-  opts.push_back(patchName);
-  copy(addopts.begin(), addopts.end(), back_inserter(opts));
+  boost::regex pat(patchNamePattern);
   
-  std::vector<std::string> output;
-  cm.executeCommand(location, "patchIntegrate", opts, &output);
+  // get all patch name candidates
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(location, boundaryDict);
   
-  boost::regex re_time("^ *Time = (.+)$");
-  boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
-  boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
-  boost::match_results<std::string::const_iterator> what;
-  double time=0;
-  std::vector<double> data, areadata;
-  BOOST_FOREACH(const std::string& line, output)
+  std::vector<std::string> patches;
+  BOOST_FOREACH(const OFDictData::dict::value_type& de, boundaryDict)
   {
-    if (boost::regex_match(line, what, re_time))
+    if (regex_match(de.first, pat))
     {
-      //cout<< what[1]<<endl;
-      time=lexical_cast<double>(what[1]);
-      data.push_back(time);
-    }
-    if (boost::regex_match(line, what, re_mag))
-    {
-      //cout<<what[1]<<" : "<<what[4]<<endl;
-      data.push_back(lexical_cast<double>(what[4]));
-    }
-    if (boost::regex_match(line, what, re_area))
-    {
-      //cout<<what[1]<<" : "<<what[4]<<endl;
-      areadata.push_back(lexical_cast<double>(what[3]));
+      patches.push_back(de.first);
+      break;
     }
   }
   
-  return arma::mat
-    ( join_rows
-      (
-	arma::mat(data.data(), 2, data.size()/2).t(),
-	arma::mat(areadata.data(), 1, areadata.size()).t()
-      )
-    );
+  arma::mat result;
+  BOOST_FOREACH(const std::string& patchName, patches)
+  {
+    std::vector<std::string> opts;
+    opts.push_back(fieldName);
+    opts.push_back(patchName);
+    copy(addopts.begin(), addopts.end(), back_inserter(opts));
+    
+    std::vector<std::string> output;
+    cm.executeCommand(location, "patchIntegrate", opts, &output);
+    
+    boost::regex re_time("^ *Time = (.+)$");
+    boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+    boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+    boost::match_results<std::string::const_iterator> what;
+    double time=0;
+    std::vector<double> data, areadata;
+    BOOST_FOREACH(const std::string& line, output)
+    {
+      if (boost::regex_match(line, what, re_time))
+      {
+	//cout<< what[1]<<endl;
+	time=lexical_cast<double>(what[1]);
+	data.push_back(time);
+      }
+      if (boost::regex_match(line, what, re_mag))
+      {
+	//cout<<what[1]<<" : "<<what[4]<<endl;
+	data.push_back(lexical_cast<double>(what[4]));
+      }
+      if (boost::regex_match(line, what, re_area))
+      {
+	//cout<<what[1]<<" : "<<what[4]<<endl;
+	areadata.push_back(lexical_cast<double>(what[3]));
+      }
+    }
+    
+    arma::mat res
+      ( join_rows
+	(
+	  arma::mat(data.data(), 2, data.size()/2).t(),
+	  arma::mat(areadata.data(), 1, areadata.size()).t()
+	)
+      );
+      
+    cout<<patchName<<endl<<res<<endl;
+      
+    if (result.n_cols==0 && result.n_rows==0)
+      result=res;
+    else
+      result+=res;
+  }
+  
+  return result;
 }
 
 

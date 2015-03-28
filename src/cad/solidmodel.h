@@ -148,6 +148,7 @@ public:
 
   void saveAs(const boost::filesystem::path& filename) const;
   void exportSTL(const boost::filesystem::path& filename, double abstol) const;
+  static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol);
   
   operator const TopoDS_Shape& () const;
   
@@ -177,6 +178,7 @@ public:
   virtual TopoDS_Shape asSingleVolume() const;
 
 };
+
 
 class Import
 : public SolidModel

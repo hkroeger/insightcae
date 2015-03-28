@@ -35,6 +35,7 @@
 
 #include <BRepLib_FindSurface.hxx>
 #include <BRepCheck_Shell.hxx>
+#include "openfoam/openfoamdict.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -419,6 +420,65 @@ void SolidModel::exportSTL(const boost::filesystem::path& filename, double absto
   stlwriter.RelativeMode()=false;
   stlwriter.SetDeflection(abstol);
   stlwriter.Write(shape_, filename.c_str());
+}
+
+
+void SolidModel::exportEMesh
+(
+  const boost::filesystem::path& filename, 
+  const FeatureSet& fs, 
+  double abstol
+)
+{
+  if (fs.shape()!=Edge) 
+    throw insight::Exception("Called with incompatible feature set!");
+  
+  std::vector<arma::mat> points;
+  typedef std::pair<int, int> Edge;
+  std::vector<Edge> edges;
+  
+  BOOST_FOREACH(const FeatureID& fi, fs)
+  {
+    BRepAdaptor_Curve ac(fs.model().edge(fi));
+    GCPnts_QuasiUniformDeflection qud(ac, abstol);
+    
+    for (int j=1; j<qud.NbPoints(); j++)
+    {
+      arma::mat p0=Vector(qud.Value(j));
+      arma::mat p1=Vector(qud.Value(j+1));
+      
+      int i0=points.size(); points.push_back(p0);
+      int i1=points.size(); points.push_back(p1);
+      
+      edges.push_back(Edge(i0,i1));
+    }
+  }
+  
+  std::ofstream f(filename.c_str());
+  f<<"FoamFile {"<<endl
+   <<" version     2.0;"<<endl
+   <<" format      ascii;"<<endl
+   <<" class       featureEdgeMesh;"<<endl
+   <<" location    \"\";"<<endl
+   <<" object      "<<filename.filename().string()<<";"<<endl
+   <<"}"<<endl;
+   
+  f<<points.size()<<endl
+   <<"("<<endl;
+  BOOST_FOREACH(const arma::mat& p, points)
+  {
+    f<<OFDictData::to_OF(p)<<endl;
+  }
+  f<<")"<<endl;
+
+  f<<edges.size()<<endl
+   <<"("<<endl;
+  BOOST_FOREACH(const Edge& e, edges)
+  {
+    f<<"("<<e.first<<" "<<e.second<<")"<<endl;
+  }
+  f<<")"<<endl;
+
 }
 
 

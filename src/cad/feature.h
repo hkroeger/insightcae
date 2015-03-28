@@ -93,6 +93,7 @@ public:
   operator TopAbs_ShapeEnum () const;
 
   inline const SolidModel& model() const { return model_; }
+  inline EntityType shape() const { return shape_; }
   
   FeatureSet query(const FilterPtr& f) const;
   FeatureSet query(const std::string& queryexpr) const;

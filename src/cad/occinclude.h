@@ -165,6 +165,7 @@
 #include "ShapeAnalysis_Surface.hxx"
 #include "GeomLProp_SLProps.hxx"
 #include "GCPnts_UniformDeflection.hxx"
+#include "GCPnts_QuasiUniformDeflection.hxx"
 #include "gce_MakeCirc.hxx"
 
 #include "HLRBRep_Algo.hxx"

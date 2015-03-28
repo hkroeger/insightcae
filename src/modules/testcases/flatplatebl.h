@@ -30,6 +30,9 @@ class FlatPlateBL
 {
   
 protected:
+#ifndef SWIG
+    const static std::vector<double> sec_locs_;
+#endif
 
     double Cw_, delta2e_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_e_, deltaywall_e_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;

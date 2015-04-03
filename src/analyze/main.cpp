@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 
     if (vm.count("savecfg"))
     {
-      parameters.saveToFile( dir/ vm["workdir"].as<std::string>() );
+      parameters.saveToFile( dir/ vm["savecfg"].as<std::string>() );
     }
     analysis->setParameters(parameters);
     

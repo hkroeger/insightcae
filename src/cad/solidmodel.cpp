@@ -2141,10 +2141,13 @@ Transform::Transform(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
+TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale)
 {
-  gp_Trsf tr1, tr2;
+  gp_Trsf tr0, tr1, tr2;
   TopoDS_Shape intermediate_shape=m1;
+  
+  tr0.SetScaleFactor(scale);
+  intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr0).Shape();
 
   tr1.SetTranslation(to_Vec(trans));  
   intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr1).Shape();
@@ -2168,8 +2171,8 @@ TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const gp_Trsf& trsf)
 }
 
 
-Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot)
-: SolidModel(makeTransform(m1, trans, rot))
+Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale)
+: SolidModel(makeTransform(m1, trans, rot, scale))
 {
   m1.unsetLeaf();
 }
@@ -2188,8 +2191,8 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Transform>(*qi::_1, qi::_2, qi::_3)) ]
+	> ruleset.r_vectorExpression > ( (',' > ruleset.r_scalarExpression ) | qi::attr(1.0) ) > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Transform>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

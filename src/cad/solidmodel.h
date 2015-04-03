@@ -534,13 +534,13 @@ public:
 class Transform
 : public SolidModel
 {
-  TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+  TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale=1.0);
   TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
   
 public:
   declareType("Transform");
   Transform(const NoParameters& nop = NoParameters());
-  Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot);
+  Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale=1.0);
   Transform(const SolidModel& m1, const gp_Trsf& trsf);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

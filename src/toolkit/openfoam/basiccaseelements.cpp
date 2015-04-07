@@ -51,6 +51,33 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
   for (int i=0; i<3; i++) gv.push_back(p_.g()(i));
   g["value"]=gv;
 }
+
+
+volumeDrag::volumeDrag(OpenFOAMCase& c, const volumeDrag::Parameters& p)
+: OpenFOAMCaseElement(c, p.name()),
+  p_(p)
+{}
+
+
+void volumeDrag::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );  
+  
+  OFDictData::dict cd;
+  cd["type"]="volumeDrag";
+  cd["active"]=true;
+  cd["selectionMode"]="cellZone";
+  cd["cellZone"]=p_.name();
+  OFDictData::dict vdd;
+  vdd["CD"]=OFDictData::to_OF(p_.CD());
+  cd["volumeDragCoeffs"]=vdd;
+  
+  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  fvOptions[p_.name()]=cd;     
+}
+
+
   
 transportModel::transportModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "transportModel")

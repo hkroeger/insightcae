@@ -54,6 +54,26 @@ public:
 
 
 
+class volumeDrag
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (name, std::string, "volumeDrag")
+    (CD, arma::mat, vec3(1, 0, 0))
+  )
+
+protected:
+  Parameters p_;
+  
+public:
+  volumeDrag(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
+
+
+
 class transportModel
 : public OpenFOAMCaseElement
 {

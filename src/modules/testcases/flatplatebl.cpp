@@ -43,7 +43,7 @@ defineType(FlatPlateBL);
 addToFactoryTable(Analysis, FlatPlateBL, NoParameters);
 
 const std::vector<double> FlatPlateBL::sec_locs_ 
- = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.99);
+ = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.9);
   
 ParameterSet FlatPlateBL::defaultParameters() const
 {
@@ -93,8 +93,20 @@ ParameterSet FlatPlateBL::defaultParameters() const
 		      ("Reh", 	new DoubleParameter(1000, "Reynolds number (formulated with height) of the tripping box"))
 		      .convert_to_container<ParameterSet::EntryList>()
 		    )
-		  ),
-		  "Refinement of the primary wave zone"))
+		  )
+		  (
+		    "drag", new ParameterSet
+		    (
+		      list_of<ParameterSet::SingleEntry>
+		      ("CD",  new DoubleParameter(1, "Drag coefficient"))
+		      ("lbyh", 	new DoubleParameter(3, "length of the blocks"))
+		      ("Reh", 	new DoubleParameter(1000, "Reynolds number (formulated with height) of the tripping zone"))
+		      .convert_to_container<ParameterSet::EntryList>()
+		    )
+		  )
+		  ,
+		  "Tripping from laminar to turbulent flow")
+	    )
 
 	    ("gradaxi",	new DoubleParameter(50, "grading from plate beginning towards inlet boundary"))
 	    .convert_to_container<ParameterSet::EntryList>()
@@ -397,6 +409,26 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     
     removeCellSetFromMesh(cm, executionPath(), trip_);
   }
+  else if (tp.selection()=="drag")
+  {
+//     int n=tp().getInt("n");
+    double Reh=tp().getDouble("Reh");
+//     double CD=tp().getDouble("CD");
+    double lbyh=tp().getDouble("lbyh");
+    
+    double dtrip=Reh*nu/uinf_;
+    double Ltrip=lbyh*dtrip; //3.*dtrip;
+    
+    std::vector<std::string> cmds;
+    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") 
+	% trip_ 
+	% Ltrip % dtrip
+    ) );
+    
+    setSet(cm, executionPath(), cmds);
+    
+    setsToZones(cm, executionPath(), true);
+  }
 }
 
 
@@ -485,6 +517,17 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //     ));
 //   }
 
+  const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
+  if (tp.selection()=="drag")
+  {
+    double CD=tp().getDouble("CD");
+
+    cm.insert(new volumeDrag(cm, volumeDrag::Parameters()
+      .set_name(trip_)
+      .set_CD(vec3(CD, 0, 0))
+    ));
+  }
+  
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
   
 //   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()

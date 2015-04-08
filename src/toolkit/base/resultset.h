@@ -195,6 +195,7 @@ public:
   virtual void writeGnuplotData(std::ostream& f) const;
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
   virtual ResultElement* clone() const;
 };
@@ -233,6 +234,7 @@ public:
   inline const AttributeValues& values() const { return values_; }
   
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
   virtual ResultElement* clone() const;
 };

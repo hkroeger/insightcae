@@ -329,6 +329,31 @@ void TabularResult::writeLatexCode(std::ostream& f, const std::string& name, int
   "\\newpage\n";  // page break algorithm fails after too short "longtable"
 }
 
+void TabularResult::exportDataToFile(const string& name, const path& outputdirectory) const
+{
+  boost::filesystem::path fname(outputdirectory/(name+".csv"));
+  std::ofstream f(fname.c_str());
+  
+  std::string sep="";
+  BOOST_FOREACH(const std::string& h, headings_)
+  {
+    f<<sep<<"\""<<h<<"\"";
+    sep=";";
+  }
+  f<<endl;
+  
+  BOOST_FOREACH(const Row& r, rows_)
+  {
+    sep="";
+    BOOST_FOREACH(const double& v, r)
+    {
+      f<<sep<<v;
+    }
+    f<<endl;
+  }
+}
+
+
 defineType(AttributeTableResult);
 addToFactoryTable(ResultElement, AttributeTableResult, ResultElement::ResultElementConstrP);
 
@@ -363,6 +388,18 @@ void AttributeTableResult::writeLatexCode(std::ostream& f, const std::string& na
   }
   f<<"\\end{tabular}\n";
 }
+
+void AttributeTableResult::exportDataToFile(const string& name, const path& outputdirectory) const
+{
+  boost::filesystem::path fname(outputdirectory/(name+".csv"));
+  std::ofstream f(fname.c_str());
+  
+  for(int i=0; i<names_.size(); i++)
+  {
+    f<<"\""<<names_[i]<<"\";"<<values_[i]<<endl;
+  }
+}
+
   
 ResultElement* AttributeTableResult::clone() const
 {

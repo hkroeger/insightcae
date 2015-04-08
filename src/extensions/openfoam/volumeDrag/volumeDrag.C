@@ -86,6 +86,8 @@ Foam::scalar Foam::fv::volumeDrag::computeAxialLength() const
   
   vector el=CD_/mCD;
   scalar l = el & boundBox(UIndirectList<vector>(mesh_.C(), cells_)()).span();
+  
+//   Info<<"axial length l="<<l<<endl;
 
   return l;
 }
@@ -104,6 +106,10 @@ Foam::fv::volumeDrag::volumeDrag
     option(sourceName, modelType, dict, mesh),
     CD_(coeffs_.lookup("CD"))
 {
+    fieldNames_.setSize(1);
+    fieldNames_[0]="U";
+    applied_.setSize(fieldNames_.size(), false);
+
     Info<< "    Setting volume drag CD = " << CD_ << nl << endl;
 }
 
@@ -175,7 +181,7 @@ Foam::tmp<Foam::vectorField> Foam::fv::volumeDrag::computeSup(fvMatrix<vector>& 
     
     const vectorField& U = eqn.psi();
     
-    Su() = 0.5*CD_* mag(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
+    Su() = 0.5*CD_* magSqr(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
 
     return Su;
 }
@@ -203,6 +209,8 @@ void Foam::fv::volumeDrag::addSup
 
     
     UIndirectList<vector>(Su, cells_) = computeSup(eqn);
+    
+//     if (mesh_.time().outputTime()) Su.write();
 
     eqn += Su;
 }

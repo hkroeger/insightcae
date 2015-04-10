@@ -28,6 +28,7 @@
 #include <base/exception.h>
 #include "boost/foreach.hpp"
 #include <boost/iterator/counting_iterator.hpp>
+#include "boost/make_shared.hpp"
 
 #include "dxfwriter.h"
 #include "featurefilter.h"
@@ -113,26 +114,32 @@ void SolidModel::setShape(const TopoDS_Shape& shape)
 
 
 SolidModel::SolidModel(const NoParameters&)
-: isleaf_(true)
+: isleaf_(true),
+  density_(1.0)
 {
 }
 
 SolidModel::SolidModel(const SolidModel& o)
 : isleaf_(true),
   providedSubshapes_(o.providedSubshapes_),
-  providedDatums_(o.providedDatums_)
+  providedDatums_(o.providedDatums_),
+  density_(1.0),
+  explicitCoG_(o.explicitCoG_),
+  explicitMass_(o.explicitMass_)
 {
   setShape(o.shape_);
 }
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
-: isleaf_(true)
+: isleaf_(true),
+  density_(1.0)
 {
   setShape(shape);
 }
 
 SolidModel::SolidModel(const boost::filesystem::path& filepath)
-: isleaf_(true)
+: isleaf_(true),
+  density_(1.0)
 {
   setShape(loadShapeFromFile(filepath));
 }
@@ -141,9 +148,33 @@ SolidModel::~SolidModel()
 {
 }
 
+double SolidModel::mass() const
+{
+  if (explicitMass_)
+  {
+    return *explicitMass_;
+  }
+  else
+  {
+    return density_*modelVolume();
+  }
+}
+
+void SolidModel::setMassExplicitly(double m) 
+{ 
+  explicitMass_.reset(new double(m));
+}
+
+void SolidModel::setCoGExplicitly(const arma::mat& cog) 
+{ 
+  explicitCoG_.reset(new arma::mat(cog));
+}
+
 SolidModel& SolidModel::operator=(const SolidModel& o)
 {
   setShape(o.shape_);
+  explicitCoG_=o.explicitCoG_;
+  explicitMass_=o.explicitMass_;
   return *this;
 }
 
@@ -189,10 +220,17 @@ arma::mat SolidModel::faceCoG(FeatureID i) const
 
 arma::mat SolidModel::modelCoG() const
 {
-  GProp_GProps props;
-  BRepGProp::VolumeProperties(shape_, props);
-  gp_Pnt cog = props.CentreOfMass();
-  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+  if (explicitCoG_)
+  {
+    return *explicitCoG_;
+  }
+  else
+  {
+    GProp_GProps props;
+    BRepGProp::VolumeProperties(shape_, props);
+    gp_Pnt cog = props.CentreOfMass();
+    return vec3(cog);
+  }
 }
 
 double SolidModel::modelVolume() const
@@ -2144,42 +2182,49 @@ Transform::Transform(const NoParameters& nop): SolidModel(nop)
 TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale)
 {
   gp_Trsf tr0, tr1, tr2;
-  TopoDS_Shape intermediate_shape=m1;
-  
+//   TopoDS_Shape intermediate_shape=m1;
+//   
   tr0.SetScaleFactor(scale);
-  intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr0).Shape();
-
+//   intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr0).Shape();
+// 
   tr1.SetTranslation(to_Vec(trans));  
-  intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr1).Shape();
-
+//   intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr1).Shape();
+// 
   double phi=norm(rot, 2);
   if (phi>1e-10)
   {
     gp_Vec axis=to_Vec(rot);
     axis.Normalize();
     tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), axis), phi);
-    intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr2).Shape();
+//     intermediate_shape=BRepBuilderAPI_Transform(intermediate_shape, tr2).Shape();
   }  
-
-  // Apply rotation first, then translation
-  return intermediate_shape;
+  
+  gp_Trsf trcomp=tr2.Multiplied(tr1).Multiplied(tr0);
+  return makeTransform(m1, trcomp);
+// 
+//   // Apply rotation first, then translation
+//   return intermediate_shape;
 }
 
 TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const gp_Trsf& trsf)
 {
+  if (m1.hasExplicitCoG())
+  {
+    this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(trsf)) );
+  }
   return BRepBuilderAPI_Transform(m1, trsf).Shape();
 }
 
 
 Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale)
-: SolidModel(makeTransform(m1, trans, rot, scale))
 {
+  setShape(makeTransform(m1, trans, rot, scale));
   m1.unsetLeaf();
 }
 
 Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
-: SolidModel(makeTransform(m1, trsf))
 {
+  setShape(makeTransform(m1, trsf));
   m1.unsetLeaf();
 }
 
@@ -2214,6 +2259,12 @@ Mirror::Mirror(const SolidModel& m1, const Datum& pl)
     throw insight::Exception("Mirror: planar reference required!");
   
   tr.SetMirror(static_cast<gp_Ax3>(pl).Ax2());  
+  
+  if (m1.hasExplicitCoG())
+  {
+    this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(tr)) );
+  }
+  
   setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
 
@@ -2235,6 +2286,16 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
 defineType(Place);
 addToFactoryTable(SolidModel, Place, NoParameters);
 
+void Place::makePlacement(const SolidModel& m, const gp_Trsf& tr)
+{
+  if (m.hasExplicitCoG())
+  {
+    this->setCoGExplicitly( vec3(to_Pnt(m.modelCoG()).Transformed(tr)) );
+  }
+  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+}
+
+
 Place::Place(const NoParameters& nop): SolidModel(nop)
 {}
 
@@ -2243,7 +2304,7 @@ Place::Place(const SolidModel& m, const gp_Ax2& cs)
 {
   gp_Trsf tr;
   tr.SetTransformation(gp_Ax3(cs));
-  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+  makePlacement(m, tr.Inverted());
 }
 
 
@@ -2251,7 +2312,7 @@ Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, cons
 {
   gp_Trsf tr;
   tr.SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
-  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+  makePlacement(m, tr.Inverted());
 }
 
 void Place::insertrule(parser::ISCADParser& ruleset) const
@@ -2277,28 +2338,20 @@ Compound::Compound(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-TopoDS_Shape Compound::makeCompound(const std::vector<SolidModelPtr>& m1)
+
+Compound::Compound(const std::vector<SolidModelPtr>& m1)
+: components_(m1)
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
-  
+
   BOOST_FOREACH(const SolidModelPtr& p, m1)
   {
     bb.Add(result, *p);
-  }
-  
-  return result;
-}
-
-
-Compound::Compound(const std::vector<SolidModelPtr>& m1)
-: SolidModel(makeCompound(m1))
-{
-  BOOST_FOREACH(const SolidModelPtr& p, m1)
-  {
     p->unsetLeaf();
   }
+  setShape(result);
 }
 
 void Compound::insertrule(parser::ISCADParser& ruleset) const
@@ -2314,6 +2367,58 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
     ))
   );
 }
+
+arma::mat Compound::modelCoG() const
+{
+  if (explicitCoG_.get())
+  {
+    return *explicitCoG_;
+  }
+  else
+  {
+    double mtot=0.0;
+    arma::mat cog=vec3(0,0,0);
+    
+    BOOST_FOREACH(const SolidModelPtr& p, components_)
+    {
+      const SolidModel& m = *p;
+      mtot+=m.mass();
+      cog += m.modelCoG()*m.mass();
+    }
+    
+    cout<<"total mass="<<mtot<<endl;
+    
+    if (mtot<1e-10)
+      throw insight::Exception("Total mass is zero!");
+    
+    cog/=mtot;
+    
+    cout<<"CoG="<<cog<<endl;
+    
+    return cog;
+  }
+}
+
+double Compound::mass() const
+{
+  if (explicitMass_)
+  {
+    return *explicitMass_;
+  }
+  else
+  {
+    double mtot=0.0;
+    
+    BOOST_FOREACH(const SolidModelPtr& p, components_)
+    {
+      const SolidModel& m = *p;
+      mtot+=m.mass();
+    }
+    return mtot;
+  }
+}
+
+
 
 
 defineType(Cutaway);

@@ -24,6 +24,7 @@
 #include <set>
 #include <map>
 #include <vector>
+#include <memory>
 
 #include "base/boost_include.h"
 
@@ -85,6 +86,10 @@ protected :
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void setShape(const TopoDS_Shape& shape);
   
+  double density_;
+  boost::shared_ptr<arma::mat> explicitCoG_;
+  boost::shared_ptr<double> explicitMass_;
+  
  
 public:
   declareType("SolidModel");
@@ -97,6 +102,19 @@ public:
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
+  
+  inline void setDensity(double rho) { density_=rho; };
+  inline double density() const { return density_; }
+  virtual double mass() const;
+  
+  void setMassExplicitly(double m);
+  void setCoGExplicitly(const arma::mat& cog);
+  
+  inline bool hasExplicitMass() const { return explicitMass_; }
+  inline bool hasExplicitCoG() const { return explicitCoG_; }
+  
+  inline void unsetExplicitMass() { explicitMass_.reset(); }
+  inline void unsetExplicitCoG() { explicitCoG_.reset(); }
   
   inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
     { return providedDatums_; }
@@ -118,8 +136,8 @@ public:
   
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
-  arma::mat modelCoG() const;
-  double modelVolume() const;
+  virtual arma::mat modelCoG() const;
+  virtual double modelVolume() const;
   
   /**
    * return bounding box of model
@@ -559,6 +577,8 @@ public:
 class Place
 : public SolidModel
 {
+  void makePlacement(const SolidModel& m, const gp_Trsf& tr);
+
 public:
   declareType("Place");
   Place(const NoParameters& nop = NoParameters());
@@ -570,13 +590,16 @@ public:
 class Compound
 : public SolidModel
 {
-  TopoDS_Shape makeCompound(const std::vector<SolidModelPtr>& m1);
+  std::vector<SolidModelPtr> components_;
   
 public:
   declareType("Compound");
   Compound(const NoParameters& nop = NoParameters());
   Compound(const std::vector<SolidModelPtr>& m1);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  virtual arma::mat modelCoG() const;
+  virtual double mass() const;
 };
 
 class Cutaway

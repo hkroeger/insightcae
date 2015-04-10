@@ -120,6 +120,35 @@ mapkey_parser::mapkey_parser<Model::Ptr> Model::modelSymbolNames() const
 //   return solidmodel(new SolidModel(filepath));
 // }
 
+arma::mat Model::modelCoG()
+{
+  double mtot=0.0;
+  arma::mat cog=vec3(0,0,0);
+  BOOST_FOREACH(const std::string cn, components_)
+  {
+    const SolidModel& m = *(modelstepSymbols_.find(cn)->second);
+    mtot+=m.mass();
+    cog += m.modelCoG()*m.mass();
+  }
+  
+  cout<<"total mass="<<mtot<<endl;
+  
+  if (mtot<1e-10)
+    throw insight::Exception("Total mass is zero!");
+  
+  cog/=mtot;
+  
+  cout<<"CoG="<<cog<<endl;
+  
+  return cog;
+}
+
+arma::mat Model::modelBndBox(double deflection) const
+{
+
+}
+
+
 double dot(const vector& v1, const vector& v2)
 {
   return arma::as_scalar(arma::dot(v1,v2));
@@ -273,7 +302,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
   model_(model)
 {
   
-    r_model =  *( r_assignment | r_modelstep /*| r_loadmodel*/ ) 
+    r_model =  *( r_assignment | r_modelstep | r_solidmodel_propertyAssignment /*| r_loadmodel*/ ) 
 	      >> -( lit("@post")  >> *r_postproc);
     
     r_assignment = 
@@ -298,6 +327,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( r_identifier >> '='  >> r_datumExpression >> ';') 
 	[ phx::bind(&Model::addDatumSymbol, model_, qi::_1, qi::_2) ]
+      |
+      ( r_identifier >> '=' >> r_solidmodel_expression > ';' ) 
+        [ phx::bind(&Model::addModelstepSymbol, model_, qi::_1, qi::_2) ]
       ;
       
     r_postproc =
@@ -345,7 +377,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ;
     
     r_modelstep  =  ( r_identifier >> ':' > r_solidmodel_expression > ';' ) 
-      [ phx::bind(&Model::addModelstepSymbol, model_, qi::_1, qi::_2) ]
+      [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2) ]
 	;
     
     
@@ -369,39 +401,6 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )
       |
       r_modelstepFunction [ _val = qi::_1 ]
-      
-      /*
-
-      | ( lit("Tri") > 
-      | ( lit("Quad") > 
-      | ( lit("Circle") > 
-      | ( lit("RegPoly") > 
-      | ( lit("SplineSurface") > 
-      | ( lit("Sketch") > 
-      
-      | ( lit("CircularPattern") > 
-      | ( lit("LinearPattern") > 
-      
-      | ( lit("Transform") > 
-      | ( lit("Mirror") > 
-      | ( lit("Place") > 
-      | ( lit("Compound") > 
-
-      // Primitives
-      | ( lit("Sphere") > 
-      | ( lit("Cylinder") > 
-      | ( lit("Shoulder") > 
-      | ( lit("Box") > 
-      | ( lit("Fillet") > 
-// 	 | ( lit("Chamfer") > 
-      | ( lit("Extrusion") > 
-      | ( lit("Revolution") > 
-      | ( lit("Sweep") > 
-      | ( lit("RotatedHelicalSweep") > 
-      | ( lit("Projected") > 
-      | ( lit("Split") > 
-      | ( lit("Cutaway") > 
-	  */
       // try identifiers last, since exceptions are generated, if symbols don't exist
       | 
 	r_solidmodel_subshape [ _val = qi::_1 ]
@@ -424,7 +423,19 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	    [ _val = qi::_1 ]
 	  ;
 
-      
+    r_solidmodel_propertyAssignment =
+      qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	  > lit("->") >
+	   (
+	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&SolidModel::setCoGExplicitly, *_a, qi::_1) ) ]
+	     |
+	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setMassExplicitly, *_a, qi::_1) ) ]
+	     |
+	     ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setDensity, *_a, qi::_1) ) ]
+	   )
+	  > ';'
+	  ;
+
     r_edgeFeaturesExpression = 
 	  qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
 	  | (
@@ -518,11 +529,21 @@ ISCADParser::ISCADParser(Model::Ptr model)
     ;
       
     r_vector_primary =
-      qi::lexeme[model_->vectorSymbolNames()] [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
-      | ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) [ _val = vec3_(qi::_1, qi::_2, qi::_3) ] 
+       ( lit("modelCoG") )
+        [ _val = phx::bind(&Model::modelCoG, model_) ]
+      |
+       qi::lexeme[model_->vectorSymbolNames()] 
+        [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
+      |
+       ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) 
+        [ _val = vec3_(qi::_1, qi::_2, qi::_3) ] 
       //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]
-      | ( '(' >> r_vectorExpression >> ')' ) [_val=qi::_1]
-      | ( '-' >> r_vector_primary ) [_val=-qi::_1]
+      |
+       ( '(' >> r_vectorExpression >> ')' ) 
+        [_val=qi::_1]
+      |
+       ( '-' >> r_vector_primary ) 
+        [_val=-qi::_1]
       ;
 
     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
@@ -547,9 +568,11 @@ ISCADParser::ISCADParser(Model::Ptr model)
 // 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
+// // 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
-//	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_subshape);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
     
     on_error<fail>(r_model, 

@@ -100,7 +100,7 @@ namespace mapkey_parser
 	    
 	    Iterator cur=first, match=first;
 	    bool matched=false;
-	    cur++;
+// 	    cur++;
 	    while (cur!=last)
 	    {
 	      std::string key(first, cur);
@@ -108,11 +108,11 @@ namespace mapkey_parser
 	      typename std::map<std::string, T>::const_iterator it=map_->find(key);
 	      if (it!=map_->end())
 	      {
-//  		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
+//   		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
 		  match=cur;
 		  matched=true;
 	      }
-// 	      else std::cout<<"NOK=>"<<key<<"<"<<std::endl;
+//  	      else std::cout<<"NOK=>"<<key<<"<"<<std::endl;
 	      cur++;
 	    }
 	    
@@ -121,7 +121,7 @@ namespace mapkey_parser
 	      std::string key(first, match);
 	      boost::spirit::traits::assign_to(std::string(first, match), attr);
 	      first=match;
-// 	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
+//  	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
 	      return true;
 	    }
 	    else
@@ -191,6 +191,8 @@ public:
   typedef std::map<std::string, Model::Ptr> 	modelSymbolTable;
   typedef std::map<std::string, EvaluationPtr> 	evaluationSymbolTable;
   
+  typedef std::set<std::string> componentTable;
+  
 protected:
   gp_Ax3 placement_;
   scalarSymbolTable 		scalarSymbols_;
@@ -200,6 +202,7 @@ protected:
   edgeFeatureSymbolTable	edgeFeatureSymbols_;
   modelSymbolTable		modelSymbols_;
   evaluationSymbolTable		evaluationSymbols_;
+  componentTable		components_;
   
 public:
   
@@ -239,6 +242,11 @@ public:
   inline void addModelstepSymbol(const std::string& name, const solidmodel& value)
   {
     modelstepSymbols_[name]=value;
+  }
+  inline void addComponent(const std::string& name, const solidmodel& value)
+  {
+    addModelstepSymbol(name, value);
+    components_.insert(name);
   }
   inline void addEdgeFeatureSymbol(const std::string& name, const FeatureSetPtr& value)
   {
@@ -320,6 +328,17 @@ public:
 //   struct edgeFeaturesSymbolTable : public qi::symbols<char, FeatureSetPtr> {} edgeFeatureSymbols;
 // 
 //   struct modelSymbolTable : public qi::symbols<char, Model::Ptr> {} modelSymbols;
+
+  arma::mat modelCoG();
+//   inline arma::mat modelCoG() { return modelCoG(); }; // "const" caused failure with phx::bind!
+  
+  /**
+   * return bounding box of model
+   * first col: min point
+   * second col: max point
+   */
+  arma::mat modelBndBox(double deflection=-1) const;
+
 };
 
 Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms);
@@ -353,6 +372,7 @@ struct ISCADParser
     
     qi::rule<std::string::iterator, skip_grammar> r_model;
     qi::rule<std::string::iterator, skip_grammar> r_assignment;
+    qi::rule<std::string::iterator, qi::locals<SolidModelPtr>, skip_grammar> r_solidmodel_propertyAssignment;
     qi::rule<std::string::iterator, skip_grammar> r_postproc;
     qi::rule<std::string::iterator, viewdef(), skip_grammar> r_viewDef;
     qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;

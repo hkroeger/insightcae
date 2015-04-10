@@ -1,13 +1,13 @@
 #include <cmath>
 #include <iostream>
 
-#include <GL/gl.h>
-#include <GL/glu.h>
-
 #include <QtGui>
 
 #include "qoccviewwidget.h"
 #include "qoccinternal.h"
+
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #include <V3d_AmbientLight.hxx>
 #include <V3d_DirectionalLight.hxx>

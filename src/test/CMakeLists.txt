@@ -1,1 +1,1 @@
-add_subdirectory(dictParser)
+#add_subdirectory(dictParser)

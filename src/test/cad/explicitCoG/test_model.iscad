@@ -1,0 +1,17 @@
+s=Sphere(O, 10);
+s->CoG=[2.5,0,0];
+s->mass=1;
+
+st1=Transform(s, [0,5,0], [0,0,0]);
+st1->mass=5;
+st2=Transform(s, [0,0,0], [0,5,0]);
+st3=Transform(s, [0,0,0], [0,0,0], 2);
+asm=Compound(s,st1);
+
+@post
+
+SolidProperties(props) << s;
+SolidProperties(propst1) << st1;
+SolidProperties(propst2) << st2;
+SolidProperties(propst3) << st3;
+SolidProperties(propsa) << asm;

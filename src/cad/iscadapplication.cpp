@@ -18,6 +18,12 @@
  *
  */
 
+#include <QMessageBox>
+#include <QMainWindow>
+
+#include "qoccviewwidget.h"
+#include "qoccviewercontext.h"
+
 #include "iscadapplication.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
@@ -25,17 +31,12 @@
 #include "datum.h"
 #include "evaluation.h"
 
-#include "qoccviewercontext.h"
-#include "qoccviewwidget.h"
 #include <iostream>
 
 #include "occinclude.h"
 #include "AIS.hxx"
 #include "AIS_Shape.hxx"
 #include "AIS_InteractiveContext.hxx"
-
-#include <QMessageBox>
-#include <QMainWindow>
 
 using namespace std;
 using namespace boost;

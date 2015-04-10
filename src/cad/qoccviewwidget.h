@@ -1,8 +1,8 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
-#include <QtOpenGL/QGLWidget>
 #include <QtGui>
+#include <QtOpenGL/QGLWidget>
 
 #include "qocc.h"
 

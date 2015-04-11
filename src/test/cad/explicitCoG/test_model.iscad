@@ -4,6 +4,7 @@ s->mass=1;
 
 st1=Transform(s, [0,5,0], [0,0,0]);
 st1->mass=5;
+st12=Place(s, [0,5,0], EX, EZ);
 st2=Transform(s, [0,0,0], [0,5,0]);
 st3=Transform(s, [0,0,0], [0,0,0], 2);
 asm=Compound(s,st1);
@@ -12,6 +13,7 @@ asm=Compound(s,st1);
 
 SolidProperties(props) << s;
 SolidProperties(propst1) << st1;
+SolidProperties(propst12) << st12;
 SolidProperties(propst2) << st2;
 SolidProperties(propst3) << st3;
 SolidProperties(propsa) << asm;

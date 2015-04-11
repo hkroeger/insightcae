@@ -30,6 +30,7 @@ namespace cad {
 void writeFreeShipSurface(const SolidModel& hull, const boost::filesystem::path& filepath);
 
 void writeHydrostaticReport(const SolidModel& hull, const arma::mat& psurf, const arma::mat& nsurf, const boost::filesystem::path& filepath);
+
 }
 }
 

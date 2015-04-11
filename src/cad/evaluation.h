@@ -75,7 +75,8 @@ class Hydrostatics
 public:
   Hydrostatics
   (
-    const SolidModel& model, 
+    const SolidModel& hullvolume, 
+    const SolidModel& shipmodel,
     const arma::mat& psurf, const arma::mat& nsurf,
     const arma::mat& elong, const arma::mat& evert
   );

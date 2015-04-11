@@ -45,6 +45,7 @@ AIS_InteractiveObject* SolidProperties::createAISRepr() const
 Hydrostatics::Hydrostatics
 (
   const SolidModel& hull_volume, 
+  const SolidModel& shipmodel,
   const arma::mat& psurf, const arma::mat& nsurf,
   const arma::mat& elong, const arma::mat& evert
 )
@@ -56,9 +57,11 @@ Hydrostatics::Hydrostatics
   SolidModelPtr csf = submerged_volume.providedSubshapes().at("CutSurface");
   if (!csf)
     throw insight::Exception("No cut surface present!");
-  cout<<"ok1!"<<endl;
+
+  // write surface for debug
   TopoDS_Shape issh=static_cast<const TopoDS_Shape&>(*csf);
-    BRepTools::Write(issh, "test.brep");
+  BRepTools::Write(issh, "test.brep");
+  
   GProp_GProps props;
   BRepGProp::SurfaceProperties(issh, props);
   GProp_PrincipalProps pcp = props.PrincipalProperties();
@@ -68,7 +71,7 @@ Hydrostatics::Hydrostatics
   double BM = I.min()/V_;
   cout<<"BM="<<BM<<endl;
 
-  G_ = hull_volume.modelCoG();
+  G_ = shipmodel.modelCoG();
   B_ = submerged_volume.modelCoG();
   M_ = B_ + BM*evert;
   double GM = norm(M_ - G_, 2);

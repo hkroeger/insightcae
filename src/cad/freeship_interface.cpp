@@ -56,22 +56,32 @@ void writeFreeShipSurface(const SolidModel& hull, const boost::filesystem::path&
   }
 }
 
-void writeHydrostaticReport(const SolidModel& hull, const arma::mat& psurf, const arma::mat& nsurf, const boost::filesystem::path& filepath)
+void writeHydrostaticReport
+(
+  const SolidModel& hullvolume,
+  const SolidModel& shipmodel,
+  const arma::mat& psurf, const arma::mat& nsurf, 
+  const boost::filesystem::path& outputfilepath
+)
 {
-  cout<<"writing to "<<filepath<<endl;
-  std::ofstream f(filepath.c_str());
+  cout<<"writing to "<<outputfilepath<<endl;
+  std::ofstream f(outputfilepath.c_str());
   
-  Cutaway sub(hull, psurf, nsurf);
+  Cutaway submergedvolume(hullvolume, psurf, nsurf);
   
-  double V=sub.modelVolume();
+  double V=submergedvolume.modelVolume();
   f<<"# Volume of displacement"<<endl;
   f<<"V = "<<V<<endl;
+
+  arma::mat G=shipmodel.modelCoG();
+  f<<"# Centre of gravity"<<endl;
+  f<<"G = ["<<G(0)<<", "<<G(1)<<", "<<G(2)<<"]"<<endl;
   
-  arma::mat cog=sub.modelCoG();
+  arma::mat B=submergedvolume.modelCoG();
   f<<"# Centre of buoyancy"<<endl;
-  f<<"B = ["<<cog(0)<<", "<<cog(1)<<", "<<cog(2)<<"]"<<endl;
+  f<<"B = ["<<B(0)<<", "<<B(1)<<", "<<B(2)<<"]"<<endl;
   
-  sub.saveAs("test.stp");
+  submergedvolume.saveAs("test.stp");
 }
 
 

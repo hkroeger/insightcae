@@ -2292,7 +2292,7 @@ void Place::makePlacement(const SolidModel& m, const gp_Trsf& tr)
   {
     this->setCoGExplicitly( vec3(to_Pnt(m.modelCoG()).Transformed(tr)) );
   }
-  setShape(BRepBuilderAPI_Transform(m, tr.Inverted()).Shape());
+  setShape(BRepBuilderAPI_Transform(m, tr).Shape());
 }
 
 

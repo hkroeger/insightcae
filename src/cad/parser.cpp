@@ -349,9 +349,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ( lit("exportFreeShipSurface") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&writeFreeShipSurface, *qi::_2, qi::_1) ]
       |
-      ( lit("writeHydrostatics") >> '(' >> r_path >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' ) 
-	[ phx::bind(&writeHydrostaticReport, *qi::_2, qi::_3, qi::_4, qi::_1) ]
-      |
+//       ( lit("writeHydrostatics") >> '(' >> r_path >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' >> ';' ) 
+// 	[ phx::bind(&writeHydrostaticReport, *qi::_2, qi::_3, qi::_4, qi::_1) ]
+//       |
       ( lit("SolidProperties") >> '(' >> r_identifier >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
 	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
 		    phx::construct<EvaluationPtr>(new_<SolidProperties>(*qi::_2))) 
@@ -361,9 +361,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	  >> r_identifier >> ',' 
 	  >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' 
 	  >> r_vectorExpression >> ',' >> r_vectorExpression
-	  >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
+	  >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' >> ';' ) // (1) hull and (2) ship
 	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
-		    phx::construct<EvaluationPtr>(new_<Hydrostatics>(*qi::_6, qi::_2, qi::_3, qi::_4, qi::_5))) 
+		    phx::construct<EvaluationPtr>(new_<Hydrostatics>(*qi::_6, *qi::_7, qi::_2, qi::_3, qi::_4, qi::_5))) 
 	]
       ;
       

@@ -2212,6 +2212,7 @@ TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const gp_Trsf& trsf)
   {
     this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(trsf)) );
   }
+  if (m1.hasExplicitMass()) setMassExplicitly(m1.mass());
   return BRepBuilderAPI_Transform(m1, trsf).Shape();
 }
 
@@ -2264,6 +2265,7 @@ Mirror::Mirror(const SolidModel& m1, const Datum& pl)
   {
     this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(tr)) );
   }
+  if (m1.hasExplicitMass()) setMassExplicitly(m1.mass());
   
   setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
 }
@@ -2292,6 +2294,7 @@ void Place::makePlacement(const SolidModel& m, const gp_Trsf& tr)
   {
     this->setCoGExplicitly( vec3(to_Pnt(m.modelCoG()).Transformed(tr)) );
   }
+  if (m.hasExplicitMass()) setMassExplicitly(m.mass());
   setShape(BRepBuilderAPI_Transform(m, tr).Shape());
 }
 

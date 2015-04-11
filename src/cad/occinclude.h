@@ -183,6 +183,8 @@
 #include <AIS_ConnectedInteractive.hxx>
 #include <AIS_MultipleConnectedInteractive.hxx>
 #include <AIS_LengthDimension.hxx>
+#include <AIS_RadiusDimension.hxx>
+#include <AIS_Shape.hxx>
 
 #include "GEOMAlgo_Splitter.hxx"
 

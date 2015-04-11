@@ -23,6 +23,8 @@
 
 #include "AIS_Point.hxx"
 
+using namespace boost;
+
 namespace insight {
 namespace cad {
 
@@ -50,10 +52,15 @@ Hydrostatics::Hydrostatics
   const arma::mat& elong, const arma::mat& evert
 )
 {
+  elat_=arma::cross(nsurf, elong);
+  
   Cutaway submerged_volume(hull_volume, psurf, nsurf);
   V_=submerged_volume.modelVolume();
   cout<<"displacement V="<<V_<<endl;
   
+  m_=shipmodel.mass();
+  cout<<"ship mass m="<<m_<<endl;
+
   SolidModelPtr csf = submerged_volume.providedSubshapes().at("CutSurface");
   if (!csf)
     throw insight::Exception("No cut surface present!");
@@ -89,13 +96,27 @@ void Hydrostatics::write(ostream&) const
 
 AIS_InteractiveObject* Hydrostatics::createAISRepr() const
 {
-  Handle_AIS_Point aisG (new AIS_Point(new Geom_CartesianPoint(to_Pnt(G_))));
-  Handle_AIS_Point aisB (new AIS_Point(new Geom_CartesianPoint(to_Pnt(B_))));
-  Handle_AIS_Point aisM (new AIS_Point(new Geom_CartesianPoint(to_Pnt(M_))));
+  TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(G_),gp_Dir(to_Vec(elat_))), 1));
+  Handle_AIS_Shape aisG = new AIS_Shape(cG);
+  TopoDS_Edge cB = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(B_),gp_Dir(to_Vec(elat_))), 1));
+  Handle_AIS_Shape aisB = new AIS_Shape(cB);
+  TopoDS_Edge cM = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(M_),gp_Dir(to_Vec(elat_))), 1));
+  Handle_AIS_Shape aisM = new AIS_Shape(cM);
+  
+  double d_gm=norm(G_-M_,2);
   Handle_AIS_InteractiveObject aisDim (new AIS_LengthDimension(
     BRepBuilderAPI_MakeVertex(to_Pnt(G_)), BRepBuilderAPI_MakeVertex(to_Pnt(M_)),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(G_), to_Vec(vec3(0,1,0))))),
-    norm(G_-M_,2), "GM"
+    d_gm, 
+    str(format("GM = %g")%d_gm).c_str()
+  ));
+  
+
+  Handle_AIS_InteractiveObject aisBLabel (new AIS_RadiusDimension(
+    cB, 1e-6, str(format("B: V_disp = %g") % V_).c_str()
+  ));
+  Handle_AIS_InteractiveObject aisGLabel (new AIS_RadiusDimension(
+    cG, 1e-6, str(format("G: m = %g") % m_).c_str()
   ));
 
   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
@@ -103,6 +124,8 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
   ais->Connect(aisB);
   ais->Connect(aisM);
   ais->Connect(aisDim);
+  ais->Connect(aisGLabel);
+  ais->Connect(aisBLabel);
   
   return ais.release();
 }

@@ -53,6 +53,16 @@ class Hydrostatics
 : public Evaluation
 {
   /**
+   * lateral direction
+   */
+  arma::mat elat_;
+  
+  /**
+   * mass of ship assembly
+   */
+  double m_;
+  
+  /**
    * displaced volume
    */
   double V_;

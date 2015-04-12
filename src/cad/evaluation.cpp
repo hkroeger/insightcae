@@ -32,6 +32,18 @@ SolidProperties::SolidProperties(const SolidModel& model)
 {
   cog_=model.modelCoG();
   cout<<"CoG="<<cog_<<endl;
+  
+  mass_=model.mass();
+  cout<<"mass="<<mass_<<endl;
+  
+  GProp_GProps props;
+  BRepGProp::SurfaceProperties(static_cast<TopoDS_Shape>(model), props);
+  area_ = props.Mass();
+  cout<<"area="<<area_<<endl;
+  
+  arma::mat bb=model.modelBndBox();
+  bb_pmin_=bb.col(0);
+  bb_pmax_=bb.col(1);
 }
 
 void SolidProperties::write(std::ostream&) const
@@ -40,7 +52,50 @@ void SolidProperties::write(std::ostream&) const
 
 AIS_InteractiveObject* SolidProperties::createAISRepr() const
 {
-  return new AIS_Point(new Geom_CartesianPoint(to_Pnt(cog_)));
+  TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(cog_),gp_Dir(1,0,0)), 1));
+  Handle_AIS_Shape aisG = new AIS_Shape(cG);
+
+  Handle_AIS_InteractiveObject aisGLabel (new AIS_RadiusDimension(
+    cG, 1e-6, str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str()
+  ));
+
+  double 
+   Lx=bb_pmax_(0)-bb_pmin_(0),
+   Ly=bb_pmax_(1)-bb_pmin_(1),
+   Lz=bb_pmax_(2)-bb_pmin_(2);
+   
+  Handle_AIS_InteractiveObject aisDimX(new AIS_LengthDimension(
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmax_(0), bb_pmin_(1), bb_pmin_(2))),
+    Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(0,0,1)))),
+    Lx, 
+    str(format("Lx = %g (%g to %g)")%Lx%bb_pmin_(0)%bb_pmax_(0)).c_str()
+  ));
+
+  Handle_AIS_InteractiveObject aisDimY(new AIS_LengthDimension(
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmax_(1), bb_pmin_(2))),
+    Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(0,0,-1)))),
+    Ly, 
+    str(format("Ly = %g (%g to %g)")%Ly%bb_pmin_(1)%bb_pmax_(1)).c_str()
+  ));
+
+  Handle_AIS_InteractiveObject aisDimZ(new AIS_LengthDimension(
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
+    BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmax_(2))),
+    Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(-1,1,0)))),
+    Lz, 
+    str(format("Lz = %g (%g to %g)")%Lz%bb_pmin_(2)%bb_pmax_(2)).c_str()
+  ));
+
+  std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
+  ais->Connect(aisG);
+  ais->Connect(aisGLabel);
+  ais->Connect(aisDimX);
+  ais->Connect(aisDimY);
+  ais->Connect(aisDimZ);
+
+  return ais.release();
 }
 
 

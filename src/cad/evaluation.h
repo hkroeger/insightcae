@@ -40,7 +40,30 @@ public:
 class SolidProperties
 : public Evaluation
 {
+  /**
+   * total mass
+   */
+  double mass_;
+  
+  /**
+   * surface area
+   */
+  double area_;
+  
+  /**
+   * center of gravity
+   */
   arma::mat cog_;
+  
+  /**
+   * min point of BB
+   */
+  arma::mat bb_pmin_;
+  
+  /**
+   * max point of BB
+   */
+  arma::mat bb_pmax_;
   
 public:
   SolidProperties(const SolidModel& model);

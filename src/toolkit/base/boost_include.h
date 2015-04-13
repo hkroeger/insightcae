@@ -22,7 +22,8 @@
 #ifndef INSIGHT_BOOST_INCLUDE_H
 #define INSIGHT_BOOST_INCLUDE_H
 
-#if (BOOST_VERSION<105100)
+#include "boost/version.hpp"
+#if ( BOOST_VERSION < 105100 )
 #define BOOST_NO_SCOPED_ENUMS
 #else
 #define BOOST_NO_CXX11_SCOPED_ENUMS

@@ -110,8 +110,8 @@ public:
   void setMassExplicitly(double m);
   void setCoGExplicitly(const arma::mat& cog);
   
-  inline bool hasExplicitMass() const { return explicitMass_; }
-  inline bool hasExplicitCoG() const { return explicitCoG_; }
+  inline bool hasExplicitMass() const { return bool(explicitMass_); }
+  inline bool hasExplicitCoG() const { return bool(explicitCoG_); }
   
   inline void unsetExplicitMass() { explicitMass_.reset(); }
   inline void unsetExplicitCoG() { explicitCoG_.reset(); }

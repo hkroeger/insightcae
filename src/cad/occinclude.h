@@ -90,6 +90,7 @@
 #include <BRepBuilderAPI_MakeSolid.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepOffsetAPI_Sewing.hxx>
+#include "BRepOffsetAPI_MakeOffsetShape.hxx"
 #include <BRepLProp_CLProps.hxx>
 #include <BRepLProp_SLProps.hxx>
 #include <BRepAdaptor_Surface.hxx>

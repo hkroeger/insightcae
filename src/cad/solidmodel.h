@@ -86,7 +86,7 @@ protected :
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void setShape(const TopoDS_Shape& shape);
   
-  double density_;
+  double density_, areaWeight_;
   boost::shared_ptr<arma::mat> explicitCoG_;
   boost::shared_ptr<double> explicitMass_;
   
@@ -105,6 +105,8 @@ public:
   
   inline void setDensity(double rho) { density_=rho; };
   inline double density() const { return density_; }
+  inline void setAreaWeight(double rho) { areaWeight_=rho; };
+  inline double areaWeight() const { return areaWeight_; }
   virtual double mass() const;
   
   void setMassExplicitly(double m);
@@ -138,6 +140,7 @@ public:
   arma::mat faceCoG(FeatureID i) const;
   virtual arma::mat modelCoG() const;
   virtual double modelVolume() const;
+  virtual double modelSurfaceArea() const;
   
   /**
    * return bounding box of model
@@ -414,6 +417,16 @@ public:
   declareType("Sweep");
   Sweep(const NoParameters& nop = NoParameters());
   Sweep(const std::vector<SolidModelPtr>& secs);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Thicken
+: public SolidModel
+{
+public:
+  declareType("Thicken");
+  Thicken(const NoParameters& nop = NoParameters());
+  Thicken(const SolidModel& shell, double thickness, double tol=Precision::Confusion());
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

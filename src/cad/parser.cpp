@@ -432,6 +432,8 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setMassExplicitly, *_a, qi::_1) ) ]
 	     |
 	     ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setDensity, *_a, qi::_1) ) ]
+	     |
+	     ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setAreaWeight, *_a, qi::_1) ) ]
 	   )
 	  > ';'
 	  ;

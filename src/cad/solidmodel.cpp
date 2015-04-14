@@ -115,7 +115,8 @@ void SolidModel::setShape(const TopoDS_Shape& shape)
 
 SolidModel::SolidModel(const NoParameters&)
 : isleaf_(true),
-  density_(1.0)
+  density_(1.0),
+  areaWeight_(0.0)
 {
 }
 
@@ -124,6 +125,7 @@ SolidModel::SolidModel(const SolidModel& o)
   providedSubshapes_(o.providedSubshapes_),
   providedDatums_(o.providedDatums_),
   density_(1.0),
+  areaWeight_(0.0),
   explicitCoG_(o.explicitCoG_),
   explicitMass_(o.explicitMass_)
 {
@@ -132,14 +134,16 @@ SolidModel::SolidModel(const SolidModel& o)
 
 SolidModel::SolidModel(const TopoDS_Shape& shape)
 : isleaf_(true),
-  density_(1.0)
+  density_(1.0),
+  areaWeight_(0.0)
 {
   setShape(shape);
 }
 
 SolidModel::SolidModel(const boost::filesystem::path& filepath)
 : isleaf_(true),
-  density_(1.0)
+  density_(1.0),
+  areaWeight_(0.0)
 {
   setShape(loadShapeFromFile(filepath));
 }
@@ -152,11 +156,16 @@ double SolidModel::mass() const
 {
   if (explicitMass_)
   {
+    cout<<"Explicit mass = "<<*explicitMass_<<endl;
     return *explicitMass_;
   }
   else
   {
-    return density_*modelVolume();
+    double mtot=density_*modelVolume()+areaWeight_*modelSurfaceArea();
+    cout<<"Computed mass rho / V = "<<density_<<" / "<<modelVolume()
+	<<", mf / A = "<<areaWeight_<<" / "<<modelSurfaceArea()
+	<<", m = "<<mtot<<endl;
+    return mtot;
   }
 }
 
@@ -235,9 +244,32 @@ arma::mat SolidModel::modelCoG() const
 
 double SolidModel::modelVolume() const
 {
-  GProp_GProps props;
-  BRepGProp::VolumeProperties(shape_, props);
-  return props.Mass();
+  TopExp_Explorer ex(shape_, TopAbs_SOLID);
+  if (ex.More())
+  {
+    GProp_GProps props;
+    BRepGProp::VolumeProperties(shape_, props);
+    return props.Mass();
+  }
+  else
+  {
+    return 0.;
+  }
+}
+
+double SolidModel::modelSurfaceArea() const
+{
+  TopExp_Explorer ex(shape_, TopAbs_FACE);
+  if (ex.More())
+  {
+    GProp_GProps props;
+    BRepGProp::SurfaceProperties(shape_, props);
+    return props.Mass();
+  }
+  else
+  {
+    return 0.;
+  }
 }
 
 arma::mat SolidModel::modelBndBox(double deflection) const
@@ -1678,6 +1710,35 @@ void Sweep::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+defineType(Thicken);
+addToFactoryTable(SolidModel, Thicken, NoParameters);
+
+Thicken::Thicken(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+Thicken::Thicken(const SolidModel& shell, double thickness, double tol)
+{
+
+  BRepOffsetAPI_MakeOffsetShape maker(shell, thickness, 0.01,BRepOffset_Skin,Standard_False,Standard_False,GeomAbs_Arc);
+  
+  setShape(maker.Shape());
+}
+
+void Thicken::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Thicken",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Thicken>(*qi::_1, qi::_2)) ]
+      
+    ))
+  );
+}
 
 defineType(RotatedHelicalSweep);
 addToFactoryTable(SolidModel, RotatedHelicalSweep, NoParameters);

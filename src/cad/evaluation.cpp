@@ -35,10 +35,8 @@ SolidProperties::SolidProperties(const SolidModel& model)
   
   mass_=model.mass();
   cout<<"mass="<<mass_<<endl;
-  
-  GProp_GProps props;
-  BRepGProp::SurfaceProperties(static_cast<TopoDS_Shape>(model), props);
-  area_ = props.Mass();
+
+  area_=model.modelSurfaceArea();
   cout<<"area="<<area_<<endl;
   
   arma::mat bb=model.modelBndBox();

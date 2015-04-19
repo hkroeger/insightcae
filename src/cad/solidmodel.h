@@ -132,6 +132,10 @@ public:
   inline const TopoDS_Face& face(FeatureID i) const { return TopoDS::Face(fmap_.FindKey(i)); }
   inline const TopoDS_Edge& edge(FeatureID i) const { return TopoDS::Edge(emap_.FindKey(i)); }
   inline const TopoDS_Vertex& vertex(FeatureID i) const { return TopoDS::Vertex(vmap_.FindKey(i)); }
+
+  inline FeatureID faceID(const TopoDS_Shape& f) const { return fmap_.FindIndex(f); }
+  inline FeatureID edgeID(const TopoDS_Shape& e) const { return emap_.FindIndex(e); }
+  inline FeatureID vertexID(const TopoDS_Shape& v) const { return vmap_.FindIndex(v); }
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;

@@ -50,7 +50,7 @@ class PlotNotebook(wx.Panel):
 
 lines=open(sys.argv[1]).readlines()
 for l in lines:
-  if l.startswith('#'):
+  if l.strip().startswith('#'):
     lines.remove(l)
     
 #headings=lines[0].lstrip(' #').split()

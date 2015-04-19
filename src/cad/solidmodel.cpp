@@ -1354,6 +1354,135 @@ void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+defineType(FillingFace);
+addToFactoryTable(SolidModel, FillingFace, NoParameters);
+
+
+FillingFace::FillingFace(const NoParameters&)
+{}
+
+FillingFace::FillingFace(const SolidModel& e1, const SolidModel& e2)
+{  
+  TopoDS_Edge ee1, ee2;
+  bool ok=true;
+  if (e1.isSingleEdge())
+  {
+    ee1=e1.asSingleEdge();
+  }
+  else ok=false;
+  if (e2.isSingleEdge())
+  {
+    ee2=e2.asSingleEdge();
+  }
+  else ok=false;
+
+  if (!ok)
+    throw insight::Exception("Invalid edge given!");
+
+  TopoDS_Face f;
+  try
+  {
+    f=BRepFill::Face(ee1, ee2);
+  }
+  catch (...)
+  {
+    throw insight::Exception("Failed to generate face!");
+  }
+  
+  ShapeFix_Face FixShape;
+  FixShape.Init(f);
+  FixShape.Perform();
+  
+  setShape(FixShape.Face());
+}
+
+FillingFace::FillingFace(const FeatureSet& e1, const FeatureSet& e2)
+{
+  /*
+  TopoDS_Edge ee1, ee2;
+  {
+    TopTools_ListOfShape edgs;
+    BOOST_FOREACH(const FeatureID& i, e1)
+    {
+      edgs.Append( e1.model().edge(*e1.begin()) );
+    }
+    BRepBuilderAPI_MakeWire w;
+    w.Add(edgs);
+    Handle_Geom_Curve crv(new BRepAdaptor_CompCurve(w.Wire()));
+    ee1=BRepBuilderAPI_MakeEdge(crv);
+  }
+
+  {
+    TopTools_ListOfShape edgs;
+    BOOST_FOREACH(const FeatureID& i, e1)
+    {
+      edgs.Append( e2.model().edge(*e2.begin()) );
+    }
+    BRepBuilderAPI_MakeWire w;
+    w.Add(edgs);
+    Handle_Geom_Curve crv(new BRepAdaptor_CompCurve(w.Wire()));
+    ee2=BRepBuilderAPI_MakeEdge(crv);
+  }
+  */
+  
+  TopoDS_Edge ee1, ee2;
+  if (e1.size()!=1)
+  {
+    throw insight::Exception("first feature set has to contain only 1 edge!");
+  }
+  else
+  {
+    ee1=e1.model().edge(*e1.begin());
+  }
+  
+  if (e2.size()!=1)
+  {
+    throw insight::Exception("second feature set has to contain only 1 edge!");
+  }
+  else
+  {
+    ee2=e2.model().edge(*e2.begin());
+  }
+
+  TopoDS_Face f;
+  try
+  {
+    f=BRepFill::Face(ee1, ee2);
+  }
+  catch (...)
+  {
+    throw insight::Exception("Failed to generate face!");
+  }
+  
+  ShapeFix_Face FixShape;
+  FixShape.Init(f);
+  FixShape.Perform();
+  
+  setShape(FixShape.Face());
+}
+
+FillingFace::operator const TopoDS_Face& () const
+{
+  return TopoDS::Face(shape_);
+}
+
+
+void FillingFace::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "FillingFace",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<FillingFace>(*qi::_1, *qi::_2)) ]
+    |
+    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<FillingFace>(*qi::_1, *qi::_2)) ]
+      
+    ))
+  );
+}
 
 bool SingleVolumeFeature::isSingleVolume() const
 {
@@ -1830,9 +1959,9 @@ StitchedSolid::StitchedSolid(const NoParameters&)
 {}
 
 
-StitchedSolid::StitchedSolid(const std::vector< SolidModelPtr >& faces)
+StitchedSolid::StitchedSolid(const std::vector< SolidModelPtr >& faces, double tol)
 {
-  BRepBuilderAPI_Sewing sew(1e-3);
+  BRepBuilderAPI_Sewing sew(tol);
   
 //   TopoDS_Compound aRes;
 //   BRep_Builder aBuilder;
@@ -1871,8 +2000,8 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
     "StitchedSolid",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression % ',' > ')' )
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedSolid>(qi::_1)) ]
+    ( '(' > (ruleset.r_solidmodel_expression % ',') > ( (',' > qi::double_) | qi::attr(1e-3) ) > ')' )
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
       
     ))
   );
@@ -2494,8 +2623,9 @@ Cutaway::Cutaway(const NoParameters& nop): SolidModel(nop)
 
 Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n)
 {
-  arma::mat bb=model.modelBndBox();
+  arma::mat bb=model.modelBndBox(0.1);
   double L=10.*norm(bb.col(1)-bb.col(0), 2);
+  std::cout<<"L="<<L<<std::endl;
   
   arma::mat ex=cross(n, vec3(1,0,0));
   if (norm(ex,2)<1e-8)
@@ -2505,11 +2635,35 @@ Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& 
   arma::mat ey=cross(n,ex);
   ey/=norm(ey,2);
   
+  std::cout<<"Quad"<<std::endl;
+#warning Relocate p0 in plane to somewhere nearer to model center!
   Quad q(p0-0.5*L*(ex+ey), L*ex, L*ey);
   this->setShape(q);
+  std::cout<<"Airspace"<<std::endl;
   TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
-  providedSubshapes_.add("CutSurface", SolidModelPtr(new BooleanIntersection(model, TopoDS::Face(q))));
-  this->setShape(BRepAlgoAPI_Cut(model, airspace));
+  
+//   SolidModel(airspace).saveAs("airspace.stp");
+  providedSubshapes_.add("AirSpace", SolidModelPtr(new SolidModel(airspace)));
+  
+  std::cout<<"CutSurf"<<std::endl;
+  try
+  {
+    providedSubshapes_.add("CutSurface", SolidModelPtr(new BooleanIntersection(model, TopoDS::Face(q))));
+  }
+  catch (...)
+  {
+    insight::Warning("Could not create cutting surface!");
+  }
+
+  std::cout<<"Cut"<<std::endl;
+  try
+  {
+    this->setShape(BRepAlgoAPI_Cut(model, airspace));
+  }
+  catch (...)
+  {
+    throw insight::Exception("Could not create cut!");
+  }
 }
 
 void Cutaway::insertrule(parser::ISCADParser& ruleset) const

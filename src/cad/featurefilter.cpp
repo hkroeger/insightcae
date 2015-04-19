@@ -561,6 +561,43 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
 
 
 
+template<> isPartOfSolid<Edge>::isPartOfSolid(const SolidModel& m)
+: s_(TopoDS::Solid(m))
+{
+}
+
+template<>
+bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const
+{
+  bool match=false;
+  
+  TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
+  match |= isPartOf(s_, e1);
+  
+  return match;
+}
+
+template<> isPartOfSolid<Face>::isPartOfSolid(const SolidModel& m)
+: s_(TopoDS::Solid(m))
+{
+}
+
+template<>
+bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const
+{
+  bool match=false;
+  
+//   BOOST_FOREACH(int f, f_)
+  {
+    TopoDS_Face e1=TopoDS::Face(model_->face(feature));
+    match |= isPartOf(s_, e1);
+  }
+  
+  return match;
+}
+
+
+
 template<>
 bool secant<Edge>::checkMatch(FeatureID feature) const
 {
@@ -846,6 +883,9 @@ struct EdgeFeatureFilterExprParser
 	|
 	( lit("isOtherCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_OtherCurve)) ]
 	|
+	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]
+	|
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
 	  ;
@@ -898,6 +938,9 @@ struct FaceFeatureFilterExprParser
 	( lit("isOffsetSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
 	|
 	( lit("isOtherSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+	|
+	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidFace>(*qi::_1)) ]
 	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]

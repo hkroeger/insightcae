@@ -317,6 +317,18 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+class FillingFace
+: public SingleFaceFeature
+{
+public:
+  declareType("FillingFace");
+  FillingFace(const NoParameters& nop=NoParameters());
+  FillingFace(const SolidModel& e1, const SolidModel& e2);
+  FillingFace(const FeatureSet& e1, const FeatureSet& e2);
+  operator const TopoDS_Face& () const;
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
 // =================== Primitives ======================
 
 class SingleVolumeFeature
@@ -446,7 +458,7 @@ class StitchedSolid
 public:
   declareType("StitchedSolid");
   StitchedSolid(const NoParameters& nop = NoParameters());
-  StitchedSolid(const std::vector<SolidModelPtr>& faces);
+  StitchedSolid(const std::vector<SolidModelPtr>& faces, double tol=1e-3);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

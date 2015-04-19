@@ -39,7 +39,7 @@ SolidProperties::SolidProperties(const SolidModel& model)
   area_=model.modelSurfaceArea();
   cout<<"area="<<area_<<endl;
   
-  arma::mat bb=model.modelBndBox();
+  arma::mat bb=model.modelBndBox(0.01);
   bb_pmin_=bb.col(0);
   bb_pmax_=bb.col(1);
 }

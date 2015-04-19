@@ -229,6 +229,52 @@ template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
 typedef coincident<Edge> coincidentEdge;
 typedef coincident<Face> coincidentFace;
 
+
+template<EntityType T>
+class isPartOfSolid
+    : public Filter
+{
+protected:
+    TopoDS_Solid s_;
+
+public:
+    isPartOfSolid(const TopoDS_Solid& s)
+    : s_(s)
+    {
+    }
+
+    isPartOfSolid(const SolidModel& m)
+    : s_(m)
+    {
+        throw insight::Exception("isPartOfSolid filter: not implemented!");
+    }
+
+    isPartOfSolid(FeatureSet f)
+        : s_(TopoDS::Solid(static_cast<TopoDS_Shape>(f.model())))
+    {}
+
+    bool checkMatch(FeatureID feature) const
+    {
+        throw insight::Exception("isPartOfSolid filter: not implemented!");
+    }
+
+    FilterPtr clone() const
+    {
+        return FilterPtr(new isPartOfSolid(s_));
+    }
+
+};
+
+
+template<> isPartOfSolid<Edge>::isPartOfSolid(const SolidModel& m);
+template<> bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const;
+template<> isPartOfSolid<Face>::isPartOfSolid(const SolidModel& m);
+template<> bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const;
+
+typedef isPartOfSolid<Edge> isPartOfSolidEdge;
+typedef isPartOfSolid<Face> isPartOfSolidFace;
+
+
 template<EntityType T>
 class secant
     : public Filter

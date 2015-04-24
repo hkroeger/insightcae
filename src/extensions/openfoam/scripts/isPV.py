@@ -9,6 +9,10 @@ parser.add_option("-s", "--statefile", dest="statefile", metavar='FILE', default
 parser.add_option("-b", "--batch", dest="batch",
 		  action='store_true',
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-f", "--from", dest="fromt", metavar="t0", default=0, type="float",
+                  help="initial time")
+parser.add_option("-t", "--to", dest="tot", metavar="t1", default=1e10, type="float",
+                  help="final time")
 parser.add_option("-l", "--list", dest="list",
 		  action='store_true',
                   help="list available state files and exit, search first in current dir then in insight shared dir")
@@ -53,14 +57,15 @@ AnimationScene1 = GetAnimationScene()
 AnimationScene1.EndTime = times[-1]
 """%scrname)
   if batch:
+    print opts.fromt, opts.tot # error occurs, when this statement is removed
     f.write("""\
-for curtime in times:
+for curtime in filter(lambda t: t>=%g and t<=%g, times):
   AnimationScene1.AnimationTime = curtime
   for i in range(0,len(GetRenderViews())):
-    fname="screenshot_view%02d_t%g.png"%(i,curtime)
+    fname="screenshot_view%%02d_t%%g.png"%%(i,curtime)
     print "Writing", fname
     WriteImage(fname, GetRenderViews()[i], Writer="vtkPNGWriter", Magnification=1)
-""")
+"""%(opts.fromt, opts.tot))
   else:
     f.write("AnimationScene1.AnimationTime = times[-1]\n")
     

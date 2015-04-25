@@ -161,6 +161,7 @@ public:
   FeatureSet query_edges(const FilterPtr& filter) const;
   FeatureSet query_edges(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_edges_subset(const FeatureSet& fs, const FilterPtr& filter) const;
+  FeatureSet query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
   FeatureSet query_faces(const FilterPtr& filter) const;
   FeatureSet query_faces(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
@@ -433,6 +434,16 @@ public:
   declareType("Sweep");
   Sweep(const NoParameters& nop = NoParameters());
   Sweep(const std::vector<SolidModelPtr>& secs);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Pipe
+: public SolidModel
+{
+public:
+  declareType("Pipe");
+  Pipe(const NoParameters& nop = NoParameters());
+  Pipe(const SolidModel& spine, const SolidModel& xsec);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

@@ -151,6 +151,7 @@
 #include <BRepAlgoAPI_Section.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepFill.hxx>
+// #include "BRepFill_Pipe.hxx"
 #include <BRepFilletAPI_MakeFillet.hxx>
 #include <BRepFilletAPI_MakeChamfer.hxx>
 #include <IGESControl_Writer.hxx>
@@ -158,6 +159,10 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
+#include "BRepOffsetAPI_MakePipe.hxx"
+#include "BRepOffsetAPI_MakePipeShell.hxx"
+#include "Law_Constant.hxx"
+#include "Law_Linear.hxx"
 
 #include "GC_MakePlane.hxx"
 #include "GC_MakeCircle.hxx"

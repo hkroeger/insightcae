@@ -161,6 +161,13 @@ FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, con
   return FeatureSetPtr(m.query_edges(filterexpr, of).clone());
 }
 
+FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(fs->model().query_edges_subset(*fs, filterexpr, of).clone());
+}
+
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
 {
   SolidModel::Views views;
@@ -441,8 +448,11 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_edgeFeaturesExpression = 
 	  qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
 	  | (
-	  ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
-	  [ _val = queryEdges_(*qi::_1, qi::_2, qi::_3) ]
+	   ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
+	    [ _val = queryEdges_(*qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("edgesFrom") >> r_edgeFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
+	    [ _val = queryEdgesSubset_(qi::_1, qi::_2, qi::_3) ]
 	  )
       ;
 // 	  

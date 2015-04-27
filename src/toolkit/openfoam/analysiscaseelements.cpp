@@ -395,16 +395,27 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
 	std::vector<string> strs;
 	boost::split(strs, line, boost::is_any_of(" \t"));
 	
-	if (fl.n_rows==0) 
-	  fl.set_size(1, strs.size());
-	else
-	  fl.resize(fl.n_rows+1, fl.n_cols);
-	int j=fl.n_rows-1;
-	
-	int k=0;
-	BOOST_FOREACH(const string& e, strs)
+	if (strs.size()==19 || strs.size()==13)
 	{
-	  fl(j,k++)=lexical_cast<double>(e);
+	  if (fl.n_rows==0) 
+	    fl.set_size(1, strs.size());
+	  else
+	    fl.resize(fl.n_rows+1, fl.n_cols);
+	  int j=fl.n_rows-1;
+	  
+	  int k=0;
+	  BOOST_FOREACH(const string& e, strs)
+	  {
+	    fl(j,k++)=lexical_cast<double>(e);
+	  }
+	}
+	else
+	{
+	  insight::Warning("Something is strange in forces.dat-file in "+td.second.string()+":\n"
+	  "number columns is not 19 or 13!\n"
+	  "Omitting the strange line.\n"
+	   "Contains garbage after crash?"
+	  );
 	}
       }
     }

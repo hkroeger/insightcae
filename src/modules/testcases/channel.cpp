@@ -41,32 +41,7 @@ using namespace boost::filesystem;
 namespace insight
 {
 
-arma::mat interiorPressureFluctuationProfile
-(
-  const OpenFOAMCase& cm, 
-  const boost::filesystem::path& location,
-  const arma::mat& axis, int n,
-  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
-)
-{
-  std::vector<std::string> opts;
-  opts.push_back(OFDictData::to_OF(axis));
-  opts.push_back("(pPrime2Mean)");
-  opts.push_back("-interior");
-  opts.push_back("-n");
-  opts.push_back(lexical_cast<string>(n));
-  copy(addopts.begin(), addopts.end(), back_inserter(opts));
-  std::vector<std::string> output;
-  cm.executeCommand(location, "binningProfile", opts, &output);
-  
-  path pref=location/"postProcessing"/"binningProfile";
-  TimeDirectoryList tdl=listTimeDirectories(pref);
-  path lastTimeDir=tdl.rbegin()->second;
-  arma::mat vfm;
-  vfm.load( ( lastTimeDir/"interior_pPrime2Mean.dat").c_str(), arma::raw_ascii);
-  
-  return vfm;
-}
+
 
 
 defineType(ChannelBase);

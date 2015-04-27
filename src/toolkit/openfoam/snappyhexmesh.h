@@ -228,6 +228,8 @@ namespace snappyHexMeshOpts
   )
 };
 
+double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer);
+
 void snappyHexMesh
 (
   const OpenFOAMCase& ofc, 

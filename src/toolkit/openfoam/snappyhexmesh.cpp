@@ -301,7 +301,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["finalLayerThickness"]=0.5;
   layerCtrls["minThickness"]=1e-5;  
   layerCtrls["nGrow"]=0;  
-  layerCtrls["featureAngle"]=30.0;  
+  layerCtrls["featureAngle"]=60.0;  
 
   layerCtrls["slipFeatureAngle"]=30.0;  
 
@@ -309,8 +309,8 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
   layerCtrls["nSmoothSurfaceNormals"]=1;  
   layerCtrls["nSmoothNormals"]=3;  
   layerCtrls["nSmoothThickness"]=10;  
-  layerCtrls["maxFaceThicknessRatio"]=200.0;  
-  layerCtrls["maxThicknessToMedialRatio"]=0.5;  
+  layerCtrls["maxFaceThicknessRatio"]=10.0;  
+  layerCtrls["maxThicknessToMedialRatio"]=0.75;  
   layerCtrls["minMedianAxisAngle"]=130.0;  
   layerCtrls["nBufferCellsNoExtrude"]=0;  
   layerCtrls["nLayerIter"]=2;  //OCFD
@@ -318,6 +318,26 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls)
 }
 
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
+{
+  qualityCtrls["maxNonOrtho"]=65.0;
+  qualityCtrls["maxBoundarySkewness"]=20.0;
+  qualityCtrls["maxInternalSkewness"]=4.0;
+  qualityCtrls["maxConcave"]=80.0;  
+  qualityCtrls["minFlatness"]=0.01;  
+  qualityCtrls["minVol"]=1e-13;  
+  qualityCtrls["minArea"]=-1.0;  
+  qualityCtrls["minTwist"]=0.02;  
+  qualityCtrls["minDeterminant"]=0.001;  
+  qualityCtrls["minFaceWeight"]=0.05;  
+  qualityCtrls["minVolRatio"]=0.01;  
+  qualityCtrls["minTriangleTwist"]=-1.0;  
+  qualityCtrls["nSmoothScale"]=4;  
+  qualityCtrls["errorReduction"]=0.75;  
+
+  qualityCtrls["minTetQuality"]=1e-40;  
+}
+
+void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)
 {
   qualityCtrls["maxNonOrtho"]=85.0;
   qualityCtrls["maxBoundarySkewness"]=20.0;
@@ -335,6 +355,31 @@ void setStdQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["errorReduction"]=0.75;  
 
   qualityCtrls["minTetQuality"]=1e-40;  
+}
+
+void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls)
+{
+  qualityCtrls["maxNonOrtho"]=180.0;
+  qualityCtrls["maxBoundarySkewness"]=20.0;
+  qualityCtrls["maxInternalSkewness"]=4.0;
+  qualityCtrls["maxConcave"]=180.0;  
+  qualityCtrls["minFlatness"]=0.002;  
+  qualityCtrls["minVol"]=-1e30;  
+  qualityCtrls["minArea"]=-1.0;  
+  qualityCtrls["minTwist"]=-1;  
+  qualityCtrls["minDeterminant"]=1e-6;  
+  qualityCtrls["minFaceWeight"]=1e-6;  
+  qualityCtrls["minVolRatio"]=1e-6;  
+  qualityCtrls["minTriangleTwist"]=-1.0;  
+  qualityCtrls["nSmoothScale"]=4;  
+  qualityCtrls["errorReduction"]=0.75;  
+
+  qualityCtrls["minTetQuality"]=1e-40;  
+}
+
+double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer)
+{
+  return totalLayerThickness*pow(expRatio, nlayer-1)*(expRatio-1.0)/(pow(expRatio, nlayer)-1.0);
 }
 
 
@@ -378,7 +423,7 @@ void snappyHexMesh
   layerCtrls["expansionRatio"]=p.erlayer();
   layerCtrls["nLayerIter"]=p.nLayerIter();  //OCFD
   layerCtrls["maxLayerIter"]=p.nLayerIter();  // engys
-  setStdQualityCtrls(qualityCtrls);
+  setRelaxedQualityCtrls(qualityCtrls);
 
   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
   {

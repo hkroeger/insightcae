@@ -314,6 +314,8 @@ int main(int argc, char *argv[])
 	      extractProfiles<scalar>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else if (fieldHeader.headerClassName()=="volVectorField")
 	      extractProfiles<vector>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
+	    else if (fieldHeader.headerClassName()=="volSymmTensorField")
+	      extractProfiles<symmTensor>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else
 	      FatalErrorIn("main")
 	       << "Unhandled field "<<fieldHeader.name()<<" of type "<<fieldHeader.headerClassName()<<endl<<abort(FatalError);

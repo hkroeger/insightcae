@@ -574,6 +574,13 @@ void removeCellSetFromMesh
   const std::string& cellSetName
 );
 
+arma::mat interiorPressureFluctuationProfile
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const arma::mat& axis, int n,
+  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+);
 
 }
 

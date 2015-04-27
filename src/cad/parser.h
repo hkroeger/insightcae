@@ -173,6 +173,8 @@ BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
 
 FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdges_, queryEdges, 3);
+FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdgesSubset_, queryEdgesSubset, 3);
 
 typedef boost::variant<scalar, vector>  ModelSymbol;
 typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;

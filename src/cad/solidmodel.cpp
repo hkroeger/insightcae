@@ -361,6 +361,11 @@ FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr&
   return res;
 }
 
+FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const
+{
+  std::istringstream is(queryexpr);
+  return query_edges_subset(fs, parseEdgeFilterExpr(is, refs));
+}
 
 FeatureSet SolidModel::query_faces(const FilterPtr& f) const
 {
@@ -1839,6 +1844,57 @@ void Sweep::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+defineType(Pipe);
+addToFactoryTable(SolidModel, Pipe, NoParameters);
+
+Pipe::Pipe(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+Pipe::Pipe(const SolidModel& spine, const SolidModel& xsec)
+{
+  if (!spine.isSingleWire())
+    throw insight::Exception("spine feature has to provide a singly connected wire!");
+  
+  if (!xsec.isSingleFace() || xsec.isSingleWire() || xsec.isSingleEdge())
+    throw insight::Exception("xsec feature has to provide a face or wire!");
+  
+  TopoDS_Wire spinew=spine.asSingleWire();
+  TopoDS_Vertex pfirst, plast;
+  TopExp::Vertices( spinew, pfirst, plast );
+  
+  
+  gp_Trsf tr;
+  tr.SetTranslation(gp_Vec(BRep_Tool::Pnt(pfirst).XYZ()));
+  TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
+
+//   BRepOffsetAPI_MakePipeShell p(spinew);
+//   Handle_Law_Constant law(new Law_Constant());
+//   law->Set(1.0, -1e10, 1e10);
+//   p.SetLaw(static_cast<TopoDS_Shape>(xsec), law, pfirst);
+//   p.SetMode(true);
+//   p.MakeSolid();
+  
+  BRepOffsetAPI_MakePipe p(spinew, xsecs);
+  
+  p.Build();
+  setShape(p.Shape());
+}
+
+void Pipe::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Pipe",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Pipe>(*qi::_1, *qi::_2)) ]
+      
+    ))
+  );
+}
 
 defineType(Thicken);
 addToFactoryTable(SolidModel, Thicken, NoParameters);

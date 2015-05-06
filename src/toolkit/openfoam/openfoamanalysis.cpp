@@ -141,6 +141,17 @@ boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
   return p;
 }
 
+void OpenFOAMAnalysis::reportIntermediateParameter
+(
+  const std::string& name, double value, const string& description, const std::string& unit
+)
+{
+  std::cout<<">>> Intermediate parameter "<<name<<" = "<<value<<" "<<unit;
+  if (description!="")
+    std::cout<<" ("<<description<<")";
+  std::cout<<std::endl;
+}
+
 void OpenFOAMAnalysis::calcDerivedInputData()
 {
 }

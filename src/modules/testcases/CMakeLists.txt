@@ -25,7 +25,10 @@ set(testcases_LIBS
   ${GSL_LIBRARIES}
 )
 target_link_libraries(testcases ${testcases_LIBS})
-
+target_include_directories(testcases
+  PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 install(TARGETS testcases LIBRARY DESTINATION lib)
 
 add_pybindings(TestcaseModules "testcasemodules.i" testcases)

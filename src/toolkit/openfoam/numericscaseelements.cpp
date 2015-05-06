@@ -1108,6 +1108,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["interpolate(U)"]="pointLinear";
+  interpolation["interpolate(HbyA)"]="pointLinear";
   interpolation["default"]="linear"; //"pointLinear"; // OF23x: pointLinear as default creates artifacts at parallel domain borders!
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");

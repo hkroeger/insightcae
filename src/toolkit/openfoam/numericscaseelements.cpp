@@ -1090,6 +1090,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss linear"; //interfaceCompression";
   div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+//   div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
   div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
   div["div(phi,omega)"]		= "Gauss upwind";
   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;

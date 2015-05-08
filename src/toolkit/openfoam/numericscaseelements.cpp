@@ -687,8 +687,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
-  interpolation["interpolate(U)"]="pointLinear";
-  interpolation["interpolate(HbyA)"]="pointLinear";
+//   interpolation["interpolate(U)"]="pointLinear";
+//   interpolation["interpolate(HbyA)"]="pointLinear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
   snGrad["default"]="limited 0.66";

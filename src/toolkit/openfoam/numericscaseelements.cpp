@@ -616,8 +616,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";
   if ( (OFversion()>=220) && !(p_.hasCyclics())) bgrads="pointCellsLeastSquares";
-  grad["default"]=bgrads;
-//   grad["grad(p)"]="Gauss linear";
+  grad["default"]="cellLimited "+bgrads+" 1";
+  grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
@@ -687,6 +687,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
+  interpolation["interpolate(U)"]="pointLinear";
+  interpolation["interpolate(HbyA)"]="pointLinear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
   snGrad["default"]="limited 0.66";

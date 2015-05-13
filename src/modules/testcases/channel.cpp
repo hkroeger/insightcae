@@ -51,7 +51,7 @@ double ChannelBase::Re(double Re_tau)
   double k=0.41;
   double Cplus=5.0;
   
-  return Re_tau*((1./k)*log(Re_tau)+Cplus-1.7);
+  return Re_tau*( (1./k)*log(Re_tau)+Cplus-1.7 );
 }
 
 
@@ -60,7 +60,7 @@ double ChannelBase::Retau(double Re)
   struct Obj: public Objective1D
   {
     double Re;
-    virtual double operator()(double x) const { return Re-ChannelBase::Re(x); }
+    virtual double operator()(double x) const { return Re - ChannelBase::Re(x); }
   } obj;
   obj.Re=Re;
   return nonlinearSolve1D(obj, 1e-3*Re, Re);

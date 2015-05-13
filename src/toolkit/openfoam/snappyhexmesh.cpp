@@ -423,7 +423,11 @@ void snappyHexMesh
   layerCtrls["expansionRatio"]=p.erlayer();
   layerCtrls["nLayerIter"]=p.nLayerIter();  //OCFD
   layerCtrls["maxLayerIter"]=p.nLayerIter();  // engys
-  setRelaxedQualityCtrls(qualityCtrls);
+  
+  if (p.qualityCtrls())
+    qualityCtrls=*p.qualityCtrls();
+  else
+    setRelaxedQualityCtrls(qualityCtrls);
 
   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
   {

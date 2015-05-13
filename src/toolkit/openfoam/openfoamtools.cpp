@@ -2066,6 +2066,11 @@ void createPrismLayers
       .set_nLayers(pl.second)
     ));
   }
+
+  snappyHexMeshOpts::DictPtr qualityCtrls(new OFDictData::dict());
+  setRelaxedQualityCtrls(*qualityCtrls);
+  (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
+  (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
   
   snappyHexMesh
   (
@@ -2081,6 +2086,8 @@ void createPrismLayers
       .set_doCastellatedMesh(false)
       .set_doSnap(false)
       .set_doAddLayers(true)
+      
+      .set_qualityCtrls(qualityCtrls)
 /*
       .set_tlayer(p.getDouble("mesh/mlayer"))
       .set_relativeSizes(true)

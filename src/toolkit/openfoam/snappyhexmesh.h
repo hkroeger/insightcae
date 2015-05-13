@@ -219,6 +219,8 @@ public:
 
 namespace snappyHexMeshOpts
 {
+  typedef boost::shared_ptr<OFDictData::dict> DictPtr;
+  
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (doCastellatedMesh, bool, true)
     (doSnap, bool, true)
@@ -228,8 +230,16 @@ namespace snappyHexMeshOpts
     (relativeSizes, bool, true)
     (nLayerIter, int, 10 )
     (stopOnBadPrismLayer, bool, false)
+    (qualityCtrls, DictPtr, DictPtr() )
   )
 };
+
+void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls);
+void setStdSnapCtrls(OFDictData::dict& snapCtrls);
+void setStdLayerCtrls(OFDictData::dict& layerCtrls);
+void setStdQualityCtrls(OFDictData::dict& qualityCtrls);
+void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls);
+void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls);
 
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer);
 

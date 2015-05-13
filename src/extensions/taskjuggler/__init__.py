@@ -66,7 +66,7 @@ accountreport projectcashflowExport "cashflow" {
     for i in range(0,len(self.dates)-1):
       if (self.dates[i]<=date) and (self.dates[i+1]>date):
 	return i
-    raise Exception("date outside of time interval")
+    raise Exception("date outside of time interval"+str(date)+" <> "+str(self.dates))
     return -1
     
   def insertLoan(self, loan):

@@ -582,6 +582,19 @@ arma::mat interiorPressureFluctuationProfile
   const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
 );
 
+
+typedef std::map<std::string, int> PatchLayers;
+
+void createPrismLayers
+(
+  const OpenFOAMCase& cm,
+  const boost::filesystem::path& casePath,
+  double finalLayerThickness, 
+  bool relativeSizes, 
+  const PatchLayers& nLayers,
+  double expRatio
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

@@ -220,6 +220,9 @@ public:
 namespace snappyHexMeshOpts
 {
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (doCastellatedMesh, bool, true)
+    (doSnap, bool, true)
+    (doAddLayers, bool, true)
     (tlayer, double, 0.5)
     (erlayer, double, 1.3)
     (relativeSizes, bool, true)

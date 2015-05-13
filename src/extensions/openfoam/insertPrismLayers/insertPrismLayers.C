@@ -46,6 +46,11 @@ Description
 #include "cellSet.H"
 #include "meshCutter.H"
 
+#include "polyAddPoint.H"
+#include "polyAddCell.H"
+#include "polyAddFace.H"
+
+
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -59,7 +64,7 @@ int main(int argc, char *argv[])
 
     Foam::argList::validOptions.insert("useSet", "cellSet");
 
-
+/*
 #   include "setRootCase.H"
 #   include "createTime.H"
     runTime.functionObjects().off();
@@ -85,10 +90,101 @@ int main(int argc, char *argv[])
             << exit(FatalError);
     }
     
+#if defined(OF16ext)
+    directTopoChange meshMod(mesh);
+#else
+    polyTopoChange meshMod(mesh);
+#endif
     
     const polyPatch& pp = mesh.boundaryMesh()[patchID];
     const pointField& pts = pp.localPoints();
     pointField pts_ext = pts - max(dists)*pp.pointNormals();
+
+    // Add the new points
+    labelList addedPoints(pts_ext.size());
+
+    forAll(pts_ext, pointI)
+    {
+        // Add the point nominal thickness away from the master zone point
+        // and grab the label
+        addedPoints[pointI] =
+            meshMod.setAction
+            (
+                polyAddPoint
+                (
+                    pts_ext[pointI],                         // master point
+		    pp.meshPoints()[pointI],
+                    -1,                                 // zone for point
+                    true                                // supports a cell
+                )
+            );
+    }
+    
+    
+    labelList addedCells(pp.size());
+
+    forAll(pp, faceI)
+    {
+        label cellI = mc[faceI];
+        label zoneI =  mesh.cellZones().whichZone(cellI);
+
+        addedCells[faceI] =
+            meshMod.setAction
+            (
+                polyAddCell
+                (
+                    -1,           // master point
+                    -1,           // master edge
+                    mf[faceI],    // master face
+                    -1,           // master cell
+                    zoneI         // zone for cell
+                )
+            );
+    }
+
+    // Grab the local faces from the master zone
+    const faceList& zoneFaces = masterFaceLayer.localFaces();
+    {
+        const face oldFace = zoneFaces[faceI].reverseFace();
+
+        face newFace(oldFace.size());
+
+        forAll(oldFace, pointI)
+        {
+            newFace[pointI] = addedPoints[oldFace[pointI]];
+        }
+
+        bool flipFaceFlux = false;
+
+        // Flip the face as necessary
+        if
+        (
+           !mesh.isInternalFace(mf[faceI])
+         || mc[faceI] == nei[mf[faceI]]
+        )
+        {
+            flipFaceFlux = true;
+        }
+
+        // Add the face
+        meshMod.setAction
+        (
+            polyAddFace
+            (
+                newFace,               // face
+                mc[faceI],             // owner
+                addedCells[faceI],     // neighbour
+                -1,                    // master point
+                -1,                    // master edge
+                mf[faceI],             // master face for addition
+                flipFaceFlux,          // flux flip
+                -1,                    // patch for face
+                -1,                    // zone for face
+                false                  // face zone flip
+            )
+        );
+    }
+
 
 /*
     forAll(dists, di)

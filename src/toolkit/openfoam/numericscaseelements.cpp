@@ -985,6 +985,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalFaceLimitedGrad.so\"" );  
+//   controlDict.getList("libs").insertNoDuplicate( "\"libreconCentral.so\"" );  
 //   controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
   
   // ============ setup fvSolution ================================
@@ -1106,15 +1107,15 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.66";
   laplacian["laplacian((1|A(U)),pcorr)"]="Gauss linear limited 0.66";
-  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 0.66";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-  interpolation["interpolate(U)"]="pointLinear";
-  interpolation["interpolate(HbyA)"]="pointLinear";
+//   interpolation["interpolate(U)"]="pointLinear";
+//   interpolation["interpolate(HbyA)"]="pointLinear";
   interpolation["default"]="linear"; //"pointLinear"; // OF23x: pointLinear as default creates artifacts at parallel domain borders!
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="localLimited UBlendingFactor 1";
+  snGrad["default"]="localLimited UBlendingFactor 0.66";
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
@@ -1182,7 +1183,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["momentumPredictor"]=momentumPredictor;
   SOL["nCorrectors"]=2;
-  SOL["nNonOrthogonalCorrectors"]=0;
+  SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
   SOL["cAlpha"]=cAlpha;

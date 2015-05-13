@@ -728,17 +728,17 @@ void FlatPlateBL::evaluateAtSection
     );
   }
   
-  // L profiles from k/omega
   if (cd.find("k")!=cd.end())
   {    
-    arma::mat k=data.col(cd["k"].col);
+    arma::mat kp_vs_yp=join_rows(ypByy*y, ypByy*data.col(cd["k"].col));
+    kp_vs_yp.save( (executionPath()/("kplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
     
     addPlot
     (
       results, executionPath(), "chartTKE_"+title,
-      "y", "<k>",
+      "y+", "<k+>",
       list_of
-       (PlotCurve(arma::mat(join_rows(y, k)), "w l lt 2 lc 1 lw 1 not"))
+       (PlotCurve(kp_vs_yp, "w l lt 2 lc 1 lw 1 not"))
        ,
       "Wall normal profile of turbulent kinetic energy at x/L=" + str(format("%g")%xByL),
       "set logscale x"

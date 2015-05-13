@@ -429,6 +429,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     
     setsToZones(cm, executionPath(), true);
   }
+
+  cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite") );
 }
 
 

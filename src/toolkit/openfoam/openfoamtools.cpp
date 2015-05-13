@@ -23,6 +23,7 @@
 #include "base/analysis.h"
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
+#include "openfoam/snappyhexmesh.h"
 
 #include <map>
 #include <cmath>
@@ -2044,5 +2045,48 @@ arma::mat interiorPressureFluctuationProfile
   
   return vfm;
 }
+
+
+void createPrismLayers
+(
+  const OpenFOAMCase& cm,
+  const boost::filesystem::path& casePath,
+  double finalLayerThickness, 
+  bool relativeSizes, 
+  const PatchLayers& nLayers,
+  double expRatio
+)
+{
+  boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
+  
+  BOOST_FOREACH(const PatchLayers::value_type& pl, nLayers)
+  {
+    shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
+      .set_name(pl.first)
+      .set_nLayers(pl.second)
+    ));
+  }
+  
+  snappyHexMesh
+  (
+    cm, casePath,
+    OFDictData::vector3(vec3(0,0,0)),
+    shm_feats,
+    snappyHexMeshOpts::Parameters()
+//       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
+      .set_erlayer(expRatio)
+      .set_tlayer(finalLayerThickness)
+      .set_relativeSizes(relativeSizes)
+      
+      .set_doCastellatedMesh(false)
+      .set_doSnap(false)
+      .set_doAddLayers(true)
+/*
+      .set_tlayer(p.getDouble("mesh/mlayer"))
+      .set_relativeSizes(true)
+  */
+  ); 
+}
+ 
 
 }

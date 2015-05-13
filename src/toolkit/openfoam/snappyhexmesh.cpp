@@ -398,9 +398,9 @@ void snappyHexMesh
   OFDictData::dictFile sHMDict;
   
   // setup dict structure
-  sHMDict["castellatedMesh"] = true;
-  sHMDict["snap"] = true;
-  sHMDict["addLayers"] = true;
+  sHMDict["castellatedMesh"] = p.doCastellatedMesh();
+  sHMDict["snap"] = p.doSnap();
+  sHMDict["addLayers"] = p.doAddLayers();
   sHMDict["debug"] = 0;
   sHMDict["mergeTolerance"] = 1e-6;
   OFDictData::dict& geomCtrls=sHMDict.addSubDictIfNonexistent("geometry");

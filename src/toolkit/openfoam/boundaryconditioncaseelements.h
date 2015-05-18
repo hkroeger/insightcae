@@ -88,6 +88,30 @@ fielddata=selectablesubset {{
    ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
  }
 
+ radialProfile 
+ set { 
+   values=array
+   [
+    set {
+     time=double 0 "Time instant"
+     profile=path "profile.dat" "Path to file with tabulated profile for this time instant"
+    } "Time instant data"
+   ] * 1  "Array of time instants"
+   
+   cmap=array
+   [
+    set {
+     column=int 0 "Column ID"
+     component=int 0 "Component ID"
+    }
+   ] * 1 "Mapping of tabular columns to vector components"
+   
+   p0=vector (0 0 0) "Origin of sampling axis"
+   ep=vector (1 0 0) "Direction of sampling axis"
+   ex=vector (1 0 0) "X-Axis direction of basis in profile data"
+   ez=vector (0 0 1) "Z-Axis direction of basis in profile data"
+ }
+
  fittedProfile 
  set { 
    values=array

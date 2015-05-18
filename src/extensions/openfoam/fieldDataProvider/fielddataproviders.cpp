@@ -40,6 +40,7 @@ makeFieldDataProvider(tensor);
 makeProviders(uniformField);
 makeProviders(nonuniformField);
 makeProviders(linearProfile);
+makeProviders(radialProfile);
 makeProviders(fittedProfile);
 
 }

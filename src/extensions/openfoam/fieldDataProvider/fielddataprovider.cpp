@@ -384,6 +384,100 @@ autoPtr<FieldDataProvider<T> > linearProfile<T>::clone() const
 
 
 template<class T>  
+radialProfile<T>::radialProfile(Istream& is)
+: FieldDataProvider<T>(is)
+{
+}
+
+template<class T>
+void radialProfile<T>::appendInstant(Istream& is)
+{
+  fileName fn;
+  is >> fn;
+  filenames_.push_back(fn);
+  
+  arma::mat xy;
+  fn.expand();
+  xy.load(fn.c_str(), arma::raw_ascii);
+  
+  values_.push_back(new insight::Interpolator(xy, true) );
+}
+
+template<class T>
+void radialProfile<T>::writeInstant(int i, Ostream& is) const
+{
+  is << filenames_[i];
+}
+
+template<class T>
+tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) const
+{
+  tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
+  Field<T>& res=resPtr();
+
+//   vector ey = - (ex_ ^ ez_);
+//   tensor tt(ex_, ey, ez_);
+// //   Info<<ey<<tt<<endl;
+  
+
+  forAll(target, pi)
+  {
+    double t = base_.t(target[pi]);
+    
+    arma::mat q = values_[idx](t);
+    
+//     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
+    
+//     Info<<cols_<<endl;
+//     std::cout<<q<<std::endl;
+    for (int c=0; c<q.n_elem; c++)
+    {
+      if (cols_.found(c)) //(cmap[c]>=0) // if column is used
+      {
+	setComponent( res[pi], cols_[c] ) = q(c);
+      }
+    }
+    res[pi]=base_(res[pi], target[pi]); //transform(tt, res[pi]);
+  }
+//    Info<<"res="<<res<<endl;
+  return resPtr;
+}
+
+template<class T>
+radialProfile<T>::radialProfile(const radialProfile<T>& o)
+: FieldDataProvider<T>(o),
+  base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
+  cols_(o.cols_),
+  filenames_(o.filenames_),
+  values_(o.values_)
+{
+}
+
+template<class T>
+void radialProfile<T>::read(Istream& is)
+{
+  base_.read(is);
+  is >> cols_;
+  FieldDataProvider<T>::read(is);
+}
+  
+template<class T>
+void radialProfile<T>::writeSup(Ostream& os) const
+{
+  base_.writeSup(os);
+  os << token::SPACE << cols_;
+}
+  
+template<class T>
+autoPtr<FieldDataProvider<T> > radialProfile<T>::clone() const
+{
+  return autoPtr<FieldDataProvider<T> >(new radialProfile<T>(*this));
+}
+
+
+
+
+template<class T>  
 fittedProfile<T>::fittedProfile(Istream& is)
 : FieldDataProvider<T>(is)
 {

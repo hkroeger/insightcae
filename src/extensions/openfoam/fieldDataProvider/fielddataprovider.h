@@ -166,6 +166,39 @@ public:
 };
 
 
+
+
+template<class T>
+class radialProfile
+: public FieldDataProvider<T>
+{
+//   point p0_;
+//   vector ep_, ex_, ez_;
+  CylCoordVectorSpaceBase base_;
+  Map<label> cols_;
+  std::vector<fileName> filenames_;
+  boost::ptr_vector<insight::Interpolator> values_;
+  
+  virtual void appendInstant(Istream& is);
+  virtual void writeInstant(int i, Ostream& os) const;
+
+public:
+  //- Runtime type information
+  TypeName("radialProfile");
+  
+  radialProfile(Istream& is);
+  radialProfile(const radialProfile<T>& o);
+
+  virtual void read(Istream& is);
+  virtual void writeSup(Ostream& os) const;
+
+  virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
+  virtual autoPtr<FieldDataProvider<T> > clone() const;
+};
+
+
+
+
 template<class T>
 class fittedProfile
 : public FieldDataProvider<T>

@@ -52,6 +52,33 @@ public:
   }
 };
 
+
+class CylCoordVectorSpaceBase
+: public VectorSpaceBase
+{
+public:
+  inline const vector& ax() const { return ep_; }
+  
+  inline scalar t(const point& p) const
+  {
+    vector r=(p-origin());
+    r-=ax()*(r&ax());
+    return mag(r);
+  }
+  
+  template<class T>
+  T operator()(const T& org, const point& p) const
+  {
+    vector er=p-origin();
+    er/=mag(er)+SMALL;
+    
+    vector et = (ax() ^ er);
+    tensor tt(ax(), et, er);    
+    
+    return transform(tt, org);
+  }
+};
+
 }
 
 #endif

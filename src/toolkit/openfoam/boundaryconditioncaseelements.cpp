@@ -105,7 +105,35 @@ OFDictData::data FieldData::sourceEntry() const
       os << " " << inst.time << " " << inst.profile;
     }
   }
-  
+
+  else if 
+    (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+  {
+    os<<" radialProfile "
+      <<OFDictData::to_OF(fd->p0)
+      <<" "
+      <<OFDictData::to_OF(fd->ep)
+      <<" "
+      <<OFDictData::to_OF(fd->ex)
+      <<" "
+      <<OFDictData::to_OF(fd->ez);
+
+    os<<" (";
+    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::cmap_default_type& cm, fd->cmap)
+    {
+      os<<" "<<cm.column<<" "<<cm.component;
+    }
+    os<<")";
+    
+    os<<" "
+      <<"unsteady";
+    
+    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
+    {
+      os << " " << inst.time << " " << inst.profile;
+    }
+  }
+
   else if 
     (const Parameters::fielddata_fittedProfile_type *fd = boost::get<Parameters::fielddata_fittedProfile_type>(&p_.fielddata) )
   {

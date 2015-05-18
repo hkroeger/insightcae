@@ -611,11 +611,15 @@ circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameter
   for (int i=0; i<p_.nc(); i++)
   {
     arma::mat raddir = rotMatrix(i) * dir_;
-    arma::mat pts=x_ * raddir.t();
+    arma::mat pts=x_ * raddir.t() + ones(p.np(),1)*(rotMatrix(i)*p.start()).t();
     
     lines_.push_back(new line( line::Parameters().set_points(pts).set_name(setname(i)) ));
   }
 
+  if (p.name().find('_') != std::string::npos)
+  {
+    throw insight::Exception("circumferentialAveragedUniformLine: set name must not contains underscores (_)!");
+  }
 }
 
 void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
@@ -655,7 +659,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
     BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
     {
       ColumnInfo ci=fn.second;
-      //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+//       cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
       if (ci.ncmpt==1)
       {
 	// scalar: no transform needed
@@ -689,7 +693,8 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       }
       else
       {
-	throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity with "
+	throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity (name "
+	      +fn.first+", col="+lexical_cast<string>(ci.col)+") with "
 	    +lexical_cast<string>(ci.ncmpt)+" components. Don't know how to handle.");
       }
     }
@@ -757,6 +762,11 @@ linearAveragedPolyLine::linearAveragedPolyLine(linearAveragedPolyLine::Parameter
 	.set_points( tp )
       ));
     }
+    
+  if (p.name().find('_') != std::string::npos)
+  {
+    throw insight::Exception("linearAveragedPolyLine: set name must not contains underscores (_)!");
+  }
 }
 
 void linearAveragedPolyLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
@@ -820,6 +830,10 @@ linearAveragedUniformLine::linearAveragedUniformLine(linearAveragedUniformLine::
   ),
   p_(p)
 {
+  if (p.name().find('_') != std::string::npos)
+  {
+    throw insight::Exception("linearAveragedUniformLine: set name must not contains underscores (_)!");
+  }
 }
 
 void linearAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const

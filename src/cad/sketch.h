@@ -51,6 +51,7 @@ protected:
     
     bool closed;
     std::auto_ptr<gp_Pnt> lp, p0;
+    double lbulge;
   };
   
   mutable std::auto_ptr<Polyline> pl_;

@@ -26,6 +26,7 @@
 #include "datum.h"
 
 #include "TColStd_Array1OfInteger.hxx"
+#include "GC_MakeArcOfCircle.hxx"
 
 using namespace boost;
 using namespace boost::filesystem;
@@ -110,7 +111,7 @@ void DXFReader::addPolyline(const DL_PolylineData &pl)
 }
 
 DXFReader::Polyline::Polyline(DXFReader& r)
-: reader(r)
+: reader(r), lbulge(0.0)
 {
 }
 
@@ -119,11 +120,18 @@ DXFReader::Polyline::~Polyline()
 {
     if ( closed )
     {
-      cout<<"added closing line"<<endl;
-      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp, *p0).Edge();
-      reader.ls_.Append(e);
+      cout<<"added closing line "<<endl;
+      DL_VertexData pv;
+      pv.x=p0->X();
+      pv.y=p0->Y();
+      pv.z=p0->Z();
+      pv.bulge=0;
+      reader.addVertex(pv);
+//       TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp, *p0).Edge();
+//       reader.ls_.Append(e);
     }
 }
+
 
 
 void DXFReader::addVertex(const DL_VertexData &pv)
@@ -132,21 +140,48 @@ void DXFReader::addVertex(const DL_VertexData &pv)
   if (attr.getLayer()==layername_)
   {
     gp_Pnt p(pv.x, pv.y, pv.z);
+    
     if (!pl_->p0.get())
     {
       pl_->p0.reset(new gp_Pnt(p));
     }
-    
-    if (pl_->lp.get())
+    else
     {
-      cout<<"added line"<<endl;
-      TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
-      ls_.Append(e);
-      
+      double bulge=pl_->lbulge;
+      if (fabs(bulge)<1e-10)
+      {
+	cout<<"added polyline line segment"<<endl;
+	TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
+	ls_.Append(e);
+      }
+      else
+      {
+	cout<<"added polyline arc segment"<<endl;
+	gp_XYZ pa(pl_->lp->XYZ());
+	gp_XYZ pb(p.XYZ());
+	double u=(pb-pa).Modulus();
+// 	double r=u*(b*b+1.0)/4.0/b;
+	double i=bulge*u/2.0;
+// 	double a=r-i;
+	gp_XYZ er=(pb-pa).Crossed(gp_XYZ(0,0,1)).Normalized();
+	gp_XYZ pt( pa + 0.5*(pb-pa) + i*er );
+	TopoDS_Edge e=BRepBuilderAPI_MakeEdge(
+	  GC_MakeArcOfCircle(gp_Pnt(pa), gp_Pnt(pt), gp_Pnt(pb)), 
+	  gp_Pnt(pa), gp_Pnt(pb)
+	).Edge();
+	std::cout<<"bulge="<<bulge<<" i="<<i<<std::endl
+	 <<"["<<pa.X()<<" "<<pa.Y()<<" "<<pa.Z()<<"]"<<std::endl
+	 <<"["<<pb.X()<<" "<<pb.Y()<<" "<<pb.Z()<<"]"<<std::endl
+	 <<"["<<pt.X()<<" "<<pt.Y()<<" "<<pt.Z()<<"]"<<std::endl;
+// 	TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
+	ls_.Append(e);
+      }
     }
     pl_->lp.reset(new gp_Pnt(p));
+    pl_->lbulge=pv.bulge;
   }
 }
+
 
 void DXFReader::addSpline(const DL_SplineData& sp)
 {

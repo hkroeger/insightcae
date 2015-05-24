@@ -603,8 +603,10 @@ void kOmegaSST2::correct()
 
     omegaEqn().relax();
 
+#ifndef Fx31
     omegaEqn().boundaryManipulate(omega_.boundaryField());
-
+#endif
+    
     solve(omegaEqn);
 #ifdef OF16ext
     bound(omega_, omega0_);

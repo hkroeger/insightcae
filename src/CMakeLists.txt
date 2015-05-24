@@ -42,6 +42,7 @@ and related tools (requires SWIG)" ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
 find_package(OpenFOAM-16ext REQUIRED)
+find_package(FOAM-extend-31 REQUIRED)
 find_package(OpenFOAM-21x REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
@@ -86,6 +87,9 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     if (OF16ext_FOUND)
       list (APPEND OF_VERSIONS OF16ext)
     endif()
+    if (Fx31_FOUND)
+      list (APPEND OF_VERSIONS Fx31)
+    endif()
     if (OF21x_FOUND)
       list (APPEND OF_VERSIONS OF21x)
     endif()
@@ -126,6 +130,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 
     if (${_ofvers} STREQUAL "OF16ext")
       setup_exe_target_OF16ext(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx31")
+      setup_exe_target_Fx31(
 	${PRJ_NAME}${_ofvers} 
 	"${sources}" 
 	"${PRJ_NAME}" 
@@ -178,6 +191,9 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     if (OF16ext_FOUND)
       list (APPEND OF_VERSIONS OF16ext)
     endif()
+    if (Fx31_FOUND)
+      list (APPEND OF_VERSIONS Fx31)
+    endif()
     if (OF21x_FOUND)
       list (APPEND OF_VERSIONS OF21x)
     endif()
@@ -218,6 +234,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 
     if (${_ofvers} STREQUAL "OF16ext")
       setup_lib_target_OF16ext(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx31")
+      setup_lib_target_Fx31(
 	${PRJ_NAME}${_ofvers} 
 	"${sources}" 
 	"${PRJ_NAME}" 

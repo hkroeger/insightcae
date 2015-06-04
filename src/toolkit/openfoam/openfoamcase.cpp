@@ -151,6 +151,10 @@ int OpenFOAMCaseElement::OFversion() const
   return OFcase().OFversion();
 }
 
+void OpenFOAMCaseElement::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
+{
+}
+
 void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
 {
 }
@@ -257,6 +261,20 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 
   return dictionaries;
 }
+
+void OpenFOAMCase::modifyMeshOnDisk(const boost::filesystem::path& location) const
+{
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+      i!=elements_.end(); i++)
+  {
+    const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
+    if (e)
+    {
+      e->modifyMeshOnDisk(*this, location);
+    }
+  }
+}
+
 
 void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) const
 {

@@ -489,9 +489,33 @@ bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
     return ( patchName == patchName_ );
 }
 
-GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+
+
+GGIBCBase::GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
 	Parameters const &p )
 : BoundaryCondition(c, patchName, boundaryDict),
+  p_(p)
+{
+}
+
+void GGIBCBase::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
+{
+  if (OFversion()<170)
+  {
+    setSet
+    (
+      cm, location,
+      list_of<std::string>    
+      ("faceSet "+p_.zone()+" new patchToFace "+patchName_)
+    );
+    cm.executeCommand(location, "setsToZones", list_of<std::string>("-noFlipMap") );
+  }
+}
+
+
+GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p )
+: GGIBCBase(c, patchName, boundaryDict, p),
   p_(p)
 {
 }
@@ -542,7 +566,7 @@ void GGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 CyclicGGIBC::CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
 	Parameters const &p )
-: BoundaryCondition(c, patchName, boundaryDict),
+: GGIBCBase(c, patchName, boundaryDict, p),
   p_(p)
 {
 }
@@ -594,6 +618,95 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     }
   }
 }
+
+
+
+MixingPlaneGGIBC::MixingPlaneGGIBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  Parameters const &p 
+) : GGIBCBase(c, patchName, boundaryDict, p),
+  p_(p)
+{
+  if ((OFversion()<160) || (OFversion()>=170))
+  {
+    throw insight::Exception("MixingPlane interface is not available in the selected OF version!");
+  }
+}
+
+void MixingPlaneGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
+{
+  bndDict["nFaces"]=nFaces_;
+  bndDict["startFace"]=startFace_;
+  bndDict["type"]="mixingPlane";
+  bndDict["shadowPatch"]= p_.shadowPatch();
+  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
+  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
+  bndDict["zone"]=p_.zone();
+  
+  OFDictData::dict csDict;
+  csDict["type"]="cylindrical";
+  csDict["name"]="mixingCS";
+  csDict["origin"]=OFDictData::vector3(vec3(0,0,0));
+  csDict["e1"]=OFDictData::vector3(vec3(1,0,0)); //radial
+  csDict["e3"]=OFDictData::vector3(vec3(0,0,1)); // rot axis
+  csDict["inDegrees"]=true;
+  bndDict["coordinateSystem"]=csDict;
+
+  OFDictData::dict rpDict;
+  rpDict["sweepAxis"]="Theta";
+  rpDict["stackAxis"]="R"; // axial interface
+  rpDict["discretisation"]="bothPatches";
+  bndDict["ribbonPatch"]=rpDict;
+
+}
+
+void MixingPlaneGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+    
+    if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+    else
+    {
+      BC["type"]=OFDictData::data("mixingPlane");
+    }
+  }
+}
+
+
+void MixingPlaneGGIBC::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoDictionaries(dictionaries);
+
+  OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
+  
+  OFDictData::dict mpd;
+  mpd["default"]="areaAveraging";
+  mpd["p"]="areaAveraging";
+  mpd["U"]="areaAveraging";
+  mpd["k"]="fluxAveraging";
+  mpd["epsilon"]="fluxAveraging";
+  mpd["omega"]="fluxAveraging";
+  mpd["nuTilda"]="fluxAveraging";
+
+  if (fvSchemes.find("mixingPlane")==fvSchemes.end())
+    fvSchemes["mixingPlane"]=mpd;
+  
+#warning There is probably a better location for this setup modification
+  OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
+  fvSolution.subDict("solvers")["p"]=stdSymmSolverSetup(1e-7, 0.01);
+
+}
+
+
 
 namespace multiphaseBC
 {

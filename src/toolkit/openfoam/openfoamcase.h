@@ -114,6 +114,7 @@ public:
   inline OpenFOAMCase& OFcase();
   
   int OFversion() const;
+  virtual void modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
   virtual void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
   
@@ -173,6 +174,7 @@ public:
     bool isCompressible() const;
     
     boost::shared_ptr<OFdicts> createDictionaries() const;
+    void modifyMeshOnDisk(const boost::filesystem::path& location) const;
     void modifyCaseOnDisk(const boost::filesystem::path& location) const;
 
     virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );

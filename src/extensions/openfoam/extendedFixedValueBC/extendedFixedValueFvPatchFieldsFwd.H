@@ -21,6 +21,7 @@
 #ifndef extendedFixedValueFvPatchFieldsFwd_H
 #define extendedFixedValueFvPatchFieldsFwd_H
 
+#include "extendedFixedValueFvPatchField.H"
 #include "fvPatchField.H"
 #include "fieldTypes.H"
 
@@ -33,7 +34,7 @@ namespace Foam
 
 template<class Type> class extendedFixedValueFvPatchField;
 
-makePatchTypeFieldTypedefs(extended)
+makePatchTypeFieldTypedefsE(extended)
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

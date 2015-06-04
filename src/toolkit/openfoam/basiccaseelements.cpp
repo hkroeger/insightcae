@@ -92,15 +92,32 @@ MRFZone::MRFZone(OpenFOAMCase& c, Parameters const& p )
 
 void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  OFDictData::list nrp; nrp.resize(p_.nonRotatingPatches().size());
+  copy(p_.nonRotatingPatches().begin(), p_.nonRotatingPatches().end(), nrp.begin());
+  
   if (OFversion()<220)
   {
-    throw insight::Exception("Not yet supported!");
+    OFDictData::dict coeffs;
+    coeffs["nonRotatingPatches"]=nrp;
+    coeffs["origin"]=OFDictData::dimensionedData(
+      "origin", dimLength, OFDictData::vector3(p_.rotationCentre())
+    );
+    coeffs["axis"]=OFDictData::dimensionedData(
+      "axis", dimless, OFDictData::vector3(p_.rotationAxis())
+    );
+    coeffs["omega"]=OFDictData::dimensionedData(
+      "omega", OFDictData::dimension(0, 0, -1, 0, 0, 0, 0), 
+      2.*M_PI*p_.rpm()/60.
+    );
+
+    OFDictData::dict& MRFZones=dictionaries.addDictionaryIfNonexistent("constant/MRFZones");
+    OFDictData::list& MRFZoneList = MRFZones.addListIfNonexistent("");     
+    MRFZoneList.push_back(p_.name());
+    MRFZoneList.push_back(coeffs);
   }
   else
   {
     OFDictData::dict coeffs;
-    OFDictData::list nrp; nrp.resize(p_.nonRotatingPatches().size());
-    copy(p_.nonRotatingPatches().begin(), p_.nonRotatingPatches().end(), nrp.begin());
     
     coeffs["nonRotatingPatches"]=nrp;
     coeffs["origin"]=OFDictData::vector3(p_.rotationCentre());

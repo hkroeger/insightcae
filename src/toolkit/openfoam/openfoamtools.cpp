@@ -316,7 +316,7 @@ void createPatchOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData:
   OFDictData::dict opsubdict;
   opsubdict["type"]=p_.type();
   
-  if (ofc.OFversion()<=160)
+  if (ofc.OFversion()<170)
   {
     opdict["dictionary"]=opsubdict;
     createPatchDict.getList("patchInfo").push_back( opdict );
@@ -410,7 +410,7 @@ void createPatch(const OpenFOAMCase& ofc,
   createPatchDict["matchTolerance"] = 1e-3;
   createPatchDict["pointSync"] = false;
   
-  if (ofc.OFversion()<=160)
+  if (ofc.OFversion()<170)
     createPatchDict.addListIfNonexistent("patchInfo");  
   else
     createPatchDict.addListIfNonexistent("patches");  
@@ -481,7 +481,7 @@ arma::mat line::readSamples
   arma::mat data;
   
   path fp;
-  if (ofc.OFversion()<=160)
+  if (ofc.OFversion()<170)
     fp=absolute(location)/"sets";
   else
     fp=absolute(location)/"postProcessing"/"sets";
@@ -918,13 +918,26 @@ void convertPatchPairToCyclic
 
 void mergeMeshes(const OpenFOAMCase& targetcase, const boost::filesystem::path& source, const boost::filesystem::path& target)
 {
-  targetcase.executeCommand
-  (
-    target, "mergeMeshes", 
-    list_of<std::string>
-    (".")
-    (boost::filesystem::absolute(source).c_str()) 
-  );
+  if (targetcase.OFversion()<170)
+  {
+    boost::filesystem::path src=boost::filesystem::absolute(source);
+    targetcase.executeCommand
+    (
+      target, "mergeMeshes", 
+      list_of<std::string>
+      (".")(".")
+      (src.parent_path().c_str()) (basename(src).c_str()) 
+      ("-noFunctionObjects")
+    );
+  }
+  else
+    targetcase.executeCommand
+    (
+      target, "mergeMeshes", 
+      list_of<std::string>
+      (".")
+      (boost::filesystem::absolute(source).c_str()) 
+    );
 }
 
 
@@ -1861,7 +1874,13 @@ void extrude2DMesh
   extrDict["mergeFaces"]=false;
   extrDict["mergeTol"]=1e-6;
   
-  extrDict.write( location / "system" / "extrudeMeshDict" );
+  boost::filesystem::path fname;
+  if (cm.OFversion()<170)
+    fname=boost::filesystem::path("constant")/"extrudeProperties";
+  else
+    fname=boost::filesystem::path("system") / "extrudeMeshDict";
+  
+  extrDict.write( location / fname );
 
   std::vector<std::string> opt;
   cm.executeCommand(location, "extrudeMesh", opt);
@@ -1895,7 +1914,10 @@ void rotateMesh
   
   extrDict["constructFrom"]="patch";
   extrDict["sourceCase"]="\""+absolute(location).string()+"\"";
-  extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  if (cm.OFversion()>=230)
+    extrDict["sourcePatches"]="("+sourcePatchName+")"; // dirty
+  else
+    extrDict["sourcePatch"]=sourcePatchName;
   extrDict["exposedPatchName"]=sourcePatchName;
   extrDict["flipNormals"]=false;
   extrDict["nLayers"]=nc;
@@ -1912,7 +1934,13 @@ void rotateMesh
   extrDict["mergeFaces"]=true;
   extrDict["mergeTol"]=1e-6;
   
-  extrDict.write( location / "system" / "extrudeMeshDict" );
+  boost::filesystem::path fname;
+  if (cm.OFversion()<170)
+    fname=boost::filesystem::path("constant")/"extrudeProperties";
+  else
+    fname=boost::filesystem::path("system") / "extrudeMeshDict";
+  
+  extrDict.write( location / fname );
 
   std::vector<std::string> opt;
   cm.executeCommand(location, "extrudeMesh", opt);

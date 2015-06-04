@@ -332,13 +332,15 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
   if (p.getBool("run/evaluateonly"))
     cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
 
+  boost::shared_ptr<OpenFOAMCase> meshCase;
+  bool meshcreated=false;
   if (!p.getBool("run/evaluateonly"))
   {
     //p.saveToFile(dir/"parameters.ist", type());
     
     {
-      OpenFOAMCase meshCase(ofe);
-      if (!meshCase.meshPresentOnDisk(dir))
+      meshCase.reset(new OpenFOAMCase(ofe));
+      if (!meshCase->meshPresentOnDisk(dir))
       {
 	if (!p.getPath("mesh/linkmesh").empty())
 	{
@@ -346,7 +348,8 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 	}
 	else
 	{
-	  createMesh(meshCase);
+	  createMesh(*meshCase);
+	  meshcreated=true;
 	}
       }
       else
@@ -361,6 +364,8 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
   
   if (!runCase.outputTimesPresentOnDisk(dir))
   {
+    if (meshcreated) 
+      runCase.modifyMeshOnDisk(executionPath());
     writeDictsToDisk(runCase, dicts);
     applyCustomPreprocessing(runCase);
   }

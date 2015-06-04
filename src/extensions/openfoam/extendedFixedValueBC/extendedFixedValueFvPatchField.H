@@ -147,6 +147,27 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#define makePatchFieldsE(type)                                                 \
+                                                                              \
+makeTemplatePatchTypeField(fvPatchScalarField, type##FvPatchScalarField);     \
+makeTemplatePatchTypeField(fvPatchVectorField, type##FvPatchVectorField);     \
+makeTemplatePatchTypeField                                                    \
+(                                                                             \
+    fvPatchSymmTensorField,                                                   \
+    type##FvPatchSymmTensorField                                              \
+);                                                                            \
+makeTemplatePatchTypeField(fvPatchTensorField, type##FvPatchTensorField);
+
+
+#define makePatchTypeFieldTypedefsE(type)                                      \
+                                                                              \
+typedef type##FvPatchField<scalar> type##FvPatchScalarField;                  \
+typedef type##FvPatchField<vector> type##FvPatchVectorField;                  \
+/*typedef type##FvPatchField<sphericalTensor>                                   \
+    type##FvPatchSphericalTensorField;*/                                        \
+typedef type##FvPatchField<symmTensor> type##FvPatchSymmTensorField;          \
+typedef type##FvPatchField<tensor> type##FvPatchTensorField;
+
 #ifdef NoRepository
 #   include "extendedFixedValueFvPatchField.C"
 #endif

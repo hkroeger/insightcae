@@ -210,6 +210,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict wonow;
   wonow["type"]="writeData";
   wonow["fileName"]="\"wnow\"";
+  wonow["outputControl"]="timeStep";
+  wonow["outputInterval"]=1;
   controlDict.addSubDictIfNonexistent("functions")["writeData"]=wonow;
   
   OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
@@ -519,7 +521,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  if (OFversion()<=160) suf=" localCellLimited "+bgrads+" UBlendingFactor"; else suf=" grad(U)";
+  if (OFversion()<170) suf=" localCellLimited "+bgrads+" UBlendingFactor"; else suf=" grad(U)";
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;

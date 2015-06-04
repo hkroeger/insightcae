@@ -251,15 +251,32 @@ public:
   virtual bool providesBCsForPatch(const std::string& patchName) const;
 };
 
-class GGIBC
+
+class GGIBCBase
 : public BoundaryCondition
 {
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (shadowPatch, std::string, "")
-    (separationOffset, arma::mat, vec3(0,0,0))
     (bridgeOverlap, bool, true)
     (zone, std::string, "")
+  )
+  
+protected:
+  Parameters p_;
+
+public:
+  GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p = Parameters() );
+  virtual void modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
+};
+
+class GGIBC
+: public GGIBCBase
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+    (separationOffset, arma::mat, vec3(0,0,0))
   )
   
 protected:
@@ -273,17 +290,14 @@ public:
 };
 
 class CyclicGGIBC
-: public BoundaryCondition
+: public GGIBCBase
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (shadowPatch, std::string, "")
+  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
     (separationOffset, arma::mat, vec3(0,0,0))
-    (bridgeOverlap, bool, true)
     (rotationCentre, arma::mat, vec3(0,0,0))
     (rotationAxis, arma::mat, vec3(0,0,1))
     (rotationAngle, double, 0.0)
-    (zone, std::string, "")
   )
   
 protected:
@@ -294,6 +308,25 @@ public:
 	Parameters const &p = Parameters() );
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+class MixingPlaneGGIBC
+: public GGIBCBase
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+    (separationOffset, arma::mat, vec3(0,0,0))
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  MixingPlaneGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p = Parameters() );
+  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
 

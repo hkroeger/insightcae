@@ -227,21 +227,21 @@ public:
 }
 
 #define makeFieldDataProvider(Type)                                           \
-                                                                              \
-    defineNamedTemplateTypeNameAndDebug(FieldDataProvider<Type>, 0);          \
+typedef FieldDataProvider<Type> Type##FieldDataProvider;                      \
+    defineNamedTemplateTypeNameAndDebug(Type##FieldDataProvider, 0);          \
                                                                               \
     defineTemplateRunTimeSelectionTable                                       \
     (                                                                         \
-        FieldDataProvider<Type>,                                              \
+        Type##FieldDataProvider,                                              \
         Istream                                                               \
-    );
+    )
 
 
 #define makeFieldDataProviderType(SS, Type)                                   \
+typedef SS<Type> Type##SS;                                                    \
+    defineNamedTemplateTypeNameAndDebug(Type##SS, 0);                         \
                                                                               \
-    defineNamedTemplateTypeNameAndDebug(SS<Type>, 0);                         \
-                                                                              \
-    FieldDataProvider<Type>::addIstreamConstructorToTable<SS<Type> >          \
+    Type##FieldDataProvider::addIstreamConstructorToTable<SS<Type> >          \
         add##SS##Type##ConstructorToTable_;
 
 

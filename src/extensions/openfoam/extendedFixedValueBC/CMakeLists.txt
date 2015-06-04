@@ -30,6 +30,7 @@ toolkit
 )
 
 set(OF16ext_LIBS fieldDataProviderOF16ext)
+set(Fx31_LIBS fieldDataProviderFx31)
 set(OF21x_LIBS fieldDataProviderOF21x)
 set(OF22x_LIBS fieldDataProviderOF22x)
 set(OF22eng_LIBS fieldDataProviderOF22eng)

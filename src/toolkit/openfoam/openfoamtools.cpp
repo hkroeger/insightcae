@@ -1067,7 +1067,9 @@ void runPotentialFoam
   OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
   solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
   fvSolution.addSubDictIfNonexistent("relaxationFactors");
-  OFDictData::dict& potentialFlow=fvSolution.addSubDictIfNonexistent("potentialFlow");
+  std::string solkey="potentialFlow";
+  if (cm.OFversion()<170) solkey="SIMPLE";
+  OFDictData::dict& potentialFlow=fvSolution.addSubDictIfNonexistent(solkey);
   potentialFlow["nNonOrthogonalCorrectors"]=3;
   
   OFDictData::dictFile fvSchemes;
@@ -1100,6 +1102,16 @@ void runPotentialFoam
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["p"]="";
   fluxRequired["default"]="no";
+
+  OFDictData::dict mpd;
+  mpd["default"]="areaAveraging";
+  mpd["p"]="areaAveraging";
+  mpd["U"]="areaAveraging";
+  mpd["k"]="fluxAveraging";
+  mpd["epsilon"]="fluxAveraging";
+  mpd["omega"]="fluxAveraging";
+  mpd["nuTilda"]="fluxAveraging";
+  fvSchemes["mixingPlane"]=mpd;
   
   // then write to file
   {

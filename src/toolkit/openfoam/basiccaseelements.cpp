@@ -114,6 +114,11 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::list& MRFZoneList = MRFZones.addListIfNonexistent("");     
     MRFZoneList.push_back(p_.name());
     MRFZoneList.push_back(coeffs);
+    
+    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    if (controlDict.find("application")!=controlDict.end())
+      if (controlDict.getString("application")=="simpleFoam")
+	controlDict["application"]="MRFSimpleFoam";
   }
   else
   {

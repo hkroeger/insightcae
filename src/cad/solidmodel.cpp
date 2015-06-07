@@ -516,16 +516,17 @@ void SolidModel::exportEMesh
   {
     BRepAdaptor_Curve ac(fs.model().edge(fi));
     GCPnts_QuasiUniformDeflection qud(ac, abstol);
-    
-    for (int j=1; j<qud.NbPoints(); j++)
+
+    int iofs=points.size();
+    for (int j=1; j<=qud.NbPoints(); j++)
     {
-      arma::mat p0=Vector(qud.Value(j));
-      arma::mat p1=Vector(qud.Value(j+1));
-      
-      int i0=points.size(); points.push_back(p0);
-      int i1=points.size(); points.push_back(p1);
-      
-      edges.push_back(Edge(i0,i1));
+      arma::mat p=Vector(qud.Value(j));
+      points.push_back(p);
+    }
+    
+    for (int i=1; i<points.size()-iofs; i++)
+    {
+      edges.push_back(Edge(iofs+i-1,iofs+i));
     }
   }
   

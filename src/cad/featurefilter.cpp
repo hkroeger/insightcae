@@ -456,6 +456,36 @@ QuantityComputer< double >::Ptr edgeLen::clone() const
   return QuantityComputer<double>::Ptr(new edgeLen());
 }
 
+edgeRadialLen::edgeRadialLen(const boost::shared_ptr<matQuantityComputer >& ax, const boost::shared_ptr<matQuantityComputer >& p0)
+: ax_(ax), p0_(p0)
+{
+}
+
+edgeRadialLen::~edgeRadialLen()
+{
+}
+
+double edgeRadialLen::evaluate(FeatureID ei)
+{
+  arma::mat ax=ax_->evaluate(ei);
+  arma::mat p0=p0_->evaluate(ei);
+  
+  arma::mat p1=(Vector(BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei))))).t()-p0;
+  arma::mat p2=(Vector(BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei))))).t()-p0;
+  
+  p1-=ax*(dot(ax, p1));
+  p2-=ax*(dot(ax, p2));
+  
+  double rl=fabs(norm(p1,2)-norm(p2,2));
+  std::cout<<"edge "<<ei<<": rl="<<rl<<std::endl;
+  return rl;
+}
+
+QuantityComputer< double >::Ptr edgeRadialLen::clone() const
+{
+  return QuantityComputer<double>::Ptr(new edgeRadialLen(ax_, p0_));
+}
+
 
 faceCoG::faceCoG() 
 {}
@@ -892,6 +922,12 @@ struct EdgeFeatureFilterExprParser
 	  
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
 	( lit("len") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
+	|
+	( lit("radialLen") >> 
+	    '(' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> 
+	    ',' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> 
+	    ')' ) 
+	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeRadialLen>(qi::_1, qi::_2)) ]
       ;
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 

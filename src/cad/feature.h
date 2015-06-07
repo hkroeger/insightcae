@@ -81,6 +81,7 @@ std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 class FeatureSet
 : public std::set<FeatureID>
 {
+#warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
   const SolidModel& model_;
   EntityType shape_;
   

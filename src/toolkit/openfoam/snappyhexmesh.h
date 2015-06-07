@@ -140,8 +140,8 @@ public:
   ExplicitFeatureCurve(Parameters const& p = Parameters() );
   
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-//   virtual void modifyFiles(const OpenFOAMCase& ofc, 
-// 		  const boost::filesystem::path& location) const;
+  virtual void modifyFiles(const OpenFOAMCase& ofc, 
+		  const boost::filesystem::path& location) const;
   
   Feature* clone() const;
 };

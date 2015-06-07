@@ -622,6 +622,24 @@ public:
     virtual QuantityComputer<double>::Ptr clone() const;
 };
 
+
+class edgeRadialLen
+    : public QuantityComputer<double>
+{
+protected:
+    boost::shared_ptr<matQuantityComputer > ax_;
+    boost::shared_ptr<matQuantityComputer > p0_;
+    
+public:
+    edgeRadialLen(const boost::shared_ptr<matQuantityComputer >& ax, const boost::shared_ptr<matQuantityComputer >& p0);
+    virtual ~edgeRadialLen();
+
+    virtual double evaluate(FeatureID ei);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
+};
+
+
 class faceCoG
     : public QuantityComputer<arma::mat>
 {

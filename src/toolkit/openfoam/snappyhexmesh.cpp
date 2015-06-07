@@ -159,11 +159,32 @@ ExplicitFeatureCurve::ExplicitFeatureCurve( Parameters const& p )
 void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict refdict;
-  refdict["file"]=std::string("\"")+p_.fileName().c_str()+"\"";
+  refdict["file"]=std::string("\"")+p_.fileName().filename().c_str()+"\"";
   refdict["level"]=p_.level();
   sHMDict.subDict("castellatedMeshControls").addListIfNonexistent("features").push_back(refdict);
 
 }
+
+void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
+{
+  boost::filesystem::path from(p_.fileName());
+  boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName().filename());
+  
+  if (!exists(to.parent_path()))
+    create_directories(to.parent_path());
+  
+  copy_file(from, to);
+
+//   ofc.executeCommand(location, "surfaceTransformPoints",
+//     list_of<std::string>
+//     (absolute(from).string())
+//     (absolute(to).string())
+//     ("-scale")(OFDictData::to_OF(p_.scale()))
+//     ("-translate")(OFDictData::to_OF(p_.translate()))
+//     ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw()))
+//   );
+}
+
 
 
 Feature* ExplicitFeatureCurve::clone() const

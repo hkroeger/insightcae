@@ -53,8 +53,9 @@ IF(Fx31_BASHRC)
       ${Fx31_LIB_DIR}/libfoam.so 
       ${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
       #${Fx31_METIS_LIB_DIR}/libmetis.a
-      ${Fx31_PARMETIS_LIB_DIR}/libparmetis.so
+      ${Fx31_PARMETIS_LIB_DIR}/libparmetis.a
       ${Fx31_SCOTCH_LIB_DIR}/libscotch.so
+      ${Fx31_SCOTCH_LIB_DIR}/libscotcherr.so
       ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so
       ${ARGN})
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_FOAM_APPBIN})

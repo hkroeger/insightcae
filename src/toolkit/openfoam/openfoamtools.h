@@ -50,7 +50,11 @@ void setsToZones(const OpenFOAMCase& ofc, const boost::filesystem::path& locatio
 void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, 
 		  bool purify=false, bool ignoremissing=false, bool include_zones=false);
 
-void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to);
+/**
+ * create mesh as symbolic links from other case.
+ * If env is given, create a case skeleton in target case
+ */
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, const OFEnvironment* env=NULL);
 
 /*
  * Copy field files below "from" into "to"

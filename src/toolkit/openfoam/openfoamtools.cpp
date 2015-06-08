@@ -143,8 +143,17 @@ void create_symlink_force_overwrite(const path& source, const path& targ)
   create_symlink(source, targ);
 }
 
-void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to)
+void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::path& to, const OFEnvironment* env)
 {
+  if (env)
+  {
+    boost::filesystem::path casedir=to.parent_path();
+    std::cout<<"Creating case skeleton in "<<casedir<<endl;
+    OpenFOAMCase cm(*env);
+    cm.insert(new MeshingNumerics(cm));
+    cm.createOnDisk(casedir);
+  }
+  
   path source(from/"polyMesh");
   path target(to/"polyMesh");
   if (!exists(target))
@@ -153,8 +162,28 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   std::string cmd("ls "); cmd+=source.c_str();
   ::system(cmd.c_str());
   
+  {
+    std::string fname="boundary";
+    
+    path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
+    if (exists(source/gzname)) 
+    {
+      cout<<"Copying file "<<gzname<<endl;
+      if (exists(target/gzname)) remove(target/gzname);
+      copy_file(source/gzname, target/gzname);
+    }
+    else if (exists(source/fname))
+    {
+      cout<<"Copying file "<<fname<<endl;
+      if (exists(target/fname)) remove(target/fname);
+      copy_file(source/fname, target/fname);
+    }
+    else 
+      throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+  }
+
   BOOST_FOREACH(const std::string& fname, 
-		list_of<std::string>("boundary")("faces")("neighbour")("owner")("points")
+		list_of<std::string>/*("boundary")*/("faces")("neighbour")("owner")("points")
 		.convert_to_container<std::vector<std::string> >())
   {
     path gzname(fname.c_str()); gzname=(gzname.string()+".gz");

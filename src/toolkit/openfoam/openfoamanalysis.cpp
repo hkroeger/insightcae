@@ -342,14 +342,15 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
       meshCase.reset(new OpenFOAMCase(ofe));
       if (!meshCase->meshPresentOnDisk(dir))
       {
+	meshcreated=true;
 	if (!p.getPath("mesh/linkmesh").empty())
 	{
-	  linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant");
+	  linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant", &ofe);
 	}
 	else
 	{
 	  createMesh(*meshCase);
-	  meshcreated=true;
+// 	  meshcreated=true;
 	}
       }
       else

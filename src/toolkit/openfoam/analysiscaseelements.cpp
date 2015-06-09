@@ -231,7 +231,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
   int np=-1;
   
   path fp;
-  if (c.OFversion()<=160)
+  if (c.OFversion()<170)
     fp=absolute(location)/tpcName;
   else
     fp=absolute(location)/"postProcessing"/tpcName;
@@ -369,7 +369,7 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
   arma::mat fl;
   
   path fp;
-  if (c.OFversion()<=160)
+  if (c.OFversion()<170)
     fp=absolute(location)/foName;
   else
     fp=absolute(location)/"postProcessing"/foName;

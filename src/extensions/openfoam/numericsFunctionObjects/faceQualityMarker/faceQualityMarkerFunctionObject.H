@@ -37,45 +37,47 @@ namespace Foam
 class faceSet;
 
 class faceQualityMarkerFunctionObject
-:
-    public functionObject
+: public functionObject
 {
+  
     // Private data
+    //- Disallow default bitwise copy construct
+    faceQualityMarkerFunctionObject(const faceQualityMarkerFunctionObject&);
 
-        //- Reference to main object registry
-        const Time& time_;
+    //- Disallow default bitwise assignment
+    void operator=(const faceQualityMarkerFunctionObject&);
+  
+protected:
+    PtrList<surfaceScalarField> blendingFactors_;
 
-        //- Region name
-        word regionName_;
+    //- Reference to main object registry
+    const Time& time_;
 
-        Switch markNonOrthFaces_;
-        Switch markSkewFaces_;
-        Switch markWarpedFaces_;
-        Switch markConcaveFaces_;
-        Switch markHighAspectFaces_;
-	Switch markLowQualityTetFaces_;
-	Switch markVelocityPeaks_;
-	Switch smoothMarkerField_;
-	scalar aspectThreshold_;
-	scalar lowerNonOrthThreshold_;
-	scalar upperNonOrthThreshold_;
-        scalar smoothingCoeff_;
-        wordList sets_;
+    //- Region name
+    word regionName_;
 
-        const polyMesh& mesh_;
-        autoPtr<wordList> blendingFieldNames_;
-        PtrList<surfaceScalarField> blendingFactors_;
+    bool markNonOrthFaces_;
+    bool markSkewFaces_;
+    bool markWarpedFaces_;
+    bool markConcaveFaces_;
+    bool markHighAspectFaces_;
+    bool markLowQualityTetFaces_;
+    bool markVelocityPeaks_;
+    bool smoothMarkerField_;
+    scalar aspectThreshold_;
+    scalar lowerNonOrthThreshold_;
+    scalar upperNonOrthThreshold_;
+    scalar smoothingCoeff_;
+    wordList sets_;
 
-    // Private Member Functions
+    const polyMesh& mesh_;
+    wordList blendingFieldNames_;
 
-        //- Disallow default bitwise copy construct
-        faceQualityMarkerFunctionObject(const faceQualityMarkerFunctionObject&);
+// Private Member Functions
 
-        //- Disallow default bitwise assignment
-        void operator=(const faceQualityMarkerFunctionObject&);
 
-        void markFaceSet(const faceSet& faces);
-        void updateBlendingFactor();
+    void markFaceSet(const faceSet& faces);
+    void updateBlendingFactor();
 
 public:
 
@@ -92,6 +94,8 @@ public:
             const Time&,
             const dictionary&
         );
+	
+	virtual ~faceQualityMarkerFunctionObject();
 
 
     // Member Functions

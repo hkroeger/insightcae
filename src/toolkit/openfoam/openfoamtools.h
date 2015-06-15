@@ -310,6 +310,8 @@ public:
       ( start, arma::mat, vec3(0,0,0) )
       ( end, arma::mat, vec3(1,0,0) )
       ( axis, arma::mat, vec3(1,0,0) )
+      ( angle, double, 2.*M_PI )  // angular span for averaging
+      ( angularOffset, double, 0.0 ) // angle from radial axis to first profile
       ( np, int, 100 )
       ( nc, int, 10 )
   )
@@ -325,7 +327,7 @@ public:
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
   virtual set* clone() const;
   
-  arma::mat rotMatrix(int i) const;
+  arma::mat rotMatrix(int i, double angularOffset=0) const;
   inline std::string setname(int i) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       ColumnDescription* coldescr=NULL

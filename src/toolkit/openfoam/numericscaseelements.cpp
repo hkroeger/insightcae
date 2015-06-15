@@ -206,6 +206,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.addSubDictIfNonexistent("functions");
 
   controlDict.getList("libs").insertNoDuplicate( "\"libwriteData.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"libconsistentCurveSampleSet.so\"" );  
 
   OFDictData::dict wonow;
   wonow["type"]="writeData";

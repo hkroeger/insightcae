@@ -482,7 +482,9 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
   
   OFDictData::dict sd;
 //   sd["type"]="uniform";
-  sd["type"]="polyLine";
+//   sd["type"]="polyLine";
+  sd["type"]="consistentCurve";
+  
   sd["axis"]="distance";
 //   sd["start"]=OFDictData::vector3(p_.start());
 //   sd["end"]=OFDictData::vector3(p_.end());
@@ -587,7 +589,8 @@ arma::mat line::readSamples
       
 //     data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
       rdata=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
-      arma::mat idata=Interpolator(data)(arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows));
+            
+      arma::mat idata=Interpolator(data)(/*arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)*/rdata);
 //       std::cout<<data<<idata<<endl;
       rdata=join_rows( rdata, idata );
   }
@@ -666,9 +669,9 @@ set* circumferentialAveragedUniformLine::clone() const
   return new circumferentialAveragedUniformLine(p_);
 }
 
-arma::mat circumferentialAveragedUniformLine::rotMatrix(int i) const
+arma::mat circumferentialAveragedUniformLine::rotMatrix(int i, double angularOffset) const
 {
-  return insight::rotMatrix( 2.*M_PI*double(i)/double(p_.nc()), p_.axis());
+  return insight::rotMatrix( angularOffset + p_.angle()*(double(i)+0.5)/double(p_.nc()), p_.axis());
 }
 
 arma::mat circumferentialAveragedUniformLine::readSamples
@@ -683,7 +686,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   BOOST_FOREACH(const line& l, lines_)
   {
     arma::mat datai = l.readSamples(ofc, location, &cd);
-    arma::mat Ri=rotMatrix(i++).t();
+    arma::mat Ri=rotMatrix(i++, p_.angularOffset()).t();
     
     BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
     {

@@ -74,7 +74,7 @@ class consistentCurveSet
         (
 #ifdef OF16ext
             Particle<passiveParticle>& singleParticle,
-#elif defined (OF22x)
+#elif defined (OF22x)||defined (OF22eng)
             passiveParticle& singleParticle,
 #else
             passiveParticleCloud& particleCloud,

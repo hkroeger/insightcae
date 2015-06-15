@@ -903,7 +903,7 @@ void sample(const OpenFOAMCase& ofc,
   
   sampleDict["setFormat"] = "raw";
   sampleDict["surfaceFormat"] = "vtk";
-  sampleDict["interpolationScheme"] = "cellPointFace";
+  sampleDict["interpolationScheme"] = "cellPoint";
   sampleDict["formatOptions"] = OFDictData::dict();
   
   OFDictData::list flds; flds.resize(fields.size());

@@ -214,13 +214,13 @@ void Foam::faceQualityMarkerFunctionObject::markFaceSet(const faceSet& faces)
 {
   forAll(blendingFactors_, i)
   {
-    markFaceSet1(faces, blendingFactors_[i]);
+    markFaceSet1(faces, *blendingFactors_[i]);
   }   
 }
 
 void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 {
-  forAll(blendingFactors_, i) blendingFactors_[i]=0.0;  
+  forAll(blendingFactors_, i) (*blendingFactors_[i])=0.0;  
 
   if (markNonOrthFaces_)
     {
@@ -260,7 +260,7 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
 	  //Info<<o<<" "<<lo<<" "<<up<<" : "<<val<<endl;
 	  
 	  forAll(blendingFactors_, i)
-	    markFace(faceI, blendingFactors_[i], val);
+	    markFace(faceI, *blendingFactors_[i], val);
 	}
       }
 #endif
@@ -464,14 +464,14 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     {
 #if (!( defined(OF16ext) || defined(OF21x) ))
       // smoothing the field
-      volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(blendingFactors_[i])) );
-      avgBlendingFactor.rename("avg_"+blendingFactors_[i].name());
+      volScalarField avgBlendingFactor( static_cast<const volScalarField&>(surfaceMax2(*blendingFactors_[i])) );
+      avgBlendingFactor.rename("avg_"+blendingFactors_[i]->name());
     
       fvc::smooth(avgBlendingFactor, smoothingCoeff_);
 // 	  fvc::spread(avgBlendingFactor, avgBlendingFactor, 1);
 // 	  fvc::smooth(avgBlendingFactor, smoothingCoeff_);
     
-      blendingFactors_[i] = surfaceMax3(avgBlendingFactor);
+      *blendingFactors_[i] = surfaceMax3(avgBlendingFactor);
     
       if (debug)
       {
@@ -487,8 +487,8 @@ void Foam::faceQualityMarkerFunctionObject::updateBlendingFactor()
     
     if (debug)
     {
-      Info<<"Writing surfaceScalarField "<<blendingFactors_[i].name()<<endl;
-      blendingFactors_[i].write();  
+      Info<<"Writing surfaceScalarField "<<blendingFactors_[i]->name()<<endl;
+      blendingFactors_[i]->write();  
     }
   }
 
@@ -526,7 +526,8 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     }
     else
     {
-    	blendingFieldNames_=wordList(1, "UBlendingFactor");
+    	blendingFieldNames_=wordList(1);
+        blendingFieldNames_[0]="UBlendingFactor";
     }
     if (dict.found("sets"))
     {
@@ -550,22 +551,21 @@ bool Foam::faceQualityMarkerFunctionObject::start()
     }
     
     Info << "Creating face quality markers" << endl;
-    const fvMesh& mesh=refCast<const fvMesh>(mesh_);
+    fvMesh& mesh=const_cast<fvMesh&>(refCast<const fvMesh>(mesh_));
 
     blendingFactors_.setSize(blendingFieldNames_.size());
     for (label i=0; i<blendingFieldNames_.size(); i++)
     {
      Info<<"Creating "<<blendingFieldNames_[i]<<endl;
-     blendingFactors_.set
+     blendingFactors_[i]=&mesh.objectRegistry::store
      (
-        i,
 	new surfaceScalarField
         (
          IOobject
          (
           blendingFieldNames_[i],
           mesh.time().timeName(),
-          mesh.time(),
+          mesh,
           IOobject::NO_READ,
           IOobject::NO_WRITE
          ),

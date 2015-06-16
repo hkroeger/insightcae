@@ -48,7 +48,7 @@ class faceQualityMarkerFunctionObject
     void operator=(const faceQualityMarkerFunctionObject&);
   
 protected:
-    PtrList<surfaceScalarField> blendingFactors_;
+    List<surfaceScalarField*> blendingFactors_;
 
     //- Reference to main object registry
     const Time& time_;

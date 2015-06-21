@@ -290,9 +290,18 @@ void DXFReader::buildSpline()
 
 
 
-TopoDS_Wire DXFReader::Wire() const
+TopoDS_Wire DXFReader::Wire(double tol) const
 {
   pl_.reset(); // Finalize
+  
+  ShapeFix_ShapeTolerance sft;
+  for (
+    TopTools_ListIteratorOfListOfShape li(ls_);
+    li.More(); li.Next()
+  )
+  {
+    sft.SetTolerance(const_cast<TopoDS_Shape&>(li.Value()), tol, TopAbs_VERTEX );
+  }
   
   BRepBuilderAPI_MakeWire wb;
   wb.Add(ls_);
@@ -310,7 +319,14 @@ Sketch::Sketch(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln, const SketchVarList& vars)
+Sketch::Sketch
+(
+  const Datum& pl, 
+  const boost::filesystem::path& fn, 
+  const std::string& ln, 
+  const SketchVarList& vars,
+  double tol
+)
 // : SolidModel(makeSketch(pl, fn, ln))
 {
   if (!pl.providesPlanarReference())
@@ -356,7 +372,7 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
     }
   }
   
-  TopoDS_Wire w = DXFReader(filename, layername).Wire();
+  TopoDS_Wire w = DXFReader(filename, layername).Wire(tol);
   providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w)));
   
   gp_Trsf tr;
@@ -385,9 +401,13 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
     "Sketch",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_datumExpression > ',' > ruleset.r_path > ',' > ruleset.r_string 
-	  > ( ( ',' > (ruleset.r_identifier > '=' > qi::double_ )% ',' )|qi::attr(SketchVarList())) > ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
+    ( '(' > ruleset.r_datumExpression > ',' 
+	  > ruleset.r_path > ',' 
+	  > ruleset.r_string 
+	  > ( ( ',' > (ruleset.r_identifier > '=' > qi::double_ )% ',' ) | qi::attr(SketchVarList()) )
+	  > ( ( ',' > qi::double_ ) | qi::attr(1e-3) ) > 
+      ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

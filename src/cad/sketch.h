@@ -76,6 +76,9 @@ public:
   TopoDS_Wire Wire() const;
 };
 
+
+typedef std::vector<boost::fusion::vector2<std::string, double> > SketchVarList;
+
 class Sketch
 : public SolidModel
 {
@@ -84,7 +87,7 @@ class Sketch
 public:
   declareType("Sketch");
   Sketch(const NoParameters& nop = NoParameters());
-  Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
+  Sketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0", const SketchVarList& vars = SketchVarList() );
   operator const TopoDS_Face& () const;
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

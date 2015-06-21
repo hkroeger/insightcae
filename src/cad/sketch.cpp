@@ -310,7 +310,7 @@ Sketch::Sketch(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
+Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln, const SketchVarList& vars)
 // : SolidModel(makeSketch(pl, fn, ln))
 {
   if (!pl.providesPlanarReference())
@@ -333,6 +333,26 @@ Sketch::Sketch(const Datum& pl, const boost::filesystem::path& fn, const std::st
     if ( ::system( cmd.c_str() ) )
     {
       throw insight::Exception("Conversion from FreeCAD part with sketch to dxf failed!");
+    }
+  }
+  else if (ext==".psketch")
+  {
+    filename=boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+    layername="0";
+    
+    std::string vargs="";
+    for (SketchVarList::const_iterator it=vars.begin(); it!=vars.end(); it++)
+    {
+      std::string vname=boost::fusion::at_c<0>(*it);
+      double vval=boost::fusion::at_c<1>(*it);
+      vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
+    }
+    
+    std::string cmd = str( format("psketchercmd %s -o %s") % fn % filename ) + vargs;
+    cout<<"CMD=\""<<cmd<<"\""<<endl;
+    if ( ::system( cmd.c_str() ) )
+    {
+      throw insight::Exception("Conversion from pSketch to dxf failed!");
     }
   }
   
@@ -365,8 +385,9 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
     "Sketch",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_datumExpression > ',' > ruleset.r_path > ',' > ruleset.r_string > ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3)) ]
+    ( '(' > ruleset.r_datumExpression > ',' > ruleset.r_path > ',' > ruleset.r_string 
+	  > ( ( ',' > (ruleset.r_identifier > '=' > qi::double_ )% ',' )|qi::attr(SketchVarList())) > ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

@@ -65,6 +65,19 @@ void vtkModel::appendPointVectorField(const std::string& name, const double x[],
   }  
 }
 
+void vtkModel::appendPointTensorField(const string& name, const double xx[], const double xy[], const double xz[], const double yx[], const double yy[], const double yz[], const double zx[], const double zy[], const double zz[])
+{
+  //cout<<"Append PointVectorField "<<name<<" to VTK"<<endl;
+  pointVectorFields_[name]=VectorField();
+  VectorField& vf = pointVectorFields_[name];
+  for (int i=0; i<pts_.size(); i++)
+  {
+    //cout<<i<<" "<<x[i]<<" "<<y[i]<<" "<<z[i]<<endl;
+    vf.push_back(tensor3(xx[i], xy[i], xz[i], yx[i], yy[i], yz[i], zx[i], zy[i], zz[i]));
+  }  
+}
+
+
 
 void vtkModel::writeGeometryToLegacyFile(std::ostream& os) const
 {

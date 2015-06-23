@@ -61,6 +61,11 @@ public:
     
     void appendPointScalarField(const std::string& name, const double v[]);
     void appendPointVectorField(const std::string& name, const double x[], const double y[], const double z[]);
+    void appendPointTensorField(const std::string& name, 
+			       const double xx[], const double xy[], const double xz[],
+			       const double yx[], const double yy[], const double yz[],
+			       const double zx[], const double zy[], const double zz[]
+			       );
     
     virtual void writeGeometryToLegacyFile(std::ostream& os) const;
     virtual void writeDataToLegacyFile(std::ostream& os) const;

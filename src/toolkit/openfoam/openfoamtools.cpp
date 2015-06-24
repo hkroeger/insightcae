@@ -1017,11 +1017,14 @@ void mapFields
     args.push_back(os.str());
   }
   
-//   if (targetcase.OFversion()>=230)
-//   {
-//     args.push_back("-mapMethod");
-//     args.push_back("mapNearest");
-//   }
+  if (targetcase.OFversion()>=230)
+  {
+    if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
+    {
+      args.push_back("-mapMethod");
+      args.push_back("direct");
+    }
+  }
 
   std::string execname="mapFields";
 //   if (targetcase.OFversion()>=220) execname="mapFields22";

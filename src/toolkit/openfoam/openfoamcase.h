@@ -141,14 +141,24 @@ public:
 class OpenFOAMCase 
 : public Case
 {
+public:
+  typedef enum {
+    cellVolumeWeightMapMethod,
+    directMapMethod
+  } MapMethod;
+  
 protected:
   const OFEnvironment& env_;
   FieldList fields_;
+  MapMethod requiredMapMethod_;
   
 public:
     OpenFOAMCase(const OFEnvironment& env);
     OpenFOAMCase(const OpenFOAMCase& other);
     virtual ~OpenFOAMCase();
+    
+    inline void setRequiredMapMethod(const MapMethod mm) { requiredMapMethod_=mm; }
+    inline MapMethod requiredMapMethod() const { return requiredMapMethod_; }
     
     void addField(const std::string& name, const FieldInfo& field);
 

@@ -928,6 +928,9 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
 : FVNumerics(c, p),
   p_(p)
 {
+  
+  c.setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
+  
   if (OFversion()<=160)
     pname_="pd";
   else

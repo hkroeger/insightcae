@@ -371,13 +371,15 @@ std::vector< string > OpenFOAMCase::fieldNames() const
 
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
-  env_(env)
+  env_(env),
+  requiredMapMethod_(directMapMethod)
 {
 }
 
 OpenFOAMCase::OpenFOAMCase(const OpenFOAMCase& other)
 : Case(other),
-  env_(other.env_)
+  env_(other.env_),
+  requiredMapMethod_(other.requiredMapMethod_)
 {
 }
 

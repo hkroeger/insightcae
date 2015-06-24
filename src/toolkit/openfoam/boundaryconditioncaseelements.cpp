@@ -137,7 +137,7 @@ OFDictData::data FieldData::sourceEntry() const
   else if 
     (const Parameters::fielddata_fittedProfile_type *fd = boost::get<Parameters::fielddata_fittedProfile_type>(&p_.fielddata) )
   {
-    os<<" linearProfile "
+    os<<" fittedProfile "
       <<OFDictData::to_OF(fd->p0)
       <<" "
       <<OFDictData::to_OF(fd->ep)

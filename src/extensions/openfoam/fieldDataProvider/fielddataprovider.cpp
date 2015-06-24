@@ -20,9 +20,18 @@
 #include "fielddataprovider.h"
 #include "addToRunTimeSelectionTable.H"
 #include "transform.H"
-#include "base/linearalgebra.h"
+#include "OFstream.H"
 
+#include "base/linearalgebra.h"
 #include "boost/foreach.hpp"
+
+#include "boost/version.hpp"
+#if ( BOOST_VERSION < 105100 )
+#define BOOST_NO_SCOPED_ENUMS
+#else
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#endif
+#include "boost/filesystem.hpp"
 
 using namespace boost;
 using namespace insight;
@@ -54,6 +63,19 @@ tmp<Field<T> > FieldDataProvider<T>::operator()(double time, const pointField& t
       scalar wi=time-timeInstants_[ip-1];
       scalar wip=timeInstants_[ip]-time;
       res = ( wip*atInstant(ip-1, target) + wi*atInstant(ip, target) ) / (wi+wip);
+    }
+  }
+  if (debug>1)
+  {
+    boost::filesystem::path fn=boost::filesystem::unique_path("./fielddataprovider-%%%%%%%%%.txt");
+    Info<<"Dumping fielddata into "<<fn.c_str()<<endl;
+    OFstream f(fn.c_str());
+    forAll(target,j)
+    {
+      f<<target[j].x()<<" "<<target[j].y()<<" "<<target[j].z();
+      for (int k=0; k<pTraits<T>::nComponents; k++)
+	f<<" "<<component(res()[j], k);
+      f<<endl;
     }
   }
 //   Info<<"RETURN="<<res()<<endl;

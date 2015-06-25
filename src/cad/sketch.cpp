@@ -341,15 +341,72 @@ Sketch::Sketch
   
   if (ext==".fcstd")
   {
-    filename=boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+    filename =
+      boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+    boost::filesystem::path macrofilename =
+      boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
     layername="0";
     
-    std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-    cout<<"CMD=\""<<cmd<<"\""<<endl;
-    if ( ::system( cmd.c_str() ) )
     {
-      throw insight::Exception("Conversion from FreeCAD part with sketch to dxf failed!");
+      
+      std::string vargs="";
+      for (SketchVarList::const_iterator it=vars.begin(); it!=vars.end(); it++)
+      {
+	std::string vname=boost::fusion::at_c<0>(*it);
+	int vid;
+	try {
+	 if (vname.size()<2)
+	   throw 1;
+	 if (!(starts_with(vname, "d") || starts_with(vname, "D")))
+	   throw 2;
+	 vname.erase(0,1);
+	 vid=lexical_cast<int>(vname);
+	}
+	catch (...)
+	{
+	  throw insight::Exception("Error in passing variable values to FCStd Sketch: variable names must be of format d<ID>! (ID equal to FreeCADs constraint ID)");
+	}
+	
+	double vval=boost::fusion::at_c<1>(*it);
+	vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+      }
+      
+      std::ofstream mf(macrofilename.c_str());
+      mf << str( format(
+"import FreeCAD\n"
+"import importDXF\n"
+
+"FreeCAD.open(\"%s\")\n"
+"__objs__=[]\n"
+"doc=FreeCAD.getDocument( \"%s\" );\n"
+//"print dir(doc)\n"
+"obj=None\n"
+"for o in doc.Objects:\n"
+" if (o.Label==\"%s\"):\n"
+"  obj=o\n"
++vargs+
+"  break\n"
+//"print obj\n"
+"__objs__.append(obj)\n"
+"doc.recompute()\n"
+"importDXF.export(__objs__, \"%s\")\n"
+"del __objs__\n") 
+      % fn.string() 
+      % fn.filename().stem().string() 
+      % ln 
+      % filename.string() 
+      );
     }
+    
+    std::string cmd = str( format("FreeCADCmd %s") % macrofilename );
+//     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
+    cout<<"CMD=\""<<cmd<<"\""<<endl;
+    if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
+    {
+      throw insight::Exception("Conversion of FreeCAD file "+fn.string()+" into DXF "+filename.string()+" failed!");
+    }
+    boost::filesystem::remove(macrofilename);
+    
   }
   else if (ext==".psketch")
   {
@@ -366,9 +423,9 @@ Sketch::Sketch
     
     std::string cmd = str( format("psketchercmd %s -o %s") % fn % filename ) + vargs;
     cout<<"CMD=\""<<cmd<<"\""<<endl;
-    if ( ::system( cmd.c_str() ) )
+    if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
     {
-      throw insight::Exception("Conversion from pSketch to dxf failed!");
+      throw insight::Exception("Conversion of pSketch file "+fn.string()+" into DXF "+filename.string()+" failed!");
     }
   }
   

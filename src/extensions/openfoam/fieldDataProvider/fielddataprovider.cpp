@@ -324,11 +324,10 @@ void linearProfile<T>::appendInstant(Istream& is)
   is >> fn;
   filenames_.push_back(fn);
   
-  arma::mat xy;
-  fn.expand();
-  xy.load(fn.c_str(), arma::raw_ascii);
-  
-  values_.push_back(new insight::Interpolator(xy, true) );
+//   arma::mat xy;
+//   fn.expand();
+//   xy.load(fn.c_str(), arma::raw_ascii);
+//   values_.push_back(new insight::Interpolator(xy, true) );
 }
 
 template<class T>
@@ -340,6 +339,16 @@ void linearProfile<T>::writeInstant(int i, Ostream& is) const
 template<class T>
 tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) const
 {
+  if (values_.find(idx)==values_.end())
+  {
+    fileName fn=filenames_[idx];
+    arma::mat xy;
+    fn.expand();
+    xy.load(fn.c_str(), arma::raw_ascii);
+    std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
+    values_.insert(idx, newipol);
+  }
+  
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
   Field<T>& res=resPtr();
 
@@ -352,7 +361,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
   {
     double t = base_.t(target[pi]);
     
-    arma::mat q = values_[idx](t);
+    arma::mat q = (*values_.find(idx)->second)(t);
     
 //     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
     
@@ -418,11 +427,11 @@ void radialProfile<T>::appendInstant(Istream& is)
   is >> fn;
   filenames_.push_back(fn);
   
-  arma::mat xy;
-  fn.expand();
-  xy.load(fn.c_str(), arma::raw_ascii);
-  
-  values_.push_back(new insight::Interpolator(xy, true) );
+//   arma::mat xy;
+//   fn.expand();
+//   xy.load(fn.c_str(), arma::raw_ascii);
+//   
+//   values_.push_back(new insight::Interpolator(xy, true) );
 }
 
 template<class T>
@@ -434,6 +443,16 @@ void radialProfile<T>::writeInstant(int i, Ostream& is) const
 template<class T>
 tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) const
 {
+  if (values_.find(idx)==values_.end())
+  {
+    fileName fn=filenames_[idx];
+    arma::mat xy;
+    fn.expand();
+    xy.load(fn.c_str(), arma::raw_ascii);
+    std::auto_ptr<insight::Interpolator> newipol(new insight::Interpolator(xy, true));
+    values_.insert(idx, newipol);
+  }
+
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
   Field<T>& res=resPtr();
 
@@ -446,7 +465,7 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
   {
     double t = base_.t(target[pi]);
     
-    arma::mat q = values_[idx](t);
+    arma::mat q = (*values_.find(idx)->second)(t);
     
 //     std::cout<<target[pi].x()<<" "<<target[pi].y()<<" "<<target[pi].z()<<" >> "<<t<<" >> "<<q<<std::endl;
     

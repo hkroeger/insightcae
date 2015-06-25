@@ -27,6 +27,7 @@
 #include <map>
 #include <vector>
 #include "boost/ptr_container/ptr_vector.hpp"
+#include "boost/ptr_container/ptr_map.hpp"
 
 #include "vectorspacebase.h"
 
@@ -146,7 +147,7 @@ class linearProfile
   VectorSpaceBase base_;
   Map<label> cols_;
   std::vector<fileName> filenames_;
-  boost::ptr_vector<insight::Interpolator> values_;
+  mutable boost::ptr_map<int, insight::Interpolator> values_;
   
   virtual void appendInstant(Istream& is);
   virtual void writeInstant(int i, Ostream& os) const;
@@ -177,7 +178,7 @@ class radialProfile
   CylCoordVectorSpaceBase base_;
   Map<label> cols_;
   std::vector<fileName> filenames_;
-  boost::ptr_vector<insight::Interpolator> values_;
+  mutable boost::ptr_map<int, insight::Interpolator> values_;
   
   virtual void appendInstant(Istream& is);
   virtual void writeInstant(int i, Ostream& os) const;

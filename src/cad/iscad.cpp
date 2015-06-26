@@ -26,12 +26,27 @@
 
 #include <QMainWindow>
 
+#include "parser.h"
+
 int main(int argc, char** argv)
 {
+  if (argc==3) 
+  {
+    if (std::string(argv[1])!="-batch")
+    {
+      cout<<"Invalid command line!"<<endl;
+      exit(-1);
+    }
+    insight::cad::parser::Model::Ptr model(new insight::cad::parser::Model);
+    return insight::cad::parseISCADModelFile(argv[2], model);
+  }
+  else
+  {
     ISCADApplication app(argc, argv);
     ISCADMainWindow w;
-    if (argc>1) 
+    if (argc==2) 
       w.loadFile(argv[1]);
     w.show();
     return app.exec();
+  }
 }

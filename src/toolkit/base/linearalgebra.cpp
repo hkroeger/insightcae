@@ -287,6 +287,86 @@ double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max)
   return x_l;
 }
 
+double F_min_obj(const gsl_vector* x, void *param)
+{
+  const Objective1D& model=*static_cast<Objective1D*>(param);
+  cout<<"ITER: X="<<x->data[0]<<" F="<<model(x->data[0])<<endl;
+  return model(x->data[0]);
+}
+
+
+double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max)
+{
+  try
+  {
+    const gsl_multimin_fminimizer_type *T = 
+      gsl_multimin_fminimizer_nmsimplex;
+    gsl_multimin_fminimizer *s = NULL;
+    gsl_vector *ss, *p;
+    gsl_multimin_function minex_func;
+
+    size_t iter = 0;
+    int status;
+    double size;
+
+    /* Starting point */
+    p = gsl_vector_alloc (1);
+    gsl_vector_set_all (p, 0.5*(x_min+x_max));
+
+    /* Set initial step sizes to 0.1 */
+    ss = gsl_vector_alloc (1);
+    gsl_vector_set_all (ss, 0.1);
+
+    /* Initialize method and iterate */
+    minex_func.n = 1;
+    minex_func.f = &F_min_obj;
+    minex_func.params = const_cast<void *>(static_cast<const void*>(&model));
+
+    s = gsl_multimin_fminimizer_alloc (T, 1);
+    gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
+
+    do
+      {
+	iter++;
+	status = gsl_multimin_fminimizer_iterate(s);
+	
+	if (status) 
+	  break;
+
+	size = gsl_multimin_fminimizer_size (s);
+	status = gsl_multimin_test_size (size, 1e-3);
+
+// 	if (status == GSL_SUCCESS)
+// 	  {
+// 	    printf ("converged to minimum at\n");
+// 	  }
+
+// 	printf ("%5d %10.3e %10.3e f() = %7.3f size = %.3f\n", 
+// 		iter,
+// 		gsl_vector_get (s->x, 0), 
+// 		s->fval, size);
+      }
+    while (status == GSL_CONTINUE && iter < 100);
+    
+    double solution=s->x->data[0];
+//     model.setParameters(s->x->data);
+    
+    gsl_vector_free(p);
+    gsl_vector_free(ss);
+    gsl_multimin_fminimizer_free (s);
+
+    return solution; //model.computeQuality(y, x);
+  }
+  catch (...)
+  {
+    std::ostringstream os;
+//     os<<"x=["<<x.t()<<"]\ty=["<<y.t()<<"]";
+    throw insight::Exception("nonlinearMinimize1D(): Failed to do regression.\nSupplied data: "+os.str());
+  }
+  
+  return DBL_MAX;
+}
+
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
   if (first_col_is_time && timeProfs.n_cols<2)

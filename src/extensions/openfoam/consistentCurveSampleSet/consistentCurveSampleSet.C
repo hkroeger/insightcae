@@ -389,8 +389,13 @@ void Foam::consistentCurveSet::genSamples()
         samplingCells,
         samplingFaces,
         samplingSegments,
+#ifdef OF16ext
         samplingCurveDist
+#else
+	mag(samplingPts-basept_)
+#endif
     );
+    
 }
 
 

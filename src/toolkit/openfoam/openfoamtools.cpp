@@ -824,7 +824,7 @@ arma::mat linearAveragedPolyLine::readSamples
   ColumnDescription* coldescr
 ) const
 {
-  arma::mat data;
+  arma::mat data; // only the data, without coordinate column!
   
   ColumnDescription cd;
   BOOST_FOREACH(const line& l, lines_)

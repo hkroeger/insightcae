@@ -44,6 +44,12 @@ public:
    * compute factor Umax/Ubulk
    */
   static double UmaxByUbulk(double Retau);
+  
+  
+  /**
+   * number of profiles for homogeneous averages
+   */
+  const int n_hom_avg=10;
 
 protected:
   std::string cycl_in_, cycl_out_;
@@ -174,6 +180,11 @@ class ChannelInflow
 {
   
 #ifndef SWIG
+  /**
+   * locations (x/H) of section evaluations 
+   */
+  std::vector<double> sec_locs_ = (boost::assign::list_of<double>(0)(0.1)(0.25)(0.5)(0.75)(1)(1.5)(2)(3)(4)(6)(8));
+
   const static int ntpc_ = 4;
   const static char* tpc_names_[ntpc_]; 
   const static double tpc_xlocs_[ntpc_];

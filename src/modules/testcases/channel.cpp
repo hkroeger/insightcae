@@ -477,7 +477,7 @@ void ChannelBase::evaluateAtSection(
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*B))
     .set_nd1(1)
-    .set_nd2(5)
+    .set_nd2(n_hom_avg)
   ));
   
   sample(cm, executionPath(), 
@@ -650,6 +650,10 @@ void ChannelBase::evaluateAtSection(
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
     arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
+
+    axial.save( (executionPath()/("Raxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    spanwise.save( (executionPath()/("Rspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    wallnormal.save( (executionPath()/("Rwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
@@ -1098,7 +1102,7 @@ void ChannelInflow::createCase
       cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
 	.set_name_prefix(tpc_names_[i])
 	.set_R(0.5*H)
-	.set_x((-0.5+tpc_xlocs_[i])*L)
+	.set_x(-0.5*L+tpc_xlocs_[i]*H)
 	.set_z(-0.49*B)
 	.set_axSpan(0.5*L)
 	.set_tanSpan(0.45*B)
@@ -1163,7 +1167,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
       .set_dir1(vec3(1,0,0))
       .set_dir2(vec3(0,0,0.98*B))
       .set_nd1(1)
-      .set_nd2(5)
+      .set_nd2(n_hom_avg)
     ));
     
     sample(cm, executionPath(), 
@@ -1213,10 +1217,22 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
       );    
     }
   }
+  
+  int i=0;
+  BOOST_FOREACH(double xH, sec_locs_)
+  {
+    double x=-0.5*L+xH*H;
+    if (xH==0.0)
+      x=-0.5*L+1e-6;
+    
+    if (x<0.5*L)
+      evaluateAtSection(cm, results, x, i+1);
+    
+    i++;
+  }
     
   for (int i=0; i<ntpc_; i++)
   {
-    evaluateAtSection(cm, results, ((-0.5+tpc_xlocs_[i])+1e-6)*L, i+1);
     
     const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
     
@@ -1227,7 +1243,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
     else
     {
       tpcs->evaluate(cm, executionPath(), results,
-	"two-point correlation of velocity at different radii at x/L="+str(format("%f")%(-0.5+tpc_xlocs_[i]))
+	"two-point correlation of velocity at different radii at x/H="+str(format("%f")%tpc_xlocs_[i])
 	    );
     }
     

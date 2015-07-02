@@ -49,6 +49,8 @@
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
 
+#include "datum.h"
+
 using namespace std;
 using namespace boost;
 
@@ -589,6 +591,99 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   return match;
 }
 
+coincidentProjectedEdge::coincidentProjectedEdge
+(
+  const SolidModel& m, 
+  const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+  const scalarQuantityComputerPtr& tol
+)
+: f_(m, Edge),
+  p0_(p0), n_(n), up_(up), tol_(tol)
+{
+}
+
+coincidentProjectedEdge::coincidentProjectedEdge
+(
+  FeatureSet f, 
+  const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+  const scalarQuantityComputerPtr& tol
+)
+: f_(f),
+  p0_(p0), n_(n), up_(up), tol_(tol)
+{
+}
+
+void coincidentProjectedEdge::firstPass(FeatureID feature)
+{
+  if (samplePts_.n_cols==0)
+  {
+    double tol=tol_->evaluate(feature);
+    
+    BOOST_FOREACH(int f, f_)
+    {    
+      TopoDS_Edge e=TopoDS::Edge(f_.model().edge(f));
+      BRepAdaptor_Curve ac(e);
+      GCPnts_QuasiUniformDeflection qud(ac, 0.1*tol);
+
+      arma::mat mypts=arma::zeros<arma::mat>(3,qud.NbPoints());
+      for (int j=1; j<=qud.NbPoints(); j++)
+      {
+	arma::mat p=Vector(qud.Value(j)).t();
+	mypts.col(j-1)=p;
+      }
+      
+      if (samplePts_.n_cols==0)
+	samplePts_=mypts;
+      else
+	samplePts_=join_rows(samplePts_, mypts);
+      
+      cout <<"f="<<f<<", #cols="<<samplePts_.n_cols<<endl;
+    }
+    
+    arma::mat spt=samplePts_.t();
+    spt.save("samplePts.csv", arma::raw_ascii);
+  }
+}
+
+
+bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
+{
+  DatumPlane pln(p0_->evaluate(feature), n_->evaluate(feature), up_->evaluate(feature));
+  double tol=tol_->evaluate(feature);
+  
+  TopoDS_Edge e1=model_->edge(feature);
+  SolidModel se1(e1);
+  ProjectedOutline po(se1, pln);
+  TopoDS_Shape pe=po;
+  
+  bool match=true;
+  for (TopExp_Explorer ex(pe, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BRepAdaptor_Curve ac(e);
+    GCPnts_QuasiUniformDeflection qud(ac, tol);
+
+    for (int j=1; j<=qud.NbPoints(); j++)
+    {
+      arma::mat p=Vector(qud.Value(j)).t();
+      // find closest sample pt
+      arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
+      arma::mat ds=sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
+//       cout<<"ds="<<ds<<endl;
+      cout<<"min(ds)="<<arma::min(ds,1)<<endl;
+      double md=arma::as_scalar(arma::min(ds, 1));
+//       cout <<md<<" => "<<(samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols))<<endl;
+      match=match & (md<tol);
+    }
+  }
+  
+  return match;
+}
+
+FilterPtr coincidentProjectedEdge::clone() const
+{
+  return FilterPtr(new coincidentProjectedEdge(f_, p0_, n_, up_, tol_));
+}
 
 
 template<> isPartOfSolid<Edge>::isPartOfSolid(const SolidModel& m)
@@ -918,14 +1013,23 @@ struct EdgeFeatureFilterExprParser
 	|
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
+	|
+	( lit("projectionIsCoincident") > '('
+	  > FeatureFilterExprParser<Iterator>::r_featureset > ','
+	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ',' // p0
+	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ',' // n
+	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ','    // up
+	  > FeatureFilterExprParser<Iterator>::r_scalar_qty_expression > ')' // tol
+	) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentProjectedEdge>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
 	  ;
 	  
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
 	( lit("len") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
 	|
 	( lit("radialLen") >> 
-	    '(' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> 
-	    ',' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> 
+	    '(' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> //ax
+	    ',' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >>  //p0
 	    ')' ) 
 	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeRadialLen>(qi::_1, qi::_2)) ]
       ;
@@ -1029,7 +1133,8 @@ try {
 
   if (first != last) // fail if we did not get a full match
   {
-    throw insight::Exception("parsing of filtering expression failed!");
+    int n=first-contents_raw.begin();
+    throw insight::Exception( str(format("parsing of filtering expression '%s' failed after %d chars!")%contents_raw%n) );
     return FilterPtr();
   }
   

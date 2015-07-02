@@ -50,7 +50,7 @@ namespace insight
 namespace cad 
 {
 
-// class Datum;
+// class DatumPlane;
 // class SolidModel;
 
 
@@ -521,6 +521,16 @@ public:
   declareType("Projected");
   Projected(const NoParameters& nop = NoParameters());
   Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class ProjectedOutline
+: public SolidModel
+{
+public:
+  declareType("ProjectedOutline");
+  ProjectedOutline(const NoParameters& nop = NoParameters());
+  ProjectedOutline(const SolidModel& source, const Datum& target);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

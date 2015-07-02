@@ -682,86 +682,101 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 {
   arma::mat data;
   ColumnDescription cd;
-  int i=0;
+  int i=0, num_valid=0;
+  bool cd_set=false;
   BOOST_FOREACH(const line& l, lines_)
   {
     arma::mat datai = l.readSamples(ofc, location, &cd);
     arma::mat Ri=rotMatrix(i++, p_.angularOffset()).t();
     
-    BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+    if (datai.n_cols>1)
     {
-      ColumnInfo ci=fn.second;
-//       cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
-      if (ci.ncmpt==1)
+      if (!cd_set)
       {
-	// scalar: no transform needed
-      }
-      else if (ci.ncmpt==3)
-      {
-	datai.cols(ci.col, ci.col+2) = (Ri * datai.cols(ci.col, ci.col+2).t()).t();
-      }
-      else if (ci.ncmpt==6)
-      {
-	// symmetric tensor
-	int c0=ci.col;
-	for (int j=0; j<datai.n_rows; j++)
+	std::ofstream f( (p_.name()+"_circularinstance_colheader.txt").c_str() );
+	f<<"#";
+	BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
 	{
-	  arma::mat t;
-	  t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << endr
-	    << datai(j,c0+1) << datai(j,c0+3) << datai(j,c0+4) << endr
-	    << datai(j,c0+2) << datai(j,c0+4) << datai(j,c0+5) << endr;
-	   
-	  t = Ri * t * Ri.t();
-	  double symm=fabs(t(1,0)-t(0,1))+fabs(t(0,2)-t(2,0))+fabs(t(1,2)-t(2,1));
-	  if (symm>1e-6) cout<<"Warning: unsymmetric tensor after rotation: "<<endl<<t<<endl;	  
-	  
-	  datai(j,c0)   = t(0,0);
-	  datai(j,c0+1) = t(0,1);
-	  datai(j,c0+2) = t(0,2);
-	  datai(j,c0+3) = t(1,1);
-	  datai(j,c0+4) = t(1,2);
-	  datai(j,c0+5) = t(2,2);
+	  ColumnInfo ci=fn.second;
+	  if (ci.ncmpt==0)
+	  {
+	    f<<" "+fn.first;
+	  }
+	  else
+	  {
+	    for (int c=0; c<ci.ncmpt; c++)
+	      f<<" "+fn.first+"_"+lexical_cast<string>(c);
+	  }
+	  //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+	}
+	f<<endl;
+
+	if (coldescr) *coldescr=cd;
+	
+	cd_set=true;
+      }
+
+      num_valid++;
+      
+      BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+      {
+	ColumnInfo ci=fn.second;
+  //       cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
+	if (ci.ncmpt==1)
+	{
+	  // scalar: no transform needed
+	}
+	else if (ci.ncmpt==3)
+	{
+	  datai.cols(ci.col, ci.col+2) = (Ri * datai.cols(ci.col, ci.col+2).t()).t();
+	}
+	else if (ci.ncmpt==6)
+	{
+	  // symmetric tensor
+	  int c0=ci.col;
+	  for (int j=0; j<datai.n_rows; j++)
+	  {
+	    arma::mat t;
+	    t << datai(j,c0)   << datai(j,c0+1) << datai(j,c0+2) << endr
+	      << datai(j,c0+1) << datai(j,c0+3) << datai(j,c0+4) << endr
+	      << datai(j,c0+2) << datai(j,c0+4) << datai(j,c0+5) << endr;
+	    
+	    t = Ri * t * Ri.t();
+	    double symm=fabs(t(1,0)-t(0,1))+fabs(t(0,2)-t(2,0))+fabs(t(1,2)-t(2,1));
+	    if (symm>1e-6) cout<<"Warning: unsymmetric tensor after rotation: "<<endl<<t<<endl;	  
+	    
+	    datai(j,c0)   = t(0,0);
+	    datai(j,c0+1) = t(0,1);
+	    datai(j,c0+2) = t(0,2);
+	    datai(j,c0+3) = t(1,1);
+	    datai(j,c0+4) = t(1,2);
+	    datai(j,c0+5) = t(2,2);
+	  }
+	}
+	else
+	{
+	  throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity (name "
+		+fn.first+", col="+lexical_cast<string>(ci.col)+") with "
+	      +lexical_cast<string>(ci.ncmpt)+" components. Don't know how to handle.");
 	}
       }
+      
+      //datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
+      
+      if (data.n_cols==0)
+	data=datai;
       else
-      {
-	throw insight::Exception("circumferentialAveragedUniformLine::readSamples: encountered quantity (name "
-	      +fn.first+", col="+lexical_cast<string>(ci.col)+") with "
-	    +lexical_cast<string>(ci.ncmpt)+" components. Don't know how to handle.");
-      }
+	data+=datai;  
     }
     
-    //datai.save(p_.name()+"_circularinstance_i"+lexical_cast<string>(i)+".txt", arma::raw_ascii);
-    
-    if (data.n_cols==0)
-      data=datai;
-    else
-      data+=datai;
   }
   
+  if (num_valid==0)
   {
-    std::ofstream f( (p_.name()+"_circularinstance_colheader.txt").c_str() );
-    f<<"#";
-    BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
-    {
-      ColumnInfo ci=fn.second;
-      if (ci.ncmpt==0)
-      {
-	f<<" "+fn.first;
-      }
-      else
-      {
-	for (int c=0; c<ci.ncmpt; c++)
-	  f<<" "+fn.first+"_"+lexical_cast<string>(c);
-      }
-      //cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
-    }
-    f<<endl;
+    insight::Exception("There were vo valid profiles for circular homogeneous averaging!");
   }
-  
-  if (coldescr) *coldescr=cd;
-  
-  return data / double(p_.nc());
+
+  return data / double(num_valid);
   
 }
 

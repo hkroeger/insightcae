@@ -230,6 +230,7 @@ typedef coincident<Edge> coincidentEdge;
 typedef coincident<Face> coincidentFace;
 
 
+
 template<EntityType T>
 class isPartOfSolid
     : public Filter
@@ -346,11 +347,44 @@ public:
 
 typedef QuantityComputer<double> scalarQuantityComputer;
 typedef QuantityComputer<arma::mat> matQuantityComputer;
+typedef boost::shared_ptr<scalarQuantityComputer> scalarQuantityComputerPtr;
+typedef boost::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
 
 // #ifdef SWIG
 // %template(doubleQuantityComputer) QuantityComputer<double>;
 // %template(matQuantityComputer) QuantityComputer<arma::mat>;
 // #endif
+
+
+class coincidentProjectedEdge
+    : public Filter
+{
+protected:
+    FeatureSet f_;
+    matQuantityComputerPtr p0_, n_, up_;
+    scalarQuantityComputerPtr tol_;
+    
+    arma::mat samplePts_;
+
+public:
+    coincidentProjectedEdge(const SolidModel& m, 
+			    const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+			    const scalarQuantityComputerPtr& tol
+ 			  );
+
+    coincidentProjectedEdge(FeatureSet f,
+			    const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+			    const scalarQuantityComputerPtr& tol);
+
+    virtual void firstPass(FeatureID feature);
+    bool checkMatch(FeatureID feature) const;
+
+    FilterPtr clone() const;
+
+};
+
+
+
 
 template<class T>
 class constantQuantity

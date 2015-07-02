@@ -2242,8 +2242,8 @@ TopoDS_Shape makeOutlineProjection
   TopoDS_Compound allVisible;
   BRep_Builder builder;
   builder.MakeCompound( allVisible );
-//   TopoDS_Shape vs=shapes.VCompound();
-//   if (!vs.IsNull()) builder.Add(allVisible, vs);
+  TopoDS_Shape vs=shapes.VCompound();
+  if (!vs.IsNull()) builder.Add(allVisible, vs);
 //   TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
 //   if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
   TopoDS_Shape olvs = shapes.OutLineVCompound();

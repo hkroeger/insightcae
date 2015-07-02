@@ -365,16 +365,27 @@ protected:
     scalarQuantityComputerPtr tol_;
     
     arma::mat samplePts_;
+    
+//     boost::shared_ptr<std::ofstream> dbgfile_;
 
 public:
-    coincidentProjectedEdge(const SolidModel& m, 
-			    const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
-			    const scalarQuantityComputerPtr& tol
- 			  );
+    coincidentProjectedEdge
+    (
+      const SolidModel& m,
+      const matQuantityComputerPtr& p0, 
+      const matQuantityComputerPtr& n, 
+      const matQuantityComputerPtr& up,
+      const scalarQuantityComputerPtr& tol
+    );
 
-    coincidentProjectedEdge(FeatureSet f,
-			    const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
-			    const scalarQuantityComputerPtr& tol);
+    coincidentProjectedEdge
+    (
+      FeatureSet f,
+      const matQuantityComputerPtr& p0, 
+      const matQuantityComputerPtr& n, 
+      const matQuantityComputerPtr& up,
+      const scalarQuantityComputerPtr& tol
+    );
 
     virtual void firstPass(FeatureID feature);
     bool checkMatch(FeatureID feature) const;

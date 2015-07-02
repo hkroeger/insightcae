@@ -594,7 +594,9 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
 coincidentProjectedEdge::coincidentProjectedEdge
 (
   const SolidModel& m, 
-  const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+  const matQuantityComputerPtr& p0, 
+  const matQuantityComputerPtr& n, 
+  const matQuantityComputerPtr& up,
   const scalarQuantityComputerPtr& tol
 )
 : f_(m, Edge),
@@ -605,7 +607,9 @@ coincidentProjectedEdge::coincidentProjectedEdge
 coincidentProjectedEdge::coincidentProjectedEdge
 (
   FeatureSet f, 
-  const matQuantityComputerPtr& p0, const matQuantityComputerPtr& n, const matQuantityComputerPtr& up,
+  const matQuantityComputerPtr& p0, 
+  const matQuantityComputerPtr& n, 
+  const matQuantityComputerPtr& up,
   const scalarQuantityComputerPtr& tol
 )
 : f_(f),
@@ -637,11 +641,11 @@ void coincidentProjectedEdge::firstPass(FeatureID feature)
       else
 	samplePts_=join_rows(samplePts_, mypts);
       
-      cout <<"f="<<f<<", #cols="<<samplePts_.n_cols<<endl;
+//       cout <<"f="<<f<<", #cols="<<samplePts_.n_cols<<endl;
     }
     
-    arma::mat spt=samplePts_.t();
-    spt.save("samplePts.csv", arma::raw_ascii);
+//     arma::mat spt=samplePts_.t();
+//     spt.save("samplePts.csv", arma::raw_ascii);
   }
 }
 
@@ -656,6 +660,11 @@ bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
   ProjectedOutline po(se1, pln);
   TopoDS_Shape pe=po;
   
+//   if (!dbgfile_)
+//   {
+//     dbgfile_.reset(new std::ofstream("check.csv"));
+//   }
+  
   bool match=true;
   for (TopExp_Explorer ex(pe, TopAbs_EDGE); ex.More(); ex.Next())
   {
@@ -666,16 +675,19 @@ bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
     for (int j=1; j<=qud.NbPoints(); j++)
     {
       arma::mat p=Vector(qud.Value(j)).t();
+//       (*dbgfile_) << p(0) << " " << p(1) << " "<<p(2)<<endl;
       // find closest sample pt
       arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
       arma::mat ds=sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
 //       cout<<"ds="<<ds<<endl;
-      cout<<"min(ds)="<<arma::min(ds,1)<<endl;
+//       cout<<"min(ds)="<<arma::min(ds,1)<<endl;
       double md=arma::as_scalar(arma::min(ds, 1));
 //       cout <<md<<" => "<<(samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols))<<endl;
       match=match & (md<tol);
     }
   }
+  
+//   (*dbgfile_)<<endl<<endl;
   
   return match;
 }

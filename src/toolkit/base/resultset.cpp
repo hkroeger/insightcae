@@ -416,26 +416,27 @@ ResultElementPtr polynomialFitResult
   int minorder  
 )
 {
-  std::vector<std::string> header;
-  TabularResult::Row cr;
+  std::vector<std::string> header=boost::assign::list_of("Term")("Coefficient");
+  AttributeTableResult::AttributeNames names;
+  AttributeTableResult::AttributeValues values;
+  
   for (int i=coeffs.n_rows-1; i>=0; i--)
   {
     int order=minorder+i;
     if (order==0)
-      header.push_back("$1$");
+      names.push_back("$1$");
     else if (order==1)
-      header.push_back("$"+xvarName+"$");
+      names.push_back("$"+xvarName+"$");
     else
-      header.push_back("$"+xvarName+"^{"+lexical_cast<string>(order)+"}$");
-    cr.push_back(coeffs(i));
+      names.push_back("$"+xvarName+"^{"+lexical_cast<string>(order)+"}$");
+    values.push_back(coeffs(i));
   }
   
   return ResultElementPtr
   (
-    new TabularResult
+    new AttributeTableResult
     (
-      header, 
-      list_of<TabularResult::Row>(cr).convert_to_container<TabularResult::Table>(),
+      names, values,
       shortDesc, longDesc, ""
     )
   );

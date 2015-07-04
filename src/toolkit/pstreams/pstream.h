@@ -2255,7 +2255,7 @@ namespace redi
 
 } // namespace redi
 
-/**
+/*
  * @mainpage PStreams Reference
  * @htmlinclude mainpage.html
  */

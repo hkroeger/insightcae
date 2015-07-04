@@ -339,6 +339,20 @@ ISCADParser::ISCADParser(Model::Ptr model)
         [ phx::bind(&Model::addModelstepSymbol, model_, qi::_1, qi::_2) ]
       ;
       
+/** @addtogroup cad_parser
+  * @{
+  * @section postproc Postprocessing statements
+  * 
+  * DXF(<filename>) << <SolidModel>
+  * 
+  *         <viewname> (<viewon>, <viewfrom> [, section]) 
+  * 
+  *        [<viewname> ...];
+  * 
+  * saveAs(<filename>) << <SolidModel>;
+  * @}
+  */
+
     r_postproc =
       ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> *(r_viewDef) >> ';' ) 
 	[ writeViews_(qi::_1, qi::_2, qi::_3) ]

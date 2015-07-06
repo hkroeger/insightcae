@@ -2339,6 +2339,14 @@ Split::Split(const SolidModel& tool, const SolidModel& target)
 {
 }
 
+/** @addtogroup cad_parser
+  * @{
+  * @section split_syntax Split solid
+  * Split solid by face
+  * 
+  * Syntax: Split(<SolidModel>, <SolidModel>)
+  * @}
+  */
 void Split::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -2378,6 +2386,14 @@ Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
   m1.unsetLeaf();
 }
 
+/** @addtogroup cad_parser
+  * @{
+  * @section fillet_syntax Fillet syntax
+  * Add fillet to edge
+  * 
+  * Syntax: Fillet(<SolidModel>, <edgeFeatures>, <scalarExpression>)
+  * @}
+  */
 void Fillet::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

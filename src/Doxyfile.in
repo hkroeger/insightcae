@@ -1,0 +1,34 @@
+PROJECT_NAME           = "Insight CAE"
+PROJECT_BRIEF          = "A workbench for Computer-Aided Engineering"
+
+OUTPUT_DIRECTORY       = "@CMAKE_BINARY_DIR@/doc"
+INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@"
+FILE_PATTERNS          = *.py *.cpp *.h *.C *.H
+
+RECURSIVE              = YES
+
+#INPUT_FILTER           = "/usr/local/bin/doxypy"
+
+#FILTER_SOURCE_FILES    = YES
+
+MULTILINE_CPP_IS_BRIEF = YES
+
+EXTRACT_ALL            = YES
+
+EXTRACT_STATIC         = YES
+
+SOURCE_BROWSER         = YES
+
+HTML_DYNAMIC_SECTIONS  = YES
+
+USE_MATHJAX            = YES
+
+PAPER_TYPE             = a4
+
+HIDE_UNDOC_RELATIONS   = NO
+
+HAVE_DOT               = NO
+
+CALL_GRAPH             = YES
+
+CALLER_GRAPH           = YES

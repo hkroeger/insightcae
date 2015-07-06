@@ -49,6 +49,17 @@ namespace insight
 {
 namespace cad 
 {
+  
+/* \mainpage
+ * 
+ * \section cad CAD
+ * The CAD module of Insight CAE
+ * 
+ * \subsection parser CAD parser
+ * Reference of the CAD parser language
+ */
+
+/** @defgroup cad_parser ISCAD Parser Language */
 
 // class DatumPlane;
 // class SolidModel;
@@ -56,7 +67,9 @@ namespace cad
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m);
 
-
+/**
+ * Base class of all CAD modelling features
+ */
 class SolidModel
 {
 public:

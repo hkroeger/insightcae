@@ -551,40 +551,62 @@ void ResultSet::exportDataToFile(const std::string& name, const boost::filesyste
   }
 }
 
+std::string builtin_template=
+    "\\documentclass[a4paper,10pt]{scrartcl}\n"
+    "\\usepackage{hyperref}\n"
+    "\\usepackage{fancyhdr}\n"
+    "\\pagestyle{fancy}\n"
+    "###HEADER###\n"
+    "\\begin{document}\n"
+    "\\title{###TITLE###\\\\\n"
+    "\\vspace{0.5cm}\\normalsize{###SUBTITLE###}}\n"
+    "\\date{###DATE###}\n"
+    "\\author{###AUTHOR###}\n"
+    "\\maketitle\n"
+    "\\tableofcontents\n"
+    "###CONTENT###\n"
+    "\\end{document}\n";
+
 
 void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
 {
   path filepath(absolute(file));
   
-  {
-    std::ofstream f(filepath.c_str());
-    f<<"\\documentclass[a4paper,10pt]{scrartcl}\n";
-    f<<"\\newcommand{\\PlotFrameB}[2]{%\n"
+  std::ostringstream header, content;
+
+  header<<"\\newcommand{\\PlotFrameB}[2]{%\n"
     <<"\\includegraphics[#1]{#2}\\endgroup}\n"
     <<"\\def\\PlotFrame{\\begingroup\n"
     <<"\\catcode`\\_=12\n"
-    <<"\\PlotFrameB}\n"
-    <<"\\usepackage{hyperref}\n"
-    <<"\\usepackage{fancyhdr}\n"
-    <<"\\pagestyle{fancy}\n";
-    
-    writeLatexHeaderCode(f);
-    
-    f<<
-    "\\begin{document}\n"
-    //"\\title{"<<title_<<"}\n"
-    //"\\subtitle{"<<subtitle_<<"}\n"
-    "\\title{"<<title_<<"\\\\\n"
-    "\\vspace{0.5cm}\\normalsize{"<<subtitle_<<"}}\n"
-    "\\date{"<<date_<<"}\n"
-    "\\author{"<<author_<<"}\n"
-    "\\maketitle\n"
-    "\\tableofcontents\n";
-      
-    writeLatexCode(f, "", 0, filepath.parent_path());
-    
-    f<<
-    "\\end{document}\n";
+    <<"\\PlotFrameB}\n";
+  writeLatexHeaderCode(header);
+  
+  writeLatexCode(content, "", 0, filepath.parent_path());
+  
+  // insert into template
+  std::string file_content=builtin_template;
+  
+  std::string envvarname="INSIGHT_REPORTTEMPLATE";
+  if (char *TEMPL=getenv(envvarname.c_str()))
+  {
+    std::ifstream in(TEMPL);
+    in.seekg(0, std::ios::end);
+    file_content.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&file_content[0], file_content.size());
+  }
+  
+  boost::replace_all(file_content, "###AUTHOR###", author_);
+  boost::replace_all(file_content, "###DATE###", date_);
+  boost::replace_all(file_content, "###TITLE###", title_);
+  boost::replace_all(file_content, "###SUBTITLE###", subtitle_);
+
+  boost::replace_all(file_content, "###HEADER###", header.str());
+  boost::replace_all(file_content, "###CONTENT###", content.str());
+  
+  {
+    std::ofstream f(filepath.c_str());
+    f<<file_content;
   }
   
   {

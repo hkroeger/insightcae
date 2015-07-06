@@ -94,7 +94,7 @@ try:
     
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
                        title=None, 
-                       barpos=[0.75, 0.25], 
+                       barpos=[0.75, 0.25], # vert, horiz
                        barsize=None,
                        barorient=1, arrayType='POINT_DATA'):
         disp = GetDisplayProperties(obj)

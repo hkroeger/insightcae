@@ -7,7 +7,6 @@ set(testcases_SOURCES
   decayingturbulence.cpp 
   pipe.cpp 
   channel.cpp 
-  explicitvortex.cpp 
   ercoftac_squaresection180degreebend.cpp 
   airfoilsection.cpp
   freeshearflow.cpp

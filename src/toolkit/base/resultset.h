@@ -310,6 +310,7 @@ struct PlotCurve
   std::string plotcmd_;
   
   PlotCurve();
+  PlotCurve(const PlotCurve& o);
   PlotCurve(const char* plotcmd);
   PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");

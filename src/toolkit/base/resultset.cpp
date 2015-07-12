@@ -635,6 +635,11 @@ PlotCurve::PlotCurve()
 {
 }
 
+PlotCurve::PlotCurve(const PlotCurve& o)
+: xy_(o.xy_), plotcmd_(o.plotcmd_)
+{}
+
+
 PlotCurve::PlotCurve(const char* plotcmd)
 : plotcmd_(plotcmd)
 {
@@ -800,10 +805,13 @@ void Chart::generatePlotImage(const path& imagepath) const
       gp<<"plot 0 not lt -1";
       BOOST_FOREACH(const PlotCurve& pc, plc_)
       {
-	if (pc.xy_.n_rows>0)
-	  gp<<", '-' "<<pc.plotcmd_;
-	else
-	  gp<<", "<<pc.plotcmd_;
+	if (!pc.plotcmd_.empty())
+	{
+	  if (pc.xy_.n_rows>0)
+	    gp<<", '-' "<<pc.plotcmd_;
+	  else
+	    gp<<", "<<pc.plotcmd_;
+	}
       }
       gp<<endl;
       BOOST_FOREACH(const PlotCurve& pc, plc_)

@@ -586,7 +586,7 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   // insert into template
   std::string file_content=builtin_template;
   
-  std::string envvarname="INSIGHT_REPORTTEMPLATE";
+  std::string envvarname="INSIGHT_REPORT_TEMPLATE";
   if (char *TEMPL=getenv(envvarname.c_str()))
   {
     std::ifstream in(TEMPL);

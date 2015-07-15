@@ -64,14 +64,15 @@ namespace parser {
 
 Model::Model(const ModelSymbols& syms)
 {
-  addScalarSymbol("M_PI", M_PI);
-  addVectorSymbol( "O", 		vec3(0,0,0) );
+  addScalarSymbol( "M_PI", 	M_PI);
+  addScalarSymbol( "deg", 	M_PI/180.);
+  addVectorSymbol( "O", 	vec3(0,0,0) );
   addVectorSymbol( "EX", 	vec3(1,0,0) );
   addVectorSymbol( "EY", 	vec3(0,1,0) );
   addVectorSymbol( "EZ", 	vec3(0,0,1) );
-  addDatumSymbol( "XY", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
-  addDatumSymbol( "XZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
-  addDatumSymbol( "YZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
+  addDatumSymbol ( "XY", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,0,1), vec3(0,1,0))) );
+  addDatumSymbol ( "XZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(0,1,0), vec3(1,0,0))) );
+  addDatumSymbol ( "YZ", 	DatumPtr(new DatumPlane(vec3(0,0,0), vec3(1,0,0), vec3(0,1,0))) );
   
   BOOST_FOREACH(const ModelSymbols::value_type& s, syms)
   {
@@ -153,6 +154,13 @@ double dot(const vector& v1, const vector& v2)
 {
   return arma::as_scalar(arma::dot(v1,v2));
 }
+
+vector rot(const vector& v, const scalar& a, const vector& ax)
+{
+  return rotMatrix(a, ax)*v;
+}
+BOOST_PHOENIX_ADAPT_FUNCTION(vector, rot_, rot, 3);
+
 
 FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of)
 {
@@ -363,9 +371,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::exportSTL, *qi::_3, qi::_1, qi::_2) ]
       |
-      ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_edgeFeaturesExpression >> ';' ) 
+      ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_edgeFeaturesExpression >> ';' ) 
 	[ phx::bind(&SolidModel::exportEMesh, 
-		    qi::_1, *qi::_3, qi::_2) ]
+		    qi::_1, *qi::_4, qi::_3, qi::_2) ]
       |
       ( lit("exportFreeShipSurface") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&writeFreeShipSurface, *qi::_2, qi::_1) ]
@@ -557,6 +565,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_vector_primary =
        ( lit("modelCoG") )
         [ _val = phx::bind(&Model::modelCoG, model_) ]
+      |
+       ( lit("rot") > '(' > r_vectorExpression > lit("by") > r_scalarExpression > ( (lit("around") > r_vectorExpression) | attr(vec3(0,0,1)) )> ')' )
+        [ _val = rot_(qi::_1, qi::_2, qi::_3) ]
       |
        qi::lexeme[model_->vectorSymbolNames()] 
         [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]

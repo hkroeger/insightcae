@@ -187,7 +187,7 @@ public:
 
   void saveAs(const boost::filesystem::path& filename) const;
   void exportSTL(const boost::filesystem::path& filename, double abstol) const;
-  static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol);
+  static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol, double maxlen=1e10);
   
   operator const TopoDS_Shape& () const;
   
@@ -363,6 +363,16 @@ public:
   declareType("Cylinder");
   Cylinder(const NoParameters& nop = NoParameters());
   Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+class Ring
+: public SingleVolumeFeature
+{
+public:
+  declareType("Ring");
+  Ring(const NoParameters& nop = NoParameters());
+  Ring(const arma::mat& p1, const arma::mat& p2, double Da, double Di);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

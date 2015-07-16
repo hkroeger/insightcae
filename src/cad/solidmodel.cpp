@@ -504,7 +504,8 @@ void SolidModel::exportEMesh
 (
   const boost::filesystem::path& filename, 
   const FeatureSet& fs, 
-  double abstol
+  double abstol,
+  double maxlen
 )
 {
   if (fs.shape()!=Edge) 
@@ -519,16 +520,32 @@ void SolidModel::exportEMesh
     BRepAdaptor_Curve ac(fs.model().edge(fi));
     GCPnts_QuasiUniformDeflection qud(ac, abstol);
 
+    double clen=0.;
+    arma::mat lp;
+    std::set<int> splits;
     int iofs=points.size();
     for (int j=1; j<=qud.NbPoints(); j++)
     {
       arma::mat p=Vector(qud.Value(j));
-      points.push_back(p);
+      if (j>1) clen+=norm(p-lp, 2);
+      lp=p;
+      if (clen>maxlen && j>1) 
+      {
+	points.push_back(lp+0.5*(lp-p)); // insert a second point at same loc
+	points.push_back(p); // insert a second point at same loc
+	splits.insert(points.size()-1); 
+	clen=0.0; 
+      }
+      else
+	points.push_back(p);
     }
     
     for (int i=1; i<points.size()-iofs; i++)
     {
-      edges.push_back(Edge(iofs+i-1,iofs+i));
+      int from=iofs+i-1;
+      int to=iofs+i;
+      if (splits.find(to)==splits.end())
+	edges.push_back(Edge(from,to));
     }
   }
   
@@ -1536,6 +1553,61 @@ void Cylinder::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+defineType(Ring);
+addToFactoryTable(SolidModel, Ring, NoParameters);
+
+Ring::Ring(const NoParameters&)
+{}
+
+
+Ring::Ring(const arma::mat& p1, const arma::mat& p2, double Da, double Di)
+{
+  setShape
+  (
+    BRepAlgoAPI_Cut
+    (
+      
+      BRepPrimAPI_MakeCylinder
+      (
+	gp_Ax2
+	(
+	  gp_Pnt(p1(0),p1(1),p1(2)), 
+	  gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+	),
+	0.5*Da, 
+	norm(p2-p1, 2)
+      ).Shape(),
+     
+      BRepPrimAPI_MakeCylinder
+      (
+	gp_Ax2
+	(
+	  gp_Pnt(p1(0),p1(1),p1(2)), 
+	  gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+	),
+	0.5*Di, 
+	norm(p2-p1, 2)
+      ).Shape()
+      
+    ).Shape()   
+  );
+}
+
+void Ring::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Ring",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Ring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+      
+    ))
+  );
+}
+
 defineType(Shoulder);
 addToFactoryTable(SolidModel, Shoulder, NoParameters);
 
@@ -2538,8 +2610,9 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
     "LinearPattern",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_scalarExpression > ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression > 
+      ',' > ruleset.r_vectorExpression > 
+      ',' > ruleset.r_scalarExpression > ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<LinearPattern>(*qi::_1, qi::_2, qi::_3)) ]
       
     ))

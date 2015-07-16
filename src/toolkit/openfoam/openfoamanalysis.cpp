@@ -56,82 +56,85 @@ OpenFOAMAnalysis::OpenFOAMAnalysis(const std::string& name, const std::string& d
 
 ParameterSet OpenFOAMAnalysis::defaultParameters() const
 {
-
-  return ParameterSet
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-      
-      ("run", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
-		    ("OFEname", 	new StringParameter("OF23x", "identifier of the OpenFOAM installation, that shall be used"))
-		    ("np", 		new IntParameter(1, "number of processors for parallel run (less or equal 1 means serial execution)"))
-// 		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
-// 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
-		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
-		    ("evaluateonly", 	new BoolParameter(false, "Whether to skip solver run and do only the evaluation"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Execution parameters"
-      ))
-
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("linkmesh", new PathParameter("", "path to another case, from what the mesh shall be linked"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-
-      ("fluid", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("turbulenceModel",new SelectionParameter
-	      (
-		kOmegaSST2_RASModel::typeName, 
-		turbulenceModel::factoryToC(), 
-		"Turbulence model"
-	      ))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Parameters of the fluid"
-	))
-      
-      ("eval", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    
-	    ("reportdicts",	new BoolParameter(true, "Include dictionaries into report"))
-	    
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Parameters for evaluation after solver run"
-	))
-
+  ParameterSet p(Parameters::makeDefault());
+  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").items()=turbulenceModel::factoryToC();
+  return p;
+  
+//   return ParameterSet
+//   (
+//     boost::assign::list_of<ParameterSet::SingleEntry>
+//       
 //       ("run", new SubsetParameter	
 // 	    (
 // 		  ParameterSet
 // 		  (
 // 		    boost::assign::list_of<ParameterSet::SingleEntry>
-// 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+// 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
+// 		    ("OFEname", 	new StringParameter("OF23x", "identifier of the OpenFOAM installation, that shall be used"))
+// 		    ("np", 		new IntParameter(1, "number of processors for parallel run (less or equal 1 means serial execution)"))
+// // 		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
+// // 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+// 		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
+// 		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
+// 		    ("evaluateonly", 	new BoolParameter(false, "Whether to skip solver run and do only the evaluation"))
 // 		    .convert_to_container<ParameterSet::EntryList>()
 // 		  ), 
-// 		  "Solver parameters"
+// 		  "Execution parameters"
 //       ))
-
-      .convert_to_container<ParameterSet::EntryList>()
-  );
+// 
+//       ("mesh", new SubsetParameter
+// 	(
+// 	  ParameterSet
+// 	  (
+// 	    boost::assign::list_of<ParameterSet::SingleEntry>
+// 	    ("linkmesh", new PathParameter("", "path to another case, from what the mesh shall be linked"))
+// 	    .convert_to_container<ParameterSet::EntryList>()
+// 	  ), 
+// 	  "Properties of the computational mesh"
+// 	))
+// 
+//       ("fluid", new SubsetParameter
+// 	(
+// 	  ParameterSet
+// 	  (
+// 	    boost::assign::list_of<ParameterSet::SingleEntry>
+// 	    ("turbulenceModel",new SelectionParameter
+// 	      (
+// 		kOmegaSST2_RASModel::typeName, 
+// 		turbulenceModel::factoryToC(), 
+// 		"Turbulence model"
+// 	      ))
+// 	    .convert_to_container<ParameterSet::EntryList>()
+// 	  ), 
+// 	  "Parameters of the fluid"
+// 	))
+//       
+//       ("eval", new SubsetParameter
+// 	(
+// 	  ParameterSet
+// 	  (
+// 	    boost::assign::list_of<ParameterSet::SingleEntry>
+// 	    
+// 	    ("reportdicts",	new BoolParameter(true, "Include dictionaries into report"))
+// 	    
+// 	    .convert_to_container<ParameterSet::EntryList>()
+// 	  ), 
+// 	  "Parameters for evaluation after solver run"
+// 	))
+// 
+// //       ("run", new SubsetParameter	
+// // 	    (
+// // 		  ParameterSet
+// // 		  (
+// // 		    boost::assign::list_of<ParameterSet::SingleEntry>
+// // 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
+// // 		    .convert_to_container<ParameterSet::EntryList>()
+// // 		  ), 
+// // 		  "Solver parameters"
+// //       ))
+// 
+//       .convert_to_container<ParameterSet::EntryList>()
+//   );
 }
 
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
@@ -163,7 +166,7 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<O
 
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSINT(p(), "run", np);
+  PSINT(parameters(), "run", np);
 //   PSDBL(p, "run", deltaT);
 //   PSDBL(p, "run", endTime);
 // 
@@ -222,7 +225,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
   
-  path mapFromPath=p().getPath("run/mapFrom");
+  path mapFromPath=parameters().getPath("run/mapFrom");
   
 //   if (mapFromPath!="")
 //   {
@@ -259,7 +262,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
     }
     else
     {
-      if (p().getBool("run/potentialinit"))
+      if (parameters().getBool("run/potentialinit"))
 	runPotentialFoam(cm, executionPath(), &stopFlag_, np);
     }
   }
@@ -305,11 +308,11 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
-  ResultSetPtr results(new ResultSet(p(), name_, "Result Report"));
+  ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
   
   meshQualityReport(cm, executionPath(), results);
   
-  if (p().getBool("eval/reportdicts"))
+  if (parameters().getBool("eval/reportdicts"))
   {
     currentNumericalSettingsReport(cm, executionPath(), results);
   }

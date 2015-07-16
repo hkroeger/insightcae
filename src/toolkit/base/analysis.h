@@ -94,7 +94,7 @@ public:
   inline const std::string& getDescription() const { return description_; }
   inline std::string& description() { return description_; }
   
-  inline const ParameterSet& p() const { return *parameters_; }
+  inline const ParameterSet& parameters() const { return *parameters_; }
 
   virtual ParameterSet defaultParameters() const =0;
   

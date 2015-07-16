@@ -586,6 +586,19 @@ struct SubsetParameterParser
     
     virtual std::string cppParamType(const std::string& name) const { return "insight::SubsetParameter"; };   
 
+    virtual void cppWriteInsertStatement(std::ostream& os, const std::string& psvarname, const std::string& name) const
+    {
+      os<<"{ ";
+      os<<"std::string key(\""<<name<<"\"); ";
+      this->cppWriteCreateStatement(os, name);
+      os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
+      os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
+      os<<"} else {"<<endl;
+      os<<psvarname<<".insert(key, "<<name<<"); ";
+      os<<"}"<<endl;
+      os<<"}"<<endl;
+    }
+
     virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
     {
 
@@ -940,7 +953,6 @@ public:
     SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
-    cout<<"ok2"<<endl;
     
     rules.init();
 
@@ -981,7 +993,6 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
   BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
   BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
-  cout<<"ok1"<<endl;
 }
 
 
@@ -998,13 +1009,25 @@ int main(int argc, char *argv[])
 
     PDLParser<std::string::iterator> parser;
     skip_grammar<std::string::iterator> skip;
+    
+    std::string first_word, base_type_name="";
+    in>>first_word;
+    if (first_word=="inherits")
+    {
+      in>>base_type_name;
+    }
+    else
+    {
+      in.seekg(0, std::ios::beg);
+    }
       
-    std::string contents_raw;
-    in.seekg(0, std::ios::end);
-    contents_raw.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents_raw[0], contents_raw.size());
-    cout<<contents_raw<<endl;
+    std::istreambuf_iterator<char> eos;
+    std::string contents_raw(std::istreambuf_iterator<char>(in), eos);
+//     std::string contents_raw;
+//     in.seekg(0, std::ios::end);
+//     contents_raw.resize(in.tellg());
+//     in.seekg(0, std::ios::beg);
+//     in.read(&contents_raw[0], contents_raw.size());
     
     std::string::iterator first=contents_raw.begin();
     std::string::iterator last=contents_raw.end();
@@ -1018,8 +1041,6 @@ int main(int argc, char *argv[])
 	skip,
 	result
     );
-    
-    cout<<"Parsing done"<<endl;
     
     {
       std::string bname=inf.stem().string();
@@ -1047,29 +1068,42 @@ int main(int argc, char *argv[])
 	std::ofstream f(bname+".h");
 	
 	f<<"struct "<<name<<endl;
+	if (!base_type_name.empty())
+	  f<<": public "<<base_type_name<<endl;
 	f<<"{"<<endl;
 	
+	// declare variables and types
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
 	  pe.second->writeCppHeader(f, pe.first);
 	}
 	
 	f
-	<<name<<"()"<<endl
+	<<name<<"()"<<endl;
+	if (!base_type_name.empty())
+	  f<<" : "<<base_type_name<<"()"<<endl;
+	f
 	<<"{"<<endl;
 	f<<"}"<<endl
 	;
 	
 	//get from other ParameterSet
 	f
-	<<name<<"(const insight::ParameterSet& p)"<<endl
-	<<"{ get(p); }"<<endl
+	<<name<<"(const insight::ParameterSet& p)"<<endl;
+	if (!base_type_name.empty())
+	  f<<" : "<<base_type_name<<"(p)"<<endl;
+	f
+	<<"{"<<endl
+	<<" get(p);"<<endl
+	<<"}"<<endl
 	;
 	
 	//set into other ParameterSet
 	f
 	<<"void set(insight::ParameterSet& p) const"<<endl
 	<<"{"<<endl;
+	if (!base_type_name.empty())
+	  f<<" "<<base_type_name<<"::set(p);"<<endl;
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
 	  std::string subname=pe.first;
@@ -1090,6 +1124,8 @@ int main(int argc, char *argv[])
 	f
 	<<"void get(const insight::ParameterSet& p)"<<endl
 	<<"{"<<endl;
+	if (!base_type_name.empty())
+	  f<<" "<<base_type_name<<"::get(p);"<<endl;
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
 	  std::string subname=pe.first;
@@ -1106,8 +1142,11 @@ int main(int argc, char *argv[])
 	<<"}"<<endl
 	;
 	
+	// create a ParameterSet with default values set
 	f<<"static ParameterSet makeDefault() {"<<endl;
 	f<<"ParameterSet p;"<<endl;
+	if (!base_type_name.empty())
+	  f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
 	BOOST_FOREACH(const ParameterSetEntry& pe, result)
 	{
 	  pe.second->cppWriteInsertStatement
@@ -1119,6 +1158,7 @@ int main(int argc, char *argv[])
 	}      
 	f<<"return p;"<<endl<<"}"<<endl;
 	
+	// convert static data into a ParameterSet
 	f<<"operator ParameterSet() const"<<endl;
 	f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 	

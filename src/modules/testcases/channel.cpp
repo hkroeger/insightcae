@@ -489,9 +489,9 @@ void ChannelBase::evaluateAtSection(
   arma::mat data = dynamic_cast<sampleOps::linearAveragedUniformLine*>(&sets[0])
     ->readSamples(cm, executionPath(), &cd);
     
-    cout<<data<<endl;
-    BOOST_FOREACH(const sampleOps::ColumnDescription::value_type& c, cd)
-     cout<<c.first<<" "<<c.second.col<<endl;
+//     cout<<data<<endl;
+//     BOOST_FOREACH(const sampleOps::ColumnDescription::value_type& c, cd)
+//      cout<<c.first<<" "<<c.second.col<<endl;
       
   arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
   arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
@@ -1268,9 +1268,9 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void ChannelInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSDBL(p(), "evaluation", inittime);
-  PSDBL(p(), "evaluation", meantime);
-  PSDBL(p(), "evaluation", mean2time);
+  PSDBL(parameters(), "evaluation", inittime);
+  PSDBL(parameters(), "evaluation", meantime);
+  PSDBL(parameters(), "evaluation", mean2time);
 
   ChannelBase::applyCustomOptions(cm, dicts);
   

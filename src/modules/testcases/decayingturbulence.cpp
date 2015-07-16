@@ -104,8 +104,8 @@ ParameterSet DecayingTurbulence::defaultParameters() const
 
 double DecayingTurbulence::calcT() const
 {
-  PSDBL(p(), "geometry", L);
-  PSDBL(p(), "operation", U);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", U);
   return L/U;
 }
 

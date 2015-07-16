@@ -148,7 +148,7 @@ ResultElementPtr ParameterStudy::table
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
 
-    double x=a->p().getDouble(varp);
+    double x=a->parameters().getDouble(varp);
     
     std::vector<double> row;
     row.push_back(x);

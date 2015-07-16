@@ -148,16 +148,18 @@ insight::ParameterSet AirfoilSection::defaultParameters() const
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 {
-  PSPATH(p(), "geometry", foilfile);
-  PSINT(p(), "mesh", nlayer);
-  PSINT(p(), "mesh", lmfoil);
-  PSINT(p(), "mesh", lxfoil);
-  PSINT(p(), "mesh", nc);
-  PSDBL(p(), "geometry", c);
-  PSDBL(p(), "geometry", alpha);
-  PSDBL(p(), "geometry", LinByc);
-  PSDBL(p(), "geometry", LoutByc);
-  PSDBL(p(), "geometry", HByc);
+  const ParameterSet& p = *parameters_;
+
+  PSPATH(p, "geometry", foilfile);
+  PSINT(p, "mesh", nlayer);
+  PSINT(p, "mesh", lmfoil);
+  PSINT(p, "mesh", lxfoil);
+  PSINT(p, "mesh", nc);
+  PSDBL(p, "geometry", c);
+  PSDBL(p, "geometry", alpha);
+  PSDBL(p, "geometry", LinByc);
+  PSDBL(p, "geometry", LoutByc);
+  PSDBL(p, "geometry", HByc);
   
   arma::mat contour;
   contour.load(foilfile.string(), arma::auto_detect);
@@ -272,12 +274,12 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 {
   // create local variables from ParameterSet
-  PSDBL(p(), "geometry", c);
-  PSDBL(p(), "geometry", alpha);
-  PSDBL(p(), "operation", vinf);
-  PSINT(p(), "fluid", turbulenceModel);
-  PSDBL(p(), "fluid", nu);
-  PSDBL(p(), "fluid", rho);
+  PSDBL(parameters(), "geometry", c);
+  PSDBL(parameters(), "geometry", alpha);
+  PSDBL(parameters(), "operation", vinf);
+  PSINT(parameters(), "fluid", turbulenceModel);
+  PSDBL(parameters(), "fluid", nu);
+  PSDBL(parameters(), "fluid", rho);
   
   path dir = executionPath();
 
@@ -335,7 +337,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
-  insertTurbulenceModel(cm, p().get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 
@@ -343,11 +345,12 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 
 insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 {
-  PSDBL(p(), "geometry", c);
-  PSDBL(p(), "geometry", alpha);
-  PSDBL(p(), "operation", vinf);
-  PSDBL(p(), "fluid", nu);
-  PSDBL(p(), "fluid", rho);
+  const ParameterSet& p = *parameters_;
+  PSDBL(p, "geometry", c);
+  PSDBL(p, "geometry", alpha);
+  PSDBL(p, "operation", vinf);
+  PSDBL(p, "fluid", nu);
+  PSDBL(p, "fluid", rho);
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   

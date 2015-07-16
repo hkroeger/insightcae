@@ -37,6 +37,45 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name
 class OpenFOAMAnalysis
 : public Analysis
 {
+public:
+  
+#include "openfoamanalysis__OpenFOAMAnalysis__Parameters.h"
+/*
+PARAMETERSET>>> OpenFOAMAnalysis Parameters
+
+run = set 
+{	
+ machine 	= 	string 	"" 	"machine or queue, where the external commands are executed on"
+ OFEname 	= 	string 	"OF23x" "identifier of the OpenFOAM installation, that shall be used"
+ np 		= 	int 	1 	"number of processors for parallel run (less or equal 1 means serial execution)"
+ deltaT 	= 	double 	1.0 	"simulation time step"
+ endTime 	= 	double 	1000.0 	"simulation time at which the solver should stop"
+ mapFrom 	= 	path 	"" 	"Map solution from specified case, potentialinit is skipped when specified"
+ potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done"
+ evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
+} "Execution parameters"
+
+mesh = set
+{
+ linkmesh 	= 	path 	"" 	"path to another case, from what the mesh shall be linked"
+} "Properties of the computational mesh"
+
+fluid = set
+{
+ turbulenceModel = 	selection 
+ ( 
+  kOmegaSST 
+ ) kOmegaSST 				"Turbulence model"
+} "Parameters of the fluid"
+
+eval = set
+{
+ reportdicts 	= 	bool 	true 	"Include dictionaries into report"
+} "Parameters for evaluation after solver run"
+
+<<<PARAMETERSET
+*/
+
 protected:
     bool stopFlag_;
 

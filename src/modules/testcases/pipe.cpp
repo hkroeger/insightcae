@@ -717,9 +717,9 @@ void PipeCyclic::createCase
 
 void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
-  if (p().getBool("run/perturbU"))
+  if (parameters().getBool("run/perturbU"))
   {
-    PSDBL(p(), "operation", Re_tau);
+    PSDBL(parameters(), "operation", Re_tau);
     
     cm.executeCommand(executionPath(), "perturbU", 
 		      list_of<string>

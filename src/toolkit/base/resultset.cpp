@@ -77,6 +77,12 @@ void ResultElement::exportDataToFile(const std::string& name, const boost::files
 {
 }
 
+ParameterPtr ResultElement::convertIntoParameter() const
+{
+  return ParameterPtr();
+}
+
+
 defineType(Image);
 addToFactoryTable(ResultElement, Image, ResultElement::ResultElementConstrP);
 
@@ -618,6 +624,30 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
     }
   }
 }
+
+ParameterSetPtr ResultSet::convertIntoParameterSet() const
+{
+  ParameterSetPtr ps(new ParameterSet());
+  BOOST_FOREACH(const_iterator::value_type rp, *this)
+  {
+    ParameterPtr p=rp.second->convertIntoParameter();
+    if (p)
+    {
+      std::string key=rp.first;
+      ps->insert(key, p->clone());
+    }
+  }
+  return ps;
+}
+
+ParameterPtr ResultSet::convertIntoParameter() const
+{
+  ParameterPtr ps(new SubsetParameter());
+  static_cast<SubsetParameter*>(ps.get())->setParameterSet(*convertIntoParameterSet());
+  return ps;
+}
+
+
 
 ResultElement* ResultSet::clone() const
 {

@@ -102,6 +102,9 @@ public:
 };
 
 
+typedef boost::shared_ptr<Parameter> ParameterPtr;
+
+
 template<class V>
 std::string valueToString(const V& value)
 {

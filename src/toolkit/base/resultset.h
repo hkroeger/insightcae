@@ -60,6 +60,13 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
+  /**
+   * convert this result element into a parameter
+   * returns an invalid pointer per default
+   * Since not all Results can be converted into parameters, a check for validity is required before using the pointer.
+   */
+  virtual ParameterPtr convertIntoParameter() const;
+  
   virtual ResultElement* clone() const =0;
 };
 
@@ -292,6 +299,9 @@ public:
       insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
     return *ret;
   }
+  
+  virtual ParameterSetPtr convertIntoParameterSet() const;
+  virtual ParameterPtr convertIntoParameter() const;
   
   virtual ResultElement* clone() const;
 };

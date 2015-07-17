@@ -397,7 +397,9 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //     .set_velocity(FieldData(vec3(uinf_,0,0)))
 //     .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
 //   ) );
-  cm.insert(new TurbulentVelocityInletBC(cm, in_, boundaryDict, TurbulentVelocityInletBC::Parameters(parameters().getSubset("inflow")) ));
+  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
+   .set_velocity(vec3(uinf_, 0, 0))
+  ));
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));

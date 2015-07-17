@@ -50,7 +50,7 @@ mesh=set
  ypluswall = double 1 "yPlus of first cell at the wall grid layer at the final station"
  dxplus = double 1000 "lateral mesh spacing at the final station"
  dzplus = double 1000 "streamwise mesh spacing at the final station"
- twod = bool true "select method of transition enforcement"
+ twod = bool false "select method of transition enforcement"
  gradaxi = double 50 "grading from plate beginning towards inlet boundary"
 
  tripping = selectablesubset

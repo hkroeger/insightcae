@@ -1,0 +1,17 @@
+[General]
+Name=Insight OpenFOAM-Analysis
+Comment=A template for an Insight Analysis using OpenFOAM
+Category=C++/Insight
+Language=C++
+Files=Header,Implementation
+Type=Class
+
+[Header]
+Name=Header
+File=class.h
+OutputFile={{ name }}.h
+ 
+[Implementation]
+Name=Implementation
+File=class.cpp
+OutputFile={{ name }}.cpp

@@ -507,6 +507,7 @@ class BooleanUnion
 public:
   declareType("BooleanUnion");
   BooleanUnion(const NoParameters& nop = NoParameters());
+  BooleanUnion(const SolidModel& m);
   BooleanUnion(const SolidModel& m1, const SolidModel& m2);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

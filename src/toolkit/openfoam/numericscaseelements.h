@@ -323,14 +323,14 @@ public:
 class magneticFoamNumerics
 : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (nCorrectors, int, 2)
-//   )
-// 
-// protected:
-//   Parameters p_;
-// 
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
+    (solverName, std::string, "magneticFoam")
+  )
+
+protected:
+  Parameters p_;
+
 public:
   magneticFoamNumerics(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;

@@ -1900,7 +1900,8 @@ void extrude2DMesh
   const boost::filesystem::path& location, 
   const std::string& sourcePatchName,
   std::string sourcePatchName2,
-  bool wedgeInsteadOfPrism
+  bool wedgeInsteadOfPrism,
+  double distance
 )
 {  
   
@@ -1928,7 +1929,7 @@ void extrude2DMesh
   {
     extrDict["extrudeModel"]="linearNormal";
     OFDictData::dict lnc;
-    lnc["thickness"]=1.0;
+    lnc["thickness"]=distance;
     extrDict["linearNormalCoeffs"]=lnc;
   }
 

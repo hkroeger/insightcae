@@ -621,6 +621,48 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 
 
+
+OverlapGGIBC::OverlapGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p )
+: GGIBCBase(c, patchName, boundaryDict, p),
+  p_(p)
+{
+}
+
+void OverlapGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
+{
+  bndDict["nFaces"]=nFaces_;
+  bndDict["startFace"]=startFace_;
+  
+  bndDict["type"]="overlapGgi";
+  bndDict["shadowPatch"]= p_.shadowPatch();
+  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
+  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
+  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
+  bndDict["nCopies"]=p_.nCopies();
+  bndDict["zone"]=p_.zone();
+}
+
+void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+{
+  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  
+  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  {
+    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+      .subDict("boundaryField").subDict(patchName_);
+    
+    if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
+      noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
+    else
+    {
+      BC["type"]=OFDictData::data("overlapGgi");
+    }
+  }
+}
+
+
+
 MixingPlaneGGIBC::MixingPlaneGGIBC
 (
   OpenFOAMCase& c, 

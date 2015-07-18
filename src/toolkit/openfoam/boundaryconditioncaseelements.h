@@ -310,6 +310,28 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
 
+
+class OverlapGGIBC
+: public GGIBCBase
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+    (separationOffset, arma::mat, vec3(0,0,0))
+    (rotationAxis, arma::mat, vec3(0,0,1))
+    (nCopies, int, 1)
+  )
+  
+protected:
+  Parameters p_;
+  
+public:
+  OverlapGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
+	Parameters const &p = Parameters() );
+  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
+  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+};
+
+
 class MixingPlaneGGIBC
 : public GGIBCBase
 {

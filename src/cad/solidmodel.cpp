@@ -2146,13 +2146,26 @@ addToFactoryTable(SolidModel, BooleanUnion, NoParameters);
 BooleanUnion::BooleanUnion(const NoParameters& nop): SolidModel(nop)
 {}
 
+BooleanUnion::BooleanUnion(const SolidModel& m)
+{
+  m.unsetLeaf();
+  
+  TopoDS_Shape res;
+  for (TopExp_Explorer ex(m, TopAbs_SOLID); ex.More(); ex.Next())
+  {
+    if (res.IsNull())
+      res=TopoDS::Solid(ex.Current());
+    else
+      res=BRepAlgoAPI_Fuse(res, TopoDS::Solid(ex.Current())).Shape();
+  }
+  setShape(res);
+}
 
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
   m1.unsetLeaf();
   m2.unsetLeaf();
-  cout<<"Union done"<<endl;
 }
 
 SolidModel operator|(const SolidModel& m1, const SolidModel& m2)

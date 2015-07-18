@@ -522,7 +522,8 @@ void extrude2DMesh
   const boost::filesystem::path& location, 
   const std::string& sourcePatchName,
   std::string sourcePatchName2="",
-  bool wedgeInsteadOfPrism=false
+  bool wedgeInsteadOfPrism=false,
+  double distance=1.0
 );
 
 /**

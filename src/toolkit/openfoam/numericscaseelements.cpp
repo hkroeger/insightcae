@@ -1458,7 +1458,8 @@ void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictiona
 }
 
 magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+: FVNumerics(c, p),
+  p_(p)
 {
   c.addField("psi", FieldInfo(scalarField, 	dimCurrent, 	list_of(0.0), volField ) );
 }
@@ -1470,7 +1471,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="magneticFoam";
+  controlDict["application"]=p_.solverName();
   
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  

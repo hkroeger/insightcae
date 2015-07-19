@@ -383,6 +383,12 @@ void Foam::consistentCurveSet::genSamples()
     samplingSegments.shrink();
     samplingCurveDist.shrink();
 
+    DynamicList<scalar> delta;
+    delta.append(0.0);
+    for(int i=1; i<samplingPts.size();i++)
+      delta.append(delta[i-1]+mag(samplingPts[i]-samplingPts[i-1]));
+    delta.shrink();
+    
     setSamples
     (
         samplingPts,
@@ -392,7 +398,8 @@ void Foam::consistentCurveSet::genSamples()
 #ifdef OF16ext
         samplingCurveDist
 #else
-	mag(samplingPts-basept_)
+// 	mag(samplingPts-basept_)
+	delta
 #endif
     );
     

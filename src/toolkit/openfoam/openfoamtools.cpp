@@ -582,17 +582,17 @@ arma::mat line::readSamples
   arma::mat rdata;
   if (data.n_cols>0)
   {
-    arma::mat 
-      dx=p_.points().col(0) - p_.points()(0,0), 
-      dy=p_.points().col(1) - p_.points()(0,1), 
-      dz=p_.points().col(2) - p_.points()(0,2);
-      
-//     data.col(0)=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
-      rdata=sqrt(pow(dx,2)+pow(dy,2)+pow(dz,2));
-            
-      arma::mat idata=Interpolator(data)(/*arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)*/rdata);
-//       std::cout<<data<<idata<<endl;
-      rdata=join_rows( rdata, idata );
+    std::vector<double> d;
+    d.push_back(0.0);
+    for (int k=1; k<p_.points().n_rows; k++)
+    {
+      d.push_back( d[k-1] + norm( p_.points().row(k)-p_.points().row(k-1), 2) );
+    }
+    rdata=arma::mat(d.data(), d.size(), 1);
+//     std::cout<<"data="<<data<<" rdata="<<rdata<<std::endl;
+    arma::mat idata=Interpolator(data)(/*arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)*/rdata);
+//     std::cout<<" idata="<<idata<<endl;
+    rdata=join_rows( rdata, idata );
   }
   
 //   return data;

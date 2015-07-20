@@ -1488,7 +1488,8 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["psi"]=stdSymmSolverSetup(1e-7, 0.0);
+  solvers["psi"]=stdSymmSolverSetup(1e-9, 0.001);
+//   solvers["psi"]=GAMGSolverSetup(1e-9, 0.001);
 
 //   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
 //   if (OFversion()<210)

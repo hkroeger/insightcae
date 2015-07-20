@@ -40,6 +40,7 @@ using namespace boost;
 
 int main(int argc, char *argv[])
 {
+  insight::UnhandledExceptionHandling ueh;
   insight::GSLExceptionHandling gsl_errtreatment;
   
   using namespace rapidxml;

@@ -52,6 +52,16 @@ public:
 
 void Warning(const std::string& msg);
 
+
+class UnhandledExceptionHandling
+{
+public:
+  static void handler();
+
+  UnhandledExceptionHandling();
+};
+
+
 }
 
 #endif // INSIGHT_EXCEPTION_H

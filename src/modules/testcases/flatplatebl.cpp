@@ -29,6 +29,7 @@
 #include <boost/assign/ptr_map_inserter.hpp>
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
+#include "boost/format.hpp"
 
 using namespace std;
 using namespace arma;
@@ -427,24 +428,32 @@ void FlatPlateBL::evaluateAtSection
   ResultSetPtr results, double x, int i,
   const Interpolator& cfi,
   const std::string& UMeanName,
-  const std::string& RFieldName
+  const std::string& RFieldName,
+  const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section
 )
 {
   Parameters p(*parameters_);
 
 
   double xByL= x/p.geometry.L;
-  string title="section__xByL_" + str(format("%04.1f") % xByL);
+  string prefix="section";
+  if (extract_section)
+    prefix=extract_section->name_prefix;
+  string title=prefix+"__xByL_" + str(format("%04.1f") % xByL);
   replace_all(title, ".", "_");
   
-  TabularResult& table = results->get<TabularResult>("tableCoefficients");
-  TabularResult::Row& thisctrow = table.appendRow();
-  table.setCellByName(thisctrow, "x/L", xByL);
+  TabularResult *table=NULL, *table2=NULL;
+  TabularResult::Row *thisctrow=NULL, *thisctrow2=NULL;
+  if (!extract_section)
+  {
+    table = &(results->get<TabularResult>("tableCoefficients"));
+    thisctrow = &(table->appendRow());
+    table->setCellByName(*thisctrow, "x/L", xByL);
 
-  TabularResult& table2 = results->get<TabularResult>("tableValues");
-  TabularResult::Row& thisctrow2 = table2.appendRow();
-  table2.setCellByName(thisctrow2, "x/L", xByL);
-  
+    table2 = &(results->get<TabularResult>("tableValues"));
+    thisctrow2 = &(table2->appendRow());
+    table2->setCellByName(*thisctrow2, "x/L", xByL);
+  }
 //   //estimate delta2
 //   double delta2_est = 0.5*FlatPlateBL::cw(uinf_*x/nu)*x;
     
@@ -460,8 +469,6 @@ void FlatPlateBL::evaluateAtSection
   
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name("radial")
-//     .set_start( vec3(x, deltaywall_e_, 0.01*W_))
-//     .set_end(   vec3(x, , 0.01*W_))
     .set_points( pts )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*W_))
@@ -484,34 +491,44 @@ void FlatPlateBL::evaluateAtSection
   double ypByy=utau/p.fluid.nu;
   arma::mat yplus=y*ypByy;
     
-  int c=cd[UMeanName].col;
-  arma::mat upaxial(join_rows(yplus, data.col(c)/utau));
-  arma::mat upwallnormal(join_rows(yplus, data.col(c+1)/utau));
-  arma::mat upspanwise(join_rows(yplus, data.col(c+2)/utau));
+  int cU=cd[UMeanName].col;
+  arma::mat upaxial(join_rows(yplus, data.col(cU)/utau));
+  arma::mat upwallnormal(join_rows(yplus, data.col(cU+1)/utau));
+  arma::mat upspanwise(join_rows(yplus, data.col(cU+2)/utau));
   
-  arma::mat uByUinf=join_rows(y, data.col(c)/uinf_);
+  arma::mat uByUinf=join_rows(y, data.col(cU)/uinf_);
   arma::mat delta123 = integrateDelta123( uByUinf );
   double delta99 = searchDelta99( uByUinf );
 
   cout<<"delta123="<<delta123<<"delta99="<<delta99<<endl;
 
-  table.setCellByName(thisctrow, "delta1+", delta123(0)*ypByy);
-  table.setCellByName(thisctrow, "delta2+", delta123(1)*ypByy);
-  table.setCellByName(thisctrow, "delta3+", delta123(2)*ypByy);
-  table.setCellByName(thisctrow, "delta99+", delta99*ypByy );
-
-  table2.setCellByName(thisctrow2, "delta1", delta123(0));
-  table2.setCellByName(thisctrow2, "delta2", delta123(1));
-  table2.setCellByName(thisctrow2, "delta3", delta123(2));
-  table2.setCellByName(thisctrow2, "delta99", delta99 );
-  table2.setCellByName(thisctrow2, "tauw", tauw);
-  table2.setCellByName(thisctrow2, "utau", utau);
+  if (table)
+  {
+    table->setCellByName(*thisctrow, "delta1+", delta123(0)*ypByy);
+    table->setCellByName(*thisctrow, "delta2+", delta123(1)*ypByy);
+    table->setCellByName(*thisctrow, "delta3+", delta123(2)*ypByy);
+    table->setCellByName(*thisctrow, "delta99+", delta99*ypByy );
+  }
+    
+  if (table2)
+  {
+    table2->setCellByName(*thisctrow2, "delta1", delta123(0));
+    table2->setCellByName(*thisctrow2, "delta2", delta123(1));
+    table2->setCellByName(*thisctrow2, "delta3", delta123(2));
+    table2->setCellByName(*thisctrow2, "delta99", delta99 );
+    table2->setCellByName(*thisctrow2, "tauw", tauw);
+    table2->setCellByName(*thisctrow2, "utau", utau);
+  }
   
   // Mean velocity profiles
   {
+    if (extract_section)
     {
-      arma::mat up=join_rows(yplus, join_rows(upaxial.col(1), join_rows(upwallnormal.col(1), upspanwise.col(1))));
-      up.save( (executionPath()/("umeanplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
+      arma::mat u=join_rows(y, data.cols(cU, cU+2));
+      u.save( (
+	executionPath() /
+	str( format("umean_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
+      ).c_str(), raw_ascii);
     }
     
     double maxU=1.1*uinf_;
@@ -559,15 +576,22 @@ void FlatPlateBL::evaluateAtSection
   }
 
   // Reynolds stress profiles
-  c=cd[RFieldName].col;
-  arma::mat Rpuu(join_rows(yplus, data.col(c)/pow(utau,2)));
-  arma::mat Rpvv(join_rows(yplus, data.col(c+3)/pow(utau,2)));
-  arma::mat Rpww(join_rows(yplus, data.col(c+5)/pow(utau,2)));
+  int cR=cd[RFieldName].col;
+  arma::mat Rpuu(join_rows(yplus, data.col(cR)/pow(utau,2)));
+  arma::mat Rpvv(join_rows(yplus, data.col(cR+3)/pow(utau,2)));
+  arma::mat Rpww(join_rows(yplus, data.col(cR+5)/pow(utau,2)));
   {
-    arma::mat Rp=join_rows(yplus, join_rows(Rpuu.col(1), join_rows(Rpvv.col(1), Rpww.col(1))));
-    Rp.save( (executionPath()/("Rplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
+    arma::mat R_vs_y=join_rows(y, data.cols(cR, cR+5));
     
-    double maxRp=1.1*as_scalar(arma::max(arma::max(Rp.cols(1,3))));
+    if (extract_section)
+    {
+      R_vs_y.save( (
+	executionPath() /
+	str( format("R_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
+      ).c_str(), raw_ascii);
+    }
+    
+    double maxRp=1.1*as_scalar(arma::max(arma::max(R_vs_y.cols(1,6))))/pow(utau,2);
     
     addPlot
     (
@@ -590,8 +614,18 @@ void FlatPlateBL::evaluateAtSection
   
   if (cd.find("k")!=cd.end())
   {    
-    arma::mat kp_vs_yp=join_rows(ypByy*y, ypByy*data.col(cd["k"].col));
-    kp_vs_yp.save( (executionPath()/("kplus_vs_yplus_"+title+".txt")).c_str(), raw_ascii);
+    int ck=cd["k"].col;
+    
+    arma::mat kp_vs_yp=join_rows(yplus, (data.col(ck)/pow(utau,2)) + 0.5*(Rpuu.col(1)+Rpvv.col(1)+Rpww.col(1)));
+    
+    if (extract_section)
+    {
+      arma::mat k_vs_y=join_rows( y, kp_vs_yp.col(1)*pow(utau,2) );
+      k_vs_y.save( (
+	executionPath() /
+	str( format("k_vs_y_%s_x%05.2f.txt") % extract_section->name_prefix % x )
+      ).c_str(), raw_ascii);
+    }
     
     addPlot
     (
@@ -600,7 +634,7 @@ void FlatPlateBL::evaluateAtSection
       list_of
        (PlotCurve(kp_vs_yp, "w l lt 2 lc 1 lw 1 not"))
        ,
-      "Wall normal profile of turbulent kinetic energy at x/L=" + str(format("%g")%xByL),
+      "Wall normal profile of total turbulent kinetic energy at x/L=" + str(format("%g")%xByL),
       "set logscale x"
     );
   }
@@ -706,14 +740,20 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   
   for (size_t i=0; i<sec_locs_.size(); i++)
     evaluateAtSection(cm, results, sec_locs_[i]*p.geometry.L, i, Cf_vs_x_i, UMeanName, RFieldName);
+  
+  BOOST_FOREACH(const FlatPlateBL::Parameters::eval_type::bc_extractsections_type::value_type& es, p.eval.bc_extractsections)
+  {
+    evaluateAtSection(cm, results, es.x, -1, Cf_vs_x_i, UMeanName, RFieldName, &es);
+  }
 
   {  
     arma::mat delta1exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta1_vs_x");
     arma::mat delta2exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta2_vs_x");
     arma::mat delta3exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta3_vs_x");
     
-    const insight::TabularResult& tabres=results->get<TabularResult>("tableCoefficients");
-    arma::mat ctd=tabres.toMat();
+//     const insight::TabularResult& tabres=results->get<TabularResult>("tableCoefficients");
+    const insight::TabularResult& tabvals=results->get<TabularResult>("tableValues");
+    arma::mat ctd=tabvals.toMat();
     addPlot
     (
       results, executionPath(), "chartDelta",
@@ -723,9 +763,9 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -736,10 +776,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       results, executionPath(), "chartDelta99",
       "x [m]", "delta [m]",
       list_of
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabres.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

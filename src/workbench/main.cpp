@@ -22,10 +22,12 @@
 #include "base/boost_include.h"
 #include "workbench.h"
 
+#include "base/exception.h"
 #include "base/linearalgebra.h"
 
 int main(int argc, char** argv)
 {
+  insight::UnhandledExceptionHandling ueh;
   insight::GSLExceptionHandling gsl_errtreatment;
   
   WorkbenchApplication app(argc, argv);

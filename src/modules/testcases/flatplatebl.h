@@ -111,6 +111,14 @@ run = set
 
 } "Solver parameters"
 
+eval = set
+{
+ bc_extractsections 	= array [ set {
+    name_prefix = string "extractsection" "name of the section"
+    x = double 1 "location of the section"
+  } ]*0 	"Sections, where BC profiles shall be extracted"
+} "Parameters for evaluation after solver run"
+
 <<<PARAMETERSET
 */
   
@@ -149,7 +157,8 @@ public:
     ResultSetPtr results, double x, int i,
     const Interpolator& cf,
     const std::string& UMeanName,
-    const std::string& RFieldName
+    const std::string& RFieldName,
+    const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section=NULL
   );  
   virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
   

@@ -506,7 +506,8 @@ set* line::clone() const
 arma::mat line::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-  ColumnDescription* coldescr
+  ColumnDescription* coldescr,
+  const std::string& time
 ) const
 {
   arma::mat data;
@@ -519,20 +520,31 @@ arma::mat line::readSamples
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
-  //BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
-  const TimeDirectoryList::value_type& tde = *tdl.rbegin();
+  boost::filesystem::path timedir=tdl.rbegin()->second;
+  if (!time.empty())
+  {
+    BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
+    {
+      if (tde.second.filename().string()==time)
+      {
+	timedir=tde.second;
+	break;
+      }
+    }
+  }
+  
   {
     arma::mat m;
     std::vector<std::string> files;
     
     directory_iterator end_itr; // default construction yields past-the-end
-    for ( directory_iterator itr( tde.second );
-          itr != end_itr;
-          ++itr )
+    for ( directory_iterator itr( timedir );
+	  itr != end_itr;
+	  ++itr )
     {      
       if ( is_regular_file(itr->status()) )
       {
-        std::string fn=itr->path().filename().string();
+	std::string fn=itr->path().filename().string();
 	if (starts_with(fn, p_.name()+"_")) files.push_back(fn);
       }
     }
@@ -542,7 +554,7 @@ arma::mat line::readSamples
     for (int i=0; i<files.size(); i++)
     {
       std::string fn=files[i];
-      path fp=tde.second/fn;
+      path fp=timedir/fn;
 
       erase_tail(fn, 3);
       std::vector<std::string> flnames;
@@ -578,6 +590,7 @@ arma::mat line::readSamples
     else 
       data=join_cols(data, m);
   }
+
   
   arma::mat rdata;
   if (data.n_cols>0)
@@ -624,9 +637,10 @@ set* uniformLine::clone() const
   return new uniformLine(p_);
 }
 
-arma::mat uniformLine::readSamples(const OpenFOAMCase& ofc, const path& location, ColumnDescription* coldescr) const
+arma::mat uniformLine::readSamples(const OpenFOAMCase& ofc, const path& location, ColumnDescription* coldescr,
+  const std::string& time) const
 {
-  return l_.readSamples(ofc, location, coldescr);
+  return l_.readSamples(ofc, location, coldescr, time);
 }
 
 
@@ -677,7 +691,8 @@ arma::mat circumferentialAveragedUniformLine::rotMatrix(int i, double angularOff
 arma::mat circumferentialAveragedUniformLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-  ColumnDescription* coldescr
+  ColumnDescription* coldescr,
+  const std::string& time
 ) const
 {
   arma::mat data;
@@ -686,7 +701,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   bool cd_set=false;
   BOOST_FOREACH(const line& l, lines_)
   {
-    arma::mat datai = l.readSamples(ofc, location, &cd);
+    arma::mat datai = l.readSamples(ofc, location, &cd, time);
     arma::mat Ri=rotMatrix(i++, p_.angularOffset()).t();
     
     if (datai.n_cols>1)
@@ -836,7 +851,8 @@ set* linearAveragedPolyLine::clone() const
 arma::mat linearAveragedPolyLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-  ColumnDescription* coldescr
+  ColumnDescription* coldescr,
+  const std::string& time
 ) const
 {
   arma::mat data; // only the data, without coordinate column!
@@ -844,7 +860,7 @@ arma::mat linearAveragedPolyLine::readSamples
   ColumnDescription cd;
   BOOST_FOREACH(const line& l, lines_)
   {
-    arma::mat ds=l.readSamples(ofc, location, &cd);
+    arma::mat ds=l.readSamples(ofc, location, &cd, time);
     arma::mat datai = Interpolator(ds)(x_);
     
     if (data.n_cols==0)
@@ -897,10 +913,11 @@ set* linearAveragedUniformLine::clone() const
 arma::mat linearAveragedUniformLine::readSamples
 (
   const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-  ColumnDescription* coldescr
+  ColumnDescription* coldescr,
+  const std::string& time
 ) const
 {
-  return pl_.readSamples(ofc, location, coldescr);
+  return pl_.readSamples(ofc, location, coldescr, time);
 }
 
 

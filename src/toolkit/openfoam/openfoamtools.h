@@ -268,7 +268,8 @@ public:
    * Only the last results in the last time folder is returned
    */
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
-			       ColumnDescription* coldescr=NULL
+			       ColumnDescription* coldescr=NULL,
+			       const std::string& time="" // empty string means latest
 			      ) const;
 };
 
@@ -298,7 +299,8 @@ public:
    * Only the last results in the last time folder is returned
    */
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
-			       ColumnDescription* coldescr=NULL
+			       ColumnDescription* coldescr=NULL,
+			       const std::string& time="" // empty string means latest
 			      ) const;
 };
 
@@ -330,7 +332,8 @@ public:
   arma::mat rotMatrix(int i, double angularOffset=0) const;
   inline std::string setname(int i) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       ColumnDescription* coldescr=NULL
+			       ColumnDescription* coldescr=NULL,
+			       const std::string& time="" // empty string means latest
 			      ) const;
 };
 
@@ -358,7 +361,8 @@ public:
   
   inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       ColumnDescription* coldescr=NULL
+			       ColumnDescription* coldescr=NULL,
+			       const std::string& time="" // empty string means latest
 			      ) const;
 };
 
@@ -387,7 +391,8 @@ public:
   virtual set* clone() const;
   
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
-			       ColumnDescription* coldescr=NULL
+			       ColumnDescription* coldescr=NULL,
+			       const std::string& time="" // empty string means latest
 			      ) const;
 };
 

@@ -78,6 +78,7 @@ eval = set
 
 protected:
     bool stopFlag_;
+    ResultSetPtr derivedInputData_;
 
 public:
     OpenFOAMAnalysis(const std::string& name, const std::string& description);
@@ -88,6 +89,7 @@ public:
     virtual boost::filesystem::path setupExecutionEnvironment();
     
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
+    
     virtual void calcDerivedInputData();
     virtual void createMesh(OpenFOAMCase& cm) =0;
     virtual void createCase(OpenFOAMCase& cm) =0;

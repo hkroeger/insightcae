@@ -144,15 +144,20 @@ boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
   return p;
 }
 
-void OpenFOAMAnalysis::reportIntermediateParameter
-(
-  const std::string& name, double value, const string& description, const std::string& unit
-)
+void OpenFOAMAnalysis::reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="")
 {
+  if (!derivedInputData_)
+  {
+    ParameterSet empty_ps;
+    derivedInputData_.reset(new ResultSet(empty_ps, "Derived Input Data", ""));
+  }
+  
   std::cout<<">>> Intermediate parameter "<<name<<" = "<<value<<" "<<unit;
   if (description!="")
     std::cout<<" ("<<description<<")";
   std::cout<<std::endl;
+  
+  boost::assign::ptr_map_insert<ScalarResult>(*derivedInputData_) (name, value, description, "", unit);
 }
 
 void OpenFOAMAnalysis::calcDerivedInputData()
@@ -315,6 +320,12 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   if (parameters().getBool("eval/reportdicts"))
   {
     currentNumericalSettingsReport(cm, executionPath(), results);
+  }
+  
+  if (derivedInputData_)
+  {
+    std::string key(derivedInputData_->title());
+    results->insert( key, derivedInputData_->clone() );
   }
   
   return results;

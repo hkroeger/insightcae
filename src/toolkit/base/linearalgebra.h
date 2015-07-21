@@ -208,9 +208,14 @@ public:
   arma::mat xy(const arma::mat& x) const;
   
   inline const arma::mat& rawdata() const { return xy_; }
+  
+  inline int ncol() const { return spline.size(); }
 };
 
 arma::mat integrate(const arma::mat& xy);
+
+double integrate(const Interpolator& ipol, double a, double b, int comp);
+arma::mat integrate(const Interpolator& ipol, double a, double b);
 
 }
 

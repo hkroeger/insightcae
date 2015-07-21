@@ -417,7 +417,8 @@ const T& findSet(const boost::ptr_vector<sampleOps::set>& sets, const std::strin
 void sample(const OpenFOAMCase& ofc, 
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
-	    const boost::ptr_vector<sampleOps::set>& sets
+	    const boost::ptr_vector<sampleOps::set>& sets,
+	    const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
 	    );
 /**
  * Converts a pair of patches into a cyclic pair using createPatch.

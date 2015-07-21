@@ -926,7 +926,8 @@ arma::mat linearAveragedUniformLine::readSamples
 void sample(const OpenFOAMCase& ofc, 
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
-	    const boost::ptr_vector<sampleOps::set>& sets
+	    const boost::ptr_vector<sampleOps::set>& sets,
+	    const std::vector<std::string>& addopts
 	    )
 {
   using namespace sampleOps;
@@ -953,11 +954,11 @@ void sample(const OpenFOAMCase& ofc,
   // then write to file
   sampleDict.write( location / "system" / "sampleDict" );
 
-  std::vector<std::string> opts;
-  opts.push_back("-latestTime");
+//   std::vector<std::string> opts;
+//   opts.push_back("-latestTime");
   //if (overwrite) opts.push_back("-overwrite");
     
-  ofc.executeCommand(location, "sample", opts);
+  ofc.executeCommand(location, "sample", addopts);
   
 }
 
@@ -1777,7 +1778,10 @@ void currentNumericalSettingsReport
   }
 }
 
-
+/**
+ * read profile of viscous force along wall
+ * return (x, fx_mean, fy_mean, fz_mean, fx, fy, fz)
+ */
 arma::mat viscousForceProfile
 (
   const OpenFOAMCase& cm, 

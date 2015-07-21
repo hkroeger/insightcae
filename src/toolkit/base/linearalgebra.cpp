@@ -18,11 +18,16 @@
  *
  */
 
+#include <stdio.h>
+#include <math.h>
+
 #include "linearalgebra.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/tuple/tuple.hpp"
-#include "gsl/gsl_multimin.h"
 #include "base/exception.h"
+#include "gsl/gsl_multimin.h"
+#include "gsl/gsl_integration.h"
+
 
 using namespace arma;
 using namespace boost;
@@ -535,6 +540,55 @@ arma::mat integrate(const arma::mat& xy)
   }
   
   return integ;
+}
+
+struct p_int
+{
+  const Interpolator* ipol_;
+  int col_;
+};
+
+double f_int (double x, void * params) {
+  p_int* p = static_cast<p_int *>(params);
+  return p->ipol_->y(x, p->col_);
+}
+
+double integrate(const Interpolator& ipol, double a, double b, int col)
+{
+  gsl_integration_workspace * w 
+    = gsl_integration_workspace_alloc (1000);
+
+  double result, error;
+  
+  p_int p;
+  p.ipol_=&ipol;
+  p.col_=col;
+  gsl_function F;
+  F.function = &f_int;
+  F.params = &p;
+
+  gsl_integration_qags 
+  (
+    &F, 
+    a, b, 
+    0, 1e-5, 1000,
+    w, &result, &error
+  ); 
+  cout<<"integration residual = "<<error<<" (result="<<result<<")"<<endl;
+
+  gsl_integration_workspace_free (w);
+
+  return result;
+}
+
+arma::mat integrate(const Interpolator& ipol, double a, double b)
+{
+  arma::mat res=zeros(ipol.ncol());
+  for (int i=0; i<res.n_elem; i++)
+  {
+    res(i)=integrate(ipol, a, b, i);
+  }
+  return res;
 }
 
 }

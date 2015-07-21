@@ -75,7 +75,25 @@ void FlatPlateBL::calcDerivedInputData()
   trip_="trip";
   
   uinf_= p.operation.uinf; //FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
-  reportIntermediateParameter("uinf", uinf_, "free stream velocity");
+  reportIntermediateParameter("uinf", uinf_, "free stream velocity", "m/s");
+  
+  Llam_=pow(p.geometry.Retheta0/0.664, 2)*p.fluid.nu/uinf_;
+  reportIntermediateParameter("Llam", Llam_, "Length of laminar range upstream of tripping point", "m");
+  
+  theta0_=0.664*sqrt(p.fluid.nu*Llam_/uinf_);
+  reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
+  
+  Lap_=p.geometry.LapByL*p.geometry.L;
+  if (Lap_>Llam_)
+  {
+    insight::Warning
+    (
+      str(format(
+	"Prescribed approach length (Lap=%g) is larger than the laminar range (Llam=%g) for prescribed Retheta0!\nThe length will be clipped to Llam."
+      ) % Lap_ % Llam_));
+    Lap_=Llam_;
+  }
+  reportIntermediateParameter("Lap", Lap_, "Length of (resolved) laminar range upstream of tripping point", "m");
   
   Re_L_=uinf_*p.geometry.L/p.fluid.nu;
   reportIntermediateParameter("Re_L", Re_L_, "reynolds number at the end of the plate");
@@ -83,25 +101,13 @@ void FlatPlateBL::calcDerivedInputData()
   dtrip_=1000.*p.fluid.nu/uinf_; // Re(d_tripwire)=1000
   reportIntermediateParameter("dtrip", dtrip_, "diameter of tripwire to fulfill Re_d=1000");
   
-  Cw_=FlatPlateBL::cw(Re_L_);
-  reportIntermediateParameter("Cw", Cw_, "");
-
-  delta2e_ = 0.5*Cw_*p.geometry.L;
-  reportIntermediateParameter("delta2e", delta2e_, "boundary layer thickness at the end of the plate");
-
-  H_=p.geometry.HBydeltae*delta2e_;
+  H_=p.geometry.HBytheta0*theta0_;
   reportIntermediateParameter("H", H_, "height of the domain");
 
-  W_=p.geometry.WBydeltae*delta2e_;
+  W_=p.geometry.WBytheta0*theta0_;
   reportIntermediateParameter("W", W_, "width of the domain");
 
-  Re_theta2e_=Re_L_*(delta2e_/p.geometry.L);
-  reportIntermediateParameter("Re_theta2e", Re_theta2e_, "");
-
-//   uinf_=Re_L*nu/L;
-//   cout<<"uinf="<<uinf_<<endl;
-  
-  reportIntermediateParameter("cf_e", cf(Re_L_), "wall friction coefficient at the end of the plate");
+  reportIntermediateParameter("cf_e", cf(Re_L_), "Expected wall friction coefficient at the end of the plate");
 
   ypfac_e_=sqrt(cf(Re_L_)/2.)*uinf_/p.fluid.nu;
   reportIntermediateParameter("ypfac", ypfac_e_, "yplus factor at the end of the plate (y+/y)");
@@ -126,10 +132,10 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("gradaxi", gradaxi_, "axial grid stretching in approach zone upstream of plate");
   
 //   naxi_=std::max(1, int(round(0.1*L/deltax)));
-  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, p.geometry.LapByL*p.geometry.L);
+  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, Lap_);
   reportIntermediateParameter("naxi", naxi_, "number cells in approach zone upstream of plate");
 
-  if (p.mesh.twod /*p.getBool("mesh/2d")*/)
+  if (p.mesh.twod)
     nlat_=1;
   else
     nlat_=std::max(1, int(round(W_/(p.mesh.dzplus/ypfac_e_))));
@@ -399,9 +405,58 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //     .set_velocity(FieldData(vec3(uinf_,0,0)))
 //     .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
 //   ) );
-  cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-   .set_velocity(vec3(uinf_, 0, 0))
-  ));
+  {
+    boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
+    {
+      std::ofstream f(inlet_velocity_profile_tabfile.c_str());
+      f<<0.0<<" "<<0.0<<endl;
+      
+      double x0=Llam_-Lap_;
+      double delta20=0.664*sqrt(p.fluid.nu*x0/uinf_);
+      
+      if (x0>0.)
+      {
+	int n=10;
+	for (int i=1; i<n; i++)
+	{
+	  double eta=double(i)/double(n-1);
+	  double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
+	  f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<endl;
+	}
+      }
+      if (H_>delta20)
+      {
+	f<<H_<<" "<<uinf_<<endl;
+      }
+    }
+    
+    FieldData::Parameters inflow_velocity;
+    FieldData::Parameters::fielddata_linearProfile_type umean_data;
+
+    // mean value profile
+    umean_data.values.resize(1);
+    umean_data.values[0].time=0;
+    umean_data.values[0].profile=inlet_velocity_profile_tabfile.filename(); // without path! otherwise problems after case copying!
+
+    // data file column mapping
+    FieldData::Parameters::fielddata_linearProfile_type::cmap_default_type cmp;
+    cmp.column=0;
+    cmp.component=0;
+    umean_data.cmap.push_back(cmp);
+    
+    umean_data.p0=vec3(0,0,0);      
+    umean_data.ep=vec3(0,1,0);
+    
+    umean_data.ex=vec3(1,0,0);
+    umean_data.ez=vec3(0,0,1);
+      
+    inflow_velocity.fielddata=umean_data;
+    
+    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
+    .set_velocity(FieldData(inflow_velocity))
+    ));
+  }
+  
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
   ));
@@ -464,7 +519,7 @@ void FlatPlateBL::evaluateAtSection
   
   double 
     miny=0.99*deltaywall_e_,
-    maxy=std::min(delta2e_*10.0, H_-deltaywall_e_);
+    maxy=std::min(theta0_*10.0, H_-deltaywall_e_);
     
   arma::mat pts=exp(linspace(log(miny), log(maxy), 101))*vec3(0,1,0).t();
   pts.col(0)+=x;
@@ -571,7 +626,7 @@ void FlatPlateBL::evaluateAtSection
       "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL),
      
       str( format("set key top left reverse Left; set logscale x; set xrange [:%g]; set yrange [0:%g];") 
-		% (ypByy*std::max(delta2e_, 10.*delta123(1))) 
+		% (ypByy*std::max(theta0_, 10.*delta123(1))) 
 		% (maxU/utau) 
 	 )
       
@@ -608,7 +663,7 @@ void FlatPlateBL::evaluateAtSection
       "Wall normal profiles of Reynolds stresses at x/L=" + str(format("%g")%xByL),
      
       str( format("set xrange [:%g]; set yrange [0:%g];") 
-		% (ypByy*std::max(delta2e_, 10.*delta123(1))) 
+		% (ypByy*std::max(theta0_, 10.*delta123(1))) 
 		% (maxRp) 
 	 )
       

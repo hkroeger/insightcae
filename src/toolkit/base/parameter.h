@@ -344,6 +344,34 @@ public:
     boost::filesystem::path inputfilepath);
 };
 
+class TableParameter
+: public Parameter
+{
+public:
+  typedef arma::mat value_type;
+
+protected:
+  arma::mat value_;
+  std::vector<std::string> colnames_;
+  
+public:
+  declareType("table");
+  
+  TableParameter(const std::string& description);
+  TableParameter(const arma::mat& defaultValue, const std::vector<std::string>& colnames, const std::string& description);
+
+  const arma::mat& operator()() const;
+  
+  virtual std::string latexRepresentation() const;
+  
+  virtual Parameter* clone () const;
+
+  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath) const;
+  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    boost::filesystem::path inputfilepath);
+};
+
 
 inline Parameter* new_clone(const Parameter& p)
 {

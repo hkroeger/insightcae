@@ -522,5 +522,88 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
   }
 }
   
+defineType(TableParameter);
+addToFactoryTable(Parameter, TableParameter, std::string);
+
+TableParameter::TableParameter(const std::string& description)
+: Parameter(description)
+{
+}
+
+TableParameter::TableParameter
+(
+  const arma::mat& defaultValue, 
+ const std::vector< string >& colnames, 
+ const string& description
+)
+: Parameter(description),
+  value_(defaultValue),
+  colnames_(colnames)
+{
+  if (!defaultValue.n_cols!=colnames_.size())
+    throw insight::Exception(
+      str(format("number column headings (%d) is not equal to number of data columns (%d)!") % colnames_.size() % value_.n_cols)
+    );
+}
+
+
+const arma::mat& TableParameter::operator()() const
+{
+  return value_;
+}
+
+string TableParameter::latexRepresentation() const
+{
+  std::ostringstream oss;
+  
+  oss<<"\\begin{tabular}{";
+  for (int j=0;j<value_.n_cols; j++) oss<<'c'<<endl;
+  oss<<"}\n";
+  
+  for (int i=0;i<value_.n_rows; i++)
+  {
+    for (int j=0;j<value_.n_cols; j++)
+    {
+      oss<<value_(i,j);
+      if (j<value_.n_cols-1) oss<<"&";
+    }
+    oss<<"\\\\"<<endl;
+  }
+  oss<<"\\end{tabular}"<<endl;
+  
+  return oss.str();
+}
+
+xml_node< char >* TableParameter::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath) const
+{
+  throw insight::Exception("not implemented!");
+
+  using namespace rapidxml;
+  xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
+//   child->append_attribute(doc.allocate_attribute
+//   (
+//     "value", 
+//     //doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
+//     doc.allocate_string( items_[value_].c_str() )
+//   ));
+//      
+//      defaultValue_->appendToNode("default", doc, *child, inputfilepath);
+//   for (int i=0; i<size(); i++)
+//   {
+//     value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
+//   }
+  return child;
+}
+
+void TableParameter::readFromNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath)
+{
+  throw insight::Exception("not implemented!");
+}
+
+Parameter* TableParameter::clone() const
+{
+  return new TableParameter(value_, colnames_, description_);
+}
+
 
 }

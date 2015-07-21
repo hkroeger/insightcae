@@ -162,6 +162,7 @@ public:
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)
+    (LESfilteredConvection, bool, false)
     (hasCyclics, bool, false)
     (pinternal, double, 0.0)
     (Uinternal, arma::mat, vec3(0,0,0))

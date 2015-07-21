@@ -91,6 +91,7 @@ fluid = set
 run = set 
 {
  iter = int 30000 "number of outer iterations after which the solver should stop"
+ filteredconvection = bool false "use filteredLinear instead of linear in LES"
  
  regime = selectablesubset
  {{

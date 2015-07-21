@@ -159,9 +159,9 @@ ScalarResult::ScalarResult(const double& value, const string& shortDesc, const s
 
 void ScalarResult::writeLatexCode(ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
 {
-  f.setf(ios::fixed,ios::floatfield);
-  f.precision(3);
-  f << value_ << unit_;
+//   f.setf(ios::fixed,ios::floatfield);
+//   f.precision(3);
+  f << str(format("%g") % value_) << unit_;
 }
 
 ResultElement* ScalarResult::clone() const
@@ -526,9 +526,12 @@ void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int lev
     f << subtitle_ << "\n\n";
   }
   
-  f << latex_subsection(level) << "{Input Parameters}\n";
-  
-  f<<p_.latexRepresentation();
+  if (p_.size()>0)
+  {
+    f << latex_subsection(level) << "{Input Parameters}\n";
+    
+    f<<p_.latexRepresentation();
+  }
   
   f << latex_subsection(level) << "{Numerical Result Summary}\n";
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)

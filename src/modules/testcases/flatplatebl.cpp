@@ -338,6 +338,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_decompositionMethod("hierarchical")
       .set_deltaT(1e-3)
       .set_hasCyclics(true)
+      .set_LESfilteredConvection(p.run.filteredconvection)
       .set_Uinternal(vec3(p.operation.uinf,0,0))
       .set_decompWeights(std::make_tuple(2,1,0))
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
@@ -409,10 +410,12 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
   //  leave approach as wall to produce laminar BL upstream
   
-  cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
-    .set_pressure(0.0)
-  ));
-  if (/*p.getBool("mesh/2d")*/p.mesh.twod)
+//   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
+//     .set_pressure(0.0)
+//   ));
+  cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+  
+  if (p.mesh.twod)
     cm.insert(new SimpleBC(cm, cycl_prefix_, boundaryDict, "empty") );
   else
     cm.insert(new CyclicPairBC(cm, cycl_prefix_, boundaryDict) );

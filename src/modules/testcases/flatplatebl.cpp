@@ -546,8 +546,8 @@ void FlatPlateBL::evaluateAtSection
     delta99pc(0,1)=0.; delta99pc(1,1)=maxU;
     
     arma::mat visclayer=linspace(0, 10, 10), loglayer=linspace(30,300,2);
-    visclayer=join_rows(visclayer, visclayer);
-    loglayer=join_rows(loglayer, (1./0.41)*log(loglayer)+5.);
+    visclayer=join_rows( visclayer, visclayer );
+    loglayer=join_rows( loglayer, (1./0.41)*log(loglayer)/log(M_E) + 5. );
 
     addPlot
     (
@@ -634,8 +634,8 @@ void FlatPlateBL::evaluateAtSection
       list_of
        (PlotCurve(kp_vs_yp, "w l lt 2 lc 1 lw 1 not"))
        ,
-      "Wall normal profile of total turbulent kinetic energy at x/L=" + str(format("%g")%xByL),
-      "set logscale x"
+      "Wall normal profile of total turbulent kinetic energy at x/L=" + str(format("%g")%xByL) /*,
+      "set logscale x"*/
     );
   }
 }

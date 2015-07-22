@@ -557,11 +557,12 @@ void FlatPlateBL::evaluateAtSection
   arma::mat uByUinf=join_rows(y, data.col(cU)/uinf_);
   arma::mat delta123 = integrateDelta123( uByUinf );
   double delta99 = searchDelta99( uByUinf );
-
-  cout<<"delta123="<<delta123<<"delta99="<<delta99<<endl;
+  
+  double Re_theta=uinf_*delta123(1)/p.fluid.nu;
 
   if (table)
   {
+    table->setCellByName(*thisctrow, "Re_theta", Re_theta);
     table->setCellByName(*thisctrow, "delta1+", delta123(0)*ypByy);
     table->setCellByName(*thisctrow, "delta2+", delta123(1)*ypByy);
     table->setCellByName(*thisctrow, "delta3+", delta123(2)*ypByy);
@@ -623,7 +624,7 @@ void FlatPlateBL::evaluateAtSection
 	(PlotCurve(visclayer, "w l lt 2 lc 5 lw 2 t 'Viscous Layer'"))
 	(PlotCurve(loglayer, "w l lt 3 lc 5 lw 2 t 'Log Layer'"))
       ,
-      "Wall normal profiles of averaged velocities at x/L=" + str(format("%g")%xByL),
+      str(format("Wall normal profiles of averaged velocities at x/L=%g (Re_theta=%g)") % xByL % Re_theta),
      
       str( format("set key top left reverse Left; set logscale x; set xrange [:%g]; set yrange [0:%g];") 
 		% (ypByy*std::max(theta0_, 10.*delta123(1))) 
@@ -783,7 +784,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   results->insert("tableCoefficients",
     std::auto_ptr<TabularResult>(new TabularResult
     (
-      list_of("x/L")("delta1+")("delta2+")("delta3+")("delta99+"),
+      list_of("x/L")("Re_theta")("delta1+")("delta2+")("delta3+")("delta99+"),
       arma::mat(),
       "Boundary layer properties along the plate (normalized)", "", ""
   )));
@@ -812,6 +813,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 //     const insight::TabularResult& tabres=results->get<TabularResult>("tableCoefficients");
     const insight::TabularResult& tabvals=results->get<TabularResult>("tableValues");
     arma::mat ctd=tabvals.toMat();
+    
     addPlot
     (
       results, executionPath(), "chartDelta",
@@ -824,6 +826,24 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
 	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
 	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	,
+      "Axial profile of boundary layer thickness",
+      "set key top left reverse Left"
+    );
+    
+    arma::mat Re_theta=tabvals.getColByName("Re_theta");
+    addPlot
+    (
+      results, executionPath(), "chartDeltaNorm",
+      "Re_theta", "delta+",
+      list_of
+// 	(PlotCurve(delta1exp_vs_x, "w p lt 1 lc 1 t 'delta_1 (Wieghardt 1951, u=17.8m/s)'"))
+// 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
+// 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
+	
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta1+"))), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta2+"))), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta3+"))), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

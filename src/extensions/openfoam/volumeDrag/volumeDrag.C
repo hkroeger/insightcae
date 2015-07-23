@@ -181,7 +181,7 @@ Foam::tmp<Foam::vectorField> Foam::fv::volumeDrag::computeSup(fvMatrix<vector>& 
     
     const vectorField& U = eqn.psi();
     
-    Su() = 0.5*CD_* magSqr(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
+    Su() = -0.5*CD_* magSqr(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
 
     return Su;
 }

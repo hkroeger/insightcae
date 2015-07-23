@@ -38,19 +38,19 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry=set
 {
- HBytheta0 = double 60.0 "Domain height above plate, divided by final BL thickness"
- WBytheta0 = double 20.0 "Domain height above plate, divided by final BL thickness"
- L = double 5.0 "[m] Length of the domain"
- LapByL = double 0.1 "Length of the resolved approach zone, divided by length of plate"
+ HBytheta0 = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ WBytheta0 = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ LBytheta0 = double 100.0 "[m] Length of the domain, divided by (laminar) BL thickness at tripping location"
+ LapByL = double 0.05 "Length of the resolved approach zone, divided by length of plate"
  Retheta0 = double 350 "Momentum-thickness reynolds number at tripping station. Determines approach zone length. No turbulence for Retheta0<320."
 } "Geometrical properties of the domain"
 
 mesh=set
 {
- nh = int 50 "# cells in vertical direction"
+ nh = int 64 "# cells in vertical direction"
  ypluswall = double 1 "yPlus of first cell at the wall grid layer at the final station"
- dxplus = double 1000 "lateral mesh spacing at the final station"
- dzplus = double 1000 "streamwise mesh spacing at the final station"
+ dxplus = double 1000 "streamwise mesh spacing at the final station"
+ dzplus = double 1000 "spanwise mesh spacing at the final station"
  twod = bool false "select method of transition enforcement"
  gradaxi = double 50 "grading from plate beginning towards inlet boundary"
 
@@ -128,9 +128,9 @@ protected:
     const static std::vector<double> sec_locs_;
 #endif
     
-    double Lap_, Llam_, theta0_;
+    double L_, Lap_, Llam_, theta0_;
 
-    double Cw_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_e_, deltaywall_e_, gradh_, T_, dtrip_, gradax_, gradaxi_;
+    double Cw_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;

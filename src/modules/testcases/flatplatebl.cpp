@@ -82,20 +82,27 @@ void FlatPlateBL::calcDerivedInputData()
   
   theta0_=0.664*sqrt(p.fluid.nu*Llam_/uinf_);
   reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
+
+  L_=p.geometry.LBytheta0*theta0_;
+  reportIntermediateParameter("L", L_, "Domain length", "m");
   
-  Lap_=p.geometry.LapByL*p.geometry.L;
+  Lap_=p.geometry.LapByL*L_;
   if (Lap_>Llam_)
   {
     insight::Warning
     (
       str(format(
-	"Prescribed approach length (Lap=%g) is larger than the laminar range (Llam=%g) for prescribed Retheta0!\nThe length will be clipped to Llam."
+	"Prescribed approach length (Lap=%g) is larger than the laminar range (Llam=%g) for prescribed Retheta0!\n"
+	"The length will be clipped to Llam."
       ) % Lap_ % Llam_));
     Lap_=Llam_;
   }
   reportIntermediateParameter("Lap", Lap_, "Length of (resolved) laminar range upstream of tripping point", "m");
   
-  Re_L_=uinf_*p.geometry.L/p.fluid.nu;
+  double Re_0=uinf_*Llam_/p.fluid.nu;
+  reportIntermediateParameter("Re_0", Re_0, "reynolds number at the tripping location");
+
+  Re_L_=uinf_*(Llam_+L_)/p.fluid.nu;
   reportIntermediateParameter("Re_L", Re_L_, "reynolds number at the end of the plate");
   
   dtrip_=1000.*p.fluid.nu/uinf_; // Re(d_tripwire)=1000
@@ -107,25 +114,32 @@ void FlatPlateBL::calcDerivedInputData()
   W_=p.geometry.WBytheta0*theta0_;
   reportIntermediateParameter("W", W_, "width of the domain");
 
-  reportIntermediateParameter("cf_e", cf(Re_L_), "Expected wall friction coefficient at the end of the plate");
+  double cf_ref=0.664/sqrt(Re_0);
+  reportIntermediateParameter("cf_ref", cf_ref, "Expected wall friction coefficient at the tripping location");
+  double tau_ref=cf_ref*0.5*pow(uinf_,2);
+  reportIntermediateParameter("tau_ref", tau_ref, "Expected wall shear stress at the tripping location", "m^2/s^2");
+  double utau_ref=sqrt(tau_ref);
+  reportIntermediateParameter("utau_ref", utau_ref, "Friction velocity at the tripping location", "m/s");
+  double Retau_ref=utau_ref*theta0_/p.fluid.nu;
+  reportIntermediateParameter("Retau_ref", Retau_ref, "Friction velocity Reynolds number at the tripping location");
 
-  ypfac_e_=sqrt(cf(Re_L_)/2.)*uinf_/p.fluid.nu;
-  reportIntermediateParameter("ypfac", ypfac_e_, "yplus factor at the end of the plate (y+/y)");
+  ypfac_ref_=sqrt(cf_ref/2.)*uinf_/p.fluid.nu;
+  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor at the end of the plate (y+/y)");
 
-  deltaywall_e_=p.mesh.ypluswall/ypfac_e_;
-  reportIntermediateParameter("deltaywall_e", deltaywall_e_, "near-wall grid spacing at the end of the plate");
+  deltaywall_ref_=p.mesh.ypluswall/ypfac_ref_;
+  reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing at the tripping location");
   
-  gradh_=bmd::GradingAnalyzer(deltaywall_e_, H_, p.mesh.nh).grad();
+  gradh_=bmd::GradingAnalyzer(deltaywall_ref_, H_, p.mesh.nh).grad();
   reportIntermediateParameter("gradh", gradh_, "required vertical grid stretching");
   
-  double deltax=(p.mesh.dxplus/ypfac_e_);
-  reportIntermediateParameter("deltax", deltax, "axial grid spacing at the end of the plate");
+  double deltax=(p.mesh.dxplus/ypfac_ref_);
+  reportIntermediateParameter("deltax", deltax, "axial grid spacing (at the end of the plate)");
   
   gradax_=deltax/dtrip_;
   reportIntermediateParameter("gradax", gradax_, "axial grid stretching");
   
 //   nax_=std::max(1, int(round(L/deltax)));
-  nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, p.geometry.L);
+  nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, L_);
   reportIntermediateParameter("nax", nax_, "number of cells in axial direction along the plate");
 
   gradaxi_=p.mesh.gradaxi; //p.getDouble("mesh/gradaxi");
@@ -138,10 +152,10 @@ void FlatPlateBL::calcDerivedInputData()
   if (p.mesh.twod)
     nlat_=1;
   else
-    nlat_=std::max(1, int(round(W_/(p.mesh.dzplus/ypfac_e_))));
+    nlat_=std::max(1, int(round(W_/(p.mesh.dzplus/ypfac_ref_))));
   reportIntermediateParameter("nlat", nlat_, "number of cells in lateral direction");
   
-  T_=p.geometry.L/uinf_;
+  T_=L_/uinf_;
   reportIntermediateParameter("T", T_, "flow-through time");
   
 //   std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
@@ -178,12 +192,12 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
       (0, 	vec3(0, 0., 0))
-      (1, 	vec3(p.geometry.L, 0., 0))
-      (2, 	vec3(p.geometry.L, H_, 0))
+      (1, 	vec3(L_, 0., 0))
+      (2, 	vec3(L_, H_, 0))
       (3, 	vec3(0, H_, 0))
       
-      (4, 	vec3(-p.geometry.LapByL*p.geometry.L, 0., 0))
-      (5, 	vec3(-p.geometry.LapByL*p.geometry.L, H_, 0))
+      (4, 	vec3(-p.geometry.LapByL*L_, 0., 0))
+      (5, 	vec3(-p.geometry.LapByL*L_, H_, 0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
@@ -304,7 +318,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     setsToZones(cm, executionPath(), true);
   }
 
-  cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite") );
+//   cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite") );
 }
 
 
@@ -493,7 +507,7 @@ void FlatPlateBL::evaluateAtSection
   Parameters p(*parameters_);
 
 
-  double xByL= x/p.geometry.L;
+  double xByL= x/L_;
   string prefix="section";
   if (extract_section)
     prefix=extract_section->name_prefix;
@@ -518,8 +532,8 @@ void FlatPlateBL::evaluateAtSection
   boost::ptr_vector<sampleOps::set> sets;
   
   double 
-    miny=0.99*deltaywall_e_,
-    maxy=std::min(theta0_*10.0, H_-deltaywall_e_);
+    miny=0.99*deltaywall_ref_,
+    maxy=std::min(theta0_*10.0, H_-deltaywall_ref_);
     
   arma::mat pts=exp(linspace(log(miny), log(maxy), 101))*vec3(0,1,0).t();
   pts.col(0)+=x;
@@ -542,7 +556,7 @@ void FlatPlateBL::evaluateAtSection
   sampleOps::ColumnDescription cd;
   arma::mat data =
     sampleOps::findSet<sampleOps::linearAveragedPolyLine>(sets, "radial").readSamples(cm, executionPath(), &cd);
-  arma::mat y=data.col(0)+deltaywall_e_;
+  arma::mat y=data.col(0)+deltaywall_ref_;
 
   double tauw=as_scalar(0.5*cfi(x)*uinf_*uinf_);
   double utau=sqrt(tauw);
@@ -728,7 +742,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       cm, executionPath(), list_of<std::string>
       (
 	"cbi=loadOFCase('.')\n"
-	+str(format("L=%g\n")%p.geometry.L)+
+	+str(format("L=%g\n")%L_)+
 	"prepareSnapshots()\n"
 
 	"eb=extractPatches(cbi, '^(wall|approach|oldInternalFaces)')\n"
@@ -798,11 +812,36 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   )));
   
   for (size_t i=0; i<sec_locs_.size(); i++)
-    evaluateAtSection(cm, results, sec_locs_[i]*p.geometry.L, i, Cf_vs_x_i, UMeanName, RFieldName);
-  
-  BOOST_FOREACH(const FlatPlateBL::Parameters::eval_type::bc_extractsections_type::value_type& es, p.eval.bc_extractsections)
   {
-    evaluateAtSection(cm, results, es.x, -1, Cf_vs_x_i, UMeanName, RFieldName, &es);
+    evaluateAtSection
+    (
+      cm, 
+      results, 
+      sec_locs_[i]*L_, 
+      i, 
+      Cf_vs_x_i, 
+      UMeanName, 
+      RFieldName
+    );
+  }
+  
+  BOOST_FOREACH
+  (
+    const FlatPlateBL::Parameters::eval_type::bc_extractsections_type::value_type& es, 
+    p.eval.bc_extractsections
+  )
+  {
+    evaluateAtSection
+    (
+      cm, 
+      results, 
+      es.x, 
+      -1, 
+      Cf_vs_x_i, 
+      UMeanName, 
+      RFieldName, 
+      &es
+    );
   }
 
   {  
@@ -823,9 +862,9 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -854,10 +893,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       results, executionPath(), "chartDelta99",
       "x [m]", "delta [m]",
       list_of
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
-	(PlotCurve(arma::mat(join_rows(p.geometry.L*ctd.col(0), tabvals.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

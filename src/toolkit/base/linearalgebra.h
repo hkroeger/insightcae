@@ -192,6 +192,7 @@ public:
   /**
    * interpolates all y values (row vector) 
    * at multiple locations given in x
+   * returns only the y values, no x-values in the first column
    */
   arma::mat operator()(const arma::mat& x) const;
   /**

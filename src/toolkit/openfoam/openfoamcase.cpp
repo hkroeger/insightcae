@@ -392,7 +392,7 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
   fields_[name]=field;
 }
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict)
+void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const
 {
   boost::filesystem::path basepath(location);
   boost::filesystem::path dictpath = basepath / "constant" / "polyMesh" / "boundary";

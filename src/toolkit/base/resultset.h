@@ -321,8 +321,25 @@ struct PlotCurve
   
   PlotCurve();
   PlotCurve(const PlotCurve& o);
+  
+  /**
+   * construct a plot curve by a gnuplot command only, i.e. a formula
+   */
   PlotCurve(const char* plotcmd);
+  
+  /**
+   * construct from separate x and y arrays (sizes have to match)
+   */
   PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
+  
+  /**
+   * construct from separate x and y column vectors (sizes have to match)
+   */
+  PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plotcmd);
+  
+  /**
+   * construct from matrix containing two columns with x and y values
+   */
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
   
   std::string title() const;

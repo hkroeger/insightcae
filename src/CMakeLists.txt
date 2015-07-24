@@ -63,7 +63,7 @@ ADD_DEFINITIONS(
     # Other flags
 )
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-deprecated")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-deprecated -Wno-old-style-cast")
 
 SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.49.0" "1.41.0" "1.39.0"
 	"1.38.0" "1.37.0"

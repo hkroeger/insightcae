@@ -237,7 +237,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
     }
 
     surfaceScalarField::GeometricBoundaryField& bLim = lim.boundaryField();
-    surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
+//     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
     forAll(bLim, patchi)
     {
         scalarField& pLim = bLim[patchi];
@@ -306,7 +306,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
     );
     surfaceScalarField& weightingFactors = tWeightingFactors();
 
-    scalarField& weights = weightingFactors.internalField();
+//     scalarField& weights = weightingFactors.internalField();
 
 
     volVectorField gradc = fvc::grad(phi);
@@ -348,7 +348,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
     surfaceScalarField::GeometricBoundaryField& bWeights =
         weightingFactors.boundaryField();
 
-    surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
+//     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
 
     forAll(bWeights, patchi)
     {

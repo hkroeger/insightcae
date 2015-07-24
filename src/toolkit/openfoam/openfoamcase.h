@@ -162,7 +162,7 @@ public:
     
     void addField(const std::string& name, const FieldInfo& field);
 
-    void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict);
+    void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const;
     
     std::set<std::string> getUnhandledPatches(OFDictData::dict& boundaryDict) const;
     

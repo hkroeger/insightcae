@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     instantList timeDirs = timeSelector::select0(runTime, args);
     #include "createNamedMesh.H"
 
-    const bool compressible = args.optionFound("compressible");
+//     const bool compressible = args.optionFound("compressible");
 
     forAll(timeDirs, timeI)
     {

@@ -1750,12 +1750,12 @@ void TurbulentVelocityInletBC::setField_U(OFDictData::dict& BC) const
   ParameterSet ps=Parameters::makeDefault();
   p_.set(ps);
   
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
     FieldData(ps.getSubset("umean")).setDirichletBC(BC);
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     BC["type"]= inflowGenerator_types[tu->type];
@@ -1775,7 +1775,7 @@ void TurbulentVelocityInletBC::setField_p(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC) const
 {
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
 
@@ -1787,7 +1787,7 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC) const
     BC["value"]="uniform "+lexical_cast<string>(k);
     
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     // set some small sgs energy
@@ -1798,7 +1798,7 @@ void TurbulentVelocityInletBC::setField_k(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC) const
 {
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
 
@@ -1811,7 +1811,7 @@ void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC) const
     BC["value"]="uniform "+lexical_cast<string>(omega);
     
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     throw insight::Exception("Requested BC for field omega while inflow generator was selected!");
@@ -1821,7 +1821,7 @@ void TurbulentVelocityInletBC::setField_omega(OFDictData::dict& BC) const
 void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC) const
 {
 
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
 
@@ -1834,7 +1834,7 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC) const
     BC["value"]="uniform "+lexical_cast<string>(epsilon);
     
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     throw insight::Exception("Requested BC for field epsilon while inflow generator was selected!");
@@ -1844,7 +1844,7 @@ void TurbulentVelocityInletBC::setField_epsilon(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC) const
 {
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
 
@@ -1856,7 +1856,7 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC) const
     BC["value"]="uniform "+lexical_cast<string>(nutilda);
     
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     throw insight::Exception("Requested BC for field nuTilda while inflow generator was selected!");
@@ -1866,7 +1866,7 @@ void TurbulentVelocityInletBC::setField_nuTilda(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC) const
 {
-  if (Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
+  if (const Parameters::turbulence_uniformIntensityAndLengthScale_type* tu 
 	= boost::get<Parameters::turbulence_uniformIntensityAndLengthScale_type>(&p_.turbulence))
   {
 
@@ -1878,7 +1878,7 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC) const
     BC["value"]="uniform ("+str(format("%g 0 0 %g 0 %g") % kBy3 % kBy3 % kBy3 )+")";
     
   }
-  else if (Parameters::turbulence_inflowGenerator_type* tu 
+  else if (const Parameters::turbulence_inflowGenerator_type* tu 
 	= boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))
   {
     throw insight::Exception("Requested BC for field R while inflow generator was selected!");

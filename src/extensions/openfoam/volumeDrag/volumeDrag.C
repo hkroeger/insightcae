@@ -85,7 +85,21 @@ Foam::scalar Foam::fv::volumeDrag::computeAxialLength() const
   }
   
   vector el=CD_/mCD;
-  scalar l = el & boundBox(UIndirectList<vector>(mesh_.C(), cells_)()).span();
+  scalar minc=GREAT, maxc=-GREAT;
+  forAll(cells_, j)
+  {
+    const cell& c=mesh_.cells()[cells_[j]];
+    forAll(c, fi)
+    {
+      const point& cf=mesh_.Cf()[c[fi]];
+      minc=min(minc, el&cf);
+      maxc=max(maxc, el&cf);
+    }
+  }
+  reduce(minc, minOp<scalar>());
+  reduce(maxc, maxOp<scalar>());
+  scalar l=maxc-minc;
+//   scalar l = el & boundBox(UIndirectList<vector>(mesh_.C(), cells_)()).span();
   
 //   Info<<"axial length l="<<l<<endl;
 

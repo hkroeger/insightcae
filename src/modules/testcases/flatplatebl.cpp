@@ -117,7 +117,7 @@ void FlatPlateBL::calcDerivedInputData()
   double cf_ref=0.664/sqrt(Re_0);
   reportIntermediateParameter("cf_ref", cf_ref, "Expected wall friction coefficient at the tripping location");
   double tau_ref=cf_ref*0.5*pow(uinf_,2);
-  reportIntermediateParameter("tau_ref", tau_ref, "Expected wall shear stress at the tripping location", "m^2/s^2");
+  reportIntermediateParameter("tau_ref", tau_ref, "Expected wall shear stress at the tripping location", "$m^2/s^2$");
   double utau_ref=sqrt(tau_ref);
   reportIntermediateParameter("utau_ref", utau_ref, "Friction velocity at the tripping location", "m/s");
   double Retau_ref=utau_ref*theta0_/p.fluid.nu;
@@ -576,7 +576,7 @@ void FlatPlateBL::evaluateAtSection
 
   if (table)
   {
-    table->setCellByName(*thisctrow, "Re_theta", Re_theta);
+    table->setCellByName(*thisctrow, "$Re_\\theta$", Re_theta);
     table->setCellByName(*thisctrow, "delta1+", delta123(0)*ypByy);
     table->setCellByName(*thisctrow, "delta2+", delta123(1)*ypByy);
     table->setCellByName(*thisctrow, "delta3+", delta123(2)*ypByy);
@@ -798,7 +798,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   results->insert("tableCoefficients",
     std::auto_ptr<TabularResult>(new TabularResult
     (
-      list_of("x/L")("Re_theta")("delta1+")("delta2+")("delta3+")("delta99+"),
+      list_of("x/L")("$Re_\\theta$")("delta1+")("delta2+")("delta3+")("delta99+"),
       arma::mat(),
       "Boundary layer properties along the plate (normalized)", "", ""
   )));
@@ -849,7 +849,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     arma::mat delta2exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta2_vs_x");
     arma::mat delta3exp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/delta3_vs_x");
     
-//     const insight::TabularResult& tabres=results->get<TabularResult>("tableCoefficients");
+    const insight::TabularResult& tabcoeffs=results->get<TabularResult>("tableCoefficients");
     const insight::TabularResult& tabvals=results->get<TabularResult>("tableValues");
     arma::mat ctd=tabvals.toMat();
     
@@ -870,7 +870,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       "set key top left reverse Left"
     );
     
-    arma::mat Re_theta=tabvals.getColByName("Re_theta");
+    arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
     addPlot
     (
       results, executionPath(), "chartDeltaNorm",
@@ -880,9 +880,9 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 // 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
 // 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta1+"))), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta2+"))), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabvals.getColByName("delta3+"))), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta1+"))), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta2+"))), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
+	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta3+"))), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

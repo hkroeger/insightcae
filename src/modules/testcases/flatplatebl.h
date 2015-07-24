@@ -38,9 +38,9 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry=set
 {
- HBytheta0 = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
- WBytheta0 = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
- LBytheta0 = double 100.0 "[m] Length of the domain, divided by (laminar) BL thickness at tripping location"
+ HBydelta2e = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ WBydelta2e = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ L = double 5.0 "[m] Length of the domain"
  LapByL = double 0.05 "Length of the resolved approach zone, divided by length of plate"
  Retheta0 = double 350 "Momentum-thickness reynolds number at tripping station. Determines approach zone length. No turbulence for Retheta0<320."
 } "Geometrical properties of the domain"
@@ -173,16 +173,26 @@ public:
   static double G(double Alpha, double D);
   
   /**
-   * computes the friction coefficient of a flat plate
-   * @Re Reynolds number formulated with running length
+   * computes the friction coefficient of a flat plate (total frictional resistance)
+   * @Re Reynolds number formulated with length of plate
    */
   static double cw(double Re, double Cplus=5.0);
 
   /**
    * computes the friction coefficient of a flat plate at station x
-   * @Re Reynolds number formulated with running distance x
+   * @Rex Reynolds number formulated with running distance x
    */
-  static double cf(double Re, double Cplus=5.0);
+  static double cf(double Rex, double Cplus=5.0);
+  
+  /**
+   * computes the Reynolds number with BL layer thickness delta99 at axial station x = Rex*nu/Uinf
+   */
+  static double Redelta99(double Rex);
+  
+  /**
+   * computes the Reynolds number with BL momentum thickness delta2 at axial station x = Rex*nu/Uinf
+   */
+  static double Redelta2(double Rex);
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);

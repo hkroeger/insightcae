@@ -80,11 +80,8 @@ void FlatPlateBL::calcDerivedInputData()
   Llam_=pow(p.geometry.Retheta0/0.664, 2)*p.fluid.nu/uinf_;
   reportIntermediateParameter("Llam", Llam_, "Length of laminar range upstream of tripping point", "m");
   
-  theta0_=0.664*sqrt(p.fluid.nu*Llam_/uinf_);
-  reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
-
-  L_=p.geometry.LBytheta0*theta0_;
-  reportIntermediateParameter("L", L_, "Domain length", "m");
+  L_=p.geometry.L;
+//   reportIntermediateParameter("L", L_, "Domain length", "m");
   
   Lap_=p.geometry.LapByL*L_;
   if (Lap_>Llam_)
@@ -104,26 +101,48 @@ void FlatPlateBL::calcDerivedInputData()
 
   Re_L_=uinf_*(Llam_+L_)/p.fluid.nu;
   reportIntermediateParameter("Re_L", Re_L_, "reynolds number at the end of the plate");
-  
-  dtrip_=1000.*p.fluid.nu/uinf_; // Re(d_tripwire)=1000
-  reportIntermediateParameter("dtrip", dtrip_, "diameter of tripwire to fulfill Re_d=1000");
-  
-  H_=p.geometry.HBytheta0*theta0_;
+
+  /**
+   * compute estimated BL thicknesses
+   */
+  theta0_=0.664*sqrt(p.fluid.nu*Llam_/uinf_);
+  reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
+  double cf_0=0.664/sqrt(Re_0);
+  reportIntermediateParameter("cf_0", cf_0, "Expected wall friction coefficient at the tripping location");
+  double tau_0=cf_0*0.5*pow(uinf_,2);
+  reportIntermediateParameter("tau_0", tau_0, "Expected wall shear stress at the tripping location", "$m^2/s^2$");
+  double utau_0=sqrt(tau_0);
+  reportIntermediateParameter("utau_0", utau_0, "Friction velocity at the tripping location", "m/s");
+  double Retau_0=utau_0*theta0_/p.fluid.nu;
+  reportIntermediateParameter("Retau_0", Retau_0, "Friction velocity Reynolds number at the tripping location");
+
+
+  double thetae=Redelta2(Re_L_)*p.fluid.nu/uinf_;
+  reportIntermediateParameter("thetae", thetae, "Turbulent boundary layer thickness at the end of the plate", "m");
+  double cf_e=cf(Re_L_);
+  reportIntermediateParameter("cf_e", cf_e, "Expected wall friction coefficient at the end of the plate");
+  double tau_e=cf_e*0.5*pow(uinf_,2);
+  reportIntermediateParameter("tau_e", tau_e, "Expected wall shear stress at the end of the plate", "$m^2/s^2$");
+  double utau_e=sqrt(tau_e);
+  reportIntermediateParameter("utau_e", utau_e, "Friction velocity at the end of the plate", "m/s");
+  double Retau_e=utau_e*thetae/p.fluid.nu;
+  reportIntermediateParameter("Retau_e", Retau_e, "Friction velocity Reynolds number at the end of the plate");
+
+
+  ypfac_ref_=sqrt(cf_e/2.)*uinf_/p.fluid.nu;
+  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor at the end of the plate (y+/y)");
+
+  H_=p.geometry.HBydelta2e*thetae;
   reportIntermediateParameter("H", H_, "height of the domain");
+  reportIntermediateParameter("Hbytheta0", H_/theta0_, "height of the domain, divided by initial BL thickness");
 
-  W_=p.geometry.WBytheta0*theta0_;
+  W_=p.geometry.WBydelta2e*thetae;
   reportIntermediateParameter("W", W_, "width of the domain");
+  reportIntermediateParameter("Wbytheta0", W_/theta0_, "width of the domain, divided by initial BL thickness");
 
-  double cf_ref=0.664/sqrt(Re_0);
-  reportIntermediateParameter("cf_ref", cf_ref, "Expected wall friction coefficient at the tripping location");
-  double tau_ref=cf_ref*0.5*pow(uinf_,2);
-  reportIntermediateParameter("tau_ref", tau_ref, "Expected wall shear stress at the tripping location", "$m^2/s^2$");
-  double utau_ref=sqrt(tau_ref);
-  reportIntermediateParameter("utau_ref", utau_ref, "Friction velocity at the tripping location", "m/s");
-  double Retau_ref=utau_ref*theta0_/p.fluid.nu;
-  reportIntermediateParameter("Retau_ref", Retau_ref, "Friction velocity Reynolds number at the tripping location");
+  reportIntermediateParameter("Lbytheta0", L_/theta0_, "length of the domain, divided by initial BL thickness");
 
-  ypfac_ref_=sqrt(cf_ref/2.)*uinf_/p.fluid.nu;
+  ypfac_ref_=sqrt(cf_e/2.)*uinf_/p.fluid.nu;
   reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor at the end of the plate (y+/y)");
 
   deltaywall_ref_=p.mesh.ypluswall/ypfac_ref_;
@@ -134,6 +153,10 @@ void FlatPlateBL::calcDerivedInputData()
   
   double deltax=(p.mesh.dxplus/ypfac_ref_);
   reportIntermediateParameter("deltax", deltax, "axial grid spacing (at the end of the plate)");
+
+  dtrip_=1000*p.fluid.nu/uinf_; // Re(d_tripwire)=1000
+  reportIntermediateParameter("dtrip", dtrip_, "diameter of tripwire to fulfill Re_d=1000");
+  
   
   gradax_=deltax/dtrip_;
   reportIntermediateParameter("gradax", gradax_, "axial grid stretching");
@@ -159,14 +182,14 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("T", T_, "flow-through time");
   
 //   std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
-  if (Parameters::run_type::regime_steady_type *steady 
+  if (const Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
     end_=steady->iter;
     avgStart_=0.98*end_;
     avg2Start_=end_;
   } 
-  else if (Parameters::run_type::regime_unsteady_type *unsteady 
+  else if (const Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
     avgStart_=unsteady->inittime*T_;
@@ -776,24 +799,21 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       wallforce.col(1)/(0.5*pow(uinf_,2))
     ));
   Cf_vs_x.save( (executionPath()/"Cf_vs_x.txt").c_str(), arma_ascii);
-  
   Interpolator Cf_vs_x_i(Cf_vs_x);
 
-  {  
-    
-    arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
-
-    addPlot
-    (
-      results, executionPath(), "chartMeanWallFriction",
-      "x [m]", "<Cf>",
-      list_of
-	(PlotCurve(Cf_vs_x, "w l lt 1 lc 2 lw 2 t 'CFD'"))
-	(PlotCurve(Cfexp_vs_x, "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'"))
-	,
-      "Axial profile of wall friction coefficient"
-    );    
-  }
+  arma::mat Cfexp_vs_x=refdatalib.getProfile("Wieghardt1951_FlatPlate", "u17.8/cf_vs_x");
+  Interpolator Cfexp_vs_x_i(Cfexp_vs_x);
+  
+  addPlot
+  (
+    results, executionPath(), "chartMeanWallFriction",
+    "x [m]", "<Cf>",
+    list_of
+      (PlotCurve(Cf_vs_x, "w l lt 1 lc 2 lw 2 t 'CFD'"))
+      (PlotCurve(Cfexp_vs_x, "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'"))
+      ,
+    "Axial profile of wall friction coefficient"
+  );    
   
   results->insert("tableCoefficients",
     std::auto_ptr<TabularResult>(new TabularResult
@@ -871,18 +891,28 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     );
     
     arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
+    Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
       results, executionPath(), "chartDeltaNorm",
       "Re_theta", "delta+",
       list_of
-// 	(PlotCurve(delta1exp_vs_x, "w p lt 1 lc 1 t 'delta_1 (Wieghardt 1951, u=17.8m/s)'"))
-// 	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
-// 	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(
+	   delta2exp_vs_x_i(delta1exp_vs_x.col(0))*uinf_/p.fluid.nu, 
+	   delta1exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta1exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
+	   "w p lt 1 lc 1 t 'delta_1+ (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(
+	   delta2exp_vs_x_i(delta2exp_vs_x.col(0))*uinf_/p.fluid.nu, 
+	   delta2exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta2exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
+	   "w p lt 2 lc 3 t 'delta_2+ (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(
+	   delta2exp_vs_x_i(delta3exp_vs_x.col(0))*uinf_/p.fluid.nu, 
+	   delta3exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta3exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
+	   "w p lt 3 lc 4 t 'delta_3+ (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta1+"))), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta2+"))), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
-	(PlotCurve(arma::mat(join_rows(Re_theta, tabcoeffs.getColByName("delta3+"))), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
+	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta1+"), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
+	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta2+"), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
+	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta3+"), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -893,10 +923,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
       results, executionPath(), "chartDelta99",
       "x [m]", "delta [m]",
       list_of
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta99"))), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta1"), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta2"), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta3"), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta99"), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -932,7 +962,7 @@ double FlatPlateBL::G(double Alpha, double D)
 
 double FlatPlateBL::cw(double Re, double Cplus)
 {
-  return 2.*pow( (0.41/log(Re)) * G( log(Re), 2.*log(0.41)+0.41*(Cplus-3.) ), 2);
+  return 2.*pow( (0.41/log(Re)) * G( log(Re), 2.*log(0.41)+0.41*(Cplus-3.) ), 2); // Schlichting eq. (18.99), Kap. 18.2.5
 }
 
 double FlatPlateBL::cf(double Rex, double Cplus)
@@ -942,7 +972,7 @@ double FlatPlateBL::cf(double Rex, double Cplus)
     double Rex, Cplus;
     virtual double operator()(double gamma) const 
     { 
-      return (1./gamma) -(1./0.41)*log(gamma*gamma*Rex)
+      return (1./gamma) -(1./0.41)*log(gamma*gamma*Rex)  // Schlichting, Eq. (18.93), Kap. 18.2.5
 	- Cplus - (1./0.41)*(2.*0.55-log(3.78)); 
     }
   } obj;
@@ -951,6 +981,19 @@ double FlatPlateBL::cf(double Rex, double Cplus)
   double gamma=nonlinearSolve1D(obj, 1e-7, 10.);
   return 2.*gamma*gamma;
 }
+
+double FlatPlateBL::Redelta99(double Rex)
+{
+  double Cplus=5., Cquer=2.1;
+  double D=(log(2*0.41)+0.41*(Cplus+Cquer));
+  return 0.14*(Rex/log(Rex))*G(log(Rex), D); // Schlichting eq. (2.12), Kap. 2.3
+}
+
+double FlatPlateBL::Redelta2(double Rex)
+{
+  return 0.5*cw(Rex)*Rex; // Schlichting eq. (18.100), Kap. 18.2.5
+}
+
 
 arma::mat FlatPlateBL::integrateDelta123(const arma::mat& uByUinf_vs_y)
 {

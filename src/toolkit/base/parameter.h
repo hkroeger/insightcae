@@ -344,7 +344,7 @@ public:
     boost::filesystem::path inputfilepath);
 };
 
-class TableParameter
+class MatrixParameter
 : public Parameter
 {
 public:
@@ -352,13 +352,12 @@ public:
 
 protected:
   arma::mat value_;
-  std::vector<std::string> colnames_;
   
 public:
-  declareType("table");
+  declareType("matrix");
   
-  TableParameter(const std::string& description);
-  TableParameter(const arma::mat& defaultValue, const std::vector<std::string>& colnames, const std::string& description);
+  MatrixParameter(const std::string& description);
+  MatrixParameter(const arma::mat& defaultValue, const std::string& description);
 
   const arma::mat& operator()() const;
   

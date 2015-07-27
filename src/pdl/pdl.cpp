@@ -326,7 +326,7 @@ struct DoubleParameterParser
     
     Data(double v, const std::string& d)
     : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual std::string cppType(const std::string&) const
     {
@@ -727,7 +727,7 @@ struct SelectableSubsetParameterParser
     
     Data(const SubsetListData& v, const std::string& ds, const std::string& d)
     : ParserDataBase(d), default_sel(ds), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
     {
@@ -973,6 +973,78 @@ struct ArrayParameterParser
   }
 };
 
+
+
+struct MatrixParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    arma::mat value;
+    
+    Data(int r, int c, const std::string& d)
+    : ParserDataBase(d), value(arma::zeros(r,c))
+    {}
+    
+    virtual void cppAddHeader(std::set<std::string>& headers) const 
+    {
+      headers.insert("<armadillo>");
+    };
+    
+    virtual std::string cppType(const std::string&) const
+    {
+      return "arma::mat";
+    }
+
+    virtual std::string cppParamType(const std::string& name) const 
+    { 
+      return "insight::MatrixParameter";
+    }; 
+    
+    virtual std::string cppValueRep(const std::string& name) const 
+    { 
+      return "#error";
+    }
+    
+    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+    {
+
+      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
+//       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
+      os<<"{"<<endl;
+      os<<"arma::mat data"<<endl;
+      for (int i=0; i<value.n_rows;i++)
+      {
+	for (int j=0; j<value.n_cols;j++)
+	{
+	  os<<"<<"<<value(i,j)<<endl;
+	}
+	os<<"<<arma::endr";
+      };
+      os<<name<<".reset(new "<<cppParamType(name)<<"(data, \""<<description<<"\")); "<<endl;
+      os<<"}"<<endl;
+    }
+    
+  };
+  
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "matrix",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+	( qi::int_ >> 'x' >> qi::int_ >> ruleset.r_description_string ) 
+	[ qi::_val = phx::construct<ParserDataBase::Ptr>(
+           new_<Data>(qi::_1, qi::_2, qi::_3)
+          ) ]
+      ))
+    );
+  }
+};
+
+
+
 template <typename Iterator, typename Skipper>
 struct PDLParser
 : qi::grammar< Iterator, ParameterSetData(), Skipper >
@@ -995,6 +1067,7 @@ public:
     SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
+    MatrixParameterParser::insertrule<Iterator, Skipper>(rules);
     
     rules.init();
 

@@ -522,46 +522,40 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
   }
 }
   
-defineType(TableParameter);
-addToFactoryTable(Parameter, TableParameter, std::string);
+defineType(MatrixParameter);
+addToFactoryTable(Parameter, MatrixParameter, std::string);
 
-TableParameter::TableParameter(const std::string& description)
+MatrixParameter::MatrixParameter(const std::string& description)
 : Parameter(description)
 {
 }
 
-TableParameter::TableParameter
+MatrixParameter::MatrixParameter
 (
   const arma::mat& defaultValue, 
- const std::vector< string >& colnames, 
- const string& description
+  const string& description
 )
 : Parameter(description),
-  value_(defaultValue),
-  colnames_(colnames)
-{
-  if (!defaultValue.n_cols!=colnames_.size())
-    throw insight::Exception(
-      str(format("number column headings (%d) is not equal to number of data columns (%d)!") % colnames_.size() % value_.n_cols)
-    );
-}
+  value_(defaultValue)
+{}
 
 
-const arma::mat& TableParameter::operator()() const
+const arma::mat& MatrixParameter::operator()() const
 {
   return value_;
 }
 
-string TableParameter::latexRepresentation() const
+string MatrixParameter::latexRepresentation() const
 {
   std::ostringstream oss;
   
-  oss<<"\\begin{tabular}{";
+  oss<<"\\begin{tabular}{l";
   for (int j=0;j<value_.n_cols; j++) oss<<'c'<<endl;
   oss<<"}\n";
   
   for (int i=0;i<value_.n_rows; i++)
   {
+    oss<<i<<"&";
     for (int j=0;j<value_.n_cols; j++)
     {
       oss<<value_(i,j);
@@ -574,35 +568,37 @@ string TableParameter::latexRepresentation() const
   return oss.str();
 }
 
-xml_node< char >* TableParameter::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath) const
+xml_node< char >* MatrixParameter::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath) const
 {
-  throw insight::Exception("not implemented!");
-
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-//   child->append_attribute(doc.allocate_attribute
-//   (
-//     "value", 
-//     //doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
-//     doc.allocate_string( items_[value_].c_str() )
-//   ));
-//      
-//      defaultValue_->appendToNode("default", doc, *child, inputfilepath);
-//   for (int i=0; i<size(); i++)
-//   {
-//     value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
-//   }
+
+  std::ostringstream voss;
+  voss<<endl;
+  value_.save(voss, arma::raw_ascii);
+  voss<<endl;
+  
+  // set stringified table values as node value
+  child->value(doc.allocate_string(voss.str().c_str()));
+    
   return child;
 }
 
-void TableParameter::readFromNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath)
+void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc, xml_node< char >& node, path inputfilepath)
 {
-  throw insight::Exception("not implemented!");
+  using namespace rapidxml;
+  xml_node<>* child = findNode(node, name);
+  if (child)
+  {
+    string value_str=child->value();
+    std::istringstream iss(value_str);
+    value_.load(iss, arma::raw_ascii);
+  }
 }
 
-Parameter* TableParameter::clone() const
+Parameter* MatrixParameter::clone() const
 {
-  return new TableParameter(value_, colnames_, description_);
+  return new MatrixParameter(value_, description_);
 }
 
 

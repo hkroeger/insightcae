@@ -78,6 +78,13 @@
 
 #include <armadillo>
 
+/**
+ * \defgroup PDL PDL - Parameter Definition Language
+ * 
+ * PDL is a special syntax to describe input parameter sets.
+ * The language is parsed by a PDL compiler who translates it into special classes which..
+ */
+
 arma::mat vec2mat(const std::vector<double>& vals)
 {
  arma::mat m = arma::zeros(vals.size());
@@ -97,20 +104,13 @@ using namespace qi;
 using namespace phx;
 using namespace boost;
 
+
 template <typename Iterator>
-struct skip_grammar : public qi::grammar<Iterator>
+struct skip_grammar 
+: public qi::grammar<Iterator>
 {
-        skip_grammar() : skip_grammar::base_type(skip, "PL/0")
-        {
-            skip
-                =   boost::spirit::ascii::space
-                | repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
-                | repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
-                ;
-        }
-
         qi::rule<Iterator> skip;
-
+        skip_grammar();
 };
 
 
@@ -119,7 +119,10 @@ std::string extendtype(const std::string& pref, const std::string& app)
   if (pref=="") return app;
   else return pref+"::"+app;
 }
-/* Basic data structures */
+
+/** 
+ * Basic data structures 
+ */
 class ParserDataBase
 {
 public:
@@ -215,31 +218,70 @@ struct PDLParserRuleset
   qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
   
   PDLParserRuleset();
-//   {  
-//     r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
-//     r_description_string = (r_string | attr(""));
-//     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-//     
-//     r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
-//     
-//     
-//     r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
-//     r_parameterset = *( r_parametersetentry );
-//     
-//     BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-//     BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
-//     BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
-//     BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
-//     cout<<"ok1"<<endl;
-//   }
   
-  void init()
-  {
-  }
+  void init() {}
   
   void addIncludeRule();
   
 };
+
+
+
+template <typename Iterator>
+skip_grammar<Iterator>::skip_grammar() 
+ : skip_grammar::base_type(skip, "PL/0")
+{
+    skip
+	=   boost::spirit::ascii::space
+	| repo::confix("//", qi::eol)[*(qi::char_ - qi::eol)]
+	| repo::confix("#", qi::eol)[*(qi::char_ - qi::eol)]
+	;
+}
+/**
+ * \addtogroup PDL
+ * \section grammar Grammar
+ * \subsection grammar_comments Comments
+ * Comments are supported inside the definition block:
+ * - lines starting with //
+ * - lines starting with #
+ */
+
+
+template <typename Iterator, typename Skipper>
+PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
+{  
+  r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
+  r_description_string = (r_string | attr(""));
+  r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+  
+  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
+  
+//   parameterDataRules.add
+//   (
+//     "include",
+//     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+//       ( "(" >> r_string >> ")" >> ruleset.r_description_string ) 
+//       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
+//     ))
+//   );
+    
+  r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
+  r_parameterset = *( r_parametersetentry );
+  
+  BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+  BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
+  BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
+  BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+}
+/**
+ * \addtogroup PDL
+ * \subsection grammar_primitives Primitives
+ * - Strings are any char confined inside quotes ""
+ * - Descriptor strings may be omitted. In this case, an empty descriptor is inserted.
+ * - Identifiers must not be enclosed by quotes but have to start with an alphabetical character. 
+ *   They may then contain alphanumerical chars or underscores.
+ */
+
 
 /* specialized data structures */
 struct BoolParameterParser
@@ -968,32 +1010,6 @@ public:
     
 };
 
-template <typename Iterator, typename Skipper>
-PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
-{  
-  r_string = as_string[ lexeme [ "\"" >> *~char_("\"") >> "\"" ] ];
-  r_description_string = (r_string | attr(""));
-  r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
-  
-  r_parameterdata %= omit[ parameterDataRules[ qi::_a = qi::_1 ] ] >> qi::lazy(*qi::_a);
-  
-//   parameterDataRules.add
-//   (
-//     "include",
-//     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-//       ( "(" >> r_string >> ")" >> ruleset.r_description_string ) 
-//       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(phx::construct<arma::mat>(qi::_1), qi::_2)) ]
-//     ))
-//   );
-    
-  r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
-  r_parameterset = *( r_parametersetentry );
-  
-  BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-  BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
-  BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
-  BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
-}
 
 
 int main(int argc, char *argv[])

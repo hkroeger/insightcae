@@ -505,7 +505,10 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //   cm.insert(new SuctionInletBC(cm, top_, boundaryDict, SuctionInletBC::Parameters()
 //     .set_pressure(0.0)
 //   ));
-  cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+//   cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
+  cm.insert(new PressureOutletBC(cm, top_, boundaryDict, PressureOutletBC::Parameters()
+    .set_pressure(0.0)
+  ));
   
   if (p.mesh.twod)
     cm.insert(new SimpleBC(cm, cycl_prefix_, boundaryDict, "empty") );

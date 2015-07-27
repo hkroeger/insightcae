@@ -135,7 +135,7 @@ protected:
     
     double avgStart_, avg2Start_, end_;
     
-    std::string in_, out_, top_, cycl_prefix_, approach_, trip_;
+    std::string in_, /*out_, top_*/out_top_, cycl_prefix_, approach_, trip_;
     inline std::string tripMaster() const { return trip_+"_master"; }
     inline std::string tripSlave() const { return trip_+"_slave"; }
   

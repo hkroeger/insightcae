@@ -68,8 +68,9 @@ void FlatPlateBL::calcDerivedInputData()
   Parameters p(*parameters_);
 
   in_="inlet";
-  out_="outlet";
-  top_="top";
+//   out_="outlet";
+//   top_="top";
+  out_top_="outlet_top";
   cycl_prefix_="cyclic";
   approach_="approach";
   trip_="trip";
@@ -227,8 +228,9 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   // create patches
   Patch& approach= bmd->addPatch(approach_, new Patch());
   Patch& in= 	bmd->addPatch(in_, new Patch());
-  Patch& out= 	bmd->addPatch(out_, new Patch());
-  Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
+//   Patch& out= 	bmd->addPatch(out_, new Patch());
+//   Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
+  Patch& out_top= 	bmd->addPatch(out_top_, new Patch());
   Patch cycl_side_0=Patch();
   Patch cycl_side_1=Patch();
   
@@ -253,8 +255,10 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     );
     in.addFace(bl.face("0473"));
     approach.addFace(bl.face("0154"));
-//     out.addFace(bl.face("1265"));
-    top.addFace(bl.face("2376"));
+    
+//     top.addFace(bl.face("2376"));
+    out_top.addFace(bl.face("2376"));
+    
     cycl_side_0.addFace(bl.face("0321"));
     cycl_side_1.addFace(bl.face("4567"));
   }
@@ -267,9 +271,11 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 	list_of<double>(gradax_)(gradh_)(1.)
       )
     );
-//     in.addFace(bl.face("0473"));
-    out.addFace(bl.face("1265"));
-    top.addFace(bl.face("2376"));
+//     out.addFace(bl.face("1265"));
+//     top.addFace(bl.face("2376"));
+    out_top.addFace(bl.face("1265"));
+    out_top.addFace(bl.face("2376"));
+    
     cycl_side_0.addFace(bl.face("0321"));
     cycl_side_1.addFace(bl.face("4567"));
   }
@@ -494,10 +500,6 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
     ));
   }
   
-  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0)
-  ));
-  
 //  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
 //    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );
   //  leave approach as wall to produce laminar BL upstream
@@ -506,8 +508,18 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //     .set_pressure(0.0)
 //   ));
 //   cm.insert(new SimpleBC(cm, top_, boundaryDict, "symmetryPlane") );
-  cm.insert(new PressureOutletBC(cm, top_, boundaryDict, PressureOutletBC::Parameters()
+//   cm.insert(new PressureOutletBC(cm, top_, boundaryDict, PressureOutletBC::Parameters()
+//     .set_pressure(0.0)
+//   ));
+// 
+//   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()
+//     .set_pressure(0.0)
+//   ));
+  
+  cm.insert(new PressureOutletBC(cm, out_top_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
+    .set_fixMeanValue(false)
+    .set_prohibitInflow(false)
   ));
   
   if (p.mesh.twod)

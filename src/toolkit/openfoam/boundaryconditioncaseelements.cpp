@@ -2065,9 +2065,17 @@ void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
       
     if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
     {
-      BC["type"]=OFDictData::data("inletOutlet");
-      BC["inletValue"]=OFDictData::data("uniform ( 0 0 0 )");
-      BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+      if (p_.prohibitInflow())
+      {
+	BC["type"]=OFDictData::data("inletOutlet");
+	BC["inletValue"]=OFDictData::data("uniform ( 0 0 0 )");
+	BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+      }
+      else
+      {
+	BC["type"]=OFDictData::data("zeroGradient");
+	BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
+      }
     }
     else if ( 
       (field.first=="T") 

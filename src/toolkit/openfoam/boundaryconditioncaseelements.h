@@ -687,6 +687,7 @@ class PressureOutletBC
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
     (pressure, double, 0.0)
+    (prohibitInflow, bool, true)
     (fixMeanValue, bool, false)
     (rho, double, 1025.0)
   )

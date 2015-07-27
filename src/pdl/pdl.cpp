@@ -1012,7 +1012,7 @@ struct MatrixParameterParser
       os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<";"<<endl;
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
       os<<"{"<<endl;
-      os<<"arma::mat data"<<endl;
+      os<<"arma::mat data; data"<<endl;
       for (int i=0; i<value.n_rows;i++)
       {
 	for (int j=0; j<value.n_cols;j++)
@@ -1021,6 +1021,7 @@ struct MatrixParameterParser
 	}
 	os<<"<<arma::endr";
       };
+      os<<";"<<endl;
       os<<name<<".reset(new "<<cppParamType(name)<<"(data, \""<<description<<"\")); "<<endl;
       os<<"}"<<endl;
     }

@@ -540,6 +540,11 @@ MatrixParameter::MatrixParameter
 {}
 
 
+arma::mat& MatrixParameter::operator()()
+{
+  return value_;
+}
+
 const arma::mat& MatrixParameter::operator()() const
 {
   return value_;
@@ -574,9 +579,9 @@ xml_node< char >* MatrixParameter::appendToNode(const string& name, xml_document
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
   std::ostringstream voss;
-  voss<<endl;
+//   voss<<endl;
   value_.save(voss, arma::raw_ascii);
-  voss<<endl;
+//   voss<<endl;
   
   // set stringified table values as node value
   child->value(doc.allocate_string(voss.str().c_str()));

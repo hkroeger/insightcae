@@ -288,6 +288,67 @@ void PathParameterWrapper::onDataEntered()
   updateTooltip();
 }
 
+defineType(MatrixParameterWrapper);
+addToFactoryTable(ParameterWrapper, MatrixParameterWrapper, ParameterWrapper::ConstrP);
+
+QString mat2Str(const arma::mat& m)
+{
+  std::ostringstream oss;
+  for (int i=0; i<m.n_rows; i++)
+  {
+    for (int j=0; j<m.n_cols; j++)
+    {
+      oss<<m(i,j);
+      if (j!=m.n_cols-1) oss<<" ";
+    }
+    if (i!=m.n_rows-1) oss<<";";
+  }
+  return QString(oss.str().c_str());
+}
+
+MatrixParameterWrapper::MatrixParameterWrapper(const ConstrP& p)
+: ParameterWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  le_=new QLineEdit(this);
+  le_->setText(mat2Str(param()()));
+  layout->addWidget(le_);
+  dlgBtn_=new QPushButton("...", this);
+  layout->addWidget(dlgBtn_);
+  this->setLayout(layout);
+  
+  connect(dlgBtn_, SIGNAL(clicked(bool)), this, SLOT(openSelectionDialog()));
+}
+
+
+
+void MatrixParameterWrapper::onApply()
+{
+  param()()=arma::mat(le_->text().toStdString());
+}
+
+void MatrixParameterWrapper::onUpdate()
+{
+  le_->setText(mat2Str(param()()));
+}
+
+void MatrixParameterWrapper::openSelectionDialog()
+{
+  QString fn = QFileDialog::getOpenFileName(this, 
+						"Select file",
+						le_->text());
+  if (!fn.isEmpty())
+  {
+    arma::mat m;
+    m.load(fn.toStdString().c_str(), arma::raw_ascii);
+    le_->setText(mat2Str(m));
+  }
+}
+
+
 defineType(DirectoryParameterWrapper);
 addToFactoryTable(ParameterWrapper, DirectoryParameterWrapper, ParameterWrapper::ConstrP);
 

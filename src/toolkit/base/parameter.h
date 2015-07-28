@@ -359,6 +359,7 @@ public:
   MatrixParameter(const std::string& description);
   MatrixParameter(const arma::mat& defaultValue, const std::string& description);
 
+  arma::mat& operator()();
   const arma::mat& operator()() const;
   
   virtual std::string latexRepresentation() const;

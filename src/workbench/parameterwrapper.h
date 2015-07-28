@@ -170,6 +170,28 @@ protected slots:
   virtual void onDataEntered();
 };
 
+class MatrixParameterWrapper
+: public ParameterWrapper
+{
+  Q_OBJECT
+  
+protected:
+  QLineEdit *le_;
+  QPushButton *dlgBtn_;
+  
+public:
+  declareType(insight::MatrixParameter::typeName_());
+  MatrixParameterWrapper(const ConstrP& p);
+  inline insight::MatrixParameter& param() { return dynamic_cast<insight::MatrixParameter&>(p_); }
+
+public slots:
+  virtual void onApply();
+  virtual void onUpdate();
+  
+protected slots:
+  virtual void openSelectionDialog();
+};
+
 class DirectoryParameterWrapper
 : public PathParameterWrapper
 {

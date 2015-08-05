@@ -1,0 +1,51 @@
+The first step is to install the CAE tools which you want to interface with Insight CAE:
+ * OpenFOAM (see installation instructions at http://openfoam.org/download) 
+
+Then you have currently different choices for the installation of Insight:
+
+1. Build insight against system-installed dependencies 
+   This is usually possible but might cause problems due to unsupported versions 
+   of dependencies on some linux distributions.
+   
+2. Build insight together with all dependencies
+   This is required, if 1) does not work, like on older distributions
+   and e.g. cluster installations.
+
+STEPS for Option 1
+==================
+
+1. Prepare system for compilation
+   install basic packages:
+   * Fedora-20: 
+     # yum install gcc-c++ git libX11-devel libXext-devel mesa-libGL-devel mesa-libOSMesa-devel cmake qt-devel \
+        qwt-devel armadillo-devel boost-devel gsl-devel python-devel python-matplotlib numpy gnuplot
+   * 
+
+STEPS for Option 2
+==================
+
+1. Prepare system for compilation
+   install basic packages:
+   * Fedora-20: gcc-c++, git, libX11-devel, libXext-devel, mesa-libGL-devel, mesa-libOSMesa-devel
+   * 
+   
+3. Clone insight source code
+   $ cd $HOME/<path/to/installation>
+   $ git clone https://git.code.sf.net/p/insightcae/code insight
+   
+4. Build dependencies
+   First of all, add a "source" statement to your bashrc for settings a proper bin and lib path.
+   This is already required during build, so insert the follwing statement into your "~/.bashrc"
+   and activate the changes by continuing in a new terminal:
+   > source $HOME/<path/to/installation>/insight/thirdparty/bashrc
+   Change into the build directory
+   $ cd insight/thirdparty_src
+   download and unpack dependency tarball pack:
+   $ wget http://sourceforge.net/projects/insightcae/files/dependencies/insight-dependency-tarballs.tgz
+   $ tar xzf insight-dependency-tarballs.tgz
+   build all packages:
+   $ ./build_all.sh
+   
+4. Install OpenFOAM
+5. Insert Addons, if required
+6. Build Insight CAE

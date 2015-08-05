@@ -80,10 +80,20 @@ public:
   T operator()(const T& org, const point& p) const
   {
     vector er=p-origin();
-    er/=mag(er)+SMALL;
+    if (mag(er)<SMALL)
+    {
+     er=vector(1,0,0);
+     if ( (1.-mag(er&ax())) < SMALL ) 
+       er=vector(0,1,0);
+    }
+    er/=mag(er);
+    
     
     vector et = (ax() ^ er);
+    
     tensor tt(ax(), et, er);    
+    
+//     Info<<p<<ax()<<et<<er<<" >> "<<org<<transform(tt, org)<<endl;
     
     return transform(tt, org);
   }

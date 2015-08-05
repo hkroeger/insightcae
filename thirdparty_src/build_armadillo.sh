@@ -1,13 +1,15 @@
 #!/bin/bash
 
-if [ ! -e rcpp_armadillo_csda_2014.pdf ]; then
- echo "please execute from within armadillo source tree!"
+if [ ! -d TARBALLS ]; then
+ echo "please execute from within thirdparty_src directory!"
  exit -1
 fi
 
-INSTALLDIR=$(cd ../..; pwd)/thirdparty
+tar xzf TARBALLS/armadillo-4.650.4.tar.gz && cd  armadillo-4.650.4 && (
 
-./configure -DCMAKE_INSTALL_PREFIX=$INSTALLDIR
-make
-make install
+ INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
+ ./configure -DCMAKE_INSTALL_PREFIX=$INSTALLDIR
+ make
+ make install
+)

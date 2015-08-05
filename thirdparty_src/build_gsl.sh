@@ -1,13 +1,16 @@
 #!/bin/bash
 
-if [ ! -e gsl-config.in ]; then
- echo "please execute from within GSL source tree!"
+if [ ! -d TARBALLS ]; then
+ echo "please execute from within thirdparty_src directory!"
  exit -1
 fi
 
-INSTALLDIR=$(cd ../..; pwd)/thirdparty
+tar xzf TARBALLS/gsl-1.15.tar.gz && cd gsl-1.15 && (
 
-./configure --prefix=$INSTALLDIR --with-libraries=all
-make
-make install
+ INSTALLDIR=$(cd ../..; pwd)/thirdparty
+ 
+ ./configure --prefix=$INSTALLDIR --with-libraries=all
+ make
+ make install
 
+)

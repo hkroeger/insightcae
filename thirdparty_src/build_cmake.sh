@@ -1,12 +1,15 @@
 #!/bin/bash
 
-if [ ! -e CMakeLogo.gif ]; then
- echo "please execute from within CMake source tree!"
+if [ ! -d TARBALLS ]; then
+ echo "please execute from within thirdparty_src directory!"
  exit -1
 fi
 
-INSTALLDIR=$(cd ../..; pwd)/thirdparty
+tar xzf TARBALLS/cmake-2.8.12.2.tar.gz && cd cmake-2.8.12.2 && (
 
-./configure --prefix=$INSTALLDIR 
-make 
-make install
+ INSTALLDIR=$(cd ../..; pwd)/thirdparty
+
+ ./configure --prefix=$INSTALLDIR 
+ make 
+ make install
+)

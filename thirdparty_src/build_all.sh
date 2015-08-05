@@ -9,3 +9,5 @@
 ./build_qwt.sh 2>&1 | tee build_qwt.log
 ./build_gnuplot.sh 2>&1 | tee build_gnuplot.log
 
+echo "Completed! Please check log files for errors:"
+tail -n 10 *.log

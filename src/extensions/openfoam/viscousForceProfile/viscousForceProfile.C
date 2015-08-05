@@ -64,7 +64,7 @@ tmp<scalarField> sampleProfile
   return tmp<scalarField>(profile/max(1.0,nsamples));
 }
 
-tmp<scalarField> writeProfile
+void writeProfile
 (
  autoPtr<OFstream> f,
  scalar x0, scalar x1, label n, 

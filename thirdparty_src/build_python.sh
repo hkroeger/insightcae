@@ -1,12 +1,15 @@
 #!/bin/bash
 
-if [ ! -e pyconfig.h.in ]; then
- echo "please execute from within python source tree!"
+if [ ! -d TARBALLS ]; then
+ echo "please execute from within thirdparty_src directory!"
  exit -1
 fi
 
-INSTALLDIR=$(cd ../..; pwd)/thirdparty
+tar xzf TARBALLS/Python-2.7.10.tgz && cd Python-2.7.10 && (
 
-./configure --prefix=$INSTALLDIR 
-make -j12
-make install
+ INSTALLDIR=$(cd ../..; pwd)/thirdparty
+
+ ./configure --prefix=$INSTALLDIR 
+ make -j12
+ make install
+)

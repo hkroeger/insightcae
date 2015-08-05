@@ -1,13 +1,15 @@
 #!/bin/bash
 
-if [ ! -e changes-4.8.6 ]; then
- echo "please execute from within QT source tree!"
+if [ ! -d TARBALLS ]; then
+ echo "please execute from within thirdparty_src directory!"
  exit -1
 fi
 
-INSTALLDIR=$(cd ../..; pwd)/thirdparty
+tar xzf TARBALLS/qt-everywhere-opensource-src-4.8.6.tar.gz && cd qt-everywhere-opensource-src-4.8.6 && (
 
-./configure --prefix=$INSTALLDIR 
-make -j12
-make install
-
+ INSTALLDIR=$(cd ../..; pwd)/thirdparty
+ 
+ ./configure --prefix=$INSTALLDIR -opensource -confirm-license
+ make -j12
+ make install
+)

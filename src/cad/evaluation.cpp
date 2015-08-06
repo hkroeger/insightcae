@@ -28,6 +28,46 @@ using namespace boost;
 
 namespace insight {
 namespace cad {
+  
+Handle_AIS_Dimension createArrow(const TopoDS_Shape& shape, const std::string& text)
+{
+  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
+  (
+   shape
+#if (OCC_VERSION_MINOR<6)
+   , 1e-6, text.c_str()
+  );
+#else
+  );
+  dim->SetModelUnits(text.c_str());
+#endif
+  return dim;
+}
+
+Handle_AIS_Dimension createLengthDimension
+(
+  const TopoDS_Vertex& from, 
+  const TopoDS_Vertex& to, 
+  const Handle_Geom_Plane& pln,
+  double L,
+  const std::string& text
+)
+{
+  Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
+    from,
+    to,
+#if (OCC_VERSION_MINOR<6)
+    pln,
+    L, 
+    text.c_str()
+  ));
+#else
+    pln->Pln()
+  ));
+  dim->SetDisplayUnits(text.c_str());
+#endif
+  return dim;
+}
 
 SolidProperties::SolidProperties(const SolidModel& model)
 {
@@ -49,32 +89,21 @@ void SolidProperties::write(std::ostream&) const
 {
 }
 
+
+
 AIS_InteractiveObject* SolidProperties::createAISRepr() const
 {
   TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(cog_),gp_Dir(1,0,0)), 1));
   Handle_AIS_Shape aisG = new AIS_Shape(cG);
 
-  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
-  (
-   cG
-#if (OCC_VERSION_MINOR<6)
-   , 1e-6, str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str()
-  );
-#else
-  );
-  dim->SetModelUnits(str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str());
-#endif
-
-  Handle_AIS_InteractiveObject aisGLabel(dim);
+  Handle_AIS_InteractiveObject aisGLabel(createArrow(cG, str(format("CoG: m = %g, A = %g") % mass_ % area_)));
 
   double 
    Lx=bb_pmax_(0)-bb_pmin_(0),
    Ly=bb_pmax_(1)-bb_pmin_(1),
    Lz=bb_pmax_(2)-bb_pmin_(2);
-   
-#warning reactivate!
-/*
-  Handle_AIS_InteractiveObject aisDimX(new AIS_LengthDimension(
+
+  Handle_AIS_InteractiveObject aisDimX(createLengthDimension(
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmax_(0), bb_pmin_(1), bb_pmin_(2))),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(0,0,1)))),
@@ -82,7 +111,7 @@ AIS_InteractiveObject* SolidProperties::createAISRepr() const
     str(format("Lx = %g (%g to %g)")%Lx%bb_pmin_(0)%bb_pmax_(0)).c_str()
   ));
 
-  Handle_AIS_InteractiveObject aisDimY(new AIS_LengthDimension(
+  Handle_AIS_InteractiveObject aisDimY(createLengthDimension(
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmax_(1), bb_pmin_(2))),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(0,0,-1)))),
@@ -90,21 +119,21 @@ AIS_InteractiveObject* SolidProperties::createAISRepr() const
     str(format("Ly = %g (%g to %g)")%Ly%bb_pmin_(1)%bb_pmax_(1)).c_str()
   ));
 
-  Handle_AIS_InteractiveObject aisDimZ(new AIS_LengthDimension(
+  Handle_AIS_InteractiveObject aisDimZ(createLengthDimension(
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmax_(2))),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(bb_pmin_), gp_Vec(-1,1,0)))),
     Lz, 
     str(format("Lz = %g (%g to %g)")%Lz%bb_pmin_(2)%bb_pmax_(2)).c_str()
   ));
-*/
+
   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
-  /*ais->Connect(aisG);
+  ais->Connect(aisG);
   ais->Connect(aisGLabel);
   ais->Connect(aisDimX);
   ais->Connect(aisDimY);
   ais->Connect(aisDimZ);
-*/
+
   return ais.release();
 }
 
@@ -169,31 +198,30 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
   Handle_AIS_Shape aisM = new AIS_Shape(cM);
   
   double d_gm=norm(G_-M_,2);
-#warning reactivate!
-/*
-  Handle_AIS_InteractiveObject aisDim (new AIS_LengthDimension(
+
+  Handle_AIS_InteractiveObject aisDim (createLengthDimension(
     BRepBuilderAPI_MakeVertex(to_Pnt(G_)), BRepBuilderAPI_MakeVertex(to_Pnt(M_)),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(G_), to_Vec(vec3(0,1,0))))),
     d_gm, 
     str(format("GM = %g")%d_gm).c_str()
   ));
   
-  Handle_AIS_InteractiveObject aisBLabel (new AIS_RadiusDimension(
-    cB, 1e-6, str(format("B: V_disp = %g") % V_).c_str()
+  Handle_AIS_InteractiveObject aisBLabel (createArrow(
+    cB, str(format("B: V_disp = %g") % V_)
   ));
-  Handle_AIS_InteractiveObject aisGLabel (new AIS_RadiusDimension(
-    cG, 1e-6, str(format("G: m = %g") % m_).c_str()
+  Handle_AIS_InteractiveObject aisGLabel (createArrow(
+    cG, str(format("G: m = %g") % m_)
   ));
-*/
+
   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
-/*
+
   ais->Connect(aisG);
   ais->Connect(aisB);
   ais->Connect(aisM);
   ais->Connect(aisDim);
   ais->Connect(aisGLabel);
   ais->Connect(aisBLabel);
-  */
+  
   return ais.release();
 }
 

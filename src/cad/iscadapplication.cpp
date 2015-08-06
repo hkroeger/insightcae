@@ -17,24 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+
 #include "occinclude.h"
 #include "AIS.hxx"
 #include "AIS_Shape.hxx"
 #include "AIS_InteractiveContext.hxx"
 
-
-#include <QMessageBox>
-#include <QMainWindow>
+#include "solidmodel.h"
+#include "datum.h"
+#include "evaluation.h"
 
 #include "qoccviewwidget.h"
 #include "qoccviewercontext.h"
 
+#include <QMessageBox>
+#include <QMainWindow>
+
 #include "iscadapplication.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
-#include "solidmodel.h"
-#include "datum.h"
-#include "evaluation.h"
 
 #include <iostream>
 

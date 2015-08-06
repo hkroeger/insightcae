@@ -89,6 +89,7 @@ IF(OCC_LIBRARY)
   set(OCC_OCAF_LIB_NAMES
     TKV3d 
     TKV2d 
+    TKOpenGl
     TKService
     TKCAF
     TKXCAF
@@ -104,7 +105,9 @@ IF(OCC_LIBRARY)
    ENDFOREACH(f)
   SET(OCC_OCAF_LIBRARIES "")
    FOREACH(f ${OCC_OCAF_LIB_NAMES})
+    IF (EXISTS "${OCC_LIBRARY_DIR}/lib${f}.so")
       LIST(APPEND OCC_OCAF_LIBRARIES "${OCC_LIBRARY_DIR}/lib${f}.so")
+    endif()
    ENDFOREACH(f)
 ENDIF(OCC_LIBRARY)
 

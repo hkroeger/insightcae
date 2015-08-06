@@ -248,6 +248,7 @@ using std::iostream;
 //#include <Xw_GraphicDevice.hxx>
 #if (OCC_VERSION_MINOR>6)
 #include <Graphic3d_GraphicDriver.hxx>
+#include <OpenGl_GraphicDriver.hxx>
 #else
 #include <Graphic3d_GraphicDevice.hxx>
 #endif

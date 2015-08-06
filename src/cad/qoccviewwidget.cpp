@@ -1,10 +1,11 @@
 #include <cmath>
 #include <iostream>
 
+#include <QtCore>
 #include <QtGui>
-
-#include "qoccviewwidget.h"
 #include "qoccinternal.h"
+#include "qoccviewwidget.h"
+
 
 #include <GL/gl.h>
 #include <GL/glu.h>
@@ -115,10 +116,13 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
 #else
   // rc = (Aspect_RenderingContext) glXGetCurrentContext(); // Untested!
   myWindow = new Xw_Window
-    ( 
+    (
+#if (OCC_VERSION_MINOR>=6)
+      myContext->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
+#else
      Handle_Graphic3d_GraphicDevice::DownCast( myContext->CurrentViewer()->Device() ),
      (int) hi, (int) lo, Xw_WQ_SAMEQUALITY, Quantity_NOC_BLACK 
-
+#endif
     );
 #endif // WNT
 	

@@ -1,10 +1,13 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+#include "clear_occ_macros.h"
+#include <QtCore>
 #include <QtGui>
+#include "qocc.h"
+
 #include <QtOpenGL/QGLWidget>
 
-#include "qocc.h"
 
 
 /** the key for multi selection */

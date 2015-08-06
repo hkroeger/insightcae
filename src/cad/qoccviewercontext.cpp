@@ -17,17 +17,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#include <QtCore>
+#include "qoccinternal.h"
+#include "qoccviewercontext.h"
 
 #include <qnamespace.h>
-#include "qoccviewercontext.h"
-#include "qoccinternal.h"
 
 QoccViewerContext::QoccViewerContext()
 {
   // Create the OCC Viewers
   TCollection_ExtendedString a3DName("Visual3D");
   myViewer = createViewer( "DISPLAY", a3DName.ToExtString(), "", 1000.0 );
+#if (OCC_VERSION_MINOR<6)
   myViewer->Init();
+#endif
   myViewer->SetZBufferManagment(Standard_False);
   myViewer->SetDefaultViewProj( V3d_Zpos );	// Top view
 
@@ -71,13 +74,19 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
  )
 {
 #ifndef WNT
+  
+#if (OCC_VERSION_MINOR>=6)
+  static Handle_Graphic3d_GraphicDriver defaultdevice;
+  Handle_Aspect_DisplayConnection displayConnection(new Aspect_DisplayConnection());
+  defaultdevice = new OpenGl_GraphicDriver( displayConnection );
+#else
   static Handle(Graphic3d_GraphicDevice) defaultdevice;
   
 //  if( defaultdevice.IsNull() )
 //    {
       defaultdevice = new Graphic3d_GraphicDevice( getenv(aDisplay) );
 //    }
-  
+#endif
   return new V3d_Viewer
     (	
      defaultdevice,

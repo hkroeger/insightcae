@@ -30,7 +30,8 @@ namespace filesystem
 {
   
 template < >
-path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end, const codecvt_type& cvt)
+// path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end, const codecvt_type& cvt)
+path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end)
 { 
   for( ; begin != end ; ++begin )
 	  *this /= *begin;

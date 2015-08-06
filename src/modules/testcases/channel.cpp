@@ -27,7 +27,6 @@
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign.hpp>
-#include "boost/ptr_container/ptr_container.hpp"
 #include "boost/lexical_cast.hpp"
 #include "boost/regex.hpp"
 #include "boost/format.hpp"

@@ -28,6 +28,9 @@
 
 #include "parser.h"
 
+#include <locale>
+#include <QLocale>
+
 int main(int argc, char** argv)
 {
   if (argc==3) 
@@ -43,6 +46,9 @@ int main(int argc, char** argv)
   else
   {
     ISCADApplication app(argc, argv);
+    std::locale::global(std::locale::classic());
+    QLocale::setDefault(QLocale::C);
+
     ISCADMainWindow w;
     if (argc==2) 
       w.loadFile(argv[1]);

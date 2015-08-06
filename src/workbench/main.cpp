@@ -18,6 +18,8 @@
  *
  */
 
+#include <locale>
+#include <QLocale>
 #include <QtGui/QApplication>
 #include "base/boost_include.h"
 #include "workbench.h"
@@ -31,7 +33,13 @@ int main(int argc, char** argv)
   insight::GSLExceptionHandling gsl_errtreatment;
   
   WorkbenchApplication app(argc, argv);
+
+  // After creation of application object!
+  std::locale::global(std::locale::classic());
+  QLocale::setDefault(QLocale::C);
+
   workbench foo;
+
   if (argc>1)
   {
     boost::filesystem::path fn(argv[1]);

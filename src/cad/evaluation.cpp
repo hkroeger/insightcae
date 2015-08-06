@@ -29,7 +29,7 @@ using namespace boost;
 namespace insight {
 namespace cad {
   
-Handle_AIS_Dimension createArrow(const TopoDS_Shape& shape, const std::string& text)
+Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text)
 {
   Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
   (
@@ -44,7 +44,7 @@ Handle_AIS_Dimension createArrow(const TopoDS_Shape& shape, const std::string& t
   return dim;
 }
 
-Handle_AIS_Dimension createLengthDimension
+Handle_AIS_InteractiveObject createLengthDimension
 (
   const TopoDS_Vertex& from, 
   const TopoDS_Vertex& to, 

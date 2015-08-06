@@ -12,7 +12,9 @@ IF (WIN32)
   IF (CYGWIN OR MINGW)
 
     FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
+      /usr/include/oce
       /usr/include/opencascade
+      /usr/local/include/oce
       /usr/local/include/opencascade
       /opt/opencascade/include
       /opt/opencascade/inc
@@ -39,8 +41,10 @@ IF (WIN32)
 ELSE (WIN32)
 
   FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
+    /usr/include/oce
     /usr/include/opencascade
     /usr/local/include/opencascade
+    /usr/local/include/oce
     /opt/opencascade/include
   )
 

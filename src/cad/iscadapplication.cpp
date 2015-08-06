@@ -17,6 +17,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *
  */
+#include "occinclude.h"
+#include "AIS.hxx"
+#include "AIS_Shape.hxx"
+#include "AIS_InteractiveContext.hxx"
+
 
 #include <QMessageBox>
 #include <QMainWindow>
@@ -32,11 +37,6 @@
 #include "evaluation.h"
 
 #include <iostream>
-
-#include "occinclude.h"
-#include "AIS.hxx"
-#include "AIS_Shape.hxx"
-#include "AIS_InteractiveContext.hxx"
 
 using namespace std;
 using namespace boost;

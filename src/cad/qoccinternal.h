@@ -24,7 +24,7 @@
 #include <iostream>
 using std::iostream;
 
-
+#include "Standard_Version.hxx"
 #include <AIS_Drawer.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_InteractiveObject.hxx>
@@ -92,18 +92,18 @@ using std::iostream;
 #include <gp_Dir.hxx>
 #include <gp_XYZ.hxx>
 #include <gp_Cylinder.hxx>
-#include <Graphic2d_Array1OfVertex.hxx>
-#include <Graphic2d_Buffer.hxx>
-#include <Graphic2d_CircleMarker.hxx>
-#include <Graphic2d_DisplayList.hxx>
-#include <Graphic2d_Drawer.hxx>
-#include <Graphic2d_Polyline.hxx>
-#include <Graphic2d_Segment.hxx>
-#include <GGraphic2d_SetOfCurves.hxx>
-#include <Graphic2d_SetOfSegments.hxx>
-#include <Graphic2d_Text.hxx>
-#include <Graphic2d_Vertex.hxx>
-#include <Graphic2d_View.hxx>
+//#include <Graphic2d_Array1OfVertex.hxx>
+//#include <Graphic2d_Buffer.hxx>
+//#include <Graphic2d_CircleMarker.hxx>
+//#include <Graphic2d_DisplayList.hxx>
+//#include <Graphic2d_Drawer.hxx>
+//#include <Graphic2d_Polyline.hxx>
+//#include <Graphic2d_Segment.hxx>
+//#include <GGraphic2d_SetOfCurves.hxx>
+//#include <Graphic2d_SetOfSegments.hxx>
+//#include <Graphic2d_Text.hxx>
+//#include <Graphic2d_Vertex.hxx>
+//#include <Graphic2d_View.hxx>
 #include <Graphic3d_AspectMarker3d.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
 #include <MMgt_TShared.hxx>
@@ -113,17 +113,19 @@ using std::iostream;
 #include <Prs3d_LineAspect.hxx>
 #include <Prs3d_Projector.hxx>
 #include <Prs3d_Text.hxx>
-#include <PrsMgr_PresentationManager2d.hxx>
+//#include <PrsMgr_PresentationManager2d.hxx>
 #include <Quantity_Factor.hxx>
 #include <Quantity_Length.hxx>
 #include <Quantity_NameOfColor.hxx>
 #include <Quantity_PhysicalQuantity.hxx>
 #include <Quantity_PlaneAngle.hxx>
 #include <Quantity_TypeOfColor.hxx>
+/*
 #include <Select2D_SensitiveArc.hxx>
 #include <Select2D_SensitiveBox.hxx>
 #include <Select2D_SensitiveEntity.hxx>
 #include <Select2D_SensitiveSegment.hxx>
+*/
 #include <SelectBasics_BasicTool.hxx>
 #include <SelectBasics_ListOfBox2d.hxx>
 #include <SelectMgr_EntityOwner.hxx>
@@ -143,9 +145,11 @@ using std::iostream;
 #include <StdPrs_Curve.hxx>
 #include <StdPrs_Point.hxx>
 #include <StdPrs_PoleCurve.hxx>
+/*
 #include <StdSelect_SensitiveText2d.hxx>
 #include <StdSelect_TextProjector2d.hxx>
 #include <StdSelect_ViewerSelector2d.hxx>
+*/
 #include <TCollection_AsciiString.hxx>
 #include <TColgp_Array1OfPnt2d.hxx>
 #include <TColgp_HArray1OfPnt2d.hxx>
@@ -165,8 +169,10 @@ using std::iostream;
 #include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 #include <UnitsAPI.hxx>
+/*
 #include <V2d_View.hxx>
 #include <V2d_Viewer.hxx>
+*/
 #include <V3d_ColorScale.hxx>
 #include <V3d_RectangularGrid.hxx>
 #include <V3d_View.hxx>
@@ -239,8 +245,12 @@ using std::iostream;
 #include <X11/Xmu/StdCmap.h>
 #undef QT_CLEAN_NAMESPACE
 #include <Xw_Window.hxx>
-#include <Xw_GraphicDevice.hxx>
+//#include <Xw_GraphicDevice.hxx>
+#if (OCC_VERSION_MINOR>6)
+#include <Graphic3d_GraphicDriver.hxx>
+#else
 #include <Graphic3d_GraphicDevice.hxx>
+#endif
 #endif
 
 #endif // QOCCINTERNAL_H

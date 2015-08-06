@@ -21,6 +21,7 @@
 #include "evaluation.h"
 #include "solidmodel.h"
 
+#include "Standard_Version.hxx"
 #include "AIS_Point.hxx"
 
 using namespace boost;
@@ -53,15 +54,26 @@ AIS_InteractiveObject* SolidProperties::createAISRepr() const
   TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(cog_),gp_Dir(1,0,0)), 1));
   Handle_AIS_Shape aisG = new AIS_Shape(cG);
 
-  Handle_AIS_InteractiveObject aisGLabel (new AIS_RadiusDimension(
-    cG, 1e-6, str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str()
-  ));
+  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
+  (
+   cG
+#if (OCC_VERSION_MINOR<6)
+   , 1e-6, str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str()
+  );
+#else
+  );
+  dim->SetModelUnits(str(format("CoG: m = %g, A = %g") % mass_ % area_).c_str());
+#endif
+
+  Handle_AIS_InteractiveObject aisGLabel(dim);
 
   double 
    Lx=bb_pmax_(0)-bb_pmin_(0),
    Ly=bb_pmax_(1)-bb_pmin_(1),
    Lz=bb_pmax_(2)-bb_pmin_(2);
    
+#warning reactivate!
+/*
   Handle_AIS_InteractiveObject aisDimX(new AIS_LengthDimension(
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmin_(0), bb_pmin_(1), bb_pmin_(2))),
     BRepBuilderAPI_MakeVertex(gp_Pnt(bb_pmax_(0), bb_pmin_(1), bb_pmin_(2))),
@@ -85,14 +97,14 @@ AIS_InteractiveObject* SolidProperties::createAISRepr() const
     Lz, 
     str(format("Lz = %g (%g to %g)")%Lz%bb_pmin_(2)%bb_pmax_(2)).c_str()
   ));
-
+*/
   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
-  ais->Connect(aisG);
+  /*ais->Connect(aisG);
   ais->Connect(aisGLabel);
   ais->Connect(aisDimX);
   ais->Connect(aisDimY);
   ais->Connect(aisDimZ);
-
+*/
   return ais.release();
 }
 
@@ -157,6 +169,8 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
   Handle_AIS_Shape aisM = new AIS_Shape(cM);
   
   double d_gm=norm(G_-M_,2);
+#warning reactivate!
+/*
   Handle_AIS_InteractiveObject aisDim (new AIS_LengthDimension(
     BRepBuilderAPI_MakeVertex(to_Pnt(G_)), BRepBuilderAPI_MakeVertex(to_Pnt(M_)),
     Handle_Geom_Plane(new Geom_Plane(gp_Pln(to_Pnt(G_), to_Vec(vec3(0,1,0))))),
@@ -164,22 +178,22 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
     str(format("GM = %g")%d_gm).c_str()
   ));
   
-
   Handle_AIS_InteractiveObject aisBLabel (new AIS_RadiusDimension(
     cB, 1e-6, str(format("B: V_disp = %g") % V_).c_str()
   ));
   Handle_AIS_InteractiveObject aisGLabel (new AIS_RadiusDimension(
     cG, 1e-6, str(format("G: m = %g") % m_).c_str()
   ));
-
+*/
   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
+/*
   ais->Connect(aisG);
   ais->Connect(aisB);
   ais->Connect(aisM);
   ais->Connect(aisDim);
   ais->Connect(aisGLabel);
   ais->Connect(aisBLabel);
-  
+  */
   return ais.release();
 }
 

@@ -460,7 +460,7 @@ if(BUILD_DOCUMENTATION)
   configure_file(Doxyfile.in
                  ${PROJECT_BINARY_DIR}/Doxyfile  @ONLY IMMEDIATE)
   #-- Add a custom target to run Doxygen when ever the project is built
-  add_custom_target (doxygen #ALL
+  add_custom_target (doc #ALL
                      COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                      SOURCES ${PROJECT_BINARY_DIR}/Doxyfile)

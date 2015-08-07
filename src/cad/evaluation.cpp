@@ -34,7 +34,7 @@ Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::s
   Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
   (
    shape
-#if (OCC_VERSION_MINOR<6)
+#if (OCC_VERSION_MINOR<7)
    , 1e-6, text.c_str()
   );
 #else
@@ -56,7 +56,7 @@ Handle_AIS_InteractiveObject createLengthDimension
   Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
     from,
     to,
-#if (OCC_VERSION_MINOR<6)
+#if (OCC_VERSION_MINOR<7)
     pln,
     L, 
     text.c_str()

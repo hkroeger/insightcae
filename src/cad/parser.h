@@ -159,7 +159,7 @@ typedef insight::cad::SolidModelPtr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
-typedef boost::tuple<std::string, vector, vector, boost::optional<bool> > viewdef;
+typedef boost::tuple<std::string, vector, vector, bool > viewdef;
 
 
 double dot(const vector& v1, const vector& v2);

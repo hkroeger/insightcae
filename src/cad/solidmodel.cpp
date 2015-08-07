@@ -1722,7 +1722,9 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
-		    > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+		    > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
+     > ( (  ',' > qi::lit("centered") > qi::attr(true) ) |qi::attr(false) )
+     > ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
@@ -1799,7 +1801,9 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset) const
     "Extrusion",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression
+      > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
+      > ')' )
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Extrusion>(*qi::_1, qi::_2, qi::_3)) ]
       
     ))
@@ -1847,7 +1851,9 @@ void Revolution::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > -(  ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
+       > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false))
+       > ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Revolution>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
@@ -2576,7 +2582,9 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > -( ',' > qi::lit("centered") > qi::attr(true) ) > ')' ) 
+	> ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
+        > ( ( ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
+        > ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))

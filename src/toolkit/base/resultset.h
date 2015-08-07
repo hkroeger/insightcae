@@ -70,7 +70,8 @@ public:
   virtual ResultElement* clone() const =0;
 };
 
-typedef std::auto_ptr<ResultElement> ResultElementPtr;
+//typedef std::auto_ptr<ResultElement> ResultElementPtr;
+typedef boost::shared_ptr<ResultElement> ResultElementPtr;
 
 
 class Image

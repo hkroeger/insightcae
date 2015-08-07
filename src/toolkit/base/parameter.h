@@ -59,7 +59,7 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 namespace insight {
   
 class Parameter
-: boost::noncopyable
+: public boost::noncopyable
 {
   
 public:

@@ -400,7 +400,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	(r_identifier >> '(' 
 	  >> r_vectorExpression >> ',' 
 	  >> r_vectorExpression
-	  >> -( ',' >> lit("section") >> qi::attr(true) )
+	  >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
 	  >> ')' 
 	)
       ;

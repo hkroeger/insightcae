@@ -116,9 +116,9 @@ void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, 
   "\\FloatBarrier";
 }
 
-ResultElement* Image::clone() const
+ResultElementPtr Image::clone() const
 {
-  return new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_);
+  return ResultElementPtr(new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_));
 }
   
 defineType(Comment);
@@ -139,9 +139,9 @@ void Comment::writeLatexCode(std::ostream& f, const std::string& name, int level
   f << value_ <<endl;
 }
 
-ResultElement* Comment::clone() const
+ResultElementPtr Comment::clone() const
 {
-  return new Comment(value_, shortDescription_, longDescription_);
+  return ResultElementPtr(new Comment(value_, shortDescription_, longDescription_));
 }
   
 defineType(ScalarResult);
@@ -164,9 +164,9 @@ void ScalarResult::writeLatexCode(ostream& f, const std::string& name, int level
   f << str(format("%g") % value_) << unit_;
 }
 
-ResultElement* ScalarResult::clone() const
+ResultElementPtr ScalarResult::clone() const
 {
-  return new ScalarResult(value_, shortDescription_, longDescription_, unit_);
+  return ResultElementPtr(new ScalarResult(value_, shortDescription_, longDescription_, unit_));
 }
 
 
@@ -288,9 +288,9 @@ void TabularResult::writeGnuplotData(std::ostream& f) const
 
 }
 
-ResultElement* TabularResult::clone() const
+ResultElementPtr TabularResult::clone() const
 {
-  return new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_);
+  return ResultElementPtr(new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_));
 }
 
 void TabularResult::writeLatexHeaderCode(ostream& f) const
@@ -407,10 +407,10 @@ void AttributeTableResult::exportDataToFile(const string& name, const path& outp
 }
 
   
-ResultElement* AttributeTableResult::clone() const
+ResultElementPtr AttributeTableResult::clone() const
 {
-  return new AttributeTableResult(names_, values_, 
-					       shortDescription_, longDescription_, unit_);
+  return ResultElementPtr(new AttributeTableResult(names_, values_, 
+					       shortDescription_, longDescription_, unit_));
 }
 
 ResultElementPtr polynomialFitResult
@@ -488,7 +488,8 @@ ResultSet::~ResultSet()
 {}
 
 ResultSet::ResultSet(const ResultSet& other)
-: ptr_map< std::string, ResultElement>(other),
+: //ptr_map< std::string, ResultElement>(other),
+  std::map< std::string, ResultElementPtr>(other),
   ResultElement(ResultElementConstrP("", "", "")),
   p_(other.p_),
   title_(other.title_),
@@ -501,7 +502,8 @@ ResultSet::ResultSet(const ResultSet& other)
 
 void ResultSet::transfer(const ResultSet& other)
 {
-  ptr_map< std::string, ResultElement>::operator=(other);
+//   ptr_map< std::string, ResultElement>::operator=(other);
+  std::map< std::string, ResultElementPtr>::operator=(other);
   p_=other.p_;
   title_=other.title_;
   subtitle_=other.subtitle_;
@@ -650,18 +652,35 @@ ParameterPtr ResultSet::convertIntoParameter() const
   return ps;
 }
 
+void ResultSet::insert(const string& key, ResultElement* elem)
+{
+  std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, ResultElementPtr(elem)));
+}
+
+// void ResultSet::insert(const string& key, auto_ptr< ResultElement > elem)
+// {
+//   this->insert(ResultSet::value_type(key, ResultElementPtr(elem.release())));
+// }
 
 
-ResultElement* ResultSet::clone() const
+void ResultSet::insert(const string& key, ResultElementPtr elem)
+{
+  std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem));
+}
+
+
+
+
+ResultElementPtr ResultSet::clone() const
 {
   std::auto_ptr<ResultSet> nr(new ResultSet(p_, title_, subtitle_, &author_, &date_));
   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
   {
     cout<<i->first<<endl;
     std::string key(i->first);
-    nr->insert(key, i->second->clone());
+    nr->insert( key, i->second->clone() );
   }
-  return nr.release();
+  return ResultElementPtr(nr.release());
 }
 
 PlotCurve::PlotCurve()
@@ -729,13 +748,13 @@ void addPlot
   {
     precmd+="set label \""+watermarktext+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
   }
-  results->insert(resultelementname,
-    std::auto_ptr<Chart>(new Chart
+  results->insert( resultelementname,
+    new Chart
     (
       xlabel, ylabel, plc,
       shortDescription, "",
       precmd
-  )));
+    ));
   
 //   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
 //   //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
@@ -904,9 +923,9 @@ void Chart::exportDataToFile(const std::string& name, const boost::filesystem::p
 }
 
   
-ResultElement* Chart::clone() const
+ResultElementPtr Chart::clone() const
 {
-  return new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_);
+  return ResultElementPtr(new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_));
 }
 
 

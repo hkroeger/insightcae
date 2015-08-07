@@ -58,6 +58,7 @@ class Filter
 
 protected:
     const SolidModel* model_;
+    
 public:
     Filter();
     virtual ~Filter();
@@ -66,10 +67,10 @@ public:
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const =0;
 
-    virtual boost::shared_ptr<Filter> clone() const =0;
+    virtual FilterPtr clone() const =0;
 
-    boost::shared_ptr<Filter> operator&&(const Filter& f2);
-    boost::shared_ptr<Filter> operator!();
+    FilterPtr operator&&(const Filter& f2);
+    FilterPtr operator!();
 
 };
 
@@ -99,7 +100,7 @@ public:
   FeatureSet query(const FilterPtr& f) const;
   FeatureSet query(const std::string& queryexpr) const;
   
-  std::auto_ptr<FeatureSet> clone() const;
+  FeatureSetPtr clone() const;
   
   void write() const;
 };

@@ -67,7 +67,7 @@ public:
    */
   virtual ParameterPtr convertIntoParameter() const;
   
-  virtual ResultElement* clone() const =0;
+  virtual boost::shared_ptr<ResultElement> clone() const =0;
 };
 
 //typedef std::auto_ptr<ResultElement> ResultElementPtr;
@@ -89,7 +89,7 @@ public:
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 
@@ -135,7 +135,7 @@ public:
   Comment(const ResultElement::ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 class ScalarResult
@@ -147,7 +147,7 @@ public:
   ScalarResult(const ResultElement::ResultElementConstrP& par);
   ScalarResult(const double& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit);
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 
@@ -205,7 +205,7 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 
@@ -244,7 +244,7 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 ResultElementPtr polynomialFitResult
@@ -257,7 +257,9 @@ ResultElementPtr polynomialFitResult
 );
 
 class ResultSet
-: public boost::ptr_map<std::string, ResultElement>,
+: 
+  public std::map<std::string, ResultElementPtr>,
+//   public boost::ptr_map<std::string, ResultElement>,
   public ResultElement
 {
 protected:
@@ -304,14 +306,22 @@ public:
   virtual ParameterSetPtr convertIntoParameterSet() const;
   virtual ParameterPtr convertIntoParameter() const;
   
-  virtual ResultElement* clone() const;
+  /**
+   * insert elem into the set.
+   * elem is put into a shared_ptr but not clone. So don't delete it!
+   */
+  void insert(const std::string& key, ResultElement* elem);
+//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
+  void insert(const std::string& key, ResultElementPtr elem);
+  
+  virtual ResultElementPtr clone() const;
 };
 
 typedef boost::shared_ptr<ResultSet> ResultSetPtr;
 
 inline ResultElement* new_clone(const ResultElement& e)
 {
-  return e.clone();
+  return e.clone().get();
 }
 
 
@@ -388,7 +398,7 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
-  virtual ResultElement* clone() const;
+  virtual ResultElementPtr clone() const;
 };
 
 struct PlotField

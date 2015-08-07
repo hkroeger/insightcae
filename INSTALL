@@ -84,8 +84,8 @@ STEPS for Option A
    
    Configure
    $ ccmake ..
-   
    Now you can set options, correct paths, disable certain parts of insight etc.
+   
    Then compile, e.g. in parallel on 4 processors (change this according to your hardware):
    $ make -j4
    

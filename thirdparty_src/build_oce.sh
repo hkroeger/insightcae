@@ -5,7 +5,7 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/oce.tgz && cd oce && (
+tar xzf TARBALLS/oce-0.13.1.tgz && cd oce-0.13.1 && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

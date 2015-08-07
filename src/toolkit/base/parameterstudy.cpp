@@ -154,7 +154,7 @@ ResultElementPtr ParameterStudy::table
     row.push_back(x);
     BOOST_FOREACH( const std::string& ren, res)
     {
-      row.push_back( dynamic_cast<ScalarResult*>(&(r->at(ren)))->value() ); 
+      row.push_back( dynamic_cast<ScalarResult*>(r->at(ren).get())->value() ); 
     }
     tab.push_back( row );    
   }

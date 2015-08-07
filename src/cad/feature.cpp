@@ -39,7 +39,7 @@ FeatureSet::FeatureSet(const FeatureSet& o)
 }
 
   
-FeatureSet::FeatureSet(const SolidModel& m, EntityType shape)
+FeatureSet::FeatureSet(SolidModelPtr m, EntityType shape)
 : model_(m),
   shape_(shape)
 {
@@ -98,9 +98,9 @@ FeatureSet FeatureSet::query(const std::string& queryexpr) const
 }
 
 
-std::auto_ptr<FeatureSet> FeatureSet::clone() const
+FeatureSetPtr FeatureSet::clone() const
 {
-  std::auto_ptr<FeatureSet> nfs(new FeatureSet(model_, shape_));
+  FeatureSetPtr nfs(new FeatureSet(model_, shape_));
   nfs->insert(begin(), end());
   return nfs;
 }

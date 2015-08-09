@@ -384,7 +384,7 @@ void Foam::consistentCurveSet::genSamples()
     samplingCurveDist.shrink();
 
     DynamicList<scalar> delta;
-    delta.append(0.0);
+    if (samplingPts.size()>0) delta.append(0.0);
     for(int i=1; i<samplingPts.size();i++)
       delta.append(delta[i-1]+mag(samplingPts[i]-samplingPts[i-1]));
     delta.shrink();

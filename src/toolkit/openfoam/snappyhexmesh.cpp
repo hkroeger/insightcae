@@ -200,8 +200,9 @@ RefinementRegion::RefinementRegion(Parameters const& p)
 void RefinementRegion::addIntoDictionary(OFDictData::dict& sHMDict) const
 {
   OFDictData::dict geodict;
-  if (setGeometrySubdict(geodict))
-    sHMDict.subDict("geometry")[p_.name()]=geodict;
+  std::string entryTitle=p_.name();
+  if (setGeometrySubdict(geodict, entryTitle))
+    sHMDict.subDict("geometry")[entryTitle]=geodict;
 
   OFDictData::dict castdict;
   castdict["mode"]=p_.mode();
@@ -221,7 +222,7 @@ RefinementBox::RefinementBox(const RefinementBox::Parameters& p)
 {
 }
 
-bool RefinementBox::setGeometrySubdict(OFDictData::dict& d) const
+bool RefinementBox::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 {
   d["type"]="searchableBox";
   d["min"]=OFDictData::to_OF(p_.min());
@@ -239,24 +240,25 @@ RefinementGeometry::RefinementGeometry(const RefinementGeometry::Parameters& p)
   p_(p)
 {}
 
-void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
+// void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
+// {
+//   OFDictData::dict geodict;
+//   if (setGeometrySubdict(geodict))
+//     sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
+// 
+//   OFDictData::dict castdict;
+//   castdict["mode"]=p_.mode();
+//   OFDictData::list level;
+//   level.push_back(p_.distance());
+//   level.push_back(p_.level());
+//   OFDictData::list levels;
+//   levels.push_back(level);
+//   castdict["levels"]=levels;
+//   sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
+// }
+bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  OFDictData::dict geodict;
-  if (setGeometrySubdict(geodict))
-    sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
-
-  OFDictData::dict castdict;
-  castdict["mode"]=p_.mode();
-  OFDictData::list level;
-  level.push_back(p_.distance());
-  level.push_back(p_.level());
-  OFDictData::list levels;
-  levels.push_back(level);
-  castdict["levels"]=levels;
-  sHMDict.subDict("castellatedMeshControls").subDict("refinementRegions")[p_.name()]=castdict;
-}
-bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict) const
-{
+  entryTitle=p_.fileName().filename().c_str();
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name();
 //   //boost::filesystem::path x; x.f
@@ -275,7 +277,7 @@ NearSurfaceRefinement::NearSurfaceRefinement(const RefinementRegion::Parameters&
 {
 }
 
-bool NearSurfaceRefinement::setGeometrySubdict(OFDictData::dict& d) const
+bool NearSurfaceRefinement::setGeometrySubdict(OFDictData::dict&, std::string&) const
 {
   // do nothing
   return false;
@@ -285,6 +287,45 @@ bool NearSurfaceRefinement::setGeometrySubdict(OFDictData::dict& d) const
 Feature* NearSurfaceRefinement::clone() const
 {
   return new NearSurfaceRefinement(p_);
+}
+
+
+NearTemplatePatchRefinement::NearTemplatePatchRefinement
+(
+  const NearTemplatePatchRefinement::Parameters& p
+)
+: RefinementRegion(p),
+  p_(p)
+{
+}
+
+void NearTemplatePatchRefinement::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
+{
+  boost::filesystem::path to(boost::filesystem::path("constant")/"triSurface"/p_.fileName());
+
+  if (!exists((location/to).parent_path()))
+    create_directories((location/to).parent_path());
+
+  ofc.executeCommand(location, "surfaceMeshTriangulate",
+    list_of<std::string>
+    ("-patches")
+    ("("+p_.name()+")")
+    (to.string())
+  );
+}
+
+
+bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
+{
+  entryTitle=p_.fileName();
+  geodict["type"]="triSurfaceMesh";
+  geodict["name"]=p_.name();
+}
+
+
+Feature* NearTemplatePatchRefinement::clone() const
+{
+  return new NearTemplatePatchRefinement(p_);
 }
 
 

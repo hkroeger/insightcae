@@ -163,7 +163,11 @@ protected:
 public:
   RefinementRegion(Parameters const& p = Parameters() );
   
-  virtual bool setGeometrySubdict(OFDictData::dict& d) const =0;
+  /**
+   * create entry into geometry subdict.
+   * supply handle to title, since it is not always equal to name and there might be need to change it
+   */
+  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const =0;
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
 };
 
@@ -181,7 +185,7 @@ protected:
 
 public:
   RefinementBox(Parameters const& p = Parameters() );
-  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
+  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
   Feature* clone() const;
 };
 
@@ -199,8 +203,8 @@ protected:
 
 public:
   RefinementGeometry(Parameters const& p = Parameters() );
-  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
+//   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   Feature* clone() const;
 };
 
@@ -209,7 +213,26 @@ class NearSurfaceRefinement
 {
 public:
   NearSurfaceRefinement(Parameters const& p = Parameters() );
-  virtual bool setGeometrySubdict(OFDictData::dict& d) const;
+  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
+  Feature* clone() const;
+};
+
+class NearTemplatePatchRefinement
+: public RefinementRegion
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
+      ( fileName, std::string, "" )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  NearTemplatePatchRefinement(Parameters const& p = Parameters() );
+  virtual void modifyFiles(const OpenFOAMCase& ofc, 
+		  const boost::filesystem::path& location) const;
+  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
   Feature* clone() const;
 };
 

@@ -43,7 +43,7 @@ void GmshCase::nameEdges(const std::string& name, const FeatureSet& edges)
   }
   else 
   {
-    namedEdges_.insert(name, edges.clone()); // .insert(edges.begin(), edges.end());
+    namedEdges_.insert(NamedFeatureSet::value_type(name, edges.clone())); // .insert(edges.begin(), edges.end());
   }
 }
 
@@ -56,7 +56,7 @@ void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
   }
   else 
   {
-    namedFaces_.insert(name, faces.clone());
+    namedFaces_.insert(NamedFeatureSet::value_type(name, faces.clone()));
   }
 }
 

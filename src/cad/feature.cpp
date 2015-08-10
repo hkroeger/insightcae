@@ -39,7 +39,7 @@ FeatureSet::FeatureSet(const FeatureSet& o)
 }
 
   
-FeatureSet::FeatureSet(SolidModelPtr m, EntityType shape)
+FeatureSet::FeatureSet(const SolidModel& m, EntityType shape)
 : model_(m),
   shape_(shape)
 {

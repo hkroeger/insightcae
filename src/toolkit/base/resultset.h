@@ -294,10 +294,10 @@ public:
   template<class T>
   inline T& get(const std::string& name)
   {
-    ResultSet::iterator i=find(name);
+    std::map<std::string, ResultElementPtr>::iterator i=find(name);
     if (i==end())
       insight::Exception("ResultSet does not contain element "+name);
-    T* ret=dynamic_cast<T*>(i->second);
+    T* ret=dynamic_cast<T*>(i->second.get());
     if (!ret)
       insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
     return *ret;

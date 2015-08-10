@@ -30,7 +30,7 @@ namespace cad {
 class GmshCase
 {
 public:
-  typedef boost::ptr_map<std::string, FeatureSet> NamedFeatureSet;
+  typedef std::map<std::string, FeatureSetPtr> NamedFeatureSet;
   
 private:
   const SolidModel& part_;

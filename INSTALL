@@ -40,7 +40,7 @@ STEPS for Option A
 1. Prepare system,
    install basic packages for compilation.
    
-   * Fedora-20 to 22: 
+   * Fedora-20: 
    
      For a minimum functionality install from repositories:
      # yum install gcc-c++ git cmake armadillo-devel boost-devel gsl-devel python-devel gnuplot 
@@ -52,6 +52,19 @@ STEPS for Option A
      and precompiled from the insight download area:
      # rpm -ivh http://sourceforge.net/projects/insightcae/files/dependencies/dxflib-3.7.5-fedora20.x86_64.rpm
      # rpm -ivh http://sourceforge.net/projects/insightcae/files/dependencies/salomegeom-7.2.0-fedora20.x86_64.rpm
+     
+   * Fedora-22: 
+   
+     For a minimum functionality install from repositories:
+     # yum install gcc-c++ git cmake armadillo-devel boost-devel gsl-devel python-devel gnuplot 
+     
+     additionally for complete functionality:
+     # yum install libX11-devel libXext-devel libXmu-devel mesa-libGL-devel mesa-libOSMesa-devel qt-devel \
+        qwt-devel swig doxygen graphviz python-matplotlib numpy texlive OCE-devel OCE-draw
+        
+     and precompiled from the insight download area:
+     # rpm -ivh http://sourceforge.net/projects/insightcae/files/dependencies/dxflib-3.7.5-fedora22.x86_64.rpm
+     # rpm -ivh http://sourceforge.net/projects/insightcae/files/dependencies/salomegeom-7.2.0-fedora22.x86_64.rpm
      
    * CentOS 7.0
    

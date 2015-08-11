@@ -173,6 +173,8 @@
 #include "GeomLProp_SLProps.hxx"
 #include "GCPnts_UniformDeflection.hxx"
 #include "GCPnts_QuasiUniformDeflection.hxx"
+#include "GCPnts_UniformAbscissa.hxx"
+#include "GCPnts_QuasiUniformAbscissa.hxx"
 #include "gce_MakeCirc.hxx"
 
 #include "HLRBRep_Algo.hxx"

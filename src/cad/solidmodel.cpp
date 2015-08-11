@@ -517,35 +517,50 @@ void SolidModel::exportEMesh
   
   BOOST_FOREACH(const FeatureID& fi, fs)
   {
-    BRepAdaptor_Curve ac(fs.model().edge(fi));
-    GCPnts_QuasiUniformDeflection qud(ac, abstol);
-
-    double clen=0.;
-    arma::mat lp;
-    std::set<int> splits;
-    int iofs=points.size();
-    for (int j=1; j<=qud.NbPoints(); j++)
-    {
-      arma::mat p=Vector(qud.Value(j));
-      if (j>1) clen+=norm(p-lp, 2);
-      lp=p;
-      if (clen>maxlen && j>1) 
-      {
-	points.push_back(lp+0.5*(lp-p)); // insert a second point at same loc
-	points.push_back(p); // insert a second point at same loc
-	splits.insert(points.size()-1); 
-	clen=0.0; 
-      }
-      else
-	points.push_back(p);
-    }
     
-    for (int i=1; i<points.size()-iofs; i++)
+    TopoDS_Edge e=fs.model().edge(fi);
+    if (!BRep_Tool::Degenerated(e))
     {
-      int from=iofs+i-1;
-      int to=iofs+i;
-      if (splits.find(to)==splits.end())
-	edges.push_back(Edge(from,to));
+      std::cout<<"feature "<<fi<<std::endl;
+//       BRepTools::Dump(e, std::cout);
+      BRepAdaptor_Curve ac(e);
+      GCPnts_QuasiUniformDeflection qud(ac, abstol);
+
+      if (!qud.IsDone())
+	throw insight::Exception("Discretization of curves into eMesh failed!");
+
+      double clen=0.;
+      arma::mat lp;
+      std::set<int> splits;
+      int iofs=points.size();
+      for (int j=1; j<=qud.NbPoints(); j++)
+      {
+	gp_Pnt pp=ac.Value(qud.Parameter(j));
+
+	arma::mat p=Vector(pp);
+	if (j>1) clen+=norm(p-lp, 2);
+
+	lp=p;
+	if ((clen>maxlen) && (j>1)) 
+	{
+	  points.push_back(lp+0.5*(p-lp)); // insert a second point at same loc
+	  points.push_back(p); // insert a second point at same loc
+	  splits.insert(points.size()-1); 
+	  clen=0.0; 
+	}
+	else
+	{
+	  points.push_back(p);
+	}
+      }
+      
+      for (int i=1; i<points.size()-iofs; i++)
+      {
+	int from=iofs+i-1;
+	int to=iofs+i;
+	if (splits.find(to)==splits.end())
+	  edges.push_back(Edge(from,to));
+      }
     }
   }
   

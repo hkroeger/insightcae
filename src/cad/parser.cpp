@@ -373,7 +373,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_edgeFeaturesExpression >> ';' ) 
 	[ phx::bind(&SolidModel::exportEMesh, 
-		    qi::_1, *qi::_4, qi::_3, qi::_2) ]
+		    qi::_1, *qi::_4, qi::_2, qi::_3) ]
       |
       ( lit("exportFreeShipSurface") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&writeFreeShipSurface, *qi::_2, qi::_1) ]

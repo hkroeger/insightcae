@@ -263,6 +263,7 @@ void setStdLayerCtrls(OFDictData::dict& layerCtrls);
 void setStdQualityCtrls(OFDictData::dict& qualityCtrls);
 void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls);
 void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls);
+void setNoQualityCtrls(OFDictData::dict& qualityCtrls);
 
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer);
 

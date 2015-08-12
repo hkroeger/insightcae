@@ -455,7 +455,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
+  solvers["p"]=GAMGPCGSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
   solvers["R"]=smoothSolverSetup(1e-8, 0.1);
@@ -516,13 +516,18 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if ( (OFversion()>=220) && !p_.hasCyclics() ) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads;
-//   grad["grad(p)"]="Gauss linear";
+  grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  if (OFversion()<170) suf=" localCellLimited "+bgrads+" UBlendingFactor"; else suf=" grad(U)";
+  suf="localCellLimited "+bgrads+" UBlendingFactor";
+  if (OFversion()>=170)
+  {
+    grad["limitedGrad"]=suf;
+    suf="limitedGrad";
+  }
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
   div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;

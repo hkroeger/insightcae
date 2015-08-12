@@ -605,7 +605,8 @@ void createPrismLayers
   double finalLayerThickness, 
   bool relativeSizes, 
   const PatchLayers& nLayers,
-  double expRatio
+  double expRatio,
+  bool twodForExtrusion=false
 );
 
 }

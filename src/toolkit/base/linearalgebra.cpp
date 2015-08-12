@@ -24,6 +24,7 @@
 #include "linearalgebra.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/tuple/tuple.hpp"
+#include "boost/format.hpp"
 #include "base/exception.h"
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_integration.h"
@@ -472,6 +473,10 @@ Interpolator::~Interpolator()
 
 double Interpolator::y(double x, int col) const
 {
+  if (col>=spline.size())
+    throw insight::Exception(str(format("requested value interpolation in data column %d while there are only %d columns!")
+			    % col % spline.size()));
+    
   if (x<first(0)) return first(col+1);
   if (x>last(0)) return last(col+1);
   double v=gsl_spline_eval (&(spline[col]), x, &(*acc));
@@ -480,6 +485,10 @@ double Interpolator::y(double x, int col) const
 
 double Interpolator::dydx(double x, int col) const
 {
+  if (col>=spline.size())
+    throw insight::Exception(str(format("requested derivative interpolation in data column %d while there are only %d columns!")
+			    % col % spline.size()));
+    
   if (x<first(0)) return dydx(first(0), col);
   if (x>last(0)) return dydx(last(0), col);
   double v=gsl_spline_eval_deriv (&(spline[col]), x, &(*acc));

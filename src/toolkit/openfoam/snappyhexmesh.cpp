@@ -168,7 +168,14 @@ void ExplicitFeatureCurve::addIntoDictionary(OFDictData::dict& sHMDict) const
 void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& location) const
 {
   boost::filesystem::path from(p_.fileName());
-  boost::filesystem::path to(location/"constant"/"triSurface"/p_.fileName().filename());
+  if (!exists(from))
+  {
+    boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
+    if (exists(alt_from)) from=alt_from;
+    else
+      throw insight::Exception("feature edge file does not exist:"+from.string()+" nor "+alt_from.string());
+  }
+  boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());
   
   if (!exists(to.parent_path()))
     create_directories(to.parent_path());
@@ -437,6 +444,27 @@ void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["errorReduction"]=0.75;  
 
   qualityCtrls["minTetQuality"]=1e-40;  
+}
+
+
+void setNoQualityCtrls(OFDictData::dict& qualityCtrls)
+{
+  qualityCtrls["maxNonOrtho"]=180.0;
+  qualityCtrls["maxBoundarySkewness"]=-1;
+  qualityCtrls["maxInternalSkewness"]=-1;
+  qualityCtrls["maxConcave"]=180.0;  
+  qualityCtrls["minFlatness"]=0.002;  
+  qualityCtrls["minVol"]=-1e30;  
+  qualityCtrls["minArea"]=-1.0;  
+  qualityCtrls["minTwist"]=-1;  
+  qualityCtrls["minDeterminant"]=0;  
+  qualityCtrls["minFaceWeight"]=0;  
+  qualityCtrls["minVolRatio"]=0;  
+  qualityCtrls["minTriangleTwist"]=-1.0;  
+  qualityCtrls["nSmoothScale"]=4;  
+  qualityCtrls["errorReduction"]=0.75;  
+
+  qualityCtrls["minTetQuality"]=-1e30;  
 }
 
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer)

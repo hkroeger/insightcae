@@ -1956,7 +1956,7 @@ void extrude2DMesh
 
 
   extrDict["mergeFaces"]=false;
-  extrDict["mergeTol"]=1e-6;
+  extrDict["mergeTol"]=1e-8; // needs to be small for not collapsing prism layer faces
   
   boost::filesystem::path fname;
   if (cm.OFversion()<170)
@@ -2016,7 +2016,7 @@ void rotateMesh
 
 
   extrDict["mergeFaces"]=true;
-  extrDict["mergeTol"]=1e-6;
+  extrDict["mergeTol"]=1e-8; // needs to be small for not collapsing prism layer faces
   
   boost::filesystem::path fname;
   if (cm.OFversion()<170)
@@ -2180,7 +2180,8 @@ void createPrismLayers
   double finalLayerThickness, 
   bool relativeSizes, 
   const PatchLayers& nLayers,
-  double expRatio
+  double expRatio,
+  bool twodForExtrusion
 )
 {
   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
@@ -2194,9 +2195,17 @@ void createPrismLayers
   }
 
   snappyHexMeshOpts::DictPtr qualityCtrls(new OFDictData::dict());
-  setRelaxedQualityCtrls(*qualityCtrls);
-  (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
-  (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
+  
+  if (twodForExtrusion)
+  {
+    setNoQualityCtrls(*qualityCtrls);
+  }
+  else
+  {
+    setRelaxedQualityCtrls(*qualityCtrls);
+    (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
+    (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
+  }
   
   snappyHexMesh
   (

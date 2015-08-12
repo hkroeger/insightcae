@@ -5,7 +5,7 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/dxflib.tgz && cd dxflib && (
+tar xzf TARBALLS/dxflib-2.7.5.tgz && cd dxflib-2.7.5 && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

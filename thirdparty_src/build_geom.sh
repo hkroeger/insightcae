@@ -5,7 +5,7 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/dxflib-2.7.5.tar.gz && cd dxflib-2.7.5 && (
+tar xzf TARBALLS/salomegeom-7.2.0.tar.gz && cd salomegeom-7.2.0 && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

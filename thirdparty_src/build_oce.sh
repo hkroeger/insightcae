@@ -11,7 +11,7 @@ tar xzf TARBALLS/oce-0.13.1.tgz && cd oce-0.13.1 && (
 
  mkdir build
  cd build
- cmake ..  -DCMAKE_INSTALL_PREFIX=$INSTALLDIR 
+ cmake ..  -DOCE_INSTALL_PREFIX=$INSTALLDIR 
  make -j12
  make install
 )

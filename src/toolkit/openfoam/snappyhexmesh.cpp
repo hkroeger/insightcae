@@ -173,15 +173,18 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
     boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
     if (exists(alt_from)) from=alt_from;
     else
-      throw insight::Exception("feature edge file does not exist:"+from.string()+" nor "+alt_from.string());
+      throw insight::Exception("feature edge file does not exist: neither "+from.string()+" nor "+alt_from.string());
   }
   boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());
   
-  if (!exists(to.parent_path()))
-    create_directories(to.parent_path());
-  
-  copy_file(from, to);
-
+  if (to!=from) // might occur, if file path in target location is specified (e.g. after surfaceFeatureExtract)
+  {
+    if (!exists(to.parent_path()))
+      create_directories(to.parent_path());
+    
+    std::cout<<"copy from "<<from<<" to "<<to<<std::endl;
+    copy_file(from, to);
+  }
 //   ofc.executeCommand(location, "surfaceTransformPoints",
 //     list_of<std::string>
 //     (absolute(from).string())

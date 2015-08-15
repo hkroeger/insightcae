@@ -364,7 +364,7 @@ bool kOmegaHe::read()
 
 tmp<volTensorField> kOmegaHe::calcNonLinearPart(const volTensorField& gradU)
 {
-    volTensorField         W_    =  skew(gradU);
+    volTensorField         W_    = - skew(gradU);
     volSymmTensorField     S_    =  symm(gradU); // dimensioned
     
     volScalarField     tau1 = 1.0/(omega_*betastar);

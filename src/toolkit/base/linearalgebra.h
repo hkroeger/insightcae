@@ -173,6 +173,11 @@ class Interpolator
 public:
   Interpolator(const arma::mat& xy, bool force_linear=false);
   ~Interpolator();
+  
+  /**
+   * integrate column col fromx=a to x=b
+   */
+  double integrate(double a, double b, int col=0) const;
   /**
    * returns a single y-value from column col
    */

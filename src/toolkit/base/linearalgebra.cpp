@@ -471,6 +471,29 @@ Interpolator::~Interpolator()
 //   gsl_interp_accel_free (acc);
 }
 
+double Interpolator::integrate(double a, double b, int col) const
+{
+  if (col>=spline.size())
+    throw insight::Exception(str(format("requested value interpolation in data column %d while there are only %d columns!")
+			    % col % spline.size()));
+    
+//   double small=1e-20;
+//   if (first(0)-a > small);
+//     throw insight::Exception(str(format("Begin of integration interval (%g) before beginning of definition interval (%g)!")
+// 			    % a % first(0)));
+//   if (a-last(0) > small);
+//     throw insight::Exception(str(format("Begin of integration interval (%g) after end of definition interval (%g)!")
+// 			    % a % last(0)));
+//   if (first(0)-b>small);
+//     throw insight::Exception(str(format("End of integration interval (%g) before beginning of definition interval (%g)!")
+// 			    % b % first(0)));
+//   if (b-last(0)>small);
+//     throw insight::Exception(str(format("End of integration interval (%g) after end of definition interval (%g)!")
+// 			    % b % last(0)));
+  
+  return gsl_spline_eval_integ( &(spline[col]), a, b, &(*acc) );
+}
+
 double Interpolator::y(double x, int col) const
 {
   if (col>=spline.size())

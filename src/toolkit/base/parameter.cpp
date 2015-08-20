@@ -180,7 +180,7 @@ char IntName[] = "int";
 char BoolName[] = "bool";
 char VectorName[] = "vector";
 char StringName[] = "string";
-char PathName[] = "path";
+char PathName[] = "pathbase";
 
 defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter, std::string);
@@ -197,6 +197,7 @@ PathParameter::PathParameter(const path& value, const string& description)
 
 bool PathParameter::isPacked() const
 {
+  return false;
 }
 
 void PathParameter::pack()
@@ -206,6 +207,12 @@ void PathParameter::pack()
 void PathParameter::unpack()
 {
 }
+
+Parameter* PathParameter::clone() const
+{
+    return new PathParameter(value_, description_);
+}
+
 
   
 template<> defineType(DoubleParameter);

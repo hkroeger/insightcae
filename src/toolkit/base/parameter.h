@@ -211,7 +211,7 @@ class PathParameter
 {
   std::string file_content_;
 public:
-  declareType(PathName);
+  declareType("path");
 
   PathParameter(const std::string& description);
   PathParameter(const boost::filesystem::path& value, const std::string& description);
@@ -219,6 +219,14 @@ public:
   bool isPacked() const;
   void pack();
   void unpack();
+
+  virtual Parameter* clone() const;
+  
+//   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+//     boost::filesystem::path inputfilepath) const;
+// 
+//   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+//     boost::filesystem::path inputfilepath);
 };
 
 #ifdef SWIG

@@ -211,7 +211,7 @@ class PathParameter
 {
   std::string file_content_;
 public:
-//   declareType(PathName);
+  declareType(PathName);
 
   PathParameter(const std::string& description);
   PathParameter(const boost::filesystem::path& value, const std::string& description);

@@ -182,7 +182,7 @@ char VectorName[] = "vector";
 char StringName[] = "string";
 char PathName[] = "path";
 
-// defineType(PathParameter);
+defineType(PathParameter);
 addToFactoryTable(Parameter, PathParameter, std::string);
 
 PathParameter::PathParameter(const string& description)

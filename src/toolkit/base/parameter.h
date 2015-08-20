@@ -58,6 +58,9 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 
 namespace insight {
   
+std::string base64_encode(const std::string& s);
+std::string base64_decode(const std::string& s);
+  
 class Parameter
 : public boost::noncopyable
 {
@@ -201,7 +204,22 @@ typedef SimpleParameter<int, IntName> IntParameter;
 typedef SimpleParameter<bool, BoolName> BoolParameter;
 typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
-typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
+// typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
+
+class PathParameter
+: public SimpleParameter<boost::filesystem::path, PathName>
+{
+  std::string file_content_;
+public:
+//   declareType(PathName);
+
+  PathParameter(const std::string& description);
+  PathParameter(const boost::filesystem::path& value, const std::string& description);
+  
+  bool isPacked() const;
+  void pack();
+  void unpack();
+};
 
 #ifdef SWIG
 %template(DoubleParameter) SimpleParameter<double, DoubleName>;
@@ -209,7 +227,7 @@ typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 %template(BoolParameter) SimpleParameter<bool, BoolName>;
 %template(VectorParameter) SimpleParameter<arma::mat, VectorName>;
 %template(StringParameter) SimpleParameter<std::string, StringName>;
-%template(PathParameter) SimpleParameter<boost::filesystem::path, PathName>;
+// %template(PathParameter) SimpleParameter<boost::filesystem::path, PathName>;
 #endif
 
 template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 

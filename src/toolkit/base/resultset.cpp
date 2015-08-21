@@ -716,6 +716,11 @@ PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plotcmd)
 : xy_(xy), plotcmd_(plotcmd)
 {}
 
+void PlotCurve::sort()
+{
+  xy_=sortedByCol(xy_, 0);
+}
+
 
 std::string PlotCurve::title() const
 {

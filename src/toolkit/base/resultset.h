@@ -353,6 +353,12 @@ struct PlotCurve
    */
   PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
   
+  /**
+   * sort the curve values by x.
+   * This needs to be explicitly called, because it is not always wanted (e.g. parametric plots)
+   */
+  void sort();
+  
   std::string title() const;
 };
 

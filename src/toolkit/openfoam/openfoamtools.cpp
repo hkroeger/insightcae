@@ -1274,9 +1274,17 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
     
     std::vector<std::string> output;
     cm.executeCommand(location, "patchIntegrate", opts, &output);
-    
+// >>     Area vector of patch rot_upstream[3] = (2.9166954e-37 0 0.013666426)
+// >>     Area magnitude of patch rot_upstream[3] = 0.013666426
+// >>     Reading surfaceScalarField phi
+// >>     Integral of phi over patch rot_upstream[3] = -0.033370145
+
     boost::regex re_time("^ *Time = (.+)$");
-    boost::regex re_mag("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+    boost::regex re_mag;
+    if (cm.OFversion()>=230)
+      re_mag=boost::regex("^ *Integral of (.+) over patch (.+)\\[(.+)\\] = (.+)$");
+    else
+      re_mag=boost::regex("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
     boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
     boost::match_results<std::string::const_iterator> what;
     double time=0;
@@ -1301,13 +1309,10 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
       }
     }
     
-    arma::mat res
-      ( join_rows
-	(
-	  arma::mat(data.data(), 2, data.size()/2).t(),
-	  arma::mat(areadata.data(), 1, areadata.size()).t()
-	)
-      );
+    arma::mat d(data.data(), 2, data.size()/2);
+    arma::mat ad(areadata.data(), 1, areadata.size());
+    cout<<patchName<<d<<ad<<endl;
+    arma::mat res( join_rows(d.t(), ad.t()) );
       
     cout<<patchName<<endl<<res<<endl;
       
@@ -2181,7 +2186,9 @@ void createPrismLayers
   bool relativeSizes, 
   const PatchLayers& nLayers,
   double expRatio,
-  bool twodForExtrusion
+  bool twodForExtrusion,
+  bool isalreadydecomposed,
+  bool keepdecomposedafterfinish
 )
 {
   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
@@ -2227,6 +2234,10 @@ void createPrismLayers
       .set_tlayer(p.getDouble("mesh/mlayer"))
       .set_relativeSizes(true)
   */
+    ,
+    true,
+    isalreadydecomposed,
+    keepdecomposedafterfinish
   ); 
 }
  

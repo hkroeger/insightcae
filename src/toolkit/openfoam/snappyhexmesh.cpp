@@ -483,7 +483,9 @@ void snappyHexMesh
   const OFDictData::list& PiM,
   const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
   snappyHexMeshOpts::Parameters const& p,
-  bool overwrite
+  bool overwrite,
+  bool isalreadydecomposed,
+  bool keepdecomposedafterfinish
 )
 {
   using namespace snappyHexMeshFeats;
@@ -546,7 +548,7 @@ void snappyHexMesh
   int np=readDecomposeParDict(location);
   bool is_parallel = (np>1);
 
-  if (is_parallel)
+  if (is_parallel && (!isalreadydecomposed) )
   {
     ofc.executeCommand(location, "decomposePar");
   }
@@ -587,7 +589,7 @@ void snappyHexMesh
     }
   }
   
-  if (is_parallel)
+  if (is_parallel && (!keepdecomposedafterfinish) )
   {
     ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
     ofc.removeProcessorDirectories(location);

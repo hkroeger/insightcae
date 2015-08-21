@@ -88,6 +88,7 @@ public:
   virtual setFieldOperator* clone() const =0;
 };
 
+
 class fieldToCellOperator
 : public setFieldOperator
 {
@@ -606,7 +607,9 @@ void createPrismLayers
   bool relativeSizes, 
   const PatchLayers& nLayers,
   double expRatio,
-  bool twodForExtrusion=false
+  bool twodForExtrusion=false,
+  bool isalreadydecomposed=false,
+  bool keepdecomposedafterfinish=false
 );
 
 }

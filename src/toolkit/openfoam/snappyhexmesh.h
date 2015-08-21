@@ -274,7 +274,9 @@ void snappyHexMesh
   const OFDictData::list& PiM,
   const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
   snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
-  bool overwrite=true
+  bool overwrite=true,
+  bool isalreadydecomposed=false,
+  bool keepdecomposedafterfinish=false
 );
 
 

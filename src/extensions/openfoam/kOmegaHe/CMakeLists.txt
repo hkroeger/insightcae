@@ -40,4 +40,4 @@ set(LIBS
 # add_subdirectory(wallFunctions/nutHybridWallFunction2)
 
 set(OF_VERSIONS OF22x OF22eng OF23x)
-setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")
+setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")

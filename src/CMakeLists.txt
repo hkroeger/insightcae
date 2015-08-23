@@ -87,7 +87,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 #SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-needed -Wl,--no-as-needed") 
 
-macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs)
+macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
   if (NOT OF_VERSIONS)
     if (OF16ext_FOUND)
       list (APPEND OF_VERSIONS OF16ext)
@@ -131,7 +131,12 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       )
     endforeach()
     
-    LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
+    #LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
+    foreach (_targ ${is_of_targets})
+      list (APPEND ${PRJ_NAME}_LIBRARIES
+      ${_targ}${_ofvers}
+      )
+    endforeach()
 
     if (${_ofvers} STREQUAL "OF16ext")
       setup_exe_target_OF16ext(
@@ -191,7 +196,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   endforeach()
 endmacro(setup_exe_target_OF)
 
-macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs)
+macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
   if (NOT OF_VERSIONS)
     if (OF16ext_FOUND)
       list (APPEND OF_VERSIONS OF16ext)
@@ -235,7 +240,12 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       )
     endforeach()
     
-    LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
+    #LIST(APPEND ${PRJ_NAME}_LIBRARIES ${${_ofvers}_LIBS})
+    foreach (_targ ${is_of_targets})
+      list (APPEND ${PRJ_NAME}_LIBRARIES
+      ${_targ}${_ofvers}
+      )
+    endforeach()
 
     if (${_ofvers} STREQUAL "OF16ext")
       setup_lib_target_OF16ext(

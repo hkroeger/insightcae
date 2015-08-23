@@ -22,5 +22,5 @@ set(LIBS
 # set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 # add_subdirectory(twoPointCorrelation)
 
-setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")
+setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
 

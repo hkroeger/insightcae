@@ -39,7 +39,7 @@ set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 add_subdirectory(wallFunctions/hybridOmegaWallFunction2)
 add_subdirectory(wallFunctions/nutHybridWallFunction2)
 
-setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")
+setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")
 # 
 # set(kOmegaSST2_SOURCES 
 #  kOmegaSST2.C

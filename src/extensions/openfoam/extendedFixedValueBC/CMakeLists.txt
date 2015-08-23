@@ -29,12 +29,9 @@ set(LIBS
 toolkit
 )
 
-set(OF16ext_LIBS fieldDataProviderOF16ext)
-set(Fx31_LIBS fieldDataProviderFx31)
-set(OF21x_LIBS fieldDataProviderOF21x)
-set(OF22x_LIBS fieldDataProviderOF22x)
-set(OF22eng_LIBS fieldDataProviderOF22eng)
-set(OF23x_LIBS fieldDataProviderOF23x)
+set(IS_OF_LIBS 
+ fieldDataProvider
+)
 
 # set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 # add_subdirectory(turbulentStructures/turbulentStructure)
@@ -44,4 +41,4 @@ set(OF23x_LIBS fieldDataProviderOF23x)
 # add_subdirectory(turbulentStructures/decayingTurbulenceVorton)
 # add_subdirectory(turbulentStructures/anisotropicVorton)
 
-setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}")
+setup_lib_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "${IS_OF_LIBS}")

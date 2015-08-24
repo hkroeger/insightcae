@@ -83,6 +83,10 @@ IF(OF23x_BASHRC)
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION})
     target_link_libraries(${targetname} ${ARGN}) 
+    target_include_directories(${targetname}
+      PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
+      PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+      )
     install(TARGETS ${targetname} LIBRARY DESTINATION ${OF23x_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

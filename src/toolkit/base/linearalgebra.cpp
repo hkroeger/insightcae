@@ -379,7 +379,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     throw insight::Exception("movingAverage: first column specified as time but only dataset with "
       +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
   
-  if (timeProfs.n_rows>0)
+  if (timeProfs.n_rows>1)
   {
     int n_raw=timeProfs.n_rows;
     int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );

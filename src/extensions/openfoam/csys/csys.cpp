@@ -108,6 +108,19 @@ vector cartesian_csys::localVectorToGlobal(const point&, const vector& v) const
   return v.x()*ex_ + v.y()*ey_ + v.z()*ez_;
 }
 
+point cartesian_csys::globalPointToLocal(const point& p) const
+{
+#warning untested!
+  vector r=p-orig_;
+  return point(r&ex_, r&ey_, r&ez_);
+}
+
+vector cartesian_csys::globalVectorToLocal(const point& p, const vector& v) const
+{
+#warning untested!
+  return vector(v&ex_, v&ey_, v&ez_);
+}
+
 autoPtr<csys> cartesian_csys::clone() const
 {
   return autoPtr<csys>(new cartesian_csys(*this));
@@ -129,6 +142,24 @@ cylindrical_csys::cylindrical_csys(const dictionary& dict)
   orig_(dict.lookup("orig")),
   ez_(dict.lookup("ez")),
   er_(dict.lookup("er"))
+{
+  setup();
+}
+
+cylindrical_csys::cylindrical_csys
+(
+ const point& orig,
+ const vector& er,
+ const vector& ez
+)
+: orig_(orig),
+  ez_(ez),
+  er_(er)
+{
+  setup();
+}
+
+void cylindrical_csys::setup()
 {
   if (mag(er_)<SMALL)
     throw insight::Exception("invalid direction er specified: vector magnitude is zero!");
@@ -155,15 +186,51 @@ vector cylindrical_csys::localPointToGlobal(const point& p) const
   return orig_ + cos(phi)*r*er_ + sin(phi)*r*e3_ + p.z()*ez_;
 }
 
-vector cylindrical_csys::localVectorToGlobal(const point& p, const vector& v) const
+tensor cylindrical_csys::localDirections(const point& p) const
 {
   vector r=p-orig_;
   r-=(r&ez_)*ez_;
   double phi=atan2(r&e3_, r&er_);
   vector erp=cos(phi)*er_ + sin(phi)*e3_;
   vector etp=ez_^erp;
-  return v.x()*erp + v.y()*etp + v.z()*ez_;
+  
+  return tensor(erp,etp,ez_).T();
 }
+
+vector cylindrical_csys::localVectorToGlobal(const point& p, const vector& v) const
+{/*
+  vector r=p-orig_;
+  r-=(r&ez_)*ez_;
+  double phi=atan2(r&e3_, r&er_);
+  vector erp=cos(phi)*er_ + sin(phi)*e3_;
+  vector etp=ez_^erp;
+  return v.x()*erp + v.y()*etp + v.z()*ez_;
+  */
+  return localDirections(p)&v;
+}
+
+point cylindrical_csys::globalPointToLocal(const point& p) const
+{
+#warning untested!
+  vector r=p-orig_;
+  scalar z=r&ez_;
+  r-=ez_*z;
+  return point(mag(r), atan2(r&e3_, r&er_), z);
+}
+
+vector cylindrical_csys::globalVectorToLocal(const point& p, const vector& v) const
+{
+#warning untested!
+  /*vector r=p-orig_;
+  r-=(r&ez_)*ez_;
+  double phi=atan2(r&e3_, r&er_);
+  vector erp=cos(phi)*er_ + sin(phi)*e3_;
+  vector etp=ez_^erp;
+  return vector(v&erp, v&etp, v&ez_);
+  */
+  return localDirections(p).T()&v;
+}
+
 
 autoPtr<csys> cylindrical_csys::clone() const
 {

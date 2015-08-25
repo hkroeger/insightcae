@@ -556,7 +556,9 @@ Parameter* ArrayParameter::clone () const
 {
   ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_);
   for (int i=0; i<size(); i++)
+  {
     np->appendValue(value_[i]);
+  }
   return np;
 }
 
@@ -577,29 +579,27 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapi
 void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath)
 {
-  value_.clear();
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
   if (child)
   {
+    value_.clear();
     for (xml_node<> *e = child->first_node(); e; e = e->next_sibling())
     {
       std::string name(e->first_attribute("name")->value());
       if (name=="default")
       {
-	cout<<"reading default value"<<endl;
+// 	cout<<"reading default value"<<endl;
 // 	defaultValue_.reset(Parameter::lookup(e->name(), ""));
 	defaultValue_->readFromNode( name, doc, *child, inputfilepath );
       }
       else
       {
 	int i=boost::lexical_cast<int>(name);
-	cout<<"Reading element i="<<i<<endl;
+// 	cout<<"Reading element i="<<i<<endl;
 	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
-	cout<<"now at size="<<size()<<endl;
-// 	Parameter* curp = Parameter::lookup(e->name(), "");
-	/*curp*/value_[i].readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
-	/*value_.replace(i, curp);*/
+// 	cout<<"now at size="<<size()<<endl;
+	value_[i].readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
       }
     }
   }

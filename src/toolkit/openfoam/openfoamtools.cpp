@@ -2240,6 +2240,56 @@ void createPrismLayers
     keepdecomposedafterfinish
   ); 
 }
+
+arma::mat surfaceProjectLine
+(
+ const OFEnvironment& ofe, 
+ const path& surfaceFile, 
+ const arma::mat& start, 
+ const arma::mat& end, 
+ int npts, 
+ const arma::mat& projdir)
+{
+  std::vector<std::string> opts;
+  opts.push_back(surfaceFile.string());
+  opts.push_back(OFDictData::to_OF(start));
+  opts.push_back(OFDictData::to_OF(end));
+  opts.push_back(lexical_cast<std::string>(npts));
+  opts.push_back(OFDictData::to_OF(projdir));
+//   copy(addopts.begin(), addopts.end(), back_inserter(opts));
+
+  std::vector<std::string> output;
+  OpenFOAMCase(ofe).executeCommand(surfaceFile.parent_path(), "surfaceProjectLine", opts, &output);
+  
+  boost::regex re_res("curve = \\((.*)\\)$");
+  boost::match_results<std::string::const_iterator> what;
+  
+  BOOST_FOREACH(const std::string& l, output)
+  {
+    if (boost::regex_match(l, what, re_res))
+    {
+      std::vector<double> data;
+      std::vector<std::string> pairs;
+      std::string matched(what[1]);
+      boost::split(pairs, matched, boost::is_any_of(","));
+      BOOST_FOREACH(const std::string& p, pairs)
+      {
+	std::istringstream is(p);
+	double x, r;
+	is>>x>>r;
+	data.push_back(x);
+	data.push_back(r);
+      }
+      arma::mat result(data.data(), 2, data.size()/2);
+      return result.t();
+    }
+  }
+  
+  throw insight::Exception("could not extract coordinate points!");
+  
+  return arma::mat();
+}
+
  
 
 }

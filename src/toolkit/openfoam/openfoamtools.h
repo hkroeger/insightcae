@@ -612,6 +612,14 @@ void createPrismLayers
   bool keepdecomposedafterfinish=false
 );
 
+arma::mat surfaceProjectLine
+(
+  const OFEnvironment& ofe, 
+  const boost::filesystem::path& surfaceFile,
+  const arma::mat& start, const arma::mat& end, int npts,
+  const arma::mat& projdir
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

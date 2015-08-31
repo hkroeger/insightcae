@@ -23,6 +23,8 @@
 
 #include "Standard_Version.hxx"
 #include "AIS_Point.hxx"
+#include "AIS_Drawer.hxx"
+#include "Prs3d_TextAspect.hxx"
 
 using namespace boost;
 
@@ -41,6 +43,9 @@ Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::s
   );
   dim->SetModelUnits(text.c_str());
 #endif
+//   Handle_Prs3d_TextAspect ta=dim->Attributes()->TextAspect();
+//   ta->SetHeight(100.0);
+//   dim->Attributes()->SetTextAspect(ta);
   return dim;
 }
 
@@ -224,6 +229,37 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
   
   return ais.release();
 }
+
+
+showPoint::showPoint(const arma::mat& p, const std::string& label)
+: p_(p), label_(label)
+{
+
+}
+
+void showPoint::write(ostream&) const
+{
+  // do nothing
+}
+
+
+AIS_InteractiveObject* showPoint::createAISRepr() const
+{
+  TopoDS_Edge cP = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(p_),gp_Dir(0,0,1)), 1));
+  Handle_AIS_Shape aisP = new AIS_Shape(cP);
+  
+  Handle_AIS_InteractiveObject aisPLabel (createArrow(
+    cP, label_)
+  );
+
+  std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
+
+  ais->Connect(aisP);
+  ais->Connect(aisPLabel);
+  
+  return ais.release();
+}
+
 
 
 }

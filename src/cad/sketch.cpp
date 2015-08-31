@@ -451,6 +451,12 @@ Sketch::operator const TopoDS_Face& () const
   return TopoDS::Face(shape_);
 }
 
+bool Sketch::isSingleFace() const
+{
+  return (shape_.ShapeType()==TopAbs_FACE);
+}
+
+
 void Sketch::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

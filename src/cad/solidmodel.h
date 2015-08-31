@@ -470,6 +470,16 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+class Bar
+: public SolidModel
+{
+public:
+  declareType("Bar");
+  Bar(const NoParameters& nop = NoParameters());
+  Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const arma::mat& vert);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
 class Thicken
 : public SolidModel
 {

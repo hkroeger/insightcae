@@ -1992,6 +1992,99 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+defineType(Bar);
+addToFactoryTable(SolidModel, Bar, NoParameters);
+
+Bar::Bar(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+Bar::Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const arma::mat& vert)
+{
+  if (norm(vert,2)<1e-10)
+    throw insight::Exception("Bar: length of vertical direction is zero!");
+  arma::mat v=vert/norm(vert,2);
+  
+  if (!xsec.isSingleFace() || xsec.isSingleWire() || xsec.isSingleEdge())
+    throw insight::Exception("xsec feature has to provide a face or wire!");
+  
+  TopoDS_Wire spine=BRepBuilderAPI_MakeWire
+  (
+    BRepBuilderAPI_MakeEdge
+    (
+      GC_MakeSegment(to_Pnt(p0), to_Pnt(p1))
+    )
+  );
+//   TopoDS_Vertex pfirst, plast;
+//   TopExp::Vertices( spine, pfirst, plast );
+  
+    
+  arma::mat baraxis=p1-p0;
+  double lba=norm(baraxis,2);
+  if (lba<1e-10)
+    throw insight::Exception("Bar: invalid definition of bar end points!");
+  baraxis/=lba;
+  
+  arma::mat ex=-arma::cross(baraxis, vert);
+  
+  double lex=norm(ex, 2);
+  if (lex<1e-10)
+    throw insight::Exception("Bar: invalid definition of vertical direction!");
+  ex/=lex;
+  
+  gp_Trsf tr;
+  tr.SetTransformation
+  (
+    // from
+    gp_Ax3
+    (
+      gp_Pnt(0,0,0),
+      gp_Dir(0,0,1),
+      gp_Dir(1,0,0)
+    ),
+    //to
+    gp_Ax3
+    (
+      to_Pnt(p0),
+      to_Vec(baraxis),
+      to_Vec(ex)
+    )
+  );
+  TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr.Inverted()).Shape();
+
+//   BRepOffsetAPI_MakePipeShell p(spinew);
+//   Handle_Law_Constant law(new Law_Constant());
+//   law->Set(1.0, -1e10, 1e10);
+//   p.SetLaw(static_cast<TopoDS_Shape>(xsec), law, pfirst);
+//   p.SetMode(true);
+//   p.MakeSolid();
+  
+  BRepOffsetAPI_MakePipe p(spine, xsecs);
+  
+  p.Build();
+  setShape(p.Shape());
+}
+
+void Bar::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "Bar",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' 
+	>> ruleset.r_vectorExpression >> ',' 
+	>> ruleset.r_vectorExpression >> ',' 
+	>> ruleset.r_solidmodel_expression >> ',' 
+	>> ruleset.r_vectorExpression >> 
+      ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Bar>(qi::_1, qi::_2, *qi::_3, qi::_4)) ]
+      
+    ))
+  );
+}
+
 defineType(Thicken);
 addToFactoryTable(SolidModel, Thicken, NoParameters);
 

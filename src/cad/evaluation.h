@@ -117,6 +117,20 @@ public:
   virtual void write(std::ostream&) const;
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
+
+class showPoint
+: public Evaluation
+{
+  arma::mat p_;
+  std::string label_;
+  
+public:
+  showPoint(const arma::mat& p, const std::string& label);
+  
+  virtual void write(std::ostream&) const;
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
+
 }
 }
 

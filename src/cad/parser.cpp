@@ -394,6 +394,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_1, 
 		    phx::construct<EvaluationPtr>(new_<Hydrostatics>(*qi::_6, *qi::_7, qi::_2, qi::_3, qi::_4, qi::_5))) 
 	]
+      |
+      ( lit("show") >> '(' >> r_vectorExpression >> ',' >> r_identifier >> ')' >> ';' ) 
+	[ phx::bind(&Model::addEvaluationSymbol, model_, qi::_2, 
+		    phx::construct<EvaluationPtr>(new_<showPoint>(qi::_1, qi::_2))) 
+	]
+// 	[ phx::bind(&showPoint, *qi::_2, qi::_1) ]
       ;
       
     r_viewDef =

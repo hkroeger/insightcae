@@ -95,6 +95,10 @@ public:
     const SketchVarList& vars = SketchVarList(), 
     double tol=Precision::Confusion() 
   );
+  
+//   virtual bool isSingleCloseWire() const;
+//   virtual TopoDS_Wire asSingleClosedWire() const;
+  virtual bool isSingleFace() const;
   operator const TopoDS_Face& () const;
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

@@ -86,6 +86,8 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
+
+
 }
 }
 

@@ -41,8 +41,8 @@ geometry=set
  HBydelta2e = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
  WBydelta2e = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
  L = double 5.0 "[m] Length of the domain"
- LapByL = double 0.05 "Length of the resolved approach zone, divided by length of plate"
- Retheta0 = double 350 "Momentum-thickness reynolds number at tripping station. Determines approach zone length. No turbulence for Retheta0<320."
+ LapByL = double 0.05 "Length of the upstream extension of the plate, divided by length of plate"
+ Retheta0 = double 350 "Momentum-thickness reynolds number at initial (tripping) station x=0."
 } "Geometrical properties of the domain"
 
 mesh=set
@@ -62,7 +62,7 @@ mesh=set
     
     blocks
     set {
-     n = int 4 "number evenly distributed tripping block across plate width"
+     n = int 4 "number of evenly distributed tripping block across plate width"
      wbyh = double 6 "width of the blocks"
      lbyh = double 3 "length of the blocks"
      Reh = double 1000 "Reynolds number (formulated with height) of the tripping box"
@@ -81,7 +81,7 @@ mesh=set
     
 operation=set
 {
-  uinf = double 17.78 "[m/s] free-stream velocity"
+  uinf = double 17.78 "[m/s] free-stream velocity"   
 } "Definition of the operation point under consideration"
 
 fluid = set 
@@ -130,7 +130,7 @@ protected:
     
     double L_, Lap_, Llam_, theta0_;
 
-    double Cw_, H_, W_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
+    double Cw_, H_, W_, cf_0_, Rex_0_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;
@@ -151,6 +151,8 @@ public:
   
   virtual ParameterSet defaultParameters() const;
   virtual void calcDerivedInputData();
+  
+  virtual void createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
   virtual void createCase(insight::OpenFOAMCase& cm);
   virtual void createMesh(insight::OpenFOAMCase& cm);
 
@@ -185,12 +187,12 @@ public:
   static double cf(double Rex, double Cplus=5.0);
   
   /**
-   * computes the Reynolds number with BL layer thickness delta99 at axial station x = Rex*nu/Uinf
+   * computes the Reynolds number with BL layer thickness delta99 Redelta99=uinf*delta99/nu at axial station x = Rex*nu/Uinf
    */
   static double Redelta99(double Rex);
   
   /**
-   * computes the Reynolds number with BL momentum thickness delta2 at axial station x = Rex*nu/Uinf
+   * computes the Reynolds number with BL momentum thickness Redelta2=uinf*delta2/nu delta2 at axial station x = Rex*nu/Uinf
    */
   static double Redelta2(double Rex);
   

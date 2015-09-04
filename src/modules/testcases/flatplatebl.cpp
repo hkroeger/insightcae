@@ -75,6 +75,20 @@ void FlatPlateBL::calcDerivedInputData()
   approach_="approach";
   trip_="trip";
   
+  struct Obj : public Objective1D
+  {
+    double Redelta2;
+    virtual double operator()(double Rex) const 
+    { 
+//       cout << G << (1./G) + 2.*log(1./G) - D - Alpha <<endl;
+      return FlatPlateBL::Redelta2(Rex)-Redelta2; 
+    }
+    
+  } o;
+  o.Redelta2=p.geometry.Retheta0;
+  Rex_0_=nonlinearSolve1D(o, o.Redelta2, 1e6);
+  reportIntermediateParameter("Rex_0", Rex_0_, "Rex at initial location", "");
+  
   uinf_= p.operation.uinf; //FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
   reportIntermediateParameter("uinf", uinf_, "free stream velocity", "m/s");
   
@@ -106,11 +120,11 @@ void FlatPlateBL::calcDerivedInputData()
   /**
    * compute estimated BL thicknesses
    */
-  theta0_=0.664*sqrt(p.fluid.nu*Llam_/uinf_);
+  theta0_= p.geometry.Retheta0*p.fluid.nu/p.operation.uinf; //0.664*sqrt(p.fluid.nu*Llam_/uinf_);
   reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
-  double cf_0=0.664/sqrt(Re_0);
-  reportIntermediateParameter("cf_0", cf_0, "Expected wall friction coefficient at the tripping location");
-  double tau_0=cf_0*0.5*pow(uinf_,2);
+  cf_0_=cf(Rex_0_); //0.664/sqrt(Re_0); // laminar
+  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the tripping location");
+  double tau_0=cf_0_*0.5*pow(uinf_,2);
   reportIntermediateParameter("tau_0", tau_0, "Expected wall shear stress at the tripping location", "$m^2/s^2$");
   double utau_0=sqrt(tau_0);
   reportIntermediateParameter("utau_0", utau_0, "Friction velocity at the tripping location", "m/s");
@@ -170,8 +184,15 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("gradaxi", gradaxi_, "axial grid stretching in approach zone upstream of plate");
   
 //   naxi_=std::max(1, int(round(0.1*L/deltax)));
-  naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, Lap_);
-  reportIntermediateParameter("naxi", naxi_, "number cells in approach zone upstream of plate");
+  if (Lap_>1e-10)
+  {
+    naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, Lap_);
+    reportIntermediateParameter("naxi", naxi_, "number cells in approach zone upstream of plate");
+  }
+  else
+  {
+    naxi_=0;
+  }
 
   if (p.mesh.twod)
     nlat_=1;
@@ -244,6 +265,9 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   P_8(pts[a], pts[b], pts[c], pts[d], \
       pts[a]+vH, pts[b]+vH, pts[c]+vH, pts[d]+vH)
       
+  bool upstreamzone=(naxi_>0);
+      
+  if (upstreamzone)
   {
     Block& bl = bmd->addBlock
     (  
@@ -271,6 +295,10 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 	list_of<double>(gradax_)(gradh_)(1.)
       )
     );
+    
+    if (!upstreamzone)
+      in.addFace(bl.face("0473"));
+    
 //     out.addFace(bl.face("1265"));
 //     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
@@ -350,6 +378,62 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 //   cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite") );
 }
 
+void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const
+{
+  Parameters p(*parameters_);
+
+  {
+    boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
+    {
+      std::ofstream f(inlet_velocity_profile_tabfile.c_str());
+      f<<0.0<<" "<<0.0<<endl;
+      
+      double x0=Llam_-Lap_;
+      double delta20=0.664*sqrt(p.fluid.nu*x0/uinf_);
+      
+      if (x0>0.)
+      {
+	int n=10;
+	for (int i=1; i<n; i++)
+	{
+	  double eta=double(i)/double(n-1);
+	  double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
+	  f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<endl;
+	}
+      }
+      if (H_>delta20)
+      {
+	f<<H_<<" "<<uinf_<<endl;
+      }
+    }
+    
+    FieldData::Parameters inflow_velocity;
+    FieldData::Parameters::fielddata_linearProfile_type umean_data;
+
+    // mean value profile
+    umean_data.values.resize(1);
+    umean_data.values[0].time=0;
+    umean_data.values[0].profile=inlet_velocity_profile_tabfile.filename(); // without path! otherwise problems after case copying!
+
+    // data file column mapping
+    FieldData::Parameters::fielddata_linearProfile_type::cmap_default_type cmp;
+    cmp.column=0;
+    cmp.component=0;
+    umean_data.cmap.push_back(cmp);
+    
+    umean_data.p0=vec3(0,0,0);      
+    umean_data.ep=vec3(0,1,0);
+    
+    umean_data.ex=vec3(1,0,0);
+    umean_data.ez=vec3(0,0,1);
+      
+    inflow_velocity.fielddata=umean_data;
+    
+    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
+    .set_velocity(FieldData(inflow_velocity))
+    ));
+  }
+}
 
 void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 {
@@ -448,57 +532,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 //     .set_velocity(FieldData(vec3(uinf_,0,0)))
 //     .set_turbulence(uniformIntensityAndLengthScale(0.005, 0.1*H_))
 //   ) );
-  {
-    boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
-    {
-      std::ofstream f(inlet_velocity_profile_tabfile.c_str());
-      f<<0.0<<" "<<0.0<<endl;
-      
-      double x0=Llam_-Lap_;
-      double delta20=0.664*sqrt(p.fluid.nu*x0/uinf_);
-      
-      if (x0>0.)
-      {
-	int n=10;
-	for (int i=1; i<n; i++)
-	{
-	  double eta=double(i)/double(n-1);
-	  double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
-	  f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<endl;
-	}
-      }
-      if (H_>delta20)
-      {
-	f<<H_<<" "<<uinf_<<endl;
-      }
-    }
-    
-    FieldData::Parameters inflow_velocity;
-    FieldData::Parameters::fielddata_linearProfile_type umean_data;
 
-    // mean value profile
-    umean_data.values.resize(1);
-    umean_data.values[0].time=0;
-    umean_data.values[0].profile=inlet_velocity_profile_tabfile.filename(); // without path! otherwise problems after case copying!
-
-    // data file column mapping
-    FieldData::Parameters::fielddata_linearProfile_type::cmap_default_type cmp;
-    cmp.column=0;
-    cmp.component=0;
-    umean_data.cmap.push_back(cmp);
-    
-    umean_data.p0=vec3(0,0,0);      
-    umean_data.ep=vec3(0,1,0);
-    
-    umean_data.ex=vec3(1,0,0);
-    umean_data.ez=vec3(0,0,1);
-      
-    inflow_velocity.fielddata=umean_data;
-    
-    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(FieldData(inflow_velocity))
-    ));
-  }
+  createInflowBC(cm, boundaryDict);
   
 //  if (patchExists(boundaryDict, approach_)) // make possible to evaluate old cases without approach patch
 //    cm.insert(new SimpleBC(cm, approach_, boundaryDict, "symmetryPlane") );

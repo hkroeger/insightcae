@@ -624,25 +624,26 @@ set {
 
 inflowGenerator
 set {
-
-uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
-volexcess=double 2.0 "Volumetric overlapping of spots"
-type=selection ( 
-  hatSpot 
-  gaussianSpot
-  decayingTurbulenceSpot
-  decayingTurbulenceVorton
-  anisotropicVorton
-  modalTurbulence
+  uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
+  
+  volexcess=double 2.0 "Volumetric overlapping of spots"
+  
+  type=selection ( 
+    hatSpot 
+    gaussianSpot
+    decayingTurbulenceSpot
+    decayingTurbulenceVorton
+    anisotropicVorton
+    modalTurbulence
   ) anisotropicVorton "Type of inflow generator"
   
-R=set {
-#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
-} "Reynolds stresses specification"
+  R=set {
+  #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+  } "Reynolds stresses specification"
 
-L=set {
-#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
-} "Length scale specification"
+  L=set {
+  #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+  } "Length scale specification"
 
 }
 

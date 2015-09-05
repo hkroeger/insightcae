@@ -21,8 +21,6 @@
 #ifndef INSIGHT_CAD_PARSER_H
 #define INSIGHT_CAD_PARSER_H
 
-#define BOOST_SPIRIT_USE_PHOENIX_V3
-
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"

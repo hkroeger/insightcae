@@ -28,8 +28,6 @@
 
 #include "base/boost_include.h"
 
-
-#define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
 
 #include "base/linearalgebra.h"
@@ -476,7 +474,24 @@ class Bar
 public:
   declareType("Bar");
   Bar(const NoParameters& nop = NoParameters());
-  Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const arma::mat& vert);
+  
+  /**
+   * crate bar between p0 and p1. Cross section's xsec (single face) y-axis will be aligned with vertical direction vert.
+   * bar is elongated at p0 by ext0 and at p1 by ext1, respectively.
+   * 
+   * @param miterangle0_vert Miter angle of bar end at (elongated) p0 around vertical direction
+   * @param miterangle0_hor Miter angle of bar end at (elongated) p0 around horizontal direction
+   * @param miterangle1_vert Miter angle of bar end at (elongated) p1 around vertical direction
+   * @param miterangle1_hor Miter angle of bar end at (elongated) p1 around horizontal direction
+   */
+  Bar
+  (
+    const arma::mat& p0, const arma::mat& p1, 
+    const SolidModel& xsec, const arma::mat& vert,
+    double ext0=0.0, double ext1=0.0,
+    double miterangle0_vert=0.0, double miterangle1_vert=0.0,
+    double miterangle0_hor=0.0, double miterangle1_hor=0.0
+  );
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

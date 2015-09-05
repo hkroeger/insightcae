@@ -29,9 +29,6 @@
 #include <string>
 
 #include "base/boost_include.h"
-// #include "boost/spirit/include/qi.hpp"
-// #include "boost/spirit/repository/include/qi_confix.hpp"
-// #include <boost/spirit/include/qi_eol.hpp>
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"

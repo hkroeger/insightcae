@@ -2000,14 +2000,34 @@ Bar::Bar(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-Bar::Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const arma::mat& vert)
+Bar::Bar
+(
+  const arma::mat& start, const arma::mat& end, 
+  const SolidModel& xsec, const arma::mat& vert, 
+  double ext0, double ext1,
+  double miterangle0_vert, double miterangle1_vert,
+  double miterangle0_hor, double miterangle1_hor
+)
 {
+  arma::mat p0=start;
+  arma::mat p1=end;
+  
   if (norm(vert,2)<1e-10)
     throw insight::Exception("Bar: length of vertical direction is zero!");
   arma::mat v=vert/norm(vert,2);
   
   if (!xsec.isSingleFace() || xsec.isSingleWire() || xsec.isSingleEdge())
     throw insight::Exception("xsec feature has to provide a face or wire!");
+  
+  arma::mat baraxis=p1-p0;
+  double lba=norm(baraxis,2);
+  if (lba<1e-10)
+    throw insight::Exception("Bar: invalid definition of bar end points!");
+  baraxis/=lba;
+  
+  p0 += -baraxis*ext0;
+  p1 +=  baraxis*ext1;
+  double L=norm(p1-p0, 2);
   
   TopoDS_Wire spine=BRepBuilderAPI_MakeWire
   (
@@ -2020,18 +2040,14 @@ Bar::Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const
 //   TopExp::Vertices( spine, pfirst, plast );
   
     
-  arma::mat baraxis=p1-p0;
-  double lba=norm(baraxis,2);
-  if (lba<1e-10)
-    throw insight::Exception("Bar: invalid definition of bar end points!");
-  baraxis/=lba;
-  
   arma::mat ex=-arma::cross(baraxis, vert);
   
   double lex=norm(ex, 2);
   if (lex<1e-10)
     throw insight::Exception("Bar: invalid definition of vertical direction!");
   ex/=lex;
+  
+  arma::mat ey=arma::cross(baraxis, ex);
   
   gp_Trsf tr;
   tr.SetTransformation
@@ -2063,7 +2079,29 @@ Bar::Bar(const arma::mat& p0, const arma::mat& p1, const SolidModel& xsec, const
   BRepOffsetAPI_MakePipe p(spine, xsecs);
   
   p.Build();
-  setShape(p.Shape());
+  TopoDS_Shape result=p.Shape();
+  
+  // cut away at end 0
+  if ( (fabs(miterangle0_vert)>1e-10) || (fabs(miterangle0_hor)>1e-10) )
+  {
+    arma::mat cex=rotMatrix(miterangle0_vert, ey)*ex;
+    arma::mat cey=rotMatrix(miterangle0_hor, ex)*ey;
+    Quad q(start-0.5*L*(cex+cey), L*cex, L*cey);
+    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(-L*baraxis) );
+    result=BRepAlgoAPI_Cut(result, airspace);
+  }
+  
+  // cut away at end 1
+  if ( (fabs(miterangle1_vert)>1e-10) || (fabs(miterangle1_hor)>1e-10) )
+  {
+    arma::mat cex=rotMatrix(miterangle1_vert, ey)*ex;
+    arma::mat cey=rotMatrix(miterangle1_hor, ex)*ey;
+    Quad q(end-0.5*L*(cex+cey), L*cex, L*cey);
+    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*baraxis) );
+    result=BRepAlgoAPI_Cut(result, airspace);
+  }
+  
+  setShape(result);
 }
 
 void Bar::insertrule(parser::ISCADParser& ruleset) const
@@ -2074,12 +2112,31 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' 
-	>> ruleset.r_vectorExpression >> ',' 
-	>> ruleset.r_vectorExpression >> ',' 
-	>> ruleset.r_solidmodel_expression >> ',' 
-	>> ruleset.r_vectorExpression >> 
+	>> ruleset.r_vectorExpression // 1
+	  >> ( ( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0) )
+	  >> ( ( qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+// 	  >> ( ( qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+	  >> ',' 
+	>> ruleset.r_vectorExpression // 5
+	  >> ( ( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+	  >> ( ( qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+// 	  >> ( ( qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+	  >> ',' 
+	>> ruleset.r_solidmodel_expression >> ',' // 9
+	>> ruleset.r_vectorExpression >> // 10
       ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Bar>(qi::_1, qi::_2, *qi::_3, qi::_4)) ]
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Bar>
+	(
+	  qi::_1, qi::_4, 
+	  *qi::_7, qi::_8,
+	  qi::_2, qi::_5,
+	  qi::_3, qi::_6
+// 	  qi::_1, qi::_5, 
+// 	  *qi::_9, qi::_10,
+// 	  qi::_2, qi::_6,
+// 	  qi::_3, qi::_7,
+// 	  qi::_4, qi::_8
+	)) ]
       
     ))
   );
@@ -3026,7 +3083,7 @@ Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& 
 #warning Relocate p0 in plane to somewhere nearer to model center!
   Quad q(p0-0.5*L*(ex+ey), L*ex, L*ey);
   this->setShape(q);
-  std::cout<<"Airspace"<<std::endl;
+//   std::cout<<"Airspace"<<std::endl;
   TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
   
 //   SolidModel(airspace).saveAs("airspace.stp");

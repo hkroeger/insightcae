@@ -531,7 +531,7 @@ bool dynOneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname,
   if (fieldname == "k")
   {
     BC["type"]="fixedValue";
-    BC["value"]="uniform 0";
+    BC["value"]="uniform 1e-10";
     return true;
   }
   else if (fieldname == "nuSgs")

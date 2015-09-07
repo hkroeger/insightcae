@@ -506,8 +506,8 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties["printCoeffs"]=true;
 
   LESProperties["LESModel"]="dynOneEqEddy";
-  //LESProperties["delta"]="cubeRootVol";
-  LESProperties["delta"]="vanDriest";
+  LESProperties["delta"]="cubeRootVol";
+//   LESProperties["delta"]="vanDriest";
   
   OFDictData::dict doeec;
   doeec["filter"]="simple";

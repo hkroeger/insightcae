@@ -1523,7 +1523,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   }
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 10 );
+  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 20 );
 //   SIMPLE["pRefCell"]=0;
 //   SIMPLE["pRefValue"]=0.0;
   

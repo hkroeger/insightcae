@@ -62,6 +62,36 @@ FlatPlateBL::FlatPlateBL(const NoParameters&)
 {}
 
 
+void FlatPlateBL::computeInitialLocation()
+{
+  Parameters p(*parameters_);
+
+  Retheta0_= p.geometry.Retheta0;
+  
+  struct Obj : public Objective1D
+  {
+    double Redelta2;
+    virtual double operator()(double Rex) const 
+    { 
+      return FlatPlateBL::Redelta2(Rex)-Redelta2; 
+    }
+    
+  } o;
+  o.Redelta2=Retheta0_;
+  Rex_0_=nonlinearSolve1D(o, o.Redelta2, 1e6);
+
+  uinf_= p.operation.uinf; //FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
+
+  // estimate (turbulent) friction coefficient at initial location
+  cf_0_=cf(Rex_0_);
+  utau_0_=uinf_*sqrt(0.5*cf_0_);
+  
+  theta0_=Retheta0_*p.fluid.nu/uinf_;
+  
+  delta99_0_=Redelta99(Rex_0_)*p.fluid.nu/uinf_;
+}
+
+
 void FlatPlateBL::calcDerivedInputData()
 {
   insight::OpenFOAMAnalysis::calcDerivedInputData();
@@ -75,24 +105,16 @@ void FlatPlateBL::calcDerivedInputData()
   approach_="approach";
   trip_="trip";
   
-  struct Obj : public Objective1D
-  {
-    double Redelta2;
-    virtual double operator()(double Rex) const 
-    { 
-//       cout << G << (1./G) + 2.*log(1./G) - D - Alpha <<endl;
-      return FlatPlateBL::Redelta2(Rex)-Redelta2; 
-    }
-    
-  } o;
-  o.Redelta2=p.geometry.Retheta0;
-  Rex_0_=nonlinearSolve1D(o, o.Redelta2, 1e6);
-  reportIntermediateParameter("Rex_0", Rex_0_, "Rex at initial location", "");
-  
-  uinf_= p.operation.uinf; //FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
+  computeInitialLocation();
   reportIntermediateParameter("uinf", uinf_, "free stream velocity", "m/s");
+  reportIntermediateParameter("Retheta0", Retheta0_, "Momentum thickness Reynolds number at tripping location", "");
+  reportIntermediateParameter("Rex_0", Rex_0_, "Reynolds number with turbulent running length at tripping location", "");
+  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the tripping location");
+  reportIntermediateParameter("utau_0", utau_0_, "Friction velocity at the tripping location", "m/s");
+  reportIntermediateParameter("theta_0", theta0_, "Momentum thickness at the tripping location", "m");
+  reportIntermediateParameter("delta99_0", delta99_0_, "Boundary layer thickness at the tripping location", "m");
   
-  Llam_=pow(p.geometry.Retheta0/0.664, 2)*p.fluid.nu/uinf_;
+  Llam_=pow(Retheta0_/0.664, 2)*p.fluid.nu/uinf_;
   reportIntermediateParameter("Llam", Llam_, "Length of laminar range upstream of tripping point", "m");
   
   L_=p.geometry.L;
@@ -111,57 +133,48 @@ void FlatPlateBL::calcDerivedInputData()
   }
   reportIntermediateParameter("Lap", Lap_, "Length of (resolved) laminar range upstream of tripping point", "m");
   
-  double Re_0=uinf_*Llam_/p.fluid.nu;
-  reportIntermediateParameter("Re_0", Re_0, "reynolds number at the tripping location");
+  double Rexl_0=uinf_*Llam_/p.fluid.nu;
+  reportIntermediateParameter("Rexl_0", Rexl_0, "reynolds number with laminar running length at the tripping location");
 
-  Re_L_=uinf_*(Llam_+L_)/p.fluid.nu;
-  reportIntermediateParameter("Re_L", Re_L_, "reynolds number at the end of the plate");
+  Re_L_=Rex_0_ + uinf_*L_/p.fluid.nu;
+  reportIntermediateParameter("Re_L", Re_L_, "reynolds number with turbulent running length at the end of the plate");
 
   /**
    * compute estimated BL thicknesses
    */
-  theta0_= p.geometry.Retheta0*p.fluid.nu/p.operation.uinf; //0.664*sqrt(p.fluid.nu*Llam_/uinf_);
-  reportIntermediateParameter("theta0", theta0_, "Laminar boundary layer thickness at tripping point.", "m");
-  cf_0_=cf(Rex_0_); //0.664/sqrt(Re_0); // laminar
-  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the tripping location");
-  double tau_0=cf_0_*0.5*pow(uinf_,2);
-  reportIntermediateParameter("tau_0", tau_0, "Expected wall shear stress at the tripping location", "$m^2/s^2$");
-  double utau_0=sqrt(tau_0);
-  reportIntermediateParameter("utau_0", utau_0, "Friction velocity at the tripping location", "m/s");
-  double Retau_0=utau_0*theta0_/p.fluid.nu;
+  double Retau_0=utau_0_*delta99_0_/p.fluid.nu;
   reportIntermediateParameter("Retau_0", Retau_0, "Friction velocity Reynolds number at the tripping location");
 
 
   double thetae=Redelta2(Re_L_)*p.fluid.nu/uinf_;
-  reportIntermediateParameter("thetae", thetae, "Turbulent boundary layer thickness at the end of the plate", "m");
+  reportIntermediateParameter("thetae", thetae, "Momentum thickness at the end of the plate", "m");
   double cf_e=cf(Re_L_);
   reportIntermediateParameter("cf_e", cf_e, "Expected wall friction coefficient at the end of the plate");
   double tau_e=cf_e*0.5*pow(uinf_,2);
   reportIntermediateParameter("tau_e", tau_e, "Expected wall shear stress at the end of the plate", "$m^2/s^2$");
   double utau_e=sqrt(tau_e);
   reportIntermediateParameter("utau_e", utau_e, "Friction velocity at the end of the plate", "m/s");
-  double Retau_e=utau_e*thetae/p.fluid.nu;
+  double delta99_e=Redelta99(Re_L_)*p.fluid.nu/uinf_;
+  reportIntermediateParameter("delta99_e", delta99_e, "Boundary layer thickness at the end of the plate", "m");
+  double Retau_e=utau_e*delta99_e/p.fluid.nu;
   reportIntermediateParameter("Retau_e", Retau_e, "Friction velocity Reynolds number at the end of the plate");
 
 
-  ypfac_ref_=sqrt(cf_e/2.)*uinf_/p.fluid.nu;
-  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor at the end of the plate (y+/y)");
+  ypfac_ref_=sqrt(cf_0_/2.)*uinf_/p.fluid.nu;
+  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at tripping location)");
 
-  H_=p.geometry.HBydelta2e*thetae;
+  H_=p.geometry.HBydelta99e*delta99_e;
   reportIntermediateParameter("H", H_, "height of the domain");
   reportIntermediateParameter("Hbytheta0", H_/theta0_, "height of the domain, divided by initial BL thickness");
 
-  W_=p.geometry.WBydelta2e*thetae;
+  W_=p.geometry.WBydelta99e*delta99_e;
   reportIntermediateParameter("W", W_, "width of the domain");
   reportIntermediateParameter("Wbytheta0", W_/theta0_, "width of the domain, divided by initial BL thickness");
 
   reportIntermediateParameter("Lbytheta0", L_/theta0_, "length of the domain, divided by initial BL thickness");
 
-  ypfac_ref_=sqrt(cf_e/2.)*uinf_/p.fluid.nu;
-  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor at the end of the plate (y+/y)");
-
   deltaywall_ref_=p.mesh.ypluswall/ypfac_ref_;
-  reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing at the tripping location");
+  reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing");
   
   gradh_=bmd::GradingAnalyzer(deltaywall_ref_, H_, p.mesh.nh).grad();
   reportIntermediateParameter("gradh", gradh_, "required vertical grid stretching");
@@ -1015,33 +1028,72 @@ double FlatPlateBL::cw(double Re, double Cplus)
   return 2.*pow( (0.41/log(Re)) * G( log(Re), 2.*log(0.41)+0.41*(Cplus-3.) ), 2); // Schlichting eq. (18.99), Kap. 18.2.5
 }
 
-double FlatPlateBL::cf(double Rex, double Cplus)
+double FlatPlateBL::cf(double Rex, double Cplus, cf_method method)
 {
-  struct Obj: public Objective1D
+  switch (method)
   {
-    double Rex, Cplus;
-    virtual double operator()(double gamma) const 
-    { 
-      return (1./gamma) -(1./0.41)*log(gamma*gamma*Rex)  // Schlichting, Eq. (18.93), Kap. 18.2.5
-	- Cplus - (1./0.41)*(2.*0.55-log(3.78)); 
+    case cf_method_Schlichting:
+    {
+      struct Obj: public Objective1D
+      {
+	double Rex, Cplus;
+	virtual double operator()(double gamma) const 
+	{ 
+	  return (1./gamma) -(1./0.41)*log(gamma*gamma*Rex)  // Schlichting, Eq. (18.93), Kap. 18.2.5
+	    - Cplus - (1./0.41)*(2.*0.55-log(3.78)); 
+	}
+      } obj;
+      obj.Rex=Rex;
+      obj.Cplus=Cplus;
+      double gamma=nonlinearSolve1D(obj, 1e-7, 10.);
+      return 2.*gamma*gamma;
     }
-  } obj;
-  obj.Rex=Rex;
-  obj.Cplus=Cplus;
-  double gamma=nonlinearSolve1D(obj, 1e-7, 10.);
-  return 2.*gamma*gamma;
+    
+    case cf_method_Cengel:
+      return 0.059*pow(Rex, -1./5.);
+      
+    default:
+      throw insight::Exception("Unknown method for computation of cf!");
+  }
+  
+  return FP_NAN;      
 }
 
-double FlatPlateBL::Redelta99(double Rex)
+double FlatPlateBL::Redelta99(double Rex, Redelta99_method method)
 {
-  double Cplus=5., Cquer=2.1;
-  double D=(log(2*0.41)+0.41*(Cplus+Cquer));
-  return 0.14*(Rex/log(Rex))*G(log(Rex), D); // Schlichting eq. (2.12), Kap. 2.3
+  switch (method)
+  {
+    case Redelta99_method_Schlichting:
+    {
+      double Cplus=5., Cquer=2.1;
+      double D=(log(2*0.41)+0.41*(Cplus+Cquer));
+      return 0.14*(Rex/log(Rex))*G(log(Rex), D); // Schlichting eq. (2.12), Kap. 2.3
+    } 
+    case Redelta99_method_Cengel:
+      return 0.38*pow(Rex, 4./5.);
+      
+    default:
+      throw insight::Exception("Unknown method for computation of Redelta2!");
+  }
+  
+  return FP_NAN;
 }
 
-double FlatPlateBL::Redelta2(double Rex)
+double FlatPlateBL::Redelta2(double Rex, Redelta2_method method)
 {
-  return 0.5*cw(Rex)*Rex; // Schlichting eq. (18.100), Kap. 18.2.5
+  switch (method)
+  {
+    case Redelta2_method_Schlichting:
+      return 0.5*cw(Rex)*Rex; // Schlichting eq. (18.100), Kap. 18.2.5
+      
+    case Redelta2_method_Cengel:
+      return 0.037*pow(Rex, 4./5.);
+      
+    default:
+      throw insight::Exception("Unknown method for computation of Redelta99!");
+  }
+
+  return FP_NAN;
 }
 
 

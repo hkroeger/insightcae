@@ -38,8 +38,8 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry=set
 {
- HBydelta2e = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
- WBydelta2e = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ HBydelta99e = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
+ WBydelta99e = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
  L = double 5.0 "[m] Length of the domain"
  LapByL = double 0.05 "Length of the upstream extension of the plate, divided by length of plate"
  Retheta0 = double 350 "Momentum-thickness reynolds number at initial (tripping) station x=0."
@@ -128,9 +128,11 @@ protected:
     const static std::vector<double> sec_locs_;
 #endif
     
-    double L_, Lap_, Llam_, theta0_;
+    double Retheta0_, theta0_, delta99_0_, cf_0_, utau_0_, Rex_0_;
+    double L_, Lap_, Llam_;
 
-    double Cw_, H_, W_, cf_0_, Rex_0_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
+    double H_, W_;
+    double Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;
@@ -150,6 +152,8 @@ public:
   FlatPlateBL(const NoParameters& p = NoParameters());
   
   virtual ParameterSet defaultParameters() const;
+  
+  virtual void computeInitialLocation();
   virtual void calcDerivedInputData();
   
   virtual void createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
@@ -184,17 +188,23 @@ public:
    * computes the friction coefficient of a flat plate at station x
    * @Rex Reynolds number formulated with running distance x
    */
-  static double cf(double Rex, double Cplus=5.0);
+  enum cf_method {cf_method_Cengel, cf_method_Schlichting};
+
+  static double cf(double Rex, double Cplus=5.0, cf_method=cf_method_Cengel);
   
   /**
    * computes the Reynolds number with BL layer thickness delta99 Redelta99=uinf*delta99/nu at axial station x = Rex*nu/Uinf
    */
-  static double Redelta99(double Rex);
+  enum Redelta99_method {Redelta99_method_Cengel, Redelta99_method_Schlichting};
+  
+  static double Redelta99(double Rex, Redelta99_method=Redelta99_method_Cengel);
   
   /**
    * computes the Reynolds number with BL momentum thickness Redelta2=uinf*delta2/nu delta2 at axial station x = Rex*nu/Uinf
    */
-  static double Redelta2(double Rex);
+  enum Redelta2_method {Redelta2_method_Cengel, Redelta2_method_Schlichting};
+  
+  static double Redelta2(double Rex, Redelta2_method=Redelta2_method_Cengel);
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);

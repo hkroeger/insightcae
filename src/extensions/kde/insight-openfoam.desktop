@@ -7,7 +7,7 @@ MimeType=inode/directory;
 Actions=openasofinparaview;
 
 [Desktop Action openasofinparaview]
-Exec=bash -lc 'cd "%f"; isPV.py'
+Exec=bash -lc 'if [ -e $HOME/.bashrc ]; then source $HOME/.bashrc; fi; cd "%f"; isPV.py'
 Icon=utilities-terminal
 Name=Open as OF case in Paraview
 Name[de]=Als OF-Case in Paraview öffnen

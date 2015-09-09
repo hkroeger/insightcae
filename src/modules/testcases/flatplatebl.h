@@ -128,7 +128,38 @@ protected:
     const static std::vector<double> sec_locs_;
 #endif
     
-    double Retheta0_, theta0_, delta99_0_, cf_0_, utau_0_, Rex_0_;
+    /**
+     * the momentum thickness reynolds number at the tripping location.
+     * This is a parameter but can be overwritten by computeInitialLocation 
+     * if e.g. velocity profiles are supplied in derived analysis classes
+     */
+    double Retheta0_;
+    
+    /**
+     * the momentum thickness at initial location, determined in computeInitialLocation
+     */
+    double theta0_;
+
+    /**
+     * the 99% velocity BL thickness, determined in computeInitialLocation
+     */
+    double delta99_0_;
+    
+    /**
+     * the friction coefficient at the initial location, determined in computeInitialLocation
+     */
+    double cf_0_;
+    
+    /**
+     * friction velocity at the initial location, determined in computeInitialLocation
+     */
+    double utau_0_;
+    
+    /**
+     * the Reynolds number with the (virtual) turbulent running length, determined in computeInitialLocation
+     */
+    double Rex_0_;
+    
     double L_, Lap_, Llam_;
 
     double H_, W_;

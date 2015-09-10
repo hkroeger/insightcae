@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
   po::options_description desc("Allowed options");
   desc.add_options()
       ("help", "produce help message")
+      ("skiplatex,x", "skip execution of pdflatex")
       ("workdir,w", po::value<std::string>(), "execution directory")
       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -233,15 +234,22 @@ int main(int argc, char *argv[])
 
     boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
     results->writeLatexFile( outpath );
-    
-    for (int i=0; i<2; i++)
+   
+    if (!vm.count("skiplatex"))
     {
-      if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
-      {
-	Warning("TeX input file was written but could not execute pdflatex successfully.");
-	break;
-      }
+     for (int i=0; i<2; i++)
+     {
+       if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
+       {
+ 	Warning("TeX input file was written but could not execute pdflatex successfully.");
+ 	break;
+       }
+     }
     }
+
+    std::cout
+     << "#### ANALYSIS FINISHED SUCCESSFULLY. ####"
+     <<std::endl;
   }
   catch (insight::Exception e)
   {

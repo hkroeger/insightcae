@@ -154,20 +154,20 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("tau_e", tau_e, "Expected wall shear stress at the end of the plate", "$m^2/s^2$");
   double utau_e=sqrt(tau_e);
   reportIntermediateParameter("utau_e", utau_e, "Friction velocity at the end of the plate", "m/s");
-  double delta99_e=Redelta99(Re_L_)*p.fluid.nu/uinf_;
-  reportIntermediateParameter("delta99_e", delta99_e, "Boundary layer thickness at the end of the plate", "m");
-  double Retau_e=utau_e*delta99_e/p.fluid.nu;
+  delta99_e_=Redelta99(Re_L_)*p.fluid.nu/uinf_;
+  reportIntermediateParameter("delta99_e", delta99_e_, "Boundary layer thickness at the end of the plate", "m");
+  double Retau_e=utau_e*delta99_e_/p.fluid.nu;
   reportIntermediateParameter("Retau_e", Retau_e, "Friction velocity Reynolds number at the end of the plate");
 
 
   ypfac_ref_=sqrt(cf_0_/2.)*uinf_/p.fluid.nu;
   reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at tripping location)");
 
-  H_=p.geometry.HBydelta99e*delta99_e;
+  H_=p.geometry.HBydelta99e*delta99_e_;
   reportIntermediateParameter("H", H_, "height of the domain");
   reportIntermediateParameter("Hbytheta0", H_/theta0_, "height of the domain, divided by initial BL thickness");
 
-  W_=p.geometry.WBydelta99e*delta99_e;
+  W_=p.geometry.WBydelta99e*delta99_e_;
   reportIntermediateParameter("W", W_, "width of the domain");
   reportIntermediateParameter("Wbytheta0", W_/theta0_, "width of the domain, divided by initial BL thickness");
 
@@ -619,7 +619,7 @@ void FlatPlateBL::evaluateAtSection
   
   double 
     miny=0.99*deltaywall_ref_,
-    maxy=std::min(theta0_*10.0, H_-deltaywall_ref_);
+    maxy=std::min(1.5*delta99_e_, H_-deltaywall_ref_);
     
   arma::mat pts=exp(linspace(log(miny), log(maxy), 101))*vec3(0,1,0).t();
   pts.col(0)+=x;
@@ -735,6 +735,7 @@ void FlatPlateBL::evaluateAtSection
   }
 
   // Reynolds stress profiles
+  std::cout<<"index of "<<RFieldName<<": "<<cd[RFieldName].col<<"."<<std::endl;
   int cR=cd[RFieldName].col;
   arma::mat Rpuu(join_rows(yplus, data.col(cR)/pow(utau,2)));
   arma::mat Rpvv(join_rows(yplus, data.col(cR+3)/pow(utau,2)));
@@ -954,28 +955,16 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     );
     
     arma::mat Re_theta=tabcoeffs.getColByName("$Re_\\theta$");
+    arma::mat xL=tabcoeffs.getColByName("x/L");
+    arma::mat Rex=(Rex_0_ + uinf_*xL*L_/p.fluid.nu)/1e5;
     Interpolator delta2exp_vs_x_i(delta2exp_vs_x);
     addPlot
     (
-      results, executionPath(), "chartDeltaNorm",
-      "Re_theta", "delta+",
+      results, executionPath(), "chartRetheta",
+      "Rex /10^5", "Re_theta",
       list_of
-	(PlotCurve(
-	   delta2exp_vs_x_i(delta1exp_vs_x.col(0))*uinf_/p.fluid.nu, 
-	   delta1exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta1exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
-	   "w p lt 1 lc 1 t 'delta_1+ (Wieghardt 1951, u=17.8m/s)'"))
-	(PlotCurve(
-	   delta2exp_vs_x_i(delta2exp_vs_x.col(0))*uinf_/p.fluid.nu, 
-	   delta2exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta2exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
-	   "w p lt 2 lc 3 t 'delta_2+ (Wieghardt 1951, u=17.8m/s)'"))
-	(PlotCurve(
-	   delta2exp_vs_x_i(delta3exp_vs_x.col(0))*uinf_/p.fluid.nu, 
-	   delta3exp_vs_x.col(1) % sqrt(0.5*Cfexp_vs_x_i(delta3exp_vs_x.col(0)))*uinf_/p.fluid.nu, 
-	   "w p lt 3 lc 4 t 'delta_3+ (Wieghardt 1951, u=17.8m/s)'"))
-	
-	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta1+"), "w l lt 1 lc 1 lw 2 t 'delta_1+'"))
-	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta2+"), "w l lt 1 lc 3 lw 2 t 'delta_2+'"))
-	(PlotCurve(Re_theta, tabcoeffs.getColByName("delta3+"), "w l lt 1 lc 4 lw 2 t 'delta_3+'"))
+	(PlotCurve(Rex, Re_theta, "w lp lt 1 lc 1 lw 2 t 'Re_theta'"))	
+	(PlotCurve("0.037*(1e5*x)**(4./5.) w l lt 2 lc 1 t 'Analytical (Cengel)'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

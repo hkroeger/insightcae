@@ -483,7 +483,8 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
   OFDictData::dict sd;
 //   sd["type"]="uniform";
 //   sd["type"]="polyLine";
-  sd["type"]="consistentCurve";
+//   sd["type"]="consistentCurve";
+  sd["type"]="cloud";
   
   sd["axis"]="distance";
 //   sd["start"]=OFDictData::vector3(p_.start());
@@ -551,40 +552,49 @@ arma::mat line::readSamples
       
     sort(files.begin(), files.end());
     
+    // join contents of all files in one time directory by column 
+    // provide the mapping field<>column in coldescr
     for (int i=0; i<files.size(); i++)
     {
       std::string fn=files[i];
       path fp=timedir/fn;
 
-      erase_tail(fn, 3);
+      erase_tail(fn, 3); // remove file extension
+      // split into field name => flnames
       std::vector<std::string> flnames;
       boost::split(flnames, fn, boost::is_any_of("_"));
       flnames.erase(flnames.begin());
-      
-      //cout<<"Reading "<< fp <<endl;
+
+      // read data of file
       arma::mat res;	  
       res.load(fp.string(), arma::raw_ascii);
-      //cout << "Got size ("<< res.n_rows << "x" << res.n_cols << ")" << endl;
     
       int start_col=1;
-      if (m.n_cols==0) m=res;
+      if (m.n_cols==0)
+      {
+	// first file: init m
+	m=res;
+      }
       else 
       {
+	// another one: join cols
 	start_col=m.n_cols;
-	m=arma::join_rows(m, res.cols(1, res.n_cols-1));
+	m=arma::join_rows(m, res.cols(1, res.n_cols-1)); // skip the coordinate column
       }
       
-      int ncmpt=(res.n_cols-1)/flnames.size();
+      int ncmpt=(res.n_cols-1)/flnames.size(); // retrieve number of cols per field
       for (int j=0; j<flnames.size(); j++)
       {
 	if (coldescr) 
 	{
-	  (*coldescr)[flnames[j]].ncmpt=ncmpt;
 	  (*coldescr)[flnames[j]].col=start_col+ncmpt*j;
+	  (*coldescr)[flnames[j]].ncmpt=ncmpt;
+// 	  std::cout<<flnames[j]<<" "<<start_col<<" "<<ncmpt*j<<" "<<ncmpt<<std::endl;
 	}
       }
     }
 
+    // originally it was intended to join by row all time directories:
     if (data.n_rows==0) 
       data=m;
     else 
@@ -592,20 +602,32 @@ arma::mat line::readSamples
   }
 
   
+  // interpolate missing point in dataset => rdata
   arma::mat rdata;
   if (data.n_cols>0)
   {
+    
+    // compute expected length coordinates from prescribed sampling points => coords
     std::vector<double> d;
     d.push_back(0.0);
     for (int k=1; k<p_.points().n_rows; k++)
     {
-      d.push_back( d[k-1] + norm( p_.points().row(k)-p_.points().row(k-1), 2) );
+      d.push_back( d[k-1] + norm( p_.points().row(k) - p_.points().row(k-1), 2) );
     }
-    rdata=arma::mat(d.data(), d.size(), 1);
-//     std::cout<<"data="<<data<<" rdata="<<rdata<<std::endl;
-    arma::mat idata=Interpolator(data)(/*arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)*/rdata);
+    arma::mat coords=arma::mat(d.data(), d.size(), 1);
+    
+//     std::cout<<"data="<<data<<" coords="<<coords<<std::endl;
+    
+    // interpolate data to expected coordinates (coords) for curve-like sampledSets or to expected indices for e.g. cloud
+    arma::mat idata=Interpolator(data)
+    (
+      arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)  // cloud
+//       coords				// curve-like
+    );
 //     std::cout<<" idata="<<idata<<endl;
-    rdata=join_rows( rdata, idata );
+    
+    // combine expected coords with interpolated data
+    rdata=join_rows( coords, idata );
   }
   
 //   return data;
@@ -858,20 +880,45 @@ arma::mat linearAveragedPolyLine::readSamples
   arma::mat data; // only the data, without coordinate column!
   
   ColumnDescription cd;
+  int valid_lines=0;
   BOOST_FOREACH(const line& l, lines_)
   {
     arma::mat ds=l.readSamples(ofc, location, &cd, time);
-    arma::mat datai = Interpolator(ds)(x_);
-    
-    if (data.n_cols==0)
-      data=datai;
-    else
-      data+=datai;
+    if (ds.n_rows>0)
+    {
+      arma::mat datai = Interpolator(ds)(x_);
+      
+//       ds.save( str(format("polyline_%d.dat")%valid_lines), arma::raw_ascii);
+      
+      if (data.n_cols==0)
+	data=datai;
+      else
+	data+=datai;
+      
+      valid_lines++;
+      
+      if (coldescr) *coldescr=cd;
+    }
   }
   
-  if (coldescr) *coldescr=cd;
+  if (valid_lines==0)
+  {
+    throw insight::Exception("Not a single valid dataset found!");
+  }
+  else
+  {
+    if ( valid_lines != (p_.nd1()*p_.nd2()) ) 
+    {
+      insight::Warning
+      (
+	str(format("linearAveragedPolyLine: Only %d out of %d dataset for averaging contained valid data!") 
+	      % valid_lines % (p_.nd1()*p_.nd2()) )
+      );
+    }
+  }
+  
 
-  return arma::mat(join_rows(x_, data / double(p_.nd1()*p_.nd2())));
+  return arma::mat(join_rows(x_, data / double(valid_lines)));
   
 }
 

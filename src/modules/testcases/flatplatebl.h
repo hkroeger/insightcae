@@ -163,7 +163,7 @@ protected:
     double L_, Lap_, Llam_;
 
     double H_, W_;
-    double Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
+    double delta99_e_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;

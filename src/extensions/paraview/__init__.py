@@ -47,7 +47,8 @@ try:
         view.ViewTime=vs[-1]
         view.Background = [1,1,1]
         #view.ViewSize = [1024, 768]
-        view.ViewSize = [1920, 1080] # HD-Ready!
+        #view.ViewSize = [1920, 1080] # HD-Ready!
+        view.ViewSize = [3840, 2160]
         
         return (case, blockIndices)
     

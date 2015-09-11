@@ -274,6 +274,54 @@ double SolidModel::modelSurfaceArea() const
   }
 }
 
+double SolidModel::minDist(const arma::mat& p) const
+{
+  BRepExtrema_DistShapeShape dss
+  (
+    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(), 
+    shape_
+  );
+  
+  if (!dss.Perform())
+    throw insight::Exception("determination of minimum distance to point failed!");
+  return dss.Value();
+}
+
+double SolidModel::maxVertexDist(const arma::mat& p) const
+{
+  double maxdist=0.;
+  for (TopExp_Explorer ex(shape_, TopAbs_VERTEX); ex.More(); ex.Next())
+  {
+    TopoDS_Vertex v=TopoDS::Vertex(ex.Current());
+    arma::mat vp=Vector(BRep_Tool::Pnt(v)).t();
+    maxdist=std::max(maxdist, norm(p-vp,2));
+  }
+  return maxdist;
+}
+
+double SolidModel::maxDist(const arma::mat& p) const
+{
+  if (!isSingleFace())
+    throw insight::Exception("max distance determination from anything else than single face shapes is currently not supported!");
+  
+  BRepExtrema_ExtPF epf
+  ( 
+    BRepBuilderAPI_MakeVertex(to_Pnt(p)).Vertex(), 
+    TopoDS::Face(asSingleFace()), 
+    Extrema_ExtFlag_MAX,
+    Extrema_ExtAlgo_Tree
+  );
+  std::cout<<"Nb="<<epf.NbExt()<<std::endl;
+  if (!epf.IsDone())
+    throw insight::Exception("determination of maximum distance to point failed!");
+  double maxdistsq=0.;
+  for (int i=1; i<epf.NbExt(); i++)
+  {
+    maxdistsq=std::max(maxdistsq, epf.SquareDistance(i));
+  }
+  return sqrt(maxdistsq);
+}
+
 arma::mat SolidModel::modelBndBox(double deflection) const
 {
   if (deflection>0)

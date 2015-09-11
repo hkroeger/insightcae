@@ -25,6 +25,8 @@
 #include <Quantity_TypeOfColor.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
 #include <BRep_Tool.hxx>
+#include "BRepExtrema_DistShapeShape.hxx"
+#include "BRepExtrema_ExtPF.hxx"
 #include <Geom_Curve.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <Geom_BSplineCurve.hxx>

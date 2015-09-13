@@ -24,6 +24,7 @@
 #include "AIS_InteractiveContext.hxx"
 
 #include "solidmodel.h"
+#include "solidmodeltransient.h"
 #include "datum.h"
 #include "evaluation.h"
 
@@ -350,6 +351,8 @@ public:
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
     ais_=new AIS_Shape(*smp_);
+    Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
+    ais_->SetOwner(owner_container);
     context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
     updateDisplay();
   }

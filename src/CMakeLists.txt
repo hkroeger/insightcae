@@ -46,12 +46,38 @@ and related tools (requires SWIG)" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+
+macro(create_script SCRIPTFILE SCR_CONTENT)
+#   message(STATUS  "CTS: ${SCR_CONTENT}")
+  set(SRC "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
+  file(WRITE "${SRC}" "${SCR_CONTENT}")
+  install(FILES "${SRC}" DESTINATION bin)
+endmacro(create_script)
+
+SET(INSIGHT_OFES_VARCONTENT "")
+SET(INSIGHT_OF_ALIASES "")
 find_package(OpenFOAM-16ext REQUIRED)
 find_package(FOAM-extend-31 REQUIRED)
 find_package(OpenFOAM-21x REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
+
+function(JOIN VALUES GLUE OUTPUT)
+  string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
+  set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+join("${INSIGHT_OFES_VARCONTENT}" ":" INSIGHT_OFES)
+message(STATUS "\"${INSIGHT_OFES}\"")
+create_script("insight.bashrc.OpenFOAM"
+"export INSIGHT_OFES=\"${INSIGHT_OFES}\"
+${INSIGHT_OF_ALIASES}
+"
+)
+
 find_package(Armadillo REQUIRED)
 find_package(GSL REQUIRED)
 find_package(PythonLibs 2.7 REQUIRED)
@@ -77,9 +103,6 @@ SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.49.0" "1.41.0
 find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams python program_options REQUIRED)
 message(STATUS "BOOST_INC=" ${Boost_INCLUDE_DIRS})
 
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 include_directories(${ARMADILLO_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIR})

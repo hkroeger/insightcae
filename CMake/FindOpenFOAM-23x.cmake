@@ -46,6 +46,25 @@ IF(OF23x_BASHRC)
 
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF23x_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_LIBBIN)
+  
+  set(OF23x_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
+  set(OF23x_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
+
+  list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
+  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+alias of23x=\"source insight.bashrc.of23x\"
+")
+  create_script("insight.bashrc.of23x"
+"source ${OF23x_BASHRC}
+
+foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OF23x_INSIGHT_LIB}
+#- Clean LD_LIBRARY_PATH
+cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+export PATH=$PATH:${OF23x_INSIGHT_BIN}
+#- Clean PATH
+cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+")
 
   macro (setup_exe_target_OF23x targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
@@ -59,7 +78,7 @@ IF(OF23x_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF23x_WM_PROJECT_VERSION})
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
       ${OF23x_LIB_DIR}/libOpenFOAM.so 
       ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
@@ -81,7 +100,7 @@ IF(OF23x_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION})
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF23x_INSIGHT_LIB})
     target_link_libraries(${targetname} ${ARGN}) 
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 

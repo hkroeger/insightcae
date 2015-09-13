@@ -40,6 +40,25 @@ IF(Fx31_BASHRC)
   message(STATUS "exe link flags = "  ${Fx31_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_MPI_LIBBIN)
 
+  set(Fx31_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-3.1")
+  set(Fx31_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-3.1")
+
+  list(APPEND INSIGHT_OFES_VARCONTENT "FX31@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.fx31 -print -quit`#161")
+  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+alias fx31=\"source insight.bashrc.fx31\"
+")
+  create_script("insight.bashrc.fx31"
+"source ${Fx31_BASHRC}
+
+foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${Fx31_INSIGHT_LIB}
+#- Clean LD_LIBRARY_PATH
+cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+export PATH=$PATH:${Fx31_INSIGHT_BIN}
+#- Clean PATH
+cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+")
+
   macro (setup_exe_target_Fx31 targetname sources exename includes)
     add_executable(${targetname} ${sources})
     set(allincludes ${includes})
@@ -49,7 +68,7 @@ IF(Fx31_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx31_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx31_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/foam-extend-3.1)
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx31_INSIGHT_BIN})
     target_link_libraries(${targetname} 
       ${Fx31_LIB_DIR}/libfoam.so 
       ${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
@@ -74,7 +93,7 @@ IF(Fx31_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx31_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx31_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/foam-extend-3.1)
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx31_INSIGHT_LIB})
     target_link_libraries(${targetname} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx31_FOAM_LIBBIN})
     

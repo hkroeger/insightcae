@@ -156,6 +156,9 @@ public:
   virtual arma::mat modelCoG() const;
   virtual double modelVolume() const;
   virtual double modelSurfaceArea() const;
+  virtual double minDist(const arma::mat& p) const;
+  virtual double maxVertexDist(const arma::mat& p) const;
+  virtual double maxDist(const arma::mat& p) const;
   
   /**
    * return bounding box of model

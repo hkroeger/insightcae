@@ -13,3 +13,5 @@ add_custom_command(
   TARGET insight_python
   COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
   )
+
+install(FILES __init__.py DESTINATION share/insight/python/Insight)

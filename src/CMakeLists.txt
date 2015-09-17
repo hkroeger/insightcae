@@ -34,6 +34,7 @@ SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSIO
 # SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
 SET(CPACK_GENERATOR "TGZ;DEB")
 set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot")
 INCLUDE(CPack)
 
 OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
@@ -381,6 +382,7 @@ macro(install_package_script PACKAGENAME)
       TARGET ${PACKAGENAME}_${_src}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
       )
+    install(FILES ${_src} DESTINATION share/insight/python/Insight/${PACKAGENAME})
   endforeach()
 endmacro(install_package_script)
 

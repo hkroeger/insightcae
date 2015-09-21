@@ -31,49 +31,6 @@ using namespace boost;
 namespace insight {
 namespace cad {
   
-Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::string& text)
-{
-  Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
-  (
-   shape
-#if (OCC_VERSION_MINOR<7)
-   , 1e-6, text.c_str()
-  );
-#else
-  );
-  dim->SetModelUnits(text.c_str());
-#endif
-//   Handle_Prs3d_TextAspect ta=dim->Attributes()->TextAspect();
-//   ta->SetHeight(100.0);
-//   dim->Attributes()->SetTextAspect(ta);
-  return dim;
-}
-
-Handle_AIS_InteractiveObject createLengthDimension
-(
-  const TopoDS_Vertex& from, 
-  const TopoDS_Vertex& to, 
-  const Handle_Geom_Plane& pln,
-  double L,
-  const std::string& text
-)
-{
-  Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
-    from,
-    to,
-#if (OCC_VERSION_MINOR<7)
-    pln,
-    L, 
-    text.c_str()
-  ));
-#else
-    pln->Pln()
-  ));
-  dim->SetDisplayUnits(text.c_str());
-#endif
-  return dim;
-}
-
 SolidProperties::SolidProperties(const SolidModel& model)
 {
   cog_=model.modelCoG();

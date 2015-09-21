@@ -49,7 +49,7 @@ install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 if (INSIGHT_BUILD_WORKBENCH)
 
-set(iscad_SRCS iscad.cpp iscadapplication.cpp qoccviewwidget.cpp qoccviewercontext.cpp)
+set(iscad_SRCS iscad.cpp iscadapplication.cpp qoccviewwidget.cpp qoccviewercontext.cpp solidmodeltransient.cpp)
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)
 #find_package(Boost COMPONENTS system filesystem REQUIRED)

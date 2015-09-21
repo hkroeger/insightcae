@@ -39,13 +39,32 @@ IF(OF16ext_BASHRC)
   message(STATUS "exe link flags = "  ${OF16ext_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_MPI_LIBBIN)
 
+  set(OF16ext_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF16ext_WM_PROJECT_VERSION}")
+  set(OF16ext_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF16ext_WM_PROJECT_VERSION}")
+
+  list(APPEND INSIGHT_OFES_VARCONTENT "OF16ext@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of16ext -print -quit`#160")
+  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+alias of16ext=\"source insight.bashrc.of16ext\"
+")
+  create_script("insight.bashrc.of16ext"
+"source ${OF16ext_BASHRC}
+
+foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OF16ext_INSIGHT_LIB}
+#- Clean LD_LIBRARY_PATH
+cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+export PATH=$PATH:${OF16ext_INSIGHT_BIN}
+#- Clean PATH
+cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+")
+
   macro (setup_exe_target_OF16ext targetname sources exename includes)
     add_executable(${targetname} ${sources})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF16ext_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-1.6-ext)
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_BIN})
     target_link_libraries(${targetname} 
       ${OF16ext_LIB_DIR}/libOpenFOAM.so 
       ${OF16ext_FOAM_MPI_LIBBIN}/libPstream.so 
@@ -66,7 +85,7 @@ IF(OF16ext_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF16ext_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-1.6-ext)
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_LIB})
     target_link_libraries(${targetname} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN})
     

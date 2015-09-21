@@ -45,7 +45,26 @@ IF(OF21x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF21x_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF21x_FOAM_LIBBIN)
 
-  macro (setup_exe_target_OF21x targetname sources exename includes)
+  set(OF21x_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF21x_WM_PROJECT_VERSION}")
+  set(OF21x_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF21x_WM_PROJECT_VERSION}")
+
+  list(APPEND INSIGHT_OFES_VARCONTENT "OF21x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of21x -print -quit`#210")
+  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+alias of21x=\"source insight.bashrc.of21x\"
+")
+  create_script("insight.bashrc.of21x"
+"source ${OF21x_BASHRC}
+
+foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OF21x_INSIGHT_LIB}
+#- Clean LD_LIBRARY_PATH
+cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+export PATH=$PATH:${OF21x_INSIGHT_BIN}
+#- Clean PATH
+cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+")
+
+    macro (setup_exe_target_OF21x targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
     
@@ -57,7 +76,7 @@ IF(OF21x_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF21x_WM_PROJECT_VERSION})
+    set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF21x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
       ${OF21x_LIB_DIR}/libOpenFOAM.so 
       ${OF21x_LIB_DIR}/${OF21x_MPI}/libPstream.so 
@@ -79,7 +98,7 @@ IF(OF21x_BASHRC)
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
-    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF21x_WM_PROJECT_VERSION})
+    set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF21x_INSIGHT_LIB})
     target_link_libraries(${targetname} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${OF21x_FOAM_LIBBIN})
     

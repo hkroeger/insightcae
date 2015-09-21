@@ -285,18 +285,18 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
   {
     boost::filesystem::path abspath(child->first_attribute("value")->value());
     if (!abspath.empty())
-      if (boost::filesystem::exists(abspath)) // avoid throwing errors during read of parameterset
+    {
+      if (abspath.is_relative())
       {
-	if (abspath.is_relative())
-	{
-	  abspath = boost::filesystem::absolute(inputfilepath / abspath);
-	}
+	abspath = boost::filesystem::absolute(inputfilepath / abspath);
+      }
   #if BOOST_VERSION < 104800
   #warning Conversion into canonical paths disabled!
   #else
+      if (boost::filesystem::exists(abspath)) // avoid throwing errors during read of parameterset
 	  abspath=boost::filesystem::canonical(abspath);
   #endif
-      }
+    }
     cout<<"path="<<abspath<<endl;
     value_=abspath;
   }

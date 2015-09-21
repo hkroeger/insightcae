@@ -17,6 +17,7 @@ set(insightcad_SOURCES
   feature.cpp 
   freeship_interface.cpp
   evaluation.cpp
+  occtools.cpp
 )
 
 include_directories(${toolkit_SOURCE_DIR})

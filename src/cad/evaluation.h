@@ -26,6 +26,8 @@
 #include "occinclude.h"
 #include "cadtypes.h"
 
+#include "occtools.h"
+
 namespace insight {
 namespace cad {
   

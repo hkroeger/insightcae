@@ -29,7 +29,19 @@
 #include <QListWidget>
 
 #include "occinclude.h"
+#include "solidmodel.h"
 #include "parser.h"
+
+struct ViewState
+{
+  int shading;
+  bool visible;
+  double r, g, b;
+  
+  ViewState();
+  void randomizeColor();
+};
+
 
 class ISCADApplication
 : public QApplication
@@ -45,6 +57,68 @@ public:
 
 class QoccViewerContext;
 class QoccViewWidget;
+
+class QModelStepItem
+: public QObject, public QListWidgetItem
+{
+  Q_OBJECT 
+  
+  QString name_;
+  insight::cad::SolidModelPtr smp_;
+  QoccViewerContext* context_;
+  Handle_AIS_Shape ais_;
+    
+signals:
+  void insertParserStatementAtCursor(const QString& statement);
+ 
+public:
+  ViewState state_;
+
+  QModelStepItem(const std::string& name, insight::cad::SolidModelPtr smp, QoccViewerContext* context, 
+		 const ViewState& state, QListWidget* view = 0);
+  
+  void reset(insight::cad::SolidModelPtr smp);
+  void wireframe();
+  void shaded();
+  void randomizeColor();
+  void updateDisplay();
+  void exportShape();
+  void insertName();
+  
+public slots:
+  void showContextMenu(const QPoint& gpos);
+};
+
+class QVariableItem
+: public QObject, public QListWidgetItem
+{
+  Q_OBJECT 
+  
+  QString name_;
+  arma::mat value_;
+  QoccViewerContext* context_;
+  Handle_AIS_InteractiveObject ais_;
+    
+signals:
+  void insertParserStatementAtCursor(const QString& statement);
+ 
+protected:
+  createAISShape();
+  
+public:
+  ViewState state_;
+
+  QVariableItem(const std::string& name, arma::mat value, 
+		QoccViewerContext* context, 
+		const ViewState& state, QListWidget* view = 0);
+  
+  void reset(arma::mat value);
+  void updateDisplay();
+  void insertName();
+  
+public slots:
+  void showContextMenu(const QPoint& gpos);
+};
 
 
 class ModelStepList
@@ -83,16 +157,6 @@ protected slots:
   void showContextMenuForWidget(const QPoint &);
 };
 
-struct ViewState
-{
-  int shading;
-  bool visible;
-  double r, g, b;
-  
-  ViewState();
-  void randomizeColor();
-};
-
 
 class ISCADMainWindow
 : public QMainWindow
@@ -110,6 +174,7 @@ protected:
   }
 
 protected slots:
+  void onVariableItemChanged(QListWidgetItem * item);
   void onModelStepItemChanged(QListWidgetItem * item);
   void onDatumItemChanged(QListWidgetItem * item);
   void onEvaluationItemChanged(QListWidgetItem * item);
@@ -131,7 +196,8 @@ public slots:
   void saveModel();
   void saveModelAs();
   void rebuildModel();
-
+  void popupMenu( const QoccViewWidget* aView, const QPoint aPoint ); 
+  
 protected:
   boost::filesystem::path filename_;
   QoccViewerContext* context_;

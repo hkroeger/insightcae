@@ -138,6 +138,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   context_=new QoccViewerContext;
   
   viewer_=new QoccViewWidget(context_->getContext(), spl);
+  connect(viewer_, 
+	  SIGNAL(popupMenu( const QoccViewWidget*, const QPoint)),
+	  this,
+	  SLOT(popupMenu(const QoccViewWidget*,const QPoint))
+ 	);
   spl->addWidget(viewer_);
   
   editor_=new QTextEdit(spl);
@@ -150,6 +155,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   gb=new QGroupBox("Variables");
   vbox = new QVBoxLayout;
   variablelist_=new QListWidget;
+  connect(variablelist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onVariableItemChanged(QListWidgetItem*)));
   vbox->addWidget(variablelist_);
   gb->setLayout(vbox);
   spl2->addWidget(gb);
@@ -326,109 +332,154 @@ void ViewState::randomizeColor()
   b=0.5+0.5*( double(rand()) / double(RAND_MAX) );
 }
 
-class QModelStepItem
-: public QListWidgetItem
+class PointerTransient 
+: public Standard_Transient
 {
-  SolidModelPtr smp_;
-  QoccViewerContext* context_;
-  Handle_AIS_Shape ais_;
-    
+protected:
+  QObject* mi_;
+  
 public:
-  ViewState state_;
-
-  QModelStepItem(const std::string& name, SolidModelPtr smp, QoccViewerContext* context, 
-		 const ViewState& state, QListWidget* view = 0)
-  : QListWidgetItem(QString::fromStdString(name), view),
-    context_(context),
-    state_(state)
-  {
-    setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
-    reset(smp);
-  }
-  
-  void reset(SolidModelPtr smp)
-  {
-    smp_=smp;
-    if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
-    ais_=new AIS_Shape(*smp_);
-    Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
-    ais_->SetOwner(owner_container);
-    context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
-    updateDisplay();
-  }
-  
-  void wireframe()
-  {
-    state_.shading=0;
-    updateDisplay();
-  }
-
-  void shaded()
-  {
-    state_.shading=1;
-    updateDisplay();
-  }
-  
-  void randomizeColor()
-  {
-    state_.randomizeColor();
-    updateDisplay();
-  }
-  
-  void updateDisplay()
-  {
-    state_.visible = (checkState()==Qt::Checked);
+    PointerTransient();
+    PointerTransient(const PointerTransient& o);
+    PointerTransient(QObject* mi);
+    ~PointerTransient();
+    void operator=(QObject* mi);
+    QObject* getPointer();
     
-    if (state_.visible)
+};
+
+
+
+QModelStepItem::QModelStepItem(const std::string& name, SolidModelPtr smp, QoccViewerContext* context, 
+		const ViewState& state, QListWidget* view )
+: QListWidgetItem(QString::fromStdString(name), view),
+  name_(QString::fromStdString(name)),
+  context_(context),
+  state_(state)
+{
+  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+  reset(smp);
+}
+
+void QModelStepItem::reset(SolidModelPtr smp)
+{
+  smp_=smp;
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  ais_=new AIS_Shape(*smp_);
+//     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
+  Handle_Standard_Transient owner_container(new PointerTransient(this));
+  ais_->SetOwner(owner_container);
+  context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+  updateDisplay();
+}
+
+void QModelStepItem::wireframe()
+{
+  state_.shading=0;
+  updateDisplay();
+}
+
+void QModelStepItem::shaded()
+{
+  state_.shading=1;
+  updateDisplay();
+}
+
+void QModelStepItem::randomizeColor()
+{
+  state_.randomizeColor();
+  updateDisplay();
+}
+
+void QModelStepItem::updateDisplay()
+{
+  state_.visible = (checkState()==Qt::Checked);
+  
+  if (state_.visible)
+  {
+    context_->getContext()->Display(ais_);
+    context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+    context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+  }
+  else
+  {
+    context_->getContext()->Erase(ais_);
+  }
+}
+
+void QModelStepItem::exportShape()
+{
+  QString fn=QFileDialog::getSaveFileName
+  (
+    listWidget(), 
+    "Export file name", 
+    "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
+  );
+  if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
+}
+
+void QModelStepItem::insertName()
+{
+  emit insertParserStatementAtCursor(name_);
+}
+
+void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
+{
+    // for QAbstractScrollArea and derived classes you would use:
+    // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
+
+    QMenu myMenu;
+    QAction *tit=new QAction(name_, &myMenu);
+    tit->setDisabled(true);
+    myMenu.addAction(tit);
+    myMenu.addSeparator();
+    myMenu.addAction("Shaded");
+    myMenu.addAction("Wireframe");
+    myMenu.addAction("Randomize Color");
+    myMenu.addAction("Insert name");
+    myMenu.addAction("Export...");
+    // ...
+
+    QAction* selectedItem = myMenu.exec(gpos);
+    if (selectedItem)
     {
-      context_->getContext()->Display(ais_);
-      context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-      context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+	if (selectedItem->text()=="Shaded") shaded();
+	if (selectedItem->text()=="Wireframe") wireframe();
+	if (selectedItem->text()=="Randomize Color") randomizeColor();
+	if (selectedItem->text()=="Insert name") insertName();
+	if (selectedItem->text()=="Export...") exportShape();
     }
     else
     {
-      context_->getContext()->Erase(ais_);
+	// nothing was chosen
     }
-  }
-  
-  void exportShape()
-  {
-    QString fn=QFileDialog::getSaveFileName
-    (
-      listWidget(), 
-      "Export file name", 
-      "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
-    );
-    if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
-  }
- 
-public slots:
-  void showContextMenu(const QPoint& gpos) // this is a slot
-  {
-      // for QAbstractScrollArea and derived classes you would use:
-      // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
+}
 
-      QMenu myMenu;
-      myMenu.addAction("Shaded");
-      myMenu.addAction("Wireframe");
-      myMenu.addAction("Randomize Color");
-      myMenu.addAction("Export...");
-      // ...
+PointerTransient::PointerTransient()
+: mi_(NULL)
+{}
 
-      QAction* selectedItem = myMenu.exec(gpos);
-      if (selectedItem)
-      {
-	  if (selectedItem->text()=="Shaded") shaded();
-	  if (selectedItem->text()=="Wireframe") wireframe();
-	  if (selectedItem->text()=="Randomize Color") randomizeColor();
-	  if (selectedItem->text()=="Export...") exportShape();
-      }
-      else
-      {
-	  // nothing was chosen
-      }
-  }
-};
+PointerTransient::PointerTransient(const PointerTransient& o)
+: mi_(o.mi_)
+{}
+
+PointerTransient::PointerTransient(QObject* mi)
+: mi_(mi)
+{}
+
+PointerTransient::~PointerTransient()
+{}
+
+void PointerTransient::operator=(QObject* mi)
+{
+  mi_=mi;
+}
+
+QObject *PointerTransient::getPointer()
+{
+  return mi_;
+}
+
 
 void ModelStepList::showContextMenuForWidget(const QPoint &p)
 {
@@ -653,6 +704,100 @@ public slots:
   }
 };
 
+QVariableItem::QVariableItem(const std::string& name, arma::mat vv, QoccViewerContext* context, 
+		const ViewState& state, QListWidget* view )
+: QListWidgetItem
+  (
+   QString::fromStdString(name+" = ["+lexical_cast<string>(vv(0))+", "+lexical_cast<string>(vv(1))+", "+lexical_cast<string>(vv(2))+"]"), 
+   view
+  ),
+  name_(QString::fromStdString(name)),
+  context_(context),
+  state_(state)
+{
+  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+  reset(vv);
+}
+
+QVariableItem::createAISShape()
+{
+//   TopoDS_Edge cP = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(value_),gp_Dir(0,0,1)), 1));
+//   Handle_AIS_Shape aisP = new AIS_Shape(cP);
+  TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
+  Handle_AIS_Shape aisP(new AIS_Shape(cP));
+  
+//   Handle_AIS_InteractiveObject aisPLabel (createArrow(
+//     cP, name_.toStdString())
+//   );
+// 
+//   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
+// 
+//   Handle_Standard_Transient owner_container(new PointerTransient(this));
+//   aisP->SetOwner(owner_container);
+//   aisPLabel->SetOwner(owner_container);
+//   ais->Connect(aisP);
+//   ais->Connect(aisPLabel);
+//   ais_=ais.release();
+  ais_=aisP;
+}
+
+void QVariableItem::reset(arma::mat val)
+{
+  value_=val;
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  createAISShape();
+//     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
+//   context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+  updateDisplay();
+}
+
+void QVariableItem::updateDisplay()
+{
+  state_.visible = (checkState()==Qt::Checked);
+  
+  if (state_.visible)
+  {
+    context_->getContext()->Display(ais_);
+//     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+//     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+  }
+  else
+  {
+    context_->getContext()->Erase(ais_);
+  }
+}
+
+void QVariableItem::insertName()
+{
+  emit insertParserStatementAtCursor(name_);
+}
+
+void QVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
+{
+    // for QAbstractScrollArea and derived classes you would use:
+    // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
+
+    QMenu myMenu;
+    QAction *tit=new QAction(name_, &myMenu);
+    tit->setDisabled(true);
+    myMenu.addAction(tit);
+    myMenu.addSeparator();
+    myMenu.addAction("Insert name");
+    // ...
+
+    QAction* selectedItem = myMenu.exec(gpos);
+    if (selectedItem)
+    {
+	if (selectedItem->text()=="Insert name") insertName();
+    }
+    else
+    {
+	// nothing was chosen
+    }
+}
+
+
+
 void EvaluationList::showContextMenuForWidget(const QPoint &p)
 {
   QEvaluationItem * mi=dynamic_cast<QEvaluationItem*>(itemAt(p));
@@ -662,6 +807,15 @@ void EvaluationList::showContextMenuForWidget(const QPoint &p)
   }
 }
   
+
+void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
+{
+  QVariableItem* mi=dynamic_cast<QVariableItem*>(item);
+  if (mi)
+  {
+    mi->updateDisplay();
+  }
+}
 
 void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
 {
@@ -700,7 +854,13 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModelPtr s
     vd=checked_modelsteps_.find(sn)->second;
   }
   
-  modelsteplist_->addItem(new QModelStepItem(sn, sm, context_, vd));
+  QModelStepItem* msi=new QModelStepItem(sn, sm, context_, vd);
+  connect
+  (
+    msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
+    editor_, SLOT(insertPlainText(const QString&))
+  );
+  modelsteplist_->addItem(msi);
 }
 
 void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
@@ -733,12 +893,39 @@ void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::EvaluationPtr 
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar sv)
 {
-  variablelist_->addItem(new QListWidgetItem(QString::fromStdString(sn+" = "+lexical_cast<string>(sv))));
+  variablelist_->addItem
+  (
+    new QListWidgetItem
+    (
+      QString::fromStdString(sn+" = "+lexical_cast<string>(sv))
+    )
+  );
 }
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector vv)
 {
-  variablelist_->addItem(new QListWidgetItem(QString::fromStdString(sn+" = ["+lexical_cast<string>(vv(0))+", "+lexical_cast<string>(vv(1))+", "+lexical_cast<string>(vv(2))+"]")));
+//   variablelist_->addItem
+//   (
+//     new QListWidgetItem
+//     (
+//       QString::fromStdString(sn+" = ["+lexical_cast<string>(vv(0))+", "+lexical_cast<string>(vv(1))+", "+lexical_cast<string>(vv(2))+"]")
+//     )
+//   );
+  ViewState vd;
+  vd.visible=false;
+  
+//   if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end())
+//   {
+//     vd=checked_modelsteps_.find(sn)->second;
+//   }
+  
+  QVariableItem* msi=new QVariableItem(sn, vv, context_, vd);
+  connect
+  (
+    msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
+    editor_, SLOT(insertPlainText(const QString&))
+  );
+  variablelist_->addItem(msi);
 }
 
 void ISCADMainWindow::rebuildModel()
@@ -832,6 +1019,31 @@ void ISCADMainWindow::rebuildModel()
     { addVariable(v.first, v.second); }
 //     m->vectorSymbols.for_each(Transferrer(*this));
   }
-    
-  
+}
+
+void ISCADMainWindow::popupMenu( const QoccViewWidget* aView, const QPoint aPoint )
+{
+  if (aView->getContext()->HasDetected())
+  {
+    if (aView->getContext()->DetectedInteractive()->HasOwner())
+    {
+      Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
+      if (!own.IsNull())
+      {
+	if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
+	{
+	  if (QModelStepItem* mi=dynamic_cast<QModelStepItem*>(smo->getPointer()))
+	  {
+	    // an item exists under the requested position
+	    mi->showContextMenu(aView->mapToGlobal(aPoint));
+	  }
+	  else if (QVariableItem* mi=dynamic_cast<QVariableItem*>(smo->getPointer()))
+	  {
+	    // an item exists under the requested position
+	    mi->showContextMenu(aView->mapToGlobal(aPoint));
+	  }
+	}
+      }
+    }
+  }
 }

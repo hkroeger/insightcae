@@ -220,6 +220,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   act = new QAction(("Toggle &grid"), this);
   connect(act, SIGNAL(triggered()), context_, SLOT(toggleGrid()));
   vmenu->addAction(act);
+  act = new QAction(("Change background color..."), this);
+  connect(act, SIGNAL(triggered()), viewer_, SLOT(background()));
+  vmenu->addAction(act);
 
   QSettings settings;
   restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
@@ -385,6 +388,19 @@ void QModelStepItem::shaded()
   updateDisplay();
 }
 
+void QModelStepItem::hide()
+{
+  setCheckState(Qt::Unchecked);
+  updateDisplay();
+}
+
+void QModelStepItem::show()
+{
+  setCheckState(Qt::Checked);
+  updateDisplay();
+}
+
+
 void QModelStepItem::randomizeColor()
 {
   state_.randomizeColor();
@@ -425,24 +441,25 @@ void QModelStepItem::insertName()
 
 void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
-    // for QAbstractScrollArea and derived classes you would use:
-    // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
-
     QMenu myMenu;
     QAction *tit=new QAction(name_, &myMenu);
     tit->setDisabled(true);
     myMenu.addAction(tit);
     myMenu.addSeparator();
+    myMenu.addAction("Insert name");
+    myMenu.addSeparator();
+    myMenu.addAction("Show");
+    myMenu.addAction("Hide");
     myMenu.addAction("Shaded");
     myMenu.addAction("Wireframe");
     myMenu.addAction("Randomize Color");
-    myMenu.addAction("Insert name");
     myMenu.addAction("Export...");
-    // ...
 
     QAction* selectedItem = myMenu.exec(gpos);
     if (selectedItem)
     {
+	if (selectedItem->text()=="Show") show();
+	if (selectedItem->text()=="Hide") hide();
 	if (selectedItem->text()=="Shaded") shaded();
 	if (selectedItem->text()=="Wireframe") wireframe();
 	if (selectedItem->text()=="Randomize Color") randomizeColor();
@@ -451,7 +468,6 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
     }
     else
     {
-	// nothing was chosen
     }
 }
 
@@ -646,6 +662,18 @@ public:
   void randomizeColor()
   {
     state_.randomizeColor();
+    updateDisplay();
+  }
+  
+  void hide()
+  {
+    setCheckState(Qt::Unchecked);
+    updateDisplay();
+  }
+  
+  void show()
+  {
+    setCheckState(Qt::Checked);
     updateDisplay();
   }
   

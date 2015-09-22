@@ -28,12 +28,14 @@
 #include "BRepExtrema_DistShapeShape.hxx"
 #include "BRepExtrema_ExtPF.hxx"
 #include <Geom_Curve.hxx>
+#include <Geom_CylindricalSurface.hxx>
 #include <Geom_BezierCurve.hxx>
 #include <Geom_BSplineCurve.hxx>
 #include <GeomAdaptor_Curve.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <GeomAbs_SurfaceType.hxx>
 #include <Geom2d_Curve.hxx>
+#include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_Surface.hxx>
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <GeomAPI_ProjectPointOnCurve.hxx>
@@ -168,6 +170,7 @@
 
 #include "GC_MakePlane.hxx"
 #include "GC_MakeCircle.hxx"
+#include "GC_MakeArcOfCircle.hxx"
 #include "GC_MakeSegment.hxx"
 #include "BRepMesh_FastDiscret.hxx"
 #include "ShapeAnalysis_Curve.hxx"
@@ -178,6 +181,7 @@
 #include "GCPnts_UniformAbscissa.hxx"
 #include "GCPnts_QuasiUniformAbscissa.hxx"
 #include "gce_MakeCirc.hxx"
+#include "GCE2d_MakeSegment.hxx"
 
 #include "HLRBRep_Algo.hxx"
 #include "HLRBRep_HLRToShape.hxx"

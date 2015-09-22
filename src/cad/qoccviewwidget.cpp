@@ -644,6 +644,7 @@ void QoccViewWidget::hiddenLineOn()
 
 void QoccViewWidget::background()
 {
+  
   QColor aColor ;
   Standard_Real R1;
   Standard_Real G1;
@@ -658,7 +659,12 @@ void QoccViewWidget::background()
       R1 = aRetColor.red()/255.;
       G1 = aRetColor.green()/255.;
       B1 = aRetColor.blue()/255.;
+//       myView->SetBgGradientStyle( Aspect_GFM_NONE ); // cancel gradient background
+//       myView->SetBgImageStyle( Aspect_FM_NONE ); 
+//       Quantity_Color qw(R1,G1,B1,Quantity_TOC_RGB);
+//       myView->SetBgGradientColors( qw, qw, Aspect_GFM_NONE );
       myView->SetBackgroundColor(Quantity_TOC_RGB,R1,G1,B1);
+      myView->Update();
     }
   redraw();
 }

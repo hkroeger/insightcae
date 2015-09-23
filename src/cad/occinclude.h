@@ -21,6 +21,8 @@
 #ifndef OCC_INCLUDE
 #define OCC_INCLUDE
 
+#include "Standard_Version.hxx"
+
 #include <Quantity_Color.hxx>
 #include <Quantity_TypeOfColor.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>

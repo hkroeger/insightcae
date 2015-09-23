@@ -21,7 +21,6 @@
 #include "evaluation.h"
 #include "solidmodel.h"
 
-#include "Standard_Version.hxx"
 #include "AIS_Point.hxx"
 #include "AIS_Drawer.hxx"
 #include "Prs3d_TextAspect.hxx"

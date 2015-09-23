@@ -230,6 +230,18 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+// =================== 0D Entities ======================
+class Spring
+: public SolidModel
+{
+public:
+  declareType("Spring");
+  Spring(const NoParameters& nop = NoParameters());
+  Spring(const arma::mat& p0, const arma::mat& p1, double d, double winds);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleEdge() const { return true; };
+};
+
 // =================== 1D Primitives ======================
 class SplineCurve
 : public SolidModel
@@ -249,6 +261,30 @@ public:
   declareType("Wire");
   Wire(const NoParameters& nop = NoParameters());
   Wire(const FeatureSet& edges);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleCloseWire() const;
+  virtual bool isSingleOpenWire() const;
+};
+
+class Line
+: public SolidModel
+{
+public:
+  declareType("Line");
+  Line(const NoParameters& nop = NoParameters());
+  Line(const arma::mat& p0, const arma::mat& p1);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleCloseWire() const;
+  virtual bool isSingleOpenWire() const;
+};
+
+class Arc
+: public SolidModel
+{
+public:
+  declareType("Arc");
+  Arc(const NoParameters& nop = NoParameters());
+  Arc(const arma::mat& p0, const arma::mat& p0tang, const arma::mat& p1);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual bool isSingleCloseWire() const;
   virtual bool isSingleOpenWire() const;

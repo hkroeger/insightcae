@@ -80,6 +80,8 @@ public:
   void reset(insight::cad::SolidModelPtr smp);
   void wireframe();
   void shaded();
+  void hide();
+  void show();
   void randomizeColor();
   void updateDisplay();
   void exportShape();

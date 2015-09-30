@@ -906,6 +906,19 @@ int GradingAnalyzer::calc_n(double delta0, double L) const
   return x_l;
 }
 
+double GradingAnalyzer::calc_L(double delta0, int n) const
+{
+  double r=pow(grad_, 1./(n-1.));
+  return delta0 * (pow(r, n)-1.) / (r-1.);
+}
+
+double GradingAnalyzer::calc_delta1(double delta0) const
+{
+  return delta0*grad_;
+}
+
+
+
 Patch2D::Patch2D(const transform2D& t2d, std::string typ)
 : Patch(typ),
   t2d_(t2d)

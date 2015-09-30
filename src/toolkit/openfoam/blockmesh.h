@@ -118,6 +118,8 @@ public:
   inline double grad() const { return grad_; }
   
   int calc_n(double delta0, double L) const;
+  double calc_L(double delta0, int n) const;
+  double calc_delta1(double delta0) const;
 };
 
 class Block

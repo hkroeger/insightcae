@@ -176,7 +176,19 @@ void FlatPlateBL::calcDerivedInputData()
   deltaywall_ref_=p.mesh.ypluswall/ypfac_ref_;
   reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing");
   
-  gradh_=bmd::GradingAnalyzer(deltaywall_ref_, H_, p.mesh.nh).grad();
+  gradl_=pow(p.mesh.layerratio, p.mesh.nl-1);
+  reportIntermediateParameter("gradl", gradl_, "near-wall layer block grading");
+  
+  y_final_=bmd::GradingAnalyzer(gradl_).calc_L(deltaywall_ref_, p.mesh.nl);
+  y_final_=std::min(0.9*H_, y_final_);
+  reportIntermediateParameter("y_final", y_final_, "near-wall layer block height (clipped to 0.9*H)");
+  
+  gradh_=bmd::GradingAnalyzer
+  (
+    bmd::GradingAnalyzer(gradl_).calc_delta1(deltaywall_ref_), 
+    H_-y_final_, 
+    p.mesh.nh-p.mesh.nl
+  ).grad();
   reportIntermediateParameter("gradh", gradh_, "required vertical grid stretching");
   
   double deltax=(p.mesh.dxplus/ypfac_ref_);
@@ -251,10 +263,13 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   pts = boost::assign::map_list_of   
       (0, 	vec3(0, 0., 0))
       (1, 	vec3(L_, 0., 0))
+      (10, 	vec3(0, y_final_, 0))
+      (11, 	vec3(L_, y_final_, 0))
       (2, 	vec3(L_, H_, 0))
       (3, 	vec3(0, H_, 0))
       
       (4, 	vec3(-p.geometry.LapByL*L_, 0., 0))
+      (14, 	vec3(-p.geometry.LapByL*L_, y_final_, 0))
       (5, 	vec3(-p.geometry.LapByL*L_, H_, 0))
       .convert_to_container<std::map<int, Point> >()
   ;
@@ -282,29 +297,55 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       
   if (upstreamzone)
   {
-    Block& bl = bmd->addBlock
-    (  
-      new Block(PTS(4,0,3,5),
-	naxi_, p.mesh.nh, nlat_,
-	list_of<double>(1./gradaxi_)(gradh_)(1.),
-	approach_
-      )
-    );
-    in.addFace(bl.face("0473"));
-    approach.addFace(bl.face("0154"));
-    
-//     top.addFace(bl.face("2376"));
-    out_top.addFace(bl.face("2376"));
-    
-    cycl_side_0.addFace(bl.face("0321"));
-    cycl_side_1.addFace(bl.face("4567"));
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(
+  // 	PTS(4,0,3,5),
+	  PTS(14,10,3,5),
+	  naxi_, p.mesh.nh-p.mesh.nl, nlat_,
+	  list_of<double>(1./gradaxi_)(gradh_)(1.),
+	  approach_
+	)
+      );
+      in.addFace(bl.face("0473"));
+      approach.addFace(bl.face("0154"));
+      
+  //     top.addFace(bl.face("2376"));
+      out_top.addFace(bl.face("2376"));
+      
+      cycl_side_0.addFace(bl.face("0321"));
+      cycl_side_1.addFace(bl.face("4567"));
+    }
+    {
+      Block& bl = bmd->addBlock
+      (  
+	new Block(
+  // 	PTS(4,0,3,5),
+	  PTS(4,0,10,14),
+	  naxi_, p.mesh.nl, nlat_,
+	  list_of<double>(1./gradaxi_)(gradl_)(1.),
+	  approach_
+	)
+      );
+      in.addFace(bl.face("0473"));
+      approach.addFace(bl.face("0154"));
+      
+  //     top.addFace(bl.face("2376"));
+//       out_top.addFace(bl.face("2376"));
+      
+      cycl_side_0.addFace(bl.face("0321"));
+      cycl_side_1.addFace(bl.face("4567"));
+    }
   }
 
   {
     Block& bl = bmd->addBlock
     (  
-      new Block(PTS(0,1,2,3),
-	nax_, p.mesh.nh, nlat_,
+      new Block(
+// 	PTS(0,1,2,3),
+	PTS(10,11,2,3),
+	nax_, p.mesh.nh-p.mesh.nl, nlat_,
 	list_of<double>(gradax_)(gradh_)(1.)
       )
     );
@@ -316,6 +357,26 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 //     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
     out_top.addFace(bl.face("2376"));
+    
+    cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
+  }
+  {
+    Block& bl = bmd->addBlock
+    (  
+      new Block(PTS(0,1,11,10),
+	nax_, p.mesh.nl, nlat_,
+	list_of<double>(gradax_)(gradl_)(1.)
+      )
+    );
+    
+    if (!upstreamzone)
+      in.addFace(bl.face("0473"));
+    
+//     out.addFace(bl.face("1265"));
+//     top.addFace(bl.face("2376"));
+    out_top.addFace(bl.face("1265"));
+//     out_top.addFace(bl.face("2376"));
     
     cycl_side_0.addFace(bl.face("0321"));
     cycl_side_1.addFace(bl.face("4567"));

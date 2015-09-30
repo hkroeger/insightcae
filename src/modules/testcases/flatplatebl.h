@@ -48,6 +48,8 @@ geometry=set
 mesh=set
 {
  nh = int 64 "# cells in vertical direction"
+ nl = int 20 "# number of near wall layers"
+ layerratio = double 1.2 "near wall layer grading"
  ypluswall = double 1 "yPlus of first cell at the wall grid layer at the final station"
  dxplus = double 1000 "streamwise mesh spacing at the final station"
  dzplus = double 1000 "spanwise mesh spacing at the final station"
@@ -163,7 +165,7 @@ protected:
     double L_, Lap_, Llam_;
 
     double H_, W_;
-    double delta99_e_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, gradh_, T_, dtrip_, gradax_, gradaxi_;
+    double delta99_e_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, y_final_, gradl_, gradh_, T_, dtrip_, gradax_, gradaxi_;
     int nax_, naxi_, nlat_;
     
     double avgStart_, avg2Start_, end_;

@@ -194,6 +194,37 @@ FilterPtr Filter::operator!()
 //   return NOTFilter(f1);
 // }
 
+boundaryEdge::boundaryEdge()
+{
+}
+
+void boundaryEdge::initialize(const SolidModel& m)
+{
+    insight::cad::Filter::initialize(m);
+    safb_.reset(new ShapeAnalysis_FreeBounds(m));
+}
+
+
+bool boundaryEdge::checkMatch(FeatureID feature) const
+{
+  for (TopExp_Explorer ex(safb_->GetOpenWires(), TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    if (TopoDS::Edge(ex.Current()).IsEqual(model_->edge(feature)))
+      return true;
+  }
+  for (TopExp_Explorer ex(safb_->GetClosedWires(), TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    if (TopoDS::Edge(ex.Current()).IsEqual(model_->edge(feature)))
+      return true;
+  }
+  return false;
+}
+
+FilterPtr boundaryEdge::clone() const
+{
+  return FilterPtr(new boundaryEdge());  
+}
+
 
 edgeTopology::edgeTopology(GeomAbs_CurveType ct)
 : ct_(ct)
@@ -1078,6 +1109,8 @@ struct EdgeFeatureFilterExprParser
 	( lit("isBSplineCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_BSplineCurve)) ]
 	|
 	( lit("isOtherCurve") ) [ qi::_val = phx::construct<FilterPtr>(new_<edgeTopology>(GeomAbs_OtherCurve)) ]
+	|
+	( lit("isFaceBoundary") ) [ qi::_val = phx::construct<FilterPtr>(new_<boundaryEdge>()) ]
 	|
 	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]

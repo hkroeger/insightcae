@@ -97,6 +97,20 @@ public:
 // ANDFilter operator&&(const Filter& f1, const Filter& f2);
 // NOTFilter operator!(const Filter& f1);
 
+class boundaryEdge
+    : public Filter
+{
+protected:
+  mutable boost::shared_ptr<ShapeAnalysis_FreeBounds> safb_;
+
+public:
+    boundaryEdge();
+    virtual void initialize(const SolidModel& m);
+    virtual bool checkMatch(FeatureID feature) const;
+
+    virtual FilterPtr clone() const;
+};
+
 class edgeTopology
     : public Filter
 {

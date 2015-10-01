@@ -480,13 +480,13 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::saveAs, *qi::_2, qi::_1) ]
       |
-      ( lit ("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
+      ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
         >> r_solidmodel_expression >> lit("as") >> r_identifier
         >> ( ( lit("Lmin") >> '=' >> qi::double_ ) | attr(0.1) )
         >> ( lit("Lmax") >> '=' >> qi::double_ ) 
-	>> lit("vertexGroups") >> '(' >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
-	>> lit("faceGroups") >> '(' >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
-	>> lit("edgeGroups") >> '(' >> ( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
+	>> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > double_ ) ) ) >> ')'
+	>> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
+	>> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
 	>> ';' )
 	[ phx::bind(&runGmsh, qi::_1, *qi::_2, qi::_3, 
 		    qi::_4, qi::_5, 

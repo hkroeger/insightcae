@@ -2549,6 +2549,53 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
 }
 
 
+defineType(StitchedShell);
+addToFactoryTable(SolidModel, StitchedShell, NoParameters);
+
+StitchedShell::StitchedShell(const NoParameters& nop)
+: SolidModel(nop)
+{
+}
+
+StitchedShell::StitchedShell(const FeatureSet& faces, double tol)
+: SolidModel()
+{
+  BRepBuilderAPI_Sewing sew(tol);
+  
+//   TopoDS_Compound aRes;
+//   BRep_Builder aBuilder;
+//   aBuilder.MakeCompound(aRes);
+
+  BOOST_FOREACH(const FeatureID& fi, faces)
+  {
+    sew.Add(faces.model().face(fi));
+//     aBuilder.Add(aRes, bladeFace_[s]);
+  }
+
+  sew.Perform();
+  sew.Dump();
+  
+  TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
+  BRepCheck_Shell acheck(sshell);
+  
+  
+  setShape(sshell);
+}
+
+void StitchedShell::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "StitchedShell",
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_faceFeaturesExpression  > ( (',' > qi::double_) | qi::attr(1e-3) ) > ')' )
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedShell>(*qi::_1, qi::_2)) ]
+      
+    ))
+  );
+}
+
 
 defineType(BooleanUnion);
 addToFactoryTable(SolidModel, BooleanUnion, NoParameters);

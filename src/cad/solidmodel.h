@@ -571,6 +571,17 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
+class StitchedShell
+: public SolidModel
+{
+public:
+  declareType("StitchedShell");
+  StitchedShell(const NoParameters& nop = NoParameters());
+  StitchedShell(const FeatureSet& faces, double tol=1e-3);
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+};
+
+
 // =================== Boolean operations ======================
 class BooleanUnion
 : public SolidModel

@@ -33,6 +33,8 @@
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
 
+#include "meshing.h"
+
 
 using namespace std;
 using namespace boost;
@@ -368,6 +370,53 @@ skip_grammar::skip_grammar()
 }
 
 
+typedef boost::fusion::vector3<std::string, FeatureSetPtr, boost::optional<double> > GroupDesc;
+
+typedef std::vector<GroupDesc> GroupsDesc;
+
+void runGmsh
+(
+  const boost::filesystem::path& outpath,
+  const SolidModel& model,
+  const std::string& volname,
+  double Lmin, double Lmax,
+  const GroupsDesc& vertexGroups,
+  const GroupsDesc& edgeGroups,
+  const GroupsDesc& faceGroups
+)
+{
+  GmshCase c(model, Lmin, Lmax);
+  BOOST_FOREACH(const GroupDesc& gd, edgeGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameEdges(gname, *gfs);
+  }
+  BOOST_FOREACH(const GroupDesc& gd, faceGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameFaces(gname, *gfs);
+  }
+  BOOST_FOREACH(const GroupDesc& gd, edgeGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<double> gs=boost::fusion::at_c<2>(gd))
+    {
+      c.setEdgeLen(gname, *gs);
+    }
+  }
+  BOOST_FOREACH(const GroupDesc& gd, faceGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<double> gs=boost::fusion::at_c<2>(gd))
+    {
+      c.setFaceEdgeLen(gname, *gs);
+    }
+  }
+  c.doMeshing(volname, outpath);
+}
+
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model::Ptr model)
 : ISCADParser::base_type(r_model),
@@ -430,14 +479,19 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::saveAs, *qi::_2, qi::_1) ]
-//       |
-//       ( lit ("mesh") >> '(' >> r_path >> ')' >> lit("<<") 
-//         >> r_solidmodel_expression >> lit('as') >> r_identifier
-//         >> ( ( lit("Lmin") >> '=' >> qi::double_ ) | attr(0.1) )
-//         >> ( lit("Lmax") >> '=' >> qi::double_ ) 
-// 	>> lit("faceGroups") >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression ) % ',' )
-// 	>> lit("edgeGroups") >> ( ( r_identifier >> '=' >> r_edgeFeaturesExpression ) % ',' )
-// 	>> ';' )
+      |
+      ( lit ("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
+        >> r_solidmodel_expression >> lit("as") >> r_identifier
+        >> ( ( lit("Lmin") >> '=' >> qi::double_ ) | attr(0.1) )
+        >> ( lit("Lmax") >> '=' >> qi::double_ ) 
+	>> lit("vertexGroups") >> '(' >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
+	>> lit("faceGroups") >> '(' >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
+	>> lit("edgeGroups") >> '(' >> ( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' >> double_ ) ) % ',' ) >> ')'
+	>> ';' )
+	[ phx::bind(&runGmsh, qi::_1, *qi::_2, qi::_3, 
+		    qi::_4, qi::_5, 
+		    qi::_6, qi::_7, qi::_8
+ 		  ) ]
       |
       ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::exportSTL, *qi::_3, qi::_1, qi::_2) ]

@@ -36,25 +36,31 @@ private:
   const SolidModel& part_;
   double Lmax_, Lmin_;
   
-  NamedFeatureSet namedEdges_, namedFaces_;
+  NamedFeatureSet namedVertices_, namedEdges_, namedFaces_;
   std::vector<std::string> options_;
   
   int elementOrder_;
   int secondOrderLinear_;
   
+  int additionalPoints_;
+  
 public:
   GmshCase(const SolidModel& part, double Lmax=500., double Lmin=0.1);
   
+  void nameVertices(const std::string& name, const FeatureSet& vertices);
   void nameEdges(const std::string& name, const FeatureSet& edges);
   void nameFaces(const std::string& name, const FeatureSet& faces);
 
+  void addSingleNamedVertex(const std::string& vn, const arma::mat& p);
+  void setVertexLen(const std::string& vn, double L);
   void setEdgeLen(const std::string& en, double L);
   void setFaceEdgeLen(const std::string& fn, double L);
   
   void doMeshing
   (
     const std::string& volname,
-    const boost::filesystem::path& outputMeshFile
+    const boost::filesystem::path& outputMeshFile,
+    bool keeptmpdir=false
   );
 };
   

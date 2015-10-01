@@ -408,7 +408,7 @@ arma::mat vertexLocation::evaluate(FeatureID ei)
   
 QuantityComputer<arma::mat>::Ptr vertexLocation::clone() const 
 {
-  return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
+  return QuantityComputer<arma::mat>::Ptr(new vertexLocation());
 }
 
 

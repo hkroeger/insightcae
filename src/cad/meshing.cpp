@@ -30,9 +30,24 @@ GmshCase::GmshCase(const insight::cad::SolidModel& part, double Lmax, double Lmi
   Lmax_(Lmax),
   Lmin_(Lmin),
   elementOrder_(2),
-  secondOrderLinear_(0)
+  secondOrderLinear_(0),
+  additionalPoints_(0)
 {
 }
+
+void GmshCase::nameVertices(const std::string& name, const FeatureSet& vertices)
+{
+  NamedFeatureSet::iterator i = namedVertices_.find(name);
+  if (i!=namedVertices_.end())
+  {
+    i->second->safe_union(vertices);
+  }
+  else 
+  {
+    namedVertices_.insert(NamedFeatureSet::value_type(name, vertices.clone()));
+  }
+}
+
 
 void GmshCase::nameEdges(const std::string& name, const FeatureSet& edges)
 {
@@ -59,6 +74,35 @@ void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
     namedFaces_.insert(NamedFeatureSet::value_type(name, faces.clone()));
   }
 }
+
+void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
+{
+  additionalPoints_++;
+  int id=part_.allVertices().size()+additionalPoints_;
+  std::ostringstream oss;
+  oss<<"Point("<< id <<") = {"<<p(0)<<", "<<p(1)<<", "<<p(2)<<", 999};\n";
+  oss<<"Physical Point(\""<< vn <<"\") = {"<<id<<"};\n";
+  options_.push_back(oss.str());  
+}
+
+
+void GmshCase::setVertexLen(const std::string& vn, double L)
+{
+  std::ostringstream oss;
+  oss<<"Characteristic Length{";
+  
+  const FeatureSet& fs = *(namedVertices_.find(vn)->second);
+  
+  for (FeatureSet::const_iterator i=fs.begin(); i!=fs.end(); i++)
+  {
+    if (i!=fs.begin()) oss<<",";
+    oss<<*i;
+  }
+  oss<<"}="<<L<<";";
+  options_.push_back(oss.str());
+
+}
+
 
 void GmshCase::setEdgeLen(const std::string& en, double L)
 {
@@ -97,7 +141,8 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
 void GmshCase::doMeshing
 (
   const std::string& vname,
-  const boost::filesystem::path& outputMeshFile
+  const boost::filesystem::path& outputMeshFile,
+  bool keeptmpdir
 )
 {
 //   boost::filesystem::path inputFile = boost::filesystem::unique_path("%%%%-%%%%-%%%%.geo");
@@ -132,6 +177,17 @@ void GmshCase::doMeshing
     f<<o<<endl;
   }
 
+  BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedVertices_)
+  {
+    f<<"Physical Point(\""<< ne.first <<"\") = {";
+    for (FeatureSet::const_iterator j=ne.second->begin(); j!=ne.second->end(); j++)
+    {
+      if (j!=ne.second->begin()) f<<",";
+      f<<*j;
+    }
+    f<<"};\n";
+  }
+  
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedEdges_)
   {
     f<<"Physical Line(\""<< ne.first <<"\") = {";
@@ -177,7 +233,9 @@ void GmshCase::doMeshing
   
 //   boost::filesystem::remove(inputFile);
 //   boost::filesystem::remove(geomFile);
-  boost::filesystem::remove_all(tmpWorkDir);
+
+  if (!keeptmpdir)
+    boost::filesystem::remove_all(tmpWorkDir);
   
 }
 

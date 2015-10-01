@@ -371,8 +371,10 @@ skip_grammar::skip_grammar()
 
 
 typedef boost::fusion::vector3<std::string, FeatureSetPtr, boost::optional<double> > GroupDesc;
-
 typedef std::vector<GroupDesc> GroupsDesc;
+
+typedef boost::fusion::vector2<std::string, arma::mat> NamedVertex;
+typedef std::vector<NamedVertex> NamedVertices;
 
 void runGmsh
 (
@@ -382,10 +384,18 @@ void runGmsh
   double Lmin, double Lmax,
   const GroupsDesc& vertexGroups,
   const GroupsDesc& edgeGroups,
-  const GroupsDesc& faceGroups
+  const GroupsDesc& faceGroups,
+  const NamedVertices& namedVertices/*,
+  bool keeptmpdir=false*/
 )
 {
   GmshCase c(model, Lmin, Lmax);
+  BOOST_FOREACH(const GroupDesc& gd, vertexGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameVertices(gname, *gfs);
+  }
   BOOST_FOREACH(const GroupDesc& gd, edgeGroups)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -397,6 +407,21 @@ void runGmsh
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameFaces(gname, *gfs);
+  }
+  BOOST_FOREACH(const NamedVertex& gd, namedVertices)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const arma::mat& loc=boost::fusion::at_c<1>(gd);
+    c.addSingleNamedVertex(gname, loc);
+  }
+  
+  BOOST_FOREACH(const GroupDesc& gd, vertexGroups)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    if (boost::optional<double> gs=boost::fusion::at_c<2>(gd))
+    {
+      c.setVertexLen(gname, *gs);
+    }
   }
   BOOST_FOREACH(const GroupDesc& gd, edgeGroups)
   {
@@ -414,7 +439,7 @@ void runGmsh
       c.setFaceEdgeLen(gname, *gs);
     }
   }
-  c.doMeshing(volname, outpath);
+  c.doMeshing(volname, outpath/*, keeptmpdir*/);
 }
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
@@ -487,10 +512,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	>> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > double_ ) ) ) >> ')'
 	>> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
 	>> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
+	>> ( lit("vertices") >> '(' >> *( r_identifier >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
+//         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
 	>> ';' )
 	[ phx::bind(&runGmsh, qi::_1, *qi::_2, qi::_3, 
 		    qi::_4, qi::_5, 
-		    qi::_6, qi::_7, qi::_8
+		    qi::_6, qi::_7, qi::_8, qi::_9
  		  ) ]
       |
       ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 

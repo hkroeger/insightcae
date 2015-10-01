@@ -189,6 +189,7 @@ void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
 
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
 {
+  out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
        <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
@@ -252,6 +253,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
     ord[d.subDict(i.first).getInt("startFace")] = i.first;
   }
   
+  out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
        <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl
@@ -276,6 +278,7 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
 
 void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
 {
+  out /*<< std::scientific*/ << std::setprecision(18);
     out<<"FoamFile"<<endl
        <<"{"<<endl
        <<" version     "+lexical_cast<std::string>(d.dictVersion)+";"<<endl

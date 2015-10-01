@@ -1496,7 +1496,9 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["psi"]=stdSymmSolverSetup(1e-9, 0.01);
+//   solvers["psi"]=stdSymmSolverSetup(1e-7, 0.01);
+  solvers["psi"]=GAMGSolverSetup(1e-7, 0.01);
+  solvers.subDict("psi")["maxIter"]=5000;
 //   solvers["psi"]=GAMGPCGSolverSetup(1e-9, 0.001);
 
 //   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -1523,7 +1525,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   }
 
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 20 );
+  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 10 );
 //   SIMPLE["pRefCell"]=0;
 //   SIMPLE["pRefValue"]=0.0;
   
@@ -1553,17 +1555,19 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["default"]="none";
       
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["default"]="Gauss linear localLimited UBlendingFactor 0.66";
+//   laplacian["default"]="Gauss linear localLimited UBlendingFactor 0.66";
+  laplacian["default"]="Gauss linear corrected";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="localLimited UBlendingFactor 0.66";
+//   snGrad["default"]="localLimited UBlendingFactor 0.66";
+  snGrad["default"]="corrected";
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
-  fluxRequired["T"]="";
+//   fluxRequired["T"]="";
 
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
   transportProperties.addListIfNonexistent("magnets");

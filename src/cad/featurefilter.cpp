@@ -364,6 +364,22 @@ FilterPtr everything::clone() const
   return FilterPtr(new everything());
 }
 
+vertexLocation::vertexLocation() 
+{}
+
+vertexLocation::~vertexLocation()
+{}
+  
+arma::mat vertexLocation::evaluate(FeatureID ei)
+{
+  return model_->vertexLocation(ei);
+}
+  
+QuantityComputer<arma::mat>::Ptr vertexLocation::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new edgeCoG());
+}
+
 
 edgeCoG::edgeCoG() 
 {}
@@ -996,6 +1012,49 @@ public:
 };
 
 template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
+struct VertexFeatureFilterExprParser
+: public FeatureFilterExprParser<Iterator>
+{
+
+  VertexFeatureFilterExprParser(const FeatureSetList& extsets)
+  : FeatureFilterExprParser<Iterator>(extsets)
+  {
+//     FeatureFilterExprParser<Iterator>::r_filter_functions =
+// 	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]
+// 	|
+// 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
+// 	|
+// 	( lit("projectionIsCoincident") > '('
+// 	  > FeatureFilterExprParser<Iterator>::r_featureset > ','
+// 	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ',' // p0
+// 	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ',' // n
+// 	  > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > ','    // up
+// 	  > FeatureFilterExprParser<Iterator>::r_scalar_qty_expression > ')' // tol
+// 	) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentProjectedEdge>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+// 	  ;
+	  
+//       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
+// 	( lit("radius") >> 
+// 	    '(' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> //ax
+// 	    ',' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >>  //p0
+// 	    ')' ) 
+// 	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<vertexRadius>(qi::_1, qi::_2)) ]
+//       ;
+      
+      FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+//         ( lit("avgTangent") ) [ _val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::edgeAvgTangent>()) ]
+//         |
+        ( lit("loc") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::vertexLocation>()) ]
+      ;
+    
+  }
+};
+
+
+template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
 struct EdgeFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
@@ -1160,6 +1219,11 @@ catch (insight::Exception e)
   throw e;
 }
 
+}
+
+FilterPtr parseVertexFilterExpr(std::istream& in, const FeatureSetList& refs)
+{
+  return parseFilterExpr<VertexFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
 FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetList& refs)

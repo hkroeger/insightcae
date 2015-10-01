@@ -607,6 +607,18 @@ BINARY_FUNCTION_QTC(dotted, (dot(value1,value2)), DotResult );
 BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1,2)/norm(value2,2))), DotResult );
 BINARY_FUNCTION_QTC(angleMag, (acos(abs(dot(value1,value2)/norm(value1,2)/norm(value2,2)))), DotResult );
 
+class vertexLocation
+    : public QuantityComputer<arma::mat>
+{
+public:
+    vertexLocation();
+    virtual ~vertexLocation();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
 class edgeCoG
     : public QuantityComputer<arma::mat>
 {
@@ -858,6 +870,7 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
+FilterPtr parseVertexFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
 FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
 FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
 

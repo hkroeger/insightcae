@@ -70,6 +70,9 @@ FeatureSet FeatureSet::query(const FilterPtr& f) const
 {
   switch (shape_)
   {
+    case Vertex:
+      return model_.query_vertices_subset(*this, f);
+      break;
     case Edge:
       return model_.query_edges_subset(*this, f);
       break;
@@ -86,6 +89,9 @@ FeatureSet FeatureSet::query(const std::string& queryexpr) const
   std::istringstream is(queryexpr);
   switch (shape_)
   {
+    case Vertex:
+      return model_.query_vertices_subset(*this, parseVertexFilterExpr(is));
+      break;
     case Edge:
       return model_.query_edges_subset(*this, parseEdgeFilterExpr(is));
       break;

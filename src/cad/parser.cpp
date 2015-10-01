@@ -107,9 +107,17 @@ mapkey_parser::mapkey_parser<solidmodel> Model::modelstepSymbolNames() const
 {
   return mapkey_parser::mapkey_parser<solidmodel>(modelstepSymbols_); 
 }
+mapkey_parser::mapkey_parser<FeatureSetPtr> Model::vertexFeatureSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<FeatureSetPtr>(vertexFeatureSymbols_); 
+}
 mapkey_parser::mapkey_parser<FeatureSetPtr> Model::edgeFeatureSymbolNames() const 
 {
   return mapkey_parser::mapkey_parser<FeatureSetPtr>(edgeFeatureSymbols_); 
+}
+mapkey_parser::mapkey_parser<FeatureSetPtr> Model::faceFeatureSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<FeatureSetPtr>(faceFeatureSymbols_); 
 }
 mapkey_parser::mapkey_parser<Model::Ptr> Model::modelSymbolNames() const 
 {
@@ -162,6 +170,27 @@ vector rot(const vector& v, const scalar& a, const vector& ax)
 BOOST_PHOENIX_ADAPT_FUNCTION(vector, rot_, rot, 3);
 
 
+FeatureSetPtr queryVertices(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.query_vertices(filterexpr, of).clone());
+}
+
+FeatureSetPtr queryAllVertices(const SolidModel& m)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.allVertices().clone());
+}
+
+FeatureSetPtr queryVerticesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(fs->model().query_vertices_subset(*fs, filterexpr, of).clone());
+}
+
 FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of)
 {
   using namespace std;
@@ -169,11 +198,39 @@ FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, con
   return FeatureSetPtr(m.query_edges(filterexpr, of).clone());
 }
 
+FeatureSetPtr queryAllEdges(const SolidModel& m)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.allEdges().clone());
+}
+
 FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of)
 {
   using namespace std;
   using namespace insight::cad;
   return FeatureSetPtr(fs->model().query_edges_subset(*fs, filterexpr, of).clone());
+}
+
+FeatureSetPtr queryFaces(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.query_faces(filterexpr, of).clone());
+}
+
+FeatureSetPtr queryAllFaces(const SolidModel& m)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.allFaces().clone());
+}
+
+FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(fs->model().query_faces_subset(*fs, filterexpr, of).clone());
 }
 
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
@@ -337,8 +394,14 @@ ISCADParser::ISCADParser(Model::Ptr model)
       ( r_identifier >> lit("?=")  >> r_vectorExpression >> ';') 
 	[ phx::bind(&Model::addVectorSymbolIfNotPresent, model_, qi::_1, qi::_2) ]
       |
+      ( r_identifier >> '='  >> r_vertexFeaturesExpression >> ';') 
+	[ phx::bind(&Model::addVertexFeatureSymbol, model_, qi::_1, qi::_2) ]
+      |
       ( r_identifier >> '='  >> r_edgeFeaturesExpression >> ';') 
 	[ phx::bind(&Model::addEdgeFeatureSymbol, model_, qi::_1, qi::_2) ]
+      |
+      ( r_identifier >> '='  >> r_faceFeaturesExpression >> ';') 
+	[ phx::bind(&Model::addFaceFeatureSymbol, model_, qi::_1, qi::_2) ]
       |
       ( r_identifier >> '='  >> r_datumExpression >> ';') 
 	[ phx::bind(&Model::addDatumSymbol, model_, qi::_1, qi::_2) ]
@@ -367,6 +430,14 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::saveAs, *qi::_2, qi::_1) ]
+//       |
+//       ( lit ("mesh") >> '(' >> r_path >> ')' >> lit("<<") 
+//         >> r_solidmodel_expression >> lit('as') >> r_identifier
+//         >> ( ( lit("Lmin") >> '=' >> qi::double_ ) | attr(0.1) )
+//         >> ( lit("Lmax") >> '=' >> qi::double_ ) 
+// 	>> lit("faceGroups") >> ( ( r_identifier >> '=' >> r_faceFeaturesExpression ) % ',' )
+// 	>> lit("edgeGroups") >> ( ( r_identifier >> '=' >> r_edgeFeaturesExpression ) % ',' )
+// 	>> ';' )
       |
       ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 
 	[ phx::bind(&SolidModel::exportSTL, *qi::_3, qi::_1, qi::_2) ]
@@ -473,6 +544,21 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	  > ';'
 	  ;
 
+    r_vertexFeaturesExpression = 
+	  qi::lexeme[model_->vertexFeatureSymbolNames()] 
+	    [ _val =  phx::bind(&Model::lookupVertexFeatureSymbol, model_, qi::_1) ]
+	  | (
+	   ( lit("verticesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_vertexFeaturesExpression ) >> ')' )
+	    [ _val = queryVertices_(*qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("verticesFrom") >> r_vertexFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_vertexFeaturesExpression ) >> ')' )
+	    [ _val = queryVerticesSubset_(qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("allVerticesFrom") >> r_solidmodel_expression )
+	    [ _val = queryAllVertices_(*qi::_1) ]
+	  )
+      ;
+
     r_edgeFeaturesExpression = 
 	  qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
 	  | (
@@ -481,16 +567,27 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	   |
 	   ( lit("edgesFrom") >> r_edgeFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression ) >> ')' )
 	    [ _val = queryEdgesSubset_(qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("allEdgesFrom") >> r_solidmodel_expression )
+	    [ _val = queryAllEdges_(*qi::_1) ]
 	  )
       ;
-// 	  
-// 	r_edgeFilterExpression = 
-// 	  ( lit("*") [ _val = construct<Filter::Ptr>(new_<everything>()) ] )
-// 	 | ( lit("all") ) [ _val = construct<Filter::Ptr>(new_<everything>()) ]
-// 	 | ( lit("coincidentWith") >> r_edgeFeaturesExpression >> lit("from") >> r_solidmodel_expression ) 
-// 	    [ _val = construct<Filter::Ptr>(new_<coincident<Edge> >(*qi::_2, qi::_1)) ]
-// 	 | ( lit("secant") >> r_vectorExpression ) [ _val = construct<Filter::Ptr>(new_<secant<Edge> >(qi::_1)) ]
-// 	 ;
+
+    r_faceFeaturesExpression = 
+	  qi::lexeme[model_->faceFeatureSymbolNames()] 
+	    [ _val =  phx::bind(&Model::lookupFaceFeatureSymbol, model_, qi::_1) ]
+	  | (
+	   ( lit("facesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_faceFeaturesExpression ) >> ')' )
+	    [ _val = queryFaces_(*qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("facesFrom") >> r_faceFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_faceFeaturesExpression ) >> ')' )
+	    [ _val = queryFacesSubset_(qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("allFacesFrom") >> r_solidmodel_expression )
+	    [ _val = queryAllFaces_(*qi::_1) ]
+	  )
+	;
+
       
     r_datumExpression = 
 	  qi::lexeme[model_->datumSymbolNames()] [ _val =  phx::bind(&Model::lookupDatumSymbol, model_, qi::_1) ]

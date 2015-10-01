@@ -151,6 +151,7 @@ public:
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;
   
+  arma::mat vertexLocation(FeatureID i) const;
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
   virtual arma::mat modelCoG() const;
@@ -169,9 +170,14 @@ public:
   
   arma::mat faceNormal(FeatureID i) const;
 
+  FeatureSet allVertices() const;
   FeatureSet allEdges() const;
   FeatureSet allFaces() const;
   
+  FeatureSet query_vertices(const FilterPtr& filter) const;
+  FeatureSet query_vertices(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
+  FeatureSet query_vertices_subset(const FeatureSet& fs, const FilterPtr& filter) const;
+  FeatureSet query_vertices_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
   FeatureSet query_edges(const FilterPtr& filter) const;
   FeatureSet query_edges(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_edges_subset(const FeatureSet& fs, const FilterPtr& filter) const;
@@ -179,6 +185,7 @@ public:
   FeatureSet query_faces(const FilterPtr& filter) const;
   FeatureSet query_faces(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
+  FeatureSet query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;
   FeatureSet verticesOfEdges(const FeatureSet& es) const;

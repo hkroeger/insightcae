@@ -402,7 +402,7 @@ FeatureSet SolidModel::query_vertices(const FilterPtr& f) const
   return query_vertices_subset(allVertices(), f);
 }
 
-FeatureSet SolidModel::query_vertices(const string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_vertices(const string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_vertices(parseVertexFilterExpr(is, refs));
@@ -427,7 +427,7 @@ FeatureSet SolidModel::query_vertices_subset(const FeatureSet& fs, const FilterP
   return res;
 }
 
-FeatureSet SolidModel::query_vertices_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_vertices_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_vertices_subset(fs, parseVertexFilterExpr(is, refs));
@@ -441,7 +441,7 @@ FeatureSet SolidModel::query_edges(const FilterPtr& f) const
   return query_edges_subset(allEdges(), f);
 }
 
-FeatureSet SolidModel::query_edges(const std::string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_edges(const std::string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_edges(parseEdgeFilterExpr(is, refs));
@@ -465,7 +465,7 @@ FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const FilterPtr&
   return res;
 }
 
-FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_edges_subset(fs, parseEdgeFilterExpr(is, refs));
@@ -476,7 +476,7 @@ FeatureSet SolidModel::query_faces(const FilterPtr& f) const
   return query_faces_subset(allFaces(), f);
 }
 
-FeatureSet SolidModel::query_faces(const string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_faces(const string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_faces(parseFaceFilterExpr(is, refs));
@@ -501,7 +501,7 @@ FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const FilterPtr&
   return res;
 }
 
-FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const
+FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const
 {
   std::istringstream is(queryexpr);
   return query_faces_subset(fs, parseFaceFilterExpr(is, refs));

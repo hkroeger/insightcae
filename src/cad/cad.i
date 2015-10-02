@@ -14,7 +14,7 @@
 	insight::cad::FeatureSet* p;
 	
 	int res1 = SWIG_ConvertPtr
-	( 
+	(
 	  PySequence_GetItem($input, i), 
 	  &p,
 	  SWIGTYPE_p_insight__cad__FeatureSet, 1 

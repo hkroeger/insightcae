@@ -430,6 +430,25 @@ public:
 
 };
 
+
+class distance
+: public QuantityComputer<double>
+{
+protected:
+    matQuantityComputerPtr p0_;
+    matQuantityComputerPtr p1_;
+public:
+    distance(const matQuantityComputerPtr& p0, const matQuantityComputerPtr& p1)
+        : p0_(p0), p1_(p1)
+    {}
+    virtual double evaluate(FeatureID i) {
+        return arma::norm(p0_->evaluate(i)-p1_->evaluate(i), 2);
+    };
+    virtual typename QuantityComputer<double>::Ptr clone() const {
+        return typename QuantityComputer<double>::Ptr(new distance(p0_, p1_));
+    };
+
+};
 #ifdef SWIG
 %template(doubleConstantQuantity) constantQuantity<double>;
 %template(matConstantQuantity) constantQuantity<arma::mat>;
@@ -884,9 +903,9 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 %template(equalDouble) equal<double, double>;
 #endif*/
 
-FilterPtr parseVertexFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
-FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
-FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetList& refs=FeatureSetList() );
+FilterPtr parseVertexFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
 
 }
 }

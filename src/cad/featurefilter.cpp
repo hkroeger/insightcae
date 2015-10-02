@@ -855,7 +855,7 @@ using namespace phx;
 using namespace insight::cad;
 
 
-FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
+FeatureSetPtr lookupFeatureSet(const FeatureSetParserArgList& fl, size_t id)
 {
   if (id>=fl.size())
     throw insight::Exception
@@ -864,10 +864,69 @@ FeatureSetPtr lookupFeatureSet(const FeatureSetList& fl, size_t id)
      +" is not present in list of size "+lexical_cast<std::string>(fl.size())
     );
   
-  return FeatureSetPtr(fl.at(id)->clone());
+  
+  if (FeatureSetPtr* fsp = boost::get<FeatureSetPtr>(&fl.at(id)))
+  {
+    return FeatureSetPtr( (*fsp)->clone() );
+  }
+  else
+  {
+    throw insight::Exception
+    (
+      "Argument #"+lexical_cast<std::string>(id)+" is not a FeatureSet"
+    );
+  }
+  return FeatureSetPtr();
 }
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, lookupFeatureSet_, lookupFeatureSet, 2);
 
+arma::mat lookupMat(const FeatureSetParserArgList& fl, size_t id)
+{
+  if (id>=fl.size())
+    throw insight::Exception
+    (
+      "Vector entry #"+lexical_cast<std::string>(id)
+     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+    );
+  
+  
+  if (arma::mat* m = boost::get<arma::mat>(&fl.at(id)))
+  {
+    return *m;
+  }
+  else
+  {
+    throw insight::Exception
+    (
+      "Argument #"+lexical_cast<std::string>(id)+" is not a vector/matrix"
+    );
+  }
+  return arma::mat();
+}
+
+double lookupScalar(const FeatureSetParserArgList& fl, size_t id)
+{
+  if (id>=fl.size())
+    throw insight::Exception
+    (
+      "scalar entry #"+lexical_cast<std::string>(id)
+     +" is not present in list of size "+lexical_cast<std::string>(fl.size())
+    );
+  
+  
+  if (double* m = boost::get<double>(&fl.at(id)))
+  {
+    return *m;
+  }
+  else
+  {
+    throw insight::Exception
+    (
+      "Argument #"+lexical_cast<std::string>(id)+" is not a scalar"
+    );
+  }
+  return 0.0;
+}
 BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec3_, vec3, 3);
 
 template <typename Iterator, typename Skipper = qi::space_type >
@@ -888,11 +947,11 @@ public:
     qi::rule<Iterator, scalarQuantityComputer::Ptr(), Skipper> r_scalar_qty_functions;
     qi::rule<Iterator, matQuantityComputer::Ptr(), Skipper> r_mat_qty_functions;
     
-    FeatureSetList externalFeatureSets_;
+    FeatureSetParserArgList externalFeatureSets_;
 
     FeatureFilterExprParser
     (
-      const FeatureSetList& extsets
+      const FeatureSetParserArgList& extsets
     )
     : FeatureFilterExprParser::base_type(r_filter),
       externalFeatureSets_(extsets)
@@ -962,6 +1021,9 @@ public:
 	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*qi::_1, *qi::_2)) ]
 	  |
 	  ( r_mat_primary >> '&' >> r_mat_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
+	  |
+	  lexeme[ lit("%%d") >> qi::int_ ] [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>
+	      ( new_<constantQuantity<double> >(phx::bind(&lookupScalar, externalFeatureSets_, qi::_1)) ) ];	  
 	  ;
 	  
 	r_scalar_primary =
@@ -970,6 +1032,8 @@ public:
 	  | r_scalar_qty_functions [ qi::_val = qi::_1 ]
 	  | ( lit("mag") > '(' > r_scalar_qty_expression > ')' ) 
 	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*qi::_1)) ]
+	  | ( lit("dist") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
+	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<distance>(qi::_1, qi::_2)) ]
 	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
 	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*qi::_1)) ]
 	  | ( lit("angle") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
@@ -1017,6 +1081,10 @@ public:
 	  | 
 	  ( '(' >> r_mat_qty_expression >> ')' ) [ qi::_val = qi::_1 ]
 // 	  | ('-' >> r_scalar_primary) [ qi::_val = -qi::_1 ]
+	  |
+	  lexeme[ lit("%%m") >> qi::int_ ] 
+	   [ qi::_val = phx::construct<matQuantityComputer::Ptr>
+	      ( new_<constantQuantity<arma::mat> >(phx::bind(&lookupMat, externalFeatureSets_, qi::_1)) ) ];	  
 	  ;
 
 //       BOOST_SPIRIT_DEBUG_NODE(r_filter);
@@ -1047,7 +1115,7 @@ struct VertexFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
 
-  VertexFeatureFilterExprParser(const FeatureSetList& extsets)
+  VertexFeatureFilterExprParser(const FeatureSetParserArgList& extsets)
   : FeatureFilterExprParser<Iterator>(extsets)
   {
 //     FeatureFilterExprParser<Iterator>::r_filter_functions =
@@ -1090,7 +1158,7 @@ struct EdgeFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
 
-  EdgeFeatureFilterExprParser(const FeatureSetList& extsets)
+  EdgeFeatureFilterExprParser(const FeatureSetParserArgList& extsets)
   : FeatureFilterExprParser<Iterator>(extsets)
   {
     FeatureFilterExprParser<Iterator>::r_filter_functions =
@@ -1157,7 +1225,7 @@ struct FaceFeatureFilterExprParser
 : public FeatureFilterExprParser<Iterator>
 {
 
-  FaceFeatureFilterExprParser(const FeatureSetList& extsets)
+  FaceFeatureFilterExprParser(const FeatureSetParserArgList& extsets)
   : FeatureFilterExprParser<Iterator>(extsets)
   {
     FeatureFilterExprParser<Iterator>::r_filter_functions = 
@@ -1207,7 +1275,7 @@ struct FaceFeatureFilterExprParser
 };
 
 template<class Parser>
-FilterPtr parseFilterExpr(std::istream& in, const FeatureSetList& refs)
+FilterPtr parseFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
 try {
   Parser parser(refs);
@@ -1254,17 +1322,17 @@ catch (insight::Exception e)
 
 }
 
-FilterPtr parseVertexFilterExpr(std::istream& in, const FeatureSetList& refs)
+FilterPtr parseVertexFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
   return parseFilterExpr<VertexFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
-FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetList& refs)
+FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
   return parseFilterExpr<EdgeFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
-FilterPtr parseFaceFilterExpr(std::istream& in, const FeatureSetList& refs)
+FilterPtr parseFaceFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
   return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }

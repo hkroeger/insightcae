@@ -21,6 +21,8 @@
 #ifndef INSIGHT_CAD_CADTYPES_H
 #define INSIGHT_CAD_CADTYPES_H
 
+#include "boost/variant.hpp"
+
 namespace insight {
 namespace cad {
 
@@ -30,6 +32,7 @@ class FeatureSet;
 class Filter;
 class Evaluation;
 
+
 typedef boost::shared_ptr<SolidModel> SolidModelPtr;
 typedef boost::shared_ptr<Datum> DatumPtr;
 typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
@@ -37,6 +40,8 @@ typedef boost::shared_ptr<Evaluation> EvaluationPtr;
 
 typedef int FeatureID;
 typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
+typedef boost::variant<FeatureSetPtr,arma::mat,double> FeatureSetParserArg;
+typedef std::vector<FeatureSetParserArg> FeatureSetParserArgList;
 typedef std::vector<FeatureSetPtr> FeatureSetList;
 
 typedef boost::shared_ptr<Filter> FilterPtr;

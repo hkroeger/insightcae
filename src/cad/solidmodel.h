@@ -175,17 +175,17 @@ public:
   FeatureSet allFaces() const;
   
   FeatureSet query_vertices(const FilterPtr& filter) const;
-  FeatureSet query_vertices(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
+  FeatureSet query_vertices(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
   FeatureSet query_vertices_subset(const FeatureSet& fs, const FilterPtr& filter) const;
-  FeatureSet query_vertices_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
+  FeatureSet query_vertices_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const;
   FeatureSet query_edges(const FilterPtr& filter) const;
-  FeatureSet query_edges(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
+  FeatureSet query_edges(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
   FeatureSet query_edges_subset(const FeatureSet& fs, const FilterPtr& filter) const;
-  FeatureSet query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
+  FeatureSet query_edges_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const;
   FeatureSet query_faces(const FilterPtr& filter) const;
-  FeatureSet query_faces(const std::string& queryexpr, const FeatureSetList& refs=FeatureSetList()) const;
+  FeatureSet query_faces(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
-  FeatureSet query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetList& refs) const;
+  FeatureSet query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;
   FeatureSet verticesOfEdges(const FeatureSet& es) const;

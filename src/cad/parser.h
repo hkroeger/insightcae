@@ -169,25 +169,25 @@ BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs);
 BOOST_PHOENIX_ADAPT_FUNCTION(void, writeViews_, writeViews, 3);
 
-FeatureSetPtr queryVertices(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryVertices(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryVertices_, queryVertices, 3);
 FeatureSetPtr queryAllVertices(const SolidModel& m);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllVertices_, queryAllVertices, 1);
-FeatureSetPtr queryVerticesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryVerticesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryVerticesSubset_, queryVerticesSubset, 3);
 
-FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdges_, queryEdges, 3);
 FeatureSetPtr queryAllEdges(const SolidModel& m);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllEdges_, queryAllEdges, 1);
-FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdgesSubset_, queryEdgesSubset, 3);
 
-FeatureSetPtr queryFaces(const SolidModel& m, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryFaces(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryFaces_, queryFaces, 3);
 FeatureSetPtr queryAllFaces(const SolidModel& m);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllFaces_, queryAllFaces, 1);
-FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetList& of);
+FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryFacesSubset_, queryFacesSubset, 3);
 
 typedef boost::variant<scalar, vector>  ModelSymbol;

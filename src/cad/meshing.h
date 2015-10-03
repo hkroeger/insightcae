@@ -47,6 +47,9 @@ private:
 public:
   GmshCase(const SolidModel& part, double Lmax=500., double Lmin=0.1);
   
+  inline void setLinear() { elementOrder_=1; }
+  inline void setQuadratic() { elementOrder_=2; }
+  
   void nameVertices(const std::string& name, const FeatureSet& vertices);
   void nameEdges(const std::string& name, const FeatureSet& edges);
   void nameFaces(const std::string& name, const FeatureSet& faces);

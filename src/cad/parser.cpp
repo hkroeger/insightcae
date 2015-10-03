@@ -381,7 +381,8 @@ void runGmsh
   const boost::filesystem::path& outpath,
   const SolidModel& model,
   const std::string& volname,
-  double Lmin, double Lmax,
+  std::vector<double> L,
+  bool quad,
   const GroupsDesc& vertexGroups,
   const GroupsDesc& edgeGroups,
   const GroupsDesc& faceGroups,
@@ -389,7 +390,8 @@ void runGmsh
   bool keeptmpdir=false*/
 )
 {
-  GmshCase c(model, Lmin, Lmax);
+  GmshCase c(model, L[0], L[1]);
+  if (!quad) c.setLinear();
   BOOST_FOREACH(const GroupDesc& gd, vertexGroups)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -512,8 +514,8 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
         >> r_solidmodel_expression >> lit("as") >> r_identifier
-        >> ( ( lit("Lmin") >> '=' >> qi::double_ ) | attr(0.1) )
-        >> ( lit("Lmax") >> '=' >> qi::double_ ) 
+        >> ( lit("L") >> '=' >> '(' >> repeat(2)[qi::double_] ) >> ')'
+	>> ( ( lit("linear") >> attr(false) ) | attr(true) )
 	>> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > double_ ) ) ) >> ')'
 	>> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
 	>> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > double_ ) )  ) >> ')'
@@ -522,7 +524,8 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	>> ';' )
 	[ phx::bind(&runGmsh, qi::_1, *qi::_2, qi::_3, 
 		    qi::_4, qi::_5, 
-		    qi::_6, qi::_7, qi::_8, qi::_9
+		    qi::_6,
+		    qi::_7, qi::_8, qi::_9
  		  ) ]
       |
       ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' ) 

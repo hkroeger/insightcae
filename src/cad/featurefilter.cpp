@@ -401,9 +401,9 @@ vertexLocation::vertexLocation()
 vertexLocation::~vertexLocation()
 {}
   
-arma::mat vertexLocation::evaluate(FeatureID ei)
+arma::mat vertexLocation::evaluate(FeatureID vi)
 {
-  return model_->vertexLocation(ei);
+  return model_->vertexLocation(vi);
 }
   
 QuantityComputer<arma::mat>::Ptr vertexLocation::clone() const 
@@ -1082,7 +1082,7 @@ public:
 	  ( '(' >> r_mat_qty_expression >> ')' ) [ qi::_val = qi::_1 ]
 // 	  | ('-' >> r_scalar_primary) [ qi::_val = -qi::_1 ]
 	  |
-	  lexeme[ lit("%%m") >> qi::int_ ] 
+	  lexeme[ lit("%m") >> qi::int_ ] 
 	   [ qi::_val = phx::construct<matQuantityComputer::Ptr>
 	      ( new_<constantQuantity<arma::mat> >(phx::bind(&lookupMat, externalFeatureSets_, qi::_1)) ) ];	  
 	  ;

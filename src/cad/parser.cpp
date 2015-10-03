@@ -636,11 +636,11 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	  | (
 	   ( lit("verticesFrom") >> r_solidmodel_expression 
 	    >> lit("where") >> '(' >> r_string 
-	    >> *( ',' >> r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	    >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryVertices_(*qi::_1, qi::_2, qi::_3) ]
 	   |
 	   ( lit("verticesFrom") >> r_vertexFeaturesExpression >> lit("where") >> '(' >> r_string
-	    >> *( ',' >> r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	    >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryVerticesSubset_(qi::_1, qi::_2, qi::_3) ]
 	   |
 	   ( lit("allVerticesFrom") >> r_solidmodel_expression )
@@ -806,6 +806,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_subshape);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_model);
+	BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
     
     on_error<fail>(r_model, 
 	    phx::ref(std::cout)

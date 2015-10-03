@@ -441,8 +441,15 @@ public:
     distance(const matQuantityComputerPtr& p0, const matQuantityComputerPtr& p1)
         : p0_(p0), p1_(p1)
     {}
+    
+    virtual void initialize(const SolidModel& m)
+    {
+      p0_->initialize(m);
+      p1_->initialize(m);
+    }
+    
     virtual double evaluate(FeatureID i) {
-        return arma::norm(p0_->evaluate(i)-p1_->evaluate(i), 2);
+        return arma::norm( p0_->evaluate(i) - p1_->evaluate(i) , 2);
     };
     virtual typename QuantityComputer<double>::Ptr clone() const {
         return typename QuantityComputer<double>::Ptr(new distance(p0_, p1_));

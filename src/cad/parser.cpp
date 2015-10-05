@@ -422,6 +422,7 @@ void runGmsh
     const std::string& gname=boost::fusion::at_c<0>(gd);
     if (boost::optional<double> gs=boost::fusion::at_c<2>(gd))
     {
+      cout<<"set vertex "<<gname<<" to L="<<*gs<<endl;
       c.setVertexLen(gname, *gs);
     }
   }
@@ -441,7 +442,7 @@ void runGmsh
       c.setFaceEdgeLen(gname, *gs);
     }
   }
-  c.doMeshing(volname, outpath/*, keeptmpdir*/);
+  c.doMeshing(volname, outpath/*, true*/);
 }
 
 double getVectorComponent(const arma::mat& v, int c)

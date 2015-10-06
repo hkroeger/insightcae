@@ -542,7 +542,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
-  laplacian["laplacian(1,p)"]="Gauss linear limited 0.33";
+//   laplacian["laplacian(1,p)"]="Gauss linear limited 0.33";
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
   interpolation["default"]="linear";

@@ -89,83 +89,7 @@ ChannelBase::~ChannelBase()
 
 ParameterSet ChannelBase::defaultParameters() const
 {
-  ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      ("geometry", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("H",		new DoubleParameter(2.0, "[m] Height of the channel"))
-	    ("B",		new DoubleParameter(4.19, "[m] Width of the channel"))
-	    ("L",		new DoubleParameter(12.56, "[m] Length of the channel"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Geometrical properties of the bearing"
-	))
-      
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    //("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("nh",	new IntParameter(64, "# cells in vertical direction"))
-	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
-	    ("nl",	new IntParameter(15, "number of near wall layers"))
-	    ("layerratio", new DoubleParameter(1.1, "near wall layer grading"))
-	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
-	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
-	    ("ypluswall", new DoubleParameter(2, "yPlus at the wall grid layer"))
-	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-      
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Re_tau",		new DoubleParameter(180, "[-] Friction-Velocity-Reynolds number"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      ("run", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Execution parameters"
-      ))
-
-      ("evaluation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(5, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
-	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
-	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
-	    ("eval2", 		new BoolParameter(true, "Whether to evaluate second order statistics"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Options for statistical evaluation"
-	))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
+  ParameterSet p(Parameters::makeDefault());  
   return p;
 }
 
@@ -179,20 +103,20 @@ std::string ChannelBase::cyclPrefix() const
 
 void ChannelBase::calcDerivedInputData()
 {
-  const ParameterSet& p=*parameters_;
+  Parameters p(*parameters_);
   
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
+  PSDBL(parameters(), "geometry", H);
+  PSDBL(parameters(), "geometry", B);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", Re_tau);
 
-  PSDBL(p, "mesh", ypluswall);
-  PSDBL(p, "mesh", layerratio);
-  PSDBL(p, "mesh", dxplus);
-  PSDBL(p, "mesh", dzplus);
-  PSINT(p, "mesh", nh);
-  PSINT(p, "mesh", nl);
-  PSBOOL(p, "mesh", fixbuf);
+  PSDBL(parameters(), "mesh", ypluswall);
+  PSDBL(parameters(), "mesh", layerratio);
+  PSDBL(parameters(), "mesh", dxplus);
+  PSDBL(parameters(), "mesh", dzplus);
+  PSINT(parameters(), "mesh", nh);
+  PSINT(parameters(), "mesh", nl);
+  PSBOOL(parameters(), "mesh", fixbuf);
   
   // Physics
   Re_=Re(Re_tau);
@@ -206,7 +130,7 @@ void ChannelBase::calcDerivedInputData()
   //double Delta=L/double(nax);
   nax_=int(L*Re_tau/dxplus);
   
-  if (p.getBool("mesh/2d"))
+  if (p.mesh.twod)
     nb_=1;
   else
     nb_=int(B*Re_tau/dzplus);
@@ -247,6 +171,20 @@ void ChannelBase::calcDerivedInputData()
   ).grad();
   //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
   
+  if (const Parameters::run_type::regime_steady_type *steady 
+	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+  {
+    end_=steady->iter;
+    avgStart_=0.98*end_;
+    avg2Start_=end_;
+  } 
+  else if (const Parameters::run_type::regime_unsteady_type *unsteady 
+	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  {
+    avgStart_=unsteady->inittime*T_;
+    avg2Start_=avgStart_+unsteady->meantime*T_;
+    end_=avg2Start_+unsteady->mean2time*T_;
+  }
 
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
@@ -271,12 +209,12 @@ void ChannelBase::createMesh
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
-  const ParameterSet& p=*parameters_;
+  Parameters p(*parameters_);
   
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
+  PSDBL(parameters(), "geometry", H);
+  PSDBL(parameters(), "geometry", B);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", Re_tau);
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -304,7 +242,7 @@ void ChannelBase::createMesh
   Patch cycl_side_1=Patch();
   
   string side_type="cyclic";
-  if (p.getBool("mesh/2d")) side_type="empty";
+  if (p.mesh.twod) side_type="empty";
   Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
   
   arma::mat vHbuf=vec3(0, 0, 0);
@@ -402,44 +340,66 @@ void ChannelBase::createCase
   OpenFOAMCase& cm
 )
 {
-  const ParameterSet& p=*parameters_;
+  Parameters p(*parameters_);
 
   // create local variables from ParameterSet
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
-  
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
-  
+  PSDBL(parameters(), "geometry", H);
+  PSDBL(parameters(), "geometry", B);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", Re_tau);
+  PSINT(parameters(), "fluid", turbulenceModel);
+    
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
-    .set_maxDeltaT(0.25*T_)
-    .set_writeControl("adjustableRunTime")
-    .set_writeInterval(0.25*T_)
-    .set_endTime( (inittime+meantime+mean2time)*T_ )
-    .set_writeFormat("ascii")
-    .set_decompositionMethod("simple")
-    .set_deltaT(1e-3)
-    .set_hasCyclics(true)
-  ) );
+//   cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+//   ) );
+  
+  if (Parameters::run_type::regime_steady_type *steady 
+	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
+  {
+    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+      .set_hasCyclics(true)
+      .set_decompositionMethod("hierarchical")
+      .set_endTime(end_)
+      .set_checkResiduals(false) // don't stop earlier since averaging should be completed
+      .set_Uinternal(vec3(Ubulk_,0,0))
+      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+    ));
+  } 
+  else if (Parameters::run_type::regime_unsteady_type *unsteady 
+	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
+  {
+    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
+      .set_maxDeltaT(0.25*T_)
+      .set_writeControl("adjustableRunTime")
+      .set_writeInterval(0.25*T_)
+      .set_endTime( end_ )
+      .set_writeFormat("ascii")
+      .set_decompositionMethod("simple")
+      .set_deltaT(1e-3)
+      .set_hasCyclics(true)
+      .set_maxDeltaT(0.25*T_)
+      .set_LESfilteredConvection(p.run.filteredconvection)
+      .set_Uinternal(vec3(Ubulk_,0,0))
+      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+    ) );
+  }
+  
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
   ));
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
-    .set_timeStart(inittime*T_)
+    .set_timeStart(avgStart_)
   ));
   
-  if (p.getBool("evaluation/eval2"))
+  if (p.run.eval2)
   {
     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
       .set_name_prefix("tpc_interior")
@@ -448,27 +408,29 @@ void ChannelBase::createCase
       .set_z(-0.49*B)
       .set_axSpan(0.5*L)
       .set_tanSpan(0.45*B)
-      .set_timeStart( (inittime+meantime)*T_ )
+      .set_timeStart( avg2Start_ )
     ));
   }
 
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
-  if (p.getBool("mesh/2d"))
+  if (p.mesh.twod)
     cm.insert(new SimpleBC(cm, "cycl_side", boundaryDict, "empty") );
   else
     cm.insert(new CyclicPairBC(cm, "cycl_side", boundaryDict) );
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
 
 }
 
 void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
+  Parameters p(*parameters_);
+  
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
-  if (parameters().getBool("mesh/2d")) 
+  if (p.mesh.twod) 
   {
     OFDictData::dict& fvSolution=dicts->lookupDict("system/fvSolution");
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
@@ -483,12 +445,12 @@ void ChannelBase::evaluateAtSection(
   ResultSetPtr results, double x, int i
 )
 {
-  const ParameterSet& p=*parameters_;
+  Parameters p(*parameters_);
 
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
+  PSDBL(parameters(), "geometry", B);
+  PSDBL(parameters(), "geometry", H);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", Re_tau);
   
   double xByH= (x/L + 0.5)*L/H;
   string title="section__xByH_" + str(format("%04.2f") % xByH);
@@ -532,7 +494,7 @@ void ChannelBase::evaluateAtSection(
   ));
   sample(cm, executionPath(),
     
-  list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
+  list_of<std::string>(UMeanName_)(RFieldName_)("k")("omega")("epsilon")("nut"),
      sets
   );    
       
@@ -549,7 +511,7 @@ void ChannelBase::evaluateAtSection(
 
   // Mean velocity profiles
   {
-    int c=cd["UMean"].col;
+    int c=cd[UMeanName_].col;
     
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1)));
@@ -693,7 +655,7 @@ void ChannelBase::evaluateAtSection(
   {
     string chart_name="chartMeanReyStress_"+title;
     
-    int c=cd["UPrime2Mean"].col;
+    int c=cd[RFieldName_].col;
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
     arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
     arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
@@ -759,7 +721,7 @@ void ChannelBase::evaluateAtSection(
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
       
-  if (!p.getBool("mesh/2d"))
+  if (!p.mesh.twod)
   {
     std::string pressure_contour_name="contourPressure_ax_"+title;
     std::string pressure_contour_filename=pressure_contour_name+".png";
@@ -816,6 +778,16 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
+  
+  RFieldName_="UPrime2Mean";
+  UMeanName_="UMean";
+  if ( const RASModel *rm = cm.get<RASModel>(".*") )
+  {
+    std::cout<<"Case included RASModel "<<rm->name()<<". Computing R field"<<std::endl;
+    cm.executeCommand( executionPath(), "R"/*, list_of("-latestTime")*/ );
+    RFieldName_="R";
+    UMeanName_="U";
+  }
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
@@ -976,10 +948,7 @@ void ChannelCyclic::createCase
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
   PSINT(p, "fluid", turbulenceModel);
-  
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  
+    
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -1030,9 +999,6 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
   const ParameterSet& p=*parameters_;
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
 
   ChannelBase::applyCustomOptions(cm, dicts);
   
@@ -1053,7 +1019,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdic
   {
     controlDict["application"]="channelFoam";
   }
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
+  controlDict["endTime"] = end_;
 }
 
 addToFactoryTable(Analysis, ChannelCyclic, NoParameters);
@@ -1118,22 +1084,18 @@ void ChannelInflow::createCase
   OpenFOAMCase& cm
 )
 {  
-  const ParameterSet& p=*parameters_;
+  Parameters p(*parameters_);
   // create local variables from ParameterSet
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
+  PSDBL(parameters(), "geometry", H);
+  PSDBL(parameters(), "geometry", B);
+  PSDBL(parameters(), "geometry", L);
+  PSDBL(parameters(), "operation", Re_tau);
+  PSINT(parameters(), "fluid", turbulenceModel);
   
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
-  PSDBL(p, "evaluation", mean2time);
-
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(executionPath(), boundaryDict);
       
-  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, p.getSubset("inflow") ));
+  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, parameters().getSubset("inflow") ));
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
@@ -1142,7 +1104,7 @@ void ChannelInflow::createCase
   
   ChannelBase::createCase(cm);
   
-  if (p.getBool("evaluation/eval2"))
+  if (p.run.eval2)
   {
     for (int i=0; i<ntpc_; i++)
     {
@@ -1153,7 +1115,7 @@ void ChannelInflow::createCase
 	.set_z(-0.49*B)
 	.set_axSpan(0.5*L)
 	.set_tanSpan(0.45*B)
-	.set_timeStart( (inittime+meantime)*T_ )
+	.set_timeStart( avg2Start_ )
       ));
     }
   }
@@ -1218,7 +1180,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
     ));
     
     sample(cm, executionPath(), 
-      list_of<std::string>("p")("U")("UMean")("UPrime2Mean"),
+      list_of<std::string>("p")(UMeanName_)(RFieldName_),
       sets
     );
     
@@ -1229,7 +1191,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
       
     // Mean velocity profiles
     {
-      int c=cd["UMean"].col;
+      int c=cd[UMeanName_].col;
       
       double fac_yp=Re_tau*2.0/H;
       double fac_Up=1./utau_;
@@ -1250,7 +1212,7 @@ ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
     {
       double fac_yp=Re_tau*2.0/H;
       double fac_Rp=1./pow(utau_,2);
-      int c=cd["UPrime2Mean"].col;
+      int c=cd[RFieldName_].col;
       
       addPlot
       (
@@ -1315,14 +1277,10 @@ void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void ChannelInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSDBL(parameters(), "evaluation", inittime);
-  PSDBL(parameters(), "evaluation", meantime);
-  PSDBL(parameters(), "evaluation", mean2time);
-
   ChannelBase::applyCustomOptions(cm, dicts);
   
   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
-  controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
+  controlDict["endTime"] = end_;
 }
 
 addToFactoryTable(Analysis, ChannelInflow, NoParameters);

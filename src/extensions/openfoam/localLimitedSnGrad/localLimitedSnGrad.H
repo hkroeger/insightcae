@@ -146,7 +146,11 @@ public:
         //- Return true if this scheme uses an explicit correction
         virtual bool corrected() const
         {
+#ifdef OF16ext
+	    return !this->mesh().orthogonal();
+#else
             return true;
+#endif
         }
 
         //- Return the explicit correction to the limitedSnGrad

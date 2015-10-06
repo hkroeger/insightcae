@@ -116,6 +116,8 @@ ParameterSet ChannelBase::defaultParameters() const
 	    //("nax",	new IntParameter(100, "# cells in axial direction"))
 	    ("nh",	new IntParameter(64, "# cells in vertical direction"))
 	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
+	    ("nl",	new IntParameter(15, "number of near wall layers"))
+	    ("layerratio", new DoubleParameter(1.1, "near wall layer grading"))
 	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
 	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
 	    ("ypluswall", new DoubleParameter(2, "yPlus at the wall grid layer"))
@@ -185,9 +187,11 @@ void ChannelBase::calcDerivedInputData()
   PSDBL(p, "operation", Re_tau);
 
   PSDBL(p, "mesh", ypluswall);
+  PSDBL(p, "mesh", layerratio);
   PSDBL(p, "mesh", dxplus);
   PSDBL(p, "mesh", dzplus);
   PSINT(p, "mesh", nh);
+  PSINT(p, "mesh", nl);
   PSBOOL(p, "mesh", fixbuf);
   
   // Physics
@@ -210,19 +214,37 @@ void ChannelBase::calcDerivedInputData()
   hbuf_=0.0;  
   nh_=nh/2;
   
+  
+  
   nhbuf_=0;
+  gradl_=1.;
   if (fixbuf>0)
   {
-    double ypbuf=30.;
-    hbuf_=ypbuf/Re_tau;
-    nhbuf_=std::max(1.0, hbuf_/ywall_);
-      //ywall_=hbuf_/double(nhbuf);
-    
     if (nh_-nhbuf_<=1)
       throw insight::Exception("Cannot fix cell height inside buffer layer: too few cells in vertical direction allowed! (min "+lexical_cast<string>(nhbuf_+1)+")");
+
+    nhbuf_=nl;
+    
+    gradl_=pow(layerratio, nl-1);
+    reportIntermediateParameter("gradl", gradl_, "near-wall layer block grading");
+    
+    hbuf_=bmd::GradingAnalyzer(gradl_).calc_L(ywall_, nl);
+    hbuf_=std::min(0.49*H, hbuf_);
+    reportIntermediateParameter("hbuf", hbuf_, "near-wall layer block height (clipped to 0.9*H)");
+
+//     double ypbuf=30.;
+//     hbuf_=ypbuf/Re_tau;
+//     nhbuf_=std::max(1.0, hbuf_/ywall_);
+      //ywall_=hbuf_/double(nhbuf);
+    
   }
 
-  gradh_=bmd::GradingAnalyzer(ywall_, 0.5*H-hbuf_, nh_-nhbuf_).grad();
+  gradh_=bmd::GradingAnalyzer
+  (
+    bmd::GradingAnalyzer(gradl_).calc_delta1(ywall_), 
+    0.5*H-hbuf_, 
+    nh_-nhbuf_
+  ).grad();
   //nh_=max(1, bmd::GradingAnalyzer(gradh_).calc_n(ywall_, H/2.));
   
 
@@ -303,7 +325,7 @@ void ChannelBase::createMesh
 	  (pts[0])+vHbuf, (pts[1])+vHbuf, (pts[2])+vHbuf, (pts[3])+vHbuf
 	  ),
 	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(1.)
+	  list_of<double>(1.)(1.)(gradl_)
 	)
       );
       cycl_out.addFace(bl.face("0473"));
@@ -320,7 +342,7 @@ void ChannelBase::createMesh
 	    (pts[0])+vH+2.*vHbuf, (pts[1])+vH+2.*vHbuf, (pts[2])+vH+2.*vHbuf, (pts[3])+vH+2.*vHbuf
 	  ),
 	  nax_, nb_, nhbuf_,
-	  list_of<double>(1.)(1.)(1.)
+	  list_of<double>(1.)(1.)(1./gradl_)
 	)
       );
       cycl_out.addFace(bl.face("0473"));
@@ -446,6 +468,12 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts
 {
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
+  if (parameters().getBool("mesh/2d")) 
+  {
+    OFDictData::dict& fvSolution=dicts->lookupDict("system/fvSolution");
+    OFDictData::dict& solvers=fvSolution.subDict("solvers");
+    solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
+  }
 //   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["maxDeltaT"]=0.5*T_;
 }
@@ -469,29 +497,49 @@ void ChannelBase::evaluateAtSection(
   boost::ptr_vector<sampleOps::set> sets;
   
   double delta_yp1=1./Re_tau;
-  sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
+//   sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
+//     .set_name("radial")
+//     .set_start( vec3(x, delta_yp1, -0.49*B))
+//     .set_end(   vec3(x, 0.5*H-delta_yp1, -0.49*B))
+//     .set_dir1(vec3(1,0,0))
+//     .set_dir2(vec3(0,0,0.98*B))
+//     .set_nd1(1)
+//     .set_nd2(n_hom_avg)
+//   ));
+//   
+//   sample(cm, executionPath(), 
+//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
+//      sets
+//   );
+//   
+  
+  double
+    miny=delta_yp1,
+    maxy=0.5*H-delta_yp1;
+    
+  arma::mat pts=miny+(maxy-miny)*cos(0.5*M_PI*(pow(linspace(0., 1., 101) -1.0,2)))*vec3(0,1,0).t();
+ 
+  pts.col(0)+=x;
+  pts.col(2)+=-0.49*B;
+ 
+  sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name("radial")
-    .set_start( vec3(x, delta_yp1, -0.49*B))
-    .set_end(   vec3(x, 0.5*H-delta_yp1, -0.49*B))
+    .set_points( pts )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*B))
     .set_nd1(1)
     .set_nd2(n_hom_avg)
   ));
-  
-  sample(cm, executionPath(), 
-     list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
-     sets
-  );
-  
-  sampleOps::ColumnDescription cd;
-  arma::mat data = dynamic_cast<sampleOps::linearAveragedUniformLine*>(&sets[0])
-    ->readSamples(cm, executionPath(), &cd);
+  sample(cm, executionPath(),
     
-//     cout<<data<<endl;
-//     BOOST_FOREACH(const sampleOps::ColumnDescription::value_type& c, cd)
-//      cout<<c.first<<" "<<c.second.col<<endl;
+  list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
+     sets
+  );    
       
+  sampleOps::ColumnDescription cd;
+  arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
+    ->readSamples(cm, executionPath(), &cd);
+
   arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
   arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");
   arma::mat refdata_umean395=refdatalib.getProfile("MKM_Channel", "395/umean_vs_yp");

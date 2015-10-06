@@ -85,6 +85,8 @@ protected:
    */
   double ywall_;
   
+  double gradl_;
+  
   /**
    * number of cells along flow direction
    */

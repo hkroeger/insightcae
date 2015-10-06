@@ -873,11 +873,12 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   if ( const RASModel *rm = cm.get<RASModel>(".*") )
   {
     std::cout<<"Case included RASModel "<<rm->name()<<". Computing R field"<<std::endl;
-    cm.executeCommand( executionPath(), "R", list_of("-latestTime") );
+    cm.executeCommand( executionPath(), "R"/*, list_of("-latestTime")*/ );
     RFieldName="R";
     UMeanName="U";
   }
   
+  if (!((cm.OFversion()>160) && (cm.OFversion()<200)))
   {
     cm.executeCommand(executionPath(), "Lambda2", list_of("-latestTime"));
     

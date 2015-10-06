@@ -31,7 +31,10 @@ class extendedForces
 {
 protected:
   
-  autoPtr<volVectorField> pressureForce_, viscousForce_;
+  volVectorField* pressureForce_;
+  volVectorField* viscousForce_;
+  
+  void createFields();
   
 public:
   TypeName("extendedForces");
@@ -44,11 +47,14 @@ public:
             const word& name,
             const objectRegistry&,
             const dictionary&,
-            const bool loadFromFiles = false,
+            const bool loadFromFiles = false
+#ifndef OF16ext
+            ,
             const bool readFields = true
+#endif
         );
 
-
+#ifndef OF16ext
         //- Construct from components
         extendedForces
         (
@@ -62,12 +68,13 @@ public:
             const scalar pRef,
             const coordinateSystem& coordSys
         );
-
+#endif
 
     //- Destructor
     virtual ~extendedForces();  
 
     virtual void execute();
+    virtual void end();
   
 };
 

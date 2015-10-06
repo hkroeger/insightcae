@@ -28,6 +28,48 @@ namespace Foam
 
 defineTypeNameAndDebug(extendedForces, 0);
 
+void extendedForces::createFields()
+{
+  const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
+  
+  pressureForce_=&mesh.objectRegistry::store
+  (
+      new volVectorField
+      (
+	IOobject
+	(
+	  "pressureForce",
+	  mesh.time().timeName(),
+	  mesh,
+	  IOobject::NO_READ,
+	  IOobject::AUTO_WRITE
+	),
+       mesh,
+       dimensionedVector("pressureForce", dimPressure, vector::zero),
+       calculatedFvPatchField<vector>::typeName
+      )
+  );
+     
+  viscousForce_=&mesh.objectRegistry::store
+  (
+      new volVectorField
+      (
+	IOobject
+	(
+	  "viscousForce",
+	  mesh.time().timeName(),
+	  mesh,
+	  IOobject::NO_READ,
+	  IOobject::AUTO_WRITE
+	),
+       mesh,
+       dimensionedVector("viscousForce", dimPressure, vector::zero),
+       calculatedFvPatchField<vector>::typeName
+      )
+  );
+}
+
+
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
 extendedForces::extendedForces
@@ -35,14 +77,22 @@ extendedForces::extendedForces
     const word& name,
     const objectRegistry& obr,
     const dictionary& dict,
-    const bool loadFromFiles,
+    const bool loadFromFiles
+#ifndef OF16ext
+    ,
     const bool readFields
+#endif
 )
-: forces(name, obr, dict, loadFromFiles, readFields)
+: forces(name, obr, dict, loadFromFiles
+#ifndef OF16ext
+	  , readFields
+#endif
+	)
 {
+  createFields();
 }
 
-
+#ifndef OF16ext
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -58,8 +108,9 @@ extendedForces::extendedForces
 )
 : forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys)
 {
+  createFields();
 }
-
+#endif
 
 //- Destructor
 extendedForces::~extendedForces()
@@ -68,53 +119,13 @@ extendedForces::~extendedForces()
 
 void extendedForces::execute()
 {
-  const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
-  
-  if (!pressureForce_.valid())
-  {
-    pressureForce_.reset
-    (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "pressureForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("pressureForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-    );
-  }
-
-  if (!viscousForce_.valid())
-  {
-    viscousForce_.reset
-    (
-      new volVectorField
-      (
-	IOobject
-	(
-	  "viscousForce",
-	  mesh.time().timeName(),
-	  mesh,
-	  IOobject::NO_READ,
-	  IOobject::AUTO_WRITE
-	),
-       mesh,
-       dimensionedVector("viscousForce", dimPressure, vector::zero),
-       calculatedFvPatchField<vector>::typeName
-      )
-    );
-  }
+//   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
 
   forces::execute();
 
+#ifndef OF16ext
   initialise();
+#endif
   
   if (!active_)
   {
@@ -149,12 +160,12 @@ void extendedForces::execute()
 	const symmTensorField& devRhoReffb
 	    = tdevRhoReff().boundaryField()[patchI];
 
-	  pressureForce_().boundaryField()[patchI]==
+	  pressureForce_->boundaryField()[patchI]==
 	  (
 	      rho(p)*nfb*(p.boundaryField()[patchI] - pRef)
 	  );
 
-	  viscousForce_().boundaryField()[patchI]==
+	  viscousForce_->boundaryField()[patchI]==
 	  (
 	    nfb & devRhoReffb
 	  );
@@ -162,6 +173,12 @@ void extendedForces::execute()
     }
   }    
 }
+
+void extendedForces::end()
+{
+  Foam::forces::end();
+}
+
 
 typedef OutputFilterFunctionObject<extendedForces> extendedForcesFunctionObject;
 

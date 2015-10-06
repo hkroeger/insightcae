@@ -676,7 +676,8 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   }
   else if (fieldname == "nut")
   {
-    BC["type"]=OFDictData::data("nutkWallFunction");
+//     BC["type"]=OFDictData::data("nutkWallFunction");
+    BC["type"]=OFDictData::data("nutUWallFunction");
     BC["value"]=OFDictData::data("uniform 1e-10");
     return true;
   }

@@ -483,8 +483,8 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
   OFDictData::dict sd;
 //   sd["type"]="uniform";
 //   sd["type"]="polyLine";
-//   sd["type"]="consistentCurve";
-  sd["type"]="cloud";
+  sd["type"]="consistentCurve";
+//   sd["type"]="cloud";
   
   sd["axis"]="distance";
 //   sd["start"]=OFDictData::vector3(p_.start());
@@ -621,8 +621,8 @@ arma::mat line::readSamples
     // interpolate data to expected coordinates (coords) for curve-like sampledSets or to expected indices for e.g. cloud
     arma::mat idata=Interpolator(data)
     (
-      arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)  // cloud
-//       coords				// curve-like
+//       arma::linspace(0, p_.points().n_rows-1, p_.points().n_rows)  // cloud
+      coords				// curve-like
     );
 //     std::cout<<" idata="<<idata<<endl;
     

@@ -89,7 +89,8 @@ ChannelBase::~ChannelBase()
 
 ParameterSet ChannelBase::defaultParameters() const
 {
-  ParameterSet p(Parameters::makeDefault());  
+  ParameterSet p(Parameters::makeDefault());
+  p.merge(OpenFOAMAnalysis::defaultParameters());
   return p;
 }
 
@@ -501,6 +502,9 @@ void ChannelBase::evaluateAtSection(
   sampleOps::ColumnDescription cd;
   arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
     ->readSamples(cm, executionPath(), &cd);
+    
+  // turn curve length along sample line into y-coordinate (add initial offset miny)
+  data.col(0)+=miny;
 
   arma::mat refdata_umean180=refdatalib.getProfile("MKM_Channel", "180/umean_vs_yp");
   arma::mat refdata_wmean180=refdatalib.getProfile("MKM_Channel", "180/wmean_vs_yp");

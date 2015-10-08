@@ -158,7 +158,6 @@ public:
     (nCorrectors, int, 2)
     (nOuterCorrectors, int, 1)
     (nNonOrthogonalCorrectors, int, 0)
-    (deltaT, double, 1.0)
     (maxCo, double, 0.45)
     (maxDeltaT, double, 1.0)
     (forceLES, bool, false)

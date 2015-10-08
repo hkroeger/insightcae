@@ -454,6 +454,9 @@ void ChannelBase::evaluateAtSection(
   PSDBL(parameters(), "operation", Re_tau);
   
   double xByH= (x/L + 0.5)*L/H;
+  bool isfirstslice=false;
+  if (xByH<=1e-3) isfirstslice=true;
+  
   string title="section__xByH_" + str(format("%04.2f") % xByH);
   replace_all(title, ".", "_");
     
@@ -727,26 +730,42 @@ void ChannelBase::evaluateAtSection(
       
   if (!p.mesh.twod)
   {
-    std::string pressure_contour_name="contourPressure_ax_"+title;
-    std::string pressure_contour_filename=pressure_contour_name+".png";
-    runPvPython
-    (
-      cm, executionPath(), list_of<std::string>
+    std::string extractSliceCmd;
+    if (isfirstslice)
+      extractSliceCmd="eb = extractPatches(cbi, '"+cycl_in_+"')\n";
+    else      
+      extractSliceCmd="eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n";
+    
+    try 
+    {
+      std::string pressure_contour_name="contourPressure_ax_"+title;
+      std::string pressure_contour_filename=pressure_contour_name+".png";
+      runPvPython
       (
-	init+
-	"eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
-	"Show(eb)\n"
-	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
-	"setCam([-10,0,0], [0,0,0], [0,1,0])\n"
-	"WriteImage('"+pressure_contour_filename+"')\n"
-      )
-    );
-    results->insert(pressure_contour_name,
-      std::auto_ptr<Image>(new Image
-      (
-      executionPath(), pressure_contour_filename, 
-      "Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
-    )));
+	cm, executionPath(), list_of<std::string>
+	(
+	  init+
+	  extractSliceCmd+
+	  "Show(eb)\n"
+	  "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
+	  "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
+	  "WriteImage('"+pressure_contour_filename+"')\n"
+	)
+      );
+      results->insert(pressure_contour_name,
+	std::auto_ptr<Image>(new Image
+	(
+	executionPath(), pressure_contour_filename, 
+	"Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
+      )));
+    }
+    catch (insight::Exception& e)
+    {
+      std::cout
+	<<"Warning: creation of pressure contour plot failed! Error was: "
+	<<e
+	<<std::endl;
+    }
     
     for(int i=0; i<3; i++)
     {
@@ -758,7 +777,7 @@ void ChannelBase::evaluateAtSection(
 	cm, executionPath(), list_of<std::string>
 	(
 	  init+
-	  "eb = planarSlice(cbi, ["+lexical_cast<string>(x)+",0,1e-6], [1,0,0])\n"
+	  extractSliceCmd+
 	  "Show(eb)\n"
 	  "displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
 	  "setCam([-10,0,0], [0,0,0], [0,1,0])\n"
@@ -795,7 +814,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
-  evaluateAtSection(cm, results, 1e-3, 0);
+  evaluateAtSection(cm, results, 1e-4, 0);
 
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)

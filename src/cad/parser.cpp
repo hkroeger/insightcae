@@ -655,10 +655,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_edgeFeaturesExpression = 
 	  qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
 	  | (
-	   ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	   ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryEdges_(*qi::_1, qi::_2, qi::_3) ]
 	   |
-	   ( lit("edgesFrom") >> r_edgeFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	   ( lit("edgesFrom") >> r_edgeFeaturesExpression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryEdgesSubset_(qi::_1, qi::_2, qi::_3) ]
 	   |
 	   ( lit("allEdgesFrom") >> r_solidmodel_expression )
@@ -670,10 +672,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	  qi::lexeme[model_->faceFeatureSymbolNames()] 
 	    [ _val =  phx::bind(&Model::lookupFaceFeatureSymbol, model_, qi::_1) ]
 	  | (
-	   ( lit("facesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string >> *( ',' >> r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	   ( lit("facesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryFaces_(*qi::_1, qi::_2, qi::_3) ]
 	   |
-	   ( lit("facesFrom") >> r_faceFeaturesExpression >> lit("where") >> '(' >> r_string >> *( ',' >> r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression ) >> ')' )
+	   ( lit("facesFrom") >> r_faceFeaturesExpression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
 	    [ _val = queryFacesSubset_(qi::_1, qi::_2, qi::_3) ]
 	   |
 	   ( lit("allFacesFrom") >> r_solidmodel_expression )

@@ -1021,9 +1021,6 @@ public:
 	  ( r_scalar_primary >> '/' >> r_scalar_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*qi::_1, *qi::_2)) ]
 	  |
 	  ( r_mat_primary >> '&' >> r_mat_primary ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
-	  |
-	  lexeme[ lit("%%d") >> qi::int_ ] [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>
-	      ( new_<constantQuantity<double> >(phx::bind(&lookupScalar, externalFeatureSets_, qi::_1)) ) ];	  
 	  ;
 	  
 	r_scalar_primary =
@@ -1040,6 +1037,9 @@ public:
 	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
 	   [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
+	  |
+	  lexeme[ lit("%d") >> qi::int_ ] [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>
+	      ( new_<constantQuantity<double> >(phx::bind(&lookupScalar, externalFeatureSets_, qi::_1)) ) ]	  
 	  | ( '(' >> r_scalar_qty_expression >> ')' ) [ qi::_val = qi::_1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
 	  | ( r_mat_primary >> '.' >> 'x' ) [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compX<arma::mat> >(*qi::_1)) ]
@@ -1253,6 +1253,9 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidFace>(*qi::_1)) ]
+	|
+	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentFace>(*qi::_1)) ]
 	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]

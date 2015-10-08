@@ -129,15 +129,15 @@ void ChannelBase::calcDerivedInputData()
   
   // grid
   //double Delta=L/double(nax);
-  nax_=int(L*Re_tau/dxplus);
+  nax_=std::max(1, int(L*Re_tau/dxplus));
   
   if (p.mesh.twod)
     nb_=1;
   else
-    nb_=int(B*Re_tau/dzplus);
+    nb_=std::max(1, int(B*Re_tau/dzplus));
 
   hbuf_=0.0;  
-  nh_=nh/2;
+  nh_=std::max(1, nh/2);
   
   
   
@@ -381,7 +381,7 @@ void ChannelBase::createCase
       .set_endTime( end_ )
       .set_writeFormat("ascii")
       .set_decompositionMethod("simple")
-      .set_deltaT(1e-3)
+      .set_deltaT( double(L/nax_)/Ubulk_ ) // Co=1
       .set_hasCyclics(true)
       .set_maxDeltaT(0.25*T_)
       .set_LESfilteredConvection(p.run.filteredconvection)
@@ -1031,262 +1031,5 @@ addToFactoryTable(Analysis, ChannelCyclic, NoParameters);
 
 
 
-
-
-
-defineType(ChannelInflow);
-
-const char* ChannelInflow::tpc_names_[] = 
-  {
-    "tpc0_inlet",
-    "tpc1_intermediate1",
-    "tpc2_intermediate2",
-    "tpc3_intermediate3"
-  };
-
-const double ChannelInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
-
-ChannelInflow::ChannelInflow(const NoParameters& nop)
-: ChannelBase(nop)
-{
-}
-
-ParameterSet ChannelInflow::defaultParameters() const
-{
-  ParameterSet p(ChannelBase::defaultParameters());
-  
-  std::auto_ptr<SubsetParameter> inflowparams(new SubsetParameter(TurbulentVelocityInletBC::Parameters::makeDefault(), "Inflow BC"));
-  
-//   (*inflowparams)().extend
-//   (
-//       boost::assign::list_of<ParameterSet::SingleEntry>
-//       ("umean", FieldData::defaultParameter(vec3(1,0,0)))
-//       .convert_to_container<ParameterSet::EntryList>()
-//   );
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    ("inflow", inflowparams.release())
-    .convert_to_container<ParameterSet::EntryList>()
-  );
-
-  return p;
-}
-
-void ChannelInflow::createMesh
-(
-  OpenFOAMCase& cm
-)
-{  
-  ChannelBase::createMesh(cm);
-  //convertPatchPairToCyclic(cm, executionPath(), cyclPrefix());
-}
-
-void ChannelInflow::createCase
-(
-  OpenFOAMCase& cm
-)
-{  
-  Parameters p(*parameters_);
-  // create local variables from ParameterSet
-  PSDBL(parameters(), "geometry", H);
-  PSDBL(parameters(), "geometry", B);
-  PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", Re_tau);
-  PSINT(parameters(), "fluid", turbulenceModel);
-  
-  OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict(executionPath(), boundaryDict);
-      
-  cm.insert(new TurbulentVelocityInletBC( cm, cycl_in_, boundaryDict, parameters().getSubset("inflow") ));
-  
-  cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
-    .set_pressure(0.0)
-    .set_fixMeanValue(true)
-  ));
-  
-  ChannelBase::createCase(cm);
-  
-  if (p.run.eval2)
-  {
-    for (int i=0; i<ntpc_; i++)
-    {
-      cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
-	.set_name_prefix(tpc_names_[i])
-	.set_R(0.5*H)
-	.set_x(-0.5*L+tpc_xlocs_[i]*H)
-	.set_z(-0.49*B)
-	.set_axSpan(0.5*L)
-	.set_tanSpan(0.45*B)
-	.set_timeStart( avg2Start_ )
-      ));
-    }
-  }
-  
-}
-
-ResultSetPtr ChannelInflow::evaluateResults(OpenFOAMCase& cm)
-{
-  const ParameterSet& p=*parameters_;
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  
-  ResultSetPtr results = ChannelBase::evaluateResults(cm);
-  
-  {
-    
-   // Pressure fluctuations
-   arma::mat pPrime=interiorPressureFluctuationProfile(cm, executionPath(), vec3(1,0,0), nax_);
-    
-   arma::mat pPrime2_vs_xp(join_rows(
-      pPrime.col(0)*Re_tau, 
-      pPrime.col(1)
-    ));
-    pPrime2_vs_xp.save( (executionPath()/"pPrime2_vs_xp.txt").c_str(), raw_ascii);
-    
-    addPlot
-    (
-      results, executionPath(), "chartMeanpPrime2",
-      "x+", "<pPrime^2>",
-      list_of
-	(PlotCurve(pPrime2_vs_xp, "w l lt 1 lc 2 lw 2 not"))
-	,
-      "Axial profile of pressure fluctuation",
-      "set logscale y;"
-    );    
-  }
-  
-  // ============= Longitudinal profile of Velocity an RMS ================
-  int nr=10;
-  for (int i=0; i<nr; i++)
-  {
-    double r0=0.1, r1=0.997;
-    double r=r0+(r1-r0)*double(i)/double(nr-1);
-    double yByH=r/H;
-    
-    string title="longitudinal__yByH_"+str(format("%07.3f")%yByH);
-    replace_all(title, ".", "_");
-
-    boost::ptr_vector<sampleOps::set> sets;
-    
-    double delta_yp1=1./Re_tau;
-    sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
-      .set_name("longitudinal"+lexical_cast<string>(i))
-      .set_start( vec3(-0.5*L, r*0.5*H, -0.49*B))
-      .set_end(   vec3(0.5*L, r*0.5*H, -0.49*B))
-      .set_dir1(vec3(1,0,0))
-      .set_dir2(vec3(0,0,0.98*B))
-      .set_nd1(1)
-      .set_nd2(n_hom_avg)
-    ));
-    
-    sample(cm, executionPath(), 
-      list_of<std::string>("p")(UMeanName_)(RFieldName_),
-      sets
-    );
-    
-    sampleOps::ColumnDescription cd;
-    arma::mat data = static_cast<sampleOps::linearAveragedUniformLine&>(*sets.begin())
-      .readSamples(cm, executionPath(), &cd);
-      
-      
-    // Mean velocity profiles
-    {
-      int c=cd[UMeanName_].col;
-      
-      double fac_yp=Re_tau*2.0/H;
-      double fac_Up=1./utau_;
-      
-      addPlot
-      (
-	results, executionPath(), "chartMeanVelocity_"+title,
-        "x+", "<U+>",
-	list_of<PlotCurve>
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c))), "w l t 'Axial'"))
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+1))), "w l t 'Wall normal'" ))
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Up*data.col(c+2))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged velocities at y/H="+str(format("%g")%yByH)
-      );
-    }
-    
-    // Mean reynolds stress profiles
-    {
-      double fac_yp=Re_tau*2.0/H;
-      double fac_Rp=1./pow(utau_,2);
-      int c=cd[RFieldName_].col;
-      
-      addPlot
-      (
-	results, executionPath(), "chartMeanRstress_"+title,
-        "x+", "<R+>",
-	list_of<PlotCurve>
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c))), "w l t 'Axial'"))
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+3))), "w l t 'Wall normal'" ))
-	  (PlotCurve( arma::mat(join_rows(fac_yp*data.col(0), fac_Rp*data.col(c+5))), "w l t 'Tangential'" )),
-	"Longitudinal profiles of averaged reynolds stresses at y/H="+str(format("%g")%yByH)
-      );    
-    }
-  }
-  
-  int i=0;
-  BOOST_FOREACH(double xH, sec_locs_)
-  {
-    double x=-0.5*L+xH*H;
-    if (xH==0.0)
-      x=-0.5*L+1e-6;
-    
-    if (x<0.5*L)
-      evaluateAtSection(cm, results, x, i+1);
-    
-    i++;
-  }
-    
-  for (int i=0; i<ntpc_; i++)
-  {
-    
-    const LinearTPCArray* tpcs=cm.get<LinearTPCArray>( string(tpc_names_[i])+"TPCArray");
-    
-    if (!tpcs)
-    {
-      //throw insight::Exception("tpc FO array not found in case!");
-    }
-    else
-    {
-      tpcs->evaluate(cm, executionPath(), results,
-	"two-point correlation of velocity at different radii at x/H="+str(format("%f")%tpc_xlocs_[i])
-	    );
-    }
-    
-  }
-  
-  return results;
-}
-
-void ChannelInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
-{
-  
-  setFields(cm, executionPath(), 
-	    list_of<setFieldOps::FieldValueSpec>
-	      ("volVectorFieldValue U "+OFDictData::to_OF(vec3(Ubulk_, 0, 0))),
-	    ptr_vector<setFieldOps::setFieldOperator>()
-  );
-  
-//   cm.get<TurbulentVelocityInletBC>(cycl_in_+"BC")->initInflowBC(executionPath(), p.getSubset("inflow"));
-  
-  OpenFOAMAnalysis::applyCustomPreprocessing(cm);
-}
-
-void ChannelInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
-{
-  ChannelBase::applyCustomOptions(cm, dicts);
-  
-  OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
-  controlDict["endTime"] = end_;
-}
-
-addToFactoryTable(Analysis, ChannelInflow, NoParameters);
 
 }

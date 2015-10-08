@@ -247,44 +247,6 @@ public:
   
 };
 
-class ChannelInflow
-: public ChannelBase
-{
-  
-#ifndef SWIG
-  /**
-   * locations (x/H) of section evaluations 
-   */
-  std::vector<double> sec_locs_ = (boost::assign::list_of<double>(0)(0.1)(0.25)(0.5)(0.75)(1)(1.5)(2)(3)(4)(6)(8));
-
-  const static int ntpc_ = 4;
-  const static char* tpc_names_[ntpc_]; 
-  const static double tpc_xlocs_[ntpc_];
-#endif
-  
-public:
-  declareType("Channel Flow Test Case (Inflow Generator)");
-  
-  ChannelInflow(const NoParameters& p = NoParameters() );
-  
-  virtual ParameterSet defaultParameters() const;
-
-  virtual void createMesh
-  (
-    OpenFOAMCase& cm
-  );  
-  
-  virtual void createCase
-  (
-    OpenFOAMCase& cm
-  );
-
-  ResultSetPtr evaluateResults(OpenFOAMCase& cm);
-
-  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
-  virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
-  
-};
 
 }
 

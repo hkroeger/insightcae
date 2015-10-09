@@ -50,6 +50,7 @@ FeatureSet::operator TopAbs_ShapeEnum () const
   if (shape_==Edge) return TopAbs_EDGE;
   else if (shape_==Face) return TopAbs_FACE;
   else if (shape_==Vertex) return TopAbs_VERTEX;
+  else if (shape_==Solid) return TopAbs_SOLID;
   else throw insight::Exception("Unknown EntityType:"+lexical_cast<std::string>(shape_));
 }
 
@@ -79,6 +80,9 @@ FeatureSet FeatureSet::query(const FilterPtr& f) const
     case Face:
       return model_.query_faces_subset(*this, f);
       break;
+    case Solid:
+      return model_.query_solids_subset(*this, f);
+      break;
     default:
       throw insight::Exception("Unknown feature type");
   }
@@ -97,6 +101,9 @@ FeatureSet FeatureSet::query(const std::string& queryexpr) const
       break;
     case Face:
       return model_.query_faces_subset(*this, parseFaceFilterExpr(is));
+      break;
+    case Solid:
+      return model_.query_solids_subset(*this, parseSolidFilterExpr(is));
       break;
     default:
       throw insight::Exception("Unknown feature type");

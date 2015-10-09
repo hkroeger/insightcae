@@ -47,7 +47,7 @@ namespace insight
 namespace cad 
 {
   
-enum EntityType { Vertex, Edge, Face};
+enum EntityType { Vertex, Edge, Face, Solid };
 
 
 // class SolidModel;

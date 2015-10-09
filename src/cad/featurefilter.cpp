@@ -505,6 +505,34 @@ QuantityComputer< double >::Ptr edgeLen::clone() const
   return QuantityComputer<double>::Ptr(new edgeLen());
 }
 
+
+
+faceArea::faceArea()
+{
+}
+
+faceArea::~faceArea()
+{
+}
+
+double faceArea::evaluate(FeatureID ei)
+{
+  GProp_GProps gpr;
+  TopoDS_Face e=model_->face(ei);
+  double l = 0.;
+  if (!e.IsNull() /*&& !BRep_Tool::Degenerated(e)*/) {
+    BRepGProp::SurfaceProperties(e, gpr);
+    l = gpr.Mass();
+  }
+  return l;
+}
+
+QuantityComputer< double >::Ptr faceArea::clone() const
+{
+  return QuantityComputer<double>::Ptr(new faceArea());
+}
+
+
 edgeRadialLen::edgeRadialLen(const boost::shared_ptr<matQuantityComputer >& ax, const boost::shared_ptr<matQuantityComputer >& p0)
 : ax_(ax), p0_(p0)
 {
@@ -550,6 +578,23 @@ arma::mat faceCoG::evaluate(FeatureID ei)
 QuantityComputer<arma::mat>::Ptr faceCoG::clone() const 
 {
   return QuantityComputer<arma::mat>::Ptr(new faceCoG());
+}
+
+
+solidCoG::solidCoG() 
+{}
+
+solidCoG::~solidCoG()
+{}
+  
+arma::mat solidCoG::evaluate(FeatureID i)
+{
+  return model_->subsolidCoG(i);
+}
+  
+QuantityComputer<arma::mat>::Ptr solidCoG::clone() const 
+{
+  return QuantityComputer<arma::mat>::Ptr(new solidCoG());
 }
 
 
@@ -1266,12 +1311,70 @@ struct FaceFeatureFilterExprParser
 
       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
 	( lit("cylRadius") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
+	|
+	( lit("area") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<faceArea>()) ]
       ;
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
         ( lit("normal") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
         |
         ( lit("CoG") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceCoG>()) ]
+      ;
+    
+  }
+};
+
+
+template <typename Iterator/*, typename Skipper = skip_grammar<Iterator>*/ >
+struct SolidFeatureFilterExprParser
+: public FeatureFilterExprParser<Iterator>
+{
+
+  SolidFeatureFilterExprParser(const FeatureSetParserArgList& extsets)
+  : FeatureFilterExprParser<Iterator>(extsets)
+  {
+//     FeatureFilterExprParser<Iterator>::r_filter_functions = 
+// 	( lit("isPlane") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Plane)) ]
+// 	|
+// 	( lit("isCylinder") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cylinder)) ]
+// 	|
+// 	( lit("isCone") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Cone)) ]
+// 	|
+// 	( lit("isSphere") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Sphere)) ]
+// 	|
+// 	( lit("isTorus") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_Torus)) ]
+// 	|
+// 	( lit("isBezierSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BezierSurface)) ]
+// 	|
+// 	( lit("isBSplineSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_BSplineSurface)) ]
+// 	|
+// 	( lit("isSurfaceOfRevolution") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfRevolution)) ]
+// 	|
+// 	( lit("isSurfaceOfExtrusion") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_SurfaceOfExtrusion)) ]
+// 	|
+// 	( lit("isOffsetSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OffsetSurface)) ]
+// 	|
+// 	( lit("isOtherSurface") ) [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
+// 	|
+// 	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidFace>(*qi::_1)) ]
+// 	|
+// 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentFace>(*qi::_1)) ]
+// 	|
+// 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]
+// 	|
+// 	( lit("adjacentToFaces") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+// 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToFaces>(*qi::_1)) ]
+//       ;
+
+//       FeatureFilterExprParser<Iterator>::r_scalar_qty_functions =
+// 	( lit("cylRadius") ) [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<cylRadius>()) ]
+//       ;
+      
+      FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+        ( lit("CoG") ) [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::solidCoG>()) ]
       ;
     
   }
@@ -1338,6 +1441,11 @@ FilterPtr parseEdgeFilterExpr(std::istream& in, const FeatureSetParserArgList& r
 FilterPtr parseFaceFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
 {
   return parseFilterExpr<FaceFeatureFilterExprParser<std::string::iterator> >(in, refs);
+}
+
+FilterPtr parseSolidFilterExpr(std::istream& in, const FeatureSetParserArgList& refs)
+{
+  return parseFilterExpr<SolidFeatureFilterExprParser<std::string::iterator> >(in, refs);
 }
 
 }

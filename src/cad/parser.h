@@ -190,6 +190,13 @@ BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllFaces_, queryAllFaces, 1);
 FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
 BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryFacesSubset_, queryFacesSubset, 3);
 
+FeatureSetPtr querySolids(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, querySolids_, querySolids, 3);
+FeatureSetPtr queryAllSolids(const SolidModel& m);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllSolids_, queryAllSolids, 1);
+FeatureSetPtr querySolidsSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
+BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, querySolidsSubset_, querySolidsSubset, 3);
+
 typedef boost::variant<scalar, vector>  ModelSymbol;
 typedef std::vector<boost::fusion::vector2<std::string, ModelSymbol> > ModelSymbols;
 
@@ -206,6 +213,7 @@ public:
   typedef std::map<std::string, FeatureSetPtr> 	vertexFeatureSymbolTable;
   typedef std::map<std::string, FeatureSetPtr> 	edgeFeatureSymbolTable;
   typedef std::map<std::string, FeatureSetPtr> 	faceFeatureSymbolTable;
+  typedef std::map<std::string, FeatureSetPtr> 	solidFeatureSymbolTable;
   typedef std::map<std::string, Model::Ptr> 	modelSymbolTable;
   typedef std::map<std::string, EvaluationPtr> 	evaluationSymbolTable;
   
@@ -220,6 +228,7 @@ protected:
   vertexFeatureSymbolTable	vertexFeatureSymbols_;
   edgeFeatureSymbolTable	edgeFeatureSymbols_;
   faceFeatureSymbolTable	faceFeatureSymbols_;
+  solidFeatureSymbolTable	solidFeatureSymbols_;
   modelSymbolTable		modelSymbols_;
   evaluationSymbolTable		evaluationSymbols_;
   componentTable		components_;
@@ -235,6 +244,7 @@ public:
   mapkey_parser::mapkey_parser<FeatureSetPtr> vertexFeatureSymbolNames() const;
   mapkey_parser::mapkey_parser<FeatureSetPtr> edgeFeatureSymbolNames() const;
   mapkey_parser::mapkey_parser<FeatureSetPtr> faceFeatureSymbolNames() const;
+  mapkey_parser::mapkey_parser<FeatureSetPtr> solidFeatureSymbolNames() const;
   mapkey_parser::mapkey_parser<Model::Ptr> modelSymbolNames() const;
   mapkey_parser::mapkey_parser<EvaluationPtr> evaluationSymbolNames() const;
 
@@ -281,6 +291,10 @@ public:
   inline void addFaceFeatureSymbol(const std::string& name, const FeatureSetPtr& value)
   {
     faceFeatureSymbols_[name]=value;
+  }
+  inline void addSolidFeatureSymbol(const std::string& name, const FeatureSetPtr& value)
+  {
+    solidFeatureSymbols_[name]=value;
   }
   inline void addModelSymbol(const std::string& name, const Model::Ptr& value)
   {
@@ -340,6 +354,13 @@ public:
       throw insight::Exception("Could not lookup face feature symbol "+name);
     return it->second;
   }
+  inline FeatureSetPtr lookupSolidFeatureSymbol(const std::string& name) const
+  {
+    solidFeatureSymbolTable::const_iterator it=solidFeatureSymbols_.find(name);
+    if (it==solidFeatureSymbols_.end())
+      throw insight::Exception("Could not lookup solid feature symbol "+name);
+    return it->second;
+  }
   inline Model::Ptr lookupModelSymbol(const std::string& name) const
   {
     modelSymbolTable::const_iterator it=modelSymbols_.find(name);
@@ -362,6 +383,7 @@ public:
   const std::map<std::string, FeatureSetPtr>& vertexFeatureSymbols() const { return vertexFeatureSymbols_; }  
   const std::map<std::string, FeatureSetPtr>& edgeFeatureSymbols() const { return edgeFeatureSymbols_; }  
   const std::map<std::string, FeatureSetPtr>& faceFeatureSymbols() const { return faceFeatureSymbols_; }  
+  const std::map<std::string, FeatureSetPtr>& solidFeatureSymbols() const { return solidFeatureSymbols_; }  
   const std::map<std::string, Model::Ptr>& modelSymbols() const { return modelSymbols_; }  
   const std::map<std::string, EvaluationPtr>& evaluationSymbols() const { return evaluationSymbols_; }  
   
@@ -411,11 +433,12 @@ struct ISCADParser
     Model::Ptr model_;
 
     qi::rule<std::string::iterator, scalar(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
-    qi::rule<std::string::iterator, vector(), skip_grammar> r_vector_primary, r_vector_term, r_vectorExpression;
+    qi::rule<std::string::iterator, vector(), qi::locals<SolidModelPtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
     
     qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_vertexFeaturesExpression;
     qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_edgeFeaturesExpression;
     qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_faceFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_solidFeaturesExpression;
     qi::rule<std::string::iterator, datum(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;

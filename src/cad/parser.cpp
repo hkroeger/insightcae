@@ -121,6 +121,10 @@ mapkey_parser::mapkey_parser<FeatureSetPtr> Model::faceFeatureSymbolNames() cons
 {
   return mapkey_parser::mapkey_parser<FeatureSetPtr>(faceFeatureSymbols_); 
 }
+mapkey_parser::mapkey_parser<FeatureSetPtr> Model::solidFeatureSymbolNames() const 
+{
+  return mapkey_parser::mapkey_parser<FeatureSetPtr>(solidFeatureSymbols_); 
+}
 mapkey_parser::mapkey_parser<Model::Ptr> Model::modelSymbolNames() const 
 {
   return mapkey_parser::mapkey_parser<Model::Ptr>(modelSymbols_); 
@@ -235,6 +239,26 @@ FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filte
   return FeatureSetPtr(fs->model().query_faces_subset(*fs, filterexpr, of).clone());
 }
 
+FeatureSetPtr querySolids(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.query_solids(filterexpr, of).clone());
+}
+
+FeatureSetPtr queryAllSolids(const SolidModel& m)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(m.allSolids().clone());
+}
+
+FeatureSetPtr querySolidsSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of)
+{
+  using namespace std;
+  using namespace insight::cad;
+  return FeatureSetPtr(fs->model().query_solids_subset(*fs, filterexpr, of).clone());
+}
 void writeViews(const boost::filesystem::path& file, const solidmodel& model, const std::vector<viewdef>& viewdefs)
 {
   SolidModel::Views views;
@@ -450,6 +474,11 @@ double getVectorComponent(const arma::mat& v, int c)
   return v(c);
 }
 
+arma::mat getModelCoG(const SolidModel& m)
+{
+  return m.modelCoG();
+}
+
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model::Ptr model)
 : ISCADParser::base_type(r_model),
@@ -484,6 +513,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
       ( r_identifier >> '='  >> r_faceFeaturesExpression >> ';') 
 	[ phx::bind(&Model::addFaceFeatureSymbol, model_, qi::_1, qi::_2) ]
+      |
+      ( r_identifier >> '='  >> r_solidFeaturesExpression >> ';') 
+	[ phx::bind(&Model::addSolidFeatureSymbol, model_, qi::_1, qi::_2) ]
       |
       ( r_identifier >> '='  >> r_datumExpression >> ';') 
 	[ phx::bind(&Model::addDatumSymbol, model_, qi::_1, qi::_2) ]
@@ -685,6 +717,23 @@ ISCADParser::ISCADParser(Model::Ptr model)
 	  )
 	;
 
+    r_solidFeaturesExpression = 
+	  qi::lexeme[model_->solidFeatureSymbolNames()] 
+	    [ _val =  phx::bind(&Model::lookupSolidFeatureSymbol, model_, qi::_1) ]
+	  | (
+	   ( lit("solidsFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
+	    [ _val = querySolids_(*qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("solidsFrom") >> r_faceFeaturesExpression >> lit("where") >> '(' >> r_string 
+	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
+	    [ _val = querySolidsSubset_(qi::_1, qi::_2, qi::_3) ]
+	   |
+	   ( lit("allSolidsFrom") >> r_solidmodel_expression )
+	    [ _val = queryAllSolids_(*qi::_1) ]
+	  )
+	;
+
       
     r_datumExpression = 
 	  qi::lexeme[model_->datumSymbolNames()] [ _val =  phx::bind(&Model::lookupDatumSymbol, model_, qi::_1) ]
@@ -774,6 +823,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
       |
        qi::lexeme[model_->vectorSymbolNames()] 
         [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
+      |
+      qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	  > lit("->") >
+	   (
+	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
+	   )
       |
        ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) 
         [ _val = vec3_(qi::_1, qi::_2, qi::_3) ] 

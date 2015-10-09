@@ -109,6 +109,7 @@ public:
   SolidModel(const SolidModel& o);
   SolidModel(const TopoDS_Shape& shape);
   SolidModel(const boost::filesystem::path& filepath);
+  SolidModel(const FeatureSet& feat);
   virtual ~SolidModel();
   
   inline bool isleaf() const { return isleaf_; }
@@ -143,6 +144,7 @@ public:
   inline const TopoDS_Face& face(FeatureID i) const { return TopoDS::Face(fmap_.FindKey(i)); }
   inline const TopoDS_Edge& edge(FeatureID i) const { return TopoDS::Edge(emap_.FindKey(i)); }
   inline const TopoDS_Vertex& vertex(FeatureID i) const { return TopoDS::Vertex(vmap_.FindKey(i)); }
+  inline const TopoDS_Solid& subsolid(FeatureID i) const { return TopoDS::Solid(somap_.FindKey(i)); }
 
   inline FeatureID faceID(const TopoDS_Shape& f) const { return fmap_.FindIndex(f); }
   inline FeatureID edgeID(const TopoDS_Shape& e) const { return emap_.FindIndex(e); }
@@ -154,6 +156,7 @@ public:
   arma::mat vertexLocation(FeatureID i) const;
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
+  arma::mat subsolidCoG(FeatureID i) const;
   virtual arma::mat modelCoG() const;
   virtual double modelVolume() const;
   virtual double modelSurfaceArea() const;
@@ -173,6 +176,7 @@ public:
   FeatureSet allVertices() const;
   FeatureSet allEdges() const;
   FeatureSet allFaces() const;
+  FeatureSet allSolids() const;
   
   FeatureSet query_vertices(const FilterPtr& filter) const;
   FeatureSet query_vertices(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
@@ -186,6 +190,10 @@ public:
   FeatureSet query_faces(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const FilterPtr& filter) const;
   FeatureSet query_faces_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const;
+  FeatureSet query_solids(const FilterPtr& filter) const;
+  FeatureSet query_solids(const std::string& queryexpr, const FeatureSetParserArgList& refs=FeatureSetParserArgList()) const;
+  FeatureSet query_solids_subset(const FeatureSet& fs, const FilterPtr& filter) const;
+  FeatureSet query_solids_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const;
   
   FeatureSet verticesOfEdge(const FeatureID& e) const;
   FeatureSet verticesOfEdges(const FeatureSet& es) const;

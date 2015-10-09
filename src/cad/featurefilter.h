@@ -239,9 +239,12 @@ template<> coincident<Edge>::coincident(const SolidModel& m);
 template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
 template<> coincident<Face>::coincident(const SolidModel& m);
 template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
+template<> coincident<Solid>::coincident(const SolidModel& m);
+template<> bool coincident<Solid>::checkMatch(FeatureID feature) const;
 
 typedef coincident<Edge> coincidentEdge;
 typedef coincident<Face> coincidentFace;
+typedef coincident<Solid> coincidentSolid;
 
 
 
@@ -719,6 +722,18 @@ public:
     virtual QuantityComputer<double>::Ptr clone() const;
 };
 
+class faceArea
+    : public QuantityComputer<double>
+{
+public:
+    faceArea();
+    virtual ~faceArea();
+
+    virtual double evaluate(FeatureID ei);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
+};
+
 
 class edgeRadialLen
     : public QuantityComputer<double>
@@ -743,6 +758,18 @@ class faceCoG
 public:
     faceCoG();
     virtual ~faceCoG();
+
+    virtual arma::mat evaluate(FeatureID ei);
+
+    virtual QuantityComputer<arma::mat>::Ptr clone() const;
+};
+
+class solidCoG
+    : public QuantityComputer<arma::mat>
+{
+public:
+    solidCoG();
+    virtual ~solidCoG();
 
     virtual arma::mat evaluate(FeatureID ei);
 
@@ -913,6 +940,7 @@ RELATION_QTY_FILTER_OPERATOR(equal, operator== );
 FilterPtr parseVertexFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
 FilterPtr parseEdgeFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
 FilterPtr parseFaceFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
+FilterPtr parseSolidFilterExpr(std::istream& stream, const FeatureSetParserArgList& refs=FeatureSetParserArgList() );
 
 }
 }

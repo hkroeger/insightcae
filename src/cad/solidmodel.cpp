@@ -150,6 +150,46 @@ SolidModel::SolidModel(const boost::filesystem::path& filepath)
   setShape(loadShapeFromFile(filepath));
 }
 
+SolidModel::SolidModel(const FeatureSet& feat)
+{
+  TopoDS_Compound comp;
+  BRep_Builder builder;
+  builder.MakeCompound( comp );
+
+  BOOST_FOREACH(const FeatureID& id, feat)
+  {
+    TopoDS_Shape entity;
+    if (feat.shape()==Vertex)
+    {
+      entity=feat.model().vertex(id);
+    }
+    else if (feat.shape()==Edge)
+    {
+      entity=feat.model().edge(id);
+    }
+    else if (feat.shape()==Face)
+    {
+      entity=feat.model().face(id);
+    }
+    else if (feat.shape()==Solid)
+    {
+      entity=feat.model().subsolid(id);
+    }
+    if (feat.size()==1)
+    {
+      setShape(entity);
+      return;
+    }
+    else
+    {
+      builder.Add(comp, entity);
+    }
+  }
+  
+  setShape(comp);
+}
+
+
 SolidModel::~SolidModel()
 {
 }
@@ -231,6 +271,14 @@ arma::mat SolidModel::faceCoG(FeatureID i) const
 {
   GProp_GProps props;
   BRepGProp::SurfaceProperties(face(i), props);
+  gp_Pnt cog = props.CentreOfMass();
+  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+}
+
+arma::mat SolidModel::subsolidCoG(FeatureID i) const
+{
+  GProp_GProps props;
+  BRepGProp::VolumeProperties(subsolid(i), props);
   gp_Pnt cog = props.CentreOfMass();
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
@@ -397,6 +445,16 @@ FeatureSet SolidModel::allFaces() const
   return f;
 }
 
+FeatureSet SolidModel::allSolids() const
+{
+  FeatureSet f(*this, Solid);
+  f.insert(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( somap_.Extent()+1 ) 
+  );
+  return f;
+}
+
 FeatureSet SolidModel::query_vertices(const FilterPtr& f) const
 {
   return query_vertices_subset(allVertices(), f);
@@ -507,6 +565,41 @@ FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const std::strin
   return query_faces_subset(fs, parseFaceFilterExpr(is, refs));
 }
 
+FeatureSet SolidModel::query_solids(const FilterPtr& f) const
+{
+  return query_solids_subset(allSolids(), f);
+}
+
+FeatureSet SolidModel::query_solids(const string& queryexpr, const FeatureSetParserArgList& refs) const
+{
+  std::istringstream is(queryexpr);
+  return query_solids(parseSolidFilterExpr(is, refs));
+}
+
+
+FeatureSet SolidModel::query_solids_subset(const FeatureSet& fs, const FilterPtr& f) const
+{
+//   Filter::Ptr f(filter.clone());
+  
+  f->initialize(*this);
+  BOOST_FOREACH(int i, fs)
+  {
+    f->firstPass(i);
+  }
+  FeatureSet res(*this, Solid);
+  BOOST_FOREACH(int i, fs)
+  {
+    if (f->checkMatch(i)) res.insert(i);
+  }
+  cout<<"QUERY_SOLIDS RESULT = "<<res<<endl;
+  return res;
+}
+
+FeatureSet SolidModel::query_solids_subset(const FeatureSet& fs, const std::string& queryexpr, const FeatureSetParserArgList& refs) const
+{
+  std::istringstream is(queryexpr);
+  return query_solids_subset(fs, parseSolidFilterExpr(is, refs));
+}
 
 FeatureSet SolidModel::verticesOfEdge(const FeatureID& e) const
 {
@@ -807,6 +900,16 @@ SolidModel::View SolidModel::createView
 
 void SolidModel::insertrule(parser::ISCADParser& ruleset) const
 {
+  ruleset.modelstepFunctionRules.add
+  (
+    "asModel",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' ) 
+	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<SolidModel>(*qi::_1)) ]
+      
+    ))
+  );
 }
 
 bool SolidModel::isSingleEdge() const
@@ -2632,17 +2735,17 @@ SolidModel operator|(const SolidModel& m1, const SolidModel& m2)
 
 void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
 {
-//   ruleset.modelstepFunctionRules.add
-//   (
-//     "",	
-//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-// 
-//     
-//       
-//     ))
-//   );
-}
+  ruleset.modelstepFunctionRules.add
+  (
+    "MergeSolids",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
+    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<BooleanUnion>(*qi::_1)) ]
+      
+    ))
+  );
+}
 
 defineType(BooleanSubtract);
 addToFactoryTable(SolidModel, BooleanSubtract, NoParameters);

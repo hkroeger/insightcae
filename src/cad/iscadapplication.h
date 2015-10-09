@@ -105,7 +105,7 @@ signals:
   void insertParserStatementAtCursor(const QString& statement);
  
 protected:
-  createAISShape();
+  void createAISShape();
   
 public:
   ViewState state_;

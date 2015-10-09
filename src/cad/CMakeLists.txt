@@ -20,11 +20,17 @@ set(insightcad_SOURCES
   occtools.cpp
 )
 
-include_directories(${toolkit_SOURCE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
-include_directories(${OCC_INCLUDE_DIR})
-include_directories(${DXFLIB_INCLUDE_DIR})
-include_directories(${GEOM_INCLUDE_DIRS})
+set(INCLUDE_DIRS "")
+set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
+add_subdirectory(quantitycomputers)
+add_subdirectory(featurefilters)
+add_subdirectory(solidmodels)
+
+# include_directories(${toolkit_SOURCE_DIR})
+# include_directories(${Boost_INCLUDE_DIRS})
+# include_directories(${OCC_INCLUDE_DIR})
+# include_directories(${DXFLIB_INCLUDE_DIR})
+# include_directories(${GEOM_INCLUDE_DIRS})
 
 #link_directories(${OCC_LIBRARY_DIR})
 #link_directories(${DXFLIB_LIBRARY_DIR})
@@ -41,6 +47,7 @@ target_include_directories(insightcad
   PUBLIC ${GEOM_INCLUDE_DIRS}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC ${INCLUDE_DIRS}
   )
 install(TARGETS insightcad LIBRARY DESTINATION lib)
 
@@ -74,4 +81,3 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
 endif()
 
 add_pybindings(cad "cad.i" insightcad)
-

@@ -30,7 +30,28 @@ namespace insight
 {
 namespace cad 
 {
-  
+
+
+Filter::Filter()
+: model_(NULL)
+{
+}
+
+Filter::~Filter()
+{
+}
+
+void Filter::initialize(const SolidModel& m)
+{
+  model_=&m;
+}
+
+void Filter::firstPass(FeatureID feature)
+{
+}
+
+
+
 FeatureSet::FeatureSet(const FeatureSet& o)
 : model_(o.model_),
   shape_(o.shape_)
@@ -128,7 +149,16 @@ void FeatureSet::write() const
   std::cout<<" ]"<<std::endl;
 }
 
-
+std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
+{
+  os<<fs.size()<<" {";
+  BOOST_FOREACH(int fi, fs)
+  {
+    os<<" "<<fi;
+  }
+  os<<" }";
+  return os;
+}
   
 }
 }

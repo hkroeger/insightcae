@@ -22,6 +22,7 @@
 #define INSIGHT_CAD_CADTYPES_H
 
 #include "boost/variant.hpp"
+#include "base/linearalgebra.h"
 
 namespace insight {
 namespace cad {

@@ -21,6 +21,8 @@
 #ifndef INSIGHT_CAD_FEATURE_H
 #define INSIGHT_CAD_FEATURE_H
 
+#include "cadtypes.h"
+
 #include <set>
 #include <memory>
 #include "boost/concept_check.hpp"
@@ -29,7 +31,6 @@
 #include "base/linearalgebra.h"
 #include "occinclude.h"
 
-#include "cadtypes.h"
 
 namespace boost
 {
@@ -47,6 +48,9 @@ namespace insight
 namespace cad 
 {
   
+class SolidModel;
+class Sketch;
+
 enum EntityType { Vertex, Edge, Face, Solid };
 
 
@@ -75,14 +79,77 @@ public:
 };
 
 
+
+inline FilterPtr new_clone(const Filter& f)
+{
+    return f.clone();
+}
+
+
+
+
+
+template<class T>
+class QuantityComputer
+{
+public:
+    typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
+
+protected:
+    const SolidModel* model_;
+
+public:
+    QuantityComputer()
+        : model_(NULL)
+    {}
+
+    virtual ~QuantityComputer()
+    {}
+
+    virtual void initialize(const SolidModel& m)
+    {
+        model_=&m;
+    }
+
+    virtual bool isValidForFeature(FeatureID) const
+    {
+      return true;
+    }
+    
+    virtual T evaluate(FeatureID) =0;
+    virtual QuantityComputer::Ptr clone() const =0;
+
+    typename QuantityComputer<T>::Ptr operator+(const typename QuantityComputer<T>::Ptr& other) const;
+    typename QuantityComputer<T>::Ptr operator+(const T& constant) const;
+
+    FilterPtr operator==(const typename QuantityComputer<T>::Ptr& other) const;
+    FilterPtr operator==(const T& constant) const
+    {
+        return FilterPtr();
+    }
+};
+
+
+
+typedef QuantityComputer<double> scalarQuantityComputer;
+typedef QuantityComputer<arma::mat> matQuantityComputer;
+typedef boost::shared_ptr<scalarQuantityComputer> scalarQuantityComputerPtr;
+typedef boost::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
+
+
+
+
+
 // class FeatureSet;
 
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
 
+
+
 class FeatureSet
 : public std::set<FeatureID>
 {
-#warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
+// #warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
   const SolidModel& model_;
   EntityType shape_;
   

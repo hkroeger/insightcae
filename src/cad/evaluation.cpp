@@ -19,7 +19,7 @@
  */
 
 #include "evaluation.h"
-#include "solidmodel.h"
+#include "solidmodels.h"
 
 #include "AIS_Point.hxx"
 #include "AIS_Drawer.hxx"

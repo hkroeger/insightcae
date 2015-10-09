@@ -747,7 +747,7 @@ QVariableItem::QVariableItem(const std::string& name, arma::mat vv, QoccViewerCo
   reset(vv);
 }
 
-QVariableItem::createAISShape()
+void QVariableItem::createAISShape()
 {
 //   TopoDS_Edge cP = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(value_),gp_Dir(0,0,1)), 1));
 //   Handle_AIS_Shape aisP = new AIS_Shape(cP);

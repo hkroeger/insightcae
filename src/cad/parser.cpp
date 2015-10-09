@@ -33,6 +33,7 @@
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
 
+#include "solidmodels.h"
 #include "meshing.h"
 
 

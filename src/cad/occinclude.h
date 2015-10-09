@@ -75,6 +75,7 @@
 #include <gp_Vec.hxx>
 #include <gp_Elips.hxx>
 #include <gp_Circ.hxx>
+#include "gp_Cylinder.hxx"
 #include <TopoDS.hxx>
 #include <TopoDS_Solid.hxx>
 #include <TopExp_Explorer.hxx>

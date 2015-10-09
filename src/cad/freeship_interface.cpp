@@ -19,6 +19,7 @@
  */
 
 #include "freeship_interface.h"
+#include "solidmodels.h"
 
 namespace insight {
 namespace cad {

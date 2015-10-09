@@ -161,12 +161,22 @@ NOT::NOT(const Filter& f1)
 }
 void NOT::initialize(const SolidModel& m)
 {
+  Filter::initialize(m);
   f1_->initialize(m);
 }
 
+void NOT::firstPass(FeatureID feature)
+{
+    Filter::firstPass(feature);
+    f1_->firstPass(feature);
+}
+
+
 bool NOT::checkMatch(FeatureID feature) const
 {
-  return !f1_->checkMatch(feature);
+  bool ok=f1_->checkMatch(feature);
+  std::cout<<"NOT="<<ok<<std::endl;
+  return !ok;
 }
 
 FilterPtr NOT::clone() const
@@ -864,7 +874,14 @@ bool maximal::checkMatch(FeatureID feature) const
   int j=0;
   for (std::map<double, std::set<FeatureID> >::const_iterator i=ranking_.begin(); i!=ranking_.end(); i++)
   {
-    if ((i->second.find(feature)!=i->second.end()) && (j==rank_)) return true;
+    if ((i->second.find(feature)!=i->second.end())) 
+    {
+      std::cout<<"Feature #"<<feature<<" rank="<<j<<" match="<<(j==rank_)<<std::endl;
+    }
+    if ((i->second.find(feature)!=i->second.end()) && (j==rank_)) 
+    {
+      return true;
+    }
     j++;
   }
   return false;

@@ -553,7 +553,9 @@ FeatureSet SolidModel::query_faces_subset(const FeatureSet& fs, const FilterPtr&
   FeatureSet res(*this, Face);
   BOOST_FOREACH(int i, fs)
   {
-    if (f->checkMatch(i)) res.insert(i);
+    bool ok=f->checkMatch(i);
+    if (ok) std::cout<<"match! ("<<i<<")"<<std::endl;
+    if (ok) res.insert(i);
   }
   cout<<"QUERY_FACES RESULT = "<<res<<endl;
   return res;

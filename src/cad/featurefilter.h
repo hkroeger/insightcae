@@ -88,6 +88,7 @@ protected:
     FilterPtr f1_;
 public:
     NOT(const Filter& f1);
+    virtual void firstPass(FeatureID feature);
     virtual void initialize(const SolidModel& m);
     virtual bool checkMatch(FeatureID feature) const;
 

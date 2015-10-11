@@ -627,9 +627,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
     
     r_solidmodel_primary = 
-      ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )
+        ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )
       |
-      r_modelstepFunction [ _val = qi::_1 ]
+        r_modelstepFunction [ _val = qi::_1 ]
       // try identifiers last, since exceptions are generated, if symbols don't exist
       | 
 	r_solidmodel_subshape [ _val = qi::_1 ]
@@ -654,7 +654,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
 
     r_solidmodel_propertyAssignment =
       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
-	  > lit("->") >
+	  >> lit("->") >
 	   (
 	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&SolidModel::setCoGExplicitly, *_a, qi::_1) ) ]
 	     |
@@ -826,7 +826,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
         [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
       |
       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
-	  > lit("->") >
+	  >> lit("->") >
 	   (
 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 	   )

@@ -139,6 +139,14 @@ void Comment::writeLatexCode(std::ostream& f, const std::string& name, int level
   f << value_ <<endl;
 }
 
+void Comment::exportDataToFile(const string& name, const path& outputdirectory) const
+{
+  boost::filesystem::path fname(outputdirectory/(name+".txt"));
+  std::ofstream f(fname.c_str());
+  f<<value_;
+}
+
+
 ResultElementPtr Comment::clone() const
 {
   return ResultElementPtr(new Comment(value_, shortDescription_, longDescription_));

@@ -135,6 +135,7 @@ public:
   Comment(const ResultElement::ResultElementConstrP& par);
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual ResultElementPtr clone() const;
 };
 

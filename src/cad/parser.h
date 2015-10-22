@@ -435,10 +435,10 @@ struct ISCADParser
     qi::rule<std::string::iterator, scalar(), skip_grammar> r_scalar_primary, r_scalar_term, r_scalarExpression;
     qi::rule<std::string::iterator, vector(), qi::locals<SolidModelPtr>, skip_grammar > r_vector_primary, r_vector_term, r_vectorExpression;
     
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_vertexFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_edgeFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_faceFeaturesExpression;
-    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar> r_solidFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<SolidModelPtr> > r_vertexFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<SolidModelPtr> > r_edgeFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<SolidModelPtr> > r_faceFeaturesExpression;
+    qi::rule<std::string::iterator, FeatureSetPtr(), skip_grammar, qi::locals<SolidModelPtr> > r_solidFeaturesExpression;
     qi::rule<std::string::iterator, datum(), skip_grammar> r_datumExpression;
     
     qi::rule<std::string::iterator, skip_grammar> r_model;

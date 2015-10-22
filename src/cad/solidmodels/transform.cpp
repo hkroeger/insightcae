@@ -82,6 +82,18 @@ Transform::Transform(const SolidModel& m1, const arma::mat& trans, const arma::m
   m1.unsetLeaf();
 }
 
+Transform::Transform(const SolidModel& m1, const arma::mat& trans)
+{
+  setShape(makeTransform(m1, trans, vec3(0,0,0), 1.0));
+  m1.unsetLeaf();
+}
+
+Transform::Transform(const SolidModel& m1, double sf)
+{
+  setShape(makeTransform(m1, vec3(0,0,0), vec3(0,0,0), sf));
+  m1.unsetLeaf();
+}
+
 Transform::Transform(const SolidModel& m1, const gp_Trsf& trsf)
 {
   setShape(makeTransform(m1, trsf));

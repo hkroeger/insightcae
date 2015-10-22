@@ -36,18 +36,7 @@ namespace cad {
 defineType(Bar);
 addToFactoryTable(SolidModel, Bar, NoParameters);
 
-Bar::Bar(const NoParameters& nop): SolidModel(nop)
-{}
-
-
-Bar::Bar
-(
-  const arma::mat& start, const arma::mat& end, 
-  const SolidModel& xsec, const arma::mat& vert, 
-  double ext0, double ext1,
-  double miterangle0_vert, double miterangle1_vert,
-  double miterangle0_hor, double miterangle1_hor
-)
+void Bar::create(const arma::mat& start, const arma::mat& end, const SolidModel& xsec, const arma::mat& vert, double ext0, double ext1, double miterangle0_vert, double miterangle1_vert, double miterangle0_hor, double miterangle1_hor)
 {
   arma::mat p0=start;
   arma::mat p1=end;
@@ -144,6 +133,43 @@ Bar::Bar
   setShape(result);
 }
 
+
+Bar::Bar(const NoParameters& nop): SolidModel(nop)
+{}
+
+
+Bar::Bar
+(
+  const arma::mat& start, const arma::mat& end, 
+  const SolidModel& xsec, const arma::mat& vert, 
+  double ext0, double ext1,
+  double miterangle0_vert, double miterangle1_vert,
+  double miterangle0_hor, double miterangle1_hor
+)
+{
+  create(start, end, xsec, vert, ext0, ext1, miterangle0_vert, miterangle1_vert, miterangle0_hor, miterangle1_hor);
+}
+
+Bar::Bar
+(
+  const arma::mat& start, const arma::mat& end, 
+  const SolidModel& xsec, const arma::mat& vert, 
+  const boost::fusion::vector3<double,double,double>& ext_miterv_miterh0, 
+  const boost::fusion::vector3<double,double,double>& ext_miterv_miterh1
+)
+: SolidModel(xsec)
+{
+  create
+  (
+    start, end, 
+    xsec, vert, 
+    boost::fusion::at_c<0>(ext_miterv_miterh0), boost::fusion::at_c<0>(ext_miterv_miterh1),
+    boost::fusion::at_c<1>(ext_miterv_miterh0), boost::fusion::at_c<1>(ext_miterv_miterh1),
+    boost::fusion::at_c<2>(ext_miterv_miterh0), boost::fusion::at_c<2>(ext_miterv_miterh1)
+  );
+}
+
+
 void Bar::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -153,29 +179,23 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' 
 	>> ruleset.r_vectorExpression // 1
-	  >> ( ( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0) )
-	  >> ( ( qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
-// 	  >> ( ( qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0)) 
+	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
+ 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  ) ]
 	  >> ',' 
-	>> ruleset.r_vectorExpression // 5
-	  >> ( ( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
-	  >> ( ( qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
-// 	  >> ( ( qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0) ) 
+	>> ruleset.r_vectorExpression // 3
+	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
+	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
+ 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  ) ]
 	  >> ',' 
-	>> ruleset.r_solidmodel_expression >> ',' // 9
-	>> ruleset.r_vectorExpression >> // 10
+	>> ruleset.r_solidmodel_expression >> ',' // 5
+	>> ruleset.r_vectorExpression >> // 6
       ')' ) 
       [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Bar>
 	(
-	  qi::_1, qi::_4, 
-	  *qi::_7, qi::_8,
-	  qi::_2, qi::_5,
-	  qi::_3, qi::_6
-// 	  qi::_1, qi::_5, 
-// 	  *qi::_9, qi::_10,
-// 	  qi::_2, qi::_6,
-// 	  qi::_3, qi::_7,
-// 	  qi::_4, qi::_8
+	  qi::_1, qi::_3, 
+	  *qi::_5, qi::_6,
+	  qi::_2, qi::_4
 	)) ]
       
     ))

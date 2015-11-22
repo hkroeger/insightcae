@@ -612,11 +612,16 @@ ISCADParser::ISCADParser(Model::Ptr model)
     
     r_solidmodel_expression =
       r_solidmodel_term [_val=qi::_1 ]
-      >> *( '-' >> r_solidmodel_term [ _val = construct<solidmodel>(new_<BooleanSubtract>(*_val, *qi::_1)) ] )
+      >>
+       *( '-' >> r_solidmodel_term [ _val = construct<solidmodel>(new_<BooleanSubtract>(*_val, *qi::_1)) ] )
       ;
     
     r_solidmodel_term =
       r_solidmodel_primary [_val=qi::_1 ]
+      >>
+       -( lit("<<") >> r_vectorExpression [ _val = construct<solidmodel>(new_<Transform>(*qi::_val, qi::_1)) ] )
+      >>
+       -( lit("*") >> r_scalarExpression [ _val = construct<solidmodel>(new_<Transform>(*qi::_val, qi::_1)) ] )
       >> *( 
       ('|' >> r_solidmodel_primary [ _val = construct<solidmodel>(new_<BooleanUnion>(*_val, *qi::_1)) ] )
       |
@@ -641,13 +646,13 @@ ISCADParser::ISCADParser(Model::Ptr model)
       
     r_submodel_modelstep =
       qi::lexeme[ model_->modelSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelSymbol, model_, qi::_1) ]
-	>> lit('.') > /*lazy(phx::val(phx::bind(&Model::modelstepSymbolNames, *_a)))*/ 
+	>> lit('.') >> /*lazy(phx::val(phx::bind(&Model::modelstepSymbolNames, *_a)))*/ 
 	r_identifier [ _val =  phx::bind(&Model::lookupModelstepSymbol, *_a, qi::_1) ]
 	;
       
     r_solidmodel_subshape =
       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
-	  >> lit('.') > 
+	  >> lit('.') >>
 	  lazy( phx::val(phx::bind(&SolidModel::providedSubshapes, *_a)) )
 	    [ _val = qi::_1 ]
 	  ;
@@ -670,7 +675,22 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_vertexFeaturesExpression = 
 	  qi::lexeme[model_->vertexFeatureSymbolNames()] 
 	    [ _val =  phx::bind(&Model::lookupVertexFeatureSymbol, model_, qi::_1) ]
-	  | (
+	  | 
+	  qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	      >> '.' >> (
+	        (
+		 (lit("vertices")|lit("vertex"))
+		 > '(' > r_string 
+		 >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+		 >> ')' 
+		) [ lazy( _val = queryVertices_(*_a, qi::_1, qi::_2) ) ]
+		|
+	        (
+		 lit("allVertices") 
+		) [ lazy( _val = queryAllVertices_(*_a) ) ]
+	      )
+	  |
+	  (
 	   ( lit("verticesFrom") >> r_solidmodel_expression 
 	    >> lit("where") >> '(' >> r_string 
 	    >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
@@ -687,6 +707,20 @@ ISCADParser::ISCADParser(Model::Ptr model)
 
     r_edgeFeaturesExpression = 
 	  qi::lexeme[model_->edgeFeatureSymbolNames()] [ _val =  phx::bind(&Model::lookupEdgeFeatureSymbol, model_, qi::_1) ]
+	  | 
+	  qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	      >> '.' >> (
+	        (
+		 (lit("edges")|lit("edge"))
+		 > '(' > r_string 
+		 >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+		 >> ')' 
+		) [ lazy( _val = queryEdges_(*_a, qi::_1, qi::_2) ) ]
+		|
+	        (
+		 lit("allEdges") 
+		) [ lazy( _val = queryAllEdges_(*_a) ) ]
+	      )
 	  | (
 	   ( lit("edgesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
 	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
@@ -704,6 +738,20 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_faceFeaturesExpression = 
 	  qi::lexeme[model_->faceFeatureSymbolNames()] 
 	    [ _val =  phx::bind(&Model::lookupFaceFeatureSymbol, model_, qi::_1) ]
+	  |
+	  qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	      >> '.' >> (
+	        (
+		 (lit("faces")|lit("face"))
+		 > '(' > r_string 
+		 >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+		 >> ')' 
+		) [ lazy( _val = queryFaces_(*_a, qi::_1, qi::_2) ) ]
+		|
+	        (
+		 lit("allFaces") 
+		) [ lazy( _val = queryAllFaces_(*_a) ) ]
+	      )
 	  | (
 	   ( lit("facesFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
 	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )
@@ -721,6 +769,20 @@ ISCADParser::ISCADParser(Model::Ptr model)
     r_solidFeaturesExpression = 
 	  qi::lexeme[model_->solidFeatureSymbolNames()] 
 	    [ _val =  phx::bind(&Model::lookupSolidFeatureSymbol, model_, qi::_1) ]
+	  |
+	  qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstepSymbol, model_, qi::_1) ] 
+	      >> '.' >> (
+	        (
+		 (lit("solids")|lit("solid"))
+		 > '(' > r_string 
+		 >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+		 >> ')' 
+		) [ lazy( _val = querySolids_(*_a, qi::_1, qi::_2) ) ]
+		|
+	        (
+		 lit("allSolids") 
+		) [ lazy( _val = queryAllSolids_(*_a) ) ]
+	      )
 	  | (
 	   ( lit("solidsFrom") >> r_solidmodel_expression >> lit("where") >> '(' >> r_string 
 	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) ) >> ')' )

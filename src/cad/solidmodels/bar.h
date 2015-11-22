@@ -29,6 +29,16 @@ namespace cad {
 class Bar
 : public SolidModel
 {
+  
+  void create
+  (    
+    const arma::mat& p0, const arma::mat& p1, 
+    const SolidModel& xsec, const arma::mat& vert,
+    double ext0=0.0, double ext1=0.0,
+    double miterangle0_vert=0.0, double miterangle1_vert=0.0,
+    double miterangle0_hor=0.0, double miterangle1_hor=0.0
+  );
+
 public:
   declareType("Bar");
   Bar(const NoParameters& nop = NoParameters());
@@ -49,6 +59,14 @@ public:
     double ext0=0.0, double ext1=0.0,
     double miterangle0_vert=0.0, double miterangle1_vert=0.0,
     double miterangle0_hor=0.0, double miterangle1_hor=0.0
+  );
+
+  Bar
+  (
+    const arma::mat& p0, const arma::mat& p1, 
+    const SolidModel& xsec, const arma::mat& vert,
+    const boost::fusion::vector3<double,double,double>& ext_miterv_miterh0,
+    const boost::fusion::vector3<double,double,double>& ext_miterv_miterh1
   );
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

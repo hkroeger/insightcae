@@ -88,6 +88,16 @@ void vtkModel::writeGeometryToLegacyFile(std::ostream& os) const
   }  
 }
 
+void vtkModel2d::appendCellScalarField(const std::string& name, const double s[])
+{
+  cellScalarFields_[name]=ScalarField();
+  ScalarField& vf = cellScalarFields_[name];
+  for (int i=0; i<poly_.size(); i++)
+  {
+    vf.push_back(s[i]);
+  }  
+}
+
 
 void vtkModel2d::appendCellVectorField(const std::string& name, const double x[], const double y[], const double z[])
 {
@@ -159,6 +169,15 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
   vtkModel::writeDataToLegacyFile(os);
   
   os<<"CELL_DATA "<<poly_.size()<<endl;
+  BOOST_FOREACH(const ScalarFieldList::value_type& sf, cellScalarFields_)
+  {
+    os<<"SCALARS "<<sf.first<<" float 1"<<endl;
+    os<<"LOOKUP_TABLE default"<<endl;
+    BOOST_FOREACH(const double& v, sf.second)
+    {
+      os<<v<<endl;
+    }
+  }
   BOOST_FOREACH(const VectorFieldList::value_type& sf, cellVectorFields_)
   {
     if (poly_.size()>0)

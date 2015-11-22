@@ -39,6 +39,8 @@ struct TemporaryCaseDir
   ~TemporaryCaseDir();
 };
   
+
+
 class Case
 {
   
@@ -58,7 +60,7 @@ public:
       elements_.push_back(elem);
       return static_cast<T>(&elements_.back());
     }
-      
+
     template<class T>
     T* get(const std::string& name)
     {
@@ -98,6 +100,10 @@ public:
     
 //    virtual void run() =0;
 };
+
+#ifdef SWIG
+%template(insertCaseElement) insight::Case::insert<CaseElement*>;
+#endif
 
 }
 

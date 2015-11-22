@@ -486,8 +486,32 @@ public:
     return *patch; 
   }
   
+  /**
+   * Add the given patch, if none with the same name is present.
+   * If it is present, the supplied object is deleted and the existing patch is returned.
+   */
+  inline Patch& addOrDestroyPatch(const std::string& name, Patch *patch) 
+  { 
+    if (name=="")
+      throw insight::Exception("Empty patch names are not allowed!");
+    
+    std::string key(name);
+    if ( allPatches_.find(name)!=allPatches_.end())
+    {
+      delete patch;
+      return *allPatches_.find(name)->second;
+    }
+    else
+    {
+      allPatches_.insert(key, patch); 
+      return *patch; 
+    }
+  }
+  
   virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
 };
+
+typedef boost::shared_ptr<blockMesh> blockMeshPtr;
 
 }
 

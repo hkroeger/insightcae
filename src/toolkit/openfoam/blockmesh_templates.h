@@ -31,11 +31,25 @@ namespace bmd
   
 class BlockMeshTemplate
 {
+public:
+  BlockMeshTemplate();
+  virtual ~BlockMeshTemplate();
+  
+  virtual void create_bmd(blockMesh& bmd) const =0;
 };
+
+void create_bmd_file
+(
+  const boost::filesystem::path& casedir,
+  const std::string& ofename, 
+  const BlockMeshTemplate& bmt
+);
   
 /**
  * A cylinder meshed with an O-grid
  */
+
+
 class Cylinder
 : public BlockMeshTemplate
 {
@@ -46,10 +60,11 @@ PARAMETERSET>>> Cylinder Parameters
 
 geometry = set
 {
-  D = double 1.0 "Diameter"
-  L = double 1.0 "Length"
-  ex = vector(0 0 1) "Axial direction"
-  er = vector(1 0 0) "Radial direction"
+  D = double 1.0 "[m] Diameter"
+  L = double 1.0 "[m] Length"
+  p0 = vector(0 0 0) "[m] Axis origin"
+  ex = vector(0 0 1) "[m] Axial direction"
+  er = vector(1 0 0) "[m] Radial direction"
 }
 
 mesh = set
@@ -58,30 +73,29 @@ mesh = set
   nr = int 10 "# cells in radial direction (from edge of core block to outer radius)"
   nu = int 10 "# cells in circumferential direction (in one of four segments)"
   gradr = double 1 "grading towards outer boundary"
+  
+  outerPatchName = string "" "name of patch on outer"
+  basePatchName = string "" "name of patch on base end"
+  topPatchName = string "" "name of patch on top end"
 }
 
 <<<PARAMETERSET
 */
 
 protected:
-  blockMesh& bmd_;
-  Parameters p_;
+  Parameters p;
 
 public:
-  Cylinder
-  (
-    blockMesh& bmd,
-    const ParameterSet& p,
-    Patch* lowxendPatch=NULL,
-    Patch* highxendPatch=NULL,
-    Patch* outerPatch=NULL
-  );
+  Cylinder(const ParameterSet& p);
   
-  inline static ParameterSet defaultParameters() 
+  virtual void create_bmd(blockMesh& bmd) const;
+  
+  inline static ParameterSet defaultParameterSet() 
     { return Parameters::makeDefault(); };
     
   double rCore() const;
 };
+
 
 }
 

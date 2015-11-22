@@ -28,36 +28,58 @@ namespace insight {
   
 namespace bmd
 {
+  
+BlockMeshTemplate::BlockMeshTemplate()
+{}
 
-Cylinder::Cylinder
-(
-  blockMesh& bmd, 
-  const insight::ParameterSet& p, 
-  insight::bmd::Patch* lowxendPatch, 
-  insight::bmd::Patch* highxendPatch, 
-  insight::bmd::Patch* outerPatch
-)
-: bmd_(bmd), p_(p)
+BlockMeshTemplate::~BlockMeshTemplate()
+{}
+
+
+void create_bmd_file(const filesystem::path& casedir, const std::string& ofename, const BlockMeshTemplate& bmt)
 {
+  OpenFOAMCase cm(OFEs::get(ofename));
+  blockMesh& bmd = *cm.insert(new blockMesh(cm));
+  bmt.create_bmd(bmd);
+  cm.createOnDisk(casedir, cm.createDictionaries());
+}
 
+
+Cylinder::Cylinder(const ParameterSet& ps)
+: p(ps)
+{}
+
+void Cylinder::create_bmd
+(
+  blockMesh& bmd
+) const
+{
   double al = M_PI/2.;
   
-  double Lc=p_.geometry.D*0.33;
+  double Lc=p.geometry.D*0.33;
   
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
-      (2, 	vec3(0, 0.5*p_.geometry.D, 0))
-      (1, 	vec3(0,  ::cos(al)*Lc, 0.))
+      (1, 	vec3(0, 0.5*p.geometry.D, 0))
+      (0, 	vec3(0,  ::cos(al)*Lc, 0.))
       .convert_to_container<std::map<int, Point> >()
   ;
-  arma::mat vL=p_.geometry.L*p_.geometry.ex;
+  arma::mat vL=p.geometry.L*p.geometry.ex;
+  
+  Patch* base=NULL;
+  Patch* top=NULL;
+  Patch* outer=NULL;
+  
+  if (p.mesh.basePatchName!="") base=&bmd.addOrDestroyPatch(p.mesh.basePatchName, new bmd::Patch());
+  if (p.mesh.topPatchName!="") top=&bmd.addOrDestroyPatch(p.mesh.topPatchName, new bmd::Patch());
+  if (p.mesh.outerPatchName!="") outer=&bmd.addOrDestroyPatch(p.mesh.outerPatchName, new bmd::Patch());
   
   // core block
   {
-    arma::mat r0=rotMatrix(0.5*al, p_.geometry.ex);
-    arma::mat r1=rotMatrix(1.5*al, p_.geometry.ex);
-    arma::mat r2=rotMatrix(2.5*al, p_.geometry.ex);
-    arma::mat r3=rotMatrix(3.5*al, p_.geometry.ex);
+    arma::mat r0=rotMatrix(0.5*al, p.geometry.ex);
+    arma::mat r1=rotMatrix(1.5*al, p.geometry.ex);
+    arma::mat r2=rotMatrix(2.5*al, p.geometry.ex);
+    arma::mat r3=rotMatrix(3.5*al, p.geometry.ex);
 
     Block& bl = bmd.addBlock
     (  
@@ -65,18 +87,18 @@ Cylinder::Cylinder
 	  r1*pts[0], r2*pts[0], r3*pts[0], r0*pts[0],
 	  (r1*pts[0])+vL, (r2*pts[0])+vL, (r3*pts[0])+vL, (r0*pts[0])+vL
 	),
-	p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
+	p.mesh.nu, p.mesh.nu, p.mesh.nx
       )
     );
-    if (lowxendPatch) lowxendPatch->addFace(bl.face("0321"));
-    if (highxendPatch) highxendPatch->addFace(bl.face("4567"));
+    if (base) base->addFace(bl.face("0321"));
+    if (top) top->addFace(bl.face("4567"));
   }
 
   // radial blocks
   for (int i=0; i<4; i++)
   {
-    arma::mat r0=rotMatrix(double(i+0.5)*al, p_.geometry.ex);
-    arma::mat r1=rotMatrix(double(i+1.5)*al, p_.geometry.ex);
+    arma::mat r0=rotMatrix(double(i+0.5)*al, p.geometry.ex);
+    arma::mat r1=rotMatrix(double(i+1.5)*al, p.geometry.ex);
 
     {    
       Block& bl = bmd.addBlock
@@ -85,16 +107,16 @@ Cylinder::Cylinder
 	    r1*pts[0], r0*pts[0], r0*pts[1], r1*pts[1],
 	    (r1*pts[0])+vL, (r0*pts[0])+vL, (r0*pts[1])+vL, (r1*pts[1])+vL
 	  ),
-	  p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
-	  list_of<double>(1)(1./p_.mesh.gradr)(1)
+	  p.mesh.nu, p.mesh.nr, p.mesh.nx,
+	  list_of<double>(1)(1./p.mesh.gradr)(1)
 	)
       );
-      if (lowxendPatch) lowxendPatch->addFace(bl.face("0321"));
-      if (highxendPatch) highxendPatch->addFace(bl.face("4567"));
+      if (base) base->addFace(bl.face("0321"));
+      if (top) top->addFace(bl.face("4567"));
     }
 
 
-    arma::mat rmid=rotMatrix(double(i+1)*al, p_.geometry.ex);
+    arma::mat rmid=rotMatrix(double(i+1)*al, p.geometry.ex);
     bmd.addEdge(new ArcEdge(r1*pts[1], r0*pts[1], rmid*pts[1]));
     bmd.addEdge(new ArcEdge((r1*pts[1])+vL, (r0*pts[1])+vL, (rmid*pts[1])+vL));
 
@@ -105,6 +127,12 @@ Cylinder::Cylinder
   }
 
 }
+
+double Cylinder::rCore() const
+{
+  return p.geometry.D*0.33;
+}
+
 
   
 }

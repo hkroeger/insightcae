@@ -87,6 +87,7 @@ public:
     void appendPolygon(int nc, const int ci[]);
     int nPolyPts() const;
     
+    void appendCellScalarField(const std::string& name, const double s[]);
     void appendCellVectorField(const std::string& name, const double x[], const double y[], const double z[]);
     void appendCellTensorField(const std::string& name, 
 			       const double xx[], const double xy[], const double xz[],

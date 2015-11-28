@@ -30,8 +30,9 @@ def split(more, path):
   else:
     return tail
   
-def writeloadscript(scrname, path, batch=False):
+def writeloadscript(scrname, path, batch=False, loadcmd=True):
   fn=os.path.join(os.getcwd(), ".loadscript.py")
+  fnamestem=os.path.splitext(os.path.basename(scrname))[0]
   f=open(fn, "w")
   f.write("""\
 try: paraview.simple
@@ -51,21 +52,32 @@ def isfloat(x):
 times=sorted(map(float, filter(isfloat, os.listdir("."))))
 print times
 #curtime=times[-1]
-servermanager.LoadState("%s")
+"""
++ ('paraview.simple.LoadState("%s")\n'%scrname if loadcmd else "") +
+"""
 
 AnimationScene1 = GetAnimationScene()
 AnimationScene1.EndTime = times[-1]
-"""%scrname)
+""")
   if batch:
     print opts.fromt, opts.tot # error occurs, when this statement is removed
+#  for i in range(0,len(GetRenderViews())):
+#    fname="%s_view%%02d_t%%g.png"%%(i,curtime)
+#    print "Writing", fname
+#    WriteImage(fname, GetRenderViews()[i], Writer="vtkPNGWriter", Magnification=1)
     f.write("""\
 for curtime in filter(lambda t: t>=%g and t<=%g, times):
   AnimationScene1.AnimationTime = curtime
-  for i in range(0,len(GetRenderViews())):
-    fname="screenshot_view%%02d_t%%g.png"%%(i,curtime)
+  
+  #RescaleTransferFunctionToDataRange(False)
+  
+  RenderAllViews()
+  
+  for i,l in enumerate(GetLayouts()):
+    fname="%s_layout%%02d_t%%g.png"%%(i,curtime)
     print "Writing", fname
-    WriteImage(fname, GetRenderViews()[i], Writer="vtkPNGWriter", Magnification=1)
-"""%(opts.fromt, opts.tot))
+    SaveScreenshot(fname, layout=GetLayouts()[l], magnification=1, quality=100)
+"""%(opts.fromt, opts.tot, fnamestem))
   else:
     f.write("AnimationScene1.AnimationTime = times[-1]\n")
     
@@ -104,11 +116,12 @@ if (opts.statefile!=""):
 
 
 if not statefile is None:
-  scrp=writeloadscript(statefile, os.getcwd(), opts.batch);
   if opts.batch:
+    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=True);
     subprocess.call(["pvbatch", "--use-offscreen-rendering", scrp])
   else:
-    subprocess.call(["paraview", "--script="+scrp])
+    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=False);
+    subprocess.call(["paraview", "--state="+statefile, "--script="+scrp])
   os.remove(scrp)
 else:
   cn=split(3, os.getcwd())+".foam"

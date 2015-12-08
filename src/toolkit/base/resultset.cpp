@@ -597,7 +597,13 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
     <<"\\includegraphics[#1]{#2}\\endgroup}\n"
     <<"\\def\\PlotFrame{\\begingroup\n"
     <<"\\catcode`\\_=12\n"
-    <<"\\PlotFrameB}\n";
+    <<"\\PlotFrameB}\n"
+    
+    <<"\\usepackage{enumitem}\n"
+      "\\setlist[enumerate]{label*=\\arabic*.}\n"
+      "\\renewlist{enumerate}{enumerate}{10}\n"
+      
+      ;
   writeLatexHeaderCode(header);
   
   writeLatexCode(content, "", 0, filepath.parent_path());

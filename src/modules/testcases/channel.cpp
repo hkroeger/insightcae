@@ -533,15 +533,15 @@ void ChannelBase::evaluateAtSection(
       results, executionPath(), "chartMeanVelocity_"+title,
       "y+", "<U+>",
       list_of
-      (PlotCurve(axial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
-      (PlotCurve(spanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
-      (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
-      (PlotCurve(refdata_umean180, "w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)'"))
-      (PlotCurve(refdata_wmean180, "w l lt 2 lc 2 t 'Spanwise (MKM Re_tau=180)'"))
-      (PlotCurve(refdata_umean395, "w l lt 4 lc 1 t 'Axial (MKM Re_tau=395)'"))
-      (PlotCurve(refdata_wmean395, "w l lt 4 lc 2 t 'Spanwise (MKM Re_tau=395)'"))
-      (PlotCurve(refdata_umean590, "w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)'"))
-      (PlotCurve(refdata_wmean590, "w l lt 3 lc 2 t 'Spanwise (MKM Re_tau=590)'"))
+      (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Axial'"))
+      (PlotCurve(wallnormal, 		"w l lt 1 lc 2 lw 4 t 'Wall normal'"))
+      (PlotCurve(spanwise, 		"w l lt 1 lc 3 lw 4 t 'Spanwise'"))
+      (PlotCurve(refdata_umean180,	"w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)'"))
+      (PlotCurve(refdata_wmean180, 	"w l lt 2 lc 3 t 'Spanwise (MKM Re_tau=180)'"))
+      (PlotCurve(refdata_umean395, 	"w l lt 4 lc 1 t 'Axial (MKM Re_tau=395)'"))
+      (PlotCurve(refdata_wmean395, 	"w l lt 4 lc 3 t 'Spanwise (MKM Re_tau=395)'"))
+      (PlotCurve(refdata_umean590, 	"w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)'"))
+      (PlotCurve(refdata_wmean590, 	"w l lt 3 lc 3 t 'Spanwise (MKM Re_tau=590)'"))
       ,
       "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
       "set logscale x"
@@ -664,30 +664,30 @@ void ChannelBase::evaluateAtSection(
     
     int c=cd[RFieldName_].col;
     arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
+    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
+    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
 
     axial.save( (executionPath()/("Raxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    spanwise.save( (executionPath()/("Rspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     wallnormal.save( (executionPath()/("Rwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    spanwise.save( (executionPath()/("Rspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
       results, executionPath(), chart_name,
       "y+", "<R+>",
       list_of
-       (PlotCurve(axial, "w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"))
-       (PlotCurve(spanwise, "w l lt 1 lc 2 lw 4 t 'Ryy (Spanwise)'"))
-       (PlotCurve(wallnormal, "w l lt 1 lc 3 lw 4 t 'Rzz (Wall normal)'"))
-       (PlotCurve(refdata_Ruu, "w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Rvv, "w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Rww, "w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Ruu395, "w l lt 4 lc 1 t 'Rxx (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Rvv395, "w l lt 4 lc 2 t 'Ryy (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Rww395, "w l lt 4 lc 3 t 'Rzz (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Ruu590, "w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)'"))
-       (PlotCurve(refdata_Rvv590, "w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)'"))
-       (PlotCurve(refdata_Rww590, "w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"))
+       (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"))
+       (PlotCurve(wallnormal, 		"w l lt 1 lc 2 lw 4 t 'Ryy (Wall normal)'"))
+       (PlotCurve(spanwise, 		"w l lt 1 lc 3 lw 4 t 'Rzz (Spanwise)'"))
+       (PlotCurve(refdata_Ruu, 		"w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Rvv, 		"w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Rww, 		"w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
+       (PlotCurve(refdata_Ruu395, 	"w l lt 4 lc 1 t 'Rxx (MKM Re_tau=395)'"))
+       (PlotCurve(refdata_Rvv395, 	"w l lt 4 lc 2 t 'Ryy (MKM Re_tau=395)'"))
+       (PlotCurve(refdata_Rww395, 	"w l lt 4 lc 3 t 'Rzz (MKM Re_tau=395)'"))
+       (PlotCurve(refdata_Ruu590, 	"w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)'"))
+       (PlotCurve(refdata_Rvv590, 	"w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)'"))
+       (PlotCurve(refdata_Rww590, 	"w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"))
        ,
      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
      "set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"

@@ -15,6 +15,9 @@ for cfgd in $INSIGHT_USERSHAREDDIR ${INSIGHT_GLOBALSHAREDDIRS/:/ }; do # in that
  if [ -d $cfgd/python ]; then
   export PYTHONPATH=$cfgd/python:$PYTHONPATH
  fi
+ if [ -d $cfgd/tex ]; then
+  export TEXINPUTS=$TEXINPUTS:$cfgd/tex
+ fi
 done
 
 source $INSIGHT_BINDIR/insight.bashrc.OpenFOAM

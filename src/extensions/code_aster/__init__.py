@@ -525,21 +525,32 @@ for view in GetRenderViews():
 	s
       ):
     
+    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from Accas import _F
+
     ops=[]
+    ops2=[]
     for gname in singlenode_groups:
       ops.append(_F(OPERATION='EXTRACTION',
                                  INTITULE=gname,
-                                 RESULTAT=sol,
+                                 RESULTAT=s,
                                  NOM_CHAM='REAC_NODA',
                                  GROUP_NO=gname,
-                                 RESULTANTE=('COOR_X', 'COOR_Y', 'COOR_Y', 
-					     'DX','DY','DZ',
+                                 RESULTANTE=('DX','DY','DZ',
 					     'DRX','DRY','DRZ'),)
                                  );   
+      ops2.append(_F(OPERATION='EXTRACTION',
+				      INTITULE=gname,
+				      RESULTAT=s,
+				      NOM_CHAM='DEPL',
+				      GROUP_NO=gname,
+				      NOM_CMP=('DX', 'DY', 'DZ',)
+				  )
+				);
     for gname,center in cumulnode_groups:
       ops.append(_F(OPERATION='EXTRACTION',
                                  INTITULE=gname,
-                                 RESULTAT=sol,
+                                 RESULTAT=s,
                                  NOM_CHAM='REAC_NODA',
                                  GROUP_NO=gname,
                                  RESULTANTE=('DX','DY','DZ',),
@@ -547,38 +558,44 @@ for view in GetRenderViews():
                                  POINT=center
                                  ),
 				);
+      
     reac=POST_RELEVE_T(ACTION=tuple(ops));
+    deplta=POST_RELEVE_T(ACTION=tuple(ops2));
     
     IMPR_TABLE(TABLE=reac,
            FORMAT='TABLEAU',
            );
-    csvsnippet="# id, X, Y, Z, FX, FY, FZ, MX, MY, MZ"
+    IMPR_TABLE(TABLE=deplta,
+           FORMAT='TABLEAU',
+           );
+    
+    csvsnippet="#name,X,Y,Z,FX,FY,FZ,MX,MY,MZ\n" # all in N and mm
     latexsnippet="""\\begin{tabular}{lrrrrrr}
 ID & $F_x/N$ & $F_y/N$ & $F_z/N$ & $M_x/Nm$ & $M_y/Nm$ & $M_z/Nm$\\\\
 \\hline
-"""
+"""  ## convert Nmm into Nm!!
     i=0
     for gname in singlenode_groups:
       i+=1
-      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"
-       %(gname,
-	 reac['COOR_X',i],reac['COOR_Y',i],reac['COOR_Z',i],
+      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"%(
+	 gname,
+	 deplta['COOR_X',i],deplta['COOR_Y',i],deplta['COOR_Z',i],
 	 reac['DX',i],reac['DY',i],reac['DZ',i],
 	 reac['DRX',i],reac['DRY',i],reac['DRZ',i])
-      latexsnippet+="%s & %g & %g & %g & %g & %g & %g\\\\\n"
-       %(gname,
+      latexsnippet+="%s & %g & %g & %g & %g & %g & %g\\\\\n"%(
+	 gname,
 	 reac['DX',i],reac['DY',i],reac['DZ',i],
 	 1e-3*reac['DRX',i],1e-3*reac['DRY',i],1e-3*reac['DRZ',i])
        
     for gname,center in cumulnode_groups:
       i+=1
-      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"
-       %(gname,
+      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"%(
+	 gname,
 	 center[0],center[1],center[2],
 	 reac['RESULT_X',i],reac['RESULT_Y',i],reac['RESULT_Z',i],
 	 reac['MOMENT_X',i],reac['MOMENT_Y',i],reac['MOMENT_Z',i])
-      latexsnippet+="%s & %g & %g & %g & %g & %g & %g\\\\\n"
-       %(gname,
+      latexsnippet+="%s & %g & %g & %g & %g & %g & %g\\\\\n"%(
+	 gname,
 	 reac['RESULT_X',i],reac['RESULT_Y',i],reac['RESULT_Z',i],
 	 1e-3*reac['MOMENT_X',i],1e-3*reac['MOMENT_Y',i],1e-3*reac['MOMENT_Z',i])
        
@@ -587,5 +604,5 @@ ID & $F_x/N$ & $F_y/N$ & $F_z/N$ & $M_x/Nm$ & $M_y/Nm$ & $M_z/Nm$\\\\
     self.appendFile(label+"_table.csv", csvsnippet)
     self.appendFile(label+"_table.tex", latexsnippet)
     
-    DETRUIRE(CONCEPT=_F(NOM=(reac,),),
+    DETRUIRE(CONCEPT=_F(NOM=(reac,deplta),),
          INFO=1,);

@@ -1,5 +1,5 @@
 
-import os, sys, re, time, math
+import os, sys, re, time, math, zipfile, StringIO
 import numpy as np
 import scipy
 import scipy.spatial
@@ -15,6 +15,11 @@ def getCommDir():
   pat="^F comm (.+)/([^/]+).comm"
   d=re.search(pat, filter(re.compile(pat).search, lines)[0]).group(1)
   return d
+
+
+
+
+
 
 
 
@@ -36,6 +41,10 @@ def readMeshes(nMeshes):
       m[i]=LIRE_MAILLAGE(UNITE=20+i, FORMAT='MED');
 
   return m[nMeshes-1]
+
+
+
+
 
 
 
@@ -80,6 +89,9 @@ def area(mesh, group_ma_name):
 
 
 
+
+
+
 class PressureField(object):
 
   def __init__(self, csvfilename, 
@@ -98,6 +110,14 @@ class PressureField(object):
       """
       return self.pinterp(x[0], x[1], x[2])
       
+
+
+
+
+
+
+
+
 
 class BoltedJoint(object):
   
@@ -295,3 +315,294 @@ class BoltedJoint(object):
     delta_T=f_T/F_V # elasticity of part
     
     return F_V, data[1][0], F_BS, delta_S, delta_T, Delta_f
+
+
+
+
+class StressAssessmentPoints:
+  
+  def __init__(self):
+    self.zip_in_memory=StringIO.StringIO()
+    self.zip_archive = zipfile.ZipFile(
+      self.zip_in_memory, 
+      "a", 
+      zipfile.ZIP_DEFLATED, 
+      False
+    )
+
+  def appendFile(self, fname, contents):
+    self.zip_archive.writestr(fname, contents)
+
+  def write(self, fname):
+    self.zip_archive.close()
+    self.zip_in_memory.seek(0)
+
+    f = file(fname, "w")
+    f.write(self.zip_in_memory.read())
+    f.close()
+
+  def extractMaxBeamStress(self, label, group, s):
+    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from Accas import _F
+    
+    tabex=POST_RELEVE_T(
+      ACTION=tuple( [
+	_F (
+	  INTITULE=label+':'+qty ,
+	  OPERATION='EXTREMA' ,
+	  GROUP_MA = group ,
+	  RESULTAT=s ,
+	  NOM_CHAM='SIPO_ELNO' ,
+	  NOM_CMP = ( qty , ) ,
+	) for qty in ['SN', 'SVY', 'SVZ', 'SMT', 'SMFY', 'SMFZ'] ] )
+    );
+
+    tabmax=CALC_TABLE (
+      TABLE=tabex ,
+      ACTION = (
+	_F (
+	  OPERATION='FILTRE' ,
+	  NOM_PARA='EXTREMA' ,
+	  VALE_K='MAX' ,
+	),
+      ),
+    );
+    IMPR_TABLE(TABLE=tabmax);
+    
+    tabmin=CALC_TABLE (
+      TABLE=tabex ,
+      ACTION = (
+	_F (
+	  OPERATION='FILTRE' ,
+	  NOM_PARA='EXTREMA' ,
+	  VALE_K='MIN' ,
+	),
+      ),
+    );
+    IMPR_TABLE(TABLE=tabmin);
+    
+    extrema={}
+    for cm,i in [('SN',1), ('SVY',2), ('SVZ',3), ('SMT',4), ('SMFY',5), ('SMFZ',6)]:
+      minv=tabmin['VALE',i]
+      maxv=tabmax['VALE',i]
+      ex=maxv
+      if (abs(minv)>abs(maxv)):
+	ex=minv
+      extrema[cm]=ex
+    
+    DETRUIRE( CONCEPT=_F ( NOM= (tabmax,tabmin,tabex) ) , ) ;
+    
+    snippet="""<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <selectableSubset name="witnesspointlocation" value="nominalparentmaterial">
+    <double name="Szd" value="%g"/>
+    <double name="Tsy" value="%g"/>
+    <double name="Tsz" value="%g"/>
+    <double name="Tt"  value="%g"/>
+    <double name="Sby" value="%g"/>
+    <double name="Sbz" value="%g"/>
+  </selectableSubset>
+</root>
+"""%(
+    extrema['SN'], 
+    extrema['SVY'], 
+    extrema['SVZ'], 
+    extrema['SMT'], 
+    extrema['SMFY'], 
+    extrema['SMFZ']
+    )
+
+    self.appendFile(label+"_stress_values.ist", snippet)
+
+
+
+  def extractMaxShellStress(
+	self,
+	label, 
+	group, 
+	solInf, solSup
+      ):
+    
+    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from Accas import _F
+    
+    critset='SIEQ_ELNO'
+    critcmp='VMIS'
+    repset='SIEQ_ELNO'
+    repcmp=('VMIS', 
+	    'PRIN_1', 'PRIN_2', 'PRIN_3', 
+	    'VECT_1_X', 'VECT_1_Y', 'VECT_1_Z', 
+	    'VECT_2_X', 'VECT_2_Y', 'VECT_2_Z', 
+	    'VECT_3_X', 'VECT_3_Y', 'VECT_3_Z')
+    
+    vmis	=  0.
+    sigma123	= [0.,0.,0.]
+    pt		= [0.,0.,0.]
+
+    for s in [solInf, solSup]:
+      tabmax=POST_RELEVE_T(
+	ACTION=_F (
+	  INTITULE='extremes' ,
+	  OPERATION='EXTREMA' ,
+	  GROUP_MA = group ,
+	  RESULTAT=s ,
+	  NOM_CHAM=critset ,
+	  NOM_CMP = ( critcmp , ) ,
+	  #LIST_INST = ( liste , ) ,
+	),
+      );
+
+      tabmax=CALC_TABLE (
+	TABLE=tabmax ,
+	reuse=tabmax ,
+	ACTION = (
+	  _F (
+	    OPERATION='FILTRE' ,
+	    NOM_PARA='EXTREMA' ,
+	    VALE_K='MAX' ,
+	  ),
+	  _F (
+	    OPERATION='TRI' ,
+	    NOM_PARA='VALE' ,
+	    ORDRE='CROISSANT' ,
+	  ),
+	),
+      );
+
+      thiselem = tabmax [ 'MAILLE' , 1 ] ;
+      thisnode = tabmax [ 'NOEUD' , 1 ] ;
+      valatmax=POST_RELEVE_T(
+	ACTION=_F (
+	  INTITULE=label ,
+	  OPERATION='EXTRACTION' ,
+	  RESULTAT=s ,
+	  NOM_CHAM=repset ,
+	    MAILLE=thiselem ,
+	    NOEUD=thisnode,
+	    NOM_CMP=repcmp
+	),
+      );
+      IMPR_TABLE(TABLE=valatmax);
+      
+      cur_vmis=valatmax['VMIS',1]
+      
+      if (abs(cur_vmis)>vmis):
+	vmis     = cur_vmis
+	sigma123 = [ valatmax['PRIN_1',1], valatmax['PRIN_2',1], valatmax['PRIN_3',1] ]
+	pt       = [ valatmax['COOR_X',1], valatmax['COOR_Y',1], valatmax['COOR_Z',1] ]
+      
+      DETRUIRE( CONCEPT=_F ( NOM= (tabmax,valatmax) ) , ) ;
+
+    snippet="""<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <selectableSubset name="witnesspointlocation" value="localparentmaterial">
+    <double name="S1" value="%g"/>
+    <double name="S2" value="%g"/>
+    <double name="S3" value="%g"/>
+  </selectableSubset>
+</root>
+  """%( sigma123[0], sigma123[1], sigma123[2] )
+    self.appendFile(label+"_stress_values.ist", snippet)
+      
+    snippet="""
+sphere1 = Sphere()
+
+# Properties modified on sphere1
+sphere1.Center = [%g, %g, %g]
+sphere1.Radius = 50
+
+for view in GetRenderViews():
+ sphere1Display = Show(sphere1, view)
+ sphere1Display.DiffuseColor = [1.0, 0.0, 0.0]
+"""%(pt[0],pt[1],pt[2])
+    self.appendFile(label+"_paraview_asp_marker.py", snippet)
+
+  def extractReactionForces(
+	self,
+	label, 
+	singlenode_groups, 
+	cumulnode_groups, 
+	s
+      ):
+    
+    from Cata.cata import POST_RELEVE_T, CALC_TABLE, IMPR_TABLE, DETRUIRE
+    from Accas import _F
+
+    ops=[]
+    ops2=[]
+    for gname in singlenode_groups:
+      ops.append(_F(OPERATION='EXTRACTION',
+                                 INTITULE=gname,
+                                 RESULTAT=s,
+                                 NOM_CHAM='REAC_NODA',
+                                 GROUP_NO=gname,
+                                 RESULTANTE=('DX','DY','DZ',
+					     'DRX','DRY','DRZ'),)
+                                 );   
+      ops2.append(_F(OPERATION='EXTRACTION',
+				      INTITULE=gname,
+				      RESULTAT=s,
+				      NOM_CHAM='DEPL',
+				      GROUP_NO=gname,
+				      NOM_CMP=('DX', 'DY', 'DZ',)
+				  )
+				);
+    for gname,center in cumulnode_groups:
+      ops.append(_F(OPERATION='EXTRACTION',
+                                 INTITULE=gname,
+                                 RESULTAT=s,
+                                 NOM_CHAM='REAC_NODA',
+                                 GROUP_NO=gname,
+                                 RESULTANTE=('DX','DY','DZ',),
+                                 MOMENT=('DRX', 'DRY', 'DRZ'),
+                                 POINT=center
+                                 ),
+				);
+      
+    reac=POST_RELEVE_T(ACTION=tuple(ops));
+    deplta=POST_RELEVE_T(ACTION=tuple(ops2));
+    
+    IMPR_TABLE(TABLE=reac,
+           FORMAT='TABLEAU',
+           );
+    IMPR_TABLE(TABLE=deplta,
+           FORMAT='TABLEAU',
+           );
+    
+    csvsnippet="#name,X,Y,Z,FX,FY,FZ,MX,MY,MZ\n" # all in N and mm
+    latexsnippet="""\\begin{tabular}{lrrrrrr}
+ID & $F_x/N$ & $F_y/N$ & $F_z/N$ & $M_x/Nm$ & $M_y/Nm$ & $M_z/Nm$\\\\
+\\hline
+"""  ## convert Nmm into Nm!!
+    i=0
+    for gname in singlenode_groups:
+      i+=1
+      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"%(
+	 gname,
+	 deplta['COOR_X',i],deplta['COOR_Y',i],deplta['COOR_Z',i],
+	 reac['DX',i],reac['DY',i],reac['DZ',i],
+	 reac['DRX',i],reac['DRY',i],reac['DRZ',i])
+      latexsnippet+="%s & %.2f & %.2f & %.2f & %.2f & %.2f & %.2f\\\\\n"%(
+	 gname,
+	 reac['DX',i],reac['DY',i],reac['DZ',i],
+	 1e-3*reac['DRX',i],1e-3*reac['DRY',i],1e-3*reac['DRZ',i])
+       
+    for gname,center in cumulnode_groups:
+      i+=1
+      csvsnippet+="%s,%g,%g,%g,%g,%g,%g,%g,%g,%g\n"%(
+	 gname,
+	 center[0],center[1],center[2],
+	 reac['RESULT_X',i],reac['RESULT_Y',i],reac['RESULT_Z',i],
+	 reac['MOMENT_X',i],reac['MOMENT_Y',i],reac['MOMENT_Z',i])
+      latexsnippet+="%s & %.2f & %.2f & %.2f & %.2f & %.2f & %.2f\\\\\n"%(
+	 gname,
+	 reac['RESULT_X',i],reac['RESULT_Y',i],reac['RESULT_Z',i],
+	 1e-3*reac['MOMENT_X',i],1e-3*reac['MOMENT_Y',i],1e-3*reac['MOMENT_Z',i])
+       
+    latexsnippet+="\\end{tabular}\n"
+
+    self.appendFile(label+"_table.csv", csvsnippet)
+    self.appendFile(label+"_table.tex", latexsnippet)
+    
+    DETRUIRE(CONCEPT=_F(NOM=(reac,deplta),),
+         INFO=1,);

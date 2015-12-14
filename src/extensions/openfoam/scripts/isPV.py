@@ -6,9 +6,14 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-s", "--statefile", dest="statefile", metavar='FILE', default="",
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-r", "--loadscript", dest="loadscript", metavar='FILE', default="",
+                  help="include (append) the specified snippet into the loadscript")
 parser.add_option("-b", "--batch", dest="batch",
 		  action='store_true',
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-c", "--rescale", dest="rescale",
+		  action='store_true',
+                  help="automatically rescale all contour plots to data range (within each time step)")
 parser.add_option("-f", "--from", dest="fromt", metavar="t0", default=0, type="float",
                   help="initial time")
 parser.add_option("-t", "--to", dest="tot", metavar="t1", default=1e10, type="float",
@@ -30,7 +35,7 @@ def split(more, path):
   else:
     return tail
   
-def writeloadscript(scrname, path, batch=False, loadcmd=True):
+def writeloadscript(scrname, path, batch=False, loadcmd=True, appendFile=""):
   fn=os.path.join(os.getcwd(), ".loadscript.py")
   fnamestem=os.path.splitext(os.path.basename(scrname))[0]
   f=open(fn, "w")
@@ -59,12 +64,30 @@ print times
 AnimationScene1 = GetAnimationScene()
 AnimationScene1.EndTime = times[-1]
 """)
+  
+  if (appendFile!=""):
+    for line in open(appendFile, 'r'):
+      f.write(line)
+      
   if batch:
     print opts.fromt, opts.tot # error occurs, when this statement is removed
 #  for i in range(0,len(GetRenderViews())):
 #    fname="%s_view%%02d_t%%g.png"%%(i,curtime)
 #    print "Writing", fname
 #    WriteImage(fname, GetRenderViews()[i], Writer="vtkPNGWriter", Magnification=1)
+
+    rescalesnippet=""
+    if (opts.rescale):
+      rescalesnippet="""
+  import math
+  for view in GetRenderViews():
+    reps = view.Representations
+    for rep in reps:
+     if hasattr(rep, 'Visibility') and rep.Visibility == 1 and hasattr(rep, 'MapScalars') and rep.MapScalars != '':
+      input = rep.Input
+      input.UpdatePipeline() #make sure range is up-to-date
+      rep.RescaleTransferFunctionToDataRange(False)
+"""
     f.write("""\
 for curtime in filter(lambda t: t>=%g and t<=%g, times):
   AnimationScene1.AnimationTime = curtime
@@ -73,11 +96,15 @@ for curtime in filter(lambda t: t>=%g and t<=%g, times):
   
   RenderAllViews()
   
-  for i,l in enumerate(GetLayouts()):
+  %s
+  
+  layouts=GetLayouts()
+  for i,l in enumerate(sorted(layouts.keys(), key=lambda k: k[0])):
+  #for i,l in enumerate(layouts):
     fname="%s_layout%%02d_t%%g.png"%%(i,curtime)
     print "Writing", fname
-    SaveScreenshot(fname, layout=GetLayouts()[l], magnification=1, quality=100)
-"""%(opts.fromt, opts.tot, fnamestem))
+    SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)
+"""%(opts.fromt, opts.tot, rescalesnippet, fnamestem))
   else:
     f.write("AnimationScene1.AnimationTime = times[-1]\n")
     
@@ -117,10 +144,10 @@ if (opts.statefile!=""):
 
 if not statefile is None:
   if opts.batch:
-    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=True);
+    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=True, appendFile=opts.loadscript);
     subprocess.call(["pvbatch", "--use-offscreen-rendering", scrp])
   else:
-    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=False);
+    scrp=writeloadscript(statefile, os.getcwd(), opts.batch, loadcmd=False, appendFile=opts.loadscript);
     subprocess.call(["paraview", "--state="+statefile, "--script="+scrp])
   os.remove(scrp)
 else:

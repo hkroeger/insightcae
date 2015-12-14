@@ -1062,6 +1062,8 @@ void mapFields
   const std::vector<std::string>& fields
 )
 {
+  std::string execname="mapFields";
+
   path mfdPath=target / "system" / "mapFieldsDict";
   if (!exists(mfdPath))
   {
@@ -1083,7 +1085,19 @@ void mapFields
   if (parallelTarget) 
     args.push_back("-parallelTarget");
   
-  if (targetcase.OFversion()>=230 && fields.size()>0)
+  
+  if (targetcase.OFversion()>=230)
+  {
+    if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
+    {
+      args.push_back("-mapMethod");
+      args.push_back("mapNearest");
+//       execname="mapFields22";
+//       args.push_back("-noFunctionObjects");
+    }
+  }
+
+  if (targetcase.OFversion()>=230 && (fields.size()>0) && (execname!="mapFields22") )
   {
     std::ostringstream os;
     os<<"(";
@@ -1096,17 +1110,7 @@ void mapFields
     args.push_back("-fields");
     args.push_back(os.str());
   }
-  
-  if (targetcase.OFversion()>=230)
-  {
-    if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
-    {
-      args.push_back("-mapMethod");
-      args.push_back("direct");
-    }
-  }
 
-  std::string execname="mapFields";
 //   if (targetcase.OFversion()>=220) execname="mapFields22";
   targetcase.executeCommand
   (

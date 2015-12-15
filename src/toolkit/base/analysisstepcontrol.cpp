@@ -20,8 +20,53 @@
 
 #include "analysisstepcontrol.h"
 
+#include <iostream>
+#include "base/analysis.h"
+
 namespace insight
 {
   
+void AnalysisStep::flushStepCache() const
+{
+  if (analysis_.writestepcache_)
+  {
+    std::ofstream f(analysis_.stepcachefile_.c_str(), std::ios_base::app);
+    f<<curstep_<<std::endl;
+  }
+}
+
   
+AnalysisStep::AnalysisStep(Analysis& analysis, const std::string& curstep)
+: analysis_(analysis),
+  curstep_(curstep)
+{
+  std::cout<<
+    " =>=>=> Entering next analysis step: "<<curstep_<<" <=<=<= "
+  <<std::endl;
+}
+
+AnalysisStep::~AnalysisStep()
+{
+  std::cout<<
+    " =>=>=> analysis step finished: "<<curstep_<<" <=<=<= "
+  <<std::endl;
+  analysis_.performedsteps_.insert(curstep_);
+  flushStepCache();
+}
+
+AnalysisStep::operator bool() const
+{
+  if ( analysis_.performedsteps_.find(curstep_) != analysis_.performedsteps_.end() )
+  {
+    std::cout<<
+      " =>=>=> (skip)"
+      <<std::endl;
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
 }

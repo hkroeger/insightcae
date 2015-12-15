@@ -25,6 +25,7 @@
 #include "base/parameterset.h"
 #include "base/factory.h"
 #include "base/resultset.h"
+#include "base/analysisstepcontrol.h"
 
 #include <queue>
 
@@ -70,6 +71,11 @@ protected:
   DirectoryParameter executionPath_;
   ParameterSetPtr parameters_;
   
+  bool writestepcache_ = false;
+  boost::filesystem::path stepcachefile_;
+  AnalysisStepList performedsteps_;
+  friend class AnalysisStep;
+  
   SharedPathList sharedSearchPath_;
   void extendSharedSearchPath(const std::string& name);
   
@@ -91,6 +97,14 @@ public:
   
   inline const std::string& getName() const { return name_; }
   inline std::string& name() { return name_; }
+  inline std::string safe_name() const
+  {
+    std::string n(getName());
+    boost::replace_all(n, " ", "_");
+    boost::replace_all(n, "/", "-");
+    return n; 
+  }
+  
   inline const std::string& getDescription() const { return description_; }
   inline std::string& description() { return description_; }
   

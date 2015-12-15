@@ -140,6 +140,19 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()
 {
   path p=Analysis::setupExecutionEnvironment();
+  
+  writestepcache_=true;
+  if (exists(stepcachefile_))
+  {
+    std::ifstream stc(stepcachefile_.c_str());
+    while (!stc.eof())
+    {
+      std::string stepname;
+      getline(stc, stepname);
+      performedsteps_.insert(stepname);
+    }
+  }
+  
   calcDerivedInputData();
   return p;
 }

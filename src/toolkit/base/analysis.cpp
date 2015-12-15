@@ -74,8 +74,13 @@ boost::filesystem::path Analysis::setupExecutionEnvironment()
   {
     executionPath_() = boost::filesystem::unique_path();
   }
+  
   if (!exists(executionPath_()))
     create_directories(executionPath_());
+  
+  stepcachefile_=executionPath()/(safe_name()+".stepcache"); // set name, but...
+  performedsteps_=AnalysisStepList(); // reset list, don't support restart per default
+  
   return executionPath_();
 }
 

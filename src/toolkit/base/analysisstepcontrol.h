@@ -18,14 +18,42 @@
  *
  */
 
+#ifndef INSIGHT_ANALYSISSTEPCONTROL_H
+#define INSIGHT_ANALYSISSTEPCONTROL_H
+
 #include <string>
 #include <vector>
+#include <set>
 #include <boost/preprocessor.hpp>
 
 
 namespace insight
 {
   
+class Analysis;
+ 
+typedef std::set<std::string> AnalysisStepList;
+
+#define INSIGHT_ANALYSIS_STEP_NOT_DONE(analysis, curstep) \
+ AnalysisStep cs=AnalysisStep(analysis, curstep)
+ 
+class AnalysisStep
+{
+  Analysis& analysis_;
+  std::string curstep_;
+  
+  void flushStepCache() const;
+  
+public:
+  AnalysisStep(Analysis& analysis, const std::string& curstep);
+  ~AnalysisStep();
+  
+  /**
+   * return true, if the step is ok to execute, i.e. has not been performed
+   */
+  operator bool() const;
+};
+
 // #define X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE(r, data, elem)    \
 //     case elem : return std::string(BOOST_PP_STRINGIZE(elem));
 // 
@@ -79,3 +107,5 @@ public:
 };
 */
 }
+
+#endif

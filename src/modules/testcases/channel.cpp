@@ -462,28 +462,13 @@ void ChannelBase::evaluateAtSection(
     
   boost::ptr_vector<sampleOps::set> sets;
   
-  double delta_yp1=1./Re_tau;
-//   sets.push_back(new sampleOps::linearAveragedUniformLine(sampleOps::linearAveragedUniformLine::Parameters()
-//     .set_name("radial")
-//     .set_start( vec3(x, delta_yp1, -0.49*B))
-//     .set_end(   vec3(x, 0.5*H-delta_yp1, -0.49*B))
-//     .set_dir1(vec3(1,0,0))
-//     .set_dir2(vec3(0,0,0.98*B))
-//     .set_nd1(1)
-//     .set_nd2(n_hom_avg)
-//   ));
-//   
-//   sample(cm, executionPath(), 
-//      list_of<std::string>("p")("U")("UMean")("UPrime2Mean")("k")("omega")("epsilon")("nut"),
-//      sets
-//   );
-//   
+  double delta_yp1=1./Re_tau;   
   
   double
     miny=delta_yp1,
     maxy=0.5*H-delta_yp1;
     
-  arma::mat pts=miny+(maxy-miny)*cos(0.5*M_PI*(pow(linspace(0., 1., 101) -1.0,2)))*vec3(0,1,0).t();
+  arma::mat pts = (miny + (maxy-miny)*cos(0.5*M_PI*(pow( linspace(0., 1., 101)-1.0, 2 )))) * vec3(0,1,0).t();
  
   pts.col(0)+=x;
   pts.col(2)+=-0.49*B;
@@ -833,10 +818,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   try
   {
     
-   // Wall friction coefficient
-   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+  // Wall friction coefficient
+  arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
     
-   arma::mat Cf_vs_xp(join_rows(
+  arma::mat Cf_vs_xp(join_rows(
       wallforce.col(0)*Re_tau, 
       wallforce.col(1)/(0.5*pow(Ubulk_,2))
     ));
@@ -864,23 +849,26 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   {
     insight::Warning("Could not include viscous resistance coefficient plot into result report.\nCheck console output for reason.");
   }
-
+  
   std::string init=
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
-      
-  runPvPython
-  (
-    cm, executionPath(), list_of<std::string>
+    
+  if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_P"))
+  {	
+    runPvPython
     (
-      init+
-      "eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
-      "Show(eb)\n"
-      "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
-      "setCam([0,0,10], [0,0,0], [0,1,0])\n"
-      "WriteImage('pressure_longi.jpg')\n"
-    )
-  );
+      cm, executionPath(), list_of<std::string>
+      (
+	init+
+	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
+	"Show(eb)\n"
+	"displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5,0.7], barorient=0)\n"
+	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
+	"WriteImage('pressure_longi.jpg')\n"
+      )
+    );
+  }
   results->insert("contourPressure",
     std::auto_ptr<Image>(new Image
     (
@@ -891,18 +879,21 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   for(int i=0; i<3; i++)
   {
     std::string c("x"); c[0]+=i;
-    runPvPython
-    (
-      cm, executionPath(), list_of<std::string>
+    if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_U"+c))
+    {
+      runPvPython
       (
-	init+
-	"eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
-	"Show(eb)\n"
-	"displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
-	"setCam([0,0,10], [0,0,0], [0,1,0])\n"
-	"WriteImage('U"+c+"_longi.jpg')\n"
-      )
-    );
+	cm, executionPath(), list_of<std::string>
+	(
+	  init+
+	  "eb = planarSlice(cbi, [0,0,1e-6], [0,0,1])\n"
+	  "Show(eb)\n"
+	  "displayContour(eb, 'U', arrayType='CELL_DATA', component="+lexical_cast<char>(i)+", barpos=[0.5,0.7], barorient=0)\n"
+	  "setCam([0,0,10], [0,0,0], [0,1,0])\n"
+	  "WriteImage('U"+c+"_longi.jpg')\n"
+	)
+      );
+    }
     results->insert("contourU"+c,
       std::auto_ptr<Image>(new Image
       (

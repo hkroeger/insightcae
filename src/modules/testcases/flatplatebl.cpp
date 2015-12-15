@@ -682,7 +682,7 @@ void FlatPlateBL::evaluateAtSection
     miny=0.99*deltaywall_ref_,
     maxy=std::min(1.5*delta99_e_, H_-deltaywall_ref_);
     
-  arma::mat pts=exp(linspace(log(miny), log(maxy), 101))*vec3(0,1,0).t();
+  arma::mat pts=exp(linspace(log(miny), log(maxy), 101)) * vec3(0,1,0).t();
   pts.col(0)+=x;
   pts.col(2)+=0.01*W_;
   

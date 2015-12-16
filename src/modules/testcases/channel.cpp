@@ -510,8 +510,8 @@ void ChannelBase::evaluateAtSection(
     arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+2)));
     
     axial.save( (executionPath()/("umeanaxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
@@ -648,13 +648,14 @@ void ChannelBase::evaluateAtSection(
     string chart_name="chartMeanReyStress_"+title;
     
     int c=cd[RFieldName_].col;
-    arma::mat axial(join_rows(Re_tau-Re_tau*data.col(0), data.col(c)));
-    arma::mat wallnormal(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3)));
-    arma::mat spanwise(join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5)));
+    
+    arma::mat axial(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c))	);
+    arma::mat wallnormal(	join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3))	);
+    arma::mat spanwise(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5))	);
 
-    axial.save( (executionPath()/("Raxial_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    wallnormal.save( (executionPath()/("Rwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
-    spanwise.save( (executionPath()/("Rspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
+    axial.save( 	( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
+    wallnormal.save( 	( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).c_str(), arma::raw_ascii);
+    spanwise.save( 	( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     
     addPlot
     (
@@ -700,10 +701,10 @@ void ChannelBase::evaluateAtSection(
       results, executionPath(), chart_name,
       "y_delta", "<K+>",
       list_of
-       (PlotCurve( Kp, "w l t 'TKE'" ))
-       (PlotCurve( refdata_K, "u 1:2 w l lt 1 lc 1 t 'DNS (Re_tau=180, MKM)'" ))
-       (PlotCurve( refdata_K395, "u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=395, MKM)'" ))
-       (PlotCurve( refdata_K590, "u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
+       (PlotCurve( Kp, 			"w l t 'TKE'" ))
+       (PlotCurve( refdata_K, 		"u 1:2 w l lt 1 lc 1 t 'DNS (Re_tau=180, MKM)'" ))
+       (PlotCurve( refdata_K395, 	"u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=395, MKM)'" ))
+       (PlotCurve( refdata_K590, 	"u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH)
     );

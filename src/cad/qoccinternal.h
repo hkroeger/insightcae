@@ -246,7 +246,7 @@ using std::iostream;
 #undef QT_CLEAN_NAMESPACE
 #include <Xw_Window.hxx>
 //#include <Xw_GraphicDevice.hxx>
-#if (OCC_VERSION_MINOR>6)
+#if (OCC_VERSION_MINOR>=6)
 #include <Graphic3d_GraphicDriver.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #else

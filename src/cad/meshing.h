@@ -21,7 +21,9 @@
 #ifndef INSIGHT_CAD_MESHING_H
 #define INSIGHT_CAD_MESHING_H
 
+#ifndef Q_MOC_RUN
 #include "boost/ptr_container/ptr_map.hpp"
+#endif
 #include "solidmodel.h"
 
 namespace insight {

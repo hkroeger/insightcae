@@ -28,9 +28,11 @@
 #include <QTextEdit>
 #include <QListWidget>
 
+#ifndef Q_MOC_RUN
 #include "occinclude.h"
 #include "solidmodel.h"
 #include "parser.h"
+#endif
 
 struct ViewState
 {

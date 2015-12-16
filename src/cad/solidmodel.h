@@ -28,7 +28,9 @@
 
 #include "base/boost_include.h"
 
+#ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
+#endif
 
 #include "base/linearalgebra.h"
 #include "base/exception.h"

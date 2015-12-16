@@ -44,6 +44,8 @@
 // #define PHOENIX_CONSTRUCT_LIMIT 20
 // #define PHOENIX_COMPOSITE_LIMIT 20
 
+#ifndef Q_MOC_RUN
+
 #include "boost/version.hpp"
 #if ( BOOST_VERSION < 105100 )
 #define BOOST_NO_SCOPED_ENUMS
@@ -88,5 +90,7 @@
 #include <boost/fusion/adapted.hpp>
 
 #include "boost/thread.hpp"
+
+#endif
 
 #endif

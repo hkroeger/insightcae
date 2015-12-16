@@ -25,8 +25,10 @@
 
 #include <set>
 #include <memory>
+#ifndef Q_MOC_RUN
 #include "boost/concept_check.hpp"
 #include "boost/shared_ptr.hpp"
+#endif
 
 #include "base/linearalgebra.h"
 #include "occinclude.h"

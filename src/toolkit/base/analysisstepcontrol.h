@@ -54,58 +54,6 @@ public:
   operator bool() const;
 };
 
-// #define X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE(r, data, elem)    \
-//     case elem : return std::string(BOOST_PP_STRINGIZE(elem));
-// 
-// #define DEFINE_ANALYSIS_STEPS(enumerators)                \
-//     enum AnalysisSteps {                                                               \
-//         BOOST_PP_SEQ_ENUM(enumerators)                                        \
-//     };                                                                        \
-//                                                                               \
-//     inline std::string stepIDToString(AnalysisSteps v)                                       \
-//     {                                                                         \
-//         switch (v)                                                            \
-//         {                                                                     \
-//             BOOST_PP_SEQ_FOR_EACH(                                            \
-//                 X_DEFINE_ENUM_WITH_STRING_CONVERSIONS_TOSTRING_CASE,          \
-//                 AnalysisSteps,                                                         \
-//                 enumerators                                                   \
-//             )                                                                 \
-//             default: return "[Unknown " BOOST_PP_STRINGIZE(AnalysisSteps) "]";         \
-//         }                                                                     \
-//     }
-/*
-#define X_DEFINE_ANALYSIS_STEP_CASE(r, data, elem)    \
-    const std::string elem = BOOST_PP_STRINGIZE(elem);
-
-#define DEFINE_ANALYSIS_STEPS(enumerators)            \
-            BOOST_PP_SEQ_FOR_EACH(                    \
-                X_DEFINE_ANALYSIS_STEP_CASE,          \
-                AnalysisSteps,                        \
-                enumerators                           \
-            )
- 
-class AnalysisTracker
-{
-protected:
-  std::vector<std::string> completedSteps_;
-  
-public:
-  
-  class Step
-  {
-  public:
-    Step(AnalysisTracker<A>& tracker);
-    
-    bool isFinished() const;
-    inline operator bool() const { return isFinished(); }
-    
-    void markCompleted();
-  };
-  
-  AnalysisTracker(const StepList& steps);
-};
-*/
 }
 
 #endif

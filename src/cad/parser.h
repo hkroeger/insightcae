@@ -25,6 +25,7 @@
 #include "base/exception.h"
 #include "base/linearalgebra.h"
 
+#ifndef Q_MOC_RUN
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
 #include "boost/spirit/repository/include/qi_confix.hpp"
@@ -41,6 +42,7 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/utility/enable_if.hpp>
+#endif
 
 #include "cadtypes.h"
 
@@ -139,7 +141,6 @@ namespace mapkey_parser
         }
     };
 }
-
 
 namespace insight {
 namespace cad {

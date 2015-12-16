@@ -21,8 +21,10 @@
 #ifndef INSIGHT_CAD_CADTYPES_H
 #define INSIGHT_CAD_CADTYPES_H
 
+#ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
 #include "base/linearalgebra.h"
+#endif
 
 namespace insight {
 namespace cad {

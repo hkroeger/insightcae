@@ -936,7 +936,7 @@ bool SolidModel::isSingleClosedWire() const
 
 bool SolidModel::isSingleWire() const
 {
-  return isSingleOpenWire() || isSingleClosedWire();
+  return (isSingleOpenWire() || isSingleClosedWire());
 }
 
 
@@ -985,6 +985,8 @@ TopoDS_Wire SolidModel::asSingleWire() const
 {
   if (isSingleWire())
     return TopoDS::Wire(shape_);
+  else
+    throw insight::Exception("Feature "+type()+" does not provide a single wire!");
 }
 
 
@@ -996,6 +998,39 @@ TopoDS_Shape SolidModel::asSingleVolume() const
     return shape_;
 }
 
+const SolidModel::RefPointsList& SolidModel::getDatumPoints() const
+{
+  return refpoints_;
+}
+
+
+arma::mat SolidModel::getDatumPoint(const std::string& name) const
+{
+  RefPointsList::const_iterator i = refpoints_.find(name);
+  if (i!=refpoints_.end())
+  {
+    return i->second;
+  }
+  else
+  {
+    throw insight::Exception("the feature does not define a reference point named \""+name+"\"");
+    return arma::mat();
+  }
+}
+
+arma::mat SolidModel::getDatumVector(const std::string& name) const
+{
+  RefVectorsList::const_iterator i = refvectors_.find(name);
+  if (i!=refvectors_.end())
+  {
+    return i->second;
+  }
+  else
+  {
+    throw insight::Exception("the feature does not define a reference vector named \""+name+"\"");
+    return arma::mat();
+  }
+}
 
 void SolidModel::nameFeatures()
 {
@@ -1153,7 +1188,19 @@ void SolidModel::nameFeatures()
       if(vmap_.FindIndex(vertex) < 1)
 	  vmap_.Add(vertex);
   }
+  
+  extractReferenceFeatures();
+}
 
+void SolidModel::extractReferenceFeatures()
+{
+  ///////////////////////////////////////////////////////////////////////////////
+  /////////////// save reference points
+
+  for (int i=1; i<=vmap_.Extent(); i++)
+  {
+    refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
+  }
 }
 
 

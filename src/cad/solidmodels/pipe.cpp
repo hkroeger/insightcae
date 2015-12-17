@@ -39,23 +39,51 @@ Pipe::Pipe(const NoParameters& nop): SolidModel(nop)
 {}
 
 
-Pipe::Pipe(const SolidModel& spine, const SolidModel& xsec)
+Pipe::Pipe(const SolidModel& spine, const SolidModel& xsec, bool orient)
 {
   if (!spine.isSingleWire())
-    throw insight::Exception("spine feature has to provide a singly connected wire!");
+    throw insight::Exception("spine feature has to provide a singly connected wire!");  // not working for wires created from feature edge selection
   
   if (!xsec.isSingleFace() || xsec.isSingleWire() || xsec.isSingleEdge())
     throw insight::Exception("xsec feature has to provide a face or wire!");
-  
-  TopoDS_Wire spinew=spine.asSingleWire();
-  TopoDS_Vertex pfirst, plast;
-  TopExp::Vertices( spinew, pfirst, plast );
-  
-  
-  gp_Trsf tr;
-  tr.SetTranslation(gp_Vec(BRep_Tool::Pnt(pfirst).XYZ()));
-  TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
 
+  TopoDS_Wire spinew=spine.asSingleWire();
+
+//   TopoDS_Vertex pfirst, plast;
+//   TopExp::Vertices( spinew, pfirst, plast );
+  
+  BRepAdaptor_CompCurve w(spinew);
+  double p0=w.FirstParameter();
+  double p1=w.LastParameter();
+  
+  
+  
+
+  gp_Trsf tr;
+//   tr.SetTranslation(gp_Vec(BRep_Tool::Pnt(pfirst).XYZ()));
+  if (!orient)
+    tr.SetTranslation(w.Value(p0).XYZ());
+  else
+  {
+    gp_Pnt v0;
+    gp_Vec vp0;
+    w.D1(p0, v0, vp0);
+    vp0.Normalize();
+    std::cout<<v0.X()<<" "<<v0.Y()<<" "<<v0.Z()<<endl;
+    std::cout<<vp0.X()<<" "<<vp0.Y()<<" "<<vp0.Z()<<endl;
+    gp_Trsf tr1;
+    tr1.SetTransformation
+    (
+      gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(1,0,0)),
+      gp_Ax3(gp_Pnt(0,0,0), gp_Dir(0,0,1), gp_Dir(vp0))
+    );
+    xsec=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr1).Shape();
+// 
+     tr.SetTranslationPart(v0.XYZ());
+//     tr.SetAxis(gp_Ax1(v0, gp_Dir(vp0)));
+  }
+  TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
+  
 //   BRepOffsetAPI_MakePipeShell p(spinew);
 //   Handle_Law_Constant law(new Law_Constant());
 //   law->Set(1.0, -1e10, 1e10);
@@ -76,8 +104,8 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
     "Pipe",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Pipe>(*qi::_1, *qi::_2)) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) >> ')' ) 
+      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Pipe>(*qi::_1, *qi::_2, qi::_3)) ]
       
     ))
   );

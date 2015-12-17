@@ -85,6 +85,10 @@ public:
   };
   typedef std::map<std::string, View> Views;
   
+  typedef std::map<std::string, double> RefValuesList;
+  typedef std::map<std::string, arma::mat> RefPointsList;
+  typedef std::map<std::string, arma::mat> RefVectorsList;
+  
 protected :
   // needs to be unset, if this shape is used as a tool to create another shape
   mutable bool isleaf_;
@@ -95,6 +99,10 @@ protected :
   
   SolidModel::Map providedSubshapes_;
   std::map<std::string, boost::shared_ptr<Datum> > providedDatums_;
+  
+  RefValuesList refvalues_;
+  RefPointsList refpoints_;
+  RefVectorsList refvectors_;
   
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void setShape(const TopoDS_Shape& shape);
@@ -142,6 +150,7 @@ public:
   bool operator==(const SolidModel& o) const;
 
   void nameFeatures();
+  void extractReferenceFeatures();
   
   inline const TopoDS_Face& face(FeatureID i) const { return TopoDS::Face(fmap_.FindKey(i)); }
   inline const TopoDS_Edge& edge(FeatureID i) const { return TopoDS::Edge(emap_.FindKey(i)); }
@@ -234,6 +243,9 @@ public:
   virtual TopoDS_Face asSingleFace() const;
   virtual TopoDS_Shape asSingleVolume() const;
 
+  virtual const RefPointsList& getDatumPoints() const;
+  virtual arma::mat getDatumPoint(const std::string& name="") const;
+  virtual arma::mat getDatumVector(const std::string& name="") const;
 };
 
 

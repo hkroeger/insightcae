@@ -32,7 +32,7 @@ class Pipe
 public:
   declareType("Pipe");
   Pipe(const NoParameters& nop = NoParameters());
-  Pipe(const SolidModel& spine, const SolidModel& xsec);
+  Pipe(const SolidModel& spine, const SolidModel& xsec, bool orient=false);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

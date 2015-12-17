@@ -66,27 +66,9 @@ bool ISCADApplication::notify(QObject *rec, QEvent *ev)
     QMessageBox msgBox;
     msgBox.setIcon(QMessageBox::Critical);
     msgBox.setText(QString(e.as_string().c_str()));
-/*    if (e.addInfo()!="")
-    {
-      msgBox.setInformativeText("Please check additional info.");
-      msgBox.setDetailedText(QString(e.addInfo().c_str()));
-    }*/
+
     msgBox.exec();
-//    QMessageBox::critical
-//    (
-//        activeWindow(), "Error",
-//        QString(("An error occured in PropGeo:\n"+e.message()).c_str())
-//    );
   }
-  /*
-  catch (Standard_Failure e)
-  {
-    QMessageBox::critical
-    (
-	activeWindow(), "Error",
-	QString("An error occured in OpenCASCADE:\n")+e.GetMessageString()
-    );
-  }*/
 
   return true;
 }

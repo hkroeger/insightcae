@@ -64,14 +64,14 @@ void Wire::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
-bool Wire::isSingleCloseWire() const
+bool Wire::isSingleClosedWire() const
 {
   return TopoDS::Wire(shape_).Closed();
 }
 
 bool Wire::isSingleOpenWire() const
 {
-  return !isSingleCloseWire();
+  return !isSingleClosedWire();
 }
 
 }

@@ -884,6 +884,12 @@ ISCADParser::ISCADParser(Model::Ptr model)
        ( lit("rot") > '(' > r_vectorExpression > lit("by") > r_scalarExpression > ( (lit("around") > r_vectorExpression) | attr(vec3(0,0,1)) )> ')' )
         [ _val = rot_(qi::_1, qi::_2, qi::_3) ]
       |
+       ( r_solidmodel_expression >> '@' >> ( r_identifier | qi::attr(std::string()) ) ) 
+        [ _val = phx::bind(&SolidModel::getDatumPoint, *qi::_1, qi::_2) ]
+      |
+       ( r_solidmodel_expression >> '^' >> ( r_identifier | qi::attr(std::string()) ) ) 
+        [ _val = phx::bind(&SolidModel::getDatumVector, *qi::_1, qi::_2) ]
+      |
        qi::lexeme[model_->vectorSymbolNames()] 
         [ _val =  phx::bind(&Model::lookupVectorSymbol, model_, qi::_1) ]
       |

@@ -34,7 +34,7 @@ public:
   Wire(const NoParameters& nop = NoParameters());
   Wire(const FeatureSet& edges);
   virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleCloseWire() const;
+  virtual bool isSingleClosedWire() const;
   virtual bool isSingleOpenWire() const;
 };
 

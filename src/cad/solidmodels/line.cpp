@@ -43,6 +43,11 @@ Line::Line(const NoParameters& nop)
 Line::Line(const arma::mat& p0, const arma::mat& p1)
 : SolidModel()
 {
+  refpoints_["p0"]=p0;  
+  refpoints_["p1"]=p1;
+//   refvalues_["L"]=arma::norm(p1-p0, 2);
+  refvectors_["ex"]=(p1-p0)/arma::norm(p1-p0, 2);
+  
   setShape(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0), to_Pnt(p1))));
 }
 

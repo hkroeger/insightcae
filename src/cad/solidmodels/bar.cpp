@@ -36,8 +36,18 @@ namespace cad {
 defineType(Bar);
 addToFactoryTable(SolidModel, Bar, NoParameters);
 
-void Bar::create(const arma::mat& start, const arma::mat& end, const SolidModel& xsec, const arma::mat& vert, double ext0, double ext1, double miterangle0_vert, double miterangle1_vert, double miterangle0_hor, double miterangle1_hor)
+void Bar::create
+(
+  const arma::mat& start, 
+  const arma::mat& end, 
+  const SolidModel& xsec, 
+  const arma::mat& vert, 
+  double ext0, double ext1, 
+  double miterangle0_vert, double miterangle1_vert, 
+  double miterangle0_hor, double miterangle1_hor
+)
 {
+
   arma::mat p0=start;
   arma::mat p1=end;
   
@@ -58,6 +68,13 @@ void Bar::create(const arma::mat& start, const arma::mat& end, const SolidModel&
   p1 +=  baraxis*ext1;
   double L=norm(p1-p0, 2);
   
+  refpoints_["start"]=start;
+  refpoints_["end"]=end;
+  refpoints_["p0"]=p0;
+  refpoints_["p1"]=p1;
+  
+  refvalues_["L"]=L;
+
   TopoDS_Wire spine=BRepBuilderAPI_MakeWire
   (
     BRepBuilderAPI_MakeEdge

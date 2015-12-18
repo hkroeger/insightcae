@@ -837,6 +837,9 @@ ISCADParser::ISCADParser(Model::Ptr model)
 // 	  lexeme[ model_->scalarSymbols >> !(alnum | '_') ] [ _val = qi::_1 ]
       qi::lexeme[model_->scalarSymbolNames()]
 	[ _val = phx::bind(&Model::lookupScalarSymbol, model_, qi::_1) ]
+      |
+       ( r_solidmodel_expression >> '$' >> ( r_identifier | qi::attr(std::string()) ) ) 
+        [ _val = phx::bind(&SolidModel::getDatumScalar, *qi::_1, qi::_2) ]
       | double_ [ _val = qi::_1 ]
       | ( lit("pow") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::pow, qi::_1, qi::_2) ]
       | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sqrt, qi::_1) ]
@@ -887,7 +890,7 @@ ISCADParser::ISCADParser(Model::Ptr model)
        ( r_solidmodel_expression >> '@' >> ( r_identifier | qi::attr(std::string()) ) ) 
         [ _val = phx::bind(&SolidModel::getDatumPoint, *qi::_1, qi::_2) ]
       |
-       ( r_solidmodel_expression >> '^' >> ( r_identifier | qi::attr(std::string()) ) ) 
+       ( r_solidmodel_expression >> '!' >> ( r_identifier | qi::attr(std::string()) ) ) 
         [ _val = phx::bind(&SolidModel::getDatumVector, *qi::_1, qi::_2) ]
       |
        qi::lexeme[model_->vectorSymbolNames()] 

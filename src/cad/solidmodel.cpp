@@ -1004,6 +1004,20 @@ const SolidModel::RefPointsList& SolidModel::getDatumPoints() const
 }
 
 
+double SolidModel::getDatumScalar(const std::string& name) const
+{
+  RefValuesList::const_iterator i = refvalues_.find(name);
+  if (i!=refvalues_.end())
+  {
+    return i->second;
+  }
+  else
+  {
+    throw insight::Exception("the feature does not define a reference value named \""+name+"\"");
+    return 0.0;
+  }
+}
+
 arma::mat SolidModel::getDatumPoint(const std::string& name) const
 {
   RefPointsList::const_iterator i = refpoints_.find(name);

@@ -244,6 +244,7 @@ public:
   virtual TopoDS_Shape asSingleVolume() const;
 
   virtual const RefPointsList& getDatumPoints() const;
+  virtual double getDatumScalar(const std::string& name="") const;
   virtual arma::mat getDatumPoint(const std::string& name="") const;
   virtual arma::mat getDatumVector(const std::string& name="") const;
 };

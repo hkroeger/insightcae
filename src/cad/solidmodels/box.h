@@ -29,15 +29,6 @@ namespace cad {
 class Box
 : public SingleVolumeFeature
 {
-protected:
-  TopoDS_Shape makeBox
-  (
-    const arma::mat& p0,
-    const arma::mat& L1,
-    const arma::mat& L2,
-    const arma::mat& L3,
-    bool centered=false
-  );
   
 public:
   declareType("Box");

@@ -39,8 +39,8 @@ addToFactoryTable(SolidModel, Box, NoParameters);
 Box::Box(const NoParameters&)
 {}
 
-
-TopoDS_Shape Box::makeBox
+  
+Box::Box
 (
   const arma::mat& p0, 
   const arma::mat& L1, 
@@ -48,7 +48,17 @@ TopoDS_Shape Box::makeBox
   const arma::mat& L3,
   bool centered
 )
-{
+{ 
+  refpoints_["p0"]=p0;
+  
+  refvalues_["L1"]=arma::norm(L1, 2);
+  refvalues_["L2"]=arma::norm(L2, 2);
+  refvalues_["L3"]=arma::norm(L3, 2);
+  
+  refvectors_["e1"]=L1/arma::norm(L1, 2);
+  refvectors_["e2"]=L2/arma::norm(L2, 2);
+  refvectors_["e3"]=L3/arma::norm(L3, 2);
+  
   Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1), to_Pnt(p0+L2)).Value();
   TopoDS_Shape box=
   BRepPrimAPI_MakePrism
@@ -73,19 +83,7 @@ TopoDS_Shape Box::makeBox
     t.SetTranslation(to_Vec(-0.5*L1-0.5*L2-0.5*L3));
     box=BRepBuilderAPI_Transform(box, t).Shape();
   }
-  return box;
-}
-  
-Box::Box
-(
-  const arma::mat& p0, 
-  const arma::mat& L1, 
-  const arma::mat& L2, 
-  const arma::mat& L3,
-  bool centered
-)
-{ 
-  setShape(makeBox(p0, L1, L2, L3, centered));
+  setShape(box);
 }
 
 void Box::insertrule(parser::ISCADParser& ruleset) const

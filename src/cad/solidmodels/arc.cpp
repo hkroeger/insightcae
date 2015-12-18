@@ -45,7 +45,17 @@ Arc::Arc(const NoParameters& nop)
 Arc::Arc(const arma::mat& p0, const arma::mat& p0tang, const arma::mat& p1)
 : SolidModel()
 {
-  setShape(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(p0), to_Vec(p0tang), to_Pnt(p1))));
+  Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(p0), to_Vec(p0tang), to_Pnt(p1));
+  setShape(BRepBuilderAPI_MakeEdge(crv));
+  
+  gp_Pnt p;
+  gp_Vec v;
+  crv->D1(crv->FirstParameter(), p, v);
+  refpoints_["p0"]=vec3(p);
+  refvectors_["et0"]=vec3(v);
+  crv->D1(crv->LastParameter(), p, v);
+  refpoints_["p1"]=vec3(p);
+  refvectors_["et1"]=vec3(v);
 }
 
 void Arc::insertrule(parser::ISCADParser& ruleset) const

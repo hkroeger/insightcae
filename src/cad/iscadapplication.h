@@ -28,11 +28,32 @@
 #include <QTextEdit>
 #include <QListWidget>
 
+#include "solidmodel.h"
+#include "solidmodeltransient.h"
+
+#include "qoccviewwidget.h"
+
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
 #include "solidmodel.h"
 #include "parser.h"
 #endif
+
+class PointerTransient 
+: public Standard_Transient
+{
+protected:
+  QObject* mi_;
+  
+public:
+    PointerTransient();
+    PointerTransient(const PointerTransient& o);
+    PointerTransient(QObject* mi);
+    ~PointerTransient();
+    void operator=(QObject* mi);
+    QObject* getPointer();
+    
+};
 
 struct ViewState
 {
@@ -58,7 +79,7 @@ public:
 };
 
 class QoccViewerContext;
-class QoccViewWidget;
+// class QoccViewWidget;
 
 class QModelStepItem
 : public QObject, public QListWidgetItem
@@ -88,6 +109,11 @@ public:
   void updateDisplay();
   void exportShape();
   void insertName();
+  
+  inline insight::cad::SolidModel& solidmodel()
+  {
+    return *smp_;
+  }
   
 public slots:
   void showContextMenu(const QPoint& gpos);
@@ -166,7 +192,21 @@ class ISCADMainWindow
 : public QMainWindow
 {
   Q_OBJECT
+
+protected:
+  boost::filesystem::path filename_;
+  QoccViewerContext* context_;
+  QoccViewWidget* viewer_;
+  QListWidget* modelsteplist_;
+  QListWidget* datumlist_;
+  QListWidget* evaluationlist_;
+  QListWidget* variablelist_;
+  QTextEdit* editor_;
   
+  std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
+  
+  std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
+
 protected:
   void clearDerivedData();
   virtual void closeEvent(QCloseEvent *event);
@@ -176,8 +216,32 @@ protected:
     filename_=fn;
     setWindowTitle(filename_.filename().c_str());
   }
+  
+  template<class PT>
+  PT* checkGraphicalSelection(QoccViewWidget* aView)
+  {
+    if (aView->getContext()->HasDetected())
+    {
+      if (aView->getContext()->DetectedInteractive()->HasOwner())
+      {
+	Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
+	if (!own.IsNull())
+	{
+	  if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
+	  {
+	    if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
+	    {
+	      return mi;
+	    }
+	  }
+	}
+      }
+    }
+    return NULL;
+  }
 
 protected slots:
+  void onGraphicalSelectionChanged(QoccViewWidget* aView);
   void onVariableItemChanged(QListWidgetItem * item);
   void onModelStepItemChanged(QListWidgetItem * item);
   void onDatumItemChanged(QListWidgetItem * item);
@@ -200,19 +264,8 @@ public slots:
   void saveModel();
   void saveModelAs();
   void rebuildModel();
-  void popupMenu( const QoccViewWidget* aView, const QPoint aPoint ); 
+  void popupMenu( QoccViewWidget* aView, const QPoint aPoint ); 
   
-protected:
-  boost::filesystem::path filename_;
-  QoccViewerContext* context_;
-  QoccViewWidget* viewer_;
-  QListWidget* modelsteplist_;
-  QListWidget* datumlist_;
-  QListWidget* evaluationlist_;
-  QListWidget* variablelist_;
-  QTextEdit* editor_;
-  
-  std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
 
 };
 

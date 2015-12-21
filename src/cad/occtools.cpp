@@ -20,6 +20,9 @@
 
 #include "occtools.h"
 
+#include "Prs3d_Text.hxx"
+#include "Graphic2d_Text.hxx"
+
 namespace insight {
 namespace cad {
   
@@ -64,6 +67,121 @@ Handle_AIS_InteractiveObject createLengthDimension
   dim->SetDisplayUnits(text.c_str());
 #endif
   return dim;
+}
+
+
+
+IMPLEMENT_STANDARD_HANDLE (InteractiveText, AIS_InteractiveObject)
+// IMPLEMENT_STANDARD_RTTI (InteractiveText, AIS_InteractiveObject)
+IMPLEMENT_STANDARD_RTTI (InteractiveText)
+//
+// Foreach ancestors, we add a IMPLEMENT_STANDARD_SUPERTYPE and
+// a IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY macro.
+// We must respect the order: from the direct ancestor class
+// to the base class.
+//
+IMPLEMENT_STANDARD_TYPE (InteractiveText)
+IMPLEMENT_STANDARD_SUPERTYPE (AIS_InteractiveObject)
+IMPLEMENT_STANDARD_SUPERTYPE (SelectMgr_SelectableObject)
+IMPLEMENT_STANDARD_SUPERTYPE (PrsMgr_PresentableObject)
+IMPLEMENT_STANDARD_SUPERTYPE (MMgt_TShared)
+IMPLEMENT_STANDARD_SUPERTYPE (Standard_Transient)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY ()
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (AIS_InteractiveObject)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (SelectMgr_SelectableObject)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (PrsMgr_PresentableObject)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (MMgt_TShared)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (Standard_Transient)
+IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_END ()
+IMPLEMENT_STANDARD_TYPE_END (InteractiveText)
+
+
+
+// ------------------- Initialization and Deletion ---------------------
+InteractiveText::InteractiveText () :
+    AIS_InteractiveObject (),
+    width_ (0), 
+    height_ (0)
+{
+}
+
+InteractiveText::InteractiveText 
+(
+  const std::string& text, const arma::mat& pos,
+  double angle, double slant,
+  int color_id, int font_id,
+  double scale
+) 
+: AIS_InteractiveObject (),
+  text_ (text), 
+  position_ (pos),
+  angle_ (angle), 
+  slant_ (slant),
+  color_id_ (color_id), 
+  font_id_ (font_id),
+  scale_ (scale),
+  width_ (0), 
+  height_ (0)
+{
+}
+
+InteractiveText::~InteractiveText ()
+{
+}
+
+// -------------------------- Element change ---------------------------
+
+void InteractiveText::set_text (const std::string& v)
+{
+    text_ = v;
+}
+
+void InteractiveText::set_position (const arma::mat& pos)
+{
+    position_ = pos;
+}
+
+// -------------------------- Implementation ---------------------------
+
+void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& pm,
+                               const Handle_Prs3d_Presentation& pres,
+                               const Standard_Integer mode)
+{
+    Prs3d_Text::Draw (pres, myDrawer, (Standard_CString) text_.c_str (),
+                      gp_Pnt (position_(0),
+                              position_(1),
+                              position_(2)));
+}
+
+void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,
+                               const Handle_Prs3d_Presentation& pres)
+{
+
+}
+
+void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
+                               const Handle_Graphic2d_GraphicObject& gr_obj,
+                               const Standard_Integer mode)
+{
+    Handle_Graphic2d_Text text =
+        new Graphic2d_Text (gr_obj, (Standard_CString) text_.c_str(),
+                            position_(0), position_(1),
+                            angle_, Aspect_TOT_SOLID, scale_);
+    text->SetFontIndex (font_id_);
+    text->SetColorIndex (color_id_);
+
+    text->SetSlant (slant_);
+    text->SetUnderline (false);
+    text->SetZoomable (true);
+    gr_obj->Display ();
+    double x_offset;
+    double y_offset;
+    text->TextSize (width_, height_, x_offset, y_offset);
+}
+
+void InteractiveText::ComputeSelection (const Handle_SelectMgr_Selection& sel,
+                                        const Standard_Integer mode)
+{
 }
 
 }

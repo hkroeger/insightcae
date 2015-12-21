@@ -39,6 +39,7 @@ BooleanUnion::BooleanUnion(const NoParameters& nop): SolidModel(nop)
 
 BooleanUnion::BooleanUnion(const SolidModel& m)
 {
+  copyDatums(m);
   m.unsetLeaf();
   
   TopoDS_Shape res;
@@ -55,6 +56,8 @@ BooleanUnion::BooleanUnion(const SolidModel& m)
 BooleanUnion::BooleanUnion(const SolidModel& m1, const SolidModel& m2)
 : SolidModel(BRepAlgoAPI_Fuse(m1, m2).Shape())
 {
+  copyDatums(m1, "1.");
+  copyDatums(m2, "2.");
   m1.unsetLeaf();
   m2.unsetLeaf();
 }

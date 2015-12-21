@@ -42,6 +42,7 @@ protected:
   
 public:
   Datum(bool point, bool axis, bool planar);
+  Datum(std::istream&);
   virtual ~Datum();
   
   inline bool providesPointReference() const { return providesPointReference_; }
@@ -55,6 +56,7 @@ public:
 
   virtual AIS_InteractiveObject* createAISRepr() const;
 
+  virtual void write(std::ostream& file) const;
 };
 
 class DatumPlane
@@ -79,11 +81,14 @@ public:
     const SolidModel& m, 
     FeatureID f
   );
+  DatumPlane(std::istream&);
   
   virtual operator const gp_Pnt () const;
   virtual operator const gp_Ax3 () const;
 
   virtual AIS_InteractiveObject* createAISRepr() const;
+
+  virtual void write(std::ostream& file) const;
 };
 
 

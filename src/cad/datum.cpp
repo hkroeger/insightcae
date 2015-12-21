@@ -33,6 +33,13 @@ Datum::Datum(bool point, bool axis, bool planar)
 {
 }
 
+Datum::Datum(istream& file)
+{
+  file>>providesPointReference_;
+  file>>providesAxisReference_;
+  file>>providesPlanarReference_;
+}
+
 Datum::~Datum()
 {
 }
@@ -60,6 +67,16 @@ AIS_InteractiveObject* Datum::createAISRepr() const
   throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
   return NULL;
 }
+
+void Datum::write(ostream& file) const
+{
+  file<<providesPointReference_<<endl;
+  file<<providesAxisReference_<<endl;
+  file<<providesPlanarReference_<<endl;
+}
+
+
+
   
 DatumPlane::DatumPlane(const arma::mat& p0, const arma::mat& ni)
 : Datum(true, false, true)
@@ -137,6 +154,14 @@ AIS_InteractiveObject* DatumPlane::createAISRepr() const
 {
   return new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_)));
 }
+
+
+
+void DatumPlane::write(ostream& file) const
+{
+    insight::cad::Datum::write(file);
+}
+
 
 }
 }

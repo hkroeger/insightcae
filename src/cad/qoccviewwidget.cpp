@@ -836,7 +836,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 	  break;
 	}
     }
-  emit selectionChanged();
+  emit selectionChanged(this);
 }
 /*!
   \brief	Middle button up event handler.
@@ -1000,7 +1000,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 				std::max (startPoint.y(), endPoint.y()),
 				myView );
     }
-  emit selectionChanged();
+  emit selectionChanged(this);
   return pick;
 }
 /*!
@@ -1022,7 +1022,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     }
   if ( pick != AIS_SOP_NothingSelected )
     {
-      emit selectionChanged();
+      emit selectionChanged(this);
     }
   return pick;
 }

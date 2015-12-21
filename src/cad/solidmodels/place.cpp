@@ -42,6 +42,8 @@ void Place::makePlacement(const SolidModel& m, const gp_Trsf& tr)
   }
   if (m.hasExplicitMass()) setMassExplicitly(m.mass());
   setShape(BRepBuilderAPI_Transform(m, tr).Shape());
+  
+  copyDatumsTransformed(m, tr);
 }
 
 

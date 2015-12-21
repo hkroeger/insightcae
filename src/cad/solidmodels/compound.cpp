@@ -46,10 +46,13 @@ Compound::Compound(const std::vector<SolidModelPtr>& m1)
   TopoDS_Compound result;
   bb.MakeCompound(result);
 
+  int i=1;
   BOOST_FOREACH(const SolidModelPtr& p, m1)
   {
     bb.Add(result, *p);
     p->unsetLeaf();
+    copyDatums(*p, str(format("%d.")%i));
+    i++;
   }
   setShape(result);
 }

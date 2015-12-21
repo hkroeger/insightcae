@@ -21,6 +21,7 @@
 #include "geotest.h"
 
 #include <memory>
+
 #include "solidmodel.h"
 #include "datum.h"
 #include "sketch.h"
@@ -40,6 +41,7 @@
 
 #include "openfoam/openfoamdict.h"
 
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -47,12 +49,77 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
+namespace boost
+{
+ 
+std::size_t hash<TopoDS_Shape>::operator()(const TopoDS_Shape& shape) const
+{
+  return shape.HashCode(__INT_MAX__);
+}
+
+std::size_t hash<arma::mat>::operator()(const arma::mat& v) const
+{
+  std::hash<double> dh;
+  size_t h=0;
+  for (int i=0; i<v.n_elem; i++)
+  {
+    boost::hash_combine(h, dh(v(i)));
+  }
+  return h;
+}
+
+std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
+{
+  std::hash<double> dh;
+  size_t h=0;
+  boost::hash_combine(h, dh(v.X()));
+  boost::hash_combine(h, dh(v.Y()));
+  boost::hash_combine(h, dh(v.Z()));
+  return h;
+}
+
+std::size_t hash<insight::cad::SolidModel>::operator()(const insight::cad::SolidModel& shape) const
+{
+  size_t h=0;
+  
+  // create hash from
+  // 1. total volume
+  // 2. # vertices
+  // 3. # faces
+  // 4. vertex locations
+  
+  boost::hash_combine(h, boost::hash<double>()(shape.modelVolume()));
+  boost::hash_combine(h, boost::hash<int>()(shape.allVertices().size()));
+  boost::hash_combine(h, boost::hash<int>()(shape.allFaces().size()));
+
+  BOOST_FOREACH(const insight::cad::FeatureID& j, shape.allVertices())
+  {
+    boost::hash_combine(h, boost::hash<arma::mat>()(shape.vertexLocation(j)));    
+  }
+  
+//   return hash<TopoDS_Shape>()( static_cast<TopoDS_Shape>(shape) );
+  return h;
+}
+
+
+}
 
 
 namespace insight 
 {
 namespace cad 
 {
+
+
+ParameterListHash::ParameterListHash()
+: hash_(0)
+{}
+
+
+ParameterListHash::operator size_t ()
+{
+  return hash_;
+}
 
 
 std::ostream& operator<<(std::ostream& os, const SolidModel& m)
@@ -998,11 +1065,67 @@ TopoDS_Shape SolidModel::asSingleVolume() const
     return shape_;
 }
 
+void SolidModel::copyDatums(const SolidModel& m1, const std::string& prefix)
+{
+  // Transform all ref points and ref vectors
+  BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
+  {
+    if (refvalues_.find(prefix+v.first)!=refvalues_.end())
+      throw insight::Exception("datum value "+prefix+v.first+" already present!");
+    refvalues_[prefix+v.first]=v.second;
+  }
+  BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
+  {
+    if (refpoints_.find(prefix+p.first)!=refpoints_.end())
+      throw insight::Exception("datum point "+prefix+p.first+" already present!");
+    refpoints_[prefix+p.first]=p.second;
+  }
+  BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
+  {
+    if (refvectors_.find(prefix+p.first)!=refvectors_.end())
+      throw insight::Exception("datum vector "+prefix+p.first+" already present!");
+    refvectors_[prefix+p.first]=p.second;
+  }
+}
+
+void SolidModel::copyDatumsTransformed(const SolidModel& m1, const gp_Trsf& trsf, const std::string& prefix)
+{
+  // Transform all ref points and ref vectors
+  BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
+  {
+    if (refvalues_.find(prefix+v.first)!=refvalues_.end())
+      throw insight::Exception("datum value "+prefix+v.first+" already present!");
+    refvalues_[prefix+v.first]=v.second;
+  }
+  BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
+  {
+    if (refpoints_.find(prefix+p.first)!=refpoints_.end())
+      throw insight::Exception("datum point "+prefix+p.first+" already present!");
+    refpoints_[prefix+p.first]=vec3(to_Pnt(p.second).Transformed(trsf));
+  }
+  BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
+  {
+    if (refvectors_.find(prefix+p.first)!=refvectors_.end())
+      throw insight::Exception("datum vector "+prefix+p.first+" already present!");
+    refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
+  }
+}
+
+
+const SolidModel::RefValuesList& SolidModel::getDatumScalars() const
+{
+  return refvalues_;
+}
+
 const SolidModel::RefPointsList& SolidModel::getDatumPoints() const
 {
   return refpoints_;
 }
 
+const SolidModel::RefVectorsList& SolidModel::getDatumVectors() const
+{
+  return refvectors_;
+}
 
 double SolidModel::getDatumScalar(const std::string& name) const
 {
@@ -1203,7 +1326,7 @@ void SolidModel::nameFeatures()
 	  vmap_.Add(vertex);
   }
   
-  extractReferenceFeatures();
+//   extractReferenceFeatures();
 }
 
 void SolidModel::extractReferenceFeatures()
@@ -1216,6 +1339,196 @@ void SolidModel::extractReferenceFeatures()
     refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
   }
 }
+
+void SolidModel::write(const filesystem::path& file) const
+{
+  std::ofstream f(file.c_str());
+  write(f);
+}
+
+
+void SolidModel::write(std::ostream& f) const
+{
+  f<<isleaf_<<endl;
+
+  // the shape
+  {
+    std::ostringstream bufs;
+    BRepTools::Write(shape_, bufs);
+    std::string buf=bufs.str();
+    cout<<buf<<endl;
+    f<<buf.size()<<endl;
+    f<<buf<<endl;
+  }
+
+//   nameFeatures();
+
+//   f<<providedSubshapes_.size()<<endl;
+//   BOOST_FOREACH(const SolidModel::Map::value_type& i, providedSubshapes_)
+//   {
+//     f<<i.first<<endl;
+//     i.second->write(f);
+//     f<<endl;
+//   }
+
+//   typedef std::map<std::string, boost::shared_ptr<Datum> > DatumMap;
+//   f<<providedDatums_.size()<<endl;
+//   BOOST_FOREACH(const DatumMap::value_type& i, providedDatums_)
+//   {
+//     f<<i.first<<endl;
+//     i.second->write(f);
+//     f<<endl;
+//   }
+
+
+//   RefValuesList refvalues_;
+  f<<refvalues_.size()<<endl;
+  BOOST_FOREACH(const RefValuesList::value_type& i, refvalues_)
+  {
+    f<<i.first<<endl;
+    f<<i.second<<endl;
+  }
+//   RefPointsList refpoints_;
+  f<<refpoints_.size()<<endl;
+  BOOST_FOREACH(const RefPointsList::value_type& i, refpoints_)
+  {
+    f<<i.first<<endl;
+    f<<i.second(0)<<" "<<i.second(1)<<" "<<i.second(2)<<endl;
+  }
+//   RefVectorsList refvectors_;
+  f<<refvectors_.size()<<endl;
+  BOOST_FOREACH(const RefVectorsList::value_type& i, refvectors_)
+  {
+    f<<i.first<<endl;
+    f<<i.second(0)<<" "<<i.second(1)<<" "<<i.second(2)<<endl;
+  }
+
+//   double density_, areaWeight_;
+  f<<density_<<endl;
+  f<<areaWeight_<<endl;
+  
+  f<<bool(explicitCoG_)<<endl;
+  if (explicitCoG_) 
+  {
+    f<<(*explicitCoG_)(0)<<" "<<(*explicitCoG_)(1)<<" "<<(*explicitCoG_)(2)<<endl;
+  }
+  
+  f<<bool(explicitMass_)<<endl;
+  if (explicitMass_) f<<*explicitMass_<<endl;
+
+}
+
+void SolidModel::read(const filesystem::path& file)
+{
+  std::ifstream f(file.c_str());
+  read(f);
+}
+
+
+void SolidModel::read(std::istream& f)
+{
+  int n;
+  
+  f>>isleaf_;
+
+  {
+    size_t s;
+    f>>s;
+    
+    char buf[s+2];
+    f.read(buf, s);
+    buf[s]='\0';
+    cout<<buf<<endl;
+    
+    BRep_Builder b;
+    std::istringstream bufs(buf);
+    BRepTools::Read(shape_, bufs, b);
+  }
+  nameFeatures();
+
+//   f<<providedSubshapes_.size()<<endl;
+//   BOOST_FOREACH(const SolidModel::Map::value_type& i, providedSubshapes_)
+//   {
+//     f<<i.first<<endl;
+//     i.second->write(f);
+//     f<<endl;
+//   }
+
+//   typedef std::map<std::string, boost::shared_ptr<Datum> > DatumMap;
+//   int n;
+// 
+//   f>>n;
+//   for (int i=0; i<n; i++)
+//   {
+//     std::string name;
+//     getline(f, name);
+//     providedDatums_[name].reset(new Datum(f));
+//   }
+
+
+//   RefValuesList refvalues_;
+  f>>n;
+  cout<<"reading "<<n<<" ref values"<<endl;
+  for (int i=0; i<n; i++)
+  {
+    std::string name;
+//     getline(f, name);
+    f>>name;
+    double v;
+    f>>v;
+    cout<<name<<": "<<v<<endl;
+    refvalues_[name]=v;
+  }
+//   RefPointsList refpoints_;
+  f>>n;
+  cout<<"reading "<<n<<" ref points"<<endl;
+  for (int i=0; i<n; i++)
+  {
+    std::string name;
+//     getline(f, name);
+    f>>name;
+    double x, y, z;
+    f>>x>>y>>z;
+    cout<<name<<": "<<x<<" "<<y<<" "<<z<<endl;
+    refpoints_[name]=vec3(x, y, z);
+  }
+//   RefVectorsList refvectors_;
+  f>>n;
+  cout<<"reading "<<n<<" ref vectors"<<endl;
+  for (int i=0; i<n; i++)
+  {
+    std::string name;
+//     getline(f, name);
+    f>>name;
+    double x, y, z;
+    f>>x>>y>>z;
+    refvectors_[name]=vec3(x, y, z);
+  }
+
+//   double density_, areaWeight_;
+  f>>density_;
+  f>>areaWeight_;
+  
+  bool has;
+  
+  f>>has;
+  if (has)
+  {
+    double x,y,z;
+    f>>x>>y>>z;
+    explicitCoG_.reset(new arma::mat(vec3(x,y,z)));
+  }
+  
+  f>>has;
+  if (has)
+  {
+    double v;
+    f>>v;
+    explicitMass_.reset(new double(v));
+  }
+
+}
+
 
 
 
@@ -1241,6 +1554,62 @@ bool SingleVolumeFeature::isSingleVolume() const
   return true;
 }
 
+SolidModelCache::SolidModelCache(const filesystem::path& cacheDir)
+: cacheDir_(cacheDir),
+  removeCacheDir_(false)
+{
+  if (cacheDir.empty())
+  {
+    removeCacheDir_=true;
+    cacheDir_ = boost::filesystem::unique_path
+    (
+      boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
+    );
+    boost::filesystem::create_directories(cacheDir_);
+  }
+}
+
+SolidModelCache::~SolidModelCache()
+{
+  if (removeCacheDir_)
+  {
+    boost::filesystem::remove_all(cacheDir_);
+  }
+}
+
+void SolidModelCache::initRebuild()
+{
+  usedFilesDuringRebuild_.clear();
+}
+
+void SolidModelCache::finishRebuild()
+{
+  // remove all cache files that have not been used
+}
+
+
+bool SolidModelCache::contains(size_t hash) const
+{
+  return boost::filesystem::exists(fileName(hash));
+}
+
+
+filesystem::path SolidModelCache::markAsUsed(size_t hash)
+{
+  usedFilesDuringRebuild_.insert(fileName(hash));
+  return fileName(hash);
+}
+
+filesystem::path SolidModelCache::fileName(size_t hash) const
+{
+  return boost::filesystem::absolute
+  (
+    cacheDir_ /
+    boost::filesystem::path( str(format("%x")%hash) + ".iscad_cache" )
+  );
+}
+
+SolidModelCache cache;
 
 }
 }

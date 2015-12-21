@@ -30,6 +30,7 @@
 
 #ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
+#include "boost/functional/hash.hpp"
 #endif
 
 #include "base/linearalgebra.h"
@@ -49,6 +50,63 @@ namespace insight
 {
 namespace cad 
 {
+  class SolidModel;
+}
+}
+
+namespace boost
+{
+  
+template<> struct hash<TopoDS_Shape>
+{
+  std::size_t operator()(const TopoDS_Shape& shape) const;
+};
+
+template<> struct hash<arma::mat>
+{
+  std::size_t operator()(const arma::mat& v) const;
+};
+
+template<> struct hash<gp_Pnt>
+{
+  std::size_t operator()(const gp_Pnt& v) const;
+};
+
+template<> struct hash<insight::cad::SolidModel>
+{
+  std::size_t operator()(const insight::cad::SolidModel& v) const;
+};
+
+}
+
+namespace insight 
+{
+namespace cad 
+{
+  
+class ParameterListHash
+{
+  size_t hash_;
+  
+public:
+  ParameterListHash();
+  
+  template<class T>
+  void addParameter(const T& p)
+  {
+    boost::hash_combine(hash_, p);
+  }
+
+  template<class T>
+  void operator+=(const T& p)
+  {
+    addParameter(p);
+  }
+  
+  operator size_t ();
+
+  inline size_t getHash() const { return hash_; };
+};
   
 /* \mainpage
  * 
@@ -104,12 +162,12 @@ protected :
   RefPointsList refpoints_;
   RefVectorsList refvectors_;
   
-  TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
-  void setShape(const TopoDS_Shape& shape);
-  
   double density_, areaWeight_;
   boost::shared_ptr<arma::mat> explicitCoG_;
   boost::shared_ptr<double> explicitMass_;
+  
+  TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
+  void setShape(const TopoDS_Shape& shape);
   
  
 public:
@@ -242,11 +300,21 @@ public:
   virtual TopoDS_Wire asSingleWire() const;
   virtual TopoDS_Face asSingleFace() const;
   virtual TopoDS_Shape asSingleVolume() const;
+  
+  void copyDatums(const SolidModel& m1, const std::string& prefix="");
+  void copyDatumsTransformed(const SolidModel& m1, const gp_Trsf& trsf, const std::string& prefix="");
 
-  virtual const RefPointsList& getDatumPoints() const;
+  virtual const RefValuesList& getDatumScalars() const;
   virtual double getDatumScalar(const std::string& name="") const;
+  virtual const RefPointsList& getDatumPoints() const;
   virtual arma::mat getDatumPoint(const std::string& name="") const;
+  virtual const RefVectorsList& getDatumVectors() const;
   virtual arma::mat getDatumVector(const std::string& name="") const;
+  
+  virtual void write(std::ostream& file) const;
+  virtual void write(const boost::filesystem::path& file) const;
+  virtual void read(std::istream& file);
+  virtual void read(const boost::filesystem::path& file);
 };
 
 
@@ -268,6 +336,29 @@ public:
   virtual bool isSingleVolume() const;
 };
 
+
+class SolidModelCache
+{
+  boost::filesystem::path cacheDir_;
+  bool removeCacheDir_;
+  
+  std::set<boost::filesystem::path> usedFilesDuringRebuild_;
+  
+  boost::filesystem::path fileName(size_t hash) const;
+  
+public:
+  SolidModelCache(const boost::filesystem::path& cacheDir="");
+  ~SolidModelCache();
+  
+  void initRebuild();
+  void finishRebuild();
+  
+  bool contains(size_t hash) const;
+  boost::filesystem::path markAsUsed(size_t hash);
+  
+};
+
+extern SolidModelCache cache;
 
 }
 }

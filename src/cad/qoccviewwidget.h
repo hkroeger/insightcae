@@ -87,12 +87,12 @@ public:
 signals:
 
   void initialized();
-  void selectionChanged();
+  void selectionChanged(QoccViewWidget* aView);
   void mouseMoved   ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
   void pointClicked ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
   void sendStatus   ( const QString aMessage );
   //! Just a placeholder for now
-  void popupMenu ( const QoccViewWidget* aView, const QPoint aPoint ); 
+  void popupMenu ( QoccViewWidget* aView, const QPoint aPoint ); 
   void error ( int errorCode, QString& errorDescription );
   
 public slots:

@@ -36,6 +36,97 @@ Handle_AIS_InteractiveObject createLengthDimension
   const std::string& text
 );
 
+
+/*! \class InteractiveText
+* \brief Interactive items specialized in the displaying of texts.
+*/
+
+DEFINE_STANDARD_HANDLE (InteractiveText, AIS_InteractiveObject)
+
+class InteractiveText 
+: public AIS_InteractiveObject
+{
+protected:
+    std::string text_;
+    arma::mat	position_;
+    double	angle_;
+    double	slant_;
+    int		color_id_;
+    int		font_id_;
+    double	scale_;
+
+    double	width_;
+    double	height_;
+
+// ------------------- Initialization and Deletion ---------------------
+public:
+    //! Construct a default instance of InteractiveText.
+    InteractiveText ();
+
+    //! Construct a fully initialized instance of InteractiveText.
+    InteractiveText 
+    (
+      const std::string& text, const arma::mat& pos,
+      double angle = 0, double slant = 0,
+      int color_id = 1, int font_id = 1,
+      double scale = 0.2
+    );
+
+    //! Destruct the instance and free any allocated resources.
+    virtual ~InteractiveText ();
+
+    DEFINE_STANDARD_RTTI (InteractiveText)
+
+// ----------------------------- Access --------------------------------
+public:
+    //! Position of the text displayed.
+    const arma::mat& position () const
+    {
+        return position_;
+    }
+
+    //! Text displated by the current InteractiveText object.
+    const std::string& text () const
+    {
+        return text_;
+    }
+
+//     //! User friendly string of the instance.
+//     virtual std::string& to_string () const
+//     {
+//         return text_;
+//     }
+
+// -------------------------- Element change ---------------------------
+public:
+    void set_text (const std::string& v);
+
+    void set_position (const arma::mat& pos);
+
+// -------------------------- Implementation ---------------------------
+private:
+//! -- from PrsMgr_PresentableObject.
+    void Compute (const Handle_PrsMgr_PresentationManager3d& pm,
+                  const Handle_Prs3d_Presentation& pres,
+                  const Standard_Integer mode);
+
+//! -- from PrsMgr_PresentableObject.
+    void Compute (const Handle_Prs3d_Projector& proj,
+                  const Handle_Prs3d_Presentation& pres);
+
+//! -- from PrsMgr_PresentableObject.
+    void Compute (const Handle_PrsMgr_PresentationManager2d& pres,
+                  const Handle_Graphic2d_GraphicObject& gr_obj,
+                  const Standard_Integer mode) ;
+
+//! -- from SelectMgr_SelectableObject.
+    void ComputeSelection (const Handle_SelectMgr_Selection& sel,
+                           const Standard_Integer mode);
+
+// ---------------------------- Attributes -----------------------------
+
+};
+
 }
 }
 

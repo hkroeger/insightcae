@@ -22,6 +22,7 @@
 #define INSIGHT_LINEARALGEBRA_H
 
 #include <armadillo>
+#include <map>
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
@@ -222,6 +223,14 @@ arma::mat integrate(const arma::mat& xy);
 
 double integrate(const Interpolator& ipol, double a, double b, int comp);
 arma::mat integrate(const Interpolator& ipol, double a, double b);
+
+struct compareArmaMat 
+{
+  bool operator()(const arma::mat& v1, const arma::mat& v2) const;
+};
+
+
+//typedef std::map<arma::mat, int, CompMat> SortedMatMap;
 
 }
 

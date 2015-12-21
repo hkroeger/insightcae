@@ -72,6 +72,10 @@ TopoDS_Shape Transform::makeTransform(const SolidModel& m1, const gp_Trsf& trsf)
     this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(trsf)) );
   }
   if (m1.hasExplicitMass()) setMassExplicitly(m1.mass());
+  
+  // Transform all ref points and ref vectors
+  copyDatumsTransformed(m1, trsf);
+  
   return BRepBuilderAPI_Transform(m1, trsf).Shape();
 }
 

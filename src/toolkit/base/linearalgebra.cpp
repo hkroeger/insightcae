@@ -623,4 +623,23 @@ arma::mat integrate(const Interpolator& ipol, double a, double b)
   return res;
 }
 
+#define SMALL 1e-10
+bool compareArmaMat::operator()(const arma::mat& v1, const arma::mat& v2) const
+{
+  if ( fabs(v1(0) - v2(0))<SMALL )
+    {
+      if ( fabs(v1(1) - v2(1))<SMALL )
+        {
+          if (fabs(v1(2)-v2(2))<SMALL)
+          {
+              //return v1.instance_ < v2.instance_;
+              return false;
+          }
+          else return v1(2)<v2(2);
+        }
+      else return v1(1)<v2(1);
+    }
+  else return v1(0)<v2(0);
+}
+
 }

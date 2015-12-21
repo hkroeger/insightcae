@@ -23,13 +23,12 @@
 #include "AIS_Shape.hxx"
 #include "AIS_InteractiveContext.hxx"
 
-#include "solidmodel.h"
-#include "solidmodeltransient.h"
 #include "datum.h"
 #include "evaluation.h"
 
 #include "qoccviewwidget.h"
 #include "qoccviewercontext.h"
+#include "occtools.h"
 
 #include <QMessageBox>
 #include <QMainWindow>
@@ -112,6 +111,55 @@ EvaluationList::EvaluationList(QWidget* parent)
   );
 }
 
+void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
+{
+  // Remove previously displayed sub objects from display
+  BOOST_FOREACH(Handle_AIS_InteractiveObject& o, additionalDisplayObjectsForSelection_)
+  {
+    aView->getContext()->Erase(o, false);
+  }
+  additionalDisplayObjectsForSelection_.clear();
+  
+  // Display sub objects for current selection
+  if (QModelStepItem* ms=checkGraphicalSelection<QModelStepItem>(aView))
+  {
+    SolidModel& sm=ms->solidmodel();
+    const SolidModel::RefPointsList& pts=sm.getDatumPoints();
+    
+    // reverse storage to detect collocated points
+    typedef std::map<arma::mat, std::string, compareArmaMat> trpts;
+    trpts rpts;
+    BOOST_FOREACH(const SolidModel::RefPointsList::value_type& p, pts)
+    {
+      const std::string& name=p.first;
+      const arma::mat& xyz=p.second;
+      std::cout<<name<<":"<<xyz<<std::endl;
+      
+      trpts::iterator j=rpts.find(xyz);
+      if (j!=rpts.end())
+      {
+	j->second = j->second+"="+name;
+      }
+      else
+      {
+	rpts[xyz]=name;
+      }
+    }
+      
+    BOOST_FOREACH(const trpts::value_type& p, rpts)
+    {
+      const std::string& name=p.second;
+      const arma::mat& xyz=p.first;
+      Handle_AIS_InteractiveObject o(new InteractiveText(name, xyz));
+      additionalDisplayObjectsForSelection_.push_back(o);
+      aView->getContext()->Display(o, false);
+    }
+  }
+  
+  aView->getContext()->UpdateCurrentViewer();
+}
+
+
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags)
 {  
@@ -121,11 +169,17 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   
   viewer_=new QoccViewWidget(context_->getContext(), spl);
   connect(viewer_, 
-	  SIGNAL(popupMenu( const QoccViewWidget*, const QPoint)),
+	  SIGNAL(popupMenu( QoccViewWidget*, const QPoint)),
 	  this,
-	  SLOT(popupMenu(const QoccViewWidget*,const QPoint))
+	  SLOT(popupMenu(QoccViewWidget*,const QPoint))
  	);
   spl->addWidget(viewer_);
+
+  connect(viewer_, 
+	  SIGNAL(selectionChanged(QoccViewWidget*)),
+	  this,
+	  SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
+ 	);
   
   editor_=new QTextEdit(spl);
   spl->addWidget(editor_);
@@ -317,21 +371,6 @@ void ViewState::randomizeColor()
   b=0.5+0.5*( double(rand()) / double(RAND_MAX) );
 }
 
-class PointerTransient 
-: public Standard_Transient
-{
-protected:
-  QObject* mi_;
-  
-public:
-    PointerTransient();
-    PointerTransient(const PointerTransient& o);
-    PointerTransient(QObject* mi);
-    ~PointerTransient();
-    void operator=(QObject* mi);
-    QObject* getPointer();
-    
-};
 
 
 
@@ -1031,7 +1070,8 @@ void ISCADMainWindow::rebuildModel()
   }
 }
 
-void ISCADMainWindow::popupMenu( const QoccViewWidget* aView, const QPoint aPoint )
+
+void ISCADMainWindow::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
 {
   if (aView->getContext()->HasDetected())
   {

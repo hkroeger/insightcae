@@ -18,7 +18,7 @@
  *
  */
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 #include "feature.h"
 #include "boost/lexical_cast.hpp"
 #include "boost/foreach.hpp"
@@ -41,9 +41,9 @@ Filter::~Filter()
 {
 }
 
-void Filter::initialize(const SolidModel& m)
+void Filter::initialize(ConstFeaturePtr m)
 {
-  model_=&m;
+  model_=m;
 }
 
 void Filter::firstPass(FeatureID feature)
@@ -53,18 +53,49 @@ void Filter::firstPass(FeatureID feature)
 
 
 FeatureSet::FeatureSet(const FeatureSet& o)
-: model_(o.model_),
+: ASTBase(o),
+  model_(o.model_),
   shape_(o.shape_)
 {
-  insert(o.begin(), o.end());
+  data_.insert( o.data().begin(), o.data().end() );
 }
 
   
-FeatureSet::FeatureSet(const SolidModel& m, EntityType shape)
+FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape)
 : model_(m),
   shape_(shape)
 {
 }
+
+
+FeatureSet::FeatureSet
+(
+  ConstFeaturePtr m, 
+  EntityType shape, 
+  const string& filterexpr, 
+  const FeatureSetParserArgList& refs
+)
+: model_(m),
+  shape_(shape),
+  filterexpr_(filterexpr),
+  refs_(refs)
+{}
+
+
+FeatureSet::FeatureSet
+(
+  ConstFeatureSetPtr q, 
+  const string& filterexpr, 
+  const FeatureSetParserArgList& refs
+)
+: model_(q->model()),
+  shape_(q->shape()),
+  base_set_(q),
+  filterexpr_(filterexpr),
+  refs_(refs)
+{}
+
+
 
 FeatureSet::operator TopAbs_ShapeEnum () const
 {
@@ -73,6 +104,24 @@ FeatureSet::operator TopAbs_ShapeEnum () const
   else if (shape_==Vertex) return TopAbs_VERTEX;
   else if (shape_==Solid) return TopAbs_SOLID;
   else throw insight::Exception("Unknown EntityType:"+lexical_cast<std::string>(shape_));
+}
+
+const FeatureSetData& FeatureSet::data() const
+{
+  checkForBuildDuringAccess();
+  return data_;
+}
+
+void FeatureSet::setData(const FeatureSetData& d)
+{
+  data_=d;
+  setValid();
+}
+
+
+FeatureSet::operator const FeatureSetData& () const
+{
+  return data();
 }
 
 
@@ -84,81 +133,132 @@ void FeatureSet::safe_union(const FeatureSet& o)
     throw insight::Exception("feature sets belong to different models!");
   else
   {
-    insert(o.begin(), o.end());
+    checkForBuildDuringAccess();
+    data_.insert(o.data().begin(), o.data().end());
   }
 }
 
-FeatureSet FeatureSet::query(const FilterPtr& f) const
+void FeatureSet::safe_union(ConstFeatureSetPtr o)
 {
+  safe_union(*o);
+}
+
+void FeatureSet::build()
+{
+  
   switch (shape_)
   {
     case Vertex:
-      return model_.query_vertices_subset(*this, f);
+      if (base_set_)
+	data_=model_->query_vertices_subset(base_set_->data(), filterexpr_, refs_);
+      else
+	data_=model_->query_vertices(filterexpr_, refs_);
       break;
     case Edge:
-      return model_.query_edges_subset(*this, f);
+      if (base_set_)
+	data_=model_->query_edges_subset(base_set_->data(), filterexpr_, refs_);
+      else
+	data_=model_->query_edges(filterexpr_, refs_);
       break;
     case Face:
-      return model_.query_faces_subset(*this, f);
+      if (base_set_)
+	data_=model_->query_faces_subset(base_set_->data(), filterexpr_, refs_);
+      else
+	data_=model_->query_faces(filterexpr_, refs_);
       break;
     case Solid:
-      return model_.query_solids_subset(*this, f);
+      if (base_set_)
+	data_=model_->query_solids_subset(base_set_->data(), filterexpr_, refs_);
+      else
+	data_=model_->query_solids(filterexpr_, refs_);
       break;
     default:
       throw insight::Exception("Unknown feature type");
   }
 }
 
-FeatureSet FeatureSet::query(const std::string& queryexpr) const
+size_t FeatureSet::size() const
 {
-  std::istringstream is(queryexpr);
-  switch (shape_)
-  {
-    case Vertex:
-      return model_.query_vertices_subset(*this, parseVertexFilterExpr(is));
-      break;
-    case Edge:
-      return model_.query_edges_subset(*this, parseEdgeFilterExpr(is));
-      break;
-    case Face:
-      return model_.query_faces_subset(*this, parseFaceFilterExpr(is));
-      break;
-    case Solid:
-      return model_.query_solids_subset(*this, parseSolidFilterExpr(is));
-      break;
-    default:
-      throw insight::Exception("Unknown feature type");
-  }
+  return data().size();
 }
+
+
+// FeatureSet FeatureSet::query(const FilterPtr& f) const
+// {
+//   switch (shape_)
+//   {
+//     case Vertex:
+//       return model_.query_vertices_subset(*this, f);
+//       break;
+//     case Edge:
+//       return model_.query_edges_subset(*this, f);
+//       break;
+//     case Face:
+//       return model_.query_faces_subset(*this, f);
+//       break;
+//     case Solid:
+//       return model_.query_solids_subset(*this, f);
+//       break;
+//     default:
+//       throw insight::Exception("Unknown feature type");
+//   }
+// }
+// 
+// FeatureSet FeatureSet::query(const std::string& queryexpr) const
+// {
+//   std::istringstream is(queryexpr);
+//   switch (shape_)
+//   {
+//     case Vertex:
+//       return model_.query_vertices_subset(*this, parseVertexFilterExpr(is));
+//       break;
+//     case Edge:
+//       return model_.query_edges_subset(*this, parseEdgeFilterExpr(is));
+//       break;
+//     case Face:
+//       return model_.query_faces_subset(*this, parseFaceFilterExpr(is));
+//       break;
+//     case Solid:
+//       return model_.query_solids_subset(*this, parseSolidFilterExpr(is));
+//       break;
+//     default:
+//       throw insight::Exception("Unknown feature type");
+//   }
+// }
 
 
 FeatureSetPtr FeatureSet::clone() const
 {
-  FeatureSetPtr nfs(new FeatureSet(model_, shape_));
-  nfs->insert(begin(), end());
+  FeatureSetPtr nfs(new FeatureSet(*this));
   return nfs;
 }
 
 void FeatureSet::write() const
 {
   std::cout<<'[';
-  BOOST_FOREACH(FeatureID i, *this)
+  BOOST_FOREACH(FeatureID i, data_)
   {
     std::cout<<" "<<i;
   }
   std::cout<<" ]"<<std::endl;
 }
 
-std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
+std::ostream& operator<<(std::ostream& os, const FeatureSetData& fsd)
 {
-  os<<fs.size()<<" {";
-  BOOST_FOREACH(int fi, fs)
+  os<<fsd.size()<<" {";
+  BOOST_FOREACH(int fi, fsd)
   {
     os<<" "<<fi;
   }
   os<<" }";
   return os;
 }
-  
+
+std::ostream& operator<<(std::ostream& os, const FeatureSet& fs)
+{
+  os << fs.data();
+  return os;
+}
+
 }
 }

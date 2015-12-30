@@ -11,12 +11,12 @@ set(insightcad_SOURCES
   datum.cpp 
   sketch.cpp 
   geotest.cpp 
-  solidmodel.cpp 
+  cadparameter.cpp
+  cadfeature.cpp 
+  cadmodel.cpp
   meshing.cpp 
   featurefilter.cpp 
-  feature.cpp 
-  freeship_interface.cpp
-  evaluation.cpp
+  feature.cpp
   occtools.cpp
 )
 
@@ -24,7 +24,9 @@ set(INCLUDE_DIRS "")
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}") #hack
 add_subdirectory(quantitycomputers)
 add_subdirectory(featurefilters)
-add_subdirectory(solidmodels)
+add_subdirectory(cadfeatures)
+add_subdirectory(cadparameters)
+add_subdirectory(cadpostprocactions)
 
 # include_directories(${toolkit_SOURCE_DIR})
 # include_directories(${Boost_INCLUDE_DIRS})
@@ -57,7 +59,13 @@ install(TARGETS insightcad LIBRARY DESTINATION lib)
 
 if (INSIGHT_BUILD_WORKBENCH)
 
-set(iscad_SRCS iscad.cpp iscadapplication.cpp qoccviewwidget.cpp qoccviewercontext.cpp solidmodeltransient.cpp)
+set(iscad_SRCS 
+ iscad.cpp
+ iscadapplication.cpp
+ qoccviewwidget.cpp
+ qoccviewercontext.cpp
+ cadfeaturetransient.cpp
+)
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)
 #find_package(Boost COMPONENTS system filesystem REQUIRED)

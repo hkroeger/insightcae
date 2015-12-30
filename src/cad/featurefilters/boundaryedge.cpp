@@ -19,7 +19,7 @@
  */
 
 #include "boundaryedge.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 #include "occinclude.h"
 
 using namespace std;
@@ -34,10 +34,10 @@ boundaryEdge::boundaryEdge()
 {
 }
 
-void boundaryEdge::initialize(const SolidModel& m)
+void boundaryEdge::initialize(FeaturePtr m)
 {
     insight::cad::Filter::initialize(m);
-    safb_.reset(new ShapeAnalysis_FreeBounds(m));
+    safb_.reset(new ShapeAnalysis_FreeBounds(*m));
 }
 
 

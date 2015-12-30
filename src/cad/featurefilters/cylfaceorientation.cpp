@@ -18,7 +18,7 @@
  */
 
 #include "cylfaceorientation.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 
 using namespace std;

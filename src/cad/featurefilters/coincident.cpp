@@ -18,7 +18,7 @@
  */
 
 #include "coincident.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 #include "occtools.h"
 #include "geotest.h"
@@ -32,8 +32,8 @@ namespace cad
 {
 
 
-template<> coincident<Edge>::coincident(const SolidModel& m)
-: f_(m.allEdges())
+template<> coincident<Edge>::coincident(FeaturePtr m)
+: f_(m->allEdges())
 {
 }
 
@@ -42,18 +42,18 @@ bool coincident<Edge>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  BOOST_FOREACH(int f, f_)
+  BOOST_FOREACH(int f, f_.data())
   {
     TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
-    TopoDS_Edge e2=TopoDS::Edge(f_.model().edge(f));
+    TopoDS_Edge e2=TopoDS::Edge(f_.model()->edge(f));
     match |= isPartOf(e2, e1);
   }
   
   return match;
 }
 
-template<> coincident<Face>::coincident(const SolidModel& m)
-: f_(m.allFaces())
+template<> coincident<Face>::coincident(FeaturePtr m)
+: f_(m->allFaces())
 {
 }
 
@@ -62,10 +62,10 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  BOOST_FOREACH(int f, f_)
+  BOOST_FOREACH(int f, f_.data())
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
-    TopoDS_Face e2=TopoDS::Face(f_.model().face(f));
+    TopoDS_Face e2=TopoDS::Face(f_.model()->face(f));
     match |= isPartOf(e2, e1);
   }
   

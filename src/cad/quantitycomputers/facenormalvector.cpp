@@ -18,7 +18,7 @@
  */
 
 #include "facenormalvector.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 using namespace std;
 using namespace boost;

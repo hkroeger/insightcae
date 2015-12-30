@@ -34,7 +34,7 @@ in::in(FeatureSet set)
 
 bool in::checkMatch(FeatureID feature) const
 {
-  return set_.find(feature)!=set_.end();
+  return set_.data().find(feature)!=set_.data().end();
 }
 
 FilterPtr in::clone() const

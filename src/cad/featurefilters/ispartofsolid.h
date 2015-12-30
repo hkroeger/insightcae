@@ -40,14 +40,14 @@ public:
     {
     }
 
-    isPartOfSolid(const SolidModel& m)
-    : s_(m)
+    isPartOfSolid(FeaturePtr m)
+    : s_(*m)
     {
         throw insight::Exception("isPartOfSolid filter: not implemented!");
     }
 
     isPartOfSolid(FeatureSet f)
-        : s_(TopoDS::Solid(static_cast<TopoDS_Shape>(f.model())))
+        : s_(TopoDS::Solid(static_cast<TopoDS_Shape>(*f.model())))
     {}
 
     bool checkMatch(FeatureID feature) const
@@ -63,9 +63,9 @@ public:
 };
 
 
-template<> isPartOfSolid<Edge>::isPartOfSolid(const SolidModel& m);
+template<> isPartOfSolid<Edge>::isPartOfSolid(FeaturePtr m);
 template<> bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const;
-template<> isPartOfSolid<Face>::isPartOfSolid(const SolidModel& m);
+template<> isPartOfSolid<Face>::isPartOfSolid(FeaturePtr m);
 template<> bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const;
 
 typedef isPartOfSolid<Edge> isPartOfSolidEdge;

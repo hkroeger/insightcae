@@ -24,7 +24,7 @@
 #ifndef Q_MOC_RUN
 #include "boost/ptr_container/ptr_map.hpp"
 #endif
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -35,7 +35,7 @@ public:
   typedef std::map<std::string, FeatureSetPtr> NamedFeatureSet;
   
 private:
-  const SolidModel& part_;
+  const Feature& part_;
   double Lmax_, Lmin_;
   
   NamedFeatureSet namedVertices_, namedEdges_, namedFaces_;
@@ -47,7 +47,7 @@ private:
   int additionalPoints_;
   
 public:
-  GmshCase(const SolidModel& part, double Lmax=500., double Lmin=0.1);
+  GmshCase(const Feature& part, double Lmax=500., double Lmin=0.1);
   
   inline void setLinear() { elementOrder_=1; }
   inline void setQuadratic() { elementOrder_=2; }

@@ -37,7 +37,7 @@ protected:
 public:
     maximal(const scalarQuantityComputer& qtc, int rank=0);
     virtual void firstPass(FeatureID feature);
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(FeaturePtr m);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

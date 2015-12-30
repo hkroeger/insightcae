@@ -25,7 +25,8 @@
 #include "occinclude.h"
 
 #include "cadtypes.h"
-#include "solidmodel.h"
+#include "cadparameters.h"
+#include "cadfeature.h"
 
 #include "dxflib/dl_creationadapter.h"
 #include "dxflib/dl_dxf.h"
@@ -77,24 +78,30 @@ public:
 };
 
 
-typedef std::vector<boost::fusion::vector2<std::string, double> > SketchVarList;
+typedef std::vector<boost::fusion::vector2<std::string, ScalarPtr> > SketchVarList;
 
 class Sketch
-: public SolidModel
+: public Feature
 {
-//   TopoDS_Shape makeSketch(const Datum& pl, const boost::filesystem::path& filename, const std::string& layername="0");
+  DatumPtr pl_;
+  boost::filesystem::path fn_;
+  std::string ln_;
+  SketchVarList vars_;
+  double tol_;
 
 public:
   declareType("Sketch");
   Sketch(const NoParameters& nop = NoParameters());
   Sketch
   (
-    const Datum& pl, 
+    DatumPtr pl, 
     const boost::filesystem::path& filename, 
     const std::string& layername="0", 
     const SketchVarList& vars = SketchVarList(), 
     double tol=Precision::Confusion() 
   );
+  
+  virtual void build();
   
 //   virtual bool isSingleCloseWire() const;
 //   virtual TopoDS_Wire asSingleClosedWire() const;

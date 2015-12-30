@@ -1,0 +1,46 @@
+add_sources(insightcad_SOURCES 
+ arc.cpp
+#  bar.cpp
+ booleanintersection.cpp
+ booleansubtract.cpp
+ booleanunion.cpp
+#  boundedflatface.cpp
+#  box.cpp
+#  chamfer.cpp
+#  circle.cpp
+#  circularpattern.cpp
+#  compound.cpp
+#  cutaway.cpp
+#  cylinder.cpp
+#  extrusion.cpp
+#  fillet.cpp
+#  fillingface.cpp
+#  importsolidmodel.cpp
+#  linearpattern.cpp
+#  line.cpp
+#  mirror.cpp
+#  pipe.cpp
+#  place.cpp
+#  projected.cpp
+#  projectedoutline.cpp
+#  quad.cpp
+#  regpoly.cpp
+#  revolution.cpp
+#  ring.cpp
+#  rotatedhelicalsweep.cpp
+#  shoulder.cpp
+#  sphere.cpp
+#  splinecurve.cpp
+#  splinesurface.cpp
+#  split.cpp
+#  spring.cpp
+#  stitchedshell.cpp
+#  stitchedsolid.cpp
+#  sweep.cpp
+#  thicken.cpp
+ transform.cpp
+#  tri.cpp
+#  wire.cpp
+)
+
+add_include_dir(INCLUDE_DIRS)

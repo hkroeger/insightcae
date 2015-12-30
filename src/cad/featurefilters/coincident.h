@@ -23,25 +23,27 @@
 #include "feature.h"
 #include "base/exception.h"
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
 
 template<EntityType T>
 class coincident
-    : public Filter
+: public Filter
 {
 protected:
     FeatureSet f_;
 
 public:
-    coincident(const SolidModel& m)
-        : f_(m, T)
+    coincident(FeaturePtr m)
+    : f_(m, T)
     {
         throw insight::Exception("coincident filter: not implemented!");
     }
 
     coincident(FeatureSet f)
-        : f_(f)
+    : f_(f)
     {}
 
     bool checkMatch(FeatureID feature) const
@@ -57,11 +59,11 @@ public:
 };
 
 
-template<> coincident<Edge>::coincident(const SolidModel& m);
+template<> coincident<Edge>::coincident(FeaturePtr m);
 template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
-template<> coincident<Face>::coincident(const SolidModel& m);
+template<> coincident<Face>::coincident(FeaturePtr m);
 template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
-template<> coincident<Solid>::coincident(const SolidModel& m);
+template<> coincident<Solid>::coincident(FeaturePtr m);
 template<> bool coincident<Solid>::checkMatch(FeatureID feature) const;
 
 typedef coincident<Edge> coincidentEdge;

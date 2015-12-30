@@ -22,9 +22,11 @@
 #define INSIGHT_CAD_FEATURE_H
 
 #include "cadtypes.h"
+#include "astbase.h"
 
 #include <set>
 #include <memory>
+
 #ifndef Q_MOC_RUN
 #include "boost/concept_check.hpp"
 #include "boost/shared_ptr.hpp"
@@ -50,28 +52,27 @@ namespace insight
 namespace cad 
 {
   
-class SolidModel;
 class Sketch;
 
 enum EntityType { Vertex, Edge, Face, Solid };
 
-
-// class SolidModel;
 
 
 class Filter
 {
 
 protected:
-    const SolidModel* model_;
+    ConstFeaturePtr model_;
     
 public:
     Filter();
     virtual ~Filter();
 
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(ConstFeaturePtr m);
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const =0;
+    
+    inline const Feature& model() const { return *model_; }
 
     virtual FilterPtr clone() const =0;
 
@@ -98,19 +99,18 @@ public:
     typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
 
 protected:
-    const SolidModel* model_;
+    ConstFeaturePtr model_;
 
 public:
     QuantityComputer()
-        : model_(NULL)
     {}
 
     virtual ~QuantityComputer()
     {}
 
-    virtual void initialize(const SolidModel& m)
+    virtual void initialize(ConstFeaturePtr m)
     {
-        model_=&m;
+        model_=m;
     }
 
     virtual bool isValidForFeature(FeatureID) const
@@ -142,37 +142,77 @@ typedef boost::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
 
 
 
-// class FeatureSet;
-
 std::ostream& operator<<(std::ostream& os, const FeatureSet& fs);
-
-
+std::ostream& operator<<(std::ostream& os, const FeatureSetData& fs);
 
 class FeatureSet
-: public std::set<FeatureID>
+: public ASTBase
 {
 // #warning Should be a shared_ptr! Otherwise problems with feature sets from temporarily created shapes.
-  const SolidModel& model_;
-  EntityType shape_;
   
+  /**
+   * feature which shall be queried
+   */
+  ConstFeaturePtr model_;
+  
+  /**
+   * basis for subset query
+   */
+  ConstFeatureSetPtr base_set_;
+  
+  EntityType shape_;
+  std::string filterexpr_;
+  FeatureSetParserArgList refs_;
+  
+  FeatureSetData data_;
+
 public:
   FeatureSet(const FeatureSet& o);
-  FeatureSet(const SolidModel& m, EntityType shape);
+  FeatureSet(ConstFeaturePtr m, EntityType shape);
+  
+  /**
+   * query an entire feature
+   */
+  FeatureSet
+  (
+    ConstFeaturePtr  m, 
+    EntityType shape, 
+    const std::string& filterexpr, 
+    const FeatureSetParserArgList& refs = FeatureSetParserArgList() 
+  );
+  
+  /**
+   * query based on the result of a previous query
+   */
+  FeatureSet
+  (
+    ConstFeatureSetPtr q, 
+    const std::string& filterexpr, 
+    const FeatureSetParserArgList& refs = FeatureSetParserArgList() 
+  );
+  
+  virtual void build();
+  
+  size_t size() const;
   
   void safe_union(const FeatureSet& o);
+  void safe_union(ConstFeatureSetPtr o);
   
+  const FeatureSetData& data() const;
+  void setData(const FeatureSetData& d);
+  
+  operator const FeatureSetData& () const;
   operator TopAbs_ShapeEnum () const;
 
-  inline const SolidModel& model() const { return model_; }
+  inline ConstFeaturePtr model() const { return model_; }
   inline EntityType shape() const { return shape_; }
-  
-  FeatureSet query(const FilterPtr& f) const;
-  FeatureSet query(const std::string& queryexpr) const;
   
   FeatureSetPtr clone() const;
   
   void write() const;
 };
+
+
 
 
 }

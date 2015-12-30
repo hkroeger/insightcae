@@ -19,7 +19,7 @@
  */
 
 #include "faceadjacenttoedges.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 using namespace std;
 using namespace boost;
@@ -40,9 +40,9 @@ bool faceAdjacentToEdges::checkMatch(FeatureID feature) const
   for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
   {
     TopoDS_Edge e=TopoDS::Edge(ex.Current());
-    BOOST_FOREACH(FeatureID ei, edges_)
+    BOOST_FOREACH(FeatureID ei, edges_.data())
     {
-      TopoDS_Edge e2=edges_.model().edge(ei);
+      TopoDS_Edge e2=edges_.model()->edge(ei);
       if (e.IsSame(e2))
 	return true;
     }

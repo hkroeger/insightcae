@@ -18,7 +18,7 @@
  */
 
 #include "edgeend.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 using namespace std;
 using namespace boost;
@@ -37,7 +37,7 @@ edgeEnd::~edgeEnd()
 arma::mat edgeEnd::evaluate(FeatureID ei)
 {
   gp_Pnt p=BRep_Tool::Pnt(TopExp::LastVertex(model_->edge(ei)));
-  return Vector(p);
+  return insight::Vector(p);
 }
   
 QuantityComputer<arma::mat>::Ptr edgeEnd::clone() const 

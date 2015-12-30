@@ -21,33 +21,55 @@
 #ifndef INSIGHT_CAD_CADTYPES_H
 #define INSIGHT_CAD_CADTYPES_H
 
+#include <set>
+#include <vector>
+
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
 #include "base/linearalgebra.h"
 #endif
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
 
-class SolidModel;
+class Scalar;
+class Vector;
+class ASTBase;
+class Feature;
 class Datum;
 class FeatureSet;
 class Filter;
-class Evaluation;
+class Model;
+class PostprocAction;
 
-
-typedef boost::shared_ptr<SolidModel> SolidModelPtr;
+typedef boost::shared_ptr<Feature> FeaturePtr;
+typedef boost::shared_ptr<Feature const> ConstFeaturePtr;
 typedef boost::shared_ptr<Datum> DatumPtr;
+typedef boost::shared_ptr<Datum const> ConstDatumPtr;
 typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
-typedef boost::shared_ptr<Evaluation> EvaluationPtr;
+typedef boost::shared_ptr<FeatureSet const > ConstFeatureSetPtr;
+typedef boost::shared_ptr<Model> ModelPtr;
+typedef boost::shared_ptr<Model const> ConstModelPtr;
+typedef boost::shared_ptr<PostprocAction> PostprocActionPtr;
+typedef boost::shared_ptr<PostprocAction const> ConstPostprocActionPtr;
+typedef boost::shared_ptr<Scalar> ScalarPtr;
+typedef boost::shared_ptr<Scalar const> ConstScalarPtr;
+typedef boost::shared_ptr<Vector> VectorPtr;
+typedef boost::shared_ptr<Vector const> ConstVectorPtr;
+typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
+typedef boost::shared_ptr<FeatureSet const> ConstFeatureSetPtr;
+typedef boost::shared_ptr<Filter> FilterPtr;
+typedef boost::shared_ptr<Filter const> ConstFilterPtr;
 
 typedef int FeatureID;
-typedef boost::shared_ptr<FeatureSet> FeatureSetPtr;
-typedef boost::variant<FeatureSetPtr,arma::mat,double> FeatureSetParserArg;
+typedef boost::variant<FeatureSetPtr,VectorPtr,ScalarPtr> FeatureSetParserArg;
 typedef std::vector<FeatureSetParserArg> FeatureSetParserArgList;
 typedef std::vector<FeatureSetPtr> FeatureSetList;
+typedef std::set<FeatureID> FeatureSetData;
+typedef std::map<std::string, FeaturePtr> SubfeatureMap;
 
-typedef boost::shared_ptr<Filter> FilterPtr;
 
 }
 }

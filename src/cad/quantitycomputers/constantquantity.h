@@ -22,19 +22,21 @@
 
 #include "feature.h"
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
 
 template<class T>
 class constantQuantity
-    : public QuantityComputer<T>
+: public QuantityComputer<T>
 {
 protected:
     T refValue_;
     
 public:
     constantQuantity(const T& refValue)
-        : refValue_(refValue)
+    : refValue_(refValue)
     {}
     
     virtual T evaluate(FeatureID) 

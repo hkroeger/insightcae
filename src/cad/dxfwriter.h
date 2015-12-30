@@ -24,7 +24,7 @@
 #include "base/boost_include.h"
 #include "dxflib/dl_dxf.h"
 #include "occinclude.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -128,7 +128,7 @@ public:
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
   void writeSection(const TopoDS_Shape& s, HatchGenerator& hgen, std::string layer="0");
   
-  static void writeViews(const boost::filesystem::path& file, const SolidModel::Views& views);
+  static void writeViews(const boost::filesystem::path& file, const Feature::Views& views);
 };
 }
 }

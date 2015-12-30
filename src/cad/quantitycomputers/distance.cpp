@@ -18,7 +18,7 @@
  */
 
 #include "distance.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 
 using namespace std;
@@ -34,7 +34,7 @@ distance::distance(const matQuantityComputerPtr& p0, const matQuantityComputerPt
 {
 }
 
-void distance::initialize(const SolidModel& m)
+void distance::initialize(FeaturePtr m)
 {
   p0_->initialize(m);
   p1_->initialize(m);

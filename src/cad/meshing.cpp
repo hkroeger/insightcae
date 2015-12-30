@@ -25,7 +25,7 @@
 namespace insight {
 namespace cad {
 
-GmshCase::GmshCase(const insight::cad::SolidModel& part, double Lmax, double Lmin)
+GmshCase::GmshCase(const insight::cad::Feature& part, double Lmax, double Lmin)
 : part_(part),
   Lmax_(Lmax),
   Lmin_(Lmin),
@@ -78,7 +78,7 @@ void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
 void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
 {
   additionalPoints_++;
-  int id=part_.allVertices().size()+additionalPoints_;
+  int id=part_.allVertices().data().size()+additionalPoints_;
   std::ostringstream oss;
   oss<<"Point("<< id <<") = {"<<p(0)<<", "<<p(1)<<", "<<p(2)<<", 999};\n";
   oss<<"Physical Point(\""<< vn <<"\") = {"<<id<<"};\n";
@@ -91,9 +91,9 @@ void GmshCase::setVertexLen(const std::string& vn, double L)
   std::ostringstream oss;
   oss<<"Characteristic Length{";
   
-  const FeatureSet& fs = *(namedVertices_.find(vn)->second);
+  const FeatureSetData& fs = (namedVertices_.find(vn)->second)->data();
   
-  for (FeatureSet::const_iterator i=fs.begin(); i!=fs.end(); i++)
+  for (FeatureSetData::const_iterator i=fs.begin(); i!=fs.end(); i++)
   {
     if (i!=fs.begin()) oss<<",";
     oss<<*i;
@@ -112,9 +112,9 @@ void GmshCase::setEdgeLen(const std::string& en, double L)
   const FeatureSet& fs = *(namedEdges_.find(en)->second);
   FeatureSet vs = part_.verticesOfEdges(fs);
   
-  for (FeatureSet::const_iterator i=vs.begin(); i!=vs.end(); i++)
+  for (FeatureSetData::const_iterator i=vs.data().begin(); i!=vs.data().end(); i++)
   {
-    if (i!=vs.begin()) oss<<",";
+    if (i!=vs.data().begin()) oss<<",";
     oss<<*i;
   }
   oss<<"}="<<L<<";";
@@ -129,9 +129,9 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
   const FeatureSet& fs = *(namedFaces_.find(fn)->second);
   FeatureSet vs = part_.verticesOfFaces(fs);
   
-  for (FeatureSet::const_iterator i=vs.begin(); i!=vs.end(); i++)
+  for (FeatureSetData::const_iterator i=vs.data().begin(); i!=vs.data().end(); i++)
   {
-    if (i!=vs.begin()) oss<<",";
+    if (i!=vs.data().begin()) oss<<",";
     oss<<*i;
   }
   oss<<"}="<<L<<";";
@@ -180,9 +180,9 @@ void GmshCase::doMeshing
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedVertices_)
   {
     f<<"Physical Point(\""<< ne.first <<"\") = {";
-    for (FeatureSet::const_iterator j=ne.second->begin(); j!=ne.second->end(); j++)
+    for (FeatureSetData::const_iterator j=ne.second->data().begin(); j!=ne.second->data().end(); j++)
     {
-      if (j!=ne.second->begin()) f<<",";
+      if (j!=ne.second->data().begin()) f<<",";
       f<<*j;
     }
     f<<"};\n";
@@ -191,9 +191,9 @@ void GmshCase::doMeshing
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedEdges_)
   {
     f<<"Physical Line(\""<< ne.first <<"\") = {";
-    for (FeatureSet::const_iterator j=ne.second->begin(); j!=ne.second->end(); j++)
+    for (FeatureSetData::const_iterator j=ne.second->data().begin(); j!=ne.second->data().end(); j++)
     {
-      if (j!=ne.second->begin()) f<<",";
+      if (j!=ne.second->data().begin()) f<<",";
       f<<*j;
     }
     f<<"};\n";
@@ -202,9 +202,9 @@ void GmshCase::doMeshing
   BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedFaces_)
   {
     f<<"Physical Surface(\""<< nf.first <<"\") = {";
-    for (FeatureSet::const_iterator j=nf.second->begin(); j!=nf.second->end(); j++)
+    for (FeatureSetData::const_iterator j=nf.second->data().begin(); j!=nf.second->data().end(); j++)
     {
-      if (j!=nf.second->begin()) f<<",";
+      if (j!=nf.second->data().begin()) f<<",";
       f<<*j;
     }
     f<<"};\n";

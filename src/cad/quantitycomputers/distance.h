@@ -36,7 +36,7 @@ protected:
 public:
     distance(const matQuantityComputerPtr& p0, const matQuantityComputerPtr& p1);
     
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(FeaturePtr m);
     
     virtual double evaluate(FeatureID i);
     

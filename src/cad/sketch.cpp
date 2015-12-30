@@ -313,29 +313,37 @@ TopoDS_Wire DXFReader::Wire(double tol) const
 // }
 
 defineType(Sketch);
-addToFactoryTable(SolidModel, Sketch, NoParameters);
+addToFactoryTable(Feature, Sketch, NoParameters);
 
-Sketch::Sketch(const NoParameters& nop): SolidModel(nop)
+Sketch::Sketch(const NoParameters& nop)
+: Feature(nop)
 {}
 
 
 Sketch::Sketch
 (
-  const Datum& pl, 
+  DatumPtr pl, 
   const boost::filesystem::path& fn, 
   const std::string& ln, 
   const SketchVarList& vars,
   double tol
 )
-// : SolidModel(makeSketch(pl, fn, ln))
+: pl_(pl),
+  fn_(fn),
+  ln_(ln),
+  vars_(vars),
+  tol_(tol)
+{}
+
+void Sketch::build()
 {
-  if (!pl.providesPlanarReference())
+  if (!pl_->providesPlanarReference())
     throw insight::Exception("Sketch: Planar reference required!");
   
-  boost::filesystem::path filename = fn;
-  std::string layername = ln;
+  boost::filesystem::path filename = fn_;
+  std::string layername = ln_;
   
-  std::string ext=fn.extension().string();
+  std::string ext=fn_.extension().string();
   boost::algorithm::to_lower(ext);
   cout<<ext<<endl;
   
@@ -350,7 +358,7 @@ Sketch::Sketch
     {
       
       std::string vargs="";
-      for (SketchVarList::const_iterator it=vars.begin(); it!=vars.end(); it++)
+      for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
       {
 	std::string vname=boost::fusion::at_c<0>(*it);
 	int vid;
@@ -367,7 +375,7 @@ Sketch::Sketch
 	  throw insight::Exception("Error in passing variable values to FCStd Sketch: variable names must be of format d<ID>! (ID equal to FreeCADs constraint ID)");
 	}
 	
-	double vval=boost::fusion::at_c<1>(*it);
+	double vval=boost::fusion::at_c<1>(*it)->value();
 	vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
       }
       
@@ -391,9 +399,9 @@ Sketch::Sketch
 "doc.recompute()\n"
 "importDXF.export(__objs__, \"%s\")\n"
 "del __objs__\n") 
-      % fn.string() 
-      % fn.filename().stem().string() 
-      % ln 
+      % fn_.string() 
+      % fn_.filename().stem().string() 
+      % ln_
       % filename.string() 
       );
     }
@@ -403,7 +411,7 @@ Sketch::Sketch
     cout<<"CMD=\""<<cmd<<"\""<<endl;
     if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
     {
-      throw insight::Exception("Conversion of FreeCAD file "+fn.string()+" into DXF "+filename.string()+" failed!");
+      throw insight::Exception("Conversion of FreeCAD file "+fn_.string()+" into DXF "+filename.string()+" failed!");
     }
     boost::filesystem::remove(macrofilename);
     
@@ -414,26 +422,26 @@ Sketch::Sketch
     layername="0";
     
     std::string vargs="";
-    for (SketchVarList::const_iterator it=vars.begin(); it!=vars.end(); it++)
+    for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
     {
       std::string vname=boost::fusion::at_c<0>(*it);
-      double vval=boost::fusion::at_c<1>(*it);
+      double vval=boost::fusion::at_c<1>(*it)->value();
       vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
     }
     
-    std::string cmd = str( format("psketchercmd %s -o %s") % fn % filename ) + vargs;
+    std::string cmd = str( format("psketchercmd %s -o %s") % fn_ % filename ) + vargs;
     cout<<"CMD=\""<<cmd<<"\""<<endl;
     if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
     {
-      throw insight::Exception("Conversion of pSketch file "+fn.string()+" into DXF "+filename.string()+" failed!");
+      throw insight::Exception("Conversion of pSketch file "+fn_.string()+" into DXF "+filename.string()+" failed!");
     }
   }
   
-  TopoDS_Wire w = DXFReader(filename, layername).Wire(tol);
-  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w)));
+  TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
+  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
   
   gp_Trsf tr;
-  gp_Ax3 ax=pl;
+  gp_Ax3 ax=*pl_;
   tr.SetTransformation(ax);
   
   BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
@@ -446,14 +454,14 @@ Sketch::Sketch
 
 Sketch::operator const TopoDS_Face& () const
 {
-  if (!shape_.ShapeType()==TopAbs_FACE)
+  if (!shape().ShapeType()==TopAbs_FACE)
     throw insight::Exception("Shape is not a face: presumably, original wire was not closed");
-  return TopoDS::Face(shape_);
+  return TopoDS::Face(shape());
 }
 
 bool Sketch::isSingleFace() const
 {
-  return (shape_.ShapeType()==TopAbs_FACE);
+  return (shape().ShapeType()==TopAbs_FACE);
 }
 
 
@@ -467,10 +475,10 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
     ( '(' > ruleset.r_datumExpression > ',' 
 	  > ruleset.r_path > ',' 
 	  > ruleset.r_string 
-	  > ( ( ',' > (ruleset.r_identifier > '=' > qi::double_ )% ',' ) | qi::attr(SketchVarList()) )
+	  > ( ( ',' > (ruleset.r_identifier > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(SketchVarList()) )
 	  > ( ( ',' > qi::double_ ) | qi::attr(1e-3) ) > 
       ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sketch>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Sketch>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

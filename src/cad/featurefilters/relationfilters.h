@@ -44,7 +44,7 @@ public:\
     qtc2_(qtc2.clone())\
   {}\
   \
-  virtual void initialize(const SolidModel& m)\
+  virtual void initialize(FeaturePtr m)\
   {\
     Filter::initialize(m);\
     qtc1_->initialize(m);\

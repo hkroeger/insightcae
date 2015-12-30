@@ -44,7 +44,7 @@ public:\
   \
   ~OPERATED_QTC_NAME() {}\
   \
-  virtual void initialize(const SolidModel& m)\
+  virtual void initialize(FeaturePtr m)\
   {\
     QuantityComputer<T>::initialize(m);\
     qtc_->initialize(m);\
@@ -76,7 +76,7 @@ public:\
   \
   ~OPERATED_QTC_NAME() {}\
   \
-  virtual void initialize(const SolidModel& m)\
+  virtual void initialize(FeaturePtr m)\
   {\
     QuantityComputer<RETURN_T>::initialize(m);\
     qtc_->initialize(m);\
@@ -109,7 +109,7 @@ public:\
   \
   ~OPERATED_QTC_NAME() {}\
   \
-  virtual void initialize(const SolidModel& m)\
+  virtual void initialize(FeaturePtr m)\
   {\
     QuantityComputer< typename RESULT_T<T1,T2>::type >::initialize(m);\
     qtc1_->initialize(m);\

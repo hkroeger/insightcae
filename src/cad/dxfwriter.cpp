@@ -620,11 +620,11 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
   }
 }
 
-void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel::Views& views)
+void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::Views& views)
 {
   std::vector<LayerDefinition> addlayers;
   
-  BOOST_FOREACH(const SolidModel::Views::value_type& v, views)
+  BOOST_FOREACH(const Feature::Views::value_type& v, views)
   {
     string name=v.first;
     addlayers.push_back
@@ -643,7 +643,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const SolidModel
   DXFWriter dxf(file, addlayers);
 
   HatchGenerator hgen;
-  BOOST_FOREACH(const SolidModel::Views::value_type& v, views)
+  BOOST_FOREACH(const Feature::Views::value_type& v, views)
   {
     string name=v.first;
     dxf.writeShapeEdges(v.second.visibleEdges, name);

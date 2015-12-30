@@ -18,7 +18,7 @@
  */
 
 #include "edgestart.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 using namespace std;
 using namespace boost;
@@ -37,7 +37,7 @@ edgeStart::~edgeStart()
 arma::mat edgeStart::evaluate(FeatureID ei)
 {
   gp_Pnt p=BRep_Tool::Pnt(TopExp::FirstVertex(model_->edge(ei)));
-  return Vector(p);
+  return insight::Vector(p);
 }
   
 QuantityComputer<arma::mat>::Ptr edgeStart::clone() const 

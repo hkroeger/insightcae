@@ -34,7 +34,7 @@ protected:
     FilterPtr f2_;
 public:
     AND(const Filter& f1, const Filter& f2);
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(FeaturePtr m);
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const;
 
@@ -49,7 +49,7 @@ protected:
     FilterPtr f2_;
 public:
     OR(const Filter& f1, const Filter& f2);
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(FeaturePtr m);
     virtual void firstPass(FeatureID feature);
     virtual bool checkMatch(FeatureID feature) const;
 
@@ -64,7 +64,7 @@ protected:
 public:
     NOT(const Filter& f1);
     virtual void firstPass(FeatureID feature);
-    virtual void initialize(const SolidModel& m);
+    virtual void initialize(FeaturePtr m);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

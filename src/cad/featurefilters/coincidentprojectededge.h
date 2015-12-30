@@ -41,7 +41,7 @@ protected:
 public:
     coincidentProjectedEdge
     (
-      const SolidModel& m,
+      ConstFeaturePtr m,
       const matQuantityComputerPtr& p0, 
       const matQuantityComputerPtr& n, 
       const matQuantityComputerPtr& up,

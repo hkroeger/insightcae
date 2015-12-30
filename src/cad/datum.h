@@ -26,13 +26,15 @@
 #include "base/linearalgebra.h"
 
 #include "occinclude.h"
-// #include "solidmodel.h"
 #include "cadtypes.h"
+#include "astbase.h"
+#include "cadparameters.h"
 
 namespace insight {
 namespace cad {
 
 class Datum
+: public ASTBase
 {
 public:
   typedef std::map<std::string, DatumPtr> Map;
@@ -43,16 +45,20 @@ protected:
 public:
   Datum(bool point, bool axis, bool planar);
   Datum(std::istream&);
+  
   virtual ~Datum();
   
   inline bool providesPointReference() const { return providesPointReference_; }
-  virtual operator const gp_Pnt () const;
+  virtual gp_Pnt point() const;
+  operator const gp_Pnt () const;
   
   inline bool providesAxisReference() const { return providesAxisReference_; }
-  virtual operator const gp_Ax1 () const;
+  virtual gp_Ax1 axis() const;
+  operator const gp_Ax1 () const;
 
   inline bool providesPlanarReference() const { return providesPlanarReference_; }
-  virtual operator const gp_Ax3 () const;
+  virtual gp_Ax3 plane() const;
+  operator const gp_Ax3 () const;
 
   virtual AIS_InteractiveObject* createAISRepr() const;
 
@@ -62,31 +68,38 @@ public:
 class DatumPlane
 : public Datum
 {
+  VectorPtr p0_, n_, up_;
+  
   gp_Ax3 cs_;
   
 public:
   DatumPlane
   (
-    const arma::mat& p0, 
-    const arma::mat& n
+    VectorPtr p0, 
+    VectorPtr n
   );
+  
   DatumPlane
   (
-    const arma::mat& p0, 
-    const arma::mat& n,
-    const arma::mat& up
+    VectorPtr p0, 
+    VectorPtr n,
+    VectorPtr up
   );
-  DatumPlane
-  (
-    const SolidModel& m, 
-    FeatureID f
-  );
+  
+//   DatumPlane
+//   (
+//     FeaturePtr m, 
+//     FeatureID f
+//   );
+  
   DatumPlane(std::istream&);
   
-  virtual operator const gp_Pnt () const;
-  virtual operator const gp_Ax3 () const;
+  virtual gp_Pnt point() const;
+  virtual gp_Ax3 plane() const;
 
   virtual AIS_InteractiveObject* createAISRepr() const;
+  
+  virtual void build();
 
   virtual void write(std::ostream& file) const;
 };

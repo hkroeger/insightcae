@@ -18,7 +18,7 @@
  */
 
 #include "ispartofsolid.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 #include "occtools.h"
 #include "geotest.h"
@@ -32,8 +32,8 @@ namespace cad
 {
 
 
-template<> isPartOfSolid<Edge>::isPartOfSolid(const SolidModel& m)
-: s_(TopoDS::Solid(m))
+template<> isPartOfSolid<Edge>::isPartOfSolid(FeaturePtr m)
+: s_(TopoDS::Solid(*m))
 {
 }
 
@@ -48,8 +48,8 @@ bool isPartOfSolid<Edge>::checkMatch(FeatureID feature) const
   return match;
 }
 
-template<> isPartOfSolid<Face>::isPartOfSolid(const SolidModel& m)
-: s_(TopoDS::Solid(m))
+template<> isPartOfSolid<Face>::isPartOfSolid(FeaturePtr m)
+: s_(TopoDS::Solid(*m))
 {
 }
 

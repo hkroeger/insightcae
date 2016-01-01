@@ -28,14 +28,14 @@
 #include <QTextEdit>
 #include <QListWidget>
 
-#include "solidmodel.h"
-#include "solidmodeltransient.h"
+// #include "cadfeatures.h"
 
 #include "qoccviewwidget.h"
 
 #ifndef Q_MOC_RUN
+#include "cadfeaturetransient.h"
 #include "occinclude.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 #include "parser.h"
 #endif
 
@@ -87,7 +87,7 @@ class QModelStepItem
   Q_OBJECT 
   
   QString name_;
-  insight::cad::SolidModelPtr smp_;
+  insight::cad::FeaturePtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_Shape ais_;
     
@@ -97,10 +97,10 @@ signals:
 public:
   ViewState state_;
 
-  QModelStepItem(const std::string& name, insight::cad::SolidModelPtr smp, QoccViewerContext* context, 
+  QModelStepItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0);
   
-  void reset(insight::cad::SolidModelPtr smp);
+  void reset(insight::cad::FeaturePtr smp);
   void wireframe();
   void shaded();
   void hide();
@@ -110,7 +110,7 @@ public:
   void exportShape();
   void insertName();
   
-  inline insight::cad::SolidModel& solidmodel()
+  inline insight::cad::Feature& solidmodel()
   {
     return *smp_;
   }
@@ -251,9 +251,9 @@ public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
   
   // insert model step
-  void addModelStep(std::string sn, insight::cad::SolidModelPtr sm);
+  void addModelStep(std::string sn, insight::cad::FeaturePtr sm);
   void addDatum(std::string sn, insight::cad::DatumPtr dm);
-  void addEvaluation(std::string sn, insight::cad::EvaluationPtr em);
+  void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em);
   void addVariable(std::string sn, insight::cad::parser::scalar sv);
   void addVariable(std::string sn, insight::cad::parser::vector vv);
   

@@ -34,6 +34,8 @@ public:
   virtual double value() const;
 };
 
+ScalarPtr scalarconst(double);
+
 }
 }
 

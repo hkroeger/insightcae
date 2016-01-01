@@ -30,11 +30,11 @@
 // #include "box.h"                                                                                                                    
 // #include "chamfer.h"                                                                                                                
 // #include "circle.h"                                                                                                                 
-// #include "circularpattern.h"                                                                                                        
-// #include "compound.h"                                                                                                               
+#include "circularpattern.h"                                                                                                        
+#include "compound.h"                                                                                                               
 // #include "cutaway.h"                                                                                                                
 // #include "cylinder.h"                                                                                                               
-// #include "extrusion.h"                                                                                                              
+#include "extrusion.h"                                                                                                              
 // #include "fillet.h"                                                                                                                 
 // #include "fillingface.h"                                                                                                            
 // #include "importsolidmodel.h"                                                                                                                 
@@ -63,5 +63,7 @@
 #include "transform.h"
 // #include "tri.h"
 // #include "wire.h"
+#include "modelfeature.h"
+#include "subfeature.h"
 
 #endif

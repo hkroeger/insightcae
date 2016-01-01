@@ -40,7 +40,7 @@ void FeatureTransient::reset(FeaturePtr sm)
   sm_=sm;
 }
 
-void FeatureTransient::operator=(FeaturePtr sm)
+void FeatureTransient::operator=(const FeaturePtr& sm)
 {
   sm_=sm;
 }

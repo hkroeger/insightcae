@@ -35,11 +35,11 @@ protected:
   
 public:
     FeatureTransient();
-    FeatureTransient(SolidModelPtr sm);
+    FeatureTransient(FeaturePtr sm);
     ~FeatureTransient();
     
-    void reset(SolidModelPtr sm);
-    void operator=(const SolidModelPtr& sm);
+    void reset(FeaturePtr sm);
+    void operator=(const FeaturePtr& sm);
     
     operator Feature& ();
 };

@@ -24,7 +24,7 @@
 #include "AIS_InteractiveContext.hxx"
 
 #include "datum.h"
-#include "evaluation.h"
+#include "cadpostprocactions.h"
 
 #include "qoccviewwidget.h"
 #include "qoccviewercontext.h"
@@ -123,13 +123,13 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
   // Display sub objects for current selection
   if (QModelStepItem* ms=checkGraphicalSelection<QModelStepItem>(aView))
   {
-    SolidModel& sm=ms->solidmodel();
-    const SolidModel::RefPointsList& pts=sm.getDatumPoints();
+    Feature& sm=ms->solidmodel();
+    const Feature::RefPointsList& pts=sm.getDatumPoints();
     
     // reverse storage to detect collocated points
     typedef std::map<arma::mat, std::string, compareArmaMat> trpts;
     trpts rpts;
-    BOOST_FOREACH(const SolidModel::RefPointsList::value_type& p, pts)
+    BOOST_FOREACH(const Feature::RefPointsList::value_type& p, pts)
     {
       const std::string& name=p.first;
       const arma::mat& xyz=p.second;
@@ -336,7 +336,7 @@ struct Transferrer
   {
   }
   
-  void operator()(std::string sn, insight::cad::SolidModelPtr sm)
+  void operator()(std::string sn, insight::cad::FeaturePtr sm)
   {
     cout<<sn<<" : "<<sm.get()<<endl;
     mw_.addModelStep(sn, sm);
@@ -374,7 +374,7 @@ void ViewState::randomizeColor()
 
 
 
-QModelStepItem::QModelStepItem(const std::string& name, SolidModelPtr smp, QoccViewerContext* context, 
+QModelStepItem::QModelStepItem(const std::string& name, FeaturePtr smp, QoccViewerContext* context, 
 		const ViewState& state, QListWidget* view )
 : QListWidgetItem(QString::fromStdString(name), view),
   name_(QString::fromStdString(name)),
@@ -385,7 +385,7 @@ QModelStepItem::QModelStepItem(const std::string& name, SolidModelPtr smp, QoccV
   reset(smp);
 }
 
-void QModelStepItem::reset(SolidModelPtr smp)
+void QModelStepItem::reset(FeaturePtr smp)
 {
   smp_=smp;
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
@@ -642,14 +642,14 @@ void DatumList::showContextMenuForWidget(const QPoint &p)
 class QEvaluationItem
 : public QListWidgetItem
 {
-  EvaluationPtr smp_;
+  PostprocActionPtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_InteractiveObject ais_;
     
 public:
   ViewState state_;
 
-  QEvaluationItem(const std::string& name, EvaluationPtr smp, QoccViewerContext* context, 
+  QEvaluationItem(const std::string& name, PostprocActionPtr smp, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0)
   : QListWidgetItem(QString::fromStdString(name), view),
     context_(context),
@@ -659,7 +659,7 @@ public:
     reset(smp);
   }
   
-  void reset(EvaluationPtr smp)
+  void reset(PostprocActionPtr smp)
   {
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
@@ -892,7 +892,7 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
-void ISCADMainWindow::addModelStep(std::string sn, insight::cad::SolidModelPtr sm)
+void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm)
 { 
   ViewState vd;
   
@@ -926,7 +926,7 @@ void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
   datumlist_->addItem(new QDatumItem(sn, sm, context_, vd));
 }
 
-void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::EvaluationPtr sm)
+void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm)
 { 
   ViewState vd;
   vd.visible=false;
@@ -968,7 +968,7 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
 //     vd=checked_modelsteps_.find(sn)->second;
 //   }
   
-  QVariableItem* msi=new QVariableItem(sn, vv, context_, vd);
+  QVariableItem* msi=new QVariableItem(sn, vv->value(), context_, vd);
   connect
   (
     msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
@@ -1030,8 +1030,8 @@ void ISCADMainWindow::rebuildModel()
   std::istringstream is(editor_->toPlainText().toStdString());
   
   int failloc=-1;
-  parser::Model::Ptr m(new Model);
-  bool r=parseISCADModelStream(is, m, &failloc);
+  ModelPtr m(new Model);
+  bool r=parseISCADModelStream(is, m.get(), &failloc);
 
   if (!r) // fail if we did not get a full match
   {
@@ -1048,11 +1048,11 @@ void ISCADMainWindow::rebuildModel()
     
     context_->getContext()->EraseAll();
 //     m->modelstepSymbols.for_each(Transferrer(*this));
-    BOOST_FOREACH(const Model::modelstepSymbolTable::value_type& v, m->modelstepSymbols())
+    BOOST_FOREACH(const Model::ModelstepTable::value_type& v, m->modelsteps())
     { addModelStep(v.first, v.second); }
-    BOOST_FOREACH(const Model::datumSymbolTable::value_type& v, m->datumSymbols())
+    BOOST_FOREACH(const Model::DatumTable::value_type& v, m->datums())
     { addDatum(v.first, v.second); }
-    BOOST_FOREACH(const Model::evaluationSymbolTable::value_type& v, m->evaluationSymbols())
+    BOOST_FOREACH(const Model::PostprocActionTable::value_type& v, m->postprocActions())
     { addEvaluation(v.first, v.second); }
    
 //     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
@@ -1062,9 +1062,9 @@ void ISCADMainWindow::rebuildModel()
 // 	   this->addModelStep(i->first, i->second);
 // 	 }
 //     m->scalarSymbols.for_each(Transferrer(*this));
-    BOOST_FOREACH(const Model::scalarSymbolTable::value_type& v, m->scalarSymbols())
+    BOOST_FOREACH(const Model::ScalarTable::value_type& v, m->scalars())
     { addVariable(v.first, v.second); }
-    BOOST_FOREACH(const Model::vectorSymbolTable::value_type& v, m->vectorSymbols())
+    BOOST_FOREACH(const Model::VectorTable::value_type& v, m->vectors())
     { addVariable(v.first, v.second); }
 //     m->vectorSymbols.for_each(Transferrer(*this));
   }

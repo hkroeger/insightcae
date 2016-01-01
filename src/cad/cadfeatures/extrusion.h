@@ -20,20 +20,27 @@
 #ifndef INSIGHT_CAD_EXTRUSION_H
 #define INSIGHT_CAD_EXTRUSION_H
 
-#include "solidmodel.h"
+#include "cadtypes.h"
+#include "cadparameters.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Extrusion
-: public SolidModel
+: public Feature
 {
+  FeaturePtr sk_;
+  VectorPtr L_;
+  bool centered_;
+  
 public:
   declareType("Extrusion");
   Extrusion(const NoParameters& nop = NoParameters());
-  Extrusion(const SolidModel& sk, const arma::mat& L, bool centered=false);
+  Extrusion(FeaturePtr sk, VectorPtr L, bool centered=false);
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

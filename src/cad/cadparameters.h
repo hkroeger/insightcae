@@ -25,9 +25,7 @@
 
 #include "constantscalar.h"
 #include "scalarfeatureprop.h"
-#include "modelfeature.h"
 #include "scalarops.h"
-#include "subfeature.h"
 
 #include "constantvector.h"
 #include "lookuptablescalar.h"

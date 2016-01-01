@@ -8,11 +8,11 @@ add_sources(insightcad_SOURCES
 #  box.cpp
 #  chamfer.cpp
 #  circle.cpp
-#  circularpattern.cpp
-#  compound.cpp
+ circularpattern.cpp
+ compound.cpp
 #  cutaway.cpp
 #  cylinder.cpp
-#  extrusion.cpp
+ extrusion.cpp
 #  fillet.cpp
 #  fillingface.cpp
 #  importsolidmodel.cpp
@@ -41,6 +41,8 @@ add_sources(insightcad_SOURCES
  transform.cpp
 #  tri.cpp
 #  wire.cpp
+ modelfeature.cpp
+ subfeature.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

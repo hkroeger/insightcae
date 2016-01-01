@@ -22,6 +22,7 @@
 
 #include "cadparameters.h"
 #include "cadpostprocaction.h"
+#include "base/boost_include.h"
 
 namespace insight 
 {

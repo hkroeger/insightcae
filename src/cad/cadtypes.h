@@ -26,6 +26,7 @@
 
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
+#include "boost/fusion/container.hpp"
 #include "base/linearalgebra.h"
 #endif
 
@@ -69,6 +70,9 @@ typedef std::vector<FeatureSetParserArg> FeatureSetParserArgList;
 typedef std::vector<FeatureSetPtr> FeatureSetList;
 typedef std::set<FeatureID> FeatureSetData;
 typedef std::map<std::string, FeaturePtr> SubfeatureMap;
+typedef boost::variant<ScalarPtr, VectorPtr>  ModelVariable;
+typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
+
 
 
 }

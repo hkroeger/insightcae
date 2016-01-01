@@ -110,45 +110,47 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 //   m1.unsetLeaf();
 }
 
-// Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
-// {
-//   setShape(makeTransform(m1, trsf));
-//   m1.unsetLeaf();
-// }
+Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
+: trsf_(new gp_Trsf(trsf))
+{
+}
 
 void Transform::build()
 {
   gp_Trsf tr0, tr1, tr2;
 
-  if (sf_)
-    tr0.SetScaleFactor(*sf_);
-
-  if (trans_)
-    tr1.SetTranslation(to_Vec(*trans_));  
-
-  if (rot_)
+  if (!trsf_)
   {
-    double phi=norm(rot_->value(), 2);
-    if (phi>1e-10)
+    if (sf_)
+      tr0.SetScaleFactor(*sf_);
+
+    if (trans_)
+      tr1.SetTranslation(to_Vec(*trans_));  
+
+    if (rot_)
     {
-      gp_Vec axis=to_Vec(rot_->value());
-      axis.Normalize();
-      tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), axis), phi);
-    }  
+      double phi=norm(rot_->value(), 2);
+      if (phi>1e-10)
+      {
+	gp_Vec axis=to_Vec(rot_->value());
+	axis.Normalize();
+	tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), axis), phi);
+      }  
+    }
+    
+    trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
   }
   
-  gp_Trsf trsf=tr2.Multiplied(tr1).Multiplied(tr0);
-  
-  setShape(BRepBuilderAPI_Transform(*m1_, trsf).Shape());
+  setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
   if (m1_->hasExplicitCoG())
   {
-    this->setCoGExplicitly( vec3(to_Pnt(m1_->modelCoG()).Transformed(trsf)) );
+    this->setCoGExplicitly( vec3(to_Pnt(m1_->modelCoG()).Transformed(*trsf_)) );
   }
   if (m1_->hasExplicitMass()) setMassExplicitly(m1_->mass());
   
   // Transform all ref points and ref vectors
-  copyDatumsTransformed(*m1_, trsf);
+  copyDatumsTransformed(*m1_, *trsf_);
 }
 
 

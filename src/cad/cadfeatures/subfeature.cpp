@@ -17,25 +17,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "modelfeature.h"
-#include "cadfeature.h"
-#include "cadmodel.h"
+#include "subfeature.h"
 
 namespace insight 
 {
 namespace cad 
 {
-  
-ModelFeature::ModelFeature(ModelPtr model, const std::string& featurename)
-: model_(model), featurename_(featurename)
+
+Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
+: basefeat_(basefeat),
+  subfeatname_(subfeatname)
 {}
 
-ModelFeature::~ModelFeature()
-{}
-  
-FeaturePtr ModelFeature::feature() const
+
+void Subfeature::build()
 {
-  return model_->lookupModelstep(featurename_);
+  FeaturePtr f=basefeat_->subshape(subfeatname_);
+  setShape(f->shape());
+  copyDatums(*f);
 }
   
 }

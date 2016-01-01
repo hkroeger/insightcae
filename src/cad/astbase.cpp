@@ -38,7 +38,7 @@ void ASTBase::checkForBuildDuringAccess() const
   if (!valid()) 
   {
     const_cast<ASTBase*>(this)->build();
-    setValid();
+    const_cast<ASTBase*>(this)->setValid();
   }
 }
 

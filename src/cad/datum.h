@@ -33,6 +33,7 @@
 namespace insight {
 namespace cad {
 
+#ifndef SWIG
 class Datum
 : public ASTBase
 {
@@ -64,6 +65,7 @@ public:
 
   virtual void write(std::ostream& file) const;
 };
+#endif
 
 class DatumPlane
 : public Datum

@@ -17,9 +17,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "cadfeature.h"
 #include "compound.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -27,32 +29,46 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
   
 
 defineType(Compound);
-addToFactoryTable(SolidModel, Compound, NoParameters);
+addToFactoryTable(Feature, Compound, NoParameters);
 
-Compound::Compound(const NoParameters& nop): SolidModel(nop)
+Compound::Compound(const NoParameters& nop)
+: Feature(nop)
 {}
 
 
 
-Compound::Compound(const std::vector<SolidModelPtr>& m1)
+Compound::Compound(const CompoundFeatureList& m1)
+{
+  for (size_t i=1; i<=m1.size(); i++)
+    components_[str( format("component%d")%(i++) )] = m1[i-1];
+}
+
+Compound::Compound(const CompoundFeatureMap& m1)
 : components_(m1)
+{}
+
+
+void Compound::build()
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
 
-  int i=1;
-  BOOST_FOREACH(const SolidModelPtr& p, m1)
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
   {
+    std::string name=c.first;
+    FeaturePtr p=c.second;
+    
     bb.Add(result, *p);
     p->unsetLeaf();
-    copyDatums(*p, str(format("%d.")%i));
-    i++;
+    copyDatums(*p, name);
   }
   setShape(result);
 }
@@ -65,7 +81,7 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ( ruleset.r_solidmodel_expression % ',' ) > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Compound>(qi::_1)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Compound>(qi::_1)) ]
       
     ))
   );
@@ -82,9 +98,12 @@ arma::mat Compound::modelCoG() const
     double mtot=0.0;
     arma::mat cog=vec3(0,0,0);
     
-    BOOST_FOREACH(const SolidModelPtr& p, components_)
+    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
     {
-      const SolidModel& m = *p;
+      std::string name=c.first;
+      FeaturePtr p=c.second;
+      const Feature& m = *p;
+      
       mtot+=m.mass();
       cog += m.modelCoG()*m.mass();
     }
@@ -112,9 +131,11 @@ double Compound::mass() const
   {
     double mtot=0.0;
     
-    BOOST_FOREACH(const SolidModelPtr& p, components_)
+    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
     {
-      const SolidModel& m = *p;
+      std::string name=c.first;
+      FeaturePtr p=c.second;
+      const Feature& m = *p;
       mtot+=m.mass();
     }
     return mtot;

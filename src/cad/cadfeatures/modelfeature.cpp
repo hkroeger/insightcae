@@ -17,7 +17,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "extrusion.h"
+#include "modelfeature.h"
+#include "cadfeature.h"
+#include "cadmodel.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -28,54 +30,37 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
-namespace insight {
-namespace cad {
-
-
-defineType(Extrusion);
-addToFactoryTable(Feature, Extrusion, NoParameters);
-
-Extrusion::Extrusion(const NoParameters& nop): Feature(nop)
-{}
-
-
-Extrusion::Extrusion(FeaturePtr sk, VectorPtr L, bool centered)
-: sk_(sk), L_(L), centered_(centered)
-{}
-
-void Extrusion::build()
+namespace insight 
 {
-  if (!centered_)
+namespace cad 
+{
+  
+ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
+: modelname_(modelname), vars_(vars)
+{}
+
+  
+void ModelFeature::build()
+{
+  model_.reset(new Model(modelname_, vars_));
+  BOOST_FOREACH(const Model::ModelstepTable::value_type& c, model_->modelsteps())
   {
-    setShape(BRepPrimAPI_MakePrism( sk_->shape(), to_Vec(L_->value()) ).Shape());
+    components_[c.first]=c.second;
   }
-  else
-  {
-    gp_Trsf trsf;
-    trsf.SetTranslation(to_Vec(-0.5*L_->value()));
-    setShape
-    (
-      BRepPrimAPI_MakePrism
-      ( 
-	BRepBuilderAPI_Transform(sk_->shape(), trsf).Shape(), 
-	to_Vec(L_->value()) 
-      ).Shape()
-    );
-  }
+  Compound::build();
 }
 
 
-void Extrusion::insertrule(parser::ISCADParser& ruleset) const
+void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Extrusion",	
+    "loadmodel",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression
-      > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
-      > ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Extrusion>(qi::_1, qi::_2, qi::_3)) ]
+    ( '(' >> ruleset.r_identifier >> 
+	*(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_scalarExpression|ruleset.r_vectorExpression) ) ) >> ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<ModelFeature>(qi::_1, qi::_2)) ]
       
     ))
   );

@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_MODELFEATURE_H
 
 #include "cadtypes.h"
+#include "compound.h"
 
 namespace insight 
 {
@@ -28,15 +29,20 @@ namespace cad
 {
 
 class ModelFeature
+: public Compound
 {
+  std::string modelname_;
+  ModelVariableTable vars_;
+  
   ModelPtr model_;
-  std::string featurename_;
   
 public:
-  ModelFeature(ModelPtr model_, const std::string& featurename);
-  virtual ~ModelFeature();
+  ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
   
-  virtual FeaturePtr feature() const;
+  virtual void build();
+  
+  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
 };
 
 }

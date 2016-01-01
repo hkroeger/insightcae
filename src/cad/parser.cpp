@@ -407,11 +407,11 @@ ISCADParser::ISCADParser(Model* model)
 
 		      
     r_assignment = 
-      ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
-      *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
-	[ phx::bind(&Model::addModel, model_, qi::_1, 
-		    phx::construct<ModelPtr>(phx::new_<Model>(qi::_2, qi::_3))) ]
-      |
+//       ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
+//       *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
+// 	[ phx::bind(&Model::addModel, model_, qi::_1, 
+// 		    phx::construct<ModelPtr>(phx::new_<Model>(qi::_2, qi::_3))) ]
+//       |
       ( r_identifier >> '='  >> r_scalarExpression >> ';') 
 	[ phx::bind(&Model::addScalar, model_, qi::_1, qi::_2) ]
       |
@@ -569,10 +569,10 @@ ISCADParser::ISCADParser(Model* model)
 // 	r_identifier [ _val =  phx::construct<FeaturePtr>(phx::new_<ModelFeature>(_a, qi::_1)) ]
 // 	;
 //       
-//     r_solidmodel_subshape =
-//        r_solidmodel_expression >> lit(':') 
-//         >> r_identifier [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_a, qi::_1)) ]
-// 	  ;
+    r_solidmodel_subshape =
+       ( r_solidmodel_expression >> lit(':') >> r_identifier )
+	 [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_1, qi::_2)) ]
+	  ;
 
 //     r_solidmodel_propertyAssignment =
 //       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ] 

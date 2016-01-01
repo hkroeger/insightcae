@@ -20,21 +20,28 @@
 #ifndef INSIGHT_CAD_COMPOUND_H
 #define INSIGHT_CAD_COMPOUND_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
 
+
+typedef std::vector<FeaturePtr> CompoundFeatureList;
+typedef std::map<std::string, FeaturePtr> CompoundFeatureMap;
 
 class Compound
-: public SolidModel
+: public Feature
 {
-  std::vector<SolidModelPtr> components_;
+protected:
+  CompoundFeatureMap components_;
   
 public:
   declareType("Compound");
   Compound(const NoParameters& nop = NoParameters());
-  Compound(const std::vector<SolidModelPtr>& m1);
+  Compound(const CompoundFeatureList& m1);
+  Compound(const CompoundFeatureMap& m1);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

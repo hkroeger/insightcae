@@ -32,37 +32,64 @@ namespace cad {
 
 
 defineType(CircularPattern);
-addToFactoryTable(SolidModel, CircularPattern, NoParameters);
+addToFactoryTable(Feature, CircularPattern, NoParameters);
 
-CircularPattern::CircularPattern(const NoParameters& nop): SolidModel(nop)
+CircularPattern::CircularPattern(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
+// TopoDS_Shape CircularPattern::makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
+// {
+//   BRep_Builder bb;
+//   TopoDS_Compound result;
+//   bb.MakeCompound(result);
+//   
+//   double delta_phi=norm(axis, 2);
+//   double phi0=0.0;
+//   if (center) phi0=-0.5*delta_phi*double(n-1);
+//   gp_Ax1 ax(to_Pnt(p0), to_Vec(axis/delta_phi));
+//   for (int i=0; i<n; i++)
+//   {
+//     gp_Trsf tr;
+//     tr.SetRotation(ax, phi0+delta_phi*double(i));
+//     bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
+//   }
+//   
+//   return result;
+// }
+  
+CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center)
+: m1_(m1),
+  p0_(p0),
+  axis_(axis),
+  n_(n),
+  center_(center)
+{
+}
+
+void CircularPattern::build()
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
   
-  double delta_phi=norm(axis, 2);
+  int n = n_->value();
+  
+  double delta_phi=norm(axis_->value(), 2);
   double phi0=0.0;
-  if (center) phi0=-0.5*delta_phi*double(n-1);
-  gp_Ax1 ax(to_Pnt(p0), to_Vec(axis/delta_phi));
+  if (center_) phi0=-0.5*delta_phi*double(n-1);
+  gp_Ax1 ax(to_Pnt(p0_->value()), to_Vec(axis_->value()/delta_phi));
   for (int i=0; i<n; i++)
   {
     gp_Trsf tr;
     tr.SetRotation(ax, phi0+delta_phi*double(i));
-    bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
+    bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
   }
   
-  return result;
+  setShape(result);
+  m1_->unsetLeaf();
 }
-  
-CircularPattern::CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center)
-: SolidModel(makePattern(m1, p0, axis, n, center))
-{
-  m1.unsetLeaf();
-}
+
 
 void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -75,7 +102,7 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
 	> ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
         > ( ( ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
         > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<CircularPattern>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<CircularPattern>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

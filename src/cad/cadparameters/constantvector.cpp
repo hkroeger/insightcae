@@ -18,6 +18,12 @@
  */
 
 #include "constantvector.h"
+#include "base/linearalgebra.h"
+
+namespace insight 
+{
+namespace cad
+{
 
 insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 : value_(value)
@@ -27,4 +33,17 @@ insight::cad::ConstantVector::ConstantVector(const arma::mat& value)
 arma::mat insight::cad::ConstantVector::value() const
 {
   return value_;
+}
+
+VectorPtr matconst(const arma::mat& m)
+{
+  return VectorPtr(new ConstantVector(m));
+}
+
+VectorPtr vec3const(double x, double y, double z)
+{
+  return VectorPtr(new ConstantVector(vec3(x, y, z)));
+}
+
+}
 }

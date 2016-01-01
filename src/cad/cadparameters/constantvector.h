@@ -35,6 +35,9 @@ public:
   ConstantVector(const arma::mat& value);
   virtual arma::mat value() const;
 };
+
+VectorPtr matconst(const arma::mat& m);
+VectorPtr vec3const(double, double, double);
 }
 }
 

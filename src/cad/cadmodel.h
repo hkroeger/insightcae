@@ -32,9 +32,6 @@ namespace cad
 {
 
   
-typedef boost::variant<ScalarPtr, VectorPtr>  ModelVariable;
-typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
-
 class Model
 : public ASTBase
 {

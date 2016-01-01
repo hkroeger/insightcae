@@ -40,6 +40,8 @@ class Transform
   VectorPtr rot_;
   ScalarPtr sf_;
   
+  boost::shared_ptr<gp_Trsf> trsf_;
+  
 public:
   declareType("Transform");
   
@@ -47,7 +49,7 @@ public:
   Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
   Transform(FeaturePtr m1, VectorPtr trans);
   Transform(FeaturePtr m1, ScalarPtr scale);
-//   Transform(FeaturePtr m1, const gp_Trsf& trsf);
+  Transform(FeaturePtr m1, const gp_Trsf& trsf);
   
   virtual void build();
   

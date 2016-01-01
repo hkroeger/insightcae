@@ -28,3 +28,8 @@ double insight::cad::ConstantScalar::value() const
 {
   return value_;
 }
+
+insight::cad::ScalarPtr insight::cad::scalarconst(double v)
+{
+  return ScalarPtr(new ConstantScalar(v));
+}

@@ -40,8 +40,8 @@ int main(int argc, char** argv)
       cout<<"Invalid command line!"<<endl;
       exit(-1);
     }
-    insight::cad::parser::Model::Ptr model(new insight::cad::parser::Model);
-    return insight::cad::parseISCADModelFile(argv[2], model);
+    insight::cad::ModelPtr model(new insight::cad::Model);
+    return insight::cad::parseISCADModelFile(argv[2], model.get());
   }
   else
   {

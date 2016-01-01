@@ -20,22 +20,28 @@
 #ifndef INSIGHT_CAD_CIRCULARPATTERN_H
 #define INSIGHT_CAD_CIRCULARPATTERN_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class CircularPattern
-: public SolidModel
+: public Feature
 {
-  TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
+//   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
+  FeaturePtr m1_;
+  VectorPtr p0_;
+  VectorPtr axis_;
+  ScalarPtr n_; 
+  bool center_;
   
 public:
   declareType("CircularPattern");
   CircularPattern(const NoParameters& nop = NoParameters());
-  CircularPattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
+  CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false);
     
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

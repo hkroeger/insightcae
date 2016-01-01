@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SUBFEATURE_H
 #define INSIGHT_CAD_SUBFEATURE_H
 
-#include "cadtypes.h"
+#include "cadfeature.h"
 
 namespace insight 
 {
@@ -28,15 +28,15 @@ namespace cad
 {
 
 class Subfeature
+: public Feature
 {
-  FeaturePtr feat_;
+  FeaturePtr basefeat_;
   std::string subfeatname_;
   
 public:
-  Subfeature(FeaturePtr feat, const std::string& subfeatname);  
-  virtual ~Subfeature();
+  Subfeature(FeaturePtr basefeat, const std::string& subfeatname);  
   
-  virtual FeaturePtr subfeature() const;
+  virtual void build();
 };
 
 }

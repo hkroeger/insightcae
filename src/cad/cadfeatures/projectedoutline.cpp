@@ -35,15 +35,15 @@ namespace cad {
 
 
 defineType(ProjectedOutline);
-addToFactoryTable(SolidModel, ProjectedOutline, NoParameters);
+addToFactoryTable(Feature, ProjectedOutline, NoParameters);
 
-ProjectedOutline::ProjectedOutline(const NoParameters& nop): SolidModel(nop)
+ProjectedOutline::ProjectedOutline(const NoParameters& nop): Feature(nop)
 {}
 
 
 TopoDS_Shape makeOutlineProjection
 (
-  const SolidModel& source, 
+  const Feature& source, 
   const Datum& target
 )
 {
@@ -81,7 +81,7 @@ TopoDS_Shape makeOutlineProjection
 
 TopoDS_Shape makeOutlineProjectionEdges
 (
-  const SolidModel& source, 
+  const Feature& source, 
   const Datum& target
 )
 {
@@ -121,13 +121,16 @@ TopoDS_Shape makeOutlineProjectionEdges
   return allVisible;
 }
 
-ProjectedOutline::ProjectedOutline(const SolidModel& source, const Datum& target)
-//: SolidModel(makeOutlineProjection(source, target))
+ProjectedOutline::ProjectedOutline(FeaturePtr source, DatumPtr target)
+: source_(source), target_(target)
+{}
+
+void ProjectedOutline::build()
 {
-  if (source.allFaces().size()==0)
-    setShape(makeOutlineProjectionEdges(source, target));
+  if (source_->allFaces().size()==0)
+    setShape(makeOutlineProjectionEdges(*source_, *target_));
   else
-    setShape(makeOutlineProjection(source, target));
+    setShape(makeOutlineProjection(*source_, *target_));
 }
 
 void ProjectedOutline::insertrule(parser::ISCADParser& ruleset) const
@@ -138,7 +141,7 @@ void ProjectedOutline::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<ProjectedOutline>(*qi::_1, *qi::_2)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<ProjectedOutline>(qi::_1, qi::_2)) ]
       
     ))
   );

@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_CIRCLE_H
 #define INSIGHT_CAD_CIRCLE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,10 +29,14 @@ namespace cad {
 class Circle
 : public SingleFaceFeature
 {
+  VectorPtr p0_;
+  VectorPtr n_;
+  ScalarPtr D_;
+  
 public:
   declareType("Circle");
   Circle(const NoParameters& nop = NoParameters());
-  Circle(const arma::mat& p0, const arma::mat& n, double D);
+  Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
   operator const TopoDS_Face& () const;
   
   virtual void build();

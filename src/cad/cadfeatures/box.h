@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_BOX_H
 #define INSIGHT_CAD_BOX_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,16 +29,21 @@ namespace cad {
 class Box
 : public SingleVolumeFeature
 {
+  VectorPtr p0_;
+  VectorPtr L1_;
+  VectorPtr L2_;
+  VectorPtr L3_;
+  bool centered_;
   
 public:
   declareType("Box");
   Box(const NoParameters& nop = NoParameters());
   Box
   (
-    const arma::mat& p0, 
-    const arma::mat& L1, 
-    const arma::mat& L2, 
-    const arma::mat& L3,
+    VectorPtr p0, 
+    VectorPtr L1, 
+    VectorPtr L2, 
+    VectorPtr L3,
     bool centered=false
   );
   virtual void insertrule(parser::ISCADParser& ruleset) const;

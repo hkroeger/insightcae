@@ -34,7 +34,7 @@ namespace cad {
 
 
 defineType(Box);
-addToFactoryTable(SolidModel, Box, NoParameters);
+addToFactoryTable(Feature, Box, NoParameters);
 
 Box::Box(const NoParameters&)
 {}
@@ -42,24 +42,28 @@ Box::Box(const NoParameters&)
   
 Box::Box
 (
-  const arma::mat& p0, 
-  const arma::mat& L1, 
-  const arma::mat& L2, 
-  const arma::mat& L3,
+  VectorPtr p0, 
+  VectorPtr L1, 
+  VectorPtr L2, 
+  VectorPtr L3,
   bool centered
 )
+: p0_(p0), L1_(L1), L2_(L2), L3_(L3)
+{}
+
+void Box::build()
 { 
-  refpoints_["p0"]=p0;
+  refpoints_["p0"]=p0_->value();
   
-  refvalues_["L1"]=arma::norm(L1, 2);
-  refvalues_["L2"]=arma::norm(L2, 2);
-  refvalues_["L3"]=arma::norm(L3, 2);
+  refvalues_["L1"]=arma::norm(L1_->value(), 2);
+  refvalues_["L2"]=arma::norm(L2_->value(), 2);
+  refvalues_["L3"]=arma::norm(L3_->value(), 2);
   
-  refvectors_["e1"]=L1/arma::norm(L1, 2);
-  refvectors_["e2"]=L2/arma::norm(L2, 2);
-  refvectors_["e3"]=L3/arma::norm(L3, 2);
+  refvectors_["e1"]=L1_->value()/arma::norm(L1_->value(), 2);
+  refvectors_["e2"]=L2_->value()/arma::norm(L2_->value(), 2);
+  refvectors_["e3"]=L3_->value()/arma::norm(L3_->value(), 2);
   
-  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1), to_Pnt(p0+L2)).Value();
+  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0_->value()), to_Pnt(p0_->value()+L1_->value()), to_Pnt(p0_->value()+L2_->value())).Value();
   TopoDS_Shape box=
   BRepPrimAPI_MakePrism
   (
@@ -68,19 +72,19 @@ Box::Box
       pln,
       BRepBuilderAPI_MakePolygon
       (
-	to_Pnt(p0), 
-	to_Pnt(p0+L1), 
-	to_Pnt(p0+L1+L2), 
-	to_Pnt(p0+L2), 
+	to_Pnt(p0_->value()), 
+	to_Pnt(p0_->value()+L1_->value()), 
+	to_Pnt(p0_->value()+L1_->value()+L2_->value()), 
+	to_Pnt(p0_->value()+L2_->value()), 
 	true
       ).Wire()
     ).Face(),
-    to_Vec(L3)
+    to_Vec(L3_->value())
   ).Shape();
-  if (centered)
+  if (centered_)
   {
     gp_Trsf t;
-    t.SetTranslation(to_Vec(-0.5*L1-0.5*L2-0.5*L3));
+    t.SetTranslation(to_Vec(-0.5*L1_->value() - 0.5*L2_->value() - 0.5*L3_->value()));
     box=BRepBuilderAPI_Transform(box, t).Shape();
   }
   setShape(box);
@@ -97,7 +101,7 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
 		    > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
      > ( (  ',' > qi::lit("centered") > qi::attr(true) ) |qi::attr(false) )
      > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

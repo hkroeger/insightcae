@@ -32,20 +32,24 @@ namespace insight {
 namespace cad {
 
 defineType(Sphere);
-addToFactoryTable(SolidModel, Sphere, NoParameters);
+addToFactoryTable(Feature, Sphere, NoParameters);
 
 Sphere::Sphere(const NoParameters&)
 {}
 
   
-Sphere::Sphere(const arma::mat& p, double D)
+Sphere::Sphere(VectorPtr p, ScalarPtr D)
+: p_(p), D_(D)
+{}
+
+void Sphere::build()
 {
   setShape
   (
     BRepPrimAPI_MakeSphere
     (
-      gp_Pnt(p(0),p(1),p(2)),
-      0.5*D
+      to_Pnt(p_->value()),
+      0.5*D_->value()
     ).Shape()
   );
 }
@@ -58,7 +62,7 @@ void Sphere::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sphere>(qi::_1, qi::_2)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Sphere>(qi::_1, qi::_2)) ]
       
     ))
   );

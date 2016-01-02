@@ -33,25 +33,28 @@ namespace cad {
 
 
 defineType(StitchedShell);
-addToFactoryTable(SolidModel, StitchedShell, NoParameters);
+addToFactoryTable(Feature, StitchedShell, NoParameters);
 
 StitchedShell::StitchedShell(const NoParameters& nop)
-: SolidModel(nop)
+: Feature(nop)
 {
 }
 
-StitchedShell::StitchedShell(const FeatureSet& faces, double tol)
-: SolidModel()
+StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
+:faces_(faces), tol_(tol)
+{}
+
+void StitchedShell::build()
 {
-  BRepBuilderAPI_Sewing sew(tol);
+  BRepBuilderAPI_Sewing sew(tol_->value());
   
 //   TopoDS_Compound aRes;
 //   BRep_Builder aBuilder;
 //   aBuilder.MakeCompound(aRes);
 
-  BOOST_FOREACH(const FeatureID& fi, faces)
+  BOOST_FOREACH(const FeatureID& fi, faces_->data())
   {
-    sew.Add(faces.model().face(fi));
+    sew.Add(faces_->model()->face(fi));
 //     aBuilder.Add(aRes, bladeFace_[s]);
   }
 
@@ -72,8 +75,8 @@ void StitchedShell::insertrule(parser::ISCADParser& ruleset) const
     "StitchedShell",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_faceFeaturesExpression  > ( (',' > qi::double_) | qi::attr(1e-3) ) > ')' )
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedShell>(*qi::_1, qi::_2)) ]
+    ( '(' > ruleset.r_faceFeaturesExpression  > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) > ')' )
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedShell>(qi::_1, qi::_2)) ]
       
     ))
   );

@@ -18,7 +18,7 @@
  */
 
 #include "coincidentprojectededge.h"
-#include "cadfeature.h"
+#include "cadfeatures.h"
 #include "datum.h"
 
 
@@ -62,7 +62,7 @@ void coincidentProjectedEdge::firstPass(FeatureID feature)
   {
     double tol=tol_->evaluate(feature);
     
-    BOOST_FOREACH(int f, f_.data())
+    BOOST_FOREACH(FeatureID f, f_.data())
     {    
       TopoDS_Edge e=TopoDS::Edge(f_.model()->edge(f));
       BRepAdaptor_Curve ac(e);
@@ -91,39 +91,38 @@ void coincidentProjectedEdge::firstPass(FeatureID feature)
 
 bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
 {
-  DatumPlane pln
+  DatumPtr pln(new DatumPlane
   (
     VectorPtr(new ConstantVector(p0_->evaluate(feature))), 
     VectorPtr(new ConstantVector(n_->evaluate(feature))), 
     VectorPtr(new ConstantVector(up_->evaluate(feature)))
-  );
+  ));
   double tol=tol_->evaluate(feature);
   
   TopoDS_Edge e1=model_->edge(feature);
-  Feature se1(e1);
-//   ProjectedOutline po(se1, pln);
-//   TopoDS_Shape pe=po;
-#warning Temporarily disabled!
+  FeaturePtr se1(new Feature(e1));
+  FeaturePtr po(new ProjectedOutline(se1, pln));
+  TopoDS_Shape pe=po->shape();
   
   bool match=true;
-//   for (TopExp_Explorer ex(pe, TopAbs_EDGE); ex.More(); ex.Next())
-//   {
-//     TopoDS_Edge e=TopoDS::Edge(ex.Current());
-//     BRepAdaptor_Curve ac(e);
-//     GCPnts_QuasiUniformDeflection qud(ac, tol);
-// 
-//     for (int j=1; j<=qud.NbPoints(); j++)
-//     {
-//       arma::mat p=Vector(qud.Value(j)).t();
-// 
-//       arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
-//       arma::mat ds=sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
-// 
-//       double md=arma::as_scalar(arma::min(ds, 1));
-//       
-//       match=match & (md<tol);
-//     }
-//   }
+  for (TopExp_Explorer ex(pe, TopAbs_EDGE); ex.More(); ex.Next())
+  {
+    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+    BRepAdaptor_Curve ac(e);
+    GCPnts_QuasiUniformDeflection qud(ac, tol);
+
+    for (int j=1; j<=qud.NbPoints(); j++)
+    {
+      arma::mat p=insight::Vector(qud.Value(j)).t();
+
+      arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
+      arma::mat ds=sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
+
+      double md=arma::as_scalar(arma::min(ds, 1));
+      
+      match=match & (md<tol);
+    }
+  }
   
   return match;
 }

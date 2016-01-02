@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_REGPOLY_H
 #define INSIGHT_CAD_REGPOLY_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,11 +29,17 @@ namespace cad {
 class RegPoly
 : public SingleFaceFeature
 {
+  VectorPtr p0_;
+  VectorPtr n_;
+  ScalarPtr ne_;
+  ScalarPtr a_; 
+  VectorPtr ez_;
+  
 public:
   declareType("RegPoly");
   RegPoly(const NoParameters& nop = NoParameters());
-  RegPoly(const arma::mat& p0, const arma::mat& n, double ne, double a, 
-	  const arma::mat& ez = arma::mat());
+  RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a, 
+	  VectorPtr ez = matconst(arma::mat()));
   operator const TopoDS_Face& () const;
   
   virtual void build();

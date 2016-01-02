@@ -20,6 +20,7 @@
 #include "line.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -27,28 +28,33 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
-namespace insight {
-namespace cad {
+namespace insight 
+{
+namespace cad 
+{
 
 
 defineType(Line);
-addToFactoryTable(SolidModel, Line, NoParameters);
+addToFactoryTable(Feature, Line, NoParameters);
 
 
 Line::Line(const NoParameters& nop)
-: SolidModel(nop)
+: Feature(nop)
 {
 }
 
-Line::Line(const arma::mat& p0, const arma::mat& p1)
-: SolidModel()
+Line::Line(VectorPtr p0, VectorPtr p1)
+: p0_(p0), p1_(p1)
+{}
+
+void Line::build()
 {
-  refpoints_["p0"]=p0;  
-  refpoints_["p1"]=p1;
+  refpoints_["p0"]=p0_->value();  
+  refpoints_["p1"]=p1_->value();
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
-  refvectors_["ex"]=(p1-p0)/arma::norm(p1-p0, 2);
+  refvectors_["ex"]=(p1_->value() - p0_->value())/arma::norm(p1_->value() - p0_->value(), 2);
   
-  setShape(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0), to_Pnt(p1))));
+  setShape(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0_->value()), to_Pnt(p1_->value()))));
 }
 
 void Line::insertrule(parser::ISCADParser& ruleset) const
@@ -59,7 +65,7 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Line>(qi::_1, qi::_2)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Line>(qi::_1, qi::_2)) ]
       
     ))
   );

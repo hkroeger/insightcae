@@ -32,16 +32,20 @@ namespace insight {
 namespace cad {
 
 defineType(SplineCurve);
-addToFactoryTable(SolidModel, SplineCurve, NoParameters);
+addToFactoryTable(Feature, SplineCurve, NoParameters);
 
-SplineCurve::SplineCurve(const NoParameters& nop): SolidModel(nop)
+SplineCurve::SplineCurve(const NoParameters& nop): Feature(nop)
 {}
 
 
-SplineCurve::SplineCurve(const std::vector< arma::mat >& pts)
+SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts)
+: pts_(pts)
+{}
+
+void SplineCurve::build()
 {
-  TColgp_Array1OfPnt pts_col(1, pts.size());
-  for (int j=0; j<pts.size(); j++) pts_col.SetValue(j+1, to_Pnt(pts[j]));
+  TColgp_Array1OfPnt pts_col(1, pts_.size());
+  for (int j=0; j<pts_.size(); j++) pts_col.SetValue(j+1, to_Pnt(pts_[j]->value()));
   GeomAPI_PointsToBSpline splbuilder(pts_col);
   Handle_Geom_BSplineCurve crv=splbuilder.Curve();
   setShape(BRepBuilderAPI_MakeEdge(crv, crv->FirstParameter(), crv->LastParameter()));
@@ -55,7 +59,7 @@ void SplineCurve::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression % ',' >> ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<SplineCurve>(qi::_1)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<SplineCurve>(qi::_1)) ]
       
     ))
   );

@@ -34,48 +34,66 @@ namespace cad {
 
 
 defineType(Cutaway);
-addToFactoryTable(SolidModel, Cutaway, NoParameters);
+addToFactoryTable(Feature, Cutaway, NoParameters);
 
-Cutaway::Cutaway(const NoParameters& nop): SolidModel(nop)
+Cutaway::Cutaway(const NoParameters& nop): Feature(nop)
 {}
 
 
-Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n)
+Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
+: model_(model), p0_(p0), n_(n)
+{
+}
+
+void Cutaway::build()
 {
   ParameterListHash h(this);
-  h+=model;
-  h+=p0;
-  h+=n;
+  h+=*model_;
+  h+=p0_->value();
+  h+=n_->value();
   
-  if (!cache.contains(h))
+//   if (!cache.contains(h))
   {
 
-    arma::mat bb=model.modelBndBox(0.1);
+    arma::mat bb=model_->modelBndBox(0.1);
     double L=10.*norm(bb.col(1)-bb.col(0), 2);
     std::cout<<"L="<<L<<std::endl;
     
-    arma::mat ex=cross(n, vec3(1,0,0));
+    arma::mat ex=cross(n_->value(), vec3(1,0,0));
     if (norm(ex,2)<1e-8)
-      ex=cross(n, vec3(0,1,0));
+      ex=cross(n_->value(), vec3(0,1,0));
     ex/=norm(ex,2);
     
-    arma::mat ey=cross(n,ex);
+    arma::mat ey=cross(n_->value(),ex);
     ey/=norm(ey,2);
     
     std::cout<<"Quad"<<std::endl;
   #warning Relocate p0 in plane to somewhere nearer to model center!
-    Quad q(p0-0.5*L*(ex+ey), L*ex, L*ey);
+    Quad q
+    (
+      matconst(p0_->value()-0.5*L*(ex+ey)), 
+      matconst(L*ex), 
+      matconst(L*ey)
+    );
     this->setShape(q);
   //   std::cout<<"Airspace"<<std::endl;
-    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
+    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n_->value()) );
     
   //   SolidModel(airspace).saveAs("airspace.stp");
-    providedSubshapes_.add("AirSpace", SolidModelPtr(new SolidModel(airspace)));
+    providedSubshapes_["AirSpace"]=FeaturePtr(new Feature(airspace));
     
     std::cout<<"CutSurf"<<std::endl;
     try
     {
-      providedSubshapes_.add("CutSurface", SolidModelPtr(new BooleanIntersection(model, TopoDS::Face(q))));
+      providedSubshapes_["CutSurface"]=
+	FeaturePtr
+	(
+	  new BooleanIntersection
+	  (
+	    model_, 
+	    FeaturePtr(new Feature(TopoDS::Face(q)))
+	  )
+	);
     }
     catch (...)
     {
@@ -85,19 +103,19 @@ Cutaway::Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& 
     std::cout<<"Cut"<<std::endl;
     try
     {
-      this->setShape(BRepAlgoAPI_Cut(model, airspace));
+      this->setShape(BRepAlgoAPI_Cut(model_->shape(), airspace));
     }
     catch (...)
     {
       throw insight::Exception("Could not create cut!");
     }
     
-    write(cache.markAsUsed(h));
+//     write(cache.markAsUsed(h));
   }
-  else
-  {
-    read(cache.markAsUsed(h));
-  }
+//   else
+//   {
+//     read(cache.markAsUsed(h));
+//   }
     
 }
 
@@ -109,7 +127,7 @@ void Cutaway::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Cutaway>(*qi::_1, qi::_2, qi::_3)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cutaway>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

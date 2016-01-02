@@ -33,13 +33,13 @@ namespace cad {
 
 
 defineType(Split);
-addToFactoryTable(SolidModel, Split, NoParameters);
+addToFactoryTable(Feature, Split, NoParameters);
 
-Split::Split(const NoParameters& nop): SolidModel(nop)
+Split::Split(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape makeSplit(const SolidModel& tool, const SolidModel& target)
+TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
 {
   GEOMAlgo_Splitter spl;
   spl.AddShape(target);
@@ -48,9 +48,13 @@ TopoDS_Shape makeSplit(const SolidModel& tool, const SolidModel& target)
   return spl.Shape();
 }
 
-Split::Split(const SolidModel& tool, const SolidModel& target)
-: SolidModel(makeSplit(tool, target))
+Split::Split(FeaturePtr source, FeaturePtr target)
+: source_(source), target_(target)
+{}
+
+void Split::build()
 {
+  setShape(makeSplit(*source_, *target_));
 }
 
 /** @addtogroup cad_parser
@@ -69,7 +73,7 @@ void Split::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Split>(*qi::_1, *qi::_2)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Split>(qi::_1, qi::_2)) ]
       
     ))
   );

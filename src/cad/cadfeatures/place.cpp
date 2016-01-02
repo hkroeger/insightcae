@@ -32,38 +32,45 @@ namespace cad {
 
 
 defineType(Place);
-addToFactoryTable(SolidModel, Place, NoParameters);
+addToFactoryTable(Feature, Place, NoParameters);
 
-void Place::makePlacement(const SolidModel& m, const gp_Trsf& tr)
-{
-  if (m.hasExplicitCoG())
-  {
-    this->setCoGExplicitly( vec3(to_Pnt(m.modelCoG()).Transformed(tr)) );
-  }
-  if (m.hasExplicitMass()) setMassExplicitly(m.mass());
-  setShape(BRepBuilderAPI_Transform(m, tr).Shape());
-  
-  copyDatumsTransformed(m, tr);
-}
-
-
-Place::Place(const NoParameters& nop): SolidModel(nop)
+Place::Place(const NoParameters& nop): Feature(nop)
 {}
 
 
-Place::Place(const SolidModel& m, const gp_Ax2& cs)
+Place::Place(FeaturePtr m, const gp_Ax2& cs)
+: m_(m) 
 {
-  gp_Trsf tr;
-  tr.SetTransformation(gp_Ax3(cs));
-  makePlacement(m, tr.Inverted());
+  trsf_.reset(new gp_Trsf);
+  trsf_->SetTransformation(gp_Ax3(cs));
+  
+  trsf_->Invert();
+//   makePlacement(m, tr.Inverted());
 }
 
 
-Place::Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez)
+Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
+: m_(m), p0_(p0), ex_(ex), ez_(ez)
+{}
+
+void Place::build()
 {
-  gp_Trsf tr;
-  tr.SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
-  makePlacement(m, tr.Inverted());
+  if (!trsf_)
+  {
+    trsf_.reset(new gp_Trsf);
+    trsf_->SetTransformation(gp_Ax3(to_Pnt(p0_->value()), to_Vec(ez_->value()), to_Vec(ex_->value())));
+    trsf_->Invert();
+  //   makePlacement(m, tr.Inverted());
+  }
+ 
+  if (m_->hasExplicitCoG())
+  {
+    this->setCoGExplicitly( vec3(to_Pnt(m_->modelCoG()).Transformed(*trsf_)) );
+  }
+  if (m_->hasExplicitMass()) setMassExplicitly(m_->mass());
+  setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
+  
+  copyDatumsTransformed(*m_, *trsf_);
 }
 
 void Place::insertrule(parser::ISCADParser& ruleset) const
@@ -75,7 +82,7 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > 
 	  ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Place>(*qi::_1, qi::_2, qi::_3, qi::_4)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Place>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

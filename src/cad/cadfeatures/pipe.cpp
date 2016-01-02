@@ -33,21 +33,25 @@ namespace cad {
 
   
 defineType(Pipe);
-addToFactoryTable(SolidModel, Pipe, NoParameters);
+addToFactoryTable(Feature, Pipe, NoParameters);
 
-Pipe::Pipe(const NoParameters& nop): SolidModel(nop)
+Pipe::Pipe(const NoParameters& nop): Feature(nop)
 {}
 
 
-Pipe::Pipe(const SolidModel& spine, const SolidModel& xsec, bool orient)
+Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, bool orient)
+: spine_(spine), xsec_(xsec), orient_(orient)
+{}
+
+void Pipe::build()
 {
-  if (!spine.isSingleWire())
+  if (!spine_->isSingleWire())
     throw insight::Exception("spine feature has to provide a singly connected wire!");  // not working for wires created from feature edge selection
   
-  if (!xsec.isSingleFace() || xsec.isSingleWire() || xsec.isSingleEdge())
+  if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
     throw insight::Exception("xsec feature has to provide a face or wire!");
 
-  TopoDS_Wire spinew=spine.asSingleWire();
+  TopoDS_Wire spinew=spine_->asSingleWire();
 
 //   TopoDS_Vertex pfirst, plast;
 //   TopExp::Vertices( spinew, pfirst, plast );
@@ -57,11 +61,11 @@ Pipe::Pipe(const SolidModel& spine, const SolidModel& xsec, bool orient)
   double p1=w.LastParameter();
   
   
-  
+  TopoDS_Shape xsec=xsec_->shape();
 
   gp_Trsf tr;
 //   tr.SetTranslation(gp_Vec(BRep_Tool::Pnt(pfirst).XYZ()));
-  if (!orient)
+  if (!orient_)
     tr.SetTranslation(w.Value(p0).XYZ());
   else
   {
@@ -104,8 +108,10 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
     "Pipe",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) >> ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Pipe>(*qi::_1, *qi::_2, qi::_3)) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' 
+          >> ruleset.r_solidmodel_expression 
+          >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) >> ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Pipe>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

@@ -32,15 +32,23 @@ namespace cad {
 
 
 defineType(Import);
-addToFactoryTable(SolidModel, Import, NoParameters);
+addToFactoryTable(Feature, Import, NoParameters);
 
-Import::Import(const NoParameters& nop): SolidModel(nop)
+Import::Import(const NoParameters& nop): Feature(nop)
 {}
 
 
 Import::Import(const filesystem::path& filepath)
-: SolidModel(filepath)
+: filepath_(filepath)
 {}
+
+void Import::build()
+{
+  setShape(loadShapeFromFile(filepath_));
+  setShapeHash();
+  setValid();
+}
+
 
 void Import::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -48,7 +56,7 @@ void Import::insertrule(parser::ISCADParser& ruleset) const
   (
     "import",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-      ( '(' > ruleset.r_path > ')' ) [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Import>(qi::_1)) ]
+      ( '(' > ruleset.r_path > ')' ) [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Import>(qi::_1)) ]
     ))
   );
 }

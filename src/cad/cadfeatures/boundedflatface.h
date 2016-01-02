@@ -20,18 +20,25 @@
 #ifndef INSIGHT_CAD_BOUNDEDFLATFACE_H
 #define INSIGHT_CAD_BOUNDEDFLATFACE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
+
 
 class BoundedFlatFace
 : public SingleFaceFeature
 {
 public:
+  typedef boost::variant< std::vector<FeaturePtr>, std::vector<FeatureSetPtr> > EdgeSelection;
+  
+private:
+  EdgeSelection edges_;
+  
+public:
   declareType("BoundedFlatFace");
   BoundedFlatFace(const NoParameters& nop=NoParameters());
-  BoundedFlatFace(const std::vector<SolidModelPtr>& edges);
+  BoundedFlatFace(const std::vector<FeaturePtr>& edges);
   BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
   operator const TopoDS_Face& () const;
   

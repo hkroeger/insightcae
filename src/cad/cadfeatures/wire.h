@@ -20,21 +20,24 @@
 #ifndef INSIGHT_CAD_WIRE_H
 #define INSIGHT_CAD_WIRE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class Wire
-: public SolidModel
+: public Feature
 {
+  FeatureSetPtr edges_;
+  
 public:
   declareType("Wire");
   Wire(const NoParameters& nop = NoParameters());
-  Wire(const FeatureSet& edges);
+  Wire(FeatureSetPtr edges);
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual bool isSingleClosedWire() const;
   virtual bool isSingleOpenWire() const;

@@ -20,19 +20,25 @@
 #ifndef INSIGHT_CAD_REVOLUTION_H
 #define INSIGHT_CAD_REVOLUTION_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class Revolution
-: public SolidModel
+: public Feature
 {
+  FeaturePtr sk_;
+  VectorPtr p0_;
+  VectorPtr axis_;
+  ScalarPtr angle_;
+  bool centered_;
+  
 public:
   declareType("Revolution");
   Revolution(const NoParameters& nop = NoParameters());
-  Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double angle, bool centered=false);
+  Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

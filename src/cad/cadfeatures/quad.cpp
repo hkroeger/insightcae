@@ -33,19 +33,23 @@ namespace cad {
 
 
 defineType(Quad);
-addToFactoryTable(SolidModel, Quad, NoParameters);
+addToFactoryTable(Feature, Quad, NoParameters);
 
 Quad::Quad(const NoParameters&)
 {}
 
 
-Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
+Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W)
+: p0_(p0), L_(L), W_(W)
+{}
+
+void Quad::build()
 {
   gp_Pnt 
-    p1(to_Pnt(p0)),
-    p2=p1.Translated(to_Vec(W)),
-    p3=p2.Translated(to_Vec(L)),
-    p4=p1.Translated(to_Vec(L))
+    p1(to_Pnt(p0_->value())),
+    p2=p1.Translated(to_Vec(W_->value())),
+    p3=p2.Translated(to_Vec(L_->value())),
+    p4=p1.Translated(to_Vec(L_->value()))
   ;
   
   BRepBuilderAPI_MakeWire w;
@@ -55,14 +59,14 @@ Quad::Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W)
   w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_.add("OuterWire", SolidModelPtr(new SolidModel(w.Wire())));
+  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));
   
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
 Quad::operator const TopoDS_Face& () const
 {
-  return TopoDS::Face(shape_);
+  return TopoDS::Face(shape());
 }
 
 void Quad::insertrule(parser::ISCADParser& ruleset) const
@@ -73,7 +77,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

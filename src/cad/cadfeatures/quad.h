@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_QUAD_H
 #define INSIGHT_CAD_QUAD_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -28,10 +28,14 @@ namespace cad {
 class Quad
 : public SingleFaceFeature
 {
+  VectorPtr p0_;
+  VectorPtr L_;
+  VectorPtr W_;
+  
 public:
   declareType("Quad");
   Quad(const NoParameters& nop = NoParameters());
-  Quad(const arma::mat& p0, const arma::mat& L, const arma::mat& W);
+  Quad(VectorPtr p0, VectorPtr L, VectorPtr W);
   operator const TopoDS_Face& () const;
   
   virtual void build();

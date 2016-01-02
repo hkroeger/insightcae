@@ -20,20 +20,23 @@
 #ifndef INSIGHT_CAD_LINE_H
 #define INSIGHT_CAD_LINE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Line
-: public SolidModel
+: public Feature
 {
+  VectorPtr p0_, p1_;
+  
 public:
   declareType("Line");
   Line(const NoParameters& nop = NoParameters());
-  Line(const arma::mat& p0, const arma::mat& p1);
+  Line(VectorPtr p0, VectorPtr p1);
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual bool isSingleCloseWire() const;
   virtual bool isSingleOpenWire() const;

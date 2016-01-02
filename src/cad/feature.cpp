@@ -145,32 +145,51 @@ void FeatureSet::safe_union(ConstFeatureSetPtr o)
 
 void FeatureSet::build()
 {
-  
   switch (shape_)
   {
     case Vertex:
-      if (base_set_)
-	data_=model_->query_vertices_subset(base_set_->data(), filterexpr_, refs_);
+      if (!filterexpr_.empty())
+      {
+	if (base_set_)
+	  data_=model_->query_vertices_subset(base_set_->data(), filterexpr_, refs_);
+	else
+	  data_=model_->query_vertices(filterexpr_, refs_);
+      }
       else
-	data_=model_->query_vertices(filterexpr_, refs_);
+	data_=model_->allVertices().data();
       break;
     case Edge:
-      if (base_set_)
-	data_=model_->query_edges_subset(base_set_->data(), filterexpr_, refs_);
+      if (!filterexpr_.empty())
+      {
+	if (base_set_)
+	  data_=model_->query_edges_subset(base_set_->data(), filterexpr_, refs_);
+	else
+	  data_=model_->query_edges(filterexpr_, refs_);
+      }
       else
-	data_=model_->query_edges(filterexpr_, refs_);
+	data_=model_->allEdges().data();
       break;
     case Face:
-      if (base_set_)
-	data_=model_->query_faces_subset(base_set_->data(), filterexpr_, refs_);
+      if (!filterexpr_.empty())
+      {
+	if (base_set_)
+	  data_=model_->query_faces_subset(base_set_->data(), filterexpr_, refs_);
+	else
+	  data_=model_->query_faces(filterexpr_, refs_);
+      }
       else
-	data_=model_->query_faces(filterexpr_, refs_);
+	data_=model_->allFaces().data();
       break;
     case Solid:
-      if (base_set_)
-	data_=model_->query_solids_subset(base_set_->data(), filterexpr_, refs_);
+      if (!filterexpr_.empty())
+      {
+	if (base_set_)
+	  data_=model_->query_solids_subset(base_set_->data(), filterexpr_, refs_);
+	else
+	  data_=model_->query_solids(filterexpr_, refs_);
+      }
       else
-	data_=model_->query_solids(filterexpr_, refs_);
+	data_=model_->allSolids().data();
       break;
     default:
       throw insight::Exception("Unknown feature type");

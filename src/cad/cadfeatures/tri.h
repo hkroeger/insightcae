@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_TRI_H
 #define INSIGHT_CAD_TRI_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -28,13 +28,18 @@ namespace cad {
 class Tri
 : public SingleFaceFeature
 {
+  VectorPtr p0_;
+  VectorPtr e1_;
+  VectorPtr e2_;
+  
 public:
   declareType("Tri");
   Tri(const NoParameters& nop = NoParameters());
-  Tri(const arma::mat& p0, const arma::mat& e1, const arma::mat& e2);
-  operator const TopoDS_Face& () const;
+  Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2);
   
   virtual void build();
+  operator const TopoDS_Face& () const;
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   
 };

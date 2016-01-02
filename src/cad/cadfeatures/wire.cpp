@@ -32,20 +32,24 @@ namespace insight {
 namespace cad {
 
 defineType(Wire);
-addToFactoryTable(SolidModel, Wire, NoParameters);
+addToFactoryTable(Feature, Wire, NoParameters);
 
-Wire::Wire(const NoParameters& nop): SolidModel(nop)
+Wire::Wire(const NoParameters& nop): Feature(nop)
 {
 
 }
 
 
-Wire::Wire(const FeatureSet& edges)
+Wire::Wire(FeatureSetPtr edges)
+: edges_(edges)
+{}
+
+void Wire::build()
 {
   BRepBuilderAPI_MakeWire wb;
-  BOOST_FOREACH(const FeatureID& fi, edges)
+  BOOST_FOREACH(const FeatureID& fi, edges_->data())
   {
-    wb.Add(edges.model().edge(fi));
+    wb.Add(edges_->model()->edge(fi));
   }
   setShape(wb.Wire());
 }
@@ -58,7 +62,7 @@ void Wire::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_edgeFeaturesExpression >> ')' ) 
-	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Wire>(*qi::_1)) ]
+	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Wire>(qi::_1)) ]
       
     ))
   );
@@ -66,7 +70,7 @@ void Wire::insertrule(parser::ISCADParser& ruleset) const
 
 bool Wire::isSingleClosedWire() const
 {
-  return TopoDS::Wire(shape_).Closed();
+  return TopoDS::Wire(shape()).Closed();
 }
 
 bool Wire::isSingleOpenWire() const

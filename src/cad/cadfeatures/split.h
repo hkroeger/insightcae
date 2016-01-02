@@ -20,18 +20,21 @@
 #ifndef INSIGHT_CAD_SPLIT_H
 #define INSIGHT_CAD_SPLIT_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Split
-: public SolidModel
+: public Feature
 {
+  FeaturePtr source_;
+  FeaturePtr target_;
+  
 public:
   declareType("Split");
   Split(const NoParameters& nop = NoParameters());
-  Split(const SolidModel& source, const SolidModel& target);
+  Split(FeaturePtr source, FeaturePtr target);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

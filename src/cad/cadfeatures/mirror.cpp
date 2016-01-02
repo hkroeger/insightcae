@@ -33,28 +33,32 @@ namespace cad {
 
 
 defineType(Mirror);
-addToFactoryTable(SolidModel, Mirror, NoParameters);
+addToFactoryTable(Feature, Mirror, NoParameters);
 
-Mirror::Mirror(const NoParameters& nop): SolidModel(nop)
+Mirror::Mirror(const NoParameters& nop): Feature(nop)
 {}
 
 
-Mirror::Mirror(const SolidModel& m1, const Datum& pl)
+Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
+: m1_(m1), pl_(pl)
+{}
+
+void Mirror::build()
 {
   gp_Trsf tr;
 
-  if (!pl.providesPlanarReference())
+  if (!pl_->providesPlanarReference())
     throw insight::Exception("Mirror: planar reference required!");
   
-  tr.SetMirror(static_cast<gp_Ax3>(pl).Ax2());  
+  tr.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
   
-  if (m1.hasExplicitCoG())
+  if (m1_->hasExplicitCoG())
   {
-    this->setCoGExplicitly( vec3(to_Pnt(m1.modelCoG()).Transformed(tr)) );
+    this->setCoGExplicitly( vec3(to_Pnt(m1_->modelCoG()).Transformed(tr)) );
   }
-  if (m1.hasExplicitMass()) setMassExplicitly(m1.mass());
+  if (m1_->hasExplicitMass()) setMassExplicitly(m1_->mass());
   
-  setShape(BRepBuilderAPI_Transform(m1, tr).Shape());
+  setShape(BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
 }
 
 void Mirror::insertrule(parser::ISCADParser& ruleset) const
@@ -65,7 +69,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Mirror>(*qi::_1, *qi::_2)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, qi::_2)) ]
       
     ))
   );

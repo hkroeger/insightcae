@@ -20,19 +20,23 @@
 #ifndef INSIGHT_CAD_THICKEN_H
 #define INSIGHT_CAD_THICKEN_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class Thicken
-: public SolidModel
+: public Feature
 {
+  FeaturePtr shell_;
+  ScalarPtr thickness_;
+  ScalarPtr tol_;
+  
 public:
   declareType("Thicken");
   Thicken(const NoParameters& nop = NoParameters());
-  Thicken(const SolidModel& shell, double thickness, double tol=Precision::Confusion());
+  Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst(Precision::Confusion()) );
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

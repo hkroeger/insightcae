@@ -68,47 +68,6 @@ typedef std::vector<modelstep> model;
 
 boost::filesystem::path sharedModelFilePath(const std::string& name);
 
-// double dot(const vector& v1, const vector& v2);
-// BOOST_PHOENIX_ADAPT_FUNCTION(vector, vec3_, vec3, 3);
-// BOOST_PHOENIX_ADAPT_FUNCTION(vector, cross_, cross, 2);
-// BOOST_PHOENIX_ADAPT_FUNCTION(vector, trans_, arma::trans, 1);
-// BOOST_PHOENIX_ADAPT_FUNCTION(double, dot_, dot, 2);
-// 
-// FeatureSetPtr queryVertices(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryVertices_, queryVertices, 3);
-// FeatureSetPtr queryAllVertices(const SolidModel& m);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllVertices_, queryAllVertices, 1);
-// FeatureSetPtr queryVerticesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryVerticesSubset_, queryVerticesSubset, 3);
-// 
-// FeatureSetPtr queryEdges(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdges_, queryEdges, 3);
-// FeatureSetPtr queryAllEdges(const SolidModel& m);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllEdges_, queryAllEdges, 1);
-// FeatureSetPtr queryEdgesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryEdgesSubset_, queryEdgesSubset, 3);
-// 
-// FeatureSetPtr queryFaces(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryFaces_, queryFaces, 3);
-// FeatureSetPtr queryAllFaces(const SolidModel& m);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllFaces_, queryAllFaces, 1);
-// FeatureSetPtr queryFacesSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryFacesSubset_, queryFacesSubset, 3);
-// 
-// FeatureSetPtr querySolids(const SolidModel& m, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, querySolids_, querySolids, 3);
-// FeatureSetPtr queryAllSolids(const SolidModel& m);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, queryAllSolids_, queryAllSolids, 1);
-// FeatureSetPtr querySolidsSubset(const FeatureSetPtr& fs, const std::string& filterexpr, const FeatureSetParserArgList& of);
-// BOOST_PHOENIX_ADAPT_FUNCTION(FeatureSetPtr, querySolidsSubset_, querySolidsSubset, 3);
-// 
-// 
-// 
-// 
-// Model::Ptr loadModel(const std::string& name, const ModelSymbols& syms);
-// BOOST_PHOENIX_ADAPT_FUNCTION(Model::Ptr, loadModel_, loadModel, 2);
-
-
 
 // template <typename Iterator>
 struct skip_grammar 
@@ -147,8 +106,8 @@ struct ISCADParser
     qi::rule<std::string::iterator, std::string()> r_string;
     qi::rule<std::string::iterator, boost::filesystem::path()> r_path;
     qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
-    qi::rule<std::string::iterator, FeaturePtr(), qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_subshape;
-    qi::rule<std::string::iterator, FeaturePtr(), qi::locals<ModelPtr>, skip_grammar> r_submodel_modelstep;
+//     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_subshape;
+//     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<ModelPtr>, skip_grammar> r_submodel_modelstep;
     
 
     ISCADParser(Model* model);
@@ -163,6 +122,6 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m);
 }
 }
 
-#undef BOOST_SPIRIT_DEBUG
+// #undef BOOST_SPIRIT_DEBUG
 
 #endif // INSIGHT_CAD_PARSER_H

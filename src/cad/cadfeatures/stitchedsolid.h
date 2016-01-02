@@ -20,20 +20,24 @@
 #ifndef INSIGHT_CAD_STITCHEDSOLID_H
 #define INSIGHT_CAD_STITCHEDSOLID_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class StitchedSolid
-: public SolidModel
+: public Feature
 {
+  std::vector<FeaturePtr> faces_;
+  ScalarPtr tol_;
+  
 public:
   declareType("StitchedSolid");
   StitchedSolid(const NoParameters& nop = NoParameters());
-  StitchedSolid(const std::vector<SolidModelPtr>& faces, double tol=1e-3);
+  StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

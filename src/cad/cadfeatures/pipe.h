@@ -20,19 +20,23 @@
 #ifndef INSIGHT_CAD_PIPE_H
 #define INSIGHT_CAD_PIPE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class Pipe
-: public SolidModel
+: public Feature
 {
+  FeaturePtr spine_;
+  FeaturePtr xsec_;
+  bool orient_;
+  
 public:
   declareType("Pipe");
   Pipe(const NoParameters& nop = NoParameters());
-  Pipe(const SolidModel& spine, const SolidModel& xsec, bool orient=false);
+  Pipe(FeaturePtr spine, FeaturePtr xsec, bool orient=false);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

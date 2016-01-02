@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_RING_H
 #define INSIGHT_CAD_RING_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,10 +29,15 @@ namespace cad {
 class Ring
 : public SingleVolumeFeature
 {
+  VectorPtr p1_;
+  VectorPtr p2_;
+  ScalarPtr Da_;
+  ScalarPtr Di_;
+  
 public:
   declareType("Ring");
   Ring(const NoParameters& nop = NoParameters());
-  Ring(const arma::mat& p1, const arma::mat& p2, double Da, double Di);
+  Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

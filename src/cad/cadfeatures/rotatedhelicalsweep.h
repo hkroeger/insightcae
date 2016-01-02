@@ -20,19 +20,25 @@
 #ifndef INSIGHT_CAD_ROTATEDHELICALSWEEP_H
 #define INSIGHT_CAD_ROTATEDHELICALSWEEP_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class RotatedHelicalSweep
-: public SolidModel
+: public Feature
 {
+  FeaturePtr sk_;
+  VectorPtr p0_;
+  VectorPtr axis_;
+  ScalarPtr P_;
+  ScalarPtr revoffset_;
+  
 public:
   declareType("RotatedHelicalSweep");
   RotatedHelicalSweep(const NoParameters& nop = NoParameters());
-  RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset=0.0);
+  RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset=scalarconst(0.0));
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -31,29 +31,34 @@ namespace insight {
 namespace cad {
 
 defineType(LinearPattern);
-addToFactoryTable(SolidModel, LinearPattern, NoParameters);
+addToFactoryTable(Feature, LinearPattern, NoParameters);
 
-LinearPattern::LinearPattern(const NoParameters& nop): SolidModel(nop)
+LinearPattern::LinearPattern(const NoParameters& nop): Feature(nop)
 {}
 
 
   
-LinearPattern::LinearPattern(const SolidModel& m1, const arma::mat& axis, int n)
+LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
+: m1_(m1), axis_(axis), n_(n)
+{}
+
+void LinearPattern::build()
 {
   BRep_Builder bb;
   TopoDS_Compound result;
   bb.MakeCompound(result);
   
-  double delta_x=norm(axis, 2);
-  gp_Vec ax(to_Vec(axis/delta_x));
+  double delta_x=norm(axis_->value(), 2);
+  gp_Vec ax(to_Vec(axis_->value()/delta_x));
   
+  int n=round(n_->value());
   for (int i=0; i<n; i++)
   {
     gp_Trsf tr;
     tr.SetTranslation(ax*delta_x*double(i));
-    bb.Add(result, BRepBuilderAPI_Transform(m1, tr).Shape());
+    bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
   }
-  m1.unsetLeaf();
+  m1_->unsetLeaf();
   
   setShape(result);
 }
@@ -68,7 +73,7 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
     ( '(' > ruleset.r_solidmodel_expression > 
       ',' > ruleset.r_vectorExpression > 
       ',' > ruleset.r_scalarExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<LinearPattern>(*qi::_1, qi::_2, qi::_3)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<LinearPattern>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

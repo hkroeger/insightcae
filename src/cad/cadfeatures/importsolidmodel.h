@@ -20,14 +20,16 @@
 #ifndef INSIGHT_CAD_IMPORT_H
 #define INSIGHT_CAD_IMPORT_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
   
 class Import
-: public SolidModel
+: public Feature
 {
+  boost::filesystem::path filepath_;
+  
 public:
   declareType("Import");
   Import(const NoParameters& nop = NoParameters());

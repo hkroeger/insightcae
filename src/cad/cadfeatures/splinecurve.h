@@ -20,18 +20,20 @@
 #ifndef INSIGHT_CAD_SPLINECURVE_H
 #define INSIGHT_CAD_SPLINECURVE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class SplineCurve
-: public SolidModel
+: public Feature
 {
+  std::vector<VectorPtr> pts_;
+  
 public:
   declareType("SplineCurve");
   SplineCurve(const NoParameters& nop = NoParameters());
-  SplineCurve(const std::vector<arma::mat>& pts);
+  SplineCurve(const std::vector<VectorPtr>& pts);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

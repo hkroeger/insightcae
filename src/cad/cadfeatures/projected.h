@@ -20,18 +20,22 @@
 #ifndef INSIGHT_CAD_PROJECTED_H
 #define INSIGHT_CAD_PROJECTED_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Projected
-: public SolidModel
+: public Feature
 {
+  FeaturePtr source_;
+  FeaturePtr target_;
+  VectorPtr dir_;
+  
 public:
   declareType("Projected");
   Projected(const NoParameters& nop = NoParameters());
-  Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir);
+  Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

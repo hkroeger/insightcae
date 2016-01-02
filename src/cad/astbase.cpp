@@ -25,7 +25,8 @@ namespace cad
 {
   
 ASTBase::ASTBase()
-: valid_(false)
+: valid_(false),
+  building_(false)
 {}
 
 
@@ -37,7 +38,9 @@ void ASTBase::checkForBuildDuringAccess() const
 {
   if (!valid()) 
   {
+    building_=true;
     const_cast<ASTBase*>(this)->build();
+    building_=false;
     const_cast<ASTBase*>(this)->setValid();
   }
 }

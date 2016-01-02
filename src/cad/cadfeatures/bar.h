@@ -21,19 +21,19 @@
 #define INSIGHT_CAD_BAR_H
 
 #include "cadparameters.h"
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class Bar
-: public SolidModel
+: public Feature
 {
   
   VectorPtr p0_;
   VectorPtr p1_; 
-  SolidModelPtr xsec_;
+  FeaturePtr xsec_;
   VectorPtr vert_;
   ScalarPtr ext0_;
   ScalarPtr ext1_;
@@ -59,7 +59,7 @@ public:
   Bar
   (
     VectorPtr p0, VectorPtr p1, 
-    SolidModelPtr xsec, VectorPtr vert,
+    FeaturePtr xsec, VectorPtr vert,
     ScalarPtr ext0, ScalarPtr ext1,
     ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
     ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
@@ -68,7 +68,7 @@ public:
   Bar
   (
     VectorPtr p0, VectorPtr p1, 
-    SolidModelPtr xsec, VectorPtr vert,
+    FeaturePtr xsec, VectorPtr vert,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
   );

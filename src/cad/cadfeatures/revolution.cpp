@@ -32,13 +32,13 @@ namespace cad {
 
   
 defineType(Revolution);
-addToFactoryTable(SolidModel, Revolution, NoParameters);
+addToFactoryTable(Feature, Revolution, NoParameters);
 
-Revolution::Revolution(const NoParameters& nop): SolidModel(nop)
+Revolution::Revolution(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
+TopoDS_Shape makeRevolution(const Feature& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
 {
   if (!centered)
   {
@@ -58,9 +58,13 @@ TopoDS_Shape makeRevolution(const SolidModel& sk, const arma::mat& p0, const arm
   }
 }
 
-Revolution::Revolution(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
-: SolidModel(makeRevolution(sk, p0, axis, ang, centered))
+Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
+: sk_(sk), p0_(p0), axis_(axis), angle_(angle), centered_(centered)
+{}
+
+void Revolution::build()
 {
+  setShape(makeRevolution(*sk_, p0_->value(), axis_->value(), angle_->value(), centered_));
 }
 
 void Revolution::insertrule(parser::ISCADParser& ruleset) const
@@ -74,7 +78,7 @@ void Revolution::insertrule(parser::ISCADParser& ruleset) const
 	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
        > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false))
        > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Revolution>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Revolution>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

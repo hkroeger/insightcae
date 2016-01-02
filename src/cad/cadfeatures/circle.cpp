@@ -33,30 +33,30 @@ namespace cad {
 
 
 defineType(Circle);
-addToFactoryTable(SolidModel, Circle, NoParameters);
+addToFactoryTable(Feature, Circle, NoParameters);
 
 Circle::Circle(const NoParameters&)
 {
 }
 
 
-TopoDS_Face makeCircle(const arma::mat& p0, const arma::mat& n, double D)
+void Circle::build()
 {
-  Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0), to_Vec(n), 0.5*D);
+  Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0_->value()), to_Vec(n_->value()), 0.5*D_->value());
   
   BRepBuilderAPI_MakeWire w;
   w.Add(BRepBuilderAPI_MakeEdge(c));
-  return BRepBuilderAPI_MakeFace(w.Wire());
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
-Circle::Circle(const arma::mat& p0, const arma::mat& n, double D)
+Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
+: p0_(p0), n_(n), D_(D)
 {
-  setShape(makeCircle(p0, n, D));
 }
 
 Circle::operator const TopoDS_Face& () const
 {
-  return TopoDS::Face(shape_);
+  return TopoDS::Face(shape());
 }
 
 void Circle::insertrule(parser::ISCADParser& ruleset) const
@@ -67,7 +67,7 @@ void Circle::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Circle>(qi::_1, qi::_2, qi::_3)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Circle>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

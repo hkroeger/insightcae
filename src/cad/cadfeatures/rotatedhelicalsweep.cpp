@@ -33,13 +33,13 @@ namespace cad {
 
 
 defineType(RotatedHelicalSweep);
-addToFactoryTable(SolidModel, RotatedHelicalSweep, NoParameters);
+addToFactoryTable(Feature, RotatedHelicalSweep, NoParameters);
 
-RotatedHelicalSweep::RotatedHelicalSweep(const NoParameters& nop): SolidModel(nop)
+RotatedHelicalSweep::RotatedHelicalSweep(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
+TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
 {
 //   BRep_Builder bb;
 //   TopoDS_Compound result;
@@ -90,9 +90,13 @@ TopoDS_Shape makeRotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, 
 }
 
 
-RotatedHelicalSweep::RotatedHelicalSweep(const SolidModel& sk, const arma::mat& p0, const arma::mat& axis, double P, double revoffset)
-: SolidModel(makeRotatedHelicalSweep(sk, p0, axis, P, revoffset))
+RotatedHelicalSweep::RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset)
+: sk_(sk), p0_(p0), axis_(axis), P_(P), revoffset_(revoffset)
+{}
+
+void RotatedHelicalSweep::build()
 {
+  setShape(makeRotatedHelicalSweep(*sk_, p0_->value(), axis_->value(), P_->value(), revoffset_->value()));
 }
 
 void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset) const
@@ -107,8 +111,8 @@ void RotatedHelicalSweep::insertrule(parser::ISCADParser& ruleset) const
 	    > ruleset.r_vectorExpression > ',' 
 	    > ruleset.r_vectorExpression > ',' 
 	    > ruleset.r_scalarExpression > 
-	    ((  ',' > ruleset.r_scalarExpression ) | qi::attr(0.0)) > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<RotatedHelicalSweep>(*qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+	    ((  ',' > ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0))) > ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<RotatedHelicalSweep>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       
     ))
   );

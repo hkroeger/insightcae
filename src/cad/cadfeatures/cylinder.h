@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_CYLINDER_H
 #define INSIGHT_CAD_CYLINDER_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,10 +29,14 @@ namespace cad {
 class Cylinder
 : public SingleVolumeFeature
 {
+  VectorPtr p1_;
+  VectorPtr p2_;
+  ScalarPtr D_;
+  
 public:
   declareType("Cylinder");
   Cylinder(const NoParameters& nop = NoParameters());
-  Cylinder(const arma::mat& p1, const arma::mat& p2, double D);
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -32,29 +32,29 @@ namespace cad {
 
 
 defineType(Fillet);
-addToFactoryTable(SolidModel, Fillet, NoParameters);
+addToFactoryTable(Feature, Fillet, NoParameters);
 
-Fillet::Fillet(const NoParameters& nop): SolidModel(nop)
+Fillet::Fillet(const NoParameters& nop): Feature(nop)
 {}
 
 
 
-TopoDS_Shape Fillet::makeFillets(const SolidModel& m1, const FeatureSet& edges, double r)
+void Fillet::build()
 {
+  const Feature& m1=*(edges_->model());
+  m1.unsetLeaf();
   BRepFilletAPI_MakeFillet fb(m1);
-  BOOST_FOREACH(FeatureID f, edges)
+  BOOST_FOREACH(FeatureID f, edges_->data())
   {
-    fb.Add(r, m1.edge(f));
+    fb.Add(r_->value(), m1.edge(f));
   }
   fb.Build();
   return fb.Shape();
 }
   
-Fillet::Fillet(const SolidModel& m1, const FeatureSet& edges, double r)
-: SolidModel(makeFillets(m1, edges, r))
-{
-  m1.unsetLeaf();
-}
+Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
+: edges_(edges), r_(r)
+{}
 
 /** @addtogroup cad_parser
   * @{
@@ -71,8 +71,8 @@ void Fillet::insertrule(parser::ISCADParser& ruleset) const
     "Fillet",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Fillet>(*qi::_1, *qi::_2, qi::_3)) ]
+    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Fillet>(qi::_1, qi::_2)) ]
       
     ))
   );

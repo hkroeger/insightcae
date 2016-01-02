@@ -25,10 +25,16 @@ namespace insight
 namespace cad
 {
   
+Scalar::~Scalar()
+{}
+
 Scalar::operator double() const
 {
   return value();
 }
+
+Vector::~Vector()
+{}
 
 Vector::operator arma::mat() const
 {

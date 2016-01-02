@@ -34,18 +34,9 @@ namespace cad {
 
   
 defineType(Bar);
-addToFactoryTable(SolidModel, Bar, NoParameters);
+addToFactoryTable(Feature, Bar, NoParameters);
 
-void Bar::build
-(
-//   const arma::mat& start, 
-//   const arma::mat& end, 
-//   const SolidModel& xsec, 
-//   const arma::mat& vert, 
-//   double ext0, double ext1, 
-//   double miterangle0_vert, double miterangle1_vert, 
-//   double miterangle0_hor, double miterangle1_hor
-)
+void Bar::build()
 {
   
   if (!valid())
@@ -55,12 +46,12 @@ void Bar::build
     h+=p1_->value();
     h+=*xsec_;
     h+=vert_->value();
-    h+=*ext0_;
-    h+=*ext1_;
-    h+=*miterangle0_vert_;
-    h+=*miterangle1_vert_;
-    h+=*miterangle0_hor_;
-    h+=*miterangle1_hor_;
+    h+=ext0_->value();
+    h+=ext1_->value();
+    h+=miterangle0_vert_->value();
+    h+=miterangle1_vert_->value();
+    h+=miterangle0_hor_->value();
+    h+=miterangle1_hor_->value();
     
 //     if (!cache.contains(h))
     {
@@ -149,7 +140,12 @@ void Bar::build
       {
 	arma::mat cex=rotMatrix(*miterangle0_vert_, ey)*ex;
 	arma::mat cey=rotMatrix(*miterangle0_hor_, ex)*ey;
-	Quad q(*p0_-0.5*L*(cex+cey), L*cex, L*cey);
+	Quad q
+	(
+	  matconst(p0_->value() -0.5*L*(cex+cey)), 
+	  matconst(L*cex), 
+	  matconst(L*cey)
+	);
 	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(-L*baraxis) );
 	result=BRepAlgoAPI_Cut(result, airspace);
       }
@@ -159,7 +155,12 @@ void Bar::build
       {
 	arma::mat cex=rotMatrix(*miterangle1_vert_, ey)*ex;
 	arma::mat cey=rotMatrix(*miterangle1_hor_, ex)*ey;
-	Quad q(end-0.5*L*(cex+cey), L*cex, L*cey);
+	Quad q
+	(
+	  matconst(p1_->value() -0.5*L*(cex+cey)), 
+	  matconst(L*cex), 
+	  matconst(L*cey)
+	);
 	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*baraxis) );
 	result=BRepAlgoAPI_Cut(result, airspace);
       }
@@ -176,14 +177,14 @@ void Bar::build
 }
 
 
-Bar::Bar(const NoParameters& nop): SolidModel(nop)
+Bar::Bar(const NoParameters& nop): Feature(nop)
 {}
 
 
 Bar::Bar
 (
   VectorPtr start, VectorPtr end, 
-  SolidModelPtr xsec, VectorPtr vert, 
+  FeaturePtr xsec, VectorPtr vert, 
   ScalarPtr ext0, ScalarPtr ext1,
   ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
   ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
@@ -205,7 +206,7 @@ Bar::Bar
 Bar::Bar
 (
   VectorPtr start, VectorPtr end, 
-  SolidModelPtr xsec, VectorPtr vert, 
+  FeaturePtr xsec, VectorPtr vert, 
   const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0, 
   const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
 )
@@ -240,22 +241,22 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' 
 	>> ruleset.r_vectorExpression // 1
-	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0)) 
-	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
- 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  ) ]
+	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0))) 
+	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  
+ 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
 	  >> ',' 
 	>> ruleset.r_vectorExpression // 3
-	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
-	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  
- 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(0.0))  ) ]
+	  >> qi::hold[ (  (( qi::lit("ext") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  
+	  >> ((  qi::lit("vmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  
+ 	  >> ((  qi::lit("hmiter") >> ruleset.r_scalarExpression ) | qi::attr(scalarconst(0.0)))  ) ]
 	  >> ',' 
 	>> ruleset.r_solidmodel_expression >> ',' // 5
 	>> ruleset.r_vectorExpression >> // 6
       ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Bar>
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Bar>
 	(
 	  qi::_1, qi::_3, 
-	  *qi::_5, qi::_6,
+	  qi::_5, qi::_6,
 	  qi::_2, qi::_4
 	)) ]
       

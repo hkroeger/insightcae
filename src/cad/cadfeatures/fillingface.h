@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_FILLINGFACE_H
 #define INSIGHT_CAD_FILLINGFACE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -28,11 +28,17 @@ namespace cad {
 class FillingFace
 : public SingleFaceFeature
 {
+  FeaturePtr e1_;
+  FeaturePtr e2_;
+  
+  FeatureSetPtr es1_;
+  FeatureSetPtr es2_;
+  
 public:
   declareType("FillingFace");
   FillingFace(const NoParameters& nop=NoParameters());
-  FillingFace(const SolidModel& e1, const SolidModel& e2);
-  FillingFace(const FeatureSet& e1, const FeatureSet& e2);
+  FillingFace(FeaturePtr e1, FeaturePtr e2);
+  FillingFace(FeatureSetPtr es1, FeatureSetPtr es2);
   operator const TopoDS_Face& () const;
   
   virtual void build();

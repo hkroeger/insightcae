@@ -20,19 +20,22 @@
 #ifndef INSIGHT_CAD_PROJECTEDOUTLINE_H
 #define INSIGHT_CAD_PROJECTEDOUTLINE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class ProjectedOutline
-: public SolidModel
+: public Feature
 {
+  FeaturePtr source_;
+  DatumPtr target_;
+  
 public:
   declareType("ProjectedOutline");
   ProjectedOutline(const NoParameters& nop = NoParameters());
-  ProjectedOutline(const SolidModel& source, const Datum& target);
+  ProjectedOutline(FeaturePtr source, DatumPtr target);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

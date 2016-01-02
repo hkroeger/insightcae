@@ -20,20 +20,26 @@
 #ifndef INSIGHT_CAD_SPRING_H
 #define INSIGHT_CAD_SPRING_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Spring
-: public SolidModel
+: public Feature
 {
+  VectorPtr p0_;
+  VectorPtr p1_;
+  ScalarPtr d_;
+  ScalarPtr winds_;
+  
 public:
   declareType("Spring");
   Spring(const NoParameters& nop = NoParameters());
-  Spring(const arma::mat& p0, const arma::mat& p1, double d, double winds);
+  Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual bool isSingleEdge() const { return true; };
 };

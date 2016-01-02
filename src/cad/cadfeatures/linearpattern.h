@@ -20,18 +20,22 @@
 #ifndef INSIGHT_CAD_LINEARPATTERN_H
 #define INSIGHT_CAD_LINEARPATTERN_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class LinearPattern
-: public SolidModel
+: public Feature
 {
+  FeaturePtr m1_;
+  VectorPtr axis_;
+  ScalarPtr n_;
+  
 public:
   declareType("LinearPattern");
   LinearPattern(const NoParameters& nop = NoParameters());
-  LinearPattern(const SolidModel& m1, const arma::mat& axis, int n);
+  LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

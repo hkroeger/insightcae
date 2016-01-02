@@ -30,6 +30,7 @@ namespace cad {
 class Scalar
 {
 public:
+  virtual ~Scalar();
   virtual double value() const =0;
   operator double() const;
 };
@@ -39,6 +40,7 @@ public:
 class Vector
 {
 public:
+  virtual ~Vector();
   virtual arma::mat value() const =0;
   operator arma::mat() const;
 };

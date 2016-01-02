@@ -18,7 +18,8 @@
  *
  */
 
-#undef BOOST_SPIRIT_DEBUG
+// #undef BOOST_SPIRIT_DEBUG
+#define BOOST_SPIRIT_DEBUG
 
 #include "cadfeature.h"
 
@@ -386,8 +387,8 @@ ISCADParser::ISCADParser(Model* model)
        r_assignment 
        | 
        r_modelstep 
-       | 
-       r_solidmodel_propertyAssignment
+//        | 
+//        r_solidmodel_propertyAssignment
      ) 
       >> 
      -( 
@@ -539,40 +540,28 @@ ISCADParser::ISCADParser(Model* model)
        -( lit("<<") >> r_vectorExpression [ _val = construct<FeaturePtr>(new_<Transform>(qi::_val, qi::_1)) ] )
       >>
        -( lit("*") >> r_scalarExpression [ _val = construct<FeaturePtr>(new_<Transform>(qi::_val, qi::_1)) ] )
-      >> *( 
-      ('|' >> r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanUnion>(_val, qi::_1)) ] )
-      |
-      ('&' >> r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ] )
-      )
+      >> 
+       -( '.' >> r_identifier
+	 [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_1)) ] )
+      >>
+      *( 
+        ('|' >> r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanUnion>(_val, qi::_1)) ] )
+	|
+	('&' >> r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ] )
+       )
       ;
 
     r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
     
     r_solidmodel_primary = 
+	qi::lexeme [ model_->modelstepSymbols() ] 
+	 [ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
+      |
         ( '(' >> r_solidmodel_expression [ _val = qi::_1] > ')' )
       |
         r_modelstepFunction [ _val = qi::_1 ]
       // try identifiers last, since exceptions are generated, if symbols don't exist
-      | 
-	r_solidmodel_subshape [ _val = qi::_1 ]
-      | 
-	r_submodel_modelstep [ _val = qi::_1 ]
-      |
-	qi::lexeme [ model_->modelstepSymbols() ] 
-	 [ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
       ;
-#warning disabled for now!
-//     r_submodel_modelstep =
-//       qi::lexeme[ model_->modelSymbols() ] 
-//        [ _a =  phx::bind(&Model::lookupModel, model_, qi::_1) ]
-// 	>> lit('.') >>
-// 	r_identifier [ _val =  phx::construct<FeaturePtr>(phx::new_<ModelFeature>(_a, qi::_1)) ]
-// 	;
-//       
-    r_solidmodel_subshape =
-       ( r_solidmodel_expression >> lit(':') >> r_identifier )
-	 [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_1, qi::_2)) ]
-	  ;
 
 //     r_solidmodel_propertyAssignment =
 //       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ] 
@@ -594,7 +583,7 @@ ISCADParser::ISCADParser(Model* model)
 	    [ _val =  phx::bind(&Model::lookupVertexFeature, model_, qi::_1) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> (lit("vertices")|lit("vertex"))
 	    >> '(' 
 	    >> r_string 
@@ -604,7 +593,7 @@ ISCADParser::ISCADParser(Model* model)
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, qi::_2, qi::_3)) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> lit("allvertices")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex)) ]
@@ -615,8 +604,8 @@ ISCADParser::ISCADParser(Model* model)
 	    [ _val =  phx::bind(&Model::lookupEdgeFeature, model_, qi::_1) ]
 	  | 
 	  ( r_solidmodel_expression
-	    >> '.'
-	    >> (lit("egdes")|lit("edge"))
+	    >> '?'
+	    >> (lit("edges")|lit("edge"))
 	    >> '(' 
 	    >> r_string 
 	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) )
@@ -625,7 +614,7 @@ ISCADParser::ISCADParser(Model* model)
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge, qi::_2, qi::_3)) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> lit("alledges")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge)) ]
@@ -636,7 +625,7 @@ ISCADParser::ISCADParser(Model* model)
 	    [ _val =  phx::bind(&Model::lookupFaceFeature, model_, qi::_1) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> (lit("faces")|lit("face"))
 	    >> '(' 
 	    >> r_string 
@@ -646,7 +635,7 @@ ISCADParser::ISCADParser(Model* model)
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2, qi::_3)) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> lit("allfaces")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face)) ]
@@ -657,7 +646,7 @@ ISCADParser::ISCADParser(Model* model)
 	    [ _val =  phx::bind(&Model::lookupSolidFeature, model_, qi::_1) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> (lit("solids")|lit("solid"))
 	    >> '(' 
 	    >> r_string 
@@ -667,7 +656,7 @@ ISCADParser::ISCADParser(Model* model)
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid, qi::_2, qi::_3)) ]
 	  |
 	  ( r_solidmodel_expression
-	    >> '.'
+	    >> '?'
 	    >> lit("allsolids")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid)) ]
@@ -743,7 +732,6 @@ ISCADParser::ISCADParser(Model* model)
          =
          phx::construct<ScalarPtr>(phx::new_<MultipliedScalar>
          (
-// 	  phx::construct<ScalarPtr>(phx::new_<ConstantScalar>(-1.0)),
 	  ScalarPtr( new ConstantScalar(-1.0)),
 	  qi::_1
 	 ))
@@ -808,7 +796,6 @@ ISCADParser::ISCADParser(Model* model)
          phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>
          (
 	  ScalarPtr( new ConstantScalar(-1.0)),
-// 	  phx::construct<VectorPtr>(phx::new_<ConstantScalar>(-1.0)),
 	  qi::_1
 	 ))
 	]
@@ -822,24 +809,22 @@ ISCADParser::ISCADParser(Model* model)
     }
     
       
-// 	BOOST_SPIRIT_DEBUG_NODE(r_path);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-// // 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFilterExpression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
+	BOOST_SPIRIT_DEBUG_NODE(r_path);
+	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
+	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
+	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
+	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
+	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
+	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
+	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_subshape);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_model);
+	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
+	BOOST_SPIRIT_DEBUG_NODE(r_model);
 	BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
     
     on_error<fail>(r_model, 

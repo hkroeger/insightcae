@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SHOULDER_H
 #define INSIGHT_CAD_SHOULDER_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -28,10 +28,15 @@ namespace cad {
 class Shoulder
 : public SingleVolumeFeature
 {
+  VectorPtr p0_;
+  VectorPtr dir_;
+  ScalarPtr d_;
+  ScalarPtr Dmax_;
+  
 public:
   declareType("Shoulder");
   Shoulder(const NoParameters& nop = NoParameters());
-  Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax);
+  Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -32,30 +32,26 @@ namespace cad {
 
 
 defineType(Projected);
-addToFactoryTable(SolidModel, Projected, NoParameters);
+addToFactoryTable(Feature, Projected, NoParameters);
 
-Projected::Projected(const NoParameters& nop): SolidModel(nop)
+Projected::Projected(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape makeProjection
-(
-  const SolidModel& source, 
-  const SolidModel& target, 
-  const arma::mat& dir
-)
+Projected::Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir)
+: source_(source), target_(target), dir_(dir)
 {
-  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source));
+}
 
-  BRepProj_Projection proj(ow, target, to_Vec(dir));
+void Projected::build()
+{
+  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(source_->shape()));
+
+  BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
   
-  return proj.Shape();
+  setShape(proj.Shape());
 }
 
-Projected::Projected(const SolidModel& source, const SolidModel& target, const arma::mat& dir)
-: SolidModel(makeProjection(source, target, dir))
-{
-}
 
 void Projected::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -65,7 +61,7 @@ void Projected::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Projected>(*qi::_1, *qi::_2, qi::_3)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Projected>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

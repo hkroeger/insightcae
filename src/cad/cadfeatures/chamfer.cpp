@@ -32,29 +32,30 @@ namespace cad {
 
 
 defineType(Chamfer);
-addToFactoryTable(SolidModel, Chamfer, NoParameters);
+addToFactoryTable(Feature, Chamfer, NoParameters);
 
-Chamfer::Chamfer(const NoParameters& nop): SolidModel(nop)
+Chamfer::Chamfer(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape Chamfer::makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l)
+Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l)
+: edges_(edges), l_(l)
+{}
+
+void Chamfer::build()
 {
+  const Feature& m1=*(edges_->model());
+  
+  m1.unsetLeaf();
   BRepFilletAPI_MakeChamfer fb(m1);
-  BOOST_FOREACH(FeatureID f, edges)
+  BOOST_FOREACH(FeatureID f, edges_->data())
   {
     TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
     TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
-    fb.Add(l, m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
+    fb.Add(l_->value(), m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
   }
   fb.Build();
-  return fb.Shape();
-}
-  
-Chamfer::Chamfer(const SolidModel& m1, const FeatureSet& edges, double l)
-: SolidModel(makeChamfers(m1, edges, l))
-{
-  m1.unsetLeaf();
+  setShape(fb.Shape());
 }
 
 void Chamfer::insertrule(parser::ISCADParser& ruleset) const
@@ -64,8 +65,8 @@ void Chamfer::insertrule(parser::ISCADParser& ruleset) const
     "Chamfer",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Chamfer>(*qi::_1, *qi::_2, qi::_3)) ]
+    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Chamfer>(qi::_1, qi::_2)) ]
       
     ))
   );

@@ -19,6 +19,7 @@
 
 #include "cylinder.h"
 #include "base/boost_include.h"
+
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -31,13 +32,17 @@ namespace insight {
 namespace cad {
 
 defineType(Cylinder);
-addToFactoryTable(SolidModel, Cylinder, NoParameters);
+addToFactoryTable(Feature, Cylinder, NoParameters);
 
 Cylinder::Cylinder(const NoParameters&)
 {}
 
 
-Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
+Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D)
+: p1_(p1), p2_(p2), D_(D)
+{}
+
+void Cylinder::build()
 {
   setShape
   (
@@ -45,11 +50,11 @@ Cylinder::Cylinder(const arma::mat& p1, const arma::mat& p2, double D)
     (
       gp_Ax2
       (
-	gp_Pnt(p1(0),p1(1),p1(2)), 
-	gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+	gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
+	gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
       ),
-      0.5*D, 
-      norm(p2-p1, 2)
+      0.5*D_->value(), 
+      norm(p2_->value()-p1_->value(), 2)
     ).Shape()
   );
 }
@@ -62,7 +67,7 @@ void Cylinder::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
+	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

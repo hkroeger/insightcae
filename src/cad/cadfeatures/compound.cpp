@@ -43,7 +43,6 @@ Compound::Compound(const NoParameters& nop)
 {}
 
 
-
 Compound::Compound(const CompoundFeatureList& m1)
 {
   for (size_t i=1; i<=m1.size(); i++)

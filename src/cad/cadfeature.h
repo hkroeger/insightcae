@@ -165,6 +165,8 @@ private:
   // shall only be accessed via the shape() function, which triggers the build function if needed
   TopoDS_Shape shape_;
   
+  FeatureSetPtr creashapes_;
+  
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
   TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
@@ -195,7 +197,7 @@ public:
   Feature(const Feature& o);
   Feature(const TopoDS_Shape& shape);
   Feature(const boost::filesystem::path& filepath);
-  Feature(const FeatureSet& feat);
+  Feature(FeatureSetPtr creashapes);
   virtual ~Feature();
   
   inline bool isleaf() const { return isleaf_; }

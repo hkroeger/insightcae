@@ -34,19 +34,23 @@ namespace cad {
 
 
 defineType(Shoulder);
-addToFactoryTable(SolidModel, Shoulder, NoParameters);
+addToFactoryTable(Feature, Shoulder, NoParameters);
 
 Shoulder::Shoulder(const NoParameters&)
 {}
 
 
-Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double Dmax)
+Shoulder::Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax)
+: p0_(p0), dir_(dir), d_(d), Dmax_(Dmax)
+{}
+
+void Shoulder::build()
 {
   TopoDS_Face xsec_o=BRepBuilderAPI_MakeFace
   (
     BRepBuilderAPI_MakeWire
     (
-      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0), to_Vec(dir) ), 0.5*Dmax ))
+      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0_->value()), to_Vec(dir_->value()) ), 0.5*Dmax_->value() ))
     )
   );
   TopoDS_Face xsec=BRepBuilderAPI_MakeFace
@@ -54,7 +58,7 @@ Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double D
     xsec_o,
     BRepBuilderAPI_MakeWire
     (
-      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0), to_Vec(dir) ), 0.5*d ))
+      BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2( to_Pnt(p0_->value()), to_Vec(dir_->value()) ), 0.5*d_->value() ))
     )
   );
   
@@ -64,7 +68,7 @@ Shoulder::Shoulder(const arma::mat& p0, const arma::mat& dir, double d, double D
     ( 
       xsec, 
 //       gp_Dir(to_Vec(dir)), false 
-      to_Vec(dir)*1e6
+      to_Vec(dir_->value())*1e6
     )
   ); // semi-infinite prism
 }
@@ -77,8 +81,8 @@ void Shoulder::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > 
-			    ',' > ruleset.r_scalarExpression > ((',' > ruleset.r_scalarExpression)|qi::attr(1e6)) > ')' )
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+			    ',' > ruleset.r_scalarExpression > ((',' > ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) > ')' )
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

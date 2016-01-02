@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SPLINESURFACE_H
 #define INSIGHT_CAD_SPLINESURFACE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,13 +29,16 @@ namespace cad {
 class SplineSurface
 : public SingleFaceFeature
 {
+  std::vector<std::vector<VectorPtr> > pts_;
+  
 public:
   declareType("SplineSurface");
   SplineSurface(const NoParameters& nop = NoParameters());
-  SplineSurface(const std::vector<std::vector<arma::mat> >& pts);
+  SplineSurface(const std::vector<std::vector<VectorPtr> >& pts);
   operator const TopoDS_Face& () const;
   
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

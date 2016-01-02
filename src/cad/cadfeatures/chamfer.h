@@ -20,20 +20,21 @@
 #ifndef INSIGHT_CAD_CHAMFER_H
 #define INSIGHT_CAD_CHAMFER_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Chamfer
-: public SolidModel
+: public Feature
 {
-  TopoDS_Shape makeChamfers(const SolidModel& m1, const FeatureSet& edges, double l);
+  FeatureSetPtr edges_;
+  ScalarPtr l_;
   
 public:
   declareType("Chamfer");
   Chamfer(const NoParameters& nop = NoParameters());
-  Chamfer(const SolidModel& m1, const FeatureSet& edges, double l);
+  Chamfer(FeatureSetPtr edges, ScalarPtr l);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

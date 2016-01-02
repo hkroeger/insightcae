@@ -232,44 +232,9 @@ Feature::Feature(const boost::filesystem::path& filepath)
   setValid();
 }
 
-Feature::Feature(const FeatureSet& feat)
-{
-  TopoDS_Compound comp;
-  BRep_Builder builder;
-  builder.MakeCompound( comp );
-
-  BOOST_FOREACH(const FeatureID& id, feat.data())
-  {
-    TopoDS_Shape entity;
-    if (feat.shape()==Vertex)
-    {
-      entity=feat.model()->vertex(id);
-    }
-    else if (feat.shape()==Edge)
-    {
-      entity=feat.model()->edge(id);
-    }
-    else if (feat.shape()==Face)
-    {
-      entity=feat.model()->face(id);
-    }
-    else if (feat.shape()==Solid)
-    {
-      entity=feat.model()->subsolid(id);
-    }
-    if (feat.size()==1)
-    {
-      setShape(entity);
-      return;
-    }
-    else
-    {
-      builder.Add(comp, entity);
-    }
-  }
-  
-  setShape(comp);
-}
+Feature::Feature(FeatureSetPtr creashapes)
+: creashapes_(creashapes)
+{}
 
 
 Feature::~Feature()
@@ -295,7 +260,41 @@ double Feature::mass() const
 
 void Feature::build()
 {
-  // construct model geometry here
+  TopoDS_Compound comp;
+  BRep_Builder builder;
+  builder.MakeCompound( comp );
+
+  BOOST_FOREACH(const FeatureID& id, creashapes_->data())
+  {
+    TopoDS_Shape entity;
+    if (creashapes_->shape()==Vertex)
+    {
+      entity=creashapes_->model()->vertex(id);
+    }
+    else if (creashapes_->shape()==Edge)
+    {
+      entity=creashapes_->model()->edge(id);
+    }
+    else if (creashapes_->shape()==Face)
+    {
+      entity=creashapes_->model()->face(id);
+    }
+    else if (creashapes_->shape()==Solid)
+    {
+      entity=creashapes_->model()->subsolid(id);
+    }
+    if (creashapes_->size()==1)
+    {
+      setShape(entity);
+      return;
+    }
+    else
+    {
+      builder.Add(comp, entity);
+    }
+  }
+  
+  setShape(comp);
 }
 
 
@@ -326,15 +325,18 @@ FeaturePtr Feature::subshape(const std::string& name)
 Feature& Feature::operator=(const Feature& o)
 {
   ASTBase::operator=(o);
-  setShape(o.shape_);
-  explicitCoG_=o.explicitCoG_;
-  explicitMass_=o.explicitMass_;
+  if (o.valid())
+  {
+    setShape(o.shape_);
+    explicitCoG_=o.explicitCoG_;
+    explicitMass_=o.explicitMass_;
+  }
   return *this;
 }
 
 bool Feature::operator==(const Feature& o) const
 {
-  return shape_==o.shape_;
+  return shape()==o.shape();
 }
 
 
@@ -924,6 +926,8 @@ Feature::operator const TopoDS_Shape& () const
 
 const TopoDS_Shape& Feature::shape() const
 {
+  if (building())
+    throw insight::Exception("Internal error: recursion during build!");
   checkForBuildDuringAccess();
   return shape_;
 }
@@ -1039,7 +1043,7 @@ void Feature::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ( ruleset.r_vertexFeaturesExpression | ruleset.r_edgeFeaturesExpression | ruleset.r_faceFeaturesExpression | ruleset.r_solidFeaturesExpression ) >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(*qi::_1)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
       
     ))
   );
@@ -1178,21 +1182,25 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
 
 const Feature::RefValuesList& Feature::getDatumScalars() const
 {
+  checkForBuildDuringAccess();
   return refvalues_;
 }
 
 const Feature::RefPointsList& Feature::getDatumPoints() const
 {
+  checkForBuildDuringAccess();
   return refpoints_;
 }
 
 const Feature::RefVectorsList& Feature::getDatumVectors() const
 {
+  checkForBuildDuringAccess();
   return refvectors_;
 }
 
 double Feature::getDatumScalar(const std::string& name) const
 {
+  checkForBuildDuringAccess();
   RefValuesList::const_iterator i = refvalues_.find(name);
   if (i!=refvalues_.end())
   {
@@ -1207,6 +1215,7 @@ double Feature::getDatumScalar(const std::string& name) const
 
 arma::mat Feature::getDatumPoint(const std::string& name) const
 {
+  checkForBuildDuringAccess();
   RefPointsList::const_iterator i = refpoints_.find(name);
   if (i!=refpoints_.end())
   {
@@ -1221,6 +1230,7 @@ arma::mat Feature::getDatumPoint(const std::string& name) const
 
 arma::mat Feature::getDatumVector(const std::string& name) const
 {
+  checkForBuildDuringAccess();
   RefVectorsList::const_iterator i = refvectors_.find(name);
   if (i!=refvectors_.end())
   {
@@ -1235,6 +1245,7 @@ arma::mat Feature::getDatumVector(const std::string& name) const
 
 void Feature::nameFeatures()
 {
+  // Don't call "shape()" here!
   fmap_.Clear();
   emap_.Clear(); 
   vmap_.Clear(); 
@@ -1244,7 +1255,7 @@ void Feature::nameFeatures()
   
   // Solids
   TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
-  for(exp0.Init(shape(), TopAbs_SOLID); exp0.More(); exp0.Next()) {
+  for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next()) {
       TopoDS_Solid solid = TopoDS::Solid(exp0.Current());
       if(somap_.FindIndex(solid) < 1) {
 	  somap_.Add(solid);
@@ -1321,7 +1332,7 @@ void Feature::nameFeatures()
   }
 
   // Free Faces
-  for(exp2.Init(shape(), TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
+  for(exp2.Init(shape_, TopAbs_FACE, TopAbs_SHELL); exp2.More(); exp2.Next()) {
       TopoDS_Face face = TopoDS::Face(exp2.Current());
       if(fmap_.FindIndex(face) < 1) {
 	  fmap_.Add(face);
@@ -1349,7 +1360,7 @@ void Feature::nameFeatures()
   }
 
   // Free Wires
-  for(exp3.Init(shape(), TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
+  for(exp3.Init(shape_, TopAbs_WIRE, TopAbs_FACE); exp3.More(); exp3.Next()) {
       TopoDS_Wire wire = TopoDS::Wire(exp3.Current());
       if(wmap_.FindIndex(wire) < 1) {
 	  wmap_.Add(wire);
@@ -1370,7 +1381,7 @@ void Feature::nameFeatures()
   }
 
   // Free Edges
-  for(exp4.Init(shape(), TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
+  for(exp4.Init(shape_, TopAbs_EDGE, TopAbs_WIRE); exp4.More(); exp4.Next()) {
       TopoDS_Edge edge = TopoDS::Edge(exp4.Current());
       if(emap_.FindIndex(edge) < 1) {
 	  emap_.Add(edge);
@@ -1384,7 +1395,7 @@ void Feature::nameFeatures()
   }
 
   // Free Vertices
-  for(exp5.Init(shape(), TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
+  for(exp5.Init(shape_, TopAbs_VERTEX, TopAbs_EDGE); exp5.More(); exp5.Next()) {
       TopoDS_Vertex vertex = TopoDS::Vertex(exp5.Current());
       if(vmap_.FindIndex(vertex) < 1)
 	  vmap_.Add(vertex);
@@ -1507,9 +1518,10 @@ void Feature::read(std::istream& f)
     
     BRep_Builder b;
     std::istringstream bufs(buf);
-    BRepTools::Read(shape_, bufs, b);
+    TopoDS_Shape sh;
+    BRepTools::Read(sh, bufs, b);
+    setShape(sh);
   }
-  nameFeatures();
 
 //   f<<providedSubshapes_.size()<<endl;
 //   BOOST_FOREACH(const Feature::Map::value_type& i, providedSubshapes_)

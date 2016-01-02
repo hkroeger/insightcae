@@ -31,20 +31,24 @@ namespace insight {
 namespace cad {
 
 defineType(Sweep);
-addToFactoryTable(SolidModel, Sweep, NoParameters);
+addToFactoryTable(Feature, Sweep, NoParameters);
 
-Sweep::Sweep(const NoParameters& nop): SolidModel(nop)
+Sweep::Sweep(const NoParameters& nop): Feature(nop)
 {}
 
 
-Sweep::Sweep(const std::vector<SolidModelPtr>& secs)
+Sweep::Sweep(const std::vector<FeaturePtr>& secs)
+: secs_(secs)
+{}
+
+void Sweep::build()
 {
-  if (secs.size()<2)
+  if (secs_.size()<2)
     throw insight::Exception("Insufficient number of sections given!");
   
   bool create_solid=false;
   {
-    TopoDS_Shape cs0=*secs[0];
+    TopoDS_Shape cs0=*secs_[0];
     if (cs0.ShapeType()==TopAbs_FACE)
       create_solid=true;
     else if (cs0.ShapeType()==TopAbs_WIRE)
@@ -55,7 +59,7 @@ Sweep::Sweep(const std::vector<SolidModelPtr>& secs)
   
   BRepOffsetAPI_ThruSections sb(create_solid);
  
-  BOOST_FOREACH(const SolidModelPtr& skp, secs)
+  BOOST_FOREACH(const FeaturePtr& skp, secs_)
   {
     TopoDS_Wire cursec;
     TopoDS_Shape cs=*skp;
@@ -89,7 +93,7 @@ void Sweep::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Sweep>(qi::_1)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Sweep>(qi::_1)) ]
       
     ))
   );

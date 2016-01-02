@@ -20,20 +20,21 @@
 #ifndef INSIGHT_CAD_FILLET_H
 #define INSIGHT_CAD_FILLET_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Fillet
-: public SolidModel
+: public Feature
 {
-  TopoDS_Shape makeFillets(const SolidModel& m1, const FeatureSet& edges, double r);
+  FeatureSetPtr edges_;
+  ScalarPtr r_;
   
 public:
   declareType("Fillet");
   Fillet(const NoParameters& nop = NoParameters());
-  Fillet(const SolidModel& m1, const FeatureSet& edges, double r);
+  Fillet(FeatureSetPtr edges, ScalarPtr r);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

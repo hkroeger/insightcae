@@ -20,19 +20,21 @@
 #ifndef INSIGHT_CAD_MIRROR_H
 #define INSIGHT_CAD_MIRROR_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Mirror
-: public SolidModel
+: public Feature
 {
+  FeaturePtr m1_;
+  DatumPtr pl_;
   
 public:
   declareType("Mirror");
   Mirror(const NoParameters& nop = NoParameters());
-  Mirror(const SolidModel& m1, const Datum& pl);
+  Mirror(FeaturePtr m1, DatumPtr pl);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

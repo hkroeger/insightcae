@@ -20,18 +20,22 @@
 #ifndef INSIGHT_CAD_CUTAWAY_H
 #define INSIGHT_CAD_CUTAWAY_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Cutaway
-: public SolidModel
+: public Feature
 {
+  FeaturePtr model_;
+  VectorPtr p0_;
+  VectorPtr n_;
+  
 public:
   declareType("Cutaway");
   Cutaway(const NoParameters& nop = NoParameters());
-  Cutaway(const SolidModel& model, const arma::mat& p0, const arma::mat& n);
+  Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

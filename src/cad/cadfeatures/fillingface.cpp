@@ -32,115 +32,101 @@ namespace cad {
 
 
 defineType(FillingFace);
-addToFactoryTable(SolidModel, FillingFace, NoParameters);
+addToFactoryTable(Feature, FillingFace, NoParameters);
 
 
 FillingFace::FillingFace(const NoParameters&)
 {}
 
-FillingFace::FillingFace(const SolidModel& e1, const SolidModel& e2)
-{  
-  TopoDS_Edge ee1, ee2;
-  bool ok=true;
-  if (e1.isSingleEdge())
-  {
-    ee1=e1.asSingleEdge();
-  }
-  else ok=false;
-  if (e2.isSingleEdge())
-  {
-    ee2=e2.asSingleEdge();
-  }
-  else ok=false;
+FillingFace::FillingFace(FeaturePtr e1, FeaturePtr e2)
+: e1_(e1), e2_(e2)
+{}
 
-  if (!ok)
-    throw insight::Exception("Invalid edge given!");
+FillingFace::FillingFace(FeatureSetPtr es1, FeatureSetPtr es2)
+: es1_(es1), es2_(es2)
+{}
 
-  TopoDS_Face f;
-  try
-  {
-    f=BRepFill::Face(ee1, ee2);
-  }
-  catch (...)
-  {
-    throw insight::Exception("Failed to generate face!");
-  }
-  
-  ShapeFix_Face FixShape;
-  FixShape.Init(f);
-  FixShape.Perform();
-  
-  setShape(FixShape.Face());
-}
-
-FillingFace::FillingFace(const FeatureSet& e1, const FeatureSet& e2)
+void FillingFace::build()
 {
-  /*
-  TopoDS_Edge ee1, ee2;
-  {
-    TopTools_ListOfShape edgs;
-    BOOST_FOREACH(const FeatureID& i, e1)
+  if (e1_ && e2_)
+  {  
+    TopoDS_Edge ee1, ee2;
+    bool ok=true;
+    if (e1_->isSingleEdge())
     {
-      edgs.Append( e1.model().edge(*e1.begin()) );
+      ee1=e1_->asSingleEdge();
     }
-    BRepBuilderAPI_MakeWire w;
-    w.Add(edgs);
-    Handle_Geom_Curve crv(new BRepAdaptor_CompCurve(w.Wire()));
-    ee1=BRepBuilderAPI_MakeEdge(crv);
-  }
+    else ok=false;
+    if (e2_->isSingleEdge())
+    {
+      ee2=e2_->asSingleEdge();
+    }
+    else ok=false;
 
-  {
-    TopTools_ListOfShape edgs;
-    BOOST_FOREACH(const FeatureID& i, e1)
+    if (!ok)
+      throw insight::Exception("Invalid edge given!");
+
+    TopoDS_Face f;
+    try
     {
-      edgs.Append( e2.model().edge(*e2.begin()) );
+      f=BRepFill::Face(ee1, ee2);
     }
-    BRepBuilderAPI_MakeWire w;
-    w.Add(edgs);
-    Handle_Geom_Curve crv(new BRepAdaptor_CompCurve(w.Wire()));
-    ee2=BRepBuilderAPI_MakeEdge(crv);
+    catch (...)
+    {
+      throw insight::Exception("Failed to generate face!");
+    }
+    
+    ShapeFix_Face FixShape;
+    FixShape.Init(f);
+    FixShape.Perform();
+    
+    setShape(FixShape.Face());
   }
-  */
-  
-  TopoDS_Edge ee1, ee2;
-  if (e1.size()!=1)
+  else if (es1_ && es2_)
   {
-    throw insight::Exception("first feature set has to contain only 1 edge!");
+    TopoDS_Edge ee1, ee2;
+    if (es1_->size()!=1)
+    {
+      throw insight::Exception("first feature set has to contain only 1 edge!");
+    }
+    else
+    {
+      ee1=es1_->model()->edge(*es1_->data().begin());
+    }
+    
+    if (es2_->size()!=1)
+    {
+      throw insight::Exception("second feature set has to contain only 1 edge!");
+    }
+    else
+    {
+      ee2=es2_->model()->edge(*es2_->data().begin());
+    }
+
+    TopoDS_Face f;
+    try
+    {
+      f=BRepFill::Face(ee1, ee2);
+    }
+    catch (...)
+    {
+      throw insight::Exception("Failed to generate face!");
+    }
+    
+    ShapeFix_Face FixShape;
+    FixShape.Init(f);
+    FixShape.Perform();
+    
+    setShape(FixShape.Face());
   }
   else
-  {
-    ee1=e1.model().edge(*e1.begin());
-  }
-  
-  if (e2.size()!=1)
-  {
-    throw insight::Exception("second feature set has to contain only 1 edge!");
-  }
-  else
-  {
-    ee2=e2.model().edge(*e2.begin());
-  }
-
-  TopoDS_Face f;
-  try
-  {
-    f=BRepFill::Face(ee1, ee2);
-  }
-  catch (...)
-  {
-    throw insight::Exception("Failed to generate face!");
-  }
-  
-  ShapeFix_Face FixShape;
-  FixShape.Init(f);
-  FixShape.Perform();
-  
-  setShape(FixShape.Face());
+    throw insight::Exception("Improper specification of edges for FillingFace!");
 }
+
 
 FillingFace::operator const TopoDS_Face& () const
 {
-  return TopoDS::Face(shape_);
+  return TopoDS::Face(shape());
 }
 
 
@@ -152,10 +138,10 @@ void FillingFace::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<FillingFace>(*qi::_1, *qi::_2)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<FillingFace>(qi::_1, qi::_2)) ]
     |
     ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
-	[ qi::_val = phx::construct<SolidModelPtr>(phx::new_<FillingFace>(*qi::_1, *qi::_2)) ]
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<FillingFace>(qi::_1, qi::_2)) ]
       
     ))
   );

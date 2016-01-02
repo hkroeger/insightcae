@@ -32,16 +32,27 @@ namespace cad {
 
 
 defineType(Thicken);
-addToFactoryTable(SolidModel, Thicken, NoParameters);
+addToFactoryTable(Feature, Thicken, NoParameters);
 
-Thicken::Thicken(const NoParameters& nop): SolidModel(nop)
+Thicken::Thicken(const NoParameters& nop): Feature(nop)
 {}
 
 
-Thicken::Thicken(const SolidModel& shell, double thickness, double tol)
+Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
+: shell_(shell), thickness_(thickness), tol_(tol)
+{}
+
+void Thicken::build()
 {
 
-  BRepOffsetAPI_MakeOffsetShape maker(shell, thickness, 0.01,BRepOffset_Skin,Standard_False,Standard_False,GeomAbs_Arc);
+  BRepOffsetAPI_MakeOffsetShape maker
+  (
+    *shell_, thickness_->value(), 
+    0.01, BRepOffset_Skin,
+    Standard_False,
+    Standard_False,
+    GeomAbs_Arc
+  );
   
   setShape(maker.Shape());
 }
@@ -54,7 +65,7 @@ void Thicken::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Thicken>(*qi::_1, qi::_2)) ]
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Thicken>(qi::_1, qi::_2)) ]
       
     ))
   );

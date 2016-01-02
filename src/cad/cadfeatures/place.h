@@ -20,21 +20,26 @@
 #ifndef INSIGHT_CAD_PLACE_H
 #define INSIGHT_CAD_PLACE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Place
-: public SolidModel
+: public Feature
 {
-  void makePlacement(const SolidModel& m, const gp_Trsf& tr);
+  FeaturePtr m_;
+  VectorPtr p0_;
+  VectorPtr ex_;
+  VectorPtr ez_;
+  
+  boost::shared_ptr<gp_Trsf> trsf_;
 
 public:
   declareType("Place");
   Place(const NoParameters& nop = NoParameters());
-  Place(const SolidModel& m, const gp_Ax2& cs);
-  Place(const SolidModel& m, const arma::mat& p0, const arma::mat& ex, const arma::mat& ez);
+  Place(FeaturePtr m, const gp_Ax2& cs);
+  Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

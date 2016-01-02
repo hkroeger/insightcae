@@ -20,19 +20,22 @@
 #ifndef INSIGHT_CAD_STITCHEDSHELL_H
 #define INSIGHT_CAD_STITCHEDSHELL_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 
 class StitchedShell
-: public SolidModel
+: public Feature
 {
+  FeatureSetPtr faces_;
+  ScalarPtr tol_;
+  
 public:
   declareType("StitchedShell");
   StitchedShell(const NoParameters& nop = NoParameters());
-  StitchedShell(const FeatureSet& faces, double tol=1e-3);
+  StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

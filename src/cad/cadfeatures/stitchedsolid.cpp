@@ -34,21 +34,25 @@ namespace cad {
 
 
 defineType(StitchedSolid);
-addToFactoryTable(SolidModel, StitchedSolid, NoParameters);
+addToFactoryTable(Feature, StitchedSolid, NoParameters);
 
 StitchedSolid::StitchedSolid(const NoParameters&)
 {}
 
 
-StitchedSolid::StitchedSolid(const std::vector< SolidModelPtr >& faces, double tol)
+StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
+: faces_(faces), tol_(tol)
+{}
+
+void StitchedSolid::build()
 {
-  BRepBuilderAPI_Sewing sew(tol);
+  BRepBuilderAPI_Sewing sew(tol_->value());
   
 //   TopoDS_Compound aRes;
 //   BRep_Builder aBuilder;
 //   aBuilder.MakeCompound(aRes);
 
-  BOOST_FOREACH(const SolidModelPtr& m, faces)
+  BOOST_FOREACH(const FeaturePtr& m, faces_)
   {
     sew.Add(*m);
 //     aBuilder.Add(aRes, bladeFace_[s]);
@@ -81,8 +85,9 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
     "StitchedSolid",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > (ruleset.r_solidmodel_expression % ',') > ( (',' > qi::double_) | qi::attr(1e-3) ) > ')' )
-      [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
+    ( '(' > (ruleset.r_solidmodel_expression % ',') 
+	  > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) > ')' )
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
       
     ))
   );

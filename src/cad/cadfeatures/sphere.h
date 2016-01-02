@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SPHERE_H
 #define INSIGHT_CAD_SPHERE_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
@@ -29,10 +29,13 @@ namespace cad {
 class Sphere
 : public SingleVolumeFeature
 {
+  VectorPtr p_;
+  ScalarPtr D_;
+  
 public:
   declareType("Sphere");
   Sphere(const NoParameters& nop = NoParameters());
-  Sphere(const arma::mat& p, double D);
+  Sphere(VectorPtr p, ScalarPtr D);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

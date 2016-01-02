@@ -32,13 +32,17 @@ namespace cad {
 
 
 defineType(Ring);
-addToFactoryTable(SolidModel, Ring, NoParameters);
+addToFactoryTable(Feature, Ring, NoParameters);
 
 Ring::Ring(const NoParameters&)
 {}
 
 
-Ring::Ring(const arma::mat& p1, const arma::mat& p2, double Da, double Di)
+Ring::Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
+: p1_(p1), p2_(p2), Da_(Da), Di_(Di)
+{}
+
+void Ring::build()
 {
   setShape
   (
@@ -49,22 +53,22 @@ Ring::Ring(const arma::mat& p1, const arma::mat& p2, double Da, double Di)
       (
 	gp_Ax2
 	(
-	  gp_Pnt(p1(0),p1(1),p1(2)), 
-	  gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
+	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
 	),
-	0.5*Da, 
-	norm(p2-p1, 2)
+	0.5*Da_->value(), 
+	norm(p2_->value()-p1_->value(), 2)
       ).Shape(),
      
       BRepPrimAPI_MakeCylinder
       (
 	gp_Ax2
 	(
-	  gp_Pnt(p1(0),p1(1),p1(2)), 
-	  gp_Dir(p2(0)-p1(0),p2(1)-p1(1),p2(2)-p1(2))
+	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
+	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
 	),
-	0.5*Di, 
-	norm(p2-p1, 2)
+	0.5*Di_->value(), 
+	norm(p2_->value()-p1_->value(), 2)
       ).Shape()
       
     ).Shape()   
@@ -79,7 +83,7 @@ void Ring::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	  [ qi::_val = phx::construct<SolidModelPtr>(phx::new_<Ring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Ring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

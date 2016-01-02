@@ -31,6 +31,7 @@ namespace cad
 class ASTBase
 {
   bool valid_;
+  mutable bool building_;
   
 public:
   ASTBase();
@@ -44,6 +45,11 @@ public:
   inline bool valid() const 
   { 
     return valid_; 
+  }
+
+  inline bool building() const 
+  { 
+    return building_; 
   }
 
   void checkForBuildDuringAccess() const;

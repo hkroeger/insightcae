@@ -20,18 +20,20 @@
 #ifndef INSIGHT_CAD_SWEEP_H
 #define INSIGHT_CAD_SWEEP_H
 
-#include "solidmodel.h"
+#include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Sweep
-: public SolidModel
+: public Feature
 {
+  std::vector<FeaturePtr> secs_;
+  
 public:
   declareType("Sweep");
   Sweep(const NoParameters& nop = NoParameters());
-  Sweep(const std::vector<SolidModelPtr>& secs);
+  Sweep(const std::vector<FeaturePtr>& secs);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

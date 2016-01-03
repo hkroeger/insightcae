@@ -89,57 +89,18 @@ public:
   mapkey_parser::mapkey_parser<PostprocActionPtr> 	postprocActionSymbols() const;
 
     
-  inline void addScalar(const std::string& name, ScalarPtr value)
-  {
-    scalars_[name]=value;
-  }
-  inline void addScalarIfNotPresent(const std::string& name, ScalarPtr value)
-  {
-    if (scalars_.find(name)==scalars_.end())
-      scalars_[name]=value;
-  }
-  inline void addVector(const std::string& name, VectorPtr value)
-  {
-    vectors_[name]=value;
-  }
-  inline void addVectorIfNotPresent(const std::string& name, VectorPtr value)
-  {
-    if (vectors_.find(name)==vectors_.end())
-      vectors_[name]=value;
-  }
-  inline void addDatum(const std::string& name, DatumPtr value)
-  {
-    datums_[name]=value;
-  }
-  inline void addModelstep(const std::string& name, FeaturePtr value)
-  {
-    modelsteps_[name]=value;
-  }
-  inline void addVertexFeature(const std::string& name, FeatureSetPtr value)
-  {
-    vertexFeatures_[name]=value;
-  }
-  inline void addEdgeFeature(const std::string& name, FeatureSetPtr value)
-  {
-    edgeFeatures_[name]=value;
-  }
-  inline void addFaceFeature(const std::string& name, FeatureSetPtr value)
-  {
-    faceFeatures_[name]=value;
-  }
-  inline void addSolidFeature(const std::string& name, FeatureSetPtr value)
-  {
-    solidFeatures_[name]=value;
-  }
-  inline void addModel(const std::string& name, ModelPtr value)
-  {
-    models_[name]=value;
-  }
-  inline void addPostprocAction(const std::string& name, PostprocActionPtr value)
-  {
-    postprocActions_[name]=value;
-  }
-  
+  void addScalar(const std::string& name, ScalarPtr value);
+  void addScalarIfNotPresent(const std::string& name, ScalarPtr value);
+  void addVector(const std::string& name, VectorPtr value);
+  void addVectorIfNotPresent(const std::string& name, VectorPtr value);
+  void addDatum(const std::string& name, DatumPtr value);
+  void addModelstep(const std::string& name, FeaturePtr value);
+  void addVertexFeature(const std::string& name, FeatureSetPtr value);
+  void addEdgeFeature(const std::string& name, FeatureSetPtr value);
+  void addFaceFeature(const std::string& name, FeatureSetPtr value);
+  void addSolidFeature(const std::string& name, FeatureSetPtr value);
+  void addModel(const std::string& name, ModelPtr value);
+  void addPostprocAction(const std::string& name, PostprocActionPtr value);
   std::string addPostprocActionUnnamed(PostprocActionPtr value);
   
   inline ScalarPtr lookupScalar(const std::string& name) const

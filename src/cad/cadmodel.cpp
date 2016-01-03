@@ -95,6 +95,97 @@ void Model::build()
 }
 
 
+void Model::addScalar(const std::string& name, ScalarPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding scalar variable "<<name<<std::endl;
+#endif
+  scalars_[name]=value;
+}
+
+void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
+{
+  if (scalars_.find(name)==scalars_.end())
+    addScalar(name, value);
+}
+
+void Model::addVector(const std::string& name, VectorPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding vector variable "<<name<<std::endl;
+#endif
+  vectors_[name]=value;
+}
+
+void Model::addVectorIfNotPresent(const std::string& name, VectorPtr value)
+{
+  if (vectors_.find(name)==vectors_.end())
+    addVector(name, value);
+}
+
+void Model::addDatum(const std::string& name, DatumPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding datum "<<name<<std::endl;
+#endif
+  datums_[name]=value;
+}
+
+void Model::addModelstep(const std::string& name, FeaturePtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding model step "<<name<<std::endl;
+#endif
+  modelsteps_[name]=value;
+}
+
+void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding vertex feature set "<<name<<std::endl;
+#endif
+  vertexFeatures_[name]=value;
+}
+
+void Model::addEdgeFeature(const std::string& name, FeatureSetPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding edge feature set "<<name<<std::endl;
+#endif
+  edgeFeatures_[name]=value;
+}
+
+void Model::addFaceFeature(const std::string& name, FeatureSetPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding face feature set "<<name<<std::endl;
+#endif
+  faceFeatures_[name]=value;
+}
+
+void Model::addSolidFeature(const std::string& name, FeatureSetPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding solid feature set "<<name<<std::endl;
+#endif
+  solidFeatures_[name]=value;
+}
+
+void Model::addModel(const std::string& name, ModelPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding model "<<name<<std::endl;
+#endif
+  models_[name]=value;
+}
+
+void Model::addPostprocAction(const std::string& name, PostprocActionPtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding postproc action "<<name<<std::endl;
+#endif
+  postprocActions_[name]=value;
+}
 
 std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
 {

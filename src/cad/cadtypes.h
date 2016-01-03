@@ -21,6 +21,8 @@
 #ifndef INSIGHT_CAD_CADTYPES_H
 #define INSIGHT_CAD_CADTYPES_H
 
+#define INSIGHT_CAD_DEBUG 1
+
 #include <set>
 #include <vector>
 

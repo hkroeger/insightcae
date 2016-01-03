@@ -42,6 +42,7 @@ public:
   typedef std::map<std::string, DatumPtr> 	DatumTable;
   typedef std::map<std::string, FeaturePtr> 	ModelstepTable;
   typedef std::map<std::string, ModelPtr> 	ModelTable;
+  typedef std::set<std::string> 	ComponentSet;
 
   typedef std::map<std::string, FeatureSetPtr> 	VertexFeatureTable;
   typedef std::map<std::string, FeatureSetPtr> 	EdgeFeatureTable;
@@ -49,20 +50,18 @@ public:
   typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTable;
   typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTable;
   
-  typedef std::set<std::string> componentTable;
-  
 protected:
   ScalarTable 		scalars_;
   VectorTable 		vectors_;
   DatumTable 		datums_;
   ModelstepTable	modelsteps_;
+  ComponentSet		components_;
   VertexFeatureTable	vertexFeatures_;
   EdgeFeatureTable	edgeFeatures_;
   FaceFeatureTable	faceFeatures_;
   SolidFeatureTable	solidFeatures_;
   ModelTable		models_;
   PostprocActionTable	postprocActions_;
-  componentTable	components_;
   
   std::string modelname_;
   
@@ -95,6 +94,8 @@ public:
   void addVectorIfNotPresent(const std::string& name, VectorPtr value);
   void addDatum(const std::string& name, DatumPtr value);
   void addModelstep(const std::string& name, FeaturePtr value);
+  void addComponent(const std::string& name, FeaturePtr value);
+  
   void addVertexFeature(const std::string& name, FeatureSetPtr value);
   void addEdgeFeature(const std::string& name, FeatureSetPtr value);
   void addFaceFeature(const std::string& name, FeatureSetPtr value);
@@ -178,6 +179,7 @@ public:
   const VectorTable& 		vectors() const 	{ return vectors_; }
   const DatumTable& 		datums() const		{ return datums_; }
   const ModelstepTable& 	modelsteps() const 	{ return modelsteps_; }  
+  const ComponentSet& 		components() const 	{ return components_; }  
   const VertexFeatureTable& 	vertexFeatures() const 	{ return vertexFeatures_; }  
   const EdgeFeatureTable& 	edgeFeatures() const 	{ return edgeFeatures_; }  
   const FaceFeatureTable& 	faceFeatures() const 	{ return faceFeatures_; }  

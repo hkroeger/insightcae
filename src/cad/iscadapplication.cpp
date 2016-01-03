@@ -182,6 +182,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
  	);
   
   editor_=new QTextEdit(spl);
+  editor_->setFontFamily("Monospace");
   spl->addWidget(editor_);
   
   QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
@@ -324,35 +325,35 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
   editor_->setPlainText(contents_raw.c_str());
 }
 
-/**
- * Needed since QMainWindows copy constructor is not available
- */
-struct Transferrer
-{
-  ISCADMainWindow& mw_;
-  
-  Transferrer(ISCADMainWindow& mw)
-  : mw_(mw)
-  {
-  }
-  
-  void operator()(std::string sn, insight::cad::FeaturePtr sm)
-  {
-    cout<<sn<<" : "<<sm.get()<<endl;
-    mw_.addModelStep(sn, sm);
-  }
-
-  void operator()(std::string sn, insight::cad::parser::scalar sv)
-  {
-    mw_.addVariable(sn, sv);
-  }
-
-  void operator()(std::string sn, insight::cad::parser::vector vv)
-  {
-    mw_.addVariable(sn, vv);
-  }
-};
-
+// /**
+//  * Needed since QMainWindows copy constructor is not available
+//  */
+// struct Transferrer
+// {
+//   ISCADMainWindow& mw_;
+//   
+//   Transferrer(ISCADMainWindow& mw)
+//   : mw_(mw)
+//   {
+//   }
+//   
+//   void operator()(std::string sn, insight::cad::FeaturePtr sm)
+//   {
+//     cout<<sn<<" : "<<sm.get()<<endl;
+//     mw_.addModelStep(sn, sm);
+//   }
+// 
+//   void operator()(std::string sn, insight::cad::parser::scalar sv)
+//   {
+//     mw_.addVariable(sn, sv);
+//   }
+// 
+//   void operator()(std::string sn, insight::cad::parser::vector vv)
+//   {
+//     mw_.addVariable(sn, vv);
+//   }
+// };
+// 
 
 ViewState::ViewState()
 : shading(1),
@@ -898,11 +899,14 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
-void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm)
+void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible)
 { 
   ViewState vd;
   
-  if (sm->isleaf()) vd.visible=true; else vd.visible=false;
+  if (visible) 
+    vd.visible=true; 
+  else 
+    vd.visible=false;
   
   if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end())
   {
@@ -1055,7 +1059,12 @@ void ISCADMainWindow::rebuildModel()
     context_->getContext()->EraseAll();
 //     m->modelstepSymbols.for_each(Transferrer(*this));
     BOOST_FOREACH(const Model::ModelstepTable::value_type& v, m->modelsteps())
-    { addModelStep(v.first, v.second); }
+    { 
+      bool inivis=false;
+      if (m->components().find(v.first)!=m->components().end())
+	inivis=true;
+      addModelStep(v.first, v.second, inivis); 
+    }
     BOOST_FOREACH(const Model::DatumTable::value_type& v, m->datums())
     { addDatum(v.first, v.second); }
     BOOST_FOREACH(const Model::PostprocActionTable::value_type& v, m->postprocActions())

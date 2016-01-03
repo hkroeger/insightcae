@@ -45,8 +45,8 @@ Compound::Compound(const NoParameters& nop)
 
 Compound::Compound(const CompoundFeatureList& m1)
 {
-  for (size_t i=1; i<=m1.size(); i++)
-    components_[str( format("component%d")%(i++) )] = m1[i-1];
+  for (size_t i=0; i<m1.size(); i++)
+    components_[str( format("component%d") % (i+1) )] = m1[i];
 }
 
 Compound::Compound(const CompoundFeatureMap& m1)

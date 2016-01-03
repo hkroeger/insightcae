@@ -251,7 +251,7 @@ public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
   
   // insert model step
-  void addModelStep(std::string sn, insight::cad::FeaturePtr sm);
+  void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible);
   void addDatum(std::string sn, insight::cad::DatumPtr dm);
   void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em);
   void addVariable(std::string sn, insight::cad::parser::scalar sv);

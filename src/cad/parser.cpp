@@ -266,7 +266,7 @@ ISCADParser::ISCADParser(Model* model)
       ;
     
     r_modelstep  =  ( r_identifier >> ':' >> r_solidmodel_expression > ';' ) 
-      [ phx::bind(&Model::addModelstep, model_, qi::_1, qi::_2) ]
+      [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2) ]
 	;
     
     
@@ -497,9 +497,20 @@ ISCADParser::ISCADParser(Model* model)
     r_vector_term =
     (
       r_vector_primary [_val=qi::_1] >> *(
-	( '*' >> r_scalar_term [ _val=phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_val)) ] )
-      | ( '/' >> r_scalar_term [ _val=phx::construct<VectorPtr>(phx::new_<ScalarDividedVector>(qi::_val, qi::_1)) ] )
-      | ( '^' >> r_vector_primary [ _val=phx::construct<VectorPtr>(phx::new_<CrossMultipliedVector>(qi::_val, qi::_1)) ] )
+	( '*' >> r_scalar_term 
+	 [ _val=phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_val)) ] )
+      | ( '/' >> r_scalar_term 
+         [ _val=phx::construct<VectorPtr>(phx::new_<ScalarDividedVector>(qi::_val, qi::_1)) ] )
+      | ( '^' >> r_vector_primary 
+         [ _val=phx::construct<VectorPtr>(phx::new_<CrossMultipliedVector>(qi::_val, qi::_1)) ] )
+      | lit(">>") > 
+       (
+	( '(' >> r_datumExpression >> ',' >> r_vectorExpression >> ')' )
+	 [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1, qi::_2)) ] 
+	|
+        r_datumExpression
+	 [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1)) ] 
+       )
       )
     ) | (
       r_scalar_primary >> '*' >> r_vector_term

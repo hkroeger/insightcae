@@ -53,11 +53,23 @@ void ModelFeature::build()
   model_.reset(new Model(modelname_, vars_));
   model_->checkForBuildDuringAccess();
   
+  BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())
+  {
+    std::cout<<"inserting component "<<c<<std::endl;
+//     c.second->checkForBuildDuringAccess();
+    components_[c]=model_->lookupModelstep(c);
+  }
   BOOST_FOREACH(const Model::ModelstepTable::value_type& c, model_->modelsteps())
   {
-    std::cout<<"component "<<c.first<<std::endl;
-//     c.second->checkForBuildDuringAccess();
-    components_[c.first]=c.second;
+    std::string name=c.first;
+    // Compound::build copies the components. Here, the rest is copied.
+    if (components_.find(name)==components_.end())
+    {
+      FeaturePtr p=c.second;
+      
+      copyDatums(*p, name);
+      providedSubshapes_[name]=p;
+    }
   }
   Compound::build();
 }

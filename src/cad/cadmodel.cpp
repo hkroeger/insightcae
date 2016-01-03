@@ -139,6 +139,15 @@ void Model::addModelstep(const std::string& name, FeaturePtr value)
   modelsteps_[name]=value;
 }
 
+void Model::addComponent(const std::string& name, FeaturePtr value)
+{
+#ifdef INSIGHT_CAD_DEBUG
+  std::cout<<"adding component "<<name<<std::endl;
+#endif
+  components_.insert(name);
+  addModelstep(name, value);
+}
+
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
 #ifdef INSIGHT_CAD_DEBUG

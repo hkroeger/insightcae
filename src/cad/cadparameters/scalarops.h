@@ -82,7 +82,7 @@ public:
   virtual double value() const;
 };
 
-#define UNARY_FUNCTION(FUNCTION) \
+#define INSIGHT_CAD_UNARY_FUNCTION(FUNCTION) \
 class Scalar_##FUNCTION\
 : public insight::cad::Scalar\
 {\
@@ -94,15 +94,15 @@ public:\
   { return ::FUNCTION ( p1_->value() ); }\
 };
 
-UNARY_FUNCTION(sqrt);
-UNARY_FUNCTION(sin);
-UNARY_FUNCTION(cos);
-UNARY_FUNCTION(tan);
-UNARY_FUNCTION(asin);
-UNARY_FUNCTION(acos);
-UNARY_FUNCTION(atan);
+INSIGHT_CAD_UNARY_FUNCTION(sqrt);
+INSIGHT_CAD_UNARY_FUNCTION(sin);
+INSIGHT_CAD_UNARY_FUNCTION(cos);
+INSIGHT_CAD_UNARY_FUNCTION(tan);
+INSIGHT_CAD_UNARY_FUNCTION(asin);
+INSIGHT_CAD_UNARY_FUNCTION(acos);
+INSIGHT_CAD_UNARY_FUNCTION(atan);
 
-#define BINARY_FUNCTION(FUNCTION) \
+#define INSIGHT_CAD_BINARY_FUNCTION(FUNCTION) \
 class Scalar_##FUNCTION\
 : public insight::cad::Scalar\
 {\
@@ -114,8 +114,8 @@ public:\
   { return ::FUNCTION ( p1_->value(), p2_->value() ); }\
 };
 
-BINARY_FUNCTION(pow);
-BINARY_FUNCTION(atan2);
+INSIGHT_CAD_BINARY_FUNCTION(pow);
+INSIGHT_CAD_BINARY_FUNCTION(atan2);
 
 }
 }

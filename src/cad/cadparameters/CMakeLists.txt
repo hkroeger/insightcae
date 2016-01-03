@@ -2,6 +2,7 @@ add_sources(insightcad_SOURCES
  constantscalar.cpp
  constantvector.cpp
  lookuptablescalar.cpp
+ projectedpoint.cpp
  scalarfeatureprop.cpp
  vectorfeatureprop.cpp
  scalarops.cpp

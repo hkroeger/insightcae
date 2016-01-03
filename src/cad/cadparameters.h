@@ -31,5 +31,6 @@
 #include "lookuptablescalar.h"
 #include "vectorfeatureprop.h"
 #include "vectorops.h"
+#include "projectedpoint.h"
 
 #endif

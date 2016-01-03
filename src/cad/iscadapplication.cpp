@@ -664,7 +664,10 @@ public:
     smp_=smp;
     if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
     ais_=smp_->createAISRepr();
-    context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+    if (!ais_.IsNull()) 
+    {
+      context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+    }
     updateDisplay();
   }
   
@@ -702,15 +705,18 @@ public:
   {
     state_.visible = (checkState()==Qt::Checked);
     
-    if (state_.visible)
+    if (!ais_.IsNull())
     {
-      context_->getContext()->Display(ais_);
-      context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-      context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
-    }
-    else
-    {
-      context_->getContext()->Erase(ais_);
+      if (state_.visible)
+      {
+	context_->getContext()->Display(ais_);
+	context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+	context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+      }
+      else
+      {
+	context_->getContext()->Erase(ais_);
+      }
     }
   }
   
@@ -946,7 +952,7 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar s
   (
     new QListWidgetItem
     (
-      QString::fromStdString(sn+" = "+lexical_cast<string>(sv))
+      QString::fromStdString(sn+" = "+lexical_cast<string>(sv->value()))
     )
   );
 }

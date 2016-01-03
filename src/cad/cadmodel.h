@@ -67,6 +67,7 @@ protected:
   std::string modelname_;
   
   
+  void defaultVariables();
   void copyVariables(const ModelVariableTable& vars);
   
 public:

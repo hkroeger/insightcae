@@ -88,6 +88,8 @@ void Hydrostatics::build()
 
 AIS_InteractiveObject* Hydrostatics::createAISRepr() const
 {
+  checkForBuildDuringAccess();
+  
   TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(G_),gp_Dir(to_Vec(elat_))), 1));
   Handle_AIS_Shape aisG = new AIS_Shape(cG);
   TopoDS_Edge cB = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(B_),gp_Dir(to_Vec(elat_))), 1));
@@ -125,7 +127,6 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
 
 void Hydrostatics::write(std::ostream& ) const
 {
-
 }
 
 }

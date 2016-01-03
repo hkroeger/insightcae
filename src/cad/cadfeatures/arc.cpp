@@ -47,6 +47,8 @@ Arc::Arc(const NoParameters& nop)
 
 void Arc::build()
 {
+  std::cout<<"build arc: start"<<std::endl;
+  
   Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Vec(*p0tang_), to_Pnt(*p1_));
   setShape(BRepBuilderAPI_MakeEdge(crv));
   
@@ -58,6 +60,8 @@ void Arc::build()
   crv->D1(crv->LastParameter(), p, v);
   refpoints_["p1"]=vec3(p);
   refvectors_["et1"]=vec3(v);
+  
+  std::cout<<"build arc: finished"<<std::endl;
 }
 
 

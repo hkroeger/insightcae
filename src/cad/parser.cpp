@@ -18,8 +18,8 @@
  *
  */
 
-// #undef BOOST_SPIRIT_DEBUG
-#define BOOST_SPIRIT_DEBUG
+#undef BOOST_SPIRIT_DEBUG
+// #define BOOST_SPIRIT_DEBUG
 
 #include "cadfeature.h"
 
@@ -705,15 +705,17 @@ ISCADParser::ISCADParser(Model* model)
         
       | double_ 
 	[ _val = phx::construct<ScalarPtr>(phx::new_<ConstantScalar>(qi::_1)) ]
-//       | ( lit("pow") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::pow, qi::_1, qi::_2) ]
-//       | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sqrt, qi::_1) ]
-//       | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::sin, qi::_1) ]
-//       | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::cos, qi::_1) ]
-//       | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::tan, qi::_1) ]
-//       | ( lit("asin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::asin, qi::_1) ]
-//       | ( lit("acos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::acos, qi::_1) ]
-//       | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan, qi::_1) ]
-//       | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) [ _val = phx::bind(&::atan2, qi::_1, qi::_2) ]
+      | ( lit("sqrt") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
+      | ( lit("sin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]
+      | ( lit("cos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_cos>(qi::_1)) ]
+      | ( lit("tan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_tan>(qi::_1)) ]
+      | ( lit("asin") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_asin>(qi::_1)) ]
+      | ( lit("acos") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_acos>(qi::_1)) ]
+      | ( lit("atan") >> '(' >> r_scalarExpression >> ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan>(qi::_1)) ]
+      | ( lit("pow") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) 
+        [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_pow>(qi::_1, qi::_2)) ]
+      | ( lit("atan2") >> '(' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')' ) 
+        [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan2>(qi::_1, qi::_2)) ]
       | ('(' >> r_scalarExpression >> ')') [ _val = qi::_1 ]
       
       | ( lit("TableLookup") > '(' > r_identifier > ',' 
@@ -809,23 +811,23 @@ ISCADParser::ISCADParser(Model* model)
     }
     
       
-	BOOST_SPIRIT_DEBUG_NODE(r_path);
-	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
-	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
-	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
-	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
-	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
-	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
-// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
-	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
-	BOOST_SPIRIT_DEBUG_NODE(r_model);
-	BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_path);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_assignment);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_postproc);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_viewDef);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_primary);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalar_term);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_scalarExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_expression);
+// // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_modelstep);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_model);
+// 	BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
     
     on_error<fail>(r_model, 
 	    phx::ref(std::cout)
@@ -844,12 +846,14 @@ bool parseISCADModel(std::string::iterator first, std::string::iterator last, Mo
   ISCADParser parser(model);
   skip_grammar skip;
   
+  std::cout<<"Parsing started."<<std::endl;
   bool r = qi::phrase_parse(
       first,
       last,
       parser,
       skip
   );
+  std::cout<<"Parsing finished."<<std::endl;
   
   if (first != last) return false;
   return r;
@@ -860,10 +864,10 @@ bool parseISCADModel(std::string::iterator first, std::string::iterator last, Mo
 using namespace parser;
 
 
-bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m)
+bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc)
 {
   std::ifstream f(fn.c_str());
-  return parseISCADModelStream(f, m);
+  return parseISCADModelStream(f, m, failloc);
 }
 
 bool parseISCADModelStream(std::istream& in, Model* m, int* failloc)
@@ -883,12 +887,14 @@ bool parseISCADModelStream(std::istream& in, Model* m, int* failloc)
   ISCADParser parser(m);
   skip_grammar skip;
   
+  std::cout<<"Parsing started."<<std::endl;
   bool r = qi::phrase_parse(
       first,
       last,
       parser,
       skip
   );
+  std::cout<<"Parsing finished."<<std::endl;
   
   if (first != last) // fail if we did not get a full match
   {

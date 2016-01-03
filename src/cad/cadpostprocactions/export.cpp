@@ -70,6 +70,7 @@ void Export::build()
 
 AIS_InteractiveObject* Export::createAISRepr() const
 {
+  checkForBuildDuringAccess();
   return NULL;
 }
 

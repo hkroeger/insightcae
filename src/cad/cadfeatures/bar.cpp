@@ -140,13 +140,13 @@ void Bar::build()
       {
 	arma::mat cex=rotMatrix(*miterangle0_vert_, ey)*ex;
 	arma::mat cey=rotMatrix(*miterangle0_hor_, ex)*ey;
-	Quad q
+	FeaturePtr q(new Quad
 	(
 	  matconst(p0_->value() -0.5*L*(cex+cey)), 
 	  matconst(L*cex), 
 	  matconst(L*cey)
-	);
-	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(-L*baraxis) );
+	));
+	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(-L*baraxis) );
 	result=BRepAlgoAPI_Cut(result, airspace);
       }
       
@@ -155,13 +155,13 @@ void Bar::build()
       {
 	arma::mat cex=rotMatrix(*miterangle1_vert_, ey)*ex;
 	arma::mat cey=rotMatrix(*miterangle1_hor_, ex)*ey;
-	Quad q
+	FeaturePtr q(new Quad
 	(
 	  matconst(p1_->value() -0.5*L*(cex+cey)), 
 	  matconst(L*cex), 
 	  matconst(L*cey)
-	);
-	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*baraxis) );
+	));
+	TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*baraxis) );
 	result=BRepAlgoAPI_Cut(result, airspace);
       }
       

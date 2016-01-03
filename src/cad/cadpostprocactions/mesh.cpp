@@ -52,6 +52,7 @@ Mesh::Mesh
 
 AIS_InteractiveObject* Mesh::createAISRepr() const
 {
+  checkForBuildDuringAccess();
   return NULL;
 }
 

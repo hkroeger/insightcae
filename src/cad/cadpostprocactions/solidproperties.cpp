@@ -55,6 +55,8 @@ void insight::cad::SolidProperties::write(ostream&) const
 
 AIS_InteractiveObject* insight::cad::SolidProperties::createAISRepr() const
 {
+  checkForBuildDuringAccess();
+  
   TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(cog_),gp_Dir(1,0,0)), 1));
   Handle_AIS_Shape aisG = new AIS_Shape(cG);
 

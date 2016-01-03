@@ -116,7 +116,7 @@ struct ISCADParser
 }
 
 bool parseISCADModelStream(std::istream& in, Model* m, int* failloc=NULL);
-bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m);
+bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc=NULL);
 
 
 }

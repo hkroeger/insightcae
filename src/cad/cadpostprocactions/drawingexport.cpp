@@ -60,6 +60,7 @@ void DrawingExport::build()
   
 AIS_InteractiveObject* DrawingExport::createAISRepr() const
 {
+  checkForBuildDuringAccess();
   return NULL;
 }
 

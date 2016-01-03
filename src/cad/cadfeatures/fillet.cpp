@@ -49,7 +49,7 @@ void Fillet::build()
     fb.Add(r_->value(), m1.edge(f));
   }
   fb.Build();
-  return fb.Shape();
+  setShape(fb.Shape());
 }
   
 Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)

@@ -82,6 +82,41 @@ public:
   virtual double value() const;
 };
 
+#define UNARY_FUNCTION(FUNCTION) \
+class Scalar_##FUNCTION\
+: public insight::cad::Scalar\
+{\
+  ScalarPtr p1_;\
+public:\
+  Scalar_##FUNCTION(ScalarPtr p1)\
+  : p1_(p1) {} \
+  virtual double value() const\
+  { return ::FUNCTION ( p1_->value() ); }\
+};
+
+UNARY_FUNCTION(sqrt);
+UNARY_FUNCTION(sin);
+UNARY_FUNCTION(cos);
+UNARY_FUNCTION(tan);
+UNARY_FUNCTION(asin);
+UNARY_FUNCTION(acos);
+UNARY_FUNCTION(atan);
+
+#define BINARY_FUNCTION(FUNCTION) \
+class Scalar_##FUNCTION\
+: public insight::cad::Scalar\
+{\
+  ScalarPtr p1_, p2_;\
+public:\
+  Scalar_##FUNCTION(ScalarPtr p1, ScalarPtr p2)\
+  : p1_(p1), p2_(p2) {} \
+  virtual double value() const\
+  { return ::FUNCTION ( p1_->value(), p2_->value() ); }\
+};
+
+BINARY_FUNCTION(pow);
+BINARY_FUNCTION(atan2);
+
 }
 }
 

@@ -172,10 +172,11 @@ void Feature::setShapeHash()
   // 4. vertex locations
   
   boost::hash_combine(hash_, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash_, boost::hash<int>()(allVertices().data().size()));
-  boost::hash_combine(hash_, boost::hash<int>()(allFaces().data().size()));
+  boost::hash_combine(hash_, boost::hash<int>()(vmap_.Extent()));
+  boost::hash_combine(hash_, boost::hash<int>()(fmap_.Extent()));
 
-  BOOST_FOREACH(const insight::cad::FeatureID& j, allVertices().data())
+  FeatureSetData vset=allVerticesSet();
+  BOOST_FOREACH(const insight::cad::FeatureID& j, vset)
   {
     boost::hash_combine(hash_, boost::hash<arma::mat>()(vertexLocation(j)));    
   }
@@ -243,6 +244,7 @@ Feature::~Feature()
 
 double Feature::mass() const
 {
+  checkForBuildDuringAccess();
   if (explicitMass_)
   {
     cout<<"Explicit mass = "<<*explicitMass_<<endl;
@@ -310,6 +312,7 @@ void Feature::setCoGExplicitly(const arma::mat& cog)
 
 FeaturePtr Feature::subshape(const std::string& name)
 {
+  checkForBuildDuringAccess();
   SubfeatureMap::iterator i = providedSubshapes_.find(name);
   if (i==providedSubshapes_.end())
   {
@@ -390,6 +393,7 @@ arma::mat Feature::subsolidCoG(FeatureID i) const
 
 arma::mat Feature::modelCoG() const
 {
+  checkForBuildDuringAccess();
   if (explicitCoG_)
   {
     return *explicitCoG_;
@@ -422,6 +426,7 @@ double Feature::modelVolume() const
 
 double Feature::modelSurfaceArea() const
 {
+  checkForBuildDuringAccess();
   TopoDS_Shape sh=shape();
   TopExp_Explorer ex(sh, TopAbs_FACE);
   if (ex.More())
@@ -486,6 +491,8 @@ double Feature::maxDist(const arma::mat& p) const
 
 arma::mat Feature::modelBndBox(double deflection) const
 {
+  checkForBuildDuringAccess();
+  
   if (deflection>0)
   {
       BRepMesh_IncrementalMesh Inc(shape(), deflection);
@@ -523,51 +530,75 @@ arma::mat Feature::faceNormal(FeatureID i) const
   return insight::vec3( vec.X(), vec.Y(), vec.Z() );  
 }
 
-FeatureSet Feature::allVertices() const
+FeatureSetData Feature::allVerticesSet() const
 {
-  FeatureSet f(shared_from_this(), Vertex);
+  checkForBuildDuringAccess();
   FeatureSetData fsd;
   fsd.insert(
     boost::counting_iterator<int>( 1 ), 
     boost::counting_iterator<int>( vmap_.Extent()+1 ) 
   );
-  f.setData(fsd);
+  return fsd;
+}
+
+FeatureSetData Feature::allEdgesSet() const
+{
+  checkForBuildDuringAccess();
+  FeatureSetData fsd;
+  fsd.insert(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( emap_.Extent()+1 ) 
+  );
+  return fsd;
+}
+
+FeatureSetData Feature::allFacesSet() const
+{
+  checkForBuildDuringAccess();
+  FeatureSetData fsd;
+  fsd.insert(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( fmap_.Extent()+1 ) 
+  );
+  return fsd;
+}
+
+FeatureSetData Feature::allSolidsSet() const
+{
+  checkForBuildDuringAccess();
+  FeatureSetData fsd;  
+  fsd.insert(
+    boost::counting_iterator<int>( 1 ), 
+    boost::counting_iterator<int>( somap_.Extent()+1 ) 
+  );
+  return fsd;
+}
+
+FeatureSet Feature::allVertices() const
+{
+  FeatureSet f(shared_from_this(), Vertex);
+  f.setData(allVerticesSet());
   return f;
 }
 
 FeatureSet Feature::allEdges() const
 {
   FeatureSet f(shared_from_this(), Edge);
-  FeatureSetData fsd;
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( emap_.Extent()+1 ) 
-  );
-  f.setData(fsd);
+  f.setData(allEdgesSet());
   return f;
 }
 
 FeatureSet Feature::allFaces() const
 {
   FeatureSet f(shared_from_this(), Edge);
-  FeatureSetData fsd;
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( fmap_.Extent()+1 ) 
-  );
-  f.setData(fsd);
+  f.setData(allFacesSet());
   return f;
 }
 
 FeatureSet Feature::allSolids() const
 {
   FeatureSet f(shared_from_this(), Solid);
-  FeatureSetData fsd;  
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( somap_.Extent()+1 ) 
-  );
-  f.setData(fsd);
+  f.setData(allSolidsSet());
   return f;
 }
 
@@ -586,6 +617,7 @@ FeatureSetData Feature::query_vertices(const string& queryexpr, const FeatureSet
 FeatureSetData Feature::query_vertices_subset(const FeatureSetData& fs, FilterPtr f) const
 {
 //   Filter::Ptr f(filter.clone());
+  checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
   BOOST_FOREACH(int i, fs)
@@ -623,6 +655,8 @@ FeatureSetData Feature::query_edges(const std::string& queryexpr, const FeatureS
 
 FeatureSetData Feature::query_edges_subset(const FeatureSetData& fs, FilterPtr f) const
 {
+  checkForBuildDuringAccess();
+  
   f->initialize(shared_from_this());
   //for (int i=1; i<=emap_.Extent(); i++)
   BOOST_FOREACH(int i, fs)
@@ -660,6 +694,7 @@ FeatureSetData Feature::query_faces(const string& queryexpr, const FeatureSetPar
 FeatureSetData Feature::query_faces_subset(const FeatureSetData& fs, FilterPtr f) const
 {
 //   Filter::Ptr f(filter.clone());
+  checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
   BOOST_FOREACH(int i, fs)
@@ -698,6 +733,7 @@ FeatureSetData Feature::query_solids(const string& queryexpr, const FeatureSetPa
 FeatureSetData Feature::query_solids_subset(const FeatureSetData& fs, FilterPtr f) const
 {
 //   Filter::Ptr f(filter.clone());
+  checkForBuildDuringAccess();
   
   f->initialize(shared_from_this());
   BOOST_FOREACH(int i, fs)

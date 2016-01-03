@@ -156,7 +156,7 @@ void FeatureSet::build()
 	  data_=model_->query_vertices(filterexpr_, refs_);
       }
       else
-	data_=model_->allVertices().data();
+	data_=model_->allVerticesSet();
       break;
     case Edge:
       if (!filterexpr_.empty())
@@ -167,7 +167,7 @@ void FeatureSet::build()
 	  data_=model_->query_edges(filterexpr_, refs_);
       }
       else
-	data_=model_->allEdges().data();
+	data_=model_->allEdgesSet();
       break;
     case Face:
       if (!filterexpr_.empty())
@@ -178,7 +178,7 @@ void FeatureSet::build()
 	  data_=model_->query_faces(filterexpr_, refs_);
       }
       else
-	data_=model_->allFaces().data();
+	data_=model_->allFacesSet();
       break;
     case Solid:
       if (!filterexpr_.empty())
@@ -189,7 +189,7 @@ void FeatureSet::build()
 	  data_=model_->query_solids(filterexpr_, refs_);
       }
       else
-	data_=model_->allSolids().data();
+	data_=model_->allSolidsSet();
       break;
     default:
       throw insight::Exception("Unknown feature type");

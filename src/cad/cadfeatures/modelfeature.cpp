@@ -34,7 +34,14 @@ namespace insight
 {
 namespace cad 
 {
-  
+
+defineType(ModelFeature);
+addToFactoryTable(Feature, ModelFeature, NoParameters);
+
+ModelFeature::ModelFeature(const NoParameters&): Compound()
+{}
+
+
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
 : modelname_(modelname), vars_(vars)
 {}
@@ -42,9 +49,14 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
   
 void ModelFeature::build()
 {
+  std::cout<<"loading model "<<modelname_<<std::endl;
   model_.reset(new Model(modelname_, vars_));
+  model_->checkForBuildDuringAccess();
+  
   BOOST_FOREACH(const Model::ModelstepTable::value_type& c, model_->modelsteps())
   {
+    std::cout<<"component "<<c.first<<std::endl;
+//     c.second->checkForBuildDuringAccess();
     components_[c.first]=c.second;
   }
   Compound::build();

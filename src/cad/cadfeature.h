@@ -223,12 +223,12 @@ public:
   inline void unsetExplicitCoG() { explicitCoG_.reset(); }
   
   inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
-    { return providedDatums_; }
+    { checkForBuildDuringAccess(); return providedDatums_; }
     
   FeaturePtr subshape(const std::string& name);
   
   inline const SubfeatureMap& providedSubshapes() const // caused failure with phx::bind!
-    { return providedSubshapes_; }
+    { checkForBuildDuringAccess(); return providedSubshapes_; }
   
   Feature& operator=(const Feature& o);
   
@@ -237,14 +237,14 @@ public:
   void nameFeatures();
   void extractReferenceFeatures();
   
-  inline const TopoDS_Face& face(FeatureID i) const { return TopoDS::Face(fmap_.FindKey(i)); }
-  inline const TopoDS_Edge& edge(FeatureID i) const { return TopoDS::Edge(emap_.FindKey(i)); }
-  inline const TopoDS_Vertex& vertex(FeatureID i) const { return TopoDS::Vertex(vmap_.FindKey(i)); }
-  inline const TopoDS_Solid& subsolid(FeatureID i) const { return TopoDS::Solid(somap_.FindKey(i)); }
+  inline const TopoDS_Face& face(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Face(fmap_.FindKey(i)); }
+  inline const TopoDS_Edge& edge(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Edge(emap_.FindKey(i)); }
+  inline const TopoDS_Vertex& vertex(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Vertex(vmap_.FindKey(i)); }
+  inline const TopoDS_Solid& subsolid(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Solid(somap_.FindKey(i)); }
 
-  inline FeatureID faceID(const TopoDS_Shape& f) const { return fmap_.FindIndex(f); }
-  inline FeatureID edgeID(const TopoDS_Shape& e) const { return emap_.FindIndex(e); }
-  inline FeatureID vertexID(const TopoDS_Shape& v) const { return vmap_.FindIndex(v); }
+  inline FeatureID faceID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); return fmap_.FindIndex(f); }
+  inline FeatureID edgeID(const TopoDS_Shape& e) const { checkForBuildDuringAccess(); return emap_.FindIndex(e); }
+  inline FeatureID vertexID(const TopoDS_Shape& v) const { checkForBuildDuringAccess(); return vmap_.FindIndex(v); }
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;
@@ -268,6 +268,11 @@ public:
   arma::mat modelBndBox(double deflection=-1) const;
   
   arma::mat faceNormal(FeatureID i) const;
+
+  FeatureSetData allVerticesSet() const;
+  FeatureSetData allEdgesSet() const;
+  FeatureSetData allFacesSet() const;
+  FeatureSetData allSolidsSet() const;
 
   FeatureSet allVertices() const;
   FeatureSet allEdges() const;

@@ -48,7 +48,7 @@ Box::Box
   VectorPtr L3,
   bool centered
 )
-: p0_(p0), L1_(L1), L2_(L2), L3_(L3)
+: p0_(p0), L1_(L1), L2_(L2), L3_(L3), centered_(centered)
 {}
 
 void Box::build()
@@ -81,6 +81,7 @@ void Box::build()
     ).Face(),
     to_Vec(L3_->value())
   ).Shape();
+  
   if (centered_)
   {
     gp_Trsf t;

@@ -46,12 +46,19 @@ Wire::Wire(FeatureSetPtr edges)
 
 void Wire::build()
 {
-  BRepBuilderAPI_MakeWire wb;
+  std::cout<<"create wire: start"<<std::endl;
+  
+  TopTools_ListOfShape ee;
   BOOST_FOREACH(const FeatureID& fi, edges_->data())
   {
-    wb.Add(edges_->model()->edge(fi));
+    std::cout<<"edge #"<<fi<<std::endl;
+    ee.Append(edges_->model()->edge(fi));
   }
+  BRepBuilderAPI_MakeWire wb;
+  wb.Add(ee);
   setShape(wb.Wire());
+  
+  std::cout<<"create wire: finished"<<std::endl;
 }
 
 void Wire::insertrule(parser::ISCADParser& ruleset) const

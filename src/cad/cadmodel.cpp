@@ -31,29 +31,8 @@ namespace insight
 namespace cad
 {
   
-void Model::copyVariables(const ModelVariableTable& vars)
+void Model::defaultVariables()
 {
-  BOOST_FOREACH(const ModelVariableTable::value_type& s, vars)
-  {
-    const std::string& name=boost::fusion::at_c<0>(s);
-//     cout<<"Insert symbol:"<<name<<endl;
-    if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )
-    {
-        addScalar(name, *sv);
-// 	cout<<(*sv)<<endl;
-    }
-    else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
-    {
-        addVector(name, *vv);
-// 	cout<<(*vv)<<endl;
-    }
-  }
-}
-
-
-Model::Model(const ModelVariableTable& vars)
-{
-  
   addScalar( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
   addScalar( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
   addVector( "O", 	VectorPtr(new ConstantVector(vec3(0,0,0))) );
@@ -63,7 +42,30 @@ Model::Model(const ModelVariableTable& vars)
   addDatum ( "XY", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EZ"), lookupVector("EY"))) );
   addDatum ( "XZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EY"), lookupVector("EX"))) );
   addDatum ( "YZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EX"), lookupVector("EY"))) );
+}
   
+void Model::copyVariables(const ModelVariableTable& vars)
+{
+  BOOST_FOREACH(const ModelVariableTable::value_type& s, vars)
+  {
+    const std::string& name=boost::fusion::at_c<0>(s);
+    if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )
+    {
+        addScalar(name, *sv);
+	cout<<"insert scalar "<<name<<" = "<<(*sv)->value()<<endl;
+    }
+    else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
+    {
+        addVector(name, *vv);
+	cout<<"insert vector "<<name<<" = "<<(*vv)->value()<<endl;
+    }
+  }
+}
+
+
+Model::Model(const ModelVariableTable& vars)
+{
+  defaultVariables();  
   copyVariables(vars);
   
   setValid();
@@ -72,6 +74,7 @@ Model::Model(const ModelVariableTable& vars)
 Model::Model(const std::string& modelname, const ModelVariableTable& vars)
 : modelname_(modelname)
 {
+  defaultVariables();  
   copyVariables(vars);
 }
 
@@ -79,9 +82,11 @@ void Model::build()
 {
   std::string name=modelname_+".iscad";
   
-  if (!parseISCADModelFile(parser::sharedModelFilePath(name), this))
+  int failloc=-1;
+  if (!parseISCADModelFile(parser::sharedModelFilePath(name), this, &failloc))
   {
-    throw insight::Exception("Failed to parse model "+name);
+    throw insight::Exception("Failed to parse model "+name+
+	    str(format(". Stopped at %d.")%failloc));
   }
   else
   {

@@ -36,6 +36,8 @@ class ModelFeature
   
   ModelPtr model_;
   
+  void copyModelDatums();
+  
 public:
   declareType("loadmodel");
   

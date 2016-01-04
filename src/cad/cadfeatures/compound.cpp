@@ -67,7 +67,7 @@ void Compound::build()
     
     bb.Add(result, *p);
     p->unsetLeaf();
-    copyDatums(*p, name);
+    copyDatums(*p, name+"_");
     
     providedSubshapes_[c.first]=c.second;
   }

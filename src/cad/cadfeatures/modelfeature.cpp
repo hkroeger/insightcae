@@ -38,6 +38,23 @@ namespace cad
 defineType(ModelFeature);
 addToFactoryTable(Feature, ModelFeature, NoParameters);
 
+void ModelFeature::copyModelDatums()
+{
+  BOOST_FOREACH(const Model::ScalarTable::value_type& v, model_->scalars())
+  {
+    if (refvalues_.find(v.first)!=refvalues_.end())
+      throw insight::Exception("datum value "+v.first+" already present!");
+    refvalues_[v.first]=v.second->value();
+  }
+  BOOST_FOREACH(const Model::VectorTable::value_type& p, model_->vectors())
+  {
+    if (refpoints_.find(p.first)!=refpoints_.end())
+      throw insight::Exception("datum point "+p.first+" already present!");
+    refpoints_[p.first]=p.second->value();
+  }
+}
+
+
 ModelFeature::ModelFeature(const NoParameters&): Compound()
 {}
 
@@ -67,10 +84,13 @@ void ModelFeature::build()
     {
       FeaturePtr p=c.second;
       
-      copyDatums(*p, name);
+      copyDatums(*p, name+"_");
       providedSubshapes_[name]=p;
     }
   }
+  
+  copyModelDatums();
+  
   Compound::build();
 }
 

@@ -42,10 +42,13 @@ Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D)
 : p1_(p1), p2_(p2), D_(D)
 {}
 
+Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
+: p1_(p1), p2_(p2), D_(Da), Di_(Di)
+{}
+
 void Cylinder::build()
 {
-  setShape
-  (
+  TopoDS_Shape cyl=
     BRepPrimAPI_MakeCylinder
     (
       gp_Ax2
@@ -55,8 +58,30 @@ void Cylinder::build()
       ),
       0.5*D_->value(), 
       norm(p2_->value()-p1_->value(), 2)
-    ).Shape()
-  );
+    ).Shape();
+    
+  if (Di_)
+  {
+    cyl=BRepAlgoAPI_Cut
+    (
+      
+      cyl,
+     
+      BRepPrimAPI_MakeCylinder
+      (
+	gp_Ax2
+	(
+	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
+	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
+	),
+	0.5*Di_->value(), 
+	norm(p2_->value()-p1_->value(), 2)
+      ).Shape()
+      
+    );
+  }
+
+  setShape(cyl);
 }
 
 void Cylinder::insertrule(parser::ISCADParser& ruleset) const
@@ -66,8 +91,13 @@ void Cylinder::insertrule(parser::ISCADParser& ruleset) const
     "Cylinder",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3)) ]
+    ( '(' 
+      >> ruleset.r_vectorExpression >> ',' 
+      >> ruleset.r_vectorExpression >> ',' 
+      >> ruleset.r_scalarExpression 
+      >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+      >> ')' ) 
+     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

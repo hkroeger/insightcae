@@ -33,10 +33,13 @@ class Cylinder
   VectorPtr p2_;
   ScalarPtr D_;
   
+  ScalarPtr Di_;
+  
 public:
   declareType("Cylinder");
   Cylinder(const NoParameters& nop = NoParameters());
   Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D);
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -25,6 +25,7 @@
 #include "cadfeature.h"
 #include "datum.h"
 #include "sketch.h"
+#include "transform.h"
 
 #include <base/exception.h>
 #include "boost/foreach.hpp"
@@ -1190,6 +1191,15 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix)
       throw insight::Exception("datum vector "+prefix+p.first+" already present!");
     refvectors_[prefix+p.first]=p.second;
   }
+  BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
+  {
+#ifdef INSIGHT_CAD_DEBUG
+    std::cout<<"adding subshape "<<(prefix+sf.first)<<std::endl;
+#endif
+    if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
+      throw insight::Exception("subshape "+prefix+sf.first+" already present!");
+    providedSubshapes_[prefix+sf.first]=sf.second;
+  }
 }
 
 void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix)
@@ -1212,6 +1222,15 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
     if (refvectors_.find(prefix+p.first)!=refvectors_.end())
       throw insight::Exception("datum vector "+prefix+p.first+" already present!");
     refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
+  }
+  BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
+  {
+#ifdef INSIGHT_CAD_DEBUG
+    std::cout<<"adding subshape (transformed) "<<(prefix+sf.first)<<std::endl;
+#endif
+    if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
+      throw insight::Exception("subshape "+prefix+sf.first+" already present!");
+    providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
   }
 }
 

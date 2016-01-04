@@ -111,7 +111,7 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 }
 
 Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
-: trsf_(new gp_Trsf(trsf))
+: m1_(m1), trsf_(new gp_Trsf(trsf))
 {
 }
 

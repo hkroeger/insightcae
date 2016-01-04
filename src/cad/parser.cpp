@@ -453,6 +453,9 @@ ISCADParser::ISCADParser(Model* model)
       | ( lit("asin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_asin>(qi::_1)) ]
       | ( lit("acos") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_acos>(qi::_1)) ]
       | ( lit("atan") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan>(qi::_1)) ]
+      | ( lit("ceil") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_ceil>(qi::_1)) ]
+      | ( lit("floor") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_floor>(qi::_1)) ]
+      | ( lit("round") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_round>(qi::_1)) ]
       | ( lit("pow") > '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ) 
         [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_pow>(qi::_1, qi::_2)) ]
       | ( lit("atan2") > '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ) 

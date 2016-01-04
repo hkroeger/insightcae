@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+#MimeType=application/pv-med;application/x-hdf;
+MimeType=application/insight-iscad;
+Actions=open;
+
+[Desktop Action open]
+Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
+Icon=utilities-terminal
+Name=Open in ISCAD editor
+Name[de]=In ISCAD-Editor öffnen
+

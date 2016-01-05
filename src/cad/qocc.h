@@ -21,6 +21,9 @@
 #ifndef QOCC_H
 #define QOCC_H
 
+#ifndef Q_MOC_RUN
+#undef Status
+
 #include <AIS_StatusOfDetection.hxx>
 #include <AIS_StatusOfPick.hxx>
 #include <Aspect_Drawable.hxx>
@@ -56,6 +59,8 @@
 #endif
 
 #define SIGN(X) ((X) < 0. ? -1 : ((X) > 0. ? 1 : 0.))
+
+#endif
 
 #endif // Qocc_H
 

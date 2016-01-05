@@ -23,3 +23,4 @@
 
 #undef None
 #undef GrayScale
+#undef Status

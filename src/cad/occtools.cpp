@@ -21,7 +21,9 @@
 #include "occtools.h"
 
 #include "Prs3d_Text.hxx"
+#if (OCC_VERSION_MINOR<7)
 #include "Graphic2d_Text.hxx"
+#endif
 
 namespace insight {
 namespace cad {
@@ -159,6 +161,7 @@ void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,
 
 }
 
+#if (OCC_VERSION_MINOR<7)
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                                const Handle_Graphic2d_GraphicObject& gr_obj,
                                const Standard_Integer mode)
@@ -178,6 +181,7 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
     double y_offset;
     text->TextSize (width_, height_, x_offset, y_offset);
 }
+#endif
 
 void InteractiveText::ComputeSelection (const Handle_SelectMgr_Selection& sel,
                                         const Standard_Integer mode)

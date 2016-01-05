@@ -113,12 +113,12 @@ private:
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_Prs3d_Projector& proj,
                   const Handle_Prs3d_Presentation& pres);
-
+#if (OCC_VERSION_MINOR<7)
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                   const Handle_Graphic2d_GraphicObject& gr_obj,
                   const Standard_Integer mode) ;
-
+#endif
 //! -- from SelectMgr_SelectableObject.
     void ComputeSelection (const Handle_SelectMgr_Selection& sel,
                            const Standard_Integer mode);

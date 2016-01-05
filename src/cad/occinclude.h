@@ -21,6 +21,8 @@
 #ifndef OCC_INCLUDE
 #define OCC_INCLUDE
 
+#undef Status
+
 #include "Standard_Version.hxx"
 
 #include <Quantity_Color.hxx>
@@ -208,6 +210,7 @@
 #include "GEOMAlgo_Splitter.hxx"
 
 #include <armadillo>
+
 
 inline gp_Pnt to_Pnt(const arma::mat& xyz)
 {

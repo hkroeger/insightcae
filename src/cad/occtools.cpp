@@ -21,7 +21,7 @@
 #include "occtools.h"
 
 #include "Prs3d_Text.hxx"
-#if (OCC_VERSION_MINOR<7)
+#if (OCC_VERSION_MINOR<6)
 #include "Graphic2d_Text.hxx"
 #endif
 
@@ -33,7 +33,7 @@ Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::s
   Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
   (
    shape
-#if (OCC_VERSION_MINOR<7)
+#if (OCC_VERSION_MINOR<=6)
    , 1e-6, text.c_str()
   );
 #else
@@ -58,7 +58,7 @@ Handle_AIS_InteractiveObject createLengthDimension
   Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
     from,
     to,
-#if (OCC_VERSION_MINOR<7)
+#if (OCC_VERSION_MINOR<=6)
     pln,
     L, 
     text.c_str()
@@ -161,7 +161,7 @@ void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,
 
 }
 
-#if (OCC_VERSION_MINOR<7)
+#if (OCC_VERSION_MINOR<6)
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                                const Handle_Graphic2d_GraphicObject& gr_obj,
                                const Standard_Integer mode)

@@ -113,7 +113,7 @@ private:
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_Prs3d_Projector& proj,
                   const Handle_Prs3d_Presentation& pres);
-#if (OCC_VERSION_MINOR<7)
+#if (OCC_VERSION_MINOR<6)
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                   const Handle_Graphic2d_GraphicObject& gr_obj,

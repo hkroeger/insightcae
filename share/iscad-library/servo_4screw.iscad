@@ -1,0 +1,60 @@
+# O located at operating shaft center
+
+L=100;
+B=40;
+H=70;
+dshaft=5;
+Lshaft=5; # vert distance shaft top to housing top
+deltashaftx=20; # distance shaft center to nearest border of body
+Lfl=10; # length of flange
+tfl=2; # flange thickness
+deltafl=20; # lateral distance between two mount holes in flange
+deltaflv=10; # vertical distance shaft top to mount hole top
+dmount=4; #diameter of mount hole
+tslot=2; # mount hole slot width
+
+# derived
+
+pm1=O +(L-deltashaftx+0.5*Lfl)*EX +0.5*deltafl*EY -deltaflv*EZ;
+pm2=O -(deltashaftx+0.5*Lfl)*EX +0.5*deltafl*EY -deltaflv*EZ;
+pm3=pm1-deltafl*EY;
+pm4=pm2-deltafl*EY;
+
+shaft=
+Cylinder(
+ O, O-Lshaft*EZ, 
+ dshaft
+);
+
+housing=
+Box(
+ O-EX*deltashaftx-0.5*B*EY-Lshaft*EZ,
+ L*EX, B*EY, -H*EZ
+)
+;
+
+fl1=
+Box(
+ housing@p0 +(Lshaft-deltaflv)*EZ,
+ -Lfl*EX, B*EY, -tfl*EZ
+)
+-Cylinder(pm2, pm2-dmount*EZ, dmount)
+-Box(pm2-0.5*Lfl*EX, -Lfl*EX, tslot*EY, 2*tfl*EZ, centered)
+-Cylinder(pm4, pm4-dmount*EZ, dmount)
+-Box(pm4-0.5*Lfl*EX, -Lfl*EX, tslot*EY, 2*tfl*EZ, centered)
+;
+
+fl2=
+Box(
+ housing@p0 +(Lshaft-deltaflv)*EZ +L*EX,
+ Lfl*EX, B*EY, -tfl*EZ
+)
+-Cylinder(pm1, pm1-dmount*EZ, dmount)
+-Box(pm1+0.5*Lfl*EX, Lfl*EX, tslot*EY, 2*tfl*EZ, centered)
+-Cylinder(pm3, pm3-dmount*EZ, dmount)
+-Box(pm3+0.5*Lfl*EX, Lfl*EX, tslot*EY, 2*tfl*EZ, centered)
+;
+
+
+servo:
+ housing|fl1|fl2|shaft;

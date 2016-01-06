@@ -200,6 +200,7 @@ void QoccViewerContext::toggleGrid  ( void )
 }
 
 
+
 /*!
 \brief	Turn the grid on.
  */

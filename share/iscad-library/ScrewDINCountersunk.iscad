@@ -1,0 +1,56 @@
+Dn?=8;
+k=TableLookup(ScrewDIN, Dn, Dn, k5);
+s=TableLookup(ScrewDIN, Dn, Dn, s3);
+P=TableLookup(ScrewDIN, Dn, Dn, P);
+dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+hk=0.5*P;
+L=24;
+deg60=45*deg;
+tan60=tan(deg60);
+Lt=k+(0.5*Dn)/tan60;
+Rh=tan60*Lt;
+
+screw:
+( 
+ Cylinder(O+k*EX, O+(L+k)*EX, Dn)
+|
+Revolution(Tri(O, 
+ Lt*EX,
+ Rh*EY
+), O, EX, 2.*M_PI)
+)
+- Extrusion(
+ RegPoly(O,EX,6,s/2.),
+ k*EX)
+- Revolution(
+ Tri(O+(L+k)*EX+0.5*Dn*EY, -P*EY, -P*EX),
+ O, EX, 2.*M_PI)
+;
+
+Lthr?=L;
+throughhole=
+Cylinder(O, O+(Lthr+k)*EX, dh);
+
+Lhh?=L;
+Lhhb?=L;
+headhole=
+Cylinder(O, O+(Lhhb+k)*EX, dh)
+|
+Revolution(Tri(O, 
+ EX*Lt,
+ Rh*EY
+), O, EX, 2.*M_PI)
+|
+Cylinder(O-Lhh*EX, O, 2.*Rh)
+;
+
+blindhole=
+Cylinder(O, O+(L+k)*EX, dh)
+|
+Revolution(Tri(O, 
+ Lt*EX,
+ Rh*EY
+), O, EX, 2.*M_PI)
+|
+Cylinder(O-Lhh*EX, O, 2.*Rh)
+;

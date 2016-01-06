@@ -39,6 +39,7 @@
 #include <Quantity_Length.hxx>
 #include <Quantity_NameOfColor.hxx>
 #include <V3d_Coordinate.hxx>
+#include <V3d_Plane.hxx>
 
 #ifdef WNT
 //#include <Handle_WNT_Window.hxx>

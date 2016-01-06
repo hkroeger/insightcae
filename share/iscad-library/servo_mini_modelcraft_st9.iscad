@@ -1,0 +1,15 @@
+servo: 
+loadmodel(
+ servo_2screw,
+ L=23,
+ B=12.5,
+ H=22.5,
+ dshaft=4.6,
+ Lshaft=7,
+ deltashaftx=5.5,
+ Lfl=5,
+ tfl=2.3,
+ deltaflv=4.55+7,
+ dmount=2,
+ tslot=1.1 
+);

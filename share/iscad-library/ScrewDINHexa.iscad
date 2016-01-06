@@ -1,0 +1,39 @@
+Dn?=12;
+k=TableLookup(ScrewDIN, Dn, Dn, k);
+s=TableLookup(ScrewDIN, Dn, Dn, s);
+P=TableLookup(ScrewDIN, Dn, Dn, P);
+d3=TableLookup(ScrewDIN, Dn, Dn, d3);
+dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+hk=0.5*P;
+L=24;
+
+screw:
+( 
+ Extrusion(
+ RegPoly([-hk,0,0],[1,0,0],6,s/2.),
+ [-(k-hk),0,0])
+|
+ Cylinder([0,0,0], [-hk,0,0], 0.95*s)
+|
+ Cylinder([0,0,0], [L,0,0], Dn)
+)
+- Revolution(
+ Tri([L,0.5*Dn,0], [0,-P,0], [-P,0,0]),
+ O, EX, 2.*M_PI)
+;
+
+Lthr?=L;
+throughhole=
+Cylinder(
+ O,
+ O+Lthr*EX,
+ dh
+);
+
+Lhh?=2*L;
+headhole=
+Cylinder(
+ O,
+ O-Lhh*EX,
+ d3
+);

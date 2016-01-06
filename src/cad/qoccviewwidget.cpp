@@ -678,6 +678,24 @@ void QoccViewWidget::setReset ()
     }
 }
 
+void QoccViewWidget::toggleClip()
+{
+  if (clipPlane_.IsNull())
+  {
+    gp_Pln pl( gp_Pnt(0,0,0), gp_Dir(0,1,0) );
+    double a, b, c, d;
+    pl.Coefficients(a, b, c, d);
+    clipPlane_=new V3d_Plane(
+//       myViewer, 
+      a, b, c, d);
+    myView->SetPlaneOn(clipPlane_);
+  }
+  else
+  {
+    myView->SetPlaneOff();
+    clipPlane_.Nullify();
+  }
+}
 /*!
   \brief	This function handles left button down events from the mouse.
 */

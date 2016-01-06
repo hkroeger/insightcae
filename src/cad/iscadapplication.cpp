@@ -257,6 +257,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   act = new QAction(("Toggle &grid"), this);
   connect(act, SIGNAL(triggered()), context_, SLOT(toggleGrid()));
   vmenu->addAction(act);
+  act = new QAction(("Toggle &clip plane"), this);
+  connect(act, SIGNAL(triggered()), viewer_, SLOT(toggleClip()));
+  vmenu->addAction(act);
   act = new QAction(("Change background color..."), this);
   connect(act, SIGNAL(triggered()), viewer_, SLOT(background()));
   vmenu->addAction(act);

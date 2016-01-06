@@ -120,6 +120,8 @@ public slots:
   void viewReset();
   void setReset();
   
+  void toggleClip ( void );
+  
 protected: // methods
 
   virtual void paintEvent        ( QPaintEvent* e );
@@ -144,6 +146,8 @@ private: // members
   Handle_AIS_InteractiveContext   myContext;
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
+
+  Handle_V3d_Plane		clipPlane_;
 
   Standard_Boolean		myViewResized;
   Standard_Boolean		myViewInitialized;

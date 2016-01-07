@@ -137,7 +137,7 @@ public:
       const std::string& name, 
       const std::string& description, 
       const OpenFOAMAnalysis& baseAnalysis, 
-      const RangeParameterList& varp,
+      const RangeParameterList& varp = RangeParameterList(),
       bool subcasesRemesh=false
     );
 

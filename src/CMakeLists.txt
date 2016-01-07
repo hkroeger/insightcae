@@ -160,6 +160,9 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
       list (APPEND ${PRJ_NAME}_LIBRARIES
       ${_targ}${_ofvers}
       )
+      list (APPEND ${PRJ_NAME}_INCLUDE_DIRS
+      ${${_targ}${_ofvers}_SOURCE_DIR}
+      )
     endforeach()
 
     if (${_ofvers} STREQUAL "OF16ext")
@@ -268,6 +271,9 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     foreach (_targ ${is_of_targets})
       list (APPEND ${PRJ_NAME}_LIBRARIES
       ${_targ}${_ofvers}
+      )
+      list (APPEND ${PRJ_NAME}_INCLUDE_DIRS
+      ${${_targ}${_ofvers}_SOURCE_DIR}
       )
     endforeach()
 

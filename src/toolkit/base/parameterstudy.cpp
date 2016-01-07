@@ -51,6 +51,11 @@ ParameterStudy::ParameterStudy
   varp_(varp)
 {}
 
+void ParameterStudy::setRangeParameters(const RangeParameterList& varp)
+{
+  varp_=varp;
+}
+
 
 ParameterSet ParameterStudy::defaultParameters() const
 {

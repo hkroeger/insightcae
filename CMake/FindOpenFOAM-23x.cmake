@@ -92,16 +92,16 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   macro (setup_lib_target_OF23x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
-    #message(STATUS "target " ${targetname} ": includes=" ${includes})
+#     message(STATUS "target " ${targetname} ": includes=" ${includes})
     #link_directories(${OF23x_LIB_DIR} ${OF23x_LIB_DIR}/${OF23x_MPI} ${OF23x_FOAM_EXT_LIBBIN} "${OF23x_SCOTCH_ROOT}/lib")
     SET(LIB_SEARCHFLAGS "-L${OF23x_LIB_DIR} -L${OF23x_LIB_DIR}/${OF23x_MPI} -L${OF23x_FOAM_EXT_LIBBIN} -L${OF23x_SCOTCH_ROOT}/lib")
     add_library(${targetname} SHARED ${sources})
+    target_link_libraries(${targetname} ${ARGN}) 
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF23x_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${ARGN}) 
     target_include_directories(${targetname}
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

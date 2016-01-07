@@ -54,8 +54,10 @@ public:
     const std::string& name, 
     const std::string& description, 
     const Analysis& baseAnalysis, 
-    const RangeParameterList& varp
+    const RangeParameterList& varp = RangeParameterList()
   );
+  
+  void setRangeParameters(const RangeParameterList& varp);
   
   virtual ParameterSet defaultParameters() const;
   

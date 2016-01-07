@@ -61,7 +61,7 @@
 #include "boost/thread.hpp"
 
 #define BOOST_SPIRIT_USE_PHOENIX_V3
-#define BOOST_SPIRIT_DEBUG
+// #define BOOST_SPIRIT_DEBUG
 
 #include "boost/spirit/include/qi.hpp"
 #include "boost/variant/recursive_variant.hpp"
@@ -268,10 +268,10 @@ PDLParserRuleset<Iterator,Skipper>::PDLParserRuleset()
   r_parametersetentry = r_identifier >> '=' >> r_parameterdata;
   r_parameterset = *( r_parametersetentry );
   
-  BOOST_SPIRIT_DEBUG_NODE(r_identifier);
-  BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
-  BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
-  BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
+//   BOOST_SPIRIT_DEBUG_NODE(r_identifier);
+//   BOOST_SPIRIT_DEBUG_NODE(r_parameterdata);
+//   BOOST_SPIRIT_DEBUG_NODE(r_parameterset);
+//   BOOST_SPIRIT_DEBUG_NODE(r_parametersetentry);
 }
 /**
  * \addtogroup PDL

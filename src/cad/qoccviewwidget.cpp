@@ -680,6 +680,7 @@ void QoccViewWidget::setReset ()
 
 void QoccViewWidget::toggleClip()
 {
+#if OCC_VERSION_MINOR<7
   if (clipPlane_.IsNull())
   {
     gp_Pln pl( gp_Pnt(0,0,0), gp_Dir(0,1,0) );
@@ -695,6 +696,23 @@ void QoccViewWidget::toggleClip()
     myView->SetPlaneOff();
     clipPlane_.Nullify();
   }
+#else
+  if (clipPlane_.IsNull())
+  {
+    gp_Pln pl( gp_Pnt(0,0,0), gp_Dir(0,1,0) );
+    clipPlane_=new Graphic3d_ClipPlane(pl);
+    Graphic3d_MaterialAspect mat(Graphic3d_NOM_DEFAULT);
+    mat.SetColor(Quantity_Color(Quantity_NOC_WHITE));
+    clipPlane_->SetCappingMaterial(mat);
+    clipPlane_->SetCapping(true);
+    myView->AddClipPlane(clipPlane_);
+  }
+  else
+  {
+    myView->RemoveClipPlane(clipPlane_);
+    clipPlane_.Nullify();
+  }
+#endif
 }
 /*!
   \brief	This function handles left button down events from the mouse.

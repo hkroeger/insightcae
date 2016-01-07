@@ -8,7 +8,9 @@
 
 #include <QtOpenGL/QGLWidget>
 
-
+#if (OCC_VERSION_MINOR>=7)
+#include "Graphic3d_ClipPlane.hxx"
+#endif
 
 /** the key for multi selection */
 #define MULTISELECTIONKEY  Qt::ShiftModifier   
@@ -147,7 +149,11 @@ private: // members
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
 
+#if (OCC_VERSION_MINOR<7)
   Handle_V3d_Plane		clipPlane_;
+#else
+  Handle_Graphic3d_ClipPlane	clipPlane_;  
+#endif
 
   Standard_Boolean		myViewResized;
   Standard_Boolean		myViewInitialized;

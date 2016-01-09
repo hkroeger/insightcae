@@ -42,7 +42,7 @@ public:
           tol_(tol)
     {}
 
-    virtual void initialize(FeaturePtr m)
+    virtual void initialize(ConstFeaturePtr m)
     {
         Filter::initialize(m);
         qtc1_->initialize(m);

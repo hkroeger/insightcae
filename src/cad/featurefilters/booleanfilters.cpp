@@ -33,7 +33,7 @@ AND::AND(const Filter& f1, const Filter& f2)
 {
 }
 
-void AND::initialize(FeaturePtr m)
+void AND::initialize(ConstFeaturePtr m)
 {
   f1_->initialize(m);
   f2_->initialize(m);
@@ -65,7 +65,7 @@ OR::OR(const Filter& f1, const Filter& f2)
 {
 }
 
-void OR::initialize(FeaturePtr m)
+void OR::initialize(ConstFeaturePtr m)
 {
   f1_->initialize(m);
   f2_->initialize(m);
@@ -96,7 +96,7 @@ NOT::NOT(const Filter& f1)
   f1_(f1.clone())
 {
 }
-void NOT::initialize(FeaturePtr m)
+void NOT::initialize(ConstFeaturePtr m)
 {
   Filter::initialize(m);
   f1_->initialize(m);

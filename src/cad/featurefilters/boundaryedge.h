@@ -35,7 +35,7 @@ protected:
 
 public:
     boundaryEdge();
-    virtual void initialize(FeaturePtr m);
+    virtual void initialize(ConstFeaturePtr m);
     virtual bool checkMatch(FeatureID feature) const;
 
     virtual FilterPtr clone() const;

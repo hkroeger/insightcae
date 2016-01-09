@@ -34,7 +34,7 @@ distance::distance(const matQuantityComputerPtr& p0, const matQuantityComputerPt
 {
 }
 
-void distance::initialize(FeaturePtr m)
+void distance::initialize(ConstFeaturePtr m)
 {
   p0_->initialize(m);
   p1_->initialize(m);

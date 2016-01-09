@@ -44,7 +44,7 @@ public:\
     qtc2_(qtc2.clone())\
   {}\
   \
-  virtual void initialize(FeaturePtr m)\
+  virtual void initialize(ConstFeaturePtr m)\
   {\
     Filter::initialize(m);\
     qtc1_->initialize(m);\

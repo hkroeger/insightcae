@@ -33,7 +33,7 @@ maximal::maximal(const scalarQuantityComputer& qtc, int rank)
 {
 }
 
-void maximal::initialize(FeaturePtr m)
+void maximal::initialize(ConstFeaturePtr m)
 {
   Filter::initialize(m);
   qtc_->initialize(m);

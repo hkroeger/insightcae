@@ -34,7 +34,7 @@ boundaryEdge::boundaryEdge()
 {
 }
 
-void boundaryEdge::initialize(FeaturePtr m)
+void boundaryEdge::initialize(ConstFeaturePtr m)
 {
     insight::cad::Filter::initialize(m);
     safb_.reset(new ShapeAnalysis_FreeBounds(*m));

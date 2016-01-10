@@ -192,28 +192,22 @@ Analysis* Analysis::clone() const
 
 defineFactoryTable(Analysis, NoParameters);
 
-class CollectingProgressDisplayer
-: public ProgressDisplayer
+CollectingProgressDisplayer::CollectingProgressDisplayer(const std::string& id, ProgressDisplayer* receiver)
+: id_(id), receiver_(receiver)
+{}
+
+void CollectingProgressDisplayer::update(const ProgressState& pi)
 {
-  std::string id_;
-  ProgressDisplayer* receiver_;
-public:
-  CollectingProgressDisplayer(const std::string& id, ProgressDisplayer* receiver)
-  : id_(id), receiver_(receiver)
-  {}
-  
-  virtual void update(const ProgressState& pi)
+  double maxv=-1e10;
+  BOOST_FOREACH( const ProgressVariableList::value_type v, pi.second)
   {
-    double maxv=-1e10;
-    BOOST_FOREACH( const ProgressVariableList::value_type v, pi.second)
-    {
-      if (v.second > maxv) maxv=v.second;
-    } 
-    ProgressVariableList pvl;
-    pvl[id_]=maxv;
-    receiver_->update(ProgressState(pi.first, pvl));
-  }
-};
+    if (v.second > maxv) maxv=v.second;
+  } 
+  ProgressVariableList pvl;
+  pvl[id_]=maxv;
+  receiver_->update(ProgressState(pi.first, pvl));
+}
+
 
 AnalysisWorkerThread::AnalysisWorkerThread(SynchronisedAnalysisQueue* queue, ProgressDisplayer* displayer)
 : queue_(queue), displayer_(displayer)

@@ -154,6 +154,22 @@ public:
 };
 
 
+
+
+class CollectingProgressDisplayer
+: public ProgressDisplayer
+{
+  std::string id_;
+  ProgressDisplayer* receiver_;
+  
+public:
+  CollectingProgressDisplayer(const std::string& id, ProgressDisplayer* receiver);
+  virtual void update(const ProgressState& pi);
+};
+
+
+
+
 class AnalysisWorkerThread
 : boost::noncopyable
 {

@@ -1294,10 +1294,14 @@ void runPvPython
 
 }
 
-arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
-		    const std::string& fieldName, const std::string& patchNamePattern,
-		   const std::vector<std::string>& addopts
-			)
+arma::mat patchIntegrate
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::string& fieldName, 
+  const std::string& patchNamePattern,
+  const std::vector<std::string>& addopts
+)
 {
   boost::regex pat(patchNamePattern);
   
@@ -1331,39 +1335,56 @@ arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& 
 // >>     Integral of phi over patch rot_upstream[3] = -0.033370145
 
     boost::regex re_time("^ *Time = (.+)$");
-    boost::regex re_mag;
-    if (cm.OFversion()>=230)
-      re_mag=boost::regex("^ *Integral of (.+) over patch (.+)\\[(.+)\\] = (.+)$");
-    else
-      re_mag=boost::regex("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+    boost::regex re_mag_sum, re_mag_int;
+//     if (cm.OFversion()>=230)
+      re_mag_sum=boost::regex("^ *Integral of (.+) over patch (.+)\\[(.+)\\] = (.+)$");
+//     else
+      re_mag_int=boost::regex("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
     boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
     boost::match_results<std::string::const_iterator> what;
     double time=0;
-    std::vector<double> data, areadata;
+    std::vector<double> times, data, areadata;
     BOOST_FOREACH(const std::string& line, output)
     {
       if (boost::regex_match(line, what, re_time))
       {
-	//cout<< what[1]<<endl;
+	cout<< what[1]<<endl;
 	time=lexical_cast<double>(what[1]);
-	data.push_back(time);
+	times.push_back(time);
       }
-      if (boost::regex_match(line, what, re_mag))
+      
+      if (boost::regex_match(line, what, re_mag_int))
       {
-	//cout<<what[1]<<" : "<<what[4]<<endl;
+	cout<<what[1]<<" : "<<what[4]<<endl;
 	data.push_back(lexical_cast<double>(what[4]));
       }
+      else if (boost::regex_match(line, what, re_mag_sum))
+      {
+	cout<<what[1]<<" : "<<what[4]<<endl;
+	data.push_back(lexical_cast<double>(what[4]));
+      }
+      
       if (boost::regex_match(line, what, re_area))
       {
-	//cout<<what[1]<<" : "<<what[4]<<endl;
+	cout<<what[1]<<" : "<<what[3]<<endl;
 	areadata.push_back(lexical_cast<double>(what[3]));
       }
     }
     
-    arma::mat d(data.data(), 2, data.size()/2);
-    arma::mat ad(areadata.data(), 1, areadata.size());
-    cout<<patchName<<d<<ad<<endl;
-    arma::mat res( join_rows(d.t(), ad.t()) );
+    if ((data.size()!=areadata.size()) || (data.size()!=times.size()))
+      throw insight::Exception("Inconsistent information returned by patchIntegrate: number of values not equal to number of areas and number of times.");
+    
+    arma::mat res=zeros(data.size(), 3);
+    for (int i=0; i<data.size(); i++)
+    {
+      res(i,0)=times[i];
+      res(i,1)=data[i];
+      res(i,2)=areadata[i];
+    }
+//     arma::mat d(data.data(), 2, data.size()/2);
+//     arma::mat ad(areadata.data(), 1, areadata.size());
+//     cout<<patchName<<d<<ad<<endl;
+//     arma::mat res( join_rows(d.t(), ad.t()) );
       
     cout<<patchName<<endl<<res<<endl;
       

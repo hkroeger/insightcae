@@ -58,36 +58,48 @@ template<class T>
 class GlobalField
 : public Field<T >
 {
+  List<label> localSizes_;
   List<Field<T> > localFields_;
+  
+  void syncSizes()
+  {
+    localSizes_[Pstream::myProcNo()]=localFields_[Pstream::myProcNo()].size();
+    Pstream::gatherList(localSizes_);
+    Pstream::scatterList(localSizes_);   
+    this->Field<T>::resize(sum(localSizes_));
+  }
   
 public:
   
   GlobalField()
-  : localFields_(Pstream::nProcs())
+  : localSizes_(Pstream::nProcs()),
+    localFields_(Pstream::nProcs())
   {}
   
-  GlobalField(label globalsize, label localsize)
-  : localFields_(Pstream::nProcs())
+  GlobalField(label localsize)
+  : localSizes_(Pstream::nProcs()),
+    localFields_(Pstream::nProcs())
   {
-    resize(globalsize, localsize);
+    resize(localsize);
   }
   
   GlobalField(const Field<T>& localfield)
-  : Field<T>(globalFieldSize<T>(localfield), pTraits<T>::zero),
+  : localSizes_(Pstream::nProcs()),
     localFields_(Pstream::nProcs())
   {
     insertLocalValues(localfield);
   }
   
-  void resize(label globalsize, label localsize)
+  void resize(label localsize)
   {
-    Field<T>::resize(globalsize);
     localFields_[Pstream::myProcNo()].resize(localsize);
+    localFields_[Pstream::myProcNo()]=pTraits<T>::zero;
+    syncSizes();
   }
   
   const Field<T>& getLocalValues() const
   {
-    sync();
+//     syncGlobalSumToLocal();
     return localFields_[Pstream::myProcNo()];
   }
 
@@ -99,13 +111,48 @@ public:
   void insertLocalValues(const Field<T>& localfield)
   {
     localFields_[Pstream::myProcNo()]=localfield;
-    sync();
+    syncSizes();
+    syncLocalToGlobal();
   }
   
-  void sync()
+  void syncGlobalSumToLocal()
   {
+    Pout<<"before sync: nloc="<<localFields_[Pstream::myProcNo()].size()<<", nglob="<<this->size()
+      <<", avg="<<average(localFields_[Pstream::myProcNo()])<<"/"<<average(*this)<<endl;
+    
+    reduce(*this, sumOp<Field<T> >());
+    label ofs0=0;
+    for (label j=0; j<Pstream::myProcNo(); j++)
+      ofs0+=localSizes_[j];
+    
+    Field<T>& myField=localFields_[Pstream::myProcNo()];
+    forAll(myField, i)
+    {
+      myField[i]=this->Field<T>::operator[](ofs0+i);
+    }
+    
+    Pout<<"after sync: nloc="<<localFields_[Pstream::myProcNo()].size()<<", nglob="<<this->size()
+      <<", avg="<<average(localFields_[Pstream::myProcNo()])<<"/"<<average(*this)<<endl;
+  }
+  
+  void syncLocalToGlobal()
+  {
+    Pout<<"before sync: nloc="<<localFields_[Pstream::myProcNo()].size()<<", nglob="<<this->size()
+      <<", avg="<<average(localFields_[Pstream::myProcNo()])<<"/"<<average(*this)<<endl;
+    
     Pstream::gatherList(localFields_);
-    Pstream::scatterList(localFields_);    
+    Pstream::scatterList(localFields_);   
+    
+    this->Field<T>::operator=
+    (
+      ListListOps::combine<List<T> >
+      (
+	localFields_, accessOp<List<T> >()
+      )
+    );
+	
+    Pout<<"after sync: nloc="<<localFields_[Pstream::myProcNo()].size()<<", nglob="<<this->size()
+      <<", avg="<<average(localFields_[Pstream::myProcNo()])<<"/"<<average(*this)<<endl;
   }
 };
 

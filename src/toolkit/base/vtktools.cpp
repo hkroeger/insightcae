@@ -129,6 +129,7 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
   BOOST_FOREACH(const ScalarFieldList::value_type& sf, pointScalarFields_)
   {
     os<<"SCALARS "<<sf.first<<" float 1"<<endl;
+    os<<"LOOKUP_TABLE default"<<endl;
     BOOST_FOREACH(const double& v, sf.second)
     {
       os<<v<<endl;
@@ -136,7 +137,7 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
   }
   BOOST_FOREACH(const VectorFieldList::value_type& sf, pointVectorFields_)
   {
-    cout<<sf.first<<endl;
+//     cout<<sf.first<<endl;
     if (pts_.size()>0)
     {
       const arma::mat& fe=sf.second[0];

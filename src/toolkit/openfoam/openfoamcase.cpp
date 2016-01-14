@@ -330,9 +330,17 @@ bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) 
     exists(meshPath/"boundary");
 }
 
-bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& location ) const
+bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& location, bool checkpar ) const
 {
-  TimeDirectoryList timedirs=listTimeDirectories(location);
+  TimeDirectoryList timedirs;
+  if (checkpar)
+  {
+    boost::filesystem::path pd=location/"processor0";
+    if (!boost::filesystem::exists(pd)) return false;
+    timedirs=listTimeDirectories(pd);
+  }
+  else
+    timedirs=listTimeDirectories(location);
   return (timedirs.size()>1);
 }
 

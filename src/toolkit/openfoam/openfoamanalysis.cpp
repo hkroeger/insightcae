@@ -222,6 +222,7 @@ void OpenFOAMAnalysis::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel)
 {
+  
   if (const RASModel* rm=cm.get<RASModel>(".*"))
   {
     // check, if turbulence model is compatible in source case
@@ -260,10 +261,13 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
 //     }
 //   }
   
-  if ((cm.OFversion()>=230) && (mapFromPath!=""))
+  if (!cm.outputTimesPresentOnDisk(executionPath(), false))
   {
-    // parallelTarget option is not present in OF2.3.x
-    mapFromOther(cm, mapFromPath, false);
+    if ((cm.OFversion()>=230) && (mapFromPath!=""))
+    {
+      // parallelTarget option is not present in OF2.3.x
+      mapFromOther(cm, mapFromPath, false);
+    }
   }
 
   if (is_parallel)
@@ -272,7 +276,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
       cm.executeCommand(executionPath(), "decomposePar");
   }
   
-  if (!cm.outputTimesPresentOnDisk(executionPath()))
+  if (!cm.outputTimesPresentOnDisk(executionPath(), is_parallel))
   {
     if ( (!(cm.OFversion()>=230)) && (mapFromPath!="") )
     {

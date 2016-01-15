@@ -17,8 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "cylinder.h"
+#include "cone.h"
 #include "base/boost_include.h"
+
+#include "BRepPrimAPI_MakeCone.hxx"
 
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -31,78 +33,69 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
-defineType(Cylinder);
-addToFactoryTable(Feature, Cylinder, NoParameters);
+defineType(Cone);
+addToFactoryTable(Feature, Cone, NoParameters);
 
-Cylinder::Cylinder(const NoParameters&)
+Cone::Cone(const NoParameters&)
 {}
 
-
-Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D)
-: p1_(p1), p2_(p2), D_(D)
+Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
+: p1_(p1), p2_(p2), D1_(D1), D2_(D2)
 {}
 
-Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
-: p1_(p1), p2_(p2), D_(Da), Di_(Di)
-{}
-
-void Cylinder::build()
+void Cone::build()
 {
-  refpoints_["p0"]=p1_->value();
-  refpoints_["p1"]=p2_->value();
-  refvalues_["Da"]=D_->value();
-  
-  TopoDS_Shape cyl=
-    BRepPrimAPI_MakeCylinder
+  TopoDS_Shape cone=
+    BRepPrimAPI_MakeCone
     (
       gp_Ax2
       (
 	gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
 	gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
       ),
-      0.5*D_->value(), 
+      0.5*D1_->value(), 
+      0.5*D2_->value(), 
       norm(p2_->value()-p1_->value(), 2)
     ).Shape();
     
-  if (Di_)
-  {
-    refvalues_["Di"]=Di_->value();
-    cyl=BRepAlgoAPI_Cut
-    (
-      
-      cyl,
-     
-      BRepPrimAPI_MakeCylinder
-      (
-	gp_Ax2
-	(
-	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
-	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
-	),
-	0.5*Di_->value(), 
-	norm(p2_->value()-p1_->value(), 2)
-      ).Shape()
-      
-    );
-  }
+//   if (Di_)
+//   {
+//     cyl=BRepAlgoAPI_Cut
+//     (
+//       
+//       cyl,
+//      
+//       BRepPrimAPI_MakeCylinder
+//       (
+// 	gp_Ax2
+// 	(
+// 	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
+// 	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
+// 	),
+// 	0.5*Di_->value(), 
+// 	norm(p2_->value()-p1_->value(), 2)
+//       ).Shape()
+//       
+//     );
+//   }
 
-  setShape(cyl);
+  setShape(cone);
 }
 
-void Cylinder::insertrule(parser::ISCADParser& ruleset) const
+void Cone::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Cylinder",	
+    "Cone",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' 
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_vectorExpression >> ',' 
-      >> ruleset.r_scalarExpression 
-      >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+      >> ruleset.r_scalarExpression >> ','
+      >> ruleset.r_scalarExpression
       >> ')' ) 
-     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cylinder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cone>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

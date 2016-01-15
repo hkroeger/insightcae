@@ -12,6 +12,7 @@ add_sources(insightcad_SOURCES
  compound.cpp
  cutaway.cpp
  cylinder.cpp
+ cone.cpp
  extrusion.cpp
  fillet.cpp
  fillingface.cpp

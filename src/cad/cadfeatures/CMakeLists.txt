@@ -13,6 +13,7 @@ add_sources(insightcad_SOURCES
  cutaway.cpp
  cylinder.cpp
  cone.cpp
+ torus.cpp
  extrusion.cpp
  fillet.cpp
  fillingface.cpp

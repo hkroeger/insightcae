@@ -45,8 +45,7 @@ Import::Import(const filesystem::path& filepath)
 void Import::build()
 {
   setShape(loadShapeFromFile(filepath_));
-  setShapeHash();
-  setValid();
+//   setShapeHash(); // not possible to use in build...
 }
 
 

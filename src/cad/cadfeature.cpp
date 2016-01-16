@@ -179,7 +179,11 @@ void Feature::setShapeHash()
   FeatureSetData vset=allVerticesSet();
   BOOST_FOREACH(const insight::cad::FeatureID& j, vset)
   {
-    boost::hash_combine(hash_, boost::hash<arma::mat>()(vertexLocation(j)));    
+    boost::hash_combine
+    (
+      hash_, 
+      boost::hash<arma::mat>()(vertexLocation(j))
+    );    
   }
 }
 

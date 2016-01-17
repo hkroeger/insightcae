@@ -37,3 +37,20 @@ Cylinder(
  O-Lhh*EX,
  d3
 );
+
+Lblind?=1.2*L;
+blindhole=
+Cylinder(
+ O,
+ O+Lblind*EX,
+ Dn
+)
+|
+Revolution(
+ Tri(
+  O+Lblind*EX, 
+  0.5*Dn*EY, 
+  (0.5*0.5*Dn)*EX
+ ),
+ O, EX, 2.*M_PI)
+;

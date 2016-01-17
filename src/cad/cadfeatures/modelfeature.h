@@ -36,6 +36,9 @@ class ModelFeature
   
   ModelPtr model_;
   
+//   void addScalar(const std::string& name, ScalarPtr s);
+//   void addVector(const std::string& name, VectorPtr s);
+//   void addModelstepNotComponent(const std::string& name, FeaturePtr m);
   void copyModelDatums();
   
 public:

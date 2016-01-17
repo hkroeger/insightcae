@@ -38,20 +38,39 @@ namespace cad
 defineType(ModelFeature);
 addToFactoryTable(Feature, ModelFeature, NoParameters);
 
+// void ModelFeature::addScalar(const string& name, ScalarPtr s)
+// {
+//   if (refvalues_.find(name)!=refvalues_.end())
+//     throw insight::Exception("datum value "+name+" already present!");
+//   refvalues_[name]=s->value();
+// }
+// 
+// void ModelFeature::addVector(const string& name, VectorPtr v)
+// {
+//   if (refpoints_.find(name)!=refpoints_.end())
+//     throw insight::Exception("datum point "+name+" already present!");
+//   refpoints_[name]=v->value();
+// }
+// 
+
 void ModelFeature::copyModelDatums()
 {
-  BOOST_FOREACH(const Model::ScalarTable::value_type& v, model_->scalars())
+  auto scalars=model_->scalars();
+  BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
   {
     if (refvalues_.find(v.first)!=refvalues_.end())
       throw insight::Exception("datum value "+v.first+" already present!");
     refvalues_[v.first]=v.second->value();
   }
-  BOOST_FOREACH(const Model::VectorTable::value_type& p, model_->vectors())
+  auto vectors=model_->vectors();
+  BOOST_FOREACH(decltype(vectors)::value_type const& p, vectors)
   {
     if (refpoints_.find(p.first)!=refpoints_.end())
       throw insight::Exception("datum point "+p.first+" already present!");
     refpoints_[p.first]=p.second->value();
   }
+//   model_->scalars().for_each(phx::bind(&addScalar, this, ));
+//   model_->vectors().for_each(&(this->addVector));
 }
 
 
@@ -63,7 +82,16 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 : modelname_(modelname), vars_(vars)
 {}
 
-  
+
+// void ModelFeature::addModelstepNotComponent(const string& name, FeaturePtr p)
+// {
+//   if (components_.find(name)==components_.end())
+//   {
+//     copyDatums(*p, name+"_");
+//     providedSubshapes_[name]=p;
+//   }
+// }
+// 
 void ModelFeature::build()
 {
   std::cout<<"loading model "<<modelname_<<std::endl;
@@ -76,7 +104,9 @@ void ModelFeature::build()
 //     c.second->checkForBuildDuringAccess();
     components_[c]=model_->lookupModelstep(c);
   }
-  BOOST_FOREACH(const Model::ModelstepTable::value_type& c, model_->modelsteps())
+  
+  auto modelsteps=model_->modelsteps();
+  BOOST_FOREACH(decltype(modelsteps)::value_type const& c, modelsteps)
   {
     std::string name=c.first;
     // Compound::build copies the components. Here, the rest is copied.
@@ -88,6 +118,7 @@ void ModelFeature::build()
       providedSubshapes_[name]=p;
     }
   }
+//   model_->modelsteps().for_each(&(this->addModelstepNotComponent));
   
   copyModelDatums();
   

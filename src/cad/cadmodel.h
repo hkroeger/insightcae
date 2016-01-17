@@ -26,29 +26,58 @@
 #include "mapkey_parser.h"
 #include "astbase.h"
 
+#include <boost/spirit/include/qi.hpp>
+
+#include <map>
+#include <string>
+
 namespace insight 
 {
 namespace cad 
 {
 
-  
+template<class T>
+class SymbolTableContents
+: public std::map<std::string, T>
+{
+public:
+  void operator()(const std::string& name, T v)
+  {
+    std::cout<<"copying "<<name<<std::endl;
+    (*this)[name]=v;
+  }
+};
+
 class Model
 : public ASTBase
 {
 public:
   
-  typedef std::map<std::string, ScalarPtr> 	ScalarTable;
-  typedef std::map<std::string, VectorPtr> 	VectorTable;
-  typedef std::map<std::string, DatumPtr> 	DatumTable;
-  typedef std::map<std::string, FeaturePtr> 	ModelstepTable;
-  typedef std::map<std::string, ModelPtr> 	ModelTable;
+//   typedef std::map<std::string, ScalarPtr> 	ScalarTable;
+//   typedef std::map<std::string, VectorPtr> 	VectorTable;
+//   typedef std::map<std::string, DatumPtr> 	DatumTable;
+//   typedef std::map<std::string, FeaturePtr> 	ModelstepTable;
+//   typedef std::map<std::string, ModelPtr> 	ModelTable;
+//   typedef std::set<std::string> 	ComponentSet;
+// 
+//   typedef std::map<std::string, FeatureSetPtr> 	VertexFeatureTable;
+//   typedef std::map<std::string, FeatureSetPtr> 	EdgeFeatureTable;
+//   typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTable;
+//   typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTable;
+//   typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTable;
+
+  typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
+  typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
+  typedef boost::spirit::qi::symbols<char, DatumPtr> 	DatumTable;
+  typedef boost::spirit::qi::symbols<char, FeaturePtr> 	ModelstepTable;
+  typedef boost::spirit::qi::symbols<char, ModelPtr> 	ModelTable;
   typedef std::set<std::string> 	ComponentSet;
 
-  typedef std::map<std::string, FeatureSetPtr> 	VertexFeatureTable;
-  typedef std::map<std::string, FeatureSetPtr> 	EdgeFeatureTable;
-  typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTable;
-  typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTable;
-  typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTable;
+  typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	VertexFeatureTable;
+  typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	EdgeFeatureTable;
+  typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	FaceFeatureTable;
+  typedef boost::spirit::qi::symbols<char, FeatureSetPtr> 	SolidFeatureTable;
+  typedef boost::spirit::qi::symbols<char, PostprocActionPtr> 	PostprocActionTable;
   
 protected:
   ScalarTable 		scalars_;
@@ -76,16 +105,26 @@ public:
   
   virtual void build();
 
-  mapkey_parser::mapkey_parser<ScalarPtr> 	scalarSymbols() const;
-  mapkey_parser::mapkey_parser<VectorPtr> 	vectorSymbols() const;
-  mapkey_parser::mapkey_parser<DatumPtr> 	datumSymbols() const;
-  mapkey_parser::mapkey_parser<FeaturePtr> 	modelstepSymbols() const;
-  mapkey_parser::mapkey_parser<FeatureSetPtr> 	vertexFeatureSymbols() const;
-  mapkey_parser::mapkey_parser<FeatureSetPtr> 	edgeFeatureSymbols() const;
-  mapkey_parser::mapkey_parser<FeatureSetPtr> 	faceFeatureSymbols() const;
-  mapkey_parser::mapkey_parser<FeatureSetPtr> 	solidFeatureSymbols() const;
-  mapkey_parser::mapkey_parser<ModelPtr> 	modelSymbols() const;
-  mapkey_parser::mapkey_parser<PostprocActionPtr> 	postprocActionSymbols() const;
+//   mapkey_parser::mapkey_parser<ScalarPtr> 	scalarSymbols() const;
+//   mapkey_parser::mapkey_parser<VectorPtr> 	vectorSymbols() const;
+//   mapkey_parser::mapkey_parser<DatumPtr> 	datumSymbols() const;
+//   mapkey_parser::mapkey_parser<FeaturePtr> 	modelstepSymbols() const;
+//   mapkey_parser::mapkey_parser<FeatureSetPtr> 	vertexFeatureSymbols() const;
+//   mapkey_parser::mapkey_parser<FeatureSetPtr> 	edgeFeatureSymbols() const;
+//   mapkey_parser::mapkey_parser<FeatureSetPtr> 	faceFeatureSymbols() const;
+//   mapkey_parser::mapkey_parser<FeatureSetPtr> 	solidFeatureSymbols() const;
+//   mapkey_parser::mapkey_parser<ModelPtr> 	modelSymbols() const;
+//   mapkey_parser::mapkey_parser<PostprocActionPtr> 	postprocActionSymbols() const;
+  const ScalarTable& 	scalarSymbols() const;
+  const VectorTable&	vectorSymbols() const;
+  const DatumTable&	datumSymbols() const;
+  const ModelstepTable&	modelstepSymbols() const;
+  const VertexFeatureTable&	vertexFeatureSymbols() const;
+  const EdgeFeatureTable&	edgeFeatureSymbols() const;
+  const FaceFeatureTable& 	faceFeatureSymbols() const;
+  const SolidFeatureTable& 	solidFeatureSymbols() const;
+  const ModelTable& 	modelSymbols() const;
+  const PostprocActionTable& 	postprocActionSymbols() const;
 
     
   void addScalar(const std::string& name, ScalarPtr value);
@@ -104,88 +143,39 @@ public:
   void addPostprocAction(const std::string& name, PostprocActionPtr value);
   std::string addPostprocActionUnnamed(PostprocActionPtr value);
   
-  inline ScalarPtr lookupScalar(const std::string& name) const
-  {
-    ScalarTable::const_iterator it=scalars_.find(name);
-    if (it==scalars_.end())
-      throw insight::Exception("Could not lookup scalar "+name);
-    return it->second;
-  }
-  inline VectorPtr lookupVector(const std::string& name) const
-  {
-    VectorTable::const_iterator it=vectors_.find(name);
-    if (it==vectors_.end())
-      throw insight::Exception("Could not lookup vector "+name);
-    return it->second;
-  }
-  inline DatumPtr lookupDatum(const std::string& name) const
-  {
-    DatumTable::const_iterator it=datums_.find(name);
-    if (it==datums_.end())
-      throw insight::Exception("Could not lookup datum "+name);
-    return it->second;
-  }
-  inline FeaturePtr lookupModelstep(const std::string& name) const
-  {
-    ModelstepTable::const_iterator it=modelsteps_.find(name);
-    if (it==modelsteps_.end())
-      throw insight::Exception("Could not lookup model step "+name);
-    return it->second;
-  }
-  inline FeatureSetPtr lookupVertexFeature(const std::string& name) const
-  {
-    VertexFeatureTable::const_iterator it=vertexFeatures_.find(name);
-    if (it==vertexFeatures_.end())
-      throw insight::Exception("Could not lookup vertex feature "+name);
-    return it->second;
-  }
-  inline FeatureSetPtr lookupEdgeFeature(const std::string& name) const
-  {
-    EdgeFeatureTable::const_iterator it=edgeFeatures_.find(name);
-    if (it==edgeFeatures_.end())
-      throw insight::Exception("Could not lookup edge feature "+name);
-    return it->second;
-  }
-  inline FeatureSetPtr lookupFaceFeature(const std::string& name) const
-  {
-    FaceFeatureTable::const_iterator it=faceFeatures_.find(name);
-    if (it==faceFeatures_.end())
-      throw insight::Exception("Could not lookup face feature "+name);
-    return it->second;
-  }
-  inline FeatureSetPtr lookupSolidFeature(const std::string& name) const
-  {
-    SolidFeatureTable::const_iterator it=solidFeatures_.find(name);
-    if (it==solidFeatures_.end())
-      throw insight::Exception("Could not lookup solid feature "+name);
-    return it->second;
-  }
-  inline ModelPtr lookupModel(const std::string& name) const
-  {
-    ModelTable::const_iterator it=models_.find(name);
-    if (it==models_.end())
-      throw insight::Exception("Could not lookup model "+name);
-    return it->second;
-  }
-  inline PostprocActionPtr lookupPostprocActionSymbol(const std::string& name) const
-  {
-    PostprocActionTable::const_iterator it=postprocActions_.find(name);
-    if (it==postprocActions_.end())
-      throw insight::Exception("Could not lookup evaluation "+name);
-    return it->second;
-  }
+  ScalarPtr lookupScalar(const std::string& name) const;
+  VectorPtr lookupVector(const std::string& name) const;
+  DatumPtr lookupDatum(const std::string& name) const;
+  FeaturePtr lookupModelstep(const std::string& name) const;
+  FeatureSetPtr lookupVertexFeature(const std::string& name) const;
+  FeatureSetPtr lookupEdgeFeature(const std::string& name) const;
+  FeatureSetPtr lookupFaceFeature(const std::string& name) const;
+  FeatureSetPtr lookupSolidFeature(const std::string& name) const;
+  ModelPtr lookupModel(const std::string& name) const;
+  PostprocActionPtr lookupPostprocActionSymbol(const std::string& name) const;
   
-  const ScalarTable& 		scalars() const 	{ return scalars_; }
-  const VectorTable& 		vectors() const 	{ return vectors_; }
-  const DatumTable& 		datums() const		{ return datums_; }
-  const ModelstepTable& 	modelsteps() const 	{ return modelsteps_; }  
+//   const ScalarTable& 		scalars() const 	{ return scalars_; }
+//   const VectorTable& 		vectors() const 	{ return vectors_; }
+//   const DatumTable& 		datums() const		{ return datums_; }
+//   const ModelstepTable& 	modelsteps() const 	{ return modelsteps_; }  
   const ComponentSet& 		components() const 	{ return components_; }  
-  const VertexFeatureTable& 	vertexFeatures() const 	{ return vertexFeatures_; }  
-  const EdgeFeatureTable& 	edgeFeatures() const 	{ return edgeFeatures_; }  
-  const FaceFeatureTable& 	faceFeatures() const 	{ return faceFeatures_; }  
-  const SolidFeatureTable& 	solidFeatures() const 	{ return solidFeatures_; }  
-  const ModelTable& 		models() const 		{ return models_; }  
-  const PostprocActionTable& 	postprocActions() const { return postprocActions_; }  
+//   const VertexFeatureTable& 	vertexFeatures() const 	{ return vertexFeatures_; }  
+//   const EdgeFeatureTable& 	edgeFeatures() const 	{ return edgeFeatures_; }  
+//   const FaceFeatureTable& 	faceFeatures() const 	{ return faceFeatures_; }  
+//   const SolidFeatureTable& 	solidFeatures() const 	{ return solidFeatures_; }  
+//   const ModelTable& 		models() const 		{ return models_; }  
+//   const PostprocActionTable& 	postprocActions() const { return postprocActions_; }  
+
+  SymbolTableContents<ScalarPtr> scalars() const;
+  SymbolTableContents<VectorPtr>	vectors() const;
+  SymbolTableContents<DatumPtr> 		datums() const;
+  SymbolTableContents<FeaturePtr> 	modelsteps() const;
+  SymbolTableContents<FeatureSetPtr> 	vertexFeatures() const;
+  SymbolTableContents<FeatureSetPtr> 	edgeFeatures() const;
+  SymbolTableContents<FeatureSetPtr> 	faceFeatures() const;
+  SymbolTableContents<FeatureSetPtr> 	solidFeatures() const;
+  SymbolTableContents<ModelPtr> 		models() const;
+  SymbolTableContents<PostprocActionPtr> 	postprocActions() const;
 
   arma::mat modelCoG();
 //   inline arma::mat modelCoG() { return modelCoG(); }; // "const" caused failure with phx::bind!

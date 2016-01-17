@@ -705,6 +705,7 @@ void QoccViewWidget::toggleClip()
     mat.SetColor(Quantity_Color(Quantity_NOC_WHITE));
     clipPlane_->SetCappingMaterial(mat);
     clipPlane_->SetCapping(true);
+//     clipPlane_->SetCappingHatchOn();
     myView->AddClipPlane(clipPlane_);
   }
   else

@@ -1061,16 +1061,22 @@ void ISCADMainWindow::rebuildModel()
     
     context_->getContext()->EraseAll();
 //     m->modelstepSymbols.for_each(Transferrer(*this));
-    BOOST_FOREACH(const Model::ModelstepTable::value_type& v, m->modelsteps())
+    
+    auto modelsteps=m->modelsteps();
+    BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
     { 
       bool inivis=false;
       if (m->components().find(v.first)!=m->components().end())
 	inivis=true;
       addModelStep(v.first, v.second, inivis); 
     }
-    BOOST_FOREACH(const Model::DatumTable::value_type& v, m->datums())
+    
+    auto datums=m->datums();
+    BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
     { addDatum(v.first, v.second); }
-    BOOST_FOREACH(const Model::PostprocActionTable::value_type& v, m->postprocActions())
+    
+    auto postprocActions=m->postprocActions();
+    BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
     { addEvaluation(v.first, v.second); }
    
 //     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
@@ -1080,9 +1086,13 @@ void ISCADMainWindow::rebuildModel()
 // 	   this->addModelStep(i->first, i->second);
 // 	 }
 //     m->scalarSymbols.for_each(Transferrer(*this));
-    BOOST_FOREACH(const Model::ScalarTable::value_type& v, m->scalars())
+
+    auto scalars=m->scalars();
+    BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
     { addVariable(v.first, v.second); }
-    BOOST_FOREACH(const Model::VectorTable::value_type& v, m->vectors())
+    
+    auto vectors=m->vectors();
+    BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
     { addVariable(v.first, v.second); }
 //     m->vectorSymbols.for_each(Transferrer(*this));
   }

@@ -299,8 +299,9 @@ ISCADParser::ISCADParser(Model* model)
        r_modelstepFunction 
         [ _val = qi::_1 ]
       |
-       qi::lexeme [ model_->modelstepSymbols() ] 
-	[ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
+//        qi::lexeme [ model_->modelstepSymbols() ] 
+// 	[ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
+        model_->modelstepSymbols()[_val=qi::_1 ]
       |
        ( '(' >> r_solidmodel_expression 
         [ _val = qi::_1] > ')' )
@@ -323,8 +324,9 @@ ISCADParser::ISCADParser(Model* model)
 // 	  ;
 
     r_vertexFeaturesExpression = 
-	  qi::lexeme[model_->vertexFeatureSymbols()] 
-	    [ _val =  phx::bind(&Model::lookupVertexFeature, model_, qi::_1) ]
+// 	  qi::lexeme[model_->vertexFeatureSymbols()] 
+// 	    [ _val =  phx::bind(&Model::lookupVertexFeature, model_, qi::_1) ]
+	  model_->vertexFeatureSymbols() [ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -344,8 +346,9 @@ ISCADParser::ISCADParser(Model* model)
       ;
 
     r_edgeFeaturesExpression = 
-	  qi::lexeme[model_->edgeFeatureSymbols()] 
-	    [ _val =  phx::bind(&Model::lookupEdgeFeature, model_, qi::_1) ]
+// 	  qi::lexeme[model_->edgeFeatureSymbols()] 
+// 	    [ _val =  phx::bind(&Model::lookupEdgeFeature, model_, qi::_1) ]
+	  model_->edgeFeatureSymbols()[ qi::_val = qi::_1 ]
 	  | 
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -365,8 +368,9 @@ ISCADParser::ISCADParser(Model* model)
       ;
 
     r_faceFeaturesExpression = 
-	  qi::lexeme[model_->faceFeatureSymbols()] 
-	    [ _val =  phx::bind(&Model::lookupFaceFeature, model_, qi::_1) ]
+// 	  qi::lexeme[model_->faceFeatureSymbols()] 
+// 	    [ _val =  phx::bind(&Model::lookupFaceFeature, model_, qi::_1) ]
+	  model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -386,8 +390,9 @@ ISCADParser::ISCADParser(Model* model)
 	;
 
     r_solidFeaturesExpression = 
-	  qi::lexeme[model_->solidFeatureSymbols()] 
-	    [ _val =  phx::bind(&Model::lookupSolidFeature, model_, qi::_1) ]
+// 	  qi::lexeme[model_->solidFeatureSymbols()] 
+// 	    [ _val =  phx::bind(&Model::lookupSolidFeature, model_, qi::_1) ]
+	  model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -408,8 +413,9 @@ ISCADParser::ISCADParser(Model* model)
 
       
     r_datumExpression = 
-	  qi::lexeme[model_->datumSymbols()] 
-	    [ _val =  phx::bind(&Model::lookupDatum, model_, qi::_1) ]
+// 	  qi::lexeme[model_->datumSymbols()] 
+// 	    [ _val =  phx::bind(&Model::lookupDatum, model_, qi::_1) ]
+          model_->datumSymbols()[ qi::_val = qi::_1 ]
 	  |
 	  ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 	    [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2)) ]
@@ -444,8 +450,9 @@ ISCADParser::ISCADParser(Model* model)
       double_ 
 	[ _val = phx::construct<ScalarPtr>(phx::new_<ConstantScalar>(qi::_1)) ]
       |
-       qi::lexeme[model_->scalarSymbols()]
-	[ _val = phx::bind(&Model::lookupScalar, model_, qi::_1) ]        
+//        qi::lexeme[model_->scalarSymbols()]
+// 	[ _val = phx::bind(&Model::lookupScalar, model_, qi::_1) ]        
+        model_->scalarSymbols()[ qi::_val = qi::_1 ]
       | ( lit("sqrt") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
       | ( lit("sin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]
       | ( lit("cos") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_cos>(qi::_1)) ]
@@ -527,8 +534,9 @@ ISCADParser::ISCADParser(Model* model)
 //        ( lit("rot") > '(' > r_vectorExpression > lit("by") > r_scalarExpression > ( (lit("around") > r_vectorExpression) | attr(vec3(0,0,1)) )> ')' )
 //         [ _val = rot_(qi::_1, qi::_2, qi::_3) ]
 //       |
-       qi::lexeme[model_->vectorSymbols()] 
-        [ _val =  phx::bind(&Model::lookupVector, model_, qi::_1) ]
+//        qi::lexeme[model_->vectorSymbols()] 
+//         [ _val =  phx::bind(&Model::lookupVector, model_, qi::_1) ]
+       model_->vectorSymbols()[ qi::_val = qi::_1 ]
 //       qi::lexeme[ model_->modelsteps() ] [ _a =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ] 
 // 	  >> lit("->") >
 // 	   (

@@ -232,7 +232,7 @@ ScalarPtr Model::lookupScalar(const std::string& name) const
 //       throw insight::Exception("Could not lookup scalar "+name);
 //     return it->second;
   
-  ScalarPtr *obj = scalars_.find(name);
+  ScalarPtr *obj = const_cast<ScalarPtr*>(scalars_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup scalar "+name);
   return *obj;
@@ -245,7 +245,7 @@ VectorPtr Model::lookupVector(const std::string& name) const
 //       throw insight::Exception("Could not lookup vector "+name);
 //     return it->second;
 
-  VectorPtr *obj = vectors_.find(name);
+  VectorPtr *obj = const_cast<VectorPtr*>(vectors_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup vector "+name);
   return *obj;
@@ -258,7 +258,7 @@ DatumPtr Model::lookupDatum(const std::string& name) const
 //       throw insight::Exception("Could not lookup datum "+name);
 //     return it->second;
 
-  DatumPtr *obj = datums_.find(name);
+  DatumPtr *obj = const_cast<DatumPtr*>(datums_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup datum "+name);
   return *obj;
@@ -271,7 +271,7 @@ FeaturePtr Model::lookupModelstep(const std::string& name) const
 //       throw insight::Exception("Could not lookup model step "+name);
 //     return it->second;
 
-  FeaturePtr *obj = modelsteps_.find(name);
+  FeaturePtr *obj = const_cast<FeaturePtr*>(modelsteps_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup model step "+name);
   return *obj;    
@@ -284,7 +284,7 @@ FeatureSetPtr Model::lookupVertexFeature(const std::string& name) const
 //       throw insight::Exception("Could not lookup vertex feature "+name);
 //     return it->second;
 
-  FeatureSetPtr *obj = vertexFeatures_.find(name);
+  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(vertexFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup vertex feature "+name);
   return *obj;    
@@ -297,7 +297,7 @@ FeatureSetPtr Model::lookupEdgeFeature(const std::string& name) const
 //       throw insight::Exception("Could not lookup edge feature "+name);
 //     return it->second;
 
-  FeatureSetPtr *obj = edgeFeatures_.find(name);
+  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(edgeFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup edge feature "+name);
   return *obj;    
@@ -310,7 +310,7 @@ FeatureSetPtr Model::lookupFaceFeature(const std::string& name) const
 //       throw insight::Exception("Could not lookup face feature "+name);
 //     return it->second;
 
-  FeatureSetPtr *obj = faceFeatures_.find(name);
+  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(faceFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup face feature "+name);
   return *obj;    
@@ -323,7 +323,7 @@ FeatureSetPtr Model::lookupSolidFeature(const std::string& name) const
 //       throw insight::Exception("Could not lookup solid feature "+name);
 //     return it->second;
 
-  FeatureSetPtr *obj = solidFeatures_.find(name);
+  FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(solidFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup solid feature "+name);
   return *obj;    
@@ -336,7 +336,7 @@ ModelPtr Model::lookupModel(const std::string& name) const
 //       throw insight::Exception("Could not lookup model "+name);
 //     return it->second;
 
-  ModelPtr *obj = models_.find(name);
+  ModelPtr *obj = const_cast<ModelPtr*>(models_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup model "+name);
   return *obj;    
@@ -349,7 +349,7 @@ PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) con
 //       throw insight::Exception("Could not lookup evaluation "+name);
 //     return it->second;
 
-  PostprocActionPtr *obj = postprocActions_.find(name);
+  PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup postprocessing action "+name);
   return *obj;    
@@ -411,74 +411,91 @@ mapkey_parser::mapkey_parser<ModelPtr> Model::modelSymbols() const
 // }
 
 
-
-SymbolTableContents<ScalarPtr> Model::scalars() const
+template<class T>
+class SymbolTableContentsInserter
 {
-  SymbolTableContents<ScalarPtr> result;
-  scalars_.for_each(result);
+  std::map<std::string, T>& tab_;
+public:
+  SymbolTableContentsInserter(std::map<std::string, T>& tab)
+  : tab_(tab)
+  {}
+  
+  void operator()(const std::string& name, T v)
+  {
+    tab_[name]=v;
+//     std::cout<<"copying "<<name<<", after: #="<<tab_.size()<<std::endl;
+  }
+};
+
+
+Model::ScalarTableContents Model::scalars() const
+{
+  ScalarTableContents result;
+  scalars_.for_each(SymbolTableContentsInserter<ScalarPtr>(result));
   return result;
 }
 
-SymbolTableContents<VectorPtr> Model::vectors() const
+Model::VectorTableContents Model::vectors() const
 {
-  SymbolTableContents<VectorPtr> result;
-  vectors_.for_each(result);
+  VectorTableContents result;
+  vectors_.for_each(SymbolTableContentsInserter<VectorPtr>(result));
   return result;
 }
 
-SymbolTableContents<DatumPtr> 		Model::datums() const
+Model::DatumTableContents Model::datums() const
 {
-  SymbolTableContents<DatumPtr> result;
-  datums_.for_each(result);
+  DatumTableContents result;
+  datums_.for_each(SymbolTableContentsInserter<DatumPtr>(result));
   return result;
 }
 
-SymbolTableContents<FeaturePtr> 	Model::modelsteps() const
+Model::ModelstepTableContents Model::modelsteps() const
 {
-  SymbolTableContents<FeaturePtr> result;
-  modelsteps_.for_each(result);
+  ModelstepTableContents result;
+  modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
+//   std::cout<<"##="<<result.size()<<std::endl;
   return result;
 }
 
-SymbolTableContents<FeatureSetPtr> 	Model::vertexFeatures() const
+Model::VertexFeatureTableContents Model::vertexFeatures() const
 {
-  SymbolTableContents<FeatureSetPtr> result;
-  vertexFeatures_.for_each(result);
+  VertexFeatureTableContents result;
+  vertexFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
   return result;
 }
 
-SymbolTableContents<FeatureSetPtr> 	Model::edgeFeatures() const
+Model::EdgeFeatureTableContents Model::edgeFeatures() const
 {
-  SymbolTableContents<FeatureSetPtr> result;
-  edgeFeatures_.for_each(result);
+  EdgeFeatureTableContents result;
+  edgeFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
   return result;
 }
 
-SymbolTableContents<FeatureSetPtr> 	Model::faceFeatures() const
+Model::FaceFeatureTableContents Model::faceFeatures() const
 {
-  SymbolTableContents<FeatureSetPtr> result;
-  faceFeatures_.for_each(result);
+  FaceFeatureTableContents result;
+  faceFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
   return result;
 }
 
-SymbolTableContents<FeatureSetPtr> 	Model::solidFeatures() const
+Model::SolidFeatureTableContents Model::solidFeatures() const
 {
-  SymbolTableContents<FeatureSetPtr> result;
-  solidFeatures_.for_each(result);
+  SolidFeatureTableContents result;
+  solidFeatures_.for_each(SymbolTableContentsInserter<FeatureSetPtr>(result));
   return result;
 }
 
-SymbolTableContents<ModelPtr> 		Model::models() const
+Model::ModelTableContents Model::models() const
 {
-  SymbolTableContents<ModelPtr> result;
-  models_.for_each(result);
+  ModelTableContents result;
+  models_.for_each(SymbolTableContentsInserter<ModelPtr>(result));
   return result;
 }
 
-SymbolTableContents<PostprocActionPtr> 	Model::postprocActions() const
+Model::PostprocActionTableContents Model::postprocActions() const
 {
-  SymbolTableContents<PostprocActionPtr> result;
-  postprocActions_.for_each(result);
+  PostprocActionTableContents result;
+  postprocActions_.for_each(SymbolTableContentsInserter<PostprocActionPtr>(result));
   return result;
 }
 

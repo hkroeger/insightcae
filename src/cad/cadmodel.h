@@ -36,35 +36,22 @@ namespace insight
 namespace cad 
 {
 
-template<class T>
-class SymbolTableContents
-: public std::map<std::string, T>
-{
-public:
-  void operator()(const std::string& name, T v)
-  {
-    std::cout<<"copying "<<name<<std::endl;
-    (*this)[name]=v;
-  }
-};
-
 class Model
 : public ASTBase
 {
 public:
   
-//   typedef std::map<std::string, ScalarPtr> 	ScalarTable;
-//   typedef std::map<std::string, VectorPtr> 	VectorTable;
-//   typedef std::map<std::string, DatumPtr> 	DatumTable;
-//   typedef std::map<std::string, FeaturePtr> 	ModelstepTable;
-//   typedef std::map<std::string, ModelPtr> 	ModelTable;
-//   typedef std::set<std::string> 	ComponentSet;
-// 
-//   typedef std::map<std::string, FeatureSetPtr> 	VertexFeatureTable;
-//   typedef std::map<std::string, FeatureSetPtr> 	EdgeFeatureTable;
-//   typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTable;
-//   typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTable;
-//   typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTable;
+  typedef std::map<std::string, ScalarPtr> 	ScalarTableContents;
+  typedef std::map<std::string, VectorPtr> 	VectorTableContents;
+  typedef std::map<std::string, DatumPtr> 	DatumTableContents;
+  typedef std::map<std::string, FeaturePtr> 	ModelstepTableContents;
+  typedef std::map<std::string, ModelPtr> 	ModelTableContents;
+
+  typedef std::map<std::string, FeatureSetPtr> 	VertexFeatureTableContents;
+  typedef std::map<std::string, FeatureSetPtr> 	EdgeFeatureTableContents;
+  typedef std::map<std::string, FeatureSetPtr> 	FaceFeatureTableContents;
+  typedef std::map<std::string, FeatureSetPtr> 	SolidFeatureTableContents;
+  typedef std::map<std::string, PostprocActionPtr> 	PostprocActionTableContents;
 
   typedef boost::spirit::qi::symbols<char, ScalarPtr> 	ScalarTable;
   typedef boost::spirit::qi::symbols<char, VectorPtr> 	VectorTable;
@@ -166,16 +153,16 @@ public:
 //   const ModelTable& 		models() const 		{ return models_; }  
 //   const PostprocActionTable& 	postprocActions() const { return postprocActions_; }  
 
-  SymbolTableContents<ScalarPtr> scalars() const;
-  SymbolTableContents<VectorPtr>	vectors() const;
-  SymbolTableContents<DatumPtr> 		datums() const;
-  SymbolTableContents<FeaturePtr> 	modelsteps() const;
-  SymbolTableContents<FeatureSetPtr> 	vertexFeatures() const;
-  SymbolTableContents<FeatureSetPtr> 	edgeFeatures() const;
-  SymbolTableContents<FeatureSetPtr> 	faceFeatures() const;
-  SymbolTableContents<FeatureSetPtr> 	solidFeatures() const;
-  SymbolTableContents<ModelPtr> 		models() const;
-  SymbolTableContents<PostprocActionPtr> 	postprocActions() const;
+  ScalarTableContents scalars() const;
+  VectorTableContents	vectors() const;
+  DatumTableContents	datums() const;
+  ModelstepTableContents	modelsteps() const;
+  VertexFeatureTableContents 	vertexFeatures() const;
+  EdgeFeatureTableContents edgeFeatures() const;
+  FaceFeatureTableContents faceFeatures() const;
+  SolidFeatureTableContents solidFeatures() const;
+  ModelTableContents models() const;
+  PostprocActionTableContents postprocActions() const;
 
   arma::mat modelCoG();
 //   inline arma::mat modelCoG() { return modelCoG(); }; // "const" caused failure with phx::bind!

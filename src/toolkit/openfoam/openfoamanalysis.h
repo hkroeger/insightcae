@@ -79,6 +79,8 @@ eval = set
 protected:
     bool stopFlag_;
     ResultSetPtr derivedInputData_;
+    
+    std::vector<boost::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
     OpenFOAMAnalysis(const std::string& name, const std::string& description);
@@ -110,6 +112,8 @@ public:
     
     virtual void mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel);
     virtual void initializeSolverRun(OpenFOAMCase& cm);
+    
+    virtual void installConvergenceAnalysis(boost::shared_ptr<ConvergenceAnalysisDisplayer> cc);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);
     virtual void finalizeSolverRun(OpenFOAMCase& cm);
     

@@ -39,14 +39,10 @@ class ProgressDisplayer;
 typedef boost::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
 typedef std::map<std::string, double> ProgressVariableList;
 typedef std::pair<double, ProgressVariableList> ProgressState;  
-  
+
 class ProgressDisplayer
 {
-protected:
-  ProgressDisplayerPtr hookedDisplayer_;
-  
 public:
-  ProgressDisplayer(ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
   virtual ~ProgressDisplayer();
   
   virtual void update(const ProgressState& pi) =0;
@@ -54,11 +50,25 @@ public:
   virtual bool stopRun() const;
 };
 
+class CombinedProgressDisplayer
+: public ProgressDisplayer
+{
+public:
+  typedef enum {AND, OR} Ops;
+protected:
+  std::vector<ProgressDisplayer*> displayers_;
+  Ops op_;
+public:
+  CombinedProgressDisplayer(Ops op);
+  void add(ProgressDisplayer*);
+  virtual void update(const ProgressState& pi);
+  virtual bool stopRun() const;  
+};
+  
 class TextProgressDisplayer
 : public ProgressDisplayer
 {
 public:
-  TextProgressDisplayer(ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
   virtual void update(const ProgressState& pi);
 };
 
@@ -74,12 +84,14 @@ class ConvergenceAnalysisDisplayer
   bool converged_;
   
 public:
-  ConvergenceAnalysisDisplayer(const std::string& progvar, ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
+  ConvergenceAnalysisDisplayer(const std::string& progvar);
   
   virtual void update(const ProgressState& pi);
   
   virtual bool stopRun() const;
 };
+
+typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
 
 class SharedPathList 
 : public std::vector<boost::filesystem::path>

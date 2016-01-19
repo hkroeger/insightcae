@@ -35,11 +35,6 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-ProgressDisplayer::ProgressDisplayer(ProgressDisplayerPtr hookedDisplayer)
-: hookedDisplayer_(hookedDisplayer)
-{}
-
-  
 ProgressDisplayer::~ProgressDisplayer()
 {
 }
@@ -49,9 +44,46 @@ bool ProgressDisplayer::stopRun() const
   return false;
 }
 
-TextProgressDisplayer::TextProgressDisplayer(ProgressDisplayerPtr hookedDisplayer)
-: ProgressDisplayer(hookedDisplayer)
+CombinedProgressDisplayer::CombinedProgressDisplayer(CombinedProgressDisplayer::Ops op)
+: op_(op)
 {}
+
+
+void CombinedProgressDisplayer::add(ProgressDisplayer* d)
+{
+  displayers_.push_back(d);
+}
+
+void CombinedProgressDisplayer::update(const ProgressState& pi)
+{
+  int j=0;
+  BOOST_FOREACH(ProgressDisplayer* d, displayers_)
+  {
+//     std::cout<<"exec #"<<(j++)<<std::endl;
+    d->update(pi);
+  }
+}
+
+
+bool CombinedProgressDisplayer::stopRun() const
+{
+  bool stop;
+  
+  if (op_==AND)
+    stop=true;
+  else if (op_==OR)
+    stop=false;
+  
+  BOOST_FOREACH(const ProgressDisplayer* d, displayers_)
+  {
+    if (op_==AND)
+      stop = stop && d->stopRun();
+    else if (op_==OR)
+      stop = stop || d->stopRun();
+  }
+  return stop;
+}
+
 
 void TextProgressDisplayer::update(const ProgressState& pi)
 {
@@ -68,9 +100,8 @@ void TextProgressDisplayer::update(const ProgressState& pi)
   cout << endl;
 }
 
-ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& progvar, ProgressDisplayerPtr hookedDisplayer)
-: ProgressDisplayer(hookedDisplayer),
-  progvar_(progvar),
+ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& progvar)
+: progvar_(progvar),
   istart_(10),
   co_(15),
   threshold_(1e-5),
@@ -79,9 +110,12 @@ ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& pr
 
 void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
 {
-  if (pi.second.find(progvar_)!=pi.second.end())
+  decltype(pi.second)::const_iterator pv=pi.second.find(progvar_);
+  
+  if ( pv != pi.second.end() )
   {
-    trackedValues_.push_back(pi.second[progvar_]);
+    std::cout << progvar_ << "=" << pv->second <<std::endl;
+    trackedValues_.push_back(pv->second);
   }
   
   if (trackedValues_.size() > istart_)
@@ -95,13 +129,14 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
 	sum+=trackedValues_[j];
       ym.push_back(sum/double(i-i0));
     }
+    std::cout<<"#ym="<<ym.size()<<std::endl;
     
     if (ym.size()>co_)
     {
       double maxrely=0.0;
-      for (size_t j=ym.size()-1; j>=ym.size()-1-co_; j--)
+      for (size_t j=ym.size()-1; j>=ym.size()-co_; j--)
       {
-	double rely=fabs( (ym[j]-ym[j-1])/ym[j] );
+	double rely=fabs( (ym[j]-ym[j-1]) / ym[j] );
 	maxrely=std::max(rely, maxrely);
       }
       
@@ -122,7 +157,7 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
 
 bool ConvergenceAnalysisDisplayer::stopRun() const
 {
-  return !converged_ || hookedDisplayer_->stopRun();
+  return converged_;
 }
 
   

@@ -75,7 +75,7 @@ private:
         const objectRegistry& obr_;
 
         //- The fully-qualified name of the abort file
-        fileName abortFile_;
+        fileName writeFile_, abortFile_;
 
     // Private Member Functions
 

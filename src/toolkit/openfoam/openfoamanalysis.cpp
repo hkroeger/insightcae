@@ -294,9 +294,23 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   }
 }
 
+void OpenFOAMAnalysis::installConvergenceAnalysis(boost::shared_ptr<ConvergenceAnalysisDisplayer> cc)
+{
+  convergenceAnalysis_.push_back(cc);
+}
+
+
 void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
 {
-  SolverOutputAnalyzer analyzer(*displayer);
+  CombinedProgressDisplayer cpd(CombinedProgressDisplayer::OR), conv(CombinedProgressDisplayer::AND);
+  cpd.add(displayer);
+  cpd.add(&conv);
+  
+  BOOST_FOREACH(decltype(convergenceAnalysis_)::value_type& ca, convergenceAnalysis_)
+  {
+    conv.add(ca.get());
+  }
+  SolverOutputAnalyzer analyzer(cpd);
   
   string solverName;
   int np=readDecomposeParDict(executionPath());

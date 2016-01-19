@@ -187,14 +187,15 @@ void SolverOutputAnalyzer::update(const string& line)
       curforcesection_=2;
     }
     
-    boost::regex p_pattern("^ *pressure : \\((.*) (.*) (.*)\\)$");
-    boost::regex v_pattern("^ *viscous : \\((.*) (.*) (.*)\\)$");
-    boost::regex por_pattern("^ *porous : \\((.*) (.*) (.*)\\)$");
+    boost::regex p_pattern("^ *pressure *: *\\((.*) (.*) (.*)\\)$");
+    boost::regex v_pattern("^ *viscous *: *\\((.*) (.*) (.*)\\)$");
+    boost::regex por_pattern("^ *porous *: *\\((.*) (.*) (.*)\\)$");
     if ( boost::regex_search( line, match, p_pattern, boost::match_default ) )
     {
       double px=lexical_cast<double>(match[1]);
       double py=lexical_cast<double>(match[2]);
       double pz=lexical_cast<double>(match[3]);
+//       std::cout<<"pres ("<<curforcesection_<<") : "<<px<<" "<<py<<" "<<pz<<std::endl;
       if (curforcesection_==1)
       {
 	// force
@@ -215,6 +216,7 @@ void SolverOutputAnalyzer::update(const string& line)
       double vx=lexical_cast<double>(match[1]);
       double vy=lexical_cast<double>(match[2]);
       double vz=lexical_cast<double>(match[3]);
+//       std::cout<<"pres ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
       if (curforcesection_==1)
       {
 	// force
@@ -233,6 +235,7 @@ void SolverOutputAnalyzer::update(const string& line)
     else if ( boost::regex_search( line, match, por_pattern, boost::match_default ) )
     {
       //
+//       std::cout<<"por ("<<curforcesection_<<") "<<std::endl;
       
       if (curforcesection_==2)
       {
@@ -266,6 +269,7 @@ void SolverOutputAnalyzer::update(const string& line)
 
     if ( boost::regex_search( line, match, force_pattern, boost::match_default ) )
     {
+      std::cout<<"force output recog"<<std::endl;
       curforcename_=match[1];
       curforcesection_=1;
       curforcevalue_=arma::zeros(12);
@@ -275,6 +279,7 @@ void SolverOutputAnalyzer::update(const string& line)
       if (curTime_ == curTime_)
       {
 	pdisp_.update( ProgressState(curTime_, curProgVars_));
+	curProgVars_.clear();
       }
       curTime_=lexical_cast<double>(match[1]);
     } 
@@ -606,7 +611,7 @@ void OpenFOAMCase::runSolver
     
     if (analyzer.stopRun())
     {
-      std::ofstream f( (location/"wnow").c_str() );
+      std::ofstream f( (location/"wnowandstop").c_str() );
       f<<"STOP"<<std::endl;
     }
     

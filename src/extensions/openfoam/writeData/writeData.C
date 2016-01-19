@@ -42,9 +42,18 @@ defineTypeNameAndDebug(writeData, 0);
 
 void Foam::writeData::removeFile() const
 {
+    bool hasWrite = isFile(writeFile_);
+    reduce(hasWrite, orOp<bool>());
+    
     bool hasAbort = isFile(abortFile_);
     reduce(hasAbort, orOp<bool>());
 
+    if (hasWrite && Pstream::master())
+    {
+        // cleanup ABORT file (on master only)
+        rm(writeFile_);
+    }
+    
     if (hasAbort && Pstream::master())
     {
         // cleanup ABORT file (on master only)
@@ -65,8 +74,10 @@ Foam::writeData::writeData
 :
     name_(name),
     obr_(obr),
-    abortFile_("$FOAM_CASE/" + name)
+    writeFile_("$FOAM_CASE/" + name),
+    abortFile_("$FOAM_CASE/" + name+"Abort")
 {
+    writeFile_.expand();
     abortFile_.expand();
     read(dict);
 
@@ -85,7 +96,12 @@ Foam::writeData::~writeData()
 
 void Foam::writeData::read(const dictionary& dict)
 {
-    if (dict.readIfPresent("fileName", abortFile_))
+    if (dict.readIfPresent("fileName", writeFile_))
+    {
+        writeFile_.expand();
+    }
+    
+    if (dict.readIfPresent("fileNameAbort", abortFile_))
     {
         abortFile_.expand();
     }
@@ -94,8 +110,10 @@ void Foam::writeData::read(const dictionary& dict)
 
 void Foam::writeData::execute()
 {
-    bool write = isFile(abortFile_);
+    bool write = isFile(writeFile_);
     reduce(write, orOp<bool>());
+    bool abort = isFile(abortFile_);
+    reduce(abort, orOp<bool>());
 
     if (write)
     {
@@ -108,7 +126,23 @@ void Foam::writeData::execute()
             << obr_.time().timeIndex()
             << ")"
             << endl;
-            
+    }
+    
+    if (abort)
+    {
+#if defined(OF16ext) || defined(OF21x)
+        const_cast<Time&>(obr_.time()).setStopAt(Time::saWriteNow);
+#else
+        const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
+#endif
+	Info<< "USER REQUESTED ABORT (timeIndex="
+	    << obr_.time().timeIndex()
+	    << "): stop+write data"
+	    << endl;
+    }
+    
+    if (write||abort)
+    {    
         removeFile();
     }
 }

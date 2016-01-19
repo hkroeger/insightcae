@@ -25,6 +25,8 @@
 #include <fstream>
 
 #include "base/boost_include.h"
+#include <algorithm>
+#include "boost/bind.hpp"
 
 #include "gnuplot-iostream.h"
 
@@ -58,7 +60,8 @@ defineFactoryTable(ResultElement, ResultElement::ResultElementConstrP);
 ResultElement::ResultElement(const ResultElement::ResultElementConstrP& par)
 : shortDescription_(boost::get<0>(par)),
   longDescription_(boost::get<1>(par)),
-  unit_(boost::get<2>(par))
+  unit_(boost::get<2>(par)),
+  order_(0)
 {}
 
 ResultElement::~ResultElement()
@@ -80,6 +83,121 @@ void ResultElement::exportDataToFile(const std::string& name, const boost::files
 ParameterPtr ResultElement::convertIntoParameter() const
 {
   return ParameterPtr();
+}
+
+defineType(ResultSection);
+addToFactoryTable(ResultElement, ResultSection, ResultElement::ResultElementConstrP);
+
+ResultSection::ResultSection(const ResultElement::ResultElementConstrP& par)
+: ResultElement(par)
+{}
+
+ResultSection::ResultSection(const std::string& sectionName, const std::string& introduction)
+: ResultElement(ResultElementConstrP("", "", "")),
+  sectionName_(sectionName),
+  introduction_(introduction)
+{}
+
+void ResultElementCollection::writeLatexCodeOfElements
+(
+  std::ostream& f, 
+  const string& name, 
+  int level, 
+  const boost::filesystem::path& outputfilepath
+) const
+{
+  std::vector<value_type> items;
+  
+//   std::transform
+//   ( 
+//     begin(), 
+//     end(),
+//     std::back_inserter(items),
+//     boost::bind(&value_type, _1) // does not work...
+//   );
+  
+  std::for_each
+  (
+    begin(),
+    end(),
+    [&items](const value_type& p) 
+    { 
+      items.push_back(p);       
+    }
+  );
+  
+  std::sort
+  (
+    items.begin(), 
+    items.end(),
+    [](value_type &left, value_type &right) 
+    {
+      return left.second->order() < right.second->order();
+    }
+  );
+  
+  BOOST_FOREACH(const value_type& re, items)
+  {
+    const ResultElement* r = &(*re.second);
+
+    std::string subelemname=re.first;
+    if (name!="")
+      subelemname=name+"__"+re.first;
+      
+    
+    if (const ResultSection* se=dynamic_cast<const ResultSection*>(r))
+    {
+      se->writeLatexCode(f, subelemname, level+1, outputfilepath);
+    }
+    else
+    {
+      f << latex_subsection(level+1) << "{" << cleanSymbols(re.first) << "}\n";
+      f << r->shortDescription() << "\n\n";
+      
+  //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
+      r->writeLatexCode(f, subelemname, level+2, outputfilepath);
+      
+      f << "\n\n" << r->longDescription() << "\n\n";
+      f << endl;
+    }
+  }
+}
+
+void ResultSection::writeLatexCode(ostream& f, const string& name, int level, const path& outputfilepath) const
+{
+  f << latex_subsection(level) << "{"<<sectionName_<<"}\n";
+  f << "\\label{" << cleanSymbols(name) << "}" << std::endl;
+  f << introduction_ << std::endl;
+  
+  writeLatexCodeOfElements(f, "", level, outputfilepath);
+}
+
+void ResultSection::writeLatexHeaderCode(ostream& f) const
+{
+}
+
+void ResultSection::exportDataToFile(const string& name, const path& outputdirectory) const
+{
+  boost::filesystem::path subdir=outputdirectory/name;
+  
+  if (!boost::filesystem::exists(subdir)) 
+    boost::filesystem::create_directories(subdir);
+  
+  BOOST_FOREACH(const value_type& re, *this)
+  {
+    re.second->exportDataToFile(re.first, subdir);
+  }
+}
+
+boost::shared_ptr< ResultElement > ResultSection::clone() const
+{
+  ResultSection *res=new ResultSection(sectionName_);
+  BOOST_FOREACH(const value_type& re, *this)
+  {
+#warning Possible memory leak in case of exception
+    (*res)[re.first]=re.second->clone();
+  }
+  return ResultElementPtr(res);
 }
 
 
@@ -497,7 +615,7 @@ ResultSet::~ResultSet()
 
 ResultSet::ResultSet(const ResultSet& other)
 : //ptr_map< std::string, ResultElement>(other),
-  std::map< std::string, ResultElementPtr>(other),
+  ResultElementCollection(other),
   ResultElement(ResultElementConstrP("", "", "")),
   p_(other.p_),
   title_(other.title_),
@@ -544,20 +662,23 @@ void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int lev
   }
   
   f << latex_subsection(level) << "{Numerical Result Summary}\n";
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
-    f << cleanSymbols(i->second->shortDescription()) << "\n\n";
-    
-    std::string subelemname=i->first;
-    if (name!="")
-      subelemname=name+"__"+i->first;
-    
-    i->second->writeLatexCode(f, subelemname, level+2, outputfilepath);
-    
-    f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
-    f << endl;
-  }
+  
+  writeLatexCodeOfElements(f, name, level, outputfilepath);
+  
+//   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
+//   {
+//     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
+//     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
+//     
+//     std::string subelemname=i->first;
+//     if (name!="")
+//       subelemname=name+"__"+i->first;
+//     
+//     i->second->writeLatexCode(f, subelemname, level+2, outputfilepath);
+//     
+//     f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
+//     f << endl;
+//   }
 }
 
 void ResultSet::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
@@ -666,7 +787,7 @@ ParameterPtr ResultSet::convertIntoParameter() const
   return ps;
 }
 
-void ResultSet::insert(const string& key, ResultElement* elem)
+void ResultElementCollection::insert(const string& key, ResultElement* elem)
 {
   std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, ResultElementPtr(elem)));
 }
@@ -677,7 +798,7 @@ void ResultSet::insert(const string& key, ResultElement* elem)
 // }
 
 
-void ResultSet::insert(const string& key, ResultElementPtr elem)
+void ResultElementCollection::insert(const string& key, ResultElementPtr elem)
 {
   std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem));
 }
@@ -751,7 +872,7 @@ std::string PlotCurve::title() const
   
 void addPlot
 (
-  ResultSetPtr& results, 
+  boost::shared_ptr<ResultElementCollection> results, 
   const boost::filesystem::path& workdir,
   const std::string& resultelementname,
   const std::string& xlabel,
@@ -960,7 +1081,7 @@ PlotField::PlotField(const arma::mat& xy, const std::string& plotcmd)
 
 void addContourPlot
 (
-  ResultSetPtr& results, 
+  boost::shared_ptr<ResultElementCollection> results, 
   const boost::filesystem::path& workdir,
   const std::string& resultelementname,
   const std::string& xlabel,

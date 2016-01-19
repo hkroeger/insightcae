@@ -45,6 +45,7 @@ protected:
   std::string shortDescription_;
   std::string longDescription_;
   std::string unit_;
+  double order_;
   
 public:
   declareType("ResultElement");
@@ -55,6 +56,8 @@ public:
   inline const std::string& shortDescription() const { return shortDescription_; }
   inline const std::string& longDescription() const { return longDescription_; }
   inline const std::string& unit() const { return unit_; }
+  inline void setOrder(double o) { order_=o; }
+  inline double order() const { return order_; }
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
@@ -72,6 +75,40 @@ public:
 
 //typedef std::auto_ptr<ResultElement> ResultElementPtr;
 typedef boost::shared_ptr<ResultElement> ResultElementPtr;
+
+class ResultElementCollection
+: public std::map<std::string, ResultElementPtr> 
+{
+public:
+  /**
+   * insert elem into the set.
+   * elem is put into a shared_ptr but not clone. So don't delete it!
+   */
+  void insert(const std::string& key, ResultElement* elem);
+//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
+  void insert(const std::string& key, ResultElementPtr elem);
+  
+  void writeLatexCodeOfElements(std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath) const;
+};
+
+class ResultSection
+: public ResultElementCollection,
+  public ResultElement
+{
+  std::string sectionName_, introduction_;
+  
+public:
+  declareType("ResultSection");
+  
+  ResultSection(const ResultElement::ResultElementConstrP& par);
+  ResultSection(const std::string& sectionName, const std::string& introduction=std::string());
+  
+  virtual void writeLatexHeaderCode(std::ostream& f) const;
+  virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+  virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+    
+  virtual boost::shared_ptr<ResultElement> clone() const;
+};
 
 
 class Image
@@ -259,7 +296,7 @@ ResultElementPtr polynomialFitResult
 
 class ResultSet
 : 
-  public std::map<std::string, ResultElementPtr>,
+  public ResultElementCollection,
 //   public boost::ptr_map<std::string, ResultElement>,
   public ResultElement
 {
@@ -306,15 +343,7 @@ public:
   
   virtual ParameterSetPtr convertIntoParameterSet() const;
   virtual ParameterPtr convertIntoParameter() const;
-  
-  /**
-   * insert elem into the set.
-   * elem is put into a shared_ptr but not clone. So don't delete it!
-   */
-  void insert(const std::string& key, ResultElement* elem);
-//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
-  void insert(const std::string& key, ResultElementPtr elem);
-  
+    
   virtual ResultElementPtr clone() const;
 };
 
@@ -367,7 +396,7 @@ typedef std::vector<PlotCurve> PlotCurveList;
 
 void addPlot
 (
-  ResultSetPtr& results,
+  boost::shared_ptr<ResultElementCollection> results,
   const boost::filesystem::path& workdir, 
   const std::string& resultelementname,
   const std::string& xlabel,
@@ -421,7 +450,7 @@ typedef std::vector<PlotCurve> PlotFieldList;
 
 void addContourPlot
 (
-  ResultSetPtr& results,
+  boost::shared_ptr<ResultElementCollection> results,
   const boost::filesystem::path& workdir, 
   const std::string& resultelementname,
   const std::string& xlabel,

@@ -1,0 +1,48 @@
+Dn?=4;
+l3=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, l3);
+l1=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, l1);
+a1=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, a1);
+b1=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, b1);
+d5=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, d5);
+d3=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, d3);
+d7=TableLookup(Insert_DIN16903_3_Q, Dn, Dn, d7);
+
+insert1=
+Cylinder(
+O, O+l3*EX,
+d5
+);
+che=insert1 ? edges('maximal(CoG.x)');
+
+insert:
+Chamfer(che, (d5-d7)/2)
+-Cylinder(
+ O+a1*EX,
+ O+l1*EX,
+ d5, d3
+)
+-
+Cylinder(
+O,
+O+l1*EX,
+Dn
+)
+-
+Revolution(
+ Tri(
+  O+l1*EX, 
+  0.5*Dn*EY, 
+  0.25*Dn*EX
+ ),
+ O, EX, 2*M_PI
+)
+;
+
+Lafter?=0;
+Lbefore?=2*l3;
+cutout=
+Cylinder(
+O-Lbefore*EX,
+O+(l3+Lafter)*EX,
+d5
+);

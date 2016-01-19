@@ -45,6 +45,11 @@ Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
 
 void Cone::build()
 {
+  refpoints_["p0"]=p1_->value();
+  refpoints_["p1"]=p2_->value();
+  refvalues_["D0"]=D1_->value();
+  refvalues_["D1"]=D2_->value();
+  
   TopoDS_Shape cone=
     BRepPrimAPI_MakeCone
     (

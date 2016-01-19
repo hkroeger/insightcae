@@ -324,9 +324,8 @@ ISCADParser::ISCADParser(Model* model)
 // 	  ;
 
     r_vertexFeaturesExpression = 
-// 	  qi::lexeme[model_->vertexFeatureSymbols()] 
-// 	    [ _val =  phx::bind(&Model::lookupVertexFeature, model_, qi::_1) ]
-	  model_->vertexFeatureSymbols() [ qi::_val = qi::_1 ]
+	 (
+	   model_->vertexFeatureSymbols() [ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -343,12 +342,22 @@ ISCADParser::ISCADParser(Model* model)
 	    >> lit("allvertices")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex)) ]
+	 )
+	 >>
+	  *(
+	       '?'
+	    >> (lit("vertices")|lit("vertex"))
+	    >> '(' 
+	    >> r_string 
+	    >> *( ',' >> (r_vertexFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> ')' 
+	  ) 
+	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
       ;
 
-    r_edgeFeaturesExpression = 
-// 	  qi::lexeme[model_->edgeFeatureSymbols()] 
-// 	    [ _val =  phx::bind(&Model::lookupEdgeFeature, model_, qi::_1) ]
-	  model_->edgeFeatureSymbols()[ qi::_val = qi::_1 ]
+    r_edgeFeaturesExpression =
+         (
+	  model_->edgeFeatureSymbols() [ _val = qi::_1 ]
 	  | 
 	  ( r_solidmodel_expression
 	    >> '?'
@@ -365,11 +374,21 @@ ISCADParser::ISCADParser(Model* model)
 	    >> lit("alledges")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge)) ]
+	 )
+	 >>
+	  *(
+	       '?'
+	    >> (lit("edges")|lit("edge"))
+	    >> '(' 
+	    >> r_string 
+	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> ')' 
+	  ) 
+	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
       ;
 
     r_faceFeaturesExpression = 
-// 	  qi::lexeme[model_->faceFeatureSymbols()] 
-// 	    [ _val =  phx::bind(&Model::lookupFaceFeature, model_, qi::_1) ]
+         (
 	  model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
@@ -387,11 +406,21 @@ ISCADParser::ISCADParser(Model* model)
 	    >> lit("allfaces")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face)) ]
+	 )
+	 >>
+	  *(
+	       '?'
+	    >> (lit("faces")|lit("face"))
+	    >> '(' 
+	    >> r_string 
+	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> ')' 
+	  ) 
+	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
 	;
 
     r_solidFeaturesExpression = 
-// 	  qi::lexeme[model_->solidFeatureSymbols()] 
-// 	    [ _val =  phx::bind(&Model::lookupSolidFeature, model_, qi::_1) ]
+         (
 	  model_->solidFeatureSymbols()[ qi::_val = qi::_1 ]
 	  |
 	  ( r_solidmodel_expression
@@ -409,6 +438,17 @@ ISCADParser::ISCADParser(Model* model)
 	    >> lit("allsolids")
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid)) ]
+	 )
+	 >>
+	  *(
+	       '?'
+	    >> (lit("solids")|lit("solid"))
+	    >> '(' 
+	    >> r_string 
+	    >> *( ',' >> (r_solidFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> ')' 
+	  ) 
+	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
 	;
 
       
@@ -590,10 +630,10 @@ ISCADParser::ISCADParser(Model* model)
 	BOOST_SPIRIT_DEBUG_NODE(r_vector_primary);
 	BOOST_SPIRIT_DEBUG_NODE(r_vector_term);
 	BOOST_SPIRIT_DEBUG_NODE(r_vectorExpression);
-	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
 	BOOST_SPIRIT_DEBUG_NODE(r_model);
 	BOOST_SPIRIT_DEBUG_NODE(r_vertexFeaturesExpression);
 // 	BOOST_SPIRIT_DEBUG_NODE(r_solidmodel_propertyAssignment);
+	BOOST_SPIRIT_DEBUG_NODE(r_edgeFeaturesExpression);
 #endif
 	
     on_error<fail>(r_model, 

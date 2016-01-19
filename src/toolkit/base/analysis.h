@@ -33,22 +33,52 @@
 
 namespace insight
 {
+  
+class ProgressDisplayer;
 
+typedef boost::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
 typedef std::map<std::string, double> ProgressVariableList;
 typedef std::pair<double, ProgressVariableList> ProgressState;  
   
 class ProgressDisplayer
 {
+protected:
+  ProgressDisplayerPtr hookedDisplayer_;
+  
 public:
+  ProgressDisplayer(ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
   virtual ~ProgressDisplayer();
+  
   virtual void update(const ProgressState& pi) =0;
+  
+  virtual bool stopRun() const;
 };
 
 class TextProgressDisplayer
 : public ProgressDisplayer
 {
 public:
+  TextProgressDisplayer(ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
   virtual void update(const ProgressState& pi);
+};
+
+class ConvergenceAnalysisDisplayer
+: public ProgressDisplayer
+{
+  std::string progvar_;
+  std::vector<double> trackedValues_;
+  
+  int istart_, co_;
+  double threshold_;
+  
+  bool converged_;
+  
+public:
+  ConvergenceAnalysisDisplayer(const std::string& progvar, ProgressDisplayerPtr hookedDisplayer=ProgressDisplayerPtr());
+  
+  virtual void update(const ProgressState& pi);
+  
+  virtual bool stopRun() const;
 };
 
 class SharedPathList 

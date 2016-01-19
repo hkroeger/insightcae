@@ -35,9 +35,23 @@ using namespace boost::filesystem;
 namespace insight
 {
   
+ProgressDisplayer::ProgressDisplayer(ProgressDisplayerPtr hookedDisplayer)
+: hookedDisplayer_(hookedDisplayer)
+{}
+
+  
 ProgressDisplayer::~ProgressDisplayer()
 {
 }
+
+bool ProgressDisplayer::stopRun() const
+{
+  return false;
+}
+
+TextProgressDisplayer::TextProgressDisplayer(ProgressDisplayerPtr hookedDisplayer)
+: ProgressDisplayer(hookedDisplayer)
+{}
 
 void TextProgressDisplayer::update(const ProgressState& pi)
 {
@@ -52,6 +66,63 @@ void TextProgressDisplayer::update(const ProgressState& pi)
     cout << name << "=" << value << "\t";
   }
   cout << endl;
+}
+
+ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& progvar, ProgressDisplayerPtr hookedDisplayer)
+: ProgressDisplayer(hookedDisplayer),
+  progvar_(progvar),
+  istart_(10),
+  co_(15),
+  threshold_(1e-5),
+  converged_(false)
+{}
+
+void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
+{
+  if (pi.second.find(progvar_)!=pi.second.end())
+  {
+    trackedValues_.push_back(pi.second[progvar_]);
+  }
+  
+  if (trackedValues_.size() > istart_)
+  {
+    std::vector<double> ym;
+    for (size_t i=istart_; i<trackedValues_.size(); i++)
+    {
+      size_t i0=i/2;
+      double sum=0.0;
+      for (size_t j=i0; j<i; j++)
+	sum+=trackedValues_[j];
+      ym.push_back(sum/double(i-i0));
+    }
+    
+    if (ym.size()>co_)
+    {
+      double maxrely=0.0;
+      for (size_t j=ym.size()-1; j>=ym.size()-1-co_; j--)
+      {
+	double rely=fabs( (ym[j]-ym[j-1])/ym[j] );
+	maxrely=std::max(rely, maxrely);
+      }
+      
+      std::cout<<"max relative change of "<<progvar_<<" = "<<maxrely;
+      
+      if (maxrely<threshold_)
+      {
+	std::cout<<" >>> CONVERGED"<<std::endl;
+	converged_=true;
+      }
+      else
+      {
+	std::cout<<", not converged"<<std::endl;
+      }
+    }
+  }
+}
+
+bool ConvergenceAnalysisDisplayer::stopRun() const
+{
+  return !converged_ || hookedDisplayer_->stopRun();
 }
 
   

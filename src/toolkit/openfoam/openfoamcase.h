@@ -131,10 +131,22 @@ protected:
   double curTime_;
   std::map<std::string, double> curProgVars_;
   
+  /**
+   * name of currently tracked force output,
+   * emtpy, if no force output is currently expected
+   */
+  std::string curforcename_;
+  int curforcesection_;
+  arma::mat curforcevalue_;
+  
+//   std::map<std::string, std::vector<arma::mat> > trackedForces_;
+  
 public:
   SolverOutputAnalyzer(ProgressDisplayer& pdisp);
   
   void update(const std::string& line);
+  
+  bool stopRun() const;
 };
 
 

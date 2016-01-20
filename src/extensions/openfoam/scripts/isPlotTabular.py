@@ -61,6 +61,14 @@ data=np.array([
    for line in lines[1+opts.skip:]
   ])
 
+# moving average
+dataavg=np.asarray(
+   [
+     [ data[i,0] ] + list(np.average(data[i/2:i,1:], axis=0))
+     for i in range(1,len(data))
+   ]
+   )
+
 app = wx.PySimpleApp()
 frame = wx.Frame(None, -1, 'Plotter')
 plotter = PlotNotebook(frame)
@@ -73,7 +81,8 @@ if len(headings) != ncols:
 for i in range(1, ncols):
   ax = plotter.add(heads[i-1]).gca()
   ax.grid(True)
-  ax.plot(data[:,0], data[:,i])
+  ax.plot(data[:,0], data[:,i], 'k--')
+  ax.plot(dataavg[:,0], dataavg[:,i], 'k-')
 
 frame.Show()
 app.MainLoop()

@@ -84,7 +84,7 @@ class ConvergenceAnalysisDisplayer
   bool converged_;
   
 public:
-  ConvergenceAnalysisDisplayer(const std::string& progvar);
+  ConvergenceAnalysisDisplayer(const std::string& progvar, double threshold=1e-5);
   
   virtual void update(const ProgressState& pi);
   

@@ -100,11 +100,11 @@ void TextProgressDisplayer::update(const ProgressState& pi)
   cout << endl;
 }
 
-ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& progvar)
+ConvergenceAnalysisDisplayer::ConvergenceAnalysisDisplayer(const std::string& progvar, double threshold)
 : progvar_(progvar),
   istart_(10),
   co_(15),
-  threshold_(1e-5),
+  threshold_(threshold),
   converged_(false)
 {}
 
@@ -114,7 +114,7 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
   
   if ( pv != pi.second.end() )
   {
-    std::cout << progvar_ << "=" << pv->second <<std::endl;
+//     std::cout << progvar_ << "=" << pv->second <<std::endl;
     trackedValues_.push_back(pv->second);
   }
   
@@ -129,7 +129,7 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
 	sum+=trackedValues_[j];
       ym.push_back(sum/double(i-i0));
     }
-    std::cout<<"#ym="<<ym.size()<<std::endl;
+//     std::cout<<"#ym="<<ym.size()<<std::endl;
     
     if (ym.size()>co_)
     {
@@ -140,7 +140,7 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
 	maxrely=std::max(rely, maxrely);
       }
       
-      std::cout<<"max relative change of "<<progvar_<<" = "<<maxrely;
+      std::cout<<"max rel. change of "<<progvar_<<" = "<<maxrely;
       
       if (maxrely<threshold_)
       {

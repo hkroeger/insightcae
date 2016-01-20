@@ -115,6 +115,11 @@ void Foam::writeData::execute()
     bool abort = isFile(abortFile_);
     reduce(abort, orOp<bool>());
 
+    if (write||abort)
+    {    
+        removeFile();
+    }
+
     if (write)
     {
 #if defined(OF16ext) || defined(OF21x)
@@ -141,10 +146,6 @@ void Foam::writeData::execute()
 	    << endl;
     }
     
-    if (write||abort)
-    {    
-        removeFile();
-    }
 }
 
 void Foam::writeData::updateMesh(const mapPolyMesh& mpm)

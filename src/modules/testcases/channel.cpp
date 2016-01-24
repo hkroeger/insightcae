@@ -706,7 +706,7 @@ void ChannelBase::evaluateAtSection(
        (PlotCurve( refdata_K395, 	"u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=395, MKM)'" ))
        (PlotCurve( refdata_K590, 	"u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
        ,
-     "Wall normal profiles of averaged turbulent kinetic energy (1/2 R_ii + k_model) at x/H=" + str(format("%g")%xByH)
+     "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
     );
   }
 

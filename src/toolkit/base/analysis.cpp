@@ -67,12 +67,10 @@ void CombinedProgressDisplayer::update(const ProgressState& pi)
 
 bool CombinedProgressDisplayer::stopRun() const
 {
-  bool stop;
+  bool stop=false;
   
-  if (op_==AND)
+  if ( (op_==AND)&&(displayers_.size()>0) )
     stop=true;
-  else if (op_==OR)
-    stop=false;
   
   BOOST_FOREACH(const ProgressDisplayer* d, displayers_)
   {
@@ -136,7 +134,7 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
       double maxrely=0.0;
       for (size_t j=ym.size()-1; j>=ym.size()-co_; j--)
       {
-	double rely=fabs( (ym[j]-ym[j-1]) / ym[j] );
+	double rely=fabs(ym[j]-ym[j-1]) / (fabs(ym[j])+1e-10);
 	maxrely=std::max(rely, maxrely);
       }
       

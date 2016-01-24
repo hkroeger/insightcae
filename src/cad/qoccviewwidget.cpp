@@ -13,6 +13,7 @@
 #include <V3d_AmbientLight.hxx>
 #include <V3d_DirectionalLight.hxx>
 #include <V3d_PositionalLight.hxx>
+#include "Graphic3d_AspectFillArea3d.hxx"
 
 
 QoccViewWidget::QoccViewWidget
@@ -703,9 +704,14 @@ void QoccViewWidget::toggleClip()
     clipPlane_=new Graphic3d_ClipPlane(pl);
     Graphic3d_MaterialAspect mat(Graphic3d_NOM_DEFAULT);
     mat.SetColor(Quantity_Color(Quantity_NOC_WHITE));
-    clipPlane_->SetCappingMaterial(mat);
     clipPlane_->SetCapping(true);
+    clipPlane_->SetCappingMaterial(mat);
 //     clipPlane_->SetCappingHatchOn();
+//     clipPlane_->SetCappingHatch(Aspect_HS_DIAGONAL_45_WIDE);
+
+//     Handle_Graphic3d_AspectFillArea3d ca=clipPlane_->CappingAspect();
+//     ca->SetEdgeOn();
+
     myView->AddClipPlane(clipPlane_);
   }
   else

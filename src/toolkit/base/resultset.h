@@ -84,9 +84,9 @@ public:
    * insert elem into the set.
    * elem is put into a shared_ptr but not clone. So don't delete it!
    */
-  void insert(const std::string& key, ResultElement* elem);
+  ResultElement& insert(const std::string& key, ResultElement* elem);
 //   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
-  void insert(const std::string& key, ResultElementPtr elem);
+  ResultElement& insert(const std::string& key, ResultElementPtr elem);
   
   void writeLatexCodeOfElements(std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath) const;
 };

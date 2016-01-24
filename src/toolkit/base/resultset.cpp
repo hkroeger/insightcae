@@ -787,9 +787,11 @@ ParameterPtr ResultSet::convertIntoParameter() const
   return ps;
 }
 
-void ResultElementCollection::insert(const string& key, ResultElement* elem)
+ResultElement& ResultElementCollection::insert(const string& key, ResultElement* elem)
 {
-  std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, ResultElementPtr(elem)));
+  std::pair< iterator, bool > res=
+    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, ResultElementPtr(elem)));
+  return *(*res.first).second;
 }
 
 // void ResultSet::insert(const string& key, auto_ptr< ResultElement > elem)
@@ -798,9 +800,11 @@ void ResultElementCollection::insert(const string& key, ResultElement* elem)
 // }
 
 
-void ResultElementCollection::insert(const string& key, ResultElementPtr elem)
+ResultElement& ResultElementCollection::insert(const string& key, ResultElementPtr elem)
 {
-  std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem));
+  std::pair< iterator, bool > res=
+    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem));
+  return *(*res.first).second;
 }
 
 

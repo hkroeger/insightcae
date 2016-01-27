@@ -1708,21 +1708,21 @@ FeatureCache::FeatureCache(const filesystem::path& cacheDir)
     (
       boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
     );
-    boost::filesystem::create_directories(cacheDir_);
+//     boost::filesystem::create_directories(cacheDir_);
   }
 }
 
 FeatureCache::~FeatureCache()
 {
-  if (removeCacheDir_)
-  {
-    boost::filesystem::remove_all(cacheDir_);
-  }
+//   if (removeCacheDir_)
+//   {
+//     boost::filesystem::remove_all(cacheDir_);
+//   }
 }
 
 void FeatureCache::initRebuild()
 {
-  usedFilesDuringRebuild_.clear();
+//   usedFilesDuringRebuild_.clear();
 }
 
 void FeatureCache::finishRebuild()
@@ -1733,13 +1733,14 @@ void FeatureCache::finishRebuild()
 
 bool FeatureCache::contains(size_t hash) const
 {
-  return boost::filesystem::exists(fileName(hash));
+//   return boost::filesystem::exists(fileName(hash));
+  return false;
 }
 
 
 filesystem::path FeatureCache::markAsUsed(size_t hash)
 {
-  usedFilesDuringRebuild_.insert(fileName(hash));
+//   usedFilesDuringRebuild_.insert(fileName(hash));
   return fileName(hash);
 }
 

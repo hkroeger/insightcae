@@ -978,7 +978,8 @@ Feature::View Feature::createView
 (
   const arma::mat p0,
   const arma::mat n,
-  bool section
+  bool section,
+  const arma::mat up
 ) const
 {
   View result_view;
@@ -989,6 +990,12 @@ Feature::View Feature::createView
   gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
   
   gp_Ax2 viewCS(p_base, view_dir); 
+  if (up.n_elem==3)
+  {
+    arma::mat ex = cross(up, n);
+    viewCS=gp_Ax2(p_base, view_dir, gp_Dir(to_Vec(ex))); 
+  }
+  
   HLRAlgo_Projector projector( viewCS );
   gp_Trsf transform=projector.FullTransformation();
 
@@ -1701,21 +1708,21 @@ FeatureCache::FeatureCache(const filesystem::path& cacheDir)
     (
       boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
     );
-    boost::filesystem::create_directories(cacheDir_);
+//     boost::filesystem::create_directories(cacheDir_);
   }
 }
 
 FeatureCache::~FeatureCache()
 {
-  if (removeCacheDir_)
-  {
-    boost::filesystem::remove_all(cacheDir_);
-  }
+//   if (removeCacheDir_)
+//   {
+//     boost::filesystem::remove_all(cacheDir_);
+//   }
 }
 
 void FeatureCache::initRebuild()
 {
-  usedFilesDuringRebuild_.clear();
+//   usedFilesDuringRebuild_.clear();
 }
 
 void FeatureCache::finishRebuild()
@@ -1726,13 +1733,14 @@ void FeatureCache::finishRebuild()
 
 bool FeatureCache::contains(size_t hash) const
 {
-  return boost::filesystem::exists(fileName(hash));
+//   return boost::filesystem::exists(fileName(hash));
+  return false;
 }
 
 
 filesystem::path FeatureCache::markAsUsed(size_t hash)
 {
-  usedFilesDuringRebuild_.insert(fileName(hash));
+//   usedFilesDuringRebuild_.insert(fileName(hash));
   return fileName(hash);
 }
 

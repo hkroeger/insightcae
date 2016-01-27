@@ -260,6 +260,7 @@ ISCADParser::ISCADParser(Model* model)
 	(r_identifier >> '(' 
 	  >> r_vectorExpression >> ',' 
 	  >> r_vectorExpression
+	  >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
 	  >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
 	  >> ')' 
 	)

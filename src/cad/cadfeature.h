@@ -316,7 +316,8 @@ public:
   (
     const arma::mat p0,
     const arma::mat n,
-    bool section
+    bool section,
+    const arma::mat up=arma::mat()
   ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const Feature& m);

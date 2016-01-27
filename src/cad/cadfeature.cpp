@@ -978,7 +978,8 @@ Feature::View Feature::createView
 (
   const arma::mat p0,
   const arma::mat n,
-  bool section
+  bool section,
+  const arma::mat up
 ) const
 {
   View result_view;
@@ -989,6 +990,12 @@ Feature::View Feature::createView
   gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
   
   gp_Ax2 viewCS(p_base, view_dir); 
+  if (up.n_elem==3)
+  {
+    arma::mat ex = cross(up, n);
+    viewCS=gp_Ax2(p_base, view_dir, gp_Dir(to_Vec(ex))); 
+  }
+  
   HLRAlgo_Projector projector( viewCS );
   gp_Trsf transform=projector.FullTransformation();
 

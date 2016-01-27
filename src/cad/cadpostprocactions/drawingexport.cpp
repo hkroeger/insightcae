@@ -42,13 +42,17 @@ void DrawingExport::build()
   Feature::Views views;
   BOOST_FOREACH(const DrawingViewDefinition& vd, viewdefs_)
   {
-    bool sec=boost::get<3>(vd);
-    cout<<"is_section="<<sec<<endl;
+    bool sec=boost::get<4>(vd);
+    arma::mat up;
+    VectorPtr upd=boost::get<3>(vd);
+    if (upd)
+      up=upd->value();
     views[boost::get<0>(vd)]=model_->createView
     (
       boost::get<1>(vd)->value(),
       boost::get<2>(vd)->value(),
-      sec
+      sec,
+      up
     );
   }
   

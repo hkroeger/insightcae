@@ -29,7 +29,7 @@ namespace insight
 namespace cad 
 {
 
-typedef boost::tuple<std::string, VectorPtr, VectorPtr, bool > DrawingViewDefinition;
+typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool > DrawingViewDefinition;
 typedef std::vector<DrawingViewDefinition> DrawingViewDefinitions;
 
 class DrawingExport 

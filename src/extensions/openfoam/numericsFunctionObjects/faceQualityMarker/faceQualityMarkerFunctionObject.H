@@ -64,6 +64,7 @@ protected:
     bool markLowQualityTetFaces_;
     bool markVelocityPeaks_;
     bool smoothMarkerField_;
+    bool updateOnMeshChange_;
     scalar aspectThreshold_;
     scalar lowerNonOrthThreshold_;
     scalar upperNonOrthThreshold_;

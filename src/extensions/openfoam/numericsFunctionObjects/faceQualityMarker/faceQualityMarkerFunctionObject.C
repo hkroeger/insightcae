@@ -514,6 +514,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     markLowQualityTetFaces_(dict.lookupOrDefault<bool>("markLowQualityTetFaces", true)),
     markVelocityPeaks_(dict.lookupOrDefault<bool>("markVelocityPeaks", false)),
     smoothMarkerField_(dict.lookupOrDefault<bool>("smoothMarkerField", true)),
+    updateOnMeshChange_(dict.lookupOrDefault<bool>("updateOnMeshChange", true)),
     aspectThreshold_(dict.lookupOrDefault<scalar>("aspectThreshold", 500.0)),
     lowerNonOrthThreshold_(dict.lookupOrDefault<scalar>("lowerNonOrthThreshold", 35.0)),
     upperNonOrthThreshold_(dict.lookupOrDefault<scalar>("upperNonOrthThreshold", 65.0)),
@@ -588,7 +589,7 @@ bool Foam::faceQualityMarkerFunctionObject::execute
 #endif
 )
 {
-  if (mesh_.changing()) updateBlendingFactor();
+  if (mesh_.changing() && updateOnMeshChange_) updateBlendingFactor();
   return true;
 }
 

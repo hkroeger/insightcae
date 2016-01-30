@@ -112,6 +112,11 @@ autoPtr<FieldDataProvider<T> > FieldDataProvider<T>::New
   
   
 template<class T>
+FieldDataProvider<T>::FieldDataProvider()
+{
+}
+
+template<class T>
 FieldDataProvider<T>::FieldDataProvider(const FieldDataProvider<T>& o)
 : refCount(),
   timeInstants_(o.timeInstants_)
@@ -261,7 +266,8 @@ uniformField<T>::uniformField(const uniformField<T>& o)
   values_(o.values_)
 {
 }
-  
+
+
 template<class T>
 autoPtr<FieldDataProvider<T> > uniformField<T>::clone() const
 {
@@ -290,15 +296,27 @@ nonuniformField<T>::nonuniformField(Istream& is)
 {}
   
 template<class T>
-nonuniformField<T>::nonuniformField(const uniformField<T>& o)
+nonuniformField<T>::nonuniformField(const nonuniformField<T>& o)
 : FieldDataProvider<T>(o),
   values_(o.values_)
 {
 }
+
+template<class T>  
+nonuniformField<T>::nonuniformField(const Field<T>& uf)
+: FieldDataProvider<T>()
+{
+  FieldDataProvider<T>::timeInstants_.resize(1);
+  FieldDataProvider<T>::timeInstants_[0]=0;
   
+  values_.clear();
+  values_.push_back(new Field<T>(uf));
+}
+
 template<class T>
 tmp<Field<T> > nonuniformField<T>::atInstant(int i, const pointField& target) const
 {
+//   Info<<values_[i].size()<<" "<< target.size()<<" i ="<<i<<endl;
   tmp<Field<T> > res(new Field<T>(values_[i]));
   return res;
 }
@@ -367,7 +385,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
     
 //     Info<<cols_<<endl;
 //     std::cout<<q<<std::endl;
-    for (int c=0; c<q.n_elem; c++)
+    for (size_t c=0; c<q.n_elem; c++)
     {
       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
       {
@@ -471,7 +489,7 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
     
 //     Info<<cols_<<endl;
 //     std::cout<<q<<std::endl;
-    for (int c=0; c<q.n_elem; c++)
+    for (size_t c=0; c<q.n_elem; c++)
     {
       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
       {

@@ -70,6 +70,7 @@ public:
   );
 
     
+  FieldDataProvider();
   FieldDataProvider(const FieldDataProvider<T>& o);
   FieldDataProvider(Istream& is);
   
@@ -127,7 +128,8 @@ public:
   TypeName("nonuniform");
   
   nonuniformField(Istream& is);
-  nonuniformField(const uniformField<T>& o);
+  nonuniformField(const nonuniformField<T>& o);
+  nonuniformField(const Field<T>& uf);
   
   virtual tmp<Field<T> > atInstant(int i, const pointField& target) const;
   virtual autoPtr<FieldDataProvider<T> > clone() const;

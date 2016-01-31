@@ -274,7 +274,7 @@ ISCADParser::ISCADParser(Model* model)
     r_solidmodel_expression =
       r_solidmodel_term [_val=qi::_1 ]
       >>
-       *( '-' > r_solidmodel_term [ _val = construct<FeaturePtr>(new_<BooleanSubtract>(qi::_val, qi::_1)) ] )
+       *( '-' >> r_solidmodel_term [ _val = construct<FeaturePtr>(new_<BooleanSubtract>(qi::_val, qi::_1)) ] )
       ;
     
     r_solidmodel_term =

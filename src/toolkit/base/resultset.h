@@ -73,6 +73,15 @@ public:
   virtual boost::shared_ptr<ResultElement> clone() const =0;
 };
 
+class Ordering
+{
+  double ordering_, step_;
+public:
+  Ordering(double ordering_base=10., double ordering_step_fraction=0.001);
+  
+  double next();
+};
+
 //typedef std::auto_ptr<ResultElement> ResultElementPtr;
 typedef boost::shared_ptr<ResultElement> ResultElementPtr;
 
@@ -303,6 +312,7 @@ class ResultSet
 protected:
   ParameterSet p_;
   std::string title_, subtitle_, date_, author_;
+  std::string introduction_;
   
 public:
   ResultSet
@@ -316,6 +326,8 @@ public:
   
   ResultSet(const ResultSet& other);
   virtual ~ResultSet();
+  
+  inline std::string& introduction() { return introduction_; }
   
   inline const std::string& title() const { return title_; }
   inline const std::string& subtitle() const { return subtitle_; }
@@ -394,7 +406,7 @@ struct PlotCurve
 
 typedef std::vector<PlotCurve> PlotCurveList;
 
-void addPlot
+insight::ResultElement& addPlot
 (
   boost::shared_ptr<ResultElementCollection> results,
   const boost::filesystem::path& workdir, 

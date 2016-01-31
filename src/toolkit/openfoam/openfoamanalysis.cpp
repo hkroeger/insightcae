@@ -345,6 +345,7 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
+  results->introduction() = description_;
   
   meshQualityReport(cm, executionPath(), results);
   
@@ -356,7 +357,7 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   if (derivedInputData_)
   {
     std::string key(derivedInputData_->title());
-    results->insert( key, derivedInputData_->clone() );
+    results->insert( key, derivedInputData_->clone() ) .setOrder(-1.);
   }
   
   return results;

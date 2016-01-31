@@ -1805,7 +1805,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
 	"Mesh Quality", "", ""
 	)
      )
-    );
+    ).setOrder(0);
   }
 }
 
@@ -1816,6 +1816,7 @@ void currentNumericalSettingsReport
   ResultSetPtr results
 )
 {
+  double order=990;
   BOOST_FOREACH
   (
     const boost::filesystem::path& dictname, 
@@ -1845,7 +1846,8 @@ void currentNumericalSettingsReport
 	(
 	latexCode.str(), 
 	"Contents of "+dictname.string(), ""
-      )));    
+      ))).setOrder(order);    
+      order+=1.;
     }
     catch (...)
     {

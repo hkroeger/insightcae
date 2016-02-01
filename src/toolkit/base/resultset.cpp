@@ -85,6 +85,17 @@ ParameterPtr ResultElement::convertIntoParameter() const
   return ParameterPtr();
 }
 
+Ordering::Ordering(double ordering_base, double ordering_step_fraction)
+: ordering_(ordering_base),
+  step_(ordering_base*ordering_step_fraction)
+{}
+
+double Ordering::next()
+{
+  ordering_+=step_;
+  return ordering_;
+}
+
 defineType(ResultSection);
 addToFactoryTable(ResultElement, ResultSection, ResultElement::ResultElementConstrP);
 
@@ -139,6 +150,8 @@ void ResultElementCollection::writeLatexCodeOfElements
   BOOST_FOREACH(const value_type& re, items)
   {
     const ResultElement* r = &(*re.second);
+    
+    std::cout<<re.first<<" order="<<re.second->order()<<std::endl;
 
     std::string subelemname=re.first;
     if (name!="")
@@ -197,6 +210,7 @@ boost::shared_ptr< ResultElement > ResultSection::clone() const
 #warning Possible memory leak in case of exception
     (*res)[re.first]=re.second->clone();
   }
+  res->setOrder(order());
   return ResultElementPtr(res);
 }
 
@@ -236,7 +250,9 @@ void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, 
 
 ResultElementPtr Image::clone() const
 {
-  return ResultElementPtr(new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_));
+  ResultElementPtr res(new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_));
+  res->setOrder(order());
+  return res;
 }
   
 defineType(Comment);
@@ -267,7 +283,9 @@ void Comment::exportDataToFile(const string& name, const path& outputdirectory) 
 
 ResultElementPtr Comment::clone() const
 {
-  return ResultElementPtr(new Comment(value_, shortDescription_, longDescription_));
+  ResultElementPtr res(new Comment(value_, shortDescription_, longDescription_));
+  res->setOrder(order());
+  return res;
 }
   
 defineType(ScalarResult);
@@ -292,7 +310,9 @@ void ScalarResult::writeLatexCode(ostream& f, const std::string& name, int level
 
 ResultElementPtr ScalarResult::clone() const
 {
-  return ResultElementPtr(new ScalarResult(value_, shortDescription_, longDescription_, unit_));
+  ResultElementPtr res(new ScalarResult(value_, shortDescription_, longDescription_, unit_));
+  res->setOrder(order());
+  return res;
 }
 
 
@@ -416,7 +436,9 @@ void TabularResult::writeGnuplotData(std::ostream& f) const
 
 ResultElementPtr TabularResult::clone() const
 {
-  return ResultElementPtr(new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_));
+  ResultElementPtr res(new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_));
+  res->setOrder(order());
+  return res;
 }
 
 void TabularResult::writeLatexHeaderCode(ostream& f) const
@@ -535,8 +557,10 @@ void AttributeTableResult::exportDataToFile(const string& name, const path& outp
   
 ResultElementPtr AttributeTableResult::clone() const
 {
-  return ResultElementPtr(new AttributeTableResult(names_, values_, 
+  ResultElementPtr res(new AttributeTableResult(names_, values_, 
 					       shortDescription_, longDescription_, unit_));
+  res->setOrder(order());
+  return res;
 }
 
 ResultElementPtr polynomialFitResult
@@ -585,7 +609,8 @@ ResultSet::ResultSet
 : ResultElement(ResultElementConstrP("", "", "")),
   p_(p),
   title_(title),
-  subtitle_(subtitle)
+  subtitle_(subtitle),
+  introduction_()
 {
   if (date) 
     date_=*date;
@@ -621,7 +646,8 @@ ResultSet::ResultSet(const ResultSet& other)
   title_(other.title_),
   subtitle_(other.subtitle_),
   author_(other.author_),
-  date_(other.date_)
+  date_(other.date_),
+  introduction_(other.introduction_)
 {
 }
 
@@ -635,6 +661,7 @@ void ResultSet::transfer(const ResultSet& other)
   subtitle_=other.subtitle_;
   author_=other.author_;
   date_=other.date_;
+  introduction_=other.introduction_;
 }
 
 void ResultSet::writeLatexHeaderCode(std::ostream& f) const
@@ -652,6 +679,13 @@ void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int lev
     f << title_ << "\n\n";
 
     f << subtitle_ << "\n\n";
+  }
+  
+  if (!introduction_.empty())
+  {
+    f << latex_subsection(level) << "{Introduction}\n";
+    
+    f<<introduction_;
   }
   
   if (p_.size()>0)
@@ -819,6 +853,8 @@ ResultElementPtr ResultSet::clone() const
     std::string key(i->first);
     nr->insert( key, i->second->clone() );
   }
+  nr->setOrder(order());
+  nr->introduction()=introduction_;
   return ResultElementPtr(nr.release());
 }
 
@@ -874,7 +910,7 @@ std::string PlotCurve::title() const
   else return "";
 }
   
-void addPlot
+insight::ResultElement& addPlot
 (
   boost::shared_ptr<ResultElementCollection> results, 
   const boost::filesystem::path& workdir,
@@ -892,60 +928,14 @@ void addPlot
   {
     precmd+="set label \""+watermarktext+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
   }
-  results->insert( resultelementname,
+  
+  return results->insert( resultelementname,
     new Chart
     (
       xlabel, ylabel, plc,
       shortDescription, "",
       precmd
     ));
-  
-//   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-//   //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
-//   
-//   {
-//     Gnuplot gp;
-//     
-//     //gp<<"set terminal postscript color;";
-//     //gp<<"set output '"<<chart_file_name_i<<"';";
-//     gp<<"set terminal pngcairo; set termoption dash;";
-//     gp<<"set output '"<<chart_file_name<<"';";
-// 
-//     gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
-// 	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
-// 	"set linetype  3 lc rgb '#A52A2A' lw 1;"
-// 	"set linetype  4 lc rgb '#E9967A' lw 1;"
-// 	"set linetype  5 lc rgb '#5F9EA0' lw 1;"
-// 	"set linetype  6 lc rgb '#006400' lw 1;"
-// 	"set linetype  7 lc rgb '#8B008B' lw 1;"
-// 	"set linetype  8 lc rgb '#696969' lw 1;"
-// 	"set linetype  9 lc rgb '#DAA520' lw 1;"
-// 	"set linetype cycle  9;";
-// 
-//     gp<<addinit<<";";
-//     gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
-//     gp<<"plot 0 not lt -1";
-//     BOOST_FOREACH(const PlotCurve& pc, plc)
-//     {
-//       if (pc.xy_.n_rows>0)
-// 	gp<<", '-' "<<pc.plotcmd_;
-//       else
-// 	gp<<", "<<pc.plotcmd_;
-//     }
-//     gp<<endl;
-//     BOOST_FOREACH(const PlotCurve& pc, plc)
-//     {
-//       if (pc.xy_.n_rows>0)
-// 	gp.send1d(pc.xy_);
-//     }
-//   }
-// 
-//   results->insert(resultelementname,
-//     std::auto_ptr<Image>(new Image
-//     (
-//     workdir, chart_file_name, 
-//     shortDescription, ""
-//   )));
 }
 
 
@@ -1069,7 +1059,9 @@ void Chart::exportDataToFile(const std::string& name, const boost::filesystem::p
   
 ResultElementPtr Chart::clone() const
 {
-  return ResultElementPtr(new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_));
+  ResultElementPtr res(new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_));
+  res->setOrder(order());
+  return res;
 }
 
 

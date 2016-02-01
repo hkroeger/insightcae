@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
       StringList ists=vm["merge"].as<StringList>();
       BOOST_FOREACH(const string& ist, ists)
       {
-	ParameterSet to_merge;
+// 	ParameterSet to_merge;
 	parameters.readFromFile(ist);
       }
     }

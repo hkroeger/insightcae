@@ -187,6 +187,10 @@ void ResultSection::writeLatexCode(ostream& f, const string& name, int level, co
 
 void ResultSection::writeLatexHeaderCode(ostream& f) const
 {
+  BOOST_FOREACH(const value_type& i, *this)
+  {
+    i.second->writeLatexHeaderCode(f);
+  }  
 }
 
 void ResultSection::exportDataToFile(const string& name, const path& outputdirectory) const

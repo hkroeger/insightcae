@@ -443,7 +443,8 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts
 
 void ChannelBase::evaluateAtSection(
   OpenFOAMCase& cm, 
-  ResultSetPtr results, double x, int i
+  ResultSetPtr results, double x, int i,
+  Ordering& o
 )
 {
   Parameters p(*parameters_);
@@ -452,10 +453,21 @@ void ChannelBase::evaluateAtSection(
   PSDBL(parameters(), "geometry", H);
   PSDBL(parameters(), "geometry", L);
   PSDBL(parameters(), "operation", Re_tau);
+    
   
   double xByH= (x/L + 0.5)*L/H;
   bool isfirstslice=false;
   if (xByH<=1e-3) isfirstslice=true;
+
+  boost::shared_ptr<ResultSection> section
+  (
+    new ResultSection
+    (
+      str(format("Section at $x/H=%.2f$")%xByH), 
+      ""
+    )
+  );
+  Ordering so;
   
   string title="section__xByH_" + str(format("%04.2f") % xByH);
   replace_all(title, ".", "_");
@@ -515,7 +527,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      results, executionPath(), "chartMeanVelocity_"+title,
+      section, executionPath(), "chartMeanVelocity_"+title,
       "y+", "<U+>",
       list_of
       (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Axial'"))
@@ -530,7 +542,8 @@ void ChannelBase::evaluateAtSection(
       ,
       "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
       "set logscale x"
-    );
+    ) 
+    .setOrder(so.next());
     
   }
   
@@ -578,7 +591,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      results, executionPath(), "chartTurbulentLengthScale_"+title,
+      section, executionPath(), "chartTurbulentLengthScale_"+title,
       "y_delta", "<L_delta_RANS>",
       list_of
        (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
@@ -590,9 +603,10 @@ void ChannelBase::evaluateAtSection(
 		    +" + ("+str(format("%.1g") % m.c1)+"*ydelta^"+str(format("%.1g") % m.c3)+")'"))
        ,
       "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH)
-    );
+    )
+    .setOrder(so.next());
 
-    results->insert
+    section->insert
     (
      "regressionCoefficientsTubulentLengthScale_"+title,
      std::auto_ptr<AttributeTableResult>
@@ -610,7 +624,8 @@ void ChannelBase::evaluateAtSection(
 	"Regression coefficients", "", ""
 	)
      )
-    );
+    )
+    .setOrder(so.next());
        
   }
 
@@ -652,6 +667,7 @@ void ChannelBase::evaluateAtSection(
     arma::mat axial(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c))	);
     arma::mat wallnormal(	join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3))	);
     arma::mat spanwise(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5))	);
+    arma::mat cross(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1))	);
 
     axial.save( 	( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     wallnormal.save( 	( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).c_str(), arma::raw_ascii);
@@ -659,12 +675,13 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      results, executionPath(), chart_name,
+      section, executionPath(), chart_name,
       "y+", "<R+>",
       list_of
        (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"))
        (PlotCurve(wallnormal, 		"w l lt 1 lc 2 lw 4 t 'Ryy (Wall normal)'"))
        (PlotCurve(spanwise, 		"w l lt 1 lc 3 lw 4 t 'Rzz (Spanwise)'"))
+       (PlotCurve(cross, 		"w l lt 1 lc 4 lw 4 t 'Rxy'"))
        (PlotCurve(refdata_Ruu, 		"w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
        (PlotCurve(refdata_Rvv, 		"w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
        (PlotCurve(refdata_Rww, 		"w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
@@ -677,7 +694,8 @@ void ChannelBase::evaluateAtSection(
        ,
      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
      "set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"
-    );
+    )
+    .setOrder(so.next());
 
     chart_name="chartMeanTKE_"+title;
     
@@ -698,7 +716,7 @@ void ChannelBase::evaluateAtSection(
     
     addPlot
     (
-      results, executionPath(), chart_name,
+      section, executionPath(), chart_name,
       "y_delta", "<K+>",
       list_of
        (PlotCurve( Kp, 			"w l t 'TKE'" ))
@@ -707,7 +725,8 @@ void ChannelBase::evaluateAtSection(
        (PlotCurve( refdata_K590, 	"u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
-    );
+    )
+    .setOrder(so.next());
   }
 
   std::string init=
@@ -738,12 +757,12 @@ void ChannelBase::evaluateAtSection(
 	  "WriteImage('"+pressure_contour_filename+"')\n"
 	)
       );
-      results->insert(pressure_contour_name,
+      section->insert(pressure_contour_name,
 	std::auto_ptr<Image>(new Image
 	(
 	executionPath(), pressure_contour_filename, 
 	"Contour of pressure (axial section at x/H=" + str(format("%g")%xByH)+")", ""
-      )));
+      ))) .setOrder(so.next());
     }
     catch (insight::Exception& e)
     {
@@ -770,14 +789,16 @@ void ChannelBase::evaluateAtSection(
 	  "WriteImage('"+velocity_contour_filename+"')\n"
 	)
       );
-      results->insert(velocity_contour_name,
+      section->insert(velocity_contour_name,
 	std::auto_ptr<Image>(new Image
 	(
 	executionPath(), velocity_contour_filename, 
 	"Contour of "+c+"-Velocity (axial section at x/H=" + str(format("%g")%xByH)+")", ""
-      )));
+      ))) .setOrder(so.next());
     }
   }
+  
+  results->insert(title, section) .setOrder(o.next());
 }
 
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
@@ -799,9 +820,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   }
   
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
+  Ordering o;
   
-  evaluateAtSection(cm, results, 1e-4, 0);
-
   const LinearTPCArray* tpcs=cm.get<LinearTPCArray>("tpc_interiorTPCArray");
   if (!tpcs)
   {
@@ -844,7 +864,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 	(PlotCurve(Cftheo_vs_xp, "w l lt 2 lc 2 lw 1 t 'Analytical'"))
 	,
       "Axial profile of wall friction coefficient"
-    );    
+    ) .setOrder(o.next());    
   }
   catch (...)
   {
@@ -875,7 +895,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     (
     executionPath(), "pressure_longi.jpg", 
     "Contour of pressure (longitudinal section)", ""
-  )));
+  ))) .setOrder(o.next());
   
   for(int i=0; i<3; i++)
   {
@@ -900,9 +920,12 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       (
       executionPath(), "U"+c+"_longi.jpg", 
       "Contour of "+c+"-Velocity", ""
-    )));
+    ))) .setOrder(o.next());
   }
   
+  Ordering xseco(10.);
+  evaluateAtSection(cm, results, 1e-4, 0, xseco);
+
   return results;
 }
 

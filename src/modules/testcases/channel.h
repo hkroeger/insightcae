@@ -212,7 +212,8 @@ public:
   
   virtual void evaluateAtSection(
     OpenFOAMCase& cm,
-    ResultSetPtr results, double x, int i
+    ResultSetPtr results, double x, int i,
+    Ordering& o
   );
     
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);

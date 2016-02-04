@@ -179,7 +179,7 @@ void ResultElementCollection::writeLatexCodeOfElements
 void ResultSection::writeLatexCode(ostream& f, const string& name, int level, const path& outputfilepath) const
 {
   f << latex_subsection(level) << "{"<<sectionName_<<"}\n";
-  f << "\\label{" << cleanSymbols(name) << "}" << std::endl;
+//   f << "\\label{" << cleanSymbols(name) << "}" << std::endl;  // problem with underscores: "\_" as returned by cleanSymbols is wrong here
   f << introduction_ << std::endl;
   
   writeLatexCodeOfElements(f, "", level, outputfilepath);

@@ -182,7 +182,7 @@ void ResultSection::writeLatexCode(ostream& f, const string& name, int level, co
 //   f << "\\label{" << cleanSymbols(name) << "}" << std::endl;  // problem with underscores: "\_" as returned by cleanSymbols is wrong here
   f << introduction_ << std::endl;
   
-  writeLatexCodeOfElements(f, "", level, outputfilepath);
+  writeLatexCodeOfElements(f, name, level, outputfilepath);
 }
 
 void ResultSection::writeLatexHeaderCode(ostream& f) const

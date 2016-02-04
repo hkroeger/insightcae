@@ -463,7 +463,7 @@ void ChannelBase::evaluateAtSection(
   (
     new ResultSection
     (
-      str(format("Section at $x/H=%.2f$")%xByH), 
+      str(format("Section at x/H=%.2f")%xByH), 
       ""
     )
   );

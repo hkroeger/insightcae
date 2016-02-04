@@ -77,7 +77,7 @@ class Ordering
 {
   double ordering_, step_;
 public:
-  Ordering(double ordering_base=10., double ordering_step_fraction=0.001);
+  Ordering(double ordering_base=1., double ordering_step_fraction=0.001);
   
   double next();
 };
@@ -98,6 +98,20 @@ public:
   ResultElement& insert(const std::string& key, ResultElementPtr elem);
   
   void writeLatexCodeOfElements(std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath) const;
+
+  template<class T>
+  inline T& get(const std::string& name)
+  {
+    std::map<std::string, ResultElementPtr>::iterator i=find(name);
+    if (i==end())
+      insight::Exception("ResultSet does not contain element "+name);
+    T* ret=dynamic_cast<T*>(i->second.get());
+    if (!ret)
+      insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
+    return *ret;
+  }
+  
+
 };
 
 class ResultSection
@@ -340,18 +354,6 @@ public:
 
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
-  
-  template<class T>
-  inline T& get(const std::string& name)
-  {
-    std::map<std::string, ResultElementPtr>::iterator i=find(name);
-    if (i==end())
-      insight::Exception("ResultSet does not contain element "+name);
-    T* ret=dynamic_cast<T*>(i->second.get());
-    if (!ret)
-      insight::Exception("ResultSet does contain element "+name+" but it is not of requested type "+T::typeName);
-    return *ret;
-  }
   
   virtual ParameterSetPtr convertIntoParameterSet() const;
   virtual ParameterPtr convertIntoParameter() const;

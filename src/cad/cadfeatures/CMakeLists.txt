@@ -45,6 +45,7 @@ add_sources(insightcad_SOURCES
  wire.cpp
  modelfeature.cpp
  subfeature.cpp
+ nacafourdigit.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

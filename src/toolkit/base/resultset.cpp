@@ -141,7 +141,7 @@ void ResultElementCollection::writeLatexCodeOfElements
   (
     items.begin(), 
     items.end(),
-    [](value_type &left, value_type &right) 
+    [](const value_type &left, const value_type &right) 
     {
       return left.second->order() < right.second->order();
     }

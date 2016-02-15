@@ -31,9 +31,7 @@ namespace insight
   
 std::ostream& operator<<(std::ostream& os, const Exception& ex)
 {
-  os<<ex.message_<<endl;
-  if (ex.strace_!="")
-    os<<ex.strace_<<endl;
+  os<<static_cast<std::string>(ex);
   return os;
 }
 
@@ -74,7 +72,7 @@ Exception::~Exception()
 Exception::operator std::string() const
 {
   if (strace_!="")
-    return message_+"\n"+strace_;
+    return "\n\nERROR MESSAGE:\n\n"+message_+"\n\n\nSTACK TRACE:\n"+strace_+"\n\n";
   else
     return message_;
 }

@@ -24,8 +24,10 @@
 #define INSIGHT_CAD_DEBUG 1
 
 #include <set>
+#include <string>
 #include <vector>
 
+#include "base/boost_include.h"
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
 #include "boost/fusion/container.hpp"
@@ -76,6 +78,7 @@ typedef boost::variant<ScalarPtr, VectorPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
 
+boost::filesystem::path sharedModelFilePath(const std::string& name);
 
 }
 }

@@ -66,7 +66,6 @@ typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
 
-boost::filesystem::path sharedModelFilePath(const std::string& name);
 
 
 // template <typename Iterator>

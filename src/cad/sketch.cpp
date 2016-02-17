@@ -340,12 +340,16 @@ void Sketch::build()
   if (!pl_->providesPlanarReference())
     throw insight::Exception("Sketch: Planar reference required!");
   
+  boost::filesystem::path infilename = fn_;
+  if (!exists(infilename))
+    infilename=sharedModelFilePath(fn_.string());
+  
   boost::filesystem::path filename = fn_;
   std::string layername = ln_;
   
   std::string ext=fn_.extension().string();
   boost::algorithm::to_lower(ext);
-  cout<<ext<<endl;
+//   cout<<ext<<endl;
   
   if (ext==".fcstd")
   {
@@ -361,22 +365,24 @@ void Sketch::build()
       for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
       {
 	std::string vname=boost::fusion::at_c<0>(*it);
-	int vid;
-	try {
-	 if (vname.size()<2)
-	   throw 1;
-	 if (!(starts_with(vname, "d") || starts_with(vname, "D")))
-	   throw 2;
-	 vname.erase(0,1);
-	 vid=lexical_cast<int>(vname);
-	}
-	catch (...)
-	{
-	  throw insight::Exception("Error in passing variable values to FCStd Sketch: variable names must be of format d<ID>! (ID equal to FreeCADs constraint ID)");
-	}
-	
 	double vval=boost::fusion::at_c<1>(*it)->value();
-	vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+	if (starts_with(vname, "Constraint"))
+	{
+	  try 
+	  {
+	    int vid;
+	    vname.erase(0,10);
+	    vid=lexical_cast<int>(vname);
+	    vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+	  }
+	  catch (...)
+	  {
+	  }
+	}
+	else
+	{
+	  vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
+	}
       }
       
       std::ofstream mf(macrofilename.c_str());
@@ -399,8 +405,8 @@ void Sketch::build()
 "doc.recompute()\n"
 "importDXF.export(__objs__, \"%s\")\n"
 "del __objs__\n") 
-      % fn_.string() 
-      % fn_.filename().stem().string() 
+      % infilename.string() 
+      % infilename.filename().stem().string() 
       % ln_
       % filename.string() 
       );
@@ -411,7 +417,7 @@ void Sketch::build()
     cout<<"CMD=\""<<cmd<<"\""<<endl;
     if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
     {
-      throw insight::Exception("Conversion of FreeCAD file "+fn_.string()+" into DXF "+filename.string()+" failed!");
+      throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
     }
     boost::filesystem::remove(macrofilename);
     
@@ -429,11 +435,11 @@ void Sketch::build()
       vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
     }
     
-    std::string cmd = str( format("psketchercmd %s -o %s") % fn_ % filename ) + vargs;
+    std::string cmd = str( format("psketchercmd %s -o %s") % infilename % filename ) + vargs;
     cout<<"CMD=\""<<cmd<<"\""<<endl;
     if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
     {
-      throw insight::Exception("Conversion of pSketch file "+fn_.string()+" into DXF "+filename.string()+" failed!");
+      throw insight::Exception("Conversion of pSketch file "+infilename.string()+" into DXF "+filename.string()+" failed!");
     }
   }
   

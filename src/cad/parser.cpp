@@ -64,8 +64,6 @@ namespace boost { namespace phoenix { namespace stl {
 
 namespace insight {
 namespace cad {
-  
-namespace parser {  
 
 
 boost::filesystem::path sharedModelFilePath(const std::string& name)
@@ -95,6 +93,9 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
   throw insight::Exception("Shared model file "+name+" not found.");
   return boost::filesystem::path();
 }
+
+namespace parser {  
+
 
 using namespace qi;
 using namespace phx;

@@ -44,7 +44,7 @@ LookupTableScalar::LookupTableScalar
 
 double LookupTableScalar::value() const
 {
-  std::ifstream f( (parser::sharedModelFilePath(name_+".csv")).c_str() );
+  std::ifstream f( (sharedModelFilePath(name_+".csv")).c_str() );
   std::string line;
   std::vector<std::string> cols;
   getline(f, line);

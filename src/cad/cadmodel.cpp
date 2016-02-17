@@ -83,7 +83,7 @@ void Model::build()
   std::string name=modelname_+".iscad";
   
   int failloc=-1;
-  if (!parseISCADModelFile(parser::sharedModelFilePath(name), this, &failloc))
+  if (!parseISCADModelFile(sharedModelFilePath(name), this, &failloc))
   {
     throw insight::Exception("Failed to parse model "+name+
 	    str(format(". Stopped at %d.")%failloc));

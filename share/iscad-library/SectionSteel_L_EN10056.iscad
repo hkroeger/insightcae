@@ -1,0 +1,23 @@
+h?=100;
+b?=65;
+t?=7;
+r1?=10;
+r2?=t/2;
+L=1000;
+
+# ref points
+p0=O;
+p0i=t*EX+t*EY;
+ph=h*EY;
+phi=h*EY+t*EX;
+pb=b*EX;
+pbi=b*EX+t*EY;
+
+xsec=Sketch(
+ XY, 
+ "SectionSteel_L_EN10056.fcstd", 
+ 'xsec',
+ h=h, b=b, t=t, r1=r1, r2=r2);
+
+steel:
+ Extrusion(xsec, L*EZ);

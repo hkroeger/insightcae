@@ -138,17 +138,11 @@ DXFWriter::DXFWriter
   dw_->tableEnd();
 
   dxf_.writeBlockRecord(*dw_);
-  dw_->tableEnd();
   dw_->sectionEnd();
-
-  dw_->sectionEntities();
-
 }
 
 DXFWriter::~DXFWriter()
 {
-  dw_->sectionEnd();
-
   dxf_.writeObjects(*dw_);
   dxf_.writeObjectsEnd(*dw_);
   dw_->dxfEOF();
@@ -381,7 +375,7 @@ void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, auto_ptr< DL_WriterA >& dw) co
 //       f<<pts[i].X()<<" "<<pts[i].Y()<<endl;
 //     }
 //   }
-  
+//   
   for (int i=1; i<pts.size(); i++)
   {
     gp_Pnt p0=pts[i-1];
@@ -406,24 +400,24 @@ HatchGenerator::HatchData::HatchData(double s, double a)
 
 std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ =
  list_of<HatchGenerator::HatchData>
-  (HatchData(0.33, 45.0))
-  (HatchData(0.33, -45.0))
-  (HatchData(0.33, 40.0))
-  (HatchData(0.33, -40.0))
-  (HatchData(0.33, 50.0))
-  (HatchData(0.33, -50.0))
-  (HatchData(0.5, 45.0))
-  (HatchData(0.5, -45.0))
-  (HatchData(0.5, 40.0))
-  (HatchData(0.5, -40.0))
-  (HatchData(0.5, 50.0))
-  (HatchData(0.5, -50.0))
-  (HatchData(0.66, 45.0))
-  (HatchData(0.66, -45.0))
-  (HatchData(0.66, 40.0))
-  (HatchData(0.66, -40.0))
-  (HatchData(0.66, 50.0))
-  (HatchData(0.66, -50.0))
+  (HatchData(0.33, 0.0))
+  (HatchData(0.33, -90.0))
+  (HatchData(0.33, 10.0))
+  (HatchData(0.33, -80.0))
+  (HatchData(0.33, 20.0))
+  (HatchData(0.33, -70.0))
+  (HatchData(0.5, 0.0))
+  (HatchData(0.5, -90.0))
+  (HatchData(0.5, 10.0))
+  (HatchData(0.5, -80.0))
+  (HatchData(0.5, 20.0))
+  (HatchData(0.5, -70.0))
+  (HatchData(0.66, 0.0))
+  (HatchData(0.66, -90.0))
+  (HatchData(0.66, 10.0))
+  (HatchData(0.66, -80.0))
+  (HatchData(0.66, 20.0))
+  (HatchData(0.66, -70.0))
  ;
 
 HatchGenerator::HatchGenerator()
@@ -435,7 +429,7 @@ DL_HatchData HatchGenerator::generate()
   const HatchData& hd=hatches_[curidx_];
   curidx_++;
   if (curidx_>=hatches_.size()) curidx_=0;
-  return DL_HatchData(1, false, hd.scale, hd.angle, "iso03w100");
+  return DL_HatchData(1, false, hd.scale, hd.angle, /*"iso03w100"*/ "ANSI31" );
 }
   
 void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer)
@@ -543,7 +537,7 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
 	  
 	  BRepAdaptor_Curve adapt(e);
 	  
-	  //cout<<"Processing curve of type "<<adapt.GetType()<<endl;
+	  cout<<"xsec drawing: processing curve of type "<<adapt.GetType()<<endl;
 	  
 	  switch (adapt.GetType())
 	  {
@@ -635,24 +629,36 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
     {
       addlayers.push_back
       (
-	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS", 1.), false)
+	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 25, "CONTINUOUS", 1.), false)
       );
     }
   }
 
   DXFWriter dxf(file, addlayers);
 
+//   dw_->sectionEntities();
+
+  dxf.dw().sectionBlocks();
   HatchGenerator hgen;
   BOOST_FOREACH(const Feature::Views::value_type& v, views)
   {
     string name=v.first;
+    
+    dxf.dxf().writeBlock(dxf.dw(),
+      DL_BlockData(name, 0, 0.0, 0.0, 0.0));
     dxf.writeShapeEdges(v.second.visibleEdges, name);
     dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
     if (!v.second.crossSection.IsNull())
     {
       dxf.writeSection( v.second.crossSection, hgen, name+"_XSEC");
     }
+    dxf.dxf().writeEndBlock(dxf.dw(), name);
   }
+  dxf.dw().sectionEnd();
+  
+  dxf.dw().sectionEntities();
+//   dxf.dxf().writeBlock();
+  dxf.dw().sectionEnd();
 }
   
 }

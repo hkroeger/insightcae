@@ -128,6 +128,9 @@ public:
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
   void writeSection(const TopoDS_Shape& s, HatchGenerator& hgen, std::string layer="0");
   
+  inline DL_Dxf& dxf() { return dxf_; }
+  inline DL_WriterA& dw() { return *dw_; }
+  
   static void writeViews(const boost::filesystem::path& file, const Feature::Views& views);
 };
 }

@@ -338,7 +338,7 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
     if (exists(executionPath()/"processor0"))
     {
       cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
-      cm.removeProcessorDirectories(executionPath());
+//       cm.removeProcessorDirectories(executionPath());  //will remove proc dirs, if evaluation is executed while solution is still running...
     }
     else
       insight::Warning("A parallel run is configured, but not processor directory is present!\nProceeding anyway.");

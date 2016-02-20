@@ -46,6 +46,7 @@ add_sources(insightcad_SOURCES
  modelfeature.cpp
  subfeature.cpp
  nacafourdigit.cpp
+ coil.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

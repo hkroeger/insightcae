@@ -455,20 +455,64 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
     gp_Dir xaxis = ellp.XAxis().Direction();
     gp_Pnt pm=gp_Pnt(xaxis.XYZ().Normalized()*r1);
 
-    gp_Vec a (s, p);
-    gp_Vec b (e, p);
+    gp_Vec a (p, s); // = s-p
+    gp_Vec b (p, e); // = e-p
 
     double a0=atan2(xaxis.Y(), xaxis.X());
+    if (a0<0) a0=2.*M_PI-a0;
     a.Rotate(gp_Ax1(p, v3), -a0);
     b.Rotate(gp_Ax1(p, v3), -a0);
-    double start_angle = atan2(a.Y(), a.X())+M_PI;
-    double end_angle = atan2(b.Y(), b.X())+M_PI;
+    double start_angle = atan2(a.Y(), a.X());
+    if (start_angle<0) start_angle=2.*M_PI-start_angle;
+    double end_angle = atan2(b.Y(), b.X());
+    if (end_angle<0) end_angle=2.*M_PI-end_angle;
 
     double ratio = r2/r1;
 
     if (dir>0) std::swap(start_angle, end_angle);
     
-    dxf_.writeEllipse
+  dxf_.writeLine
+  (
+    *dw_,
+    DL_LineData
+    (
+      p.X(), p.Y(), 0,
+      s.X(), s.Y(), 0
+    ),
+    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
+  );
+  dxf_.writeLine
+  (
+    *dw_,
+    DL_LineData
+    (
+      p.X(), p.Y(), 0,
+      e.X(), e.Y(), 0
+    ),
+    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
+  );
+  dxf_.writeLine
+  (
+    *dw_,
+    DL_LineData
+    (
+      p.X(), p.Y(), 0,
+      m.X(), m.Y(), 0
+    ),
+    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
+  );
+  dxf_.writeLine
+  (
+    *dw_,
+    DL_LineData
+    (
+      p.X(), p.Y(), 0,
+      pm.X(), pm.Y(), 0
+    ),
+    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
+  );
+
+  dxf_.writeEllipse
     (
       *dw_,
       DL_EllipseData
@@ -506,10 +550,10 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 	    writeCircle(adapt, layer);
 	  } break;
 
-	  case GeomAbs_Ellipse:
-	  {
-	    writeEllipse(adapt, layer);
-	  } break;
+// 	  case GeomAbs_Ellipse:
+// 	  {
+// 	    writeEllipse(adapt, layer);
+// 	  } break;
 
 	  default:
 	    writeDiscrete(adapt, layer);

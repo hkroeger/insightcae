@@ -841,6 +841,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     
   // Wall friction coefficient
   arma::mat wallforce=viscousForceProfile(cm, executionPath(), vec3(1,0,0), nax_);
+  wallforce.col(0)-=wallforce.col(0)(0); // ensure start curve starts at x=0
     
   arma::mat Cf_vs_xp(join_rows(
       wallforce.col(0)*Re_tau, 

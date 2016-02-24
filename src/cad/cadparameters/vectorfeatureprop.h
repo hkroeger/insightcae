@@ -50,6 +50,17 @@ public:
   virtual arma::mat value() const;
 };
 
+
+class SinglePointCoords 
+: public insight::cad::Vector
+{
+  ConstFeatureSetPtr pfs_;
+  
+public:
+  SinglePointCoords(ConstFeatureSetPtr pfs);
+  virtual arma::mat value() const;
+};
+
 }
 }
 

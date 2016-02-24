@@ -585,6 +585,9 @@ ISCADParser::ISCADParser(Model* model)
 // 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 // 	   )
       |
+       ( lit("coord") >> '(' >> r_vertexFeaturesExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
+      |
        ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) 
         [ _val = phx::construct<VectorPtr>(phx::new_<VectorFromComponents>(qi::_1, qi::_2, qi::_3)) ] 
       //| ( r_vectorExpression >> '\'') [ _val = trans_(qi::_1) ]

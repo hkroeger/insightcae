@@ -52,3 +52,16 @@ arma::mat insight::cad::VectorFeatureProp::value() const
 {
   return model_->getDatumVector(name_);
 }
+
+insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSetPtr pfs)
+: pfs_(pfs)
+{}
+
+arma::mat insight::cad::SinglePointCoords::value() const
+{
+  if (!pfs_->size()==1)
+    throw insight::Exception("vertex feature set must not contain more than one point for coordinate extraction!");
+  
+  FeatureID i=*(pfs_->data().begin());
+  return pfs_->model()->vertexLocation(i);
+}

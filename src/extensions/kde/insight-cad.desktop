@@ -1,14 +1,18 @@
+#!/usr/bin/env xdg-open
 [Desktop Entry]
-Type=Service
-X-KDE-ServiceTypes=KonqPopupMenu/Plugin
-X-KDE-Submenu=Insight
+Type=Application
+#X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+#X-KDE-Submenu=Insight
 #MimeType=application/pv-med;application/x-hdf;
 MimeType=application/insight-iscad;
-Actions=open;
-
-[Desktop Action open]
+Categories=Graphics;VectorGraphics;Engineering;Construction;2DGraphics;Science;
+#Actions=open;
+#[Desktop Action open]
 Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
 Icon=utilities-terminal
-Name=Open in ISCAD editor
-Name[de]=In ISCAD-Editor öffnen
-
+Name=ISCAD editor
+Name[de]=ISCAD-Editor
+GenericName=Insight CAD Editor
+GenericName[de]=Insight CAD Editor
+Comment=A script-based CAD editor
+Comment[de]=Ein skriptbasierter CAD-Editor

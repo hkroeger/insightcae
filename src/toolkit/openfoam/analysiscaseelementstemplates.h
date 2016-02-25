@@ -173,12 +173,16 @@ void TPCArray<TPC>::evaluateSingle
       
       tpc_curves[k].push_back
       (
-	PlotCurve(data, "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+"'")
+	PlotCurve(data, 
+		  str( format("r%.2g")%r_[ir]), 
+		  "w p lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+"'")
       );
       
       tpc_curves[k].push_back
       (
-	PlotCurve(regressiondata, "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+" (fit)'")
+	PlotCurve(regressiondata, 
+		  str( format("r%.2gfit")%r_[ir]), 
+		  "w l lt "+lexical_cast<std::string>(ir+1)+" t 'r="+str( format("%.2g")%r_[ir])+" (fit)'")
       );
       
     }
@@ -191,7 +195,7 @@ void TPCArray<TPC>::evaluateSingle
     addPlot
     (
       results, location, name_prefix+"_"+cmptNames[k],
-      axisLabel, "<R_"+std::string(cmptNames[k])+">",
+      axisLabel, "$\\langle R_{"+std::string(cmptNames[k])+"} \\rangle$",
       tpc_curves[k],
       shortDescription+", two-point correlation function for component "+cmptNames[k]
     );
@@ -209,7 +213,8 @@ void TPCArray<TPC>::evaluateSingle
 	PlotCurve
 	(
 	  arma::mat(join_rows(L.col(0), L.col(k+1))),
-	  "w lp t 'L_"+std::string(cmptNames[k])+"'"
+	  "L"+std::string(cmptNames[k]),
+	  "w lp t '$L_{"+std::string(cmptNames[k])+"}$'"
 	)
       );
     }
@@ -235,7 +240,8 @@ void TPCArray<TPC>::evaluateSingle
 	PlotCurve
 	(
 	  arma::mat(join_rows(L.col(0), L.col(k+1))),
-	  "w lp t 'L_"+std::string(cmptNames[k])+"'"
+	  "L"+std::string(cmptNames[k]),
+	  "w lp t '$L_{"+std::string(cmptNames[k])+"}$'"
 	)
       );
     }

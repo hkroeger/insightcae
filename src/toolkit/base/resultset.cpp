@@ -30,6 +30,8 @@
 
 #include "gnuplot-iostream.h"
 
+#include "case.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -247,7 +249,7 @@ void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, 
   "\n\nSee figure below.\n"
   "\\begin{figure}[!h]"
   "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, imagePath_).c_str() << "}\n"
-  "\\caption{"+cleanSymbols(shortDescription_)+"}\n"
+  "\\caption{"+shortDescription_+"}\n"
   "\\end{figure}"
   "\\FloatBarrier";
 }
@@ -870,32 +872,32 @@ PlotCurve::PlotCurve()
 }
 
 PlotCurve::PlotCurve(const PlotCurve& o)
-: xy_(o.xy_), plotcmd_(o.plotcmd_)
+: xy_(o.xy_), plotcmd_(o.plotcmd_), plaintextlabel_(o.plaintextlabel_)
 {}
 
 
-PlotCurve::PlotCurve(const char* plotcmd)
-: plotcmd_(plotcmd)
+PlotCurve::PlotCurve(const std::string& plaintextlabel, const char* plotcmd)
+: plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {
 }
 
-PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd)
+PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plaintextlabel, const std::string& plotcmd)
 : xy_
   (
     join_rows( arma::mat(x.data(), x.size(), 1), arma::mat(y.data(), y.size(), 1) )
   ), 
-  plotcmd_(plotcmd)
+  plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {
 }
 
-PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plotcmd)
-: xy_(join_rows(x, y)), plotcmd_(plotcmd)
+PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd)
+: xy_(join_rows(x, y)), plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {}
 
 
 
-PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plotcmd)
-: xy_(xy), plotcmd_(plotcmd)
+PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plaintextlabel, const std::string& plotcmd)
+: xy_(xy), plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {}
 
 void PlotCurve::sort()
@@ -977,14 +979,17 @@ Chart::Chart
 void Chart::generatePlotImage(const path& imagepath) const
 {
 //   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-    
+  std::string bn(imagepath.filename().stem().string());
+  
+  TemporaryCaseDir tmp(false, bn+"-generate");
+  
   {
     Gnuplot gp;
     
-    //gp<<"set terminal postscript color;";
-    //gp<<"set output '"<<chart_file_name_i<<"';";
-    gp<<"set terminal pngcairo; set termoption dash;";
-    gp<<"set output '"<<absolute(imagepath).string()<<"';";
+    //gp<<"set terminal pngcairo; set termoption dash;";
+    gp<<"set terminal epslatex standalone color dash linewidth 3;";
+    gp<<"set output '"+bn+".tex';";
+//     gp<<"set output '"<<absolute(imagepath).string()<<"';";
 /*
     gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
 	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
@@ -1020,6 +1025,15 @@ void Chart::generatePlotImage(const path& imagepath) const
       }
     }
   }
+  
+  ::system(
+  (
+    "mv "+bn+".tex "+(tmp.dir/(bn+".tex")).string()+"; "
+    "mv "+bn+"-inc.eps "+(tmp.dir/(bn+"-inc.eps")).string()+"; "
+    "cd "+tmp.dir.string()+"; "
+    "pdflatex "+bn+".tex; "
+    "convert -density 300 "+bn+".pdf "+absolute(imagepath).string()
+  ).c_str());
 }
 
   
@@ -1040,7 +1054,7 @@ void Chart::writeLatexCode(std::ostream& f, const std::string& name, int level, 
   "\n\nSee figure below.\n"
   "\\begin{figure}[!h]"
   "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, chart_file).c_str() << "}\n"
-  "\\caption{"+cleanSymbols(shortDescription_)+"}\n"
+  "\\caption{"+shortDescription_+"}\n"
   "\\end{figure}"
   "\\FloatBarrier";
 }
@@ -1050,7 +1064,7 @@ void Chart::exportDataToFile(const std::string& name, const boost::filesystem::p
   int curveID=0;
   BOOST_FOREACH(const PlotCurve& pc, plc_)
   {
-    std::string suf=pc.title();
+    std::string suf=pc.plaintextlabel();
     replace_all(suf, "/", "_");
     if (suf=="")
       suf=str(format("curve%d")%curveID);

@@ -528,17 +528,17 @@ void ChannelBase::evaluateAtSection(
     addPlot
     (
       section, executionPath(), "chartMeanVelocity_"+title,
-      "y+", "<U+>",
+      "$y^+$", "$\\langle U^+ \\rangle$",
       list_of
-      (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Axial'"))
-      (PlotCurve(wallnormal, 		"w l lt 1 lc 2 lw 4 t 'Wall normal'"))
-      (PlotCurve(spanwise, 		"w l lt 1 lc 3 lw 4 t 'Spanwise'"))
-      (PlotCurve(refdata_umean180,	"w l lt 2 lc 1 t 'Axial (MKM Re_tau=180)'"))
-      (PlotCurve(refdata_wmean180, 	"w l lt 2 lc 3 t 'Spanwise (MKM Re_tau=180)'"))
-      (PlotCurve(refdata_umean395, 	"w l lt 4 lc 1 t 'Axial (MKM Re_tau=395)'"))
-      (PlotCurve(refdata_wmean395, 	"w l lt 4 lc 3 t 'Spanwise (MKM Re_tau=395)'"))
-      (PlotCurve(refdata_umean590, 	"w l lt 3 lc 1 t 'Axial (MKM Re_tau=590)'"))
-      (PlotCurve(refdata_wmean590, 	"w l lt 3 lc 3 t 'Spanwise (MKM Re_tau=590)'"))
+      (PlotCurve(axial, 		"U", "w l lt 1 lc 1 lw 4 t 'Axial'"))
+      (PlotCurve(wallnormal, 		"V", "w l lt 1 lc 2 lw 4 t 'Wall normal'"))
+      (PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 4 t 'Spanwise'"))
+      (PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc 1 t 'Axial (MKM $Re_{\\tau}=180$)'"))
+      (PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t 'Spanwise (MKM $Re_{\\tau}=180$)'"))
+      (PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc 1 t 'Axial (MKM $Re_{\\tau}=395$)'"))
+      (PlotCurve(refdata_wmean395, 	"WMKM395", "w l lt 4 lc 3 t 'Spanwise (MKM $Re_{\\tau}=395$)'"))
+      (PlotCurve(refdata_umean590, 	"UMKM590", "w l lt 3 lc 1 t 'Axial (MKM $Re_{\\tau}=590$)'"))
+      (PlotCurve(refdata_wmean590, 	"WMKM590", "w l lt 3 lc 3 t 'Spanwise (MKM $Re_{\\tau}=590$)'"))
       ,
       "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
       "set logscale x"
@@ -592,12 +592,12 @@ void ChannelBase::evaluateAtSection(
     addPlot
     (
       section, executionPath(), "chartTurbulentLengthScale_"+title,
-      "y_delta", "<L_delta_RANS>",
+      "$y_{\\delta}$", "$ \\langle L_{\\delta_{RANS}} \\rangle$",
       list_of
-       (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
-       (PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"))
-       (PlotCurve(Ltp, "w l lt 1 lc 1 lw 2 t 'CFD'"))
-       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), 
+       (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "cfdkO", "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
+       (PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "Lmix", "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"))
+       (PlotCurve(Ltp, "cfd", "w l lt 1 lc 1 lw 2 t 'CFD'"))
+       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), "fit",
 		    "w l lt 2 lc 2 lw 2 t 'Fit "
 		    + 	    str(format("%.1g") % m.c0)+"*ydelta^"+str(format("%.1g") % m.c2)
 		    +" + ("+str(format("%.1g") % m.c1)+"*ydelta^"+str(format("%.1g") % m.c3)+")'"))
@@ -676,21 +676,21 @@ void ChannelBase::evaluateAtSection(
     addPlot
     (
       section, executionPath(), chart_name,
-      "y+", "<R+>",
+      "$y^+$", "$\\langle R^+ \\rangle$",
       list_of
-       (PlotCurve(axial, 		"w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"))
-       (PlotCurve(wallnormal, 		"w l lt 1 lc 2 lw 4 t 'Ryy (Wall normal)'"))
-       (PlotCurve(spanwise, 		"w l lt 1 lc 3 lw 4 t 'Rzz (Spanwise)'"))
-       (PlotCurve(cross, 		"w l lt 1 lc 4 lw 4 t 'Rxy'"))
-       (PlotCurve(refdata_Ruu, 		"w l lt 2 lc 1 t 'Rxx (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Rvv, 		"w l lt 2 lc 2 t 'Ryy (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Rww, 		"w l lt 2 lc 3 t 'Rzz (MKM Re_tau=180)'"))
-       (PlotCurve(refdata_Ruu395, 	"w l lt 4 lc 1 t 'Rxx (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Rvv395, 	"w l lt 4 lc 2 t 'Ryy (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Rww395, 	"w l lt 4 lc 3 t 'Rzz (MKM Re_tau=395)'"))
-       (PlotCurve(refdata_Ruu590, 	"w l lt 3 lc 1 t 'Rxx (MKM Re_tau=590)'"))
-       (PlotCurve(refdata_Rvv590, 	"w l lt 3 lc 2 t 'Ryy (MKM Re_tau=590)'"))
-       (PlotCurve(refdata_Rww590, 	"w l lt 3 lc 3 t 'Rzz (MKM Re_tau=590)'"))
+       (PlotCurve(axial, 		"Ruu", "w l lt 1 lc 1 lw 4 t '$R_{uu}$ (Axial)'"))
+       (PlotCurve(wallnormal, 		"Rvv", "w l lt 1 lc 2 lw 4 t '$R_{vv}$ (Wall normal)'"))
+       (PlotCurve(spanwise, 		"Rww", "w l lt 1 lc 3 lw 4 t '$R_{ww}$ (Spanwise)'"))
+       (PlotCurve(cross, 		"Ruv", "w l lt 1 lc 4 lw 4 t '$R_{uv}$'"))
+       (PlotCurve(refdata_Ruu, 		"RuuMKM180", "w l lt 2 lc 1 t '$R_{uu}$ (MKM $Re_{\\tau}=180$)'"))
+       (PlotCurve(refdata_Rvv, 		"RvvMKM180", "w l lt 2 lc 2 t '$R_{vv}$ (MKM $Re_{\\tau}=180$)'"))
+       (PlotCurve(refdata_Rww, 		"RwwMKM180", "w l lt 2 lc 3 t '$R_{ww}$ (MKM $Re_{\\tau}=180$)'"))
+       (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 lc 1 t '$R_{uu}$ (MKM $Re_{\\tau}=395$)'"))
+       (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 lc 2 t '$R_{vv}$ (MKM $Re_{\\tau}=395$)'"))
+       (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 lc 3 t '$R_{ww}$ (MKM $Re_{\\tau}=395$)'"))
+       (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 lc 1 t '$R_{uu}$ (MKM $Re_{\\tau}=590$)'"))
+       (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 lc 2 t '$R_{vv}$ (MKM $Re_{\\tau}=590$)'"))
+       (PlotCurve(refdata_Rww590, 	"RuuMKM590", "w l lt 3 lc 3 t '$R_{ww}$ (MKM $Re_{\\tau}=590$)'"))
        ,
      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
      "set yrange [:"+lexical_cast<string>(max(axial.col(1)))+"]"
@@ -717,12 +717,12 @@ void ChannelBase::evaluateAtSection(
     addPlot
     (
       section, executionPath(), chart_name,
-      "y_delta", "<K+>",
+      "$y_{\\delta}$", "$\\langle K^+ \\rangle$",
       list_of
-       (PlotCurve( Kp, 			"w l t 'TKE'" ))
-       (PlotCurve( refdata_K, 		"u 1:2 w l lt 1 lc 1 t 'DNS (Re_tau=180, MKM)'" ))
-       (PlotCurve( refdata_K395, 	"u 1:2 w l lt 2 lc 1 t 'DNS (Re_tau=395, MKM)'" ))
-       (PlotCurve( refdata_K590, 	"u 1:2 w l lt 3 lc 1 t 'DNS (Re_tau=590, MKM)'" ))
+       (PlotCurve( Kp, 			"TKE", "w l t 'TKE'" ))
+       (PlotCurve( refdata_K, 		"TKEMKM180", "u 1:2 w l lt 1 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
+       (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
+       (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
     )
@@ -859,10 +859,10 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
     addPlot
     (
       results, executionPath(), "chartMeanWallFriction",
-      "x+", "<Cf>",
+      "$x^+$", "$\\langle C_f \\rangle$",
       list_of
-	(PlotCurve(Cf_vs_xp, "w l lt 1 lc 2 lw 2 t 'CFD'"))
-	(PlotCurve(Cftheo_vs_xp, "w l lt 2 lc 2 lw 1 t 'Analytical'"))
+	(PlotCurve(Cf_vs_xp, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'"))
+	(PlotCurve(Cftheo_vs_xp, "ref", "w l lt 2 lc 2 lw 1 t 'Analytical'"))
 	,
       "Axial profile of wall friction coefficient"
     ) .setOrder(o.next());    

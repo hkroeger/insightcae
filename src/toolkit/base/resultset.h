@@ -374,28 +374,33 @@ struct PlotCurve
   arma::mat xy_;
   std::string plotcmd_;
   
+  /**
+   * curve identifier on plain-text-level 
+   */
+  std::string plaintextlabel_;
+  
   PlotCurve();
   PlotCurve(const PlotCurve& o);
   
   /**
    * construct a plot curve by a gnuplot command only, i.e. a formula
    */
-  PlotCurve(const char* plotcmd);
+  PlotCurve(const std::string& plaintextlabel, const char* plotcmd);
   
   /**
    * construct from separate x and y arrays (sizes have to match)
    */
-  PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plotcmd = "");
+  PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plaintextlabel, const std::string& plotcmd = "");
   
   /**
    * construct from separate x and y column vectors (sizes have to match)
    */
-  PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plotcmd);
+  PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd);
   
   /**
    * construct from matrix containing two columns with x and y values
    */
-  PlotCurve(const arma::mat& xy, const std::string& plotcmd = "w l");
+  PlotCurve(const arma::mat& xy, const std::string& plaintextlabel, const std::string& plotcmd = "w l");
   
   /**
    * sort the curve values by x.
@@ -404,6 +409,8 @@ struct PlotCurve
   void sort();
   
   std::string title() const;
+  
+  const std::string& plaintextlabel() const { return plaintextlabel_; }
 };
 
 typedef std::vector<PlotCurve> PlotCurveList;

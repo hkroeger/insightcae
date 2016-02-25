@@ -772,18 +772,18 @@ void FlatPlateBL::evaluateAtSection
     addPlot
     (
       results, executionPath(), "chartMeanVelocity_"+title,
-      "y+", "<U+>",
+      "$y^+$", "$\\langle U^+ \\rangle$",
       list_of
-	(PlotCurve(upaxial, "w l lt 1 lc 1 lw 4 t 'Axial'"))
-	(PlotCurve(upspanwise, "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
-	(PlotCurve(upwallnormal, "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
-	(PlotCurve(delta1pc, "w l lt 2 lc 4 lw 1 t 'delta_1+'"))
-	(PlotCurve(delta2pc, "w l lt 3 lc 4 lw 1 t 'delta_2+'"))
-	(PlotCurve(delta3pc, "w l lt 4 lc 4 lw 1 t 'delta_3+'"))
-	(PlotCurve(delta99pc, "w l lt 5 lc 4 lw 1 t 'delta_99+'"))
+	(PlotCurve(upaxial, "Up", "w l lt 1 lc 1 lw 4 t 'Axial'"))
+	(PlotCurve(upspanwise, "Up", "w l lt 1 lc 2 lw 4 t 'Spanwise'"))
+	(PlotCurve(upwallnormal, "Wp", "w l lt 1 lc 3 lw 4 t 'Wall normal'"))
+	(PlotCurve(delta1pc, "delta1p", "w l lt 2 lc 4 lw 1 t '$\\delta_1^+$'"))
+	(PlotCurve(delta2pc, "delta2p", "w l lt 3 lc 4 lw 1 t '$\\delta_2^+$'"))
+	(PlotCurve(delta3pc, "delta3p", "w l lt 4 lc 4 lw 1 t '$\\delta_3^+$'"))
+	(PlotCurve(delta99pc, "delta99p", "w l lt 5 lc 4 lw 1 t '$\\delta_{99}^+$'"))
 	
-	(PlotCurve(visclayer, "w l lt 2 lc 5 lw 2 t 'Viscous Layer'"))
-	(PlotCurve(loglayer, "w l lt 3 lc 5 lw 2 t 'Log Layer'"))
+	(PlotCurve(visclayer, "visc", "w l lt 2 lc 5 lw 2 t 'Viscous Layer'"))
+	(PlotCurve(loglayer, "log", "w l lt 3 lc 5 lw 2 t 'Log Layer'"))
       ,
       str(format("Wall normal profiles of averaged velocities at x/L=%g (Re_theta=%g)") % xByL % Re_theta),
      
@@ -817,11 +817,11 @@ void FlatPlateBL::evaluateAtSection
     addPlot
     (
       results, executionPath(), "chartReynoldsStress_"+title,
-      "y+", "<R+>",
+      "$y^+$", "$\\langle R^+ \\rangle$",
       list_of
-	(PlotCurve(Rpuu, "w l lt 1 lc 1 lw 4 t 'Axial'"))
-	(PlotCurve(Rpvv, "w l lt 1 lc 2 lw 4 t 'Wall normal'"))
-	(PlotCurve(Rpww, "w l lt 1 lc 3 lw 4 t 'Spanwise'"))
+	(PlotCurve(Rpuu, "Rpuu", "w l lt 1 lc 1 lw 4 t 'Axial'"))
+	(PlotCurve(Rpvv, "Rpvv", "w l lt 1 lc 2 lw 4 t 'Wall normal'"))
+	(PlotCurve(Rpww, "Rpww", "w l lt 1 lc 3 lw 4 t 'Spanwise'"))
       ,
       "Wall normal profiles of Reynolds stresses at x/L=" + str(format("%g")%xByL),
      
@@ -851,9 +851,9 @@ void FlatPlateBL::evaluateAtSection
     addPlot
     (
       results, executionPath(), "chartTKE_"+title,
-      "y+", "<k+>",
+      "$y^+$", "$\\langle k^+ \\rangle$",
       list_of
-       (PlotCurve(kp_vs_yp, "w l lt 2 lc 1 lw 1 not"))
+       (PlotCurve(kp_vs_yp, "kp", "w l lt 2 lc 1 lw 1 not"))
        ,
       "Wall normal profile of total turbulent kinetic energy at x/L=" + str(format("%g")%xByL) /*,
       "set logscale x"*/
@@ -933,10 +933,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
   addPlot
   (
     results, executionPath(), "chartMeanWallFriction",
-    "x [m]", "<Cf>",
+    "x [m]", "$\\langle C_f \\rangle$",
     list_of
-      (PlotCurve(Cf_vs_x, "w l lt 1 lc 2 lw 2 t 'CFD'"))
-      (PlotCurve(Cfexp_vs_x, "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'"))
+      (PlotCurve(Cf_vs_x, "cfd", "w l lt 1 lc 2 lw 2 t 'CFD'"))
+      (PlotCurve(Cfexp_vs_x, "ref", "w p lt 2 lc 2 t 'Wieghardt 1951 (u=17.8m/s)'"))
       ,
     "Axial profile of wall friction coefficient"
   );    
@@ -1002,15 +1002,15 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     addPlot
     (
       results, executionPath(), "chartDelta",
-      "x [m]", "delta [m]",
+      "x [m]", "$\\delta$ [m]",
       list_of
-	(PlotCurve(delta1exp_vs_x, "w p lt 1 lc 1 t 'delta_1 (Wieghardt 1951, u=17.8m/s)'"))
-	(PlotCurve(delta2exp_vs_x, "w p lt 2 lc 3 t 'delta_2 (Wieghardt 1951, u=17.8m/s)'"))
-	(PlotCurve(delta3exp_vs_x, "w p lt 3 lc 4 t 'delta_3 (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(delta1exp_vs_x, "delta1ref", "w p lt 1 lc 1 t '$\\delta_1$ (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(delta2exp_vs_x, "delta2ref", "w p lt 2 lc 3 t '$\\delta_2$ (Wieghardt 1951, u=17.8m/s)'"))
+	(PlotCurve(delta3exp_vs_x, "delta3ref", "w p lt 3 lc 4 t '$\\delta_3$ (Wieghardt 1951, u=17.8m/s)'"))
 	
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta1"))), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta2"))), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"))
+	(PlotCurve(arma::mat(join_rows(L_*ctd.col(0), tabvals.getColByName("delta3"))), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -1023,10 +1023,10 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     addPlot
     (
       results, executionPath(), "chartRetheta",
-      "Rex /10^5", "Re_theta",
+      "$Re_x$ /$10^5$", "$Re_{\\theta}$",
       list_of
-	(PlotCurve(Rex, Re_theta, "w lp lt 1 lc 1 lw 2 t 'Re_theta'"))	
-	(PlotCurve("0.037*(1e5*x)**(4./5.) w l lt 2 lc 1 t 'Analytical (Cengel)'"))
+	(PlotCurve(Rex, Re_theta, "Retheta", "w lp lt 1 lc 1 lw 2 t '$Re_{\\theta}$'"))	
+	(PlotCurve("Rethetaanalytical", "0.037*(1e5*x)**(4./5.) w l lt 2 lc 1 t 'Analytical (Cengel)'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"
@@ -1035,12 +1035,12 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     addPlot
     (
       results, executionPath(), "chartDelta99",
-      "x [m]", "delta [m]",
+      "x [m]", "$\\delta$ [m]",
       list_of
-	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta1"), "w l lt 1 lc 1 lw 2 t 'delta_1'"))
-	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta2"), "w l lt 1 lc 3 lw 2 t 'delta_2'"))
-	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta3"), "w l lt 1 lc 4 lw 2 t 'delta_3'"))
-	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta99"), "w l lt 1 lc 5 lw 2 t 'delta_99'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta1"), "delta1", "w l lt 1 lc 1 lw 2 t '$\\delta_1$'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta2"), "delta2", "w l lt 1 lc 3 lw 2 t '$\\delta_2$'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta3"), "delta3", "w l lt 1 lc 4 lw 2 t '$\\delta_3$'"))
+	(PlotCurve(L_*ctd.col(0), tabvals.getColByName("delta99"), "delta99", "w l lt 1 lc 5 lw 2 t '$\\delta_{99}$'"))
 	,
       "Axial profile of boundary layer thickness",
       "set key top left reverse Left"

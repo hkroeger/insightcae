@@ -438,14 +438,14 @@ void PipeBase::evaluateAtSection(
     addPlot
     (
       results, executionPath(), "chartMeanVelocity_"+title,
-      "y+", "<U+>",
+      "$y^+$", "$\\langle U^+ \\rangle$",
       list_of<PlotCurve>
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c))), "w l lt 1 lc 1 lw 3 t 'Axial'"))
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+1))), "w l lt 1 lc 2 lw 3 t 'Radial'" ))
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+2))), "w l lt 1 lc 3 lw 3 t 'Circumferential'" ))
-	(PlotCurve( refdata_umean180, "w l lt 2 lc 1 t 'K_Pipe (Axial)'" ))
-	(PlotCurve( refdata_vmean180, "w l lt 2 lc 2 t 'K_Pipe (Radial)'" ))
-	(PlotCurve( refdata_wmean180, "w l lt 2 lc 3 t 'K_Pipe (Circumferential)'" )),
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c))), "Up", "w l lt 1 lc 1 lw 3 t 'Axial'"))
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+1))), "Vp", "w l lt 1 lc 2 lw 3 t 'Radial'" ))
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Up*data.col(c+2))), "Wp", "w l lt 1 lc 3 lw 3 t 'Circumferential'" ))
+	(PlotCurve( refdata_umean180, "Uref", "w l lt 2 lc 1 t '$U_{ref}$ (K\\_Pipe)'" ))
+	(PlotCurve( refdata_vmean180, "Vref", "w l lt 2 lc 2 t '$V_{ref}$ (K\\_Pipe)'" ))
+	(PlotCurve( refdata_wmean180, "Wref", "w l lt 2 lc 3 t '$W_{ref}$ (K\\_Pipe)'" )),
       "Radial profiles of averaged velocities",
       "set logscale x;"
     );
@@ -494,14 +494,14 @@ void PipeBase::evaluateAtSection(
     addPlot
     (
       results, executionPath(), "chartMeanRstress_"+title,
-      "y+", "<R+>",
+      "$y^+$", "$\\langle R^+ \\rangle$",
       list_of<PlotCurve>
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c))),   "w l lt 1 lc 1 lw 4 t 'Rxx (Axial)'"  ))
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+3))), "w l lt 1 lc 2 lw 4 t 'Ryy (Radial)'" ))
-	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+5))), "w l lt 1 lc 3 lw 4 t 'Rzz (Circumferential)'" ))
-	(PlotCurve( refdata_Ruu, "w l lt 2 lc 1 t 'Axial (K_Pipe, 180)'"  ))
-	(PlotCurve( refdata_Rvv, "w l lt 2 lc 2 t 'Radial (K_Pipe, 180)'" ))
-	(PlotCurve( refdata_Rww, "w l lt 2 lc 3 t 'Circumferential (K_Pipe, 180)'" ))
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c))),   "Ruu", "w l lt 1 lc 1 lw 4 t '$R_{uu}$ (axial)'"  ))
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+3))), "Rvv", "w l lt 1 lc 2 lw 4 t '$R_{vv}$ (radial)'" ))
+	(PlotCurve( arma::mat(join_rows(Re_tau-fac_yp*data.col(0), fac_Rp*data.col(c+5))), "Rww", "w l lt 1 lc 3 lw 4 t '$R_{ww}$ (circumf.)'" ))
+	(PlotCurve( refdata_Ruu, "Ruuref", "w l lt 2 lc 1 t '$R_{uu,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'"  ))
+	(PlotCurve( refdata_Rvv, "Rvvref", "w l lt 2 lc 2 t '$R_{vv,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'" ))
+	(PlotCurve( refdata_Rww, "Rwwref", "w l lt 2 lc 3 t '$R_{ww,ref}$ (K\\_Pipe, $Re_{\\tau}=180$)'" ))
 	,
       "Radial profiles of averaged reynolds stresses",
       "set yrange [:"+lexical_cast<string>(fac_Rp*max(data.col(c)))+"];"

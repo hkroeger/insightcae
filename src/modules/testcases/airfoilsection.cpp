@@ -384,11 +384,11 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
   addPlot
   (
     results, executionPath(), "chartCoefficientConvergence",
-    "Iteration", "C_L, C_D",
+    "Iteration", "$C_L$, $C_D$",
     list_of
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "w l t 'C_L'" ))
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cd)), "w l t 'C_D'" ))
-     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), eps)), "axes x1y2 w l t 'C_L/C_D'" ))
+     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cl)), "CL", "w l t '$C_L$'" ))
+     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), cd)), "CD", "w l t '$C_D$'" ))
+     (PlotCurve( arma::mat(join_rows(f_vs_iter.col(0), eps)), "CLbyCD", "axes x1y2 w l t '$C_L/C_D$'" ))
     ,
     "Convergence history of coefficients",
     "set y2tics;set y2label 'C_L/C_D'"
@@ -507,25 +507,25 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   addPlot
   (
     results, executionPath(), "chartAirfoilCharacteristics",
-    "alpha / deg", "C_L, C_D",
+    "$\\alpha$ / deg", "$C_L$, $C_D$",
     list_of<PlotCurve>
-     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"w p lt 1 lc 1 lw 2 t 'C_L'"))
-     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(2))), 	"w p lt 1 lc 2 lw 2 t 'C_D'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcl)), 	"w l lt 1 lc 1 lw 2 t 'C_L (regr.)'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcd)), 	"w l lt 1 lc 2 lw 2 t 'C_D (regr.)'"))
-     (PlotCurve(arma::mat(join_rows(ralpha, rcpmin)), 	"w l lt 2 lc 1 lw 1 axes x1y2 t 'C_p,min (regr.)'"))
+     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"CL", "w p lt 1 lc 1 lw 2 t '$C_L$'"))
+     (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(2))), 	"CD", "w p lt 1 lc 2 lw 2 t '$C_D$'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcl)), 	"CLfit", "w l lt 1 lc 1 lw 2 t '$C_L$ (regr.)'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcd)), 	"CDfit", "w l lt 1 lc 2 lw 2 t '$C_D$ (regr.)'"))
+     (PlotCurve(arma::mat(join_rows(ralpha, rcpmin)), 	"Cpfit", "w l lt 2 lc 1 lw 1 axes x1y2 t '$C_{p,min}$ (regr.)'"))
     ,
     "Characteristic chart of propeller coefficients",
-    "set y2tics; set y2label 'C_P';"
+    "set y2tics; set y2label '$C_P$';"
   );
 
   
   addPlot
   (
     results, executionPath(), "chartPolar",
-    "C_D", "C_L",
+    "$C_D$", "$C_L$",
     list_of
-     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "w l not" ))
+     (PlotCurve( arma::mat(join_rows(tabdat.col(2), tabdat.col(1))), "polar", "w l not" ))
     ,
     "Profile polar"
   );
@@ -533,9 +533,9 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
   addPlot
   (
     results, executionPath(), "chartSigma",
-    "C_L", "sigma",
+    "$C_L$", "$\\sigma$",
     list_of
-     (PlotCurve( arma::mat(join_rows(tabdat.col(1), tabdat.col(4))), "w l not" ))
+     (PlotCurve( arma::mat(join_rows(tabdat.col(1), tabdat.col(4))), "sigma", "w l not" ))
     ,
     "Minimum pressure vs. lift coefficient"
   );

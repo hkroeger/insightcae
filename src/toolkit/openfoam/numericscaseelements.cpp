@@ -619,9 +619,14 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   if (LES)
-    ddt["default"]="CrankNicolson 0.75"; // problems with pressureGradientSource (oscillations), if coefficient is =1!
+  {
+//     ddt["default"]="CrankNicolson 0.75"; // problems with pressureGradientSource (oscillations), if coefficient is =1!
+    ddt["default"]="backward"; // channel with Retau=180 gets laminar with CrankNicholson...
+  }
   else
+  {
     ddt["default"]="Euler";
+  }
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";

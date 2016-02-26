@@ -103,10 +103,13 @@ int main(int argc, char *argv[])
     cuttingPlane cpl(plane(center, nflow), mesh, false);
 #endif
     vector Ub=gAverage(cpl.sample(U));
-    if (mag(Ub)>SMALL)
+    scalar mUb=mag(Ub);
+    scalar fluc=mag(gAverage( sqr(U - dimensionedVector("", dimVelocity, Ub))() ));
+    Info<<"mean flow="<<Ub<<", mean fluctuation magnitude="<<fluc<<endl;
+    if (mUb>SMALL && (fluc>(1e-3*mUb)))
     {
-      scalar sf=mag(Ubar)/mag(Ub);
-      Info<<"Mean flow is present, scaling to proper bulk velocity by "<<sf<<endl;
+      scalar sf=mag(Ubar)/mUb;
+      Info<<"Mean flow with fluctuations is present, scaling to proper bulk velocity by "<<sf<<endl;
       U*=sf;
       U.write();
       return (0);

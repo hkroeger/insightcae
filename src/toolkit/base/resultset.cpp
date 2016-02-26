@@ -1032,7 +1032,7 @@ void Chart::generatePlotImage(const path& imagepath) const
     "mv "+bn+"-inc.eps "+(tmp.dir/(bn+"-inc.eps")).string()+"; "
     "cd "+tmp.dir.string()+"; "
     "pdflatex "+bn+".tex; "
-    "convert -density 300 "+bn+".pdf "+absolute(imagepath).string()
+    "convert -density 600 "+bn+".pdf "+absolute(imagepath).string()
   ).c_str());
 }
 

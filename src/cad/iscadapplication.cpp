@@ -184,6 +184,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   editor_=new QTextEdit(spl);
   editor_->setFontFamily("Monospace");
   spl->addWidget(editor_);
+  connect(editor_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
+  
+  highlighter_=new ISCADHighlighter(editor_->document());
   
   QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
   QGroupBox *gb;
@@ -866,6 +869,65 @@ void EvaluationList::showContextMenuForWidget(const QPoint &p)
   }
 }
   
+
+  
+  
+ISCADHighlighter::ISCADHighlighter(QTextDocument* parent)
+: QSyntaxHighlighter(parent)
+{
+  {
+    HighlightingRule rule;
+    rule.pattern=QRegExp();
+    rule.format.setForeground(Qt::darkBlue);
+    rule.format.setBackground(Qt::yellow);
+    rule.format.setFontWeight(QFont::Bold);
+    
+    highlightingRules.append(rule);
+  }
+}
+
+void ISCADHighlighter::setHighlightWord(const QString& word)
+{
+  qDebug()<<"setting highlight word = "<<word<<endl;
+  
+  if (word.isEmpty())
+  {
+    highlightingRules[0].pattern=QRegExp();
+  }
+  else
+  { 
+    highlightingRules[0].pattern=QRegExp("\\b"+word+"\\b");
+  }
+}
+
+
+
+void ISCADHighlighter::highlightBlock(const QString& text)
+{
+  foreach (const HighlightingRule &rule, highlightingRules) 
+  {
+    if (!rule.pattern.isEmpty())
+    {
+      QRegExp expression(rule.pattern);
+      int index = expression.indexIn(text);
+      while (index >= 0) 
+      {
+	int length = expression.matchedLength();
+	setFormat(index, length, rule.format);
+	index = expression.indexIn(text, index + length);
+      }
+    }
+  }
+}
+
+void ISCADMainWindow::onEditorSelectionChanged()
+{
+  QTextDocument *doc = editor_->document();
+  QString word=editor_->textCursor().selectedText();
+  highlighter_->setHighlightWord(word);
+  highlighter_->rehighlight();
+}
+
 
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 {

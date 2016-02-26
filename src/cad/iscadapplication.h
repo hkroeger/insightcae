@@ -188,6 +188,33 @@ protected slots:
 };
 
 
+
+
+class ISCADHighlighter 
+: public QSyntaxHighlighter
+{
+    Q_OBJECT
+
+public:
+    ISCADHighlighter(QTextDocument *parent = 0);
+
+    void setHighlightWord(const QString& word);
+    
+protected:
+    void highlightBlock(const QString &text);
+    
+
+private:
+    struct HighlightingRule
+    {
+	QRegExp pattern;
+	QTextCharFormat format;
+    };
+    QVector<HighlightingRule> highlightingRules;
+};
+
+
+
 class ISCADMainWindow
 : public QMainWindow
 {
@@ -201,7 +228,9 @@ protected:
   QListWidget* datumlist_;
   QListWidget* evaluationlist_;
   QListWidget* variablelist_;
+  
   QTextEdit* editor_;
+  ISCADHighlighter* highlighter_;
   
   std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
   
@@ -246,6 +275,8 @@ protected slots:
   void onModelStepItemChanged(QListWidgetItem * item);
   void onDatumItemChanged(QListWidgetItem * item);
   void onEvaluationItemChanged(QListWidgetItem * item);
+  
+  void onEditorSelectionChanged();
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);

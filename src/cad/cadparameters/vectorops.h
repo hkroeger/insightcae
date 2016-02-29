@@ -110,6 +110,17 @@ public:
 };
 
 
+class RotatedVector
+: public insight::cad::Vector
+{
+  ScalarPtr ang_;
+  VectorPtr v_, ax_;
+public:
+  RotatedVector(VectorPtr v, ScalarPtr ang, VectorPtr ax);
+  virtual arma::mat value() const;
+};
+
+
 }
 }
 

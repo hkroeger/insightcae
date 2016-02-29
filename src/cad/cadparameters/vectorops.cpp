@@ -102,3 +102,19 @@ arma::mat insight::cad::SubtractedVector::value() const
 {
   return p1_->value() - p2_->value();
 }
+
+
+insight::cad::RotatedVector::RotatedVector
+(
+  insight::cad::VectorPtr v, 
+  insight::cad::ScalarPtr ang, 
+  insight::cad::VectorPtr ax
+)
+: v_(v), ang_(ang), ax_(ax)
+{}
+
+
+arma::mat insight::cad::RotatedVector::value() const
+{
+  return rotMatrix(ang_->value(), ax_->value()) * v_->value();
+}

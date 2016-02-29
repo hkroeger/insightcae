@@ -573,9 +573,12 @@ ISCADParser::ISCADParser(Model* model)
 //        ( lit("modelCoG") )
 //         [ _val = phx::bind(&Model::modelCoG, model_) ]
 //       |
-//        ( lit("rot") > '(' > r_vectorExpression > lit("by") > r_scalarExpression > ( (lit("around") > r_vectorExpression) | attr(vec3(0,0,1)) )> ')' )
-//         [ _val = rot_(qi::_1, qi::_2, qi::_3) ]
-//       |
+       ( lit("rot") > '(' 
+          > r_vectorExpression 
+          > lit("by") > r_scalarExpression 
+          > ( (lit("around") > r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) )> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<RotatedVector>(qi::_1, qi::_2, qi::_3)) ]
+      |
 //        qi::lexeme[model_->vectorSymbols()] 
 //         [ _val =  phx::bind(&Model::lookupVector, model_, qi::_1) ]
        model_->vectorSymbols()[ qi::_val = qi::_1 ]

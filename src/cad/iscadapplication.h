@@ -92,8 +92,10 @@ class QModelStepItem
   Handle_AIS_Shape ais_;
     
 signals:
+  void jump_to(const QString& name);
   void insertParserStatementAtCursor(const QString& statement);
- 
+  void setUniformDisplayMode(const AIS_DisplayMode AM);
+
 public:
   ViewState state_;
 
@@ -103,6 +105,7 @@ public:
   void reset(insight::cad::FeaturePtr smp);
   void wireframe();
   void shaded();
+  void onlyThisShaded();
   void hide();
   void show();
   void randomizeColor();
@@ -188,6 +191,41 @@ protected slots:
 };
 
 
+
+
+class ISCADHighlighter 
+: public QSyntaxHighlighter
+{
+    Q_OBJECT
+
+public:
+    ISCADHighlighter(QTextDocument *parent = 0);
+
+    void setHighlightWord(const QString& word);
+    
+protected:
+    void highlightBlock(const QString &text);
+    
+
+private:
+  enum HighlightingRule_Index
+  {
+    HighlightingRule_Function,
+    HighlightingRule_ModelStepDef,
+    HighlightingRule_CommentHash,
+    HighlightingRule_SelectedKeyword,
+    HighlightingRule_Index_Max
+  };
+    struct HighlightingRule
+    {
+	QRegExp pattern;
+	QTextCharFormat format;
+    };
+    QVector<HighlightingRule> highlightingRules;
+};
+
+
+
 class ISCADMainWindow
 : public QMainWindow
 {
@@ -201,7 +239,9 @@ protected:
   QListWidget* datumlist_;
   QListWidget* evaluationlist_;
   QListWidget* variablelist_;
+  
   QTextEdit* editor_;
+  ISCADHighlighter* highlighter_;
   
   std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
   
@@ -246,6 +286,12 @@ protected slots:
   void onModelStepItemChanged(QListWidgetItem * item);
   void onDatumItemChanged(QListWidgetItem * item);
   void onEvaluationItemChanged(QListWidgetItem * item);
+  
+  void onEditorSelectionChanged();
+  
+  void jump_to(const QString& name);
+  
+  void setUniformDisplayMode(const AIS_DisplayMode AM);
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);

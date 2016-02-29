@@ -184,6 +184,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   editor_=new QTextEdit(spl);
   editor_->setFontFamily("Monospace");
   spl->addWidget(editor_);
+  connect(editor_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
+  
+  highlighter_=new ISCADHighlighter(editor_->document());
   
   QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
   QGroupBox *gb;
@@ -413,6 +416,15 @@ void QModelStepItem::shaded()
   updateDisplay();
 }
 
+void QModelStepItem::onlyThisShaded()
+{
+//   qDebug()<<"all wireframe"<<endl;
+  
+  emit(setUniformDisplayMode(AIS_WireFrame));
+  shaded();
+}
+
+
 void QModelStepItem::hide()
 {
   setCheckState(Qt::Unchecked);
@@ -468,7 +480,7 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
     QMenu myMenu;
     QAction *tit=new QAction(name_, &myMenu);
-    tit->setDisabled(true);
+//     tit->setDisabled(true);
     myMenu.addAction(tit);
     myMenu.addSeparator();
     myMenu.addAction("Insert name");
@@ -476,6 +488,7 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addAction("Show");
     myMenu.addAction("Hide");
     myMenu.addAction("Shaded");
+    myMenu.addAction("Only this shaded");
     myMenu.addAction("Wireframe");
     myMenu.addAction("Randomize Color");
     myMenu.addAction("Export...");
@@ -483,10 +496,12 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
     QAction* selectedItem = myMenu.exec(gpos);
     if (selectedItem)
     {
+	if (selectedItem->text()==name_) emit(jump_to(name_));
 	if (selectedItem->text()=="Show") show();
 	if (selectedItem->text()=="Hide") hide();
 	if (selectedItem->text()=="Shaded") shaded();
 	if (selectedItem->text()=="Wireframe") wireframe();
+	if (selectedItem->text()=="Only this shaded") onlyThisShaded();
 	if (selectedItem->text()=="Randomize Color") randomizeColor();
 	if (selectedItem->text()=="Insert name") insertName();
 	if (selectedItem->text()=="Export...") exportShape();
@@ -867,6 +882,142 @@ void EvaluationList::showContextMenuForWidget(const QPoint &p)
 }
   
 
+  
+  
+ISCADHighlighter::ISCADHighlighter(QTextDocument* parent)
+: QSyntaxHighlighter(parent)
+{
+  highlightingRules.resize(HighlightingRule_Index_Max);
+  
+  QString ident_pat("[a-zA-Z][a-zA-Z0-9_]*");
+  
+  {
+    HighlightingRule rule;
+    rule.pattern=QRegExp();
+    rule.format.setForeground(Qt::darkBlue);
+    rule.format.setBackground(Qt::yellow);
+    rule.format.setFontWeight(QFont::Bold);
+    
+    highlightingRules[HighlightingRule_SelectedKeyword]=rule;
+  }
+
+  {
+    HighlightingRule rule;
+    rule.pattern=QRegExp("(#.*)$");
+    rule.format.setForeground(Qt::gray);    
+    rule.format.setBackground(Qt::white);
+    rule.format.setFontWeight(QFont::Normal);
+    highlightingRules[HighlightingRule_CommentHash]=rule;
+  }
+
+  {
+    HighlightingRule rule;
+    rule.pattern=QRegExp("\\b("+ident_pat+")\\b *\\(");
+    rule.format.setForeground(Qt::darkBlue);
+    rule.format.setBackground(Qt::white);
+    rule.format.setFontWeight(QFont::Bold);
+    
+    highlightingRules[HighlightingRule_Function]=rule;
+  }
+  
+  {
+    HighlightingRule rule;
+    rule.pattern=QRegExp("\\b("+ident_pat+")\\b *\\:");
+    rule.format.setForeground(Qt::darkRed);
+    rule.format.setBackground(Qt::white);
+    rule.format.setFontWeight(QFont::Bold);
+    
+    highlightingRules[HighlightingRule_ModelStepDef]=rule;
+  }
+}
+
+void ISCADHighlighter::setHighlightWord(const QString& word)
+{
+//   qDebug()<<"setting highlight word = "<<word<<endl;
+  
+  if (word.isEmpty())
+  {
+    highlightingRules[HighlightingRule_SelectedKeyword].pattern=QRegExp();
+  }
+  else
+  { 
+    highlightingRules[HighlightingRule_SelectedKeyword].pattern=QRegExp("\\b("+word+")\\b");
+  }
+}
+
+
+
+void ISCADHighlighter::highlightBlock(const QString& text)
+{
+  foreach (const HighlightingRule &rule, highlightingRules) 
+  {
+    if (!rule.pattern.isEmpty())
+    {
+      QRegExp expression(rule.pattern);
+      
+      int index0 = expression.indexIn(text);
+      int index = expression.pos(1);
+      
+      while (index0 >= 0) 
+      {
+ 	int fulllength = expression.matchedLength();
+	int length = expression.cap(1).length();
+	setFormat(index0, length, rule.format);
+	
+	index0 = expression.indexIn(text, index0 + fulllength);
+	index = expression.pos(1);
+      }
+    }
+  }
+}
+
+void ISCADMainWindow::onEditorSelectionChanged()
+{
+  QTextDocument *doc = editor_->document();
+  QString word=editor_->textCursor().selectedText();
+  highlighter_->setHighlightWord(word);
+  highlighter_->rehighlight();
+}
+
+
+void ISCADMainWindow::jump_to(const QString& name)
+{
+  highlighter_->setHighlightWord(name);
+  highlighter_->rehighlight();
+  
+  QRegExp expression("\\b("+name+")\\b");
+  int i=expression.indexIn(editor_->toPlainText());
+  
+//   qDebug()<<"jumping "<<name<<" at i="<<i<<endl;
+  
+  if (i>=0)
+  {
+    QTextCursor tmpCursor = editor_->textCursor();
+    tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
+    tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, i );
+    editor_->setTextCursor(tmpCursor);
+  }
+}
+
+
+void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
+{
+//   qDebug()<<"allWF"<<endl;
+//     viewer_->getContext()->SetDisplayMode(AM, false);
+  for (int i=0; i<modelsteplist_->count(); i++)
+  {
+    if (QModelStepItem *msi =dynamic_cast<QModelStepItem*>(modelsteplist_->item(i)))
+    {
+      if (AM==AIS_WireFrame)
+	msi->wireframe();
+      else if (AM==AIS_Shaded)
+	msi->shaded();
+    }
+  }
+}
+
+
+
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 {
   QVariableItem* mi=dynamic_cast<QVariableItem*>(item);
@@ -921,6 +1072,16 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
   (
     msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
     editor_, SLOT(insertPlainText(const QString&))
+  );
+  connect
+  (
+    msi, SIGNAL(jump_to(const QString&)),
+    this, SLOT(jump_to(const QString&))
+  );
+  connect
+  (
+    msi, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
+    this, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
   );
   modelsteplist_->addItem(msi);
 }

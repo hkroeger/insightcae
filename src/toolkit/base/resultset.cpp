@@ -32,10 +32,13 @@
 
 #include "case.h"
 
+#include "rapidxml/rapidxml_print.hpp"
+
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::assign;
+using namespace rapidxml;
 
 namespace insight
 {
@@ -81,6 +84,58 @@ void ResultElement::writeLatexCode(ostream& f, const std::string& name, int leve
 void ResultElement::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
 {
 }
+
+rapidxml::xml_node< char >* ResultElement::appendToNode
+(
+  const string& name, 
+ rapidxml::xml_document< char >& doc, 
+ rapidxml::xml_node< char >& node  
+) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = doc.allocate_node(node_element, doc.allocate_string(this->type().c_str()));
+  node.append_node(child);
+  child->append_attribute(doc.allocate_attribute
+  (
+    "name", 
+    doc.allocate_string(name.c_str()))
+  );
+//   child->append_attribute(doc.allocate_attribute
+//   (
+//     "type", 
+//     doc.allocate_string( type().c_str() ))
+//   );
+  
+  child->append_attribute(doc.allocate_attribute
+  (
+    "shortDescription", 
+    doc.allocate_string( shortDescription_.c_str() ))
+  );
+  child->append_attribute(doc.allocate_attribute
+  (
+    "longDescription", 
+    doc.allocate_string( longDescription_.c_str() ))
+  );
+  child->append_attribute(doc.allocate_attribute
+  (
+    "unit", 
+    doc.allocate_string( unit_.c_str() ))
+  );
+  child->append_attribute(doc.allocate_attribute
+  (
+    "order", 
+    doc.allocate_string( str(format("%g") % order_).c_str() ))
+  );
+  
+  return child;
+}
+
+void ResultElement::readFromNode(const string& name, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node)
+{
+
+}
+
+
 
 ParameterPtr ResultElement::convertIntoParameter() const
 {
@@ -178,6 +233,24 @@ void ResultElementCollection::writeLatexCodeOfElements
   }
 }
 
+void ResultElementCollection::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+{
+  for( const_iterator i=begin(); i!= end(); i++)
+  {
+    i->second->appendToNode(i->first, doc, node);
+  }
+}
+
+void ResultElementCollection::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+{
+  for( iterator i=begin(); i!= end(); i++)
+  {
+    i->second->readFromNode(i->first, doc, node);
+  }
+}
+
+
+
 void ResultSection::writeLatexCode(ostream& f, const string& name, int level, const path& outputfilepath) const
 {
   f << latex_subsection(level) << "{"<<sectionName_<<"}\n";
@@ -207,6 +280,29 @@ void ResultSection::exportDataToFile(const string& name, const path& outputdirec
     re.second->exportDataToFile(re.first, subdir);
   }
 }
+
+xml_node< char >* ResultSection::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+  
+  child->append_attribute(doc.allocate_attribute
+  (
+    "sectionName", 
+    doc.allocate_string( sectionName_.c_str() )
+  ));
+  
+  child->append_attribute(doc.allocate_attribute
+  (
+    "introduction", 
+    doc.allocate_string( introduction_.c_str() )
+  ));
+  
+  ResultElementCollection::appendToNode(doc, *child);
+  
+  return child;
+}
+
 
 boost::shared_ptr< ResultElement > ResultSection::clone() const
 {
@@ -254,6 +350,23 @@ void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, 
   "\\FloatBarrier";
 }
 
+xml_node< char >* Image::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+
+  child->value
+  (
+    doc.allocate_string
+    (
+      base64_encode(imagePath_).c_str()
+    )
+  );
+
+  return child;
+}
+
+
 ResultElementPtr Image::clone() const
 {
   ResultElementPtr res(new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_));
@@ -284,6 +397,20 @@ void Comment::exportDataToFile(const string& name, const path& outputdirectory) 
   boost::filesystem::path fname(outputdirectory/(name+".txt"));
   std::ofstream f(fname.c_str());
   f<<value_;
+}
+
+xml_node< char >* Comment::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+  
+  child->append_attribute(doc.allocate_attribute
+  (
+    "value", 
+    doc.allocate_string( value_.c_str() )
+  ));
+  
+  return child;
 }
 
 
@@ -492,6 +619,33 @@ void TabularResult::writeLatexCode(std::ostream& f, const std::string& name, int
   "\\newpage\n";  // page break algorithm fails after too short "longtable"
 }
 
+xml_node< char >* TabularResult::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+  
+  xml_node<>* heads = doc.allocate_node(node_element, doc.allocate_string("headings"));
+  child->append_node(heads);
+  for (size_t i=0; i<headings_.size(); i++)
+  {
+    xml_node<>* chead = doc.allocate_node(node_element, doc.allocate_string(str(format("header_%i")%i).c_str()));
+    heads->append_node(chead);
+    
+    chead->append_attribute(doc.allocate_attribute
+    (
+      "title", 
+      doc.allocate_string( headings_[i].c_str() )
+    ));
+  }
+
+  xml_node<>* values = doc.allocate_node(node_element, doc.allocate_string("values"));
+  child->append_node(values);
+  writeMatToXMLNode(toMat(), doc, *values);
+  
+  return child;
+}
+
+
 void TabularResult::exportDataToFile(const string& name, const path& outputdirectory) const
 {
   boost::filesystem::path fname(outputdirectory/(name+".csv"));
@@ -561,6 +715,56 @@ void AttributeTableResult::exportDataToFile(const string& name, const path& outp
   {
     f<<"\""<<names_[i]<<"\";"<<values_[i]<<endl;
   }
+}
+
+
+xml_node< char >* AttributeTableResult::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+
+  for (size_t i=0; i<names_.size(); i++)
+  {
+    xml_node<>* cattr = doc.allocate_node(node_element, doc.allocate_string(str(format("attribute_%i")%i).c_str()));
+    child->append_node(cattr);
+    
+    cattr->append_attribute(doc.allocate_attribute
+    (
+      "name", 
+      doc.allocate_string( names_[i].c_str() )
+    ));
+    
+    if (const int* v = boost::get<int>(&values_[i]))
+    {
+      cattr->append_attribute(doc.allocate_attribute(
+	"type", doc.allocate_string( "int" )
+      ));
+      cattr->append_attribute(doc.allocate_attribute(
+	"value", doc.allocate_string( boost::lexical_cast<std::string>(*v).c_str() )
+      ));
+    }
+    else if (const double* v = boost::get<double>(&values_[i]))
+    {
+      cattr->append_attribute(doc.allocate_attribute(
+	"type", doc.allocate_string( "double" )
+      ));
+      cattr->append_attribute(doc.allocate_attribute(
+	"value", doc.allocate_string( boost::lexical_cast<std::string>(*v).c_str() )
+      ));
+    }
+    else if (const std::string* v = boost::get<std::string>(&values_[i]))
+    {
+      cattr->append_attribute(doc.allocate_attribute(
+	"type", doc.allocate_string( "string" )
+      ));
+      cattr->append_attribute(doc.allocate_attribute(
+	"value", doc.allocate_string( v->c_str() )
+      ));
+    }
+    
+  }
+  
+  return child;
 }
 
   
@@ -724,6 +928,17 @@ void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int lev
 //   }
 }
 
+xml_node< char >* ResultSet::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+  
+  ResultElementCollection::appendToNode(doc, *child);
+  
+  return child;
+}
+
+
 void ResultSet::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
 {
   path outsubdir(outputdirectory/name);
@@ -808,6 +1023,70 @@ void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
   }
 }
 
+
+void ResultSet::saveToFile(const boost::filesystem::path& file ) const
+{
+//   std::cout<<"Writing result set to file "<<file<<std::endl;
+  
+  xml_document<> doc;
+  
+  // xml declaration
+  xml_node<>* decl = doc.allocate_node(node_declaration);
+  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
+  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
+  doc.append_node(decl);
+
+  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
+  doc.append_node(rootnode);
+  
+//   if (analysisName != "")
+//   {
+//     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
+//     rootnode->append_node(analysisnamenode);
+//     analysisnamenode->append_attribute(doc.allocate_attribute
+//     (
+//       "name", 
+//       doc.allocate_string(analysisName.c_str())
+//     ));
+//   }
+
+  ResultElementCollection::appendToNode(doc, *rootnode);
+  
+  {
+    std::ofstream f(file.c_str());
+    f << doc << std::endl;
+    f << std::flush;
+    f.close();
+  }
+}
+
+void ResultSet::readFromFile(const boost::filesystem::path& file)
+{
+  std::ifstream in(file.c_str());
+  std::string contents;
+  in.seekg(0, std::ios::end);
+  contents.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents[0], contents.size());
+  in.close();
+
+  xml_document<> doc;
+  doc.parse<0>(&contents[0]);
+  
+  xml_node<> *rootnode = doc.first_node("root");
+  
+//   std::string analysisName;
+//   xml_node<> *analysisnamenode = rootnode->first_node("analysis");
+//   if (analysisnamenode)
+//   {
+//     analysisName = analysisnamenode->first_attribute("name")->value();
+//   }
+
+  ResultElementCollection::readFromNode(doc, *rootnode);
+  
+//   return analysisName;
+}
+
 ParameterSetPtr ResultSet::convertIntoParameterSet() const
 {
   ParameterSetPtr ps(new ParameterSet());
@@ -829,6 +1108,10 @@ ParameterPtr ResultSet::convertIntoParameter() const
   static_cast<SubsetParameter*>(ps.get())->setParameterSet(*convertIntoParameterSet());
   return ps;
 }
+
+ResultElementCollection::~ResultElementCollection()
+{}
+
 
 ResultElement& ResultElementCollection::insert(const string& key, ResultElement* elem)
 {
@@ -1076,6 +1359,67 @@ void Chart::exportDataToFile(const std::string& name, const boost::filesystem::p
     curveID++;
   }
 }
+
+
+rapidxml::xml_node<>* Chart::appendToNode
+(
+  const std::string& name, 
+  rapidxml::xml_document<>& doc, 
+  rapidxml::xml_node<>& node
+) const
+{
+  using namespace rapidxml;
+  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+  child->append_attribute(doc.allocate_attribute
+  (
+    "xlabel", 
+    doc.allocate_string( xlabel_.c_str() )
+  ));
+  child->append_attribute(doc.allocate_attribute
+  (
+    "ylabel", 
+    doc.allocate_string( xlabel_.c_str() )
+  ));
+  child->append_attribute(doc.allocate_attribute
+  (
+    "addinit", 
+    doc.allocate_string( xlabel_.c_str() )
+  ));
+  
+  BOOST_FOREACH(const PlotCurve& pc, plc_)
+  {
+    xml_node<> *pcnode = doc.allocate_node
+    (
+      node_element, 
+      "PlotCurve" 
+    );
+    child->append_node(pcnode);
+    
+    pcnode->append_attribute
+    (
+      doc.allocate_attribute
+      (
+	"plaintextlabel", 
+	doc.allocate_string( pc.plaintextlabel().c_str() )
+      )
+    );
+
+    pcnode->append_attribute
+    (
+      doc.allocate_attribute
+      (
+	"plotcmd", 
+	doc.allocate_string( pc.plotcmd_.c_str() )
+      )
+    );
+
+    writeMatToXMLNode(pc.xy_, doc, *pcnode);
+  }
+  
+  return child;
+}
+
+
 
   
 ResultElementPtr Chart::clone() const

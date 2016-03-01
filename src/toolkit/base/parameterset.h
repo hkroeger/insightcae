@@ -39,6 +39,7 @@
 
 namespace insight {
   
+  
 class SubsetParameter;
 
 class ParameterSet

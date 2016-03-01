@@ -232,6 +232,9 @@ int main(int argc, char *argv[])
     TextProgressDisplayer pd;
     ResultSetPtr results = (*analysis)(&pd);
 
+    boost::filesystem::path resoutpath=analysis->executionPath()/ (filestem+".isr");
+    results->saveToFile( resoutpath );
+
     boost::filesystem::path outpath=analysis->executionPath()/ (filestem+".tex");
     results->writeLatexFile( outpath );
    

@@ -119,6 +119,19 @@ void Cutaway::build()
     
 }
 
+
+/** @addtogroup cad_parser
+  * @{
+  * 
+  * @section cutaway Cut away a halfspace
+  * Remove everything beyond a plane from a feature
+  * 
+  * Syntax: 
+  * ~~~~
+  * Cutaway(<feature expression: model>, <vector: p0>, <vector: n>) : feature
+  * ~~~~
+  * @}
+  */
 void Cutaway::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

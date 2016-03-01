@@ -29,6 +29,7 @@ namespace cad {
 class Cylinder
 : public SingleVolumeFeature
 {
+  bool p2isAxis_;
   VectorPtr p1_;
   VectorPtr p2_;
   ScalarPtr D_;
@@ -38,8 +39,8 @@ class Cylinder
 public:
   declareType("Cylinder");
   Cylinder(const NoParameters& nop = NoParameters());
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D);
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis);
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

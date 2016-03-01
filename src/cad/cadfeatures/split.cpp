@@ -57,13 +57,14 @@ void Split::build()
   setShape(makeSplit(*source_, *target_));
 }
 
-/** @addtogroup cad_parser
-  * @{
-  * @section split_syntax Split solid
-  * Split solid by face
+
+/*! \page Split Split
+  * Split solid by face (by GEOMAlgo_Splitter)
   * 
-  * Syntax: Split(<SolidModel>, <SolidModel>)
-  * @}
+  * Syntax: 
+  * ~~~~
+  * Split(<feature expression: tool>, <feature expression: target>) : feature
+  * ~~~~
   */
 void Split::insertrule(parser::ISCADParser& ruleset) const
 {

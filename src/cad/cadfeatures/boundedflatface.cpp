@@ -137,6 +137,18 @@ BoundedFlatFace::operator const TopoDS_Face& () const
 }
 
 
+/*! \page BoundedFlatFace BoundedFlatFace
+  * Return a flat face, bounded by the given wires.
+  * 
+  * Syntax: 
+  * ~~~~
+  * BoundedFlatFace( [<feature expression>, ...] ) : feature
+  * ~~~~
+  * or
+  * ~~~~
+  * BoundedFlatFace( [<edge feature expression>, ...] ) : feature
+  * ~~~~
+  */
 void BoundedFlatFace::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

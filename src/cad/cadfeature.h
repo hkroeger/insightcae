@@ -118,11 +118,10 @@ public:
  * \section cad CAD
  * The CAD module of Insight CAE
  * 
- * \subsection parser CAD parser
+ * \subsection cadparser CAD parser
  * Reference of the CAD parser language
  */
 
-/** @defgroup cad_parser ISCAD Parser Language */
 
 // class DatumPlane;
 // class Feature;

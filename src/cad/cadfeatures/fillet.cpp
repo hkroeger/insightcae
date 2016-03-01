@@ -56,13 +56,13 @@ Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
 : edges_(edges), r_(r)
 {}
 
-/** @addtogroup cad_parser
-  * @{
-  * @section fillet_syntax Fillet syntax
-  * Add fillet to edge
+/*! \page Fillet Fillet
+  * Create a fillet on an edge.
   * 
-  * Syntax: Fillet(<SolidModel>, <edgeFeatures>, <scalarExpression>)
-  * @}
+  * Syntax:
+  * ~~~~
+  * Fillet(<edge feature set: edges>, <scalar: radius>) : feature
+  * ~~~~
   */
 void Fillet::insertrule(parser::ISCADParser& ruleset) const
 {

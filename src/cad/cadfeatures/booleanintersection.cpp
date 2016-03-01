@@ -60,6 +60,14 @@ FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
   return FeaturePtr(new BooleanIntersection(m1, m2));
 }
 
+/*! \page BooleanIntersection BooleanIntersection
+  * Return the intersection between feat1 and feat2.
+  * 
+  * Syntax: 
+  * ~~~~
+  * ( <feature expression: feat1> & <feature expression: feat2> ) : feature
+  * ~~~~
+  */
 void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
 {
 //   ruleset.modelstepFunctionRules.add

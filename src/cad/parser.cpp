@@ -117,6 +117,58 @@ skip_grammar::skip_grammar()
 
 
 
+/*! \page cad_parser ISCAD Parser Language
+ * 
+ * ISCAD language knows the following commands:
+ * - \subpage Arc
+ * - \subpage Bar
+ * - \subpage BooleanIntersection
+ * - \subpage BooleanSubtract
+ * - \subpage BooleanUnion
+ * - \subpage BoundedFlatFace
+ * - \subpage Box
+ * - \subpage Chamfer
+ * - \subpage Circle
+ * - \subpage CircularPattern
+ * - \subpage Coil
+ * - \subpage Compound
+ * - \subpage Cone
+ * - \subpage Cutaway
+ * - \subpage Cylinder
+ * - \subpage Extrusion
+ * - \subpage Fillet
+ * - \subpage FillingFace
+ * - \subpage ImportSolid
+ * - \subpage Line
+ * - \subpage LinearPattern
+ * - \subpage Mirror
+ * - \subpage ModelFeature
+ * - \subpage NacaFourDigit
+ * - \subpage Pipe
+ * - \subpage Place
+ * - \subpage Projected
+ * - \subpage ProjectedOutline
+ * - \subpage Quad
+ * - \subpage RegPoly
+ * - \subpage Revolution
+ * - \subpage Ring
+ * - \subpage RotatedHelicalSweep
+ * - \subpage Shoulder
+ * - \subpage Sphere
+ * - \subpage SplineCurve
+ * - \subpage SplineSurface
+ * - \subpage Split
+ * - \subpage Spring
+ * - \subpage StitchedShell
+ * - \subpage StitchedSolid
+ * - \subpage Subfeature
+ * - \subpage Sweep 
+ * - \subpage Thicken
+ * - \subpage Torus
+ * - \subpage Transform
+ * - \subpage Tri
+ * - \subpage Wire
+ */
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model)
@@ -191,13 +243,22 @@ ISCADParser::ISCADParser(Model* model)
   * @{
   * @section postproc Postprocessing statements
   * 
-  * DXF(<filename>) << <SolidModel>
+  * @subsection DXF Save DXF drawing.
   * 
-  *         <viewname> (<viewon>, <viewfrom> [, section]) 
+  * Syntax:
+  * ~~~~
+  * DXF("<filename>") << <feature expression>
+  *     <viewname> (<vector viewon>, <vector viewfrom> [, up <vector upward direction>] [, section]) 
+  *     [<viewname> ...]
+  * ;
+  * ~~~~
   * 
-  *        [<viewname> ...];
+  * @subsection saveAs Export feature into file.
   * 
-  * saveAs(<filename>) << <SolidModel>;
+  * Syntax:Create a fille
+  * ~~~~
+  * saveAs("<filename>") << <feature expression>;
+  * ~~~~
   * @}
   */
 

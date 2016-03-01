@@ -66,6 +66,14 @@ FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2)
   return FeaturePtr(new BooleanSubtract(m1, m2));
 }
 
+/*! \page BooleanSubtract BooleanSubtract
+  * Return the subtraction of feat2 from feat1.
+  * 
+  * Syntax: 
+  * ~~~~
+  * ( <feature expression: feat1> - <feature expression: feat2> ) : feature
+  * ~~~~
+  */
 void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
 {
 //   ruleset.modelstepFunctionRules.add

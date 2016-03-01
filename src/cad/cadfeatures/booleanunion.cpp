@@ -86,6 +86,21 @@ void BooleanUnion::build()
 
 
 
+/*! \page BooleanUnion BooleanUnion
+  * Return the union of feat1 with feat2.
+  * 
+  * Syntax: 
+  * ~~~~
+  * ( <feature expression: feat1> | <feature expression: feat2> ) : feature
+  * ~~~~
+  * 
+  * MergeSolids: Return the union of all solids in feat.
+  * 
+  * Syntax: 
+  * ~~~~
+  * MergeSolids( <feature expression: feat> ) : feature
+  * ~~~~
+  */
 void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

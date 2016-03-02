@@ -702,7 +702,7 @@ void ChannelBase::evaluateAtSection(
     
     int ck=cd["k"].col;
     
-    arma::mat K= 0.5*(data.col(c)+data.col(c+1)+data.col(c+2));
+    arma::mat K= 0.5*(data.col(c)+data.col(c+3)+data.col(c+5));
     if (cd.find("k")!=cd.end())
     {
       K+=data.col(ck);

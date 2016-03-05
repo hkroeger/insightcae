@@ -59,8 +59,11 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 namespace insight {
   
 std::string base64_encode(const std::string& s);
+std::string base64_encode(const boost::filesystem::path& f);
 std::string base64_decode(const std::string& s);
-  
+
+void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node);
+
 class Parameter
 : public boost::noncopyable
 {

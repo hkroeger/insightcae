@@ -597,12 +597,12 @@ void ChannelBase::evaluateAtSection(
        (PlotCurve(arma::mat(join_rows(ydelta, Lt1)), "cfdkO", "w l lt 2 lc 1 lw 1 t 'CFD (from k and omega)'"))
        (PlotCurve(arma::mat(join_rows(ydelta, Lt2)), "Lmix", "w l lt 3 lc 1 lw 1 t 'Mixing length limit'"))
        (PlotCurve(Ltp, "cfd", "w l lt 1 lc 1 lw 2 t 'CFD'"))
-       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), "fit",
-		    "w l lt 2 lc 2 lw 2 t 'Fit "
-		    + 	    str(format("%.1g") % m.c0)+"*ydelta^"+str(format("%.1g") % m.c2)
-		    +" + ("+str(format("%.1g") % m.c1)+"*ydelta^"+str(format("%.1g") % m.c3)+")'"))
+       (PlotCurve(arma::mat(join_rows(ydelta, yfit)), "fit", "w l lt 2 lc 2 lw 2 t 'Fit'"))
        ,
-      "Wall normal profile of turbulent length scale at x/H=" + str(format("%g")%xByH)
+      "Wall normal profile of turbulent length scale at $x/H=" + str(format("%g")%xByH) + "$. Fit: $"
+		    + 	    str(format("%.5g") % m.c0)+" y_{\\delta}^{"+str(format("%.5g") % m.c2)+"}"
+		    +" + ("+str(format("%.5g") % m.c1)+" y_{\\delta}^{"+str(format("%.5g") % m.c3)+"})$",
+      "set key top left"
     )
     .setOrder(so.next());
 
@@ -702,7 +702,7 @@ void ChannelBase::evaluateAtSection(
     
     int ck=cd["k"].col;
     
-    arma::mat K= 0.5*(data.col(c)+data.col(c+1)+data.col(c+2));
+    arma::mat K= 0.5*( data.col(c) + data.col(c+3) + data.col(c+5) );
     if (cd.find("k")!=cd.end())
     {
       K+=data.col(ck);
@@ -865,7 +865,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 	(PlotCurve(Cf_vs_xp, "cfd", "w l lt 1 lc -1 lw 2 t 'CFD'"))
 	(PlotCurve(Cftheo_vs_xp, "ref", "w l lt 2 lc -1 lw 1 t 'Analytical'"))
 	,
-      "Axial profile of wall friction coefficient"
+      "Axial profile of wall friction coefficient",
+      "set key bottom right"
     ) .setOrder(o.next());    
   }
   catch (...)

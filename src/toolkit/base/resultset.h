@@ -64,6 +64,26 @@ public:
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
   /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+    
+  /**
+   * restore the contents of this element from the given node
+   */
+  virtual void readFromNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  );
+
+  /**
    * convert this result element into a parameter
    * returns an invalid pointer per default
    * Since not all Results can be converted into parameters, a check for validity is required before using the pointer.
@@ -89,6 +109,7 @@ class ResultElementCollection
 : public std::map<std::string, ResultElementPtr> 
 {
 public:
+  virtual ~ResultElementCollection();
   /**
    * insert elem into the set.
    * elem is put into a shared_ptr but not clone. So don't delete it!
@@ -111,6 +132,15 @@ public:
     return *ret;
   }
   
+  /**
+   * append the result elements to the given xml node
+   */
+  virtual void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const;
+  
+  /**
+   * restore the result elements from the given node
+   */
+  virtual void readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node);
 
 };
 
@@ -129,6 +159,16 @@ public:
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
     
   virtual boost::shared_ptr<ResultElement> clone() const;
 };
@@ -139,6 +179,7 @@ class Image
 {
 protected:
   boost::filesystem::path imagePath_;
+  
 public:
   declareType("Image");
   Image(const ResultElement::ResultElementConstrP& par);
@@ -149,6 +190,17 @@ public:
   
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
+
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+  
   virtual ResultElementPtr clone() const;
 };
 
@@ -181,6 +233,30 @@ public:
     std::ofstream f(fname.c_str());
     f<<value_<<std::endl;
   }
+
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const
+  {
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+    
+    child->append_attribute(doc.allocate_attribute
+    (
+      "value", 
+      doc.allocate_string( boost::lexical_cast<std::string>(value_).c_str() )
+    ));
+    
+    return child;    
+  }
+    
+
 };
 
 class Comment
@@ -196,6 +272,18 @@ public:
   Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc);
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+    
+  
   virtual ResultElementPtr clone() const;
 };
 
@@ -266,6 +354,16 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+    
   virtual ResultElementPtr clone() const;
 };
 
@@ -305,6 +403,16 @@ public:
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+    
   virtual ResultElementPtr clone() const;
 };
 
@@ -354,6 +462,28 @@ public:
 
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
   virtual void writeLatexFile(const boost::filesystem::path& file) const;
+  
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
+    
+  
+  /**
+   * save result set to XML file
+   */
+  virtual void saveToFile(const boost::filesystem::path& file) const;
+  
+  /**
+   * read result set from xml file
+   */
+  virtual void readFromFile(const boost::filesystem::path& file);
+  
   
   virtual ParameterSetPtr convertIntoParameterSet() const;
   virtual ParameterPtr convertIntoParameter() const;
@@ -410,6 +540,7 @@ struct PlotCurve
   
   std::string title() const;
   
+  const arma::mat& xy() const { return xy_; }
   const std::string& plaintextlabel() const { return plaintextlabel_; }
 };
 
@@ -454,6 +585,16 @@ public:
   virtual void writeLatexHeaderCode(std::ostream& f) const;
   virtual void writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const;
   virtual void exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const;
+  
+  /**
+   * append the contents of this element to the given xml node
+   */
+  virtual rapidxml::xml_node<>* appendToNode
+  (
+    const std::string& name, 
+    rapidxml::xml_document<>& doc, 
+    rapidxml::xml_node<>& node
+  ) const;
   
   virtual ResultElementPtr clone() const;
 };

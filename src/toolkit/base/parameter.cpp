@@ -95,6 +95,19 @@ std::string base64_encode(const std::string& s)
   return os.str();
 }
 
+string base64_encode(const path& f)
+{
+  std::ifstream in(f.c_str());
+  std::string contents_raw;
+  in.seekg(0, std::ios::end);
+  contents_raw.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents_raw[0], contents_raw.size());
+  
+  return base64_encode(contents_raw);
+}
+
+
 std::string base64_decode(const std::string& s) 
 {
   namespace bai = boost::archive::iterators;
@@ -117,6 +130,19 @@ std::string base64_decode(const std::string& s)
 
   return os.str();
 }
+
+
+
+void writeMatToXMLNode(const arma::mat& matrix, xml_document< char >& doc, xml_node< char >& node)
+{
+  std::ostringstream voss;
+  matrix.save(voss, arma::raw_ascii);
+  
+  // set stringified table values as node value
+  node.value(doc.allocate_string(voss.str().c_str()));
+}
+
+
 
 defineType(Parameter);
 defineFactoryTable(Parameter, std::string);
@@ -661,13 +687,12 @@ xml_node< char >* MatrixParameter::appendToNode(const string& name, xml_document
   using namespace rapidxml;
   xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
 
-  std::ostringstream voss;
-//   voss<<endl;
-  value_.save(voss, arma::raw_ascii);
-//   voss<<endl;
-  
-  // set stringified table values as node value
-  child->value(doc.allocate_string(voss.str().c_str()));
+//   std::ostringstream voss;
+//   value_.save(voss, arma::raw_ascii);
+//   
+//   // set stringified table values as node value
+//   child->value(doc.allocate_string(voss.str().c_str()));
+  writeMatToXMLNode(value_, doc, *child);
     
   return child;
 }

@@ -58,12 +58,13 @@ CircularPattern::CircularPattern(const NoParameters& nop): Feature(nop)
 //   return result;
 // }
   
-CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center)
+CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center, const std::string& filterrule)
 : m1_(m1),
   p0_(p0),
   axis_(axis),
   n_(n),
-  center_(center)
+  center_(center),
+  filterrule_(filterrule)
 {
 }
 
@@ -79,11 +80,32 @@ void CircularPattern::build()
   double phi0=0.0;
   if (center_) phi0=-0.5*delta_phi*double(n-1);
   gp_Ax1 ax(to_Pnt(p0_->value()), to_Vec(axis_->value()/delta_phi));
+  
+  std::vector<std::string> rules;
+  if (!filterrule_.empty())
+    boost::split(rules, filterrule_, boost::is_any_of(","));
+  
   for (int i=0; i<n; i++)
   {
-    gp_Trsf tr;
-    tr.SetRotation(ax, phi0+delta_phi*double(i));
-    bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+    bool ok=true;
+    try
+    {
+      BOOST_FOREACH(const std::string& r, rules)
+      {
+	if (boost::lexical_cast<int>(r)==(i+1)) ok=false;
+      }
+    }
+    catch (...)
+    {
+      throw insight::Exception("CircularPattern: invalid filter expression! (was '"+filterrule_+"')");
+    }
+    
+    if (ok)
+    {
+      gp_Trsf tr;
+      tr.SetRotation(ax, phi0+delta_phi*double(i));
+      bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+    }
   }
   
   setShape(result);
@@ -98,11 +120,12 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
     "CircularPattern",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
-        > ( ( ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
-        > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<CircularPattern>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ',' 
+	>> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression 
+        >> ( ( ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
+        >> ( ( ',' >> qi::lit("not") >> ruleset.r_string ) | qi::attr(std::string()) ) 
+        >> ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<CircularPattern>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6)) ]
       
     ))
   );

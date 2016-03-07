@@ -34,11 +34,12 @@ class CircularPattern
   VectorPtr axis_;
   ScalarPtr n_; 
   bool center_;
+  std::string filterrule_;
   
 public:
   declareType("CircularPattern");
   CircularPattern(const NoParameters& nop = NoParameters());
-  CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false);
+  CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     
   virtual void build();
   

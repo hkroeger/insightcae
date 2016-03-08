@@ -38,6 +38,7 @@ class DrawingExport
   boost::filesystem::path file_; 
   FeaturePtr model_; 
   DrawingViewDefinitions viewdefs_;
+  TopoDS_Shape shape_;
 
 public:
   DrawingExport

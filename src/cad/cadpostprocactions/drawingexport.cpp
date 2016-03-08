@@ -55,7 +55,7 @@ void DrawingExport::build()
       up
     );
   }
-  
+  shape_=views.begin()->second.visibleEdges;
   {
     DXFWriter::writeViews(file_, views);
   }
@@ -65,7 +65,7 @@ void DrawingExport::build()
 AIS_InteractiveObject* DrawingExport::createAISRepr() const
 {
   checkForBuildDuringAccess();
-  return NULL;
+  return new AIS_Shape(shape_);
 }
 
 void DrawingExport::write(std::ostream& ) const

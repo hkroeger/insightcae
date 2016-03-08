@@ -329,22 +329,46 @@ void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& lay
 //   writeLine(c, layer);
   std::vector<gp_Pnt> pts=discretizeBSpline(c);
 
-  for (int i=1; i<pts.size(); i++)
+  dxf_.writePolyline
+  (
+        *dw_,
+        DL_PolylineData(
+                 pts.size(), 
+                 0, 0, 
+                 false
+        ),
+        DL_Attributes(layer, 256, -1, "BYLAYER", 1.)
+  );
+
+//   for (int i=1; i<pts.size(); i++)
+  for (int i=0; i<pts.size(); i++)
   {
-    gp_Pnt p0=pts[i-1];
+//     gp_Pnt p0=pts[i-1];
     gp_Pnt p1=pts[i];
     
-    dxf_.writeLine
+//     dxf_.writeLine
+//     (
+//       *dw_,
+//       DL_LineData
+//       (
+// 	p0.X(), p0.Y(), 0,
+// 	p1.X(), p1.Y(), 0
+//       ),
+//       DL_Attributes(layer, 256, -1, "BYLAYER", 1.)
+//     );
+    // for every vertex in the polyline:
+    dxf_.writeVertex
     (
-      *dw_,
-      DL_LineData
-      (
-	p0.X(), p0.Y(), 0,
-	p1.X(), p1.Y(), 0
-      ),
-      DL_Attributes(layer, 256, -1, "BYLAYER", 1.)
+	  *dw_,
+	  DL_VertexData(
+		p1.X(), p1.Y(), 0, 
+		0.0
+	  )
     );
   }
+
+  dxf_.writePolylineEnd(*dw_);
+
 }
   
 writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)

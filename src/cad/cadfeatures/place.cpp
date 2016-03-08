@@ -63,11 +63,6 @@ void Place::build()
   //   makePlacement(m, tr.Inverted());
   }
  
-  if (m_->hasExplicitCoG())
-  {
-    this->setCoGExplicitly( vec3(to_Pnt(m_->modelCoG()).Transformed(*trsf_)) );
-  }
-  if (m_->hasExplicitMass()) setMassExplicitly(m_->mass());
   setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
   
   copyDatumsTransformed(*m_, *trsf_);

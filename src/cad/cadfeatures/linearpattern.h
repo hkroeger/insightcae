@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_LINEARPATTERN_H
 #define INSIGHT_CAD_LINEARPATTERN_H
 
-#include "cadfeature.h"
+#include "compound.h"
 
 namespace insight {
 namespace cad {
 
 class LinearPattern
-: public Feature
+: public Compound
 {
   FeaturePtr m1_;
   VectorPtr axis_;

@@ -61,7 +61,7 @@ struct ViewState
   bool visible;
   double r, g, b;
   
-  ViewState();
+  ViewState(int shad=1);
   void randomizeColor();
 };
 
@@ -95,6 +95,7 @@ signals:
   void jump_to(const QString& name);
   void insertParserStatementAtCursor(const QString& statement);
   void setUniformDisplayMode(const AIS_DisplayMode AM);
+  void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible);
 
 public:
   ViewState state_;
@@ -110,7 +111,9 @@ public:
   void show();
   void randomizeColor();
   void updateDisplay();
+  void showProperties();
   void exportShape();
+  void setResolution();
   void insertName();
   
   inline insight::cad::Feature& solidmodel()
@@ -296,16 +299,17 @@ protected slots:
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
   
-  // insert model step
-  void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible);
-  void addDatum(std::string sn, insight::cad::DatumPtr dm);
-  void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em);
-  void addVariable(std::string sn, insight::cad::parser::scalar sv);
-  void addVariable(std::string sn, insight::cad::parser::vector vv);
-  
   void loadFile(const boost::filesystem::path& file);
 
 public slots:
+
+  // insert model step
+  void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible);
+  void addDatum(std::string sn, insight::cad::DatumPtr dm);
+  void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible=false);
+  void addVariable(std::string sn, insight::cad::parser::scalar sv);
+  void addVariable(std::string sn, insight::cad::parser::vector vv);
+  
   void loadModel();
   void saveModel();
   void saveModelAs();

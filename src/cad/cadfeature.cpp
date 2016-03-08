@@ -197,8 +197,8 @@ void Feature::setShape(const TopoDS_Shape& shape)
 
 Feature::Feature(const NoParameters&)
 : isleaf_(true),
-  density_(1.0),
-  areaWeight_(0.0),
+//   density_(1.0),
+//   areaWeight_(0.0),
   hash_(0)
 {
 }
@@ -207,8 +207,8 @@ Feature::Feature(const Feature& o)
 : isleaf_(true),
   providedSubshapes_(o.providedSubshapes_),
   providedDatums_(o.providedDatums_),
-  density_(1.0),
-  areaWeight_(0.0),
+  density_(o.density_),
+  areaWeight_(o.areaWeight_),
   explicitCoG_(o.explicitCoG_),
   explicitMass_(o.explicitMass_),
   hash_(o.hash_)
@@ -218,8 +218,8 @@ Feature::Feature(const Feature& o)
 
 Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
-  density_(1.0),
-  areaWeight_(0.0),
+//   density_(1.0),
+//   areaWeight_(0.0),
   hash_(0)
 {
   setShape(shape);
@@ -229,8 +229,8 @@ Feature::Feature(const TopoDS_Shape& shape)
 
 Feature::Feature(const boost::filesystem::path& filepath)
 : isleaf_(true),
-  density_(1.0),
-  areaWeight_(0.0),
+//   density_(1.0),
+//   areaWeight_(0.0),
   hash_(0)
 {
   setShape(loadShapeFromFile(filepath));
@@ -247,19 +247,52 @@ Feature::~Feature()
 {
 }
 
-double Feature::mass() const
+void Feature::setDensity(ScalarPtr rho) 
+{ 
+  density_=rho; 
+}
+  
+
+double Feature::density() const 
+{ 
+  if (density_)
+    return density_->value(); 
+  else
+    return 1.0;
+}
+
+void Feature::setAreaWeight(ScalarPtr rho) 
+{ 
+  areaWeight_=rho; 
+}
+
+double Feature::areaWeight() const 
+{ 
+  if (areaWeight_)
+    return areaWeight_->value(); 
+  else
+    return 0.0;
+}
+
+double Feature::mass(double density_ovr, double aw_ovr) const
 {
   checkForBuildDuringAccess();
   if (explicitMass_)
   {
-    cout<<"Explicit mass = "<<*explicitMass_<<endl;
-    return *explicitMass_;
+    cout<<"Explicit mass = "<<explicitMass_->value()<<endl;
+    return explicitMass_->value();
   }
   else
   {
-    double mtot=density_*modelVolume()+areaWeight_*modelSurfaceArea();
-    cout<<"Computed mass rho / V = "<<density_<<" / "<<modelVolume()
-	<<", mf / A = "<<areaWeight_<<" / "<<modelSurfaceArea()
+    double rho=density();
+    if (density_ovr>=0.) rho=density_ovr;
+    
+    double aw=areaWeight();
+    if (aw_ovr>=0.) aw=aw_ovr;
+    
+    double mtot=rho*modelVolume() + aw*modelSurfaceArea();
+    cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
+	<<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
 	<<", m = "<<mtot<<endl;
     return mtot;
   }
@@ -305,14 +338,14 @@ void Feature::build()
 }
 
 
-void Feature::setMassExplicitly(double m) 
+void Feature::setMassExplicitly(ScalarPtr m) 
 { 
-  explicitMass_.reset(new double(m));
+  explicitMass_=m;
 }
 
-void Feature::setCoGExplicitly(const arma::mat& cog) 
+void Feature::setCoGExplicitly(VectorPtr cog) 
 { 
-  explicitCoG_.reset(new arma::mat(cog));
+  explicitCoG_=cog;
 }
 
 FeaturePtr Feature::subshape(const std::string& name)
@@ -401,7 +434,7 @@ arma::mat Feature::modelCoG() const
   checkForBuildDuringAccess();
   if (explicitCoG_)
   {
-    return *explicitCoG_;
+    return explicitCoG_->value();
   }
   else
   {
@@ -1211,6 +1244,18 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix)
       throw insight::Exception("subshape "+prefix+sf.first+" already present!");
     providedSubshapes_[prefix+sf.first]=sf.second;
   }
+  
+  if (prefix.empty()) // only, if not copied into subfeature
+  {
+    if (m1.hasExplicitCoG() && (!this->hasExplicitCoG()) )
+    {
+      this->setCoGExplicitly( VectorPtr(new ConstantVector(m1.modelCoG())) );
+    }
+    if (m1.hasExplicitMass() && (!this->hasExplicitMass()) ) 
+    {
+      setMassExplicitly( ScalarPtr(new ConstantScalar(m1.mass())) );
+    }
+  }
 }
 
 void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix)
@@ -1242,6 +1287,18 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
     if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
       throw insight::Exception("subshape "+prefix+sf.first+" already present!");
     providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
+  }
+  
+  if (prefix.empty()) // only, if not copied into subfeature
+  {
+    if ( m1.hasExplicitCoG() && (!this->hasExplicitCoG()) )
+    {
+      this->setCoGExplicitly( VectorPtr(new ConstantVector(vec3(to_Pnt(m1.modelCoG()).Transformed(trsf)))) );
+    }
+    if ( m1.hasExplicitMass() && (!this->hasExplicitMass()) ) 
+    {
+      setMassExplicitly( ScalarPtr(new ConstantScalar(m1.mass())) );
+    }
   }
 }
 
@@ -1544,18 +1601,17 @@ void Feature::write(std::ostream& f) const
     f<<i.second(0)<<" "<<i.second(1)<<" "<<i.second(2)<<endl;
   }
 
-//   double density_, areaWeight_;
-  f<<density_<<endl;
-  f<<areaWeight_<<endl;
+  f<<density()<<endl;
+  f<<areaWeight()<<endl;
   
   f<<bool(explicitCoG_)<<endl;
   if (explicitCoG_) 
   {
-    f<<(*explicitCoG_)(0)<<" "<<(*explicitCoG_)(1)<<" "<<(*explicitCoG_)(2)<<endl;
+    f<<explicitCoG_->value()(0)<<" "<<explicitCoG_->value()(1)<<" "<<explicitCoG_->value()(2)<<endl;
   }
   
   f<<bool(explicitMass_)<<endl;
-  if (explicitMass_) f<<*explicitMass_<<endl;
+  if (explicitMass_) f<<explicitMass_->value()<<endl;
 
 }
 
@@ -1564,6 +1620,23 @@ void Feature::read(const filesystem::path& file)
   cout<<"Reading model of type "<<type()<<" from cache file "<<file<<endl;
   std::ifstream f(file.c_str());
   read(f);
+}
+
+MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
+{
+  double m=0.0;
+  arma::mat cog=vec3(0,0,0);
+  
+  BOOST_FOREACH(const FeaturePtr& f, feats)
+  {
+    double mc=f->mass(density_ovr, aw_ovr);
+    std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
+    m += mc;
+    cog += f->modelCoG()*mc;
+  }
+  cog/=m;
+  std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
+  return MassAndCoG(m, cog);
 }
 
 
@@ -1649,26 +1722,28 @@ void Feature::read(std::istream& f)
   }
 
 //   double density_, areaWeight_;
-  f>>density_;
-  f>>areaWeight_;
-  
-  bool has;
-  
-  f>>has;
-  if (has)
-  {
-    double x,y,z;
-    f>>x>>y>>z;
-    explicitCoG_.reset(new arma::mat(vec3(x,y,z)));
-  }
-  
-  f>>has;
-  if (has)
-  {
-    double v;
-    f>>v;
-    explicitMass_.reset(new double(v));
-  }
+
+  throw insight::Exception("not implemented!");
+//   f>>density_;
+//   f>>areaWeight_;
+//   
+//   bool has;
+//   
+//   f>>has;
+//   if (has)
+//   {
+//     double x,y,z;
+//     f>>x>>y>>z;
+//     explicitCoG_.reset(new arma::mat(vec3(x,y,z)));
+//   }
+//   
+//   f>>has;
+//   if (has)
+//   {
+//     double v;
+//     f>>v;
+//     explicitMass_.reset(new double(v));
+//   }
 
 }
 

@@ -111,7 +111,6 @@ public:
 };
 
 
-
   
 /* \mainpage
  * 
@@ -177,9 +176,10 @@ protected:
   RefPointsList refpoints_;
   RefVectorsList refvectors_;
   
-  double density_, areaWeight_;
-  boost::shared_ptr<arma::mat> explicitCoG_;
-  boost::shared_ptr<double> explicitMass_;
+  ScalarPtr density_;
+  ScalarPtr areaWeight_;
+  VectorPtr explicitCoG_;
+  ScalarPtr explicitMass_;
 
   size_t hash_;
   
@@ -204,16 +204,18 @@ public:
   
   inline size_t hash() const { return hash_; }
   
-  inline void setDensity(double rho) { density_=rho; };
-  inline double density() const { return density_; }
-  inline void setAreaWeight(double rho) { areaWeight_=rho; };
-  inline double areaWeight() const { return areaWeight_; }
-  virtual double mass() const;
+  virtual void setDensity(ScalarPtr rho);
+  virtual double density() const;
+  
+  virtual void setAreaWeight(ScalarPtr rho);
+  virtual double areaWeight() const;
+  
+  virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
   virtual void build();
   
-  void setMassExplicitly(double m);
-  void setCoGExplicitly(const arma::mat& cog);
+  void setMassExplicitly(ScalarPtr m);
+  void setCoGExplicitly(VectorPtr cog);
   
   inline bool hasExplicitMass() const { return bool(explicitMass_); }
   inline bool hasExplicitCoG() const { return bool(explicitCoG_); }
@@ -352,6 +354,11 @@ public:
   virtual void read(std::istream& file);
   virtual void read(const boost::filesystem::path& file);
 };
+
+
+typedef std::pair<double, arma::mat> MassAndCoG;
+
+MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
 
 
 template<class T>

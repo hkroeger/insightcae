@@ -52,13 +52,8 @@ void Mirror::build()
   
   tr.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
   
-  if (m1_->hasExplicitCoG())
-  {
-    this->setCoGExplicitly( vec3(to_Pnt(m1_->modelCoG()).Transformed(tr)) );
-  }
-  if (m1_->hasExplicitMass()) setMassExplicitly(m1_->mass());
-  
   setShape(BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+  copyDatumsTransformed(*m1_, tr);
 }
 
 void Mirror::insertrule(parser::ISCADParser& ruleset) const

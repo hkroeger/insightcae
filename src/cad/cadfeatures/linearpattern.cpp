@@ -18,6 +18,7 @@
  */
 
 #include "linearpattern.h"
+#include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -33,7 +34,7 @@ namespace cad {
 defineType(LinearPattern);
 addToFactoryTable(Feature, LinearPattern, NoParameters);
 
-LinearPattern::LinearPattern(const NoParameters& nop): Feature(nop)
+LinearPattern::LinearPattern(const NoParameters& nop): Compound(nop)
 {}
 
 
@@ -44,23 +45,32 @@ LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
 
 void LinearPattern::build()
 {
-  BRep_Builder bb;
-  TopoDS_Compound result;
-  bb.MakeCompound(result);
+//   BRep_Builder bb;
+//   TopoDS_Compound result;
+//   bb.MakeCompound(result);
   
   double delta_x=norm(axis_->value(), 2);
   gp_Vec ax(to_Vec(axis_->value()/delta_x));
   
   int n=round(n_->value());
+
+  int j=0;
+  CompoundFeatureMap instances;
+  
   for (int i=0; i<n; i++)
   {
     gp_Trsf tr;
     tr.SetTranslation(ax*delta_x*double(i));
-    bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+//     bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+    
+    components_[str( format("component%d") % (j+1) )] = FeaturePtr(new Transform(m1_, tr));
+    j++;
   }
-  m1_->unsetLeaf();
   
-  setShape(result);
+  m1_->unsetLeaf();
+  Compound::build();
+  
+//   setShape(result);
 }
 
 void LinearPattern::insertrule(parser::ISCADParser& ruleset) const

@@ -36,6 +36,7 @@ class Compound
 {
 protected:
   CompoundFeatureMap components_;
+  MassAndCoG mco_;
   
 public:
   declareType("Compound");

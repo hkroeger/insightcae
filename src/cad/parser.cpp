@@ -181,8 +181,8 @@ ISCADParser::ISCADParser(Model* model)
        r_assignment 
        | 
        r_modelstep 
-//        | 
-//        r_solidmodel_propertyAssignment
+       | 
+       r_solidmodel_propertyAssignment
      ) 
       >> 
      -( 
@@ -371,20 +371,20 @@ ISCADParser::ISCADParser(Model* model)
       // try identifiers last, since exceptions are generated, if symbols don't exist
       ;
 
-//     r_solidmodel_propertyAssignment =
-//       qi::lexeme[ model_->modelstepSymbolNames() ] [ _a =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ] 
-// 	  >> lit("->") >
-// 	   (
-// 	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&SolidModel::setCoGExplicitly, *_a, qi::_1) ) ]
-// 	     |
-// 	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setMassExplicitly, *_a, qi::_1) ) ]
-// 	     |
-// 	     ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setDensity, *_a, qi::_1) ) ]
-// 	     |
-// 	     ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&SolidModel::setAreaWeight, *_a, qi::_1) ) ]
-// 	   )
-// 	  > ';'
-// 	  ;
+    r_solidmodel_propertyAssignment =
+      qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ] 
+	  >> lit("->") >
+	   (
+	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&Feature::setCoGExplicitly, *_a, qi::_1) ) ]
+	     |
+	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setMassExplicitly, *_a, qi::_1) ) ]
+	     |
+	     ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
+	     |
+	     ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
+	   )
+	  > ';'
+	  ;
 
     r_vertexFeaturesExpression = 
 	 (

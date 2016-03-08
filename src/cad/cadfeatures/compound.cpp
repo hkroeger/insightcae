@@ -60,10 +60,13 @@ void Compound::build()
   TopoDS_Compound result;
   bb.MakeCompound(result);
 
+  std::vector<FeaturePtr> sfs;
   BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
   {
     std::string name=c.first;
     FeaturePtr p=c.second;
+    
+    sfs.push_back(p);
     
     bb.Add(result, *p);
     p->unsetLeaf();
@@ -72,6 +75,11 @@ void Compound::build()
     providedSubshapes_[c.first]=c.second;
   }
   setShape(result);
+  
+  double grho=-1, gaw=-1;
+  if (density_) grho=density_->value();
+  if (areaWeight_) gaw=areaWeight_->value();
+  mco_=compoundProps(sfs, grho, gaw);
 }
 
 void Compound::insertrule(parser::ISCADParser& ruleset) const
@@ -90,56 +98,27 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
 
 arma::mat Compound::modelCoG() const
 {
-  if (explicitCoG_.get())
+  checkForBuildDuringAccess();
+  if (explicitCoG_)
   {
-    return *explicitCoG_;
+    return explicitCoG_->value();
   }
   else
   {
-    double mtot=0.0;
-    arma::mat cog=vec3(0,0,0);
-    
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
-    {
-      std::string name=c.first;
-      FeaturePtr p=c.second;
-      const Feature& m = *p;
-      
-      mtot+=m.mass();
-      cog += m.modelCoG()*m.mass();
-    }
-    
-    cout<<"total mass="<<mtot<<endl;
-    
-    if (mtot<1e-10)
-      throw insight::Exception("Total mass is zero!");
-    
-    cog/=mtot;
-    
-    cout<<"CoG="<<cog<<endl;
-    
-    return cog;
+    return mco_.second;
   }
 }
 
 double Compound::mass() const
 {
+  checkForBuildDuringAccess();
   if (explicitMass_)
   {
-    return *explicitMass_;
+    return explicitMass_->value();
   }
   else
   {
-    double mtot=0.0;
-    
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
-    {
-      std::string name=c.first;
-      FeaturePtr p=c.second;
-      const Feature& m = *p;
-      mtot+=m.mass();
-    }
-    return mtot;
+    return mco_.first;
   }
 }
 

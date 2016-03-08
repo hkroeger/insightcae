@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_CIRCULARPATTERN_H
 #define INSIGHT_CAD_CIRCULARPATTERN_H
 
-#include "cadfeature.h"
+#include "compound.h"
 
 namespace insight {
 namespace cad {
 
 class CircularPattern
-: public Feature
+: public Compound
 {
 //   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
   FeaturePtr m1_;

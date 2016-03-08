@@ -18,6 +18,7 @@
  */
 
 #include "circularpattern.h"
+#include "transform.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -34,7 +35,7 @@ namespace cad {
 defineType(CircularPattern);
 addToFactoryTable(Feature, CircularPattern, NoParameters);
 
-CircularPattern::CircularPattern(const NoParameters& nop): Feature(nop)
+CircularPattern::CircularPattern(const NoParameters& nop): Compound(nop)
 {}
 
 
@@ -70,9 +71,6 @@ CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, Sc
 
 void CircularPattern::build()
 {
-  BRep_Builder bb;
-  TopoDS_Compound result;
-  bb.MakeCompound(result);
   
   int n = n_->value();
   
@@ -84,6 +82,9 @@ void CircularPattern::build()
   std::vector<std::string> rules;
   if (!filterrule_.empty())
     boost::split(rules, filterrule_, boost::is_any_of(","));
+  
+  int j=0;
+  CompoundFeatureMap instances;
   
   for (int i=0; i<n; i++)
   {
@@ -104,12 +105,56 @@ void CircularPattern::build()
     {
       gp_Trsf tr;
       tr.SetRotation(ax, phi0+delta_phi*double(i));
-      bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+//       bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+      components_[str( format("component%d") % (j+1) )] = FeaturePtr(new Transform(m1_, tr));
+      j++;
     }
   }
-  
-  setShape(result);
+
+
   m1_->unsetLeaf();
+  Compound::build();
+
+//   BRep_Builder bb;
+//   TopoDS_Compound result;
+//   bb.MakeCompound(result);
+//   
+//   int n = n_->value();
+//   
+//   double delta_phi=norm(axis_->value(), 2);
+//   double phi0=0.0;
+//   if (center_) phi0=-0.5*delta_phi*double(n-1);
+//   gp_Ax1 ax(to_Pnt(p0_->value()), to_Vec(axis_->value()/delta_phi));
+//   
+//   std::vector<std::string> rules;
+//   if (!filterrule_.empty())
+//     boost::split(rules, filterrule_, boost::is_any_of(","));
+//   
+//   for (int i=0; i<n; i++)
+//   {
+//     bool ok=true;
+//     try
+//     {
+//       BOOST_FOREACH(const std::string& r, rules)
+//       {
+// 	if (boost::lexical_cast<int>(r)==(i+1)) ok=false;
+//       }
+//     }
+//     catch (...)
+//     {
+//       throw insight::Exception("CircularPattern: invalid filter expression! (was '"+filterrule_+"')");
+//     }
+//     
+//     if (ok)
+//     {
+//       gp_Trsf tr;
+//       tr.SetRotation(ax, phi0+delta_phi*double(i));
+//       bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
+//     }
+//   }
+//   
+//   setShape(result);
+//   m1_->unsetLeaf();
 }
 
 

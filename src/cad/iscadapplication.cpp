@@ -361,8 +361,8 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
 // };
 // 
 
-ViewState::ViewState()
-: shading(1),
+ViewState::ViewState(int shad)
+: shading(shad),
   visible(true),
   r(0.5),
   g(0.5),
@@ -476,6 +476,27 @@ void QModelStepItem::insertName()
   emit insertParserStatementAtCursor(name_);
 }
 
+void QModelStepItem::showProperties()
+{
+  emit addEvaluation
+  (
+    "SolidProperties_"+name_.toStdString(), 
+    insight::cad::PostprocActionPtr(new SolidProperties(smp_)),
+    true
+  );
+}
+
+void QModelStepItem::setResolution()
+{
+  bool ok;
+  double res=QInputDialog::getDouble(listWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
+  if (ok)
+  {
+    context_->getContext()->SetDeviationCoefficient(ais_, res);
+  }
+}
+
+
 void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
     QMenu myMenu;
@@ -491,6 +512,8 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addAction("Only this shaded");
     myMenu.addAction("Wireframe");
     myMenu.addAction("Randomize Color");
+    myMenu.addAction("Show Properties");
+    myMenu.addAction("Set Resolution...");
     myMenu.addAction("Export...");
 
     QAction* selectedItem = myMenu.exec(gpos);
@@ -504,6 +527,8 @@ void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
 	if (selectedItem->text()=="Only this shaded") onlyThisShaded();
 	if (selectedItem->text()=="Randomize Color") randomizeColor();
 	if (selectedItem->text()=="Insert name") insertName();
+	if (selectedItem->text()=="Show Properties") showProperties();
+	if (selectedItem->text()=="Set Resolution...") setResolution();
 	if (selectedItem->text()=="Export...") exportShape();
     }
     else
@@ -1083,6 +1108,11 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
     msi, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
     this, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
   );
+  connect
+  (
+    msi, SIGNAL(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool)),
+    this, SLOT(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool))
+  );
   modelsteplist_->addItem(msi);
 }
 
@@ -1100,10 +1130,10 @@ void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
   datumlist_->addItem(new QDatumItem(sn, sm, context_, vd));
 }
 
-void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm)
+void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm, bool visible)
 { 
-  ViewState vd;
-  vd.visible=false;
+  ViewState vd(0);
+  vd.visible=visible;
 //   if (sm->isleaf()) vd.visible=true; else vd.visible=false;
   
   if (checked_evaluations_.find(sn)!=checked_evaluations_.end())

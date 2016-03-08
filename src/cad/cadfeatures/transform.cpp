@@ -142,12 +142,6 @@ void Transform::build()
   }
   
   setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
-
-  if (m1_->hasExplicitCoG())
-  {
-    this->setCoGExplicitly( vec3(to_Pnt(m1_->modelCoG()).Transformed(*trsf_)) );
-  }
-  if (m1_->hasExplicitMass()) setMassExplicitly(m1_->mass());
   
   // Transform all ref points and ref vectors
   copyDatumsTransformed(*m1_, *trsf_);

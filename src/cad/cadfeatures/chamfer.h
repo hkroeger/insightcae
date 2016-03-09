@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_CHAMFER_H
 #define INSIGHT_CAD_CHAMFER_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Chamfer
-: public Feature
+: public DerivedFeature
 {
   FeatureSetPtr edges_;
   ScalarPtr l_;

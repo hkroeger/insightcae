@@ -1,3 +1,4 @@
+ 
 /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
@@ -17,36 +18,36 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_BOOLEANUNION_H
-#define INSIGHT_CAD_BOOLEANUNION_H
+#ifndef INSIGHT_CAD_DERIVEDFEATURE_H
+#define INSIGHT_CAD_DERIVEDFEATURE_H
 
 #include "cadparameters.h"
-#include "derivedfeature.h"
+#include "cadfeature.h"
 
 namespace insight 
 {
-namespace cad 
+namespace cad
 {
 
-class BooleanUnion
-: public DerivedFeature
+class DerivedFeature
+: public Feature
 {
-  FeaturePtr m1_, m2_;
+  ConstFeaturePtr basefeat_;
   
 public:
-  declareType("BooleanUnion");
-  BooleanUnion(const NoParameters& nop = NoParameters());
-  BooleanUnion(FeaturePtr m1);
-  BooleanUnion(FeaturePtr m1, FeaturePtr m2);
+  declareType("DerivedFeature");
   
-  virtual void build();
-
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+  DerivedFeature(const NoParameters& nop = NoParameters());
+  DerivedFeature(ConstFeaturePtr basefeat);
+  
+  virtual double density() const;
+  virtual double areaWeight() const;
+  virtual arma::mat modelCoG() const;
+  virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
 };
 
-FeaturePtr operator|(FeaturePtr m1, FeaturePtr m2);
 
 }
 }
 
-#endif // INSIGHT_CAD_BOOLEANUNION_H
+#endif // INSIGHT_CAD_ARC_H

@@ -176,10 +176,9 @@ protected:
   RefPointsList refpoints_;
   RefVectorsList refvectors_;
   
+  ScalarPtr visresolution_;
   ScalarPtr density_;
   ScalarPtr areaWeight_;
-  VectorPtr explicitCoG_;
-  ScalarPtr explicitMass_;
 
   size_t hash_;
   
@@ -204,6 +203,7 @@ public:
   
   inline size_t hash() const { return hash_; }
   
+  inline void setVisResolution( ScalarPtr r ) { visresolution_=r; }
   virtual void setDensity(ScalarPtr rho);
   virtual double density() const;
   
@@ -213,16 +213,7 @@ public:
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
   virtual void build();
-  
-  void setMassExplicitly(ScalarPtr m);
-  void setCoGExplicitly(VectorPtr cog);
-  
-  inline bool hasExplicitMass() const { return bool(explicitMass_); }
-  inline bool hasExplicitCoG() const { return bool(explicitCoG_); }
-  
-  inline void unsetExplicitMass() { explicitMass_.reset(); }
-  inline void unsetExplicitCoG() { explicitCoG_.reset(); }
-  
+    
   inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }
     
@@ -353,6 +344,12 @@ public:
   virtual void write(const boost::filesystem::path& file) const;
   virtual void read(std::istream& file);
   virtual void read(const boost::filesystem::path& file);
+  
+  /**
+   * whether this feature does not create or alters geometry.
+   * Return false e.g. four compound or transform
+   */
+  virtual bool isRelocationFeature() const;
 };
 
 

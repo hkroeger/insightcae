@@ -37,6 +37,16 @@ public:
   virtual double value() const;
 };
 
+class FeatureVolume 
+: public Scalar
+{
+  FeaturePtr model_;
+  
+public:
+  FeatureVolume(FeaturePtr model);
+  virtual double value() const;
+};
+
 }
 }
 

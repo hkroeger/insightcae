@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_SPLIT_H
 #define INSIGHT_CAD_SPLIT_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Split
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr source_;
   FeaturePtr target_;

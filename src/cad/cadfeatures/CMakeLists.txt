@@ -1,4 +1,5 @@
 add_sources(insightcad_SOURCES 
+ derivedfeature.cpp
  arc.cpp
  bar.cpp
  booleanintersection.cpp

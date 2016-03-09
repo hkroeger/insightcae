@@ -36,12 +36,12 @@ namespace cad {
 defineType(Cutaway);
 addToFactoryTable(Feature, Cutaway, NoParameters);
 
-Cutaway::Cutaway(const NoParameters& nop): Feature(nop)
+Cutaway::Cutaway(const NoParameters& nop): DerivedFeature(nop)
 {}
 
 
 Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
-: model_(model), p0_(p0), n_(n)
+: DerivedFeature(model), model_(model), p0_(p0), n_(n)
 {
 }
 

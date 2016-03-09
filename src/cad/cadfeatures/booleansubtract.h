@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_BOOLEANSUBTRACT_H
 
 #include "cadparameters.h"
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight
 {
@@ -30,7 +30,7 @@ namespace cad
 
 
 class BooleanSubtract
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr m1_, m2_;
   

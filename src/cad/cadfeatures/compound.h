@@ -36,7 +36,6 @@ class Compound
 {
 protected:
   CompoundFeatureMap components_;
-  MassAndCoG mco_;
   
 public:
   declareType("Compound");
@@ -48,7 +47,7 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   
   virtual arma::mat modelCoG() const;
-  virtual double mass() const;
+  virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
 };
 
 }

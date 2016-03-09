@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_MIRROR_H
 #define INSIGHT_CAD_MIRROR_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Mirror
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr m1_;
   DatumPtr pl_;
@@ -38,6 +38,8 @@ public:
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  virtual bool isRelocationFeature() const { return true; }
 };
 
 }

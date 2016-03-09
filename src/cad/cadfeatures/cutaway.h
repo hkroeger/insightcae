@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_CUTAWAY_H
 #define INSIGHT_CAD_CUTAWAY_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Cutaway
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr model_;
   VectorPtr p0_;

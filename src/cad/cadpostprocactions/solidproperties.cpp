@@ -60,8 +60,15 @@ AIS_InteractiveObject* insight::cad::SolidProperties::createAISRepr() const
   TopoDS_Edge cG = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(cog_),gp_Dir(1,0,0)), 1));
   Handle_AIS_Shape aisG = new AIS_Shape(cG);
 
-  Handle_AIS_InteractiveObject aisGLabel(createArrow(cG, str(format("CoG: m = %g, A = %g") % mass_ % area_)));
-
+//   Handle_AIS_InteractiveObject aisGLabel(createArrow(cG, str(format("CoG: m = %g, A = %g") % mass_ % area_)));
+  Handle_AIS_InteractiveObject aisGLabel(new InteractiveText 
+    (
+      str(format("CoG: m = %g, A = %g") % mass_ % area_), cog_ //,
+//       double angle = 0, double slant = 0,
+//       int color_id = 1, int font_id = 1,
+//       double scale = 0.2
+    ));
+    
   double 
    Lx=bb_pmax_(0)-bb_pmin_(0),
    Ly=bb_pmax_(1)-bb_pmin_(1),

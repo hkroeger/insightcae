@@ -38,15 +38,17 @@ defineType(BooleanUnion);
 addToFactoryTable(Feature, BooleanUnion, NoParameters);
 
 BooleanUnion::BooleanUnion(const NoParameters& nop)
-: Feature(nop)
+: DerivedFeature(nop)
 {}
 
 BooleanUnion::BooleanUnion(FeaturePtr m1)
-: m1_(m1)
+: DerivedFeature(m1), 
+  m1_(m1)
 {}
 
 BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   m2_(m2)
 {}
 

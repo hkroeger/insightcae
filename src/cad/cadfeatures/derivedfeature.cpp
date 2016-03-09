@@ -1,3 +1,4 @@
+ 
 /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
@@ -17,9 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "fillet.h"
+#include "derivedfeature.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -27,55 +29,65 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
-namespace insight {
-namespace cad {
-
-
-defineType(Fillet);
-addToFactoryTable(Feature, Fillet, NoParameters);
-
-Fillet::Fillet(const NoParameters& nop): DerivedFeature(nop)
-{}
-
-
-
-void Fillet::build()
+namespace insight 
 {
-  const Feature& m1=*(edges_->model());
-  m1.unsetLeaf();
-  BRepFilletAPI_MakeFillet fb(m1);
-  BOOST_FOREACH(FeatureID f, edges_->data())
-  {
-    fb.Add(r_->value(), m1.edge(f));
-  }
-  fb.Build();
-  setShape(fb.Shape());
-}
+namespace cad 
+{
   
-Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
-: DerivedFeature(edges->model()), edges_(edges), r_(r)
+  
+defineType(DerivedFeature);
+
+
+DerivedFeature::DerivedFeature(const NoParameters& nop)
+: Feature(nop)
 {}
 
-/*! \page Fillet Fillet
-  * Create a fillet on an edge.
-  * 
-  * Syntax:
-  * ~~~~
-  * Fillet(<edge feature set: edges>, <scalar: radius>) : feature
-  * ~~~~
-  */
-void Fillet::insertrule(parser::ISCADParser& ruleset) const
+DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)
+: basefeat_(basefeat)
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "Fillet",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Fillet>(qi::_1, qi::_2)) ]
-      
-    ))
-  );
+}
+
+double DerivedFeature::density() const 
+{ 
+  if (density_)
+    return density_->value(); 
+  else
+    return basefeat_->density();
+}
+
+
+double DerivedFeature::areaWeight() const 
+{ 
+  if (areaWeight_)
+    return areaWeight_->value(); 
+  else
+    return basefeat_->areaWeight();
+}
+
+arma::mat DerivedFeature::modelCoG() const
+{
+  if (isRelocationFeature())
+    return basefeat_->modelCoG();
+  else
+    return Feature::modelCoG();
+}
+
+double DerivedFeature::mass(double density_ovr, double aw_ovr) const
+{
+  double rho=density_ovr, aw=aw_ovr;
+  if (density_ && (density_ovr<0.)) rho=density_->value();
+  if (areaWeight_ && (aw_ovr<0.)) aw=areaWeight_->value();
+  
+  std::cout<<"DerivedFeature: "<<rho<<" reloc:"<<isRelocationFeature()<<std::endl;
+  if (isRelocationFeature())
+  {
+    return basefeat_->mass(rho, aw);
+  }
+  else
+  {
+    return Feature::mass(rho, aw);
+  }
 }
 
 }

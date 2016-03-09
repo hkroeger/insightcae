@@ -35,7 +35,7 @@ namespace cad {
 defineType(Split);
 addToFactoryTable(Feature, Split, NoParameters);
 
-Split::Split(const NoParameters& nop): Feature(nop)
+Split::Split(const NoParameters& nop): DerivedFeature(nop)
 {}
 
 
@@ -49,7 +49,7 @@ TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
 }
 
 Split::Split(FeaturePtr source, FeaturePtr target)
-: source_(source), target_(target)
+: DerivedFeature(target), source_(source), target_(target)
 {}
 
 void Split::build()

@@ -38,12 +38,13 @@ defineType(BooleanSubtract);
 addToFactoryTable(Feature, BooleanSubtract, NoParameters);
 
 BooleanSubtract::BooleanSubtract(const NoParameters& nop)
-: Feature(nop)
+: DerivedFeature(nop)
 {}
 
 
 BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   m2_(m2)
 {}
 

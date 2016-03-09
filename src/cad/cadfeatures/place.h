@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_PLACE_H
 #define INSIGHT_CAD_PLACE_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Place
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr m_;
   VectorPtr p0_;

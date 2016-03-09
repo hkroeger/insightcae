@@ -21,7 +21,7 @@
 #define INSIGHT_CAD_TRANSFORM_H
 
 #include "cadparameters.h"
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight 
 {
@@ -30,7 +30,7 @@ namespace cad
 
 
 class Transform
-: public Feature
+: public DerivedFeature
 {
 //   TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale=1.0);
 //   TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
@@ -54,6 +54,8 @@ public:
   virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  virtual bool isRelocationFeature() const { return true; }
 };
 
 }

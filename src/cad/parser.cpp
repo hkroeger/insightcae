@@ -375,13 +375,15 @@ ISCADParser::ISCADParser(Model* model)
       qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ] 
 	  >> lit("->") >
 	   (
-	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&Feature::setCoGExplicitly, *_a, qi::_1) ) ]
-	     |
-	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setMassExplicitly, *_a, qi::_1) ) ]
-	     |
+// 	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&Feature::setCoGExplicitly, *_a, qi::_1) ) ]
+// 	     |
+// 	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setMassExplicitly, *_a, qi::_1) ) ]
+// 	     |
 	     ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
 	     |
 	     ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
+	     |
+	     ( lit("visresolution") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
 	   )
 	  > ';'
 	  ;
@@ -556,6 +558,8 @@ ISCADParser::ISCADParser(Model* model)
 //        qi::lexeme[model_->scalarSymbols()]
 // 	[ _val = phx::bind(&Model::lookupScalar, model_, qi::_1) ]        
         model_->scalarSymbols()[ qi::_val = qi::_1 ]
+      | ( lit("volume") > '(' > r_solidmodel_expression > ')' ) 
+	[ _val = phx::construct<ScalarPtr>(phx::new_<FeatureVolume>(qi::_1)) ]
       | ( lit("sqrt") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
       | ( lit("sin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]
       | ( lit("cos") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_cos>(qi::_1)) ]

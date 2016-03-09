@@ -35,12 +35,12 @@ namespace cad {
 defineType(Mirror);
 addToFactoryTable(Feature, Mirror, NoParameters);
 
-Mirror::Mirror(const NoParameters& nop): Feature(nop)
+Mirror::Mirror(const NoParameters& nop): DerivedFeature(nop)
 {}
 
 
 Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
-: m1_(m1), pl_(pl)
+: DerivedFeature(m1), m1_(m1), pl_(pl)
 {}
 
 void Mirror::build()

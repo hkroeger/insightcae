@@ -106,7 +106,8 @@ void CircularPattern::build()
       gp_Trsf tr;
       tr.SetRotation(ax, phi0+delta_phi*double(i));
 //       bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
-      components_[str( format("component%d") % (j+1) )] = FeaturePtr(new Transform(m1_, tr));
+      components_[str( format("component%d") % (j+1) )] = 
+	FeaturePtr(new Transform(m1_, tr));
       j++;
     }
   }

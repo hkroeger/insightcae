@@ -35,3 +35,14 @@ double insight::cad::ScalarFeatureProp::value() const
   return model_->getDatumScalar(name_);
 }
 
+
+insight::cad::FeatureVolume::FeatureVolume(insight::cad::FeaturePtr model)
+: model_(model)
+{}
+
+
+double insight::cad::FeatureVolume::value() const
+{
+  return model_->modelVolume();
+}
+

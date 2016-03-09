@@ -38,12 +38,13 @@ defineType(BooleanIntersection);
 addToFactoryTable(Feature, BooleanIntersection, NoParameters);
 
 BooleanIntersection::BooleanIntersection(const NoParameters& nop)
-: Feature(nop)
+: DerivedFeature(nop)
 {}
 
 
 BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   m2_(m2)
 {}
 

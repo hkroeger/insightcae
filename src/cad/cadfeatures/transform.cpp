@@ -38,7 +38,7 @@ defineType(Transform);
 addToFactoryTable(Feature, Transform, NoParameters);
 
 Transform::Transform(const NoParameters& nop)
-: Feature(nop)
+: DerivedFeature(nop)
 {}
 
 
@@ -85,7 +85,8 @@ Transform::Transform(const NoParameters& nop)
 
 
 Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr scale)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   trans_(trans),
   rot_(rot),
   sf_(scale)
@@ -95,7 +96,8 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sc
 }
 
 Transform::Transform(FeaturePtr m1, VectorPtr trans)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   trans_(trans)
 {
 //   setShape(makeTransform(m1, trans, vec3(0,0,0), 1.0));
@@ -103,7 +105,8 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans)
 }
 
 Transform::Transform(FeaturePtr m1, ScalarPtr sf)
-: m1_(m1),
+: DerivedFeature(m1),
+  m1_(m1),
   sf_(sf)
 {
 //   setShape(makeTransform(m1, vec3(0,0,0), vec3(0,0,0), sf));
@@ -111,7 +114,8 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 }
 
 Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
-: m1_(m1), trsf_(new gp_Trsf(trsf))
+: DerivedFeature(m1),
+  m1_(m1), trsf_(new gp_Trsf(trsf))
 {
 }
 

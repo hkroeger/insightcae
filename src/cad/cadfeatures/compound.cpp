@@ -60,13 +60,10 @@ void Compound::build()
   TopoDS_Compound result;
   bb.MakeCompound(result);
 
-  std::vector<FeaturePtr> sfs;
   BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
   {
     std::string name=c.first;
     FeaturePtr p=c.second;
-    
-    sfs.push_back(p);
     
     bb.Add(result, *p);
     p->unsetLeaf();
@@ -76,10 +73,6 @@ void Compound::build()
   }
   setShape(result);
   
-  double grho=-1, gaw=-1;
-  if (density_) grho=density_->value();
-  if (areaWeight_) gaw=areaWeight_->value();
-  mco_=compoundProps(sfs, grho, gaw);
 }
 
 void Compound::insertrule(parser::ISCADParser& ruleset) const
@@ -99,27 +92,31 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
 arma::mat Compound::modelCoG() const
 {
   checkForBuildDuringAccess();
-  if (explicitCoG_)
+  std::vector<FeaturePtr> sfs;
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
   {
-    return explicitCoG_->value();
+    sfs.push_back(c.second);
   }
-  else
-  {
-    return mco_.second;
-  }
+  double grho=-1, gaw=-1;
+  if ( density_ /*&& (density_ovr<0)*/ ) grho=density_->value();
+  if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
+  MassAndCoG mco=compoundProps(sfs, grho, gaw);
+  return mco.second;
 }
 
-double Compound::mass() const
+double Compound::mass(double density_ovr, double aw_ovr) const
 {
   checkForBuildDuringAccess();
-  if (explicitMass_)
+  std::vector<FeaturePtr> sfs;
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
   {
-    return explicitMass_->value();
+    sfs.push_back(c.second);
   }
-  else
-  {
-    return mco_.first;
-  }
+  double grho=density_ovr, gaw=aw_ovr;
+  if ( density_ && (density_ovr<0) ) grho=density_->value();
+  if ( areaWeight_ && (aw_ovr<0) ) gaw=areaWeight_->value();
+  MassAndCoG mco=compoundProps(sfs, grho, gaw);
+  return mco.first;
 }
 
 

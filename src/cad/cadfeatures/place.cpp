@@ -34,12 +34,12 @@ namespace cad {
 defineType(Place);
 addToFactoryTable(Feature, Place, NoParameters);
 
-Place::Place(const NoParameters& nop): Feature(nop)
+Place::Place(const NoParameters& nop): DerivedFeature(nop)
 {}
 
 
 Place::Place(FeaturePtr m, const gp_Ax2& cs)
-: m_(m) 
+: DerivedFeature(m), m_(m) 
 {
   trsf_.reset(new gp_Trsf);
   trsf_->SetTransformation(gp_Ax3(cs));
@@ -50,7 +50,7 @@ Place::Place(FeaturePtr m, const gp_Ax2& cs)
 
 
 Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
-: m_(m), p0_(p0), ex_(ex), ez_(ez)
+: DerivedFeature(m), m_(m), p0_(p0), ex_(ex), ez_(ez)
 {}
 
 void Place::build()

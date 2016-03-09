@@ -39,6 +39,8 @@
 #include <BRepLib_FindSurface.hxx>
 #include <BRepCheck_Shell.hxx>
 #include "BRepOffsetAPI_NormalProjection.hxx"
+#include "HLRBRep_PolyHLRToShape.hxx"
+#include "HLRBRep_PolyAlgo.hxx"
 
 #include "openfoam/openfoamdict.h"
 
@@ -209,8 +211,6 @@ Feature::Feature(const Feature& o)
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
-  explicitCoG_(o.explicitCoG_),
-  explicitMass_(o.explicitMass_),
   hash_(o.hash_)
 {
   setShape(o.shape_);
@@ -277,25 +277,19 @@ double Feature::areaWeight() const
 double Feature::mass(double density_ovr, double aw_ovr) const
 {
   checkForBuildDuringAccess();
-  if (explicitMass_)
-  {
-    cout<<"Explicit mass = "<<explicitMass_->value()<<endl;
-    return explicitMass_->value();
-  }
-  else
-  {
-    double rho=density();
-    if (density_ovr>=0.) rho=density_ovr;
-    
-    double aw=areaWeight();
-    if (aw_ovr>=0.) aw=aw_ovr;
-    
-    double mtot=rho*modelVolume() + aw*modelSurfaceArea();
-    cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
-	<<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
-	<<", m = "<<mtot<<endl;
-    return mtot;
-  }
+  double rho=density();
+  if (density_ovr>=0.) rho=density_ovr;
+  
+  double aw=areaWeight();
+  if (aw_ovr>=0.) aw=aw_ovr;
+  
+  std::cout<<rho<<" ("<<density_ovr<<")"<<std::endl;
+  
+  double mtot=rho*modelVolume() + aw*modelSurfaceArea();
+  cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
+      <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
+      <<", m = "<<mtot<<endl;
+  return mtot;
 }
 
 void Feature::build()
@@ -338,16 +332,6 @@ void Feature::build()
 }
 
 
-void Feature::setMassExplicitly(ScalarPtr m) 
-{ 
-  explicitMass_=m;
-}
-
-void Feature::setCoGExplicitly(VectorPtr cog) 
-{ 
-  explicitCoG_=cog;
-}
-
 FeaturePtr Feature::subshape(const std::string& name)
 {
   checkForBuildDuringAccess();
@@ -369,8 +353,6 @@ Feature& Feature::operator=(const Feature& o)
   if (o.valid())
   {
     setShape(o.shape_);
-    explicitCoG_=o.explicitCoG_;
-    explicitMass_=o.explicitMass_;
   }
   return *this;
 }
@@ -432,18 +414,11 @@ arma::mat Feature::subsolidCoG(FeatureID i) const
 arma::mat Feature::modelCoG() const
 {
   checkForBuildDuringAccess();
-  if (explicitCoG_)
-  {
-    return explicitCoG_->value();
-  }
-  else
-  {
-    GProp_GProps props;
-    TopoDS_Shape sh=shape();
-    BRepGProp::VolumeProperties(sh, props);
-    gp_Pnt cog = props.CentreOfMass();
-    return vec3(cog);
-  }
+  GProp_GProps props;
+  TopoDS_Shape sh=shape();
+  BRepGProp::VolumeProperties(sh, props);
+  gp_Pnt cog = props.CentreOfMass();
+  return vec3(cog);
 }
 
 double Feature::modelVolume() const
@@ -1003,6 +978,18 @@ const TopoDS_Shape& Feature::shape() const
   if (building())
     throw insight::Exception("Internal error: recursion during build!");
   checkForBuildDuringAccess();
+  if (visresolution_)
+  {
+//     Bnd_Box box;
+//     BRepMesh_FastDiscret m
+//     (
+//       visresolution_->value(), 
+//       0.5, box, 
+//       true, false, false, false
+//     );
+//     m.Perform(shape_);  
+    BRepMesh_IncrementalMesh aMesher(shape_, visresolution_->value());
+  }
   return shape_;
 }
 
@@ -1066,15 +1053,21 @@ Feature::View Feature::createView
   }
   
   
-  Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
-  brep_hlr->Add( dispshape );
-  brep_hlr->Projector( projector );
-  brep_hlr->Update();
-  brep_hlr->Hide();
+//   Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
+//   brep_hlr->Add( dispshape );
+//   brep_hlr->Projector( projector );
+//   brep_hlr->Update();
+//   brep_hlr->Hide();
+//   HLRBRep_HLRToShape shapes( brep_hlr );
 
   // extracting the result sets:
-  HLRBRep_HLRToShape shapes( brep_hlr );
-  
+  Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
+  HLRBRep_PolyHLRToShape shapes;
+  aHlrPolyAlgo->Load(dispshape);
+  aHlrPolyAlgo->Projector(projector);
+  aHlrPolyAlgo->Update();
+  shapes.Update(aHlrPolyAlgo);
+    
   TopoDS_Compound allVisible;
   BRep_Builder builder;
   builder.MakeCompound( allVisible );
@@ -1245,17 +1238,6 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix)
     providedSubshapes_[prefix+sf.first]=sf.second;
   }
   
-  if (prefix.empty()) // only, if not copied into subfeature
-  {
-    if (m1.hasExplicitCoG() && (!this->hasExplicitCoG()) )
-    {
-      this->setCoGExplicitly( VectorPtr(new ConstantVector(m1.modelCoG())) );
-    }
-    if (m1.hasExplicitMass() && (!this->hasExplicitMass()) ) 
-    {
-      setMassExplicitly( ScalarPtr(new ConstantScalar(m1.mass())) );
-    }
-  }
 }
 
 void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix)
@@ -1289,17 +1271,6 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
     providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
   }
   
-  if (prefix.empty()) // only, if not copied into subfeature
-  {
-    if ( m1.hasExplicitCoG() && (!this->hasExplicitCoG()) )
-    {
-      this->setCoGExplicitly( VectorPtr(new ConstantVector(vec3(to_Pnt(m1.modelCoG()).Transformed(trsf)))) );
-    }
-    if ( m1.hasExplicitMass() && (!this->hasExplicitMass()) ) 
-    {
-      setMassExplicitly( ScalarPtr(new ConstantScalar(m1.mass())) );
-    }
-  }
 }
 
 
@@ -1603,16 +1574,6 @@ void Feature::write(std::ostream& f) const
 
   f<<density()<<endl;
   f<<areaWeight()<<endl;
-  
-  f<<bool(explicitCoG_)<<endl;
-  if (explicitCoG_) 
-  {
-    f<<explicitCoG_->value()(0)<<" "<<explicitCoG_->value()(1)<<" "<<explicitCoG_->value()(2)<<endl;
-  }
-  
-  f<<bool(explicitMass_)<<endl;
-  if (explicitMass_) f<<explicitMass_->value()<<endl;
-
 }
 
 void Feature::read(const filesystem::path& file)
@@ -1622,6 +1583,11 @@ void Feature::read(const filesystem::path& file)
   read(f);
 }
 
+bool Feature::isRelocationFeature() const
+{
+  return false;
+}
+
 MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
   double m=0.0;
@@ -1629,6 +1595,7 @@ MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, 
   
   BOOST_FOREACH(const FeaturePtr& f, feats)
   {
+    std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
     double mc=f->mass(density_ovr, aw_ovr);
     std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
     m += mc;
@@ -1722,28 +1689,6 @@ void Feature::read(std::istream& f)
   }
 
 //   double density_, areaWeight_;
-
-  throw insight::Exception("not implemented!");
-//   f>>density_;
-//   f>>areaWeight_;
-//   
-//   bool has;
-//   
-//   f>>has;
-//   if (has)
-//   {
-//     double x,y,z;
-//     f>>x>>y>>z;
-//     explicitCoG_.reset(new arma::mat(vec3(x,y,z)));
-//   }
-//   
-//   f>>has;
-//   if (has)
-//   {
-//     double v;
-//     f>>v;
-//     explicitMass_.reset(new double(v));
-//   }
 
 }
 

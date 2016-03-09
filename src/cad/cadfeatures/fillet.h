@@ -20,13 +20,13 @@
 #ifndef INSIGHT_CAD_FILLET_H
 #define INSIGHT_CAD_FILLET_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 class Fillet
-: public Feature
+: public DerivedFeature
 {
   FeatureSetPtr edges_;
   ScalarPtr r_;

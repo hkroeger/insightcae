@@ -29,11 +29,12 @@ class Import
 : public Feature
 {
   boost::filesystem::path filepath_;
+  ScalarPtr scale_;
   
 public:
   declareType("Import");
   Import(const NoParameters& nop = NoParameters());
-  Import(const boost::filesystem::path& filepath);
+  Import(const boost::filesystem::path& filepath, ScalarPtr scale=ScalarPtr());
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

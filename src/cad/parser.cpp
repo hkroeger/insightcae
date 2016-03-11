@@ -248,7 +248,7 @@ ISCADParser::ISCADParser(Model* model)
   * Syntax:
   * ~~~~
   * DXF("<filename>") << <feature expression>
-  *     <viewname> (<vector viewon>, <vector viewfrom> [, up <vector upward direction>] [, section]) 
+  *     <viewname> (<vector viewon>, <vector viewfrom> [, up <vector upward direction>] [, section] [, poly]) 
   *     [<viewname> ...]
   * ;
   * ~~~~
@@ -324,6 +324,7 @@ ISCADParser::ISCADParser(Model* model)
 	  >> r_vectorExpression
 	  >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
 	  >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
+	  >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
 	  >> ')' 
 	)
       ;
@@ -655,6 +656,9 @@ ISCADParser::ISCADParser(Model* model)
       |
        ( lit("coord") >> '(' >> r_vertexFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
+      |
+       ( lit("circcenter") >> '(' >> r_edgeFeaturesExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]
       |
        ( "[" >> r_scalarExpression >> "," >> r_scalarExpression >> "," >> r_scalarExpression >> "]" ) 
         [ _val = phx::construct<VectorPtr>(phx::new_<VectorFromComponents>(qi::_1, qi::_2, qi::_3)) ] 

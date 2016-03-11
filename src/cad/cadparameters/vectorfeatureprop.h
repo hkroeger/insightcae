@@ -61,6 +61,16 @@ public:
   virtual arma::mat value() const;
 };
 
+class CircleEdgeCenterCoords 
+: public insight::cad::Vector
+{
+  ConstFeatureSetPtr pfs_;
+  
+public:
+  CircleEdgeCenterCoords(ConstFeatureSetPtr pfs);
+  virtual arma::mat value() const;
+};
+
 }
 }
 

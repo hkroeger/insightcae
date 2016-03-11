@@ -43,6 +43,7 @@ void DrawingExport::build()
   BOOST_FOREACH(const DrawingViewDefinition& vd, viewdefs_)
   {
     bool sec=boost::get<4>(vd);
+    bool poly=boost::get<5>(vd);
     arma::mat up;
     VectorPtr upd=boost::get<3>(vd);
     if (upd)
@@ -52,7 +53,8 @@ void DrawingExport::build()
       boost::get<1>(vd)->value(),
       boost::get<2>(vd)->value(),
       sec,
-      up
+      up,
+      poly
     );
   }
   shape_=views.begin()->second.visibleEdges;

@@ -60,8 +60,8 @@ void BooleanUnion::build()
     h+=*m1_;
     h+=*m2_;
     
-    copyDatums(*m1_, "1.");
-    copyDatums(*m2_, "2.");
+    copyDatums(*m1_, "m1_");
+    copyDatums(*m2_, "m2_");
     m1_->unsetLeaf();
     m2_->unsetLeaf();
     setShape(BRepAlgoAPI_Fuse(*m1_, *m2_).Shape());

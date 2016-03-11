@@ -999,7 +999,8 @@ Feature::View Feature::createView
   const arma::mat p0,
   const arma::mat n,
   bool section,
-  const arma::mat up
+  const arma::mat up,
+  bool poly
 ) const
 {
   View result_view;
@@ -1052,33 +1053,50 @@ Feature::View Feature::createView
     result_view.crossSection = xsecs;
   }
   
-  
-//   Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
-//   brep_hlr->Add( dispshape );
-//   brep_hlr->Projector( projector );
-//   brep_hlr->Update();
-//   brep_hlr->Hide();
-//   HLRBRep_HLRToShape shapes( brep_hlr );
-
-  // extracting the result sets:
-  Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
-  HLRBRep_PolyHLRToShape shapes;
-  aHlrPolyAlgo->Load(dispshape);
-  aHlrPolyAlgo->Projector(projector);
-  aHlrPolyAlgo->Update();
-  shapes.Update(aHlrPolyAlgo);
-    
   TopoDS_Compound allVisible;
+  TopoDS_Shape HiddenEdges;
   BRep_Builder builder;
   builder.MakeCompound( allVisible );
-  TopoDS_Shape vs=shapes.VCompound();
-  if (!vs.IsNull()) builder.Add(allVisible, vs);
-  TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
-  if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
-  TopoDS_Shape olvs = shapes.OutLineVCompound();
-  if (!olvs.IsNull()) builder.Add(allVisible, olvs);
-  
-  TopoDS_Shape HiddenEdges = shapes.HCompound();
+
+  if (poly)
+  {
+
+    // extracting the result sets:
+    Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
+    HLRBRep_PolyHLRToShape shapes;
+    aHlrPolyAlgo->Load(dispshape);
+    aHlrPolyAlgo->Projector(projector);
+    aHlrPolyAlgo->Update();
+    shapes.Update(aHlrPolyAlgo);
+      
+    TopoDS_Shape vs=shapes.VCompound();
+    if (!vs.IsNull()) builder.Add(allVisible, vs);
+    TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+    if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+    TopoDS_Shape olvs = shapes.OutLineVCompound();
+    if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+    
+    HiddenEdges = shapes.HCompound();
+
+  }
+  else
+  {
+    Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
+    brep_hlr->Add( dispshape );
+    brep_hlr->Projector( projector );
+    brep_hlr->Update();
+    brep_hlr->Hide();
+    HLRBRep_HLRToShape shapes( brep_hlr );
+
+    TopoDS_Shape vs=shapes.VCompound();
+    if (!vs.IsNull()) builder.Add(allVisible, vs);
+    TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+    if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+    TopoDS_Shape olvs = shapes.OutLineVCompound();
+    if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+    
+    HiddenEdges = shapes.HCompound();
+  }
   
   result_view.visibleEdges=allVisible;
   result_view.hiddenEdges=HiddenEdges;
@@ -1302,7 +1320,12 @@ double Feature::getDatumScalar(const std::string& name) const
   }
   else
   {
-    throw insight::Exception("the feature does not define a reference value named \""+name+"\"");
+    std::ostringstream av;
+    BOOST_FOREACH(const RefValuesList::value_type& i, refvalues_)
+    {
+      av<<" "<<i.first;
+    }
+    throw insight::Exception("the feature does not define a reference value named \""+name+"\". Available:"+av.str());
     return 0.0;
   }
 }
@@ -1317,7 +1340,12 @@ arma::mat Feature::getDatumPoint(const std::string& name) const
   }
   else
   {
-    throw insight::Exception("the feature does not define a reference point named \""+name+"\"");
+    std::ostringstream av;
+    BOOST_FOREACH(const RefPointsList::value_type& i, refpoints_)
+    {
+      av<<" "<<i.first;
+    }
+    throw insight::Exception("the feature does not define a reference point named \""+name+"\". Available:"+av.str());
     return arma::mat();
   }
 }
@@ -1332,7 +1360,12 @@ arma::mat Feature::getDatumVector(const std::string& name) const
   }
   else
   {
-    throw insight::Exception("the feature does not define a reference vector named \""+name+"\"");
+    std::ostringstream av;
+    BOOST_FOREACH(const RefVectorsList::value_type& i, refvectors_)
+    {
+      av<<" "<<i.first;
+    }
+    throw insight::Exception("the feature does not define a reference vector named \""+name+"\". Available:"+av.str());
     return arma::mat();
   }
 }

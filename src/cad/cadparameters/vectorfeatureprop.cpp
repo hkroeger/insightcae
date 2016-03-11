@@ -65,3 +65,25 @@ arma::mat insight::cad::SinglePointCoords::value() const
   FeatureID i=*(pfs_->data().begin());
   return pfs_->model()->vertexLocation(i);
 }
+
+insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::ConstFeatureSetPtr pfs)
+: pfs_(pfs)
+{}
+
+arma::mat insight::cad::CircleEdgeCenterCoords::value() const
+{
+  if (!pfs_->size()==1)
+    throw insight::Exception("edge feature set must not contain more than one edge for coordinate extraction!");
+  
+  FeatureID i=*(pfs_->data().begin());
+  
+  TopLoc_Location tl;
+  double c0, c1;
+  GeomAdaptor_Curve adapt(BRep_Tool::Curve(pfs_->model()->edge(i), tl, c0, c1));
+  if (adapt.GetType()!=GeomAbs_Circle)
+    throw insight::Exception("selected edge is not a  circle! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+  
+  gp_Circ icyl=adapt.Circle();
+  gp_Pnt p0=icyl.Location();
+  return vec3(p0.X(), p0.Y(), p0.Z());
+}

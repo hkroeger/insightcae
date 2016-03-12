@@ -536,6 +536,11 @@ struct SolidFeatureFilterExprParser
         ( lit("CoG") ) 
 	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::solidCoG>()) ]
       ;
+	  
+      FeatureFilterExprParser<Iterator>::r_scalar_qty_functions = 
+        ( lit("volume") ) 
+	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<insight::cad::solidVolume>()) ]
+      ;
     
   }
 };

@@ -245,6 +245,7 @@ public:
   arma::mat edgeCoG(FeatureID i) const;
   arma::mat faceCoG(FeatureID i) const;
   arma::mat subsolidCoG(FeatureID i) const;
+  double subsolidVolume(FeatureID i) const;
   virtual arma::mat modelCoG() const;
   virtual double modelVolume() const;
   virtual double modelSurfaceArea() const;

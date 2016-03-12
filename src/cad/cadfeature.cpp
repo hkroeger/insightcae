@@ -411,6 +411,15 @@ arma::mat Feature::subsolidCoG(FeatureID i) const
   return insight::vec3( cog.X(), cog.Y(), cog.Z() );
 }
 
+double Feature::subsolidVolume(FeatureID i) const
+{
+  GProp_GProps props;
+  BRepGProp::VolumeProperties(subsolid(i), props);
+  double m = props.Mass();
+  return m;
+}
+
+
 arma::mat Feature::modelCoG() const
 {
   checkForBuildDuringAccess();

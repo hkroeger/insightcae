@@ -16,6 +16,7 @@ add_sources(insightcad_SOURCES
   facenormalvector.cpp
   
   solidcog.cpp
+  solidvolume.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

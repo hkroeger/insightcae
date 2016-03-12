@@ -47,6 +47,7 @@
 #include "edgelen.h"
 #include "distance.h"
 #include "solidcog.h"
+#include "solidvolume.h"
 
 // filters
 #include "in.h"

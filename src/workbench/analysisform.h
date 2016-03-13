@@ -29,6 +29,7 @@
 #include <QMdiSubWindow>
 #include <QThread>
 #include <QMetaType>
+#include <QTreeWidget>
 
 #include "boost/shared_ptr.hpp"
 

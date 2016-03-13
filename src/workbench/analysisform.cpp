@@ -72,15 +72,24 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
 
   connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
+  
+//   DirectoryParameterWrapper *dp = 
+//      new DirectoryParameterWrapper( ParameterWrapper::ConstrP(this, "execution directory", analysis_->executionPathParameter() ) );
+//   ui->verticalLayout_4->addWidget(dp);
+//   QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
+//   QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
 
-  DirectoryParameterWrapper *dp = 
-     new DirectoryParameterWrapper( ParameterWrapper::ConstrP(this, "execution directory", analysis_->executionPathParameter() ) );
-  ui->verticalLayout_4->addWidget(dp);
-  QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
-  QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
-
-  addWrapperToWidget(parameters_, ui->inputContents, this);
-      
+//   addWrapperToWidget(parameters_, ui->inputContents, this);
+  QTreeWidgetItem* root=new QTreeWidgetItem(0);
+  root->setText(0, "Parameters");
+  ui->ptree->setColumnCount(2);
+  ui->ptree->setHeaderLabels( QStringList() << "Name" << "Type" );
+  ui->ptree->addTopLevelItem(root);
+  addWrapperToWidget(parameters_, root, ui->inputContents, this);
+  ui->ptree->expandAll();
+  ui->ptree->resizeColumnToContents(0);
+  ui->ptree->resizeColumnToContents(1);
+  ui->ptree->setContextMenuPolicy(Qt::CustomContextMenu);
 }
 
 AnalysisForm::~AnalysisForm()
@@ -92,7 +101,7 @@ AnalysisForm::~AnalysisForm()
 
 void AnalysisForm::onSaveParameters()
 {
-  emit apply();
+//   emit apply();
 
   QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())

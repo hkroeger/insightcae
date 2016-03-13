@@ -20,12 +20,31 @@
       <attribute name="title">
        <string>Input</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
         <widget class="QSplitter" name="splitter">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
+         <widget class="QTreeWidget" name="ptree">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
+         </widget>
          <widget class="QScrollArea" name="scrollArea">
           <property name="widgetResizable">
            <bool>true</bool>
@@ -35,38 +54,24 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>449</width>
-             <height>402</height>
+             <width>83</width>
+             <height>384</height>
             </rect>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_4">
             <item>
-             <widget class="QWidget" name="widget_2" native="true">
-              <layout class="QHBoxLayout" name="horizontalLayout_2">
-               <item>
-                <widget class="QPushButton" name="saveParamBtn">
-                 <property name="text">
-                  <string>Save...</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="loadParamBtn">
-                 <property name="text">
-                  <string>Load...</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
+             <widget class="QWidget" name="inputContents" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
              </widget>
-            </item>
-            <item>
-             <widget class="QWidget" name="inputContents" native="true"/>
             </item>
            </layout>
           </widget>
          </widget>
-         <widget class="QWidget" name="widget" native="true"/>
         </widget>
        </item>
       </layout>
@@ -105,8 +110,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>737</width>
-            <height>366</height>
+            <width>78</width>
+            <height>16</height>
            </rect>
           </property>
          </widget>
@@ -118,6 +123,20 @@
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="saveParamBtn">
+       <property name="text">
+        <string>Save parameters...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="loadParamBtn">
+       <property name="text">
+        <string>Merge parameters...</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="runBtn">
        <property name="text">

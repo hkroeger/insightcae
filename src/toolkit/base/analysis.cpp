@@ -239,50 +239,9 @@ void Analysis::cancel()
 {
 }
 
-SharedPathList::SharedPathList()
-{
-  char *var_usershareddir=getenv("INSIGHT_USERSHAREDDIR");
-  char *var_globalshareddir=getenv("INSIGHT_GLOBALSHAREDDIRS");
-  
-  if (var_usershareddir) 
-  {
-    push_back(var_usershareddir);
-  }
-  else
-  {
-    char *userdir=getenv("HOME");
-    if (userdir)
-    {
-      push_back( path(userdir)/".insight"/"share" );
-    }
-  }
-  
-  if (var_globalshareddir) 
-  {
-    std::vector<string> globals;
-    split(globals, var_globalshareddir, is_any_of(":"));
-    BOOST_FOREACH(const string& s, globals) push_back(s);
-  }
-  else
-  {
-    push_back( path("/usr/share/insight") );
-  }
-}
-
-
-
 boost::filesystem::path Analysis::getSharedFilePath(const boost::filesystem::path& file)
 {
-
-  BOOST_REVERSE_FOREACH( const path& p, sharedSearchPath_)
-  {
-    if (exists(p/file)) 
-      return p/file;
-  }
-  
-  // nothing found
-  throw insight::Exception(std::string("Requested shared file ")+file.c_str()+" not found either in global nor user shared directories");
-  return path();
+  return sharedSearchPath_.getSharedFilePath(file);
 }
 
 Analysis* Analysis::clone() const
@@ -421,6 +380,26 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 	  }
 	}
       }
+      
+      path pydir(p);
+      pydir /= "python_modules";
+      if (is_directory(pydir))
+      {
+	directory_iterator end_itr; // default construction yields past-the-end
+	for ( directory_iterator itr( userconfigdir );
+	      itr != end_itr;
+	      ++itr )
+	{
+	  if ( is_regular_file(itr->status()) )
+	  {
+	    if (itr->path().extension() == ".py" )
+	    {
+// 	      std::ifstream f(itr->path().c_str());
+	    }
+	  }
+	}
+      }
+	
     }
     else
     {

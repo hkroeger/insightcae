@@ -26,6 +26,7 @@
 #include "base/factory.h"
 #include "base/resultset.h"
 #include "base/analysisstepcontrol.h"
+#include "base/tools.h"
 
 #include <queue>
 
@@ -92,13 +93,6 @@ public:
 };
 
 typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
-
-class SharedPathList 
-: public std::vector<boost::filesystem::path>
-{
-public:
-  SharedPathList();
-};
 
 class Analysis
 {

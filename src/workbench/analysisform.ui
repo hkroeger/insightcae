@@ -45,33 +45,7 @@
            </property>
           </column>
          </widget>
-         <widget class="QScrollArea" name="scrollArea">
-          <property name="widgetResizable">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="pw">
-           <property name="geometry">
-            <rect>
-             <x>0</x>
-             <y>0</y>
-             <width>83</width>
-             <height>384</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <item>
-             <widget class="QWidget" name="inputContents" native="true">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </widget>
+         <widget class="QWidget" name="inputContents" native="true"/>
         </widget>
        </item>
       </layout>
@@ -110,8 +84,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>78</width>
-            <height>16</height>
+            <width>632</width>
+            <height>368</height>
            </rect>
           </property>
          </widget>

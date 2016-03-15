@@ -634,6 +634,7 @@ set {
     decayingTurbulenceSpot
     decayingTurbulenceVorton
     anisotropicVorton
+    anisotropicVorton2
     modalTurbulence
   ) anisotropicVorton "Type of inflow generator"
   

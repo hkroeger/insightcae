@@ -49,8 +49,9 @@ std::string findSharedImageFile(const std::string& file)
   return "";
 }
 
-QString latex2QtHTML(const std::string& latex)
+QString latex2QtHTML(const std::string& latex, QWidget* container)
 {
+  int w =(container->width()/4)*3;
 //   using boost::spirit::qi::double_;
 //   using boost::spirit::qi::_1;
 //   using boost::spirit::qi::phrase_parse;
@@ -83,7 +84,7 @@ QString latex2QtHTML(const std::string& latex)
   {
     html+=lx.mid(lpos, pos-lpos);
     QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
-    html+="<img src=\""+fn+"\">";
+    html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
     lpos=pos;
     pos += rx.matchedLength();
   }
@@ -207,7 +208,7 @@ void IntParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -265,7 +266,7 @@ void DoubleParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    latex2QtHTML(param().description()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -333,7 +334,7 @@ void VectorParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -403,7 +404,7 @@ void StringParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -466,7 +467,7 @@ void BoolParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -539,7 +540,7 @@ void PathParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -648,7 +649,7 @@ void MatrixParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -751,7 +752,7 @@ void SelectionParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -820,7 +821,7 @@ void SubsetParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -962,7 +963,7 @@ void ArrayParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -1028,7 +1029,7 @@ void DoubleRangeParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);
@@ -1142,7 +1143,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
 
   QLabel *shortDescLabel=new QLabel
     (
-      QString(param().description().c_str()), 
+    latex2QtHTML(param().description(), detaileditwidget_), 
       detaileditwidget_
     );
   shortDescLabel->setWordWrap(true);

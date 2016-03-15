@@ -87,6 +87,9 @@ QString latex2QtHTML(const std::string& latex)
     lpos=pos;
     pos += rx.matchedLength();
   }
+  
+  html.replace(QRegExp("\\\\\\\\"), "<br>");
+  
   std::cout<<html.toStdString()<<std::endl;
   return html;
 }

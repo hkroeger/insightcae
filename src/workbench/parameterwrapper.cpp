@@ -87,6 +87,9 @@ ParameterWrapper::ParameterWrapper(const ConstrP& p)
   superform_(get<4>(p))
 {
   setText(0, name_);
+  QFont f=font(1);
+  f.setItalic(true);
+  setFont(1, f);
 }
 
 ParameterWrapper::~ParameterWrapper()
@@ -150,6 +153,7 @@ void IntParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -207,6 +211,7 @@ void DoubleParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -274,6 +279,7 @@ void VectorParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -343,6 +349,7 @@ void StringParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -405,6 +412,7 @@ void BoolParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -477,6 +485,7 @@ void PathParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -508,8 +517,8 @@ void PathParameterWrapper::createWidgets()
 //   updateTooltip();
 //   detaileditwidget_->setLayout(layout);
   
-  connect(le_, SIGNAL(textChanged(QString)), detaileditwidget_, SLOT(onDataEntered()));
-  connect(dlgBtn_, SIGNAL(clicked(bool)), detaileditwidget_, SLOT(openSelectionDialog()));
+  connect(le_, SIGNAL(textChanged(QString)), this, SLOT(onDataEntered()));
+  connect(dlgBtn_, SIGNAL(clicked(bool)), this, SLOT(openSelectionDialog()));
 }
 
 void PathParameterWrapper::updateTooltip()
@@ -585,6 +594,7 @@ void MatrixParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -615,7 +625,7 @@ void MatrixParameterWrapper::createWidgets()
 //   layout->addWidget(dlgBtn_);
 //   detaileditwidget_->setLayout(layout);
   
-  connect(dlgBtn_, SIGNAL(clicked(bool)), detaileditwidget_, SLOT(openSelectionDialog()));
+  connect(dlgBtn_, SIGNAL(clicked(bool)), this, SLOT(openSelectionDialog()));
 }
 
 
@@ -687,6 +697,7 @@ void SelectionParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -755,6 +766,7 @@ void SubsetParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
   
 //   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
@@ -896,6 +908,7 @@ void ArrayParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -961,6 +974,7 @@ void DoubleRangeParameterWrapper::createWidgets()
     QString(param().description().c_str()), 
     detaileditwidget_
   );
+  shortDescLabel->setWordWrap(true);
   layout->addWidget(shortDescLabel);
 
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
@@ -1069,14 +1083,13 @@ void SelectableSubsetParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
 
-  layout->addWidget
-  (
-    new QLabel
+  QLabel *shortDescLabel=new QLabel
     (
       QString(param().description().c_str()), 
       detaileditwidget_
-    )
-  );
+    );
+  shortDescLabel->setWordWrap(true);
+  layout->addWidget(shortDescLabel);
   
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   layout2->addWidget(new QLabel("Selection:", detaileditwidget_));

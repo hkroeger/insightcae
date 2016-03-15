@@ -35,7 +35,61 @@
 #include "boost/foreach.hpp"
 #endif
 
+#include "base/tools.h"
+#include "boost/spirit.hpp"
+
 using namespace boost;
+
+std::string findSharedImageFile(const std::string& file)
+{
+  insight::SharedPathList spl;
+  try { return spl.getSharedFilePath(file+".png").c_str(); } catch(...) {}
+  try { return spl.getSharedFilePath(file+".jpg").c_str(); } catch(...) {}
+  try { return spl.getSharedFilePath(file+".pdf").c_str(); } catch(...) {}
+  return "";
+}
+
+QString latex2QtHTML(const std::string& latex)
+{
+//   using boost::spirit::qi::double_;
+//   using boost::spirit::qi::_1;
+//   using boost::spirit::qi::phrase_parse;
+//   using boost::spirit::ascii::space;
+//   using boost::phoenix::ref; 
+//   
+//   bool r = 
+//   phrase_parse
+//   (
+//     latex.begin(), 
+//     latex.end(),
+// 
+//     //  Begin grammar
+//     (
+// 	    '(' >> double_[ref(rN) = _1]
+// 		>> -(',' >> double_[ref(iN) = _1]) >> ')'
+// 	|   double_[ref(rN) = _1]
+//     ),
+//     //  End grammar
+// 
+//     space
+//   );
+  
+  QString lx(latex.c_str()), html("");
+  QString imageExpr = "\\\\includegraphics\\[.*\\]\\{(.+)\\}";
+  QRegExp rx(imageExpr);
+  int pos = 0;
+  int lpos=pos;
+  while ((pos = rx.indexIn(lx, pos)) != -1) 
+  {
+    html+=lx.mid(lpos, pos-lpos);
+    QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
+    html+="<img src=\""+fn+"\">";
+    lpos=pos;
+    pos += rx.matchedLength();
+  }
+  std::cout<<html.toStdString()<<std::endl;
+  return html;
+}
 
 void addWrapperToWidget
 (
@@ -208,7 +262,7 @@ void DoubleParameterWrapper::createWidgets()
   QLabel *shortDescLabel = 
   new QLabel
   (
-    QString(param().description().c_str()), 
+    latex2QtHTML(param().description()), 
     detaileditwidget_
   );
   shortDescLabel->setWordWrap(true);

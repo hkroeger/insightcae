@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -15,37 +15,25 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
  */
 
-#include <locale>
-#include <QLocale>
-#include <QDir>
-#include <QtGui/QApplication>
+#ifndef TOOLS_H
+#define TOOLS_H
+
 #include "base/boost_include.h"
-#include "workbench.h"
 
-#include "base/exception.h"
-#include "base/linearalgebra.h"
-
-int main(int argc, char** argv)
+namespace insight
 {
-  insight::UnhandledExceptionHandling ueh;
-  insight::GSLExceptionHandling gsl_errtreatment;
   
-  WorkbenchApplication app(argc, argv);
+class SharedPathList 
+: public std::vector<boost::filesystem::path>
+{
+public:
+  SharedPathList();
+  virtual ~SharedPathList();
+  virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+};
 
-  // After creation of application object!
-  std::locale::global(std::locale::classic());
-  QLocale::setDefault(QLocale::C);
-
-  workbench foo;
-
-  if (argc>1)
-  {
-    boost::filesystem::path fn(argv[1]);
-    foo.openAnalysis(boost::filesystem::absolute(fn).c_str());
-  }
-  foo.show();
-  return app.exec();
 }
+
+#endif // TOOLS_H

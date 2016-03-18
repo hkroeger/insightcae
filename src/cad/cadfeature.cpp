@@ -1073,6 +1073,8 @@ Feature::View Feature::createView
     // extracting the result sets:
     Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
     HLRBRep_PolyHLRToShape shapes;
+    std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
+    aHlrPolyAlgo->TolCoef(visresolution_->value());
     aHlrPolyAlgo->Load(dispshape);
     aHlrPolyAlgo->Projector(projector);
     aHlrPolyAlgo->Update();

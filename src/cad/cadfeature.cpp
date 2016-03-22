@@ -283,12 +283,12 @@ double Feature::mass(double density_ovr, double aw_ovr) const
   double aw=areaWeight();
   if (aw_ovr>=0.) aw=aw_ovr;
   
-  std::cout<<rho<<" ("<<density_ovr<<")"<<std::endl;
+//   std::cout<<rho<<" ("<<density_ovr<<")"<<std::endl;
   
   double mtot=rho*modelVolume() + aw*modelSurfaceArea();
-  cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
-      <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
-      <<", m = "<<mtot<<endl;
+//   cout<<"Computed mass rho / V = "<<rho<<" / "<<modelVolume()
+//       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
+//       <<", m = "<<mtot<<endl;
   return mtot;
 }
 
@@ -1074,7 +1074,8 @@ Feature::View Feature::createView
     Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
     HLRBRep_PolyHLRToShape shapes;
     std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
-    aHlrPolyAlgo->TolCoef(visresolution_->value());
+    if (visresolution_)
+      aHlrPolyAlgo->TolCoef(visresolution_->value());
     aHlrPolyAlgo->Load(dispshape);
     aHlrPolyAlgo->Projector(projector);
     aHlrPolyAlgo->Update();
@@ -1639,14 +1640,14 @@ MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, 
   
   BOOST_FOREACH(const FeaturePtr& f, feats)
   {
-    std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
+//     std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
     double mc=f->mass(density_ovr, aw_ovr);
-    std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
+//     std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
     m += mc;
     cog += f->modelCoG()*mc;
   }
   cog/=m;
-  std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
+//   std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
   return MassAndCoG(m, cog);
 }
 

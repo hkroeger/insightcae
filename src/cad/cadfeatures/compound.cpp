@@ -115,8 +115,20 @@ double Compound::mass(double density_ovr, double aw_ovr) const
   double grho=density_ovr, gaw=aw_ovr;
   if ( density_ && (density_ovr<0) ) grho=density_->value();
   if ( areaWeight_ && (aw_ovr<0) ) gaw=areaWeight_->value();
-  MassAndCoG mco=compoundProps(sfs, grho, gaw);
-  return mco.first;
+  
+  std::cout<<"Compound mass map:"<<std::endl;
+  std::cout<<"=================="<<std::endl;
+  double m=0.0;
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+  {
+    double mc = c.second->mass(density_ovr, aw_ovr);
+    m += mc;
+    std::cout<<c.first<<":\t m="<<mc<<std::endl;
+  }
+  std::cout<<std::endl;
+//   MassAndCoG mco=compoundProps(sfs, grho, gaw);
+  
+  return m;
 }
 
 

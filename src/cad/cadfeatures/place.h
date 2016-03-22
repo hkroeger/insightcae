@@ -43,6 +43,8 @@ public:
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+
+  virtual bool isRelocationFeature() const { return true; }
 };
 
 

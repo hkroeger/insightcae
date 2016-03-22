@@ -78,16 +78,18 @@ double DerivedFeature::mass(double density_ovr, double aw_ovr) const
   double rho=density_ovr, aw=aw_ovr;
   if (density_ && (density_ovr<0.)) rho=density_->value();
   if (areaWeight_ && (aw_ovr<0.)) aw=areaWeight_->value();
-  
-  std::cout<<"DerivedFeature: "<<rho<<" reloc:"<<isRelocationFeature()<<std::endl;
+
+  double m;
   if (isRelocationFeature())
   {
-    return basefeat_->mass(rho, aw);
+    m=basefeat_->mass(rho, aw);
   }
   else
   {
-    return Feature::mass(rho, aw);
+    m=Feature::mass(rho, aw);
   }
+//   std::cout<<"DerivedFeature: "<<rho<<" m="<<m<<" reloc:"<<isRelocationFeature()<<std::endl;
+  return m;
 }
 
 }

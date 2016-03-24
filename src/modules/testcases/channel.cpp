@@ -683,15 +683,18 @@ void ChannelBase::evaluateAtSection(
        (PlotCurve(wallnormal, 		"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
        (PlotCurve(spanwise, 		"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"))
        (PlotCurve(cross, 		"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
+       
        (PlotCurve(refdata_Ruu, 		"RuuMKM180", "w l lt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
        (PlotCurve(refdata_Rvv, 		"RvvMKM180", "w l lt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
        (PlotCurve(refdata_Rww, 		"RwwMKM180", "w l lt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
+       
        (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
        (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
        (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
+       
        (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
        (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
-       (PlotCurve(refdata_Rww590, 	"RuuMKM590", "w l lt 3 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
+       (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
        ,
      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
      "set yrange [:"+lexical_cast<string>(maxRp)+"]"

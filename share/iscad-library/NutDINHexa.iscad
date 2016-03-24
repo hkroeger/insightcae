@@ -1,0 +1,32 @@
+Dn?=10;
+k=TableLookup(ScrewDIN, Dn, Dn, k);
+s=TableLookup(ScrewDIN, Dn, Dn, s);
+P=TableLookup(ScrewDIN, Dn, Dn, P);
+d3=TableLookup(ScrewDIN, Dn, Dn, d3);
+dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+m=TableLookup(ScrewDIN, Dn, Dn, m);
+hk=0.5*P;
+L=24;
+
+tool=Revolution(
+ Tri(0.5*1.1548*s*EY, [0,-P,0], [P,0,0]),
+ O, EX, 2.*M_PI);
+
+nut:
+( 
+ Extrusion(
+  RegPoly(O,[1,0,0],6,s/2.),
+ m*EX)
+-
+Cylinder(O, m*EX, Dn)
+)
+- tool - Mirror(tool, Plane(0.5*m*EX, EX))
+;
+
+Lhh?=5*m;
+headhole=
+Cylinder(
+ O,
+ ax Lhh*EX,
+ d3
+);

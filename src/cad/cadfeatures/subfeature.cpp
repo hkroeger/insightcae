@@ -33,6 +33,7 @@ Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
 void Subfeature::build()
 {
   FeaturePtr f=basefeat_->subshape(subfeatname_);
+  setBaseFeat(f);
   setShape(f->shape());
   copyDatums(*f);
 }

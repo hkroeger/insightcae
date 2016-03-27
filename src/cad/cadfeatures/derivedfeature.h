@@ -40,6 +40,8 @@ public:
   DerivedFeature(const NoParameters& nop = NoParameters());
   DerivedFeature(ConstFeaturePtr basefeat);
   
+  inline void setBaseFeat(ConstFeaturePtr basefeat) { basefeat_=basefeat; }
+  
   virtual double density() const;
   virtual double areaWeight() const;
   virtual arma::mat modelCoG() const;

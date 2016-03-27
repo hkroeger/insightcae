@@ -20,7 +20,7 @@
 #ifndef INSIGHT_CAD_SUBFEATURE_H
 #define INSIGHT_CAD_SUBFEATURE_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight 
 {
@@ -28,7 +28,7 @@ namespace cad
 {
 
 class Subfeature
-: public Feature
+: public DerivedFeature
 {
   FeaturePtr basefeat_;
   std::string subfeatname_;

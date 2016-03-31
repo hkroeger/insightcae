@@ -17,30 +17,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_IMPORT_H
-#define INSIGHT_CAD_IMPORT_H
+#ifndef INSIGHT_CAD_FREECADMODEL_H
+#define INSIGHT_CAD_FREECADMODEL_H
 
 #include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
-class Import
+
+typedef std::vector<boost::fusion::vector2<std::vector<std::string>, ScalarPtr> > FreeCADModelVarList;
+
+class FreeCADModel 
 : public Feature
 {
-  boost::filesystem::path filepath_;
-  ScalarPtr scale_;
-  
+  boost::filesystem::path filename_;
+  std::string solidname_;
+  FreeCADModelVarList vars_;
+
 public:
-  declareType("Import");
-  Import(const NoParameters& nop = NoParameters());
-  Import(const boost::filesystem::path& filepath, ScalarPtr scale=ScalarPtr());
+  declareType("FreeCADModel");
   
+  FreeCADModel(const insight::NoParameters& nop);
+  FreeCADModel(const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList());
+
   virtual void build();
+  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
-
 }
 }
 
-#endif // INSIGHT_CAD_IMPORT_H
+#endif // INSIGHT_CAD_FREECADMODEL_H

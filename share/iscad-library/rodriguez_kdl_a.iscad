@@ -1,0 +1,67 @@
+
+Da?=742;
+Di?=645.5;
+di?=534;
+dIs?=598;
+da?=642.5;
+La?=685;
+li?=562;
+n?=16;
+
+B?=13.5;
+H1?=44.5;
+H2?=44.5;
+H?=56;
+tfli?=12;
+
+tboreo?=20;
+Dboreo?=12;
+
+tborei?=H;
+Bborei?=18;
+
+Ho=H-H1;
+Hu=H-H2;
+dU=0.5*(da+Di);
+
+ctr_hi=O;
+ctr_lo=O-H*EZ;
+
+sptr=
+Torus(
+O-(Ho+0.5*(H2-Ho))*EZ, dU*EZ, 0.5*(H2-Ho)
+);
+
+borei0=
+Cylinder(
+O+0.5*li*EX, ax-1.1*H*EZ,
+B);
+
+boreo0=
+Cylinder(
+O+0.5*La*EX, ax-1.1*H*EZ,
+B);
+
+ringi:
+Cylinder(
+ O, O-EZ*H2,
+ da, di
+) 
+- sptr 
+- Cylinder(
+ O-tfli*EZ, O-H1*EZ,
+ dIs
+)
+- CircularPattern(
+ borei0, O, (2*M_PI/n)*EZ, n
+);
+
+ringo:
+Cylinder(
+ O - Ho*EZ, O-(H1+Ho)*EZ,
+ Da, Di
+) 
+- sptr
+- CircularPattern(
+ boreo0, O, (2*M_PI/n)*EZ, n
+);

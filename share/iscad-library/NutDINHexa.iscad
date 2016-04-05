@@ -22,6 +22,7 @@ Cylinder(O, m*EX, Dn)
 )
 - tool - Mirror(tool, Plane(0.5*m*EX, EX))
 ;
+nut->density=7.9e-6;
 
 Lhh?=5*m;
 headhole=

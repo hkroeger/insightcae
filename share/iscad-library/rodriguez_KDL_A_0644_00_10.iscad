@@ -1,0 +1,12 @@
+kdv:
+loadmodel(
+ rodriguez_kdl_a,
+ Da=742,
+ Di=645.5,
+ di=534,
+ dIs=598,
+ da=642.5,
+ La=685,
+ li=562,
+ n=16
+);

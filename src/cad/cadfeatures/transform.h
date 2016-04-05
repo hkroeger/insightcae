@@ -37,6 +37,7 @@ class Transform
   
   FeaturePtr m1_;
   VectorPtr trans_;
+  VectorPtr rotorg_;
   VectorPtr rot_;
   ScalarPtr sf_;
   
@@ -47,6 +48,7 @@ public:
   
   Transform(const NoParameters& nop = NoParameters());
   Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
+  Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg);
   Transform(FeaturePtr m1, VectorPtr trans);
   Transform(FeaturePtr m1, ScalarPtr scale);
   Transform(FeaturePtr m1, const gp_Trsf& trsf);

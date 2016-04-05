@@ -95,6 +95,16 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sc
 //   m1.unsetLeaf();
 }
 
+Transform::Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
+: DerivedFeature(m1),
+  m1_(m1),
+  rot_(rot),
+  rotorg_(rotorg)
+{
+//   setShape(makeTransform(m1, trans, rot, scale));
+//   m1.unsetLeaf();
+}
+
 Transform::Transform(FeaturePtr m1, VectorPtr trans)
 : DerivedFeature(m1),
   m1_(m1),
@@ -138,7 +148,9 @@ void Transform::build()
       {
 	gp_Vec axis=to_Vec(rot_->value());
 	axis.Normalize();
-	tr2.SetRotation(gp_Ax1(gp_Pnt(0,0,0), axis), phi);
+	gp_Pnt rorg(0,0,0);
+	if (rotorg_) rorg=to_Pnt(rotorg_->value());
+	tr2.SetRotation(gp_Ax1(rorg, axis), phi);
       }  
     }
     
@@ -167,6 +179,19 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
 	 qi::attr(ScalarPtr( new ConstantScalar(1.0)))
 	) > ')' ) 
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Transform>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+      
+    ))
+  );
+  
+  ruleset.modelstepFunctionRules.add
+  (
+    "Rotate",
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
+	> ruleset.r_vectorExpression > 
+	')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Transform>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

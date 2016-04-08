@@ -35,6 +35,7 @@
 #include "quantityfunctions.h"
 #include "relationfilters.h"
 #include "cylradius.h"
+#include "cylaxis.h"
 #include "vertexlocation.h"
 #include "edgecog.h"
 #include "edgeend.h"

@@ -512,6 +512,9 @@ struct FaceFeatureFilterExprParser
       ;
       
       FeatureFilterExprParser<Iterator>::r_mat_qty_functions = 
+	( lit("cylAxis") ) 
+	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<cylAxis>()) ]
+	|
         ( lit("normal") ) 
 	  [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<insight::cad::faceNormalVector>()) ]
         |

@@ -11,6 +11,7 @@ add_sources(insightcad_SOURCES
   edgeradiallen.cpp
   
   cylradius.cpp
+  cylaxis.cpp
   facearea.cpp
   facecog.cpp
   facenormalvector.cpp

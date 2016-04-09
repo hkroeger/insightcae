@@ -268,10 +268,10 @@ public:
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<distance>(qi::_1, qi::_2)) ]
 	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*qi::_1)) ]
+	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) // before "angle"!
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  | ( lit("angle") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angle<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
-	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
-	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  |
 	  lexeme[ lit("%d") >> qi::int_ ] 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>
@@ -288,27 +288,29 @@ public:
 	  ;
 	  
 	r_mat_qty_expression =
-	  r_mat_term 
-	    [ qi::_val = qi::_1 ]
-	  |
-	  ( r_mat_term >> '+' >> r_mat_term ) 
-	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<added<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
-	  | 
-	  ( r_mat_term >> '-' >> r_mat_term ) 
-	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<subtracted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
+	  r_mat_term [ qi::_val = qi::_1 ]
+	    >>
+	  *(
+	    ( /*r_mat_term >>*/ '+' >> r_mat_term ) 
+	      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<added<arma::mat,arma::mat> >(*qi::_val, *qi::_1)) ]
+	    | 
+	    ( /*r_mat_term >>*/ '-' >> r_mat_term ) 
+	      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<subtracted<arma::mat,arma::mat> >(*qi::_val, *qi::_1)) ]
+	   )
 	  ;
 	
 	r_mat_term =
 	(
 	  r_mat_primary 
 	    [ qi::_val = qi::_1 ]
-	  |
-	  ( r_mat_primary >> '*' >> r_mat_primary ) 
-	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<multiplied<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
-	  | 
-	  ( r_mat_primary >> '/' >> r_mat_primary ) 
-	    [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<divided<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
-	) 
+	  >> *(
+	    ( /*r_mat_primary >>*/ '*' >> r_mat_primary ) 
+	      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<multiplied<arma::mat,arma::mat> >(*qi::_val, *qi::_1)) ]
+	    | 
+	    ( /*r_mat_primary >> */'/' >> r_mat_primary ) 
+	      [ qi::_val = phx::construct<matQuantityComputer::Ptr>(new_<divided<arma::mat,arma::mat> >(*qi::_val, *qi::_1)) ]
+	    )
+	   ) 
 	  ;
 	  
 	r_mat_primary =

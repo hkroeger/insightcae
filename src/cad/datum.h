@@ -71,6 +71,7 @@ class DatumPlane
 : public Datum
 {
   VectorPtr p0_, n_, up_;
+  VectorPtr p1_, p2_;
   
   gp_Ax3 cs_;
   
@@ -86,6 +87,14 @@ public:
     VectorPtr p0, 
     VectorPtr n,
     VectorPtr up
+  );
+  
+  DatumPlane
+  (
+    VectorPtr p0, 
+    VectorPtr p1,
+    VectorPtr p2,
+    bool dummy
   );
   
 //   DatumPlane

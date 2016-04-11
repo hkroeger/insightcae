@@ -97,7 +97,19 @@ void Datum::write(ostream& file) const
 void DatumPlane::build()
 {
   arma::mat n=n_->value()/arma::norm(n_->value(),2);
-  if (!up_)
+  if (p2_)
+  {
+
+    arma::mat vx=p1_->value() - p0_->value(); 
+    arma::mat vy=p2_->value() - p0_->value(); 
+    vx/=norm(vx, 2);
+    vy/=norm(vy, 2);
+    arma::mat n=cross(vx, vy);
+    n/=norm(n, 2);
+    
+    cs_ = gp_Ax3( to_Pnt(p0_->value()), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
+  }
+  else if (!up_)
   {
 
     arma::mat vx=cross(vec3(0,1,0), n); 
@@ -111,7 +123,7 @@ void DatumPlane::build()
     
     cs_ = gp_Ax3( to_Pnt(p0_->value()), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
   }
-  else
+  else 
   {
     arma::mat vx=cross(up_->value(), n); 
     double m=norm(vx, 2);
@@ -139,6 +151,11 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni)
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 : Datum(true, false, true),
   p0_(p0), n_(ni), up_(up)
+{}
+
+DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
+: Datum(true, false, true),
+  p0_(p0), p1_(p1_), p2_(p2)
 {}
 
 // DatumPlane::DatumPlane

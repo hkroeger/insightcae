@@ -31,3 +31,10 @@ Cylinder(
  ax Lhh*EX,
  d3
 );
+
+Leh?=5*m;
+embedhole=
+Extrusion(
+ RegPoly(O,[1,0,0],6,1.05*s/2.),
+ Leh*EX
+);

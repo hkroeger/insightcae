@@ -543,6 +543,11 @@ ISCADParser::ISCADParser(Model* model)
 	  |
 	  ( lit("xsec_plpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' ) 
 	    [ _val = construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)) ]
+	  |
+	  ( lit("xsec_ppp") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ',' >> r_datumExpression >> ')' ) 
+	    [ _val = construct<DatumPtr>(new_<XsecAxisPlane>(
+	               construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)),
+		       qi::_3)) ]
       ;
       
     r_scalarExpression = 

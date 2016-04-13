@@ -112,7 +112,7 @@ gp_Pnt DatumPoint::point() const
 
 AIS_InteractiveObject* DatumPoint::createAISRepr() const
 {
-  return new AIS_Shape( BRepBuilderAPI_MakeVertex(p_) );
+  return new AIS_Shape( BRepBuilderAPI_MakeVertex(point()) );
 }
 
 ExplicitDatumPoint::ExplicitDatumPoint(VectorPtr c)
@@ -146,8 +146,8 @@ gp_Ax1 DatumAxis::axis() const
 AIS_InteractiveObject* DatumAxis::createAISRepr() const
 {
   checkForBuildDuringAccess();
-  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(ax_)));
-  ais->SetWidth(100);
+  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis())));
+//   ais->SetWidth(100);
   return ais;
 }
 
@@ -182,7 +182,7 @@ gp_Ax3 DatumPlaneData::plane() const
 AIS_InteractiveObject* DatumPlaneData::createAISRepr() const
 {
   checkForBuildDuringAccess();
-  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_)));
+  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane())));
   ais->SetSize(100);
   return ais;
 }
@@ -311,6 +311,8 @@ void XsecPlanePlane::build()
   ax_=gp_Ax1( xsec.Position()/*, xsec.Direction()*/ );
 }
 
+
+
 XsecAxisPlane::XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl)
 : ax_(ax), pl_(pl)
 {}
@@ -335,6 +337,7 @@ void XsecAxisPlane::build()
   
   // Get intersection curve
   p_=intersection.Point(1);
+//   std::cout<<"XSEC="<<p_.X()<<" "<<p_.Y()<<" "<<p_.Z()<<std::endl;
 }
 
 }

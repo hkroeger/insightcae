@@ -97,7 +97,7 @@ insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
 
 arma::mat insight::cad::DatumPointCoord::value() const
 {
-  if ( !pfs_->providesPointReference() )
+  if ( pfs_->providesPointReference() )
   {
     return vec3(pfs_->point());
   }
@@ -115,7 +115,7 @@ insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
 
 arma::mat insight::cad::DatumDir::value() const
 {
-  if ( !pfs_->providesAxisReference() )
+  if ( pfs_->providesAxisReference() )
   {
     return vec3(pfs_->axis().Direction());
   }

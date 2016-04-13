@@ -18,6 +18,7 @@
  */
 
 #include "cadfeature.h"
+#include "datum.h"
 #include "vectorfeatureprop.h"
 
 insight::cad::PointFeatureProp::PointFeatureProp
@@ -86,4 +87,59 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
   gp_Circ icyl=adapt.Circle();
   gp_Pnt p0=icyl.Location();
   return vec3(p0.X(), p0.Y(), p0.Z());
+}
+
+
+insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
+: pfs_(pfs)
+{}
+
+
+arma::mat insight::cad::DatumPointCoord::value() const
+{
+  if ( !pfs_->providesPointReference() )
+  {
+    return vec3(pfs_->point());
+  }
+  else
+  {
+    throw insight::Exception("supplied datum does not provide a point reference!");
+  }
+  return vec3(0,0,0);
+}
+
+
+insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
+: pfs_(pfs)
+{}
+
+arma::mat insight::cad::DatumDir::value() const
+{
+  if ( !pfs_->providesAxisReference() )
+  {
+    return vec3(pfs_->axis().Direction());
+  }
+  else
+  {
+    throw insight::Exception("supplied datum does not provide an axis reference!");
+  }
+  return vec3(0,0,0);
+}
+
+
+insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs)
+: pfs_(pfs)
+{}
+
+arma::mat insight::cad::DatumPlaneNormal::value() const
+{
+  if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+  {
+    return vec3(pl->plane().Direction());
+  }
+  else
+  {
+    throw insight::Exception("supplied datum has to be a plane!");
+  }
+  return vec3(0,0,0);
 }

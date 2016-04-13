@@ -71,6 +71,36 @@ public:
   virtual arma::mat value() const;
 };
 
+class DatumPointCoord
+: public insight::cad::Vector
+{
+  ConstDatumPtr pfs_;
+  
+public:
+  DatumPointCoord(ConstDatumPtr pfs);
+  virtual arma::mat value() const;
+};
+
+class DatumDir
+: public insight::cad::Vector
+{
+  ConstDatumPtr pfs_;
+  
+public:
+  DatumDir(ConstDatumPtr pfs);
+  virtual arma::mat value() const;
+};
+
+class DatumPlaneNormal
+: public insight::cad::Vector
+{
+  ConstDatumPtr pfs_;
+  
+public:
+  DatumPlaneNormal(ConstDatumPtr pfs);
+  virtual arma::mat value() const;
+};
+
 }
 }
 

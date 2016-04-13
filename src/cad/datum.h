@@ -67,13 +67,77 @@ public:
 };
 #endif
 
-class DatumPlane
+class DatumPoint
 : public Datum
+{
+protected:
+  gp_Pnt p_;
+  
+public:
+  DatumPoint();
+  
+  virtual gp_Pnt point() const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
+
+class ExplicitDatumPoint
+: public DatumPoint
+{
+  VectorPtr coord_;
+  
+public:
+  ExplicitDatumPoint(VectorPtr c);
+  
+  virtual void build();
+};
+
+class DatumAxis
+: public Datum
+{
+protected:
+  gp_Ax1 ax_;
+  
+public:
+  DatumAxis();
+  
+  virtual gp_Pnt point() const;
+  virtual gp_Ax1 axis() const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
+
+class ExplicitDatumAxis
+: public DatumAxis
+{
+  VectorPtr p0_, ex_;
+  
+public:
+  ExplicitDatumAxis(VectorPtr p0, VectorPtr ex);
+  
+  virtual void build();
+};
+
+class DatumPlaneData
+: public Datum
+{
+protected:
+  gp_Ax3 cs_;
+
+public:
+  DatumPlaneData();
+  
+  virtual gp_Pnt point() const;
+  virtual gp_Ax3 plane() const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
+
+class DatumPlane
+: public DatumPlaneData
 {
   VectorPtr p0_, n_, up_;
   VectorPtr p1_, p2_;
-  
-  gp_Ax3 cs_;
   
 public:
   DatumPlane
@@ -105,17 +169,35 @@ public:
   
   DatumPlane(std::istream&);
   
-  virtual gp_Pnt point() const;
-  virtual gp_Ax3 plane() const;
-
-  virtual AIS_InteractiveObject* createAISRepr() const;
   
   virtual void build();
 
   virtual void write(std::ostream& file) const;
 };
 
+/**
+ * Plane/Plane intersection
+ */
 
+class XsecPlanePlane
+: public DatumAxis
+{
+  ConstDatumPtr pl1_, pl2_;
+  
+public:
+  XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2);
+  virtual void build();
+};
+
+class XsecAxisPlane
+: public DatumPoint
+{
+  ConstDatumPtr ax_, pl_;
+  
+public:
+  XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl);
+  virtual void build();
+};
 
 }
 }

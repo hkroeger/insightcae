@@ -22,6 +22,11 @@
 #include "datum.h"
 
 #include "AIS_Plane.hxx"
+#include "AIS_Axis.hxx"
+#include "Geom_Axis1Placement.hxx"
+#include "GeomAPI_IntSS.hxx"
+#include "GeomAPI_IntCS.hxx"
+#include "Geom_Line.hxx"
 
 namespace insight {
 namespace cad {
@@ -94,6 +99,95 @@ void Datum::write(ostream& file) const
 }
 
 
+
+DatumPoint::DatumPoint()
+: Datum(true, false, false)
+{}
+
+gp_Pnt DatumPoint::point() const
+{
+  checkForBuildDuringAccess();
+  return p_;
+}
+
+AIS_InteractiveObject* DatumPoint::createAISRepr() const
+{
+  return new AIS_Shape( BRepBuilderAPI_MakeVertex(p_) );
+}
+
+ExplicitDatumPoint::ExplicitDatumPoint(VectorPtr c)
+: coord_(c)
+{}
+
+
+void ExplicitDatumPoint::build()
+{
+  p_=to_Pnt(coord_->value());
+}
+
+
+DatumAxis::DatumAxis()
+: Datum(true, true, false)
+{}
+
+
+gp_Pnt DatumAxis::point() const
+{
+  checkForBuildDuringAccess();
+  return ax_.Location();
+}
+
+gp_Ax1 DatumAxis::axis() const
+{
+  checkForBuildDuringAccess();
+  return ax_;
+}
+
+AIS_InteractiveObject* DatumAxis::createAISRepr() const
+{
+  checkForBuildDuringAccess();
+  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(ax_)));
+  ais->SetWidth(100);
+  return ais;
+}
+
+ExplicitDatumAxis::ExplicitDatumAxis(VectorPtr p0, VectorPtr ex)
+: p0_(p0), ex_(ex)
+{}
+
+void ExplicitDatumAxis::build()
+{
+  ax_ = gp_Ax1( to_Pnt(p0_->value()), gp_Dir(to_Vec(ex_->value())) );
+}
+
+
+DatumPlaneData::DatumPlaneData()
+: Datum(true, false, true)
+{}
+
+
+gp_Pnt DatumPlaneData::point() const
+{
+  checkForBuildDuringAccess();
+  return cs_.Location();
+}
+
+gp_Ax3 DatumPlaneData::plane() const
+{
+  checkForBuildDuringAccess();
+  return cs_;
+}
+
+// DatumPlane::operator const Handle_AIS_InteractiveObject () const
+AIS_InteractiveObject* DatumPlaneData::createAISRepr() const
+{
+  checkForBuildDuringAccess();
+  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_)));
+  ais->SetSize(100);
+  return ais;
+}
+
+
 void DatumPlane::build()
 {
   arma::mat n=n_->value()/arma::norm(n_->value(),2);
@@ -143,19 +237,16 @@ void DatumPlane::build()
 
   
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni)
-: Datum(true, false, true),
-  p0_(p0),
+: p0_(p0),
   n_(ni)
 {}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
-: Datum(true, false, true),
-  p0_(p0), n_(ni), up_(up)
+: p0_(p0), n_(ni), up_(up)
 {}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
-: Datum(true, false, true),
-  p0_(p0), p1_(p1_), p2_(p2)
+: p0_(p0), p1_(p1_), p2_(p2)
 {}
 
 // DatumPlane::DatumPlane
@@ -182,25 +273,6 @@ DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
 //   cs_ = gp_Ax3( to_Pnt(p0), gp_Dir(to_Vec(n)), gp_Dir(to_Vec(vx)) );
 // }
 
-gp_Pnt DatumPlane::point() const
-{
-  checkForBuildDuringAccess();
-  return cs_.Location();
-}
-
-gp_Ax3 DatumPlane::plane() const
-{
-  checkForBuildDuringAccess();
-  return cs_;
-}
-
-// DatumPlane::operator const Handle_AIS_InteractiveObject () const
-AIS_InteractiveObject* DatumPlane::createAISRepr() const
-{
-  checkForBuildDuringAccess();
-  return new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(cs_)));
-}
-
 
 
 void DatumPlane::write(ostream& file) const
@@ -209,6 +281,61 @@ void DatumPlane::write(ostream& file) const
   insight::cad::Datum::write(file);
 }
 
+
+XsecPlanePlane::XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2)
+: pl1_(pl1), pl2_(pl2)
+{}
+
+
+void XsecPlanePlane::build()
+{
+  if (!pl1_->providesPlanarReference())
+    throw insight::Exception("plane 1 does not provide plane reference!");
+  if (!pl2_->providesPlanarReference())
+    throw insight::Exception("plane 2 does not provide plane reference!");
+
+  Handle_Geom_Plane plane_1 = new Geom_Plane(pl1_->plane());
+  Handle_Geom_Plane plane_2 = new Geom_Plane(pl2_->plane());
+
+  // Intersection
+  GeomAPI_IntSS	intersection;
+  intersection.Perform(plane_1, plane_2, 1.0e-7);
+
+  // For debugging only
+  if (!intersection.IsDone() || (intersection.NbLines()!=1) )
+    throw insight::Exception("no intersection found!");
+  
+  // Get intersection curve
+  gp_Lin xsec = Handle_Geom_Line::DownCast(intersection.Line(1))->Lin();
+  
+  ax_=gp_Ax1( xsec.Position()/*, xsec.Direction()*/ );
+}
+
+XsecAxisPlane::XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl)
+: ax_(ax), pl_(pl)
+{}
+
+void XsecAxisPlane::build()
+{
+  if (!ax_->providesAxisReference())
+    throw insight::Exception("axis reference does not provide axis!");
+  if (!pl_->providesPlanarReference())
+    throw insight::Exception("plane reference does not provide plane!");
+
+  Handle_Geom_Line line_1 = new Geom_Line(ax_->axis());
+  Handle_Geom_Plane plane_2 = new Geom_Plane(pl_->plane());
+
+  // Intersection
+  GeomAPI_IntCS	intersection;
+  intersection.Perform(line_1, plane_2/*, 1.0e-7*/);
+
+  // For debugging only
+  if (!intersection.IsDone() || (intersection.NbPoints()!=1) )
+    throw insight::Exception("no intersection found!");
+  
+  // Get intersection curve
+  p_=intersection.Point(1);
+}
 
 }
 }

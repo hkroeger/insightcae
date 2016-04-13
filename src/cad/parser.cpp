@@ -531,6 +531,18 @@ ISCADParser::ISCADParser(Model* model)
 	  |
 	  ( lit("TPlane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
 	    [ _val = construct<DatumPtr>(new_<DatumPlane>(qi::_1, qi::_2, qi::_3, true)) ]
+	  |
+	  ( lit("RefPt") >> '(' >> r_vectorExpression >> ')' ) 
+	    [ _val = construct<DatumPtr>(new_<ExplicitDatumPoint>(qi::_1)) ]
+	  |
+	  ( lit("RefAxis") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' ) 
+	    [ _val = construct<DatumPtr>(new_<ExplicitDatumAxis>(qi::_1, qi::_2)) ]
+	  |
+	  ( lit("xsec_axpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' ) 
+	    [ _val = construct<DatumPtr>(new_<XsecAxisPlane>(qi::_1, qi::_2)) ]
+	  |
+	  ( lit("xsec_plpl") >> '(' >> r_datumExpression >> ',' >> r_datumExpression >> ')' ) 
+	    [ _val = construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)) ]
       ;
       
     r_scalarExpression = 
@@ -659,6 +671,15 @@ ISCADParser::ISCADParser(Model* model)
       |
        ( lit("coord") >> '(' >> r_vertexFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
+      |
+       ( lit("refpt") >> '(' >> r_datumExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
+      |
+       ( lit("refdir") >> '(' >> r_datumExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<DatumDir>(qi::_1)) ]
+      |
+       ( lit("plnorm") >> '(' >> r_datumExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<DatumPlaneNormal>(qi::_1)) ]
       |
        ( lit("circcenter") >> '(' >> r_edgeFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<CircleEdgeCenterCoords>(qi::_1)) ]

@@ -677,7 +677,7 @@ ISCADParser::ISCADParser(Model* model)
        ( lit("coord") >> '(' >> r_vertexFeaturesExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
       |
-       ( lit("refpt") >> '(' >> r_datumExpression >> ')' )
+       ( /*lit("refpt") >> '(' >>*/ r_datumExpression /*>> ')'*/ )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
       |
        ( lit("refdir") >> '(' >> r_datumExpression >> ')' )

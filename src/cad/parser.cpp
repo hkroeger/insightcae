@@ -281,28 +281,28 @@ ISCADParser::ISCADParser(Model* model)
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
 		    phx::construct<PostprocActionPtr>(new_<Export>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
       |
-//       ( lit("gmsh") > '(' > r_path > ')' > lit("<<") 
-//         > r_solidmodel_expression >> lit("as") >> r_identifier
-//         >> ( lit("L") >> '=' >> '(' >> repeat(2)[qi::double_] ) >> ')'
-// 	>> ( ( lit("linear") >> attr(false) ) | attr(true) )
-// 	>> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')'
-// 	>> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
-// 	>> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
-// 	>> ( lit("vertices") >> '(' >> *( r_identifier >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
-// //         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
-// 	>> ';' )
-//         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
-// 		    phx::construct<PostprocActionPtr>(new_<Mesh>(
-// 		    qi::_1, 
-// 		    qi::_2, qi::_3, 
-// 		    qi::_4, 
-// 		    qi::_5, 
-// 		    qi::_6,
-// 		    qi::_7, 
-// 		    qi::_8, 
-// 		    qi::_9
-// 		    ))) ]
-//       |
+      ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
+        >> r_solidmodel_expression >> lit("as") >> r_identifier
+        >> ( lit("L") >> '=' >> '(' >> repeat(2)[r_scalarExpression] ) >> ')'
+	>> ( ( lit("linear") >> attr(false) ) | attr(true) )
+	>> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')'
+	>> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
+	>> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
+	>> ( lit("vertices") >> '(' >> *( r_identifier >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
+//         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
+	>> ';' )
+        [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
+		    phx::construct<PostprocActionPtr>(new_<Mesh>(
+		    qi::_1, 
+		    qi::_2, qi::_3, 
+		    qi::_4, 
+		    qi::_5, 
+		    qi::_6,
+		    qi::_7, 
+		    qi::_8, 
+		    qi::_9
+		    ))) ]
+      |
       ( lit("SolidProperties") > '(' > r_identifier > ')' > lit("<<") > r_solidmodel_expression > ';' )
 	[ phx::bind(&Model::addPostprocAction, model_, qi::_1, 
 		    phx::construct<PostprocActionPtr>(new_<SolidProperties>(qi::_2))) 

@@ -24,6 +24,8 @@
 
 namespace insight {
 namespace cad {
+  
+typedef boost::fusion::vector2<bool, bool> QuadCentering;
 
 class Quad
 : public SingleFaceFeature
@@ -32,10 +34,12 @@ class Quad
   VectorPtr L_;
   VectorPtr W_;
   
+  QuadCentering center_;
+  
 public:
   declareType("Quad");
   Quad(const NoParameters& nop = NoParameters());
-  Quad(VectorPtr p0, VectorPtr L, VectorPtr W);
+  Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
   operator const TopoDS_Face& () const;
   
   virtual void build();

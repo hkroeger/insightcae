@@ -25,6 +25,7 @@
 namespace insight {
 namespace cad {
 
+typedef boost::fusion::vector3<bool, bool, bool> BoxCentering;
 
 class Box
 : public SingleVolumeFeature
@@ -33,7 +34,7 @@ class Box
   VectorPtr L1_;
   VectorPtr L2_;
   VectorPtr L3_;
-  bool centered_;
+  BoxCentering center_;
   
 public:
   declareType("Box");
@@ -44,7 +45,7 @@ public:
     VectorPtr L1, 
     VectorPtr L2, 
     VectorPtr L3,
-    bool centered=false
+    BoxCentering center=BoxCentering(false, false, false)
   );
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   

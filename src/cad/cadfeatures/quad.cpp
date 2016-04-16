@@ -39,14 +39,19 @@ Quad::Quad(const NoParameters&)
 {}
 
 
-Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W)
-: p0_(p0), L_(L), W_(W)
+Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
+: p0_(p0), L_(L), W_(W), center_(center)
 {}
 
 void Quad::build()
 {
   gp_Pnt 
-    p1(to_Pnt(p0_->value())),
+    p1(to_Pnt(p0_->value()));
+    
+  if (boost::fusion::at_c<0>(center_)) p1.Translate(to_Vec(-0.5*L_->value()));
+  if (boost::fusion::at_c<1>(center_)) p1.Translate(to_Vec(-0.5*W_->value()));
+    
+  gp_Pnt
     p2=p1.Translated(to_Vec(W_->value())),
     p3=p2.Translated(to_Vec(L_->value())),
     p4=p1.Translated(to_Vec(L_->value()))
@@ -76,8 +81,22 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
     "Quad",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3)) ]
+    ( '(' >> ruleset.r_vectorExpression 
+      >> ',' >> ruleset.r_vectorExpression 
+      >> ',' >> ruleset.r_vectorExpression 
+      >> ( ( ',' >> (
+            (  qi::lit("centered") >> qi::attr(true) >> qi::attr(true) )
+	    |
+	    (  qi::lit("center") 
+	       >> (( 'x' >> qi::attr(true) )|qi::attr(false))
+	       >> (( 'y' >> qi::attr(true) )|qi::attr(false))
+	    )
+	  ) )
+          |
+          ( qi::attr(false) >> qi::attr(false) )
+	  )
+      >> ')' ) 
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))
   );

@@ -46,15 +46,20 @@ Box::Box
   VectorPtr L1, 
   VectorPtr L2, 
   VectorPtr L3,
-  bool centered
+  BoxCentering center
 )
-: p0_(p0), L1_(L1), L2_(L2), L3_(L3), centered_(centered)
+: p0_(p0), L1_(L1), L2_(L2), L3_(L3), center_(center)
 {}
 
 void Box::build()
 { 
-  refpoints_["p0"]=p0_->value();
+  arma::mat p0=p0_->value();
+  if (boost::fusion::at_c<0>(center_))  p0-=0.5*+L1_->value();
+  if (boost::fusion::at_c<1>(center_))  p0-=0.5*+L2_->value();
+  if (boost::fusion::at_c<2>(center_))  p0-=0.5*+L3_->value();
   
+  refpoints_["p0"]=p0;
+    
   refvalues_["L1"]=arma::norm(L1_->value(), 2);
   refvalues_["L2"]=arma::norm(L2_->value(), 2);
   refvalues_["L3"]=arma::norm(L3_->value(), 2);
@@ -63,7 +68,7 @@ void Box::build()
   refvectors_["e2"]=L2_->value()/arma::norm(L2_->value(), 2);
   refvectors_["e3"]=L3_->value()/arma::norm(L3_->value(), 2);
   
-  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0_->value()), to_Pnt(p0_->value()+L1_->value()), to_Pnt(p0_->value()+L2_->value())).Value();
+  Handle_Geom_Plane pln=GC_MakePlane(to_Pnt(p0), to_Pnt(p0+L1_->value()), to_Pnt(p0+L2_->value())).Value();
   TopoDS_Shape box=
   BRepPrimAPI_MakePrism
   (
@@ -72,22 +77,22 @@ void Box::build()
       pln,
       BRepBuilderAPI_MakePolygon
       (
-	to_Pnt(p0_->value()), 
-	to_Pnt(p0_->value()+L1_->value()), 
-	to_Pnt(p0_->value()+L1_->value()+L2_->value()), 
-	to_Pnt(p0_->value()+L2_->value()), 
+	to_Pnt(p0), 
+	to_Pnt(p0+L1_->value()), 
+	to_Pnt(p0+L1_->value()+L2_->value()), 
+	to_Pnt(p0+L2_->value()), 
 	true
       ).Wire()
     ).Face(),
     to_Vec(L3_->value())
   ).Shape();
   
-  if (centered_)
-  {
-    gp_Trsf t;
-    t.SetTranslation(to_Vec(-0.5*L1_->value() - 0.5*L2_->value() - 0.5*L3_->value()));
-    box=BRepBuilderAPI_Transform(box, t).Shape();
-  }
+//   if (centered_)
+//   {
+//     gp_Trsf t;
+//     t.SetTranslation(to_Vec(-0.5*L1_->value() - 0.5*L2_->value() - 0.5*L3_->value()));
+//     box=BRepBuilderAPI_Transform(box, t).Shape();
+//   }
   setShape(box);
 }
 
@@ -100,7 +105,19 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
 		    > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression 
-     > ( (  ',' > qi::lit("centered") > qi::attr(true) ) |qi::attr(false) )
+//      > ( (  ',' > qi::lit("centered") > qi::attr(true) ) |qi::attr(false) )
+      > ( ( ',' >> (
+            (  qi::lit("centered") >> qi::attr(true) >> qi::attr(true) >> qi::attr(true) )
+	    |
+	    (  qi::lit("center") 
+	       >> (( 'x' >> qi::attr(true) )|qi::attr(false))
+	       >> (( 'y' >> qi::attr(true) )|qi::attr(false))
+	       >> (( 'z' >> qi::attr(true) )|qi::attr(false))
+	    )
+	  ) )
+          |
+          ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
+	  )
      > ')' ) 
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Box>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       

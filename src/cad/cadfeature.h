@@ -126,6 +126,8 @@ public:
 // class Feature;
 
 
+
+
 std::ostream& operator<<(std::ostream& os, const Feature& m);
 
 /**
@@ -158,6 +160,8 @@ protected :
   // needs to be unset, if this shape is used as a tool to create another shape
   mutable bool isleaf_;
   
+  mutable boost::shared_ptr<GProp_GProps> volprops_;
+  
 private:
   // the shape
   // shall only be accessed via the shape() function, which triggers the build function if needed
@@ -183,6 +187,7 @@ protected:
   size_t hash_;
   
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
+  void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   void setShapeHash();
   
@@ -252,6 +257,11 @@ public:
   virtual double minDist(const arma::mat& p) const;
   virtual double maxVertexDist(const arma::mat& p) const;
   virtual double maxDist(const arma::mat& p) const;
+
+  /**
+   * return  the inertia tensor with respect to the current CS and the global origin
+   */
+  virtual arma::mat modelInertia() const;
   
   /**
    * return bounding box of model
@@ -348,16 +358,20 @@ public:
   virtual void read(const boost::filesystem::path& file);
   
   /**
-   * whether this feature does not create or alters geometry.
+   * whether this feature does not create or alters geometry but only transforms it.
    * Return false e.g. four compound or transform
    */
-  virtual bool isRelocationFeature() const;
+  virtual bool isTransformationFeature() const;
+  virtual gp_Trsf transformation() const;
 };
 
 
 typedef std::pair<double, arma::mat> MassAndCoG;
 
 MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
+
+arma::mat rotTrsf(const gp_Trsf& tr);
+arma::mat transTrsf(const gp_Trsf& tr);
 
 
 template<class T>

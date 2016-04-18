@@ -31,6 +31,8 @@ class Mirror
   FeaturePtr m1_;
   DatumPtr pl_;
   
+  gp_Trsf tr_;
+  
 public:
   declareType("Mirror");
   Mirror(const NoParameters& nop = NoParameters());
@@ -39,7 +41,8 @@ public:
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   
-  virtual bool isRelocationFeature() const { return true; }
+  virtual bool isTransformationFeature() const { return true; }
+  virtual gp_Trsf transformation() const;
 };
 
 }

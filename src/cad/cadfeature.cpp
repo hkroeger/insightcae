@@ -41,6 +41,7 @@
 #include "BRepOffsetAPI_NormalProjection.hxx"
 #include "HLRBRep_PolyHLRToShape.hxx"
 #include "HLRBRep_PolyAlgo.hxx"
+#include "GProp_PrincipalProps.hxx"
 
 #include "openfoam/openfoamdict.h"
 
@@ -189,8 +190,18 @@ void Feature::setShapeHash()
   }
 }
 
+void Feature::updateVolProps() const
+{
+  if (!volprops_)
+  {
+    volprops_.reset(new GProp_GProps());
+    BRepGProp::VolumeProperties(shape(), *volprops_);
+  }
+}
+
 void Feature::setShape(const TopoDS_Shape& shape)
 {
+  volprops_.reset();
   shape_=shape;
   nameFeatures();
   setValid();
@@ -423,27 +434,30 @@ double Feature::subsolidVolume(FeatureID i) const
 arma::mat Feature::modelCoG() const
 {
   checkForBuildDuringAccess();
-  GProp_GProps props;
-  TopoDS_Shape sh=shape();
-  BRepGProp::VolumeProperties(sh, props);
-  gp_Pnt cog = props.CentreOfMass();
+//   GProp_GProps props;
+//   TopoDS_Shape sh=shape();
+//   BRepGProp::VolumeProperties(sh, props);
+  updateVolProps();
+  gp_Pnt cog = volprops_->CentreOfMass();
   return vec3(cog);
 }
 
 double Feature::modelVolume() const
 {
-  TopoDS_Shape sh=shape();
-  TopExp_Explorer ex(sh, TopAbs_SOLID);
-  if (ex.More())
-  {
-    GProp_GProps props;
-    BRepGProp::VolumeProperties(sh, props);
-    return props.Mass();
-  }
-  else
-  {
-    return 0.;
-  }
+  updateVolProps();
+  return volprops_->Mass();
+//   TopoDS_Shape sh=shape();
+//   TopExp_Explorer ex(sh, TopAbs_SOLID);
+//   if (ex.More())
+//   {
+//     GProp_GProps props;
+//     BRepGProp::VolumeProperties(sh, props);
+//     return props.Mass();
+//   }
+//   else
+//   {
+//     return 0.;
+//   }
 }
 
 double Feature::modelSurfaceArea() const
@@ -509,6 +523,21 @@ double Feature::maxDist(const arma::mat& p) const
     maxdistsq=std::max(maxdistsq, epf.SquareDistance(i));
   }
   return sqrt(maxdistsq);
+}
+
+
+arma::mat Feature::modelInertia() const
+{
+  updateVolProps();
+  GProp_PrincipalProps gpp = volprops_->PrincipalProperties();
+  arma::mat T=arma::zeros(3,3);
+  T.col(0)=vec3(gpp.FirstAxisOfInertia());
+  T.col(1)=vec3(gpp.SecondAxisOfInertia());
+  T.col(2)=vec3(gpp.ThirdAxisOfInertia());
+  arma::mat Ip=arma::zeros(3,3);
+  gpp.Moments( Ip(0,0), Ip(1,1), Ip(2,2) );
+  
+  return T*Ip*T.t();
 }
 
 arma::mat Feature::modelBndBox(double deflection) const
@@ -1628,9 +1657,15 @@ void Feature::read(const filesystem::path& file)
   read(f);
 }
 
-bool Feature::isRelocationFeature() const
+bool Feature::isTransformationFeature() const
 {
   return false;
+}
+
+gp_Trsf Feature::transformation() const
+{
+  throw insight::Exception("not implemented");
+  return gp_Trsf();
 }
 
 MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
@@ -1651,6 +1686,23 @@ MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, 
   return MassAndCoG(m, cog);
 }
 
+arma::mat rotTrsf(const gp_Trsf& tr)
+{
+  gp_Mat m=tr.VectorialPart();
+  
+  arma::mat R=arma::zeros(3,3);
+  for (int i=0; i<3; i++)
+    for (int j=0; j<3; j++)
+      R(i,j)=m.Value(i+1,j+1);
+    
+  return R;
+}
+
+arma::mat transTrsf(const gp_Trsf& tr)
+{
+  gp_XYZ v=tr.TranslationPart();
+  return vec3( v.X(), v.Y(), v.Z() );
+}
 
 void Feature::read(std::istream& f)
 {

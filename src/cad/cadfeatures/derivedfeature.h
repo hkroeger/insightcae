@@ -45,6 +45,7 @@ public:
   virtual double density() const;
   virtual double areaWeight() const;
   virtual arma::mat modelCoG() const;
+  virtual arma::mat modelInertia() const;
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
 };
 

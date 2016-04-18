@@ -83,6 +83,11 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+gp_Trsf Place::transformation() const
+{
+  checkForBuildDuringAccess();
+  return *trsf_;
+}
 
 }
 }

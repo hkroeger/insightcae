@@ -45,15 +45,14 @@ Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
 
 void Mirror::build()
 {
-  gp_Trsf tr;
 
   if (!pl_->providesPlanarReference())
     throw insight::Exception("Mirror: planar reference required!");
   
-  tr.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
+  tr_.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
   
-  setShape(BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
-  copyDatumsTransformed(*m1_, tr);
+  setShape(BRepBuilderAPI_Transform(m1_->shape(), tr_).Shape());
+  copyDatumsTransformed(*m1_, tr_);
 }
 
 void Mirror::insertrule(parser::ISCADParser& ruleset) const
@@ -68,6 +67,12 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
       
     ))
   );
+}
+
+gp_Trsf Mirror::transformation() const
+{
+  checkForBuildDuringAccess();
+  return tr_;
 }
 
 }

@@ -197,6 +197,12 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+gp_Trsf Transform::transformation() const
+{
+  checkForBuildDuringAccess();
+  return *trsf_;
+}
+
 
 }
 }

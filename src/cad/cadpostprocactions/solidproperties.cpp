@@ -34,14 +34,22 @@ insight::cad::SolidProperties::SolidProperties(insight::cad::FeaturePtr model)
 
 void insight::cad::SolidProperties::build()
 {
-  cog_=model_->modelCoG();
-  cout<<"CoG="<<cog_<<endl;
-  
+  cout<<"######### SolidProperties Report ###########################################"<<endl;
   mass_=model_->mass();
   cout<<"mass="<<mass_<<endl;
 
   area_=model_->modelSurfaceArea();
   cout<<"area="<<area_<<endl;
+  
+  cog_=model_->modelCoG();
+  cout<<"CoG = ["<<endl
+    <<cog_
+    <<" ]"<<endl;
+  
+  inertia_=model_->modelInertia();
+  cout<<"inertia tensor = [ "<<endl
+       <<inertia_
+       <<" ]"<<endl;
   
   arma::mat bb=model_->modelBndBox(0.01);
   bb_pmin_=bb.col(0);

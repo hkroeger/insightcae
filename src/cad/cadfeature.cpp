@@ -431,7 +431,7 @@ double Feature::subsolidVolume(FeatureID i) const
 }
 
 
-arma::mat Feature::modelCoG() const
+arma::mat Feature::modelCoG(double density_ovr) const
 {
   checkForBuildDuringAccess();
 //   GProp_GProps props;
@@ -526,9 +526,15 @@ double Feature::maxDist(const arma::mat& p) const
 }
 
 
-arma::mat Feature::modelInertia() const
+arma::mat Feature::modelInertia(double density_ovr) const
 {
+  checkForBuildDuringAccess();
+
   updateVolProps();
+
+  double rho=density();
+  if (density_ovr>=0.) rho=density_ovr;
+
   GProp_PrincipalProps gpp = volprops_->PrincipalProperties();
   arma::mat T=arma::zeros(3,3);
   T.col(0)=vec3(gpp.FirstAxisOfInertia());
@@ -537,7 +543,7 @@ arma::mat Feature::modelInertia() const
   arma::mat Ip=arma::zeros(3,3);
   gpp.Moments( Ip(0,0), Ip(1,1), Ip(2,2) );
   
-  return T*Ip*T.t();
+  return rho*T*Ip*T.t();
 }
 
 arma::mat Feature::modelBndBox(double deflection) const
@@ -1668,22 +1674,45 @@ gp_Trsf Feature::transformation() const
   return gp_Trsf();
 }
 
-MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
+Mass_CoG_Inertia compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
   double m=0.0;
   arma::mat cog=vec3(0,0,0);
   
-  BOOST_FOREACH(const FeaturePtr& f, feats)
-  {
+  double mcs[feats.size()];
+  arma::mat cogs[feats.size()];
+  
+  int i;
+  i=-1; BOOST_FOREACH(const FeaturePtr& f, feats)
+  { i++;
+    
 //     std::cout<<density_ovr<<", "<<aw_ovr<<std::endl;
-    double mc=f->mass(density_ovr, aw_ovr);
+    mcs[i]=f->mass(density_ovr, aw_ovr);
+    cogs[i]=f->modelCoG(density_ovr);
+    
 //     std::cout<<"m="<<mc<<", cog="<<f->modelCoG()<<std::endl;
-    m += mc;
-    cog += f->modelCoG()*mc;
+    m += mcs[i];
+    cog += cogs[i]*mcs[i];
   }
   cog/=m;
+  
+  arma::mat inertia=arma::zeros(3,3);
+  i=-1; BOOST_FOREACH(const FeaturePtr& f, feats)
+  { i++;
+    arma::mat d = cogs[i] - cog;
+    arma::mat dt=arma::zeros(3,3);
+    dt(0,1)=-d(2);
+    dt(0,2)=d(1);
+    dt(1,2)=-d(0);
+    dt(1,0)=d(2);
+    dt(2,0)=-d(1);
+    dt(2,1)=d(0);
+    
+    inertia += f->modelInertia(density_ovr) + mcs[i]*dt.t()*dt;
+  }
+  
 //   std::cout<<"compound props: m="<<m<<", cog="<<cog<<std::endl;
-  return MassAndCoG(m, cog);
+  return Mass_CoG_Inertia(m, cog, inertia);
 }
 
 arma::mat rotTrsf(const gp_Trsf& tr)

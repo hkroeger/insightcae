@@ -89,20 +89,6 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
-arma::mat Compound::modelCoG() const
-{
-  checkForBuildDuringAccess();
-  std::vector<FeaturePtr> sfs;
-  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
-  {
-    sfs.push_back(c.second);
-  }
-  double grho=-1, gaw=-1;
-  if ( density_ /*&& (density_ovr<0)*/ ) grho=density_->value();
-  if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
-  MassAndCoG mco=compoundProps(sfs, grho, gaw);
-  return mco.second;
-}
 
 double Compound::mass(double density_ovr, double aw_ovr) const
 {
@@ -131,6 +117,37 @@ double Compound::mass(double density_ovr, double aw_ovr) const
   return m;
 }
 
+
+arma::mat Compound::modelCoG(double density_ovr) const
+{
+  checkForBuildDuringAccess();
+  std::vector<FeaturePtr> sfs;
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+  {
+    sfs.push_back(c.second);
+  }
+  double grho=-1, gaw=-1;
+  if ( density_  && (density_ovr<0) ) grho=density_->value();
+  if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
+  Mass_CoG_Inertia mco=compoundProps(sfs, grho, gaw);
+  return boost::fusion::at_c<1>(mco);
+}
+
+
+arma::mat Compound::modelInertia(double density_ovr) const
+{
+  checkForBuildDuringAccess();
+  std::vector<FeaturePtr> sfs;
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+  {
+    sfs.push_back(c.second);
+  }
+  double grho=-1, gaw=-1;
+  if ( density_  && (density_ovr<0) ) grho=density_->value();
+  if ( areaWeight_ /*&& (aw_ovr<0)*/ ) gaw=areaWeight_->value();
+  Mass_CoG_Inertia mco=compoundProps(sfs, grho, gaw);
+  return boost::fusion::at_c<2>(mco);
+}
 
 }
 }

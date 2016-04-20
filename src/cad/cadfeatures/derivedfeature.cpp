@@ -65,31 +65,6 @@ double DerivedFeature::areaWeight() const
     return basefeat_->areaWeight();
 }
 
-arma::mat DerivedFeature::modelCoG() const
-{
-  if (isTransformationFeature())
-    return rotTrsf(transformation())*basefeat_->modelCoG() + transTrsf(transformation());
-  else
-    return Feature::modelCoG();
-}
-
-arma::mat DerivedFeature::modelInertia() const
-{
-  if (isTransformationFeature())
-  {
-    arma::mat d=transTrsf(transformation());
-    arma::mat dt=arma::zeros(3,3);
-    dt(0,1)=-d(2);
-    dt(0,2)=d(1);
-    dt(1,2)=-d(0);
-    dt(1,0)=d(2);
-    dt(2,0)=-d(1);
-    dt(2,1)=d(0);
-    return basefeat_->modelInertia() +mass()*dt.t()*dt;
-  }
-  else
-    return Feature::modelInertia();
-}
 
 double DerivedFeature::mass(double density_ovr, double aw_ovr) const
 {
@@ -108,6 +83,40 @@ double DerivedFeature::mass(double density_ovr, double aw_ovr) const
   }
 //   std::cout<<"DerivedFeature: "<<rho<<" m="<<m<<" reloc:"<<isTransformationFeature()<<std::endl;
   return m;
+}
+
+arma::mat DerivedFeature::modelCoG(double density_ovr) const
+{
+  double rho=density_ovr/*, aw=aw_ovr*/;
+  if (density_ && (density_ovr<0.)) rho=density_->value();
+//   if (areaWeight_ && (aw_ovr<0.)) aw=areaWeight_->value();
+
+  if (isTransformationFeature())
+    return rotTrsf(transformation())*basefeat_->modelCoG(rho) + transTrsf(transformation());
+  else
+    return Feature::modelCoG(rho);
+}
+
+arma::mat DerivedFeature::modelInertia(double density_ovr) const
+{
+  double rho=density_ovr/*, aw=aw_ovr*/;
+  if (density_ && (density_ovr<0.)) rho=density_->value();
+//   if (areaWeight_ && (aw_ovr<0.)) aw=areaWeight_->value();
+
+  if (isTransformationFeature())
+  {
+    arma::mat d=transTrsf(transformation());
+    arma::mat dt=arma::zeros(3,3);
+    dt(0,1)=-d(2);
+    dt(0,2)=d(1);
+    dt(1,2)=-d(0);
+    dt(1,0)=d(2);
+    dt(2,0)=-d(1);
+    dt(2,1)=d(0);
+    return basefeat_->modelInertia(rho) + basefeat_->mass(rho)*dt.t()*dt;
+  }
+  else
+    return Feature::modelInertia(rho);
 }
 
 }

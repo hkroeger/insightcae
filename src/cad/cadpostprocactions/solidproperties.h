@@ -48,6 +48,11 @@ class SolidProperties
   arma::mat cog_;
   
   /**
+   * inertia tensor with respect to global axes and origin
+   */
+  arma::mat inertia_;
+  
+  /**
    * min point of BB
    */
   arma::mat bb_pmin_;

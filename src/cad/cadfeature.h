@@ -251,7 +251,7 @@ public:
   arma::mat faceCoG(FeatureID i) const;
   arma::mat subsolidCoG(FeatureID i) const;
   double subsolidVolume(FeatureID i) const;
-  virtual arma::mat modelCoG() const;
+  virtual arma::mat modelCoG(double density_ovr=-1.) const;
   virtual double modelVolume() const;
   virtual double modelSurfaceArea() const;
   virtual double minDist(const arma::mat& p) const;
@@ -261,7 +261,7 @@ public:
   /**
    * return  the inertia tensor with respect to the current CS and the global origin
    */
-  virtual arma::mat modelInertia() const;
+  virtual arma::mat modelInertia(double density_ovr=-1.) const;
   
   /**
    * return bounding box of model
@@ -366,9 +366,9 @@ public:
 };
 
 
-typedef std::pair<double, arma::mat> MassAndCoG;
+typedef boost::fusion::vector3<double, arma::mat, arma::mat> Mass_CoG_Inertia;
 
-MassAndCoG compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
+Mass_CoG_Inertia compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
 
 arma::mat rotTrsf(const gp_Trsf& tr);
 arma::mat transTrsf(const gp_Trsf& tr);

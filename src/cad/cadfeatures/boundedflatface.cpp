@@ -49,6 +49,8 @@ BoundedFlatFace::BoundedFlatFace(const std::vector<FeatureSetPtr>& edges)
 
 void BoundedFlatFace::build()
 {
+  ShapeFix_Face FixShape;
+
   if 
   (
     const std::vector<FeaturePtr>* edgesPtr 
@@ -93,11 +95,7 @@ void BoundedFlatFace::build()
     if (!fb.IsDone())
       throw insight::Exception("Failed to generate planar face!");
     
-    ShapeFix_Face FixShape;
     FixShape.Init(fb.Face());
-    FixShape.Perform();
-    
-    setShape(FixShape.Face());
   }
   else if 
   (
@@ -123,12 +121,19 @@ void BoundedFlatFace::build()
     if (!fb.IsDone())
       throw insight::Exception("Failed to generate planar face!");
 
-    ShapeFix_Face FixShape;
     FixShape.Init(fb.Face());
-    FixShape.Perform();
-    
-    setShape(FixShape.Face());
   }
+
+  FixShape.FixOrientation();
+  FixShape.FixIntersectingWires();
+  FixShape.FixWiresTwoCoincEdges();
+  FixShape.FixSmallAreaWire();
+  FixShape.FixMissingSeam();
+  FixShape.FixAddNaturalBound();
+  FixShape.FixPeriodicDegenerated();
+  FixShape.Perform();
+  
+  setShape(FixShape.Face());
 }
 
 BoundedFlatFace::operator const TopoDS_Face& () const

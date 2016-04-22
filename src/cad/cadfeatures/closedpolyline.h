@@ -17,38 +17,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_BOOLEANINTERSECTION_H
-#define INSIGHT_CAD_BOOLEANINTERSECTION_H
+#ifndef INSIGHT_CAD_CLOSEDPOLYLINE_H
+#define INSIGHT_CAD_CLOSEDPOLYLINE_H
 
-#include "cadparameters.h"
-#include "derivedfeature.h"
+#include "cadfeature.h"
 
-namespace insight
+namespace insight {
+namespace cad {
+
+
+class ClosedPolyline
+: public SingleFaceFeature
 {
-namespace cad
-{
-
-
-class BooleanIntersection
-: public DerivedFeature
-{
-  FeaturePtr m1_, m2_;
-  DatumPtr m2pl_;
+  std::vector<VectorPtr> pts_;
   
 public:
-  declareType("BooleanIntersection");
-  BooleanIntersection(const NoParameters& nop = NoParameters());
-  BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
-  BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
+  declareType("ClosedPolyline");
+  ClosedPolyline(const NoParameters& nop = NoParameters());
+  ClosedPolyline(std::vector<VectorPtr> pts);
+  operator const TopoDS_Face& () const;
   
   virtual void build();
-  
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
-FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2);
 
 }
 }
-
-#endif // INSIGHT_CAD_BOOLEANINTERSECTION_H
+#endif // INSIGHT_CAD_CLOSEDPOLYLINE_H

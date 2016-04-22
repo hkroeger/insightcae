@@ -50,6 +50,7 @@ add_sources(insightcad_SOURCES
  coil.cpp
  freecadmodel.cpp
  pyramid.cpp
+ closedpolyline.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

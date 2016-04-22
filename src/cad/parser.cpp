@@ -353,7 +353,12 @@ ISCADParser::ISCADParser(Model* model)
       *( 
         ('|' > r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanUnion>(_val, qi::_1)) ] )
 	|
-	('&' > r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ] )
+	('&' > (
+	   r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ]
+	 |
+	   r_datumExpression [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ] 
+	 )
+	)
        )
       ;
 
@@ -674,8 +679,16 @@ ISCADParser::ISCADParser(Model* model)
 // 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 // 	   )
       |
-       ( lit("coord") >> '(' >> r_vertexFeaturesExpression >> ')' )
-        [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
+       ( lit("coord") >> '(' >> 
+	  r_vertexFeaturesExpression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
+	  >> ')' )
+      |
+       ( lit("scoord") >> '(' >> 
+	  r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
+	    phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))
+	  )) ]
+	  >> ')' )
+        
       |
        ( /*lit("refpt") >> '(' >>*/ r_datumExpression /*>> ')'*/ )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]

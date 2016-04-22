@@ -64,7 +64,9 @@ void Sweep::build()
     TopoDS_Wire cursec;
     TopoDS_Shape cs=*skp;
     if (cs.ShapeType()==TopAbs_FACE)
+    {
      cursec=BRepTools::OuterWire(TopoDS::Face(cs));
+    }
     else if (cs.ShapeType()==TopAbs_WIRE)
     {
      cursec=TopoDS::Wire(cs);
@@ -75,6 +77,10 @@ void Sweep::build()
      w.Add(TopoDS::Edge(cs));
      cursec=w.Wire();
     }
+//     else if (cs.ShapeType()==TopAbs_SHELL)
+//     {
+//      cursec=BRepTools::OuterWire(TopoDS::Shell(cs));
+//     }
     else
     {
       throw insight::Exception("Incompatible section shape for Sweep!");

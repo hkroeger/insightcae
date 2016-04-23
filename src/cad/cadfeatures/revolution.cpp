@@ -38,25 +38,6 @@ Revolution::Revolution(const NoParameters& nop): Feature(nop)
 {}
 
 
-TopoDS_Shape makeRevolution(const Feature& sk, const arma::mat& p0, const arma::mat& axis, double ang, bool centered)
-{
-  if (!centered)
-  {
-    return BRepPrimAPI_MakeRevol( sk, gp_Ax1(to_Pnt(p0), gp_Dir(to_Vec(axis))), ang, centered ).Shape();
-  }
-  else
-  {
-    gp_Trsf trsf;
-    gp_Vec ax=to_Vec(axis);
-    ax.Normalize();
-    trsf.SetRotation(gp_Ax1(to_Pnt(p0), ax), -0.5*ang);
-    return BRepPrimAPI_MakeRevol
-    ( 
-      BRepBuilderAPI_Transform(sk, trsf).Shape(), 
-      gp_Ax1(to_Pnt(p0), gp_Dir(ax)), ang
-    ).Shape();
-  }
-}
 
 Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
 : sk_(sk), p0_(p0), axis_(axis), angle_(angle), centered_(centered)
@@ -64,7 +45,24 @@ Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr an
 
 void Revolution::build()
 {
-  setShape(makeRevolution(*sk_, p0_->value(), axis_->value(), angle_->value(), centered_));
+  if (!centered_)
+  {
+    setShape(BRepPrimAPI_MakeRevol( *sk_, gp_Ax1(to_Pnt(p0_->value()), gp_Dir(to_Vec(axis_->value()))), angle_->value(), centered_ ).Shape());
+  }
+  else
+  {
+    gp_Trsf trsf;
+    gp_Vec ax=to_Vec(axis_->value());
+    ax.Normalize();
+    trsf.SetRotation(gp_Ax1(to_Pnt(p0_->value()), ax), -0.5*angle_->value());
+    setShape(BRepPrimAPI_MakeRevol
+    ( 
+      BRepBuilderAPI_Transform(*sk_, trsf).Shape(), 
+      gp_Ax1(to_Pnt(p0_->value()), gp_Dir(ax)), angle_->value()
+    ).Shape());
+  }
+  copyDatums(*sk_);
+//   setShape(makeRevolution(*sk_, p0_->value(), axis_->value(), angle_->value(), centered_));
 }
 
 void Revolution::insertrule(parser::ISCADParser& ruleset) const

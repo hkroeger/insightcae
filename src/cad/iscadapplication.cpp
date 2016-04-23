@@ -1000,7 +1000,7 @@ void ISCADMainWindow::onEditorSelectionChanged()
 {
   QTextDocument *doc = editor_->document();
   QString word=editor_->textCursor().selectedText();
-  if (!word.contains('|'))
+  if (!(word.contains('|')||word.contains('*')))
   {
     highlighter_->setHighlightWord(word);
     highlighter_->rehighlight();

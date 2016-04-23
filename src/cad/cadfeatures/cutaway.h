@@ -31,11 +31,14 @@ class Cutaway
   FeaturePtr model_;
   VectorPtr p0_;
   VectorPtr n_;
+  ConstDatumPtr pl_;
+  bool inverted_;
   
 public:
   declareType("Cutaway");
   Cutaway(const NoParameters& nop = NoParameters());
   Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n);
+  Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -62,6 +62,8 @@ void Extrusion::build()
       ).Shape()
     );
   }
+  
+  copyDatums(*sk_);
 }
 
 

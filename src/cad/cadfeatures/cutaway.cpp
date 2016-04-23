@@ -19,6 +19,8 @@
 
 #include "cutaway.h"
 #include "quad.h"
+#include "datum.h"
+
 #include "booleanintersection.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -45,12 +47,37 @@ Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
 {
 }
 
+Cutaway::Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted)
+: DerivedFeature(model), model_(model), pl_(pl), inverted_(inverted)
+{
+}
+
 void Cutaway::build()
 {
-  ParameterListHash h(this);
-  h+=*model_;
-  h+=p0_->value();
-  h+=n_->value();
+//   ParameterListHash h(this);
+//   h+=*model_;
+//   h+=p0_->value();
+//   h+=n_->value();
+  
+  arma::mat p0, n;
+  
+  if (pl_)
+  {
+    if (!pl_->providesPlanarReference())
+      throw insight::Exception("Cutaway: Given datum does not provide a planar reference!");
+    gp_Ax3 pl=pl_->plane();
+    
+    p0=vec3(pl.Location());
+    n=vec3(pl.Direction());
+    if (inverted_) n*=-1.;
+  }
+  else
+  {
+    if ((!p0_) || (!n_))
+      throw insight::Exception("Cutaway: origin and normal direction undefined!");
+    p0=p0_->value();
+    n=n_->value();
+  }
   
 //   if (!cache.contains(h))
   {
@@ -59,25 +86,25 @@ void Cutaway::build()
     double L=10.*norm(bb.col(1)-bb.col(0), 2);
     std::cout<<"L="<<L<<std::endl;
     
-    arma::mat ex=cross(n_->value(), vec3(1,0,0));
+    arma::mat ex=cross(n, vec3(1,0,0));
     if (norm(ex,2)<1e-8)
-      ex=cross(n_->value(), vec3(0,1,0));
+      ex=cross(n, vec3(0,1,0));
     ex/=norm(ex,2);
     
-    arma::mat ey=cross(n_->value(),ex);
+    arma::mat ey=cross(n,ex);
     ey/=norm(ey,2);
     
     std::cout<<"Quad"<<std::endl;
   #warning Relocate p0 in plane to somewhere nearer to model center!
     Quad q
     (
-      matconst(p0_->value()-0.5*L*(ex+ey)), 
+      matconst(p0-0.5*L*(ex+ey)), 
       matconst(L*ex), 
       matconst(L*ey)
     );
     this->setShape(q);
   //   std::cout<<"Airspace"<<std::endl;
-    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n_->value()) );
+    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
     
   //   SolidModel(airspace).saveAs("airspace.stp");
     providedSubshapes_["AirSpace"]=FeaturePtr(new Feature(airspace));
@@ -139,9 +166,14 @@ void Cutaway::insertrule(parser::ISCADParser& ruleset) const
     "Cutaway",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> (
+     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression )
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cutaway>(qi::_1, qi::_2, qi::_3)) ]
-      
+      |
+     ( ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression 
+        >> ( (',' >> qi::lit("inverted") >> qi::attr(true) ) | (qi::attr(false)) ) )
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cutaway>(qi::_1, qi::_2, qi::_3)) ]
+     ) >> ')' )
     ))
   );
 }

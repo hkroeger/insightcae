@@ -62,6 +62,11 @@ void Quad::build()
   w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
   w.Add(BRepBuilderAPI_MakeEdge(p3, p4));
   w.Add(BRepBuilderAPI_MakeEdge(p4, p1));
+
+  refpoints_["c1"]=vec3(p1);
+  refpoints_["c2"]=vec3(p2);
+  refpoints_["c3"]=vec3(p3);
+  refpoints_["c4"]=vec3(p4);
   
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
   providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));

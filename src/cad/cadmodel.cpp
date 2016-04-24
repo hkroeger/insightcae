@@ -217,6 +217,7 @@ std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
     name=str(format(nametempl)%i);
     if (i>1000)
       throw insight::Exception("Model::addPostprocActionUnnamed: No valid name found within 1000 attempts!");
+    i++;
   }
 //   while (postprocActions_.find(name)!=postprocActions_.end());
   while (postprocActions_.find(name));

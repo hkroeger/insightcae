@@ -12,6 +12,7 @@ nb?=7;
 db?=1.15*((0.5*Da-ta)-(0.5*Di+ti));
 rtraj=0.5*((0.5*Da-ta)+(0.5*Di+ti));
 
+ctr_loc=O;
 ctr=0.5*w*EX; # mid center of bearing
 ctr_ops=w*EX; # opposite center of bearing
 
@@ -42,6 +43,10 @@ CircularPattern(
  Sphere(ctr+rtraj*EY, db),
  O, (2*M_PI/nb)*EX, nb
 );
+
+Lbb?=3*Da;
+bore_set=
+Cylinder(ctr_loc, ax Lbb*EX, Da);
 
 ring_i->density=rho;
 ring_o->density=rho;

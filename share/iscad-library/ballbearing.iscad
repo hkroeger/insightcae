@@ -1,0 +1,48 @@
+rho?=7.8e-6;
+
+Di?=10;
+Da?=26;
+w?=8;
+
+ttot=0.5*(Da-Di);
+ti?=ttot/4;
+ta?=ttot/5;
+
+nb?=7;
+db?=1.15*((0.5*Da-ta)-(0.5*Di+ti));
+rtraj=0.5*((0.5*Da-ta)+(0.5*Di+ti));
+
+ctr=0.5*w*EX; # mid center of bearing
+ctr_ops=w*EX; # opposite center of bearing
+
+tr=
+Torus(ctr, 2*rtraj*EX, db);
+
+ring_i_0=
+Cylinder(O, ax w*EX, Di+2*ti, Di)-tr;
+
+ring_i_0_inface=ring_i_0?face('minimal(cylRadius)');
+ring_i:
+Fillet(
+ ring_i_0?edges('isCircle && isCoincident %0', asModel(ring_i_0_inface)?alledges), 
+ 0.25*ti
+);
+
+ring_o_0=
+Cylinder(O, ax w*EX, Da, Da-2*ta)-tr;
+ring_o_0_inface=ring_o_0?face('maximal(cylRadius)');
+ring_o:
+Fillet(
+ ring_o_0?edges('isCircle && isCoincident %0', asModel(ring_o_0_inface)?alledges), 
+ 0.25*ta
+);
+
+balls:
+CircularPattern(
+ Sphere(ctr+rtraj*EY, db),
+ O, (2*M_PI/nb)*EX, nb
+);
+
+ring_i->density=rho;
+ring_o->density=rho;
+balls->density=rho;

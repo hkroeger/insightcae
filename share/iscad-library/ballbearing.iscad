@@ -38,9 +38,12 @@ Fillet(
  0.25*ta
 );
 
+ball=Sphere(ctr+rtraj*EY, db);
+ball->density=rho;
+
 balls:
 CircularPattern(
- Sphere(ctr+rtraj*EY, db),
+ ball,
  O, (2*M_PI/nb)*EX, nb
 );
 
@@ -50,4 +53,3 @@ Cylinder(ctr_loc, ax Lbb*EX, Da);
 
 ring_i->density=rho;
 ring_o->density=rho;
-balls->density=rho;

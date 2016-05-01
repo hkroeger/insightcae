@@ -46,7 +46,11 @@ NacaFourDigit::NacaFourDigit(const std::string& code, VectorPtr p0, VectorPtr ex
 
 void NacaFourDigit::build()
 {
-  double tc=0.0;
+  double 
+    tc=0.0, // thickness
+    m=0.0, // max camber
+    p=0.0; // max chamber location
+    
   if (code_.size()!=4)
   {
     throw insight::Exception("Invalid NACA code! (was "+code_+")");
@@ -55,6 +59,10 @@ void NacaFourDigit::build()
   {
     int t100=atoi(code_.substr(2, 2).c_str());
     tc=double(t100)/100.;
+    int m100=atoi(code_.substr(0, 1).c_str());
+    m=double(m100)/100.;
+    int p10=atoi(code_.substr(1, 1).c_str());
+    p=double(p10)/10.;
   }
   arma::mat ex=ex_->value();
   arma::mat ez=ez_->value();
@@ -64,24 +72,47 @@ void NacaFourDigit::build()
   ez/=arma::norm(ez,2);
   arma::mat ey=arma::cross(ez, ex);
   
-  cout<<"L="<<L<<", tc="<<tc<<endl;
+//   cout<<"L="<<L<<", tc="<<tc<<endl;
   
+  // create support points
+  // ===================================================
   int np=25;
   TColgp_Array1OfPnt pts_up(1, np), pts_lo(1, np);
-  
+
   for (int j=0; j<np-1; j++) 
   {
     double xc=0.5*(1.-::cos(M_PI*double(j) / double(np-1)));
-    double yc=5.*tc*(0.2969*sqrt(xc)-0.1260*xc-0.3516*pow(xc,2)+0.2843*pow(xc,3)-0.1015*pow(xc,4));
+    double t=5.*tc*(0.2969*sqrt(xc)-0.1260*xc-0.3516*pow(xc,2)+0.2843*pow(xc,3)-0.1015*pow(xc,4));
     
-    cout<<xc<<" "<<yc<<endl;
+    double yc=0.0, dycdx=0.0;
+    if (fabs(m)>1e-10)
+    {
+      if (xc<p)
+      {
+	yc=m*xc/p/p * (2.*p - xc);
+	dycdx=2*m/p/p * (p - xc);
+      }
+      else
+      {
+	yc=m*(1.-xc)/pow(1-p,2) * (1.+xc-2*p);
+	dycdx=2*m/pow(1-p,2) * (p - xc);
+      }
+    }
+    double theta=atan(dycdx);
+    pts_up.SetValue(j+1, to_Pnt(p0_->value() +(xc-t*::sin(theta))*L*ex +(yc+t*::cos(theta))*L*ey));
+    pts_lo.SetValue(j+1, to_Pnt(p0_->value() +(xc+t*::sin(theta))*L*ex +(yc-t*::cos(theta))*L*ey));
+//     pts_up.SetValue(j+1, to_Pnt(p0_->value() +xc*L*ex +(yc+t)*L*ey));
+//     pts_lo.SetValue(j+1, to_Pnt(p0_->value() +xc*L*ex +(yc-t)*L*ey));
     
-    pts_up.SetValue(j+1, to_Pnt(p0_->value()+xc*L*ex+yc*L*ey));
-    pts_lo.SetValue(j+1, to_Pnt(p0_->value()+xc*L*ex-yc*L*ey));
+//     std::cout<<xc<<" "<<(yc+t)<<" "<<(yc-t)<<std::endl;
   }
+
   pts_up.SetValue(np, to_Pnt(p0_->value()+L*ex));
   pts_lo.SetValue(np, to_Pnt(p0_->value()+L*ex));
   
+  
+  // build splines from points
+  // ===================================================
   GeomAPI_PointsToBSpline splbuilderup(pts_up);
   Handle_Geom_BSplineCurve crvup=splbuilderup.Curve();
   TopoDS_Edge eup=BRepBuilderAPI_MakeEdge(crvup, crvup->FirstParameter(), crvup->LastParameter());

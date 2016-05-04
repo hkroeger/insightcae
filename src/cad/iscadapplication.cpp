@@ -163,8 +163,13 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags)
 {  
+  QSplitter *spl0=new QSplitter(Qt::Vertical);
   QSplitter *spl=new QSplitter(Qt::Horizontal);
-  setCentralWidget(spl);
+  setCentralWidget(spl0);
+  spl0->addWidget(spl);
+  log_=new QTextEdit;
+  logger_=new Q_DebugStream(std::cout, log_);
+  spl0->addWidget(log_);
   context_=new QoccViewerContext;
   
   viewer_=new QoccViewWidget(context_->getContext(), spl);
@@ -1186,6 +1191,7 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
 
 void ISCADMainWindow::rebuildModel()
 {
+  log_->clear();
   //checked_modelsteps_.clear();
   for (int i=0; i<modelsteplist_->count(); i++)
   {

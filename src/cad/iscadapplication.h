@@ -31,6 +31,7 @@
 // #include "cadfeatures.h"
 
 #include "qoccviewwidget.h"
+#include "qdebugstream.h"
 
 #ifndef Q_MOC_RUN
 #include "cadfeaturetransient.h"
@@ -249,6 +250,9 @@ protected:
   std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
   
   std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
+  
+  Q_DebugStream* logger_;
+  QTextEdit* log_;
 
 protected:
   void clearDerivedData();

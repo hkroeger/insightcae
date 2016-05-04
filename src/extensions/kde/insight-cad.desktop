@@ -8,7 +8,8 @@ MimeType=application/insight-iscad;
 Categories=Graphics;VectorGraphics;Engineering;Construction;2DGraphics;Science;
 #Actions=open;
 #[Desktop Action open]
-Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
+#Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
+Exec=/bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
 Icon=utilities-terminal
 Name=ISCAD editor
 Name[de]=ISCAD-Editor

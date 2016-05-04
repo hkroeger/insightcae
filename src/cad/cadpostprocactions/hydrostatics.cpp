@@ -53,6 +53,7 @@ void Hydrostatics::build()
   elat_=arma::cross(nsurf_->value(), elong_->value());
   
   Cutaway submerged_volume(hullvolume_, psurf_, nsurf_);
+  submerged_volume.build();
   V_=submerged_volume.modelVolume();
   cout<<"displacement V="<<V_<<endl;
   
@@ -65,10 +66,19 @@ void Hydrostatics::build()
 
   // write surface for debug
   TopoDS_Shape issh=static_cast<const TopoDS_Shape&>(*csf);
-  BRepTools::Write(issh, "test.brep");
+  
+  std::cout<<issh<<std::endl;
+  
+  TopExp_Explorer ex(issh, TopAbs_FACE);
+  TopoDS_Face f=TopoDS::Face(ex.Current());
+  if (ex.More()) { std::cout<<"another"<<std::endl; ex.Next();
+  if (ex.More()) std::cout<<"yet another"<<std::endl; }
+//     throw insight::Exception("cut surface consists of more than a single face!");
+  
+  BRepTools::Write(f, "test.brep");
   
   GProp_GProps props;
-  BRepGProp::SurfaceProperties(issh, props);
+  BRepGProp::SurfaceProperties(f, props);
   GProp_PrincipalProps pcp = props.PrincipalProperties();
   arma::mat I=arma::zeros(3);
   pcp.Moments(I(0), I(1), I(2));

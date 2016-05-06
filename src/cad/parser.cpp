@@ -586,6 +586,7 @@ ISCADParser::ISCADParser(Model* model)
         model_->scalarSymbols()[ qi::_val = qi::_1 ]
       | ( lit("volume") > '(' > r_solidmodel_expression > ')' ) 
 	[ _val = phx::construct<ScalarPtr>(phx::new_<FeatureVolume>(qi::_1)) ]
+      | ( lit("mag") > '(' > r_vectorExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<VectorMag>(qi::_1)) ]
       | ( lit("sqrt") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
       | ( lit("sin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]
       | ( lit("cos") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_cos>(qi::_1)) ]
@@ -678,6 +679,15 @@ ISCADParser::ISCADParser(Model* model)
 // 	   (
 // 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 // 	   )
+      |
+       ( lit("mechanism_TwoLever") > '(' 
+          > r_scalarExpression > ','
+          > r_vectorExpression > ','
+          > r_scalarExpression > ','
+          > r_vectorExpression > ','
+          > r_vectorExpression
+	  > ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_TwoLever>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
       |
        ( lit("coord") >> '(' >> 
 	  r_vertexFeaturesExpression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]

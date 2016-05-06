@@ -82,6 +82,16 @@ public:
   virtual double value() const;
 };
 
+class VectorMag
+: public insight::cad::Scalar
+{
+  VectorPtr p1_;
+  
+public:
+  VectorMag(VectorPtr p1);
+  virtual double value() const;
+};
+
 #define INSIGHT_CAD_UNARY_FUNCTION(FUNCTION) \
 class Scalar_##FUNCTION\
 : public insight::cad::Scalar\

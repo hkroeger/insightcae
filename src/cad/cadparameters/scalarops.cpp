@@ -76,3 +76,12 @@ double insight::cad::VectorComponent::value() const
 {
   return p1_->value()(cmpt_);
 }
+
+insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
+: p1_(p1)
+{}
+
+double insight::cad::VectorMag::value() const
+{
+  return arma::norm(p1_->value());
+}

@@ -118,3 +118,26 @@ arma::mat insight::cad::RotatedVector::value() const
 {
   return rotMatrix(ang_->value(), ax_->value()) * v_->value();
 }
+
+insight::cad::Mechanism_TwoLever::Mechanism_TwoLever(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax)
+: L_(L), c2_(c2), r2_(r2), p1_(p1), eax_(eax)
+{
+}
+
+arma::mat insight::cad::Mechanism_TwoLever::value() const
+{
+  arma::mat edelta = c2_->value() - p1_->value();
+  arma::mat eax=eax_->value();
+  eax/=arma::norm(eax);
+  double delta=arma::norm(edelta);
+  edelta /= delta;
+  double phi = 
+   acos(
+     ( pow(delta,2) + pow(L_->value(),2) - pow(r2_->value(),2) )
+     /
+     ( 2.*delta*L_->value() )
+   );
+   
+  return p1_->value() + L_->value()*(rotMatrix(phi, eax)*edelta);
+}
+

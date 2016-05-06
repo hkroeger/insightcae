@@ -121,6 +121,19 @@ public:
 };
 
 
+class Mechanism_TwoLever
+: public insight::cad::Vector
+{
+  ScalarPtr L_;
+  VectorPtr c2_; 
+  ScalarPtr r2_;
+  VectorPtr p1_, eax_;
+public:
+  Mechanism_TwoLever(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax);
+  virtual arma::mat value() const;
+};
+
+
 }
 }
 

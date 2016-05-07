@@ -680,14 +680,22 @@ ISCADParser::ISCADParser(Model* model)
 // 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 // 	   )
       |
-       ( lit("mechanism_TwoLever") > '(' 
+       ( lit("Mechanism_CrankDrive") > '(' 
           > r_scalarExpression > ','
           > r_vectorExpression > ','
           > r_scalarExpression > ','
           > r_vectorExpression > ','
           > r_vectorExpression
 	  > ')' )
-        [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_TwoLever>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+        [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_CrankDrive>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      |
+       ( lit("Mechanism_Slider") > '(' 
+          > r_scalarExpression > ','
+          > r_vectorExpression > ','
+          > r_vectorExpression > ','
+          > r_vectorExpression
+	  > ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_Slider>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       |
        ( lit("coord") >> '(' >> 
 	  r_vertexFeaturesExpression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]

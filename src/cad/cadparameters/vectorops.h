@@ -121,7 +121,7 @@ public:
 };
 
 
-class Mechanism_TwoLever
+class Mechanism_CrankDrive
 : public insight::cad::Vector
 {
   ScalarPtr L_;
@@ -129,7 +129,27 @@ class Mechanism_TwoLever
   ScalarPtr r2_;
   VectorPtr p1_, eax_;
 public:
-  Mechanism_TwoLever(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax);
+  /**
+  * @L con rod length
+  * @c2 crank shaft center
+  * @r2 crank pin radius
+  * @p1 upper con rod eye location
+  * @eax direction of crank shaft axis
+  */
+  Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax);
+  virtual arma::mat value() const;
+};
+
+
+class Mechanism_Slider
+: public insight::cad::Vector
+{
+  ScalarPtr L_;
+  VectorPtr p0_; 
+  VectorPtr psl_; 
+  VectorPtr esl_; 
+public:
+  Mechanism_Slider(ScalarPtr L, VectorPtr p0, VectorPtr psl, VectorPtr esl);
   virtual arma::mat value() const;
 };
 

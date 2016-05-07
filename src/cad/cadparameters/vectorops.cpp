@@ -119,12 +119,12 @@ arma::mat insight::cad::RotatedVector::value() const
   return rotMatrix(ang_->value(), ax_->value()) * v_->value();
 }
 
-insight::cad::Mechanism_TwoLever::Mechanism_TwoLever(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax)
+insight::cad::Mechanism_CrankDrive::Mechanism_CrankDrive(ScalarPtr L, VectorPtr c2, ScalarPtr r2, VectorPtr p1, VectorPtr eax)
 : L_(L), c2_(c2), r2_(r2), p1_(p1), eax_(eax)
 {
 }
 
-arma::mat insight::cad::Mechanism_TwoLever::value() const
+arma::mat insight::cad::Mechanism_CrankDrive::value() const
 {
   arma::mat edelta = c2_->value() - p1_->value();
   arma::mat eax=eax_->value();
@@ -138,6 +138,39 @@ arma::mat insight::cad::Mechanism_TwoLever::value() const
      ( 2.*delta*L_->value() )
    );
    
+  std::cout<<"phi="<<phi<<std::endl;
+   
   return p1_->value() + L_->value()*(rotMatrix(phi, eax)*edelta);
+}
+
+insight::cad::Mechanism_Slider::Mechanism_Slider(ScalarPtr L, VectorPtr p0, VectorPtr psl, VectorPtr esl)
+: L_(L), p0_(p0), psl_(psl), esl_(esl)
+{}
+
+arma::mat insight::cad::Mechanism_Slider::value() const
+{
+  arma::mat edelta=p0_->value()-psl_->value();
+  double delta=arma::norm(edelta);
+  edelta/=delta;
+  arma::mat esl=esl_->value();
+  esl/=arma::norm(esl);
+  double cosa=arma::dot(edelta, esl);
+  double r=L_->value();
+  
+  double f1=cosa*delta;
+  double f2=sqrt(r*r-delta*delta+pow(cosa*delta,2));
+  std::cout<<"f1="<<f1<<", f2="<<f2<<std::endl;
+  
+  double x1=f1+f2;
+  double x2=f1-f2;
+  std::cout<<"x1="<<x1<<", x2="<<x2<<std::endl;
+  if (fabs(x1)<fabs(x2))
+  {
+    return psl_->value() + x1*esl;
+  }
+  else
+  {
+    return psl_->value() + x2*esl;
+  }
 }
 

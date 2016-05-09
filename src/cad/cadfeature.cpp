@@ -1044,7 +1044,8 @@ Feature::View Feature::createView
   const arma::mat n,
   bool section,
   const arma::mat up,
-  bool poly
+  bool poly,
+  bool skiphl
 ) const
 {
   View result_view;
@@ -1146,7 +1147,10 @@ Feature::View Feature::createView
   }
   
   result_view.visibleEdges=allVisible;
-  result_view.hiddenEdges=HiddenEdges;
+  if (!skiphl)
+  {
+    result_view.hiddenEdges=HiddenEdges;
+  }
   
   return result_view;
   

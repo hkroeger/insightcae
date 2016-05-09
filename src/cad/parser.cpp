@@ -264,9 +264,9 @@ ISCADParser::ISCADParser(Model* model)
 
 
     r_postproc =
-      ( lit("DXF") > '(' > r_path > ')' > lit("<<") > r_solidmodel_expression > *(r_viewDef) > ';' ) 
+      ( lit("DXF") > '(' > r_path > ')' > lit("<<") > ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' ) 
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
-		    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2, qi::_3))) ]
+		    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
       |
       ( lit("saveAs") > '(' > r_path > ')' > lit("<<") > r_solidmodel_expression > ';' ) 
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
@@ -325,6 +325,7 @@ ISCADParser::ISCADParser(Model* model)
 	  >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
 	  >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
 	  >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
+	  >> ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
 	  >> ')' 
 	)
       ;
@@ -593,7 +594,6 @@ ISCADParser::ISCADParser(Model* model)
       | ( lit("tan") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_tan>(qi::_1)) ]
       | ( lit("asin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_asin>(qi::_1)) ]
       | ( lit("acos") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_acos>(qi::_1)) ]
-      | ( lit("atan") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan>(qi::_1)) ]
       | ( lit("ceil") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_ceil>(qi::_1)) ]
       | ( lit("floor") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_floor>(qi::_1)) ]
       | ( lit("round") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_round>(qi::_1)) ]
@@ -601,6 +601,7 @@ ISCADParser::ISCADParser(Model* model)
         [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_pow>(qi::_1, qi::_2)) ]
       | ( lit("atan2") > '(' > r_scalarExpression > ',' > r_scalarExpression > ')' ) 
         [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan2>(qi::_1, qi::_2)) ]
+      | ( lit("atan") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_atan>(qi::_1)) ]
       | ('(' >> r_scalarExpression >> ')') [ _val = qi::_1 ]
       
       | ( lit("TableLookup") > '(' > r_identifier > ',' 

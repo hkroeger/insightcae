@@ -321,7 +321,8 @@ public:
     const arma::mat n,
     bool section,
     const arma::mat up=arma::mat(),
-    bool poly=false
+    bool poly=false,
+    bool skiphl=false
   ) const;
   
   friend std::ostream& operator<<(std::ostream& os, const Feature& m);

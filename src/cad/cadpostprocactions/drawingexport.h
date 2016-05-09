@@ -29,23 +29,21 @@ namespace insight
 namespace cad 
 {
 
-typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool, bool > DrawingViewDefinition;
-typedef std::vector<DrawingViewDefinition> DrawingViewDefinitions;
+typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool, bool, bool > DrawingViewDefinition;
+typedef boost::fusion::vector2<FeaturePtr, std::vector<DrawingViewDefinition> > DrawingViewDefinitions;
 
 class DrawingExport 
 : public PostprocAction
 {
   boost::filesystem::path file_; 
-  FeaturePtr model_; 
-  DrawingViewDefinitions viewdefs_;
+  std::vector<DrawingViewDefinitions> viewdefs_;
   TopoDS_Shape shape_;
 
 public:
   DrawingExport
   (
-    const boost::filesystem::path& file, 
-    FeaturePtr model, 
-    const DrawingViewDefinitions& viewdefs
+    const boost::filesystem::path& file,
+    std::vector<DrawingViewDefinitions> viewdefs
   );
   
   virtual void build();

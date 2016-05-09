@@ -28,34 +28,38 @@ namespace cad
   
 DrawingExport::DrawingExport
 (
-  const boost::filesystem::path& file, 
-  FeaturePtr model, 
-  const DrawingViewDefinitions& viewdefs
+  const boost::filesystem::path& file,
+  std::vector<DrawingViewDefinitions> viewdefs
 )
 : file_(file),
-  model_(model),
   viewdefs_(viewdefs)
 {}
 
 void DrawingExport::build()
 {
   Feature::Views views;
-  BOOST_FOREACH(const DrawingViewDefinition& vd, viewdefs_)
+  BOOST_FOREACH(const DrawingViewDefinitions& vds, viewdefs_)
   {
-    bool sec=boost::get<4>(vd);
-    bool poly=boost::get<5>(vd);
-    arma::mat up;
-    VectorPtr upd=boost::get<3>(vd);
-    if (upd)
-      up=upd->value();
-    views[boost::get<0>(vd)]=model_->createView
-    (
-      boost::get<1>(vd)->value(),
-      boost::get<2>(vd)->value(),
-      sec,
-      up,
-      poly
-    );
+    FeaturePtr model_=boost::fusion::at_c<0>(vds);
+    BOOST_FOREACH(const DrawingViewDefinition& vd, boost::fusion::at_c<1>(vds))
+    {
+      bool sec=boost::get<4>(vd);
+      bool poly=boost::get<5>(vd);
+      bool skiphl=boost::get<6>(vd);
+      arma::mat up;
+      VectorPtr upd=boost::get<3>(vd);
+      if (upd)
+	up=upd->value();
+      views[boost::get<0>(vd)]=model_->createView
+      (
+	boost::get<1>(vd)->value(),
+	boost::get<2>(vd)->value(),
+	sec,
+	up,
+	poly,
+	skiphl
+      );
+    }
   }
   shape_=views.begin()->second.visibleEdges;
   {

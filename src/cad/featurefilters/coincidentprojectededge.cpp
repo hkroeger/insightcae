@@ -116,7 +116,7 @@ bool coincidentProjectedEdge::checkMatch(FeatureID feature) const
       arma::mat p=insight::Vector(qud.Value(j)).t();
 
       arma::mat d=samplePts_ - p*arma::ones<arma::mat>(1,samplePts_.n_cols);
-      arma::mat ds=sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
+      arma::mat ds=arma::sqrt( d.row(0)%d.row(0) + d.row(1)%d.row(1) + d.row(2)%d.row(2) );
 
       double md=arma::as_scalar(arma::min(ds, 1));
       

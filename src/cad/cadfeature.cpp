@@ -522,7 +522,7 @@ double Feature::maxDist(const arma::mat& p) const
   {
     maxdistsq=std::max(maxdistsq, epf.SquareDistance(i));
   }
-  return sqrt(maxdistsq);
+  return ::sqrt(maxdistsq);
 }
 
 

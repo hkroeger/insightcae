@@ -147,16 +147,23 @@ void GmshCase::doMeshing
 {
 //   boost::filesystem::path inputFile = boost::filesystem::unique_path("%%%%-%%%%-%%%%.geo");
   boost::filesystem::path tmpWorkDir = boost::filesystem::unique_path();
-  create_directories(tmpWorkDir);
-  boost::filesystem::path inputFile = tmpWorkDir / (outputMeshFile.stem().string() + ".geo");
-  boost::filesystem::path geomFile = tmpWorkDir / (outputMeshFile.stem().string() + ".brep");
-  
+
   int otype=-1;
   std::string ext=outputMeshFile.extension().string();
   if (ext==".msh") otype=1;
   else if (ext==".unv") otype=2;
   else if (ext==".med") otype=33;
+  else if (ext==".geo") 
+  {
+    otype=-1;
+    tmpWorkDir = outputMeshFile.stem().string() + "_gmsh";
+    keeptmpdir=true;
+  }
   else throw insight::Exception("Mesh file extension "+ext+" is unrecognized!");
+  
+  create_directories(tmpWorkDir);
+  boost::filesystem::path inputFile = tmpWorkDir / (outputMeshFile.stem().string() + ".geo");
+  boost::filesystem::path geomFile = tmpWorkDir / (outputMeshFile.stem().string() + ".brep");
   
   std::ofstream f(inputFile.c_str());
   
@@ -221,15 +228,23 @@ void GmshCase::doMeshing
   "Mesh.SecondOrderLinear="<<secondOrderLinear_<<";\n"
   "Mesh.Smoothing = 10;\n"
   "Mesh.SmoothNormals = 1;\n"
-  "Mesh.Explode = 1;\n"
-  "Mesh.Format="<< otype <<"; /* 1=msh, 2=unv, 10=automatic, 19=vrml, 27=stl, 30=mesh, 31=bdf, 32=cgns, 33=med, 40=ply2 */\n";
+  "Mesh.Explode = 1;\n";
+  
+  if (otype>=0)
+  {
+    f<<
+    "Mesh.Format="<< otype <<"; /* 1=msh, 2=unv, 10=automatic, 19=vrml, 27=stl, 30=mesh, 31=bdf, 32=cgns, 33=med, 40=ply2 */\n";
+  }
 
   f.close();
 
-  std::string cmd="gmsh -3 -v 2 "+boost::filesystem::absolute(inputFile).string()+" -o "+boost::filesystem::absolute(outputMeshFile).string();
-  int r=system(cmd.c_str());
-  if (r)
-    throw insight::Exception("Execution of gmsh failed!");
+  if (otype>=0)
+  {
+    std::string cmd="gmsh -3 -v 2 "+boost::filesystem::absolute(inputFile).string()+" -o "+boost::filesystem::absolute(outputMeshFile).string();
+    int r=system(cmd.c_str());
+    if (r)
+      throw insight::Exception("Execution of gmsh failed!");
+  }
   
 //   boost::filesystem::remove(inputFile);
 //   boost::filesystem::remove(geomFile);

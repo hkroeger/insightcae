@@ -103,7 +103,7 @@ void Coil::build()
       if (i<(nv-1)) 
       {
 	ebu=cb*eb+vdir*d*ez;
-	fac=1./::cos(atan(d/cb));
+	fac=1./::cos(::atan(d/cb));
       }
       else
       {

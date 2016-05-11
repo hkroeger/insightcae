@@ -177,9 +177,14 @@ template<> struct DotResult<arma::mat, arma::mat> {
 };
 
 UNARY_FUNCTION_QTC(transposed, (trans(value)) );
-UNARY_FUNCTION_QTC(sin, (sin(value)) );
-UNARY_FUNCTION_QTC(cos, (cos(value)) );
-UNARY_FUNCTION_QTC(sqr, (pow(value,2)) );
+UNARY_FUNCTION_QTC(sin, (::sin(value)) );
+UNARY_FUNCTION_QTC(cos, (::cos(value)) );
+UNARY_FUNCTION_QTC(tan, (::tan(value)) );
+UNARY_FUNCTION_QTC(asin, (::asin(value)) );
+UNARY_FUNCTION_QTC(acos, (::acos(value)) );
+UNARY_FUNCTION_QTC(atan, (::atan(value)) );
+UNARY_FUNCTION_QTC(sqrt, (::sqrt(value)) );
+UNARY_FUNCTION_QTC(sqr, (::pow(value,2)) );
 UNARY_FUNCTION_QTC_RET(mag, (fabs(value)), double);
 UNARY_FUNCTION_QTC_RET(as_scalar, (arma::as_scalar(value)), double);
 UNARY_FUNCTION_QTC_RET(compX, (value(0)), double);
@@ -194,9 +199,10 @@ BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 // BINARY_FUNCTION_QTC_OP(added, operator+ );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
-BINARY_FUNCTION_QTC(dotted, (dot(value1,value2)), DotResult );
-BINARY_FUNCTION_QTC(angle, (acos(dot(value1,value2)/norm(value1,2)/norm(value2,2))), DotResult );
-BINARY_FUNCTION_QTC(angleMag, (acos(abs(dot(value1,value2)/norm(value1,2)/norm(value2,2)))), DotResult );
+BINARY_FUNCTION_QTC(dotted, (arma::dot(value1,value2)), DotResult );
+BINARY_FUNCTION_QTC(angle, (::acos(arma::norm_dot(value1, value2))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (::acos( fabs(arma::norm_dot(value1, value2)) )), DotResult );
+//BINARY_FUNCTION_QTC(angleMag, (::acos( fabs(arma::dot(value1/arma::norm(value1,2), value2/arma::norm(value2,2))) )), DotResult );
 
 }
 }

@@ -436,7 +436,7 @@ ISCADParser::ISCADParser(Model* model)
 	    >> (lit("edges")|lit("edge"))
 	    >> '(' 
 	    >> r_string 
-	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> *( ',' >> ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
 	    >> ')' 
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge, qi::_2, qi::_3)) ]
@@ -453,7 +453,7 @@ ISCADParser::ISCADParser(Model* model)
 	    >> (lit("edges")|lit("edge"))
 	    >> '(' 
 	    >> r_string 
-	    >> *( ',' >> (r_edgeFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+	    >> *( ',' >> ((r_vertexFeaturesExpression|r_edgeFeaturesExpression|r_faceFeaturesExpression|r_solidFeaturesExpression)|r_vectorExpression|r_scalarExpression) )
 	    >> ')' 
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]

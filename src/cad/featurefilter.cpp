@@ -233,25 +233,27 @@ public:
 	  ;
 	  
 	r_scalar_qty_expression =
-	  ( r_scalar_term >> '+' > r_scalar_term ) 
-	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*qi::_1, *qi::_2)) ]
-	  | 
-	  ( r_scalar_term >> '-' > r_scalar_term ) 
-	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*qi::_1, *qi::_2)) ]
-	  |
-	  r_scalar_term 
-	    [ qi::_val = qi::_1 ]
+	  r_scalar_term [qi::_val=qi::_1] >>
+	   *(
+	     ( '+' >> r_scalar_term )  
+	      [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<added<double,double> >(*qi::_val, *qi::_1)) ]
+	     | 
+	     ( '-' >> r_scalar_term ) 
+	      [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<subtracted<double,double> >(*qi::_val, *qi::_1)) ]
+	    )
 	  ;
 	
 	r_scalar_term =
-	  r_scalar_primary 
-	    [ qi::_val = qi::_1 ]
-	  |
-	  ( r_scalar_primary >> '*' >> r_scalar_primary ) 
-	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*qi::_1, *qi::_2)) ]
-	  | 
-	  ( r_scalar_primary >> '/' >> r_scalar_primary ) 
-	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*qi::_1, *qi::_2)) ]
+	  (
+	   r_scalar_primary [ qi::_val = qi::_1 ]
+	   >> *(
+	    ( '*' >> r_scalar_primary ) 
+	     [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<multiplied<double,double> >(*qi::_val, *qi::_1)) ]
+	    | 
+	    ( '/' >> r_scalar_primary ) 
+	     [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<divided<double,double> >(*qi::_val, *qi::_1)) ]
+	    )
+	  )
 	  |
 	  ( r_mat_primary >> '&' >> r_mat_primary ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<dotted<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
@@ -262,10 +264,24 @@ public:
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<constantQuantity<double> >(qi::_1)) ]
 	  | r_scalar_qty_functions 
 	    [ qi::_val = qi::_1 ]
+	  | ( lit("sin") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sin<double> >(*qi::_1)) ]
+	  | ( lit("cos") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<cos<double> >(*qi::_1)) ]
+	  | ( lit("tan") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<tan<double> >(*qi::_1)) ]
+	  | ( lit("asin") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<asin<double> >(*qi::_1)) ]
+	  | ( lit("acos") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<acos<double> >(*qi::_1)) ]
+	  | ( lit("atan") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<atan<double> >(*qi::_1)) ]
 	  | ( lit("mag") > '(' > r_scalar_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<mag<double> >(*qi::_1)) ]
 	  | ( lit("dist") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<distance>(qi::_1, qi::_2)) ]
+	  | ( lit("sqrt") > '(' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqrt<double> >(*qi::_1)) ]
 	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*qi::_1)) ]
 	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) // before "angle"!
@@ -279,11 +295,11 @@ public:
 	  | ( '(' >> r_scalar_qty_expression >> ')' ) 
 	    [ qi::_val = qi::_1 ]
 // 	  | ('-' >> r_scalar_primary) [ _val = -_1 ]
-	  | ( r_mat_primary >> '.' >> 'x' ) 
+	  | ( r_mat_qty_expression >> '.' >> 'x' ) 
 	    [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compX<arma::mat> >(*qi::_1)) ]
-	  | ( r_mat_primary >> '.' >> 'y' ) 
+	  | ( r_mat_qty_expression >> '.' >> 'y' ) 
 	    [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compY<arma::mat> >(*qi::_1)) ]
-	  | ( r_mat_primary >> '.' >> 'z' ) 
+	  | ( r_mat_qty_expression >> '.' >> 'z' ) 
 	    [ _val = phx::construct<scalarQuantityComputer::Ptr>(new_<compZ<arma::mat> >(*qi::_1)) ]
 	  ;
 	  
@@ -406,11 +422,17 @@ struct EdgeFeatureFilterExprParser
 	( lit("isFaceBoundary") ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<boundaryEdge>()) ]
 	|
+	( lit("boundaryOfFace") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<boundaryOfFace>(*qi::_1)) ]
+	|
 	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]
 	|
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
+	|
+	( lit("isIdentical") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalEdge>(*qi::_1)) ]
 	|
 	( lit("projectionIsCoincident") > '('
 	  > FeatureFilterExprParser<Iterator>::r_featureset > ','
@@ -497,6 +519,9 @@ struct FaceFeatureFilterExprParser
 	|
 	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentFace>(*qi::_1)) ]
+	|
+	( lit("isIdentical") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalFace>(*qi::_1)) ]
 	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceAdjacentToEdges>(*qi::_1)) ]

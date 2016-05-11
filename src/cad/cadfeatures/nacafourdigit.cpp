@@ -82,7 +82,7 @@ void NacaFourDigit::build()
   for (int j=0; j<np-1; j++) 
   {
     double xc=0.5*(1.-::cos(M_PI*double(j) / double(np-1)));
-    double t=5.*tc*(0.2969*sqrt(xc)-0.1260*xc-0.3516*pow(xc,2)+0.2843*pow(xc,3)-0.1015*pow(xc,4));
+    double t=5.*tc*(0.2969*::sqrt(xc)-0.1260*xc-0.3516*::pow(xc,2)+0.2843*::pow(xc,3)-0.1015*::pow(xc,4));
     
     double yc=0.0, dycdx=0.0;
     if (fabs(m)>1e-10)
@@ -94,11 +94,11 @@ void NacaFourDigit::build()
       }
       else
       {
-	yc=m*(1.-xc)/pow(1-p,2) * (1.+xc-2*p);
-	dycdx=2*m/pow(1-p,2) * (p - xc);
+	yc=m*(1.-xc)/::pow(1-p,2) * (1.+xc-2*p);
+	dycdx=2*m/::pow(1-p,2) * (p - xc);
       }
     }
-    double theta=atan(dycdx);
+    double theta=::atan(dycdx);
     pts_up.SetValue(j+1, to_Pnt(p0_->value() +(xc-t*::sin(theta))*L*ex +(yc+t*::cos(theta))*L*ey));
     pts_lo.SetValue(j+1, to_Pnt(p0_->value() +(xc+t*::sin(theta))*L*ex +(yc-t*::cos(theta))*L*ey));
 //     pts_up.SetValue(j+1, to_Pnt(p0_->value() +xc*L*ex +(yc+t)*L*ey));

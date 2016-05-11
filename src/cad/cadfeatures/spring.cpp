@@ -54,7 +54,7 @@ void Spring::build()
 
   gp_Lin2d aLine2d(gp_Pnt2d(0.0, 0.0), gp_Dir2d(2.*M_PI, l/winds_->value()));
 
-  double ll=sqrt(pow(l,2)+pow(2.0*M_PI*winds_->value(),2));
+  double ll=::sqrt(::pow(l,2)+::pow(2.0*M_PI*winds_->value(),2));
   Handle_Geom2d_TrimmedCurve aSegment = GCE2d_MakeSegment(aLine2d, 0.0, ll);
   TopoDS_Edge ec=BRepBuilderAPI_MakeEdge(aSegment, aCylinder, 0.0, ll).Edge();
     

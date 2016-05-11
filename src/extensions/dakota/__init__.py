@@ -25,7 +25,10 @@ class Parameter:
     self.pval=pval
     
   def __call__(self):
-    return self.pval
+    import importlib
+    module = importlib.import_module('__builtin__')
+    cls = getattr(module, self.ptype)
+    return cls(self.pval)
     
   def __str__(self):
     return "--"+self.ptype+" "+self.ppath+":"+self.pval

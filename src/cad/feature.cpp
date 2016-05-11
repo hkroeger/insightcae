@@ -55,7 +55,10 @@ void Filter::firstPass(FeatureID feature)
 FeatureSet::FeatureSet(const FeatureSet& o)
 : ASTBase(o),
   model_(o.model_),
-  shape_(o.shape_)
+  base_set_(o.base_set_),
+  shape_(o.shape_),
+  filterexpr_(o.filterexpr_),
+  refs_(o.refs_)
 {
   data_.insert( o.data().begin(), o.data().end() );
 }
@@ -248,6 +251,7 @@ size_t FeatureSet::size() const
 
 FeatureSetPtr FeatureSet::clone() const
 {
+//checkForBuildDuringAccess();
   FeatureSetPtr nfs(new FeatureSet(*this));
   return nfs;
 }

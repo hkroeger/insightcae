@@ -60,6 +60,7 @@
 #include "relationfilters.h"
 
 #include "coincident.h"
+#include "identical.h"
 #include "ispartofsolid.h"
 
 #include "boundaryedge.h"
@@ -72,6 +73,7 @@
 #include "faceadjacenttofaces.h"
 #include "facetopology.h"
 #include "cylfaceorientation.h"
+#include "boundaryofface.h"
 
 namespace insight
 {

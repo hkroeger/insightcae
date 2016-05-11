@@ -7,6 +7,7 @@ add_sources(insightcad_SOURCES
   maximal.cpp
   
   coincident.cpp
+  identical.cpp
   ispartofsolid.cpp
 
   boundaryedge.cpp
@@ -17,6 +18,7 @@ add_sources(insightcad_SOURCES
   facetopology.cpp
   faceadjacenttoedges.cpp
   faceadjacenttofaces.cpp
+  boundaryofface.cpp
   cylfaceorientation.cpp
 )
 

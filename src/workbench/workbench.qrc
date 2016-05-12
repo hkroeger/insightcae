@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="">
+        <file>resources/insight_workbench_splash.png</file>
         <file>resources/logo_insight_cae.png</file>
     </qresource>
 </RCC>

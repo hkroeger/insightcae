@@ -47,9 +47,8 @@ int main(int argc, char** argv)
   {
     ISCADApplication app(argc, argv);
     std::locale::global(std::locale::classic());
-
-
     QLocale::setDefault(QLocale::C);
+    
     QPixmap pixmap(":/resources/insight_cad_splash.png");
     QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
     splash.show();

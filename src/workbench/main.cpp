@@ -21,12 +21,25 @@
 #include <locale>
 #include <QLocale>
 #include <QDir>
+#include <QSplashScreen>
 #include <QtGui/QApplication>
 #include "base/boost_include.h"
 #include "workbench.h"
 
 #include "base/exception.h"
 #include "base/linearalgebra.h"
+
+#include <qthread.h>
+ 
+class I : public QThread
+{
+  QSplashScreen* sp_;
+  QWidget win_;
+public:
+  I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) {}
+  
+  void run() { QThread::sleep(3); sp_->finish(&win_); }
+};
 
 int main(int argc, char** argv)
 {
@@ -39,13 +52,26 @@ int main(int argc, char** argv)
   std::locale::global(std::locale::classic());
   QLocale::setDefault(QLocale::C);
 
-  workbench foo;
+  QPixmap pixmap(":/resources/insight_workbench_splash.png");
+  QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+  splash.show();
+  splash.showMessage(/*propGeoVersion()+" - */"Wait...");
 
+  workbench window;
+  
   if (argc>1)
   {
     boost::filesystem::path fn(argv[1]);
-    foo.openAnalysis(boost::filesystem::absolute(fn).c_str());
+    window.openAnalysis(boost::filesystem::absolute(fn).c_str());
   }
-  foo.show();
+  window.show();
+  
+  app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+  
+  I w(&splash, &window);
+  w.start(); // splash is shown for 5 seconds
+  
+  window.raise();
+
   return app.exec();
 }

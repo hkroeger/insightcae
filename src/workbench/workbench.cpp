@@ -102,7 +102,9 @@ void WorkbenchApplication::displayExceptionNotification(QString msg, QString add
 
 workbench::workbench()
 {
-  this->setWindowTitle("Insight Workbench");
+    setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
+    this->setWindowTitle("Insight Workbench");
+    
     mdiArea_ = new QMdiArea(this);
     setCentralWidget( mdiArea_ );
     

@@ -163,6 +163,8 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags)
 {  
+  setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
+  
   QSplitter *spl0=new QSplitter(Qt::Vertical);
   QSplitter *spl=new QSplitter(Qt::Horizontal);
   setCentralWidget(spl0);

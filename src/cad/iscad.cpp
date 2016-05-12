@@ -47,12 +47,25 @@ int main(int argc, char** argv)
   {
     ISCADApplication app(argc, argv);
     std::locale::global(std::locale::classic());
-    QLocale::setDefault(QLocale::C);
 
-    ISCADMainWindow w;
+
+    QLocale::setDefault(QLocale::C);
+    QPixmap pixmap(":/resources/insight_cad_splash.png");
+    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+    splash.show();
+    splash.showMessage(/*propGeoVersion()+" - */"Wait...");
+
+    ISCADMainWindow window;
     if (argc==2) 
-      w.loadFile(argv[1]);
-    w.show();
+      window.loadFile(argv[1]);
+
+    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+
+    window.show();
+
+    splash.finish(&window);
+    window.raise();
+
     return app.exec();
   }
 }

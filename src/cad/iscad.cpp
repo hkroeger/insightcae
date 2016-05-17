@@ -31,6 +31,19 @@
 #include <locale>
 #include <QLocale>
 
+#include <qthread.h>
+ 
+class I : public QThread
+{
+  QSplashScreen* sp_;
+  QWidget win_;
+public:
+  I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) {}
+  
+  void run() { QThread::sleep(3); sp_->finish(&win_); }
+};
+
+
 int main(int argc, char** argv)
 {
   if (argc==3) 
@@ -58,11 +71,14 @@ int main(int argc, char** argv)
     if (argc==2) 
       window.loadFile(argv[1]);
 
-    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
-
     window.show();
 
-    splash.finish(&window);
+    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+
+    I w(&splash, &window);
+    w.start(); // splash is shown for 5 seconds
+
+//     splash.finish(&window);
     window.raise();
 
     return app.exec();

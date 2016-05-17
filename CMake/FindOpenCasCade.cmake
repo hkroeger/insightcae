@@ -18,12 +18,14 @@ IF (WIN32)
       /usr/local/include/opencascade
       /opt/opencascade/include
       /opt/opencascade/inc
+      ENV CPLUS_INCLUDE_PATH
     )
 
     FIND_LIBRARY(OCC_LIBRARY TKernel
       /usr/lib
       /usr/local/lib
       /opt/opencascade/lib
+      ENV LD_LIBRARY_PATH
     )
 
   ELSE (CYGWIN OR MINGW)

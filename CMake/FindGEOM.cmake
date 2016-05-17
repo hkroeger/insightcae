@@ -11,11 +11,13 @@
 FIND_PATH(GEOM_INCLUDE_DIR GEOM_Application.hxx
   /usr/include/GEOM
   /usr/local/include/GEOM
+  ENV CPLUS_INCLUDE_PATH
 )
 
 FIND_LIBRARY(GEOM_LIBRARY libTKGeom.so
   /usr/lib
   /usr/local/lib
+  ENV_LD_LIBRARY_PATH
 )
 
 

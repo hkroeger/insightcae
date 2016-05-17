@@ -56,7 +56,7 @@ autoPtr<csys> csys::New
         )   << "Unknown coordinateSystem type "
             << coordType << nl << nl
             << "Valid coordinateSystem types are :" << nl
-            << dictionaryConstructorTablePtr_->sortedToc()
+            << dictionaryConstructorTablePtr_->toc()
             << exit(FatalIOError);
     }
 

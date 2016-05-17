@@ -12,17 +12,16 @@ IF (WIN32)
   IF (CYGWIN OR MINGW)
 
     FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
-      /usr/include/oce
-      /usr/include/opencascade
-      /usr/local/include/oce
-      /usr/local/include/opencascade
+      HINTS /usr/include
+      /usr/local/include
       /opt/opencascade/include
       /opt/opencascade/inc
       ENV CPLUS_INCLUDE_PATH
+      PATH_SUFFIXES oce opencascade
     )
 
     FIND_LIBRARY(OCC_LIBRARY TKernel
-      /usr/lib
+      HINTS /usr/lib
       /usr/local/lib
       /opt/opencascade/lib
       ENV LD_LIBRARY_PATH
@@ -43,17 +42,20 @@ IF (WIN32)
 ELSE (WIN32)
 
   FIND_PATH(OCC_INCLUDE_DIR Standard_Version.hxx
-    /usr/include/oce
-    /usr/include/opencascade
-    /usr/local/include/opencascade
-    /usr/local/include/oce
+    HINTS /usr/include
+    /usr/include
+    /usr/local/include
+    /usr/local/include
     /opt/opencascade/include
+    ENV CPLUS_INCLUDE_PATH
+    PATH_SUFFIXES oce opencascade
   )
 
   FIND_LIBRARY(OCC_LIBRARY TKernel
     /usr/lib
     /usr/local/lib
     /opt/opencascade/lib
+    ENV LD_LIBRARY_PATH
   )
 
 ENDIF (WIN32)

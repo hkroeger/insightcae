@@ -9,13 +9,13 @@
 
 
   FIND_PATH(DXFLIB_INCLUDE_DIR dl_dxf.h
-    /usr/include/dxflib
-    /usr/local/include/dxflib
+    HINTS /usr/include /usr/local/include
     ENV CPLUS_INCLUDE_PATH
+    PATH_SUFFIXES dxflib
   )
 
   FIND_LIBRARY(DXFLIB_LIBRARY libdxflib.so
-    /usr/lib
+    HINTS /usr/lib
     /usr/local/lib
     ENV LD_LIBRARY_PATH
   )

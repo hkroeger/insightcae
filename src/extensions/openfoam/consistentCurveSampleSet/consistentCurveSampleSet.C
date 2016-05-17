@@ -52,7 +52,7 @@ bool Foam::consistentCurveSet::trackToBoundary
 (
 #ifdef OF16ext
             Particle<passiveParticle>& singleParticle,
-#elif defined (OF22x)||defined (OF22eng)
+#elif defined (OF21x)||defined (OF22x)||defined (OF22eng)
             passiveParticle& singleParticle,
 #else
             passiveParticleCloud& particleCloud,
@@ -66,7 +66,7 @@ bool Foam::consistentCurveSet::trackToBoundary
 ) const
 {
 #ifdef OF16ext
-#elif defined(OF22x)||defined (OF22eng)
+#elif defined(OF21x)||defined(OF22x)||defined (OF22eng)
     passiveParticleCloud particleCloud(mesh());
     particle::TrackingData<passiveParticleCloud> trackData(particleCloud);
 #else
@@ -412,7 +412,7 @@ Foam::consistentCurveSet::consistentCurveSet
 (
     const word& name,
     const polyMesh& mesh,
-#ifdef OF16ext
+#if defined(OF16ext)||defined(OF21x)
     meshSearch& searchEngine,
 #else
     const meshSearch& searchEngine,
@@ -438,7 +438,7 @@ Foam::consistentCurveSet::consistentCurveSet
 (
     const word& name,
     const polyMesh& mesh,
-#ifdef OF16ext
+#if defined(OF16ext)||defined(OF21x)
     meshSearch& searchEngine,
 #else
     const meshSearch& searchEngine,

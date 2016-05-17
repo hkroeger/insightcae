@@ -83,5 +83,5 @@ insight::cad::VectorMag::VectorMag(insight::cad::VectorPtr p1)
 
 double insight::cad::VectorMag::value() const
 {
-  return arma::norm(p1_->value());
+  return arma::norm(p1_->value(),2);
 }

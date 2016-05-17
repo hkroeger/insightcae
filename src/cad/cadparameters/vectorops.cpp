@@ -128,8 +128,8 @@ arma::mat insight::cad::Mechanism_CrankDrive::value() const
 {
   arma::mat edelta = c2_->value() - p1_->value();
   arma::mat eax=eax_->value();
-  eax/=arma::norm(eax);
-  double delta=arma::norm(edelta);
+  eax/=arma::norm(eax,2);
+  double delta=arma::norm(edelta,2);
   edelta /= delta;
   double phi = 
    acos(
@@ -150,10 +150,10 @@ insight::cad::Mechanism_Slider::Mechanism_Slider(ScalarPtr L, VectorPtr p0, Vect
 arma::mat insight::cad::Mechanism_Slider::value() const
 {
   arma::mat edelta=p0_->value()-psl_->value();
-  double delta=arma::norm(edelta);
+  double delta=arma::norm(edelta,2);
   edelta/=delta;
   arma::mat esl=esl_->value();
-  esl/=arma::norm(esl);
+  esl/=arma::norm(esl,2);
   double cosa=arma::dot(edelta, esl);
   double r=L_->value();
   

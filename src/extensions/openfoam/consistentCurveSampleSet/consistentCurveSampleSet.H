@@ -74,7 +74,7 @@ class consistentCurveSet
         (
 #ifdef OF16ext
             Particle<passiveParticle>& singleParticle,
-#elif defined (OF22x)||defined (OF22eng)
+#elif defined (OF21x)||defined (OF22x)||defined (OF22eng)
             passiveParticle& singleParticle,
 #else
             passiveParticleCloud& particleCloud,
@@ -115,7 +115,7 @@ public:
         (
             const word& name,
             const polyMesh& mesh,
-#ifdef OF16ext
+#if defined(OF16ext)||defined(OF21x)
             meshSearch& searchEngine,
 #else
             const meshSearch& searchEngine,
@@ -129,7 +129,7 @@ public:
         (
             const word& name,
             const polyMesh& mesh,
-#ifdef OF16ext
+#if defined(OF16ext)||defined(OF21x)
             meshSearch& searchEngine,
 #else
             const meshSearch& searchEngine,

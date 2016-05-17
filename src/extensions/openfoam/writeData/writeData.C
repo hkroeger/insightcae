@@ -135,15 +135,15 @@ void Foam::writeData::execute()
     
     if (abort)
     {
-#if defined(OF16ext) || defined(OF21x)
-        const_cast<Time&>(obr_.time()).setStopAt(Time::saWriteNow);
+#if defined(OF16ext) //defined(OF21x)
+//        const_cast<Time&>(obr_.time()).setStopAt(Time::saWriteNow);
 #else
         const_cast<Time&>(obr_.time()).stopAt(Time::saWriteNow);
-#endif
 	Info<< "USER REQUESTED ABORT (timeIndex="
 	    << obr_.time().timeIndex()
 	    << "): stop+write data"
 	    << endl;
+#endif
     }
     
 }

@@ -147,27 +147,53 @@ public:
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#define makePatchFieldsE(type)                                                 \
+#define addToPatchFieldRunTimeSelectionE(PatchTypeField, typePatchTypeField)   \
+    addToRunTimeSelectionTable                                                \
+    (                                                                         \
+        PatchTypeField,                                                       \
+        typePatchTypeField,                                                   \
+        patch                                                                 \
+    );                                                                        \
+    addToRunTimeSelectionTable                                                \
+    (                                                                         \
+        PatchTypeField,                                                       \
+        typePatchTypeField,                                                   \
+        patchMapper                                                           \
+    );                                                                        \
+    addToRunTimeSelectionTable                                                \
+    (                                                                         \
+        PatchTypeField,                                                       \
+        typePatchTypeField,                                                   \
+        dictionary                                                            \
+    );
+
+
+#define makeTemplatePatchTypeFieldE(PatchTypeField, typePatchTypeField)        \
+    defineNamedTemplateTypeNameAndDebug(typePatchTypeField, 0);               \
+    addToPatchFieldRunTimeSelectionE(PatchTypeField, typePatchTypeField)   
+
+
+#define makePatchFieldsE(type)                                                \
                                                                               \
-makeTemplatePatchTypeField(fvPatchScalarField, type##FvPatchScalarField);     \
-makeTemplatePatchTypeField(fvPatchVectorField, type##FvPatchVectorField);     \
-makeTemplatePatchTypeField                                                    \
+makeTemplatePatchTypeFieldE(fvPatchScalarField, type##FvPatchScalarField);     \
+makeTemplatePatchTypeFieldE(fvPatchVectorField, type##FvPatchVectorField);     \
+makeTemplatePatchTypeFieldE                                                    \
 (                                                                             \
     fvPatchSymmTensorField,                                                   \
     type##FvPatchSymmTensorField                                              \
 );                                                                            \
-makeTemplatePatchTypeField(fvPatchTensorField, type##FvPatchTensorField);
+makeTemplatePatchTypeFieldE(fvPatchTensorField, type##FvPatchTensorField);
 
 
-#define makePatchTypeFieldTypedefsE(type)                                      \
+#define makePatchTypeFieldTypedefsE(type)                                     \
                                                                               \
 typedef type##FvPatchField<scalar> type##FvPatchScalarField;                  \
 typedef type##FvPatchField<vector> type##FvPatchVectorField;                  \
-/*typedef type##FvPatchField<sphericalTensor>                                   \
-    type##FvPatchSphericalTensorField;*/                                        \
 typedef type##FvPatchField<symmTensor> type##FvPatchSymmTensorField;          \
 typedef type##FvPatchField<tensor> type##FvPatchTensorField;
 
+/*typedef type##FvPatchField<sphericalTensor>                                   \
+    type##FvPatchSphericalTensorField;*/                                       
 #ifdef NoRepository
 #   include "extendedFixedValueFvPatchField.C"
 #endif

@@ -149,7 +149,8 @@ ParameterWrapper::ParameterWrapper(const ConstrP& p)
   name_(get<1>(p)),
   p_(get<2>(p)),
   detaileditwidget_(get<3>(p)),
-  superform_(get<4>(p))
+  superform_(get<4>(p)),
+  widgetsDisplayed_(false)
 {
   setText(0, name_);
   QFont f=font(1);
@@ -159,6 +160,16 @@ ParameterWrapper::ParameterWrapper(const ConstrP& p)
 
 ParameterWrapper::~ParameterWrapper()
 {
+}
+
+void ParameterWrapper::createWidgets()
+{
+  widgetsDisplayed_=true;
+}
+
+void ParameterWrapper::removedWidgets()
+{
+  widgetsDisplayed_=false;
 }
 
 void ParameterWrapper::onSelectionChanged()
@@ -193,19 +204,25 @@ void ParameterWrapper::onSelection()
   createWidgets();
 }
 
+void ParameterWrapper::onDestruction()
+{
+  removedWidgets();
+}
+
 
 defineType(IntParameterWrapper);
 addToFactoryTable(ParameterWrapper, IntParameterWrapper, ParameterWrapper::ConstrP);
 
 IntParameterWrapper::IntParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
-  le_(NULL)
+: ParameterWrapper(p)
 {
   onUpdate();
 }
 
 void IntParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+  
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -225,6 +242,7 @@ void IntParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString::number(param()()));
   le_->setValidator(new QIntValidator());
   layout2->addWidget(le_);
@@ -241,14 +259,17 @@ void IntParameterWrapper::createWidgets()
 
 void IntParameterWrapper::onApply()
 {
-  param()()=le_->text().toInt();
-  setText(1, QString::number(param()()));
+  if (widgetsDisplayed_)
+  {
+    param()()=le_->text().toInt();
+    setText(1, QString::number(param()()));
+  }
 }
 
 void IntParameterWrapper::onUpdate()
 {
   setText(1, QString::number(param()()));
-  if (le_) le_->setText(QString::number(param()()));
+  if (widgetsDisplayed_) le_->setText(QString::number(param()()));
 }
 
 
@@ -265,6 +286,8 @@ DoubleParameterWrapper::DoubleParameterWrapper(const ConstrP& p)
 
 void DoubleParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -284,6 +307,7 @@ void DoubleParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString::number(param()()));
   le_->setValidator(new QDoubleValidator());
   layout2->addWidget(le_);
@@ -311,14 +335,17 @@ void DoubleParameterWrapper::createWidgets()
 
 void DoubleParameterWrapper::onApply()
 {
-  param()()=le_->text().toDouble();
-  setText(1, QString::number(param()()));
+  if (widgetsDisplayed_)
+  {
+    param()()=le_->text().toDouble();
+    setText(1, QString::number(param()()));
+  }
 }
 
 void DoubleParameterWrapper::onUpdate()
 {
   setText(1, QString::number(param()()));
-  if (le_) le_->setText(QString::number(param()()));
+  if (widgetsDisplayed_) le_->setText(QString::number(param()()));
 }
 
 defineType(StringParameterWrapper);
@@ -334,6 +361,8 @@ VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
 
 void VectorParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -353,6 +382,7 @@ void VectorParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString(insight::valueToString(param()()).c_str()));
   layout2->addWidget(le_);
   layout->addLayout(layout2);
@@ -380,15 +410,18 @@ void VectorParameterWrapper::onApply()
 {
 //   QStringList sl=le_->text().split(" ", QString::SkipEmptyParts);
 //   param()()=insight::vec3(sl[0].toDouble(), sl[1].toDouble(), sl[2].toDouble());
-  insight::stringToValue(le_->text().toStdString(), param()());
-  setText(1, QString(insight::valueToString(param()()).c_str()));
+  if (widgetsDisplayed_)
+  {
+    insight::stringToValue(le_->text().toStdString(), param()());
+    setText(1, QString(insight::valueToString(param()()).c_str()));
+  }
 }
 
 void VectorParameterWrapper::onUpdate()
 {
   setText(1, QString(insight::valueToString(param()()).c_str()));
   //le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
-  if (le_) le_->setText(QString(insight::valueToString(param()()).c_str()));
+  if (widgetsDisplayed_) le_->setText(QString(insight::valueToString(param()()).c_str()));
   //le_->setText(QString::number(param()()));
 }
 
@@ -405,6 +438,8 @@ StringParameterWrapper::StringParameterWrapper(const ConstrP& p)
 
 void StringParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -424,6 +459,7 @@ void StringParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
@@ -447,14 +483,17 @@ void StringParameterWrapper::createWidgets()
 
 void StringParameterWrapper::onApply()
 {
-  param()()=le_->text().toStdString();
-  setText(1, param()().c_str());
+  if (widgetsDisplayed_)
+  {
+    param()()=le_->text().toStdString();
+    setText(1, param()().c_str());
+  }
 }
 
 void StringParameterWrapper::onUpdate()
 {
   setText(1, param()().c_str());
-  if (le_) le_->setText(param()().c_str());
+  if (widgetsDisplayed_) le_->setText(param()().c_str());
 }
 
 defineType(BoolParameterWrapper);
@@ -469,6 +508,8 @@ BoolParameterWrapper::BoolParameterWrapper(const ConstrP& p)
 
 void BoolParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -488,6 +529,7 @@ void BoolParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   cb_=new QCheckBox(detaileditwidget_);
+  connect(cb_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   if (param()())
     cb_->setCheckState(Qt::Checked);
   else
@@ -518,14 +560,17 @@ void BoolParameterWrapper::createWidgets()
 
 void BoolParameterWrapper::onApply()
 {
-  param()() = (cb_->checkState() == Qt::Checked);
-  setText(1, param()() ? "true" : "false");
+  if (widgetsDisplayed_)
+  {
+    param()() = (cb_->checkState() == Qt::Checked);
+    setText(1, param()() ? "true" : "false");
+  }
 }
 
 void BoolParameterWrapper::onUpdate()
 {
   setText(1, param()() ? "true" : "false");
-  if (cb_)
+  if (widgetsDisplayed_)
   {
     if (param()())
       cb_->setCheckState(Qt::Checked);
@@ -546,6 +591,8 @@ PathParameterWrapper::PathParameterWrapper(const ConstrP& p)
 
 void PathParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -565,6 +612,7 @@ void PathParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(param()().c_str());
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
@@ -606,14 +654,17 @@ void PathParameterWrapper::updateTooltip()
 
 void PathParameterWrapper::onApply()
 {
-  param()()=le_->text().toStdString();
-  setText(1, param()().c_str());
+  if (widgetsDisplayed_)
+  {
+    param()()=le_->text().toStdString();
+    setText(1, param()().c_str());
+  }
 }
 
 void PathParameterWrapper::onUpdate()
 {
   setText(1, param()().c_str());
-  if (le_) le_->setText(param()().c_str());
+  if (widgetsDisplayed_) le_->setText(param()().c_str());
 }
 
 void PathParameterWrapper::openSelectionDialog()
@@ -657,6 +708,8 @@ MatrixParameterWrapper::MatrixParameterWrapper(const ConstrP& p)
 
 void MatrixParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -676,6 +729,7 @@ void MatrixParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
+  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(mat2Str(param()()));
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
@@ -707,13 +761,16 @@ void MatrixParameterWrapper::createWidgets()
 
 void MatrixParameterWrapper::onApply()
 {
-  param()()=arma::mat(le_->text().toStdString());
+  if (widgetsDisplayed_)
+  {
+    param()()=arma::mat(le_->text().toStdString());
+  }
 }
 
 void MatrixParameterWrapper::onUpdate()
 {
   setText(1, "matrix");
-  if (le_) le_->setText(mat2Str(param()()));
+  if (widgetsDisplayed_) le_->setText(mat2Str(param()()));
 }
 
 void MatrixParameterWrapper::openSelectionDialog()
@@ -759,6 +816,8 @@ SelectionParameterWrapper::SelectionParameterWrapper(const ConstrP& p)
 
 void SelectionParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -778,6 +837,7 @@ void SelectionParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   selBox_=new QComboBox(detaileditwidget_);
+  connect(selBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   BOOST_FOREACH( const std::string& s, param().items() )
   {
     selBox_->addItem(s.c_str());
@@ -808,14 +868,17 @@ void SelectionParameterWrapper::createWidgets()
 
 void SelectionParameterWrapper::onApply()
 {
-  param()()=selBox_->currentIndex();
-  setText(1, param().selection().c_str());
+  if (widgetsDisplayed_)
+  {
+    param()()=selBox_->currentIndex();
+    setText(1, param().selection().c_str());
+  }
 }
 
 void SelectionParameterWrapper::onUpdate()
 {
   setText(1, param().selection().c_str());
-  if (selBox_) selBox_->setCurrentIndex(param()());
+  if (widgetsDisplayed_) selBox_->setCurrentIndex(param()());
 }
 
 defineType(SubsetParameterWrapper);
@@ -830,6 +893,8 @@ SubsetParameterWrapper::SubsetParameterWrapper(const ConstrP& p)
 
 void SubsetParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -851,6 +916,7 @@ void SubsetParameterWrapper::createWidgets()
 
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
+  connect(detaileditwidget_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   
 //   QHBoxLayout *layout=new QHBoxLayout(detaileditwidget_);
 //   QGroupBox *nameLabel = new QGroupBox(name_, detaileditwidget_);
@@ -974,6 +1040,8 @@ void ArrayParameterWrapper::showContextMenuForWidget(const QPoint &p)
 
 void ArrayParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   QLabel *label = new QLabel(name_, detaileditwidget_);
   QFont f=label->font(); f.setBold(true); label->setFont(f);
@@ -1039,6 +1107,8 @@ DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(const ConstrP& p)
 
 void DoubleRangeParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout *layout=new QVBoxLayout(detaileditwidget_);
   
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -1059,6 +1129,7 @@ void DoubleRangeParameterWrapper::createWidgets()
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   lBox_=new QListWidget(detaileditwidget_);
+  connect(lBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   rebuildList();
   layout2->addWidget(lBox_);
   
@@ -1137,7 +1208,7 @@ void DoubleRangeParameterWrapper::onApply()
 
 void DoubleRangeParameterWrapper::onUpdate()
 {
-  rebuildList();
+  if (widgetsDisplayed_) rebuildList();
 }
 
 
@@ -1153,6 +1224,8 @@ SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(const ConstrP
 
 void SelectableSubsetParameterWrapper::createWidgets()
 {
+  ParameterWrapper::createWidgets();
+
   QVBoxLayout* layout=new QVBoxLayout(detaileditwidget_);
 
   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
@@ -1170,6 +1243,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   layout2->addWidget(new QLabel("Selection:", detaileditwidget_));
   selBox_=new QComboBox(detaileditwidget_);
+  connect(selBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
   {
 //     std::cout<<"inserted text:"<<pair.first<<std::endl;
@@ -1204,9 +1278,12 @@ void SelectableSubsetParameterWrapper::insertSubset()
 void SelectableSubsetParameterWrapper::onApply()
 {
 //   std::cout<<"1selbox="<<selBox_<<std::endl;
-  param().selection()=selBox_->currentText().toStdString();
-  insertSubset();
-  setText(1, param().selection().c_str());
+  if (widgetsDisplayed_)
+  {
+    param().selection()=selBox_->currentText().toStdString();
+    insertSubset();
+    setText(1, param().selection().c_str());
+  }
   emit(apply());
 }
 
@@ -1216,7 +1293,7 @@ void SelectableSubsetParameterWrapper::onUpdate()
   setText(1, param().selection().c_str());
   insertSubset();
   emit(update());
-  if (selBox_) 
+  if (widgetsDisplayed_) 
   {
     selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
   }

@@ -61,6 +61,8 @@ protected:
   QWidget* detaileditwidget_;
   QWidget* superform_;
   
+  bool widgetsDisplayed_;
+  
   virtual void focusInEvent( QFocusEvent* );
   
 public:
@@ -68,13 +70,15 @@ public:
   ParameterWrapper(const ConstrP& p);
   virtual ~ParameterWrapper();
     
-  virtual void createWidgets() =0;
+  virtual void createWidgets();
+  virtual void removedWidgets();
   
 public slots:
     virtual void onApply() =0;
     virtual void onUpdate() =0;
     virtual void onSelectionChanged();
     virtual void onSelection();
+    virtual void onDestruction();
 };
 
 class IntParameterWrapper

@@ -80,13 +80,20 @@ QString latex2QtHTML(const std::string& latex, QWidget* container)
   QRegExp rx(imageExpr);
   int pos = 0;
   int lpos=pos;
-  while ((pos = rx.indexIn(lx, pos)) != -1) 
+  if (rx.indexIn(lx, pos) == -1)
   {
-    html+=lx.mid(lpos, pos-lpos);
-    QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
-    html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
-    lpos=pos;
-    pos += rx.matchedLength();
+    html=lx;
+  }
+  else
+  {
+    while ((pos = rx.indexIn(lx, pos)) != -1) 
+    {
+      html+=lx.mid(lpos, pos-lpos);
+      QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
+      html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
+      lpos=pos;
+      pos += rx.matchedLength();
+    }
   }
   
   html.replace(QRegExp("\\\\\\\\"), "<br>");
@@ -191,10 +198,10 @@ defineType(IntParameterWrapper);
 addToFactoryTable(ParameterWrapper, IntParameterWrapper, ParameterWrapper::ConstrP);
 
 IntParameterWrapper::IntParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-//   setText(1, "int");
-  setText(1, QString::number(param()()));
+  onUpdate();
 }
 
 void IntParameterWrapper::createWidgets()
@@ -240,7 +247,8 @@ void IntParameterWrapper::onApply()
 
 void IntParameterWrapper::onUpdate()
 {
-  le_->setText(QString::number(param()()));
+  setText(1, QString::number(param()()));
+  if (le_) le_->setText(QString::number(param()()));
 }
 
 
@@ -249,10 +257,10 @@ defineType(DoubleParameterWrapper);
 addToFactoryTable(ParameterWrapper, DoubleParameterWrapper, ParameterWrapper::ConstrP);
 
 DoubleParameterWrapper::DoubleParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-//   setText(1, "double");
-  setText(1, QString::number(param()()));
+  onUpdate();
 }
 
 void DoubleParameterWrapper::createWidgets()
@@ -309,7 +317,8 @@ void DoubleParameterWrapper::onApply()
 
 void DoubleParameterWrapper::onUpdate()
 {
-  le_->setText(QString::number(param()()));
+  setText(1, QString::number(param()()));
+  if (le_) le_->setText(QString::number(param()()));
 }
 
 defineType(StringParameterWrapper);
@@ -317,10 +326,10 @@ addToFactoryTable(ParameterWrapper, StringParameterWrapper, ParameterWrapper::Co
 
 
 VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-//     setText(1, "vector");
-    setText(1, QString(insight::valueToString(param()()).c_str()));
+  onUpdate();
 }
 
 void VectorParameterWrapper::createWidgets()
@@ -377,8 +386,9 @@ void VectorParameterWrapper::onApply()
 
 void VectorParameterWrapper::onUpdate()
 {
+  setText(1, QString(insight::valueToString(param()()).c_str()));
   //le_->setText(QString::number(param()()(0))+" "+QString::number(param()()(1))+" "+QString::number(param()()(2)));
-  le_->setText(QString(insight::valueToString(param()()).c_str()));
+  if (le_) le_->setText(QString(insight::valueToString(param()()).c_str()));
   //le_->setText(QString::number(param()()));
 }
 
@@ -387,10 +397,10 @@ addToFactoryTable(ParameterWrapper, VectorParameterWrapper, ParameterWrapper::Co
 
 
 StringParameterWrapper::StringParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-//   setText(1, "string");
-  setText(1, param()().c_str());
+  onUpdate();
 }
 
 void StringParameterWrapper::createWidgets()
@@ -443,17 +453,18 @@ void StringParameterWrapper::onApply()
 
 void StringParameterWrapper::onUpdate()
 {
-  le_->setText(param()().c_str());
+  setText(1, param()().c_str());
+  if (le_) le_->setText(param()().c_str());
 }
 
 defineType(BoolParameterWrapper);
 addToFactoryTable(ParameterWrapper, BoolParameterWrapper, ParameterWrapper::ConstrP);
 
 BoolParameterWrapper::BoolParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  cb_(NULL)
 {
-//   setText(1, "bool");
-  setText(1, param()() ? "true" : "false");
+  onUpdate();
 }
 
 void BoolParameterWrapper::createWidgets()
@@ -513,20 +524,24 @@ void BoolParameterWrapper::onApply()
 
 void BoolParameterWrapper::onUpdate()
 {
-  if (param()())
-    cb_->setCheckState(Qt::Checked);
-  else
-    cb_->setCheckState(Qt::Unchecked);
+  setText(1, param()() ? "true" : "false");
+  if (cb_)
+  {
+    if (param()())
+      cb_->setCheckState(Qt::Checked);
+    else
+      cb_->setCheckState(Qt::Unchecked);
+  }
 }
 
 defineType(PathParameterWrapper);
 addToFactoryTable(ParameterWrapper, PathParameterWrapper, ParameterWrapper::ConstrP);
 
 PathParameterWrapper::PathParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-//   setText(1, "path");
-  setText(1, param()().c_str());
+  onUpdate();
 }
 
 void PathParameterWrapper::createWidgets()
@@ -597,7 +612,8 @@ void PathParameterWrapper::onApply()
 
 void PathParameterWrapper::onUpdate()
 {
-  le_->setText(param()().c_str());
+  setText(1, param()().c_str());
+  if (le_) le_->setText(param()().c_str());
 }
 
 void PathParameterWrapper::openSelectionDialog()
@@ -633,9 +649,10 @@ QString mat2Str(const arma::mat& m)
 }
 
 MatrixParameterWrapper::MatrixParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  le_(NULL)
 {
-    setText(1, "matrix");
+  onUpdate();
 }
 
 void MatrixParameterWrapper::createWidgets()
@@ -695,7 +712,8 @@ void MatrixParameterWrapper::onApply()
 
 void MatrixParameterWrapper::onUpdate()
 {
-  le_->setText(mat2Str(param()()));
+  setText(1, "matrix");
+  if (le_) le_->setText(mat2Str(param()()));
 }
 
 void MatrixParameterWrapper::openSelectionDialog()
@@ -718,8 +736,6 @@ addToFactoryTable(ParameterWrapper, DirectoryParameterWrapper, ParameterWrapper:
 DirectoryParameterWrapper::DirectoryParameterWrapper(const ConstrP& p)
 : PathParameterWrapper(p)
 {
-//   setText(1, "directory");
-//   setText(1, "directory");
 }
 
 void DirectoryParameterWrapper::openSelectionDialog()
@@ -735,10 +751,10 @@ defineType(SelectionParameterWrapper);
 addToFactoryTable(ParameterWrapper, SelectionParameterWrapper, ParameterWrapper::ConstrP);
 
 SelectionParameterWrapper::SelectionParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+: ParameterWrapper(p),
+  selBox_(NULL)
 {
-//     setText(1, "selection");
-    setText(1, param().selection().c_str());
+  onUpdate();
 }
 
 void SelectionParameterWrapper::createWidgets()
@@ -766,6 +782,7 @@ void SelectionParameterWrapper::createWidgets()
   {
     selBox_->addItem(s.c_str());
   }
+  selBox_->setCurrentIndex(param()());
   layout2->addWidget(selBox_);
   layout->addLayout(layout2);
   
@@ -797,7 +814,8 @@ void SelectionParameterWrapper::onApply()
 
 void SelectionParameterWrapper::onUpdate()
 {
-  selBox_->setCurrentIndex(param()());
+  setText(1, param().selection().c_str());
+  if (selBox_) selBox_->setCurrentIndex(param()());
 }
 
 defineType(SubsetParameterWrapper);
@@ -839,6 +857,7 @@ void SubsetParameterWrapper::createWidgets()
 //   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
 //   layout->addWidget(nameLabel);
 //   detaileditwidget_->setLayout(layout);
+
 }
 
 void SubsetParameterWrapper::onApply()
@@ -1125,12 +1144,11 @@ void DoubleRangeParameterWrapper::onUpdate()
 
 
 SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)/*,
-  name2Label_(NULL)*/
+: ParameterWrapper(p),
+  selBox_(NULL)
 {
 //   setText(1, "selectableSubset");
-  setText(1, param().selection().c_str());
-  insertSubset();
+  onUpdate();
 }
 
 void SelectableSubsetParameterWrapper::createWidgets()
@@ -1154,6 +1172,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   selBox_=new QComboBox(detaileditwidget_);
   BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
   {
+//     std::cout<<"inserted text:"<<pair.first<<std::endl;
     selBox_->addItem(pair.first.c_str());
   }
   selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
@@ -1193,11 +1212,14 @@ void SelectableSubsetParameterWrapper::onApply()
 
 void SelectableSubsetParameterWrapper::onUpdate()
 {
-//   std::cout<<"2selbox="<<selBox_<<std::endl;
   //selBox_->setCurrentIndex(param()());
-  selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
+  setText(1, param().selection().c_str());
   insertSubset();
   emit(update());
+  if (selBox_) 
+  {
+    selBox_->setCurrentIndex(selBox_->findText(QString(param().selection().c_str())));
+  }
 }
 
 // void SelectableSubsetParameterWrapper::onCurrentIndexChanged(const QString& qs)

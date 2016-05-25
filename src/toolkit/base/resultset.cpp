@@ -811,6 +811,8 @@ ResultElementPtr polynomialFitResult
   );
 }
   
+defineType(ResultSet);
+
 ResultSet::ResultSet
 (
   const ParameterSet& p,
@@ -1218,7 +1220,7 @@ insight::ResultElement& addPlot
   std::string precmd=addinit+";";
   if (watermarktext!="")
   {
-    precmd+="set label \""+watermarktext+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
+    precmd+="set label \""+cleanSymbols(watermarktext)+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
   }
   
   return results->insert( resultelementname,

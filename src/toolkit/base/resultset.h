@@ -283,6 +283,7 @@ public:
     rapidxml::xml_node<>& node
   ) const;
     
+  inline const std::string& value() const { return value_; }
   
   virtual ResultElementPtr clone() const;
 };
@@ -437,6 +438,8 @@ protected:
   std::string introduction_;
   
 public:
+  declareType("ResultSet");
+  
   ResultSet
   (
     const ParameterSet& p,

@@ -20,6 +20,7 @@
 
 
 #include "resultelementwrapper.h"
+#include "base/latextools.h"
 
 #include <QHBoxLayout>
 #include <QLabel>
@@ -49,6 +50,24 @@ ResultElementWrapper::~ResultElementWrapper()
 {}
 
 
+defineType(CommentWrapper);
+addToFactoryTable(ResultElementWrapper, CommentWrapper, ResultElementWrapper::ConstrP);
+
+CommentWrapper::CommentWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  le_=new QLabel(this);
+  le_->setText( res().value().c_str() );
+  le_->setToolTip(QString(res().shortDescription().c_str()));
+  layout->addWidget(le_);
+  this->setLayout(layout);
+}
+
+
 defineType(ScalarResultWrapper);
 addToFactoryTable(ResultElementWrapper, ScalarResultWrapper, ResultElementWrapper::ConstrP);
 
@@ -63,6 +82,37 @@ ScalarResultWrapper::ScalarResultWrapper(const ConstrP& p)
   le_->setText(QString::number(res().value()) + " " + res().unit().c_str() );
   le_->setToolTip(QString(res().shortDescription().c_str()));
   layout->addWidget(le_);
+  this->setLayout(layout);
+}
+
+
+defineType(ResultSectionWrapper);
+addToFactoryTable(ResultElementWrapper, ResultSectionWrapper, ResultElementWrapper::ConstrP);
+
+ResultSectionWrapper::ResultSectionWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  frame_ = new QGroupBox(name_, this);
+  layout->addWidget(frame_);
+
+  addWrapperToWidget(res(), frame_, this);
+
+  this->setLayout(layout);
+}
+
+defineType(ResultSetWrapper);
+addToFactoryTable(ResultElementWrapper, ResultSetWrapper, ResultElementWrapper::ConstrP);
+
+ResultSetWrapper::ResultSetWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  frame_ = new QGroupBox(name_, this);
+  layout->addWidget(frame_);
+
+  addWrapperToWidget(res(), frame_, this);
+
   this->setLayout(layout);
 }
 
@@ -90,6 +140,41 @@ ImageWrapper::ImageWrapper(const ConstrP& p)
   le_->setToolTip(QString(res().shortDescription().c_str()));
   layout->addWidget(le_);
   this->setLayout(layout);
+}
+
+
+defineType(ChartWrapper);
+addToFactoryTable(ResultElementWrapper, ChartWrapper, ResultElementWrapper::ConstrP);
+
+ChartWrapper::ChartWrapper(const ConstrP& p)
+: ResultElementWrapper(p)
+{
+  QHBoxLayout *layout=new QHBoxLayout(this);
+  QLabel *nameLabel = new QLabel(name_, this);
+  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+  layout->addWidget(nameLabel);
+  
+  chart_file_=boost::filesystem::unique_path(boost::filesystem::temp_directory_path()/"%%%%-%%%%-%%%%-%%%%.png");
+  res().generatePlotImage(chart_file_);
+  QPixmap image(chart_file_.c_str());
+  
+  // scale 300dpi (print) => 70dpi (screen)
+  double w0=image.size().width();
+  image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
+  
+  le_=new QLabel(this);
+  le_->setPixmap(image);
+  le_->setScaledContents(true);
+  
+  le_->setToolTip(QString(res().shortDescription().c_str()));
+  layout->addWidget(le_);
+  this->setLayout(layout);
+}
+
+
+ChartWrapper::~ChartWrapper()
+{
+  boost::filesystem::remove(chart_file_);
 }
 
 
@@ -161,33 +246,65 @@ AttributeTableResultWrapper::AttributeTableResultWrapper(const ConstrP& p)
 }
 
 
-void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform)
+void addWrapperToWidget(insight::ResultElementCollection& rset, QWidget *widget, QWidget *superform)
 {
   QVBoxLayout *vlayout=new QVBoxLayout(widget);
-  for(insight::ResultSet::iterator i=rset.begin(); i!=rset.end(); i++)
-      {
-	try
-	{
-	  ResultElementWrapper *wrapper = 
-	    ResultElementWrapper::lookup
-	    (
-	      i->second->type(),
-	      ResultElementWrapper::ConstrP(widget, i->first.c_str(), *i->second)
-	    );
-	  vlayout->addWidget(wrapper);
-	}
-	catch (insight::Exception e)
-	{
-	  QLabel *comment=new QLabel( (i->first+": "+e.message()).c_str());
-	  vlayout->addWidget(comment);
-	}
-	/*
-	if (superform) 
-	{
-	  QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
-	  QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
-	}
-	*/
-      }
+
+//   for(insight::ResultSet::iterator i=rset.begin(); i!=rset.end(); i++)
+  std::vector<insight::ResultElementCollection::value_type> items;
+  
+//   std::transform
+//   ( 
+//     begin(), 
+//     end(),
+//     std::back_inserter(items),
+//     boost::bind(&value_type, _1) // does not work...
+//   );
+  
+  std::for_each
+  (
+    rset.begin(),
+    rset.end(),
+    [&items](const insight::ResultElementCollection::value_type& p) 
+    { 
+      items.push_back(p);       
+    }
+  );
+  
+  std::sort
+  (
+    items.begin(), 
+    items.end(),
+    [](const insight::ResultElementCollection::value_type &left, const insight::ResultElementCollection::value_type &right) 
+    {
+      return left.second->order() < right.second->order();
+    }
+  );
+  
+  BOOST_FOREACH(const insight::ResultElementCollection::value_type& i, items)
+  {
+    try
+    {
+      ResultElementWrapper *wrapper = 
+	ResultElementWrapper::lookup
+	(
+	  i.second->type(),
+	  ResultElementWrapper::ConstrP(widget, i.first.c_str(), *i.second)
+	);
+      vlayout->addWidget(wrapper);
+    }
+    catch (insight::Exception e)
+    {
+      QLabel *comment=new QLabel( (i.first+": "+e.message()).c_str());
+      vlayout->addWidget(comment);
+    }
+    /*
+    if (superform) 
+    {
+      QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
+      QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
+    }
+    */
+  }
       
 }

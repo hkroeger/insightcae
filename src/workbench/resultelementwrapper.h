@@ -26,6 +26,7 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QTableWidget>
+#include <QGroupBox>
 
 #ifndef Q_MOC_RUN
 #include "base/factory.h"
@@ -52,6 +53,18 @@ public:
   virtual ~ResultElementWrapper();
 };
 
+class CommentWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QLabel *le_;
+public:
+  declareType(insight::Comment::typeName_());
+  CommentWrapper(const ConstrP& p);
+  inline insight::Comment& res() { return dynamic_cast<insight::Comment&>(p_); }
+};
+
 class ScalarResultWrapper
 : public ResultElementWrapper
 {
@@ -64,6 +77,32 @@ public:
   inline insight::ScalarResult& res() { return dynamic_cast<insight::ScalarResult&>(p_); }
 };
 
+class ResultSectionWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QGroupBox *frame_;
+public:
+  declareType(insight::ResultSection::typeName_());
+  
+  ResultSectionWrapper(const ConstrP& p);
+  inline insight::ResultSection& res() { return dynamic_cast<insight::ResultSection&>(p_); }
+};
+
+class ResultSetWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  QGroupBox *frame_;
+public:
+  declareType(insight::ResultSet::typeName_());
+  
+  ResultSetWrapper(const ConstrP& p);
+  inline insight::ResultSet& res() { return dynamic_cast<insight::ResultSet&>(p_); }
+};
+
 class ImageWrapper
 : public ResultElementWrapper
 {
@@ -74,6 +113,20 @@ public:
   declareType(insight::Image::typeName_());
   ImageWrapper(const ConstrP& p);
   inline insight::Image& res() { return dynamic_cast<insight::Image&>(p_); }
+};
+
+class ChartWrapper
+: public ResultElementWrapper
+{
+  Q_OBJECT
+protected:
+  boost::filesystem::path chart_file_;
+  QLabel *le_;
+public:
+  declareType(insight::Chart::typeName_());
+  ChartWrapper(const ConstrP& p);
+  ~ChartWrapper();
+  inline insight::Chart& res() { return dynamic_cast<insight::Chart&>(p_); }
 };
 
 class TabularResultWrapper
@@ -100,6 +153,6 @@ public:
   inline insight::AttributeTableResult& res() { return dynamic_cast<insight::AttributeTableResult&>(p_); }
 };
 
-void addWrapperToWidget(insight::ResultSet& rset, QWidget *widget, QWidget *superform=NULL);
+void addWrapperToWidget(insight::ResultElementCollection& rset, QWidget *widget, QWidget *superform=NULL);
 
 #endif // RESULTELEMENTWRAPPER_H

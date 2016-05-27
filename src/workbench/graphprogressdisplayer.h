@@ -33,9 +33,9 @@
 #include <QLabel>
 #include <QMutex>
 
-#include <qwt/qwt.h>
-#include <qwt/qwt_plot.h>
-#include <qwt/qwt_plot_curve.h>
+#include <qwt.h>
+#include <qwt_plot.h>
+#include <qwt_plot_curve.h>
 
 class GraphProgressDisplayer 
 : public QwtPlot,

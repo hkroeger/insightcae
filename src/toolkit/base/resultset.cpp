@@ -1272,7 +1272,7 @@ void Chart::generatePlotImage(const path& imagepath) const
     Gnuplot gp;
     
     //gp<<"set terminal pngcairo; set termoption dash;";
-    gp<<"set terminal epslatex standalone color dash linewidth 3;";
+    gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
     gp<<"set output '"+bn+".tex';";
 //     gp<<"set output '"<<absolute(imagepath).string()<<"';";
 /*
@@ -1316,7 +1316,7 @@ void Chart::generatePlotImage(const path& imagepath) const
     "mv "+bn+".tex "+(tmp.dir/(bn+".tex")).string()+"; "
     "mv "+bn+"-inc.eps "+(tmp.dir/(bn+"-inc.eps")).string()+"; "
     "cd "+tmp.dir.string()+"; "
-    "pdflatex "+bn+".tex; "
+    "pdflatex -shell-escape "+bn+".tex; "
     "convert -density 600 "+bn+".pdf "+absolute(imagepath).string()
   ).c_str());
 }

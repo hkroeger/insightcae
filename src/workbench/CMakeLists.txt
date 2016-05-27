@@ -6,7 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 #SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g")
 
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
 # include_directories(${toolkit_SOURCE_DIR})
 # link_directories(${toolkit_BIN_DIR})
 

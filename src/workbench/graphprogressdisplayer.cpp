@@ -28,9 +28,9 @@
 #include <QCoreApplication>
 #include <QTimer>
 
-#include "qwt/qwt_scale_engine.h"
-#include "qwt/qwt_plot_grid.h"
-#include "qwt/qwt_legend.h"
+#include "qwt_scale_engine.h"
+#include "qwt_plot_grid.h"
+#include "qwt_legend.h"
 
 using namespace insight;
 

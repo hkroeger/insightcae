@@ -1069,7 +1069,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (p_.implicitPressureCorrection())
   {
     SOL["nCorrectors"]=1;
-    SOL["nOuterCorrectors"]=50;
+    SOL["nOuterCorrectors"]=p_.nOuterCorrectors();
     
     OFDictData::dict tol;
     tol["tolerance"]=1e-4;

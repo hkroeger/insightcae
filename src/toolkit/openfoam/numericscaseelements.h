@@ -240,6 +240,7 @@ class interFoamNumerics
 public:
   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
       (implicitPressureCorrection, bool, false)
+      (nOuterCorrectors, int, 50)
   )
 
 protected:

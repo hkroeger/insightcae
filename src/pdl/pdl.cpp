@@ -1240,12 +1240,8 @@ int main(int argc, char *argv[])
 	  f
 	  <<name<<"& set_"<<subname<<"(const "<<pe.second->cppTypeName(subname)<<"& value)"<<endl
 	  <<"{"<<endl;
-	  f<<"this->"<<subname<<" = value;"<<endl;
-// 	  f<<pe.second->cppTypeName(subname)<<"& "<<subname<<"_static = this->"<<subname<<";"<<endl;
-// 	  pe.second->cppWriteGetStatement
-// 	  (
-// 	    f, subname, subname, "value", ""
-// 	  );
+	  f<<" this->"<<subname<<" = value;"<<endl;
+	  f<<" return *this;"<<endl;
 	  f<<"}"<<endl;
 	}
 	

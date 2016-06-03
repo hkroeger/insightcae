@@ -50,7 +50,7 @@ public:
     inline void setExecutionMachine(const std::string& executionMachine) { executionMachine_=executionMachine; }
     inline const std::string& executionMachine() const { return executionMachine_; }
     
-    virtual int version() const =0;
+    virtual int version() const;
     
     virtual void executeCommand
     (  

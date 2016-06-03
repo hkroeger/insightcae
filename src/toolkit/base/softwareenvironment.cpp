@@ -42,6 +42,11 @@ SoftwareEnvironment::~SoftwareEnvironment()
 
 }
 
+int SoftwareEnvironment::version() const
+{
+  return -1;
+}
+
 void SoftwareEnvironment::executeCommand
 (
   const std::string& cmd, 

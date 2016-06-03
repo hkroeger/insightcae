@@ -1232,6 +1232,19 @@ int main(int argc, char *argv[])
 	<<"}"<<endl
 	;
 	
+	// set_variable initialization function
+	BOOST_FOREACH(const ParameterSetEntry& pe, result)
+	{
+	  std::string subname=pe.first;
+	  
+	  f
+	  <<name<<"& set_"<<subname<<"(const "<<pe.second->cppTypeName(subname)<<"& value)"<<endl
+	  <<"{"<<endl;
+	  f<<" this->"<<subname<<" = value;"<<endl;
+	  f<<" return *this;"<<endl;
+	  f<<"}"<<endl;
+	}
+	
 	// create a ParameterSet with default values set
 	f<<"static ParameterSet makeDefault() {"<<endl;
 	f<<"ParameterSet p;"<<endl;

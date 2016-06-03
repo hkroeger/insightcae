@@ -21,6 +21,7 @@ screw:
  Tri([L,0.5*Dn,0], [0,-P,0], [-P,0,0]),
  O, EX, 2.*M_PI)
 ;
+screw->density=7.9e-6;
 
 Lthr?=L;
 throughhole=

@@ -26,6 +26,7 @@ Revolution(Tri(O,
  Tri(O+(L+k)*EX+0.5*Dn*EY, -P*EY, -P*EX),
  O, EX, 2.*M_PI)
 ;
+screw->density=7.9e-6;
 
 Lthr?=L;
 throughhole=

@@ -18,6 +18,9 @@ parser.add_option("-f", "--from", dest="fromt", metavar="t0", default=0, type="f
                   help="initial time")
 parser.add_option("-t", "--to", dest="tot", metavar="t1", default=1e10, type="float",
                   help="final time")
+parser.add_option("-a", "--onlylatesttime", dest="onlylatesttime",
+		  action='store_true',
+                  help="only select the latest time step  (overrides --to and --from, if they are given)")
 parser.add_option("-l", "--list", dest="list",
 		  action='store_true',
                   help="list available state files and exit, search first in current dir then in insight shared dir")
@@ -89,7 +92,13 @@ AnimationScene1.EndTime = times[-1]
       rep.RescaleTransferFunctionToDataRange(False)
 """
     f.write("""\
-for curtime in filter(lambda t: t>=%g and t<=%g, times):
+onlylatesttime=%s
+ftimes=None
+if (onlylatesttime):
+ ftimes=[times[-1]]
+else:
+ ftimes=filter(lambda t: t>=%g and t<=%g, times)
+for curtime in ftimes:
   AnimationScene1.AnimationTime = curtime
   
   #RescaleTransferFunctionToDataRange(False)
@@ -101,10 +110,16 @@ for curtime in filter(lambda t: t>=%g and t<=%g, times):
   layouts=GetLayouts()
   for i,l in enumerate(sorted(layouts.keys(), key=lambda k: k[0])):
   #for i,l in enumerate(layouts):
-    fname="%s_layout%%02d_t%%g.png"%%(i,curtime)
+    fname="%s_layout%%02d"%%(i)
+    if (not onlylatesttime):
+      fname+="_t%%g.png"%%(curtime)
+    else:
+      fname+="_latesttime.png"
     print "Writing", fname
     SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)
-"""%(opts.fromt, opts.tot, rescalesnippet, fnamestem))
+"""%(
+  "True" if opts.onlylatesttime else "False",
+  opts.fromt, opts.tot, rescalesnippet, fnamestem))
   else:
     f.write("AnimationScene1.AnimationTime = times[-1]\n")
     

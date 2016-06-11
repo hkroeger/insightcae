@@ -48,13 +48,92 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
     path dir = setupExecutionEnvironment();
     SoftwareEnvironment g;
     
+    // unpack files
+    std::vector<std::string> filelist;
     g.executeCommand(
-      str(format("cd %s; tar xzf %s") % absolute(dir).string() % absolute(p.template_archive).string() )
+      str(format("cd %s; tar vxzf %s") % absolute(dir).string() % absolute(p.template_archive).string() ),
+      std::vector<std::string>(),
+      &filelist
     );
     
+    // ===== replace keyword occurences
+    
+    // build replacement cmd for sed
+    std::string replacecmd;
+    BOOST_FOREACH(Parameters::numerical_default_type& ne, p.numerical)
+    {
+      if (replacecmd.size()>0) replacecmd+=";";
+      
+      replacecmd+=str(format("s/###%s###/%g/g")
+        %ne.name%ne.value);
+    }
+    std::cout<<"replacecmd="<<replacecmd<<std::endl;
+    
+    // apply sed to all files except scripts
+    BOOST_FOREACH(std::string fn, filelist)
+    {
+      if (boost::filesystem::is_regular_file(dir/fn))
+      {
+	if ((fn!=ReservedFileNames[RUNSCRIPT])&&(fn!=ReservedFileNames[EVALSCRIPT]))
+	{
+	  std::cout<<"replacing variables in file "<<fn<<std::endl;
+	  g.executeCommand(
+	    str(format("cd %s; sed -ie '%s' %s") 
+	      % absolute(dir).string()
+	      % replacecmd
+	      % fn )
+	  );
+	}
+      }
+    }
+    
+    // ==== execute external analysis command
+    path rscr=dir/ReservedFileNames[RUNSCRIPT];
+    if (boost::filesystem::exists(rscr))
+    {
+      std::cout<<"executing analysis run script (assuming it is executable)"<<rscr<<std::endl;
+      g.executeCommand(
+	str(format("cd %s; ./%s") 
+	  % absolute(dir).string()
+	  % rscr.filename().string()
+       )
+      );
+    }
+    
+    // ==== return results
+    // execute eval script
+    path escr=dir/ReservedFileNames[EVALSCRIPT];
+    if (boost::filesystem::exists(escr))
+    {
+      std::cout<<"executing evaluation run script (assuming it is executable)"<<escr<<std::endl;
+      g.executeCommand(
+	str(format("cd %s; ./%s") 
+	  % absolute(dir).string()
+	  % escr.filename().string()
+       )
+      );
+    }
+
+    // read in the results
     ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
+    path resf=dir/ReservedFileNames[EVALRESULTS];
+    if (boost::filesystem::exists(resf))
+    {
+      results->readFromFile(resf);
+    }
+    else
+    {
+      results->insert(
+	"remark", 
+	new Comment(
+	  "The run script did not return result information by creating a file ``INSIGHT\\_RESULTS.isr''", 
+	  "", 
+	  ""
+	)
+      );
 
-
+    }
+    
     return results;
 }
 

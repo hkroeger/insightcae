@@ -333,130 +333,163 @@ Sketch::Sketch
   ln_(ln),
   vars_(vars),
   tol_(tol)
-{}
+{
+  ParameterListHash p(this);
+//   p+=*pl_;
+  p+=sharedModelFilePath(fn_.string());
+  p+=ln_;
+  for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+  {
+    p+=boost::fusion::at_c<0>(*it);
+    p+=boost::fusion::at_c<1>(*it)->value();
+  }
+  p+=tol_;
+}
 
 void Sketch::build()
 {
-  if (!pl_->providesPlanarReference())
-    throw insight::Exception("Sketch: Planar reference required!");
-  
-  boost::filesystem::path infilename = fn_;
-  if (!exists(infilename))
-    infilename=sharedModelFilePath(fn_.string());
-  
-  boost::filesystem::path filename = fn_;
-  std::string layername = ln_;
-  
-  std::string ext=fn_.extension().string();
-  boost::algorithm::to_lower(ext);
-//   cout<<ext<<endl;
-  
-  if (ext==".fcstd")
+  if (!cache.contains(hash()))
   {
-    filename =
-      boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
-    boost::filesystem::path macrofilename =
-      boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
-    layername="0";
+    if (!pl_->providesPlanarReference())
+      throw insight::Exception("Sketch: Planar reference required!");
     
+    boost::filesystem::path infilename = fn_;
+    if (!exists(infilename))
+      infilename=sharedModelFilePath(fn_.string());
+    
+    boost::filesystem::path filename = fn_;
+    std::string layername = ln_;
+    
+    std::string ext=fn_.extension().string();
+    boost::algorithm::to_lower(ext);
+  //   cout<<ext<<endl;
+    
+    if (ext==".fcstd")
     {
+      filename =
+	boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+      boost::filesystem::path macrofilename =
+	boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
+      layername="0";
+      
+      {
+	
+	std::string vargs="";
+	for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+	{
+	  std::string vname=boost::fusion::at_c<0>(*it);
+	  double vval=boost::fusion::at_c<1>(*it)->value();
+	  if (starts_with(vname, "Constraint"))
+	  {
+	    try 
+	    {
+	      int vid;
+	      vname.erase(0,10);
+	      vid=lexical_cast<int>(vname);
+	      vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+	    }
+	    catch (...)
+	    {
+	    }
+	  }
+	  else
+	  {
+	    vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
+	  }
+	}
+	
+	std::ofstream mf(macrofilename.c_str());
+	mf << str( format(
+  "import FreeCAD\n"
+  "import importDXF\n"
+
+  "FreeCAD.open(\"%s\")\n"
+  "__objs__=[]\n"
+  "doc=FreeCAD.getDocument( \"%s\" );\n"
+  //"print dir(doc)\n"
+  "obj=None\n"
+  "for o in doc.Objects:\n"
+  " if (o.Label==\"%s\"):\n"
+  "  obj=o\n"
+  +vargs+
+  "  break\n"
+  //"print obj\n"
+  "__objs__.append(obj)\n"
+  "doc.recompute()\n"
+  "importDXF.export(__objs__, \"%s\")\n"
+  "del __objs__\n") 
+	% infilename.string() 
+	% infilename.filename().stem().string() 
+	% ln_
+	% filename.string() 
+	);
+      }
+      
+      std::string cmd = str( format("FreeCADCmd %s") % macrofilename );
+  //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
+      cout<<"CMD=\""<<cmd<<"\""<<endl;
+      if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
+      {
+	throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+      }
+      boost::filesystem::remove(macrofilename);
+      
+    }
+    else if (ext==".psketch")
+    {
+      filename=boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
+      layername="0";
       
       std::string vargs="";
       for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
       {
 	std::string vname=boost::fusion::at_c<0>(*it);
 	double vval=boost::fusion::at_c<1>(*it)->value();
-	if (starts_with(vname, "Constraint"))
-	{
-	  try 
-	  {
-	    int vid;
-	    vname.erase(0,10);
-	    vid=lexical_cast<int>(vname);
-	    vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
-	  }
-	  catch (...)
-	  {
-	  }
-	}
-	else
-	{
-	  vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
-	}
+	vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
       }
       
-      std::ofstream mf(macrofilename.c_str());
-      mf << str( format(
-"import FreeCAD\n"
-"import importDXF\n"
+      std::string cmd = str( format("psketchercmd %s -o %s") % infilename % filename ) + vargs;
+      cout<<"CMD=\""<<cmd<<"\""<<endl;
+      if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
+      {
+	throw insight::Exception("Conversion of pSketch file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+      }
+    }
+    
+    TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
+    providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
+    
+    gp_Trsf tr;
+    gp_Ax3 ax=*pl_;
+    tr.SetTransformation(ax);
+    
+    BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
 
-"FreeCAD.open(\"%s\")\n"
-"__objs__=[]\n"
-"doc=FreeCAD.getDocument( \"%s\" );\n"
-//"print dir(doc)\n"
-"obj=None\n"
-"for o in doc.Objects:\n"
-" if (o.Label==\"%s\"):\n"
-"  obj=o\n"
-+vargs+
-"  break\n"
-//"print obj\n"
-"__objs__.append(obj)\n"
-"doc.recompute()\n"
-"importDXF.export(__objs__, \"%s\")\n"
-"del __objs__\n") 
-      % infilename.string() 
-      % infilename.filename().stem().string() 
-      % ln_
-      % filename.string() 
-      );
-    }
-    
-    std::string cmd = str( format("FreeCADCmd %s") % macrofilename );
-//     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-    cout<<"CMD=\""<<cmd<<"\""<<endl;
-    if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
-    {
-      throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
-    }
-    boost::filesystem::remove(macrofilename);
-    
-  }
-  else if (ext==".psketch")
-  {
-    filename=boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.dxf" );
-    layername="0";
-    
-    std::string vargs="";
-    for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
-    {
-      std::string vname=boost::fusion::at_c<0>(*it);
-      double vval=boost::fusion::at_c<1>(*it)->value();
-      vargs+=" -v"+vname+"="+lexical_cast<std::string>(vval);
-    }
-    
-    std::string cmd = str( format("psketchercmd %s -o %s") % infilename % filename ) + vargs;
-    cout<<"CMD=\""<<cmd<<"\""<<endl;
-    if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
-    {
-      throw insight::Exception("Conversion of pSketch file "+infilename.string()+" into DXF "+filename.string()+" failed!");
-    }
-  }
-  
-  TopoDS_Wire w = DXFReader(filename, layername).Wire(tol_);
-  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w));
-  
-  gp_Trsf tr;
-  gp_Ax3 ax=*pl_;
-  tr.SetTransformation(ax);
-  
-  BRepBuilderAPI_Transform btr(w, tr.Inverted(), true);
+    if (w.Closed())
+      setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+    else
+      setShape(TopoDS::Wire(btr.Shape()));
 
-  if (w.Closed())
-    setShape(BRepBuilderAPI_MakeFace(gp_Pln(ax), TopoDS::Wire(btr.Shape())).Shape());
+    std::cout<<"sketch"<<std::endl;
+    cache.insert(shared_from_this());
+  }
   else
-    setShape(TopoDS::Wire(btr.Shape()));
+  {
+    this->operator=(*cache.markAsUsed<Sketch>(hash()));
+  }
 }
+
+
+void Sketch::operator=(const Sketch& o)
+{
+  pl_=o.pl_;
+  fn_=o.fn_;
+  ln_=o.ln_;
+  vars_=o.vars_;
+  tol_=o.tol_;
+  Feature::operator=(o);
+}
+
 
 Sketch::operator const TopoDS_Face& () const
 {

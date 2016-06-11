@@ -58,6 +58,8 @@ int main(int argc, char** argv)
   }
   else
   {
+//     XInitThreads();
+    
     ISCADApplication app(argc, argv);
     std::locale::global(std::locale::classic());
     QLocale::setDefault(QLocale::C);

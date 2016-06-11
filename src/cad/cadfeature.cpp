@@ -88,6 +88,18 @@ std::size_t hash<insight::cad::Feature>::operator()(const insight::cad::Feature&
   return m.hash();
 }
 
+std::size_t hash<boost::filesystem::path>::operator()(const boost::filesystem::path& fn) const
+{
+  size_t h=0;
+  // build from file path string and last write time (latter only if file exists)
+  boost::hash_combine(h, fn.string());
+  if (boost::filesystem::exists(fn))
+  {
+    boost::hash_combine(h, boost::filesystem::last_write_time(fn));
+  }
+  return h;
+}
+
 }
 
 
@@ -102,7 +114,7 @@ ParameterListHash::ParameterListHash()
 {}
 
 ParameterListHash::ParameterListHash(Feature *m)
-: model_(m), hash_(m->hash())
+: model_(m), hash_(0)
 {}
 
 
@@ -189,6 +201,13 @@ void Feature::setShapeHash()
     );    
   }
 }
+
+void Feature::calcHash()
+{
+  hash_=0.0;
+  if (valid()) setShapeHash();
+}
+
 
 void Feature::updateVolProps() const
 {
@@ -361,6 +380,19 @@ FeaturePtr Feature::subshape(const std::string& name)
 Feature& Feature::operator=(const Feature& o)
 {
   ASTBase::operator=(o);
+  isleaf_=o.isleaf_;
+  
+  providedSubshapes_=o.providedSubshapes_;
+  providedDatums_=o.providedDatums_;
+  refvalues_=o.refvalues_;
+  refpoints_=o.refpoints_;
+  refvectors_=o.refvectors_;
+  
+  visresolution_=o.visresolution_;
+  density_=o.density_;
+  areaWeight_=o.areaWeight_;
+  hash_=o.hash_;
+
   if (o.valid())
   {
     setShape(o.shape_);
@@ -1847,61 +1879,109 @@ bool SingleVolumeFeature::isSingleVolume() const
   return true;
 }
 
-FeatureCache::FeatureCache(const filesystem::path& cacheDir)
-: cacheDir_(cacheDir),
-  removeCacheDir_(false)
-{
-  if (cacheDir.empty())
-  {
-    removeCacheDir_=true;
-    cacheDir_ = boost::filesystem::unique_path
-    (
-      boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
-    );
-//     boost::filesystem::create_directories(cacheDir_);
-  }
-}
+// FeatureCache::FeatureCache(const filesystem::path& cacheDir)
+// : cacheDir_(cacheDir),
+//   removeCacheDir_(false)
+// {
+//   if (cacheDir.empty())
+//   {
+//     removeCacheDir_=true;
+//     cacheDir_ = boost::filesystem::unique_path
+//     (
+//       boost::filesystem::temp_directory_path()/("iscad_cache_%%%%%%%")
+//     );
+// //     boost::filesystem::create_directories(cacheDir_);
+//   }
+// }
+// 
+// FeatureCache::~FeatureCache()
+// {
+// //   if (removeCacheDir_)
+// //   {
+// //     boost::filesystem::remove_all(cacheDir_);
+// //   }
+// }
+// 
+// void FeatureCache::initRebuild()
+// {
+// //   usedFilesDuringRebuild_.clear();
+// }
+// 
+// void FeatureCache::finishRebuild()
+// {
+//   // remove all cache files that have not been used
+// }
+// 
+// 
+// bool FeatureCache::contains(size_t hash) const
+// {
+// //   return boost::filesystem::exists(fileName(hash));
+//   return false;
+// }
+// 
+// 
+// filesystem::path FeatureCache::markAsUsed(size_t hash)
+// {
+// //   usedFilesDuringRebuild_.insert(fileName(hash));
+//   return fileName(hash);
+// }
+// 
+// filesystem::path FeatureCache::fileName(size_t hash) const
+// {
+//   return boost::filesystem::absolute
+//   (
+//     cacheDir_ /
+//     boost::filesystem::path( str(format("%x")%hash) + ".iscad_cache" )
+//   );
+// }
+
+
+FeatureCache::FeatureCache()
+{}
 
 FeatureCache::~FeatureCache()
-{
-//   if (removeCacheDir_)
-//   {
-//     boost::filesystem::remove_all(cacheDir_);
-//   }
-}
+{}
 
 void FeatureCache::initRebuild()
 {
-//   usedFilesDuringRebuild_.clear();
+   usedDuringRebuild_.clear();
 }
 
 void FeatureCache::finishRebuild()
 {
-  // remove all cache files that have not been used
+  // remove all cache entries that have not been used
+  std::cout<<"== Finish Rebuild: Cache Summary =="<<std::endl;
+  std::cout<<"cache size after rebuild: "<<size()<<std::endl;
+  std::cout<<"# used during rebuild: "<<usedDuringRebuild_.size()<<std::endl;
+  
+  for (auto it = cbegin(); it != cend();)
+  {
+    if ( usedDuringRebuild_.find(it->first)==usedDuringRebuild_.end() )
+    {
+      erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+  std::cout<<"cache size after cleanup: "<<size()<<std::endl;
+}
+
+void FeatureCache::insert(FeaturePtr p)
+{
+  size_t h=p->hash();
+  (*this)[h]=p;
+  usedDuringRebuild_.insert(h);
 }
 
 
 bool FeatureCache::contains(size_t hash) const
 {
-//   return boost::filesystem::exists(fileName(hash));
-  return false;
+  return ( this->find(hash) != end() );
 }
 
 
-filesystem::path FeatureCache::markAsUsed(size_t hash)
-{
-//   usedFilesDuringRebuild_.insert(fileName(hash));
-  return fileName(hash);
-}
-
-filesystem::path FeatureCache::fileName(size_t hash) const
-{
-  return boost::filesystem::absolute
-  (
-    cacheDir_ /
-    boost::filesystem::path( str(format("%x")%hash) + ".iscad_cache" )
-  );
-}
 
 FeatureCache cache;
 

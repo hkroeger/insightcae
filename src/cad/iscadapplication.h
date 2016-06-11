@@ -80,11 +80,33 @@ public:
 };
 
 class QoccViewerContext;
+class ISCADMainWindow;
+class QModelStepItem;
 // class QoccViewWidget;
 
-class QModelStepItem
-: public QObject, public QListWidgetItem
+class ModelStepItemAdder
+: public QThread
 {
+  ISCADMainWindow* mw_;
+  QModelStepItem* msi_;
+  
+public:
+  ModelStepItemAdder
+  (
+    ISCADMainWindow* mw, 
+    QModelStepItem* msi
+  );
+  
+  void run();
+};
+
+class QModelStepItem
+: //public QObject, 
+  public QObject, //QThread, 
+  public QListWidgetItem
+{
+  friend class ModelStepItemAdder;
+  
   Q_OBJECT 
   
   QString name_;
@@ -104,6 +126,8 @@ public:
   QModelStepItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0);
   
+//   void run();
+  void rebuild();
   void reset(insight::cad::FeaturePtr smp);
   void wireframe();
   void shaded();
@@ -234,6 +258,8 @@ class ISCADMainWindow
 : public QMainWindow
 {
   Q_OBJECT
+
+  friend class ModelStepItemAdder;
 
 protected:
   boost::filesystem::path filename_;

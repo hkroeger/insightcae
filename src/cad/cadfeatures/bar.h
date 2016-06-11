@@ -72,8 +72,11 @@ public:
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
     const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
   );
+
+  void operator=(const Bar& o);
+
   virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
+
   virtual void build();
 };
 

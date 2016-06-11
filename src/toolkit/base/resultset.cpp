@@ -243,10 +243,28 @@ void ResultElementCollection::appendToNode(rapidxml::xml_document<>& doc, rapidx
 
 void ResultElementCollection::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
 {
-  for( iterator i=begin(); i!= end(); i++)
-  {
-    i->second->readFromNode(i->first, doc, node);
-  }
+    for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
+    {
+      std::string tname(e->name());
+      std::string name(e->first_attribute("name")->value());
+      std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
+      
+      ResultElementPtr re
+      ( 
+	ResultElement::lookup
+	(
+	  tname,
+	  ResultElement::ResultElementConstrP("", "", "")
+	)
+      );
+
+      re->readFromNode(name, doc, *e);
+      insert(name, re);
+    }
+//   for( iterator i=begin(); i!= end(); i++)
+//   {
+//     i->second->readFromNode(i->first, doc, node);
+//   }
 }
 
 
@@ -1135,6 +1153,13 @@ ResultElement& ResultElementCollection::insert(const string& key, ResultElementP
   return *(*res.first).second;
 }
 
+
+ResultElement& ResultElementCollection::insert(const string& key, const ResultElement& elem)
+{
+  std::pair< iterator, bool > res=
+    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem.clone()));
+  return *(*res.first).second;
+}
 
 
 

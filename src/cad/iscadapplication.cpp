@@ -170,7 +170,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   setCentralWidget(spl0);
   spl0->addWidget(spl);
   log_=new QTextEdit;
-  logger_=new Q_DebugStream(std::cout, log_);
+//   logger_=new Q_DebugStream(std::cout, log_);
   spl0->addWidget(log_);
   context_=new QoccViewerContext;
   
@@ -388,8 +388,14 @@ void ViewState::randomizeColor()
 
 
 
-QModelStepItem::QModelStepItem(const std::string& name, FeaturePtr smp, QoccViewerContext* context, 
-		const ViewState& state, QListWidget* view )
+QModelStepItem::QModelStepItem
+(
+  const std::string& name, 
+  FeaturePtr smp, 
+  QoccViewerContext* context, 
+  const ViewState& state, 
+  QListWidget* view 
+)
 : QListWidgetItem(QString::fromStdString(name), view),
   name_(QString::fromStdString(name)),
   context_(context),
@@ -397,11 +403,23 @@ QModelStepItem::QModelStepItem(const std::string& name, FeaturePtr smp, QoccView
 {
   setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
+//   smp_=smp;
 }
 
+
+// void QModelStepItem::run()
+// {
+//   rebuild();
+// }
+// 
 void QModelStepItem::reset(FeaturePtr smp)
 {
   smp_=smp;
+  rebuild();
+}
+
+void QModelStepItem::rebuild()
+{
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
   ais_=new AIS_Shape(*smp_);
 //     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
@@ -1088,6 +1106,43 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
+
+ModelStepItemAdder::ModelStepItemAdder
+(
+  ISCADMainWindow* mw,
+  QModelStepItem* msi
+)
+: QThread(), mw_(mw), msi_(msi)
+{}
+
+void ModelStepItemAdder::run()
+{
+  msi_->rebuild();
+  
+  connect
+  (
+    msi_, SIGNAL(insertParserStatementAtCursor(const QString&)),
+    mw_->editor_, SLOT(insertPlainText(const QString&))
+  );
+  connect
+  (
+    msi_, SIGNAL(jump_to(const QString&)),
+    mw_, SLOT(jump_to(const QString&))
+  );
+  connect
+  (
+    msi_, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
+    mw_, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
+  );
+  connect
+  (
+    msi_, SIGNAL(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool)),
+    mw_, SLOT(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool))
+  );
+  mw_->modelsteplist_->addItem(msi_);
+}
+
+
 void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible)
 { 
   ViewState vd;
@@ -1103,6 +1158,13 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
   }
   
   QModelStepItem* msi=new QModelStepItem(sn, sm, context_, vd);
+  
+//   ModelStepItemAdder* ia 
+//    = new ModelStepItemAdder(this, msi);
+//   connect(ia, SIGNAL(finished()), 
+// 	  ia, SLOT(deleteLater()));
+//   ia->start();
+  
   connect
   (
     msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
@@ -1245,6 +1307,9 @@ void ISCADMainWindow::rebuildModel()
   std::istringstream is(editor_->toPlainText().toStdString());
   
   int failloc=-1;
+  
+  cache.initRebuild();
+  
   ModelPtr m(new Model);
   bool r=parseISCADModelStream(is, m.get(), &failloc);
 
@@ -1255,14 +1320,17 @@ void ISCADMainWindow::rebuildModel()
     tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
     editor_->setTextCursor(tmpCursor);
     
-    statusBar()->showMessage("Model regeneration failed => Cursor moved to location where parsing stopped!");
+    statusBar()->showMessage("Model parsing failed => Cursor moved to location where parsing stopped!");
   }
   else
   {
-    statusBar()->showMessage("Model regeneration successful.");
+    statusBar()->showMessage("Model parsed successfully. Now performing rebuild...");
     
     context_->getContext()->EraseAll();
 //     m->modelstepSymbols.for_each(Transferrer(*this));
+
+    // adding everything to scene. 
+    // rebuild will occur as soon as needed.
     
     auto modelsteps=m->modelsteps();
     BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
@@ -1297,6 +1365,10 @@ void ISCADMainWindow::rebuildModel()
     BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
     { addVariable(v.first, v.second); }
 //     m->vectorSymbols.for_each(Transferrer(*this));
+
+    statusBar()->showMessage("Model rebuild successfully finished.");
+
+    cache.finishRebuild();
   }
 }
 

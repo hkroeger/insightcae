@@ -39,7 +39,7 @@ PARAMETERSET>>> FileTemplate Parameters
 template_archive = path "" "Path to archive which contains all the template files"
 
 numerical = array [ set {
- name = string "1" "Identifier of the variable."
+ name = string "1" "Identifier of the variable. All occurences of ###<NAME>### will be replaced by the value in the template files."
  value = double 0.0 "Value for replacement"
 } ] *0 "Numerical variables in file template"
 
@@ -47,6 +47,17 @@ numerical = array [ set {
 */
 
 protected:
+  enum ReservedFiles 
+  {
+    RUNSCRIPT, 
+    EVALSCRIPT,
+    EVALRESULTS
+  };
+  std::vector<std::string> ReservedFileNames = boost::assign::list_of<std::string>
+   ("INSIGHT_RUN")
+   ("INSIGHT_EVAL")
+   ("INSIGHT_RESULTS.isr")
+   ;
     // derived data
   
 public:

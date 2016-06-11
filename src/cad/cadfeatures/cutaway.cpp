@@ -96,15 +96,15 @@ void Cutaway::build()
     
     std::cout<<"Quad"<<std::endl;
   #warning Relocate p0 in plane to somewhere nearer to model center!
-    Quad q
+    FeaturePtr q(new Quad
     (
       matconst(p0-0.5*L*(ex+ey)), 
       matconst(L*ex), 
       matconst(L*ey)
-    );
-    this->setShape(q);
+    ));
+    this->setShape(q->shape());
   //   std::cout<<"Airspace"<<std::endl;
-    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q), to_Vec(L*n) );
+    TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*n) );
     
   //   SolidModel(airspace).saveAs("airspace.stp");
     providedSubshapes_["AirSpace"]=FeaturePtr(new Feature(airspace));
@@ -118,7 +118,7 @@ void Cutaway::build()
 	  new BooleanIntersection
 	  (
 	    model_, 
-	    FeaturePtr(new Feature(TopoDS::Face(q)))
+	    FeaturePtr(new Feature(TopoDS::Face(q->shape())))
 	  )
 	);
     }

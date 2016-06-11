@@ -79,6 +79,11 @@ template<> struct hash<insight::cad::Feature>
   std::size_t operator()(const insight::cad::Feature& m) const;
 };
 
+template<> struct hash<boost::filesystem::path>
+{
+  std::size_t operator()(const boost::filesystem::path& fn) const;
+};
+
 
 }
 
@@ -189,8 +194,15 @@ protected:
   TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
+  
   void setShapeHash();
   
+  /**
+   * sets the hash from input parameters
+   * (not the shape)
+   * has to be computed before build!
+   */
+  virtual void calcHash();
   
  
 public:
@@ -201,6 +213,7 @@ public:
   Feature(const TopoDS_Shape& shape);
   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+  
   virtual ~Feature();
   
   inline bool isleaf() const { return isleaf_; }
@@ -378,8 +391,9 @@ arma::mat transTrsf(const gp_Trsf& tr);
 template<class T>
 void ParameterListHash::addParameter(const T& p)
 {
-  if (model_) hash_=model_->hash_;
   boost::hash_combine(hash_, p);
+  
+  // update
   if (model_) model_->hash_=hash_;
 }
 
@@ -401,24 +415,70 @@ public:
 };
 
 
+// class FeatureCache
+// {
+//   boost::filesystem::path cacheDir_;
+//   bool removeCacheDir_;
+//   
+//   std::set<boost::filesystem::path> usedFilesDuringRebuild_;
+//   
+//   boost::filesystem::path fileName(size_t hash) const;
+//   
+// public:
+//   FeatureCache(const boost::filesystem::path& cacheDir="");
+//   ~FeatureCache();
+//   
+//   void initRebuild();
+//   void finishRebuild();
+//   
+//   bool contains(size_t hash) const;
+//   boost::filesystem::path markAsUsed(size_t hash);
+//   
+// };
+
+
+#warning cachable feature always have to be stored in shared_ptr's! create functions and private constructors should be issues to ensure this.
 class FeatureCache
+: public std::map<size_t, FeaturePtr>
 {
-  boost::filesystem::path cacheDir_;
-  bool removeCacheDir_;
-  
-  std::set<boost::filesystem::path> usedFilesDuringRebuild_;
-  
-  boost::filesystem::path fileName(size_t hash) const;
+  std::set<size_t> usedDuringRebuild_;
   
 public:
-  FeatureCache(const boost::filesystem::path& cacheDir="");
+  FeatureCache();
   ~FeatureCache();
   
   void initRebuild();
   void finishRebuild();
   
+  void insert(FeaturePtr p);
   bool contains(size_t hash) const;
-  boost::filesystem::path markAsUsed(size_t hash);
+  
+  template<class T>
+  boost::shared_ptr<T> markAsUsed(size_t hash)
+  {
+    iterator i=this->find(hash);
+    
+    if (i==end()) 
+      throw insight::Exception
+      (
+	"requested entry in CAD feature cache is not found!"
+      );
+    
+    boost::shared_ptr<T> cp
+    ( 
+      boost::dynamic_pointer_cast<T>( i->second ) 
+    );
+    
+    if (!cp) 
+      throw insight::Exception
+      (
+	"requested entry in CAD feature cache found,"
+	" but is of wrong type! (cache: "+i->second->type()
+      );
+    
+    usedDuringRebuild_.insert(hash);
+    return cp;
+  }
   
 };
 

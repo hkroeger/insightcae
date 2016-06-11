@@ -101,6 +101,8 @@ public:
     double tol=Precision::Confusion() 
   );
   
+  void operator=(const Sketch& o);
+  
   virtual void build();
   
 //   virtual bool isSingleCloseWire() const;

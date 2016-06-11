@@ -42,6 +42,8 @@ public:
   Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
   operator const TopoDS_Face& () const;
   
+  void operator=(const Quad& o);
+  
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

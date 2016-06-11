@@ -110,13 +110,23 @@ class ResultElementCollection
 {
 public:
   virtual ~ResultElementCollection();
+  
+#ifndef SWIG
   /**
    * insert elem into the set.
    * elem is put into a shared_ptr but not clone. So don't delete it!
    */
   ResultElement& insert(const std::string& key, ResultElement* elem);
+#endif
+  
 //   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
   ResultElement& insert(const std::string& key, ResultElementPtr elem);
+
+  /**
+   * insert elem into the set.
+   * elem is cloned.
+   */
+  ResultElement& insert(const std::string& key, const ResultElement& elem);
   
   void writeLatexCodeOfElements(std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath) const;
 

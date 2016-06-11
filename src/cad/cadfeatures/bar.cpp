@@ -39,21 +39,7 @@ addToFactoryTable(Feature, Bar, NoParameters);
 void Bar::build()
 {
   
-  if (!valid())
-  {
-    ParameterListHash h(this);
-    h+=p0_->value();
-    h+=p1_->value();
-    h+=*xsec_;
-    h+=vert_->value();
-    h+=ext0_->value();
-    h+=ext1_->value();
-    h+=miterangle0_vert_->value();
-    h+=miterangle1_vert_->value();
-    h+=miterangle0_hor_->value();
-    h+=miterangle1_hor_->value();
-    
-//     if (!cache.contains(h))
+    if (!cache.contains(hash()))
     {
 
       arma::mat p0=*p0_;
@@ -121,7 +107,12 @@ void Bar::build()
 	  to_Vec(ex)
 	)
       );
-      TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(*xsec_), tr.Inverted()).Shape();
+      TopoDS_Shape xsecs =
+	BRepBuilderAPI_Transform
+	(
+	  xsec_->shape(), 
+	  tr.Inverted()
+	).Shape();
 
     //   BRepOffsetAPI_MakePipeShell p(spinew);
     //   Handle_Law_Constant law(new Law_Constant());
@@ -166,18 +157,19 @@ void Bar::build()
       }
       
       setShape(result);
-      
-//       write(cache.markAsUsed(h));
+    
+      std::cout<<"bar"<<std::endl;      
+      cache.insert(shared_from_this());
     }
-//     else
-//     {
-//       read(cache.markAsUsed(h));
-//     }
-  }
+    else
+    {
+      this->operator=(*cache.markAsUsed<Bar>(hash()));
+    }
 }
 
 
-Bar::Bar(const NoParameters& nop): Feature(nop)
+Bar::Bar(const NoParameters& nop)
+: Feature(nop)
 {}
 
 
@@ -200,7 +192,18 @@ Bar::Bar
   miterangle0_hor_(miterangle0_hor),
   miterangle1_hor_(miterangle1_hor)
 {
-//   create(start, end, xsec, vert, ext0, ext1, miterangle0_vert, miterangle1_vert, miterangle0_hor, miterangle1_hor);
+  // build the parameter hash
+  ParameterListHash h(this);
+  h+=p0_->value();
+  h+=p1_->value();
+  h+=*xsec_;
+  h+=vert_->value();
+  h+=ext0_->value();
+  h+=ext1_->value();
+  h+=miterangle0_vert_->value();
+  h+=miterangle1_vert_->value();
+  h+=miterangle0_hor_->value();
+  h+=miterangle1_hor_->value();
 }
 
 Bar::Bar
@@ -221,16 +224,34 @@ Bar::Bar
   miterangle0_hor_(boost::fusion::at_c<2>(ext_miterv_miterh0)),
   miterangle1_hor_(boost::fusion::at_c<2>(ext_miterv_miterh1))
 {
-//   create
-//   (
-//     start, end, 
-//     xsec, vert, 
-//     boost::fusion::at_c<0>(ext_miterv_miterh0), boost::fusion::at_c<0>(ext_miterv_miterh1),
-//     boost::fusion::at_c<1>(ext_miterv_miterh0), boost::fusion::at_c<1>(ext_miterv_miterh1),
-//     boost::fusion::at_c<2>(ext_miterv_miterh0), boost::fusion::at_c<2>(ext_miterv_miterh1)
-//   );
+  // build the parameter hash
+  ParameterListHash h(this);
+  h+=p0_->value();
+  h+=p1_->value();
+  h+=*xsec_;
+  h+=vert_->value();
+  h+=ext0_->value();
+  h+=ext1_->value();
+  h+=miterangle0_vert_->value();
+  h+=miterangle1_vert_->value();
+  h+=miterangle0_hor_->value();
+  h+=miterangle1_hor_->value();
 }
 
+void Bar::operator=(const Bar& o)
+{
+  p0_=o.p0_;
+  p1_=o.p1_;
+  xsec_=o.xsec_;
+  vert_=o.vert_;
+  ext0_=o.ext0_;
+  ext1_=o.ext1_;
+  miterangle0_vert_=o.miterangle0_vert_;
+  miterangle1_vert_=o.miterangle1_vert_;
+  miterangle0_hor_=o.miterangle0_hor_;
+  miterangle1_hor_=o.miterangle1_hor_;
+  Feature::operator=(o);
+}
 
 void Bar::insertrule(parser::ISCADParser& ruleset) const
 {

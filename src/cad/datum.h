@@ -65,7 +65,9 @@ public:
 
   virtual void write(std::ostream& file) const;
 };
-#endif
+
+
+
 
 class DatumPoint
 : public Datum
@@ -81,16 +83,8 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
-class ExplicitDatumPoint
-: public DatumPoint
-{
-  VectorPtr coord_;
-  
-public:
-  ExplicitDatumPoint(VectorPtr c);
-  
-  virtual void build();
-};
+
+
 
 class DatumAxis
 : public Datum
@@ -107,16 +101,7 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
 
-class ExplicitDatumAxis
-: public DatumAxis
-{
-  VectorPtr p0_, ex_;
-  
-public:
-  ExplicitDatumAxis(VectorPtr p0, VectorPtr ex);
-  
-  virtual void build();
-};
+
 
 class DatumPlaneData
 : public Datum
@@ -132,6 +117,32 @@ public:
 
   virtual AIS_InteractiveObject* createAISRepr() const;
 };
+
+#endif
+
+class ExplicitDatumPoint
+: public DatumPoint
+{
+  VectorPtr coord_;
+  
+public:
+  ExplicitDatumPoint(VectorPtr c);
+  
+  virtual void build();
+};
+
+
+class ExplicitDatumAxis
+: public DatumAxis
+{
+  VectorPtr p0_, ex_;
+  
+public:
+  ExplicitDatumAxis(VectorPtr p0, VectorPtr ex);
+  
+  virtual void build();
+};
+
 
 class DatumPlane
 : public DatumPlaneData

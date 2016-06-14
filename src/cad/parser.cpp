@@ -34,6 +34,7 @@
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
+// #include "boost/spirit/home/phoenix/statement/sequence.hpp"
 
 #include "cadfeatures.h"
 #include "meshing.h"
@@ -366,8 +367,19 @@ ISCADParser::ISCADParser(Model* model)
     r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
     
     r_solidmodel_primary = 
-       r_modelstepFunction 
+       r_modelstepFunction
         [ _val = qi::_1 ]
+//       |
+//        ( 
+//         ( lit("for") 
+//          >> '(' >> r_identifier >> '=' >> r_scalarExpression >> ':' >> r_scalarExpression >> ')' )
+// 	[ ( phx::bind(&Model::addScalar, model_, qi::_1, qi::_2), _val = qi::_1 ) ]
+//          >> r_solidmodel_expression
+//        )
+//         [ (
+// 	  _val = qi::_2 /*,
+// 	  phx::bind(&Model::removeScalar, model_, qi::_1)*/
+// 	) ]
       |
 //        qi::lexeme [ model_->modelstepSymbols() ] 
 // 	[ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]

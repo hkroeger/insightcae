@@ -51,6 +51,7 @@ add_sources(insightcad_SOURCES
  freecadmodel.cpp
  pyramid.cpp
  closedpolyline.cpp
+ loop.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

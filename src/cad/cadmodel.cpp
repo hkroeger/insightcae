@@ -154,6 +154,12 @@ void Model::addComponent(const std::string& name, FeaturePtr value)
   addModelstep(name, value);
 }
 
+void Model::removeScalar(const string& name)
+{
+  scalars_.remove(name);
+}
+
+
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
 #ifdef INSIGHT_CAD_DEBUG

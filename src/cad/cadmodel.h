@@ -121,6 +121,8 @@ public:
   void addDatum(const std::string& name, DatumPtr value);
   void addModelstep(const std::string& name, FeaturePtr value);
   void addComponent(const std::string& name, FeaturePtr value);
+
+  void removeScalar(const std::string& name);
   
   void addVertexFeature(const std::string& name, FeatureSetPtr value);
   void addEdgeFeature(const std::string& name, FeatureSetPtr value);

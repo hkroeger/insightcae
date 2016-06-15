@@ -28,10 +28,12 @@ namespace cad
 Export::Export
 (
   FeaturePtr model, 
-  const boost::filesystem::path& filename
+  const boost::filesystem::path& filename,
+  ExportNamedFeatures namedfeats
 )
 : model_(model),
-  filename_(filename)
+  filename_(filename),
+  namedfeats_(namedfeats)
 {}
 
 Export::Export(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy)
@@ -63,7 +65,7 @@ void Export::build()
     }
     else
     {
-      model_->saveAs(filename_);
+      model_->saveAs(filename_, namedfeats_);
     }
   }
 }

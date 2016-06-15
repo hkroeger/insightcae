@@ -121,6 +121,13 @@ void FeatureSet::setData(const FeatureSetData& d)
   setValid();
 }
 
+void FeatureSet::add(const FeatureID& e)
+{
+  data_.insert(e);
+  setValid();
+}
+
+
 
 FeatureSet::operator const FeatureSetData& () const
 {

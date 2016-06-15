@@ -34,6 +34,7 @@
 
 #include "dxfwriter.h"
 #include "featurefilter.h"
+#include "feature.h"
 #include "gp_Cylinder.hxx"
 
 #include <BRepLib_FindSurface.hxx>
@@ -42,6 +43,33 @@
 #include "HLRBRep_PolyHLRToShape.hxx"
 #include "HLRBRep_PolyAlgo.hxx"
 #include "GProp_PrincipalProps.hxx"
+#include "Standard_Transient.hxx"
+// #include "Standard_Transient_proto.hxx"
+#include "CDM_Document.hxx"
+// #include "MMgt_TShared.hxx"
+#include "TDocStd_Document.hxx"
+#include "XCAFApp_Application.hxx"
+#include "XCAFDoc.hxx"
+#include "XCAFDoc_DocumentTool.hxx"
+#include "XCAFDoc_ShapeTool.hxx"
+#include "XSControl_WorkSession.hxx"
+#include "XSControl_TransferReader.hxx"
+#include "XSControl_TransferWriter.hxx"
+#include "StepData_StepModel.hxx"
+#include "TDF_LabelSequence.hxx"
+#include "Handle_StepRepr_RepresentationItem.hxx"
+#include "STEPConstruct.hxx"
+#include "STEPCAFControl_Writer.hxx"
+#include "STEPCAFControl_Reader.hxx"
+#include "StepRepr_RepresentationItem.hxx"
+#include "StepShape_AdvancedFace.hxx"
+#include "APIHeaderSection_MakeHeader.hxx"
+#include "TDataStd_Name.hxx"
+#include "TDF_ChildIterator.hxx"
+#include "TDF_ChildIDIterator.hxx"
+#include "TransferBRep.hxx"
+#include "Transfer_Binder.hxx"
+#include "Transfer_TransientProcess.hxx"
 
 #include "openfoam/openfoamdict.h"
 
@@ -138,7 +166,7 @@ defineType(Feature);
 defineFactoryTable(Feature, NoParameters);
 addToFactoryTable(Feature, Feature, NoParameters);
 
-TopoDS_Shape Feature::loadShapeFromFile(const boost::filesystem::path& filename)
+void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
   cout<<"Reading "<<filename<<endl;
     
@@ -150,7 +178,7 @@ TopoDS_Shape Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     BRep_Builder bb;
     TopoDS_Shape s;
     BRepTools::Read(s, filename.c_str(), bb);
-    return s;
+    setShape(s);
   } 
   else if ( (ext==".igs") || (ext==".iges") )
   {
@@ -160,22 +188,90 @@ TopoDS_Shape Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     igesReader.ReadFile(filename.c_str());
     igesReader.TransferRoots();
 
-    return igesReader.OneShape();
+    setShape(igesReader.OneShape());
   } 
   else if ( (ext==".stp") || (ext==".step") )
   {
-    STEPControl_Reader stepReader;
+//     STEPControl_Reader stepReader;
+//     stepReader = STEPControl_Reader();
+//     stepReader.ReadFile(filename.c_str());
+//     stepReader.TransferRoots();
+//     TopoDS_Shape res=stepReader.OneShape();
 
-    stepReader = STEPControl_Reader();
-    stepReader.ReadFile(filename.c_str());
-    stepReader.TransferRoots();
+    STEPCAFControl_Reader reader;
+    reader.SetNameMode (true);
+    reader.SetColorMode(true);
+    reader.SetLayerMode(true);
+    reader.SetPropsMode(true);
+    IFSelect_ReturnStatus stat = reader.ReadFile(filename.c_str());
 
-    return stepReader.OneShape();
+    // The various ways of reading a file are available here too :
+    // to read it by the reader, to take it from a WorkSession ...
+    Handle(TDocStd_Document) aDoc;
+    {
+      Handle(XCAFApp_Application) anApp = XCAFApp_Application::GetApplication();
+      anApp->NewDocument("MDTV-XCAF", aDoc);
+    }
+    if ( !reader.Transfer ( aDoc ) ) {
+      throw insight::Exception("Cannot read any relevant data from the STEP file");
+    }
+    Handle_Interface_InterfaceModel Model = reader.Reader().WS()->Model();
+    Handle_XSControl_TransferReader TR = reader.Reader().WS()->TransferReader();
+    Handle_Transfer_TransientProcess TP = TR->TransientProcess();
+    Handle_XCAFDoc_ShapeTool STool = XCAFDoc_DocumentTool::ShapeTool( aDoc->Main() );
+    
+    TopoDS_Shape res = reader.Reader().OneShape();
+    setShape(res);
+    
+    typedef std::map<std::string, FeatureSetPtr> Feats;
+    Feats feats; 
+       
+    if ( STool.IsNull() ) throw insight::Exception("Failed");
+    Standard_Integer nb = Model->NbEntities();
+    Handle_TCollection_HAsciiString name;
+
+    for (Standard_Integer i = 1; i<nb ; i++)
+    {
+      Handle_Standard_Transient enti = Model->Value(i);
+
+      if ( ! enti->DynamicType()->SubType("StepRepr_RepresentationItem")) continue;
+      
+      Handle_StepRepr_RepresentationItem SRRI =
+	  Handle_StepRepr_RepresentationItem::DownCast(enti);
+
+      Handle_TCollection_HAsciiString hName = SRRI->Name();
+      if (!hName->IsEmpty())
+      {
+	std::string name ( hName->ToCString() );
+	
+	Handle_Transfer_Binder binder = TP->Find( enti);
+	if ( !binder.IsNull() && binder->HasResult() )
+	{
+	  TopoDS_Shape S = TransferBRep::ShapeResult ( TP, binder );
+	  if ( !S.IsNull() )
+	  {
+	    if (S.ShapeType() == TopAbs_FACE)
+	    {
+	      if (feats.find(name)==feats.end())
+		feats[name].reset(new FeatureSet(shared_from_this(), Face));
+	      
+	      feats[name]->add(faceID(TopoDS::Face(S)));
+	    }
+	  }
+	}
+      }
+    }
+    
+    BOOST_FOREACH(Feats::value_type& f, feats)
+    {
+      providedSubshapes_[f.first].reset(new Feature(f.second));
+    }
+    
   } 
   else
   {
     throw insight::Exception("Unknown import file format! (Extension "+ext+")");
-    return TopoDS_Shape();
+//     return TopoDS_Shape();
   }  
 }
 
@@ -263,7 +359,7 @@ Feature::Feature(const boost::filesystem::path& filepath)
 //   areaWeight_(0.0),
   hash_(0)
 {
-  setShape(loadShapeFromFile(filepath));
+  loadShapeFromFile(filepath);
   setShapeHash();
   setValid();
 }
@@ -892,9 +988,65 @@ FeatureSet Feature::verticesOfFaces(const FeatureSet& fs) const
   return vertices;
 }
 
+// Function "StepShape_SetName" :
+// Parameters :
+// Template type : The type corresponding to the down-cast of the writer representation e.g. 
+//     For a solid : StepShape_ManifoldSolidBrep, a face : StepShape_AdvancedFace, etc.
+// Handle(StepRepr_RepresentationItem) r = the STEP Writter representation entity obtained by 
+//      STEPConstruct::FindEntity(writer.Writer().WS()->TransferWriter()->FinderProcess(), shape)
+// STEPCAFControl_Reader & reader = the STEP Reader of the input file
+// TopoDS_Shape & shape = the shape that has to be named either from the defined name in the Reader, or with a string "prefix+i"
+// char * prefix = name's prefix to set a new name (if the shapes's name undefined in the reader)
+// int i = ID to append to the prefix (used to obtain unique names)
+// Return values :
+//   0 : failure (r is nul or not convertible into Handle_StepShape_TypeX
+//   1 : the shape's name is already defined in the input file, and has been copied to the writer
+//   2 : the shape's name is undefined in the input file, and has been initialised with "prefix"+i in the writer
+// template <class Handle_StepShape_TypeX>
+// int StepShape_SetName (Handle_StepRepr_RepresentationItem r, 
+//                               STEPCAFControl_Reader & reader, TopoDS_Shape & shape, char * prefix, int i)
+// {
+//    if (r.IsNull() == Standard_False)
+//    {
+//       // cast the StepRepr_RepresentationItem to a StepShape_AdvancedFace of the STEP Writer : variable "x"
+//       Handle_StepShape_TypeX x = Handle_StepShape_TypeX::DownCast(r);
+//       if (r.IsNull() == Standard_True)
+//       {
+//          std::cerr << "Failed to Down-cast StepRepr_RepresentationItem into "<< x->DynamicType()->Name()<<std::endl;
+//          return 0;
+//       }
+//       char readerName[512];
+//       // map the TopoDS_Face to the name of the OCAF STEP Reader (variable "readerName"), 
+//       // (the TopoDS_Face is mapped to a STEP Reader StepRepr_RepresentationItem 
+//       // inside the function STEP_GetEntityName(), and its name is retrieved )
+//       STEP_GetEntityName(shape, &reader, readerName);            
+//       if (strlen(readerName) > 0  && strcmp("NONE", readerName) != 0 )
+//       {
+//          // Associate the STEP Reader face's name to the STEP Writer face name
+//          Handle(TCollection_HAsciiString) newid = new TCollection_HAsciiString(readerName);
+//          x->SetName(newid);
+//          std::cout << "The read Entity is already named : input name \""<< readerName<<"\" is copied to the written output "<<std::endl;
+//          return 1;
+//       }
+//       else
+//       {
+//          // Associate a non-empty name to the entity
+//          char newName[512] = "";
+//          sprintf(newName, "%s#%d", prefix, i);
+//          Handle(TCollection_HAsciiString) newid = new TCollection_HAsciiString(newName);
+//          x->SetName(newid);   
+//          std::cout << "The name of the read Entity is undefined : the name is set to \""<< newName<<"\" in the written output"<<std::endl;
+//          return 2;
+//       }
+//    }
+//    return 0;
+// }
 
-
-void Feature::saveAs(const boost::filesystem::path& filename) const
+void Feature::saveAs
+(
+  const boost::filesystem::path& filename, 
+  const std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >& namedfeats
+) const
 {
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
@@ -914,9 +1066,196 @@ void Feature::saveAs(const boost::filesystem::path& filename) const
   } 
   else if ( (ext==".stp") || (ext==".step") )
   {
-    STEPControl_Writer stepwriter;
-    stepwriter.Transfer(shape(), STEPControl_AsIs);
-    stepwriter.Write(filename.c_str());
+//     STEPControl_Writer stepwriter;
+//     stepwriter.Transfer(shape(), STEPControl_AsIs);
+//     stepwriter.Write(filename.c_str());
+    
+    
+
+
+
+   IFSelect_ReturnStatus stat;
+   
+   // The various ways of reading a file are available here too :
+   // to read it by the reader, to take it from a WorkSession ...
+   Handle_TDocStd_Document aDoc;
+   {
+      Handle_XCAFApp_Application anApp = XCAFApp_Application::GetApplication();
+      anApp->NewDocument("MDTV-XCAF", aDoc);
+   }
+//    if ( !reader.Transfer ( aDoc ) ) {
+//       std::cout<<"Cannot read any relevant data from the STEP file"<<endl;
+//       // abandon ..
+//    }
+
+   Standard_Boolean ok; // = reader.Transfer(aDoc);
+   Handle_XCAFDoc_ShapeTool myAssembly = XCAFDoc_DocumentTool::ShapeTool(aDoc->Main());   
+   myAssembly->AddShape(shape());
+   
+   STEPControl_StepModelType mode = STEPControl_AsIs;
+   STEPCAFControl_Writer writer;
+
+   Interface_Static::SetCVal("write.step.schema", "AP214IS");
+   Interface_Static::SetCVal("write.step.product.name", "productInfo" );
+
+   // configure STEP interface
+   writer.SetColorMode(Standard_True);
+   writer.SetLayerMode(Standard_True);
+   writer.SetNameMode (Standard_True);
+
+   // Translating document (conversion) to STEP Writer
+   if ( !writer.Transfer ( aDoc, mode ) ) {
+      throw insight::Exception("The document cannot be translated or gives no result");
+      return Standard_False;
+   }
+
+//    // This is just to see the difference of STEP Files with and without names :
+//    // Write the File (WITHOUT names associated to Faces/Edges/Vertices) 
+//    ok=Standard_True;
+//    char outfilename2[256]="";
+//    sprintf(outfilename2, "%s_out_MISSING_NAMES.step", filename.stem().c_str());
+//    stat = writer.Write(outfilename2);
+//    if (stat!=IFSelect_RetDone) ok = Standard_False;
+
+//    // List interesting stuff : class names of the StepRepr_Items in the STEP Writer :-)
+//    // These class names have to be used to map TopoDS_Entities to classes of the STEP Writer
+//    std::map <std::string, int> TransientCounter;
+//    Handle_StepData_StepModel stpDataModel = writer.Writer().Model();
+//    for (int i=1; i<=stpDataModel->NbEntities(); i++)
+//    {
+// 
+//       Handle_Standard_Transient e = stpDataModel->Entity(i);
+// 
+//       if (TransientCounter.find((e->DynamicType())->Name()) == TransientCounter.end())
+//          TransientCounter[(e->DynamicType())->Name()] = 1;
+//       else
+//          TransientCounter[(e->DynamicType())->Name()] += 1;
+//    }
+//    for (std::map <std::string, int>::iterator it=TransientCounter.begin(); it != TransientCounter.end(); it++)
+//    {
+//       std::cout<<it->second<<" STEP Writer entities of type\""<<it->first << "\""<<std::endl;
+//    }
+
+   ////// Begin Hack to associate names to Faces/Edges/Vertices /////
+   const Handle_XSControl_WorkSession& theSession = writer.Writer().WS();
+   const Handle_XSControl_TransferWriter& aTransferWriter =
+      theSession->TransferWriter();
+   const Handle_Transfer_FinderProcess FP = aTransferWriter->FinderProcess();
+   
+   typedef std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > FSM;
+   BOOST_FOREACH(const FSM::value_type& fp, namedfeats)
+   {
+     std::string name = boost::fusion::get<0>(fp); // fp.first;
+     const FeatureSetPtr& fs = boost::fusion::get<1>(fp); //fp.second;
+     
+     if ( fs->shape() == Face )
+     {
+       BOOST_FOREACH(const FeatureID& id, fs->data())
+       {
+	 TopoDS_Face aFace = fs->model()->face(id);
+	 Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aFace);
+	 if (r.IsNull() == Standard_False)
+	 {
+	    // cast the StepRepr_RepresentationItem to a StepShape_AdvancedFace of the STEP Writer : variable "x"
+	    Handle_StepShape_AdvancedFace x = Handle_StepShape_AdvancedFace::DownCast(r);
+	    if (x.IsNull() == Standard_True)
+	    {
+	      throw insight::Exception
+	      (
+		"Failed to Down-cast StepRepr_RepresentationItem into "+ std::string(x->DynamicType()->Name())
+	      );
+	    }
+	    
+	    Handle(TCollection_HAsciiString) newid = new TCollection_HAsciiString(name.c_str());
+	    x->SetName(newid);
+#warning check, if already named?
+	    
+	 } else
+	 {
+	    throw insight::Exception
+	    (
+	      "Feature set item not found in model"
+	    );
+	 }
+// 	 StepShape_SetName<Handle_StepShape_AdvancedFace> (r, reader, aFace, "My Face", i++);
+       }
+     } else
+     {
+       throw insight::Exception("Given feature set not consisting of faces: yet unsupported");
+     }
+   }
+   
+/*
+   // Browse "Products" in the sequence of objects in the assembly document
+   TDF_LabelSequence labelSequence;
+   myAssembly->GetShapes(labelSequence);
+   for (int iLabelSeq=1; iLabelSeq<=labelSequence.Length(); iLabelSeq++)
+   {
+      TopoDS_Shape result   = myAssembly->GetShape(labelSequence.Value(iLabelSeq));
+      TopoDS_Solid aSolid; aSolid.Nullify();
+
+      try {
+         aSolid=TopoDS::Solid(result);
+      }
+      catch(Standard_Failure)
+      {
+      }
+      if (!aSolid.IsNull())
+      {
+         int i=0;
+         {
+            // map the TopoDS_Solid to a StepRepr_RepresentationItem of the STEP Writer : variable "r"
+            Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aSolid);
+            StepShape_SetName<Handle_StepShape_ManifoldSolidBrep> (r, reader, aSolid, "My Solid", i++);
+         }
+
+         for(TopExp_Explorer faceExplorer(aSolid, TopAbs_FACE); faceExplorer.More();
+            faceExplorer.Next())
+         {
+            TopoDS_Face aFace = TopoDS::Face(faceExplorer.Current());
+            Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aFace);
+            StepShape_SetName<Handle_StepShape_AdvancedFace> (r, reader, aFace, "My Face", i++);
+         }
+
+         for(TopExp_Explorer edgeExplorer(aSolid, TopAbs_EDGE); edgeExplorer.More();edgeExplorer.Next()){
+            TopoDS_Edge anEdge = TopoDS::Edge(edgeExplorer.Current());
+            Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, anEdge);
+            StepShape_SetName<Handle_StepShape_EdgeCurve> (r, reader, anEdge, "My Edge", i++);
+         }
+
+         for(TopExp_Explorer vertexExplorer(aSolid, TopAbs_VERTEX); vertexExplorer.More();vertexExplorer.Next()){
+            TopoDS_Vertex aVertex = TopoDS::Vertex(vertexExplorer.Current());
+            Handle_StepRepr_RepresentationItem r = STEPConstruct::FindEntity(FP, aVertex);
+            StepShape_SetName<Handle_StepShape_VertexPoint> (r, reader, aVertex, "My Vertex", i++);
+         }
+      }
+   }
+   ////// END of the Hack to associate names to Faces/Edges/Vertices /////
+*/
+   // edit STEP header
+   APIHeaderSection_MakeHeader makeHeader(writer.Writer().Model());
+
+//    char outfilename[256]="";
+//    sprintf(outfilename, "%s_out.step", filename.stem().string());
+   Handle_TCollection_HAsciiString headerFileName = new TCollection_HAsciiString(filename.stem().c_str());
+//    Handle(TCollection_HAsciiString) headerAuthor      = new TCollection_HAsciiString("silentdynamics GmbH");
+   Handle_TCollection_HAsciiString headerOrganization = new TCollection_HAsciiString("silentdynamics GmbH");
+   Handle_TCollection_HAsciiString headerOriginatingSystem = new TCollection_HAsciiString("Insight CAD");
+   Handle_TCollection_HAsciiString fileDescription = new TCollection_HAsciiString("iscad model");
+
+   makeHeader.SetName(headerFileName);
+//    makeHeader.SetAuthorValue (1, headerAuthor);
+   makeHeader.SetOrganizationValue (1, headerOrganization);
+   makeHeader.SetOriginatingSystem(headerOriginatingSystem);
+   makeHeader.SetDescriptionValue(1, fileDescription);
+
+   // Writing the File (With names associated to Faces/Edges/Vertices)
+   ok=Standard_True;
+   stat = writer.Write(filename.string().c_str());
+   if (stat!=IFSelect_RetDone) ok = Standard_False;
+   
+   if (!ok) throw insight::Exception("STEP export failed!");
+    
   } 
   else if ( (ext==".stl") || (ext==".stlb") )
   {

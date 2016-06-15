@@ -200,6 +200,7 @@ public:
   
   const FeatureSetData& data() const;
   void setData(const FeatureSetData& d);
+  void add(const FeatureID& e);
   
   operator const FeatureSetData& () const;
   operator TopAbs_ShapeEnum () const;

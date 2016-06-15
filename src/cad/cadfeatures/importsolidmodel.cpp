@@ -38,21 +38,21 @@ Import::Import(const NoParameters& nop): Feature(nop)
 {}
 
 
-Import::Import(const filesystem::path& filepath, ScalarPtr scale)
-: filepath_(filepath),
-  scale_(scale)
+Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
+: filepath_(filepath)/*,
+  scale_(scale)*/
 {}
 
 void Import::build()
 {
-  TopoDS_Shape s=loadShapeFromFile(filepath_);
-  if (scale_)
-  {
-    gp_Trsf tr0;
-    tr0.SetScaleFactor(scale_->value());
-    s=BRepBuilderAPI_Transform(s, tr0).Shape();
-  }
-  setShape(s);
+  loadShapeFromFile(filepath_);
+//   if (scale_)
+//   {
+//     gp_Trsf tr0;
+//     tr0.SetScaleFactor(scale_->value());
+//     s=BRepBuilderAPI_Transform(s, tr0).Shape();
+//   }
+//   setShape(s);
 //   setShapeHash(); // not possible to use in build...
 }
 
@@ -65,8 +65,8 @@ void Import::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
       ( '(' >> 
 	ruleset.r_path 
-	>> (( ',' >> ruleset.r_scalarExpression ) | ( qi::attr(ScalarPtr(new ConstantScalar(1.0))) ))
-	>> ')' ) [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Import>(qi::_1, qi::_2)) ]
+// 	>> (( ',' >> ruleset.r_scalarExpression ) | ( qi::attr(ScalarPtr(new ConstantScalar(1.0))) ))
+	>> ')' ) [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Import>(qi::_1/*, qi::_2*/)) ]
     ))
   );
 }

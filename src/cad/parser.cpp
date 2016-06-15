@@ -269,9 +269,12 @@ ISCADParser::ISCADParser(Model* model)
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
 		    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
       |
-      ( lit("saveAs") > '(' > r_path > ')' > lit("<<") > r_solidmodel_expression > ';' ) 
+      ( lit("saveAs") > '(' > r_path > ')' > lit("<<") 
+        > r_solidmodel_expression 
+        > *( r_identifier > '=' > r_faceFeaturesExpression )
+        > ';' ) 
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
-		    phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1))) ]
+		    phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1, qi::_3))) ]
       |
       ( lit("exportSTL") > '(' > r_path > ',' > r_scalarExpression > ')' > lit("<<") > r_solidmodel_expression > ';' ) 
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 

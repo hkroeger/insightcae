@@ -30,6 +30,8 @@ namespace insight
 namespace cad 
 {
 
+typedef std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> > ExportNamedFeatures;
+  
 class Export 
 : public PostprocAction
 {
@@ -42,8 +44,10 @@ class Export
   ScalarPtr eMesh_accuracy_;
   ScalarPtr eMesh_maxlen_;
   
+  ExportNamedFeatures namedfeats_;
+  
 public:
-  Export(FeaturePtr model, const boost::filesystem::path& filename);
+  Export(FeaturePtr model, const boost::filesystem::path& filename, ExportNamedFeatures namedfeats = ExportNamedFeatures() );
   Export(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy);
   Export(FeatureSetPtr eMesh_featureSet, const boost::filesystem::path& filename, ScalarPtr eMesh_accuracy, ScalarPtr eMesh_maxlen);
 

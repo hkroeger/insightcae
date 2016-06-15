@@ -115,7 +115,7 @@ void FreeCADModel::build()
     }
     boost::filesystem::remove(macrofilename);
       
-    setShape(loadShapeFromFile(filename));
+    loadShapeFromFile(filename);
 
 }
 

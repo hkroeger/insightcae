@@ -191,7 +191,7 @@ protected:
 
   size_t hash_;
   
-  TopoDS_Shape loadShapeFromFile(const boost::filesystem::path& filepath);
+  void loadShapeFromFile(const boost::filesystem::path& filepath);
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   
@@ -321,7 +321,13 @@ public:
   FeatureSet verticesOfFace(const FeatureID& f) const;
   FeatureSet verticesOfFaces(const FeatureSet& fs) const;
 
-  void saveAs(const boost::filesystem::path& filename) const;
+  void saveAs
+  (
+    const boost::filesystem::path& filename,
+    const std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >& namedfeats 
+      = std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >()
+  ) const;
+  
   void exportSTL(const boost::filesystem::path& filename, double abstol) const;
   static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol, double maxlen=1e10);
   

@@ -191,7 +191,6 @@ protected:
 
   size_t hash_;
   
-  void loadShapeFromFile(const boost::filesystem::path& filepath);
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   
@@ -204,6 +203,8 @@ protected:
    */
   virtual void calcHash();
   
+  void loadShapeFromFile(const boost::filesystem::path& filepath);
+  
  
 public:
   declareType("Feature");
@@ -211,8 +212,10 @@ public:
   Feature(const NoParameters& nop = NoParameters());
   Feature(const Feature& o);
   Feature(const TopoDS_Shape& shape);
-  Feature(const boost::filesystem::path& filepath);
+//   Feature(const boost::filesystem::path& filepath);
   Feature(FeatureSetPtr creashapes);
+  
+  static FeaturePtr CreateFromFile(const boost::filesystem::path& filepath);
   
   virtual ~Feature();
   

@@ -255,7 +255,10 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 	      if (feats.find(name)==feats.end())
 		feats[name].reset(new FeatureSet(shared_from_this(), Face));
 	      
-	      feats[name]->add(faceID(TopoDS::Face(S)));
+	      std::cout<<"adding to set "<<name;
+	      FeatureID id=faceID(TopoDS::Face(S));
+	      std::cout<<" face id="<<id<<std::endl;
+	      feats[name]->add(id);
 	    }
 	  }
 	}
@@ -353,21 +356,29 @@ Feature::Feature(const TopoDS_Shape& shape)
   setValid();
 }
 
-Feature::Feature(const boost::filesystem::path& filepath)
-: isleaf_(true),
-//   density_(1.0),
-//   areaWeight_(0.0),
-  hash_(0)
-{
-  loadShapeFromFile(filepath);
-  setShapeHash();
-  setValid();
-}
+// Feature::Feature(const boost::filesystem::path& filepath)
+// : isleaf_(true),
+// //   density_(1.0),
+// //   areaWeight_(0.0),
+//   hash_(0)
+// {
+//   loadShapeFromFile(filepath);
+//   setShapeHash();
+//   setValid();
+// }
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes)
 {}
 
+FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
+{
+  FeaturePtr f(new Feature());
+  f->loadShapeFromFile(filepath);
+  f->setShapeHash();
+  f->setValid();
+  return f;
+}
 
 Feature::~Feature()
 {

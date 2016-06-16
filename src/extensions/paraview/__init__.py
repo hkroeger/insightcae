@@ -81,7 +81,7 @@ try:
         #print p
         return GetLookupTableForArray(arrayName, component, **p)
     
-    def displaySolid(obj):
+    def displaySolid(obj, opacity=1.0):
         disp = GetDisplayProperties(obj)
         disp.LookupTable=None
         try:
@@ -92,12 +92,14 @@ try:
          disp.ColorArrayName=(None, None)
 	disp.Representation = 'Surface'
 	disp.DiffuseColor = [0, 1, 1]
+	disp.Opacity = opacity
     
     def displayContour(obj, arrayName, minV=None, maxV=None, component=-1, LUTName="bluered", 
                        title=None, 
                        barpos=[0.75, 0.25], # vert, horiz
                        barsize=None,
-                       barorient=1, arrayType='POINT_DATA'):
+                       barorient=1, arrayType='POINT_DATA',
+                       opacity=1.0):
         disp = GetDisplayProperties(obj)
         if minV is None or maxV is None:
 	  if (arrayType=='POINT_DATA'):
@@ -124,7 +126,8 @@ try:
         except:
          # ceases to exists from paraview 4.2 onwards
          disp.ColorArrayName=(arrayType, arrayName)
-           
+	disp.Opacity = opacity
+   
         t=title
         if title is None:
            t=arrayName 

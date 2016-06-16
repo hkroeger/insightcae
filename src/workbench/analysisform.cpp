@@ -73,11 +73,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
   connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
   
-//   DirectoryParameterWrapper *dp = 
-//      new DirectoryParameterWrapper( ParameterWrapper::ConstrP(this, "execution directory", analysis_->executionPathParameter() ) );
-//   ui->verticalLayout_4->addWidget(dp);
-//   QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
-//   QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
 
 //   addWrapperToWidget(parameters_, ui->inputContents, this);
   QTreeWidgetItem* root=new QTreeWidgetItem(0);
@@ -85,7 +80,26 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   ui->ptree->setColumnCount(2);
   ui->ptree->setHeaderLabels( QStringList() << "Parameter Name" << "Current Value" );
   ui->ptree->addTopLevelItem(root);
+
+  DirectoryParameterWrapper *dp = 
+     new DirectoryParameterWrapper
+     ( 
+      ParameterWrapper::ConstrP
+      (
+	root, 
+	"execution directory", 
+	analysis_->executionPathParameter(),
+        ui->inputContents, 
+	this
+      ) 
+    );
+  QObject::connect(ui->ptree, SIGNAL(itemSelectionChanged()),
+	  dp, SLOT(onSelectionChanged()));
+  QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
+  QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
+  
   addWrapperToWidget(parameters_, root, ui->inputContents, this);
+  
   ui->ptree->expandAll();
   ui->ptree->resizeColumnToContents(0);
   ui->ptree->resizeColumnToContents(1);

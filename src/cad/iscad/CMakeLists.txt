@@ -32,5 +32,5 @@ target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
-  
+install(TARGETS iscad RUNTIME DESTINATION bin)  
 endif()

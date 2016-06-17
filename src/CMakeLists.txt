@@ -34,7 +34,7 @@ SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSIO
 # SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
 SET(CPACK_GENERATOR "TGZ;DEB")
 set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick")
 INCLUDE(CPack)
 
 OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)

@@ -180,6 +180,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   connect(act, SIGNAL(triggered()), this, SLOT(rebuildModel()));
   mmenu->addAction(act);
   
+  act = new QAction(("C&lear cache"), this);
+  act->setShortcut(Qt::ControlModifier + Qt::Key_L);
+  connect(act, SIGNAL(triggered()), this, SLOT(clearCache()));
+  mmenu->addAction(act);
+  
   act = new QAction(("Fit &all"), this);
   connect(act, SIGNAL(triggered()), viewer_, SLOT(fitAll()));
   act->setShortcut(Qt::ControlModifier + Qt::Key_A);
@@ -573,6 +578,11 @@ void ISCADMainWindow::rebuildModel()
 
     insight::cad::cache.finishRebuild();
   }
+}
+
+void ISCADMainWindow::clearCache()
+{
+  insight::cad::cache.clear();
 }
 
 

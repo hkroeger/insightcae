@@ -127,6 +127,7 @@ public slots:
   void saveModel();
   void saveModelAs();
   void rebuildModel();
+  void clearCache();
   void popupMenu( QoccViewWidget* aView, const QPoint aPoint ); 
   
 

@@ -43,13 +43,33 @@ Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
 : DerivedFeature(m1), m1_(m1), pl_(pl)
 {}
 
+Mirror::Mirror(FeaturePtr m1, Mirror::Shortcut s)
+: DerivedFeature(m1), m1_(m1), s_(s)
+{}
+
+
 void Mirror::build()
 {
 
-  if (!pl_->providesPlanarReference())
-    throw insight::Exception("Mirror: planar reference required!");
-  
-  tr_.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
+  if (pl_)
+  {
+    if (!pl_->providesPlanarReference())
+      throw insight::Exception("Mirror: planar reference required!");
+    
+    tr_.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
+  }
+  else if (s_==FlipY)
+  {
+    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(0,1,0)));
+  }
+  else if (s_==FlipX)
+  {
+    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(1,0,0)));
+  }
+  else if (s_==FlipXY)
+  {
+    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(1,1,0)));
+  }
   
   setShape(BRepBuilderAPI_Transform(m1_->shape(), tr_).Shape());
   copyDatumsTransformed(*m1_, tr_);
@@ -64,6 +84,36 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, qi::_2)) ]
+      
+    ))
+  );
+  ruleset.modelstepFunctionRules.add
+  (
+    "FlipY",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipY)) ]
+      
+    ))
+  );
+  ruleset.modelstepFunctionRules.add
+  (
+    "FlipX",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipX)) ]
+      
+    ))
+  );
+  ruleset.modelstepFunctionRules.add
+  (
+    "FlipXY",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipXY)) ]
       
     ))
   );

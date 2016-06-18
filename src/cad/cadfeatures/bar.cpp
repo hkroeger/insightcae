@@ -48,10 +48,10 @@ void Bar::build()
       if (norm(vert_->value(),2)<1e-10)
 	throw insight::Exception("Bar: length of vertical direction is zero!");
       arma::mat v=vert_->value() / norm(vert_->value(),2);
-      
+/*      
       if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
 	throw insight::Exception("xsec feature has to provide a face or wire!");
-      
+  */    
       arma::mat baraxis=p1-p0;
       double lba=norm(baraxis,2);
       if (lba<1e-10)

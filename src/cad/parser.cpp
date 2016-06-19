@@ -388,8 +388,8 @@ ISCADParser::ISCADParser(Model* model)
 // 	[ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
         model_->modelstepSymbols()[_val=qi::_1 ]
       |
-       ( '(' >> r_solidmodel_expression 
-        [ _val = qi::_1] > ')' )
+       ( '(' >> r_solidmodel_expression > ')' ) 
+       [ _val = qi::_1]
       // try identifiers last, since exceptions are generated, if symbols don't exist
       ;
 
@@ -569,6 +569,9 @@ ISCADParser::ISCADParser(Model* model)
 	    [ _val = construct<DatumPtr>(new_<XsecAxisPlane>(
 	               construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)),
 		       qi::_3)) ]
+          |
+          ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' ) 
+	    [ _val = phx::construct<DatumPtr>(new_<ProvidedDatum>(qi::_1, qi::_2)) ] 
       ;
       
     r_scalarExpression = 
@@ -640,7 +643,7 @@ ISCADParser::ISCADParser(Model* model)
 	 ))
 	]
       |
-       ( r_solidmodel_expression >> '$' >> ( r_identifier | qi::attr(std::string()) ) ) 
+       ( r_solidmodel_expression >> '$' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ ) 
         [ _val = phx::construct<ScalarPtr>(phx::new_<ScalarFeatureProp>(qi::_1, qi::_2)) ] 
       ;
 
@@ -717,11 +720,11 @@ ISCADParser::ISCADParser(Model* model)
 	  r_vertexFeaturesExpression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
 	  >> ')' )
       |
-       ( lit("scoord") >> '(' >> 
+       ( lit("scoord") > '(' > 
 	  r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
 	    phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))
 	  )) ]
-	  >> ')' )
+	  > ')' )
         
       |
        ( /*lit("refpt") >> '(' >>*/ r_datumExpression /*>> ')'*/ )
@@ -754,10 +757,10 @@ ISCADParser::ISCADParser(Model* model)
 	 ))
 	]
 	|
-	( r_solidmodel_expression >> '@' >> ( r_identifier | qi::attr(std::string()) ) ) 
+	( r_solidmodel_expression >> '@' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ ) 
 	  [ _val = phx::construct<VectorPtr>(phx::new_<PointFeatureProp>(qi::_1, qi::_2)) ]
 	|
-	( r_solidmodel_expression >> '!' >> ( r_identifier | qi::attr(std::string()) ) ) 
+	( r_solidmodel_expression >> '!' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ ) 
 	  [ _val = phx::construct<VectorPtr>(phx::new_<VectorFeatureProp>(qi::_1, qi::_2)) ]
       ;
 

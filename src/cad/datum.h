@@ -49,15 +49,15 @@ public:
   
   virtual ~Datum();
   
-  inline bool providesPointReference() const { return providesPointReference_; }
+  virtual inline bool providesPointReference() const { return providesPointReference_; }
   virtual gp_Pnt point() const;
   operator const gp_Pnt () const;
   
-  inline bool providesAxisReference() const { return providesAxisReference_; }
+  virtual inline bool providesAxisReference() const { return providesAxisReference_; }
   virtual gp_Ax1 axis() const;
   operator const gp_Ax1 () const;
 
-  inline bool providesPlanarReference() const { return providesPlanarReference_; }
+  virtual inline bool providesPlanarReference() const { return providesPlanarReference_; }
   virtual gp_Ax3 plane() const;
   operator const gp_Ax3 () const;
 
@@ -65,6 +65,7 @@ public:
 
   virtual void write(std::ostream& file) const;
 };
+
 
 
 
@@ -119,6 +120,31 @@ public:
 };
 
 #endif
+
+
+class ProvidedDatum
+: public Datum
+{
+protected:
+  FeaturePtr feat_;
+  std::string name_;
+  DatumPtr dat_;
+  
+public:
+  ProvidedDatum(FeaturePtr feat, std::string name);
+  virtual void build();
+  
+  virtual inline bool providesPointReference() const { checkForBuildDuringAccess(); return providesPointReference_; }
+  virtual inline bool providesAxisReference() const { checkForBuildDuringAccess(); return providesAxisReference_; }
+  virtual inline bool providesPlanarReference() const { checkForBuildDuringAccess(); return providesPlanarReference_; }
+
+  virtual gp_Pnt point() const;
+  virtual gp_Ax1 axis() const;
+  virtual gp_Ax3 plane() const;
+
+  virtual AIS_InteractiveObject* createAISRepr() const;
+};
+
 
 class ExplicitDatumPoint
 : public DatumPoint

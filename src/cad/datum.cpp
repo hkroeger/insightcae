@@ -115,6 +115,47 @@ AIS_InteractiveObject* DatumPoint::createAISRepr() const
   return new AIS_Shape( BRepBuilderAPI_MakeVertex(point()) );
 }
 
+ProvidedDatum::ProvidedDatum(FeaturePtr feat, std::string name)
+: Datum(false, false, false),
+  feat_(feat), 
+  name_(name)
+{}
+
+void ProvidedDatum::build()
+{
+  auto iter=feat_->providedDatums().find(name_);
+  if (iter==feat_->providedDatums().end())
+    throw insight::Exception("Feature does not provide a datum of name \""+name_+"\"");
+  dat_=iter->second;
+  providesPointReference_=dat_->providesPointReference();
+  providesAxisReference_=dat_->providesAxisReference();
+  providesPlanarReference_=dat_->providesPlanarReference();
+}
+
+gp_Pnt ProvidedDatum::point() const
+{
+  checkForBuildDuringAccess();
+  return dat_->point();
+}
+
+gp_Ax1 ProvidedDatum::axis() const
+{
+  checkForBuildDuringAccess();
+  return dat_->axis();
+}
+
+gp_Ax3 ProvidedDatum::plane() const
+{
+  checkForBuildDuringAccess();
+  return dat_->plane();
+}
+
+AIS_InteractiveObject* ProvidedDatum::createAISRepr() const
+{
+    return dat_->createAISRepr();
+}
+
+
 ExplicitDatumPoint::ExplicitDatumPoint(VectorPtr c)
 : coord_(c)
 {}

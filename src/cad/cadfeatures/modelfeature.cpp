@@ -20,6 +20,7 @@
 #include "modelfeature.h"
 #include "cadfeature.h"
 #include "cadmodel.h"
+#include "datum.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -68,6 +69,14 @@ void ModelFeature::copyModelDatums()
     if (refpoints_.find(p.first)!=refpoints_.end())
       throw insight::Exception("datum point "+p.first+" already present!");
     refpoints_[p.first]=p.second->value();
+  }
+
+  auto datums=model_->datums();
+  BOOST_FOREACH(decltype(datums)::value_type const& d, datums)
+  {
+    if (providedDatums_.find(d.first)!=providedDatums_.end())
+      throw insight::Exception("datum "+d.first+" already present!");
+    providedDatums_[d.first]=d.second;
   }
 //   model_->scalars().for_each(phx::bind(&addScalar, this, ));
 //   model_->vectors().for_each(&(this->addVector));

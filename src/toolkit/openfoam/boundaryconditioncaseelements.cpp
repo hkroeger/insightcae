@@ -1743,6 +1743,7 @@ const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types =
    ("inflowGenerator<decayingTurbulenceVorton>")
    ("inflowGenerator<anisotropicVorton>")
    ("inflowGenerator<anisotropicVorton2>")
+   ("inflowGenerator<combinedVorton>")
    ("modalTurbulence")
    .convert_to_container<std::vector<std::string> >();
    

@@ -152,6 +152,11 @@ RegressionModel::~RegressionModel()
 {
 }
 
+void RegressionModel::getParameters(double* params) const
+{
+  throw insight::Exception("not implemented!");
+}
+
 arma::mat RegressionModel::weights(const arma::mat& x) const
 {
   return ones(x.n_rows);
@@ -169,7 +174,7 @@ double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) c
 }
 
 
-double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionModel& model)
+double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionModel& model, double tol)
 {
   try
   {
@@ -210,7 +215,7 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
 	  break;
 
 	size = gsl_multimin_fminimizer_size (s);
-	status = gsl_multimin_test_size (size, 1e-3);
+	status = gsl_multimin_test_size (size, tol);
 
 // 	if (status == GSL_SUCCESS)
 // 	  {
@@ -222,7 +227,7 @@ double nonlinearRegression(const arma::mat& y, const arma::mat& x,RegressionMode
 // 		gsl_vector_get (s->x, 0), 
 // 		s->fval, size);
       }
-    while (status == GSL_CONTINUE && iter < 100);
+    while (status == GSL_CONTINUE && iter < 1000);
     
     model.setParameters(s->x->data);
     

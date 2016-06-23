@@ -131,6 +131,7 @@ public:
   
   virtual int numP() const =0;
   virtual void setParameters(const double* params) =0;
+  virtual void getParameters(double* params) const;
   virtual arma::mat evaluateObjective(const arma::mat& x) const =0;
   virtual void setInitialValues(double* x) const =0;
   virtual arma::mat weights(const arma::mat& x) const;
@@ -141,7 +142,7 @@ public:
  * fits parameters of a nonlinear model F
  * return fit quality
  */
-double nonlinearRegression(const arma::mat& y, const arma::mat& x, RegressionModel& model);
+double nonlinearRegression(const arma::mat& y, const arma::mat& x, RegressionModel& model, double tol=1e-3);
 
 class Objective1D
 {

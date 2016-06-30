@@ -62,6 +62,8 @@ SET(INSIGHT_OFES_VARCONTENT "")
 SET(INSIGHT_OF_ALIASES "")
 find_package(OpenFOAM-16ext REQUIRED)
 find_package(FOAM-extend-31 REQUIRED)
+find_package(FOAM-extend-32 REQUIRED)
+find_package(FOAM-extend-40 REQUIRED)
 find_package(OpenFOAM-21x REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
@@ -122,6 +124,12 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (Fx31_FOUND)
       list (APPEND OF_VERSIONS Fx31)
+    endif()
+    if (Fx32_FOUND)
+      list (APPEND OF_VERSIONS Fx32)
+    endif()
+    if (Fx40_FOUND)
+      list (APPEND OF_VERSIONS Fx40)
     endif()
     if (OF21x_FOUND)
       list (APPEND OF_VERSIONS OF21x)
@@ -187,6 +195,24 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+    if (${_ofvers} STREQUAL "Fx32")
+      setup_exe_target_Fx32(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx40")
+      setup_exe_target_Fx40(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
     if (${_ofvers} STREQUAL "OF21x")
       setup_exe_target_OF21x(
 	${PRJ_NAME}${_ofvers} 
@@ -234,6 +260,12 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (Fx31_FOUND)
       list (APPEND OF_VERSIONS Fx31)
+    endif()
+    if (Fx32_FOUND)
+      list (APPEND OF_VERSIONS Fx32)
+    endif()
+    if (Fx40_FOUND)
+      list (APPEND OF_VERSIONS Fx40)
     endif()
     if (OF21x_FOUND)
       list (APPEND OF_VERSIONS OF21x)
@@ -292,6 +324,24 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (${_ofvers} STREQUAL "Fx31")
       setup_lib_target_Fx31(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx32")
+      setup_lib_target_Fx32(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "Fx40")
+      setup_lib_target_Fx40(
 	${PRJ_NAME}${_ofvers} 
 	"${sources}" 
 	"${PRJ_NAME}" 

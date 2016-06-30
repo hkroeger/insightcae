@@ -5,7 +5,7 @@ set(SRC
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
   turbulenceModels
   turbulenceModels/incompressible/RAS
   transportModels
@@ -13,14 +13,14 @@ set(OF_INCLUDE_DIRS
   dynamicMesh/dynamicFvMesh
   dynamicMesh/meshMotion/tetDecompositionMotionSolver
   dynamicMesh/meshMotion/fvMotionSolver
-  meshTools
-  sampling
-  triSurface
-  surfMesh
+#  meshTools
+#  sampling
+#  triSurface
+#  surfMesh
 )
 
 set(OF_LIBS 
-finiteVolume incompressibleRASModels incompressibleTransportModels
+#finiteVolume incompressibleRASModels incompressibleTransportModels
 )
 
 set(INCLUDE_DIRS 

@@ -43,14 +43,14 @@ namespace fv
 template<>
 Foam::tmp<Foam::volVectorField>
 Foam::fv::localCellLimitedGrad<Foam::scalar>::
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 grad
 #else
 calcGrad
 #endif
 (
     const volScalarField& vsf
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 #else
     ,
     const word& name
@@ -60,7 +60,7 @@ calcGrad
     const fvMesh& mesh = vsf.mesh();
 
     tmp<volVectorField> tGrad = basicGradScheme_().
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
     grad(vsf);
 #else
     calcGrad(vsf, name);
@@ -228,14 +228,15 @@ calcGrad
 template<>
 Foam::tmp<Foam::volTensorField>
 Foam::fv::localCellLimitedGrad<Foam::vector>::
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 grad
 #else
 calcGrad
 #endif
 (
     const volVectorField& vsf
-#ifndef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
+#else
     ,
     const word& name
 #endif
@@ -244,7 +245,7 @@ calcGrad
     const fvMesh& mesh = vsf.mesh();
 
     tmp<volTensorField> tGrad = basicGradScheme_().
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
     grad(vsf);
 #else
     calcGrad(vsf, name);

@@ -29,7 +29,11 @@ License
 #include "polyMesh.H"
 
 #ifdef OF16ext
+#ifdef Fx40
+#include "CloudTemplate.H"
+#else
 #include "Cloud.H"
+#endif
 #include "passiveParticle.H"
 #include "IDLList.H"
 #endif

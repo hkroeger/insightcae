@@ -205,14 +205,14 @@ public:
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
         > 
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 	grad
 #else
         calcGrad
 #endif
         (
             const GeometricField<Type, fvPatchField, volMesh>& vsf
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 #else
             ,
             const word& name
@@ -269,14 +269,15 @@ inline void localCellLimitedGrad<Type>::limitFace
 
 template<>
 tmp<volVectorField> localCellLimitedGrad<scalar>::
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 grad
 #else
 calcGrad
 #endif
 (
     const volScalarField& vsf
-#ifndef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
+#else
     ,
     const word& name
 #endif
@@ -285,14 +286,15 @@ calcGrad
 
 template<>
 tmp<volTensorField> localCellLimitedGrad<vector>::
-#ifdef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
 grad
 #else
 calcGrad
 #endif
 (
     const volVectorField& vsf
-#ifndef OF16ext
+#if (defined(OF16ext) && !defined(Fx40))
+#else
     ,
     const word& name
 #endif

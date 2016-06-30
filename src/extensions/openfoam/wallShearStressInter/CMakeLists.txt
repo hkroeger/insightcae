@@ -1,7 +1,7 @@
 set(SRC wallShearStressInter.C)
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
   transportModels 
   transportModels/twoPhaseMixture
   turbulenceModels
@@ -11,14 +11,14 @@ set(OF_INCLUDE_DIRS
   turbulenceModels/incompressible/LES 
   turbulenceModels/LES/LESfilters
   thermophysicalModels/basic
-  meshTools sampling surfMesh
+#  meshTools sampling surfMesh
 )
 
 set(OF_LIBS 
-finiteVolume
-incompressibleTransportModels
-incompressibleRASModels
-meshTools
+#finiteVolume
+#incompressibleTransportModels
+#incompressibleRASModels
+#meshTools
 )
 
 set(INCLUDE_DIRS 

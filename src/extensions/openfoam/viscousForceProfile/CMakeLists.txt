@@ -3,8 +3,8 @@ set(PRJ viscousForceProfile)
 set(SRC ${PRJ}.C)
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  meshTools
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  meshTools
 #   transportModels
 #   turbulenceModels
 #   turbulenceModels/LES/LESdeltas
@@ -13,7 +13,7 @@ set(OF_INCLUDE_DIRS
 )
 
 set(OF_LIBS 
-  finiteVolume
+#  finiteVolume
 #   incompressibleTransportModels
 #   incompressibleRASModels
 #   incompressibleLESModels

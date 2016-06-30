@@ -5,15 +5,15 @@ set(SRC
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  sampling fileFormats lagrangian/basic
-  meshTools triSurface sampling surfMesh
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  sampling fileFormats lagrangian/basic
+#  meshTools triSurface sampling surfMesh
 )
 
 set(OF_LIBS 
-finiteVolume 
-triSurface lagrangian 
-meshTools forces surfMesh sampling
+#finiteVolume 
+#triSurface lagrangian 
+#meshTools forces surfMesh sampling
 )
 
 set(INCLUDE_DIRS 

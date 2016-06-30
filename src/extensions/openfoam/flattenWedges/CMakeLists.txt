@@ -1,11 +1,13 @@
 set(SRC flattenWedges.C)
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  meshTools
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  meshTools
 )
 
-set(OF_LIBS finiteVolume)
+set(OF_LIBS 
+#finiteVolume
+)
 
 set(INCLUDE_DIRS 
   ${insight_INCLUDE_DIR}

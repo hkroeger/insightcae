@@ -379,8 +379,15 @@ tmp<volSymmTensorField> kOmegaSST2::devReff() const
 }
 
 
-tmp<fvVectorMatrix> kOmegaSST2::divDevReff(volVectorField& U) const
+tmp<fvVectorMatrix> kOmegaSST2::divDevReff(
+#ifndef Fx40
+	  volVectorField& U
+#endif
+) const
 {
+#ifdef Fx40
+    const volVectorField& U=U_;
+#endif
     return
     (
       - fvm::laplacian(nuEff(), U)
@@ -603,7 +610,7 @@ void kOmegaSST2::correct()
 
     omegaEqn().relax();
 
-#ifndef Fx31
+#if !(defined(Fx31)||defined(Fx32)||defined(Fx40))
     omegaEqn().boundaryManipulate(omega_.boundaryField());
 #endif
     

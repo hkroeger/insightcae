@@ -88,7 +88,7 @@ public:
 
     // Member Functions
 
-#if !defined(OF16ext)
+#if !(defined(OF16ext) && !defined(Fx40))
 	virtual
 #endif
         tmp
@@ -96,14 +96,14 @@ public:
             GeometricField
             <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
         > 
-#if !defined(OF16ext)
+#if !(defined(OF16ext) && !defined(Fx40))
 	calcGrad
 #else
 	grad
 #endif
         (
             const GeometricField<Type, fvPatchField, volMesh>&
-#if !defined(OF16ext) 
+#if !(defined(OF16ext) && !defined(Fx40))
 	    , const word& name
 #endif
         ) const;

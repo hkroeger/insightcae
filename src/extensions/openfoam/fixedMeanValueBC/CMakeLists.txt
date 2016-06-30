@@ -7,12 +7,12 @@ set(SRC
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
 #  meshTools triSurface sampling surfMesh
 )
 
 set(OF_LIBS 
-finiteVolume 
+#finiteVolume 
 )
 
 set(INCLUDE_DIRS 

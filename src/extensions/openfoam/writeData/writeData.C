@@ -26,7 +26,11 @@ License
 #include "writeData.H"
 #include "dictionary.H"
 #include "error.H"
+#ifdef Fx40
+#include "foamTime.H"
+#else
 #include "Time.H"
+#endif
 #include "OSspecific.H"
 #include "PstreamReduceOps.H"
 

@@ -29,6 +29,9 @@ IF(Fx31_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE Fx31_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_LIBBIN)
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_LIBRARIES)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_INCLUDE_PATHS)
+
   set(Fx31_LIBSRC_DIR "${Fx31_DIR}/src")
   set(Fx31_LIB_DIR "${Fx31_DIR}/lib/${Fx31_WM_OPTIONS}")
   
@@ -62,7 +65,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   macro (setup_exe_target_Fx31 targetname sources exename includes)
     add_executable(${targetname} ${sources})
     set(allincludes ${includes})
-    LIST(APPEND allincludes "${Fx31_LIBSRC_DIR}/foam/lnInclude")
+    LIST(APPEND allincludes "${Fx31_INCLUDE_PATHS}")
+    #LIST(APPEND allincludes "${Fx31_LIBSRC_DIR}/foam/lnInclude")
     #set_property(TARGET ${targetname} PROPERTY INCLUDE_DIRECTORIES ${allincludes})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx31_CXX_FLAGS})
@@ -70,7 +74,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx31_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      ${Fx31_LIB_DIR}/libfoam.so 
+      #${Fx31_LIB_DIR}/libfoam.so 
+      ${Fx31_LIBRARIES}
       ${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
       #${Fx31_METIS_LIB_DIR}/libmetis.a
       ${Fx31_PARMETIS_LIB_DIR}/libparmetis.a
@@ -87,7 +92,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     SET(LIB_SEARCHFLAGS "-L${Fx31_LIB_DIR} -L${Fx31_FOAM_MPI_LIBBIN} -L${Fx31_METIS_LIB_DIR} -L${Fx31_PARMETIS_LIB_DIR} -L${Fx31_SCOTCH_LIB_DIR} -L${Fx31_MESQUITE_LIB_DIR}")
     add_library(${targetname} SHARED ${sources})
     set(allincludes ${includes})
-    LIST(APPEND allincludes "${Fx31_LIBSRC_DIR}/foam/lnInclude")
+    LIST(APPEND allincludes "${Fx31_INCLUDE_PATHS}")
+#    LIST(APPEND allincludes "${Fx31_LIBSRC_DIR}/foam/lnInclude")
 #    set_property(TARGET ${targetname} PROPERTY INCLUDE_DIRECTORIES ${allincludes})
     set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${Fx31_CXX_FLAGS})

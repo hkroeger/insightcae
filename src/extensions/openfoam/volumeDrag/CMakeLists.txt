@@ -5,15 +5,15 @@ set(SRC
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  turbulenceModels/incompressible/LES turbulenceModels/LES/LESfilters transportModels
-  meshTools triSurface sampling surfMesh lagrangian lagrangian/basic fileFormats fvOptions
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  turbulenceModels/incompressible/LES turbulenceModels/LES/LESfilters transportModels
+#  meshTools triSurface sampling surfMesh lagrangian lagrangian/basic fileFormats fvOptions
 )
 
 set(OF_LIBS 
-finiteVolume incompressibleRASModels 
-incompressibleTransportModels meshTools triSurface LESfilters 
-surfMesh sampling fvOptions
+#finiteVolume incompressibleRASModels 
+#incompressibleTransportModels meshTools triSurface LESfilters 
+#surfMesh sampling fvOptions
 )
 
 set(INCLUDE_DIRS 

@@ -22,7 +22,11 @@
 #include "OFstream.H"
 #include "dictionary.H"
 #include "dlLibraryTable.H"
+#ifdef Fx40
+#include "foamTime.H"
+#else
 #include "Time.H"
+#endif
 #include "interpolation.H"
 
 #include "SortableList.H"

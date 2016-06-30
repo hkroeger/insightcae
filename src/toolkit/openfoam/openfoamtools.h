@@ -27,6 +27,7 @@
 
 #include "base/boost_include.h"
 
+#include "base/analysis.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 #include "progrock/cppx/collections/options_boosted.h"
@@ -455,6 +456,104 @@ void runPvPython
   const boost::filesystem::path& location,
   const std::vector<std::string> pvpython_commands
 );
+
+namespace paraview
+{
+  
+class PVScene
+{
+public:
+  declareFactoryTable(PVScene, NoParameters);
+
+public:
+#include "openfoamtools__PVScene__Parameters.h"
+/*
+PARAMETERSET>>> PVScene Parameters
+
+resetview = bool false "If true, the view is cleared before rendering. Previous scene will be overlayed otherwise"
+imagename = string "" "Image name. Will be used as filename. If blank, the view created but not rendered. This can be useful to overlay with the next scene."
+
+<<<PARAMETERSET
+*/
+
+  declareType("PVscene");
+  
+  virtual ParameterSet defaultParameters() const =0;
+  virtual std::string pythonCommands() const =0;
+};
+
+class CustomPVScene
+: public PVScene
+{
+protected:
+  std::string command_;
+  
+public:
+#include "openfoamtools__CustomPVScene__Parameters.h"
+/*
+PARAMETERSET>>> CustomPVScene Parameters
+
+inherits insight::paraview::PVScene::Parameters
+
+command = string "" "Python snippet to execute in pvBatch"
+
+<<<PARAMETERSET
+*/
+
+  declareType("custom");
+  
+  CustomPVScene(const NoParameters&);
+  CustomPVScene(const ParameterSet&);
+  virtual ParameterSet defaultParameters() const;
+  virtual std::string pythonCommands() const;
+};
+  
+class CutplanePVScene
+: public PVScene
+{
+  
+public:
+#include "openfoamtools__CutplanePVScene__Parameters.h"
+/*
+PARAMETERSET>>> CutplanePVScene Parameters
+
+inherits insight::paraview::PVScene::Parameters
+
+dataset = string "" "name of the data set to cut"
+field = string "" "name of the field to display on the plane"
+
+p0 = vector (0 0 0) "center point of the cut plane"
+normal = vector (0 0 1) "normal vector of the cut plane"
+camera = vector (0 0 1) "location of the view camera (looking on p0)"
+up = vector (0 1 0) "upward direction of the view"
+size = double 1.0 "size of the viewport (in the same units as the data set)"
+
+<<<PARAMETERSET
+*/
+
+  declareType("cutplane");
+  
+  CutplanePVScene(const NoParameters&);
+  CutplanePVScene(const ParameterSet&);
+  virtual ParameterSet defaultParameters() const;
+  virtual std::string pythonCommands() const;
+};
+  
+class ParaviewVisualization
+: public Analysis
+{
+public:
+  declareType("ParaviewVisualization");
+
+  ParaviewVisualization(const NoParameters&);
+  ParaviewVisualization(const ParameterSet& p);
+
+  virtual ParameterSet defaultParameters() const;
+  
+  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+};
+
+}
 
 arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
 		    const std::string& fieldName, const std::string& patchName,

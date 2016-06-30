@@ -6,14 +6,12 @@ Type=Application
 #MimeType=application/pv-med;application/x-hdf;
 MimeType=application/insight-iscad;
 Categories=Graphics;VectorGraphics;Engineering;Construction;2DGraphics;Science;
-#Actions=open;
-#[Desktop Action open]
-#Exec=konsole -e /bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
-Exec=/bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
-Icon=utilities-terminal
 Name=ISCAD editor
 Name[de]=ISCAD-Editor
 GenericName=Insight CAD Editor
 GenericName[de]=Insight CAD Editor
 Comment=A script-based CAD editor
 Comment[de]=Ein skriptbasierter CAD-Editor
+Exec=/bin/bash -lc 'cd `dirname "%f"`; iscad "%f"'
+Icon=utilities-terminal
+X-KDE-Submenu=ISCAD

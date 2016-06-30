@@ -33,7 +33,11 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "argList.H"
+#ifdef Fx40
+#include "foamTime.H"
+#else
 #include "Time.H"
+#endif
 #if defined(OF16ext)
 #include "directTopoChange.H"
 #else

@@ -3,12 +3,12 @@ set(PRJ binningProfile)
 set(SRC ${PRJ}.C)
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  meshTools
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  meshTools
 )
 
 set(OF_LIBS 
-  finiteVolume
+#  finiteVolume
 )
 
 set(INCLUDE_DIRS 

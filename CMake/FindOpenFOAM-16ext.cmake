@@ -28,6 +28,9 @@ IF(OF16ext_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF16ext_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF16ext_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF16ext_FOAM_LIBBIN)
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF16ext_BASHRC} OUTPUT_VARIABLE OF16ext_LIBRARIES)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF16ext_BASHRC} OUTPUT_VARIABLE OF16ext_INCLUDE_PATHS)
+
   set(OF16ext_LIBSRC_DIR "${OF16ext_DIR}/src")
   set(OF16ext_LIB_DIR "${OF16ext_DIR}/lib/${OF16ext_WM_OPTIONS}")
   
@@ -60,13 +63,16 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
 
   macro (setup_exe_target_OF16ext targetname sources exename includes)
     add_executable(${targetname} ${sources})
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF16ext_INCLUDE_PATHS}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF16ext_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      ${OF16ext_LIB_DIR}/libOpenFOAM.so 
+      #${OF16ext_LIB_DIR}/libOpenFOAM.so 
+      ${OF16ext_LIBRARIES}
       ${OF16ext_FOAM_MPI_LIBBIN}/libPstream.so 
       #${OF16ext_METIS_LIB_DIR}/libmetis.a
       ${OF16ext_PARMETIS_LIB_DIR}/libparmetis.so
@@ -78,10 +84,13 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   
   macro (setup_lib_target_OF16ext targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
+
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF16ext_INCLUDE_PATHS}")
     
     SET(LIB_SEARCHFLAGS "-L${OF16ext_LIB_DIR} -L${OF16ext_FOAM_MPI_LIBBIN} -L${OF16ext_METIS_LIB_DIR} -L${OF16ext_PARMETIS_LIB_DIR} -L${OF16ext_SCOTCH_LIB_DIR} -L${OF16ext_MESQUITE_LIB_DIR}")
     add_library(${targetname} SHARED ${sources})
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF16ext_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF16ext_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})

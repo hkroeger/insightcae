@@ -1294,6 +1294,124 @@ void runPvPython
 
 }
 
+namespace paraview
+{
+
+defineType(PVScene);
+defineFactoryTable(PVScene, NoParameters);
+
+defineType(CustomPVScene);
+addToFactoryTable(PVScene, CustomPVScene, NoParameters);
+
+CustomPVScene::CustomPVScene(const NoParameters&)
+{}
+
+CustomPVScene::CustomPVScene(const ParameterSet& ps)
+{
+  Parameters p(ps);
+  command_=p.command;
+}
+
+ParameterSet CustomPVScene::defaultParameters() const
+{
+  return Parameters::makeDefault();
+}
+
+string CustomPVScene::pythonCommands() const
+{
+  return command_;
+}
+
+defineType(CutplanePVScene);
+addToFactoryTable(PVScene, CutplanePVScene, NoParameters);
+
+CutplanePVScene::CutplanePVScene(const NoParameters&)
+{}
+
+CutplanePVScene::CutplanePVScene(const ParameterSet&)
+{}
+
+ParameterSet CutplanePVScene::defaultParameters() const
+{
+  return Parameters::makeDefault();
+}
+
+string CutplanePVScene::pythonCommands() const
+{
+  return "";
+}
+
+
+defineType(ParaviewVisualization);
+addToFactoryTable(Analysis, ParaviewVisualization, NoParameters);
+
+ParaviewVisualization::ParaviewVisualization(const NoParameters&np)
+: Analysis(np)
+{
+}
+
+
+ParaviewVisualization::ParaviewVisualization(const ParameterSet& p)
+: Analysis("", "")
+{
+}
+
+ParameterSet ParaviewVisualization::defaultParameters() const
+{
+  ParameterSet ps;
+  
+  SelectableSubsetParameter::SubsetList sels;
+  BOOST_FOREACH
+  (
+    const PVScene::FactoryTable::value_type& pvsf, 
+    *PVScene::factories_
+  )
+  {
+    boost::shared_ptr<PVScene> pvs
+    (
+      pvsf.second->operator()(NoParameters())
+    );
+    
+    sels.push_back
+    (
+      SelectableSubsetParameter::SingleSubset
+      (
+	pvsf.first, 
+        new ParameterSet
+        (
+	  pvs->defaultParameters()
+	)
+      )
+    );
+  }
+  
+  std::string id="scenes";
+  ps.insert
+  (
+    id, 
+    new ArrayParameter(
+      SelectableSubsetParameter
+      (
+	CustomPVScene::typeName,
+	sels, 
+	"Selection and parameters of a single scene."
+      ),
+      0,
+      "Array of scenes. The scenes will be created and overlayed in the order of their appearance."
+    )
+  );
+  
+  return ps;
+}
+
+ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer* displayer)
+{
+
+}
+
+  
+}
+
 arma::mat patchIntegrate
 (
   const OpenFOAMCase& cm, 

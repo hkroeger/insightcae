@@ -306,7 +306,11 @@ public:
         virtual tmp<volSymmTensorField> devReff() const;
 
         //- Return the source term for the momentum equation
-        virtual tmp<fvVectorMatrix> divDevReff(volVectorField& U) const;
+        virtual tmp<fvVectorMatrix> divDevReff(
+#ifndef Fx40
+	  volVectorField& U
+#endif
+	) const;
 
 #ifndef OF16ext
         //- Return the source term for the momentum equation

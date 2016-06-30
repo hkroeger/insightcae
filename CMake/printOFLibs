@@ -1,0 +1,23 @@
+#!/bin/bash
+
+ARG_BRC=$1
+shift 1
+#ARGS=$*
+source $ARG_BRC
+EXPR='^ *LIB *= *$(FOAM_LIBBIN)/\(.*\)$'
+FIRST=1
+for bd in "$FOAM_SRC" "$FOAM_APP"; do
+ for d in `find "$bd" -name "Make" -a -type d`; do 
+  if [ -e $d/files ]; then
+   libbn=`grep -o "$EXPR" $d/files |sed -e "s#$EXPR#\\1#g"`
+   #echo $libbn
+   if [[ "${libbn}" != "" ]] && [[ "${libbn}" != *"/"* ]]; then
+    lib=$FOAM_LIBBIN/${libbn}.so
+    if [ -e "$lib" ]; then
+     if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
+     echo -n "$lib"
+    fi
+   fi
+  fi
+ done
+done

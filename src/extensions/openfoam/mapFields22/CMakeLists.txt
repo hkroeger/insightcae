@@ -4,12 +4,12 @@ set(SRC mapFields.C mapLagrangian.C calculateMeshToMeshAddressing.C calculateMes
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
-  meshTools lagrangian lagrangian/basic
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  meshTools lagrangian lagrangian/basic
 )
 
 set(OF_LIBS 
-  finiteVolume meshTools lagrangian
+#  finiteVolume meshTools lagrangian
 )
 
 set(INCLUDE_DIRS 

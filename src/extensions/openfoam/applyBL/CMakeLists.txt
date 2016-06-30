@@ -2,16 +2,16 @@
 set(SRC applyBL.C)
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
+#  OpenFOAM finiteVolume OSspecific/POSIX lduSolvers 
   turbulenceModels/incompressible/LES turbulenceModels/LES/LESfilters
-  meshTools sampling surfMesh 
+#  meshTools sampling surfMesh 
   transportModels transportModels/incompressible
   turbulenceModels turbulenceModels/incompressible/RAS
 )
 
 set(OF_LIBS 
-finiteVolume LESfilters sampling 
-incompressibleTransportModels incompressibleRASModels
+#finiteVolume LESfilters sampling 
+#incompressibleTransportModels incompressibleRASModels
 )
 
 set(INCLUDE_DIRS 

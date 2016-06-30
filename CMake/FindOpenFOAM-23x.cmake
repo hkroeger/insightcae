@@ -33,6 +33,9 @@ IF(OF23x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_EXT_LIBBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF23x_SCOTCH_ROOT)
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_INCLUDE_PATHS)
+
   set(OF23x_LIBSRC_DIR "${OF23x_DIR}/src")
   set(OF23x_LIB_DIR "${OF23x_DIR}/platforms/${OF23x_WM_OPTIONS}/lib")
   
@@ -70,17 +73,21 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
     
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF23x_INCLUDE_PATHS}")
+
     #link_directories(${OF23x_LIB_DIR} ${OF23x_LIB_DIR}/${OF23x_MPI} ${OF23x_FOAM_EXT_LIBBIN} "${OF23x_SCOTCH_ROOT}/lib")
     #SET(LIB_SEARCHFLAGS "-L${OF23x_LIB_DIR} -L${OF23x_LIB_DIR}/${OF23x_MPI} -L${OF23x_FOAM_EXT_LIBBIN} -L${OF23x_SCOTCH_ROOT}/lib")
     
     add_executable(${targetname} ${sources})
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      ${OF23x_LIB_DIR}/libOpenFOAM.so 
+      ${OF23x_LIBRARIES}
+      #${OF23x_LIB_DIR}/libOpenFOAM.so 
       ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
       ${ARGN} ) 
     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF23x_FOAM_APPBIN})
@@ -92,12 +99,14 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   macro (setup_lib_target_OF23x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF23x_INCLUDE_PATHS}")
 #     message(STATUS "target " ${targetname} ": includes=" ${includes})
     #link_directories(${OF23x_LIB_DIR} ${OF23x_LIB_DIR}/${OF23x_MPI} ${OF23x_FOAM_EXT_LIBBIN} "${OF23x_SCOTCH_ROOT}/lib")
     SET(LIB_SEARCHFLAGS "-L${OF23x_LIB_DIR} -L${OF23x_LIB_DIR}/${OF23x_MPI} -L${OF23x_FOAM_EXT_LIBBIN} -L${OF23x_SCOTCH_ROOT}/lib")
     add_library(${targetname} SHARED ${sources})
     target_link_libraries(${targetname} ${ARGN}) 
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF23x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF23x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})

@@ -5,7 +5,7 @@ set(SRC
 )
 
 set(OF_INCLUDE_DIRS
-  OpenFOAM OSspecific/POSIX
+#  OpenFOAM OSspecific/POSIX
 )
 
 set(OF_LIBS 

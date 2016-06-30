@@ -31,6 +31,9 @@ IF(OF21x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF21x_FOAM_EXT_LIBBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF21x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF21x_SCOTCH_ROOT)
 
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF21x_BASHRC} OUTPUT_VARIABLE OF21x_LIBRARIES)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF21x_BASHRC} OUTPUT_VARIABLE OF21x_INCLUDE_PATHS)
+
   set(OF21x_LIBSRC_DIR "${OF21x_DIR}/src")
   set(OF21x_LIB_DIR "${OF21x_DIR}/platforms/${OF21x_WM_OPTIONS}/lib")
   
@@ -68,17 +71,21 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     get_directory_property(temp LINK_DIRECTORIES)
     
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF21x_INCLUDE_PATHS}")
+
     #link_directories(${OF21x_LIB_DIR} ${OF21x_LIB_DIR}/${OF21x_MPI} ${OF21x_FOAM_EXT_LIBBIN} "${OF21x_SCOTCH_ROOT}/lib")
     #SET(LIB_SEARCHFLAGS "-L${OF21x_LIB_DIR} -L${OF21x_LIB_DIR}/${OF21x_MPI} -L${OF21x_FOAM_EXT_LIBBIN} -L${OF21x_SCOTCH_ROOT}/lib")
     
     add_executable(${targetname} ${sources})
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKEXE} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF21x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      ${OF21x_LIB_DIR}/libOpenFOAM.so 
+      #${OF21x_LIB_DIR}/libOpenFOAM.so 
+      ${OF21x_LIBRARIES}
       ${OF21x_LIB_DIR}/${OF21x_MPI}/libPstream.so 
       ${ARGN} ) 
 
@@ -90,11 +97,14 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
   macro (setup_lib_target_OF21x targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
 
+    set(allincludes ${includes})
+    LIST(APPEND allincludes "${OF21x_INCLUDE_PATHS}")
+
     #message(STATUS "target " ${targetname} ": includes=" ${includes})
     #link_directories(${OF21x_LIB_DIR} ${OF21x_LIB_DIR}/${OF21x_MPI} ${OF21x_FOAM_EXT_LIBBIN} "${OF21x_SCOTCH_ROOT}/lib")
     SET(LIB_SEARCHFLAGS "-L${OF21x_LIB_DIR} -L${OF21x_LIB_DIR}/${OF21x_MPI} -L${OF21x_FOAM_EXT_LIBBIN} -L${OF21x_SCOTCH_ROOT}/lib")
     add_library(${targetname} SHARED ${sources})
-    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${includes}")
+    set_target_properties(${targetname} PROPERTIES INCLUDE_DIRECTORIES "${allincludes}")
     set_target_properties(${targetname} PROPERTIES COMPILE_FLAGS ${OF21x_CXX_FLAGS})
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF21x_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})

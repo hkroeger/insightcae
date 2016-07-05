@@ -6,7 +6,13 @@ shift 1
 source $ARG_BRC
 EXPR='^ *LIB *= *$(FOAM_LIBBIN)/\(.*\)$'
 FIRST=1
-for bd in "$FOAM_SRC" "$FOAM_APP"; do
+
+#"$FOAM_APP" \
+lorder $(
+for bd in \
+  "$FOAM_SRC" \
+; do
+
  for d in `find "$bd" -name "Make" -a -type d`; do 
   if [ -e $d/files ]; then
    libbn=`grep -o "$EXPR" $d/files |sed -e "s#$EXPR#\\1#g"`
@@ -14,10 +20,14 @@ for bd in "$FOAM_SRC" "$FOAM_APP"; do
    if [[ "${libbn}" != "" ]] && [[ "${libbn}" != *"/"* ]]; then
     lib=$FOAM_LIBBIN/${libbn}.so
     if [ -e "$lib" ]; then
-     if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
-     echo -n "$lib"
+     #if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
+     #echo -n "$lib"
+     #echo  "${libbn#lib}"
+     echo $lib
     fi
    fi
   fi
  done
 done
+) | tsort  \
+| if [ "$MANUAL" ]; then sed -e 's#^.*/lib\([^/]*\)\.so *$#\1#g'; else ( tr '\n' ';' | sed -e 's/;$//')  fi

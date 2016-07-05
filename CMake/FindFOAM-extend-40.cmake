@@ -14,6 +14,16 @@ FIND_FILE(Fx40_BASHRC NAMES bashrc
 )
 message(STATUS ${Fx40_BASHRC})
 
+macro(setOFlibvar prefix) 
+  SET(${prefix}_LIBRARIES "")
+   FOREACH(f ${ARGN})
+    IF (EXISTS "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+      LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+    endif()
+   ENDFOREACH(f)
+   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
+endmacro()
+
 SET(Fx40_FOUND FALSE)
 IF(Fx40_BASHRC)
   #set(Fx40_BASHRC "${Fx40_DIR}/etc/bashrc")
@@ -31,8 +41,101 @@ IF(Fx40_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx40_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE Fx40_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx40_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE Fx40_FOAM_LIBBIN)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx40_BASHRC} OUTPUT_VARIABLE Fx40_LIBRARIES)
+  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx40_BASHRC} OUTPUT_VARIABLE Fx40_LIBRARIES)
+  setOFlibvar(Fx40 
+#EulerianInterfacialModels # app #uncommenting this and the others below causes segfault at program ends...
+IOFunctionObjects
+POD
+RBFMotionSolver
+autoMesh
+barotropicCompressibilityModel
+blockMesh
+cfMesh
+checkFunctionObjects
+chemistryModel
+coalCombustion
+combustionModels
+compressibleLESModels
+compressibleRASModels
+#conjugateHeatTransfer # app
+conversion
+coupledLduMatrix
+dieselSpray
+dsmc
+dynamicTopoFvMesh
+engine
+equationReader
+errorEstimation
+extrudeModel
+fieldFunctionObjects
+foamCalcFunctions
+freeSurface
+immersedBoundaryDynamicFvMesh
+immersedBoundaryForceFunctionObject
+incompressibleLESModels
+incompressibleTransportModels
+interfaceProperties
+kineticTheoryModel
+lagrangian
+laminarFlameSpeedModels
+lduSolvers
+#materialModels # deprecated solvers
+mesquiteMotionSolver
+molecularMeasurements
+molecule
+multiSolver
+phaseModel
+randomProcesses
+rhoCentralFoam
+#rhopSonicFoam #app: BCs
+sampling
+scotchDecomp
+solidModels
+solidParticle
+systemCall
+tecio
+userd-foam
+userd-newFoam
+utilityFunctionObjects
+viscoelasticTransportModels
+edgeMesh
+ODE
+reactionThermophysicalModels
+lagrangianIntermediate
+compressibleTurbulenceModel
+fvMotionSolver
+tetMotionSolver
+immersedBoundaryTurbulence
+forces
+LESdeltas
+LESfilters
+potential
+topoChangerFvMesh
+finiteArea
+basicThermophysicalModels
+radiation
+pdf
+liquidMixture
+solidMixture
+immersedBoundary
+incompressibleRASModels
+dynamicFvMesh
+specie
+thermophysicalFunctions
+liquids
+solids
+surfMesh
+incompressibleTurbulenceModel
+tetFiniteElement
+solidBodyMotion
+dynamicMesh
+finiteVolume
+meshTools
+decompositionMethods
+foam
+)
   message(STATUS "FX40_LIBS: " ${Fx40_LIBRARIES})
+  
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${Fx40_BASHRC} OUTPUT_VARIABLE Fx40_INCLUDE_PATHS)
   message(STATUS "FX40_INCS: " ${Fx40_INCLUDE_PATHS})
 
@@ -79,14 +182,15 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${Fx40_INSIGHT_BIN})
     target_link_libraries(${targetname} 
 #      ${Fx40_LIB_DIR}/libfoam.so 
-      ${Fx40_LIBRARIES}
       #${Fx40_FOAM_MPI_LIBBIN}/libPstream.so 
       #${Fx40_METIS_LIB_DIR}/libmetis.a
+      ${ARGN}
       ${Fx40_PARMETIS_LIB_DIR}/libparmetis.a
       ${Fx40_SCOTCH_LIB_DIR}/libscotch.so
       ${Fx40_SCOTCH_LIB_DIR}/libscotcherr.so
       ${Fx40_MESQUITE_LIB_DIR}/libmesquite.so
-      ${ARGN})
+      ${Fx40_LIBRARIES}
+     )
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx40_FOAM_APPBIN})
   endmacro()
   

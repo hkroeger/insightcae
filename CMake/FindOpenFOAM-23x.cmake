@@ -15,6 +15,16 @@ FIND_FILE(OF23x_BASHRC NAMES bashrc
   /opt/openfoam230/etc
 )
 
+macro(setOFlibvar prefix) 
+  SET(${prefix}_LIBRARIES "")
+   FOREACH(f ${ARGN})
+    IF (EXISTS "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+      LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+    endif()
+   ENDFOREACH(f)
+   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
+endmacro()
+
 message(STATUS ${OF23x_BASHRC})
 
 SET(OF23x_FOUND FALSE)
@@ -33,8 +43,6 @@ IF(OF23x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_EXT_LIBBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF23x_SCOTCH_ROOT)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_INCLUDE_PATHS)
 
   set(OF23x_LIBSRC_DIR "${OF23x_DIR}/src")
   set(OF23x_LIB_DIR "${OF23x_DIR}/platforms/${OF23x_WM_OPTIONS}/lib")
@@ -50,6 +58,105 @@ IF(OF23x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF23x_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_LIBBIN)
   
+  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
+  setOFlibvar(OF23x 
+FVFunctionObjects
+IOFunctionObjects
+SloanRenumber
+autoMesh
+barotropicCompressibilityModel
+blockMesh
+cloudFunctionObjects
+coalCombustion
+combustionModels
+compressibleLESModels
+compressibleTransportModels
+compressibleTurbulenceModels
+decompose
+distributed
+dsmc
+engine
+fieldFunctionObjects
+foamCalcFunctions
+genericPatchFields
+immiscibleIncompressibleTwoPhaseMixture
+incompressibleTurbulenceModels
+jobControl
+lagrangianSpray
+lagrangianTurbulence
+lagrangianTurbulentSubModels
+laminarFlameSpeedModels
+molecularMeasurements
+molecule
+pairPatchAgglomeration
+pyrolysisModels
+randomProcesses
+reconstruct
+regionCoupled
+regionCoupling
+scotchDecomp
+sixDoFRigidBodyMotion
+solidParticle
+solidSpecie
+surfaceFilmDerivedFvPatchFields
+surfaceFilmModels
+systemCall
+thermalBaffleModels
+topoChangerFvMesh
+turbulenceDerivedFvPatchFields
+twoPhaseProperties
+utilityFunctionObjects
+renumberMethods
+edgeMesh
+fvMotionSolvers
+interfaceProperties
+incompressibleTransportModels
+lagrangianIntermediate
+potential
+solidChemistryModel
+forces
+compressibleRASModels
+regionModels
+dynamicFvMesh
+fvOptions
+decompositionMethods
+twoPhaseMixture
+SLGThermo
+radiationModels
+distributionModels
+solidThermo
+chemistryModel
+compressibleTurbulenceModel
+sampling
+liquidMixtureProperties
+solidMixtureProperties
+ODE
+reactionThermophysicalModels
+lagrangian
+conversion
+liquidProperties
+solidProperties
+fluidThermophysicalModels
+thermophysicalFunctions
+specie
+LEMOS-2.3.x
+incompressibleLESModels
+incompressibleRASModels
+dynamicMesh
+LESdeltas
+turbulenceModels
+LESfilters
+incompressibleTurbulenceModel
+extrudeModel
+finiteVolume
+meshTools
+triSurface
+surfMesh
+fileFormats
+OpenFOAM
+)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_INCLUDE_PATHS)
+
   set(OF23x_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
   set(OF23x_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
 
@@ -86,10 +193,12 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      ${OF23x_LIBRARIES}
       #${OF23x_LIB_DIR}/libOpenFOAM.so 
       ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
-      ${ARGN} ) 
+      ${ARGN}
+      ${OF23x_LIBRARIES}
+      ) 
+    #SET_TARGET_PROPERTIES(${targetname} PROPERTIES LINK_FLAGS "-Wl,--as-needed")
     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF23x_FOAM_APPBIN})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})

@@ -26,6 +26,7 @@ IF(Fx31_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-MESQUITE_LIB_DIR OUTPUT_VARIABLE Fx31_MESQUITE_LIB_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMETIS_LIB_DIR OUTPUT_VARIABLE Fx31_PARMETIS_LIB_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-SCOTCH_LIB_DIR OUTPUT_VARIABLE Fx31_SCOTCH_LIB_DIR)
+  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMGRIDGEN_LIB_DIR OUTPUT_VARIABLE Fx31_PARMGRIDGEN_LIB_DIR)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE Fx31_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_LIBBIN)
 
@@ -81,7 +82,8 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
       ${Fx31_PARMETIS_LIB_DIR}/libparmetis.a
       ${Fx31_SCOTCH_LIB_DIR}/libscotch.so
       ${Fx31_SCOTCH_LIB_DIR}/libscotcherr.so
-      ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so
+      ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so 
+      ${Fx31_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
       ${ARGN})
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_FOAM_APPBIN})
   endmacro()

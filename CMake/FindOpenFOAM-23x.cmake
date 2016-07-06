@@ -58,7 +58,7 @@ IF(OF23x_BASHRC)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF23x_FOAM_APPBIN)
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_LIBBIN)
   
-  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
   setOFlibvar(OF23x 
 FVFunctionObjects
 IOFunctionObjects
@@ -71,20 +71,19 @@ coalCombustion
 combustionModels
 compressibleLESModels
 compressibleTransportModels
-compressibleTurbulenceModels
+#compressibleTurbulenceModels
 decompose
 distributed
 dsmc
 engine
-fieldFunctionObjects
 foamCalcFunctions
 genericPatchFields
 immiscibleIncompressibleTwoPhaseMixture
-incompressibleTurbulenceModels
+#incompressibleTurbulenceModels
 jobControl
 lagrangianSpray
-lagrangianTurbulence
-lagrangianTurbulentSubModels
+#lagrangianTurbulence
+#lagrangianTurbulentSubModels
 laminarFlameSpeedModels
 molecularMeasurements
 molecule
@@ -103,7 +102,7 @@ surfaceFilmModels
 systemCall
 thermalBaffleModels
 topoChangerFvMesh
-turbulenceDerivedFvPatchFields
+#turbulenceDerivedFvPatchFields
 twoPhaseProperties
 utilityFunctionObjects
 renumberMethods
@@ -126,28 +125,29 @@ radiationModels
 distributionModels
 solidThermo
 chemistryModel
-compressibleTurbulenceModel
-sampling
+#compressibleTurbulenceModel
 liquidMixtureProperties
 solidMixtureProperties
 ODE
 reactionThermophysicalModels
-lagrangian
-conversion
 liquidProperties
 solidProperties
 fluidThermophysicalModels
 thermophysicalFunctions
 specie
-LEMOS-2.3.x
+#LEMOS-2.3.x
+fieldFunctionObjects
 incompressibleLESModels
-incompressibleRASModels
+#incompressibleRASModels
 dynamicMesh
-LESdeltas
-turbulenceModels
-LESfilters
-incompressibleTurbulenceModel
+sampling
+#LESdeltas
+#turbulenceModels
+#LESfilters
+#incompressibleTurbulenceModel
 extrudeModel
+lagrangian
+conversion
 finiteVolume
 meshTools
 triSurface
@@ -193,10 +193,9 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
-      #${OF23x_LIB_DIR}/libOpenFOAM.so 
+      ${OF23x_LIBRARIES}
       ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
       ${ARGN}
-      ${OF23x_LIBRARIES}
       ) 
     #SET_TARGET_PROPERTIES(${targetname} PROPERTIES LINK_FLAGS "-Wl,--as-needed")
     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF23x_FOAM_APPBIN})

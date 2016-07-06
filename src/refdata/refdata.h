@@ -40,17 +40,20 @@ public:
   
 protected:
   DataSetList datasets_;
+  bool interpreterStarted_;
   bool ranInitialize_;
   PyThreadState* mainThreadState;
   
+  void startInterpreter();
+  
 public:
   ReferenceDataLibrary();
-  ~ReferenceDataLibrary();
+  virtual ~ReferenceDataLibrary();
   
   arma::mat getProfile(const std::string& dataSetName, const std::string& path) const;
 };
 
-extern ReferenceDataLibrary refdatalib;
+extern "C" ReferenceDataLibrary refdatalib;
   
 }
 

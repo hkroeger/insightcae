@@ -62,55 +62,77 @@ struct release_py_GIL
 };
   
 ReferenceDataLibrary::ReferenceDataLibrary()
+: interpreterStarted_(false),
+  ranInitialize_(false),
+  mainThreadState(NULL)
 {
-  path dir=path(getenv("HOME"))/"Referenzdaten";
-  
-  if ( exists( dir ) ) 
+}
+
+void ReferenceDataLibrary::startInterpreter()
+{
+  if (!interpreterStarted_)
   {
-    directory_iterator end_itr; // default construction yields past-the-end
-    for ( directory_iterator itr( dir );
-          itr != end_itr;
-          ++itr )
+    std::cout<<"start refdata init"<<std::endl;
+
+    path dir=path(getenv("HOME"))/"Referenzdaten";
+    
+    if ( exists( dir ) ) 
     {
-      if ( is_directory(itr->status()) )
+      directory_iterator end_itr; // default construction yields past-the-end
+      for ( directory_iterator itr( dir );
+	    itr != end_itr;
+	    ++itr )
       {
-	path mod=itr->path()/"__init__.py";
-        if (exists(mod))
+	if ( is_directory(itr->status()) )
 	{
-	  datasets_[itr->path().filename().string()]=mod;
-// 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+	  path mod=itr->path()/"__init__.py";
+	  if (exists(mod))
+	  {
+	    datasets_[itr->path().filename().string()]=mod;
+  // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+	  }
 	}
       }
     }
-  }
 
-  if (!Py_IsInitialized())
-  {
-//     std::cout<<"Init python"<<std::endl;
-    Py_Initialize();
-    PyEval_InitThreads();
-    mainThreadState = PyEval_SaveThread();
-    ranInitialize_=true;
+    if (!Py_IsInitialized())
+    {
+      std::cout<<"Init python"<<std::endl;
+      Py_Initialize();
+      PyEval_InitThreads();
+      mainThreadState = PyEval_SaveThread();
+      ranInitialize_=true;
+    }
+    else
+    {
+      std::cout<<"Skipped python init"<<std::endl;
+      ranInitialize_=false;
+    }
+    std::cout<<"init python done"<<std::endl;
+    
+    interpreterStarted_=true;
   }
-  else
-  {
-//     std::cout<<"Skipped python init"<<std::endl;
-    ranInitialize_=false;
-  }
-//   std::cout<<"init python done"<<std::endl;
 }
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
-  if (ranInitialize_)
+  if (interpreterStarted_)
   {
-    PyEval_RestoreThread(mainThreadState);
-    Py_Finalize();
+    std::cout<<"start refdata cleanup"<<std::endl;
+    if (ranInitialize_ && Py_IsInitialized())
+    {
+      std::cout<<"del"<<std::endl;
+      PyEval_RestoreThread(mainThreadState);
+      Py_Finalize();
+    }
+    std::cout<<"refdata cleanup done"<<std::endl;
   }
 }
   
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const
 {
+  const_cast<ReferenceDataLibrary*>(this)->startInterpreter();
+  
   aquire_py_GIL locker;
   
   arma::mat profile;

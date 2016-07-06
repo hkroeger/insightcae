@@ -7,10 +7,13 @@ source $ARG_BRC
 FIRST=1
 for bd in "$FOAM_SRC" "$FOAM_APP"; do
  for d in `find "$bd" -name "Make" -a -type d`; do 
-  P="$(cd $d; cd ..; pwd)/lnInclude"
-  if [ -d "$P" ]; then 
-   if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
-   echo -n "$P"
+  p="$(cd $d; cd ..; pwd)"
+  if [ `basename $p` != "finiteArea" ]; then # skip this because of interfering header names, has to be included manually, if needed
+   P="$p/lnInclude"
+   if [ -d "$P" ]; then 
+    if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi
+    echo -n "$P"
+   fi
   fi
  done
 done

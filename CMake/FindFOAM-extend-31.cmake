@@ -102,7 +102,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx31_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx31_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${ARGN}) 
+    target_link_libraries(${targetname} ${Fx31_LIBRARIES} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx31_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

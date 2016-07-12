@@ -184,12 +184,12 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
 #      ${Fx40_LIB_DIR}/libfoam.so 
       #${Fx40_FOAM_MPI_LIBBIN}/libPstream.so 
       #${Fx40_METIS_LIB_DIR}/libmetis.a
+      ${Fx40_LIBRARIES}
       ${ARGN}
       ${Fx40_PARMETIS_LIB_DIR}/libparmetis.a
       ${Fx40_SCOTCH_LIB_DIR}/libscotch.so
       ${Fx40_SCOTCH_LIB_DIR}/libscotcherr.so
       ${Fx40_MESQUITE_LIB_DIR}/libmesquite.so
-      ${Fx40_LIBRARIES}
      )
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx40_FOAM_APPBIN})
   endmacro()
@@ -208,7 +208,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${Fx40_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${Fx40_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${ARGN}) 
+    target_link_libraries(${targetname} ${Fx40_LIBRARIES} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${Fx40_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

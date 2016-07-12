@@ -95,7 +95,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES LINK_FLAGS "${OF16ext_LINKLIBSO} ${LIB_SEARCHFLAGS}")
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_LIB})
-    target_link_libraries(${targetname} ${ARGN}) 
+    target_link_libraries(${targetname} ${OF16ext_LIBRARIES} ${ARGN}) 
     install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})

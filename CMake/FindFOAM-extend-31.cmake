@@ -83,7 +83,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
       ${Fx31_SCOTCH_LIB_DIR}/libscotch.so
       ${Fx31_SCOTCH_LIB_DIR}/libscotcherr.so
       ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so 
-      ${Fx31_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
+#       ${Fx31_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
       ${ARGN})
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_FOAM_APPBIN})
   endmacro()

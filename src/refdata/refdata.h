@@ -53,7 +53,7 @@ public:
   arma::mat getProfile(const std::string& dataSetName, const std::string& path) const;
 };
 
-extern "C" ReferenceDataLibrary refdatalib;
+extern ReferenceDataLibrary refdatalib;
   
 }
 

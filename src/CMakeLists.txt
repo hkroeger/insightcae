@@ -44,6 +44,7 @@ OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
 OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
 OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit
 and related tools (requires SWIG)" ON)
+OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench" ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 
@@ -68,6 +69,7 @@ find_package(OpenFOAM-21x REQUIRED)
 find_package(OpenFOAM-22x REQUIRED)
 find_package(OpenFOAM-22eng REQUIRED)
 find_package(OpenFOAM-23x REQUIRED)
+find_package(Wt)
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
@@ -526,7 +528,11 @@ IF(INSIGHT_BUILD_TOOLKIT)
   if (INSIGHT_BUILD_WORKBENCH)
     add_subdirectory(workbench)
   endif (INSIGHT_BUILD_WORKBENCH)
+  IF(INSIGHT_BUILD_WEBWORKBENCH)
+    add_subdirectory(webworkbench)
+  ENDIF()
 endif()
+
 
 if (INSIGHT_BUILD_CAD)
   add_subdirectory(cad)

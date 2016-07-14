@@ -143,3 +143,9 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   }
   return vec3(0,0,0);
 }
+
+
+insight::cad::BBMin::value
+{
+
+}

@@ -101,6 +101,26 @@ public:
   virtual arma::mat value() const;
 };
 
+class BBMin
+: public insight::cad::Vector
+{
+  ModelPtr model_;
+  
+public:
+  BBMin(ModelPtr model);
+  virtual arma::mat value() const;
+};
+
+class BBMax
+: public insight::cad::Vector
+{
+  ModelPtr model_;
+  
+public:
+  BBMax(ModelPtr model);
+  virtual arma::mat value() const;
+};
+
 }
 }
 

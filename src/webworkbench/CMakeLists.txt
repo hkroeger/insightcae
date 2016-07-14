@@ -8,7 +8,7 @@ set(webworkbench_SRCS webworkbench.cpp)
 
 INCLUDE_DIRECTORIES(${WT_INCLUDE_DIR})
 ADD_EXECUTABLE(webworkbench ${webworkbench_SRCS})
-TARGET_LINK_LIBRARIES(webworkbench 
+TARGET_LINK_LIBRARIES(webworkbench
     ${Wt_DEBUG_LIBRARY}        # or {Wt_LIBRARY}
     ${Wt_HTTP_DEBUG_LIBRARY}   # or {Wt_HTTP_LIBRARY}
     ${Wt_EXT_DEBUG_LIBRARY}    # or {Wt_EXT_LIBRARY}

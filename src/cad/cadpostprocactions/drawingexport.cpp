@@ -46,10 +46,15 @@ void DrawingExport::build()
       bool sec=boost::get<4>(vd);
       bool poly=boost::get<5>(vd);
       bool skiphl=boost::get<6>(vd);
+      
       arma::mat up;
       VectorPtr upd=boost::get<3>(vd);
       if (upd)
 	up=upd->value();
+      
+      if (arma::norm(up,2)<1e-6)
+	throw insight::Exception("length of upward direction vector must not be zero!");
+      
       views[boost::get<0>(vd)]=model_->createView
       (
 	boost::get<1>(vd)->value(),

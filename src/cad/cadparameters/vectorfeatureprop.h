@@ -104,20 +104,20 @@ public:
 class BBMin
 : public insight::cad::Vector
 {
-  ModelPtr model_;
+  FeaturePtr model_;
   
 public:
-  BBMin(ModelPtr model);
+  BBMin(FeaturePtr model);
   virtual arma::mat value() const;
 };
 
 class BBMax
 : public insight::cad::Vector
 {
-  ModelPtr model_;
+  FeaturePtr model_;
   
 public:
-  BBMax(ModelPtr model);
+  BBMax(FeaturePtr model);
   virtual arma::mat value() const;
 };
 

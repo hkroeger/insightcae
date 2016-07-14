@@ -720,6 +720,12 @@ ISCADParser::ISCADParser(Model* model)
 	  r_vertexFeaturesExpression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(qi::_1)) ]
 	  >> ')' )
       |
+       ( lit("bbmin") >> '(' >> r_solidmodel_expression >> ')' ) 
+        [ _val = phx::construct<VectorPtr>(phx::new_<BBMin>(qi::_1)) ]
+      |
+       ( lit("bbmax") >> '(' >> r_solidmodel_expression >> ')' ) 
+        [ _val = phx::construct<VectorPtr>(phx::new_<BBMax>(qi::_1)) ]
+      |
        ( lit("scoord") > '(' > 
 	  r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
 	    phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))

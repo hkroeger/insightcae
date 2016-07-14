@@ -144,8 +144,20 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   return vec3(0,0,0);
 }
 
+insight::cad::BBMin::BBMin(FeaturePtr model)
+: model_(model)
+{}
 
-insight::cad::BBMin::value
+arma::mat insight::cad::BBMin::value() const
 {
+  return model_->modelBndBox().col(0);
+}
 
+insight::cad::BBMax::BBMax(FeaturePtr model)
+: model_(model)
+{}
+
+arma::mat insight::cad::BBMax::value() const
+{
+  return model_->modelBndBox().col(1);
 }

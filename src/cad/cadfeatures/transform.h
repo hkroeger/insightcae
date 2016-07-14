@@ -57,7 +57,7 @@ public:
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   
-  virtual bool isTransformationFeature() const { return true; }
+  virtual bool isTransformationFeature() const;
   virtual gp_Trsf transformation() const;
 };
 

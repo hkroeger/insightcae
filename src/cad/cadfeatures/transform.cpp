@@ -163,6 +163,17 @@ void Transform::build()
   copyDatumsTransformed(*m1_, *trsf_);
 }
 
+bool Transform::isTransformationFeature() const 
+{
+ if (sf_)
+ {
+  if (fabs(sf_->value()-1.0)>1e-6) 
+  {
+   return false;
+  }
+ } 
+ return true; 
+}
 
 void Transform::insertrule(parser::ISCADParser& ruleset) const
 {

@@ -187,10 +187,21 @@ void AnalysisForm::onCreateReport()
     return;
   }
   
-  boost::filesystem::path outpath=analysis_->executionPath()/"report.tex";
-  results_->writeLatexFile( outpath );
+  QString fn = QFileDialog::getSaveFileName
+  (
+      this, 
+    "Save Latex Report", 
+    QString(analysis_->executionPath().c_str()), 
+    "LaTeX file (*.tex)"
+  );
+  if (!fn.isEmpty())
+  {
+    boost::filesystem::path outpath=fn.toStdString();
+    results_->writeLatexFile( outpath );
 
-  QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
+    QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
+  }
+
 
 }
 

@@ -58,83 +58,8 @@ ParameterSet OpenFOAMAnalysis::defaultParameters() const
 {
   ParameterSet p(Parameters::makeDefault());
   p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").items()=turbulenceModel::factoryToC();
+  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").setSelection("kOmegaSST");
   return p;
-  
-//   return ParameterSet
-//   (
-//     boost::assign::list_of<ParameterSet::SingleEntry>
-//       
-//       ("run", new SubsetParameter	
-// 	    (
-// 		  ParameterSet
-// 		  (
-// 		    boost::assign::list_of<ParameterSet::SingleEntry>
-// 		    ("machine", 	new StringParameter("", "machine or queue, where the external commands are executed on"))
-// 		    ("OFEname", 	new StringParameter("OF23x", "identifier of the OpenFOAM installation, that shall be used"))
-// 		    ("np", 		new IntParameter(1, "number of processors for parallel run (less or equal 1 means serial execution)"))
-// // 		    ("deltaT", 		new DoubleParameter(1.0, "simulation time step"))
-// // 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-// 		    ("mapFrom", 	new DirectoryParameter("", "Map solution from specified case, potentialinit is skipped when specified"))
-// 		    ("potentialinit", 	new BoolParameter(false, "Whether to initialize the flow field by potentialFoam when no mapping is done"))
-// 		    ("evaluateonly", 	new BoolParameter(false, "Whether to skip solver run and do only the evaluation"))
-// 		    .convert_to_container<ParameterSet::EntryList>()
-// 		  ), 
-// 		  "Execution parameters"
-//       ))
-// 
-//       ("mesh", new SubsetParameter
-// 	(
-// 	  ParameterSet
-// 	  (
-// 	    boost::assign::list_of<ParameterSet::SingleEntry>
-// 	    ("linkmesh", new PathParameter("", "path to another case, from what the mesh shall be linked"))
-// 	    .convert_to_container<ParameterSet::EntryList>()
-// 	  ), 
-// 	  "Properties of the computational mesh"
-// 	))
-// 
-//       ("fluid", new SubsetParameter
-// 	(
-// 	  ParameterSet
-// 	  (
-// 	    boost::assign::list_of<ParameterSet::SingleEntry>
-// 	    ("turbulenceModel",new SelectionParameter
-// 	      (
-// 		kOmegaSST2_RASModel::typeName, 
-// 		turbulenceModel::factoryToC(), 
-// 		"Turbulence model"
-// 	      ))
-// 	    .convert_to_container<ParameterSet::EntryList>()
-// 	  ), 
-// 	  "Parameters of the fluid"
-// 	))
-//       
-//       ("eval", new SubsetParameter
-// 	(
-// 	  ParameterSet
-// 	  (
-// 	    boost::assign::list_of<ParameterSet::SingleEntry>
-// 	    
-// 	    ("reportdicts",	new BoolParameter(true, "Include dictionaries into report"))
-// 	    
-// 	    .convert_to_container<ParameterSet::EntryList>()
-// 	  ), 
-// 	  "Parameters for evaluation after solver run"
-// 	))
-// 
-// //       ("run", new SubsetParameter	
-// // 	    (
-// // 		  ParameterSet
-// // 		  (
-// // 		    boost::assign::list_of<ParameterSet::SingleEntry>
-// // 		    ("endTime", 	new DoubleParameter(1000.0, "simulation time at which the solver should stop"))
-// // 		    .convert_to_container<ParameterSet::EntryList>()
-// // 		  ), 
-// // 		  "Solver parameters"
-// //       ))
-// 
-//       .convert_to_container<ParameterSet::EntryList>()
-//   );
 }
 
 boost::filesystem::path OpenFOAMAnalysis::setupExecutionEnvironment()

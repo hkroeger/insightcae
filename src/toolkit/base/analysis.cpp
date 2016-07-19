@@ -124,30 +124,29 @@ void ConvergenceAnalysisDisplayer::update(const ProgressState& pi)
       size_t i0=i/2;
       double sum=0.0;
       for (size_t j=i0; j<i; j++)
-	sum+=trackedValues_[j];
+        sum+=trackedValues_[j];
       ym.push_back(sum/double(i-i0));
     }
-//     std::cout<<"#ym="<<ym.size()<<std::endl;
     
     if (ym.size()>co_)
     {
       double maxrely=0.0;
       for (size_t j=ym.size()-1; j>=ym.size()-co_; j--)
       {
-	double rely=fabs(ym[j]-ym[j-1]) / (fabs(ym[j])+1e-10);
-	maxrely=std::max(rely, maxrely);
+        double rely=fabs(ym[j]-ym[j-1]) / (fabs(ym[j])+1e-10);
+        maxrely=std::max(rely, maxrely);
       }
       
       std::cout<<"max rel. change of "<<progvar_<<" = "<<maxrely;
       
       if (maxrely<threshold_)
       {
-	std::cout<<" >>> CONVERGED"<<std::endl;
-	converged_=true;
+        std::cout<<" >>> CONVERGED"<<std::endl;
+        converged_=true;
       }
       else
       {
-	std::cout<<", not converged"<<std::endl;
+        std::cout<<", not converged"<<std::endl;
       }
     }
   }
@@ -220,10 +219,11 @@ Analysis::Analysis(const NoParameters&)
 
 void Analysis::setDefaults()
 {
-  std::string name(type());
-  replace_all(name, " ", "_");
-  replace_all(name, "/", "-");
-  executionPath_()=path(".")/name;
+//   std::string name(type());
+//   replace_all(name, " ", "_");
+//   replace_all(name, "/", "-");
+//   executionPath_()=path(".")/name;
+  executionPath_()=path(".");
 }
 
 Analysis::~Analysis()

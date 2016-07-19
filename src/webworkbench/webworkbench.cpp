@@ -20,16 +20,15 @@ using namespace Wt;
  * A simple hello world application class which demonstrates how to react
  * to events, read input, and give feed-back.
  */
-class HelloApplication : public WApplication
+class WebWorkbenchApplication
+: public WApplication
 {
 public:
-  HelloApplication(const WEnvironment& env);
+  WebWorkbenchApplication(const WEnvironment& env);
 
 private:
-  WLineEdit *nameEdit_;
-  WText *greeting_;
-
-  void greet();
+  void loadAnalysis();
+  void newAnalysis();
 };
 
 /*
@@ -38,35 +37,25 @@ private:
  * constructor so it is typically also an argument for your custom
  * application constructor.
 */
-HelloApplication::HelloApplication(const WEnvironment& env)
+WebWorkbenchApplication::WebWorkbenchApplication(const WEnvironment& env)
   : WApplication(env)
 {
-  setTitle("Hello world");                               // application title
+  setTitle("Insight WebWorkbench");                               // application title
 
-  root()->addWidget(new WText("Your name, please ? "));  // show some text
-  nameEdit_ = new WLineEdit(root());                     // allow text input
-  nameEdit_->setFocus();                                 // give focus
-
-  WPushButton *button
-    = new WPushButton("Greet me.", root());              // create a button
-  button->setMargin(5, Left);                            // add 5 pixels margin
+  WPushButton *btn_upl = new WPushButton("Upload IST file...", root());              // create a button
+  WPushButton *btn_new = new WPushButton("New Analysis...", root());              // create a button
+//   button->setMargin(5, Left);                            // add 5 pixels margin
 
   root()->addWidget(new WBreak());                       // insert a line break
 
-  greeting_ = new WText(root());                         // empty text
-
-  /*
-   * Connect signals with slots
-   *
-   * - simple Wt-way
-   */
-  button->clicked().connect(this, &HelloApplication::greet);
+  btn_upl->clicked().connect(this, &WebWorkbenchApplication::loadAnalysis);
+  btn_new->clicked().connect(this, &WebWorkbenchApplication::newAnalysis);
 
   /*
    * - using an arbitrary function object (binding values with boost::bind())
    */
-  nameEdit_->enterPressed().connect
-    (boost::bind(&HelloApplication::greet, this));
+//   nameEdit_->enterPressed().connect
+//     (boost::bind(&WebWorkbenchApplication::greet, this));
 
   /*
    * - using a c++0x lambda:
@@ -76,13 +65,18 @@ HelloApplication::HelloApplication(const WEnvironment& env)
   // }));
 }
 
-void HelloApplication::greet()
+void WebWorkbenchApplication::loadAnalysis()
 {
   /*
    * Update the text, using text input into the nameEdit_ field.
    */
-  greeting_->setText("Hello there, " + nameEdit_->text());
+//   greeting_->setText("Hello there, " + nameEdit_->text());
 }
+
+void WebWorkbenchApplication::newAnalysis()
+{
+}
+
 
 WApplication *createApplication(const WEnvironment& env)
 {
@@ -90,7 +84,7 @@ WApplication *createApplication(const WEnvironment& env)
    * You could read information from the environment to decide whether
    * the user has permission to start a new application
    */
-  return new HelloApplication(env);
+  return new WebWorkbenchApplication(env);
 }
 
 int main(int argc, char **argv)

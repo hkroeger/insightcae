@@ -63,8 +63,16 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
     std::vector<double>& x = progressX_[name];
     std::vector<double>& y = progressY_[name];
 
-    x.push_back(iter); if (x.size() > maxCnt_) x.erase(x.begin());
-    y.push_back(i.second); if (y.size() > maxCnt_) y.erase(y.begin());    
+    if (i.second > 0.0) // only add, if y>0. Plot gets unreadable otherwise
+    {
+        x.push_back(iter);
+        y.push_back(i.second);
+    }
+    if (x.size() > maxCnt_) 
+    {
+        x.erase(x.begin());
+        y.erase(y.begin());    
+    }
   }
   
   setAxisAutoScale(QwtPlot::yLeft);
@@ -103,35 +111,35 @@ GraphProgressDisplayer::~GraphProgressDisplayer()
 
 void GraphProgressDisplayer::checkForUpdate()
 {
-  mutex_.lock();
-  
-  if (needsRedraw_)
-  {
-    needsRedraw_=false;
-    BOOST_FOREACH( const ArrayList::value_type& i, progressX_ )
-    {
-      const std::string& name=i.first;
-      
-      if (curve_.find(name) == curve_.end())
-      {
-	QwtPlotCurve *crv=new QwtPlotCurve();
-	crv->setTitle(name.c_str());
-	crv->setPen(QPen(QColor(
-	  double(qrand())*255.0/double(RAND_MAX), 
-	  double(qrand())*255.0/double(RAND_MAX), 
-	  double(qrand())*255.0/double(RAND_MAX)
-	), 2.0));
-	crv->attach(this);
-	curve_[name]=crv;
-      }
+    mutex_.lock();
 
-      curve_[name]->setSamples(&progressX_[name][1], &progressY_[name][1], progressY_[name].size()-1); // leave out first sample, since it is sometimes =0 and this make logscaled plot unreadable
+    if (needsRedraw_)
+    {
+        needsRedraw_=false;
+        BOOST_FOREACH( const ArrayList::value_type& i, progressX_ )
+        {
+            const std::string& name=i.first;
+
+            if (curve_.find(name) == curve_.end())
+            {
+                QwtPlotCurve *crv=new QwtPlotCurve();
+                crv->setTitle(name.c_str());
+                crv->setPen(QPen(QColor(
+                                     double(qrand())*255.0/double(RAND_MAX),
+                                     double(qrand())*255.0/double(RAND_MAX),
+                                     double(qrand())*255.0/double(RAND_MAX)
+                                 ), 2.0));
+                crv->attach(this);
+                curve_[name]=crv;
+            }
+
+            curve_[name]->setSamples(&progressX_[name][0], &progressY_[name][0], progressY_[name].size()); // leave out first sample, since it is sometimes =0 and this make logscaled plot unreadable
+        }
+
+        this->replot();
     }
 
-    this->replot();
-  }
-  
-  mutex_.unlock();
+    mutex_.unlock();
 }
 
 

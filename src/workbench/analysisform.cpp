@@ -86,9 +86,9 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
      ( 
       ParameterWrapper::ConstrP
       (
-	root, 
-	"execution directory", 
-	analysis_->executionPathParameter(),
+        root, 
+        "execution directory", 
+        analysis_->executionPathParameter(),
         ui->inputContents, 
 	this
       ) 

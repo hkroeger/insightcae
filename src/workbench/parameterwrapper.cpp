@@ -30,6 +30,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QWebView>
 
 #ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"
@@ -90,7 +91,9 @@ QString latex2QtHTML(const std::string& latex, QWidget* container)
     {
       html+=lx.mid(lpos, pos-lpos);
       QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
-      html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
+//       html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
+      html+="<img width=\"100%\" src=\"file://"+fn+"\">";
+//       html+="<img src=\"file://"+fn+"\">";
       lpos=pos;
       pos += rx.matchedLength();
     }
@@ -229,13 +232,9 @@ void IntParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -294,13 +293,9 @@ void DoubleParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -369,13 +364,9 @@ void VectorParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -446,13 +437,9 @@ void StringParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -516,13 +503,9 @@ void BoolParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -599,13 +582,9 @@ void PathParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -716,13 +695,9 @@ void MatrixParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -824,13 +799,9 @@ void SelectionParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -901,13 +872,9 @@ void SubsetParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
   
 //   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
@@ -1047,13 +1014,9 @@ void ArrayParameterWrapper::createWidgets()
   QFont f=label->font(); f.setBold(true); label->setFont(f);
   layout->addWidget(label);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -1115,13 +1078,9 @@ void DoubleRangeParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QLabel *shortDescLabel = 
-  new QLabel
-  (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-    detaileditwidget_
-  );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
 
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
@@ -1232,12 +1191,9 @@ void SelectableSubsetParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
 
-  QLabel *shortDescLabel=new QLabel
-    (
-    latex2QtHTML(param().description(), detaileditwidget_), 
-      detaileditwidget_
-    );
-  shortDescLabel->setWordWrap(true);
+  QWebView *shortDescLabel = 
+    new QWebView( detaileditwidget_ );
+  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
   layout->addWidget(shortDescLabel);
   
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);

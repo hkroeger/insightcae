@@ -27,6 +27,8 @@
 #include <QLabel>
 #include <QTableWidget>
 #include <QGroupBox>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 
 #ifndef Q_MOC_RUN
 #include "base/factory.h"
@@ -34,12 +36,13 @@
 #endif
 
 class ResultElementWrapper 
-: public QWidget
+: public QObject, //QWidget,
+  public QTreeWidgetItem
 {
   Q_OBJECT
   
 public:
-  typedef boost::tuple<QWidget *, const QString&, insight::ResultElement&> ConstrP;
+  typedef boost::tuple<QTreeWidgetItem *, const QString&, insight::ResultElement&> ConstrP;
   
   declareFactoryTable(ResultElementWrapper, ResultElementWrapper::ConstrP);  
 
@@ -153,6 +156,6 @@ public:
   inline insight::AttributeTableResult& res() { return dynamic_cast<insight::AttributeTableResult&>(p_); }
 };
 
-void addWrapperToWidget(insight::ResultElementCollection& rset, QWidget *widget, QWidget *superform=NULL);
+void addWrapperToWidget(insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform=NULL);
 
 #endif // RESULTELEMENTWRAPPER_H

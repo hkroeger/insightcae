@@ -104,6 +104,12 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   ui->ptree->resizeColumnToContents(0);
   ui->ptree->resizeColumnToContents(1);
   ui->ptree->setContextMenuPolicy(Qt::CustomContextMenu);
+  
+  rtroot_=new QTreeWidgetItem(0);
+  rtroot_->setText(0, "Results");
+  ui->resultTree->setColumnCount(3);
+  ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
+  ui->resultTree->addTopLevelItem(rtroot_);
 }
 
 AnalysisForm::~AnalysisForm()
@@ -171,8 +177,14 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
 {
   results_=results;
   
-  qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
-  addWrapperToWidget(*results_, ui->outputContents, this);
+//   qDeleteAll(ui->outputContents->findChildren<ResultElementWrapper*>());
+//   addWrapperToWidget(*results_, ui->outputContents, this);
+
+  rtroot_->takeChildren();
+  addWrapperToWidget(*results_, rtroot_, this);
+  ui->resultTree->doItemsLayout();
+  ui->resultTree->expandAll();
+  ui->resultTree->resizeColumnToContents(2);
 
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 

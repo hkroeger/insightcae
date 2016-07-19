@@ -72,6 +72,10 @@ protected:
   GraphProgressDisplayer *progdisp_;
   QThread workerThread_;
   
+  QTreeWidget *rt_;
+  QTreeWidgetItem* rtroot_;
+
+  
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
   ~AnalysisForm();

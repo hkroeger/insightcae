@@ -41,7 +41,7 @@ defineType(ResultElementWrapper);
 defineFactoryTable(ResultElementWrapper, ResultElementWrapper::ConstrP);
 
 ResultElementWrapper::ResultElementWrapper(const ConstrP& p)
-: QWidget(get<0>(p)),
+: QTreeWidgetItem(get<0>(p)), // QWidget(get<0>(p)),
   name_(get<1>(p)),
   p_(get<2>(p))
 {}
@@ -56,15 +56,19 @@ addToFactoryTable(ResultElementWrapper, CommentWrapper, ResultElementWrapper::Co
 CommentWrapper::CommentWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
-  le_=new QLabel(this);
-  le_->setText( res().value().c_str() );
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  this->setLayout(layout);
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   QLabel *nameLabel = new QLabel(name_, this);
+//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+//   layout->addWidget(nameLabel);
+//   le_=new QLabel(this);
+//   le_->setText( res().value().c_str() );
+//   le_->setToolTip(QString(res().shortDescription().c_str()));
+//   layout->addWidget(le_);
+//   this->setLayout(layout);
+  
+  setText(0, name_);
+  setText(1, res().shortDescription().c_str() );
+  setText(2, res().value().c_str() );
 }
 
 
@@ -74,15 +78,18 @@ addToFactoryTable(ResultElementWrapper, ScalarResultWrapper, ResultElementWrappe
 ScalarResultWrapper::ScalarResultWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
-  le_=new QLabel(this);
-  le_->setText(QString::number(res().value()) + " " + res().unit().c_str() );
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  this->setLayout(layout);
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   QLabel *nameLabel = new QLabel(name_, this);
+//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+//   layout->addWidget(nameLabel);
+//   le_=new QLabel(this);
+//   le_->setText(QString::number(res().value()) + " " + res().unit().c_str() );
+//   le_->setToolTip(QString(res().shortDescription().c_str()));
+//   layout->addWidget(le_);
+//   this->setLayout(layout);
+    setText(0, name_);
+    setText(1, res().shortDescription().c_str());
+    setText(2, QString::number(res().value()) + " " + res().unit().c_str() );
 }
 
 
@@ -92,13 +99,13 @@ addToFactoryTable(ResultElementWrapper, ResultSectionWrapper, ResultElementWrapp
 ResultSectionWrapper::ResultSectionWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  frame_ = new QGroupBox(name_, this);
-  layout->addWidget(frame_);
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   frame_ = new QGroupBox(name_, this);
+//   layout->addWidget(frame_);
+    setText(0, name_);
+    addWrapperToWidget(res(), this/*, this*/);
 
-  addWrapperToWidget(res(), frame_, this);
-
-  this->setLayout(layout);
+//   this->setLayout(layout);
 }
 
 defineType(ResultSetWrapper);
@@ -107,13 +114,15 @@ addToFactoryTable(ResultElementWrapper, ResultSetWrapper, ResultElementWrapper::
 ResultSetWrapper::ResultSetWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  frame_ = new QGroupBox(name_, this);
-  layout->addWidget(frame_);
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   frame_ = new QGroupBox(name_, this);
+//   layout->addWidget(frame_);
 
-  addWrapperToWidget(res(), frame_, this);
 
-  this->setLayout(layout);
+  setText(0, name_);
+  addWrapperToWidget(res(), this/*, this*/);
+
+//   this->setLayout(layout);
 }
 
 defineType(ImageWrapper);
@@ -122,24 +131,28 @@ addToFactoryTable(ResultElementWrapper, ImageWrapper, ResultElementWrapper::Cons
 ImageWrapper::ImageWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
-  
-  QPixmap image(res().imagePath().c_str());
-  
-  // scale 300dpi (print) => 70dpi (screen)
-  double w0=image.size().width();
-  image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
-  
-  le_=new QLabel(this);
-  le_->setPixmap(image);
-  le_->setScaledContents(true);
-  
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  this->setLayout(layout);
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   QLabel *nameLabel = new QLabel(name_, this);
+//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+//   layout->addWidget(nameLabel);
+//   
+    QPixmap image(res().imagePath().c_str());
+    
+    // scale 300dpi (print) => 70dpi (screen)
+    double w0=image.size().width();
+    image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
+//   
+//   le_=new QLabel(this);
+//   le_->setPixmap(image);
+//   le_->setScaledContents(true);
+//   
+//   le_->setToolTip(QString(res().shortDescription().c_str()));
+//   layout->addWidget(le_);
+//   this->setLayout(layout);
+    
+    setText(0, name_);
+    setText(1, res().shortDescription().c_str());
+    setData(2, 1, QVariant(image));
 }
 
 
@@ -149,26 +162,19 @@ addToFactoryTable(ResultElementWrapper, ChartWrapper, ResultElementWrapper::Cons
 ChartWrapper::ChartWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
   
-  chart_file_=boost::filesystem::unique_path(boost::filesystem::temp_directory_path()/"%%%%-%%%%-%%%%-%%%%.png");
-  res().generatePlotImage(chart_file_);
-  QPixmap image(chart_file_.c_str());
-  
-  // scale 300dpi (print) => 70dpi (screen)
-  double w0=image.size().width();
-  image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
-  
-  le_=new QLabel(this);
-  le_->setPixmap(image);
-  le_->setScaledContents(true);
-  
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  this->setLayout(layout);
+    chart_file_=boost::filesystem::unique_path(boost::filesystem::temp_directory_path()/"%%%%-%%%%-%%%%-%%%%.png");
+    res().generatePlotImage(chart_file_);
+    QPixmap image(chart_file_.c_str());
+    
+    // scale 300dpi (print) => 70dpi (screen)
+    double w0=image.size().width();
+    image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
+
+    setText(0, name_);
+    setText(1, res().shortDescription().c_str());
+    setData(2, 1, QVariant(image));
+
 }
 
 
@@ -184,12 +190,15 @@ addToFactoryTable(ResultElementWrapper, TabularResultWrapper, ResultElementWrapp
 TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
-  
-  le_=new QTableWidget(res().rows().size(), res().headings().size(), this);
+    setText(0, name_);
+    setText(1, res().shortDescription().c_str());
+
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   QLabel *nameLabel = new QLabel(name_, this);
+//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+//   layout->addWidget(nameLabel);
+//   
+  le_=new QTableWidget(res().rows().size(), res().headings().size()/*, this*/);
   
   QStringList headers;
   BOOST_FOREACH(const std::string& h, res().headings() )
@@ -197,7 +206,9 @@ TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
     headers << QString(h.c_str());
   }
   le_->setHorizontalHeaderLabels( headers );
-  
+     le_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    le_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+ 
   for (size_t i=0; i<res().rows().size(); i++)
   {
     const std::vector<double>& row=res().rows()[i];
@@ -206,11 +217,15 @@ TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
       le_->setItem(i, j, new QTableWidgetItem( QString::number(row[j]) ));
     }
   }
+    le_->doItemsLayout();
+    le_->resizeColumnsToContents();
   
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  
-  this->setLayout(layout);
+  treeWidget()->setItemWidget(this, 2, le_);
+//   
+//   le_->setToolTip(QString(res().shortDescription().c_str()));
+//   layout->addWidget(le_);
+//   
+//   this->setLayout(layout);
 }
 
 
@@ -220,35 +235,44 @@ addToFactoryTable(ResultElementWrapper, AttributeTableResultWrapper, ResultEleme
 AttributeTableResultWrapper::AttributeTableResultWrapper(const ConstrP& p)
 : ResultElementWrapper(p)
 {
-  QHBoxLayout *layout=new QHBoxLayout(this);
-  QLabel *nameLabel = new QLabel(name_, this);
-  QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-  layout->addWidget(nameLabel);
-  
-  le_=new QTableWidget(res().names().size(), 2, this);
-  
-  QStringList headers;
-  headers << "Attribute" << "Value";
-  le_->setHorizontalHeaderLabels( headers );
-  
-  for(int i=0; i<res().names().size(); i++)
-  {
-    QString attr_name(res().names()[i].c_str());
-    QString attr_val(boost::lexical_cast<std::string>(res().values()[i]).c_str());
-    le_->setItem(i, 0, new QTableWidgetItem( attr_name ));
-    le_->setItem(i, 1, new QTableWidgetItem( attr_val ));
-  }
-  
-  le_->setToolTip(QString(res().shortDescription().c_str()));
-  layout->addWidget(le_);
-  
-  this->setLayout(layout);
+    setText(0, name_);
+    setText(1, res().shortDescription().c_str());
+
+//   QHBoxLayout *layout=new QHBoxLayout(this);
+//   QLabel *nameLabel = new QLabel(name_, this);
+//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
+//   layout->addWidget(nameLabel);
+//   
+    le_=new QTableWidget(res().names().size(), 2/*, this*/);
+    le_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    le_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    QStringList headers;
+    headers << "Attribute" << "Value";
+    le_->setHorizontalHeaderLabels( headers );
+    
+    for(int i=0; i<res().names().size(); i++)
+    {
+        QString attr_name(res().names()[i].c_str());
+        QString attr_val(boost::lexical_cast<std::string>(res().values()[i]).c_str());
+        le_->setItem(i, 0, new QTableWidgetItem( attr_name ));
+        le_->setItem(i, 1, new QTableWidgetItem( attr_val ));
+    }
+    le_->doItemsLayout();
+    le_->resizeColumnsToContents();
+    
+    treeWidget()->setItemWidget(this, 2, le_);
+    
+//   le_->setToolTip(QString(res().shortDescription().c_str()));
+//   layout->addWidget(le_);
+//   
+//   this->setLayout(layout);
 }
 
 
-void addWrapperToWidget(insight::ResultElementCollection& rset, QWidget *widget, QWidget *superform)
+void addWrapperToWidget(insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform)
 {
-  QVBoxLayout *vlayout=new QVBoxLayout(widget);
+//   QVBoxLayout *vlayout=new QVBoxLayout(widget);
 
 //   for(insight::ResultSet::iterator i=rset.begin(); i!=rset.end(); i++)
   std::vector<insight::ResultElementCollection::value_type> items;
@@ -286,17 +310,19 @@ void addWrapperToWidget(insight::ResultElementCollection& rset, QWidget *widget,
     try
     {
       ResultElementWrapper *wrapper = 
-	ResultElementWrapper::lookup
-	(
-	  i.second->type(),
-	  ResultElementWrapper::ConstrP(widget, i.first.c_str(), *i.second)
-	);
-      vlayout->addWidget(wrapper);
+        ResultElementWrapper::lookup
+        (
+        i.second->type(),
+        ResultElementWrapper::ConstrP(node, i.first.c_str(), *i.second)
+        );
+//       vlayout->addWidget(wrapper);
     }
     catch (insight::Exception e)
     {
-      QLabel *comment=new QLabel( (i.first+": "+e.message()).c_str());
-      vlayout->addWidget(comment);
+//       QLabel *comment=new QLabel( (i.first+": "+e.message()).c_str());
+//       vlayout->addWidget(comment);
+      QString comment( (i.first+": "+e.message()).c_str() );
+      QTreeWidgetItem *it = new QTreeWidgetItem(node, QStringList() << "(error)" << " "<< comment);
     }
     /*
     if (superform) 

@@ -21,6 +21,7 @@
 #define INSIGHT_CAD_ISCADMAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
@@ -68,6 +69,11 @@ protected:
   
   Q_DebugStream* logger_;
   QTextEdit* log_;
+  
+  QTimer *bgparseTimer_;
+  const int bgparseInterval=1000;
+  
+  bool unsaved_;
 
 protected:
   void clearDerivedData();
@@ -101,7 +107,7 @@ protected:
     }
     return NULL;
   }
-
+  
 protected slots:
   void onGraphicalSelectionChanged(QoccViewWidget* aView);
   void onVariableItemChanged(QListWidgetItem * item);
@@ -114,6 +120,10 @@ protected slots:
   void jump_to(const QString& name);
   
   void setUniformDisplayMode(const AIS_DisplayMode AM);
+  
+  void restartBgParseTimer();
+  void doBgParse();
+  
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
@@ -136,6 +146,8 @@ public slots:
   void clearCache();
   void popupMenu( QoccViewWidget* aView, const QPoint aPoint ); 
   
+  void setUnsavedState();
+  void unsetUnsavedState();
 
 };
 

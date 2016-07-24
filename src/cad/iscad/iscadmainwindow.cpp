@@ -86,7 +86,8 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
-: QMainWindow(parent, flags)
+: QMainWindow(parent, flags),
+  unsaved_(false)
 {  
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   
@@ -207,6 +208,12 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   QSettings settings;
   restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
   restoreState(settings.value("mainWindowState").toByteArray());
+  
+  bgparseTimer_=new QTimer(this);
+  connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
+  restartBgParseTimer();
+  connect(editor_, SIGNAL(textChanged()), this, SLOT(restartBgParseTimer()));
+  connect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
 }
 
 
@@ -214,9 +221,32 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 
 void ISCADMainWindow::closeEvent(QCloseEvent *event) 
 {
-  QSettings settings;
-  settings.setValue("mainWindowGeometry", saveGeometry());
-  settings.setValue("mainWindowState", saveState());
+    QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+    
+    if (unsaved_)
+    {
+        resBtn = 
+            QMessageBox::question
+            ( 
+                this, 
+                "ISCAD",
+                tr("The editor content is not saved.\nAre you sure?\n"),
+                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                QMessageBox::No
+            );
+    }
+    
+    if (resBtn != QMessageBox::Yes) 
+    {
+        event->ignore();
+    } 
+    else 
+    {
+        QSettings settings;
+        settings.setValue("mainWindowGeometry", saveGeometry());
+        settings.setValue("mainWindowState", saveState());
+        event->accept();
+    }    
 }
 
 
@@ -226,7 +256,10 @@ void ISCADMainWindow::loadModel()
 {
   QString fn=QFileDialog::getOpenFileName(this, "Select file", "", "ISCAD Model Files (*.iscad)");
   if (fn!="")
+  {
     loadFile(qPrintable(fn));
+    unsetUnsavedState();
+  }
 }
 
 
@@ -239,6 +272,7 @@ void ISCADMainWindow::saveModel()
     std::ofstream out(filename_.c_str());
     out << editor_->toPlainText().toStdString();
     out.close();
+    unsetUnsavedState();
   }
 }
 
@@ -283,7 +317,9 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
   in.seekg(0, std::ios::beg);
   in.read(&contents_raw[0], contents_raw.size());  
   
+  disconnect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
   editor_->setPlainText(contents_raw.c_str());
+  connect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
 }
 
 
@@ -341,6 +377,42 @@ void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
   }
 }
 
+
+
+
+void ISCADMainWindow::restartBgParseTimer()
+{
+  bgparseTimer_->setSingleShot(true);
+  bgparseTimer_->start(bgparseInterval);
+}
+
+
+
+void ISCADMainWindow::doBgParse()
+{
+  statusBar()->showMessage("Background model parsing in progress...");
+  
+  std::istringstream is(editor_->toPlainText().toStdString());
+  
+  int failloc=-1;
+  
+  insight::cad::ModelPtr m(new insight::cad::Model);
+  bool r=insight::cad::parseISCADModelStream(is, m.get(), &failloc);
+
+  if (!r) // fail if we did not get a full match
+  {
+//     QTextCursor tmpCursor = editor_->textCursor();
+//     tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
+//     tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
+//     editor_->setTextCursor(tmpCursor);
+    
+    statusBar()->showMessage("Background model parsing failed.");
+  }
+  else
+  {
+    statusBar()->showMessage("Background model parsing finished successfully.");
+  }
+}
 
 
 
@@ -506,9 +578,12 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
 
 
 
+
+
 void ISCADMainWindow::rebuildModel()
 {
   log_->clear();
+  
   //checked_modelsteps_.clear();
   for (int i=0; i<modelsteplist_->count(); i++)
   {
@@ -632,3 +707,22 @@ void ISCADMainWindow::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
   }
 }
 
+
+
+
+void ISCADMainWindow::setUnsavedState()
+{
+    if (!unsaved_)
+    {
+        setWindowTitle(QString("*") + filename_.filename().c_str());
+        unsaved_=true;
+    }
+}
+
+
+
+void ISCADMainWindow::unsetUnsavedState()
+{
+    setWindowTitle(filename_.filename().c_str());
+    unsaved_=false;
+}

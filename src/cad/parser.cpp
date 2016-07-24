@@ -191,16 +191,21 @@ ISCADParser::ISCADParser(Model* model)
        > *r_postproc
       )
      ;
+    r_model.name("model description");
     
      
     r_identifier = lexeme[ alpha >> *(alnum | char_('_')) >> !(alnum | '_') ];
+    r_identifier.name("identifier");
     
     r_path = as_string[ 
 			lexeme [ "\"" >> *~char_("\"") >> "\"" ] 
 		      ];
+    r_path.name("path");
+    
     r_string = as_string[ 
 			lexeme [ "\'" >> *~char_("\'") >> "\'" ] 
 		      ];
+    r_string.name("string");
 
 		      
     r_assignment = 
@@ -239,6 +244,7 @@ ISCADParser::ISCADParser(Model* model)
       ( r_identifier >> '='  >> r_solidFeaturesExpression >> ';') 
 	[ phx::bind(&Model::addSolidFeature, model_, qi::_1, qi::_2) ]
       ;
+    r_assignment.name("assignment");
       
 /** @addtogroup cad_parser
   * @{
@@ -321,6 +327,7 @@ ISCADParser::ISCADParser(Model* model)
 		    phx::construct<PostprocActionPtr>(new_<Hydrostatics>(qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5))) 
 	]
       ;
+    r_postproc.name("postprocessing statement");
       
     r_viewDef =
 	(r_identifier >> '(' 
@@ -333,10 +340,12 @@ ISCADParser::ISCADParser(Model* model)
 	  >> ')' 
 	)
       ;
+    r_viewDef.name("view definition");
     
     r_modelstep  =  ( r_identifier >> ':' >> r_solidmodel_expression > ';' ) 
       [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2) ]
 	;
+    r_modelstep.name("modelling step");
     
     
     r_solidmodel_expression =
@@ -344,6 +353,7 @@ ISCADParser::ISCADParser(Model* model)
       >>
        *( '-' >> r_solidmodel_term [ _val = construct<FeaturePtr>(new_<BooleanSubtract>(qi::_val, qi::_1)) ] )
       ;
+    r_solidmodel_expression.name("feature expression");
     
     r_solidmodel_term =
       r_solidmodel_primary [_val=qi::_1 ]
@@ -366,8 +376,10 @@ ISCADParser::ISCADParser(Model* model)
 	)
        )
       ;
+    r_solidmodel_term.name("feature term");
 
     r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
+    r_modelstepFunction.name("feature function");
     
     r_solidmodel_primary = 
        r_modelstepFunction
@@ -392,6 +404,7 @@ ISCADParser::ISCADParser(Model* model)
        [ _val = qi::_1]
       // try identifiers last, since exceptions are generated, if symbols don't exist
       ;
+    r_solidmodel_primary.name("feature primary");
 
     r_solidmodel_propertyAssignment =
       qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ] 
@@ -409,6 +422,7 @@ ISCADParser::ISCADParser(Model* model)
 	   )
 	  > ';'
 	  ;
+    r_solidmodel_propertyAssignment.name("feature property assignment");
 
     r_vertexFeaturesExpression = 
 	 (
@@ -441,6 +455,7 @@ ISCADParser::ISCADParser(Model* model)
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
       ;
+    r_vertexFeaturesExpression.name("vertex selection expression");
 
     r_edgeFeaturesExpression =
          (
@@ -473,6 +488,7 @@ ISCADParser::ISCADParser(Model* model)
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
       ;
+    r_edgeFeaturesExpression.name("edge selection expression");
 
     r_faceFeaturesExpression = 
          (
@@ -505,6 +521,7 @@ ISCADParser::ISCADParser(Model* model)
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
 	;
+    r_faceFeaturesExpression.name("face selection expression");
 
     r_solidFeaturesExpression = 
          (
@@ -537,6 +554,7 @@ ISCADParser::ISCADParser(Model* model)
 	  ) 
 	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
 	;
+    r_solidFeaturesExpression.name("solid selection expression");
 
       
     r_datumExpression = 
@@ -573,6 +591,7 @@ ISCADParser::ISCADParser(Model* model)
           ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' ) 
 	    [ _val = phx::construct<DatumPtr>(new_<ProvidedDatum>(qi::_1, qi::_2)) ] 
       ;
+    r_datumExpression.name("datum expression");
       
     r_scalarExpression = 
       r_scalar_term [ _val = qi::_1]  >> *(
@@ -580,6 +599,7 @@ ISCADParser::ISCADParser(Model* model)
       | ( '-' >> r_scalar_term [ _val = phx::construct<ScalarPtr>(phx::new_<SubtractedScalar>(qi::_val, qi::_1)) ] )
       )
       ;
+    r_scalarExpression.name("scalar expression");
     
     r_scalar_term =
     (
@@ -595,6 +615,7 @@ ISCADParser::ISCADParser(Model* model)
       r_vector_primary >> '&' >> r_vector_primary
     ) [ _val = phx::construct<ScalarPtr>(phx::new_<DotMultipliedVector>(qi::_1, qi::_2)) ]
       ;
+    r_scalar_term.name("scalar term");
       
     r_scalar_primary =
       double_ 
@@ -646,6 +667,7 @@ ISCADParser::ISCADParser(Model* model)
        ( r_solidmodel_expression >> '$' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ ) 
         [ _val = phx::construct<ScalarPtr>(phx::new_<ScalarFeatureProp>(qi::_1, qi::_2)) ] 
       ;
+    r_scalar_primary.name("scalar primary");
 
 
     r_vectorExpression =
@@ -656,6 +678,7 @@ ISCADParser::ISCADParser(Model* model)
 	( '-' >> r_vector_term [_val=phx::construct<VectorPtr>(phx::new_<SubtractedVector>(qi::_val, qi::_1)) ] )
       )
       ;
+    r_vectorExpression.name("vector expression");
     
     r_vector_term =
     (
@@ -679,6 +702,7 @@ ISCADParser::ISCADParser(Model* model)
       r_scalar_primary >> '*' >> r_vector_term
     )  [ _val = phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>(qi::_1, qi::_2)) ]
     ;
+    r_vector_term.name("vector term");
       
     r_vector_primary =
 //        ( lit("modelCoG") )
@@ -769,6 +793,7 @@ ISCADParser::ISCADParser(Model* model)
 	( r_solidmodel_expression >> '!' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ ) 
 	  [ _val = phx::construct<VectorPtr>(phx::new_<VectorFeatureProp>(qi::_1, qi::_2)) ]
       ;
+    r_vector_primary.name("vector primary");
 
     for (Feature::FactoryTable::const_iterator i = Feature::factories_->begin();
 	i != Feature::factories_->end(); i++)

@@ -31,6 +31,9 @@
 
 #include "base/boost_include.h"
 
+
+
+
 void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 {
   // Remove previously displayed sub objects from display
@@ -78,6 +81,8 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
   
   aView->getContext()->UpdateCurrentViewer();
 }
+
+
 
 
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
@@ -204,6 +209,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   restoreState(settings.value("mainWindowState").toByteArray());
 }
 
+
+
+
 void ISCADMainWindow::closeEvent(QCloseEvent *event) 
 {
   QSettings settings;
@@ -211,12 +219,18 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
   settings.setValue("mainWindowState", saveState());
 }
 
+
+
+
 void ISCADMainWindow::loadModel()
 {
   QString fn=QFileDialog::getOpenFileName(this, "Select file", "", "ISCAD Model Files (*.iscad)");
   if (fn!="")
     loadFile(qPrintable(fn));
 }
+
+
+
 
 void ISCADMainWindow::saveModel()
 {
@@ -228,6 +242,9 @@ void ISCADMainWindow::saveModel()
   }
 }
 
+
+
+
 void ISCADMainWindow::saveModelAs()
 {
   QString fn=QFileDialog::getSaveFileName(this, "Select location", "", "ISCAD Model Files (*.iscad)");
@@ -238,6 +255,9 @@ void ISCADMainWindow::saveModelAs()
   }
 }
 
+
+
+
 void ISCADMainWindow::clearDerivedData()
 {
   context_->getContext()->EraseAll();
@@ -246,6 +266,9 @@ void ISCADMainWindow::clearDerivedData()
   variablelist_->clear();
   evaluationlist_->clear();
 }
+
+
+
 
 void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
 {
@@ -264,6 +287,8 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
 }
 
 
+
+
 void ISCADMainWindow::onEditorSelectionChanged()
 {
   QTextDocument *doc = editor_->document();
@@ -274,6 +299,8 @@ void ISCADMainWindow::onEditorSelectionChanged()
     highlighter_->rehighlight();
   }
 }
+
+
 
 
 void ISCADMainWindow::jump_to(const QString& name)
@@ -296,6 +323,8 @@ void ISCADMainWindow::jump_to(const QString& name)
 }
 
 
+
+
 void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
 {
 //   qDebug()<<"allWF"<<endl;
@@ -314,6 +343,7 @@ void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
 
 
 
+
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 {
   QVariableItem* mi=dynamic_cast<QVariableItem*>(item);
@@ -322,6 +352,9 @@ void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
+
+
+
 
 void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
 {
@@ -332,6 +365,9 @@ void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
   }
 }
 
+
+
+
 void ISCADMainWindow::onDatumItemChanged(QListWidgetItem * item)
 {
   QDatumItem* mi=dynamic_cast<QDatumItem*>(item);
@@ -341,6 +377,9 @@ void ISCADMainWindow::onDatumItemChanged(QListWidgetItem * item)
   }
 }
 
+
+
+
 void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
 {
   QEvaluationItem* mi=dynamic_cast<QEvaluationItem*>(item);
@@ -349,6 +388,8 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
     mi->updateDisplay();
   }
 }
+
+
 
 
 void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible)
@@ -396,6 +437,9 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
   modelsteplist_->addItem(msi);
 }
 
+
+
+
 void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
 { 
   ViewState vd;
@@ -409,6 +453,9 @@ void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
   
   datumlist_->addItem(new QDatumItem(sn, sm, context_, vd));
 }
+
+
+
 
 void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm, bool visible)
 { 
@@ -424,6 +471,9 @@ void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocAction
   evaluationlist_->addItem(new QEvaluationItem(sn, sm, context_, vd));
 }
 
+
+
+
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar sv)
 {
   variablelist_->addItem
@@ -435,22 +485,13 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar s
   );
 }
 
+
+
+
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector vv)
 {
-//   variablelist_->addItem
-//   (
-//     new QListWidgetItem
-//     (
-//       QString::fromStdString(sn+" = ["+lexical_cast<string>(vv(0))+", "+lexical_cast<string>(vv(1))+", "+lexical_cast<string>(vv(2))+"]")
-//     )
-//   );
   ViewState vd;
   vd.visible=false;
-  
-//   if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end())
-//   {
-//     vd=checked_modelsteps_.find(sn)->second;
-//   }
   
   QVariableItem* msi=new QVariableItem(sn, vv->value(), context_, vd);
   connect
@@ -458,8 +499,12 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
     msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
     editor_, SLOT(insertPlainText(const QString&))
   );
+  
   variablelist_->addItem(msi);
 }
+
+
+
 
 void ISCADMainWindow::rebuildModel()
 {
@@ -493,24 +538,6 @@ void ISCADMainWindow::rebuildModel()
   }
 
   clearDerivedData();
-    /*
-  std::string code=editor_->toPlainText().toStdString();
-  
-  parser::model m;
-  typedef std::string::iterator Iterator;
-  Iterator orgbegin, begin;
-  orgbegin=begin=code.begin();
-  Iterator end=code.end();
-  ISCADParser<Iterator> parser;
-  skip_grammar<std::string::iterator> skip;
-  
-  bool r = qi::phrase_parse(
-      begin,
-      end,
-      parser,
-      skip
-  );
-  */
     
   std::istringstream is(editor_->toPlainText().toStdString());
   
@@ -535,11 +562,7 @@ void ISCADMainWindow::rebuildModel()
     statusBar()->showMessage("Model parsed successfully. Now performing rebuild...");
     
     context_->getContext()->EraseAll();
-//     m->modelstepSymbols.for_each(Transferrer(*this));
 
-    // adding everything to scene. 
-    // rebuild will occur as soon as needed.
-    
     auto modelsteps=m->modelsteps();
     BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
     { 
@@ -556,14 +579,6 @@ void ISCADMainWindow::rebuildModel()
     auto postprocActions=m->postprocActions();
     BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
     { addEvaluation(v.first, v.second); }
-   
-//     for (SolidModel::Map::const_iterator i=m->modelstepSymbols.begin();
-// 	 i!=m->modelstepSymbols.end(); i++)
-// 	 {
-// 	   cout<<"inserting "<<i->first<<endl;
-// 	   this->addModelStep(i->first, i->second);
-// 	 }
-//     m->scalarSymbols.for_each(Transferrer(*this));
 
     auto scalars=m->scalars();
     BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
@@ -572,7 +587,6 @@ void ISCADMainWindow::rebuildModel()
     auto vectors=m->vectors();
     BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
     { addVariable(v.first, v.second); }
-//     m->vectorSymbols.for_each(Transferrer(*this));
 
     statusBar()->showMessage("Model rebuild successfully finished.");
 
@@ -580,10 +594,15 @@ void ISCADMainWindow::rebuildModel()
   }
 }
 
+
+
+
 void ISCADMainWindow::clearCache()
 {
   insight::cad::cache.clear();
 }
+
+
 
 
 void ISCADMainWindow::popupMenu( QoccViewWidget* aView, const QPoint aPoint )

@@ -35,7 +35,13 @@
 #include "parser.h"
 #endif
 
+
+
+
 class ISCADSyntaxHighlighter;
+
+
+
 
 class ISCADMainWindow
 : public QMainWindow

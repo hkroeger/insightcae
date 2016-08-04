@@ -38,6 +38,7 @@
 #include <boost/spirit/home/classic/utility/distinct.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/repository/include/qi_iter_pos.hpp>
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/assert.hpp>
@@ -65,7 +66,17 @@ typedef insight::cad::FeaturePtr solidmodel;
 typedef std::pair<std::string, solidmodel > modelstep;
 typedef std::vector<modelstep> model;
 
+typedef std::pair<std::size_t, std::size_t> SyntaxElementLocation;
 
+class SyntaxElementDirectory
+: public std::map<SyntaxElementLocation, FeaturePtr>
+{
+public:
+    void addEntry(SyntaxElementLocation location, FeaturePtr element);
+    FeaturePtr findElement(size_t location) const;
+};
+
+typedef boost::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
 
 
 // template <typename Iterator>
@@ -76,9 +87,40 @@ struct skip_grammar
   skip_grammar();
 };
 
+
+template<typename Iterator>
+struct CurrentPos 
+{
+    
+  CurrentPos() 
+  {
+    save_start_pos = qi::omit[boost::spirit::repository::qi::iter_pos[
+            phx::bind(&CurrentPos::setStartPos, this, qi::_1)]];
+    current_pos = boost::spirit::repository::qi::iter_pos[
+            qi::_val = phx::bind(&CurrentPos::getCurrentPos, this, qi::_1)];
+  }
+
+  qi::rule<Iterator> save_start_pos;
+  qi::rule<Iterator, std::size_t()> current_pos;
+
+private:
+  void setStartPos(const Iterator &iterator) {
+    start_pos_ = iterator;
+  }
+
+  std::size_t getCurrentPos(const Iterator &iterator) {
+    return std::distance(start_pos_, iterator);
+  }
+
+  Iterator start_pos_;
+};
+
 struct ISCADParser
   : qi::grammar<std::string::iterator, skip_grammar>
 {
+    CurrentPos<std::string::iterator> current_pos;
+    SyntaxElementDirectoryPtr syntax_element_locations;
+
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
     typedef boost::shared_ptr<ModelstepRule> ModelstepRulePtr;
 
@@ -114,8 +156,21 @@ struct ISCADParser
 
 }
 
-bool parseISCADModelStream(std::istream& in, Model* m, int* failloc=NULL);
-bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc=NULL);
+bool parseISCADModelStream
+(
+    std::istream& in, 
+    Model* m, 
+    int* failloc=NULL, 
+    parser::SyntaxElementDirectoryPtr* sd=NULL
+);
+
+bool parseISCADModelFile
+(
+    const boost::filesystem::path& fn, 
+    Model* m, 
+    int* failloc=NULL, 
+    parser::SyntaxElementDirectoryPtr* sd=NULL
+);
 
 
 }

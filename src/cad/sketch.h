@@ -110,6 +110,8 @@ public:
   virtual bool isSingleFace() const;
   operator const TopoDS_Face& () const;
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  
+  const boost::filesystem::path& fn() const { return fn_; }
 };
 
 }

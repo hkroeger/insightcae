@@ -336,7 +336,7 @@ Sketch::Sketch
 {
   ParameterListHash p(this);
 //   p+=*pl_;
-  p+=sharedModelFilePath(fn_.string());
+  p+=fn_.string();
   p+=ln_;
   for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
   {

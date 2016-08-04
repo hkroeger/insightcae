@@ -34,7 +34,6 @@
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
-// #include "boost/spirit/home/phoenix/statement/sequence.hpp"
 
 #include "cadfeatures.h"
 #include "meshing.h"
@@ -103,6 +102,22 @@ using namespace phx;
 using namespace insight::cad;
 
 
+void SyntaxElementDirectory::addEntry(SyntaxElementLocation location, FeaturePtr element)
+{
+    std::cout<<"between START="<<location.first<<" END="<<location.second<<std::endl;
+    this->insert(std::pair<SyntaxElementLocation, FeaturePtr>(location, element));
+}
+
+
+FeaturePtr SyntaxElementDirectory::findElement(size_t location) const
+{
+    BOOST_FOREACH(const value_type& elem, *this)
+    {
+        if ( (elem.first.first<=location) && (elem.first.second>=location) )
+            return elem.second;
+    }
+    return FeaturePtr();
+}
 
 
 skip_grammar::skip_grammar()
@@ -171,17 +186,19 @@ skip_grammar::skip_grammar()
  * - \subpage Wire
  */
 
+
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 ISCADParser::ISCADParser(Model* model)
 : ISCADParser::base_type(r_model),
+  syntax_element_locations(new SyntaxElementDirectory()),
   model_(model)
-{
-  
+{    
     r_model =  
+     current_pos.save_start_pos >>
      *( 
        r_assignment 
        | 
-       r_modelstep 
+       r_modelstep
        | 
        r_solidmodel_propertyAssignment
      ) 
@@ -344,6 +361,7 @@ ISCADParser::ISCADParser(Model* model)
     
     r_modelstep  =  ( r_identifier >> ':' >> r_solidmodel_expression > ';' ) 
       [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2) ]
+//       [ (phx::bind(&Model::addComponent, model_, qi::_2, qi::_3), std::cout<<"POS="<<qi::_1<<std::endl ) ]
 	;
     r_modelstep.name("modelling step");
     
@@ -378,12 +396,20 @@ ISCADParser::ISCADParser(Model* model)
       ;
     r_solidmodel_term.name("feature term");
 
-    r_modelstepFunction %= omit [ modelstepFunctionRules[ qi::_a = qi::_1 ] ] > qi::lazy(*qi::_a);
+    r_modelstepFunction %= 
+        omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ] 
+         > qi::lazy(*qi::_a)
+        ;
+        
     r_modelstepFunction.name("feature function");
     
     r_solidmodel_primary = 
-       r_modelstepFunction
-        [ _val = qi::_1 ]
+       ( current_pos.current_pos >> r_modelstepFunction >> current_pos.current_pos )
+        [ ( _val = qi::_2,
+            phx::bind(&SyntaxElementDirectory::addEntry, syntax_element_locations.get(), 
+                        phx::construct<SyntaxElementLocation>(qi::_1, qi::_3),
+                        qi::_2)
+        ) ]
 //       |
 //        ( 
 //         ( lit("for") 
@@ -858,13 +884,13 @@ bool parseISCADModel(std::string::iterator first, std::string::iterator last, Mo
 using namespace parser;
 
 
-bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc)
+bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd)
 {
   std::ifstream f(fn.c_str());
-  return parseISCADModelStream(f, m, failloc);
+  return parseISCADModelStream(f, m, failloc, sd);
 }
 
-bool parseISCADModelStream(std::istream& in, Model* m, int* failloc)
+bool parseISCADModelStream(std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd)
 {
   std::string contents_raw;
   in.seekg(0, std::ios::end);
@@ -894,6 +920,13 @@ bool parseISCADModelStream(std::istream& in, Model* m, int* failloc)
   {
     if (failloc) *failloc=int(first-orgbegin);
     return false;
+  }
+  else
+  {
+      if (sd) 
+      {
+          *sd = parser.syntax_element_locations;
+      }
   }
   
   return r;

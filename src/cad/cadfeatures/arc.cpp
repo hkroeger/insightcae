@@ -21,6 +21,28 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#ifndef Q_MOC_RUN
+#include "boost/spirit/include/qi.hpp"
+#include "boost/variant/recursive_variant.hpp"
+#include "boost/spirit/repository/include/qi_confix.hpp"
+#include <boost/spirit/include/qi_eol.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/phoenix/function.hpp>
+#include <boost/phoenix/function/adapt_callable.hpp>
+#include <boost/spirit/include/qi_no_case.hpp>
+#include <boost/spirit/home/classic/utility/distinct.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/karma.hpp>
+
+#include <boost/mpl/if.hpp>
+#include <boost/mpl/assert.hpp>
+#include <boost/mpl/bool.hpp>
+#include <boost/utility/enable_if.hpp>
+#endif
+#include <boost/spirit/home/support/iterators/line_pos_iterator.hpp>
+#include <boost/spirit/repository/include/qi_iter_pos.hpp>
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -70,15 +92,31 @@ Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 {
 }
 
+
+struct get_line_f
+{
+    template <typename> struct result { typedef size_t type; };
+    template <typename It> size_t operator()(It const& pos_iter) const
+    {
+        int l = boost::spirit::get_line(pos_iter);
+        std::cout<<"LINE="<<l<<std::endl;
+        return l;
+    }
+};
+boost::phoenix::function<get_line_f> get_line_;
+
+
 void Arc::insertrule(parser::ISCADParser& ruleset) const
 {
+  using boost::spirit::repository::qi::iter_pos;
+  
   ruleset.modelstepFunctionRules.add
   (
     "Arc",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Arc>(qi::_1, qi::_2, qi::_3)) ]
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+	 [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Arc>(qi::_1, qi::_2, qi::_3)) ]
       
     ))
   );

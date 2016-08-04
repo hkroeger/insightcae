@@ -34,6 +34,7 @@
 #include "occinclude.h"
 #include "cadfeature.h"
 #include "parser.h"
+#include "sketch.h"
 #endif
 
 
@@ -72,7 +73,7 @@ protected:
   
   QTimer *bgparseTimer_;
   const int bgparseInterval=1000;
-  
+  insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
   bool unsaved_;
 
 protected:
@@ -124,6 +125,7 @@ protected slots:
   void restartBgParseTimer();
   void doBgParse();
   
+  void editSketch(int sk_ptr);
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
@@ -145,6 +147,7 @@ public slots:
   void rebuildModel();
   void clearCache();
   void popupMenu( QoccViewWidget* aView, const QPoint aPoint ); 
+  void showEditorContextMenu(const QPoint&);
   
   void setUnsavedState();
   void unsetUnsavedState();

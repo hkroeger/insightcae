@@ -31,7 +31,7 @@
 
 #include "base/boost_include.h"
 
-
+#include <QSignalMapper>
 
 
 void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
@@ -118,6 +118,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   editor_->setFontFamily("Monospace");
   spl->addWidget(editor_);
   connect(editor_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
+  editor_->setContextMenuPolicy(Qt::CustomContextMenu);
+  connect(editor_, SIGNAL(customContextMenuRequested(const QPoint&)), 
+          this, SLOT(showEditorContextMenu(const QPoint&)));
+  
   
   highlighter_=new ISCADSyntaxHighlighter(editor_->document());
   
@@ -397,7 +401,8 @@ void ISCADMainWindow::doBgParse()
   int failloc=-1;
   
   insight::cad::ModelPtr m(new insight::cad::Model);
-  bool r=insight::cad::parseISCADModelStream(is, m.get(), &failloc);
+  
+  bool r=insight::cad::parseISCADModelStream(is, m.get(), &failloc, &syn_elem_dir_);
 
   if (!r) // fail if we did not get a full match
   {
@@ -415,6 +420,11 @@ void ISCADMainWindow::doBgParse()
 }
 
 
+void ISCADMainWindow::editSketch(int sk_ptr)
+{
+    insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
+    std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
+}
 
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 {
@@ -705,6 +715,38 @@ void ISCADMainWindow::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
       }
     }
   }
+}
+
+
+void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
+{
+    QMenu * menu = editor_->createStandardContextMenu();
+    
+    if (syn_elem_dir_)
+    {
+        std::size_t po=editor_->textCursor().position();
+        insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
+        if (fp)
+        {
+            QSignalMapper *signalMapper = new QSignalMapper(this);
+            QAction *act=NULL;
+            if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fp.get()))
+            {
+                act=new QAction("Edit Sketch...", this);
+                signalMapper->setMapping(act, int(sk));
+                connect(signalMapper, SIGNAL(mapped(int)), 
+                        this, SLOT(editSketch(int)));
+            }
+            if (act)
+            {
+                connect(act, SIGNAL(triggered()), signalMapper, SLOT(map()));
+                menu->addSeparator();
+                menu->addAction(act);
+            }
+        }
+    }
+    
+    menu->exec(editor_->mapToGlobal(pt));
 }
 
 

@@ -570,16 +570,18 @@ void Sketch::executeEditor()
             mf << 
             "FreeCADGui.ActiveDocument=doc\n"
             "obj=None\n"
+            "objname=\""+ln_+"\"\n"
             "for o in doc.Objects:\n"
             " if (o.Label==\""+ln_+"\"):\n"
             "  obj=o\n"
+            "  objname=o.Name\n"
             "  break\n"
             "if not obj is None:\n"
             + vargs+
             " doc.recompute()\n"
             "else:\n"
             " doc.addObject('Sketcher::SketchObject','"+ln_+"')\n"
-            "FreeCADGui.activeDocument().setEdit('"+ln_+"')\n"
+            "FreeCADGui.activeDocument().setEdit(objname)\n"
             ;
 
         }

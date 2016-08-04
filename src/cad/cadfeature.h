@@ -446,7 +446,7 @@ public:
 // };
 
 
-#warning cachable feature always have to be stored in shared_ptr's! create functions and private constructors should be issues to ensure this.
+#warning cachable feature always have to be stored in shared_ptrs! create functions and private constructors should be issues to ensure this.
 class FeatureCache
 : public std::map<size_t, FeaturePtr>
 {

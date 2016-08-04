@@ -34,6 +34,8 @@
 #include "boost/locale.hpp"
 #include "base/boost_include.h"
 #include "boost/make_shared.hpp"
+#include <boost/fusion/adapted.hpp>
+#include <boost/phoenix/fusion.hpp>
 
 #include "cadfeatures.h"
 #include "meshing.h"
@@ -397,18 +399,20 @@ ISCADParser::ISCADParser(Model* model)
     r_solidmodel_term.name("feature term");
 
     r_modelstepFunction %= 
+        ( current_pos.current_pos >>
         omit[ modelstepFunctionRules [ qi::_a = qi::_1 ] ] 
-         > qi::lazy(*qi::_a)
+        >> current_pos.current_pos
+        >>qi::lazy(*qi::_a) )
         ;
         
     r_modelstepFunction.name("feature function");
     
     r_solidmodel_primary = 
-       ( current_pos.current_pos >> r_modelstepFunction >> current_pos.current_pos )
-        [ ( _val = qi::_2,
-            phx::bind(&SyntaxElementDirectory::addEntry, syntax_element_locations.get(), 
-                        phx::construct<SyntaxElementLocation>(qi::_1, qi::_3),
-                        qi::_2)
+       r_modelstepFunction
+        [ ( _val = phx::at_c<2>(qi::_1),
+            phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(), 
+                        phx::construct<SyntaxElementLocation>(phx::at_c<0>(qi::_1), phx::at_c<1>(qi::_1)),
+                        phx::at_c<2>(qi::_1) )
         ) ]
 //       |
 //        ( 

@@ -122,7 +122,7 @@ protected slots:
   
   void setUniformDisplayMode(const AIS_DisplayMode AM);
   
-  void restartBgParseTimer();
+  void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
   void doBgParse();
   
   void editSketch(int sk_ptr);
@@ -149,7 +149,7 @@ public slots:
   void popupMenu( QoccViewWidget* aView, const QPoint aPoint ); 
   void showEditorContextMenu(const QPoint&);
   
-  void setUnsavedState();
+  void setUnsavedState(int i1=0,int i2=0,int i3=0);
   void unsetUnsavedState();
 
 };

@@ -216,8 +216,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   bgparseTimer_=new QTimer(this);
   connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
   restartBgParseTimer();
-  connect(editor_, SIGNAL(textChanged()), this, SLOT(restartBgParseTimer()));
-  connect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
+  connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
+  connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
 }
 
 
@@ -384,7 +384,7 @@ void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
 
 
 
-void ISCADMainWindow::restartBgParseTimer()
+void ISCADMainWindow::restartBgParseTimer(int,int,int)
 {
   bgparseTimer_->setSingleShot(true);
   bgparseTimer_->start(bgparseInterval);
@@ -759,7 +759,7 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
 
 
 
-void ISCADMainWindow::setUnsavedState()
+void ISCADMainWindow::setUnsavedState(int,int,int)
 {
     if (!unsaved_)
     {

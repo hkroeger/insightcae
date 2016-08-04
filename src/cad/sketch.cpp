@@ -355,6 +355,9 @@ Sketch::Sketch
   p+=tol_;
 }
 
+
+
+
 void Sketch::build()
 {
   if (!cache.contains(hash()))
@@ -488,6 +491,9 @@ void Sketch::build()
   }
 }
 
+
+
+
 void Sketch::executeEditor()
 {
 
@@ -532,7 +538,7 @@ void Sketch::executeEditor()
                             int vid;
                             vname.erase(0,10);
                             vid=lexical_cast<int>(vname);
-                            vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+                            vargs+=str(format(" obj.setDatum(%d, %g)\n") % vid % vval );
                         }
                         catch (...)
                         {
@@ -540,52 +546,41 @@ void Sketch::executeEditor()
                     }
                     else
                     {
-                        vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
+                        vargs+=str(format(" obj.setDatum('%s', %g)\n") % vname % vval );
                     }
                 }
             }
 
             std::ofstream mf(macrofilename.c_str());
-            mf << "import FreeCAD, FreeCADGui\n"
-                  "__objs__=[]\n";
+            mf << 
+            "import FreeCAD, FreeCADGui\n";
             
             if (!is_new_file)
             {
-                mf << "FreeCAD.open(\""<<infilename.string()<<"\")\n"
-                      "doc=FreeCAD.getDocument( \""<<infilename.filename().stem().string()<<"\" );\n";
+                mf << 
+                "FreeCAD.open(\""<<infilename.string()<<"\")\n"
+                "doc=FreeCAD.getDocument( \""<<infilename.filename().stem().string()<<"\" );\n";
             } else 
             {
-                mf << "doc=FreeCAD.newDocument( \""<<infilename.filename().stem().string()<<"\" )\n"
-                      "doc.saveAs(\"" << boost::filesystem::absolute(infilename).string() << "\")\n";
+                mf << 
+                "doc=FreeCAD.newDocument( \""<<infilename.filename().stem().string()<<"\" )\n"
+                "doc.saveAs(\"" << boost::filesystem::absolute(infilename).string() << "\")\n";
             }
             
-            mf << "FreeCADGui.ActiveDocument=doc\n";
-
-            if (!is_new_file)
-            {
-                mf << str( format(
-                           //"print dir(doc)\n"
-                           "obj=None\n"
-                           "for o in doc.Objects:\n"
-                           " if (o.Label==\"%s\"):\n"
-                           "  obj=o\n"
-                           +vargs+
-                           "  break\n"
-                           //"print obj\n"
-                           "__objs__.append(obj)\n"
-                           "doc.recompute()\n"
-                       )
-                       % ln_
-                     );
-            }
-            else
-            {
-                mf <<str( format(
-                    "doc.addObject('Sketcher::SketchObject','%s')\n"
-                    ) % ln_ );
-            }
-            
-            mf <<  "FreeCADGui.activeDocument().setEdit('"<<ln_<<"')\n";
+            mf << 
+            "FreeCADGui.ActiveDocument=doc\n"
+            "obj=None\n"
+            "for o in doc.Objects:\n"
+            " if (o.Label==\""+ln_+"\"):\n"
+            "  obj=o\n"
+            "  break\n"
+            "if not obj is None:\n"
+            + vargs+
+            " doc.recompute()\n"
+            "else:\n"
+            " doc.addObject('Sketcher::SketchObject','"+ln_+"')\n"
+            "FreeCADGui.activeDocument().setEdit('"+ln_+"')\n"
+            ;
 
         }
         
@@ -600,7 +595,10 @@ void Sketch::executeEditor()
         boost::filesystem::remove(macrofilename);
 
     }
-
+    else
+    {
+        throw insight::Exception("Not implemented: starting other editor than FreeCAD!");
+    }
 }
 
 void Sketch::operator=(const Sketch& o)

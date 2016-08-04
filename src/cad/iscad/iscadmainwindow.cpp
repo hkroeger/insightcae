@@ -394,6 +394,7 @@ void ISCADMainWindow::restartBgParseTimer()
 
 void ISCADMainWindow::doBgParse()
 {
+  syn_elem_dir_.reset();
   statusBar()->showMessage("Background model parsing in progress...");
   
   std::istringstream is(editor_->toPlainText().toStdString());
@@ -420,12 +421,17 @@ void ISCADMainWindow::doBgParse()
 }
 
 
+
+
 void ISCADMainWindow::editSketch(int sk_ptr)
 {
     insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
     std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
     sk->executeEditor();
 }
+
+
+
 
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 {

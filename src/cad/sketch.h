@@ -105,6 +105,8 @@ public:
   
   virtual void build();
   
+  void executeEditor();
+  
 //   virtual bool isSingleCloseWire() const;
 //   virtual TopoDS_Wire asSingleClosedWire() const;
   virtual bool isSingleFace() const;

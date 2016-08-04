@@ -424,6 +424,7 @@ void ISCADMainWindow::editSketch(int sk_ptr)
 {
     insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
     std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
+    sk->executeEditor();
 }
 
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)

@@ -479,6 +479,120 @@ void Sketch::build()
   }
 }
 
+void Sketch::executeEditor()
+{
+
+    bool is_new_file=false;
+    boost::filesystem::path infilename = fn_;
+    std::string layername = ln_;
+
+    std::string ext=fn_.extension().string();
+    boost::algorithm::to_lower(ext);
+
+    if (!exists(infilename))
+    {
+        try
+        {
+            infilename=sharedModelFilePath(fn_.string());
+        }
+        catch (...)
+        {
+            is_new_file=true;
+        }
+    }
+
+
+    if (ext==".fcstd")
+    {
+        boost::filesystem::path macrofilename =
+            boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
+        layername="0";
+
+        {
+            std::string vargs="";
+            if (!is_new_file)
+            {
+                for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+                {
+                    std::string vname=boost::fusion::at_c<0>(*it);
+                    double vval=boost::fusion::at_c<1>(*it)->value();
+                    if (starts_with(vname, "Constraint"))
+                    {
+                        try
+                        {
+                            int vid;
+                            vname.erase(0,10);
+                            vid=lexical_cast<int>(vname);
+                            vargs+=str(format("  obj.setDatum(%d, %g)\n") % vid % vval );
+                        }
+                        catch (...)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        vargs+=str(format("  obj.setDatum('%s', %g)\n") % vname % vval );
+                    }
+                }
+            }
+
+            std::ofstream mf(macrofilename.c_str());
+            mf << "import FreeCAD, FreeCADGui\n"
+                  "__objs__=[]\n";
+            
+            if (!is_new_file)
+            {
+                mf << "FreeCAD.open(\""<<infilename.string()<<"\")\n"
+                      "doc=FreeCAD.getDocument( \""<<infilename.filename().stem().string()<<"\" );\n";
+            } else 
+            {
+                mf << "doc=FreeCAD.newDocument( \""<<infilename.filename().stem().string()<<"\" )\n"
+                      "doc.saveAs(\"" << boost::filesystem::absolute(infilename).string() << "\")\n";
+            }
+            
+            mf << "FreeCADGui.ActiveDocument=doc\n";
+
+            if (!is_new_file)
+            {
+                mf << str( format(
+                           //"print dir(doc)\n"
+                           "obj=None\n"
+                           "for o in doc.Objects:\n"
+                           " if (o.Label==\"%s\"):\n"
+                           "  obj=o\n"
+                           +vargs+
+                           "  break\n"
+                           //"print obj\n"
+                           "__objs__.append(obj)\n"
+                           "doc.recompute()\n"
+                       )
+                       % ln_
+                     );
+            }
+            else
+            {
+                mf <<str( format(
+                    "doc.addObject('Sketcher::SketchObject','%s')\n"
+                    ) % ln_ );
+            }
+            
+            mf <<  "FreeCADGui.activeDocument().setEdit('"<<ln_<<"')\n";
+
+        }
+        
+
+        std::string cmd = str( format("FreeCAD %s") % macrofilename );
+        //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
+        cout<<"CMD=\""<<cmd<<"\""<<endl;
+        if ( ::system( cmd.c_str() ) )
+        {
+            throw insight::Exception("Execution of FreeCAD "+infilename.string()+" failed!");
+        }
+        boost::filesystem::remove(macrofilename);
+
+    }
+
+}
 
 void Sketch::operator=(const Sketch& o)
 {

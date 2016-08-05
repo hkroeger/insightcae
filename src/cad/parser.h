@@ -103,11 +103,11 @@ struct CurrentPos
   qi::rule<Iterator> save_start_pos;
   qi::rule<Iterator, std::size_t()> current_pos;
 
-private:
   void setStartPos(const Iterator &iterator) {
     start_pos_ = iterator;
   }
 
+private:
   std::size_t getCurrentPos(const Iterator &iterator) {
     return std::distance(start_pos_, iterator);
   }

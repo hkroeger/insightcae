@@ -196,7 +196,7 @@ ISCADParser::ISCADParser(Model* model)
   model_(model)
 {    
     r_model =  
-     current_pos.save_start_pos >>
+//      current_pos.save_start_pos >>
      *( 
        r_assignment 
        | 
@@ -871,6 +871,7 @@ bool parseISCADModel(std::string::iterator first, std::string::iterator last, Mo
   skip_grammar skip;
   
   std::cout<<"Parsing started."<<std::endl;
+  parser.current_pos.setStartPos(first);
   bool r = qi::phrase_parse(
       first,
       last,
@@ -912,6 +913,7 @@ bool parseISCADModelStream(std::istream& in, Model* m, int* failloc, parser::Syn
   skip_grammar skip;
   
   std::cout<<"Parsing started."<<std::endl;
+  parser.current_pos.setStartPos(first);
   bool r = qi::phrase_parse(
       first,
       last,

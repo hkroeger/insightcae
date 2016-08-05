@@ -126,6 +126,7 @@ protected slots:
   void doBgParse();
   
   void editSketch(int sk_ptr);
+  void editModel(int mo_ptr);
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);

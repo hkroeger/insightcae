@@ -135,6 +135,14 @@ void ModelFeature::build()
 }
 
 
+void ModelFeature::executeEditor()
+{
+  std::string name=modelname_+".iscad";
+  boost::filesystem::path fp = boost::filesystem::absolute(sharedModelFilePath(name));
+  ::system( ("iscad "+fp.string()+" &").c_str() );
+}
+
+
 void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add

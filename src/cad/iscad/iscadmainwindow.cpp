@@ -33,6 +33,7 @@
 
 #include <QSignalMapper>
 
+#include "modelfeature.h"
 
 void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 {
@@ -431,6 +432,14 @@ void ISCADMainWindow::editSketch(int sk_ptr)
 }
 
 
+void ISCADMainWindow::editModel(int sk_ptr)
+{
+    insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
+    std::cout<<"Edit Model: "<<sk->modelname()<<std::endl;
+    sk->executeEditor();
+}
+
+
 
 
 void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
@@ -737,13 +746,29 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
         {
             QSignalMapper *signalMapper = new QSignalMapper(this);
             QAction *act=NULL;
-            if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fp.get()))
+            
+            insight::cad::Feature* fpp=fp.get();
+            if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
             {
+//                 std::cout<<"SK"<<std::endl;
                 act=new QAction("Edit Sketch...", this);
                 signalMapper->setMapping(act, int(sk));
                 connect(signalMapper, SIGNAL(mapped(int)), 
                         this, SLOT(editSketch(int)));
             }
+            else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
+            {
+//                 std::cout<<"MO"<<std::endl;
+                act=new QAction("Edit Model...", this);
+                signalMapper->setMapping(act, int(mo));
+                connect(signalMapper, SIGNAL(mapped(int)), 
+                        this, SLOT(editModel(int)));
+            }
+            else
+            {
+//                 std::cout<<"NO"<<std::endl;                
+            }
+            
             if (act)
             {
                 connect(act, SIGNAL(triggered()), signalMapper, SLOT(map()));

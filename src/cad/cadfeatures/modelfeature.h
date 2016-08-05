@@ -48,6 +48,9 @@ public:
   ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
   
   virtual void build();
+  void executeEditor();
+  
+  inline const std::string& modelname() const { return modelname_; }
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   

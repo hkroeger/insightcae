@@ -187,7 +187,7 @@ boost::filesystem::path Analysis::setupExecutionEnvironment()
   return executionPath_();
 }
 
-void Analysis::setExecutionPath(boost::filesystem::path& exePath)
+void Analysis::setExecutionPath(const boost::filesystem::path& exePath)
 {
   executionPath_()=exePath;
 }

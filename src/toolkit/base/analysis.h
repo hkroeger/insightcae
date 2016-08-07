@@ -125,7 +125,7 @@ public:
   
   void setDefaults();
   virtual boost::filesystem::path setupExecutionEnvironment();
-  virtual void setExecutionPath(boost::filesystem::path& exePath);
+  virtual void setExecutionPath(const boost::filesystem::path& exePath);
   virtual void setParameters(const ParameterSet& p);
   virtual boost::filesystem::path executionPath() const;
   

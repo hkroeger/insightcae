@@ -126,10 +126,20 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   
   highlighter_=new ISCADSyntaxHighlighter(editor_->document());
   
+
   QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
   QGroupBox *gb;
   QVBoxLayout *vbox;
   
+
+  gb=new QGroupBox("Controls");
+  vbox = new QVBoxLayout;
+  QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
+  connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
+  vbox->addWidget(rebuildBtn);
+  gb->setLayout(vbox);
+  spl2->addWidget(gb);
+
   gb=new QGroupBox("Variables");
   vbox = new QVBoxLayout;
   variablelist_=new QListWidget;

@@ -740,7 +740,8 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
     
     if (syn_elem_dir_)
     {
-        std::size_t po=editor_->textCursor().position();
+        QTextCursor cursor = editor_->cursorForPosition(pt);
+        std::size_t po=/*editor_->textCursor()*/cursor.position();
         insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
         if (fp)
         {

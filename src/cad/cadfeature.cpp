@@ -168,114 +168,118 @@ addToFactoryTable(Feature, Feature, NoParameters);
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
 {
-  cout<<"Reading "<<filename<<endl;
-    
-  std::string ext=filename.extension().string();
-  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-  
-  if (ext==".brep")
-  {
-    BRep_Builder bb;
-    TopoDS_Shape s;
-    BRepTools::Read(s, filename.c_str(), bb);
-    setShape(s);
-  } 
-  else if ( (ext==".igs") || (ext==".iges") )
-  {
-    IGESControl_Reader igesReader;
+    cout<<"Reading "<<filename<<endl;
 
-    igesReader = IGESControl_Reader();
-    igesReader.ReadFile(filename.c_str());
-    igesReader.TransferRoots();
+    std::string ext=filename.extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-    setShape(igesReader.OneShape());
-  } 
-  else if ( (ext==".stp") || (ext==".step") )
-  {
+    if (ext==".brep")
+    {
+        BRep_Builder bb;
+        TopoDS_Shape s;
+        BRepTools::Read(s, filename.c_str(), bb);
+        setShape(s);
+    }
+    else if ( (ext==".igs") || (ext==".iges") )
+    {
+        IGESControl_Reader igesReader;
+
+        igesReader = IGESControl_Reader();
+        igesReader.ReadFile(filename.c_str());
+        igesReader.TransferRoots();
+
+        setShape(igesReader.OneShape());
+    }
+    else if ( (ext==".stp") || (ext==".step") )
+    {
 //     STEPControl_Reader stepReader;
 //     stepReader = STEPControl_Reader();
 //     stepReader.ReadFile(filename.c_str());
 //     stepReader.TransferRoots();
 //     TopoDS_Shape res=stepReader.OneShape();
 
-    STEPCAFControl_Reader reader;
-    reader.SetNameMode (true);
-    reader.SetColorMode(true);
-    reader.SetLayerMode(true);
-    reader.SetPropsMode(true);
-    IFSelect_ReturnStatus stat = reader.ReadFile(filename.c_str());
+        STEPCAFControl_Reader reader;
+        reader.SetNameMode (true);
+        reader.SetColorMode(true);
+        reader.SetLayerMode(true);
+        reader.SetPropsMode(true);
+        IFSelect_ReturnStatus stat = reader.ReadFile(filename.c_str());
 
-    // The various ways of reading a file are available here too :
-    // to read it by the reader, to take it from a WorkSession ...
-    Handle(TDocStd_Document) aDoc;
+        // The various ways of reading a file are available here too :
+        // to read it by the reader, to take it from a WorkSession ...
+        Handle(TDocStd_Document) aDoc;
+        {
+            Handle(XCAFApp_Application) anApp = XCAFApp_Application::GetApplication();
+            anApp->NewDocument("MDTV-XCAF", aDoc);
+        }
+
+        if ( !reader.Transfer ( aDoc ) )
+        {
+            throw insight::Exception("Cannot read any relevant data from the STEP file");
+        }
+
+        Handle_Interface_InterfaceModel Model = reader.Reader().WS()->Model();
+        Handle_XSControl_TransferReader TR = reader.Reader().WS()->TransferReader();
+        Handle_Transfer_TransientProcess TP = TR->TransientProcess();
+        Handle_XCAFDoc_ShapeTool STool = XCAFDoc_DocumentTool::ShapeTool( aDoc->Main() );
+
+        TopoDS_Shape res = reader.Reader().OneShape();
+        setShape(res);
+
+        typedef std::map<std::string, FeatureSetPtr> Feats;
+        Feats feats;
+
+        if ( STool.IsNull() ) throw insight::Exception("Failed");
+        Standard_Integer nb = Model->NbEntities();
+        Handle_TCollection_HAsciiString name;
+
+        for (Standard_Integer i = 1; i<nb ; i++)
+        {
+            Handle_Standard_Transient enti = Model->Value(i);
+
+            if ( enti->DynamicType()->SubType("StepRepr_RepresentationItem")) 
+            {
+                Handle_StepRepr_RepresentationItem SRRI =
+                    Handle_StepRepr_RepresentationItem::DownCast(enti);
+
+                Handle_TCollection_HAsciiString hName = SRRI->Name();
+                if (/*!hName->IsEmpty()*/!hName.IsNull())
+                {
+                    std::string name ( hName->ToCString() );
+
+                    Handle_Transfer_Binder binder = TP->Find( enti);
+                    if ( !binder.IsNull() && binder->HasResult() )
+                    {
+                        TopoDS_Shape S = TransferBRep::ShapeResult ( TP, binder );
+                        if ( !S.IsNull() )
+                        {
+                            if (S.ShapeType() == TopAbs_FACE)
+                            {
+                                if (feats.find(name)==feats.end())
+                                    feats[name].reset(new FeatureSet(shared_from_this(), Face));
+
+                                std::cout<<"adding to set "<<name;
+                                FeatureID id=faceID(TopoDS::Face(S));
+                                std::cout<<" face id="<<id<<std::endl;
+                                feats[name]->add(id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        BOOST_FOREACH(Feats::value_type& f, feats)
+        {
+            providedSubshapes_[f.first].reset(new Feature(f.second));
+        }
+
+    }
+    else
     {
-      Handle(XCAFApp_Application) anApp = XCAFApp_Application::GetApplication();
-      anApp->NewDocument("MDTV-XCAF", aDoc);
-    }
-    if ( !reader.Transfer ( aDoc ) ) {
-      throw insight::Exception("Cannot read any relevant data from the STEP file");
-    }
-    Handle_Interface_InterfaceModel Model = reader.Reader().WS()->Model();
-    Handle_XSControl_TransferReader TR = reader.Reader().WS()->TransferReader();
-    Handle_Transfer_TransientProcess TP = TR->TransientProcess();
-    Handle_XCAFDoc_ShapeTool STool = XCAFDoc_DocumentTool::ShapeTool( aDoc->Main() );
-    
-    TopoDS_Shape res = reader.Reader().OneShape();
-    setShape(res);
-    
-    typedef std::map<std::string, FeatureSetPtr> Feats;
-    Feats feats; 
-       
-    if ( STool.IsNull() ) throw insight::Exception("Failed");
-    Standard_Integer nb = Model->NbEntities();
-    Handle_TCollection_HAsciiString name;
-
-    for (Standard_Integer i = 1; i<nb ; i++)
-    {
-      Handle_Standard_Transient enti = Model->Value(i);
-
-      if ( ! enti->DynamicType()->SubType("StepRepr_RepresentationItem")) continue;
-      
-      Handle_StepRepr_RepresentationItem SRRI =
-	  Handle_StepRepr_RepresentationItem::DownCast(enti);
-
-      Handle_TCollection_HAsciiString hName = SRRI->Name();
-      if (!hName->IsEmpty())
-      {
-	std::string name ( hName->ToCString() );
-	
-	Handle_Transfer_Binder binder = TP->Find( enti);
-	if ( !binder.IsNull() && binder->HasResult() )
-	{
-	  TopoDS_Shape S = TransferBRep::ShapeResult ( TP, binder );
-	  if ( !S.IsNull() )
-	  {
-	    if (S.ShapeType() == TopAbs_FACE)
-	    {
-	      if (feats.find(name)==feats.end())
-		feats[name].reset(new FeatureSet(shared_from_this(), Face));
-	      
-	      std::cout<<"adding to set "<<name;
-	      FeatureID id=faceID(TopoDS::Face(S));
-	      std::cout<<" face id="<<id<<std::endl;
-	      feats[name]->add(id);
-	    }
-	  }
-	}
-      }
-    }
-    
-    BOOST_FOREACH(Feats::value_type& f, feats)
-    {
-      providedSubshapes_[f.first].reset(new Feature(f.second));
-    }
-    
-  } 
-  else
-  {
-    throw insight::Exception("Unknown import file format! (Extension "+ext+")");
+        throw insight::Exception("Unknown import file format! (Extension "+ext+")");
 //     return TopoDS_Shape();
-  }  
+    }
 }
 
 void Feature::setShapeHash()

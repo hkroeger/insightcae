@@ -102,6 +102,17 @@ const boost::filesystem::path& OFEnvironment::bashrc() const
 
 OFEs OFEs::list;
 
+std::vector<std::string> OFEs::all()
+{
+    std::vector<std::string> entries;
+    BOOST_FOREACH(const value_type& vr, OFEs::list)
+    {
+//         std::cout<<vr.first<<std::endl;
+        entries.push_back(vr.first);
+    }
+    return entries;
+}
+
 const OFEnvironment& OFEs::get(const std::string& name)
 {
   const_iterator it=list.find(name);

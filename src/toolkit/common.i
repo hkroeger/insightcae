@@ -152,3 +152,5 @@
     
     $1 = ct;
 }
+
+%template(StringList) std::vector<std::string>;

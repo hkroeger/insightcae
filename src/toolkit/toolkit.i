@@ -19,6 +19,7 @@
  */
 
 %include "common.i"
+%include "exception.i"
 
 %module(directors="1") toolkit
 
@@ -42,8 +43,20 @@
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
+#include "base/exception.h"
+
 using namespace insight;
 %}
+
+%exception {
+	try {
+	$action
+	}
+	catch (insight::Exception& e) {
+	 	SWIG_exception(SWIG_RuntimeError, ("Insight exception: "+e.as_string()).c_str());
+	}
+}
+
 
 %typemap(out) int& getInt %{
   $result = PyInt_FromLong(*$1);
@@ -54,6 +67,7 @@ using namespace insight;
 %typemap(out) double& getDouble %{
   $result = PyFloat_FromDouble(*$1);
 %}
+
 
 // %feature("director") Analysis;
 %include "base/factory.h"

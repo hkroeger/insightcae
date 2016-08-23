@@ -95,6 +95,8 @@ class OFEs
 {
 public:
   static OFEs list;
+  
+  static std::vector<std::string> all();
   static const OFEnvironment& get(const std::string& name);
   
   OFEs();

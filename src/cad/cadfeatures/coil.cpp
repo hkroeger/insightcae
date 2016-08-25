@@ -17,8 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "coil.h"
+#include <cmath>
 
+#include "coil.h"
+#include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -32,6 +34,147 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+
+defineType(CoilPath);
+addToFactoryTable(Feature, CoilPath, NoParameters);
+
+CoilPath::CoilPath(const NoParameters& nop)
+: Feature(nop)
+{
+}
+
+
+CoilPath::CoilPath
+(
+    ScalarPtr l,
+    ScalarPtr r,
+    ScalarPtr nr,
+    ScalarPtr d,
+    ScalarPtr R,
+    ScalarPtr d0
+)
+: l_(l), r_(r), nr_(nr), d_(d), R_(R), d0_(d0)
+{}
+
+
+// #define MCOMP
+
+void CoilPath::build()
+{
+
+    double l=l_->value();
+    if (l<=0) throw insight::Exception(str(format("Negative coil length (L=%g) is invalid!")%l));
+    double r=r_->value();
+    if (r<=0) throw insight::Exception(str(format("Negative coil bending radius (r=%g) is invalid!")%r));
+    double d=d_->value();
+    if (d<=0) throw insight::Exception(str(format("Negative conductor distance (d=%g) is invalid!")%d));
+    double nrd=nr_->value();
+    if ( fabs(nrd-round(nrd)) > 0 ) throw insight::Exception(str(format("number of turn has to be integer! (n=%g)")%nrd));
+    int nr=int(nrd);
+    double R=R_->value();
+    if (r<=0) throw insight::Exception(str(format("Negative yoke radius radius (R=%g) is invalid!")%R));
+
+#ifndef MCOMP
+    TopTools_ListOfShape edgs;
+#define INS_ADDWIRE(x) edgs.Append(x)
+#else
+    BRep_Builder bb;
+    TopoDS_Compound result;
+    bb.MakeCompound(result);
+#define INS_ADDWIRE(x) bb.Add(result, x)
+#endif
+
+    arma::mat el=vec3(0,0,1);
+    arma::mat er=vec3(1,0,0);
+    arma::mat et=arma::cross(el, er);
+
+    arma::mat p0=vec3(0,0,0);
+    arma::mat pc=p0-R*er;
+    arma::mat L=l*el;
+
+
+    double deltaL0=0.0;
+    arma::mat l_ps_n;
+    for (int j=0; j<nr; j++)
+    {
+        double dc=0.5*r + double(j+1)*d; // current distance from CL
+        double phic=::asin( dc / R );
+        arma::mat ps_p=rotMatrix( phic, el )*(p0+R*er) - R*er;
+        arma::mat ps_n=rotMatrix( -phic, el )*(p0+R*er) - R*er;
+
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_p-deltaL0*el), to_Pnt(ps_p+L)).Value()).Edge()); // before deltaL0 is updated!
+        
+        if (j==0)
+        {
+            // first half endwinding
+            double r=dc;
+            arma::mat p00=p0-el*r;
+            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00)).Value()));
+            refpoints_["p0"]=p00;
+            double nom=r*r-pow(0.5*d,2);
+            if (nom>0)
+            {
+//                 deltaL0=d+r - ::sqrt(nom);
+                deltaL0=d0_->value();
+            }
+        }
+        else
+        {
+            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el)).Value()));
+        }
+
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L)).Value()));
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_n+L), to_Pnt(ps_n-deltaL0*el)).Value()).Edge());
+        
+        if (j==nr-1)
+        {
+            refpoints_["p1"]=ps_n-deltaL0*el;
+        }
+
+        l_ps_n=ps_n;
+    }
+
+#ifndef MCOMP
+    BRepBuilderAPI_MakeWire wb;
+    wb.Add(edgs);
+    setShape(wb.Wire());
+#else
+    setShape(result);
+#endif
+#undef INS_ADDWIRE
+}
+
+void CoilPath::insertrule(parser::ISCADParser& ruleset) const
+{
+  ruleset.modelstepFunctionRules.add
+  (
+    "CoilPath",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+      ( '(' 
+	    > ruleset.r_scalarExpression > ',' 
+	    > ruleset.r_scalarExpression > ',' 
+	    > ruleset.r_scalarExpression > ',' 
+	    > ruleset.r_scalarExpression > ',' 
+	    > ruleset.r_scalarExpression > ',' 
+	    > ruleset.r_scalarExpression 
+	    > ')' ) 
+	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<CoilPath>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6)) ]
+    ))
+  );
+}
+
+bool CoilPath::isSingleCloseWire() const
+{
+  return false;
+}
+
+bool CoilPath::isSingleOpenWire() const
+{
+  return true;
+}
+
+    
+    
 
 defineType(Coil);
 addToFactoryTable(Feature, Coil, NoParameters);

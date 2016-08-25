@@ -25,6 +25,68 @@
 namespace insight {
 namespace cad {
 
+
+class CoilPath
+    : public Feature
+{
+
+    /**
+     * length of straight part of conductors
+     */
+    ScalarPtr l_;
+
+    /**
+     * minimal bending radius = distance between nearest opposite conductors in the center
+     */
+    ScalarPtr r_;
+
+    /**
+     * number of turns
+     */
+    ScalarPtr nr_;
+    
+    /**
+     * distance between two subsequent conductors on the same coil side
+     */
+    ScalarPtr d_;
+
+    /**
+     * additional spacing at inner endwinding
+     */
+    ScalarPtr d0_;
+
+    /**
+     * outer yoke radius
+     */
+    ScalarPtr R_;
+
+
+public:
+    declareType("CoilPath");
+    
+    CoilPath(const NoParameters& nop = NoParameters());
+    CoilPath
+    (
+        ScalarPtr l,
+        ScalarPtr r,
+        ScalarPtr nr,
+        ScalarPtr d,
+        ScalarPtr R,
+     ScalarPtr d0
+    );
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual bool isSingleEdge() const {
+        return true;
+    };
+    virtual bool isSingleCloseWire() const;
+    virtual bool isSingleOpenWire() const;
+};
+    
+    
+    
 class Coil 
 : public Feature
 {

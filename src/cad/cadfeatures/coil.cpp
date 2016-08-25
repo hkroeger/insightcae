@@ -24,6 +24,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "Geom_TrimmedCurve.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -33,6 +35,7 @@ using namespace boost;
 
 namespace insight {
 namespace cad {
+
 
 
 defineType(CoilPath);
@@ -56,6 +59,26 @@ CoilPath::CoilPath
 : l_(l), r_(r), nr_(nr), d_(d), R_(R), d0_(d0)
 {}
 
+
+
+Handle_Geom_TrimmedCurve MakeArc_Projected(gp_Pnt p1, gp_Vec n1, gp_Pnt p2, double R, gp_Pnt pc, gp_Vec el)
+{
+    Handle_Geom_TrimmedCurve ocrv=GC_MakeArcOfCircle(p1, n1, p2).Value();
+
+    int n=20;
+    TColgp_Array1OfPnt pts(1, n);
+    for (int i=0; i<n; i++)
+    {
+        double c = (double(i)/double(n-1))*(ocrv->LastParameter()-ocrv->FirstParameter()) + ocrv->FirstParameter();
+        gp_Pnt p=ocrv->Value(c);
+        gp_Pnt p0cur( pc.XYZ() + ((p.XYZ()-pc.XYZ()).Dot(el.XYZ())*el.XYZ()) );
+        gp_Pnt pproj(p0cur.XYZ() + (p.XYZ()-p0cur.XYZ()).Normalized()*R);
+        pts.SetValue(i+1, pproj);
+    }
+    
+    GeomAPI_PointsToBSpline ipol(pts);
+    return Handle_Geom_TrimmedCurve(new Geom_TrimmedCurve(ipol.Curve(), ipol.Curve()->FirstParameter(), ipol.Curve()->LastParameter()));
+}
 
 // #define MCOMP
 
@@ -109,7 +132,8 @@ void CoilPath::build()
             // first half endwinding
             double r=dc;
             arma::mat p00=p0-el*r;
-            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00)).Value()));
+//             INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00)).Value()));
+            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00), R, to_Pnt(pc), to_Vec(el))));
             refpoints_["p0"]=p00;
             double nom=r*r-pow(0.5*d,2);
             if (nom>0)
@@ -120,10 +144,13 @@ void CoilPath::build()
         }
         else
         {
-            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el)).Value()));
+//             INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el)).Value()));
+            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el), R, to_Pnt(pc), to_Vec(el))));
         }
 
-        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L)).Value()));
+//         INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L)).Value()));
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L), R, to_Pnt(pc), to_Vec(el))));
+
         INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_n+L), to_Pnt(ps_n-deltaL0*el)).Value()).Edge());
         
         if (j==nr-1)

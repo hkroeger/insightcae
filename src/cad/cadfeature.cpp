@@ -1426,142 +1426,137 @@ const TopoDS_Shape& Feature::shape() const
 
 Feature::View Feature::createView
 (
-  const arma::mat p0,
-  const arma::mat n,
-  bool section,
-  const arma::mat up,
-  bool poly,
-  bool skiphl
+    const arma::mat p0,
+    const arma::mat n,
+    bool section,
+    const arma::mat up,
+    bool poly,
+    bool skiphl
 ) const
 {
-  View result_view;
-  
-  TopoDS_Shape dispshape=shape();
-  
-  gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
-  gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
-  
-  gp_Ax2 viewCS(p_base, view_dir); 
-  if (up.n_elem==3)
-  {
-    arma::mat ex = cross(up, n);
-    viewCS=gp_Ax2(p_base, view_dir, gp_Dir(to_Vec(ex))); 
-  }
-  
-  HLRAlgo_Projector projector( viewCS );
-  gp_Trsf transform=projector.FullTransformation();
+    View result_view;
 
-  if (section)
-  {
-    gp_Dir normal = -view_dir;
-    gp_Pln plane = gp_Pln(p_base, normal);
-    gp_Pnt refPnt = gp_Pnt(p_base.X()-normal.X(), p_base.Y()-normal.Y(), p_base.Z()-normal.Z());
-    
-    TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
-    TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
-    
-    TopoDS_Compound dispshapes, xsecs;
-    BRep_Builder builder1, builder2;
-    builder1.MakeCompound( dispshapes );
-    builder2.MakeCompound( xsecs );
-    int i=-1, j=0;
-    for (TopExp_Explorer ex(shape(), TopAbs_SOLID); ex.More(); ex.Next())
+    TopoDS_Shape dispshape=shape();
+
+    gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
+    gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
+
+    gp_Ax2 viewCS(p_base, view_dir);
+    if (up.n_elem==3)
     {
-      i++;
-      try
-      {
-	builder1.Add(dispshapes, 	BRepAlgoAPI_Cut(ex.Current(), HalfSpace));
-	builder2.Add(xsecs, 		BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ex.Current(), Face), transform).Shape());
-	j++;
-      }
-      catch (...)
-      {
-	cout<<"Warning: Failed to compute cross section of solid #"<<i<<endl;
-      }
+        arma::mat ex = cross(up, n);
+        viewCS=gp_Ax2(p_base, view_dir, gp_Dir(to_Vec(ex)));
     }
-    cout<<"Generated "<<j<<" cross-sections"<<endl;
-    dispshape=dispshapes;
-    result_view.crossSection = xsecs;
-  }
-  
-  TopoDS_Compound allVisible;
-  TopoDS_Shape HiddenEdges;
-  BRep_Builder builder;
-  builder.MakeCompound( allVisible );
 
-  if (poly)
-  {
+    HLRAlgo_Projector projector( viewCS );
+    gp_Trsf transform=projector.FullTransformation();
 
-    // extracting the result sets:
-    Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
-    HLRBRep_PolyHLRToShape shapes;
-    std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
-    if (visresolution_)
-      aHlrPolyAlgo->TolCoef(visresolution_->value());
-    aHlrPolyAlgo->Load(dispshape);
-    aHlrPolyAlgo->Projector(projector);
-    aHlrPolyAlgo->Update();
-    shapes.Update(aHlrPolyAlgo);
-      
-    TopoDS_Shape vs=shapes.VCompound();
-    if (!vs.IsNull()) builder.Add(allVisible, vs);
-    TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
-    if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
-    TopoDS_Shape olvs = shapes.OutLineVCompound();
-    if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+    if (section)
+    {
+        gp_Dir normal = -view_dir;
+        gp_Pln plane = gp_Pln(p_base, normal);
+        gp_Pnt refPnt = gp_Pnt(p_base.X()-normal.X(), p_base.Y()-normal.Y(), p_base.Z()-normal.Z());
+
+        TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
+        TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
+
+        TopoDS_Compound dispshapes, xsecs;
+        BRep_Builder builder1, builder2;
+        builder1.MakeCompound( dispshapes );
+        builder2.MakeCompound( xsecs );
+        int i=-1, j=0;
+        for (TopExp_Explorer ex(shape(), TopAbs_SOLID); ex.More(); ex.Next())
+        {
+            i++;
+            try
+            {
+                builder1.Add(dispshapes, 	BRepAlgoAPI_Cut(ex.Current(), HalfSpace));
+                builder2.Add(xsecs, 		BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ex.Current(), Face), transform).Shape());
+                j++;
+            }
+            catch (...)
+            {
+                cout<<"Warning: Failed to compute cross section of solid #"<<i<<endl;
+            }
+        }
+        cout<<"Generated "<<j<<" cross-sections"<<endl;
+        dispshape=dispshapes;
+        result_view.crossSection = xsecs;
+    }
+
+    TopoDS_Compound allVisible;
+    TopoDS_Shape HiddenEdges;
+    BRep_Builder builder;
+    builder.MakeCompound( allVisible );
+
+    if (poly)
+    {
+
+        // extracting the result sets:
+        Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
+        HLRBRep_PolyHLRToShape shapes;
+        std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
+        if (visresolution_)
+            aHlrPolyAlgo->TolCoef(visresolution_->value());
+        aHlrPolyAlgo->Load(dispshape);
+        aHlrPolyAlgo->Projector(projector);
+        aHlrPolyAlgo->Update();
+        shapes.Update(aHlrPolyAlgo);
+
+        TopoDS_Shape vs=shapes.VCompound();
+        if (!vs.IsNull()) builder.Add(allVisible, vs);
+        TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+        if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+        TopoDS_Shape olvs = shapes.OutLineVCompound();
+        if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+
+        HiddenEdges = shapes.HCompound();
+
+    }
+    else
+    {
+        Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
+        brep_hlr->Add( dispshape );
+        brep_hlr->Projector( projector );
+        brep_hlr->Update();
+        brep_hlr->Hide();
+        HLRBRep_HLRToShape shapes( brep_hlr );
+
+        TopoDS_Shape vs=shapes.VCompound();
+        if (!vs.IsNull()) builder.Add(allVisible, vs);
+        TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
+        if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
+        TopoDS_Shape olvs = shapes.OutLineVCompound();
+        if (!olvs.IsNull()) builder.Add(allVisible, olvs);
+
+        HiddenEdges = shapes.HCompound();
+    }
+
+    result_view.visibleEdges=allVisible;
+    if (!skiphl)
+    {
+        result_view.hiddenEdges=HiddenEdges;
+    }
     
-    HiddenEdges = shapes.HCompound();
-
-  }
-  else
-  {
-    Handle_HLRBRep_Algo brep_hlr = new HLRBRep_Algo;
-    brep_hlr->Add( dispshape );
-    brep_hlr->Projector( projector );
-    brep_hlr->Update();
-    brep_hlr->Hide();
-    HLRBRep_HLRToShape shapes( brep_hlr );
-
-    TopoDS_Shape vs=shapes.VCompound();
-    if (!vs.IsNull()) builder.Add(allVisible, vs);
-    TopoDS_Shape r1vs=shapes.Rg1LineVCompound();
-    if (!r1vs.IsNull()) builder.Add(allVisible, r1vs);
-    TopoDS_Shape olvs = shapes.OutLineVCompound();
-    if (!olvs.IsNull()) builder.Add(allVisible, olvs);
     
-    HiddenEdges = shapes.HCompound();
-  }
-  
-  result_view.visibleEdges=allVisible;
-  if (!skiphl)
-  {
-    result_view.hiddenEdges=HiddenEdges;
-  }
-  
-  return result_view;
-  
-//   BRepTools::Write(allVisible, "visible.brep");
-//   BRepTools::Write(HiddenEdges, "hidden.brep");
-//   
-//   {
-//     std::vector<LayerDefinition> addlayers;
-//     if (section) addlayers.push_back
-//     (
-//       LayerDefinition("section", DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS"), false)
-//     );
-//     
-//     DXFWriter dxf("view.dxf", addlayers);
-//     
-//     dxf.writeShapeEdges(allVisible, "0");
-//     dxf.writeShapeEdges(HiddenEdges, "0_HL");
-//     
-//     if (!secshape.IsNull())
-//     {
-//       BRepTools::Write(secshape, "section.brep");
-//       dxf.writeSection( BRepBuilderAPI_Transform(secshape, transform).Shape(), "section");
-//     }
-//   }
-  
+    BRepMesh_IncrementalMesh Inc(allVisible, 0.0001);
+    Bnd_Box boundingBox;
+    BRepBndLib::Add(allVisible, boundingBox);
+
+    arma::mat x=arma::zeros(3,2);
+    boundingBox.Get
+    (
+        x(0,0), x(1,0), x(2,0), 
+        x(0,1), x(1,1), x(2,1)
+    );
+    
+    result_view.drawing_ctr_x=0.5*(x(0,1)+x(0,0));
+    result_view.drawing_ctr_y=0.5*(x(1,1)+x(1,0));
+    result_view.width=x(0,1)-x(0,0);
+    result_view.height=x(1,1)-x(1,0);
+
+    return result_view;
+
 }
 
 void Feature::insertrule(parser::ISCADParser& ruleset) const

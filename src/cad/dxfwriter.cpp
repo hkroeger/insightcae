@@ -32,7 +32,10 @@ using namespace boost::assign;
 
 namespace insight {
 namespace cad {
-  
+
+    
+    
+    
 std::vector<gp_Pnt> discretizeBSpline(const BRepAdaptor_Curve& c)
 {
   GeomAdaptor_Curve ac(c.Curve().Curve(), c.FirstParameter(), c.LastParameter());
@@ -62,6 +65,8 @@ std::vector<gp_Pnt> discretizeBSpline(const BRepAdaptor_Curve& c)
 
   return res;
 }
+
+
 
 
 DXFWriter::DXFWriter
@@ -141,6 +146,9 @@ DXFWriter::DXFWriter
   dw_->sectionEnd();
 }
 
+
+
+
 DXFWriter::~DXFWriter()
 {
   dxf_.writeObjects(*dw_);
@@ -148,6 +156,7 @@ DXFWriter::~DXFWriter()
   dw_->dxfEOF();
   dw_->close();
 }
+
 
 
 
@@ -168,6 +177,9 @@ void DXFWriter::writeLine(const BRepAdaptor_Curve& c, const std::string& layer)
   );
 }
 
+
+
+
 writerLine_HatchLoop::writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)
 {
   p0=c.Value(c.FirstParameter());
@@ -179,6 +191,9 @@ writerLine_HatchLoop::writerLine_HatchLoop(const BRepAdaptor_Curve& c, const std
     //cout<<"curve reversed"<<endl;
   }
 }
+
+
+
 
 void writerLine_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
 {
@@ -199,6 +214,9 @@ void writerLine_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) con
     )
   );
 }
+
+
+
 
 void DXFWriter::writeCircle(const BRepAdaptor_Curve& c, const std::string& layer)
 {
@@ -269,6 +287,9 @@ void DXFWriter::writeCircle(const BRepAdaptor_Curve& c, const std::string& layer
     }
 }
 
+
+
+
 writerCircle_HatchLoop::writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer)
 {
     gp_Circ circ = c.Circle();
@@ -309,6 +330,9 @@ writerCircle_HatchLoop::writerCircle_HatchLoop(const BRepAdaptor_Curve& c, const
     }
 }
 
+
+
+
 void writerCircle_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) const
 {
   dxf.writeHatchEdge
@@ -323,6 +347,9 @@ void writerCircle_HatchLoop::write(DL_Dxf& dxf, std::auto_ptr<DL_WriterA>& dw) c
     )
   );
 }
+
+
+
 
 void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer)
 {
@@ -371,6 +398,9 @@ void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& lay
 
 }
   
+  
+  
+  
 writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)
 {
   pts=discretizeBSpline(c);
@@ -388,6 +418,9 @@ writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, c
   
 
 }
+
+
+
 
 void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, auto_ptr< DL_WriterA >& dw) const
 {
@@ -417,10 +450,16 @@ void writerDiscrete_HatchLoop::write(DL_Dxf& dxf, auto_ptr< DL_WriterA >& dw) co
   }  
 }
 
+
+
+
 HatchGenerator::HatchData::HatchData(double s, double a)
 : scale(s), angle(a)
 {
 }
+
+
+
 
 std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ =
  list_of<HatchGenerator::HatchData>
@@ -444,9 +483,15 @@ std::vector<HatchGenerator::HatchData> HatchGenerator::hatches_ =
   (HatchData(0.66, -70.0))
  ;
 
+ 
+ 
+ 
 HatchGenerator::HatchGenerator()
 : curidx_(0)
 {}
+
+
+
 
 DL_HatchData HatchGenerator::generate()
 {
@@ -455,6 +500,9 @@ DL_HatchData HatchGenerator::generate()
   if (curidx_>=hatches_.size()) curidx_=0;
   return DL_HatchData(1, false, hd.scale, hd.angle, /*"iso03w100"*/ "ANSI31" );
 }
+  
+  
+  
   
 void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer)
 {
@@ -550,6 +598,9 @@ void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& laye
     );
 }
 
+
+
+
 void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 {
     TopExp_Explorer ex;
@@ -585,149 +636,182 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
     }
 }
 
+
+
+
 void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, std::string layer)
 {
-  for (TopExp_Explorer exf(shape, TopAbs_FACE); exf.More(); exf.Next())
-  {
-    //cout<<"Processing face"<<endl;
-    
-    TopoDS_Face f=TopoDS::Face(exf.Current());
-    
-    boost::ptr_vector<hatchLoopWriter> segments;
-    for (TopExp_Explorer exw(f, TopAbs_WIRE); exw.More(); exw.Next())
+    for (TopExp_Explorer exf(shape, TopAbs_FACE); exf.More(); exf.Next())
     {
-      //cout << "ADDING WIRE" << endl;
-      // loop through edges of wire in ordered manner
-      for (BRepTools_WireExplorer ex(TopoDS::Wire(exw.Current())); ex.More(); ex.Next())
-      {
-	  TopoDS_Edge e=ex.Current();
-	  BRepLib::BuildCurve3d(e);
-	  
-	  BRepAdaptor_Curve adapt(e);
-	  
-	  cout<<"xsec drawing: processing curve of type "<<adapt.GetType()<<endl;
-	  
-	  switch (adapt.GetType())
-	  {
-	    case GeomAbs_Line:
-	    {
-	      segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
-	    } break;
-	      
-	    case GeomAbs_Circle:
-  // 	  {
-  // 	    writeCircle_HatchLoop(adapt, layer);
-  // 	  } break;
+        //cout<<"Processing face"<<endl;
 
-	    case GeomAbs_Ellipse:
-	    case GeomAbs_Hyperbola:
-	    case GeomAbs_Parabola:
-	    case GeomAbs_BSplineCurve:
-	    case GeomAbs_BezierCurve:
-	    {
-	      segments.push_back(new writerDiscrete_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
-	    } break;
+        TopoDS_Face f=TopoDS::Face(exf.Current());
 
-	    default:
-	      segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
-	  }
-      }
+        boost::ptr_vector<hatchLoopWriter> segments;
+        for (TopExp_Explorer exw(f, TopAbs_WIRE); exw.More(); exw.Next())
+        {
+            //cout << "ADDING WIRE" << endl;
+            // loop through edges of wire in ordered manner
+            for (BRepTools_WireExplorer ex(TopoDS::Wire(exw.Current())); ex.More(); ex.Next())
+            {
+                TopoDS_Edge e=ex.Current();
+                BRepLib::BuildCurve3d(e);
+
+                BRepAdaptor_Curve adapt(e);
+
+                cout<<"xsec drawing: processing curve of type "<<adapt.GetType()<<endl;
+
+                switch (adapt.GetType())
+                {
+                case GeomAbs_Line:
+                {
+                    segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+                }
+                break;
+
+                case GeomAbs_Circle:
+                // 	  {
+                // 	    writeCircle_HatchLoop(adapt, layer);
+                // 	  } break;
+
+                case GeomAbs_Ellipse:
+                case GeomAbs_Hyperbola:
+                case GeomAbs_Parabola:
+                case GeomAbs_BSplineCurve:
+                case GeomAbs_BezierCurve:
+                {
+                    segments.push_back(new writerDiscrete_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+                }
+                break;
+
+                default:
+                    segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
+                }
+            }
+        }
+
+        DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
+
+        // start hatch with one loop:
+        DL_HatchData data = hgen.generate(); //(1, false, 0.5, 45.0, "iso03w100");
+
+        // start loop:
+        int nsegs=0;
+        BOOST_FOREACH(const hatchLoopWriter& w, segments)
+        {
+            nsegs+=w.nsegments();
+        }
+        //cout<<"nsegs="<<nsegs<<endl;
+        DL_HatchLoopData lData(nsegs);
+
+        // start hatch with one loop:
+        dxf_.writeHatch1(*dw_, data, attributes);
+
+        // start loop:
+        dxf_.writeHatchLoop1(*dw_, lData);
+
+        for (int i=0; i<segments.size(); i++)
+        {
+            hatchLoopWriter& w=segments[i];
+            if (i>0)
+            {
+                gp_Pnt lpe=segments[i-1].end();
+                w.alignStartWith(lpe);
+                gp_Pnt ps=w.start();
+                //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+            }
+            else
+            {
+                gp_Pnt lpe=segments.back().end();
+                w.alignStartWith(lpe);
+                gp_Pnt ps=w.start();
+                //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+            }
+            w.write(dxf_, dw_);
+        }
+
+        // end loop:
+        dxf_.writeHatchLoop2(*dw_, lData);
+
+        // end hatch:
+        dxf_.writeHatch2(*dw_, data, attributes);
     }
-    
-    DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
- 
-    // start hatch with one loop:
-    DL_HatchData data = hgen.generate(); //(1, false, 0.5, 45.0, "iso03w100");
- 
-    // start loop:
-    int nsegs=0;
-    BOOST_FOREACH(const hatchLoopWriter& w, segments)
-    {
-      nsegs+=w.nsegments();
-    }
-    //cout<<"nsegs="<<nsegs<<endl;
-    DL_HatchLoopData lData(nsegs);
-    
-    // start hatch with one loop:
-    dxf_.writeHatch1(*dw_, data, attributes);
- 
-    // start loop:
-    dxf_.writeHatchLoop1(*dw_, lData);
-    
-    for (int i=0; i<segments.size(); i++)
-    {
-      hatchLoopWriter& w=segments[i];
-      if (i>0)
-      {
-	gp_Pnt lpe=segments[i-1].end();
-	w.alignStartWith(lpe);
-	gp_Pnt ps=w.start();
-	//cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
-      }
-      else
-      {
-	gp_Pnt lpe=segments.back().end();
-	w.alignStartWith(lpe);
-	gp_Pnt ps=w.start();
-	//cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
-      }
-      w.write(dxf_, dw_);
-    }  
-    
-    // end loop:
-    dxf_.writeHatchLoop2(*dw_, lData);
- 
-    // end hatch:
-    dxf_.writeHatch2(*dw_, data, attributes);
-  }
 }
+
+
+
 
 void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::Views& views)
 {
-  std::vector<LayerDefinition> addlayers;
-  
-  BOOST_FOREACH(const Feature::Views::value_type& v, views)
-  {
-    string name=v.first;
-    addlayers.push_back
-    (
-      LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1.), true)
-    );
-    if (!v.second.crossSection.IsNull())
-    {
-      addlayers.push_back
-      (
-	LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 25, "CONTINUOUS", 1.), false)
-      );
-    }
-  }
+    std::vector<LayerDefinition> addlayers;
 
-  DXFWriter dxf(file, addlayers);
+    BOOST_FOREACH(const Feature::Views::value_type& v, views)
+    {
+        string name=v.first;
+        addlayers.push_back
+        (
+            LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1.), true)
+        );
+        if (!v.second.crossSection.IsNull())
+        {
+            addlayers.push_back
+            (
+                LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 25, "CONTINUOUS", 1.), false)
+            );
+        }
+    }
+
+    DXFWriter dxf(file, addlayers);
 
 //   dw_->sectionEntities();
 
-  dxf.dw().sectionBlocks();
-  HatchGenerator hgen;
-  BOOST_FOREACH(const Feature::Views::value_type& v, views)
-  {
-    string name=v.first;
-    
-    dxf.dxf().writeBlock(dxf.dw(),
-      DL_BlockData(name, 0, 0.0, 0.0, 0.0));
-    dxf.writeShapeEdges(v.second.visibleEdges, name);
-    dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
-    if (!v.second.crossSection.IsNull())
+    dxf.dw().sectionBlocks();
+    HatchGenerator hgen;
+    BOOST_FOREACH(const Feature::Views::value_type& v, views)
     {
-      dxf.writeSection( v.second.crossSection, hgen, name+"_XSEC");
+        string name=v.first;
+
+        dxf.dxf().writeBlock(dxf.dw(),
+                             DL_BlockData(name, 0, 
+                                          v.second.drawing_ctr_x, v.second.drawing_ctr_y, 0.0
+                                         )
+                            );
+        dxf.writeShapeEdges(v.second.visibleEdges, name);
+        dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
+        if (!v.second.crossSection.IsNull())
+        {
+            dxf.writeSection( v.second.crossSection, hgen, name+"_XSEC");
+        }
+        dxf.dxf().writeEndBlock(dxf.dw(), name);
     }
-    dxf.dxf().writeEndBlock(dxf.dw(), name);
-  }
-  dxf.dw().sectionEnd();
-  
-  dxf.dw().sectionEntities();
-//   dxf.dxf().writeBlock();
-  dxf.dw().sectionEnd();
+    dxf.dw().sectionEnd();
+
+    dxf.dw().sectionEntities();
+    
+    BOOST_FOREACH(const Feature::Views::value_type& v, views)
+    {
+        string name=v.first;
+        const Feature::View& vd=v.second;
+        
+        dxf.dxf().writeInsert
+        (
+            dxf.dw(), 
+            DL_InsertData
+            (
+                name, 
+                vd.insert_x, vd.insert_y, 0.,  // location x y z
+                1., 1., 1., // scale
+                0.0,    // roatation angle
+                1, 1,
+                0., 0.
+            ), 
+            DL_Attributes()
+        );
+    }
+    dxf.dw().sectionEnd();
 }
+
+  
   
 }
 }

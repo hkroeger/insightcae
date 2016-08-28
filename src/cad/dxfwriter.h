@@ -43,6 +43,9 @@ struct hatchLoopWriter
   virtual gp_Pnt& end() =0;
 };
 
+
+
+
 struct writerLine_HatchLoop
 :public hatchLoopWriter
 {
@@ -55,6 +58,9 @@ struct writerLine_HatchLoop
   virtual gp_Pnt& start() { return p0; }
   virtual gp_Pnt& end() { return p1; }
 };
+
+
+
 
 struct writerCircle_HatchLoop
 :public hatchLoopWriter
@@ -72,6 +78,9 @@ struct writerCircle_HatchLoop
   virtual gp_Pnt& end() { return p; }
 };
 
+
+
+
 struct writerDiscrete_HatchLoop
 :public hatchLoopWriter
 {
@@ -85,6 +94,9 @@ struct writerDiscrete_HatchLoop
   virtual gp_Pnt& start() { return pts[0]; }
   virtual gp_Pnt& end() { return pts.back(); }
 };
+
+
+
 
 class HatchGenerator
 {
@@ -104,6 +116,9 @@ public:
   
   DL_HatchData generate();
 };
+
+
+
 
 class DXFWriter
 {
@@ -133,6 +148,9 @@ public:
   
   static void writeViews(const boost::filesystem::path& file, const Feature::Views& views);
 };
+
+
+
 }
 }
 

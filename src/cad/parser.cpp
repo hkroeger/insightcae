@@ -349,14 +349,23 @@ ISCADParser::ISCADParser(Model* model)
     r_postproc.name("postprocessing statement");
       
     r_viewDef =
-	(r_identifier >> '(' 
-	  >> r_vectorExpression >> ',' 
-	  >> r_vectorExpression
-	  >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
-	  >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
-	  >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
-	  >> ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
-	  >> ')' 
+	(r_identifier > '(' 
+	  > r_vectorExpression > ',' 
+	  > r_vectorExpression
+	  > ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
+	  > ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
+	  > ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
+	  > ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
+      > ( ( ',' >> lit("add") 
+	       >> (( 'l' > qi::attr(true) )|qi::attr(false))
+	       >> (( 'r' > qi::attr(true) )|qi::attr(false))
+	       >> (( 't' > qi::attr(true) )|qi::attr(false))
+	       >> (( 'b' > qi::attr(true) )|qi::attr(false))
+	       >> (( 'k' > qi::attr(true) )|qi::attr(false))
+	      ) |
+          ( qi::attr(false) > qi::attr(false) > qi::attr(false) > qi::attr(false) > qi::attr(false) )
+	  )
+      > ')' 
 	)
       ;
     r_viewDef.name("view definition");

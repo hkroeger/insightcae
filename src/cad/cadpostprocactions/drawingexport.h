@@ -29,8 +29,22 @@ namespace insight
 namespace cad 
 {
 
-typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool, bool, bool > DrawingViewDefinition;
+    
+/**
+ * whether to create the additional views:
+ * 1 left
+ * 2 right
+ * 3 top
+ * 4 bottom
+ * 5 back
+ */
+typedef boost::fusion::vector5<bool, bool, bool, bool, bool> AdditionalViews;
+    
+typedef boost::tuple<std::string, VectorPtr, VectorPtr, VectorPtr, bool, bool, bool, AdditionalViews > DrawingViewDefinition;
 typedef boost::fusion::vector2<FeaturePtr, std::vector<DrawingViewDefinition> > DrawingViewDefinitions;
+
+
+
 
 class DrawingExport 
 : public PostprocAction

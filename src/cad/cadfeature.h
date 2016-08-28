@@ -132,7 +132,6 @@ public:
 
 
 
-
 std::ostream& operator<<(std::ostream& os, const Feature& m);
 
 /**
@@ -154,6 +153,18 @@ public:
   struct View
   {
     TopoDS_Shape visibleEdges, hiddenEdges, crossSection;
+    /**
+     * 2D size of projection
+     */
+    double width, height;
+    /**
+     * center of features
+     */
+    double drawing_ctr_x=0, drawing_ctr_y=0;
+    /**
+     * placement on drawing
+     */
+    double insert_x=0, insert_y=0;
   };
   typedef std::map<std::string, View> Views;
   

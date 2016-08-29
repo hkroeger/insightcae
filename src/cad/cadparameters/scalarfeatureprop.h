@@ -47,6 +47,16 @@ public:
   virtual double value() const;
 };
 
+class CumulativeEdgeLength 
+: public Scalar
+{
+  FeaturePtr model_;
+  
+public:
+  CumulativeEdgeLength(FeaturePtr model);
+  virtual double value() const;
+};
+
 }
 }
 

@@ -19,6 +19,7 @@
 
 #include "scalarfeatureprop.h"
 #include "cadfeature.h"
+#include "geotest.h"
 
 
 insight::cad::ScalarFeatureProp::ScalarFeatureProp
@@ -46,3 +47,17 @@ double insight::cad::FeatureVolume::value() const
   return model_->modelVolume();
 }
 
+insight::cad::CumulativeEdgeLength::CumulativeEdgeLength(insight::cad::FeaturePtr model)
+: model_(model)
+{}
+
+double insight::cad::CumulativeEdgeLength::value() const
+{
+    double L=0;
+    FeatureSetData ae = model_->allEdgesSet();
+    BOOST_FOREACH(const FeatureID& i, ae)
+    {
+        L+=edgeLength(model_->edge(i));
+    }
+    return L;
+}

@@ -665,6 +665,8 @@ ISCADParser::ISCADParser(Model* model)
         model_->scalarSymbols()[ qi::_val = qi::_1 ]
       | ( lit("volume") > '(' > r_solidmodel_expression > ')' ) 
 	[ _val = phx::construct<ScalarPtr>(phx::new_<FeatureVolume>(qi::_1)) ]
+      | ( lit("cumedgelen") > '(' > r_solidmodel_expression > ')' ) 
+	[ _val = phx::construct<ScalarPtr>(phx::new_<CumulativeEdgeLength>(qi::_1)) ]
       | ( lit("mag") > '(' > r_vectorExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<VectorMag>(qi::_1)) ]
       | ( lit("sqrt") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sqrt>(qi::_1)) ]
       | ( lit("sin") > '(' > r_scalarExpression > ')' ) [ _val = phx::construct<ScalarPtr>(phx::new_<Scalar_sin>(qi::_1)) ]

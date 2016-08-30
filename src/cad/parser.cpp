@@ -135,57 +135,17 @@ skip_grammar::skip_grammar()
 
 
 
-/*! \page cad_parser ISCAD Parser Language
- * 
- * ISCAD language knows the following commands:
- * - \subpage Arc
- * - \subpage Bar
- * - \subpage BooleanIntersection
- * - \subpage BooleanSubtract
- * - \subpage BooleanUnion
- * - \subpage BoundedFlatFace
- * - \subpage Box
- * - \subpage Chamfer
- * - \subpage Circle
- * - \subpage CircularPattern
- * - \subpage Coil
- * - \subpage Compound
- * - \subpage Cone
- * - \subpage Cutaway
- * - \subpage Cylinder
- * - \subpage Extrusion
- * - \subpage Fillet
- * - \subpage FillingFace
- * - \subpage ImportSolid
- * - \subpage Line
- * - \subpage LinearPattern
- * - \subpage Mirror
- * - \subpage ModelFeature
- * - \subpage NacaFourDigit
- * - \subpage Pipe
- * - \subpage Place
- * - \subpage Projected
- * - \subpage ProjectedOutline
- * - \subpage Quad
- * - \subpage RegPoly
- * - \subpage Revolution
- * - \subpage Ring
- * - \subpage RotatedHelicalSweep
- * - \subpage Shoulder
- * - \subpage Sphere
- * - \subpage SplineCurve
- * - \subpage SplineSurface
- * - \subpage Split
- * - \subpage Spring
- * - \subpage StitchedShell
- * - \subpage StitchedSolid
- * - \subpage Subfeature
- * - \subpage Sweep 
- * - \subpage Thicken
- * - \subpage Torus
- * - \subpage Transform
- * - \subpage Tri
- * - \subpage Wire
+/*! \addtogroup iscad_language ISCAD
+ * \{
+ * \section intro ISCAD Parser Language
+ * ISCAD uses a modelling language to create CAD models.
+ * An ISCAD model consists of a number of \ref iscad_assignments "assignments" in the form 
+ * \verbatim
+ *  <Identifier> = <Expression>;
+ * \endverbatim
+ * which create symbols.
+ * These symbols can represent numerical or vector parameters, datums
+ * \}
  */
 
 
@@ -227,12 +187,12 @@ ISCADParser::ISCADParser(Model* model)
     r_string.name("string");
 
 		      
+/*! \addtogroup iscad_assignments ISCAD Assignments
+ * \{
+ * 
+ * \}
+ */
     r_assignment = 
-//       ( r_identifier >> '=' >> lit("loadmodel") >> '(' >> r_identifier >> 
-//       *(',' >> (r_identifier >> '=' >> (r_scalarExpression|r_vectorExpression) ) ) >> ')' >> ';' )
-// 	[ phx::bind(&Model::addModel, model_, qi::_1, 
-// 		    phx::construct<ModelPtr>(phx::new_<Model>(qi::_2, qi::_3))) ]
-//       |
       ( r_identifier >> '=' >> r_solidmodel_expression >> ';' ) 
         [ phx::bind(&Model::addModelstep, model_, qi::_1, qi::_2) ]
       |
@@ -265,7 +225,9 @@ ISCADParser::ISCADParser(Model* model)
       ;
     r_assignment.name("assignment");
       
-/** @addtogroup cad_parser
+    r_postproc =
+
+   /** @addtogroup iscad_language
   * @{
   * @section postproc Postprocessing statements
   * 
@@ -278,6 +240,16 @@ ISCADParser::ISCADParser(Model* model)
   *     [<viewname> ...]
   * ;
   * ~~~~
+  * @}
+  */
+      ( lit("DXF") > '(' > r_path > ')' > lit("<<") > ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' ) 
+        [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
+		    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
+      |
+
+   /** @addtogroup iscad_language
+  * @{
+  * @section postproc Postprocessing statements
   * 
   * @subsection saveAs Export feature into file.
   * 
@@ -287,13 +259,6 @@ ISCADParser::ISCADParser(Model* model)
   * ~~~~
   * @}
   */
-
-
-    r_postproc =
-      ( lit("DXF") > '(' > r_path > ')' > lit("<<") > ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' ) 
-        [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
-		    phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
-      |
       ( lit("saveAs") > '(' > r_path > ')' > lit("<<") 
         > r_solidmodel_expression 
         > *( r_identifier > '=' > r_faceFeaturesExpression )
@@ -310,6 +275,22 @@ ISCADParser::ISCADParser(Model* model)
         [ phx::bind(&Model::addPostprocActionUnnamed, model_, 
 		    phx::construct<PostprocActionPtr>(new_<Export>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
       |
+
+    /** @addtogroup iscad_language
+  * @{
+  * @section postproc Postprocessing statements
+  * 
+  * @subsection gmsh Create a mesh using gmsh
+  * 
+  * Syntax:
+  * ~~~~
+  * gmsh(isc_filename_expression) << isc_feature_expression as isc_string_expression
+  *     <viewname> (<vector viewon>, <vector viewfrom> [, up <vector upward direction>] [, section] [, poly]) 
+  *     [<viewname> ...]
+  * ;
+  * ~~~~
+  * @}
+  */
       ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<") 
         >> r_solidmodel_expression >> lit("as") >> r_identifier
         >> ( lit("L") >> '=' >> '(' >> repeat(2)[r_scalarExpression] ) >> ')'

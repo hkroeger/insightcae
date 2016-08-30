@@ -36,7 +36,9 @@ faceNormalVector::~faceNormalVector()
   
 arma::mat faceNormalVector::evaluate(FeatureID fi)
 {
-  return model_->faceNormal(fi);
+    arma::mat fn=model_->faceNormal(fi);
+//     std::cout<<"face normal="<<fn<<std::endl;
+    return fn;
 }
   
 QuantityComputer<arma::mat>::Ptr faceNormalVector::clone() const 

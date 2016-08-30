@@ -23,6 +23,8 @@
 
 #include <vector>
 #include <map>
+
+#include "boost_include.h"
 #include <boost/concept_check.hpp>
 
 #include "base/linearalgebra.h"
@@ -70,6 +72,7 @@ public:
     virtual void writeGeometryToLegacyFile(std::ostream& os) const;
     virtual void writeDataToLegacyFile(std::ostream& os) const;
     virtual void writeLegacyFile(std::ostream& os) const;
+    virtual void createLegacyFile(const boost::filesystem::path& fn, bool create_dir=false) const;
 };
 
 
@@ -98,6 +101,8 @@ public:
     virtual void writeDataToLegacyFile(std::ostream& os) const;
     virtual void writeGeometryToLegacyFile(std::ostream& os) const;
 };
+
+typedef boost::shared_ptr<vtkModel2d> vtkModel2dPtr;
 
 }
 

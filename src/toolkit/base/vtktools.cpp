@@ -88,6 +88,20 @@ void vtkModel::writeGeometryToLegacyFile(std::ostream& os) const
   }  
 }
 
+
+void vtkModel::createLegacyFile(const boost::filesystem::path& fn, bool create_dir) const
+{
+    if (create_dir)
+    {
+        if (!boost::filesystem::exists(fn.parent_path()))
+            boost::filesystem::create_directories(fn.parent_path());
+    }
+    
+    std::ofstream f(fn.c_str());
+    writeLegacyFile(f);
+    f.close();
+}
+
 void vtkModel2d::appendCellScalarField(const std::string& name, const double s[])
 {
   cellScalarFields_[name]=ScalarField();

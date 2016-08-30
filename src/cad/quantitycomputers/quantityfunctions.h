@@ -123,6 +123,7 @@ public:\
     T1 value1 = qtc1_->evaluate(f);\
     T2 value2 = qtc2_->evaluate(f);\
     typename RESULT_T<T1,T2>::type value=OPERATED_QTC_OP;\
+    std::cout<<#OPERATED_QTC_NAME<<"="<<value<<std::endl;\
     return value;\
   }\
   \
@@ -200,8 +201,8 @@ BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
 BINARY_FUNCTION_QTC(dotted, (arma::dot(value1,value2)), DotResult );
-BINARY_FUNCTION_QTC(angle, (::acos(arma::norm_dot(value1, value2))), DotResult );
-BINARY_FUNCTION_QTC(angleMag, (::acos( fabs(arma::norm_dot(value1, value2)) )), DotResult );
+BINARY_FUNCTION_QTC(angle, ( ::acos(min(1.0, arma::norm_dot(value1, value2)))), DotResult );
+BINARY_FUNCTION_QTC(angleMag, (::acos( min(1.0, ::fabs(arma::norm_dot(value1, value2))) )), DotResult );
 //BINARY_FUNCTION_QTC(angleMag, (::acos( fabs(arma::dot(value1/arma::norm(value1,2), value2/arma::norm(value2,2))) )), DotResult );
 
 }

@@ -460,6 +460,9 @@ void runPvPython
 namespace paraview
 {
   
+    
+    
+    
 class PVScene
 {
 public:
@@ -478,9 +481,14 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
 
   declareType("PVscene");
   
+  virtual ~PVScene();
+  
   virtual ParameterSet defaultParameters() const =0;
   virtual std::string pythonCommands() const =0;
 };
+
+
+
 
 class CustomPVScene
 : public PVScene
@@ -504,10 +512,15 @@ command = string "" "Python snippet to execute in pvBatch"
   
   CustomPVScene(const NoParameters&);
   CustomPVScene(const ParameterSet&);
+  virtual ~CustomPVScene();
+  
   virtual ParameterSet defaultParameters() const;
   virtual std::string pythonCommands() const;
 };
-  
+
+
+
+
 class CutplanePVScene
 : public PVScene
 {
@@ -535,10 +548,15 @@ size = double 1.0 "size of the viewport (in the same units as the data set)"
   
   CutplanePVScene(const NoParameters&);
   CutplanePVScene(const ParameterSet&);
+  virtual ~CutplanePVScene();
+  
   virtual ParameterSet defaultParameters() const;
   virtual std::string pythonCommands() const;
 };
-  
+
+
+
+
 class ParaviewVisualization
 : public Analysis
 {
@@ -553,7 +571,13 @@ public:
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 
+
+
+
 }
+
+
+
 
 arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
 		    const std::string& fieldName, const std::string& patchName,

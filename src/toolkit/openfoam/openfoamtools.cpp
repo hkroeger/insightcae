@@ -1303,6 +1303,9 @@ defineFactoryTable(PVScene, NoParameters);
 defineType(CustomPVScene);
 addToFactoryTable(PVScene, CustomPVScene, NoParameters);
 
+PVScene::~PVScene()
+{}
+
 CustomPVScene::CustomPVScene(const NoParameters&)
 {}
 
@@ -1311,6 +1314,9 @@ CustomPVScene::CustomPVScene(const ParameterSet& ps)
   Parameters p(ps);
   command_=p.command;
 }
+
+CustomPVScene::~CustomPVScene()
+{}
 
 ParameterSet CustomPVScene::defaultParameters() const
 {
@@ -1329,6 +1335,9 @@ CutplanePVScene::CutplanePVScene(const NoParameters&)
 {}
 
 CutplanePVScene::CutplanePVScene(const ParameterSet&)
+{}
+
+CutplanePVScene::~CutplanePVScene()
 {}
 
 ParameterSet CutplanePVScene::defaultParameters() const

@@ -69,8 +69,6 @@ Arc::Arc(const NoParameters& nop)
 
 void Arc::build()
 {
-  std::cout<<"build arc: start"<<std::endl;
-  
   Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Vec(*p0tang_), to_Pnt(*p1_));
   setShape(BRepBuilderAPI_MakeEdge(crv));
   
@@ -82,8 +80,6 @@ void Arc::build()
   crv->D1(crv->LastParameter(), p, v);
   refpoints_["p1"]=vec3(p);
   refvectors_["et1"]=vec3(v);
-  
-  std::cout<<"build arc: finished"<<std::endl;
 }
 
 
@@ -93,18 +89,30 @@ Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 }
 
 
-struct get_line_f
-{
-    template <typename> struct result { typedef size_t type; };
-    template <typename It> size_t operator()(It const& pos_iter) const
-    {
-        int l = boost::spirit::get_line(pos_iter);
-        std::cout<<"LINE="<<l<<std::endl;
-        return l;
-    }
-};
-boost::phoenix::function<get_line_f> get_line_;
 
+/**
+ * \page iscad_arc Arc
+ *
+ * The "Arc" command creates an arc curve. The arc is specified by its start point "p0" and end point "p1" together with its tangent direction "tan" at the start point.
+ * 
+ * \section syntax Syntax
+ * 
+ * <b> Arc(\ref iscad_vector_expression "<vector:p0>", \ref iscad_vector_expression "<vector:tan> ", \ref iscad_vector_expression "<vector:p1>") </b>
+ * 
+ * \section return Return Value
+ * 
+ * \ref iscad_feature_expression "Feature"
+ * 
+ * \section provides Provided Properties
+ * 
+ * Points:
+ * * "p0": start point
+ * * "p1": end point
+ * 
+ * Vectors:
+ * * "et0": tangent vector at p0
+ * * "et1": tangent vector at p1
+ */
 
 void Arc::insertrule(parser::ISCADParser& ruleset) const
 {

@@ -409,7 +409,8 @@ bool isPartOf(const TopoDS_Face& big, const TopoDS_Face& small, double tolerance
             TopoDS_Face f = TopoDS::Face(fix.Result());
             BRepTools::Clean(f);
             TopLoc_Location L;
-            BRepMesh::Mesh(f, 0.3);
+            //BRepMesh::Mesh(f, 0.3);
+            BRepMesh_IncrementalMesh(f, 0.3);
             tri = BRep_Tool::Triangulation(f, L);
           }
           if (!tri.IsNull()){

@@ -26,8 +26,8 @@ namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
 
-using namespace std;
-using namespace boost;
+//using namespace std;
+//using namespace boost;
 
 namespace insight {
 namespace cad {

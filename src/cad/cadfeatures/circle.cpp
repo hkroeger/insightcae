@@ -44,6 +44,8 @@ void Circle::build()
 {
   Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0_->value()), to_Vec(n_->value()), 0.5*D_->value());
   
+  refpoints_["p0"]=p0_->value();
+  
   BRepBuilderAPI_MakeWire w;
   w.Add(BRepBuilderAPI_MakeEdge(c));
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));

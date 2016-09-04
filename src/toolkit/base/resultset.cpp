@@ -626,7 +626,7 @@ void TabularResult::writeLatexCode(std::ostream& f, const std::string& name, int
     for (std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++)
     {
       if (j!=i->begin()) f<<" & ";
-      if (!::isnan(*j))
+      if (!std::isnan(*j))
       {
 	f<<*j;
       }

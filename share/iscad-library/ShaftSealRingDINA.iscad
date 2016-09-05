@@ -1,0 +1,18 @@
+d1?=42;
+d2?=62;
+
+b?=TableLookup(ShaftSealRing_DIN3760_FormA, d1, d1, b);
+c?=TableLookup(ShaftSealRing_DIN3760_FormA, d1, d1, c);
+ 
+section=Sketch(
+ SPlane( 0.5*d1*EZ, EY, EZ ), 
+ "ShaftSealRing_DIN3760_FormA.fcstd", 'sketch',
+ H=(d2-d1)/2,
+ b=b,
+ c=c
+);
+
+sealring:
+Revolution(
+ section,
+ O, EX, 2*M_PI);

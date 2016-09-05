@@ -152,6 +152,7 @@ gp_Ax3 ProvidedDatum::plane() const
 
 AIS_InteractiveObject* ProvidedDatum::createAISRepr() const
 {
+    checkForBuildDuringAccess();
     return dat_->createAISRepr();
 }
 

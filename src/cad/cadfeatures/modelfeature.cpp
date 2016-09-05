@@ -76,6 +76,7 @@ void ModelFeature::copyModelDatums()
   {
     if (providedDatums_.find(d.first)!=providedDatums_.end())
       throw insight::Exception("datum "+d.first+" already present!");
+
     providedDatums_[d.first]=d.second;
   }
 //   model_->scalars().for_each(phx::bind(&addScalar, this, ));
@@ -103,13 +104,13 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 // 
 void ModelFeature::build()
 {
-  std::cout<<"loading model "<<modelname_<<std::endl;
+//   std::cout<<"loading model "<<modelname_<<std::endl;
   model_.reset(new Model(modelname_, vars_));
   model_->checkForBuildDuringAccess();
   
   BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())
   {
-    std::cout<<"inserting component "<<c<<std::endl;
+//     std::cout<<"inserting component "<<c<<std::endl;
 //     c.second->checkForBuildDuringAccess();
     components_[c]=model_->lookupModelstep(c);
   }

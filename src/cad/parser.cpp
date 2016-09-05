@@ -618,9 +618,10 @@ ISCADParser::ISCADParser(Model* model)
 	               construct<DatumPtr>(new_<XsecPlanePlane>(qi::_1, qi::_2)),
 		       qi::_3)) ]
           |
-          ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' ) 
+//           ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' ) 
+          ( ( r_solidmodel_expression >> '%' ) > r_identifier  ) 
 	    [ _val = phx::construct<DatumPtr>(new_<ProvidedDatum>(qi::_1, qi::_2)) ] 
-      ;
+        ;
     r_datumExpression.name("datum expression");
       
     r_scalarExpression = 

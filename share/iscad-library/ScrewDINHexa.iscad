@@ -55,3 +55,6 @@ Revolution(
  ),
  O, EX, 2.*M_PI)
 ;
+
+pl_contact=YZ;
+axis=RefAxis(O, EX);

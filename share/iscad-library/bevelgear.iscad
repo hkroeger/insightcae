@@ -1,0 +1,130 @@
+ 
+M?=3;
+ctr?=O; # gear pair center
+e1?=EX; # direction from ctr towards ctr wheel 1
+e2?=EY;#x+0.4*EX; # direction from ctr towards ctr wheel 2
+E1=e1/mag(e1);
+E2=e2/mag(e2);
+e3=E1^E2;
+E3=e3/mag(e3);
+
+z1?=5;
+z2?=10;
+w?=5;
+
+me=M;
+sigma=acos((E1&E2)/mag(E1)/mag(E2));
+
+u=z2/z1;
+delta1=atan(sin(sigma)/(u+cos(sigma)));
+delta2=sigma-delta1;
+
+de1=z1*me;
+de2=z2*me;
+Re1=0.5*de1/sin(delta1);
+Re2=0.5*de2/sin(delta2);
+
+xh=0;
+hae1=me*(1+xh);
+hfe1=hae1;
+hae2=me*(1-xh);
+hfe2=hae2;
+
+
+#### Gear 1
+
+e41=rot(E1 by delta1 around E3);
+e42=rot(e41 by M_PI/2 around E3);
+
+pup1=Re1*e41 -hfe1*e42;
+plo1=(Re1-w)*e41 - (1-w/Re1)*hfe1*e42;
+xsec1=Tri(
+ ctr,
+ Re1*e41 +hae1*e42,
+ pup1
+)
+-Tri(
+ ctr,
+ (Re1-w)*e41 +hae1*e42,
+ plo1
+);
+xsec12=
+Wire(Compound(
+ Line(pup1, plo1),
+ Line(plo1, ctr+((plo1-ctr)&E1)*E1),
+ Line(pup1, ctr+((pup1-ctr)&E1)*E1),
+ Line(
+  ctr+((plo1-ctr)&E1)*E1, 
+  ctr+((pup1-ctr)&E1)*E1
+  )
+ )?alledges
+);
+
+wheel1_teeth=
+Revolution(
+ xsec1,
+ O, E1, 2*M_PI
+);
+wheel1_base=
+Revolution(
+ xsec12,
+ O, E1, 2*M_PI
+);
+
+wheel1:
+Compound(
+ wheel1_teeth,
+ wheel1_base
+);
+axis1=RefAxis(ctr, E1);
+pwheel1=ctr+((pup1-ctr)&E1)*E1;
+pl_wheel1=Plane(pwheel1, E1);
+
+### Gear 2
+
+e51=rot(E2 by delta2 around E3);
+e52=rot(e51 by M_PI/2 around E3);
+
+pup2=Re2*e51 -hfe2*e52;
+plo2=(Re2-w)*e51 -(1-w/Re2)*hfe2*e52;
+xsec2=Tri(
+ ctr,
+ Re2*e51 +hae2*e52,
+ pup2
+)
+-Tri(
+ ctr,
+ (Re2-w)*e51 +hae2*e52,
+ plo2
+);
+xsec22=
+Wire(Compound(
+ Line(pup2, plo2),
+ Line(plo2, ctr+((plo2-ctr)&E2)*E2),
+ Line(pup2, ctr+((pup2-ctr)&E2)*E2),
+ Line(
+  ctr+((plo2-ctr)&E2)*E2, 
+  ctr+((pup2-ctr)&E2)*E2
+  )
+ )?alledges
+);
+
+wheel2_teeth=
+Revolution(
+ xsec2,
+ O, E2, 2*M_PI
+);
+wheel2_base=
+Revolution(
+ xsec22,
+ O, E2, 2*M_PI
+);
+
+wheel2:
+Compound(
+ wheel2_teeth,
+ wheel2_base
+);
+axis2=RefAxis(ctr, E2);
+pwheel2=ctr+((pup2-ctr)&E2)*E2;
+pl_wheel2=Plane(pwheel2, E2);

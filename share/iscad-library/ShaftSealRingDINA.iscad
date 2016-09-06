@@ -16,3 +16,7 @@ sealring:
 Revolution(
  section,
  O, EX, 2*M_PI);
+
+axis=RefAxis(O, EX);
+pl_medium=Plane(O, EX);
+pl_air=Plane(O-b*EX, -EX);

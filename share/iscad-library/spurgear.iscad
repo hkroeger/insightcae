@@ -1,0 +1,22 @@
+ 
+M?=3;
+z?=10;
+w?=5;
+
+ha=M; # head height
+d=z*M;
+r=d/2;
+
+da=d +2*ha;
+ra=da/2;
+
+wheel:
+Cylinder(
+ -0.5*w*EX,
+ 0.5*w*EX,
+ da
+);
+
+axis=RefAxis(O, EX);
+pl_side1=Plane(-0.5*w*EX, -EX);
+pl_side2=Plane(0.5*w*EX, EX);

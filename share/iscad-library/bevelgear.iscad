@@ -2,7 +2,7 @@
 M?=3;
 ctr?=O; # gear pair center
 e1?=EX; # direction from ctr towards ctr wheel 1
-e2?=EY;#x+0.4*EX; # direction from ctr towards ctr wheel 2
+e2?=EY+0.4*EX; # direction from ctr towards ctr wheel 2
 E1=e1/mag(e1);
 E2=e2/mag(e2);
 e3=E1^E2;
@@ -36,17 +36,17 @@ hfe2=hae2;
 e41=rot(E1 by delta1 around E3);
 e42=rot(e41 by M_PI/2 around E3);
 
-pup1=Re1*e41 -hfe1*e42;
-plo1=(Re1-w)*e41 - (1-w/Re1)*hfe1*e42;
+pup1=ctr+ Re1*e41 -hfe1*e42;
+plo1=ctr+(Re1-w)*e41 - (1-w/Re1)*hfe1*e42;
 xsec1=Tri(
  ctr,
  Re1*e41 +hae1*e42,
- pup1
+ pup1-ctr
 )
 -Tri(
  ctr,
  (Re1-w)*e41 +hae1*e42,
- plo1
+ plo1-ctr
 );
 xsec12=
 Wire(Compound(
@@ -63,12 +63,12 @@ Wire(Compound(
 wheel1_teeth=
 Revolution(
  xsec1,
- O, E1, 2*M_PI
+ ctr, E1, 2*M_PI
 );
 wheel1_base=
 Revolution(
  xsec12,
- O, E1, 2*M_PI
+ ctr, E1, 2*M_PI
 );
 
 wheel1:
@@ -85,17 +85,17 @@ pl_wheel1=Plane(pwheel1, E1);
 e51=rot(E2 by delta2 around E3);
 e52=rot(e51 by M_PI/2 around E3);
 
-pup2=Re2*e51 -hfe2*e52;
-plo2=(Re2-w)*e51 -(1-w/Re2)*hfe2*e52;
+pup2=ctr +Re2*e51 -hfe2*e52;
+plo2=ctr +(Re2-w)*e51 -(1-w/Re2)*hfe2*e52;
 xsec2=Tri(
  ctr,
  Re2*e51 +hae2*e52,
- pup2
+ pup2-ctr
 )
 -Tri(
  ctr,
  (Re2-w)*e51 +hae2*e52,
- plo2
+ plo2-ctr
 );
 xsec22=
 Wire(Compound(
@@ -112,12 +112,12 @@ Wire(Compound(
 wheel2_teeth=
 Revolution(
  xsec2,
- O, E2, 2*M_PI
+ ctr, E2, 2*M_PI
 );
 wheel2_base=
 Revolution(
  xsec22,
- O, E2, 2*M_PI
+ ctr, E2, 2*M_PI
 );
 
 wheel2:

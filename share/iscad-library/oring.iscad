@@ -1,11 +1,11 @@
 # O_Ring DIN 3771
 
 Di?=60;
-d1=TableLookup(ORing_DIN3771, d1, Di, d1, nearest);
-d2=TableLookup(ORing_DIN3771, d1, d1, d2_klein);
+d1?=TableLookup(ORing_DIN3771, d1, Di, d1, nearest);
+d2?=TableLookup(ORing_DIN3771, d1, d1, d2_klein, nearest);
 
-t=TableLookup(ORing_DIN3771_gland, d2, d2, t);
-b=TableLookup(ORing_DIN3771_gland, d2, d2, b);
+t?=TableLookup(ORing_DIN3771_gland, d2, d2, t, nearest);
+b?=TableLookup(ORing_DIN3771_gland, d2, d2, b, nearest);
 
 oring:
 Torus(O, (d1+d2)*EX, d2);

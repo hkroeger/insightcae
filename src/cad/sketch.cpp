@@ -335,7 +335,7 @@ Sketch::Sketch
   tol_(tol)
 {
   ParameterListHash p(this);
-//   p+=*pl_;
+  p+=*pl_;
   try 
   {
     // try to incorporate file time stamp etc

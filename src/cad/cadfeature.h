@@ -53,6 +53,7 @@ namespace insight
 namespace cad 
 {
   class Feature;
+  class Datum;
 }
 }
 
@@ -72,6 +73,11 @@ template<> struct hash<arma::mat>
 template<> struct hash<gp_Pnt>
 {
   std::size_t operator()(const gp_Pnt& v) const;
+};
+
+template<> struct hash<insight::cad::Datum>
+{
+  std::size_t operator()(const insight::cad::Datum& m) const;
 };
 
 template<> struct hash<insight::cad::Feature>

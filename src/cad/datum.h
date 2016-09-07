@@ -39,6 +39,7 @@ class Datum
 {
 public:
   typedef std::map<std::string, DatumPtr> Map;
+  size_t hash_;
   
 protected:
   bool providesPointReference_, providesAxisReference_, providesPlanarReference_;
@@ -64,6 +65,8 @@ public:
   virtual AIS_InteractiveObject* createAISRepr() const;
 
   virtual void write(std::ostream& file) const;
+  
+  inline size_t hash() const { return hash_; }
 };
 
 

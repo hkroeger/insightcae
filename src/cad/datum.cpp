@@ -119,10 +119,16 @@ ProvidedDatum::ProvidedDatum(FeaturePtr feat, std::string name)
 : Datum(false, false, false),
   feat_(feat), 
   name_(name)
-{}
+{
+    ParameterListHash plh;
+    plh+=*feat_;
+    plh+=name_;
+    hash_=plh.getHash();
+}
 
 void ProvidedDatum::build()
 {
+    
   auto iter=feat_->providedDatums().find(name_);
   if (iter==feat_->providedDatums().end())
     throw insight::Exception("Feature does not provide a datum of name \""+name_+"\"");
@@ -159,12 +165,17 @@ AIS_InteractiveObject* ProvidedDatum::createAISRepr() const
 
 ExplicitDatumPoint::ExplicitDatumPoint(VectorPtr c)
 : coord_(c)
-{}
+{
+    ParameterListHash plh;
+    plh+=coord_->value();
+    hash_=plh.getHash();
+}
 
 
 void ExplicitDatumPoint::build()
 {
-  p_=to_Pnt(coord_->value());
+
+    p_=to_Pnt(coord_->value());
 }
 
 
@@ -195,11 +206,16 @@ AIS_InteractiveObject* DatumAxis::createAISRepr() const
 
 ExplicitDatumAxis::ExplicitDatumAxis(VectorPtr p0, VectorPtr ex)
 : p0_(p0), ex_(ex)
-{}
+{
+    ParameterListHash plh;
+    plh+=p0_->value();
+    plh+=ex_->value();
+    hash_=plh.getHash();
+}
 
 void ExplicitDatumAxis::build()
 {
-  ax_ = gp_Ax1( to_Pnt(p0_->value()), gp_Dir(to_Vec(ex_->value())) );
+    ax_ = gp_Ax1( to_Pnt(p0_->value()), gp_Dir(to_Vec(ex_->value())) );
 }
 
 
@@ -232,6 +248,8 @@ AIS_InteractiveObject* DatumPlaneData::createAISRepr() const
 
 void DatumPlane::build()
 {
+    
+    
   arma::mat n=n_->value()/arma::norm(n_->value(),2);
   if (p2_)
   {
@@ -281,15 +299,32 @@ void DatumPlane::build()
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni)
 : p0_(p0),
   n_(ni)
-{}
+{
+    ParameterListHash plh;
+    plh+=n_->value();
+    plh+=p0_->value();
+    hash_=plh.getHash();
+}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 : p0_(p0), n_(ni), up_(up)
-{}
+{
+    ParameterListHash plh;
+    plh+=n_->value();
+    plh+=p0_->value();
+    plh+=up_->value();
+    hash_=plh.getHash();    
+}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
-: p0_(p0), p1_(p1_), p2_(p2)
-{}
+: p0_(p0), p1_(p1), p2_(p2)
+{
+    ParameterListHash plh;
+    plh+=p0_->value();
+    plh+=p1_->value();
+    plh+=p2_->value();
+    hash_=plh.getHash();    
+}
 
 // DatumPlane::DatumPlane
 // (
@@ -326,11 +361,17 @@ void DatumPlane::write(ostream& file) const
 
 XsecPlanePlane::XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2)
 : pl1_(pl1), pl2_(pl2)
-{}
+{
+    ParameterListHash plh;
+    plh+=*pl1_;
+    plh+=*pl2_;    
+    hash_=plh.getHash();    
+}
 
 
 void XsecPlanePlane::build()
 {
+    
   if (!pl1_->providesPlanarReference())
     throw insight::Exception("plane 1 does not provide plane reference!");
   if (!pl2_->providesPlanarReference())
@@ -357,10 +398,17 @@ void XsecPlanePlane::build()
 
 XsecAxisPlane::XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl)
 : ax_(ax), pl_(pl)
-{}
+{
+    ParameterListHash plh;
+    plh+=*ax_;
+    plh+=*pl_;    
+    hash_=plh.getHash();
+
+}
 
 void XsecAxisPlane::build()
 {
+    
   if (!ax_->providesAxisReference())
     throw insight::Exception("axis reference does not provide axis!");
   if (!pl_->providesPlanarReference())

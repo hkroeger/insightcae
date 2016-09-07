@@ -111,6 +111,11 @@ std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
   return h;
 }
 
+std::size_t hash<insight::cad::Datum>::operator()(const insight::cad::Datum& m) const
+{
+  return m.hash();
+}
+
 std::size_t hash<insight::cad::Feature>::operator()(const insight::cad::Feature& m) const
 {
   return m.hash();

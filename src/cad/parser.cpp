@@ -677,8 +677,10 @@ ISCADParser::ISCADParser(Model* model)
       | ('(' >> r_scalarExpression >> ')') [ _val = qi::_1 ]
       
       | ( lit("TableLookup") > '(' > r_identifier > ',' 
-	    > r_identifier > ',' > r_scalarExpression > ',' > r_identifier > ')' )
-	[ _val = phx::construct<ScalarPtr>(phx::new_<LookupTableScalar>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	    > r_identifier > ',' > r_scalarExpression > ',' > r_identifier 
+	    > ( ( ',' >> lit("nearest") >> qi::attr(true) ) | qi::attr(false) )
+	    > ')' )
+	[ _val = phx::construct<ScalarPtr>(phx::new_<LookupTableScalar>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
 	
       | ( r_vector_primary >> '.' >> 'x' ) 
         [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_1, 0)) ]

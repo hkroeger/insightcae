@@ -34,6 +34,7 @@ class LookupTableScalar
   std::string keycol_; 
   ScalarPtr keyval_;
   std::string depcol_;
+  bool select_nearest_;
   
 public:
   LookupTableScalar
@@ -41,7 +42,8 @@ public:
     const std::string& name, 
     const std::string& keycol, 
     ScalarPtr keyval, 
-    const std::string& depcol
+    const std::string& depcol,
+    bool select_nearest=false
   );
   
   virtual double value() const;

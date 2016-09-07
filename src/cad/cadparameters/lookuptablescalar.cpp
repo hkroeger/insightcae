@@ -33,40 +33,105 @@ LookupTableScalar::LookupTableScalar
   const std::string& name, 
   const std::string& keycol, 
   ScalarPtr keyval, 
-  const std::string& depcol
+  const std::string& depcol,
+  bool select_nearest
 )
 : name_(name),
   keycol_(keycol),
   keyval_(keyval),
-  depcol_(depcol)
+  depcol_(depcol),
+  select_nearest_(select_nearest)
 {}
 
 
 double LookupTableScalar::value() const
 {
-  std::ifstream f( (sharedModelFilePath(name_+".csv")).c_str() );
-  std::string line;
-  std::vector<std::string> cols;
-  getline(f, line);
-  boost::split(cols, line, boost::is_any_of(";"));
-  int ik=find(cols.begin(), cols.end(), keycol_) - cols.begin();
-  int id=find(cols.begin(), cols.end(), depcol_) - cols.begin();
-  double tkeyval=*keyval_;
-  while (!f.eof())
-  {
+    boost::filesystem::path fp = sharedModelFilePath(name_+".csv");
+    
+    if (!boost::filesystem::exists(fp))
+        throw insight::Exception("lookup table "+fp.string()+" does not exists!");
+    
+    std::ifstream f( fp.c_str() );
+    std::string line;
+    std::vector<std::string> cols;
     getline(f, line);
-    boost::split(cols, line, boost::is_any_of(";"));
-    double kv=lexical_cast<double>(cols[ik]);
-    if (fabs(kv-tkeyval)<1e-6)
+    boost::split(cols, line, boost::is_any_of(";,"));
+    size_t nc=cols.size();
+    
+    auto keycolit=find(cols.begin(), cols.end(), keycol_);
+    if (keycolit==cols.end())
+        throw insight::Exception("key column "+keycol_+" not found in lookup table "+fp.string()+"!");
+    int ik= keycolit - cols.begin();
+    
+    auto depcolit=find(cols.begin(), cols.end(), depcol_);
+    if (depcolit==cols.end())
+        throw insight::Exception("column with depending value "+depcol_+" not found in lookup table "+fp.string()+"!");
+    int id=depcolit - cols.begin();
+    
+    double tkeyval=*keyval_;
+    int ln=1;
+    double best_mq=DBL_MAX;
+    bool found=false;
+    double rvalue=DBL_MAX;
+    
+    while (!f.eof())
     {
-      double dv=lexical_cast<double>(cols[id]);
-      return dv;
+        ln++;
+        getline(f, line);
+        
+        if (line.size()>0)
+        {
+            boost::split(cols, line, boost::is_any_of(";,"));
+            
+            if (nc!=cols.size())
+                throw insight::Exception(boost::str(boost::format("lookup table %s: unexpected number of columns (%d, expected %d) in line %d!")
+                        % fp.string() % cols.size() % nc % ln ));
+            
+            double kv;
+            try 
+            {
+                kv=lexical_cast<double>(cols[ik]);
+            }
+            catch (...)
+            {
+                throw insight::Exception(boost::str(boost::format("lookup table %s: could not read key value in line %d! (found %s)")
+                        % fp.string() % ln % cols[ik] ));
+            }
+            
+            double mq=fabs(kv-tkeyval);
+            if (!select_nearest_)
+            {
+                if (mq>1e-6) mq=DBL_MAX;
+            }
+            
+            if (mq<best_mq)
+            {
+                best_mq=mq;
+                
+                double dv;
+                try 
+                {
+                    dv=lexical_cast<double>(cols[id]);
+                }
+                catch (...)
+                {
+                    throw insight::Exception(boost::str(boost::format("lookup table %s: could not read value in line %d! (found %s)")
+                            % fp.string() % ln % cols[id] ));
+                }
+                rvalue=dv;
+                found=true;
+            }
+        }
     }
-  }
-  throw insight::Exception(
-      "Table lookup of value "+lexical_cast<std::string>(tkeyval)+
-      " in column "+keycol_+" failed!");
-  return 0.0;
+
+    if (found)
+        return rvalue;
+
+    throw insight::Exception(
+        "Table lookup of value "+lexical_cast<std::string>(tkeyval)+
+        " in column "+keycol_+" failed!");
+    
+    return 0.0;
 }
 
 }

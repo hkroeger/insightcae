@@ -1,0 +1,25 @@
+# O_Ring DIN 3771
+
+Di?=60;
+d1=TableLookup(ORing_DIN3771, d1, Di, d1, nearest);
+d2=TableLookup(ORing_DIN3771, d1, d1, d2_klein);
+
+t=TableLookup(ORing_DIN3771_gland, d2, d2, t);
+b=TableLookup(ORing_DIN3771_gland, d2, d2, b);
+
+oring:
+Torus(O, (d1+d2)*EX, d2);
+
+Dshaft=d1+2*d2-2*t;
+tool_gland_outer=
+Cylinder(
+ -0.5*b*EX, ax b*EX,
+ d1+2*d2, Dshaft);
+
+Dbore=d1+2*t;
+tool_gland_inner=
+Cylinder(
+ -0.5*b*EX, ax b*EX,
+ Dbore, d1);
+
+axis=RefAxis(O, EX);

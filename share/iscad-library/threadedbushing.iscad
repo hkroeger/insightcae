@@ -1,0 +1,22 @@
+d?=3;
+d1?=6.1;
+D?= 4.66;
+l?=1.85;
+t?=0.85;
+
+Lbore?=10*l;
+
+bushing:
+Cylinder(
+ -l*EX, O,
+ D, d)
+|
+Cylinder(
+ O, t*EX,
+ d1);
+
+bore=
+Cylinder(
+ -Lbore*EX, O,
+ D
+);

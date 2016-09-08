@@ -200,121 +200,84 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
-    STEPControl_Reader reader;
-    reader = STEPControl_Reader();
-    reader.ReadFile(filename.c_str());
-    reader.TransferRoots();
-    TopoDS_Shape res=reader.OneShape();
+        STEPControl_Reader reader;
+        reader = STEPControl_Reader();
+        reader.ReadFile(filename.c_str());
+        reader.TransferRoots();
+        TopoDS_Shape res=reader.OneShape();
+        
+        setShape(res);
 
-//         STEPCAFControl_Reader reader;
-//         reader.SetNameMode (true);
-//         reader.SetColorMode(true);
-//         reader.SetLayerMode(true);
-//         reader.SetPropsMode(true);
-//         IFSelect_ReturnStatus stat = reader.ReadFile(filename.c_str());
-// 
-//         // The various ways of reading a file are available here too :
-//         // to read it by the reader, to take it from a WorkSession ...
-//         Handle(TDocStd_Document) aDoc;
-//         {
-//             Handle(XCAFApp_Application) anApp = XCAFApp_Application::GetApplication();
-//             anApp->NewDocument("MDTV-XCAF", aDoc);
-//         }
-// 
-//         if ( !reader.Transfer ( aDoc ) )
-//         {
-//             throw insight::Exception("Cannot read any relevant data from the STEP file");
-//         }
-// 
-//         Handle_Interface_InterfaceModel Model = reader.Reader().WS()->Model();
-//         Handle_XSControl_TransferReader TR = reader.Reader().WS()->TransferReader();
-//         Handle_Transfer_TransientProcess TP = TR->TransientProcess();
-//         Handle_XCAFDoc_ShapeTool STool = XCAFDoc_DocumentTool::ShapeTool( aDoc->Main() );
+        typedef std::map<std::string, FeatureSetPtr> Feats;
+        Feats feats;
 
-//         TopoDS_Shape res =  reader.Reader().OneShape(); 
-// //         setShape(res);
-// //         BRepTools::Dump(res, std::cout);
-// // 
-// //         typedef std::map<std::string, FeatureSetPtr> Feats;
-// //         Feats feats;
-// // 
-// //         //Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-roots");
-// //         Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
-// //         reader.TransferList(shapeList);
-// // 
-// //         for(int i=1; i <= shapeList->Length(); i++)
-// //         {
-// //             Handle_Standard_Transient transient = shapeList->Value(i);
-// //             const Handle_XSControl_WorkSession & theSession = reader.WS();
-// //             const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
-// //             const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
-// //             TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
-// //             if(!shape.IsNull())
-// //             {
-// //                 Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
-// //                 if(!anEntity.IsNull())
-// //                 {
-// //                     Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
-// // 
-// //                     if(!entity.IsNull())
-// //                     {
-// //                         if (!entity->Name()->IsEmpty())
-// //                         {
-// //                             std::string n(entity->Name()->ToCString());
-// //                             std::cout<<"\""<<n<<"\""<<std::endl;
-// //                             if (shape.ShapeType()==TopAbs_FACE)
-// //                             {
-// //                                 std::cout<<"ID="<<faceID(TopoDS::Face(shape))<<std::endl;
-// //                             }
-// //                         }
-// //                     }
-// //                 }
-// //             }
-// //         }
-//         if ( STool.IsNull() ) throw insight::Exception("Failed");
-//         Standard_Integer nb = Model->NbEntities();
-//         Handle_TCollection_HAsciiString name;
-// 
-//         for (Standard_Integer i = 1; i<nb ; i++)
-//         {
-//             Handle_Standard_Transient enti = Model->Value(i);
-// 
-//             if ( enti->DynamicType()->SubType("StepRepr_RepresentationItem")) 
-//             {
-//                 Handle_StepRepr_RepresentationItem SRRI =
-//                     Handle_StepRepr_RepresentationItem::DownCast(enti);
-// 
-//                 Handle_TCollection_HAsciiString hName = SRRI->Name();
-//                 if (/*!hName->IsEmpty()*/!hName.IsNull())
-//                 {
-//                     std::string name ( hName->ToCString() );
-// 
-//                     Handle_Transfer_Binder binder = TP->Find( enti);
-//                     if ( !binder.IsNull() && binder->HasResult() )
-//                     {
-//                         TopoDS_Shape S = TransferBRep::ShapeResult ( TP, binder );
-//                         if ( !S.IsNull() )
-//                         {
-//                             if (S.ShapeType() == TopAbs_FACE)
-//                             {
-//                                 if (feats.find(name)==feats.end())
-//                                     feats[name].reset(new FeatureSet(shared_from_this(), Face));
-// 
-//                                 std::cout<<"adding to set "<<name;
-//                                 FeatureID id=faceID(TopoDS::Face(S));
-//                                 std::cout<<" face id="<<id<<std::endl;
-//                                 feats[name]->add(id);
-//                             }
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+        //Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-roots");
+        Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
+        reader.TransferList(shapeList);
 
-// //         BOOST_FOREACH(Feats::value_type& f, feats)
-// //         {
-// //             providedSubshapes_[f.first].reset(new Feature(f.second));
-// //         }
+
+        for(int i=1; i <= shapeList->Length(); i++)
+        {
+            Handle_Standard_Transient transient = shapeList->Value(i);
+            const Handle_XSControl_WorkSession & theSession = reader.WS();
+            const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
+            const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
+            TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
+            if(!shape.IsNull())
+            {
+                Handle_Standard_Transient anEntity = aReader->EntityFromShapeResult(shape, 1);
+                if(!anEntity.IsNull())
+                {
+                    Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
+
+                    if(!entity.IsNull())
+                    {
+                        if (!entity->Name()->IsEmpty())
+                        {
+                            std::string n(entity->Name()->ToCString());
+                            std::cout<<"\""<<n<<"\""<<std::endl;
+                            if (shape.ShapeType()==TopAbs_FACE)
+                            {
+                                int found=0;
+                                FeatureID id=-1;
+                                for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
+                                {
+                                    TopoDS_Face f=TopoDS::Face(ex.Current());
+                                    if (f.IsPartner(shape))
+                                    {
+                                        found++;
+                                        id=faceID(f);
+                                        std::cout<<"MATCH! face id="<<id<<std::endl;
+
+                                    }
+                                }
+                                if (!found)
+                                {
+                                    throw insight::Exception("could not identify named face in model! ("+n+")");
+                                }
+                                else if (found>1)
+                                {
+                                    throw insight::Exception(boost::str(boost::format("identified too many named faces in model! (%s found %d times)") % n % found));
+                                }
+                                else
+                                {
+                                    if (feats.find(n)==feats.end())
+                                        feats[n].reset(new FeatureSet(shared_from_this(), Face));
+                                    feats[n]->add(id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        BOOST_FOREACH(Feats::value_type& f, feats)
+        {
+            providedFeatureSets_[f.first]=f.second;
+            providedSubshapes_[f.first].reset(new Feature(f.second));
+        }
 
     }
     else
@@ -383,6 +346,7 @@ Feature::Feature(const NoParameters&)
 Feature::Feature(const Feature& o)
 : isleaf_(true),
   providedSubshapes_(o.providedSubshapes_),
+  providedFeatureSets_(o.providedFeatureSets_),
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
@@ -530,12 +494,32 @@ FeaturePtr Feature::subshape(const std::string& name)
   }
 }
 
+
+FeatureSetPtr Feature::providedFeatureSet(const std::string& name)
+{
+  checkForBuildDuringAccess();
+  FeatureSetPtrMap::iterator i = providedFeatureSets_.find(name);
+  if (i==providedFeatureSets_.end())
+  {
+    throw insight::Exception("Feature set "+name+" is not present!");
+    return FeatureSetPtr();
+  }
+  else
+  {
+    return i->second;
+  }
+}
+
+
+
+
 Feature& Feature::operator=(const Feature& o)
 {
   ASTBase::operator=(o);
   isleaf_=o.isleaf_;
   
   providedSubshapes_=o.providedSubshapes_;
+  providedFeatureSets_=o.providedFeatureSets_;
   providedDatums_=o.providedDatums_;
   refvalues_=o.refvalues_;
   refpoints_=o.refpoints_;

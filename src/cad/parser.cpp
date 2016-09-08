@@ -520,37 +520,40 @@ ISCADParser::ISCADParser(Model* model)
       ;
     r_edgeFeaturesExpression.name("edge selection expression");
 
-    r_faceFeaturesExpression = 
-         (
-	  model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
-	  |
-	  ( r_solidmodel_expression
-	    >> '?'
-	    >> (lit("faces")|lit("face"))
-	    >> '(' 
-	    >> r_string 
-	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-	    >> ')' 
-	  ) 
-	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2, qi::_3)) ]
-	  |
-	  ( r_solidmodel_expression
-	    >> '?'
-	    >> lit("allfaces")
-	  ) 
-	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face)) ]
-	 )
-	 >>
-	  *(
-	       '?'
-	    >> (lit("faces")|lit("face"))
-	    >> '(' 
-	    >> r_string 
-	    >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
-	    >> ')' 
-	  ) 
-	   [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
-	;
+    r_faceFeaturesExpression =
+        (
+            model_->faceFeatureSymbols()[ qi::_val = qi::_1 ]
+            |
+//             ( lit("??") > r_identifier )
+//             [ _val = phx::bind(&Feature::providedFeatureSet, model_, qi::_1) ]
+//             |
+            ( r_solidmodel_expression
+              >> '?'
+              >> (lit("faces")|lit("face"))
+              >> '('
+              >> r_string
+              >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+              >> ')'
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2, qi::_3)) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
+              >> lit("allfaces")
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face)) ]
+        )
+        >>
+        *(
+            '?'
+            >> (lit("faces")|lit("face"))
+            >> '('
+            >> r_string
+            >> *( ',' >> (r_faceFeaturesExpression|r_vectorExpression|r_scalarExpression) )
+            >> ')'
+        )
+        [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_val, qi::_1, qi::_2)) ]
+        ;
     r_faceFeaturesExpression.name("face selection expression");
 
     r_solidFeaturesExpression = 

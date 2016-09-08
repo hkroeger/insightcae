@@ -196,6 +196,7 @@ protected:
   TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
   SubfeatureMap providedSubshapes_;
+  FeatureSetPtrMap providedFeatureSets_;
   std::map<std::string, boost::shared_ptr<Datum> > providedDatums_;
   
   RefValuesList refvalues_;
@@ -256,6 +257,7 @@ public:
     { checkForBuildDuringAccess(); return providedDatums_; }
     
   FeaturePtr subshape(const std::string& name);
+  FeatureSetPtr providedFeatureSet(const std::string& name);
   
   inline const SubfeatureMap& providedSubshapes() const // caused failure with phx::bind!
     { checkForBuildDuringAccess(); return providedSubshapes_; }

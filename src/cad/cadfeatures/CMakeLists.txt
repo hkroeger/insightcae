@@ -52,6 +52,7 @@ add_sources(insightcad_SOURCES
  pyramid.cpp
  closedpolyline.cpp
  loop.cpp
+ gear.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

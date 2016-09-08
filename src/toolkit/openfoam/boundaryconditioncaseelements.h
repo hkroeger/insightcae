@@ -182,37 +182,7 @@ public:
 
 
 
-/*
- * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
- * needs to know proper BC's for all fields on the given patch
- */
-class BoundaryCondition
-: public OpenFOAMCaseElement
-{
-protected:
-  std::string patchName_;
-  std::string type_;
-  int nFaces_;
-  int startFace_;
-  
-public:
-  BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict);
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const =0;
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  
-  static void insertIntoBoundaryDict
-  (
-    OFdicts& dictionaries, 
-    const std::string& patchName,
-    const OFDictData::dict& bndsubd
-  );
 
-  inline const std::string patchName() const { return patchName_; }
-  inline const std::string type() const { return type_; }
-  
-  virtual bool providesBCsForPatch(const std::string& patchName) const;
-};
 
 
 
@@ -484,18 +454,22 @@ public:
 
 
 
-
+/**
+ * The base class for inlet boundaries in OpenFOAM.
+ * It handles all informations for the creation of a dirichlet BC in the velocity field (mean velocity in turbulent cases).
+ * No handling of turbulence at this stage.
+ */
 class VelocityInletBC
 : public BoundaryCondition
 {
  
 public:
 
-// #include "boundaryconditioncaseelements__VelocityInletBC__Parameters2.h"
+// #include "boundaryconditioncaseelements__VelocityInletBC__Parameters.h"
 // /*
-// PARAMETERSET>>> VelocityInletBC Parameters2
+// PARAMETERSET>>> VelocityInletBC Parameters
 // 
-// umean=selectablesubset {{
+// velocity = selectablesubset {{
 // 
 //  uniform 
 //  set { 

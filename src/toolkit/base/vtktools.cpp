@@ -97,6 +97,7 @@ void vtkModel::createLegacyFile(const boost::filesystem::path& fn, bool create_d
             boost::filesystem::create_directories(fn.parent_path());
     }
     
+    std::cout<<"Writing to "<<fn<<std::endl;
     std::ofstream f(fn.c_str());
     writeLegacyFile(f);
     f.close();

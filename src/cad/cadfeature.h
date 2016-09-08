@@ -272,9 +272,9 @@ public:
   inline const TopoDS_Vertex& vertex(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Vertex(vmap_.FindKey(i)); }
   inline const TopoDS_Solid& subsolid(FeatureID i) const { checkForBuildDuringAccess(); return TopoDS::Solid(somap_.FindKey(i)); }
 
-  inline FeatureID faceID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); return fmap_.FindIndex(f); }
-  inline FeatureID edgeID(const TopoDS_Shape& e) const { checkForBuildDuringAccess(); return emap_.FindIndex(e); }
-  inline FeatureID vertexID(const TopoDS_Shape& v) const { checkForBuildDuringAccess(); return vmap_.FindIndex(v); }
+  inline FeatureID faceID(const TopoDS_Shape& f) const { checkForBuildDuringAccess(); int i=fmap_.FindIndex(f); if (i==0) throw insight::Exception("requested face not indexed!"); return i; }
+  inline FeatureID edgeID(const TopoDS_Shape& e) const { checkForBuildDuringAccess(); int i=emap_.FindIndex(e); if (i==0) throw insight::Exception("requested edge not indexed!"); return i; }
+  inline FeatureID vertexID(const TopoDS_Shape& v) const { checkForBuildDuringAccess(); int i=vmap_.FindIndex(v); if (i==0) throw insight::Exception("requested vertex not indexed!"); return i; }
   
   GeomAbs_CurveType edgeType(FeatureID i) const;
   GeomAbs_SurfaceType faceType(FeatureID i) const;

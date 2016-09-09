@@ -764,6 +764,7 @@ public:
     (wallVelocity, arma::mat, vec3(0., 0., 0.)) // interpreted as omega vector, if "rotating" is set to true
     (rotating, bool, false)
     (CofR, arma::mat, vec3(0,0,0))
+    (roughness_z0,double, 0.0)
     (meshmotion, boost::shared_ptr<MeshMotionBC>, boost::shared_ptr<MeshMotionBC>(noMeshMotion.clone()) )
   )
   

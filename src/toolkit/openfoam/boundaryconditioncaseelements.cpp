@@ -2244,84 +2244,84 @@ void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
 
 void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
-  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
-  
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
-  {
-    OFDictData::dict& BC = dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
-      .subDict("boundaryField").subDict(patchName_);
-    
-    // velocity
-    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+    BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+
+    BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
     {
-      if (p_.rotating())
-      {
-	BC["type"]=OFDictData::data("rotatingWallVelocity");
-	BC["origin"]=OFDictData::to_OF(p_.CofR());
-	double om=norm(p_.wallVelocity(), 2);
-	BC["axis"]=OFDictData::to_OF(p_.wallVelocity()/om);
-	BC["omega"]=lexical_cast<string>(om);
-// 	BC["value"]="uniform (0 0 0)"; //!dont include value, will trigger evaluation
-      }
-      else
-      {
-	BC["type"]=OFDictData::data("fixedValue");
-	BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p_.wallVelocity()));
-      }
-    }
-    
-    // pressure
-    else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
-    
-    // temperature
-    else if ( 
-      (field.first=="T") 
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      BC["type"]="zeroGradient";
-    }
-    
-    // pressure
-    else if ( ( (field.first=="p_rgh") || (field.first=="pd") ) 
-	      && (get<0>(field.second)==scalarField) )
-    {
-      if (OFversion()>=220)
-	BC["type"]=OFDictData::data("fixedFluxPressure");
-      else
-	BC["type"]=OFDictData::data("buoyantPressure");
+        OFDictData::dict& BC = dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
+                               .subDict("boundaryField").subDict(patchName_);
+
+        // velocity
+        if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
+        {
+            if (p_.rotating())
+            {
+                BC["type"]=OFDictData::data("rotatingWallVelocity");
+                BC["origin"]=OFDictData::to_OF(p_.CofR());
+                double om=norm(p_.wallVelocity(), 2);
+                BC["axis"]=OFDictData::to_OF(p_.wallVelocity()/om);
+                BC["omega"]=lexical_cast<string>(om);
+                // 	BC["value"]="uniform (0 0 0)"; //!dont include value, will trigger evaluation
+            }
+            else
+            {
+                BC["type"]=OFDictData::data("fixedValue");
+                BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p_.wallVelocity()));
+            }
+        }
+
+        // pressure
+        else if ( (field.first=="p") && (get<0>(field.second)==scalarField) )
+        {
+            BC["type"]=OFDictData::data("zeroGradient");
+        }
+
+        // temperature
+        else if (
+            (field.first=="T")
+            &&
+            (get<0>(field.second)==scalarField)
+        )
+        {
+            BC["type"]="zeroGradient";
+        }
+
+        // pressure
+        else if ( ( (field.first=="p_rgh") || (field.first=="pd") )
+                  && (get<0>(field.second)==scalarField) )
+        {
+            if (OFversion()>=220)
+                BC["type"]=OFDictData::data("fixedFluxPressure");
+            else
+                BC["type"]=OFDictData::data("buoyantPressure");
 //       BC["type"]=OFDictData::data("buoyantPressure");
+        }
+
+        // turbulence quantities, should be handled by turbulence model
+        else if (
+            ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") || (field.first=="nut") || (field.first=="nuTilda") )
+            &&
+            (get<0>(field.second)==scalarField)
+        )
+        {
+            OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC, p_.roughness_z0());
+        }
+
+        // any other scalar field
+        else if (get<0>(field.second)==scalarField)
+        {
+            BC["type"]=OFDictData::data("zeroGradient");
+        }
+
+        else
+        {
+            if (!p_.meshmotion()->addIntoFieldDictionary(field.first, field.second, BC))
+                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+            {
+                BC["type"]=OFDictData::data("zeroGradient");
+            }
+        }
     }
-    
-    // turbulence quantities, should be handled by turbulence model
-    else if ( 
-      ( (field.first=="k") || (field.first=="omega") || (field.first=="epsilon") || (field.first=="nut") || (field.first=="nuTilda") ) 
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC);
-    }
-    
-    // any other scalar field
-    else if (get<0>(field.second)==scalarField)
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
-    
-    else
-    {
-      if (!p_.meshmotion()->addIntoFieldDictionary(field.first, field.second, BC))
-	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
-	{
-	  BC["type"]=OFDictData::data("zeroGradient");
-	}
-    }
-  }
 }
 
 void WallBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const

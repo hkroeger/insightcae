@@ -408,7 +408,7 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
-bool laminar_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool laminar_RASModel::addIntoFieldDictionary(const std::string&, const FieldInfo&, OFDictData::dict&, double) const
 {
   return false;
 }
@@ -459,8 +459,11 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
-bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+    if (roughness_z0>0.)
+        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
+    
   if (fieldname == "k")
   {
     BC["type"]="fixedValue";
@@ -526,8 +529,11 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
-bool dynOneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool dynOneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+    if (roughness_z0>0.)
+        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
+    
   if (fieldname == "k")
   {
     BC["type"]="fixedValue";
@@ -594,8 +600,11 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   cd["filter"]="simple";
 }
 
-bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+    if (roughness_z0>0.)
+        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
+
   if (fieldname == "k")
   {
     BC["type"]="fixedValue";
@@ -653,7 +662,7 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("kOmegaSSTCoeffs");
 }
 
-bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
   std::string pref="";
   if (OFcase().isCompressible()) pref="compressible::";
@@ -676,9 +685,20 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   }
   else if (fieldname == "nut")
   {
-//     BC["type"]=OFDictData::data("nutkWallFunction");
-    BC["type"]=OFDictData::data("nutUWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
+      if (roughness_z0>0.)
+      {
+          BC["type"]="nutURoughWallFunction";
+          double Cs=0.5;
+          BC["roughnessConstant"]=Cs;
+          BC["roughnessHeight"]=roughness_z0*9.793/Cs;
+          BC["roughnessFactor"]=1.0;
+          BC["value"]="uniform 1e-10";
+      }
+      else
+      {
+        BC["type"]=OFDictData::data("nutUWallFunction");
+        BC["value"]=OFDictData::data("uniform 1e-10");
+      }
     return true;
   }
   else if (fieldname == "mut")
@@ -737,47 +757,54 @@ void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent(type()+"Coeffs");
 }
 
-bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-  std::string pref="";
-  if (OFcase().isCompressible()) pref="compressible::";
-  
-  if (fieldname == "k")
-  {
-    BC["type"]=OFDictData::data(pref+"kqRWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  else if (fieldname == "epsilon")
-  {
-    BC["type"]=OFDictData::data(pref+"epsilonWallFunction");
-//     BC["Cmu"]=0.09;
-//     BC["kappa"]=0.41;
-//     BC["E"]=9.8;
-//     BC["beta1"]=0.075;
-    BC["value"]="uniform 10";
-    return true;
-  }
-  else if (fieldname == "nut")
-  {
-    BC["type"]=OFDictData::data("nutkWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  else if (fieldname == "mut")
-  {
-    BC["type"]=OFDictData::data("mutkWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  else if (fieldname == "alphat")
-  {
-    BC["type"]=OFDictData::data(pref+"alphatWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  
-  return false;
+    std::string pref="";
+    if (OFcase().isCompressible()) pref="compressible::";
+
+    if (fieldname == "k")
+    {
+        BC["type"]=OFDictData::data(pref+"kqRWallFunction");
+        BC["value"]=OFDictData::data("uniform 1e-10");
+        return true;
+    }
+    else if (fieldname == "epsilon")
+    {
+        BC["type"]=OFDictData::data(pref+"epsilonWallFunction");
+        BC["value"]="uniform 10";
+        return true;
+    }
+    else if (fieldname == "nut")
+    {
+        if (roughness_z0>0)
+        {
+            BC["type"]="nutkRoughWallFunction";
+            double Cs=0.5;
+            BC["Cs"]=Cs;
+            BC["Ks"]=roughness_z0*9.793/Cs;
+            BC["value"]="uniform 1e-10";
+        }
+        else
+        {
+            BC["type"]=OFDictData::data("nutkWallFunction");
+            BC["value"]=OFDictData::data("uniform 1e-10");
+        }
+        return true;
+    }
+    else if (fieldname == "mut")
+    {
+        BC["type"]=OFDictData::data("mutkWallFunction");
+        BC["value"]=OFDictData::data("uniform 1e-10");
+        return true;
+    }
+    else if (fieldname == "alphat")
+    {
+        BC["type"]=OFDictData::data(pref+"alphatWallFunction");
+        BC["value"]=OFDictData::data("uniform 1e-10");
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -831,8 +858,11 @@ void SpalartAllmaras_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("SpalartAllmarasCoeffs");
 }
 
-bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+    if (roughness_z0>0.)
+        throw insight::Exception("SpalartAllmaras_RASModel: non-smooth walls are not supported!");
+    
 //   std::string pref="";
 //   if (OFcase().isCompressible()) pref="compressible::";
   
@@ -848,18 +878,6 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
     BC["value"]=OFDictData::data("uniform 0");
     return true;
   }
-//   else if (fieldname == "mut")
-//   {
-//     BC["type"]=OFDictData::data("mutkWallFunction");
-//     BC["value"]=OFDictData::data("uniform 1e-10");
-//     return true;
-//   }
-//   else if (fieldname == "alphat")
-//   {
-//     BC["type"]=OFDictData::data(pref+"alphatWallFunction");
-//     BC["value"]=OFDictData::data("uniform 1e-10");
-//     return true;
-//   }
   
   return false;
 }
@@ -928,9 +946,9 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").push_back( OFDictData::data("\"libLEMOS-2.3.x.so\"") );  
 }
 
-bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-  if (!kOmegaSST_RASModel::addIntoFieldDictionary(fieldname, fieldinfo, BC))
+  if (!kOmegaSST_RASModel::addIntoFieldDictionary(fieldname, fieldinfo, BC, roughness_z0))
   {
     if (fieldname == "kSgs")
     {
@@ -970,9 +988,12 @@ void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("kOmegaSST_LowReCoeffs");
 }
 
-bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-  if (fieldname == "k")
+    if (roughness_z0>0.)
+        throw insight::Exception("kOmegaSST_LowRe_RASModel: non-smooth walls are not supported!");
+    
+    if (fieldname == "k")
   {
     BC["type"]=OFDictData::data("fixedValue");
     BC["value"]="uniform "+str(format("%g") % 1e-10);
@@ -1021,9 +1042,12 @@ void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaSST2.so\"") );
 }
 
-bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-  if (fieldname == "k")
+    if (roughness_z0>0.)
+        throw insight::Exception("kOmegaSST2_RASModel: non-smooth walls are not supported!");
+    
+    if (fieldname == "k")
   {
     BC["type"]="kqRWallFunction";
     BC["value"]="uniform 1e-10";
@@ -1082,8 +1106,11 @@ void kOmegaHe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 }
 
-bool kOmegaHe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool kOmegaHe_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+    if (roughness_z0>0.)
+        throw insight::Exception("kOmegaHe_RASModel: non-smooth walls are not supported!");
+    
   if (fieldname == "k")
   {
     BC["type"]=OFDictData::data("fixedValue");
@@ -1139,39 +1166,51 @@ void LRR_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   RASProperties.addSubDictIfNonexistent("LRRCoeffs");
 }
 
-bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
+bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
+
 //   std::string pref="";
 //   if (OFcase().isCompressible()) pref="compressible::";
-  
-  if (fieldname == "k")
-  {
-    BC["type"]=OFDictData::data("kqRWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  else if (fieldname == "epsilon")
-  {
-    BC["type"]=OFDictData::data("epsilonWallFunction");
+
+    if (fieldname == "k")
+    {
+        BC["type"]=OFDictData::data("kqRWallFunction");
+        BC["value"]=OFDictData::data("uniform 1e-10");
+        return true;
+    }
+    else if (fieldname == "epsilon")
+    {
+        BC["type"]=OFDictData::data("epsilonWallFunction");
 //     BC["Cmu"]=0.09;
 //     BC["kappa"]=0.41;
 //     BC["E"]=9.8;
 //     BC["beta1"]=0.075;
-    BC["value"]="uniform 10";
-    return true;
-  }
-  else if (fieldname == "nut")
-  {
-    BC["type"]=OFDictData::data("nutkWallFunction");
-    BC["value"]=OFDictData::data("uniform 1e-10");
-    return true;
-  }
-  else if (fieldname == "R")
-  {
-    BC["type"]=OFDictData::data("kqRWallFunction");
-    BC["value"]=OFDictData::data("uniform (1e-10 1e-10 1e-10 1e-10 1e-10 1e-10)");
-    return true;
-  }
+        BC["value"]="uniform 10";
+        return true;
+    }
+    else if (fieldname == "nut")
+    {
+        if (roughness_z0>0)
+        {
+            BC["type"]="nutkRoughWallFunction";
+            double Cs=0.5;
+            BC["Cs"]=Cs;
+            BC["Ks"]=roughness_z0*9.793/Cs;
+            BC["value"]="uniform 1e-10";
+        }
+        else
+        {
+            BC["type"]=OFDictData::data("nutkWallFunction");
+            BC["value"]=OFDictData::data("uniform 1e-10");
+        }
+        return true;
+    }
+    else if (fieldname == "R")
+    {
+        BC["type"]=OFDictData::data("kqRWallFunction");
+        BC["value"]=OFDictData::data("uniform (1e-10 1e-10 1e-10 1e-10 1e-10 1e-10)");
+        return true;
+    }
 //   else if (fieldname == "mut")
 //   {
 //     BC["type"]=OFDictData::data("mutkWallFunction");
@@ -1184,8 +1223,8 @@ bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const Fi
 //     BC["value"]=OFDictData::data("uniform 1e-10");
 //     return true;
 //   }
-  
-  return false;
+
+    return false;
 }
 
 }

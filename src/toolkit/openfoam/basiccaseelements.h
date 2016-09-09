@@ -263,7 +263,7 @@ public:
   turbulenceModel(OpenFOAMCase& c);
   turbulenceModel(const ConstrP& c);
   
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const =0;
   
   virtual AccuracyRequirement minAccuracyRequirement() const =0;
 };
@@ -303,7 +303,7 @@ public:
   laminar_RASModel(OpenFOAMCase& c);
   laminar_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class oneEqEddy_LESModel
@@ -318,7 +318,7 @@ public:
   oneEqEddy_LESModel(OpenFOAMCase& c);
   oneEqEddy_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class dynOneEqEddy_LESModel
@@ -333,7 +333,7 @@ public:
   dynOneEqEddy_LESModel(OpenFOAMCase& c);
   dynOneEqEddy_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class dynSmagorinsky_LESModel
@@ -348,7 +348,7 @@ public:
   dynSmagorinsky_LESModel(OpenFOAMCase& c);
   dynSmagorinsky_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class kOmegaSST_RASModel
@@ -363,7 +363,7 @@ public:
   kOmegaSST_RASModel(OpenFOAMCase& c);
   kOmegaSST_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class kEpsilonBase_RASModel
@@ -378,7 +378,7 @@ public:
   kEpsilonBase_RASModel(OpenFOAMCase& c);
   kEpsilonBase_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 
@@ -418,7 +418,7 @@ public:
   SpalartAllmaras_RASModel(OpenFOAMCase& c);
   SpalartAllmaras_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class LEMOSHybrid_RASModel
@@ -433,7 +433,7 @@ public:
   LEMOSHybrid_RASModel(OpenFOAMCase& c);
   LEMOSHybrid_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class kOmegaSST_LowRe_RASModel
@@ -445,7 +445,7 @@ public:
   kOmegaSST_LowRe_RASModel(OpenFOAMCase& c);
   kOmegaSST_LowRe_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class kOmegaSST2_RASModel
@@ -460,7 +460,7 @@ public:
   kOmegaSST2_RASModel(OpenFOAMCase& c);
   kOmegaSST2_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 
@@ -473,7 +473,7 @@ public:
   kOmegaHe_RASModel(OpenFOAMCase& c);
   kOmegaHe_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class LRR_RASModel
@@ -488,7 +488,7 @@ public:
   LRR_RASModel(OpenFOAMCase& c);
   LRR_RASModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 }

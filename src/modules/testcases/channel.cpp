@@ -96,7 +96,7 @@ ParameterSet ChannelBase::defaultParameters() const
 
 std::string ChannelBase::cyclPrefix() const
 {
-  boost:smatch m;
+  boost::smatch m;
   boost::regex_search(cycl_in_, m, boost::regex("(.*)_half[0,1]"));
   std::string namePrefix=m[1];
   return namePrefix;

@@ -266,6 +266,8 @@ public:
     return child;    
   }
     
+  inline operator const T& () const { return value(); }
+  inline const T& operator()() const { return value(); }
 
 };
 

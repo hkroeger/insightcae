@@ -87,30 +87,30 @@
 
 arma::mat vec2mat(const std::vector<double>& vals)
 {
- arma::mat m = arma::zeros(vals.size());
- for (size_t i=0; i<vals.size(); i++) m(i)=vals[i];
- return m;
+    arma::mat m = arma::zeros(vals.size());
+    for (size_t i=0; i<vals.size(); i++) m(i)=vals[i];
+    return m;
 }
-
 BOOST_PHOENIX_ADAPT_FUNCTION(arma::mat, vec2mat_, vec2mat, 1);
 
-using namespace std;
+
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
 
+using namespace std;
 using namespace qi;
 using namespace phx;
 using namespace boost;
 
 
 template <typename Iterator>
-struct skip_grammar 
-: public qi::grammar<Iterator>
+struct skip_grammar
+        : public qi::grammar<Iterator>
 {
-        qi::rule<Iterator> skip;
-        skip_grammar();
+    qi::rule<Iterator> skip;
+    skip_grammar();
 };
 
 
@@ -120,109 +120,152 @@ std::string extendtype(const std::string& pref, const std::string& app)
   else return pref+"::"+app;
 }
 
-/** 
- * Basic data structures 
+
+
+
+/**
+ * Basic data structures
  */
 class ParserDataBase
 {
+    
 public:
-  typedef boost::shared_ptr<ParserDataBase> Ptr;
-  
-  std::string description;
+    typedef boost::shared_ptr<ParserDataBase> Ptr;
 
-  ParserDataBase(const std::string& d) : description(d) {}
-  
-  /* c++
-  written by writeCppHeader:
-  
-   typdef xxx name_type;  // cppTypeDecl: return statement, cppType: xxx
-   name_type name;
-   
-  */ 
-  virtual void cppAddHeader(std::set<std::string>& headers) const {};
-  virtual std::string cppParamType(const std::string& name) const =0;
-  virtual std::string cppType(const std::string& name) const =0;
-  virtual std::string cppValueRep(const std::string& name) const =0;
-  virtual std::string cppTypeName(const std::string& name) const { return name+"_type"; }
-  virtual std::string cppTypeDecl(const std::string& name) const 
-  {
-    return std::string("typedef ")+cppType(name)+" "+cppTypeName(name)+";";
-  }
-  
-  virtual void writeCppHeader(std::ostream& os, const std::string& name) const
-  {
-    os<<cppTypeDecl(name)<<endl;
-    os<<cppTypeName(name)+" "<<name<<";"<<endl;
-  }
-  
-  /*
-  written by writeCppSetStatement:
-  
-    .. ( ParameterSet &p)
-   ...
-   {
-     // SetStatement
-     p.get<TYPE>(PREFIX+)() = VALUE;
-   }
-  */
-  
-    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
+    std::string description;
+
+    ParserDataBase(const std::string& d)
+    : description(d) 
+    {}
+
+    /* c++
+    written by writeCppHeader:
+
+     typdef xxx name_type;  // cppTypeDecl: return statement, cppType: xxx
+     name_type name;
+
+    */
+    virtual void cppAddHeader(std::set<std::string>& headers) const 
+    {};
+    
+    virtual std::string cppParamType(const std::string& name) const =0;
+    
+    virtual std::string cppType(const std::string& name) const =0;
+    
+    virtual std::string cppValueRep(const std::string& name) const =0;
+    
+    virtual std::string cppTypeName(const std::string& name) const 
     {
-      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"("
-	  "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")"
-	  "); ";
+        return name+"_type";
     }
     
-    virtual void cppWriteInsertStatement(std::ostream& os, const std::string& psvarname, const std::string& name) const
+    virtual std::string cppTypeDecl(const std::string& name) const
     {
-      os<<"{ ";
-      os<<"std::string key(\""<<name<<"\"); ";
-      this->cppWriteCreateStatement(os, name);
-      os<<psvarname<<".insert(key, "<<name<<"); ";
-      os<<"}"<<endl;
+        return std::string("typedef ")+cppType(name)+" "+cppTypeName(name)+";";
     }
 
-    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& typepref
+    virtual void writeCppHeader(std::ostream& os, const std::string& name) const
+    {
+        os<<cppTypeDecl(name)<<endl;
+        os<<cppTypeName(name)+" "<<name<<";"<<endl;
+    }
+
+    /**
+     * write the code to create a new parameter object for the dynamic parameter set
+     */
+    virtual void cppWriteCreateStatement
+    (
+        std::ostream& os,
+        const std::string& name
     ) const
     {
-      os<<varname<<"() = "<<staticname<<";"<<endl;
+        os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"("
+          "new "<<cppParamType(name)<<"("<<cppValueRep(name)<<", \""<<description<<"\")"
+          "); ";
     }
-    
-    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& typepref
+
+    /**
+     * write the code to insert a new parameter object into the dynamic parameter set
+     */
+    virtual void cppWriteInsertStatement
+    (
+        std::ostream& os,
+        const std::string& psvarname,
+        const std::string& name
     ) const
     {
-      os<<staticname<<" = "<<varname<<"();"<<endl;
+        os<<"{ ";
+        os<<"std::string key(\""<<name<<"\"); ";
+        this->cppWriteCreateStatement(os, name);
+        os<<psvarname<<".insert(key, "<<name<<"); ";
+        os<<"}"<<endl;
     }
-    
+
+    /**
+     * write the code to transfer the values form the static c++ struct into
+     * the dynamic parameter set
+     */
+    virtual void cppWriteSetStatement
+    (
+        std::ostream& os,
+        const std::string& name,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string& typepref
+    ) const
+    {
+        os<<varname<<"() = "<<staticname<<";"<<endl;
+    }
+
+    /**
+     * write the code to transfer values from the dynamic parameter set
+     * into the static c++ data structure
+     */
+    virtual void cppWriteGetStatement
+    (
+        std::ostream& os,
+        const std::string& name,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string& typepref
+    ) const
+    {
+        os<<staticname<<" = "<<varname<<"();"<<endl;
+    }
+
 };
+
+
+
 
 typedef std::pair<std::string, ParserDataBase::Ptr> ParameterSetEntry;
 typedef std::vector< ParameterSetEntry > ParameterSetData;
 
+
+
+
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParser;
+
+
+
 
 template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
 {
-  typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
-  typedef boost::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
+    typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
+    typedef boost::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
-  qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_description_string;
-  qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
-  qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
-  
-  qi::symbols<char, ParameterDataRulePtr> parameterDataRules;
-  qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
-  
-  PDLParserRuleset();
-  
-  void init() {}
-  
-  void addIncludeRule();
-  
+    qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_description_string;
+    qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
+    qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
+
+    qi::symbols<char, ParameterDataRulePtr> parameterDataRules;
+    qi::rule<Iterator, ParserDataBase::Ptr(), Skipper, qi::locals<ParameterDataRulePtr> > r_parameterdata;
+
+    PDLParserRuleset();
+
+    void init() {}
 };
 
 
@@ -293,7 +336,7 @@ struct BoolParameterParser
     
     Data(bool v, const std::string& d)
     : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual std::string cppType(const std::string&) const
     {
@@ -361,7 +404,7 @@ struct VectorParameterParser
     
     Data(const arma::mat& v, const std::string& d)
     : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
     {
@@ -405,39 +448,52 @@ struct VectorParameterParser
   }
 };
 
+
+
+
 struct IntParameterParser
 {
-  struct Data
-  : public ParserDataBase
-  {
-    int value;
-    
-    Data(int v, const std::string& d)
-    : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
-    
-    virtual std::string cppType(const std::string&) const
+    struct Data
+            : public ParserDataBase
     {
-      return "int";
-    }
+        int value;
 
-    virtual std::string cppParamType(const std::string& name) const { return "insight::IntParameter"; };   
-    virtual std::string cppValueRep(const std::string& name) const { return boost::lexical_cast<std::string>(value); }
-  };
-  
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
-  {
-    ruleset.parameterDataRules.add
-    (
-      "int",
-      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-	( qi::int_ >> ruleset.r_description_string ) 
-	[ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
-      ))
-    );
-  }
+        Data(int v, const std::string& d)
+            : ParserDataBase(d), value(v)
+        {}
+
+        virtual std::string cppType(const std::string&) const
+        {
+            return "int";
+        }
+
+        virtual std::string cppParamType(const std::string& name) const
+        {
+            return "insight::IntParameter";
+        };
+
+        virtual std::string cppValueRep(const std::string& name) const
+        {
+            return boost::lexical_cast<std::string>(value);
+        }
+    };
+
+    template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+    inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+    {
+        ruleset.parameterDataRules.add
+        (
+            "int",
+            typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+                        ( qi::int_ >> ruleset.r_description_string )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+                    ))
+        );
+    }
 };
+
+
+
 
 struct StringParameterParser
 {
@@ -448,7 +504,7 @@ struct StringParameterParser
     
     Data(const std::string& v, const std::string& d)
     : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual void cppAddHeader(std::set< std::string >& headers) const
     {
@@ -489,7 +545,7 @@ struct PathParameterParser
     
     Data(const boost::filesystem::path& v, const std::string& d)
     : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual void cppAddHeader(std::set< std::string >& headers) const
     {
@@ -530,7 +586,7 @@ struct SelectionParameterParser
     
     Data(const std::vector<std::string>& sels, const std::string& sel, const std::string& d)
     : ParserDataBase(d), selections(sels), selection(sel)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual std::string cppType(const std::string&) const { return "#error"; }
     virtual std::string cppTypeDecl(const std::string& name) const
@@ -593,126 +649,264 @@ struct SelectionParameterParser
   }
 };
 
+
+
+
 struct SubsetParameterParser
 {
-  struct Data
-  : public ParserDataBase
-  {
-    ParameterSetData value;
     
-    Data(const ParameterSetData& v, const std::string& d)
-    : ParserDataBase(d), value(v)
-    {std::cout<<d<<std::endl;}
     
-    virtual void cppAddHeader(std::set< std::string >& headers) const
+    
+    struct Data
+            : public ParserDataBase
     {
-      BOOST_FOREACH(const ParameterSetEntry& pe, value)
-      {
-	pe.second->cppAddHeader(headers);
-      }
-    }
-    
-    virtual std::string cppType(const std::string&) const { return ""; }
-    virtual std::string cppTypeDecl(const std::string& name) const
-    {
-      std::ostringstream os;
-      os<<"struct "<<cppTypeName(name)<<"\n{"<<endl;
-      BOOST_FOREACH(const ParameterSetEntry& pe, value)
-      {
-	pe.second->writeCppHeader(os, pe.first);
-      }
-      os<<"};";
-      return os.str();
-    }
-    virtual std::string cppValueRep(const std::string& name) const { return "#error"; }
-    
-    virtual std::string cppParamType(const std::string& name) const { return "insight::SubsetParameter"; };   
+        ParameterSetData value;
 
-    virtual void cppWriteInsertStatement(std::ostream& os, const std::string& psvarname, const std::string& name) const
-    {
-      os<<"{ ";
-      os<<"std::string key(\""<<name<<"\"); ";
-      this->cppWriteCreateStatement(os, name);
-      os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
-      os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
-      os<<"} else {"<<endl;
-      os<<psvarname<<".insert(key, "<<name<<"); ";
-      os<<"}"<<endl;
-      os<<"}"<<endl;
-    }
+        Data(const ParameterSetData& v, const std::string& d)
+            : ParserDataBase(d), value(v)
+        {
+        }
 
-    virtual void cppWriteCreateStatement(std::ostream& os, const std::string& name) const
-    {
+        virtual void cppAddHeader(std::set< std::string >& headers) const
+        {
+            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            {
+                pe.second->cppAddHeader(headers);
+            }
+        }
 
-      os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;      
-//       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
-      os<<"{"<<endl;
-      BOOST_FOREACH(const ParameterSetEntry& pe, value)
-      {
-	pe.second->cppWriteInsertStatement
-	(
-	  os, 
-	  "(*"+name+")()",
-	  pe.first
-	);
-      }
-      os<<"}"<<endl;
-    }
-    
-    virtual void cppWriteSetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& thisscope) const
+        virtual std::string cppType(const std::string&) const 
+        {
+            return "";
+        }
+        
+        virtual std::string cppTypeDecl(const std::string& name) const
+        {
+            std::ostringstream os;
+            os<<"struct "<<cppTypeName(name)<<"\n{"<<endl;
+            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            {
+                pe.second->writeCppHeader(os, pe.first);
+            }
+            os<<"};";
+            return os.str();
+        }
+        
+        virtual std::string cppValueRep(const std::string& name) const 
+        {
+            return "#error";
+        }
+
+        virtual std::string cppParamType(const std::string& name) const 
+        {
+            return "insight::SubsetParameter";
+        };
+
+        virtual void cppWriteInsertStatement(std::ostream& os, const std::string& psvarname, const std::string& name) const
+        {
+            os<<"{ ";
+            os<<"std::string key(\""<<name<<"\"); ";
+            this->cppWriteCreateStatement(os, name);
+            os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
+            os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
+            os<<"} else {"<<endl;
+            os<<psvarname<<".insert(key, "<<name<<"); ";
+            os<<"}"<<endl;
+            os<<"}"<<endl;
+        }
+
+        virtual void cppWriteCreateStatement
+        (
+            std::ostream& os,
+            const std::string& name
+        ) const
+        {
+            os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
+            os<<"{"<<endl;
+            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            {
+                pe.second->cppWriteInsertStatement
+                (
+                    os,
+                    "(*"+name+")()",
+                    pe.first
+                );
+            }
+            os<<"}"<<endl;
+        }
+
+        
+        
+        virtual void cppWriteSetStatement
+        (
+            std::ostream& os, 
+            const std::string& name, 
+            const std::string& varname, 
+            const std::string& staticname,
+            const std::string& thisscope
+        ) const
+        {
+            std::string myscope=extendtype(thisscope, cppTypeName(name));
+            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            {
+                std::string subname=pe.first;
+                os<<"{"<<endl;
+                os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+                os<<"const "
+                  <<extendtype(myscope, pe.second->cppTypeName(subname))
+                  <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
+                pe.second->cppWriteSetStatement
+                (
+                    os, subname, subname, subname+"_static", myscope
+                );
+                os<<"}"<<endl;
+            }
+        }
+
+        virtual void cppWriteGetStatement
+        (
+            std::ostream& os,
+            const std::string& name,
+            const std::string& varname,
+            const std::string& staticname,
+            const std::string& thisscope
+        ) const
+        {
+            std::string myscope=extendtype(thisscope, cppTypeName(name));
+            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            {
+                std::string subname=pe.first;
+                os<<"{"<<endl;
+                os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
+                os<<extendtype(myscope, pe.second->cppTypeName(subname))
+                  <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
+                pe.second->cppWriteGetStatement
+                (
+                    os, subname, subname, subname+"_static", myscope
+                );
+                os<<"}"<<endl;
+            }
+        }
+
+    };
+
+    template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+    inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
     {
-      std::string myscope=extendtype(thisscope, cppTypeName(name));
-      BOOST_FOREACH(const ParameterSetEntry& pe, value)
-      {
-	std::string subname=pe.first;
-	os<<"{"<<endl;
-	  os<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
-	  os<<"const "
-	    <<extendtype(myscope, pe.second->cppTypeName(subname))
-	    <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
-	  pe.second->cppWriteSetStatement
-	  (
-	    os, subname, subname, subname+"_static", myscope
-	  );
-	os<<"}"<<endl;
-      }
+        ruleset.parameterDataRules.add
+        (
+            "set",
+            typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+                        ( "{" > ruleset.r_parameterset > "}" >> ruleset.r_description_string )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+                    ))
+        );
     }
-    
-    virtual void cppWriteGetStatement(std::ostream& os, const std::string& name, const std::string& varname, const std::string& staticname,
-      const std::string& thisscope) const
-    {
-      std::string myscope=extendtype(thisscope, cppTypeName(name));
-      BOOST_FOREACH(const ParameterSetEntry& pe, value)
-      {
-	std::string subname=pe.first;
-	os<<"{"<<endl;
-	  os<<"const "<<pe.second->cppParamType(subname)<<"& "<<subname<<" = "<<varname<<".get< "<<pe.second->cppParamType(subname)<<" >(\""<<subname<<"\");"<<endl;
-	  os<<extendtype(myscope, pe.second->cppTypeName(subname))
-	    <<"& "<<subname<<"_static = "<<staticname<<"."<<subname<<";"<<endl;
-	  pe.second->cppWriteGetStatement
-	  (
-	    os, subname, subname, subname+"_static", myscope
-	  );
-	os<<"}"<<endl;
-      }
-    }
-    
-  };
-  
-  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
-  {
-    ruleset.parameterDataRules.add
-    (
-      "set",
-     typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-      ( "{" > ruleset.r_parameterset > "}" >> ruleset.r_description_string ) 
-       [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
-     ))
-    );
-  }
 };
+
+
+
+
+struct IncludedSubsetParameterParser
+{
+    
+    
+    
+    struct Data
+            : public ParserDataBase
+    {
+        std::string value;
+
+        Data(const std::string& v, const std::string& d)
+            : ParserDataBase(d), value(v)
+        {}
+
+        virtual std::string cppType(const std::string&) const 
+        {
+            return value;
+        }
+        
+        virtual std::string cppValueRep(const std::string& name) const 
+        {
+            return "#error";
+        }
+
+        virtual std::string cppParamType(const std::string& name) const 
+        {
+            return "insight::SubsetParameter";
+        };
+        
+        virtual void cppWriteCreateStatement
+        (
+            std::ostream& os,
+            const std::string& name
+        ) const
+        {
+            os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name
+            <<"(new "<<cppParamType(name)<<"("<< value <<"::makeDefault(), \""<<description<<"\")); "<<endl;
+        }
+        
+        virtual void cppWriteInsertStatement
+        (
+            std::ostream& os,
+            const std::string& psvarname,
+            const std::string& name
+        ) const
+        {
+            os<<"{ ";
+            os<<"std::string key(\""<<name<<"\"); ";
+            this->cppWriteCreateStatement(os, name);
+            os<<"if ("<<psvarname<<".find(key)!="<<psvarname<<".end()) {"<<endl;
+            os<<psvarname<<".getSubset(key).merge(*"<<name<<"); ";
+            os<<"} else {"<<endl;
+            os<<psvarname<<".insert(key, "<<name<<"); ";
+            os<<"}"<<endl;
+            os<<"}"<<endl;
+        }
+        
+        
+        virtual void cppWriteSetStatement
+        (
+            std::ostream& os, 
+            const std::string& name, 
+            const std::string& varname, 
+            const std::string& staticname,
+            const std::string& thisscope
+        ) const
+        {
+            os << staticname << ".set(" << varname << ");" << endl;
+        }
+
+        virtual void cppWriteGetStatement
+        (
+            std::ostream& os,
+            const std::string& name,
+            const std::string& varname,
+            const std::string& staticname,
+            const std::string& thisscope
+        ) const
+        {
+            os << staticname << ".get(" << varname << ");" << endl;
+        }
+
+    };
+
+    template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+    inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+    {
+        ruleset.parameterDataRules.add
+        (
+            "includedset",
+            typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+                        ( ruleset.r_string >> ruleset.r_description_string )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(new_<Data>(qi::_1, qi::_2)) ]
+                    ))
+        );
+    }
+};
+
+
+
 
 struct SelectableSubsetParameterParser
 {
@@ -885,7 +1079,7 @@ struct ArrayParameterParser
     
     Data(ParserDataBase::Ptr v, int n, const std::string& d)
     : ParserDataBase(d), value(v), num(n)
-    {std::cout<<d<<std::endl;}
+    {}
     
     virtual void cppAddHeader(std::set<std::string>& headers) const 
     {
@@ -1065,6 +1259,7 @@ public:
     PathParameterParser::insertrule<Iterator, Skipper>(rules);
     IntParameterParser::insertrule<Iterator, Skipper>(rules);
     SubsetParameterParser::insertrule<Iterator, Skipper>(rules);
+    IncludedSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);

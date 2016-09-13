@@ -291,63 +291,70 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
   return results;
 }
 
+
+
+
 void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 {
-  const ParameterSet& p = *parameters_;
-  
-  PSSTR(p, "run", machine);
-  PSSTR(p, "run", OFEname);
-  
-  OFEnvironment ofe = OFEs::get(OFEname);
-  ofe.setExecutionMachine(machine);
-  
-  path dir = setupExecutionEnvironment();
+    const ParameterSet& p = *parameters_;
 
-  if (p.getBool("run/evaluateonly"))
-    cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
+    PSSTR(p, "run", machine);
+    PSSTR(p, "run", OFEname);
 
-  boost::shared_ptr<OpenFOAMCase> meshCase;
-  bool meshcreated=false;
-  if (!p.getBool("run/evaluateonly"))
-  {
-    //p.saveToFile(dir/"parameters.ist", type());
-    
+    OFEnvironment ofe = OFEs::get(OFEname);
+    ofe.setExecutionMachine(machine);
+
+    path dir = setupExecutionEnvironment();
+
+    bool evaluateonly=p.getBool("run/evaluateonly");
+    if (evaluateonly)
+        cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
+
+    boost::shared_ptr<OpenFOAMCase> meshCase;
+    bool meshcreated=false;
+    if (!evaluateonly)
     {
-      meshCase.reset(new OpenFOAMCase(ofe));
-      if (!meshCase->meshPresentOnDisk(dir))
-      {
-	meshcreated=true;
-	if (!p.getPath("mesh/linkmesh").empty())
-	{
-	  linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant", &ofe);
-	}
-	else
-	{
-	  createMesh(*meshCase);
-// 	  meshcreated=true;
-	}
-      }
-      else
-	cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
-    }
-  }
+        //p.saveToFile(dir/"parameters.ist", type());
 
-  createCase(runCase);
-  boost::shared_ptr<OFdicts> dicts;
-  createDictsInMemory(runCase, dicts);
-  applyCustomOptions(runCase, dicts);
-  
-  if (!runCase.outputTimesPresentOnDisk(dir))
-  {
-    if (meshcreated) 
-      runCase.modifyMeshOnDisk(executionPath());
-    writeDictsToDisk(runCase, dicts);
-    applyCustomPreprocessing(runCase);
-  }
-  else
-    cout<<"case in "<<dir<<": output timestep are already there, skipping case recreation."<<endl;    
+        {
+            meshCase.reset(new OpenFOAMCase(ofe));
+            if (!meshCase->meshPresentOnDisk(dir))
+            {
+                meshcreated=true;
+                if (!p.getPath("mesh/linkmesh").empty())
+                {
+                    linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant", &ofe);
+                }
+                else
+                {
+                    createMesh(*meshCase);
+                }
+            }
+            else
+                cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<endl;
+        }
+    }
+
+    createCase(runCase);
+    boost::shared_ptr<OFdicts> dicts;
+    createDictsInMemory(runCase, dicts);
+    applyCustomOptions(runCase, dicts);
+
+    int np=readDecomposeParDict(executionPath());
+    bool is_parallel = np>1;
+    if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
+    {
+        if (meshcreated)
+            runCase.modifyMeshOnDisk(executionPath());
+        writeDictsToDisk(runCase, dicts);
+        applyCustomPreprocessing(runCase);
+    }
+    else
+        cout<<"case in "<<dir<<": skipping case recreation."<<endl;
 
 }
+
+
 
 
 ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)

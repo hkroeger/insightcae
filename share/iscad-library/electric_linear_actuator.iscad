@@ -1,0 +1,105 @@
+d1?=120;
+d2?=175;
+Lst1?=714; # to fwd end from pivot
+Lst2?=462; # to motor from pivot
+Lmot?=420; # motor len
+b_mot=190;
+Lflat?=160;
+
+D_pivot?=50;
+B_pivot?=260;
+
+D_eye?=108;
+d_eye?=50;
+b_eye?=50;
+
+ctr_pivot?=O; # pivot ctr
+ctr_eye?=(Lst1+Lflat*2)*EX; # ctr of eye
+
+eup?=EZ;
+eax=ctr_eye-ctr_pivot;
+Eax=eax/mag(eax);
+etan=Eax^eup;
+Etan=etan/mag(etan);
+E3=Eax^Etan;
+
+axis=RefAxis(ctr_pivot, Eax);
+ax_eye=RefAxis(ctr_eye, Etan);
+ex_pivot=RefAxis(ctr_pivot, Etan);
+
+pivot=
+Cylinder(
+ ctr_pivot -0.5*B_pivot*Etan,
+ ax B_pivot*Etan,
+ D_pivot
+);
+pl_pivot_side1i=Plane(ctr_pivot +0.5*d2*Etan, Etan);
+pl_pivot_side1o=Plane(ctr_pivot +0.5*B_pivot*Etan, Etan);
+pl_pivot_side2i=Plane(ctr_pivot -0.5*d2*Etan, -Etan);
+pl_pivot_side2o=Plane(ctr_pivot -0.5*B_pivot*Etan, -Etan);
+
+gear=
+Cylinder(
+ ctr_pivot +Lst1*Eax,
+ ctr_pivot -Lst2*Eax,
+ d2
+)
+;
+
+tool=
+Extrusion(
+Tri(ctr_eye+Etan*0.5*d1-0.5*D_eye*Eax,
+ -0.5*D_eye*Eax,
+ -0.5*(d1-b_eye)*Etan
+), d1*E3, centered);
+shaft:
+(
+Cylinder(
+ ctr_eye -0.5*D_eye*Eax,
+ ctr_eye -mag(ctr_pivot-ctr_eye)*Eax,
+ d1
+)
+|
+Box(
+ctr_eye,
+-0.5*D_eye*Eax,
+D_eye*E3,
+b_eye*Etan,
+center yz
+)
+|
+Cylinder(
+ ctr_eye -0.5*b_eye*Etan, ax b_eye*Etan,
+ D_eye
+)
+)-tool-Mirror(tool, Plane(ctr_eye,Etan))
+-Cylinder(
+ ctr_eye -0.5*b_eye*Etan, 
+ ax b_eye*Etan, 
+ d_eye
+)
+;
+pl_eye_side1=Plane(ctr_eye +0.5*b_eye*Etan, Etan);
+pl_eye_side2=Plane(ctr_eye -0.5*b_eye*Etan, -Etan);
+
+dbm=0.2*b_mot;
+Lsock=0.1*Lmot;
+motor0=
+Box(
+ ctr_pivot -Lst2*Eax,
+ -Lmot*Eax,
+ b_mot*Etan, b_mot*E3,
+ center yz
+);
+motor1=
+motor0-
+CircularPattern(
+Cylinder(
+ motor0@p0 -Lsock*Eax,
+ ax -Lmot*Eax, dbm),
+ O, Eax*360*deg/4, 4);
+motor=
+Fillet(motor1?alledges, 0.2*dbm);
+
+stator:
+motor|gear|pivot;

@@ -245,7 +245,21 @@ struct ColumnInfo
   int col, ncmpt;
 };
 
-typedef std::map<std::string, ColumnInfo > ColumnDescription;
+//typedef std::map<std::string, ColumnInfo > ColumnDescription;
+class ColumnDescription
+: public std::map<std::string, ColumnInfo >
+{
+public:
+    inline bool contains(const std::string& name) const { return this->find(name) != this->end(); }
+    inline int colIndex(const std::string& name) const 
+    { 
+        auto it = this->find(name);
+        if (it != this->end() ) 
+            return it->second.col;
+        else
+            return -1; 
+    }
+};
 
 class line
 : public set

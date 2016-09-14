@@ -1,0 +1,19 @@
+#!/bin/bash
+
+ARG_BRC=$1
+LIB=$2
+PAT=$3
+shift 3
+#ARGS=$*
+source $ARG_BRC
+
+#"$FOAM_APP" \
+ldd $LIB | grep '^ *[^ ]\+ *=> *[^ ]\+ (.*).*$' | (
+ while read id sep lib addr; do
+  RES=$(echo $id | grep "$PAT")
+  if [ $? == 0 ]; then
+   echo $lib
+  fi
+ done
+)  \
+| if [ "$MANUAL" ]; then sed -e 's#^.*/lib\([^/]*\)\.so *$#\1#g'; else ( tr '\n' ';' | sed -e 's/;$//')  fi

@@ -3,6 +3,8 @@
 #
 # Fx31_FOUND          - system has foam-extend-3.1 installed
 
+include(OpenFOAMfuncs)
+
 #FIND_PATH(Fx31_DIR NAMES etc/bashrc
 FIND_FILE(Fx31_BASHRC NAMES bashrc
   HINTS
@@ -18,31 +20,132 @@ IF(Fx31_BASHRC)
   GET_FILENAME_COMPONENT(Fx31_ETC_DIR ${Fx31_BASHRC} PATH)
   GET_FILENAME_COMPONENT(Fx31_DIR ${Fx31_ETC_DIR} PATH)
 
+  detectEnvVars(Fx31 WM_OPTIONS METIS_LIB_DIR MESQUITE_LIB_DIR PARMETIS_LIB_DIR SCOTCH_LIB_DIR PARMGRIDGEN_LIB_DIR FOAM_APPBIN FOAM_LIBBIN FOAM_MPI_LIBBIN)
+
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-c++FLAGS OUTPUT_VARIABLE Fx31_CXX_FLAGS)
   set(Fx31_CXX_FLAGS "${Fx31_CXX_FLAGS} -DFx31 -DOF16ext")
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE Fx31_WM_OPTIONS)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-METIS_LIB_DIR OUTPUT_VARIABLE Fx31_METIS_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-MESQUITE_LIB_DIR OUTPUT_VARIABLE Fx31_MESQUITE_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMETIS_LIB_DIR OUTPUT_VARIABLE Fx31_PARMETIS_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-SCOTCH_LIB_DIR OUTPUT_VARIABLE Fx31_SCOTCH_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMGRIDGEN_LIB_DIR OUTPUT_VARIABLE Fx31_PARMGRIDGEN_LIB_DIR)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE Fx31_FOAM_APPBIN)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_LIBBIN)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE Fx31_WM_OPTIONS)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-METIS_LIB_DIR OUTPUT_VARIABLE Fx31_METIS_LIB_DIR)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-MESQUITE_LIB_DIR OUTPUT_VARIABLE Fx31_MESQUITE_LIB_DIR)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMETIS_LIB_DIR OUTPUT_VARIABLE Fx31_PARMETIS_LIB_DIR)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-SCOTCH_LIB_DIR OUTPUT_VARIABLE Fx31_SCOTCH_LIB_DIR)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-PARMGRIDGEN_LIB_DIR OUTPUT_VARIABLE Fx31_PARMGRIDGEN_LIB_DIR)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE Fx31_FOAM_APPBIN)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_LIBBIN)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_LIBRARIES)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_INCLUDE_PATHS)
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_LIBRARIES)
+  detectIncPaths(Fx31)
+
+#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${Fx31_BASHRC} OUTPUT_VARIABLE Fx31_INCLUDE_PATHS)
+ setOFlibvar(Fx31
+#EulerianInterfacialModels # app #uncommenting this and the others below causes segfault at program ends...
+IOFunctionObjects
+POD
+RBFMotionSolver
+autoMesh
+barotropicCompressibilityModel
+blockMesh
+cfMesh
+checkFunctionObjects
+chemistryModel
+coalCombustion
+combustionModels
+compressibleLESModels
+compressibleRASModels
+#conjugateHeatTransfer # app
+conversion
+coupledLduMatrix
+dieselSpray
+dsmc
+dynamicTopoFvMesh
+engine
+equationReader
+errorEstimation
+extrudeModel
+fieldFunctionObjects
+foamCalcFunctions
+freeSurface
+immersedBoundaryDynamicFvMesh
+immersedBoundaryForceFunctionObject
+incompressibleLESModels
+incompressibleTransportModels
+interfaceProperties
+kineticTheoryModel
+lagrangian
+laminarFlameSpeedModels
+lduSolvers
+#materialModels # deprecated solvers
+mesquiteMotionSolver
+molecularMeasurements
+molecule
+multiSolver
+phaseModel
+randomProcesses
+rhoCentralFoam
+#rhopSonicFoam #app: BCs
+sampling
+scotchDecomp
+solidModels
+solidParticle
+systemCall
+tecio
+userd-foam
+userd-newFoam
+utilityFunctionObjects
+viscoelasticTransportModels
+edgeMesh
+ODE
+reactionThermophysicalModels
+lagrangianIntermediate
+compressibleTurbulenceModel
+fvMotionSolver
+tetMotionSolver
+immersedBoundaryTurbulence
+forces
+LESdeltas
+LESfilters
+potential
+topoChangerFvMesh
+finiteArea
+basicThermophysicalModels
+radiation
+pdf
+liquidMixture
+solidMixture
+immersedBoundary
+incompressibleRASModels
+dynamicFvMesh
+specie
+thermophysicalFunctions
+liquids
+solids
+surfMesh
+incompressibleTurbulenceModel
+tetFiniteElement
+solidBodyMotion
+dynamicMesh
+finiteVolume
+meshTools
+decompositionMethods
+foam
+)
+detectDepLib(Fx31 "${Fx31_FOAM_LIBBIN}/libfoam.so" "Pstream")
+detectDepLib(Fx31 "${Fx31_FOAM_LIBBIN}/libscotchDecomp.so" "scotch")
+detectDepLib(Fx31 "${Fx31_FOAM_LIBBIN}/libmesquiteMotionSolver.so" "mesquite")
 
   set(Fx31_LIBSRC_DIR "${Fx31_DIR}/src")
   set(Fx31_LIB_DIR "${Fx31_DIR}/lib/${Fx31_WM_OPTIONS}")
   
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE Fx31_LINKLIBSO_full)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKEXE OUTPUT_VARIABLE Fx31_LINKEXE_full)
+  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE Fx31_LINKLIBSO_full)
+  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-LINKEXE OUTPUT_VARIABLE Fx31_LINKEXE_full)
+  detectEnvVar(Fx31 LINKLIBSO LINKLIBSO_full)
+  detectEnvVar(Fx31 LINKEXE LINKEXE_full)
   string(REGEX REPLACE "^[^ ]+" "" Fx31_LINKLIBSO ${Fx31_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" Fx31_LINKEXE ${Fx31_LINKEXE_full})
   message(STATUS "libso link flags = "  ${Fx31_LINKLIBSO})
   message(STATUS "exe link flags = "  ${Fx31_LINKEXE})
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_MPI_LIBBIN)
+  #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx31_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE Fx31_FOAM_MPI_LIBBIN)
 
   set(Fx31_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-3.1")
   set(Fx31_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-3.1")
@@ -77,12 +180,12 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     target_link_libraries(${targetname} 
       #${Fx31_LIB_DIR}/libfoam.so 
       ${Fx31_LIBRARIES}
-      ${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
+      #${Fx31_FOAM_MPI_LIBBIN}/libPstream.so 
       #${Fx31_METIS_LIB_DIR}/libmetis.a
-      ${Fx31_PARMETIS_LIB_DIR}/libparmetis.a
-      ${Fx31_SCOTCH_LIB_DIR}/libscotch.so
-      ${Fx31_SCOTCH_LIB_DIR}/libscotcherr.so
-      ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so 
+#      ${Fx31_PARMETIS_LIB_DIR}/libparmetis.a
+      #${Fx31_SCOTCH_LIB_DIR}/libscotch.so
+      #${Fx31_SCOTCH_LIB_DIR}/libscotcherr.so
+#      ${Fx31_MESQUITE_LIB_DIR}/libmesquite.so 
 #       ${Fx31_PARMGRIDGEN_LIB_DIR}/libMGridGen.so
       ${ARGN})
      install(TARGETS ${targetname} RUNTIME DESTINATION ${Fx31_FOAM_APPBIN})

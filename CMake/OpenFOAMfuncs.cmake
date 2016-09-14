@@ -1,0 +1,31 @@
+
+macro(setOFlibvar prefix)
+  SET(${prefix}_LIBRARIES "")
+   FOREACH(f ${ARGN})
+    IF (EXISTS "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+      LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
+    endif()
+   ENDFOREACH(f)
+   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
+endmacro()
+
+macro(detectEnvVar prefix varname outvarname)
+ execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${${prefix}_BASHRC} print-${varname} OUTPUT_VARIABLE ${prefix}_${outvarname})
+ #message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
+endmacro()
+
+macro(detectEnvVars prefix)
+ FOREACH(f ${ARGN})
+  detectEnvVar(${prefix} ${f} ${f})
+ ENDFOREACH(f)
+endmacro()
+
+macro(detectDepLib prefix fromlib pattern)
+ execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/findInDepLibs ${${prefix}_BASHRC} ${fromlib} "${pattern}" OUTPUT_VARIABLE addlibs)
+ message(STATUS "detected for ${pattern} in dependencies of ${fromlib}: " ${addlibs})
+ LIST(APPEND ${prefix}_LIBRARIES "${addlibs}")
+endmacro()
+
+macro(detectIncPaths prefix)
+ execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
+endmacro()

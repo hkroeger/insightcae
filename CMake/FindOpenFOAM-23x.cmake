@@ -3,7 +3,7 @@
 #
 # OF23x_FOUND          - system has OpenFOAM-2.3.x installed
 
-
+include(OpenFOAMfuncs)
 
 #FIND_PATH(OF23x_DIR NAMES etc/bashrc
 FIND_FILE(OF23x_BASHRC NAMES bashrc
@@ -15,17 +15,7 @@ FIND_FILE(OF23x_BASHRC NAMES bashrc
   /opt/openfoam230/etc
 )
 
-macro(setOFlibvar prefix) 
-  SET(${prefix}_LIBRARIES "")
-   FOREACH(f ${ARGN})
-    IF (EXISTS "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
-      LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
-    endif()
-   ENDFOREACH(f)
-   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
-endmacro()
-
-message(STATUS ${OF23x_BASHRC})
+message(STATUS "Found OpenFOAM 2.3.x installation: " ${OF23x_BASHRC})
 
 SET(OF23x_FOUND FALSE)
 
@@ -34,31 +24,25 @@ IF(OF23x_BASHRC)
   GET_FILENAME_COMPONENT(OF23x_ETC_DIR ${OF23x_BASHRC} PATH)
   GET_FILENAME_COMPONENT(OF23x_DIR ${OF23x_ETC_DIR} PATH)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-WM_PROJECT_VERSION OUTPUT_VARIABLE OF23x_WM_PROJECT_VERSION)
-  
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-c++FLAGS OUTPUT_VARIABLE OF23x_CXX_FLAGS)
+  detectEnvVars(OF23x WM_PROJECT_VERSION WM_OPTIONS FOAM_EXT_LIBBIN SCOTCH_ROOT FOAM_APPBIN FOAM_LIBBIN)
+
+  detectEnvVar(OF23x c++FLAGS CXX_FLAGS)
   set(OF23x_CXX_FLAGS "${OF23x_CXX_FLAGS} -DOF23x")
-
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-WM_OPTIONS OUTPUT_VARIABLE OF23x_WM_OPTIONS)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_EXT_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_EXT_LIBBIN)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-SCOTCH_ROOT OUTPUT_VARIABLE OF23x_SCOTCH_ROOT)
-
 
   set(OF23x_LIBSRC_DIR "${OF23x_DIR}/src")
   set(OF23x_LIB_DIR "${OF23x_DIR}/platforms/${OF23x_WM_OPTIONS}/lib")
   
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-LINKLIBSO OUTPUT_VARIABLE OF23x_LINKLIBSO_full)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-LINKEXE OUTPUT_VARIABLE OF23x_LINKEXE_full)
+  detectEnvVar(OF23x LINKLIBSO LINKLIBSO_full)
+  detectEnvVar(OF23x LINKEXE LINKEXE_full)
+  detectEnvVar(OF23x FOAM_MPI MPI)
   string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKLIBSO ${OF23x_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKEXE ${OF23x_LINKEXE_full})
   message(STATUS "libso link flags = "  ${OF23x_LINKLIBSO})
   message(STATUS "exe link flags = "  ${OF23x_LINKEXE})
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_MPI OUTPUT_VARIABLE OF23x_MPI)
 
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_APPBIN OUTPUT_VARIABLE OF23x_FOAM_APPBIN)
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${OF23x_BASHRC} print-FOAM_LIBBIN OUTPUT_VARIABLE OF23x_FOAM_LIBBIN)
-  
-#  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_LIBRARIES)
+
+  detectIncPaths(OF23x)
+
   setOFlibvar(OF23x 
 FVFunctionObjects
 IOFunctionObjects
@@ -155,7 +139,9 @@ surfMesh
 fileFormats
 OpenFOAM
 )
-  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${OF23x_BASHRC} OUTPUT_VARIABLE OF23x_INCLUDE_PATHS)
+
+  detectDepLib(OF23x "${OF23x_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
+  detectDepLib(OF23x "${OF23x_FOAM_LIBBIN}/libscotchDecomp.so" "scotch")
 
   set(OF23x_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
   set(OF23x_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OF23x_WM_PROJECT_VERSION}")
@@ -194,7 +180,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${OF23x_INSIGHT_BIN})
     target_link_libraries(${targetname} 
       ${OF23x_LIBRARIES}
-      ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
+#      ${OF23x_LIB_DIR}/${OF23x_MPI}/libPstream.so 
       ${ARGN}
       ) 
     #SET_TARGET_PROPERTIES(${targetname} PROPERTIES LINK_FLAGS "-Wl,--as-needed")

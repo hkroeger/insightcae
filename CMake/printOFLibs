@@ -8,7 +8,7 @@ EXPR='^ *LIB *= *$(FOAM_LIBBIN)/\(.*\)$'
 FIRST=1
 
 #"$FOAM_APP" \
-lorder $(
+(
 for bd in \
   "$FOAM_SRC" \
 ; do
@@ -29,5 +29,5 @@ for bd in \
   fi
  done
 done
-) | tsort  \
+) \
 | if [ "$MANUAL" ]; then sed -e 's#^.*/lib\([^/]*\)\.so *$#\1#g'; else ( tr '\n' ';' | sed -e 's/;$//')  fi

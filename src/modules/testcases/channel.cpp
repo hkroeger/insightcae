@@ -419,7 +419,7 @@ void ChannelBase::createCase
   else
     cm.insert(new CyclicPairBC(cm, "cycl_side", boundaryDict) );
   
-  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
+  cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters().set_roughness_z0(p.operation.y0));
   
   insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
 
@@ -495,7 +495,7 @@ void ChannelBase::evaluateAtSection(
   ));
   sample(cm, executionPath(),
     
-  list_of<std::string>(UMeanName_)(RFieldName_)("k")("omega")("epsilon")("nut"),
+  list_of<std::string>(UMeanName_)("UPrime2Mean")("R")("k")("omega")("epsilon")("nut"),
      sets
   );    
       
@@ -661,13 +661,34 @@ void ChannelBase::evaluateAtSection(
   // Mean reynolds stress profiles
   {
     string chart_name="chartMeanReyStress_"+title;
+
+        arma::mat
+            Rxx=arma::zeros(data.n_rows),
+            Rxy=arma::zeros(data.n_rows),
+            Ryy=arma::zeros(data.n_rows),
+            Rzz=arma::zeros(data.n_rows);
+
+        int c;
+        if ( (c = cd.colIndex("UPrime2Mean")) >=0 )
+        {
+            Rxx += data.col(c);
+            Rxy += data.col(c+1);
+            Ryy += data.col(c+3);
+            Rzz += data.col(c+5);
+        }
+        if ( (c = cd.colIndex("R")) >=0 )
+        {
+            Rxx += data.col(c);
+            Rxy += data.col(c+1);
+            Ryy += data.col(c+3);
+            Rzz += data.col(c+5);
+        }
     
-    int c=cd[RFieldName_].col;
     
-    arma::mat axial(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c))	);
-    arma::mat wallnormal(	join_rows(Re_tau-Re_tau*data.col(0), data.col(c+3))	);
-    arma::mat spanwise(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c+5))	);
-    arma::mat cross(		join_rows(Re_tau-Re_tau*data.col(0), data.col(c+1))	);
+    arma::mat axial(		join_rows(Re_tau-Re_tau*data.col(0), Rxx)	);
+    arma::mat wallnormal(	join_rows(Re_tau-Re_tau*data.col(0), Ryy)	);
+    arma::mat spanwise(		join_rows(Re_tau-Re_tau*data.col(0), Rzz)	);
+    arma::mat cross(		join_rows(Re_tau-Re_tau*data.col(0), Rxy)	);
 
     axial.save( 	( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     wallnormal.save( 	( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).c_str(), arma::raw_ascii);
@@ -705,7 +726,7 @@ void ChannelBase::evaluateAtSection(
     
     int ck=cd["k"].col;
     
-    arma::mat K= 0.5*( data.col(c) + data.col(c+3) + data.col(c+5) );
+    arma::mat K= 0.5*( Rxx + Ryy + Rzz );
     if (cd.find("k")!=cd.end())
     {
       K+=data.col(ck);

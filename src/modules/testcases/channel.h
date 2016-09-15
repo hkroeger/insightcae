@@ -58,6 +58,7 @@ mesh=set
 operation=set
 {
  Re_tau = double 180 "[-] Friction-Velocity-Reynolds number"
+ y0 = double 0 "[m] aerodynamic roughness height at the walls"
 } "Definition of the operation point under consideration"
 
 fluid = set 

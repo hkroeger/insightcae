@@ -1,0 +1,38 @@
+
+path?=Wire(
+ Compound(
+  Line(O, 100*EX),
+  Arc(100*EX, EX, 150*EX+100*EY)
+ )?alledges);
+
+Lseg?=15;
+Hseg?=5;
+Bseg?=20;
+tseg?=1;
+db?=2;
+nseg?=15;
+
+xsec=
+Sketch(
+ SPlane(0.5*Lseg*EZ, EX, EY), 
+ "cable_chain_sketch.fcstd", 'sketch', 
+ L=Lseg, H=Hseg);
+
+side=Extrusion(xsec <<-0.5*Bseg*EX, tseg*EX);
+
+tool=Cylinder( -0.5*Lseg*EZ+(0.5*Bseg - 0.5*tseg)*EX, ax tseg*EX, 1.1*Hseg);
+
+segment=
+side|
+Box( -0.5*Hseg*EY, tseg*EY, 0.7*Lseg*EZ, Bseg*EX, center yz)|
+Box( 0.5*Hseg*EY +0.2*Lseg*EZ, -tseg*EY, 0.25*Lseg*EZ, Bseg*EX, center z)|
+Mirror(side, YZ)
+-Cylinder(-0.5*Lseg*EZ-0.5*Bseg*EX, ax Bseg*EX, db)
+-Cylinder(0.5*Lseg*EZ-0.5*Bseg*EX, ax Bseg*EX, db)
+
+-Cylinder(0.5*Lseg*EZ-(0.5*Bseg-0.5*tseg)*EX, ax (Bseg-tseg)*EX, 1.1*Hseg)
+-tool-Mirror(tool, YZ)
+;
+
+cable_chain:
+CurvePattern(segment, path, Lseg, nseg);

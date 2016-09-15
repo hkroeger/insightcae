@@ -53,6 +53,7 @@ add_sources(insightcad_SOURCES
  closedpolyline.cpp
  loop.cpp
  gear.cpp
+ curvepattern.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

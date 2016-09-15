@@ -52,12 +52,22 @@ void Model::copyVariables(const ModelVariableTable& vars)
     if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )
     {
         addScalar(name, *sv);
-	cout<<"insert scalar "<<name<<" = "<<(*sv)->value()<<endl;
+        cout<<"insert scalar "<<name<<" = "<<(*sv)->value()<<endl;
     }
     else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
     {
         addVector(name, *vv);
-	cout<<"insert vector "<<name<<" = "<<(*vv)->value()<<endl;
+        cout<<"insert vector "<<name<<" = "<<(*vv)->value()<<endl;
+    }
+    else if ( const DatumPtr* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
+    {
+        addDatum(name, *dd);
+        cout<<"insert datum "<<name<<endl;
+    }
+    else if ( const FeaturePtr* ff = boost::get<FeaturePtr>( &boost::fusion::at_c<1>(s) ) )
+    {
+        addModelstep(name, *ff);
+        cout<<"insert model step "<<name<<endl;
     }
   }
 }
@@ -136,6 +146,12 @@ void Model::addDatum(const std::string& name, DatumPtr value)
   datums_.add(name, value);
 }
 
+void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
+{
+    if (!datums_.find(name))
+        addDatum(name, value);
+}
+
 void Model::addModelstep(const std::string& name, FeaturePtr value)
 {
 #ifdef INSIGHT_CAD_DEBUG
@@ -143,6 +159,12 @@ void Model::addModelstep(const std::string& name, FeaturePtr value)
 #endif
 //   modelsteps_[name]=value;
   modelsteps_.add(name, value);
+}
+
+void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value)
+{
+    if (!modelsteps_.find(name))
+        addModelstep(name, value);
 }
 
 void Model::addComponent(const std::string& name, FeaturePtr value)

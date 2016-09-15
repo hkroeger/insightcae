@@ -28,33 +28,38 @@ namespace insight
 namespace cad 
 {
 
+    
+    
+    
 class ModelFeature
-: public Compound
+    : public Compound
 {
-  std::string modelname_;
-  ModelVariableTable vars_;
-  
-  ModelPtr model_;
-  
-//   void addScalar(const std::string& name, ScalarPtr s);
-//   void addVector(const std::string& name, VectorPtr s);
-//   void addModelstepNotComponent(const std::string& name, FeaturePtr m);
-  void copyModelDatums();
-  
+    std::string modelname_;
+    ModelVariableTable vars_;
+
+    ModelPtr model_;
+
+    void copyModelDatums();
+
 public:
-  declareType("loadmodel");
-  
-  ModelFeature(const NoParameters&);
-  ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
-  
-  virtual void build();
-  void executeEditor();
-  
-  inline const std::string& modelname() const { return modelname_; }
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
+    declareType("loadmodel");
+
+    ModelFeature(const NoParameters&);
+    ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
+
+    virtual void build();
+    void executeEditor();
+
+    inline const std::string& modelname() const {
+        return modelname_;
+    }
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+
 };
+
+
+
 
 }
 }

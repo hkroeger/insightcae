@@ -75,7 +75,7 @@ typedef std::vector<FeatureSetPtr> FeatureSetList;
 typedef std::set<FeatureID> FeatureSetData;
 typedef std::map<std::string, FeaturePtr> SubfeatureMap;
 typedef std::map<std::string, FeatureSetPtr> FeatureSetPtrMap;
-typedef boost::variant<ScalarPtr, VectorPtr>  ModelVariable;
+typedef boost::variant<FeaturePtr, DatumPtr, VectorPtr, ScalarPtr>  ModelVariable;
 typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVariableTable;
 
 

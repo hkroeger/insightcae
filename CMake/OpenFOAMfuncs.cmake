@@ -29,3 +29,23 @@ endmacro()
 macro(detectIncPaths prefix)
  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
 endmacro()
+
+
+
+macro(addOFConfig prefix shortcut versionnumber)
+  list(APPEND INSIGHT_OFES_VARCONTENT "${prefix}@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.${shortcut} -print -quit`#${versionnumber}")
+  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
+")
+  create_script("insight.bashrc.${shortcut}"
+"source ${${prefix}_BASHRC}
+
+foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${${prefix}_INSIGHT_LIB}
+#- Clean LD_LIBRARY_PATH
+cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+export PATH=$PATH:${${prefix}_INSIGHT_BIN}
+#- Clean PATH
+cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+")
+endmacro()

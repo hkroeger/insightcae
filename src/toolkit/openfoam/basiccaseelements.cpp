@@ -377,8 +377,39 @@ LESModel::LESModel(const turbulenceModel::ConstrP& c)
 
 void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-  turbProperties["simulationType"]="LESModel";
+    OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+    turbProperties["simulationType"]="LESModel";
+
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    controlDict.getList("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
+}
+
+bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
+{
+    if (fieldname == "k")
+    {
+        BC["type"]="fixedValue";
+        BC["value"]="uniform 1e-10";
+        return true;
+    }
+    else if (fieldname == "nuSgs")
+    {
+        if (roughness_z0>0.)
+        {            
+//             std::cout<<"inserting \"nuSgsABLRoughWallFunction\" with z0="<<roughness_z0<<std::endl;
+            BC["type"]="nuSgsABLRoughWallFunction";
+            BC["z0"]=boost::str(boost::format("uniform %g")%roughness_z0);
+            BC["value"]="uniform 1e-10";
+        }
+        else
+        {
+//             std::cout<<"not inserting since z0="<<roughness_z0<<std::endl;
+            BC["type"]="zeroGradient";
+        }
+        return true;
+    }
+
+    return false;
 }
 
 turbulenceModel::AccuracyRequirement LESModel::minAccuracyRequirement() const
@@ -459,25 +490,6 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
-bool oneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
-{
-    if (roughness_z0>0.)
-        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
-    
-  if (fieldname == "k")
-  {
-    BC["type"]="fixedValue";
-    BC["value"]="uniform 1e-10";
-    return true;
-  }
-  else if (fieldname == "nuSgs")
-  {
-    BC["type"]="zeroGradient";
-    return true;
-  }
-  
-  return false;
-}
 
 defineType(dynOneEqEddy_LESModel);
 addToFactoryTable(turbulenceModel, dynOneEqEddy_LESModel, turbulenceModel::ConstrP);
@@ -529,25 +541,6 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties.addSubDictIfNonexistent("laminarCoeffs");
 }
 
-bool dynOneEqEddy_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
-{
-    if (roughness_z0>0.)
-        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
-    
-  if (fieldname == "k")
-  {
-    BC["type"]="fixedValue";
-    BC["value"]="uniform 1e-10";
-    return true;
-  }
-  else if (fieldname == "nuSgs")
-  {
-    BC["type"]="zeroGradient";
-    return true;
-  }
-  
-  return false;
-}
 
 defineType(dynSmagorinsky_LESModel);
 addToFactoryTable(turbulenceModel, dynSmagorinsky_LESModel, turbulenceModel::ConstrP);
@@ -600,25 +593,6 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   cd["filter"]="simple";
 }
 
-bool dynSmagorinsky_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
-{
-    if (roughness_z0>0.)
-        throw insight::Exception("onEqEddy_LESModel: non-smooth walls are unsupported!");
-
-  if (fieldname == "k")
-  {
-    BC["type"]="fixedValue";
-    BC["value"]="uniform 1e-10";
-    return true;
-  }
-  else if (fieldname == "nuSgs")
-  {
-    BC["type"]="zeroGradient";
-    return true;
-  }
-  
-  return false;
-}
 
 
 defineType(kOmegaSST_RASModel);

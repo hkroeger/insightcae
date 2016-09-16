@@ -292,6 +292,7 @@ public:
   LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual AccuracyRequirement minAccuracyRequirement() const;
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class laminar_RASModel
@@ -318,7 +319,6 @@ public:
   oneEqEddy_LESModel(OpenFOAMCase& c);
   oneEqEddy_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class dynOneEqEddy_LESModel
@@ -333,7 +333,6 @@ public:
   dynOneEqEddy_LESModel(OpenFOAMCase& c);
   dynOneEqEddy_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class dynSmagorinsky_LESModel
@@ -348,7 +347,6 @@ public:
   dynSmagorinsky_LESModel(OpenFOAMCase& c);
   dynSmagorinsky_LESModel(const ConstrP& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
 
 class kOmegaSST_RASModel

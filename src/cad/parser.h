@@ -166,7 +166,7 @@ struct ISCADParser
     qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> r_solidmodel_primary, r_solidmodel_term, r_solidmodel_expression;
 //     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_subshape;
 //     qi::rule<std::string::iterator, FeaturePtr(), qi::locals<ModelPtr>, skip_grammar> r_submodel_modelstep;
-    std::vector<AddRuleContainerBase> additionalrules_;
+    boost::ptr_vector<AddRuleContainerBase> additionalrules_;
     
 
     ISCADParser(Model* model);

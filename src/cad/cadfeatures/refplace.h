@@ -45,6 +45,14 @@ public:
     virtual double residual(const gp_Trsf& tr) const;
 };
 
+class ParallelAxis
+: public Condition
+{
+    VectorPtr dir_org_,  dir_targ_;
+public:
+    ParallelAxis(VectorPtr dir_org, VectorPtr dir_targ);
+    virtual double residual(const gp_Trsf& tr) const;
+};
 
 typedef boost::shared_ptr<Condition> ConditionPtr;
 typedef std::vector<ConditionPtr> ConditionList;

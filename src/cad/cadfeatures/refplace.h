@@ -54,6 +54,35 @@ public:
     virtual double residual(const gp_Trsf& tr) const;
 };
 
+class AlignedPlanes
+: public Condition
+{
+    DatumPtr pl_org_,  pl_targ_;
+public:
+    AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ);
+    virtual double residual(const gp_Trsf& tr) const;
+};
+
+class PointInPlane
+: public Condition
+{
+    VectorPtr p_org_;
+    DatumPtr pl_targ_;
+public:
+    PointInPlane(VectorPtr p_org, DatumPtr pl_targ);
+    virtual double residual(const gp_Trsf& tr) const;
+};
+
+class PointOnAxis
+: public Condition
+{
+    VectorPtr p_org_;
+    DatumPtr ax_targ_;
+public:
+    PointOnAxis(VectorPtr p_org, DatumPtr ax_targ);
+    virtual double residual(const gp_Trsf& tr) const;
+};
+
 typedef boost::shared_ptr<Condition> ConditionPtr;
 typedef std::vector<ConditionPtr> ConditionList;
 

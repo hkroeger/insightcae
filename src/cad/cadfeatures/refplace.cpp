@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
+#include "datum.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -83,7 +85,7 @@ CoincidentPoint::CoincidentPoint(VectorPtr p_org, VectorPtr p_targ)
 
 double CoincidentPoint::residual(const gp_Trsf& tr) const
 {
-    return to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) );
+    return pow( to_Pnt(p_org_->value()).Transformed(tr).Distance( to_Pnt(p_targ_->value()) ), 2);
 }
 
 
@@ -96,9 +98,59 @@ ParallelAxis::ParallelAxis(VectorPtr dir_org, VectorPtr dir_targ)
 
 double ParallelAxis::residual(const gp_Trsf& tr) const
 {
-    return to_Vec(dir_org_->value()).Transformed(tr).Angle( to_Vec(dir_targ_->value()) );
+    return pow(to_Vec(dir_org_->value()).Transformed(tr).Angle( to_Vec(dir_targ_->value()) ), 2);
 }
 
+
+
+
+AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ)
+: pl_org_(pl_org), pl_targ_(pl_targ)
+{}
+
+
+double AlignedPlanes::residual(const gp_Trsf& tr) const
+{
+    gp_Pln pl = gp_Pln(pl_org_->plane()).Transformed(tr);
+    gp_Pln ptarg(pl_targ_->plane());
+    std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
+    return pow(pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
+}
+
+
+
+
+PointInPlane::PointInPlane(VectorPtr p_org, DatumPtr pl_targ)
+: p_org_(p_org), pl_targ_(pl_targ)
+{}
+
+
+double PointInPlane::residual(const gp_Trsf& tr) const
+{
+    gp_Pnt pt = to_Pnt(p_org_->value()).Transformed(tr);
+    gp_Pln pltarg(pl_targ_->plane());
+    std::cerr<<"sqdist="<<pltarg.SquareDistance(pt)<<std::endl;
+    
+    return pltarg.SquareDistance(pt);
+}
+
+
+
+
+PointOnAxis::PointOnAxis(VectorPtr p_org, DatumPtr ax_targ)
+: p_org_(p_org), ax_targ_(ax_targ)
+{}
+
+
+double PointOnAxis::residual(const gp_Trsf& tr) const
+{
+    gp_Pnt pt = to_Pnt(p_org_->value()).Transformed(tr);
+    gp_Ax1 axtarg=ax_targ_->axis();
+    
+    gp_XYZ r = pt.XYZ()-axtarg.Location().XYZ();
+    r -= r.Dot(axtarg.Direction().XYZ())*axtarg.Direction().XYZ();
+    return r.SquareModulus();
+}
 
 
 
@@ -147,7 +199,7 @@ void RefPlace::build()
                 double Q=0.0;
                 for (size_t i=0; i<conditions.size(); i++)
                 {
-                    Q += pow(conditions[i]->residual(x), 2);
+                    Q += conditions[i]->residual(x);
                 }
                 std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
                 return Q;
@@ -189,6 +241,15 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         |
         (ruleset.r_vectorExpression >> qi::lit("parallel") >> ruleset.r_vectorExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelAxis>(qi::_1, qi::_2)) ]
+        |
+        (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2)) ]
+        |
+        (ruleset.r_vectorExpression >> qi::lit("inplane") >> ruleset.r_datumExpression  )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointInPlane>(qi::_1, qi::_2)) ]
+        |
+        (ruleset.r_vectorExpression >> qi::lit("onaxis") >> ruleset.r_datumExpression  )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointOnAxis>(qi::_1, qi::_2)) ]
         ;
     r_condition.name("placement condition");
 

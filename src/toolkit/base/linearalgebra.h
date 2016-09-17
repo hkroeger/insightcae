@@ -152,8 +152,18 @@ public:
   virtual double operator()(double x) const =0;
 };
 
+class ObjectiveND
+{
+public:
+  virtual ~ObjectiveND();
+  
+  virtual double operator()(const arma::mat& x) const =0;
+  virtual int numP() const =0;
+};
+
 double nonlinearSolve1D(const Objective1D& model, double x_min, double x_max);
 double nonlinearMinimize1D(const Objective1D& model, double x_min, double x_max);
+arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol=1e-3);
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction=0.5, bool first_col_is_time=true, bool centerwindow=false);
 

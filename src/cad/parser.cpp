@@ -152,6 +152,9 @@ skip_grammar::skip_grammar()
 }
 
 
+AddRuleContainerBase::~AddRuleContainerBase()
+{}
+
 
 
 /** \page iscad ISCAD

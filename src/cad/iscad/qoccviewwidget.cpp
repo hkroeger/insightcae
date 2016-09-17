@@ -1320,7 +1320,7 @@ OCCViewScreenshots::OCCViewScreenshots(Handle_AIS_InteractiveContext& context, Q
 
   QVBoxLayout *l = new QVBoxLayout(this);
   //setModal(false);
-  resize(1200,900);
+  resize(1000,500);
 
   occWidget_ = new QoccViewWidget(context,this);
   occWidget_->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);

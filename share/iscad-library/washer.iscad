@@ -1,0 +1,16 @@
+Dn?=12;
+D=TableLookup(washer_DIN125B, Dn, Dn, Dn, nearest);
+
+d1=TableLookup(washer_DIN125B, Dn, D, d1);
+d2=TableLookup(washer_DIN125B, Dn, D, d2);
+h=TableLookup(washer_DIN125B, Dn, D, h);
+
+axis=RefAxis(O, EX);
+pl_mate_side1=Plane(O, -EX);
+pl_mate_side2=Plane(h*EX, EX);
+
+washer:
+Cylinder(
+ O, ax h*EX,
+ d2, d1
+);

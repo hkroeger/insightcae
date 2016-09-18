@@ -1,0 +1,12 @@
+D?=5;
+L?=10;
+ofsTimesHtip?=0;
+htip=0.5*D/tan(60*deg);
+hole:
+(
+Cylinder(
+ O+htip*EX, ax L*EX, D
+)|
+Cone(
+ O, htip*EX, 0, D
+)) << -ofsTimesHtip*htip*EX;

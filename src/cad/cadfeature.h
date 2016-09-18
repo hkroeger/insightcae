@@ -197,7 +197,7 @@ protected:
   
   SubfeatureMap providedSubshapes_;
   FeatureSetPtrMap providedFeatureSets_;
-  std::map<std::string, boost::shared_ptr<Datum> > providedDatums_;
+  DatumPtrMap providedDatums_;
   
   RefValuesList refvalues_;
   RefPointsList refpoints_;
@@ -253,7 +253,7 @@ public:
   
   virtual void build();
     
-  inline const std::map<std::string, boost::shared_ptr<Datum> >& providedDatums() const 
+  inline const DatumPtrMap& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }
     
   FeaturePtr subshape(const std::string& name);

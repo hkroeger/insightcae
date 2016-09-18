@@ -1713,6 +1713,12 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix)
       throw insight::Exception("subshape "+prefix+sf.first+" already present!");
     providedSubshapes_[prefix+sf.first]=sf.second;
   }
+  BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
+  {
+    if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
+      throw insight::Exception("datum "+prefix+df.first+" already present!");
+    providedDatums_[prefix+df.first]=df.second;
+  }
   
 }
 
@@ -1746,7 +1752,13 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
       throw insight::Exception("subshape "+prefix+sf.first+" already present!");
     providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
   }
-  
+  BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
+  {
+    std::cout<<"adding datum (transformed) "<<(prefix+df.first)<<std::endl;
+    if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
+      throw insight::Exception("datum "+prefix+df.first+" already present!");
+    providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
+  }
 }
 
 

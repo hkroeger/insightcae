@@ -133,9 +133,10 @@ insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs
 
 arma::mat insight::cad::DatumPlaneNormal::value() const
 {
-  if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+//   if ( const DatumPlane *pl = dynamic_cast<const DatumPlane*>(pfs_.get()) )
+  if (pfs_->providesPlanarReference())
   {
-    return vec3(pl->plane().Direction());
+    return vec3(pfs_->plane().Direction());
   }
   else
   {

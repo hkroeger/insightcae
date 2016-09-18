@@ -828,6 +828,9 @@ ISCADParser::ISCADParser(Model* model)
         ( /*lit("refpt") >> '(' >>*/ r_datumExpression /*>> ')'*/ )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
         |
+        ( lit("refpt") >> '(' >> r_datumExpression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<DatumPointCoord>(qi::_1)) ]
+        |
         ( lit("refdir") >> '(' >> r_datumExpression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<DatumDir>(qi::_1)) ]
         |

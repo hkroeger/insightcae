@@ -62,13 +62,34 @@ public:
   virtual gp_Ax3 plane() const;
   operator const gp_Ax3 () const;
 
-  virtual AIS_InteractiveObject* createAISRepr() const;
+  virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
 
   virtual void write(std::ostream& file) const;
   
   inline size_t hash() const { return hash_; }
 };
 
+
+
+
+class TransformedDatum
+: public Datum
+{
+protected:
+    DatumPtr base_;
+    gp_Trsf tr_;
+    
+public:
+    TransformedDatum(DatumPtr datum, gp_Trsf tr);
+    
+    virtual void build();
+    
+    virtual gp_Pnt point() const;
+    virtual gp_Ax1 axis() const;
+    virtual gp_Ax3 plane() const;
+    
+    virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
+};
 
 
 
@@ -84,7 +105,7 @@ public:
   
   virtual gp_Pnt point() const;
 
-  virtual AIS_InteractiveObject* createAISRepr() const;
+  virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -102,7 +123,7 @@ public:
   virtual gp_Pnt point() const;
   virtual gp_Ax1 axis() const;
 
-  virtual AIS_InteractiveObject* createAISRepr() const;
+  virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 
@@ -119,7 +140,7 @@ public:
   virtual gp_Pnt point() const;
   virtual gp_Ax3 plane() const;
 
-  virtual AIS_InteractiveObject* createAISRepr() const;
+  virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 #endif
@@ -145,7 +166,7 @@ public:
   virtual gp_Ax1 axis() const;
   virtual gp_Ax3 plane() const;
 
-  virtual AIS_InteractiveObject* createAISRepr() const;
+  virtual AIS_InteractiveObject* createAISRepr(const gp_Trsf& tr = gp_Trsf()) const;
 };
 
 

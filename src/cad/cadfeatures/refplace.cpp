@@ -20,6 +20,7 @@
 #include "refplace.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "gp_Quaternion.hxx"
 
 #include "datum.h"
 
@@ -43,12 +44,23 @@ gp_Trsf trsf_from_vector(const arma::mat& v)
 {
     gp_Trsf t; // final transform
     
+    /*
+    //Euler angles
     gp_Trsf trsf1Probe, trsf2Probe, trsf3Probe;
     trsf1Probe.SetRotation(gp::OX(), v(0));
     trsf2Probe.SetRotation(gp::OY(), v(1));
     trsf3Probe.SetRotation(gp::OZ(), v(2));
     t = trsf1Probe * trsf2Probe * trsf3Probe;
-    t.SetTranslationPart(gp_Vec(v(3), v(4), v(5)));
+    */
+//     std::cerr<<"v="<<v<<std::endl;
+    double vx=v(4);
+    double mag=pow(vx,2)+pow(v(5),2)+pow(v(6),2);
+    if (mag<1e-16) vx=1e-16;
+//     gp_Quaternion q(vx, v(5), v(6), v(3));
+//     t.SetRotation(q);
+    t.SetRotation(gp_Ax1(gp_Pnt(0,0,0), gp_Dir(vx, v(5), v(6))), v(3));
+    
+    t.SetTranslationPart(gp_Vec(v(0), v(1), v(2)));
 //     t.SetValues
 //     (
 //         v(0), v(1), v(2), v(3),
@@ -113,13 +125,49 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
 {
     gp_Pln pl = gp_Pln(pl_org_->plane()).Transformed(tr);
     gp_Pln ptarg(pl_targ_->plane());
-    std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
+//     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
+//     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
     return pow(pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
 }
 
 
 
 
+InclinedPlanes::InclinedPlanes(DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle)
+: pl_org_(pl_org), pl_targ_(pl_targ), angle_(angle)
+{}
+
+
+double InclinedPlanes::residual(const gp_Trsf& tr) const
+{
+    gp_Pln pl = gp_Pln(pl_org_->plane()).Transformed(tr);
+    gp_Pln ptarg(pl_targ_->plane());
+//     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
+//     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
+    return ::pow( pl.Axis().Direction().Angle(ptarg.Axis().Direction()) - angle_->value(), 2);
+}
+
+
+Coaxial::Coaxial(DatumPtr ax_org, DatumPtr ax_targ)
+: ax_org_(ax_org), ax_targ_(ax_targ)
+{
+}
+
+
+double Coaxial::residual(const gp_Trsf& tr) const
+{
+    gp_Ax1 ao = ax_org_->axis().Transformed(tr);
+    gp_Ax1 at = ax_targ_->axis();
+    
+    gp_XYZ r = ao.Location().XYZ()-at.Location().XYZ();
+    r -= r.Dot(at.Direction().XYZ())*at.Direction().XYZ();
+
+    return pow(ao.Direction().Angle(at.Direction()), 2) + r.SquareModulus();
+}
+    
+    
+    
+    
 PointInPlane::PointInPlane(VectorPtr p_org, DatumPtr pl_targ)
 : p_org_(p_org), pl_targ_(pl_targ)
 {}
@@ -129,7 +177,7 @@ double PointInPlane::residual(const gp_Trsf& tr) const
 {
     gp_Pnt pt = to_Pnt(p_org_->value()).Transformed(tr);
     gp_Pln pltarg(pl_targ_->plane());
-    std::cerr<<"sqdist="<<pltarg.SquareDistance(pt)<<std::endl;
+//     std::cerr<<"sqdist="<<pltarg.SquareDistance(pt)<<std::endl;
     
     return pltarg.SquareDistance(pt);
 }
@@ -206,12 +254,12 @@ void RefPlace::build()
             }
 
             virtual int numP() const {
-                return 6;
+                return 7;
             };
 
         } obj(conditions_);
 
-        arma::mat x0=arma::zeros(6); //=vector_from_trsf(gp_Trsf());
+        arma::mat x0=arma::zeros(obj.numP()); //=vector_from_trsf(gp_Trsf());
         arma::mat tp = nonlinearMinimizeND(obj, x0, 1e-10);
         trsf_.reset( new gp_Trsf(trsf_from_vector(tp)) );
     }
@@ -244,6 +292,12 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         |
         (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2)) ]
+        |
+        (ruleset.r_datumExpression >> qi::lit("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<InclinedPlanes>(qi::_1, qi::_2, qi::_3)) ]
+        |
+        (ruleset.r_datumExpression >> qi::lit("coaxial") >> ruleset.r_datumExpression  )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<Coaxial>(qi::_1, qi::_2)) ]
         |
         (ruleset.r_vectorExpression >> qi::lit("inplane") >> ruleset.r_datumExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointInPlane>(qi::_1, qi::_2)) ]

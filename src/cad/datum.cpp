@@ -27,6 +27,7 @@
 #include "GeomAPI_IntSS.hxx"
 #include "GeomAPI_IntCS.hxx"
 #include "Geom_Line.hxx"
+#include "Geom_Transformation.hxx"
 
 namespace insight {
 namespace cad {
@@ -85,7 +86,7 @@ Datum::operator const gp_Ax3 () const
   return plane();
 }
 
-AIS_InteractiveObject* Datum::createAISRepr() const
+AIS_InteractiveObject* Datum::createAISRepr(const gp_Trsf& tr) const
 {
   throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
   return NULL;
@@ -98,6 +99,47 @@ void Datum::write(ostream& file) const
   file<<providesPlanarReference_<<endl;
 }
 
+TransformedDatum::TransformedDatum(DatumPtr datum, gp_Trsf tr)
+: Datum(datum->providesPointReference(), datum->providesAxisReference(), datum->providesPlanarReference()),
+  base_(datum),
+  tr_(tr)
+{
+    ParameterListHash plh;
+    plh+=*base_;
+    for (int i=0; i<3; i++)
+        for (int j=0; j<4; j++)
+            plh+=tr_.Value(i+1, j+1);
+    hash_=plh.getHash();
+}
+
+void TransformedDatum::build()
+{}
+    
+gp_Pnt TransformedDatum::point() const
+{
+    checkForBuildDuringAccess();
+    return base_->point().Transformed(tr_);
+}
+
+gp_Ax1 TransformedDatum::axis() const
+{
+    checkForBuildDuringAccess();
+    return base_->axis().Transformed(tr_);
+}
+
+gp_Ax3 TransformedDatum::plane() const
+{
+    checkForBuildDuringAccess();
+    return base_->plane().Transformed(tr_);
+}
+
+AIS_InteractiveObject* TransformedDatum::createAISRepr(const gp_Trsf&) const
+{
+    checkForBuildDuringAccess();
+    AIS_InteractiveObject* ais = base_->createAISRepr(tr_);
+    
+    return ais;
+}
 
 
 DatumPoint::DatumPoint()
@@ -110,9 +152,9 @@ gp_Pnt DatumPoint::point() const
   return p_;
 }
 
-AIS_InteractiveObject* DatumPoint::createAISRepr() const
+AIS_InteractiveObject* DatumPoint::createAISRepr(const gp_Trsf& tr) const
 {
-  return new AIS_Shape( BRepBuilderAPI_MakeVertex(point()) );
+  return new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) );
 }
 
 ProvidedDatum::ProvidedDatum(FeaturePtr feat, std::string name)
@@ -156,10 +198,10 @@ gp_Ax3 ProvidedDatum::plane() const
   return dat_->plane();
 }
 
-AIS_InteractiveObject* ProvidedDatum::createAISRepr() const
+AIS_InteractiveObject* ProvidedDatum::createAISRepr(const gp_Trsf& tr) const
 {
     checkForBuildDuringAccess();
-    return dat_->createAISRepr();
+    return dat_->createAISRepr(tr);
 }
 
 
@@ -196,10 +238,10 @@ gp_Ax1 DatumAxis::axis() const
   return ax_;
 }
 
-AIS_InteractiveObject* DatumAxis::createAISRepr() const
+AIS_InteractiveObject* DatumAxis::createAISRepr(const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis())));
+  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr))));
 //   ais->SetWidth(100);
   return ais;
 }
@@ -237,10 +279,10 @@ gp_Ax3 DatumPlaneData::plane() const
 }
 
 // DatumPlane::operator const Handle_AIS_InteractiveObject () const
-AIS_InteractiveObject* DatumPlaneData::createAISRepr() const
+AIS_InteractiveObject* DatumPlaneData::createAISRepr(const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane())));
+  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane().Transformed(tr))));
   ais->SetSize(100);
   return ais;
 }

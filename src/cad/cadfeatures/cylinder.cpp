@@ -19,6 +19,7 @@
 
 #include "cylinder.h"
 #include "base/boost_include.h"
+#include "datum.h"
 
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;
@@ -95,6 +96,8 @@ void Cylinder::build()
       
     );
   }
+  
+  providedDatums_["axis"]=DatumPtr(new ExplicitDatumAxis(p1_, VectorPtr(new SubtractedVector(p2_, p1_))));
 
   setShape(cyl);
 }

@@ -63,6 +63,25 @@ public:
     virtual double residual(const gp_Trsf& tr) const;
 };
 
+class InclinedPlanes
+: public Condition
+{
+    DatumPtr pl_org_,  pl_targ_;
+    ScalarPtr angle_;
+public:
+    InclinedPlanes(DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle);
+    virtual double residual(const gp_Trsf& tr) const;
+};
+
+class Coaxial
+: public Condition
+{
+    DatumPtr ax_org_,  ax_targ_;
+public:
+    Coaxial(DatumPtr ax_org, DatumPtr ax_targ);
+    virtual double residual(const gp_Trsf& tr) const;
+};
+
 class PointInPlane
 : public Condition
 {

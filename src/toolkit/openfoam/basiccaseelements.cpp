@@ -183,10 +183,13 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
 {
   if (OFversion()==230)
   {
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+  controlDict.getList("libs").insertNoDuplicate( "\"libconstantPressureGradient.so\"" );  
+
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
     coeffs["fieldNames"]=flds;
-    coeffs["gradp"]=OFDictData::dimensionedData("gradp", dimKinPressure, OFDictData::vector3(p_.gradp()));
+    coeffs["gradp"]=OFDictData::dimensionedData("gradp", OFDictData::dimension(0, 1, -2, 0, 0, 0, 0), OFDictData::vector3(p_.gradp()));
 
     OFDictData::dict fod;
     fod["type"]="constantPressureGradientExplicitSource";

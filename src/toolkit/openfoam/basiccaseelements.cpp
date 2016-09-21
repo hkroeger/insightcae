@@ -189,7 +189,7 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
     coeffs["fieldNames"]=flds;
-    coeffs["gradp"]=OFDictData::dimensionedData("gradp", OFDictData::dimension(0, 1, -2, 0, 0, 0, 0), OFDictData::vector3(p_.gradp()));
+    coeffs["gradP"]=OFDictData::dimensionedData("gradP", OFDictData::dimension(0, 1, -2, 0, 0, 0, 0), OFDictData::vector3(p_.gradp()));
 
     OFDictData::dict fod;
     fod["type"]="constantPressureGradientExplicitSource";

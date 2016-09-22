@@ -173,6 +173,42 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
   }
 }
 
+ConstantPressureGradientSource::ConstantPressureGradientSource(OpenFOAMCase& c, Parameters const& p )
+: OpenFOAMCaseElement(c, "ConstantPressureGradientSource"),
+  p_(p)
+{
+}
+
+void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  if (OFversion()==230)
+  {
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+  controlDict.getList("libs").insertNoDuplicate( "\"libconstantPressureGradient.so\"" );  
+
+    OFDictData::dict coeffs;
+    OFDictData::list flds; flds.push_back("U");
+    coeffs["fieldNames"]=flds;
+    coeffs["gradP"]=OFDictData::dimensionedData("gradP", OFDictData::dimension(0, 1, -2, 0, 0, 0, 0), OFDictData::vector3(p_.gradp()));
+
+    OFDictData::dict fod;
+    fod["type"]="constantPressureGradientExplicitSource";
+    fod["active"]=true;
+    fod["selectionMode"]="all";
+    fod["constantPressureGradientExplicitSourceCoeffs"]=coeffs;
+
+    OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+    fvOptions[name()]=fod;
+  }
+  else
+  {
+throw insight::Exception("constantPressureGradient unavailable!");
+    // for channelFoam:
+ //   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
+ //   transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar()));
+  }
+}
+
 singlePhaseTransportProperties::singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p )
 : transportModel(c),
   p_(p)

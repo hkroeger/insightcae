@@ -119,6 +119,22 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
+class ConstantPressureGradientSource
+: public OpenFOAMCaseElement
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+    (gradp, arma::mat, vec3(0,0,0))
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  ConstantPressureGradientSource(OpenFOAMCase& c, Parameters const& p = Parameters() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+};
+
 
 class singlePhaseTransportProperties
 : public transportModel

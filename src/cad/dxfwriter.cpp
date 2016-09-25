@@ -25,6 +25,8 @@
 #include "boost/lexical_cast.hpp"
 
 #include "base/exception.h"
+#include "TopTools_ListIteratorOfListOfShape.hxx"
+#include "Geom_Ellipse.hxx"
 
 using namespace std;
 using namespace boost;
@@ -115,7 +117,7 @@ DXFWriter::DXFWriter
   dw_->tableLayers(numberOfLayers);
   dxf_.writeLayer(*dw_, DL_LayerData("ANNOTATIONS", 0), DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS", 1) );
   dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1) );
-  dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS", 1) );
+//   dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS", 1) );
   BOOST_FOREACH(const LayerDefinition& ld, layers)
   {
     DL_LayerData ldata(boost::get<0>(ld), 0);
@@ -507,94 +509,39 @@ DL_HatchData HatchGenerator::generate()
 void DXFWriter::writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer)
 {
     gp_Elips ellp = c.Ellipse();
+    Handle_Geom_Ellipse ec = Handle_Geom_Ellipse::DownCast(c.Curve().Curve());
+
     const gp_Pnt& p= ellp.Location();
-    
+
     double r1 = ellp.MajorRadius();
     double r2 = ellp.MinorRadius();
-    
-    double f = c.FirstParameter();
-    double l = c.LastParameter();
-    
-    gp_Pnt s = c.Value(f);
-    gp_Pnt e = c.Value(l);
-    gp_Pnt m = c.Value(0.5*(l+f));
-
-    gp_Vec v1(m, s);
-    gp_Vec v2(m, e);
-    gp_Vec v3(0, 0, 1.);
-    double dir = v3.DotCross(v1,v2);
+    double ratio = r2/r1;
+    double dp = ellp.Axis().Direction().Dot( gp_Vec(0,0,1) );
 
     gp_Dir xaxis = ellp.XAxis().Direction();
-    gp_Pnt pm=gp_Pnt(xaxis.XYZ().Normalized()*r1);
+    gp_Pnt pm( xaxis.XYZ().Normalized() * r1 );
 
-    gp_Vec a (p, s); // = s-p
-    gp_Vec b (p, e); // = e-p
-
-    double a0=atan2(xaxis.Y(), xaxis.X());
-    if (a0<0) a0=2.*M_PI-a0;
-    a.Rotate(gp_Ax1(p, v3), -a0);
-    b.Rotate(gp_Ax1(p, v3), -a0);
-    double start_angle = atan2(a.Y(), a.X());
-    if (start_angle<0) start_angle=2.*M_PI-start_angle;
-    double end_angle = atan2(b.Y(), b.X());
-    if (end_angle<0) end_angle=2.*M_PI-end_angle;
-
-    double ratio = r2/r1;
-
-    if (dir>0) std::swap(start_angle, end_angle);
+    double start_angle = c.FirstParameter();
+    double end_angle = c.LastParameter();
     
-  dxf_.writeLine
-  (
-    *dw_,
-    DL_LineData
-    (
-      p.X(), p.Y(), 0,
-      s.X(), s.Y(), 0
-    ),
-    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
-  );
-  dxf_.writeLine
-  (
-    *dw_,
-    DL_LineData
-    (
-      p.X(), p.Y(), 0,
-      e.X(), e.Y(), 0
-    ),
-    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
-  );
-  dxf_.writeLine
-  (
-    *dw_,
-    DL_LineData
-    (
-      p.X(), p.Y(), 0,
-      m.X(), m.Y(), 0
-    ),
-    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
-  );
-  dxf_.writeLine
-  (
-    *dw_,
-    DL_LineData
-    (
-      p.X(), p.Y(), 0,
-      pm.X(), pm.Y(), 0
-    ),
-    DL_Attributes("ANNOTATIONS", 256, -1, "BYLAYER", 1)
-  );
+    if ( ec->Position().Direction().Dot( gp_Vec(0,0,1) ) < 0.0 )
+    {
+        start_angle=2.*M_PI-start_angle;
+        end_angle=2.*M_PI-end_angle;
+    }
 
-  dxf_.writeEllipse
+    if (dp < 0) std::swap(start_angle, end_angle);
+    
+    dxf_.writeEllipse
     (
-      *dw_,
-      DL_EllipseData
-      (
-	p.X(), p.Y(), 0,
-	pm.X(), pm.Y(), 0,
-	ratio, 
-	start_angle, end_angle
-      ),
-      DL_Attributes(layer, 256, -1, "BYLAYER", 1)
+        *dw_,
+        DL_EllipseData
+        (
+            p.X(), p.Y(), 0,
+            pm.X(), pm.Y(), 0,
+            ratio, start_angle, end_angle
+        ),
+        DL_Attributes(layer, 256, -1, "BYLAYER", 1)
     );
 }
 
@@ -625,10 +572,10 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 	    writeCircle(adapt, layer);
 	  } break;
 
-// 	  case GeomAbs_Ellipse:
-// 	  {
-// 	    writeEllipse(adapt, layer);
-// 	  } break;
+	  case GeomAbs_Ellipse:
+	  {
+	    writeEllipse(adapt, layer);
+	  } break;
 
 	  default:
 	    writeDiscrete(adapt, layer);
@@ -641,6 +588,8 @@ void DXFWriter::writeShapeEdges(const TopoDS_Shape& shape, std::string layer)
 
 void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, std::string layer)
 {
+    DL_HatchData data = hgen.generate(); //(1, false, 0.5, 45.0, "iso03w100");
+    
     for (TopExp_Explorer exf(shape, TopAbs_FACE); exf.More(); exf.Next())
     {
         //cout<<"Processing face"<<endl;
@@ -692,9 +641,6 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
 
         DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
 
-        // start hatch with one loop:
-        DL_HatchData data = hgen.generate(); //(1, false, 0.5, 45.0, "iso03w100");
-
         // start loop:
         int nsegs=0;
         BOOST_FOREACH(const hatchLoopWriter& w, segments)
@@ -744,21 +690,33 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
 void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::Views& views)
 {
     std::vector<LayerDefinition> addlayers;
+    
+#define DEF_LAYERNAMES(name) \
+    std::string \
+     HLlayername=name+"_1_HIDL", \
+     xseclayername=name+"_2_XSEC", \
+     vislayername=name+"_3_CONT" \
+     ;
 
     BOOST_FOREACH(const Feature::Views::value_type& v, views)
     {
-        string name=v.first;
+        DEF_LAYERNAMES(v.first);
+        
         addlayers.push_back
         (
-            LayerDefinition(name, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1.), true)
+            LayerDefinition(HLlayername, DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS", 1), false)
         );
-        if (!v.second.crossSection.IsNull())
+        if (!v.second.crossSections)
         {
             addlayers.push_back
             (
-                LayerDefinition(name+"_XSEC", DL_Attributes(std::string(""), DL_Codes::black, 25, "CONTINUOUS", 1.), false)
+                LayerDefinition(xseclayername, DL_Attributes(std::string(""), DL_Codes::black, 25, "CONTINUOUS", 1.), false)
             );
         }
+        addlayers.push_back
+        (
+            LayerDefinition(vislayername, DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1.), false)
+        );
     }
 
     DXFWriter dxf(file, addlayers);
@@ -769,20 +727,27 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
     HatchGenerator hgen;
     BOOST_FOREACH(const Feature::Views::value_type& v, views)
     {
-        string name=v.first;
+        std::string blockname=v.first;
+        DEF_LAYERNAMES(v.first);
 
         dxf.dxf().writeBlock(dxf.dw(),
-                             DL_BlockData(name, 0, 
+                             DL_BlockData(blockname, 0, 
                                           v.second.drawing_ctr_x, v.second.drawing_ctr_y, 0.0
                                          )
                             );
-        dxf.writeShapeEdges(v.second.visibleEdges, name);
-        dxf.writeShapeEdges(v.second.hiddenEdges, name+"_HL");
-        if (!v.second.crossSection.IsNull())
+        
+        // order of entities: background first
+        dxf.writeShapeEdges(v.second.hiddenEdges, HLlayername);
+        if (v.second.crossSections)
         {
-            dxf.writeSection( v.second.crossSection, hgen, name+"_XSEC");
+            for (TopTools_ListIteratorOfListOfShape it(*v.second.crossSections);
+                  it.More(); it.Next())
+            {
+                dxf.writeSection( it.Value(), hgen, xseclayername);
+            }
         }
-        dxf.dxf().writeEndBlock(dxf.dw(), name);
+        dxf.writeShapeEdges(v.second.visibleEdges, vislayername);
+        dxf.dxf().writeEndBlock(dxf.dw(), blockname);
     }
     dxf.dw().sectionEnd();
 
@@ -790,7 +755,9 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
     
     BOOST_FOREACH(const Feature::Views::value_type& v, views)
     {
-        string name=v.first;
+        std::string blockname=v.first;
+        DEF_LAYERNAMES(v.first);
+        
         const Feature::View& vd=v.second;
         
         dxf.dxf().writeInsert
@@ -798,7 +765,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
             dxf.dw(), 
             DL_InsertData
             (
-                name, 
+                blockname, 
                 vd.insert_x, vd.insert_y, 0.,  // location x y z
                 1., 1., 1., // scale
                 0.0,    // roatation angle

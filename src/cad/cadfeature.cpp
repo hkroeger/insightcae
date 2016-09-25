@@ -1465,13 +1465,13 @@ Feature::View Feature::createView
     TopoDS_Shape dispshape=shape();
 
     gp_Pnt p_base = gp_Pnt(p0(0), p0(1), p0(2));
-    gp_Dir view_dir = gp_Dir(n(0), n(1), n(2));
+    gp_Dir view_dir = -gp_Dir(n(0), n(1), n(2));
 
     gp_Ax2 viewCS(p_base, view_dir);
     if (up.n_elem==3)
     {
         arma::mat ex = cross(up, n);
-        viewCS=gp_Ax2(p_base, view_dir, gp_Dir(to_Vec(ex)));
+        viewCS=gp_Ax2(p_base, -view_dir, gp_Dir(to_Vec(ex)));
     }
 
     HLRAlgo_Projector projector( viewCS );
@@ -1481,33 +1481,37 @@ Feature::View Feature::createView
     {
         gp_Dir normal = -view_dir;
         gp_Pln plane = gp_Pln(p_base, normal);
-        gp_Pnt refPnt = gp_Pnt(p_base.X()-normal.X(), p_base.Y()-normal.Y(), p_base.Z()-normal.Z());
+        gp_Pnt refPnt = gp_Pnt(p_base.X()+normal.X(), p_base.Y()+normal.Y(), p_base.Z()+normal.Z());
 
         TopoDS_Face Face = BRepBuilderAPI_MakeFace(plane);
         TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
 
-        TopoDS_Compound dispshapes, xsecs;
-        BRep_Builder builder1, builder2;
+        TopoDS_Compound dispshapes;
+        boost::shared_ptr<TopTools_ListOfShape> xsecs(new TopTools_ListOfShape);
+        BRep_Builder builder1;
         builder1.MakeCompound( dispshapes );
-        builder2.MakeCompound( xsecs );
         int i=-1, j=0;
         for (TopExp_Explorer ex(shape(), TopAbs_SOLID); ex.More(); ex.Next())
         {
+            TopoDS_Compound cxsecs;
+            BRep_Builder builder2;
+            builder2.MakeCompound( cxsecs );
             i++;
             try
             {
                 builder1.Add(dispshapes, 	BRepAlgoAPI_Cut(ex.Current(), HalfSpace));
-                builder2.Add(xsecs, 		BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ex.Current(), Face), transform).Shape());
+                builder2.Add(cxsecs, 		BRepBuilderAPI_Transform(BRepAlgoAPI_Common(ex.Current(), Face), transform).Shape());
                 j++;
             }
             catch (...)
             {
                 cout<<"Warning: Failed to compute cross section of solid #"<<i<<endl;
             }
+            xsecs->Append(cxsecs);
         }
         cout<<"Generated "<<j<<" cross-sections"<<endl;
         dispshape=dispshapes;
-        result_view.crossSection = xsecs;
+        result_view.crossSections = xsecs;
     }
 
     TopoDS_Compound allVisible;

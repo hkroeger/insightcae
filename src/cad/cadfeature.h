@@ -39,6 +39,7 @@
 #include "base/factory.h"
 
 #include "occinclude.h"
+#include "TopTools_ListOfShape.hxx"
 
 #include "cadtypes.h"
 #include "astbase.h"
@@ -158,7 +159,8 @@ public:
   
   struct View
   {
-    TopoDS_Shape visibleEdges, hiddenEdges, crossSection;
+    TopoDS_Shape visibleEdges, hiddenEdges;
+    boost::shared_ptr<TopTools_ListOfShape> crossSections;
     /**
      * 2D size of projection
      */

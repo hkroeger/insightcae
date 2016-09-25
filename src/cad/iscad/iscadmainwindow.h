@@ -75,6 +75,7 @@ protected:
   const int bgparseInterval=1000;
   insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
   bool unsaved_;
+  bool doBgParsing_;
 
 protected:
   void clearDerivedData();
@@ -127,6 +128,8 @@ protected slots:
   
   void editSketch(int sk_ptr);
   void editModel(int mo_ptr);
+  
+  void toggleBgParsing(int state);
 
 public:
   ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);

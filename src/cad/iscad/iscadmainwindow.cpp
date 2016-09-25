@@ -88,7 +88,8 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags),
-  unsaved_(false)
+  unsaved_(false),
+  doBgParsing_(true)
 {  
   setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
   
@@ -137,6 +138,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
   QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
   connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
   vbox->addWidget(rebuildBtn);
+  QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
+  toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
+  connect(toggleBgParse, SIGNAL(stateChanged(int)), this, SLOT(toggleBgParsing(int)));
+  vbox->addWidget(toggleBgParse);
   gb->setLayout(vbox);
   spl2->addWidget(gb);
 
@@ -405,30 +410,28 @@ void ISCADMainWindow::restartBgParseTimer(int,int,int)
 
 void ISCADMainWindow::doBgParse()
 {
-  syn_elem_dir_.reset();
-  statusBar()->showMessage("Background model parsing in progress...");
-  
-  std::istringstream is(editor_->toPlainText().toStdString());
-  
-  int failloc=-1;
-  
-  insight::cad::ModelPtr m(new insight::cad::Model);
-  
-  bool r=insight::cad::parseISCADModelStream(is, m.get(), &failloc, &syn_elem_dir_);
+    if (doBgParsing_)
+    {
+        syn_elem_dir_.reset();
+        statusBar()->showMessage("Background model parsing in progress...");
 
-  if (!r) // fail if we did not get a full match
-  {
-//     QTextCursor tmpCursor = editor_->textCursor();
-//     tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
-//     tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
-//     editor_->setTextCursor(tmpCursor);
-    
-    statusBar()->showMessage("Background model parsing failed.");
-  }
-  else
-  {
-    statusBar()->showMessage("Background model parsing finished successfully.");
-  }
+        std::istringstream is(editor_->toPlainText().toStdString());
+
+        int failloc=-1;
+
+        insight::cad::ModelPtr m(new insight::cad::Model);
+
+        bool r=insight::cad::parseISCADModelStream(is, m.get(), &failloc, &syn_elem_dir_);
+
+        if (!r) // fail if we did not get a full match
+        {
+            statusBar()->showMessage("Background model parsing failed.");
+        }
+        else
+        {
+            statusBar()->showMessage("Background model parsing finished successfully.");
+        }
+    }
 }
 
 
@@ -449,6 +452,20 @@ void ISCADMainWindow::editModel(int sk_ptr)
     sk->executeEditor();
 }
 
+
+
+
+void ISCADMainWindow::toggleBgParsing(int state)
+{
+    if (state==Qt::Checked)
+    {
+        doBgParsing_=true;
+    }
+    else if (state==Qt::Unchecked)
+    {
+        doBgParsing_=false;
+    }
+}
 
 
 

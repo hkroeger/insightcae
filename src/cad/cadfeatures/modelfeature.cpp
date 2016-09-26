@@ -83,38 +83,96 @@ ModelFeature::ModelFeature(const NoParameters&): Compound()
 
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
 : modelname_(modelname), vars_(vars)
-{}
+{
+  // build the parameter hash
+  ParameterListHash p(this);
+  
+  std::string fname=modelname+".iscad";
+  try 
+  {
+    // try to incorporate file time stamp etc
+    p+=sharedModelFilePath(fname);
+  }
+  catch (...)
+  {
+    // if file is non-existing, use filename only
+    p+=fname;
+  }
+
+  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
+  {
+    p+=boost::fusion::at_c<0>(*it);
+    auto v=boost::fusion::at_c<1>(*it);
+    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+    {
+        p+=(*fp);
+    }
+    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+    {
+        p+=(*dp);
+    }
+    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+    {
+        p+=(*vp)->value();
+    }
+    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+    {
+        p+=(*sp)->value();
+    }
+    
+  }
+}
 
 
+
+FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariableTable& vars)
+{
+    return FeaturePtr
+           (
+               new ModelFeature
+               (
+                   modelname, vars
+               )
+           );
+}
 
 
 void ModelFeature::build()
 {
-  model_.reset(new Model(modelname_, vars_));
-  model_->checkForBuildDuringAccess();
-  
-  BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())
-  {
-    components_[c]=model_->lookupModelstep(c);
-  }
-  
-  auto modelsteps=model_->modelsteps();
-  BOOST_FOREACH(decltype(modelsteps)::value_type const& c, modelsteps)
-  {
-    std::string name=c.first;
-    // Compound::build copies the components. Here, the rest is copied.
-    if (components_.find(name)==components_.end())
+    if (!cache.contains(hash()))
     {
-      FeaturePtr p=c.second;
-      
-      copyDatums(*p, name+"_");
-      providedSubshapes_[name]=p;
-    }
-  }
+        model_.reset(new Model(modelname_, vars_));
+        model_->checkForBuildDuringAccess();
 
-  copyModelDatums();
-  
-  Compound::build();
+        BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())
+        {
+            components_[c]=model_->lookupModelstep(c);
+        }
+
+        auto modelsteps=model_->modelsteps();
+        BOOST_FOREACH(decltype(modelsteps)::value_type const& c, modelsteps)
+        {
+            std::string name=c.first;
+            // Compound::build copies the components. Here, the rest is copied.
+            if (components_.find(name)==components_.end())
+            {
+                FeaturePtr p=c.second;
+
+                copyDatums(*p, name+"_");
+                providedSubshapes_[name]=p;
+            }
+        }
+
+        copyModelDatums();
+
+        Compound::build();
+
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<ModelFeature>(hash()));
+    }
 }
 
 
@@ -139,7 +197,7 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' >> ruleset.r_identifier >> 
 	*(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<ModelFeature>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
       
     ))
   );

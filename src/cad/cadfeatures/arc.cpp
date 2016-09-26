@@ -89,6 +89,17 @@ Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 }
 
 
+FeaturePtr Arc::create(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
+{
+    return FeaturePtr
+           (
+               new Arc
+               (
+                   p0, p0tang,
+                   p1
+               )
+           );
+}
 
 /**
  * \page iscad_arc Arc
@@ -124,7 +135,7 @@ void Arc::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-	 [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Arc>(qi::_1, qi::_2, qi::_3)) ]
+	 [ qi::_val = phx::bind(&Arc::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );

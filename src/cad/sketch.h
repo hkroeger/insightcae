@@ -89,10 +89,20 @@ class Sketch
   SketchVarList vars_;
   double tol_;
 
+  Sketch
+  (
+    DatumPtr pl, 
+    const boost::filesystem::path& filename, 
+    const std::string& layername="0", 
+    const SketchVarList& vars = SketchVarList(), 
+    double tol=Precision::Confusion() 
+  );
+
 public:
   declareType("Sketch");
   Sketch(const NoParameters& nop = NoParameters());
-  Sketch
+  
+  static FeaturePtr create
   (
     DatumPtr pl, 
     const boost::filesystem::path& filename, 

@@ -50,6 +50,18 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
   h+=boost::fusion::at_c<1>(center_);
 }
 
+FeaturePtr Quad::create(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
+{
+    return FeaturePtr
+           (
+               new Quad
+               (
+                   p0, L, W, center
+               )
+           );
+}
+
+
 void Quad::operator=(const Quad& o)
 {
   p0_=o.p0_;
@@ -128,7 +140,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
           ( qi::attr(false) >> qi::attr(false) )
 	  )
       >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Quad>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	[ qi::_val = phx::bind(&Quad::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );

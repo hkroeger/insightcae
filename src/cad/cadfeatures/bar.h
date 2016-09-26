@@ -42,12 +42,7 @@ class Bar
   ScalarPtr miterangle0_hor_; 
   ScalarPtr miterangle1_hor_;
 
-
-public:
-  declareType("Bar");
-  Bar(const NoParameters& nop = NoParameters());
-  
-  /**
+ /**
    * crate bar between p0 and p1. Cross section's xsec (single face) y-axis will be aligned with vertical direction vert.
    * bar is elongated at p0 by ext0 and at p1 by ext1, respectively.
    * 
@@ -66,6 +61,27 @@ public:
   );
 
   Bar
+  (
+    VectorPtr p0, VectorPtr p1, 
+    FeaturePtr xsec, VectorPtr vert,
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+  );
+
+
+public:
+  declareType("Bar");
+  Bar(const NoParameters& nop = NoParameters());
+  
+  static FeaturePtr create(
+    VectorPtr p0, VectorPtr p1, 
+    FeaturePtr xsec, VectorPtr vert,
+    ScalarPtr ext0, ScalarPtr ext1,
+    ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
+    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
+  );
+
+  static FeaturePtr create
   (
     VectorPtr p0, VectorPtr p1, 
     FeaturePtr xsec, VectorPtr vert,

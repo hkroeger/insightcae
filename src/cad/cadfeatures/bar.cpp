@@ -134,12 +134,12 @@ void Bar::build()
         {
             arma::mat cex=rotMatrix(*miterangle0_vert_, ey)*ex;
             arma::mat cey=rotMatrix(*miterangle0_hor_, ex)*ey;
-            FeaturePtr q(new Quad
+            FeaturePtr q=Quad::create
                          (
                              matconst(p0_->value() -0.5*L*(cex+cey)),
                              matconst(L*cex),
                              matconst(L*cey)
-                         ));
+                         );
             TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(-L*baraxis) );
             result=BRepAlgoAPI_Cut(result, airspace);
         }
@@ -149,12 +149,12 @@ void Bar::build()
         {
             arma::mat cex=rotMatrix(*miterangle1_vert_, ey)*ex;
             arma::mat cey=rotMatrix(*miterangle1_hor_, ex)*ey;
-            FeaturePtr q(new Quad
+            FeaturePtr q=Quad::create
                          (
                              matconst(p1_->value() -0.5*L*(cex+cey)),
                              matconst(L*cex),
                              matconst(L*cey)
-                         ));
+                         );
             TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*baraxis) );
             result=BRepAlgoAPI_Cut(result, airspace);
         }
@@ -251,6 +251,54 @@ Bar::Bar
 
 
 
+FeaturePtr Bar::create
+(
+    VectorPtr p0, VectorPtr p1,
+    FeaturePtr xsec, VectorPtr vert,
+    ScalarPtr ext0, ScalarPtr ext1,
+    ScalarPtr miterangle0_vert, ScalarPtr miterangle1_vert,
+    ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
+)
+{
+    return FeaturePtr
+           (
+               new Bar
+               (
+                   p0, p1,
+                   xsec, vert,
+                   ext0, ext1,
+                   miterangle0_vert, miterangle1_vert,
+                   miterangle0_hor, miterangle1_hor
+               )
+           );
+}
+
+
+
+
+FeaturePtr Bar::create
+(
+    VectorPtr p0, VectorPtr p1,
+    FeaturePtr xsec, VectorPtr vert,
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh0,
+    const boost::fusion::vector3<ScalarPtr,ScalarPtr,ScalarPtr>& ext_miterv_miterh1
+)
+{
+    return FeaturePtr
+           (
+               new Bar
+               (
+                   p0, p1,
+                   xsec, vert,
+                   ext_miterv_miterh0,
+                   ext_miterv_miterh1
+               )
+           );
+}
+
+
+
+
 void Bar::operator=(const Bar& o)
 {
   p0_=o.p0_;
@@ -327,12 +375,17 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                       >> ruleset.r_solidmodel_expression >> ',' // 5
                       >> ruleset.r_vectorExpression >> // 6
                       ')' )
-                    [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Bar>
-                                 (
+//                     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Bar>
+//                                  (
+//                                      qi::_1, qi::_3,
+//                                      qi::_5, qi::_6,
+//                                      qi::_2, qi::_4
+//                                  )) ]
+                    [ qi::_val = phx::bind(&Bar::create, 
                                      qi::_1, qi::_3,
                                      qi::_5, qi::_6,
                                      qi::_2, qi::_4
-                                 )) ]
+                                 ) ]
 
                 ))
     );

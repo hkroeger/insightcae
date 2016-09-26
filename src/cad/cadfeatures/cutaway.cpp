@@ -108,12 +108,12 @@ void Cutaway::build()
 
 //     std::cout<<"Quad"<<std::endl;
 #warning Relocate p0 in plane to somewhere nearer to model center!
-        FeaturePtr q(new Quad
+        FeaturePtr q=Quad::create
                      (
                          matconst(p0-0.5*L*(ex+ey)),
                          matconst(L*ex),
                          matconst(L*ey)
-                     ));
+                     );
         this->setShape(q->shape());
         //   std::cout<<"Airspace"<<std::endl;
         TopoDS_Shape airspace=BRepPrimAPI_MakePrism(TopoDS::Face(q->shape()), to_Vec(L*n) );

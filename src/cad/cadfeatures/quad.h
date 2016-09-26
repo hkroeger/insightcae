@@ -35,11 +35,13 @@ class Quad
   VectorPtr W_;
   
   QuadCentering center_;
+
+  Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
   
 public:
   declareType("Quad");
   Quad(const NoParameters& nop = NoParameters());
-  Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
+  static FeaturePtr create(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
   operator const TopoDS_Face& () const;
   
   void operator=(const Quad& o);

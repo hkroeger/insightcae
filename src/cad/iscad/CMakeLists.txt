@@ -7,6 +7,7 @@ set(iscad_SRCS
  datumlist.cpp            iscadmainwindow.cpp         qdatumitem.cpp        qoccviewwidget.cpp
  evaluationlist.cpp       iscadsyntaxhighlighter.cpp  qevaluationitem.cpp   qvariableitem.cpp
  iscadapplication.cpp     modelsteplist.cpp           qmodelstepitem.cpp    viewstate.cpp
+ modelcomponentselectordlg.cpp
 )
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)
@@ -18,11 +19,11 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})
 # link_directories(${toolkit_BIN_DIR})
 
-SET(iscad_FORMS ) #newanalysisdlg.ui analysisform.ui)
+SET(iscad_FORMS modelcomponentselectordlg.ui) #newanalysisdlg.ui analysisform.ui)
 
 SET(iscad_RCCS iscad.qrc)
 
-# QT4_WRAP_UI(workbench_FORMS_HEADERS ${iscad_FORMS})
+QT4_WRAP_UI(iscad_FORMS_HEADERS ${iscad_FORMS})
 qt4_automoc(${iscad_SRCS})
 
 add_executable(iscad ${iscad_SRCS} ${iscad_FORMS_HEADERS} ${iscad_RCCS})

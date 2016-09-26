@@ -17,55 +17,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_MODELFEATURE_H
-#define INSIGHT_CAD_MODELFEATURE_H
+#ifndef MODELCOMPONENTSELECTORDLG_H
+#define MODELCOMPONENTSELECTORDLG_H
 
+#include <QDialog>
 #include "cadtypes.h"
-#include "compound.h"
+#include "cadmodel.h"
 
-namespace insight 
+class QTreeWidgetItem;
+
+namespace Ui
 {
-namespace cad 
+class ModelComponentSelectorDlg;
+}
+
+class ModelComponentSelectorDlg 
+: public QDialog
 {
-
+    Q_OBJECT
     
-    
-    
-class ModelFeature
-    : public Compound
-{
-    std::string modelname_;
-    ModelVariableTable vars_;
-
-    ModelPtr model_;
-
-    void copyModelDatums();
-    
-    ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
-
 public:
-    declareType("loadmodel");
-
-    ModelFeature(const NoParameters&);
-    static FeaturePtr create(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
-
-    virtual void build();
-    void executeEditor();
-
-    inline const std::string& modelname() const {
-        return modelname_;
-    }
+    ModelComponentSelectorDlg(const insight::cad::ModelPtr& m, QWidget* parent=NULL, Qt::WindowFlags f=0);
     
-    inline ModelPtr model() const { return model_; }
+    std::string selected() const;
 
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-
+private:
+    Ui::ModelComponentSelectorDlg* ui;
 };
 
-
-
-
-}
-}
-
-#endif // INSIGHT_CAD_MODELFEATURE_H
+#endif // MODELCOMPONENTSELECTORDLG_H

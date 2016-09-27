@@ -158,7 +158,7 @@ void ModelFeature::build()
             {
                 FeaturePtr p=c.second;
 
-                copyDatums(*p, name+"_");
+//                 copyDatums(*p, name+"_");
                 providedSubshapes_[name]=p;
             }
         }

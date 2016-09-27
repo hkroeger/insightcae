@@ -41,17 +41,13 @@ void ASTBase::checkForBuildDuringAccess() const
   boost::mutex m_mutex;
   boost::unique_lock<boost::mutex> lock(m_mutex);
   
-//   std::cout<<"rebuild?"<<std::endl;
   if (!valid()) 
   {
-//     std::cout<<"do rebuild"<<std::endl;
     building_=true;
     const_cast<ASTBase*>(this)->build();
     building_=false;
     const_cast<ASTBase*>(this)->setValid();
-//     std::cout<<"rebuild finished"<<std::endl;
   }
-//     else std::cout<<"no rebuild necessary"<<std::endl;
 }
 
 }

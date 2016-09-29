@@ -172,14 +172,14 @@ public slots:
     void addVariable(std::string sn, insight::cad::parser::vector vv);
 
     void loadModel();
-    void saveModel();
-    void saveModelAs();
+    bool saveModel();
+    bool saveModelAs();
     void rebuildModel();
     void clearCache();
     void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
     void showEditorContextMenu(const QPoint&);
 
-    void setUnsavedState(int i1=0,int i2=0,int i3=0);
+    void setUnsavedState(int i1=0, int i2=1, int i3=1);
     void unsetUnsavedState();
 
 };

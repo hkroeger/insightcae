@@ -267,18 +267,32 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
             (
                 this,
                 "ISCAD",
-                tr("The editor content is not saved.\nAre you sure?\n"),
+                tr("The editor content is not saved.\nSave now?\n"),
                 QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
                 QMessageBox::No
             );
     }
 
-    if (resBtn != QMessageBox::Yes)
+    if (resBtn == QMessageBox::Cancel)
     {
         event->ignore();
     }
     else
     {
+        if (resBtn == QMessageBox::Yes)
+        {
+            bool saved = saveModel();
+            if (!saved)
+            {
+                saved=saveModelAs();
+            }
+            if (!saved)
+            {
+                event->ignore();
+                return;
+            }
+        }
+        
         QSettings settings;
         settings.setValue("mainWindowGeometry", saveGeometry());
         settings.setValue("mainWindowState", saveState());
@@ -302,7 +316,7 @@ void ISCADMainWindow::loadModel()
 
 
 
-void ISCADMainWindow::saveModel()
+bool ISCADMainWindow::saveModel()
 {
     if (filename_!="")
     {
@@ -310,19 +324,29 @@ void ISCADMainWindow::saveModel()
         out << editor_->toPlainText().toStdString();
         out.close();
         unsetUnsavedState();
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
 
 
 
-void ISCADMainWindow::saveModelAs()
+bool ISCADMainWindow::saveModelAs()
 {
     QString fn=QFileDialog::getSaveFileName(this, "Select location", "", "ISCAD Model Files (*.iscad)");
     if (fn!="")
     {
         setFilename(qPrintable(fn));
         saveModel();
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -354,9 +378,10 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
     in.seekg(0, std::ios::beg);
     in.read(&contents_raw[0], contents_raw.size());
 
-    disconnect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
+
+   disconnect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
     editor_->setPlainText(contents_raw.c_str());
-    connect(editor_, SIGNAL(textChanged()), this, SLOT(setUnsavedState()));
+    connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
 }
 
 
@@ -896,12 +921,16 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
 
 
 
-void ISCADMainWindow::setUnsavedState(int,int,int)
+void ISCADMainWindow::setUnsavedState(int, int rem, int ad)
 {
-    if (!unsaved_)
+//     std::cerr<<"CHANGED:"<<rem<<" "<<ad<<std::endl;
+    if ((rem>0) || (ad>0))
     {
-        setWindowTitle(QString("*") + filename_.filename().c_str());
-        unsaved_=true;
+        if (!unsaved_)
+        {
+            setWindowTitle(QString("*") + filename_.filename().c_str());
+            unsaved_=true;
+        }
     }
 }
 

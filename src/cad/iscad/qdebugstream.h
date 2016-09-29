@@ -6,11 +6,15 @@
 #include <string>
 
 #include <QTextEdit>
+#include <QMutex>
 #include <qapplication.h>
 
+extern QMutex qdebugstream_mutex;
+
 class Q_DebugStream 
-: public std::basic_streambuf<char>
+: public QObject, public std::basic_streambuf<char>
 {
+    Q_OBJECT
 public:
     Q_DebugStream(std::ostream &stream, QTextEdit* text_edit) : m_stream(stream)
     {
@@ -24,8 +28,9 @@ public:
         m_stream.rdbuf(m_old_buf);
     }
 
-    static void registerQDebugMessageHandler(){
-      qInstallMsgHandler(myQDebugMessageHandler);
+    static void registerQDebugMessageHandler()
+    {
+        qInstallMsgHandler(myQDebugMessageHandler);
 //         qInstallMessageHandler(myQDebugMessageHandler);
     }
 
@@ -41,16 +46,19 @@ protected:
     //This is called when a std::endl has been inserted into the stream
     virtual int_type overflow(int_type v)
     {
+        qdebugstream_mutex.lock();
         if (v == '\n')
         {
             log_window->append("");
         }
+        qdebugstream_mutex.unlock();
         return v;
     }
 
 
     virtual std::streamsize xsputn(const char *p, std::streamsize n)
     {
+        qdebugstream_mutex.lock();
         QString str(p);
         if(str.contains("\n")){
             QStringList strSplitted = str.split("\n");
@@ -65,6 +73,7 @@ protected:
             log_window->moveCursor (QTextCursor::End);
             log_window->insertPlainText (str);
         }
+        qdebugstream_mutex.unlock();
         return n;
     }
 

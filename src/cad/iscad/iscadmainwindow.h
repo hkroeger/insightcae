@@ -44,7 +44,25 @@
 class ISCADSyntaxHighlighter;
 
 
-
+class BGParsingThread
+: public QThread
+{
+    Q_OBJECT
+    
+protected:
+    std::string script_;
+    
+    QStatusBar* statusbar_;
+    
+public:
+    insight::cad::ModelPtr model_;
+    insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
+    
+    BGParsingThread(QStatusBar*);
+    
+    void launch(const std::string& script);
+    virtual void run();
+};
 
 class ISCADMainWindow
     : public QMainWindow
@@ -79,6 +97,8 @@ protected:
     bool doBgParsing_;
     
     insight::cad::ModelPtr cur_model_;
+    
+    BGParsingThread bgparsethread_;
 
 protected:
     void clearDerivedData();
@@ -135,9 +155,12 @@ protected slots:
     void toggleBgParsing(int state);
     
     void insertComponentNameAtCursor();
+    
+    void onBgParseFinished();
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+    ~ISCADMainWindow();
 
     void loadFile(const boost::filesystem::path& file);
 

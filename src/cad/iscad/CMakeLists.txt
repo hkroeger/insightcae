@@ -7,7 +7,7 @@ set(iscad_SRCS
  datumlist.cpp            iscadmainwindow.cpp         qdatumitem.cpp        qoccviewwidget.cpp
  evaluationlist.cpp       iscadsyntaxhighlighter.cpp  qevaluationitem.cpp   qvariableitem.cpp
  iscadapplication.cpp     modelsteplist.cpp           qmodelstepitem.cpp    viewstate.cpp
- modelcomponentselectordlg.cpp
+ modelcomponentselectordlg.cpp qdebugstream.cpp
 )
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)

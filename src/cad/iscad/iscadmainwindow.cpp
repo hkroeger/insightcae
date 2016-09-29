@@ -88,10 +88,13 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
-    : QMainWindow(parent, flags),
-      unsaved_(false),
-      doBgParsing_(true)
+: QMainWindow(parent, flags),
+    unsaved_(false),
+    doBgParsing_(true),
+    bgparsethread_(this->statusBar())
 {
+    connect(&bgparsethread_, SIGNAL(finished()), this, SLOT(onBgParseFinished()));
+    
     setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
 
     QSplitter *spl0=new QSplitter(Qt::Vertical);
@@ -99,7 +102,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     setCentralWidget(spl0);
     spl0->addWidget(spl);
     log_=new QTextEdit;
-    logger_=new Q_DebugStream(std::cout, log_);
+    logger_=new Q_DebugStream(std::cout, log_); // ceases to work with multithreaded bg parsing
     spl0->addWidget(log_);
     context_=new QoccViewerContext;
 
@@ -240,9 +243,14 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     restartBgParseTimer();
     connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
     connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+    
 }
 
-
+ISCADMainWindow::~ISCADMainWindow()
+{
+//     bgparsethread_.stop();
+    bgparsethread_.wait();
+}
 
 
 void ISCADMainWindow::closeEvent(QCloseEvent *event)
@@ -413,31 +421,80 @@ void ISCADMainWindow::restartBgParseTimer(int,int,int)
 }
 
 
+BGParsingThread::BGParsingThread(QStatusBar* sb)
+: statusbar_(sb)
+{
+}
 
+void BGParsingThread::launch(const std::string& script)
+{
+    script_=script;
+    start();
+}
+
+void BGParsingThread::run()
+{
+    std::cerr<<"START"<<std::endl;
+    
+    statusbar_->showMessage("Background model parsing in progress...");
+    
+    std::istringstream is(script_);
+    std::cerr<<"START1"<<std::endl;
+
+    int failloc=-1;
+
+    model_.reset(new insight::cad::Model);
+    std::cerr<<"START2"<<std::endl;
+    syn_elem_dir_.reset();
+
+    bool r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+    
+    if (!r) // fail if we did not get a full match
+    {
+        statusbar_->showMessage("Background model parsing failed.");
+    }
+    else
+    {
+        statusbar_->showMessage("Background model parsing finished successfully.");
+    }
+
+    std::cerr<<"END"<<std::endl;
+}
+ 
 void ISCADMainWindow::doBgParse()
 {
     if (doBgParsing_)
     {
-        syn_elem_dir_.reset();
-        statusBar()->showMessage("Background model parsing in progress...");
-
-        std::istringstream is(editor_->toPlainText().toStdString());
-
-        int failloc=-1;
-
-        cur_model_.reset(new insight::cad::Model);
-
-        bool r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc, &syn_elem_dir_);
-
-        if (!r) // fail if we did not get a full match
+        if (!bgparsethread_.isRunning())
         {
-            statusBar()->showMessage("Background model parsing failed.");
+            bgparsethread_.launch( editor_->toPlainText().toStdString() );
         }
-        else
-        {
-            statusBar()->showMessage("Background model parsing finished successfully.");
-        }
+//         syn_elem_dir_.reset();
+//         statusBar()->showMessage("Background model parsing in progress...");
+
+//         std::istringstream is(editor_->toPlainText().toStdString());
+// 
+//         int failloc=-1;
+// 
+//         cur_model_.reset(new insight::cad::Model);
+// 
+//         bool r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc, &syn_elem_dir_);
+
+//         if (!r) // fail if we did not get a full match
+//         {
+//             statusBar()->showMessage("Background model parsing failed.");
+//         }
+//         else
+//         {
+//             statusBar()->showMessage("Background model parsing finished successfully.");
+//         }
     }
+}
+
+void ISCADMainWindow::onBgParseFinished()
+{
+    cur_model_ = bgparsethread_.model_;
+    syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
 }
 
 

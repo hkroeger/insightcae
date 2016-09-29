@@ -16,9 +16,9 @@ class Q_DebugStream
 {
     Q_OBJECT
 public:
-    Q_DebugStream(std::ostream &stream, QTextEdit* text_edit) : m_stream(stream)
+    Q_DebugStream(std::ostream &stream/*, QTextEdit* text_edit*/) : m_stream(stream)
     {
-        log_window = text_edit;
+//         log_window = text_edit;
         m_old_buf = stream.rdbuf();
         stream.rdbuf(this);
     }
@@ -49,7 +49,8 @@ protected:
         qdebugstream_mutex.lock();
         if (v == '\n')
         {
-            log_window->append("");
+            //log_window->append("");
+            emit appendText("");
         }
         qdebugstream_mutex.unlock();
         return v;
@@ -63,24 +64,30 @@ protected:
         if(str.contains("\n")){
             QStringList strSplitted = str.split("\n");
 
-            log_window->moveCursor (QTextCursor::End);
-            log_window->insertPlainText (strSplitted.at(0)); //Index 0 is still on the same old line
+//             log_window->moveCursor (QTextCursor::End);
+//             log_window->insertPlainText (strSplitted.at(0)); //Index 0 is still on the same old line
+            emit appendText(strSplitted.at(0));
 
             for(int i = 1; i < strSplitted.size(); i++){
-                log_window->append(strSplitted.at(i));
+                //log_window->append(strSplitted.at(i));
+                emit appendText(strSplitted.at(i));
             }
         }else{
-            log_window->moveCursor (QTextCursor::End);
-            log_window->insertPlainText (str);
+            emit appendText(str);
+//             log_window->moveCursor (QTextCursor::End);
+//             log_window->insertPlainText (str);
         }
         qdebugstream_mutex.unlock();
         return n;
     }
+    
+signals:
+    void appendText(const QString& text);
 
 private:
     std::ostream &m_stream;
     std::streambuf *m_old_buf;
-    QTextEdit* log_window;
+//     QTextEdit* log_window;
 };
 
 

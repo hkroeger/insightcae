@@ -91,7 +91,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags),
     unsaved_(false),
     doBgParsing_(true),
-    bgparsethread_(this->statusBar())
+    bgparsethread_()
 {
     connect(&bgparsethread_, SIGNAL(finished()), this, SLOT(onBgParseFinished()));
     
@@ -102,7 +102,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     setCentralWidget(spl0);
     spl0->addWidget(spl);
     log_=new QTextEdit;
-    logger_=new Q_DebugStream(std::cout, log_); // ceases to work with multithreaded bg parsing
+    
+    logger_=new Q_DebugStream(std::cout/*, log_*/); // ceases to work with multithreaded bg parsing
+    connect(logger_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+    
     spl0->addWidget(log_);
     context_=new QoccViewerContext;
 
@@ -421,8 +424,7 @@ void ISCADMainWindow::restartBgParseTimer(int,int,int)
 }
 
 
-BGParsingThread::BGParsingThread(QStatusBar* sb)
-: statusbar_(sb)
+BGParsingThread::BGParsingThread()
 {
 }
 
@@ -434,31 +436,20 @@ void BGParsingThread::launch(const std::string& script)
 
 void BGParsingThread::run()
 {
-    std::cerr<<"START"<<std::endl;
-    
-    statusbar_->showMessage("Background model parsing in progress...");
-    
     std::istringstream is(script_);
-    std::cerr<<"START1"<<std::endl;
 
     int failloc=-1;
 
     model_.reset(new insight::cad::Model);
-    std::cerr<<"START2"<<std::endl;
     syn_elem_dir_.reset();
 
     bool r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
     
     if (!r) // fail if we did not get a full match
     {
-        statusbar_->showMessage("Background model parsing failed.");
+        model_.reset();
+        syn_elem_dir_.reset();
     }
-    else
-    {
-        statusbar_->showMessage("Background model parsing finished successfully.");
-    }
-
-    std::cerr<<"END"<<std::endl;
 }
  
 void ISCADMainWindow::doBgParse()
@@ -467,6 +458,7 @@ void ISCADMainWindow::doBgParse()
     {
         if (!bgparsethread_.isRunning())
         {
+            statusBar()->showMessage("Background model parsing in progress...");
             bgparsethread_.launch( editor_->toPlainText().toStdString() );
         }
 //         syn_elem_dir_.reset();
@@ -493,8 +485,17 @@ void ISCADMainWindow::doBgParse()
 
 void ISCADMainWindow::onBgParseFinished()
 {
-    cur_model_ = bgparsethread_.model_;
-    syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
+    if (bgparsethread_.model_)
+    {
+        statusBar()->showMessage("Background model parsing finished successfully.");
+        cur_model_ = bgparsethread_.model_;
+        syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
+    }
+    else
+    {
+         statusBar()->showMessage("Background model parsing failed.");
+    }
+
 }
 
 

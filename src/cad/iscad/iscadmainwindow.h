@@ -52,13 +52,11 @@ class BGParsingThread
 protected:
     std::string script_;
     
-    QStatusBar* statusbar_;
-    
 public:
     insight::cad::ModelPtr model_;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     
-    BGParsingThread(QStatusBar*);
+    BGParsingThread();
     
     void launch(const std::string& script);
     virtual void run();

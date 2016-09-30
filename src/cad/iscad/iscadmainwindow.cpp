@@ -271,33 +271,35 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
                 QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
                 QMessageBox::No
             );
-    }
 
-    if (resBtn == QMessageBox::Cancel)
-    {
-        event->ignore();
-    }
-    else
-    {
-        if (resBtn == QMessageBox::Yes)
+        if (resBtn == QMessageBox::Cancel)
         {
-            bool saved = saveModel();
-            if (!saved)
+            event->ignore();
+            return;
+        }
+        else
+        {
+            if (resBtn == QMessageBox::Yes)
             {
-                saved=saveModelAs();
-            }
-            if (!saved)
-            {
-                event->ignore();
-                return;
+                bool saved = saveModel();
+                if (!saved)
+                {
+                    saved=saveModelAs();
+                }
+                if (!saved)
+                {
+                    event->ignore();
+                    return;
+                }
             }
         }
-        
-        QSettings settings;
-        settings.setValue("mainWindowGeometry", saveGeometry());
-        settings.setValue("mainWindowState", saveState());
-        event->accept();
     }
+    
+    QSettings settings;
+    settings.setValue("mainWindowGeometry", saveGeometry());
+    settings.setValue("mainWindowState", saveState());
+    event->accept();
+
 }
 
 
@@ -367,6 +369,12 @@ void ISCADMainWindow::clearDerivedData()
 
 void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
 {
+    if (!boost::filesystem::exists(file))
+    {
+        QMessageBox::critical(this, "File error", ("The file "+file.string()+" does not exists!").c_str());
+        return;
+    }
+
     clearDerivedData();
 
     setFilename(file);
@@ -379,7 +387,7 @@ void ISCADMainWindow::loadFile(const boost::filesystem::path& file)
     in.read(&contents_raw[0], contents_raw.size());
 
 
-   disconnect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+    disconnect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
     editor_->setPlainText(contents_raw.c_str());
     connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
 }

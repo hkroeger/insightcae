@@ -97,6 +97,8 @@ protected:
     insight::cad::ModelPtr cur_model_;
     
     BGParsingThread bgparsethread_;
+    
+    bool skipPostprocActions_;
 
 protected:
     void clearDerivedData();
@@ -151,6 +153,7 @@ protected slots:
     void editModel(QObject* mo_ptr);
 
     void toggleBgParsing(int state);
+    void toggleSkipPostprocActions(int state);
     
     void insertComponentNameAtCursor();
     

@@ -343,7 +343,7 @@ ISCADParser::ISCADParser(Model* model)
         * Syntax:
         *
         * <b>gmsh(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>" as \ref iscad_identifier_expression "<identifier:mesh name>"
-        *   L = ( \ref iscad_scalar_expression "<scalar:minL>"  \ref iscad_scalar_expression "<scalar:minL>" )
+        *   L = ( \ref iscad_scalar_expression "<scalar:maxL>"  \ref iscad_scalar_expression "<scalar:minL>" )
         *  [linear]
         *  vertexGroups ( \ref iscad_identifier_expression "<identifier:vertex group name>" = \ref iscad_vertexfeat_expression "<vertex features:vertex group>" [ \@ \ref iscad_scalar_expression "<scalar:mesh size>" ] ... )
         *  edgeGroups ( \ref iscad_identifier_expression "<identifier:edge group name>" = \ref iscad_edgefeat_expression "<edge features:edge group>" [ \@ \ref iscad_scalar_expression "<scalar:mesh size>" ] ... )
@@ -933,8 +933,14 @@ using namespace parser;
 
 bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd)
 {
-  std::ifstream f(fn.c_str());
-  return parseISCADModelStream(f, m, failloc, sd);
+    if (!boost::filesystem::exists(fn))
+    {
+        throw insight::Exception("The iscad script file \""+fn.string()+"\" does not exist!");
+        return false;
+    }
+    
+    std::ifstream f(fn.c_str());
+    return parseISCADModelStream(f, m, failloc, sd);
 }
 
 bool parseISCADModelStream(std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd)
@@ -954,7 +960,7 @@ bool parseISCADModelStream(std::istream& in, Model* m, int* failloc, parser::Syn
   ISCADParser parser(m);
   skip_grammar skip;
   
-  std::cout<<"Parsing started."<<std::endl;
+//   std::cout<<"Parsing started."<<std::endl;
   parser.current_pos.setStartPos(first);
   bool r = qi::phrase_parse(
       first,
@@ -962,7 +968,7 @@ bool parseISCADModelStream(std::istream& in, Model* m, int* failloc, parser::Syn
       parser,
       skip
   );
-  std::cout<<"Parsing finished."<<std::endl;
+//   std::cout<<"Parsing finished."<<std::endl;
   
   if (first != last) // fail if we did not get a full match
   {

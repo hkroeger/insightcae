@@ -30,78 +30,86 @@ namespace insight
 {
 namespace cad
 {
-  
+
 void Model::defaultVariables()
 {
-  addScalar( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
-  addScalar( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
-  addVector( "O", 	VectorPtr(new ConstantVector(vec3(0,0,0))) );
-  addVector( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
-  addVector( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
-  addVector( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
-  addDatum ( "XY", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EZ"), lookupVector("EY"))) );
-  addDatum ( "XZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EY"), lookupVector("EX"))) );
-  addDatum ( "YZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EX"), lookupVector("EY"))) );
+    addScalar( "M_PI", 	ScalarPtr(new ConstantScalar(M_PI)));
+    addScalar( "deg", 	ScalarPtr(new ConstantScalar(M_PI/180.)));
+    addVector( "O", 	VectorPtr(new ConstantVector(vec3(0,0,0))) );
+    addVector( "EX", 	VectorPtr(new ConstantVector(vec3(1,0,0))) );
+    addVector( "EY", 	VectorPtr(new ConstantVector(vec3(0,1,0))) );
+    addVector( "EZ", 	VectorPtr(new ConstantVector(vec3(0,0,1))) );
+    addDatum ( "XY", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EZ"), lookupVector("EY"))) );
+    addDatum ( "XZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EY"), lookupVector("EX"))) );
+    addDatum ( "YZ", 	DatumPtr(new DatumPlane(lookupVector("O"), lookupVector("EX"), lookupVector("EY"))) );
 }
-  
+
 void Model::copyVariables(const ModelVariableTable& vars)
 {
-  BOOST_FOREACH(const ModelVariableTable::value_type& s, vars)
-  {
-    const std::string& name=boost::fusion::at_c<0>(s);
-    if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )
+    BOOST_FOREACH(const ModelVariableTable::value_type& s, vars)
     {
-        addScalar(name, *sv);
-        cout<<"insert scalar "<<name<<" = "<<(*sv)->value()<<endl;
+        const std::string& name=boost::fusion::at_c<0>(s);
+        if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )
+        {
+            addScalar(name, *sv);
+        }
+        else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
+        {
+            addVector(name, *vv);
+        }
+        else if ( const DatumPtr* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
+        {
+            addDatum(name, *dd);
+        }
+        else if ( const FeaturePtr* ff = boost::get<FeaturePtr>( &boost::fusion::at_c<1>(s) ) )
+        {
+            addModelstep(name, *ff);
+        }
     }
-    else if ( const VectorPtr* vv = boost::get<VectorPtr>( &boost::fusion::at_c<1>(s) ) )
-    {
-        addVector(name, *vv);
-        cout<<"insert vector "<<name<<" = "<<(*vv)->value()<<endl;
-    }
-    else if ( const DatumPtr* dd = boost::get<DatumPtr>( &boost::fusion::at_c<1>(s) ) )
-    {
-        addDatum(name, *dd);
-        cout<<"insert datum "<<name<<endl;
-    }
-    else if ( const FeaturePtr* ff = boost::get<FeaturePtr>( &boost::fusion::at_c<1>(s) ) )
-    {
-        addModelstep(name, *ff);
-        cout<<"insert model step "<<name<<endl;
-    }
-  }
 }
+
+
 
 
 Model::Model(const ModelVariableTable& vars)
 {
-  defaultVariables();  
-  copyVariables(vars);
-  
-  setValid();
+    defaultVariables();
+    copyVariables(vars);
+
+    setValid();
 }
 
+
+
+
 Model::Model(const std::string& modelname, const ModelVariableTable& vars)
-: modelname_(modelname)
+    : modelname_(modelname)
 {
-  defaultVariables();  
-  copyVariables(vars);
+    defaultVariables();
+    copyVariables(vars);
 }
+
+
+
 
 void Model::build()
 {
-  std::string name=modelname_+".iscad";
-  
-  int failloc=-1;
-  if (!parseISCADModelFile(sharedModelFilePath(name), this, &failloc))
-  {
-    throw insight::Exception("Failed to parse model "+name+
-	    str(format(". Stopped at %d.")%failloc));
-  }
-  else
-  {
-    setValid();
-  }
+    std::string name=modelname_+".iscad";
+
+    int failloc=-1;
+    if (!parseISCADModelFile(sharedModelFilePath(name), this, &failloc))
+    {
+        throw insight::Exception
+        (
+            "Failed to parse model "
+            +name+
+            str(format(". Stopped at %d.")%failloc)
+        );
+    }
+    else
+    {
+        setValid();
+    }
 }
 
 
@@ -110,13 +118,11 @@ void Model::addScalar(const std::string& name, ScalarPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding scalar variable "<<name<<std::endl;
 #endif
-//   scalars_[name]=value;
   scalars_.add(name, value);
 }
 
 void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 {
-//   if (scalars_.find(name)==scalars_.end())
   if (!scalars_.find(name))
     addScalar(name, value);
 }
@@ -126,13 +132,11 @@ void Model::addVector(const std::string& name, VectorPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding vector variable "<<name<<std::endl;
 #endif
-//   vectors_[name]=value;
   vectors_.add(name, value);
 }
 
 void Model::addVectorIfNotPresent(const std::string& name, VectorPtr value)
 {
-//   if (vectors_.find(name)==vectors_.end())
   if (!vectors_.find(name))
     addVector(name, value);
 }
@@ -142,7 +146,6 @@ void Model::addDatum(const std::string& name, DatumPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding datum "<<name<<std::endl;
 #endif
-//   datums_[name]=value;
   datums_.add(name, value);
 }
 
@@ -157,7 +160,6 @@ void Model::addModelstep(const std::string& name, FeaturePtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding model step "<<name<<std::endl;
 #endif
-//   modelsteps_[name]=value;
   modelsteps_.add(name, value);
 }
 
@@ -187,7 +189,6 @@ void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding vertex feature set "<<name<<std::endl;
 #endif
-//   vertexFeatures_[name]=value;
   vertexFeatures_.add(name, value);
 }
 
@@ -196,7 +197,6 @@ void Model::addEdgeFeature(const std::string& name, FeatureSetPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding edge feature set "<<name<<std::endl;
 #endif
-//   edgeFeatures_[name]=value;
   edgeFeatures_.add(name, value);
 }
 
@@ -205,7 +205,6 @@ void Model::addFaceFeature(const std::string& name, FeatureSetPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding face feature set "<<name<<std::endl;
 #endif
-//   faceFeatures_[name]=value;
   faceFeatures_.add(name, value);
 }
 
@@ -214,7 +213,6 @@ void Model::addSolidFeature(const std::string& name, FeatureSetPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding solid feature set "<<name<<std::endl;
 #endif
-//   solidFeatures_[name]=value;
   solidFeatures_.add(name, value);
 }
 
@@ -223,7 +221,6 @@ void Model::addModel(const std::string& name, ModelPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding model "<<name<<std::endl;
 #endif
-//   models_[name]=value;
   models_.add(name, value);
 }
 
@@ -232,13 +229,13 @@ void Model::addPostprocAction(const std::string& name, PostprocActionPtr value)
 #ifdef INSIGHT_CAD_DEBUG
   std::cout<<"adding postproc action "<<name<<std::endl;
 #endif
-//   postprocActions_[name]=value;
   postprocActions_.add(name, value);
 }
 
 std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
 {
   std::string name, nametempl="PostprocAction%d";
+  
   int i=1;
   do
   {
@@ -247,20 +244,14 @@ std::string Model::addPostprocActionUnnamed(PostprocActionPtr value)
       throw insight::Exception("Model::addPostprocActionUnnamed: No valid name found within 1000 attempts!");
     i++;
   }
-//   while (postprocActions_.find(name)!=postprocActions_.end());
   while (postprocActions_.find(name));
-//   postprocActions_[name]=value;
+  
   postprocActions_.add(name, value);
   return name;
 }
 
 ScalarPtr Model::lookupScalar(const std::string& name) const
 {
-//     ScalarTable::const_iterator it=scalars_.find(name);
-//     if (it==scalars_.end())
-//       throw insight::Exception("Could not lookup scalar "+name);
-//     return it->second;
-  
   ScalarPtr *obj = const_cast<ScalarPtr*>(scalars_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup scalar "+name);
@@ -269,11 +260,6 @@ ScalarPtr Model::lookupScalar(const std::string& name) const
 
 VectorPtr Model::lookupVector(const std::string& name) const
 {
-//     VectorTable::const_iterator it=vectors_.find(name);
-//     if (it==vectors_.end())
-//       throw insight::Exception("Could not lookup vector "+name);
-//     return it->second;
-
   VectorPtr *obj = const_cast<VectorPtr*>(vectors_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup vector "+name);
@@ -282,11 +268,6 @@ VectorPtr Model::lookupVector(const std::string& name) const
 
 DatumPtr Model::lookupDatum(const std::string& name) const
 {
-//     DatumTable::const_iterator it=datums_.find(name);
-//     if (it==datums_.end())
-//       throw insight::Exception("Could not lookup datum "+name);
-//     return it->second;
-
   DatumPtr *obj = const_cast<DatumPtr*>(datums_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup datum "+name);
@@ -295,11 +276,6 @@ DatumPtr Model::lookupDatum(const std::string& name) const
 
 FeaturePtr Model::lookupModelstep(const std::string& name) const
 {
-//     ModelstepTable::const_iterator it=modelsteps_.find(name);
-//     if (it==modelsteps_.end())
-//       throw insight::Exception("Could not lookup model step "+name);
-//     return it->second;
-
   FeaturePtr *obj = const_cast<FeaturePtr*>(modelsteps_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup model step "+name);
@@ -308,11 +284,6 @@ FeaturePtr Model::lookupModelstep(const std::string& name) const
 
 FeatureSetPtr Model::lookupVertexFeature(const std::string& name) const
 {
-//     VertexFeatureTable::const_iterator it=vertexFeatures_.find(name);
-//     if (it==vertexFeatures_.end())
-//       throw insight::Exception("Could not lookup vertex feature "+name);
-//     return it->second;
-
   FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(vertexFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup vertex feature "+name);
@@ -321,11 +292,6 @@ FeatureSetPtr Model::lookupVertexFeature(const std::string& name) const
 
 FeatureSetPtr Model::lookupEdgeFeature(const std::string& name) const
 {
-//     EdgeFeatureTable::const_iterator it=edgeFeatures_.find(name);
-//     if (it==edgeFeatures_.end())
-//       throw insight::Exception("Could not lookup edge feature "+name);
-//     return it->second;
-
   FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(edgeFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup edge feature "+name);
@@ -334,11 +300,6 @@ FeatureSetPtr Model::lookupEdgeFeature(const std::string& name) const
 
 FeatureSetPtr Model::lookupFaceFeature(const std::string& name) const
 {
-//     FaceFeatureTable::const_iterator it=faceFeatures_.find(name);
-//     if (it==faceFeatures_.end())
-//       throw insight::Exception("Could not lookup face feature "+name);
-//     return it->second;
-
   FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(faceFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup face feature "+name);
@@ -347,11 +308,6 @@ FeatureSetPtr Model::lookupFaceFeature(const std::string& name) const
 
 FeatureSetPtr Model::lookupSolidFeature(const std::string& name) const
 {
-//     SolidFeatureTable::const_iterator it=solidFeatures_.find(name);
-//     if (it==solidFeatures_.end())
-//       throw insight::Exception("Could not lookup solid feature "+name);
-//     return it->second;
-
   FeatureSetPtr *obj = const_cast<FeatureSetPtr*>(solidFeatures_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup solid feature "+name);
@@ -360,11 +316,6 @@ FeatureSetPtr Model::lookupSolidFeature(const std::string& name) const
 
 ModelPtr Model::lookupModel(const std::string& name) const
 {
-//     ModelTable::const_iterator it=models_.find(name);
-//     if (it==models_.end())
-//       throw insight::Exception("Could not lookup model "+name);
-//     return it->second;
-
   ModelPtr *obj = const_cast<ModelPtr*>(models_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup model "+name);
@@ -373,11 +324,6 @@ ModelPtr Model::lookupModel(const std::string& name) const
 
 PostprocActionPtr Model::lookupPostprocActionSymbol(const std::string& name) const
 {
-//     PostprocActionTable::const_iterator it=postprocActions_.find(name);
-//     if (it==postprocActions_.end())
-//       throw insight::Exception("Could not lookup evaluation "+name);
-//     return it->second;
-
   PostprocActionPtr *obj = const_cast<PostprocActionPtr*>(postprocActions_.find(name));
   if (!obj)
     throw insight::Exception("Could not lookup postprocessing action "+name);
@@ -395,49 +341,6 @@ const Model::SolidFeatureTable& 	Model::solidFeatureSymbols() const { return sol
 const Model::ModelTable& 	Model::modelSymbols() const { return models_; }
 const Model::PostprocActionTable& 	Model::postprocActionSymbols() const { return postprocActions_; }
 
-/*
-mapkey_parser::mapkey_parser<ScalarPtr> Model::scalarSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<ScalarPtr>(scalars_); 
-}
-mapkey_parser::mapkey_parser<VectorPtr> Model::vectorSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<VectorPtr>(vectors_); 
-}
-mapkey_parser::mapkey_parser<DatumPtr> Model::datumSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<DatumPtr>(datums_); 
-}
-mapkey_parser::mapkey_parser<FeaturePtr> Model::modelstepSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<FeaturePtr>(modelsteps_); 
-}
-mapkey_parser::mapkey_parser<FeatureSetPtr> Model::vertexFeatureSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<FeatureSetPtr>(vertexFeatures_); 
-}
-mapkey_parser::mapkey_parser<FeatureSetPtr> Model::edgeFeatureSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<FeatureSetPtr>(edgeFeatures_); 
-}
-mapkey_parser::mapkey_parser<FeatureSetPtr> Model::faceFeatureSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<FeatureSetPtr>(faceFeatures_); 
-}
-mapkey_parser::mapkey_parser<FeatureSetPtr> Model::solidFeatureSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<FeatureSetPtr>(solidFeatures_); 
-}
-mapkey_parser::mapkey_parser<ModelPtr> Model::modelSymbols() const 
-{
-  return mapkey_parser::mapkey_parser<ModelPtr>(models_); 
-}*/
-
-// solidmodel import(const boost::filesystem::path& filepath)
-// {
-//   cout << "reading model "<<filepath<<endl;
-//   return solidmodel(new SolidModel(filepath));
-// }
 
 
 template<class T>
@@ -452,7 +355,6 @@ public:
   void operator()(const std::string& name, T v)
   {
     tab_[name]=v;
-//     std::cout<<"copying "<<name<<", after: #="<<tab_.size()<<std::endl;
   }
 };
 
@@ -482,7 +384,6 @@ Model::ModelstepTableContents Model::modelsteps() const
 {
   ModelstepTableContents result;
   modelsteps_.for_each(SymbolTableContentsInserter<FeaturePtr>(result));
-//   std::cout<<"##="<<result.size()<<std::endl;
   return result;
 }
 
@@ -528,34 +429,6 @@ Model::PostprocActionTableContents Model::postprocActions() const
   return result;
 }
 
-arma::mat Model::modelCoG()
-{
-//   double mtot=0.0;
-//   arma::mat cog=vec3(0,0,0);
-//   BOOST_FOREACH(const std::string cn, components_)
-//   {
-//     const SolidModel& m = *(modelstepSymbols_.find(cn)->second);
-//     mtot+=m.mass();
-//     cog += m.modelCoG()*m.mass();
-//   }
-//   
-//   cout<<"total mass="<<mtot<<endl;
-//   
-//   if (mtot<1e-10)
-//     throw insight::Exception("Total mass is zero!");
-//   
-//   cog/=mtot;
-//   
-//   cout<<"CoG="<<cog<<endl;
-//   
-//   return cog;
-  return arma::mat();
-}
-
-arma::mat Model::modelBndBox(double deflection) const
-{
-  return arma::mat();
-}
 
 }
 }

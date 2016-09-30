@@ -91,7 +91,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
 : QMainWindow(parent, flags),
     unsaved_(false),
     doBgParsing_(true),
-    bgparsethread_()
+    bgparsethread_(),
+    skipPostprocActions_(true)
 {
     connect(&bgparsethread_, SIGNAL(finished()), this, SLOT(onBgParseFinished()));
     
@@ -103,7 +104,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     spl0->addWidget(spl);
     log_=new QTextEdit;
     
-    logger_=new Q_DebugStream(std::cout/*, log_*/); // ceases to work with multithreaded bg parsing
+    logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
     connect(logger_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
     
     spl0->addWidget(log_);
@@ -145,10 +146,17 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
     connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
     vbox->addWidget(rebuildBtn);
+    
     QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
     toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
     connect(toggleBgParse, SIGNAL(stateChanged(int)), this, SLOT(toggleBgParsing(int)));
     vbox->addWidget(toggleBgParse);
+    
+    QCheckBox *toggleSkipPostprocActions=new QCheckBox("Skip Postproc Actions", gb);
+    toggleSkipPostprocActions->setCheckState( skipPostprocActions_ ? Qt::Checked : Qt::Unchecked );
+    connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)), this, SLOT(toggleSkipPostprocActions(int)));
+    vbox->addWidget(toggleSkipPostprocActions);
+    
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
@@ -536,7 +544,7 @@ void ISCADMainWindow::onBgParseFinished()
 void ISCADMainWindow::editSketch(QObject* sk_ptr)
 {
     insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
-    std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
+//     std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
     sk->executeEditor();
 }
 
@@ -544,7 +552,7 @@ void ISCADMainWindow::editSketch(QObject* sk_ptr)
 void ISCADMainWindow::editModel(QObject* sk_ptr)
 {
     insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
-    std::cout<<"Edit Model: "<<sk->modelname()<<std::endl;
+//     std::cout<<"Edit Model: "<<sk->modelname()<<std::endl;
     sk->executeEditor();
 }
 
@@ -560,6 +568,19 @@ void ISCADMainWindow::toggleBgParsing(int state)
     else if (state==Qt::Unchecked)
     {
         doBgParsing_=false;
+    }
+}
+
+
+void ISCADMainWindow::toggleSkipPostprocActions(int state)
+{
+    if (state==Qt::Checked)
+    {
+        skipPostprocActions_=true;
+    }
+    else if (state==Qt::Unchecked)
+    {
+        skipPostprocActions_=false;
     }
 }
 
@@ -814,10 +835,13 @@ void ISCADMainWindow::rebuildModel()
             addDatum(v.first, v.second);
         }
 
-        auto postprocActions=cur_model_->postprocActions();
-        BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
+        if (!skipPostprocActions_)
         {
-            addEvaluation(v.first, v.second);
+            auto postprocActions=cur_model_->postprocActions();
+            BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
+            {
+                addEvaluation(v.first, v.second);
+            }
         }
 
         auto scalars=cur_model_->scalars();

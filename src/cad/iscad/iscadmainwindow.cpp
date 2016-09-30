@@ -474,7 +474,6 @@ void BGParsingThread::run()
     int failloc=-1;
 
     model_.reset(new insight::cad::Model);
-    syn_elem_dir_.reset();
 
     bool r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
     
@@ -534,7 +533,7 @@ void ISCADMainWindow::onBgParseFinished()
 
 
 
-void ISCADMainWindow::editSketch(int sk_ptr)
+void ISCADMainWindow::editSketch(QObject* sk_ptr)
 {
     insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
     std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
@@ -542,7 +541,7 @@ void ISCADMainWindow::editSketch(int sk_ptr)
 }
 
 
-void ISCADMainWindow::editModel(int sk_ptr)
+void ISCADMainWindow::editModel(QObject* sk_ptr)
 {
     insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
     std::cout<<"Edit Model: "<<sk->modelname()<<std::endl;
@@ -897,17 +896,17 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
             {
 //                 std::cout<<"SK"<<std::endl;
                 act=new QAction("Edit Sketch...", this);
-                signalMapper->setMapping(act, int(sk));
-                connect(signalMapper, SIGNAL(mapped(int)),
-                        this, SLOT(editSketch(int)));
+                signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
+                connect(signalMapper, SIGNAL(mapped(QObject*)),
+                        this, SLOT(editSketch(QObject*)));
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
             {
 //                 std::cout<<"MO"<<std::endl;
                 act=new QAction("Edit Model...", this);
-                signalMapper->setMapping(act, int(mo));
-                connect(signalMapper, SIGNAL(mapped(int)),
-                        this, SLOT(editModel(int)));
+                signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
+                connect(signalMapper, SIGNAL(mapped(QObject*)),
+                        this, SLOT(editModel(QObject*)));
             }
             else
             {

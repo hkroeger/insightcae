@@ -147,8 +147,8 @@ protected slots:
     void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
     void doBgParse();
 
-    void editSketch(int sk_ptr);
-    void editModel(int mo_ptr);
+    void editSketch(QObject* sk_ptr);
+    void editModel(QObject* mo_ptr);
 
     void toggleBgParsing(int state);
     

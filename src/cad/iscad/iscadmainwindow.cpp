@@ -894,7 +894,6 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
             insight::cad::Feature* fpp=fp.get();
             if (insight::cad::Sketch* sk=dynamic_cast<insight::cad::Sketch*>(fpp))
             {
-//                 std::cout<<"SK"<<std::endl;
                 act=new QAction("Edit Sketch...", this);
                 signalMapper->setMapping(act, reinterpret_cast<QObject*>(sk));
                 connect(signalMapper, SIGNAL(mapped(QObject*)),
@@ -902,7 +901,6 @@ void ISCADMainWindow::showEditorContextMenu(const QPoint& pt)
             }
             else if (insight::cad::ModelFeature* mo=dynamic_cast<insight::cad::ModelFeature*>(fpp))
             {
-//                 std::cout<<"MO"<<std::endl;
                 act=new QAction("Edit Model...", this);
                 signalMapper->setMapping(act, reinterpret_cast<QObject*>(mo));
                 connect(signalMapper, SIGNAL(mapped(QObject*)),

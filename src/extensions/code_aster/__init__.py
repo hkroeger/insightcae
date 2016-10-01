@@ -61,7 +61,7 @@ def area(mesh, group_ma_name):
                        );
   
   dummod=AFFE_MODELE(MAILLAGE=tmpmesh,
-		    VERIF='MAILLE',
+		    #VERIF='MAILLE',
 		    AFFE=(_F(GROUP_MA=(group_ma_name),# '1out', '2in'),
 			     PHENOMENE='MECANIQUE',
 			     MODELISATION='COQUE_3D'),
@@ -89,6 +89,33 @@ def area(mesh, group_ma_name):
 
 
 
+def volume(mesh, group_ma_name):
+  from Cata.cata import CREA_MAILLAGE, AFFE_MODELE, DEFI_MATERIAU, \
+      AFFE_MATERIAU, AFFE_CARA_ELEM, POST_ELEM, DETRUIRE
+  from Accas import _F
+  
+  dummod=AFFE_MODELE(MAILLAGE=mesh,
+#		    VERIF='MAILLE',
+		    AFFE=(_F(GROUP_MA=(group_ma_name),# '1out', '2in'),
+			     PHENOMENE='MECANIQUE',
+			     MODELISATION='3D'),
+			  ),
+		      );
+		      
+  dummat=DEFI_MATERIAU(ELAS=_F(E=210000.0, RHO=1, NU=0.0,),);
+
+  dmatass=AFFE_MATERIAU(MAILLAGE=mesh, AFFE=_F(GROUP_MA=group_ma_name, MATER=dummat,),);
+
+  tmptab=POST_ELEM(MASS_INER=_F(GROUP_MA=group_ma_name),
+		    TITRE='tit_von_post_elem',
+		    MODELE=dummod,
+		    CHAM_MATER=dmatass,
+		    );
+  #IMPR_TABLE(TABLE=tab_post,);
+  print tmptab.EXTR_TABLE()
+  V = tmptab['MASSE',1]
+  DETRUIRE(CONCEPT=(_F(NOM=(dummod,dummat,dmatass,tmptab))), INFO=1);
+  return V
 
 
 

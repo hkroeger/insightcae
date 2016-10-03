@@ -46,6 +46,15 @@ Revolution(Tri(O,
 Cylinder(O-Lhh*EX, O, 2.*Rh)
 ;
 
+headhole_conical=
+Cylinder(O, O+(Lhhb+k)*EX, dh)
+|
+Revolution(Tri(EX*Lt, 
+ -EX*Lhh,
+ (Lhh/tan60)*(EY-EX)
+), O, EX, 2.*M_PI)
+;
+
 dbl=Dn-P;
 blindhole=
 Place(

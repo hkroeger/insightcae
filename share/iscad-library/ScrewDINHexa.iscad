@@ -4,6 +4,7 @@ s=TableLookup(ScrewDIN, Dn, Dn, s);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
 d3=TableLookup(ScrewDIN, Dn, Dn, d3);
 dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L=24;
 
@@ -39,8 +40,13 @@ Cylinder(
  d3
 );
 
-Lblind?=1.2*L;
+#Lblind?=1.2*L;
+dbl=Dn-P;
 blindhole=
+Place(
+ loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
+ O, -EX, EZ)
+/*
 Cylinder(
  O,
  O+Lblind*EX,
@@ -54,7 +60,7 @@ Revolution(
   (0.5*0.5*Dn)*EX
  ),
  O, EX, 2.*M_PI)
-;
+*/;
 
 pl_contact=YZ;
 axis=RefAxis(O, EX);

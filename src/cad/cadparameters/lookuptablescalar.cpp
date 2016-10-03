@@ -54,7 +54,10 @@ double LookupTableScalar::value() const
     std::ifstream f( fp.c_str() );
     std::string line;
     std::vector<std::string> cols;
-    getline(f, line);
+    do
+    {
+        getline(f, line);
+    } while (boost::algorithm::starts_with(line, "#"));
     boost::split(cols, line, boost::is_any_of(";,"));
     size_t nc=cols.size();
     

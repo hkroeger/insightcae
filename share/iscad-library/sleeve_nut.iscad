@@ -1,0 +1,42 @@
+Dn?=3; # Gewindenenndurchmesser
+D?=4.5; # Schaftdurchmesser
+dk?=6; # Kopfdurchmesser
+k?=0.8; # Kopfhöhe
+l1?=7; # Gewindelänge
+l2?=4; # Schaftlänge
+SW?=2; # Schlüsselweite
+tsl?=2; # Imbustiefe
+
+nut1=
+Cylinder(
+ O, (l1-k)*EX,
+ D
+)
+-Cylinder(
+ O, ax l2*EX, Dn
+)
+;
+
+nut2=
+nut1
+|
+Cone(
+ (l1-k)*EX,
+ l1*EX,
+D, dk);
+
+nut:
+nut2
+-
+ Extrusion(
+   RegPoly(l1*EX, EX, 6, SW/2.),
+ -tsl*EX)
+;
+
+Lh1?=3*l1; # Lochl. richtg. Gewindeende
+Lh2?=3*l1; # Lochl. richtg. Kopf
+bore=
+ Cylinder((l1-k)*EX, ax -Lh1*EX, D)
+|
+ Cone( (l1-k)*EX, (l1-k +Lh2)*EX, D, Lh2*(dk-D)/k)
+;

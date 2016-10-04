@@ -3,6 +3,7 @@ k=TableLookup(ScrewDIN, Dn, Dn, k5);
 s=TableLookup(ScrewDIN, Dn, Dn, s3);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
 dh=TableLookup(ScrewDIN, Dn, Dn, dh);
+e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L=24;
 deg60=45*deg;
@@ -45,8 +46,20 @@ Revolution(Tri(O,
 Cylinder(O-Lhh*EX, O, 2.*Rh)
 ;
 
+headhole_conical=
+Cylinder(O, O+(Lhhb+k)*EX, dh)
+|
+Revolution(Tri(EX*Lt, 
+ -EX*Lhh,
+ (Lhh/tan60)*(EY-EX)
+), O, EX, 2.*M_PI)
+;
+
+dbl=Dn-P;
 blindhole=
-Cylinder(O, O+(L+k)*EX, dh)
+Place(
+ loadmodel(drill_hole, D=dbl, L=(L+k+e1), ofsTimesHtip=1, ofsTimesL=1), 
+ O, -EX, EZ)
 |
 Revolution(Tri(O, 
  Lt*EX,

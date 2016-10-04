@@ -1,6 +1,7 @@
 D?=5;
 L?=10;
 ofsTimesHtip?=0;
+ofsTimesL?=0;
 htip=0.5*D/tan(60*deg);
 hole:
 (
@@ -9,4 +10,4 @@ Cylinder(
 )|
 Cone(
  O, htip*EX, 0, D
-)) << -ofsTimesHtip*htip*EX;
+)) << -(ofsTimesHtip*htip+ofsTimesL*L)*EX;

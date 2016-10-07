@@ -21,8 +21,10 @@
 #define MODELCOMPONENTSELECTORDLG_H
 
 #include <QDialog>
+#ifndef Q_MOC_RUN
 #include "cadtypes.h"
 #include "cadmodel.h"
+#endif
 
 class QTreeWidgetItem;
 

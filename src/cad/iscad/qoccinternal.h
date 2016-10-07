@@ -35,18 +35,18 @@ using std::iostream;
 #include <AIS_Trihedron.hxx>
 
 #include <Aspect_Background.hxx>
-#include <Aspect_ColorMapEntry.hxx>
-#include <Aspect_GenericColorMap.hxx>
+//#include <Aspect_ColorMapEntry.hxx>
+//#include <Aspect_GenericColorMap.hxx>
 #include <Aspect_GridDrawMode.hxx>
 #include <Aspect_GridType.hxx>
-#include <Aspect_LineStyle.hxx>
-#include <Aspect_MarkMap.hxx>
+//#include <Aspect_LineStyle.hxx>
+//#include <Aspect_MarkMap.hxx>
 #include <Aspect_RectangularGrid.hxx>
-#include <Aspect_TypeMap.hxx>
-#include <Aspect_TypeMapEntry.hxx>
+//#include <Aspect_TypeMap.hxx>
+//#include <Aspect_TypeMapEntry.hxx>
 #include <Aspect_TypeOfLine.hxx>
 #include <Aspect_TypeOfText.hxx>
-#include <Aspect_WidthMapEntry.hxx>
+//#include <Aspect_WidthMapEntry.hxx>
 #include <Aspect_WidthOfLine.hxx>
 #include <Aspect_Window.hxx>
 
@@ -178,7 +178,7 @@ using std::iostream;
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 #include <Visual3d_View.hxx>
-#include <Visual3d_ViewMapping.hxx>
+//#include <Visual3d_ViewMapping.hxx>
 #include <Visual3d_ViewManager.hxx>
 
 // specific to ISession2D_Shape
@@ -234,24 +234,23 @@ using std::iostream;
 // The OpenCASCADE includes...
 #include <AIS_InteractiveContext.hxx>
 #ifdef WNT
-#include <WNT_WDriver.hxx>
-#include <WNT_Window.hxx>
-#include <Graphic3d_WNTGraphicDevice.hxx>
+ #include <WNT_WDriver.hxx>
+ #include <WNT_Window.hxx>
+ #include <Graphic3d_WNTGraphicDevice.hxx>
 #else
-#include <GL/glx.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/Xmu/StdCmap.h>
-#undef QT_CLEAN_NAMESPACE
-#include <Xw_Window.hxx>
-//#include <Xw_GraphicDevice.hxx>
-#if (OCC_VERSION_MINOR>=6)
-#include <Graphic3d_GraphicDriver.hxx>
-#include <OpenGl_GraphicDriver.hxx>
-#else
-#include <Graphic3d_GraphicDevice.hxx>
-#endif
+ #include <X11/Xlib.h>
+ #include <X11/Xutil.h>
+ #include <X11/Xatom.h>
+ #include <X11/Xmu/StdCmap.h>
+ #undef QT_CLEAN_NAMESPACE
+ #include <Xw_Window.hxx>
+ //#include <Xw_GraphicDevice.hxx>
+ #if (OCC_VERSION_MINOR>=6)
+  #include <Graphic3d_GraphicDriver.hxx>
+  #include <OpenGl_GraphicDriver.hxx>
+ #else
+  #include <Graphic3d_GraphicDevice.hxx>
+ #endif
 #endif
 
 #endif // QOCCINTERNAL_H

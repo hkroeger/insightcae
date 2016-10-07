@@ -5,4 +5,4 @@ enable_language (CXX)
 enable_language (Fortran OPTIONAL)
 
 add_subdirectory(src)
-
+add_subdirectory(share)

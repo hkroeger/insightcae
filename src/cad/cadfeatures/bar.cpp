@@ -29,6 +29,16 @@ namespace phx   = boost::phoenix;
 //using namespace std;
 //using namespace boost;
 
+namespace boost {
+namespace fusion {
+ typedef boost::fusion::vector3<insight::cad::ScalarPtr, insight::cad::ScalarPtr, insight::cad::ScalarPtr> Arg;
+ void swap(Arg&a1, Arg&a2)
+ {
+  boost::swap(a1, a2);
+ }
+}
+}
+
 namespace insight {
 namespace cad {
 

@@ -36,6 +36,7 @@ SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSIO
 SET(CPACK_GENERATOR "TGZ;DEB")
 set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick")
+SET(CPACK_SET_DESTDIR ON)
 INCLUDE(CPack)
 
 OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
@@ -426,6 +427,25 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
   install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} )
+endmacro(install_shared_file)
+
+macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
+  file(GLOB COPY_FILES
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}
+    ${SHAREDDIR}/*)
+
+  add_custom_target(${NAME} ALL
+    COMMENT "Copying directory: ${SHAREDDIR}")
+  foreach(file ${COPY_FILES})
+   set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${SHAREDDIR}/${file}")
+   set(DST "${CMAKE_BINARY_DIR}/share/insight/${DSTLOCATION}/${file}")
+
+   add_custom_command(
+     TARGET ${NAME}
+     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+     )
+   install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} )
+  endforeach()
 endmacro(install_shared_file)
 
 macro(install_package_script PACKAGENAME)

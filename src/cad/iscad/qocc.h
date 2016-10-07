@@ -23,6 +23,7 @@
 
 #ifndef Q_MOC_RUN
 #undef Status
+#undef Opposite
 
 #include <AIS_StatusOfDetection.hxx>
 #include <AIS_StatusOfPick.hxx>
@@ -48,6 +49,7 @@
 //#include <Handle_Xw_Window.hxx>
 #include <Xw_Window.hxx>
 #endif
+#undef Opposite
 
 #ifdef QOCC_STATIC
 #define QOCC_DECLSPEC

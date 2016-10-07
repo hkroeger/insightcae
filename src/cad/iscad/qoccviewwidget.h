@@ -5,8 +5,8 @@
 #include <QtCore>
 #include <QtGui>
 #include "qocc.h"
-
 #include <QtOpenGL/QGLWidget>
+
 
 #if (OCC_VERSION_MINOR>=7)
 #include "Graphic3d_ClipPlane.hxx"

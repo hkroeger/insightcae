@@ -120,6 +120,7 @@ void CircularPattern::build()
     refvalues_["phi0"]=phi0;
     refpoints_["p0"]=p0;
     refvectors_["axis"]=axis;
+    providedSubshapes_["basefeat"]=m1_;
     
 
     std::vector<std::string> rules;

@@ -408,7 +408,7 @@ ISCADParser::ISCADParser(Model* model)
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
-        -( '.' > r_identifier
+        *( '.' > r_identifier
            [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_1)) ] )
         >>
         -( lit("<<") > r_vectorExpression [ _val = construct<FeaturePtr>(new_<Transform>(qi::_val, qi::_1)) ] )
@@ -444,20 +444,7 @@ ISCADParser::ISCADParser(Model* model)
                        phx::construct<SyntaxElementLocation>(phx::at_c<0>(qi::_1), phx::at_c<1>(qi::_1)),
                        phx::at_c<2>(qi::_1) )
           ) ]
-//       |
-//        (
-//         ( lit("for")
-//          >> '(' >> r_identifier >> '=' >> r_scalarExpression >> ':' >> r_scalarExpression >> ')' )
-// 	[ ( phx::bind(&Model::addScalar, model_, qi::_1, qi::_2), _val = qi::_1 ) ]
-//          >> r_solidmodel_expression
-//        )
-//         [ (
-// 	  _val = qi::_2 /*,
-// 	  phx::bind(&Model::removeScalar, model_, qi::_1)*/
-// 	) ]
         |
-//        qi::lexeme [ model_->modelstepSymbols() ]
-// 	[ _val =  phx::bind(&Model::lookupModelstep, model_, qi::_1) ]
         model_->modelstepSymbols()[_val=qi::_1 ]
         |
         ( '(' >> r_solidmodel_expression > ')' )
@@ -470,10 +457,6 @@ ISCADParser::ISCADParser(Model* model)
         qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]
         >> lit("->") >
         (
-// 	     ( lit("CoG") > '=' > r_vectorExpression ) [ lazy( phx::bind(&Feature::setCoGExplicitly, *_a, qi::_1) ) ]
-// 	     |
-// 	     ( lit("mass") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setMassExplicitly, *_a, qi::_1) ) ]
-// 	     |
             ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
             ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
@@ -722,17 +705,8 @@ ISCADParser::ISCADParser(Model* model)
         | ( r_vector_primary >> '.' >> 'z' )
         [ _val = phx::construct<ScalarPtr>(phx::new_<VectorComponent>(qi::_1, 2)) ]
         | ('-' >> r_scalar_primary)
-        [
-            _val
-            =
-                phx::construct<ScalarPtr>(phx::new_<MultipliedScalar>
-                                          (
-                                                  ScalarPtr( new ConstantScalar(-1.0)),
-                                                  qi::_1
-                                          ))
-        ]
-        |
-        ( r_solidmodel_expression >> '$' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ )
+        [ _val =  phx::construct<ScalarPtr>(phx::new_<MultipliedScalar>( ScalarPtr( new ConstantScalar(-1.0)), qi::_1 )) ]
+        | ( r_solidmodel_expression >> '$' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ )
         [ _val = phx::construct<ScalarPtr>(phx::new_<ScalarFeatureProp>(qi::_1, qi::_2)) ]
         ;
     r_scalar_primary.name("scalar primary");
@@ -848,15 +822,7 @@ ISCADParser::ISCADParser(Model* model)
         [_val = qi::_1]
         |
         ( '-' >> r_vector_primary )
-        [
-            _val
-            =
-                phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>
-                                          (
-                                                  ScalarPtr( new ConstantScalar(-1.0)),
-                                                  qi::_1
-                                          ))
-        ]
+        [ _val = phx::construct<VectorPtr>(phx::new_<ScalarMultipliedVector>( ScalarPtr( new ConstantScalar(-1.0)), qi::_1 )) ]
         |
         ( r_solidmodel_expression >> '@' >> /*(*/ r_identifier /*| qi::attr(std::string()) )*/ )
         [ _val = phx::construct<VectorPtr>(phx::new_<PointFeatureProp>(qi::_1, qi::_2)) ]

@@ -20,24 +20,31 @@
 #include "modelsteplist.h"
 #include "qmodelstepitem.h"
 
+
+
 ModelStepList::ModelStepList(QWidget* parent)
-: QListWidget(parent)
+    : QListWidget(parent)
 {
-  setContextMenuPolicy(Qt::CustomContextMenu);
-  connect
-  (
-    this,
-    SIGNAL(customContextMenuRequested(const QPoint &)),
-    this,
-    SLOT(showContextMenuForWidget(const QPoint &))
-  );
+//     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    setMinimumHeight(20);
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect
+    (
+        this,
+        SIGNAL(customContextMenuRequested(const QPoint &)),
+        this,
+        SLOT(showContextMenuForWidget(const QPoint &))
+    );
 }
+
+
+
 
 void ModelStepList::showContextMenuForWidget(const QPoint &p)
 {
-  QModelStepItem * mi=dynamic_cast<QModelStepItem*>(itemAt(p));
-  if (mi)
-  {
-    mi->showContextMenu(this->mapToGlobal(p));
-  }
+    QModelStepItem * mi=dynamic_cast<QModelStepItem*>(itemAt(p));
+    if (mi)
+    {
+        mi->showContextMenu(this->mapToGlobal(p));
+    }
 }

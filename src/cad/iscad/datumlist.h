@@ -23,15 +23,15 @@
 #include <QListWidget>
 
 class DatumList
-: public QListWidget
+    : public QListWidget
 {
-  Q_OBJECT
-  
+    Q_OBJECT
+
 public:
-  DatumList(QWidget* parent = 0);
-  
+    DatumList(QWidget* parent = 0);
+
 protected slots:
-  void showContextMenuForWidget(const QPoint &);
+    void showContextMenuForWidget(const QPoint &);
 };
 
 

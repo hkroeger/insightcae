@@ -163,6 +163,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     gb=new QGroupBox("Variables");
     vbox = new QVBoxLayout;
     variablelist_=new QListWidget;
+    variablelist_->setMinimumHeight(20);
     connect(variablelist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onVariableItemChanged(QListWidgetItem*)));
     vbox->addWidget(variablelist_);
     gb->setLayout(vbox);

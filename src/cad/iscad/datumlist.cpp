@@ -20,24 +20,31 @@
 #include "datumlist.h"
 #include "qdatumitem.h"
 
+
+
+
 DatumList::DatumList(QWidget* parent)
-: QListWidget(parent)
+    : QListWidget(parent)
 {
-  setContextMenuPolicy(Qt::CustomContextMenu);
-  connect
-  (
-    this,
-    SIGNAL(customContextMenuRequested(const QPoint &)),
-    this,
-    SLOT(showContextMenuForWidget(const QPoint &))
-  );
+    setMinimumHeight(20);
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect
+    (
+        this,
+        SIGNAL(customContextMenuRequested(const QPoint &)),
+        this,
+        SLOT(showContextMenuForWidget(const QPoint &))
+    );
 }
+
+
+
 
 void DatumList::showContextMenuForWidget(const QPoint &p)
 {
-  QDatumItem * mi=dynamic_cast<QDatumItem*>(itemAt(p));
-  if (mi)
-  {
-    mi->showContextMenu(this->mapToGlobal(p));
-  }
+    QDatumItem * mi=dynamic_cast<QDatumItem*>(itemAt(p));
+    if (mi)
+    {
+        mi->showContextMenu(this->mapToGlobal(p));
+    }
 }

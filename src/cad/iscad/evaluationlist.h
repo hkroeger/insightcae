@@ -23,15 +23,15 @@
 #include <QListWidget>
 
 class EvaluationList
-: public QListWidget
+    : public QListWidget
 {
-  Q_OBJECT
-  
+    Q_OBJECT
+
 public:
-  EvaluationList(QWidget* parent = 0);
-  
+    EvaluationList(QWidget* parent = 0);
+
 protected slots:
-  void showContextMenuForWidget(const QPoint &);
+    void showContextMenuForWidget(const QPoint &);
 };
 
 

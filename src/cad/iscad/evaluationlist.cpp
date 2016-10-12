@@ -21,24 +21,30 @@
 #include "qevaluationitem.h"
 
 
+
+
 EvaluationList::EvaluationList(QWidget* parent)
-: QListWidget(parent)
+    : QListWidget(parent)
 {
-  setContextMenuPolicy(Qt::CustomContextMenu);
-  connect
-  (
-    this,
-    SIGNAL(customContextMenuRequested(const QPoint &)),
-    this,
-    SLOT(showContextMenuForWidget(const QPoint &))
-  );
+    setMinimumHeight(20);
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect
+    (
+        this,
+        SIGNAL(customContextMenuRequested(const QPoint &)),
+        this,
+        SLOT(showContextMenuForWidget(const QPoint &))
+    );
 }
+
+
+
 
 void EvaluationList::showContextMenuForWidget(const QPoint &p)
 {
-  QEvaluationItem * mi=dynamic_cast<QEvaluationItem*>(itemAt(p));
-  if (mi)
-  {
-    mi->showContextMenu(this->mapToGlobal(p));
-  }
+    QEvaluationItem * mi=dynamic_cast<QEvaluationItem*>(itemAt(p));
+    if (mi)
+    {
+        mi->showContextMenu(this->mapToGlobal(p));
+    }
 }

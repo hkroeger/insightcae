@@ -23,15 +23,15 @@
 #include <QListWidget>
 
 class ModelStepList
-: public QListWidget
+    : public QListWidget
 {
-  Q_OBJECT
-  
+    Q_OBJECT
+
 public:
-  ModelStepList(QWidget* parent = 0);
-  
+    ModelStepList(QWidget* parent = 0);
+
 protected slots:
-  void showContextMenuForWidget(const QPoint &);
+    void showContextMenuForWidget(const QPoint &);
 };
 
 

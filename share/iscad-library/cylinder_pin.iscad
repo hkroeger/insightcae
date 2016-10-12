@@ -16,3 +16,9 @@ pin:
 Chamfer(
  pin1?edges('isCircle'), 0.2*D, 15*deg
 );
+
+hole=
+Place(
+ loadmodel(drill_hole, D=D, L=l, ofsTimesHtip=1),
+ l*EX, -EX, EZ
+);

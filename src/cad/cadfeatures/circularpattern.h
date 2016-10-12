@@ -28,22 +28,36 @@ namespace cad {
 class CircularPattern
 : public Compound
 {
-//   TopoDS_Shape makePattern(const SolidModel& m1, const arma::mat& p0, const arma::mat& axis, int n, bool center=false);
-  FeaturePtr m1_;
-  VectorPtr p0_;
-  VectorPtr axis_;
-  ScalarPtr n_; 
-  bool center_;
-  std::string filterrule_;
+
+    FeaturePtr m1_;
   
-public:
-  declareType("CircularPattern");
-  CircularPattern(const NoParameters& nop = NoParameters());
-  CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
+    /**
+     * pointer to another circular pattern feature, from which the parameters shall be copied
+     */
+    FeaturePtr otherpat_;
     
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    /**
+     * alternative: parameters
+     */
+    VectorPtr p0_;
+    VectorPtr axis_;
+    ScalarPtr n_;
+    bool center_;
+    std::string filterrule_;
+
+    CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
+    CircularPattern(FeaturePtr m1, FeaturePtr otherpat);
+
+public:
+    declareType("CircularPattern");
+    CircularPattern(const NoParameters& nop = NoParameters());
+    
+    static FeaturePtr create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
+    static FeaturePtr create(FeaturePtr m1, FeaturePtr otherpat);
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 

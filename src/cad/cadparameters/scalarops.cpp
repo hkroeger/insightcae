@@ -85,3 +85,29 @@ double insight::cad::VectorMag::value() const
 {
   return arma::norm(p1_->value(),2);
 }
+
+/*
+insight::cad::UpperTolerance::UpperTolerance(ScalarPtr nominal, const std::string& tolstring)
+: nominal_(nominal), tolstring_(tolstring)
+{
+}
+
+double insight::cad::UpperTolerance::value() const
+{
+    double val = nominal_->value();
+    
+    return val;
+}
+
+
+insight::cad::LowerTolerance::LowerTolerance(ScalarPtr nominal, const std::string& tolstring)
+: nominal_(nominal), tolstring_(tolstring)
+{
+}
+
+double insight::cad::LowerTolerance::value() const
+{
+    double val = nominal_->value();
+    
+    return val;
+}*/

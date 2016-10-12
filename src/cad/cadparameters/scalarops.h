@@ -130,6 +130,27 @@ public:\
 INSIGHT_CAD_BINARY_FUNCTION(pow);
 INSIGHT_CAD_BINARY_FUNCTION(atan2);
 
+
+// class UpperTolerance
+// : public insight::cad::Scalar
+// {
+//     ScalarPtr nominal_;
+//     std::string tolstring_;
+// public:
+//     UpperTolerance(ScalarPtr nominal, const std::string& tolstring);
+//     virtual double value() const;
+// };
+// 
+// class LowerTolerance
+// : public insight::cad::Scalar
+// {
+//     ScalarPtr nominal_;
+//     std::string tolstring_;
+// public:
+//     LowerTolerance(ScalarPtr nominal, const std::string& tolstring);
+//     virtual double value() const;
+// };
+
 }
 }
 

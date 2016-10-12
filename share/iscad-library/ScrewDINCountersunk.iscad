@@ -11,6 +11,8 @@ tan60=tan(deg60);
 Lt=k+(0.5*Dn)/tan60;
 Rh=tan60*Lt;
 
+axis=RefAxis(O, -EX);
+
 screw:
 ( 
  Cylinder(O+k*EX, O+(L+k)*EX, Dn)

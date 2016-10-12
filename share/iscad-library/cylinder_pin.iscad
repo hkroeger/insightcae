@@ -1,0 +1,18 @@
+
+D?=4;
+l?=20;
+
+axis=RefAxis(O, EX);
+pl_side1=Plane(O, -EX);
+pl_side2=Plane(l*EX, EX);
+
+pin1=
+Cylinder(
+ O, ax l*EX,
+ D
+);
+
+pin:
+Chamfer(
+ pin1?edges('isCircle'), 0.2*D, 15*deg
+);

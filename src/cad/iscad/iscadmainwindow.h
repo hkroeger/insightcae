@@ -158,6 +158,10 @@ protected slots:
     void insertComponentNameAtCursor();
     
     void onBgParseFinished();
+    
+    void allShaded();
+    void allWireframe();
+    void resetViz();
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
@@ -168,7 +172,7 @@ public:
 public slots:
 
     // insert model step
-    void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible);
+    void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible, bool is_component);
     void addDatum(std::string sn, insight::cad::DatumPtr dm);
     void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible=false);
     void addVariable(std::string sn, insight::cad::parser::scalar sv);

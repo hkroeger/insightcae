@@ -34,7 +34,7 @@ void addModelsteps(const insight::cad::SubfeatureMap& m, QTreeWidgetItem* parent
         QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
         
         std::cerr<<"adding "<<ms.first<<std::endl;
-        addModelsteps( ms.second->providedSubshapes(), curnode, "("+thisname+")" );
+        addModelsteps( ms.second->providedSubshapes(), curnode, /*"("+*/thisname/*+")"*/ );
     }
 }
 

@@ -66,6 +66,7 @@ class QModelStepItem
   insight::cad::FeaturePtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_Shape ais_;
+  bool is_component_;
     
 signals:
   void jump_to(const QString& name);
@@ -77,7 +78,7 @@ public:
   ViewState state_;
 
   QModelStepItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
-		 const ViewState& state, QListWidget* view = 0);
+		 const ViewState& state, QListWidget* view = 0, bool is_component=false);
   
 //   void run();
   void rebuild();
@@ -93,6 +94,7 @@ public:
   void exportShape();
   void setResolution();
   void insertName();
+  void resetDisplay();
   
   inline insight::cad::Feature& solidmodel()
   {

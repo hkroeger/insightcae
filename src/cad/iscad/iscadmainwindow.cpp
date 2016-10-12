@@ -245,6 +245,16 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     act = new QAction(("Change background color..."), this);
     connect(act, SIGNAL(triggered()), viewer_, SLOT(background()));
     vmenu->addAction(act);
+    act = new QAction(("Display all &shaded"), this);
+    connect(act, SIGNAL(triggered()), this, SLOT(allShaded()));
+    vmenu->addAction(act);
+    act = new QAction(("Display all &wireframe"), this);
+    connect(act, SIGNAL(triggered()), this, SLOT(allWireframe()));
+    vmenu->addAction(act);
+    act = new QAction(("&Reset shading and visibility"), this);
+    connect(act, SIGNAL(triggered()), this, SLOT(resetViz()));
+//     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
+    vmenu->addAction(act);
 
     QSettings settings;
     restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
@@ -442,8 +452,6 @@ void ISCADMainWindow::jump_to(const QString& name)
 
 void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
 {
-//   qDebug()<<"allWF"<<endl;
-//     viewer_->getContext()->SetDisplayMode(AM, false);
     for (int i=0; i<modelsteplist_->count(); i++)
     {
         if (QModelStepItem *msi =dynamic_cast<QModelStepItem*>(modelsteplist_->item(i)))
@@ -540,12 +548,32 @@ void ISCADMainWindow::onBgParseFinished()
 }
 
 
+void ISCADMainWindow::allShaded()
+{
+    setUniformDisplayMode(AIS_Shaded);
+}
+
+void ISCADMainWindow::allWireframe()
+{
+    setUniformDisplayMode(AIS_WireFrame);
+}
+
+void ISCADMainWindow::resetViz()
+{
+    for (int i=0; i<modelsteplist_->count(); i++)
+    {
+        if ( QModelStepItem *qmsi=dynamic_cast<QModelStepItem*>(modelsteplist_->item(i)) )
+        {
+            qmsi->resetDisplay();
+            qmsi->shaded();
+        }
+    }
+}
 
 
 void ISCADMainWindow::editSketch(QObject* sk_ptr)
 {
     insight::cad::Sketch* sk = reinterpret_cast<insight::cad::Sketch*>(sk_ptr);
-//     std::cout<<"Edit Sketch: "<<sk->fn().string()<<std::endl;
     sk->executeEditor();
 }
 
@@ -553,7 +581,6 @@ void ISCADMainWindow::editSketch(QObject* sk_ptr)
 void ISCADMainWindow::editModel(QObject* sk_ptr)
 {
     insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
-//     std::cout<<"Edit Model: "<<sk->modelname()<<std::endl;
     sk->executeEditor();
 }
 
@@ -587,15 +614,15 @@ void ISCADMainWindow::toggleSkipPostprocActions(int state)
 
 
 
- void ISCADMainWindow::insertComponentNameAtCursor()
- {
-     ModelComponentSelectorDlg* dlg=new ModelComponentSelectorDlg(cur_model_, this);
-     if ( dlg->exec() == QDialog::Accepted )
-     {
-         std::string id = dlg->selected();
-         editor_->textCursor().insertText(id.c_str());
-     }
- }
+void ISCADMainWindow::insertComponentNameAtCursor()
+{
+    ModelComponentSelectorDlg* dlg=new ModelComponentSelectorDlg(cur_model_, this);
+    if ( dlg->exec() == QDialog::Accepted )
+    {
+        std::string id = dlg->selected();
+        editor_->textCursor().insertText(id.c_str());
+    }
+}
 
 
 
@@ -647,7 +674,7 @@ void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
 
 
 
-void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible)
+void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible, bool is_component)
 {
     ViewState vd;
 
@@ -661,7 +688,7 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
         vd=checked_modelsteps_.find(sn)->second;
     }
 
-    QModelStepItem* msi=new QModelStepItem(sn, sm, context_, vd);
+    QModelStepItem* msi=new QModelStepItem(sn, sm, context_, vd, 0, is_component);
 
 //   ModelStepItemAdder* ia
 //    = new ModelStepItemAdder(this, msi);
@@ -824,10 +851,12 @@ void ISCADMainWindow::rebuildModel()
         auto modelsteps=cur_model_->modelsteps();
         BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
         {
-            bool inivis=false;
+            bool is_comp=false;
             if (cur_model_->components().find(v.first)!=cur_model_->components().end())
-                inivis=true;
-            addModelStep(v.first, v.second, inivis);
+            {
+                is_comp=true;
+            }
+            addModelStep(v.first, v.second, is_comp, is_comp);
         }
 
         auto datums=cur_model_->datums();

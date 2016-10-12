@@ -71,12 +71,14 @@ QModelStepItem::QModelStepItem
   insight::cad::FeaturePtr smp, 
   QoccViewerContext* context, 
   const ViewState& state, 
-  QListWidget* view 
+  QListWidget* view,
+  bool is_component
 )
 : QListWidgetItem(QString::fromStdString(name), view),
   name_(QString::fromStdString(name)),
   context_(context),
-  state_(state)
+  state_(state),
+  is_component_(is_component)
 {
   setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
@@ -176,6 +178,18 @@ void QModelStepItem::exportShape()
 void QModelStepItem::insertName()
 {
   emit insertParserStatementAtCursor(name_);
+}
+
+void QModelStepItem::resetDisplay()
+{
+    if (is_component_)
+    {
+        show();
+    }
+    else
+    {
+        hide();
+    }
 }
 
 void QModelStepItem::showProperties()

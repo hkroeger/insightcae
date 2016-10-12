@@ -1,32 +1,31 @@
 Dn?=12;
-k?=TableLookup(ScrewDIN, Dn, Dn, k);
-s=TableLookup(ScrewDIN, Dn, Dn, s);
+k?=TableLookup(ScrewDINImbus_LowHead, D, Dn, k);
+SW=TableLookup(ScrewDINImbus_LowHead, D, Dn, SW);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
-d3=TableLookup(ScrewDIN, Dn, Dn, d3);
-dh=TableLookup(ScrewDIN, Dn, Dn, dh);
-ki=TableLookup(ScrewDIN, Dn, Dn, ki);
-d1i=TableLookup(ScrewDIN, Dn, Dn, d1i);
+dh=TableLookup(ScrewDINImbus_LowHead, D, Dn, dh);
+dk=TableLookup(ScrewDINImbus_LowHead, D, Dn, dk);
+d1=TableLookup(ScrewDINImbus_LowHead, D, Dn, d1);
 s1i=TableLookup(ScrewDIN, Dn, Dn, s1i);
 e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
-L=25;
+L?=25;
 
 screw0=
 (( 
- Cylinder(O, -ki*EX, d1i)
+ Cylinder(O, -k*EX, dk)
  |
  Cylinder([0,0,0], [L,0,0], Dn)
 )
 - Revolution(
   Tri([L,0.5*Dn,0], [0,-P,0], [-P,0,0]),
   O, EX, 2.*M_PI))
-- Extrusion(RegPoly([-ki,0,0],[1,0,0],6,s1i/2.),
- [0.5*ki,0,0])
+- Extrusion(RegPoly([-k,0,0],[1,0,0],6,s1i/2.),
+ [0.5*k,0,0])
 ;
 
 e=screw0?edges('isCircle')?edges('minimal(CoG.x)');
 screw:
-Fillet(e, 0.07*d1i);
+Fillet(e, 0.07*dk);
 
 
 Lthr?=L;
@@ -42,7 +41,7 @@ headhole=
 Cylinder(
  O,
  O-Lhh*EX,
- d1i*1.1
+ d1
 );
 
 dbl=Dn-P;
@@ -51,21 +50,3 @@ Place(
  loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
  O, -EX, EZ)
 ;
-/*
-Lblind?=1.2*L;
-blindhole=
-Cylinder(
- O,
- O+Lblind*EX,
- Dn
-)
-|
-Revolution(
- Tri(
-  O+Lblind*EX, 
-  0.5*Dn*EY, 
-  (0.5*0.5*Dn)*EX
- ),
- O, EX, 2.*M_PI)
-;
-*/

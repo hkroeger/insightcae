@@ -15,7 +15,7 @@ axis=RefAxis(O, -EX);
 
 screw:
 ( 
- Cylinder(O+k*EX, O+(L+k)*EX, Dn)
+ Cylinder(O+k*EX, O+(L)*EX, Dn)
 |
 Revolution(Tri(O, 
  Lt*EX,
@@ -26,7 +26,7 @@ Revolution(Tri(O,
  RegPoly(O,EX,6,s/2.),
  k*EX)
 - Revolution(
- Tri(O+(L+k)*EX+0.5*Dn*EY, -P*EY, -P*EX),
+ Tri(O+(L)*EX+0.5*Dn*EY, -P*EY, -P*EX),
  O, EX, 2.*M_PI)
 ;
 screw->density=7.9e-6;
@@ -60,7 +60,7 @@ Revolution(Tri(EX*Lt,
 dbl=Dn-P;
 blindhole=
 Place(
- loadmodel(drill_hole, D=dbl, L=(L+k+e1), ofsTimesHtip=1, ofsTimesL=1), 
+ loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
  O, -EX, EZ)
 |
 Revolution(Tri(O, 

@@ -28,16 +28,20 @@ namespace cad {
 class Chamfer
 : public DerivedFeature
 {
-  FeatureSetPtr edges_;
-  ScalarPtr l_;
-  
+    FeatureSetPtr edges_;
+    ScalarPtr l_;
+    ScalarPtr angle_;
+
+    Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
+
 public:
-  declareType("Chamfer");
-  Chamfer(const NoParameters& nop = NoParameters());
-  Chamfer(FeatureSetPtr edges, ScalarPtr l);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType("Chamfer");
+    Chamfer(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
+
+    virtual void build();
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 
 

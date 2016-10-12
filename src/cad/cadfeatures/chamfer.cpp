@@ -34,42 +34,67 @@ namespace cad {
 defineType(Chamfer);
 addToFactoryTable(Feature, Chamfer, NoParameters);
 
+
+
+
 Chamfer::Chamfer(const NoParameters& nop): DerivedFeature(nop)
 {}
 
 
-Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l)
-: DerivedFeature(edges->model()), edges_(edges), l_(l)
+
+
+Chamfer::Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
+: DerivedFeature(edges->model()), edges_(edges), l_(l), angle_(angle)
 {}
+
+
+
+
+FeaturePtr Chamfer::create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle)
+{
+    return FeaturePtr(new Chamfer(edges, l, angle));
+}
+
+
+
 
 void Chamfer::build()
 {
-  const Feature& m1=*(edges_->model());
-  
-  m1.unsetLeaf();
-  BRepFilletAPI_MakeChamfer fb(m1);
-  BOOST_FOREACH(FeatureID f, edges_->data())
-  {
-    TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
-    TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
-    fb.Add(l_->value(), m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
-  }
-  fb.Build();
-  setShape(fb.Shape());
+    double l1=l_->value();
+    double l2=::tan(angle_->value())*l1;
+
+    const Feature& m1=*(edges_->model());
+
+    m1.unsetLeaf();
+    BRepFilletAPI_MakeChamfer fb(m1);
+    BOOST_FOREACH(FeatureID f, edges_->data())
+    {
+        TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
+        TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
+        fb.Add(l1, l2, m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
+    }
+    fb.Build();
+    setShape(fb.Shape());
 }
+
+
+
 
 void Chamfer::insertrule(parser::ISCADParser& ruleset) const
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "Chamfer",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    ruleset.modelstepFunctionRules.add
+    (
+        "Chamfer",
+        typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+            ( '(' 
+                > ruleset.r_edgeFeaturesExpression > ',' 
+                > ruleset.r_scalarExpression 
+                > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) ) 
+                > ')' )
+            [ qi::_val = phx::bind(&Chamfer::create, qi::_1, qi::_2, qi::_3) ]
 
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Chamfer>(qi::_1, qi::_2)) ]
-      
-    ))
-  );
+        ))
+    );
 }
 
 }

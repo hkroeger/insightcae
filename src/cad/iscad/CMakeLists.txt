@@ -1,4 +1,4 @@
-if (INSIGHT_BUILD_WORKBENCH)
+if (INSIGHT_BUILD_ISCAD)
 
 project(iscad)
 

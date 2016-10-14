@@ -141,8 +141,17 @@ OFEs::OFEs()
   {
     std::vector<std::string> strs;
     boost::split(strs, ofe, boost::is_any_of("@#"));
-    //cout << "adding " << strs[0] << ": "<<strs[1] << " (version "<<strs[2]<<")"<<endl;
-    (*this).insert(strs[0], new OFEnvironment(lexical_cast<int>(strs[2]), strs[1]));
+    if (strs.size()==3)
+    {
+        try
+        {
+            (*this).insert(strs[0], new OFEnvironment(lexical_cast<int>(strs[2]), strs[1]));
+        }
+        catch (...)
+        {
+            insight::Warning("Error while parsing INSIGHT_OFES environment variable: OFE specification is invalid: \""+ofe+"\"");
+        }
+    }
   }
 }
 

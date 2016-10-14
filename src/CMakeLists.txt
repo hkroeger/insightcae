@@ -4,7 +4,24 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 list(APPEND CMAKE_LIBRARY_PATH $ENV{INSIGHT_THIRDPARTYDIR}/lib)
 list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)
 
-message (STATUS ${CMAKE_LIBRARY_PATH})
+
+OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt4 is required)" ON)
+OPTION(INSIGHT_BUILD_FREECAD "Install FreeCAD workbench" OFF)
+OPTION(INSIGHT_BUILD_OPENFOAM "Build the OpenFOAM extensions (OpenFOAM is required)" ON)
+OPTION(INSIGHT_BUILD_CODEASTER "Build the Code_Aster extensions (Code_Aster is required)" ON)
+OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser (OCE is required)" ON)
+OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
+OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
+OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit and related tools (SWIG is required)" ON)
+OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" ON)
+option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
+
+if (INSIGHT_BUILD_ISCAD AND NOT INSIGHT_BUILD_CAD)
+ message(FATAL_ERROR "It is not possible to build ISCAD without the CAD parser library. Please reconsider your option selection.")
+endif()
+if (INSIGHT_BUILD_WORKBENCH AND NOT INSIGHT_BUILD_TOOLKIT)
+ message(FATAL_ERROR "It is not possible to build insight workbench without the toolkit library. Please reconsider your option selection.")
+endif()
 
 INCLUDE(InstallRequiredSystemLibraries)
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "InsightCAE")
@@ -12,11 +29,8 @@ SET(CPACK_PACKAGE_NAME "insightcae")
 SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
 SET(CPACK_PACKAGE_CONTACT "hannes.kroeger@silentdynamics.de")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a workbench for Computer-Aided Engineering")
-#SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/ReadMe.txt")
-#SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/Copyright.txt")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "0")
-#SET(CPACK_PACKAGE_VERSION_PATCH "0")
 execute_process(
   COMMAND git rev-list --count HEAD
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -24,21 +38,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
-# IF(WIN32 AND NOT UNIX)
-#   # There is a bug in NSI that does not handle full unix paths properly. Make
-#   # sure there is at least one set of four (4) backlasshes.
-#   SET(CPACK_PACKAGE_ICON "${CMake_SOURCE_DIR}/Utilities/Release\\\\InstallIcon.bmp")
-#   SET(CPACK_NSIS_INSTALLED_ICON_NAME "bin\\\\MyExecutable.exe")
-#   SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_INSTALL_DIRECTORY} My Famous Project")
-#   SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.my-project-home-page.org")
-#   SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.my-personal-home-page.com")
-#   SET(CPACK_NSIS_CONTACT "me@my-personal-home-page.com")
-#   SET(CPACK_NSIS_MODIFY_PATH ON)
-# ELSE(WIN32 AND NOT UNIX)
-#   SET(CPACK_STRIP_FILES "bin/MyExecutable")
-#   SET(CPACK_SOURCE_STRIP_FILES "")
-# ENDIF(WIN32 AND NOT UNIX)
-# SET(CPACK_PACKAGE_EXECUTABLES "MyExecutable" "My Executable")
+
 
 string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
@@ -52,7 +52,16 @@ if(DPKG_PROGRAM)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,openfoam23x-insightcae")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick")
+  if (INSIGHT_BUILD_OPENFOAM)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},openfoam23x-insightcae")
+  endif()
+  if (INSIGHT_BUILD_CODEASTER)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},codeaster-insightcae")
+  endif()
+  if (INSIGHT_BUILD_CAD OR INSIGHT_BUILD_FREECAD)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},freecad")
+  endif()
 else(DPKG_PROGRAM)
   SET(CPACK_GENERATOR "TGZ")
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CMAKE_SYSTEM_NAME}")
@@ -60,15 +69,6 @@ endif(DPKG_PROGRAM)
 
 SET(CPACK_SET_DESTDIR ON)
 INCLUDE(CPack)
-
-OPTION(INSIGHT_OLD_BOOST_COMPAT "Omit extensions which are incompatible with older boost versions" OFF)
-OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI" ON)
-OPTION(INSIGHT_BUILD_FREECAD "Build the FreeCAD extensions" ON)
-OPTION(INSIGHT_BUILD_CAD "Build the ISCAD modeling language parser" ON)
-OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
-OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit
-and related tools (requires SWIG)" ON)
-OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench" ON)
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -82,34 +82,52 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
   install(FILES "${SRC}" DESTINATION bin)
 endmacro(create_script)
 
-SET(INSIGHT_OFES_VARCONTENT "")
-SET(INSIGHT_OF_ALIASES "")
-find_package(OpenFOAM-16ext REQUIRED)
-find_package(FOAM-extend-31 REQUIRED)
-find_package(FOAM-extend-32 REQUIRED)
-find_package(FOAM-extend-40 REQUIRED)
-find_package(OpenFOAM-21x REQUIRED)
-find_package(OpenFOAM-22x REQUIRED)
-find_package(OpenFOAM-22eng REQUIRED)
-find_package(OpenFOAM-23x REQUIRED)
-find_package(Wt)
+find_package(Armadillo REQUIRED)
+find_package(GSL REQUIRED)
+find_package(PythonLibs 2.7 REQUIRED)
+SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.49.0" "1.41.0" "1.39.0"
+	"1.38.0" "1.37.0"
+        "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"
+        "1.33.1" "1.33.0" "1.33" )
+find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams python program_options REQUIRED)
+
+
+include_directories(${ARMADILLO_INCLUDE_DIRS})
+include_directories(${GSL_INCLUDE_DIR})
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+if (INSIGHT_BUILD_WEBWORKBENCH)
+    find_package(Wt)
+endif()
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
   set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
 endfunction()
-join("${INSIGHT_OFES_VARCONTENT}" ":" INSIGHT_OFES)
-message(STATUS "\"${INSIGHT_OFES}\"")
-create_script("insight.bashrc.OpenFOAM"
+
+if (INSIGHT_BUILD_OPENFOAM)
+    SET(INSIGHT_OFES_VARCONTENT "")
+    SET(INSIGHT_OF_ALIASES "")
+    find_package(OpenFOAM-16ext)
+    find_package(FOAM-extend-31)
+    find_package(FOAM-extend-32)
+    find_package(FOAM-extend-40)
+    find_package(OpenFOAM-21x)
+    find_package(OpenFOAM-22x)
+    find_package(OpenFOAM-22eng)
+    find_package(OpenFOAM-23x)
+    
+    join("${INSIGHT_OFES_VARCONTENT}" ":" INSIGHT_OFES)
+    message(STATUS "\"${INSIGHT_OFES}\"")
+    
+    create_script("insight.bashrc.OpenFOAM"
 "export INSIGHT_OFES=\"${INSIGHT_OFES}\"
 ${INSIGHT_OF_ALIASES}
 "
 )
+endif()
 
-find_package(Armadillo REQUIRED)
-find_package(GSL REQUIRED)
-find_package(PythonLibs 2.7 REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
   FIND_PACKAGE(SWIG REQUIRED)
@@ -126,21 +144,6 @@ ADD_DEFINITIONS(
     # Other flags
 )
 
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive -Wno-deprecated -Wno-old-style-cast")
-
-SET( _boost_TEST_VERSIONS ${Boost_ADDITIONAL_VERSIONS} "1.55.0" "1.49.0" "1.41.0" "1.39.0"
-	"1.38.0" "1.37.0"
-        "1.36.1" "1.36.0" "1.35.1" "1.35.0" "1.35" "1.34.1" "1.34.0" "1.34"
-        "1.33.1" "1.33.0" "1.33" )
-find_package(Boost COMPONENTS system filesystem regex date_time thread iostreams python program_options REQUIRED)
-message(STATUS "BOOST_INC=" ${Boost_INCLUDE_DIRS})
-
-
-include_directories(${ARMADILLO_INCLUDE_DIRS})
-include_directories(${GSL_INCLUDE_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
-
-#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker --add-needed -Wl,--no-as-needed") 
 
 macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
   if (NOT OF_VERSIONS)
@@ -468,7 +471,7 @@ macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
      )
    install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} )
   endforeach()
-endmacro(install_shared_file)
+endmacro(install_shared_directory)
 
 macro(install_package_script PACKAGENAME)
   foreach (_src ${ARGN})
@@ -522,23 +525,9 @@ macro (add_pybindings TARGETNAME IFFILES LIBS)
     SET(${TARGETNAME}_INTERFACES ${IFFILES})
     SET(CMAKE_SWIG_FLAGS "")
     SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES CPLUSPLUS ON)
-#     set(INCS "")
-#     foreach (_src ${INCLUDEDIRS})
-#      set(INCS "${INCS} -I${_src}")
-#     endforeach()
-#     message(STATUS ${INCS})
-#     SET_SOURCE_FILES_PROPERTIES(${${TARGETNAME}_INTERFACES} PROPERTIES SWIG_FLAGS ${INCS})
-    #SET_SOURCE_FILES_PROPERTIES(${toolkit_INTERFACES} PROPERTIES SWIG_FLAGS "-builtin")
     SWIG_ADD_MODULE(${TARGETNAME} python ${${TARGETNAME}_INTERFACES})
     SWIG_LINK_LIBRARIES(${TARGETNAME} ${LIBS})
     set_target_properties(${SWIG_MODULE_${TARGETNAME}_REAL_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/share/insight/python/Insight)
-    
-#     SET(SWIG_RUNTIME swigpyrun.h)
-#     ADD_CUSTOM_COMMAND(
-#     OUTPUT ${SWIG_RUNTIME}
-#     COMMAND ${SWIG_EXECUTABLE} -python -external-runtime swigpyrun.h
-#     )
-#     ADD_CUSTOM_TARGET(swig-runtime-h ALL DEPENDS ${SWIG_RUNTIME})
   ENDIF()
 endmacro()
 
@@ -560,44 +549,47 @@ macro (add_PDL TARGETNAME HEADERS)
   ADD_DEPENDENCIES( ${TARGETNAME} ${TARGETNAME}_PDLGenerator )
 endmacro(add_PDL)
 
+
 add_subdirectory(pdl)
-add_subdirectory(refdata)
 add_subdirectory(test)
+add_subdirectory(refdata)
+add_subdirectory(etc)
+add_subdirectory(extensions/python)
+add_subdirectory(extensions/paraview)
+add_subdirectory(extensions/taskjuggler)
+add_subdirectory(extensions/dakota)
+
+IF (INSIGHT_BUILD_CODEASTER)
+    add_subdirectory(extensions/code_aster)
+ENDIF()
+
+if (INSIGHT_BUILD_OPENFOAM)
+ add_subdirectory(extensions/openfoam)
+ENDIF()
 
 IF(INSIGHT_BUILD_TOOLKIT)
   add_subdirectory(toolkit)
   add_subdirectory(analyze)
+  add_subdirectory(modules)
   if (INSIGHT_BUILD_WORKBENCH)
     add_subdirectory(workbench)
   endif (INSIGHT_BUILD_WORKBENCH)
   IF(INSIGHT_BUILD_WEBWORKBENCH)
     add_subdirectory(webworkbench)
   ENDIF()
+  if (INSIGHT_BUILD_CAD)
+    add_subdirectory(cad)
+  endif(INSIGHT_BUILD_CAD)
 endif()
 
 
-if (INSIGHT_BUILD_CAD)
-  add_subdirectory(cad)
-endif (INSIGHT_BUILD_CAD)
-add_subdirectory(addons)
-
-IF(INSIGHT_BUILD_TOOLKIT)
-  add_subdirectory(modules)
-ENDIF()
-
-add_subdirectory(etc)
 if (INSIGHT_BUILD_FREECAD)
   add_subdirectory(extensions/freecad)
 endif (INSIGHT_BUILD_FREECAD)
-add_subdirectory(extensions/openfoam)
-add_subdirectory(extensions/python)
-add_subdirectory(extensions/paraview)
-add_subdirectory(extensions/code_aster)
-add_subdirectory(extensions/taskjuggler)
-add_subdirectory(extensions/dakota)
+
+add_subdirectory(addons)
 
 #-- Add an Option to toggle the generation of the API documentation
-option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation" ON)
 if(BUILD_DOCUMENTATION)
   FIND_PACKAGE(Doxygen)
   if (NOT DOXYGEN_FOUND)

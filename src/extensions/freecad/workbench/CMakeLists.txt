@@ -1,7 +1,5 @@
 project(InsightWorkbench)
 
-#find_package(FreeCAD REQUIRED)
-
 SET(InsightWorkbench_SOURCES
     Init.py
     InitGui.py

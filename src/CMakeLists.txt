@@ -6,6 +6,7 @@ list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)
 
 
 OPTION(INSIGHT_BUILD_WORKBENCH "Build the workbench GUI (Qt4 is required)" ON)
+OPTION(INSIGHT_BUILD_ADDONS "Build all present add-ons" ON)
 OPTION(INSIGHT_BUILD_FREECAD "Install FreeCAD workbench" OFF)
 OPTION(INSIGHT_BUILD_OPENFOAM "Build the OpenFOAM extensions (OpenFOAM is required)" ON)
 OPTION(INSIGHT_BUILD_CODEASTER "Build the Code_Aster extensions (Code_Aster is required)" ON)
@@ -602,7 +603,9 @@ if (INSIGHT_BUILD_FREECAD)
   add_subdirectory(extensions/freecad)
 endif (INSIGHT_BUILD_FREECAD)
 
-add_subdirectory(addons)
+IF (INSIGHT_BUILD_ADDONS)
+  add_subdirectory(addons)
+ENDIF()
 
 #-- Add an Option to toggle the generation of the API documentation
 if(BUILD_DOCUMENTATION)

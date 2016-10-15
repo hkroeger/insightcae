@@ -28,4 +28,6 @@ target_include_directories(genericmodules
   )
 install(TARGETS genericmodules LIBRARY DESTINATION lib)
 
+install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
+
 # add_pybindings(GenericModules "genericmodules.i" genericmodules)

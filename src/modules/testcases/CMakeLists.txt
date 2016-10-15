@@ -11,12 +11,13 @@ set(testcases_SOURCES
   airfoilsection.cpp
   freeshearflow.cpp
   )
+  
 file(GLOB_RECURSE testcases_HEADERS "*.h")
+
 include_directories(${toolkit_SOURCE_DIR})
 include_directories(${refdata_SOURCE_DIR})
 include_directories(${GSL_INCLUDE_DIR})
-#include_directories(${OCC_INCLUDE_DIR})
-#include_directories(${journalbearingcommon_SOURCE_DIR})
+
 add_library(testcases SHARED ${testcases_SOURCES})
 add_PDL(testcases "${testcases_HEADERS}")
 set(testcases_LIBS
@@ -32,5 +33,7 @@ target_include_directories(testcases
 install(TARGETS testcases LIBRARY DESTINATION lib)
 
 add_pybindings(TestcaseModules "testcasemodules.i" testcases)
+
+install_shared_file(testcases_module_cfg testcases.module modules.d)
 
 install_script(isCreateChannelProfiles isCreateChannelProfiles.py)

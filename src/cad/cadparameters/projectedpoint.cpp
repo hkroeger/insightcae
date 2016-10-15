@@ -25,6 +25,8 @@
 #include "GeomAPI_IntCS.hxx"
 #include "Geom_Line.hxx"
 
+#include "BRepIntCurveSurface_Inter.hxx"
+
 namespace insight {
 namespace cad {
   
@@ -77,6 +79,50 @@ arma::mat ProjectedPoint::value() const
     
     return res;
   }
+}
+
+
+ProjectedPointOnFeature::ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, FeaturePtr targ)
+    : p0_(p0), along_(along), targ_(targ)
+{}
+
+arma::mat ProjectedPointOnFeature::value() const
+{
+    gp_Pnt p0=to_Pnt(p0_->value());
+    gp_Pnt pproj;
+    
+    double nearestdist=DBL_MAX;
+    bool found=false;
+    BRepIntCurveSurface_Inter proj;
+    for 
+    (
+        proj.Init
+        (
+            targ_->shape(),
+            gp_Lin(p0, gp_Dir(to_Vec(along_->value()))),
+            Precision::Confusion()
+        );
+        proj.More(); 
+        proj.Next()
+    )
+    {
+        gp_Pnt cp = proj.Pnt();
+        double d=cp.Distance(p0);
+        std::cout<<"dist="<<d<<", nearest="<<nearestdist<<std::endl;
+        if (d<nearestdist)
+        {
+            nearestdist=d;
+            pproj=cp;
+            found=true;
+        }
+    }
+
+    if (!found)
+        throw insight::Exception("ProjectedPointOnFeature: did not find a projection!");
+
+    arma::mat resp;
+    resp << pproj.X()<<arma::endr << pproj.Y()<<arma::endr << pproj.Z();
+    return resp;
 }
 
 }

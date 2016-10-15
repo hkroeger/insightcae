@@ -36,11 +36,17 @@ class Cylinder
   
   ScalarPtr Di_;
   
+  bool centered_;
+  
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered);
+  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered);
+
 public:
   declareType("Cylinder");
   Cylinder(const NoParameters& nop = NoParameters());
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis);
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis);
+  
+  static FeaturePtr create(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered);
+  static FeaturePtr create(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

@@ -25,6 +25,7 @@
 namespace insight {
 namespace cad {
 
+    
 class ProjectedPoint 
 : public insight::cad::Vector
 {
@@ -38,6 +39,22 @@ public:
   ProjectedPoint(VectorPtr p0, DatumPtr plane, VectorPtr along);
   virtual arma::mat value() const;
 };
+
+
+
+class ProjectedPointOnFeature
+: public insight::cad::Vector
+{
+  VectorPtr p0_;
+  VectorPtr along_;
+  FeaturePtr targ_;
+  
+public:
+  ProjectedPointOnFeature(VectorPtr p0, VectorPtr along, FeaturePtr targ);
+  virtual arma::mat value() const;
+};
+
+
 }
 }
 

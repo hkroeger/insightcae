@@ -39,68 +39,92 @@ Cylinder::Cylinder(const NoParameters&)
 {}
 
 
-Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis)
-: p2isAxis_(p2isAxis), p1_(p1), p2_(p2), D_(D)
+Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered)
+: p2isAxis_(p2isAxis), p1_(p1), p2_(p2), D_(D), centered_(centered)
 {}
 
-Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis)
-: p2isAxis_(p2isAxis), p1_(p1), p2_(p2), D_(Da), Di_(Di)
+Cylinder::Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered)
+: p2isAxis_(p2isAxis), p1_(p1), p2_(p2), D_(Da), Di_(Di), centered_(centered)
 {}
 
+
+FeaturePtr Cylinder::create(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered)
+{
+    return FeaturePtr(new Cylinder(p1, p2, D, p2isAxis, centered));
+}
+
+
+FeaturePtr Cylinder::create(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered)
+{
+    return FeaturePtr(new Cylinder(p1, p2, Da, Di, p2isAxis, centered));
+}
+
+ 
 void Cylinder::build()
 {
-  refpoints_["p0"]=p1_->value();
-  
-  arma::mat p2;
-  if (p2isAxis_)
-  {
-    p2=p1_->value()+p2_->value();
-  }
-  else
-  {
-    p2=p2_->value();
-  }
-  refpoints_["p1"]=p2;
-  refvalues_["Da"]=D_->value();
-  
-  TopoDS_Shape cyl=
-    BRepPrimAPI_MakeCylinder
-    (
-      gp_Ax2
-      (
-	gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
-	gp_Dir(p2(0) - p1_->value()(0), p2(1) - p1_->value()(1), p2(2) - p1_->value()(2))
-      ),
-      0.5*D_->value(), 
-      norm(p2 - p1_->value(), 2)
-    ).Shape();
-    
-  if (Di_)
-  {
-    refvalues_["Di"]=Di_->value();
-    cyl=BRepAlgoAPI_Cut
-    (
-      
-      cyl,
-     
-      BRepPrimAPI_MakeCylinder
-      (
-	gp_Ax2
-	(
-	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
-	  gp_Dir(p2(0) - p1_->value()(0), p2(1) - p1_->value()(1), p2(2) - p1_->value()(2))
-	),
-	0.5*Di_->value(), 
-	norm(p2 - p1_->value(), 2)
-      ).Shape()
-      
-    );
-  }
-  
-  providedDatums_["axis"]=DatumPtr(new ExplicitDatumAxis(p1_, VectorPtr(new SubtractedVector(p2_, p1_))));
+    arma::mat p1, p2;
 
-  setShape(cyl);
+    p1=p1_->value();
+    if (p2isAxis_)
+    {
+        p2=p1_->value()+p2_->value();
+    }
+    else
+    {
+        p2=p2_->value();
+    }
+
+    double L=arma::norm(p2-p1,2);
+    arma::mat ax=(p2-p1)/L;
+    if (centered_)
+    {
+        p1 -= 0.5*L*ax;
+        p2 -= 0.5*L*ax;
+    }
+
+    refpoints_["p0"]=p1;
+    refpoints_["p1"]=p2;
+    refvalues_["Da"]=D_->value();
+
+    TopoDS_Shape cyl=
+        BRepPrimAPI_MakeCylinder
+        (
+            gp_Ax2
+            (
+                to_Pnt(p1), //gp_Pnt( p1(0), p1(1), p1(2) ),
+                gp_Dir(to_Vec(ax)) //p2(0) - p1_->value()(0), p2(1) - p1_->value()(1), p2(2) - p1_->value()(2))
+            ),
+            0.5*D_->value(),
+            L
+        ).Shape();
+
+    if (Di_)
+    {
+        refvalues_["Di"]=Di_->value();
+        cyl=BRepAlgoAPI_Cut
+            (
+
+                cyl,
+
+                BRepPrimAPI_MakeCylinder
+                (
+                    gp_Ax2
+                    (
+                        gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)),
+                        gp_Dir(p2(0) - p1_->value()(0), p2(1) - p1_->value()(1), p2(2) - p1_->value()(2))
+                    ),
+                    0.5*Di_->value(),
+                    norm(p2 - p1_->value(), 2)
+                ).Shape()
+
+            );
+    }
+
+    providedDatums_["axis"]=DatumPtr(new ExplicitDatumAxis(p1_, VectorPtr(new SubtractedVector(p2_, p1_))));
+
+    setShape(cyl);
 }
+
 
 void Cylinder::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -115,8 +139,9 @@ void Cylinder::insertrule(parser::ISCADParser& ruleset) const
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_scalarExpression 
       >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr()) )
+      >> ( (',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) )
       >> ')' ) 
-     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cylinder>(qi::_1, qi::_3, qi::_4, qi::_5, qi::_2)) ]
+     [ qi::_val = phx::bind(&Cylinder::create, qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6) ]
       
     ))
   );

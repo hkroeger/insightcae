@@ -736,6 +736,9 @@ ISCADParser::ISCADParser(Model* model)
                     ( '(' >> r_datumExpression >> ',' >> r_vectorExpression >> ')' )
                     [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1, qi::_2)) ]
                     |
+                    ( '(' >> r_solidmodel_expression >> ',' >> r_vectorExpression >> ')' )
+                    [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPointOnFeature>(qi::_val, qi::_2, qi::_1)) ]
+                    |
                     r_datumExpression
                     [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1)) ]
                 )

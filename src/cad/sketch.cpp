@@ -461,12 +461,15 @@ void Sketch::build()
                          );
             }
 
-            std::string cmd = str( format("FreeCADCmd %s") % macrofilename );
-            //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-            cout<<"CMD=\""<<cmd<<"\""<<endl;
-            if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
+            std::string cmd1 = str( format("FreeCADCmd %s") % macrofilename );
+            std::string cmd2 = str( format("freecadcmd %s") % macrofilename );  // system-installed in debian..
+
+            if ( ::system( cmd1.c_str() ) || !boost::filesystem::exists(filename) )
             {
-                throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+                if ( ::system( cmd2.c_str() ) || !boost::filesystem::exists(filename) )
+                {
+                    throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into DXF "+filename.string()+" failed!");
+                }
             }
             boost::filesystem::remove(macrofilename);
 
@@ -610,12 +613,15 @@ void Sketch::executeEditor()
         }
         
 
-        std::string cmd = str( format("FreeCAD %s") % macrofilename );
-        //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
-        cout<<"CMD=\""<<cmd<<"\""<<endl;
-        if ( ::system( cmd.c_str() ) )
+        std::string cmd1 = str( format("FreeCAD %s") % macrofilename );
+        std::string cmd2 = str( format("freecad %s") % macrofilename ); // system-installed freecad in debian...
+
+        if ( ::system( cmd1.c_str() ) )
         {
-            throw insight::Exception("Execution of FreeCAD "+infilename.string()+" failed!");
+            if ( ::system( cmd2.c_str() ) )
+            {
+                throw insight::Exception("Execution of command \""+cmd2+"\" failed!");
+            }
         }
         boost::filesystem::remove(macrofilename);
 

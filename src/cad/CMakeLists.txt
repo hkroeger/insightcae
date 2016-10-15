@@ -31,21 +31,12 @@ add_subdirectory(cadfeatures)
 add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
 
-# include_directories(${toolkit_SOURCE_DIR})
-# include_directories(${Boost_INCLUDE_DIRS})
-# include_directories(${OCC_INCLUDE_DIR})
-# include_directories(${DXFLIB_INCLUDE_DIR})
-# include_directories(${GEOM_INCLUDE_DIRS})
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})
 
-#link_directories(${OCC_LIBRARY_DIR})
-#link_directories(${DXFLIB_LIBRARY_DIR})
-#link_directories(${GEOM_LIBRARY_DIR})
-
 add_library(insightcad SHARED ${insightcad_SOURCES})
 target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES})
-set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
+# set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
 target_include_directories(insightcad
   PUBLIC ${toolkit_SOURCE_DIR}
   PUBLIC ${Boost_INCLUDE_DIRS}
@@ -57,11 +48,6 @@ target_include_directories(insightcad
   PUBLIC ${INCLUDE_DIRS}
   )
 install(TARGETS insightcad LIBRARY DESTINATION lib)
-
-# set(cadtest_SRCS test.cpp)
-# add_executable(cadtest ${cadtest_SRCS})
-# target_link_libraries(cadtest insightcad)
-
 
 add_pybindings(cad "cad.i" insightcad)
 

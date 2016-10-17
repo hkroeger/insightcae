@@ -96,38 +96,136 @@ Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 
 
 
+Transform::Transform(FeaturePtr m1, FeaturePtr other)
+: DerivedFeature(m1),
+  m1_(m1), other_(other)
+{
+}
+
+
+
+
+FeaturePtr Transform::create(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf)
+{
+    return FeaturePtr(new Transform(m1, trans, rot, sf));    
+}
+
+
+
+
+FeaturePtr Transform::create(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
+{
+    return FeaturePtr(new Transform(m1, rot, rotorg));    
+}
+
+
+
+
+FeaturePtr Transform::create_translate(FeaturePtr m1, VectorPtr trans)
+{
+    return FeaturePtr(new Transform(m1, trans));    
+}
+
+
+
+
+FeaturePtr Transform::create_scale(FeaturePtr m1, ScalarPtr scale)
+{
+    return FeaturePtr(new Transform(m1, scale));    
+}
+
+
+
+
+FeaturePtr Transform::create_copy(FeaturePtr m1, FeaturePtr other)
+{
+    return FeaturePtr(new Transform(m1, other));    
+}
+
+
+
+
 void Transform::build()
 {
     gp_Trsf tr0, tr1, tr2;
 
     if (!trsf_)
     {
-        if (sf_)
-            tr0.SetScaleFactor(*sf_);
-
-        if (trans_)
-            tr1.SetTranslation(to_Vec(*trans_));
-
-        if (rot_)
+        if (other_)
         {
-            double phi=norm(rot_->value(), 2);
+            tr0.SetScaleFactor(other_->getDatumScalar("scaleFactor"));
+            
+            tr1.SetTranslation(to_Vec(other_->getDatumVector("translation")));
+            
+            arma::mat rot=other_->getDatumVector("rotation");
+            double phi=norm(rot, 2);
             if (phi>1e-10)
             {
-                gp_Vec axis=to_Vec(rot_->value());
+                gp_Vec axis=to_Vec(rot);
                 axis.Normalize();
-                gp_Pnt rorg(0,0,0);
-                if (rotorg_) rorg=to_Pnt(rotorg_->value());
+                gp_Pnt rorg=to_Pnt(other_->getDatumPoint("rotationOrigin"));
                 tr2.SetRotation(gp_Ax1(rorg, axis), phi);
             }
         }
+        else
+        {
+            if (sf_)
+            {
+                tr0.SetScaleFactor(*sf_);
+                refvalues_["scaleFactor"]=*sf_;
+            }
+            else
+            {
+                refvalues_["scaleFactor"]=1.0;
+            }
+            
+            if (trans_)
+            {
+                tr1.SetTranslation(to_Vec(*trans_));
+                refvectors_["translation"]=*trans_;
+            }
+            else
+            {
+                refvectors_["translation"]=vec3(0,0,0);
+            }
 
+            if (rot_)
+            {
+                double phi=norm(rot_->value(), 2);
+                if (phi>1e-10)
+                {
+                    gp_Vec axis=to_Vec(rot_->value());
+                    axis.Normalize();
+                    gp_Pnt rorg(0,0,0);
+                    if (rotorg_) 
+                    {
+                        rorg=to_Pnt(rotorg_->value());
+                        refpoints_["rotationOrigin"]=rotorg_->value();
+                    }
+                    else
+                    {
+                        refpoints_["rotationOrigin"]=vec3(0,0,0);
+                    }
+                    tr2.SetRotation(gp_Ax1(rorg, axis), phi);
+                }
+                refvectors_["rotation"]=rot_->value();
+            }
+            else
+            {
+                refpoints_["rotationOrigin"]=vec3(0,0,0);
+                refvectors_["rotation"]=vec3(0,0,0);
+            }
+        }
+        
         trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
     }
 
     setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());
 
     // Transform all ref points and ref vectors
-    copyDatumsTransformed(*m1_, *trsf_);
+    copyDatumsTransformed(*m1_, *trsf_, "", 
+                          boost::assign::list_of("scaleFactor")("translation")("rotationOrigin")("rotation")
+                         );
 }
 
 
@@ -135,14 +233,25 @@ void Transform::build()
 
 bool Transform::isTransformationFeature() const 
 {
- if (sf_)
- {
-  if (fabs(sf_->value()-1.0)>1e-6) 
-  {
-   return false;
-  }
- } 
- return true; 
+    double sf=1.0;
+    
+    if (other_)
+    {
+        sf=other_->getDatumScalar("scaleFactor");
+    }
+    else if (sf_)
+    {
+        sf=sf_->value();
+    }
+    
+    if (fabs(sf-1.0)>1e-6) 
+    {
+        return false;
+    } 
+    else
+    {
+        return true; 
+    }
 }
 
 
@@ -155,14 +264,19 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
     "Transform",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_vectorExpression > 
-	( 
-	 (',' > ruleset.r_scalarExpression ) 
-	 | 
-	 qi::attr(ScalarPtr( new ConstantScalar(1.0)))
-	) > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Transform>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+       ( '(' 
+        >> ruleset.r_solidmodel_expression >> ',' 
+        >> ruleset.r_vectorExpression >> ',' 
+        >> ruleset.r_vectorExpression 
+        >> ( (',' >> ruleset.r_scalarExpression ) | qi::attr(ScalarPtr( new ConstantScalar(1.0))) ) 
+        >> ')' 
+       ) [ qi::_val = phx::bind(&Transform::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+       |
+       ( '(' 
+        >> ruleset.r_solidmodel_expression >> ',' 
+        >> ruleset.r_solidmodel_expression
+        >> ')' 
+       ) [ qi::_val = phx::bind(&Transform::create_copy, qi::_1, qi::_2) ]
       
     ))
   );
@@ -172,10 +286,12 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
     "Rotate",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	> ruleset.r_vectorExpression > 
-	')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Transform>(qi::_1, qi::_2, qi::_3)) ]
+    ( '(' 
+      > ruleset.r_solidmodel_expression > ',' 
+      > ruleset.r_vectorExpression > ',' 
+      > ruleset.r_vectorExpression 
+      > ')' ) 
+      [ qi::_val = phx::bind(&Transform::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );

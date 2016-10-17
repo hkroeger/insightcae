@@ -386,8 +386,8 @@ public:
   virtual TopoDS_Face asSingleFace() const;
   virtual TopoDS_Shape asSingleVolume() const;
   
-  void copyDatums(const Feature& m1, const std::string& prefix="");
-  void copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix="");
+  void copyDatums(const Feature& m1, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
+  void copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix="", std::set<std::string> excludes = std::set<std::string>() );
 
   virtual const RefValuesList& getDatumScalars() const;
   virtual double getDatumScalar(const std::string& name="") const;

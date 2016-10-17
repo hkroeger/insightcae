@@ -411,9 +411,9 @@ ISCADParser::ISCADParser(Model* model)
         *( '.' > r_identifier
            [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_1)) ] )
         >>
-        -( lit("<<") > r_vectorExpression [ _val = construct<FeaturePtr>(new_<Transform>(qi::_val, qi::_1)) ] )
+        -( lit("<<") > r_vectorExpression [ _val = phx::bind(&Transform::create_translate, qi::_val, qi::_1) ] )
         >>
-        -( lit("*") > r_scalarExpression [ _val = construct<FeaturePtr>(new_<Transform>(qi::_val, qi::_1)) ] )
+        -( lit("*") > r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
         >>
         *(
             ('|' > r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanUnion>(_val, qi::_1)) ] )

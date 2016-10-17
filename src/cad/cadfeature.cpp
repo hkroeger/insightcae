@@ -1687,83 +1687,121 @@ TopoDS_Shape Feature::asSingleVolume() const
     return shape();
 }
 
-void Feature::copyDatums(const Feature& m1, const std::string& prefix)
+
+
+
+void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<std::string> excludes)
 {
-  // Transform all ref points and ref vectors
-  BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
-  {
-    if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-      throw insight::Exception("datum value "+prefix+v.first+" already present!");
-    refvalues_[prefix+v.first]=v.second;
-  }
-  BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
-  {
-    if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-      throw insight::Exception("datum point "+prefix+p.first+" already present!");
-    refpoints_[prefix+p.first]=p.second;
-  }
-  BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
-  {
-    if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-      throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-    refvectors_[prefix+p.first]=p.second;
-  }
-  BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
-  {
+    // Transform all ref points and ref vectors
+    BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
+    {
+        if (excludes.find(v.first)==excludes.end())
+        {
+            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
+                throw insight::Exception("datum value "+prefix+v.first+" already present!");
+            refvalues_[prefix+v.first]=v.second;
+        }
+    }
+    BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
+    {
+        if (excludes.find(p.first)==excludes.end())
+        {
+            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
+                throw insight::Exception("datum point "+prefix+p.first+" already present!");
+            refpoints_[prefix+p.first]=p.second;
+        }
+    }
+    BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
+    {
+        if (excludes.find(p.first)==excludes.end())
+        {
+            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
+                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
+            refvectors_[prefix+p.first]=p.second;
+        }
+    }
+    BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
+    {
+        if (excludes.find(sf.first)==excludes.end())
+        {
 #ifdef INSIGHT_CAD_DEBUG
-    std::cout<<"adding subshape "<<(prefix+sf.first)<<std::endl;
+            std::cout<<"adding subshape "<<(prefix+sf.first)<<std::endl;
 #endif
-    if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-      throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-    providedSubshapes_[prefix+sf.first]=sf.second;
-  }
-  BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
-  {
-    if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-      throw insight::Exception("datum "+prefix+df.first+" already present!");
-    providedDatums_[prefix+df.first]=df.second;
-  }
-  
+            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
+                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
+            providedSubshapes_[prefix+sf.first]=sf.second;
+        }
+    }
+    BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
+    {
+        if (excludes.find(df.first)==excludes.end())
+        {
+            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
+                throw insight::Exception("datum "+prefix+df.first+" already present!");
+            providedDatums_[prefix+df.first]=df.second;
+        }
+    }
+
 }
 
-void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix)
+
+
+
+void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, const std::string& prefix, std::set<std::string> excludes)
 {
-  // Transform all ref points and ref vectors
-  BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
-  {
-    if (refvalues_.find(prefix+v.first)!=refvalues_.end())
-      throw insight::Exception("datum value "+prefix+v.first+" already present!");
-    refvalues_[prefix+v.first]=v.second;
-  }
-  BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
-  {
-    if (refpoints_.find(prefix+p.first)!=refpoints_.end())
-      throw insight::Exception("datum point "+prefix+p.first+" already present!");
-    refpoints_[prefix+p.first]=vec3(to_Pnt(p.second).Transformed(trsf));
-  }
-  BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
-  {
-    if (refvectors_.find(prefix+p.first)!=refvectors_.end())
-      throw insight::Exception("datum vector "+prefix+p.first+" already present!");
-    refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
-  }
-  BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
-  {
+    // Transform all ref points and ref vectors
+    BOOST_FOREACH(const RefValuesList::value_type& v, m1.getDatumScalars())
+    {
+        if (excludes.find(v.first)==excludes.end())
+        {
+            if (refvalues_.find(prefix+v.first)!=refvalues_.end())
+                throw insight::Exception("datum value "+prefix+v.first+" already present!");
+            refvalues_[prefix+v.first]=v.second;
+        }
+    }
+    BOOST_FOREACH(const RefPointsList::value_type& p, m1.getDatumPoints())
+    {
+        if (excludes.find(p.first)==excludes.end())
+        {
+            if (refpoints_.find(prefix+p.first)!=refpoints_.end())
+                throw insight::Exception("datum point "+prefix+p.first+" already present!");
+            refpoints_[prefix+p.first]=vec3(to_Pnt(p.second).Transformed(trsf));
+        }
+    }
+    BOOST_FOREACH(const RefVectorsList::value_type& p, m1.getDatumVectors())
+    {
+        if (excludes.find(p.first)==excludes.end())
+        {
+            if (refvectors_.find(prefix+p.first)!=refvectors_.end())
+                throw insight::Exception("datum vector "+prefix+p.first+" already present!");
+            refvectors_[prefix+p.first]=vec3(to_Vec(p.second).Transformed(trsf));
+        }
+    }
+    BOOST_FOREACH(const SubfeatureMap::value_type& sf, m1.providedSubshapes())
+    {
+        if (excludes.find(sf.first)==excludes.end())
+        {
 #ifdef INSIGHT_CAD_DEBUG
-    std::cout<<"adding subshape (transformed) "<<(prefix+sf.first)<<std::endl;
+            std::cout<<"adding subshape (transformed) "<<(prefix+sf.first)<<std::endl;
 #endif
-    if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
-      throw insight::Exception("subshape "+prefix+sf.first+" already present!");
-    providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
-  }
-  BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
-  {
-    std::cout<<"adding datum (transformed) "<<(prefix+df.first)<<std::endl;
-    if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
-      throw insight::Exception("datum "+prefix+df.first+" already present!");
-    providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
-  }
+            if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
+                throw insight::Exception("subshape "+prefix+sf.first+" already present!");
+            providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
+        }
+    }
+    BOOST_FOREACH(const DatumPtrMap::value_type& df, m1.providedDatums())
+    {
+        if (excludes.find(df.first)==excludes.end())
+        {
+            std::cout<<"adding datum (transformed) "<<(prefix+df.first)<<std::endl;
+            if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
+                throw insight::Exception("datum "+prefix+df.first+" already present!");
+            providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));
+        }
+    }
 }
+
+
 
 
 const Feature::RefValuesList& Feature::getDatumScalars() const

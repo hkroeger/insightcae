@@ -32,14 +32,20 @@ class Place
   VectorPtr p0_;
   VectorPtr ex_;
   VectorPtr ez_;
+  FeaturePtr other_;
   
   boost::shared_ptr<gp_Trsf> trsf_;
+
+  Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez);
+  Place(FeaturePtr m, FeaturePtr other);
 
 public:
   declareType("Place");
   Place(const NoParameters& nop = NoParameters());
   Place(FeaturePtr m, const gp_Ax2& cs);
-  Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez);
+  
+  static FeaturePtr create(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez);
+  static FeaturePtr create(FeaturePtr m, FeaturePtr other);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

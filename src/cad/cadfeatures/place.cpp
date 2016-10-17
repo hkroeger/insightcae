@@ -49,23 +49,70 @@ Place::Place(FeaturePtr m, const gp_Ax2& cs)
 }
 
 
+
+
 Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
 : DerivedFeature(m), m_(m), p0_(p0), ex_(ex), ez_(ez)
 {}
+
+
+
+
+Place::Place(FeaturePtr m, FeaturePtr other)
+: DerivedFeature(m), m_(m), other_(other)
+{}
+
+
+
+
+FeaturePtr Place::create(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
+{
+    return FeaturePtr(new Place(m, p0, ex, ez));
+}
+
+
+
+
+FeaturePtr Place::create(FeaturePtr m, FeaturePtr other)
+{
+    return FeaturePtr(new Place(m, other));
+}
+
+
+
 
 void Place::build()
 {
   if (!trsf_)
   {
+      
     trsf_.reset(new gp_Trsf);
-    trsf_->SetTransformation(gp_Ax3(to_Pnt(p0_->value()), to_Vec(ez_->value()), to_Vec(ex_->value())));
+    
+    if (other_)
+    {
+        trsf_->SetTransformation
+        (
+            gp_Ax3(to_Pnt(other_->getDatumPoint("origin")), 
+            to_Vec(other_->getDatumVector("ez")), 
+            to_Vec(other_->getDatumVector("ex")))
+        );
+    }
+    else
+    {
+        arma::mat p0=p0_->value(), ez=ez_->value(), ex=ex_->value();
+        trsf_->SetTransformation(gp_Ax3(to_Pnt(p0), to_Vec(ez), to_Vec(ex)));
+        refpoints_["origin"]=p0;
+        refvectors_["ex"]=ex;
+        refvectors_["ez"]=ez;
+    }
+    
     trsf_->Invert();
   //   makePlacement(m, tr.Inverted());
   }
  
   setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
   
-  copyDatumsTransformed(*m_, *trsf_);
+  copyDatumsTransformed( *m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
 }
 
 void Place::insertrule(parser::ISCADParser& ruleset) const
@@ -75,9 +122,19 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
     "Place",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > 
-	  ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Place>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+    ( '(' 
+       >> ruleset.r_solidmodel_expression >> ',' 
+       >> ruleset.r_vectorExpression >> ',' 
+       >> ruleset.r_vectorExpression >> ',' 
+       >> ruleset.r_vectorExpression 
+       >> ')' ) 
+      [ qi::_val = phx::bind(&Place::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+    |
+    ( '(' 
+       >> ruleset.r_solidmodel_expression >> ',' 
+       >> ruleset.r_solidmodel_expression 
+       >> ')' ) 
+      [ qi::_val = phx::bind(&Place::create, qi::_1, qi::_2) ]
       
     ))
   );

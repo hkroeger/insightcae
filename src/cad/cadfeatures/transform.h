@@ -40,18 +40,27 @@ class Transform
   VectorPtr rotorg_;
   VectorPtr rot_;
   ScalarPtr sf_;
+  FeaturePtr other_;
   
   boost::shared_ptr<gp_Trsf> trsf_;
   
-public:
-  declareType("Transform");
-  
-  Transform(const NoParameters& nop = NoParameters());
   Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
   Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg);
   Transform(FeaturePtr m1, VectorPtr trans);
   Transform(FeaturePtr m1, ScalarPtr scale);
+  Transform(FeaturePtr m1, FeaturePtr other);
+
+public:
+  declareType("Transform");
+  
+  Transform(const NoParameters& nop = NoParameters());
   Transform(FeaturePtr m1, const gp_Trsf& trsf);
+
+  static FeaturePtr create(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
+  static FeaturePtr create(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg);
+  static FeaturePtr create_translate(FeaturePtr m1, VectorPtr trans);
+  static FeaturePtr create_scale(FeaturePtr m1, ScalarPtr scale);
+  static FeaturePtr create_copy(FeaturePtr m1, FeaturePtr other);
   
   virtual void build();
   

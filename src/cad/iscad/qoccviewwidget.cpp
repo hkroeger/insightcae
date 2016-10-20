@@ -677,12 +677,28 @@ void QoccViewWidget::setReset ()
     }
 }
 
-void QoccViewWidget::toggleClip()
+
+void QoccViewWidget::toggleClipXY(void)
+{
+    toggleClip( 0,0,0, 0,0,1 );
+}
+
+void QoccViewWidget::toggleClipXZ(void)
+{
+    toggleClip( 0,0,0, 0,1,0 );
+}
+
+void QoccViewWidget::toggleClipYZ(void)
+{
+    toggleClip( 0,0,0, 1,0,0 );
+}
+
+void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, double ny, double nz)
 {
 #if OCC_VERSION_MINOR<7
   if (clipPlane_.IsNull())
   {
-    gp_Pln pl( gp_Pnt(0,0,0), gp_Dir(0,1,0) );
+    gp_Pln pl( gp_Pnt(px,py,pz), gp_Dir(nx,ny,nz) );
     double a, b, c, d;
     pl.Coefficients(a, b, c, d);
     clipPlane_=new V3d_Plane(
@@ -698,7 +714,7 @@ void QoccViewWidget::toggleClip()
 #else
   if (clipPlane_.IsNull())
   {
-    gp_Pln pl( gp_Pnt(0,0,0), gp_Dir(0,1,0) );
+    gp_Pln pl( gp_Pnt(px,py,pz), gp_Dir(nx,ny,nz) );
     clipPlane_=new Graphic3d_ClipPlane(pl);
     Graphic3d_MaterialAspect mat(Graphic3d_NOM_DEFAULT);
     mat.SetColor(Quantity_Color(Quantity_NOC_WHITE));
@@ -719,6 +735,9 @@ void QoccViewWidget::toggleClip()
   }
 #endif
 }
+
+
+
 /*!
   \brief	This function handles left button down events from the mouse.
 */

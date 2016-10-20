@@ -122,7 +122,10 @@ public slots:
   void viewReset();
   void setReset();
   
-  void toggleClip ( void );
+  void toggleClipXY ( void );
+  void toggleClipYZ ( void );
+  void toggleClipXZ ( void );
+  void toggleClip ( double px, double py, double pz, double nx, double ny, double nz );
   
 protected: // methods
 

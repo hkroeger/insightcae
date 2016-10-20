@@ -87,24 +87,25 @@ void ISCADSyntaxHighlighter::setHighlightWord(const QString& word)
 
 void ISCADSyntaxHighlighter::highlightBlock(const QString& text)
 {
-  foreach (const HighlightingRule &rule, highlightingRules) 
-  {
-    if (!rule.pattern.isEmpty())
+    foreach (const HighlightingRule &rule, highlightingRules)
     {
-      QRegExp expression(rule.pattern);
-      
-      int index0 = expression.indexIn(text);
-      int index = expression.pos(1);
-      
-      while (index0 >= 0) 
-      {
- 	int fulllength = expression.matchedLength();
-	int length = expression.cap(1).length();
-	setFormat(index0, length, rule.format);
-	
-	index0 = expression.indexIn(text, index0 + fulllength);
-	index = expression.pos(1);
-      }
+        if (!rule.pattern.isEmpty())
+        {
+            QRegExp expression(rule.pattern);
+
+            int index0 = expression.indexIn(text);
+            int index = expression.pos(1);
+
+            while (index0 >= 0)
+            {
+                int fulllength = expression.matchedLength();
+                int length = expression.cap(1).length();
+                setFormat(index0, length, rule.format);
+
+                index0 = expression.indexIn(text, index0 + fulllength);
+                index = expression.pos(1);
+
+            }
+        }
     }
-  }
 }

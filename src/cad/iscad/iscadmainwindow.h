@@ -44,6 +44,8 @@
 class ISCADSyntaxHighlighter;
 
 
+
+
 class BGParsingThread
 : public QThread
 {
@@ -61,6 +63,9 @@ public:
     void launch(const std::string& script);
     virtual void run();
 };
+
+
+
 
 class ISCADMainWindow
     : public QMainWindow
@@ -99,6 +104,8 @@ protected:
     BGParsingThread bgparsethread_;
     
     bool skipPostprocActions_;
+    
+    QMenu* clipplanemenu_;
 
 protected:
     void clearDerivedData();
@@ -162,6 +169,9 @@ protected slots:
     void allShaded();
     void allWireframe();
     void resetViz();
+    
+    void updateClipPlaneMenu();
+    void onSetClipPlane(QObject* datumplane);
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);

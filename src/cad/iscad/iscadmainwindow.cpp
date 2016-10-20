@@ -36,6 +36,8 @@
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"
 
+#include "datum.h"
+
 void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 {
     // Remove previously displayed sub objects from display
@@ -239,9 +241,20 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     act = new QAction(("Toggle &grid"), this);
     connect(act, SIGNAL(triggered()), context_, SLOT(toggleGrid()));
     vmenu->addAction(act);
-    act = new QAction(("Toggle &clip plane"), this);
-    connect(act, SIGNAL(triggered()), viewer_, SLOT(toggleClip()));
+    
+    act = new QAction(("Toggle clip plane (&XY)"), this);
+    connect(act, SIGNAL(triggered()), viewer_, SLOT(toggleClipXY()));
     vmenu->addAction(act);
+    act = new QAction(("Toggle clip plane (&YZ)"), this);
+    connect(act, SIGNAL(triggered()), viewer_, SLOT(toggleClipYZ()));
+    vmenu->addAction(act);
+    act = new QAction(("Toggle clip plane (X&Z)"), this);
+    connect(act, SIGNAL(triggered()), viewer_, SLOT(toggleClipXZ()));
+    vmenu->addAction(act);
+    
+    clipplanemenu_=vmenu->addMenu("Clip at datum plane");
+    clipplanemenu_->setDisabled(true);
+    
     act = new QAction(("Change background color..."), this);
     connect(act, SIGNAL(triggered()), viewer_, SLOT(background()));
     vmenu->addAction(act);
@@ -510,25 +523,6 @@ void ISCADMainWindow::doBgParse()
             statusBar()->showMessage("Background model parsing in progress...");
             bgparsethread_.launch( editor_->toPlainText().toStdString() );
         }
-//         syn_elem_dir_.reset();
-//         statusBar()->showMessage("Background model parsing in progress...");
-
-//         std::istringstream is(editor_->toPlainText().toStdString());
-// 
-//         int failloc=-1;
-// 
-//         cur_model_.reset(new insight::cad::Model);
-// 
-//         bool r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc, &syn_elem_dir_);
-
-//         if (!r) // fail if we did not get a full match
-//         {
-//             statusBar()->showMessage("Background model parsing failed.");
-//         }
-//         else
-//         {
-//             statusBar()->showMessage("Background model parsing finished successfully.");
-//         }
     }
 }
 
@@ -539,6 +533,7 @@ void ISCADMainWindow::onBgParseFinished()
         statusBar()->showMessage("Background model parsing finished successfully.");
         cur_model_ = bgparsethread_.model_;
         syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
+        updateClipPlaneMenu();
     }
     else
     {
@@ -568,6 +563,51 @@ void ISCADMainWindow::resetViz()
             qmsi->shaded();
         }
     }
+}
+
+
+void ISCADMainWindow::updateClipPlaneMenu()
+{
+    clipplanemenu_->clear();
+    
+    int added=0;
+    auto datums=cur_model_->datums();
+    BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
+    {
+        insight::cad::DatumPtr d = v.second;
+        if (d->providesPlanarReference())
+        {
+            QAction *act = new QAction( v.first.c_str(), this );
+            
+            QSignalMapper *signalMapper = new QSignalMapper(this);
+            signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
+            connect(signalMapper, SIGNAL(mapped(QObject*)),
+                    this, SLOT(onSetClipPlane(QObject*)));
+            connect(act, SIGNAL(triggered()), signalMapper, SLOT(map()));
+            clipplanemenu_->addAction(act);
+            
+            added++;
+        }
+    }
+    
+    if (added)
+    {
+        clipplanemenu_->setEnabled(true);
+    }
+    else
+    {
+        clipplanemenu_->setDisabled(true);
+    }
+}
+
+
+void ISCADMainWindow::onSetClipPlane(QObject* datumplane)
+{
+    insight::cad::Datum* datum = reinterpret_cast<insight::cad::Datum*>(datumplane);
+    gp_Ax3 pl = datum->plane();
+    gp_Pnt p = pl.Location();
+    gp_Dir n = pl.Direction();
+    viewer_->toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
 }
 
 
@@ -885,6 +925,8 @@ void ISCADMainWindow::rebuildModel()
         {
             addVariable(v.first, v.second);
         }
+        
+        updateClipPlaneMenu();
 
         statusBar()->showMessage("Model rebuild successfully finished.");
 

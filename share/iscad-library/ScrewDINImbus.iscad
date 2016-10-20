@@ -43,7 +43,7 @@ Cylinder(
  O,
  O-Lhh*EX,
  d1i*1.1
-);
+)|throughhole;
 
 dbl=Dn-P;
 blindhole=

@@ -33,10 +33,12 @@ nut2
  -tsl*EX)
 ;
 
-Lh1?=3*l1; # Lochl. richtg. Gewindeende
-Lh2?=3*l1; # Lochl. richtg. Kopf
+Lh1Byl1?=3;
+Lh2Byl1?=3;
+Lh1?=Lh1Byl1*l1; # Lochl. richtg. Gewindeende
+Lh2?=Lh2Byl1*l1+k; # Lochl. richtg. Kopf
 bore=
  Cylinder((l1-k)*EX, ax -Lh1*EX, D)
 |
- Cone( (l1-k)*EX, (l1-k +Lh2)*EX, D, Lh2*(dk-D)/k)
+ Cone( (l1-k)*EX, (l1-k +Lh2)*EX, D, D + Lh2*(dk-D)/k)
 ;

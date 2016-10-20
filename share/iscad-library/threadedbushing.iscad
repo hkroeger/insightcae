@@ -7,16 +7,26 @@ t?=0.85;
 Lbore?=10*l;
 
 bushing:
+(
 Cylinder(
  -l*EX, O,
  D, d)
 |
 Cylinder(
  O, t*EX,
- d1);
+ d1)
+);
 
 bore=
+(
+Cylinder(
+ O, Lbore*EX,
+ d1)
+|
 Cylinder(
  -Lbore*EX, O,
  D
+)
 );
+
+axis=RefAxis(O, EX);

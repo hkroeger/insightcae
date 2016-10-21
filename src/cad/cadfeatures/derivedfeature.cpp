@@ -119,5 +119,42 @@ arma::mat DerivedFeature::modelInertia(double density_ovr) const
     return Feature::modelInertia(rho);
 }
 
+bool DerivedFeature::isSingleEdge() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleEdge();
+}
+
+bool DerivedFeature::isSingleOpenWire() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleOpenWire();
+}
+
+bool DerivedFeature::isSingleClosedWire() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleClosedWire();
+}
+
+bool DerivedFeature::isSingleWire() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleWire();
+}
+
+bool DerivedFeature::isSingleFace() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleFace();
+}
+
+bool DerivedFeature::isSingleVolume() const
+{
+    checkForBuildDuringAccess();
+    return basefeat_->isSingleVolume();
+}
+
+
 }
 }

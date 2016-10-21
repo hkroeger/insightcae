@@ -47,6 +47,14 @@ public:
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   virtual arma::mat modelCoG(double density_ovr=-1.) const;
   virtual arma::mat modelInertia(double density_ovr=-1.) const;
+  
+  virtual bool isSingleEdge() const;
+  virtual bool isSingleOpenWire() const;
+  virtual bool isSingleClosedWire() const;
+  virtual bool isSingleWire() const;
+  virtual bool isSingleFace() const;
+  virtual bool isSingleVolume() const;
+  
 };
 
 

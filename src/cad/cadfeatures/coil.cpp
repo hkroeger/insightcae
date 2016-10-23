@@ -53,12 +53,23 @@ CoilPath::CoilPath
     ScalarPtr r,
     ScalarPtr nr,
     ScalarPtr d,
-    ScalarPtr R,
-    ScalarPtr d0
+    ScalarPtr R
 )
-: l_(l), r_(r), nr_(nr), d_(d), R_(R), d0_(d0)
+: l_(l), r_(r), nr_(nr), d_(d), R_(R)
 {}
 
+
+FeaturePtr CoilPath::create
+(
+    ScalarPtr l,
+    ScalarPtr r,
+    ScalarPtr nr,
+    ScalarPtr d,
+    ScalarPtr R
+)
+{
+    return FeaturePtr(new CoilPath(l, r, nr, d, R));
+}
 
 
 Handle_Geom_TrimmedCurve MakeArc_Projected(gp_Pnt p1, gp_Vec n1, gp_Pnt p2, double R, gp_Pnt pc, gp_Vec el)
@@ -85,6 +96,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected(gp_Pnt p1, gp_Vec n1, gp_Pnt p2, doub
 void CoilPath::build()
 {
 
+    // some sanity checks
     double l=l_->value();
     if (l<=0) throw insight::Exception(str(format("Negative coil length (L=%g) is invalid!")%l));
     double r=r_->value();
@@ -116,7 +128,7 @@ void CoilPath::build()
     arma::mat L=l*el;
 
 
-    double deltaL0=0.0;
+//     double deltaL0=0.0;
     arma::mat l_ps_n;
     for (int j=0; j<nr; j++)
     {
@@ -125,37 +137,24 @@ void CoilPath::build()
         arma::mat ps_p=rotMatrix( phic, el )*(p0+R*er) - R*er;
         arma::mat ps_n=rotMatrix( -phic, el )*(p0+R*er) - R*er;
 
-        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_p-deltaL0*el), to_Pnt(ps_p+L)).Value()).Edge()); // before deltaL0 is updated!
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_p), to_Pnt(ps_p+L)).Value()).Edge());
         
         if (j==0)
         {
-            // first half endwinding
-            double r=dc;
-            arma::mat p00=p0-el*r;
-//             INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00)).Value()));
-            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p), to_Vec(-el), to_Pnt(p00), R, to_Pnt(pc), to_Vec(el))));
-            refpoints_["p0"]=p00;
-            double nom=r*r-pow(0.5*d,2);
-            if (nom>0)
-            {
-//                 deltaL0=d+r - ::sqrt(nom);
-                deltaL0=d0_->value();
-            }
+            refpoints_["p0"]=ps_p;
         }
         else
         {
-//             INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el)).Value()));
-            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p-deltaL0*el), to_Vec(-el), to_Pnt(l_ps_n-deltaL0*el), R, to_Pnt(pc), to_Vec(el))));
+            INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p), to_Vec(-el), to_Pnt(l_ps_n), R, to_Pnt(pc), to_Vec(el))));
         }
 
-//         INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L)).Value()));
         INS_ADDWIRE(BRepBuilderAPI_MakeEdge(MakeArc_Projected(to_Pnt(ps_p+L), to_Vec(el), to_Pnt(ps_n+L), R, to_Pnt(pc), to_Vec(el))));
 
-        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_n+L), to_Pnt(ps_n-deltaL0*el)).Value()).Edge());
+        INS_ADDWIRE(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(ps_n+L), to_Pnt(ps_n)).Value()).Edge());
         
         if (j==nr-1)
         {
-            refpoints_["p1"]=ps_n-deltaL0*el;
+            refpoints_["p1"]=ps_n;
         }
 
         l_ps_n=ps_n;
@@ -182,10 +181,9 @@ void CoilPath::insertrule(parser::ISCADParser& ruleset) const
 	    > ruleset.r_scalarExpression > ',' 
 	    > ruleset.r_scalarExpression > ',' 
 	    > ruleset.r_scalarExpression > ',' 
-	    > ruleset.r_scalarExpression > ',' 
 	    > ruleset.r_scalarExpression 
 	    > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<CoilPath>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6)) ]
+	[ qi::_val = phx::bind(&CoilPath::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
     ))
   );
 }

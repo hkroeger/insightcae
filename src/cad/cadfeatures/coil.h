@@ -51,28 +51,30 @@ class CoilPath
     ScalarPtr d_;
 
     /**
-     * additional spacing at inner endwinding
-     */
-    ScalarPtr d0_;
-
-    /**
      * outer yoke radius
      */
     ScalarPtr R_;
 
-
-public:
-    declareType("CoilPath");
-    
-    CoilPath(const NoParameters& nop = NoParameters());
     CoilPath
     (
         ScalarPtr l,
         ScalarPtr r,
         ScalarPtr nr,
         ScalarPtr d,
-        ScalarPtr R,
-     ScalarPtr d0
+        ScalarPtr R
+    );
+
+public:
+    declareType("CoilPath");
+    
+    CoilPath(const NoParameters& nop = NoParameters());
+    static FeaturePtr create
+    (
+        ScalarPtr l,
+        ScalarPtr r,
+        ScalarPtr nr,
+        ScalarPtr d,
+        ScalarPtr R
     );
 
     virtual void build();

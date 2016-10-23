@@ -9,6 +9,7 @@ add_sources(insightcad_SOURCES
  box.cpp
  chamfer.cpp
  circle.cpp
+ clipwire.cpp
  circularpattern.cpp
  compound.cpp
  cutaway.cpp

@@ -17,29 +17,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_PIPE_H
-#define INSIGHT_CAD_PIPE_H
+#ifndef INSIGHT_CAD_CLIPWIRE_H
+#define INSIGHT_CAD_CLIPWIRE_H
 
-#include "cadfeature.h"
+#include "derivedfeature.h"
 
 namespace insight {
 namespace cad {
 
 
-class Pipe
-: public Feature
+class ClipWire
+: public DerivedFeature
 {
-  FeaturePtr spine_;
-  FeaturePtr xsec_;
-  bool orient_;
-  bool reapprox_spine_;
+  FeaturePtr m1_;
+  ScalarPtr ls_, le_;
   
-  Pipe(FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false);
+  ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
   
 public:
-  declareType("Pipe");
-  Pipe(const NoParameters& nop = NoParameters());
-  static FeaturePtr create(FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false);
+  declareType("ClipWire");
+  ClipWire(const NoParameters& nop = NoParameters());
+  
+  static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
@@ -49,4 +48,4 @@ public:
 }
 }
 
-#endif // INSIGHT_CAD_PIPE_H
+#endif // INSIGHT_CAD_CLIPWIRE_H

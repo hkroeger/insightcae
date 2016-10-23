@@ -1,0 +1,30 @@
+Dn?=3;
+l?=6;
+
+Dk?=2.1*Dn;
+k?=0.415*Dn;
+
+dhmin=Dn+0.15;
+b=l+Dn;
+
+rivet:
+Cutaway(
+ (Torus(
+  O, (Dk-2*k)*EX, 2*k
+ )|Cylinder(O, ax -k*EX, Dk-2*k)),
+ YZ
+)
+|
+Cylinder(
+O, ax b*EX, Dn)
+;
+
+Lh?=2*k;
+bore=
+Cylinder(
+ O, ax -Lh*EX, Dk+1)
+|
+Cylinder(
+ O, ax (b+1)*EX, dhmin);
+
+axis=RefAxis(O, EX);

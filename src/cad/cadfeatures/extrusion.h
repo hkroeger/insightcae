@@ -34,10 +34,13 @@ class Extrusion
   VectorPtr L_;
   bool centered_;
   
+  Extrusion(FeaturePtr sk, VectorPtr L, bool centered=false);
+  
 public:
   declareType("Extrusion");
   Extrusion(const NoParameters& nop = NoParameters());
-  Extrusion(FeaturePtr sk, VectorPtr L, bool centered=false);
+
+  static FeaturePtr create(FeaturePtr sk, VectorPtr L, bool centered=false);
   
   virtual void build();
   

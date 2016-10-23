@@ -30,12 +30,18 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
   
 defineType(Revolution);
 addToFactoryTable(Feature, Revolution, NoParameters);
 
+
+
+
 Revolution::Revolution(const NoParameters& nop): Feature(nop)
 {}
+
 
 
 
@@ -43,27 +49,47 @@ Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr an
 : sk_(sk), p0_(p0), axis_(axis), angle_(angle), centered_(centered)
 {}
 
+
+
+
+FeaturePtr Revolution::create(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
+{
+    return FeaturePtr(new Revolution(sk, p0, axis, angle, centered));
+}
+
+
+
+
 void Revolution::build()
 {
-  if (!centered_)
-  {
-    setShape(BRepPrimAPI_MakeRevol( *sk_, gp_Ax1(to_Pnt(p0_->value()), gp_Dir(to_Vec(axis_->value()))), angle_->value(), centered_ ).Shape());
-  }
-  else
-  {
-    gp_Trsf trsf;
-    gp_Vec ax=to_Vec(axis_->value());
-    ax.Normalize();
-    trsf.SetRotation(gp_Ax1(to_Pnt(p0_->value()), ax), -0.5*angle_->value());
-    setShape(BRepPrimAPI_MakeRevol
-    ( 
-      BRepBuilderAPI_Transform(*sk_, trsf).Shape(), 
-      gp_Ax1(to_Pnt(p0_->value()), gp_Dir(ax)), angle_->value()
-    ).Shape());
-  }
-  copyDatums(*sk_);
-//   setShape(makeRevolution(*sk_, p0_->value(), axis_->value(), angle_->value(), centered_));
+    if (!centered_)
+    {
+        BRepPrimAPI_MakeRevol mkr( *sk_, gp_Ax1(to_Pnt(p0_->value()), gp_Dir(to_Vec(axis_->value()))), angle_->value(), centered_ );
+        providedSubshapes_["frontFace"]=FeaturePtr(new Feature(mkr.FirstShape()));
+        providedSubshapes_["backFace"]=FeaturePtr(new Feature(mkr.LastShape()));
+        setShape(mkr.Shape());
+    }
+    else
+    {
+        gp_Trsf trsf;
+        gp_Vec ax=to_Vec(axis_->value());
+        ax.Normalize();
+        trsf.SetRotation(gp_Ax1(to_Pnt(p0_->value()), ax), -0.5*angle_->value());
+        BRepPrimAPI_MakeRevol mkr
+        (
+            BRepBuilderAPI_Transform(*sk_, trsf).Shape(),
+            gp_Ax1(to_Pnt(p0_->value()), gp_Dir(ax)), angle_->value()
+        );
+        providedSubshapes_["frontFace"]=FeaturePtr(new Feature(mkr.FirstShape()));
+        providedSubshapes_["backFace"]=FeaturePtr(new Feature(mkr.LastShape()));
+        setShape(mkr.Shape());
+    }
+
+    copyDatums(*sk_);
 }
+
+
+
 
 void Revolution::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -76,11 +102,14 @@ void Revolution::insertrule(parser::ISCADParser& ruleset) const
 	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
        > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false))
        > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Revolution>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
+      [ qi::_val = phx::bind(&Revolution::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))
   );
 }
+
+
+
 
 }
 }

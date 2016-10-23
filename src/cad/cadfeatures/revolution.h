@@ -35,10 +35,13 @@ class Revolution
   ScalarPtr angle_;
   bool centered_;
   
+  Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
+  
 public:
   declareType("Revolution");
   Revolution(const NoParameters& nop = NoParameters());
-  Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
+
+  static FeaturePtr create(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
   
   virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;

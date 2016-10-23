@@ -122,6 +122,9 @@ void Pipe::build()
 
     p.Build();
     
+    providedSubshapes_["frontFace"]=FeaturePtr(new Feature(p.FirstShape()));
+    providedSubshapes_["backFace"]=FeaturePtr(new Feature(p.LastShape()));
+    
     setShape(p.Shape());
 }
 

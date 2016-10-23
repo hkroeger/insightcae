@@ -18,6 +18,7 @@
  *
  */
 
+#include "Standard_Failure.hxx"
 #include "iscadapplication.h"
 #include "base/exception.h"
 #include <string>
@@ -35,6 +36,14 @@ bool ISCADApplication::notify(QObject *rec, QEvent *ev)
   try
   {
     return QApplication::notify(rec, ev);
+  }
+  catch (Standard_Failure e)
+  {
+    QMessageBox msgBox;
+    msgBox.setIcon(QMessageBox::Critical);
+    msgBox.setText("OpenCascade error: "+QString(e.GetMessageString()));
+
+    msgBox.exec();
   }
   catch (insight::Exception e)
   {

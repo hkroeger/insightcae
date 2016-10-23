@@ -110,7 +110,7 @@ void ClipWire::build()
     
     for (size_t i=0; i<n; i++)
     {
-        L_at_start_from_end[i]=Ltotal - L_at_start_from_end[i];
+        L_at_start_from_end[i] = Ltotal - L_at_start_from_end[i];
     }
     for (int i=0; i<n; i++)
     {
@@ -140,7 +140,7 @@ void ClipWire::build()
             BRep_Tool::Pnt(TopExp::LastVertex(oedgs[i0])) 
         )
     );
-    for (int i=i0+1; i<i1-1; i++)
+    for (int i=i0+1; i<=i1-1; i++)
     {
         edgs.Append(oedgs[i]);
     }

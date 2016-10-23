@@ -137,7 +137,7 @@ void ClipWire::build()
         (
             BRep_Tool::Curve(oedgs[i0], t0, t1), 
             ps, 
-            BRep_Tool::Pnt(TopExp::LastVertex(oedgs[i0])) 
+            BRep_Tool::Pnt(TopExp::LastVertex(oedgs[i0], Standard_True)) 
         )
     );
     for (int i=i0+1; i<=i1-1; i++)
@@ -149,7 +149,7 @@ void ClipWire::build()
         BRepBuilderAPI_MakeEdge
         (
             BRep_Tool::Curve(oedgs[i1], t0, t1), 
-            BRep_Tool::Pnt(TopExp::FirstVertex(oedgs[i1])),
+            BRep_Tool::Pnt(TopExp::FirstVertex(oedgs[i1], Standard_True)),
             pe 
         )
     );
@@ -159,7 +159,12 @@ void ClipWire::build()
     
     BRepBuilderAPI_MakeWire wb;
     wb.Add(edgs);
-    setShape(wb.Wire());
+    
+    ShapeFix_Wire wf;
+    wf.Load(wb.Wire());
+    wf.Perform();
+
+    setShape(wf.Wire());
 }
 
 

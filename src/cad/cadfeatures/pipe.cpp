@@ -121,6 +121,7 @@ void Pipe::build()
     BRepOffsetAPI_MakePipe p(spinew, xsecs);
 
     p.Build();
+    
     setShape(p.Shape());
 }
 

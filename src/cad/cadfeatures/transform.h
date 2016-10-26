@@ -29,46 +29,50 @@ namespace cad
 {
 
 
+    
+    
 class Transform
-: public DerivedFeature
+    : public DerivedFeature
 {
-//   TopoDS_Shape makeTransform(const SolidModel& m1, const arma::mat& trans, const arma::mat& rot, double scale=1.0);
-//   TopoDS_Shape makeTransform(const SolidModel& m1, const gp_Trsf& trsf);
-  
-  FeaturePtr m1_;
-  VectorPtr trans_;
-  VectorPtr rotorg_;
-  VectorPtr rot_;
-  ScalarPtr sf_;
-  FeaturePtr other_;
-  
-  boost::shared_ptr<gp_Trsf> trsf_;
-  
-  Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
-  Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg);
-  Transform(FeaturePtr m1, VectorPtr trans);
-  Transform(FeaturePtr m1, ScalarPtr scale);
-  Transform(FeaturePtr m1, FeaturePtr other);
+
+    FeaturePtr m1_;
+    VectorPtr trans_;
+    VectorPtr rotorg_;
+    VectorPtr rot_;
+    ScalarPtr sf_;
+    FeaturePtr other_;
+
+    boost::shared_ptr<gp_Trsf> trsf_;
+
+    Transform ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
+    Transform ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
+    Transform ( FeaturePtr m1, VectorPtr trans );
+    Transform ( FeaturePtr m1, ScalarPtr scale );
+    Transform ( FeaturePtr m1, FeaturePtr other );
 
 public:
-  declareType("Transform");
-  
-  Transform(const NoParameters& nop = NoParameters());
-  Transform(FeaturePtr m1, const gp_Trsf& trsf);
+    declareType ( "Transform" );
 
-  static FeaturePtr create(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf);
-  static FeaturePtr create(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg);
-  static FeaturePtr create_translate(FeaturePtr m1, VectorPtr trans);
-  static FeaturePtr create_scale(FeaturePtr m1, ScalarPtr scale);
-  static FeaturePtr create_copy(FeaturePtr m1, FeaturePtr other);
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
-  virtual bool isTransformationFeature() const;
-  virtual gp_Trsf transformation() const;
+    Transform ( const NoParameters& nop = NoParameters() );
+    Transform ( FeaturePtr m1, const gp_Trsf& trsf );
+
+    static FeaturePtr create ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
+    static FeaturePtr create ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
+    static FeaturePtr create_translate ( FeaturePtr m1, VectorPtr trans );
+    static FeaturePtr create_scale ( FeaturePtr m1, ScalarPtr scale );
+    static FeaturePtr create_copy ( FeaturePtr m1, FeaturePtr other );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isTransformationFeature() const;
+    virtual gp_Trsf transformation() const;
 };
+
+
+
 
 }
 }

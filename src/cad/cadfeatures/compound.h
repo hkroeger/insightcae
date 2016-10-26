@@ -28,28 +28,41 @@ namespace cad
 {
 
 
+    
+    
 typedef std::vector<FeaturePtr> CompoundFeatureList;
 typedef std::map<std::string, FeaturePtr> CompoundFeatureMap;
 
+
+
+
 class Compound
-: public Feature
+    : public Feature
 {
 protected:
-  CompoundFeatureMap components_;
-  
+    CompoundFeatureMap components_;
+
+    Compound ( const CompoundFeatureList& m1 );
+    Compound ( const CompoundFeatureMap& m1 );
+
 public:
-  declareType("Compound");
-  Compound(const NoParameters& nop = NoParameters());
-  Compound(const CompoundFeatureList& m1);
-  Compound(const CompoundFeatureMap& m1);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
-  virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
-  virtual arma::mat modelCoG(double density_ovr=-1.) const;
-  virtual arma::mat modelInertia(double density_ovr=-1.) const;
+    declareType ( "Compound" );
+    Compound ( const NoParameters& nop = NoParameters() );
+    
+    static FeaturePtr create( const CompoundFeatureList& m1 );
+    static FeaturePtr create_map( const CompoundFeatureMap& m1 );
+
+    virtual void build();
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual double mass ( double density_ovr=-1., double aw_ovr=-1. ) const;
+    virtual arma::mat modelCoG ( double density_ovr=-1. ) const;
+    virtual arma::mat modelInertia ( double density_ovr=-1. ) const;
 };
+
+
+
 
 }
 }

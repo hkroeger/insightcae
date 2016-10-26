@@ -32,12 +32,19 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Circle);
 addToFactoryTable(Feature, Circle, NoParameters);
+
+
+
 
 Circle::Circle(const NoParameters&)
 {
 }
+
+
 
 
 void Circle::build()
@@ -51,15 +58,31 @@ void Circle::build()
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 
+
+
+
 Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
 : p0_(p0), n_(n), D_(D)
 {
 }
 
+
+
+
+FeaturePtr Circle::create(VectorPtr p0, VectorPtr n, ScalarPtr D)
+{
+    return FeaturePtr(new Circle(p0, n, D));
+}
+
+
+
 Circle::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape());
 }
+
+
+
 
 void Circle::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -69,11 +92,31 @@ void Circle::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Circle>(qi::_1, qi::_2, qi::_3)) ]
+	[ qi::_val = phx::bind(&Circle::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Circle::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Circle",
+         
+            "( <vector:p0>, <vector:n>, <scalar:D> )",
+            
+            "Creates a circular face. The circle is centered at p0, the axis vector is n and the diameter D."
+        )
+    );
+}
+
+
 
 }
 }

@@ -401,7 +401,7 @@ ISCADParser::ISCADParser(Model* model)
     r_solidmodel_expression =
         r_solidmodel_term [_val=qi::_1 ]
         >>
-        *( '-' >> r_solidmodel_term [ _val = construct<FeaturePtr>(new_<BooleanSubtract>(qi::_val, qi::_1)) ] )
+        *( '-' >> r_solidmodel_term [ _val = phx::bind(&BooleanSubtract::create, qi::_val, qi::_1) ] )
         ;
     r_solidmodel_expression.name("feature expression");
 
@@ -416,12 +416,12 @@ ISCADParser::ISCADParser(Model* model)
         -( lit("*") > r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
         >>
         *(
-            ('|' > r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanUnion>(_val, qi::_1)) ] )
+            ('|' > r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, _val, qi::_1) ] )
             |
             ('&' > (
-                 r_solidmodel_primary [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ]
+                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create, _val, qi::_1) ]
                  |
-                 r_datumExpression [ _val = construct<FeaturePtr>(new_<BooleanIntersection>(_val, qi::_1)) ]
+                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create_plane, _val, qi::_1) ]
              )
             )
         )

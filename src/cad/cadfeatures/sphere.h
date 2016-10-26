@@ -26,20 +26,29 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 class Sphere
-: public SingleVolumeFeature
+    : public SingleVolumeFeature
 {
-  VectorPtr p_;
-  ScalarPtr D_;
-  
+    VectorPtr p_;
+    ScalarPtr D_;
+
+    Sphere ( VectorPtr p, ScalarPtr D );
+
 public:
-  declareType("Sphere");
-  Sphere(const NoParameters& nop = NoParameters());
-  Sphere(VectorPtr p, ScalarPtr D);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Sphere" );
+    Sphere ( const NoParameters& nop = NoParameters() );
+    static FeaturePtr create ( VectorPtr p, ScalarPtr D );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

@@ -26,31 +26,37 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 class Cylinder
-: public SingleVolumeFeature
+    : public SingleVolumeFeature
 {
-  bool p2isAxis_;
-  VectorPtr p1_;
-  VectorPtr p2_;
-  ScalarPtr D_;
-  
-  ScalarPtr Di_;
-  
-  bool centered_;
-  
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered);
-  Cylinder(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered);
+    bool p2isAxis_;
+    VectorPtr p1_;
+    VectorPtr p2_;
+    ScalarPtr D_;
+
+    ScalarPtr Di_;
+
+    bool centered_;
+
+    Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
+    Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
 public:
-  declareType("Cylinder");
-  Cylinder(const NoParameters& nop = NoParameters());
-  
-  static FeaturePtr create(VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered);
-  static FeaturePtr create(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Cylinder" );
+    Cylinder ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
+    static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

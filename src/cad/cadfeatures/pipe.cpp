@@ -152,5 +152,24 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
 
 
 
+FeatureCmdInfoList Pipe::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Pipe",
+            "( <feature:xsec>, <feature:spine> [, orient] [, reapprox] )",
+            "Sweeps the planar section xsec along the curve feature spine."
+            " The xsec is expected at global origin [0,0,0] and is moved to the beginning of the spine."
+            " By default, the section is not rotated. If keyword reorient is given, the z-axis of the section is aligned with the tangent of the spine."
+            " The keyword reapprox triggers an reapproximation of the spine wire into a single b-spline curve (experimental)."
+        )
+    );
+}
+
+
+
+
 }
 }

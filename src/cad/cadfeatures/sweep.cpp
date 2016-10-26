@@ -27,69 +27,87 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
+
+
+
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Sweep);
 addToFactoryTable(Feature, Sweep, NoParameters);
 
+
+
+
 Sweep::Sweep(const NoParameters& nop): Feature(nop)
 {}
+
+
 
 
 Sweep::Sweep(const std::vector<FeaturePtr>& secs)
 : secs_(secs)
 {}
 
+
+
+
+FeaturePtr Sweep::create ( const std::vector<FeaturePtr>& secs )
+{
+    return FeaturePtr(new Sweep(secs));
+}
+
+
+
+
 void Sweep::build()
 {
-  if (secs_.size()<2)
-    throw insight::Exception("Insufficient number of sections given!");
-  
-  bool create_solid=false;
-  {
-    TopoDS_Shape cs0=*secs_[0];
-    if (cs0.ShapeType()==TopAbs_FACE)
-      create_solid=true;
-    else if (cs0.ShapeType()==TopAbs_WIRE)
-    {
-      create_solid=TopoDS::Wire(cs0).Closed();
+    if ( secs_.size() <2 ) {
+        throw insight::Exception ( "Insufficient number of sections given!" );
     }
-  }
-  
-  BRepOffsetAPI_ThruSections sb(create_solid);
- 
-  BOOST_FOREACH(const FeaturePtr& skp, secs_)
-  {
-    TopoDS_Wire cursec;
-    TopoDS_Shape cs=*skp;
-    if (cs.ShapeType()==TopAbs_FACE)
+
+    bool create_solid=false;
     {
-     cursec=BRepTools::OuterWire(TopoDS::Face(cs));
+        TopoDS_Shape cs0=*secs_[0];
+        if ( cs0.ShapeType() ==TopAbs_FACE ) {
+            create_solid=true;
+        } else if ( cs0.ShapeType() ==TopAbs_WIRE ) {
+            create_solid=TopoDS::Wire ( cs0 ).Closed();
+        }
     }
-    else if (cs.ShapeType()==TopAbs_WIRE)
-    {
-     cursec=TopoDS::Wire(cs);
-    }
-    else if (cs.ShapeType()==TopAbs_EDGE)
-    {
-     BRepBuilderAPI_MakeWire w;
-     w.Add(TopoDS::Edge(cs));
-     cursec=w.Wire();
-    }
+
+    BRepOffsetAPI_ThruSections sb ( create_solid );
+
+    BOOST_FOREACH ( const FeaturePtr& skp, secs_ ) {
+        TopoDS_Wire cursec;
+        TopoDS_Shape cs=*skp;
+        if ( cs.ShapeType() ==TopAbs_FACE ) {
+            cursec=BRepTools::OuterWire ( TopoDS::Face ( cs ) );
+        } else if ( cs.ShapeType() ==TopAbs_WIRE ) {
+            cursec=TopoDS::Wire ( cs );
+        } else if ( cs.ShapeType() ==TopAbs_EDGE ) {
+            BRepBuilderAPI_MakeWire w;
+            w.Add ( TopoDS::Edge ( cs ) );
+            cursec=w.Wire();
+        }
 //     else if (cs.ShapeType()==TopAbs_SHELL)
 //     {
 //      cursec=BRepTools::OuterWire(TopoDS::Shell(cs));
 //     }
-    else
-    {
-      throw insight::Exception("Incompatible section shape for Sweep!");
+        else {
+            throw insight::Exception ( "Incompatible section shape for Sweep!" );
+        }
+        sb.AddWire ( cursec );
     }
-    sb.AddWire(cursec);
-  }
-  
-  setShape(sb.Shape());
+
+    setShape ( sb.Shape() );
 }
+
+
+
 
 void Sweep::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -99,11 +117,29 @@ void Sweep::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> (ruleset.r_solidmodel_expression % ',' ) >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Sweep>(qi::_1)) ]
+      [ qi::_val = phx::bind(&Sweep::create, qi::_1) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Sweep::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Sweep",
+            "( <feature:xsec0>, ..., <feature:xsecn> )",
+            "Interpolates a solid through the planar sections xsec0 to xsecn."
+        )
+    );
+}
+
+
 
 }
 }

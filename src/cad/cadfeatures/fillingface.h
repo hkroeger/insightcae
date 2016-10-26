@@ -25,25 +25,37 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class FillingFace
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  FeaturePtr e1_;
-  FeaturePtr e2_;
-  
-  FeatureSetPtr es1_;
-  FeatureSetPtr es2_;
-  
+    FeaturePtr e1_;
+    FeaturePtr e2_;
+
+    FeatureSetPtr es1_;
+    FeatureSetPtr es2_;
+
+    FillingFace ( FeaturePtr e1, FeaturePtr e2 );
+    FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 );
+
 public:
-  declareType("FillingFace");
-  FillingFace(const NoParameters& nop=NoParameters());
-  FillingFace(FeaturePtr e1, FeaturePtr e2);
-  FillingFace(FeatureSetPtr es1, FeatureSetPtr es2);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "FillingFace" );
+    FillingFace ( const NoParameters& nop=NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr e1, FeaturePtr e2 );
+    static FeaturePtr create_set ( FeatureSetPtr es1, FeatureSetPtr es2 );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

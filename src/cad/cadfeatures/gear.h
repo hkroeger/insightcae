@@ -27,24 +27,33 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 class ExternalGear
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  VectorPtr p0_;
-  VectorPtr n_;
-  ScalarPtr m_;
-  ScalarPtr z_;
-  
+    VectorPtr p0_;
+    VectorPtr n_;
+    ScalarPtr m_;
+    ScalarPtr z_;
+
+    ExternalGear ( VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z );
+
 public:
-  declareType("ExternalGear");
-  
-  ExternalGear(const NoParameters& nop = NoParameters());
-  ExternalGear(VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "ExternalGear" );
+    ExternalGear ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

@@ -40,25 +40,30 @@ class ModelFeature
     ModelPtr model_;
 
     void copyModelDatums();
-    
-    ModelFeature(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
+
+    ModelFeature ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
 
 public:
-    declareType("loadmodel");
+    declareType ( "loadmodel" );
 
-    ModelFeature(const NoParameters&);
-    static FeaturePtr create(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
+    ModelFeature ( const NoParameters& );
+    static FeaturePtr create ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
 
     virtual void build();
     void executeEditor();
 
-    inline const std::string& modelname() const {
+    inline const std::string& modelname() const
+    {
         return modelname_;
     }
-    
-    inline ModelPtr model() const { return model_; }
 
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    inline ModelPtr model() const
+    {
+        return model_;
+    }
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 
 };
 

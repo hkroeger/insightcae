@@ -25,21 +25,32 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Projected
-: public Feature
+    : public Feature
 {
-  FeaturePtr source_;
-  FeaturePtr target_;
-  VectorPtr dir_;
-  
+    FeaturePtr source_;
+    FeaturePtr target_;
+    VectorPtr dir_;
+
+    Projected ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
+
 public:
-  declareType("Projected");
-  Projected(const NoParameters& nop = NoParameters());
-  Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Projected" );
+    Projected ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

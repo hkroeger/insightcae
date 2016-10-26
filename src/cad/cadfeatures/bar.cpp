@@ -330,7 +330,7 @@ void Bar::operator=(const Bar& o)
 /**
  * \page iscad_bar Bar
  *
- * The "Bar" command creates a straight extruded volume. 
+ * The "Bar" command creates a straight extruded volume from a planar section. 
  * The location of the bar is specified by its start point "p0" and end point "p1".
  * Also needed is a face feature defining the cross section.
  * For orienting the cross section an upward direction needs to be given.
@@ -385,12 +385,6 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                       >> ruleset.r_solidmodel_expression >> ',' // 5
                       >> ruleset.r_vectorExpression >> // 6
                       ')' )
-//                     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Bar>
-//                                  (
-//                                      qi::_1, qi::_3,
-//                                      qi::_5, qi::_6,
-//                                      qi::_2, qi::_4
-//                                  )) ]
                     [ qi::_val = phx::bind(&Bar::create, 
                                      qi::_1, qi::_3,
                                      qi::_5, qi::_6,
@@ -400,6 +394,31 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                 ))
     );
 }
+
+FeatureCmdInfoList Bar::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Bar",
+         
+            "( <vector:p0> [ext <scalar:ext0>] [vmiter <scalar:vmiter0>] [hmiter <scalar:hmiter0>],\n"
+            "<vector:p1> [ext <scalar:ext1>] [vmiter <scalar:vmiter1>] [hmiter <scalar:hmiter1>],\n"
+            "<feature:xsec>, <vector:up> )",
+         
+            "This command creates a straight extruded volume from a planar section."
+            "\n"
+            "The location of the bar is specified by its start point p0 and end point p1."
+            " Also needed is a face feature xsec defining the cross section."
+            " For orienting the cross section an upward direction up has to be given."
+            "\n"
+            "The end points can optionally be shifted along the bar axis by offsets ext0 and ext1."
+            " Furthermore, the bar ends can be mitered around the vertical axis (vmiter0, vmiter1) and the horizontal axis (hmiter0, hmiter1)."
+        )
+    );
+}
+
 
 }
 }

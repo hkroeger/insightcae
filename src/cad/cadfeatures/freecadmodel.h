@@ -26,25 +26,37 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 typedef std::vector<boost::fusion::vector2<std::vector<std::string>, ScalarPtr> > FreeCADModelVarList;
 
-class FreeCADModel 
-: public Feature
+
+
+
+class FreeCADModel
+    : public Feature
 {
-  boost::filesystem::path filename_;
-  std::string solidname_;
-  FreeCADModelVarList vars_;
+    boost::filesystem::path filename_;
+    std::string solidname_;
+    FreeCADModelVarList vars_;
+
+    FreeCADModel ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
 public:
-  declareType("FreeCADModel");
-  
-  FreeCADModel(const insight::NoParameters& nop);
-  FreeCADModel(const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList());
+    declareType ( "FreeCADModel" );
 
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    FreeCADModel ( const insight::NoParameters& nop );
+    static FeaturePtr create ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
+
 }
 }
 

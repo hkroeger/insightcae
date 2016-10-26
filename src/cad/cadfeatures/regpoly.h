@@ -25,26 +25,37 @@
 namespace insight {
 namespace cad {
 
+    
+    
 
 class RegPoly
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  VectorPtr p0_;
-  VectorPtr n_;
-  ScalarPtr ne_;
-  ScalarPtr a_; 
-  VectorPtr ez_;
-  
+    VectorPtr p0_;
+    VectorPtr n_;
+    ScalarPtr ne_;
+    ScalarPtr a_;
+    VectorPtr ez_;
+
+    RegPoly ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
+              VectorPtr ez = matconst ( arma::mat() ) );
+
 public:
-  declareType("RegPoly");
-  RegPoly(const NoParameters& nop = NoParameters());
-  RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a, 
-	  VectorPtr ez = matconst(arma::mat()));
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "RegPoly" );
+    RegPoly ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
+                               VectorPtr ez = matconst ( arma::mat() ) );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

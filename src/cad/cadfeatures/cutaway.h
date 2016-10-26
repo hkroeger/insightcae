@@ -25,24 +25,36 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Cutaway
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeaturePtr model_;
-  VectorPtr p0_;
-  VectorPtr n_;
-  ConstDatumPtr pl_;
-  bool inverted_;
-  
+    FeaturePtr model_;
+    VectorPtr p0_;
+    VectorPtr n_;
+    ConstDatumPtr pl_;
+    bool inverted_;
+
+    Cutaway ( FeaturePtr model, VectorPtr p0, VectorPtr n );
+    Cutaway ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
+
 public:
-  declareType("Cutaway");
-  Cutaway(const NoParameters& nop = NoParameters());
-  Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n);
-  Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Cutaway" );
+    Cutaway ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr model, VectorPtr p0, VectorPtr n );
+    static FeaturePtr create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

@@ -31,6 +31,8 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Chamfer);
 addToFactoryTable(Feature, Chamfer, NoParameters);
 
@@ -96,6 +98,24 @@ void Chamfer::insertrule(parser::ISCADParser& ruleset) const
         ))
     );
 }
+
+
+
+FeatureCmdInfoList Chamfer::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Chamfer",
+         
+            "( <edgeSelection:edges>, <scalar:l> )",
+         
+            "Creates chamfers at selected edges of a solid. All edges in the selection set edges are chamfered with width l."
+        )
+    );
+}
+
 
 }
 }

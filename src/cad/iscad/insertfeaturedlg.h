@@ -15,45 +15,39 @@
  * You should have received a copy of the GNU General Public License along
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
  */
 
-#ifndef INSIGHT_CAD_CONE_H
-#define INSIGHT_CAD_CONE_H
+#ifndef INSERTFEATUREDLG_H
+#define INSERTFEATUREDLG_H
 
-#include "cadfeature.h"
+#include "cadtypes.h"
 
-namespace insight {
-namespace cad {
+#include <QDialog>
+#include <QListWidgetItem>
 
-    
-    
-    
-class Cone
-: public SingleVolumeFeature
+namespace Ui
 {
-    VectorPtr p1_;
-    VectorPtr p2_;
-    ScalarPtr D1_;
-    ScalarPtr D2_;
+class InsertFeatureDlg;
+}
 
-    Cone ( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
-
+class InsertFeatureDlg 
+: public QDialog
+{
+    Q_OBJECT
+    
 public:
-    declareType ( "Cone" );
-    
-    Cone ( const NoParameters& nop = NoParameters() );
-    static FeaturePtr create( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
+    QString insert_string_;
 
-    virtual void build();
-    virtual FeatureCmdInfoList ruleDocumentation() const;
+    InsertFeatureDlg(QWidget* parent);
     
-    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+protected slots:
+    void onItemSelectionChanged ();
+    
+   virtual void accept();
+
+private:
+    Ui::InsertFeatureDlg* ui;
 };
 
-
-
-
-}
-}
-
-#endif // INSIGHT_CAD_CONE_H
+#endif // INSERTFEATUREDLG_H

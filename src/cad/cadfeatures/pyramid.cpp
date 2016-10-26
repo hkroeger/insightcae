@@ -32,13 +32,19 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Pyramid);
 addToFactoryTable(Feature, Pyramid, NoParameters);
+
+
 
 
 Pyramid::Pyramid(const NoParameters& nop)
 : Feature(nop)
 {}
+
+
 
 
 Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
@@ -48,43 +54,57 @@ Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
 {
 }
 
+
+
+
+FeaturePtr Pyramid::create ( FeaturePtr base, VectorPtr ptip )
+{
+    return FeaturePtr(new Pyramid(base, ptip));
+}
+
+
+
+
 void Pyramid::build()
 {
-  TopoDS_Shape base=base_->shape();
-  gp_Pnt tip=to_Pnt(ptip_->value());
-  TopoDS_Vertex vtip=BRepBuilderAPI_MakeVertex(tip);
-  
-  BRepBuilderAPI_Sewing sew(/*tol_->value()*/1e-3);
-  sew.Add(TopoDS::Face(base));
+    TopoDS_Shape base=base_->shape();
+    gp_Pnt tip=to_Pnt ( ptip_->value() );
+    TopoDS_Vertex vtip=BRepBuilderAPI_MakeVertex ( tip );
 
-  for (TopExp_Explorer ex(base, TopAbs_EDGE); ex.More(); ex.Next())
-  {
-    TopoDS_Edge e=TopoDS::Edge(ex.Current());
-    TopoDS_Vertex v1=TopExp::FirstVertex(e);
-    TopoDS_Vertex v2=TopExp::LastVertex(e);
-    
-    BRepBuilderAPI_MakeWire mw;
-    mw.Add(e);
-    mw.Add(BRepBuilderAPI_MakeEdge(v1, vtip));
-    mw.Add(BRepBuilderAPI_MakeEdge(v2, vtip));
-    
-    TopoDS_Face f=BRepBuilderAPI_MakeFace(mw.Wire());
-    sew.Add(f);
-  }
-  
-  sew.Perform();
-  sew.Dump();
-  
-  TopoDS_Shell sshell = TopoDS::Shell(sew.SewedShape());
+    BRepBuilderAPI_Sewing sew ( /*tol_->value()*/1e-3 );
+    sew.Add ( TopoDS::Face ( base ) );
+
+    for ( TopExp_Explorer ex ( base, TopAbs_EDGE ); ex.More(); ex.Next() ) {
+        TopoDS_Edge e=TopoDS::Edge ( ex.Current() );
+        TopoDS_Vertex v1=TopExp::FirstVertex ( e );
+        TopoDS_Vertex v2=TopExp::LastVertex ( e );
+
+        BRepBuilderAPI_MakeWire mw;
+        mw.Add ( e );
+        mw.Add ( BRepBuilderAPI_MakeEdge ( v1, vtip ) );
+        mw.Add ( BRepBuilderAPI_MakeEdge ( v2, vtip ) );
+
+        TopoDS_Face f=BRepBuilderAPI_MakeFace ( mw.Wire() );
+        sew.Add ( f );
+    }
+
+    sew.Perform();
+    sew.Dump();
+
+    TopoDS_Shell sshell = TopoDS::Shell ( sew.SewedShape() );
 //   BRepCheck_Shell acheck(sshell);
-  
-  BRepBuilderAPI_MakeSolid solidmaker(sshell);
-  
-  if (!solidmaker.IsDone())
-    throw insight::Exception("Creation of solid failed!");
 
-  setShape(solidmaker.Solid());
+    BRepBuilderAPI_MakeSolid solidmaker ( sshell );
+
+    if ( !solidmaker.IsDone() ) {
+        throw insight::Exception ( "Creation of solid failed!" );
+    }
+
+    setShape ( solidmaker.Solid() );
 }
+
+
+
 
 void Pyramid::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -94,11 +114,28 @@ void Pyramid::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' )
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Pyramid>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(&Pyramid::create, qi::_1, qi::_2) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Pyramid::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Pyramid",
+            "( <feature:base>, <vector:ptip> )",
+            "Creates a pyramid from the planar base feature and the tip point ptip."
+        )
+    );
+}
+
 
 
 }

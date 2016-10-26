@@ -27,18 +27,24 @@ namespace cad {
 
 
 class ClosedPolyline
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  std::vector<VectorPtr> pts_;
-  
+    std::vector<VectorPtr> pts_;
+
+    ClosedPolyline(std::vector<VectorPtr> pts);
+
 public:
-  declareType("ClosedPolyline");
-  ClosedPolyline(const NoParameters& nop = NoParameters());
-  ClosedPolyline(std::vector<VectorPtr> pts);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType("ClosedPolyline");
+    ClosedPolyline(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create(std::vector<VectorPtr> pts);
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 

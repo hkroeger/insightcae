@@ -27,105 +27,139 @@ namespace cad {
 
     
     
-    
+
 class Condition
 {
 public:
-    double residual(const arma::mat& values) const;
-    virtual double residual(const gp_Trsf& tr) const =0;
+    double residual ( const arma::mat& values ) const;
+    virtual double residual ( const gp_Trsf& tr ) const =0;
 };
+
+
 
 
 class CoincidentPoint
-: public Condition
+    : public Condition
 {
     VectorPtr p_org_,  p_targ_;
 public:
-    CoincidentPoint(VectorPtr p_org, VectorPtr p_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    CoincidentPoint ( VectorPtr p_org, VectorPtr p_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class ParallelAxis
-: public Condition
+    : public Condition
 {
     VectorPtr dir_org_,  dir_targ_;
 public:
-    ParallelAxis(VectorPtr dir_org, VectorPtr dir_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    ParallelAxis ( VectorPtr dir_org, VectorPtr dir_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class AlignedPlanes
-: public Condition
+    : public Condition
 {
     DatumPtr pl_org_,  pl_targ_;
 public:
-    AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class InclinedPlanes
-: public Condition
+    : public Condition
 {
     DatumPtr pl_org_,  pl_targ_;
     ScalarPtr angle_;
 public:
-    InclinedPlanes(DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle);
-    virtual double residual(const gp_Trsf& tr) const;
+    InclinedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, ScalarPtr angle );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class Coaxial
-: public Condition
+    : public Condition
 {
     DatumPtr ax_org_,  ax_targ_;
 public:
-    Coaxial(DatumPtr ax_org, DatumPtr ax_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    Coaxial ( DatumPtr ax_org, DatumPtr ax_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class PointInPlane
-: public Condition
+    : public Condition
 {
     VectorPtr p_org_;
     DatumPtr pl_targ_;
 public:
-    PointInPlane(VectorPtr p_org, DatumPtr pl_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    PointInPlane ( VectorPtr p_org, DatumPtr pl_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
 
+
+
+
 class PointOnAxis
-: public Condition
+    : public Condition
 {
     VectorPtr p_org_;
     DatumPtr ax_targ_;
 public:
-    PointOnAxis(VectorPtr p_org, DatumPtr ax_targ);
-    virtual double residual(const gp_Trsf& tr) const;
+    PointOnAxis ( VectorPtr p_org, DatumPtr ax_targ );
+    virtual double residual ( const gp_Trsf& tr ) const;
 };
+
+
+
 
 typedef boost::shared_ptr<Condition> ConditionPtr;
 typedef std::vector<ConditionPtr> ConditionList;
 
 
+
+
 class RefPlace
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeaturePtr m_;
-  
-  ConditionList conditions_;
-  
-  boost::shared_ptr<gp_Trsf> trsf_;
+    FeaturePtr m_;
+
+    ConditionList conditions_;
+
+    boost::shared_ptr<gp_Trsf> trsf_;
+
+    RefPlace ( FeaturePtr m, const gp_Ax2& cs );
+    RefPlace ( FeaturePtr m, ConditionList conditions );
 
 public:
-  declareType("RefPlace");
-  RefPlace(const NoParameters& nop = NoParameters());
-  RefPlace(FeaturePtr m, const gp_Ax2& cs);
-  RefPlace(FeaturePtr m, ConditionList conditions);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "RefPlace" );
+    RefPlace ( const NoParameters& nop = NoParameters() );
+    
+    static FeaturePtr create_fix ( FeaturePtr m, const gp_Ax2& cs );
+    static FeaturePtr create ( FeaturePtr m, ConditionList conditions );
 
-  virtual bool isTransformationFeature() const { return true; }
-  virtual gp_Trsf transformation() const;
+    virtual void build();
+    
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isTransformationFeature() const
+    {
+        return true;
+    }
+    virtual gp_Trsf transformation() const;
 };
 
 

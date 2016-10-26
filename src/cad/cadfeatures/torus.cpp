@@ -33,40 +33,63 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Torus);
 addToFactoryTable(Feature, Torus, NoParameters);
 
+
+
+
 Torus::Torus(const NoParameters&)
 {}
+
+
+
 
 Torus::Torus(VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d)
 : p0_(p0), axisTimesD_(axisTimesD), d_(d)
 {}
 
+
+
+
+FeaturePtr Torus::create ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d )
+{
+    return FeaturePtr(new Torus(p0, axisTimesD, d));
+}
+
+
+
+
 void Torus::build()
 {
-  double D=arma::norm(axisTimesD_->value(), 2);
-  arma::mat axis=axisTimesD_->value()/D;
-  
-  refpoints_["p0"]=p0_->value();
-  refvectors_["axis"]=axis;
-  refvalues_["D"]=D;
-  refvalues_["d"]=d_->value();
-  
-  TopoDS_Shape tor=
-    BRepPrimAPI_MakeTorus
-    (
-      gp_Ax2
-      (
-	to_Pnt(p0_->value()), 
-	gp_Dir(to_Vec(axis))
-      ),
-      0.5*D, 
-      0.5*d_->value()
-    ).Shape();
-    
-  setShape(tor);
+    double D=arma::norm ( axisTimesD_->value(), 2 );
+    arma::mat axis=axisTimesD_->value() /D;
+
+    refpoints_["p0"]=p0_->value();
+    refvectors_["axis"]=axis;
+    refvalues_["D"]=D;
+    refvalues_["d"]=d_->value();
+
+    TopoDS_Shape tor=
+        BRepPrimAPI_MakeTorus
+        (
+            gp_Ax2
+            (
+                to_Pnt ( p0_->value() ),
+                gp_Dir ( to_Vec ( axis ) )
+            ),
+            0.5*D,
+            0.5*d_->value()
+        ).Shape();
+
+    setShape ( tor );
 }
+
+
+
 
 void Torus::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -80,11 +103,30 @@ void Torus::insertrule(parser::ISCADParser& ruleset) const
       >> ruleset.r_vectorExpression >> ',' 
       >> ruleset.r_scalarExpression 
       >> ')' ) 
-     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Torus>(qi::_1, qi::_2, qi::_3)) ]
+     [ qi::_val = phx::bind(&Torus::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Torus::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Torus",
+            "( <vector:p0>, <vector:axisTimesD>, <scala:d> )",
+            "Creates a torus around center point p0. The axis is specified by the direction of axisTimesD and the torus diameter by its magnitude. The tube diameter is d."
+        )
+    );
+}
+
+
+
 
 }
 }

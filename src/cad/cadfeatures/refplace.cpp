@@ -40,6 +40,9 @@ namespace cad {
 defineType(RefPlace);
 addToFactoryTable(Feature, RefPlace, NoParameters);
 
+
+
+
 gp_Trsf trsf_from_vector(const arma::mat& v)
 {
     gp_Trsf t; // final transform
@@ -225,6 +228,23 @@ RefPlace::RefPlace(FeaturePtr m, ConditionList conditions)
 
 
 
+
+FeaturePtr RefPlace::create_fix ( FeaturePtr m, const gp_Ax2& cs )
+{
+    return FeaturePtr(new RefPlace(m, cs));
+}
+
+
+
+
+FeaturePtr RefPlace::create ( FeaturePtr m, ConditionList conditions )
+{
+    return FeaturePtr(new RefPlace(m, conditions));
+}
+
+
+
+
 void RefPlace::build()
 {
 
@@ -315,12 +335,27 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
                     ( '(' > ruleset.r_solidmodel_expression >
                       ',' > r_condition % ','  >
                       ')' )
-                    [ qi::_val = phx::construct<FeaturePtr>(phx::new_<RefPlace>(qi::_1, qi::_2)) ]
+                    [ qi::_val = phx::bind(&RefPlace::create, qi::_1, qi::_2) ]
 
                 ))
     );
 }
 
+
+
+
+FeatureCmdInfoList RefPlace::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "RefPlace",
+            "( <feature:base>, [ <placement condition>, ...] )",
+            "Places the feature base by solving a set of placement conditions numerically (experimental)."
+        )
+    );
+}
 
 
 

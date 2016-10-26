@@ -35,6 +35,8 @@ namespace cad
 {
   
 
+    
+    
 defineType(Compound);
 addToFactoryTable(Feature, Compound, NoParameters);
 
@@ -64,24 +66,39 @@ Compound::Compound(const CompoundFeatureMap& m1)
 
 
 
+FeaturePtr Compound::create( const CompoundFeatureList& m1 )
+{
+    return FeaturePtr(new Compound(m1));
+}
+
+
+
+
+FeaturePtr Compound::create_map( const CompoundFeatureMap& m1 )
+{
+    return FeaturePtr(new Compound(m1));
+}
+
+    
+    
+    
 void Compound::build()
 {
     BRep_Builder bb;
     TopoDS_Compound result;
-    bb.MakeCompound(result);
+    bb.MakeCompound ( result );
 
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
-    {
+    BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ ) {
         std::string name=c.first;
         FeaturePtr p=c.second;
 
-        bb.Add(result, *p);
+        bb.Add ( result, *p );
         p->unsetLeaf();
 //     copyDatums(*p, name+"_");
 
         providedSubshapes_[c.first]=c.second;
     }
-    setShape(result);
+    setShape ( result );
 }
 
 
@@ -95,12 +112,29 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
                     ( '(' > ( ruleset.r_solidmodel_expression % ',' ) > ')' )
-                    [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Compound>(qi::_1)) ]
+                    [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
 
                 ))
     );
 }
 
+
+
+
+FeatureCmdInfoList Compound::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Compound",
+         
+            "( <feature:c0> [, <feature:c1>, ..., <feature:cn> ] )",
+         
+            "Creates a compound (assembly) of multiple features c0 to cn"
+        )
+    );
+}
 
 
 

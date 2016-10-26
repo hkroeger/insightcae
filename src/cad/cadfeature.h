@@ -141,6 +141,22 @@ public:
 
 std::ostream& operator<<(std::ostream& os, const Feature& m);
 
+struct FeatureCmdInfo
+{
+    std::string command_;
+    std::string signature_;
+    std::string documentation_;
+    
+    FeatureCmdInfo
+    (
+        std::string command,
+        std::string signature,
+        std::string documentation
+    );
+};
+typedef std::vector<FeatureCmdInfo> FeatureCmdInfoList;
+
+
 /**
  * Base class of all CAD modelling features
  */
@@ -371,6 +387,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Feature& m);
 
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual FeatureCmdInfoList ruleDocumentation() const;
   
   virtual bool isSingleEdge() const;
   virtual bool isSingleOpenWire() const;

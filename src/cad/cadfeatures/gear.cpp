@@ -35,11 +35,17 @@ namespace cad {
 
 
 
+    
 defineType(ExternalGear);
 addToFactoryTable(Feature, ExternalGear, NoParameters);
 
+
+
+
 ExternalGear::ExternalGear(const NoParameters&)
 {}
+
+
 
 
 ExternalGear::ExternalGear(VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z)
@@ -47,10 +53,23 @@ ExternalGear::ExternalGear(VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z)
 {}
 
 
+
+
 ExternalGear::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape());
 }
+
+
+
+
+FeaturePtr ExternalGear::create(VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z)
+{
+    return FeaturePtr(new ExternalGear(p0, n, m, z));
+}
+
+
+
 
 void ExternalGear::build()
 {
@@ -160,6 +179,8 @@ void ExternalGear::build()
 }
 
 
+
+
 void ExternalGear::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -168,11 +189,31 @@ void ExternalGear::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<ExternalGear>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	[ qi::_val = phx::bind(&ExternalGear::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );
 }
+   
+
+
+
+FeatureCmdInfoList ExternalGear::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "ExternalGear",
+         
+            "( <vector:p0>, <vector:n>, <scalar:m>, <scalar:z> )",
+         
+            "Creates an external gear mockup. The gear starts at point p0, axis and thickness are specified by vector n."
+            " The diameter follows from modulus m and tooth number z."
+        )
+    );
+}
+   
    
    
 }

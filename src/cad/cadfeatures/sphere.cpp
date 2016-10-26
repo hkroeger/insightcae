@@ -31,16 +31,34 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Sphere);
 addToFactoryTable(Feature, Sphere, NoParameters);
 
+
+
+
 Sphere::Sphere(const NoParameters&)
 {}
+
+
 
   
 Sphere::Sphere(VectorPtr p, ScalarPtr D)
 : p_(p), D_(D)
 {}
+
+
+
+FeaturePtr Sphere::create ( VectorPtr p, ScalarPtr D )
+{
+    return FeaturePtr(new Sphere(p, D));
+}
+
+
+
 
 void Sphere::build()
 {
@@ -54,6 +72,9 @@ void Sphere::build()
   );
 }
 
+
+
+
 void Sphere::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -62,11 +83,29 @@ void Sphere::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Sphere>(qi::_1, qi::_2)) ]
+	[ qi::_val = phx::bind(&Sphere::create, qi::_1, qi::_2) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Sphere::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Sphere",
+            "( <vector:p0>, <scalar:D> )",
+            "Creates a sphere around point p0 with diameter D."
+        )
+    );
+}
+
+
 
 }
 }

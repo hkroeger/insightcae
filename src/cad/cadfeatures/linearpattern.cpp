@@ -31,11 +31,18 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(LinearPattern);
 addToFactoryTable(Feature, LinearPattern, NoParameters);
 
+
+
+
 LinearPattern::LinearPattern(const NoParameters& nop): Compound(nop)
 {}
+
 
 
   
@@ -43,35 +50,48 @@ LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
 : m1_(m1), axis_(axis), n_(n)
 {}
 
+
+
+
+FeaturePtr LinearPattern::create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n )
+{
+    return FeaturePtr(new LinearPattern(m1, axis, n));
+}
+
+
+
+
 void LinearPattern::build()
 {
 //   BRep_Builder bb;
 //   TopoDS_Compound result;
 //   bb.MakeCompound(result);
-  
-  double delta_x=norm(axis_->value(), 2);
-  gp_Vec ax(to_Vec(axis_->value()/delta_x));
-  
-  int n=round(n_->value());
 
-  int j=0;
-  CompoundFeatureMap instances;
-  
-  for (int i=0; i<n; i++)
-  {
-    gp_Trsf tr;
-    tr.SetTranslation(ax*delta_x*double(i));
+    double delta_x=norm ( axis_->value(), 2 );
+    gp_Vec ax ( to_Vec ( axis_->value() /delta_x ) );
+
+    int n=round ( n_->value() );
+
+    int j=0;
+    CompoundFeatureMap instances;
+
+    for ( int i=0; i<n; i++ ) {
+        gp_Trsf tr;
+        tr.SetTranslation ( ax*delta_x*double ( i ) );
 //     bb.Add(result, BRepBuilderAPI_Transform(m1_->shape(), tr).Shape());
-    
-    components_[str( format("component%d") % (j+1) )] = FeaturePtr(new Transform(m1_, tr));
-    j++;
-  }
-  
-  m1_->unsetLeaf();
-  Compound::build();
-  
+
+        components_[str ( format ( "component%d" ) % ( j+1 ) )] = FeaturePtr ( new Transform ( m1_, tr ) );
+        j++;
+    }
+
+    m1_->unsetLeaf();
+    Compound::build();
+
 //   setShape(result);
 }
+
+
+
 
 void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -83,11 +103,32 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
     ( '(' > ruleset.r_solidmodel_expression > 
       ',' > ruleset.r_vectorExpression > 
       ',' > ruleset.r_scalarExpression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<LinearPattern>(qi::_1, qi::_2, qi::_3)) ]
+      [ qi::_val = phx::bind(&LinearPattern::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList LinearPattern::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "LinearPattern",
+         
+            "( <feature:base>, <vector:delta_l>, <scalar:n> )",
+         
+            "Copies the bease feature base into a linear pattern."
+            " The copies of the base feature are shifted in increments of delta_l."
+            " The number of copies is n."
+        )
+    );
+}
+
 
 
 }

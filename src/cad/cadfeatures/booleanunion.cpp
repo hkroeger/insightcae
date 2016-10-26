@@ -34,17 +34,28 @@ namespace cad
 {
 
 
+    
+    
 defineType(BooleanUnion);
 addToFactoryTable(Feature, BooleanUnion, NoParameters);
+
+
+
 
 BooleanUnion::BooleanUnion(const NoParameters& nop)
 : DerivedFeature(nop)
 {}
 
+
+
+
 BooleanUnion::BooleanUnion(FeaturePtr m1)
 : DerivedFeature(m1), 
   m1_(m1)
 {}
+
+
+
 
 BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
@@ -52,39 +63,59 @@ BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
   m2_(m2)
 {}
 
+
+
+
+FeaturePtr BooleanUnion::create(FeaturePtr m1)
+{
+    return FeaturePtr(new BooleanUnion(m1));
+}
+
+
+
+
+FeaturePtr BooleanUnion::create(FeaturePtr m1, FeaturePtr m2)
+{
+    return FeaturePtr(new BooleanUnion(m1, m2));
+}
+     
+     
+     
+     
 void BooleanUnion::build()
 {
-  if (m1_ && m2_)
-  {
-    ParameterListHash h(this);
-    h+=*m1_;
-    h+=*m2_;
-    
-    copyDatums(*m1_, "m1_");
-    copyDatums(*m2_, "m2_");
-    m1_->unsetLeaf();
-    m2_->unsetLeaf();
-    setShape(BRepAlgoAPI_Fuse(*m1_, *m2_).Shape());
-  }
-  else
-  {
-    ParameterListHash h(this);
-    h+=*m1_;
-  
-    copyDatums(*m1_);
-    m1_->unsetLeaf();
-    
-    TopoDS_Shape res;
-    for (TopExp_Explorer ex(*m1_, TopAbs_SOLID); ex.More(); ex.Next())
+    if (m1_ && m2_)
     {
-      if (res.IsNull())
-	res=TopoDS::Solid(ex.Current());
-      else
-	res=BRepAlgoAPI_Fuse(res, TopoDS::Solid(ex.Current())).Shape();
+        ParameterListHash h(this);
+        h+=*m1_;
+        h+=*m2_;
+
+        copyDatums(*m1_, "m1_");
+        copyDatums(*m2_, "m2_");
+        m1_->unsetLeaf();
+        m2_->unsetLeaf();
+        setShape(BRepAlgoAPI_Fuse(*m1_, *m2_).Shape());
     }
-    setShape(res);
-  }
+    else
+    {
+        ParameterListHash h(this);
+        h+=*m1_;
+
+        copyDatums(*m1_);
+        m1_->unsetLeaf();
+
+        TopoDS_Shape res;
+        for (TopExp_Explorer ex(*m1_, TopAbs_SOLID); ex.More(); ex.Next())
+        {
+            if (res.IsNull())
+                res=TopoDS::Solid(ex.Current());
+            else
+                res=BRepAlgoAPI_Fuse(res, TopoDS::Solid(ex.Current())).Shape();
+        }
+        setShape(res);
+    }
 }
+
 
 
 
@@ -111,16 +142,40 @@ void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<BooleanUnion>(qi::_1)) ]
+      [ qi::_val = phx::bind(&BooleanUnion::create, qi::_1) ]
       
     ))
   );
 }
 
+
+
+
+
+FeatureCmdInfoList BooleanUnion::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "MergeSolids",
+         
+            "( <feature> )",
+         
+            "Creates a boolean union of all (possibly intersecting) volumes of the given feature."
+        )
+    );
+}
+
+
+
+
 FeaturePtr operator|(FeaturePtr m1, FeaturePtr m2)
 {
-  return FeaturePtr(new BooleanUnion(m1, m2));
+  return BooleanUnion::create(m1, m2);
 }
+
+
 
 
 }

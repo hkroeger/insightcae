@@ -56,6 +56,8 @@ namespace cad
 {
   
   
+    
+    
 defineType(Arc);
 addToFactoryTable(Feature, Arc, NoParameters);
 
@@ -64,8 +66,10 @@ addToFactoryTable(Feature, Arc, NoParameters);
 Arc::Arc(const NoParameters& nop)
 : Feature(nop)
 {
-
 }
+
+
+
 
 void Arc::build()
 {
@@ -83,23 +87,23 @@ void Arc::build()
 }
 
 
+
+
 Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 : p0_(p0), p0tang_(p0tang), p1_(p1)
 {
 }
 
 
+
+
 FeaturePtr Arc::create(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 {
-    return FeaturePtr
-           (
-               new Arc
-               (
-                   p0, p0tang,
-                   p1
-               )
-           );
+    return FeaturePtr(new Arc(p0, p0tang, p1));
 }
+
+
+
 
 /**
  * \page iscad_arc Arc
@@ -141,15 +145,40 @@ void Arc::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+
+
+FeatureCmdInfoList Arc::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Arc",
+            "( <vector:p0>, <vector:et0>, <vector:p1> )",
+            "Creates an arc between point p0 and p1. At point p0, the arc is tangent to vector et0."
+        )
+    );
+}
+
+
+
+
 bool Arc::isSingleCloseWire() const
 {
   return false;
 }
 
+
+
+
 bool Arc::isSingleOpenWire() const
 {
   return true;
 }
+
+
+
 
 }
 }

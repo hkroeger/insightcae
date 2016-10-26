@@ -33,9 +33,14 @@ namespace insight
 namespace cad 
 {
 
+    
+    
 
 defineType(Transform);
 addToFactoryTable(Feature, Transform, NoParameters);
+
+
+
 
 Transform::Transform(const NoParameters& nop)
 : DerivedFeature(nop)
@@ -297,6 +302,31 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+
+
+FeatureCmdInfoList Transform::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Transform",
+            "( <feature:base>, <vector:trans>, <vector:rot> [, <scalar:scale>] )",
+            "Transforms the base feature by translating it by vector trans and rotates it around vector rot (magnitude gives angle, axis goes through global origin)."
+            " Optionally scale the base feature by scale factor scale."
+        )
+    )
+    (
+        FeatureCmdInfo
+        (
+            "Rotate",
+            "( <feature:base>, <vector:rot>, <vector:origin> )",
+            "Rotates the base feature around vector rot (magnitude gives angle), the axis goes through point origin."
+        )
+    )
+    ;
+}
 
 
 

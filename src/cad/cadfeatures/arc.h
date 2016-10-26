@@ -28,25 +28,34 @@ namespace insight
 namespace cad
 {
 
+    
+    
+    
 class Arc
-: public Feature
+    : public Feature
 {
-  VectorPtr p0_;
-  VectorPtr p0tang_;
-  VectorPtr p1_;
+    VectorPtr p0_;
+    VectorPtr p0tang_;
+    VectorPtr p1_;
 
-  Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1);
-  
+    Arc ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
+
 public:
-  declareType("Arc");
-  Arc(const NoParameters& nop = NoParameters());
-  static FeaturePtr create(VectorPtr p0, VectorPtr p0tang, VectorPtr p1);
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleCloseWire() const;
-  virtual bool isSingleOpenWire() const;
-  
-  virtual void build();
+    declareType ( "Arc" );
+    Arc ( const NoParameters& nop = NoParameters() );
+    
+    static FeaturePtr create ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isSingleCloseWire() const;
+    virtual bool isSingleOpenWire() const;
+
+    virtual void build();
 };
+
+
 
 
 }

@@ -25,19 +25,31 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class SplineCurve
-: public Feature
+    : public Feature
 {
-  std::vector<VectorPtr> pts_;
-  
+    std::vector<VectorPtr> pts_;
+
+    SplineCurve ( const std::vector<VectorPtr>& pts );
+
 public:
-  declareType("SplineCurve");
-  SplineCurve(const NoParameters& nop = NoParameters());
-  SplineCurve(const std::vector<VectorPtr>& pts);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleEdge() const { return true; };
+    declareType ( "SplineCurve" );
+    SplineCurve ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( const std::vector<VectorPtr>& pts );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isSingleEdge() const
+    {
+        return true;
+    };
 };
 
 }

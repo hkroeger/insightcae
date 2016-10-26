@@ -26,23 +26,28 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 class Pipe
-: public Feature
+    : public Feature
 {
-  FeaturePtr spine_;
-  FeaturePtr xsec_;
-  bool orient_;
-  bool reapprox_spine_;
-  
-  Pipe(FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false);
-  
+    FeaturePtr spine_;
+    FeaturePtr xsec_;
+    bool orient_;
+    bool reapprox_spine_;
+
+    Pipe ( FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false );
+
 public:
-  declareType("Pipe");
-  Pipe(const NoParameters& nop = NoParameters());
-  static FeaturePtr create(FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Pipe" );
+    Pipe ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 

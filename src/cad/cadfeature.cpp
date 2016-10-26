@@ -169,6 +169,19 @@ std::ostream& operator<<(std::ostream& os, const Feature& m)
   return os;
 }
 
+
+FeatureCmdInfo::FeatureCmdInfo
+(
+    std::string command,
+    std::string signature,
+    std::string documentation
+)
+: command_(command), 
+  signature_(signature), 
+  documentation_(documentation)
+{}
+
+
 defineType(Feature);
 defineFactoryTable(Feature, NoParameters);
 addToFactoryTable(Feature, Feature, NoParameters);
@@ -1601,6 +1614,26 @@ void Feature::insertrule(parser::ISCADParser& ruleset) const
       
     ))
   );
+}
+
+FeatureCmdInfoList Feature::ruleDocumentation() const
+{
+    if (type() == Feature::typeName)
+    {
+        return boost::assign::list_of
+        (
+            FeatureCmdInfo
+            (
+                "asModel",
+                "( <verticesSelection>|<edgesSelection>|<facesSelection>|<solidSelection> )",
+                "Creates a new feature from selected entities of an existing feature."
+            )
+        );
+    }
+    else
+    {
+        return FeatureCmdInfoList();
+    }
 }
 
 bool Feature::isSingleEdge() const

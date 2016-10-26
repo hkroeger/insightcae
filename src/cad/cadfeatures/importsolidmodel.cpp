@@ -31,17 +31,35 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Import);
 addToFactoryTable(Feature, Import, NoParameters);
 
+
+
+
 Import::Import(const NoParameters& nop): Feature(nop)
 {}
+
+
 
 
 Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
 : filepath_(filepath)/*,
   scale_(scale)*/
 {}
+
+
+
+
+FeaturePtr Import::create ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ )
+{
+    return FeaturePtr(new Import(filepath));
+}
+
+
+
 
 void Import::build()
 {
@@ -57,6 +75,8 @@ void Import::build()
 }
 
 
+
+
 void Import::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -66,10 +86,30 @@ void Import::insertrule(parser::ISCADParser& ruleset) const
       ( '(' >> 
 	ruleset.r_path 
 // 	>> (( ',' >> ruleset.r_scalarExpression ) | ( qi::attr(ScalarPtr(new ConstantScalar(1.0))) ))
-	>> ')' ) [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Import>(qi::_1/*, qi::_2*/)) ]
+	>> ')' ) [ qi::_val = phx::bind(&Import::create, qi::_1/*, qi::_2*/) ]
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Import::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "import",
+         
+            "( <path> )",
+         
+            "Imports a feature from a file. The format is recognized from the filename extension. Supported formats are IGS, STP, BREP."
+        )
+    );
+}
+
+
 
 }
 }

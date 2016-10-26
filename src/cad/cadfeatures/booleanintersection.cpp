@@ -37,93 +37,129 @@ namespace cad
 {
 
 
+    
+    
 defineType(BooleanIntersection);
 addToFactoryTable(Feature, BooleanIntersection, NoParameters);
 
+
+
+
 BooleanIntersection::BooleanIntersection(const NoParameters& nop)
-: DerivedFeature(nop)
+    : DerivedFeature(nop)
 {}
+
+
 
 
 BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
-: DerivedFeature(m1),
-  m1_(m1),
-  m2_(m2)
+    : DerivedFeature(m1),
+      m1_(m1),
+      m2_(m2)
 {}
 
+
+
+
 BooleanIntersection::BooleanIntersection(FeaturePtr m1, DatumPtr m2pl)
-: DerivedFeature(m1),
-  m1_(m1),
-  m2pl_(m2pl)
+    : DerivedFeature(m1),
+      m1_(m1),
+      m2pl_(m2pl)
 {}
+
+
+
+
+FeaturePtr BooleanIntersection::create(FeaturePtr m1, FeaturePtr m2)
+{
+    return FeaturePtr(new BooleanIntersection(m1, m2));
+}
+
+
+
+
+FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
+{
+    return FeaturePtr(new BooleanIntersection(m1, m2pl));
+}
+
+
+
 
 void BooleanIntersection::build()
 {
-  if (m2_)
-  {
-    setShape(BRepAlgoAPI_Common(*m1_, *m2_).Shape());
-    m1_->unsetLeaf();
-    m2_->unsetLeaf();
-  } else {
-    if (m2pl_)
+    if (m2_)
     {
-      if (!m2pl_->providesPlanarReference())
-	throw insight::Exception("BooleanIntersection: given reference does not provide planar reference!");
-      
-      if (m1_->isSingleWire() || m1_->isSingleEdge())
-      {
-	TopoDS_Compound res;
-	BRep_Builder builder;
-	builder.MakeCompound( res );
-	
-	Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
-	for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
-	{
-	  std::cout<<"..edge"<<std::endl;
-	  TopoDS_Edge e=TopoDS::Edge(ex.Current());
-	  GeomAPI_IntCS	intersection;
-	  double x0, x1;
-	  intersection.Perform(BRep_Tool::Curve(e, x0, x1), pl);
-
-	  // For debugging only
-	  if (!intersection.IsDone() )
-	    throw insight::Exception("intersection not successful!");
-	  
-	  // Get intersection curve
-	  for (int j=1; j<=intersection.NbPoints(); j++)
-	  {
-	    std::cout<<"..ixsecpt"<<std::endl;
-	    builder.Add(res, BRepBuilderAPI_MakeVertex(intersection.Point(j)));;
-	  }
-	}
-	
-	setShape(res);
-      }
-      else
-      {
-	TopoDS_Shape isecsh = BRepAlgoAPI_Section(*m1_, 
-				    m2pl_->plane()
-				  ).Shape();
-
-	setShape(isecsh);
-      }
-      m1_->unsetLeaf();
+        setShape(BRepAlgoAPI_Common(*m1_, *m2_).Shape());
+        m1_->unsetLeaf();
+        m2_->unsetLeaf();
     }
     else
-      throw insight::Exception("Internal error: second object undefined!");
-  }
+    {
+        if (m2pl_)
+        {
+            if (!m2pl_->providesPlanarReference())
+                throw insight::Exception("BooleanIntersection: given reference does not provide planar reference!");
+
+            if (m1_->isSingleWire() || m1_->isSingleEdge())
+            {
+                TopoDS_Compound res;
+                BRep_Builder builder;
+                builder.MakeCompound( res );
+
+                Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
+                for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
+                {
+                    std::cout<<"..edge"<<std::endl;
+                    TopoDS_Edge e=TopoDS::Edge(ex.Current());
+                    GeomAPI_IntCS	intersection;
+                    double x0, x1;
+                    intersection.Perform(BRep_Tool::Curve(e, x0, x1), pl);
+
+                    // For debugging only
+                    if (!intersection.IsDone() )
+                        throw insight::Exception("intersection not successful!");
+
+                    // Get intersection curve
+                    for (int j=1; j<=intersection.NbPoints(); j++)
+                    {
+                        std::cout<<"..ixsecpt"<<std::endl;
+                        builder.Add(res, BRepBuilderAPI_MakeVertex(intersection.Point(j)));;
+                    }
+                }
+
+                setShape(res);
+            }
+            else
+            {
+                TopoDS_Shape isecsh = BRepAlgoAPI_Section(*m1_,
+                                      m2pl_->plane()
+                                                         ).Shape();
+
+                setShape(isecsh);
+            }
+            m1_->unsetLeaf();
+        }
+        else
+            throw insight::Exception("Internal error: second object undefined!");
+    }
 }
+
+
 
 
 FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)
 {
-  return FeaturePtr(new BooleanIntersection(m1, m2));
+    return BooleanIntersection::create(m1, m2);
 }
+
+
+
 
 /*! \page BooleanIntersection BooleanIntersection
   * Return the intersection between feat1 and feat2.
-  * 
-  * Syntax: 
+  *
+  * Syntax:
   * ~~~~
   * ( <feature expression: feat1> & <feature expression: feat2> ) : feature
   * ~~~~
@@ -132,14 +168,24 @@ void BooleanIntersection::insertrule(parser::ISCADParser& ruleset) const
 {
 //   ruleset.modelstepFunctionRules.add
 //   (
-//     "",	
-//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-// 
-//     
-//       
+//     "",
+//     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
+//
+//
+//
 //     ))
 //   );
 }
+
+
+
+
+FeatureCmdInfoList BooleanIntersection::ruleDocumentation() const
+{
+    return FeatureCmdInfoList();
+}
+
+
 
 
 }

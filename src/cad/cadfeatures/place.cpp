@@ -31,11 +31,18 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Place);
 addToFactoryTable(Feature, Place, NoParameters);
 
+
+
+
 Place::Place(const NoParameters& nop): DerivedFeature(nop)
 {}
+
+
 
 
 Place::Place(FeaturePtr m, const gp_Ax2& cs)
@@ -115,6 +122,9 @@ void Place::build()
   copyDatumsTransformed( *m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
 }
 
+
+
+
 void Place::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -140,11 +150,33 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
   );
 }
 
+
+
+
+FeatureCmdInfoList Place::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Place",
+            "( <feature:base>, ( <vector:p0>, <vector:ex>, <vector:ez> ) | <feature:other_place> )",
+            "Places the feature base in a new coordinate system. The new origin is at point p0, the new x-axis along vector ex and the new z-direction is ez."
+            " Alternatively, the placement is copied from another Place-feature other_place."
+        )
+    );
+}
+
+
+
 gp_Trsf Place::transformation() const
 {
   checkForBuildDuringAccess();
   return *trsf_;
 }
+
+
+
 
 }
 }

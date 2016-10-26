@@ -27,25 +27,31 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Extrusion
-: public Feature
+    : public Feature
 {
-  FeaturePtr sk_;
-  VectorPtr L_;
-  bool centered_;
-  
-  Extrusion(FeaturePtr sk, VectorPtr L, bool centered=false);
-  
-public:
-  declareType("Extrusion");
-  Extrusion(const NoParameters& nop = NoParameters());
+    FeaturePtr sk_;
+    VectorPtr L_;
+    bool centered_;
 
-  static FeaturePtr create(FeaturePtr sk, VectorPtr L, bool centered=false);
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
+
+public:
+    declareType ( "Extrusion" );
+    Extrusion ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr sk, VectorPtr L, bool centered=false );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

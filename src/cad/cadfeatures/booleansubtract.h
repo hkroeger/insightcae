@@ -34,15 +34,19 @@ class BooleanSubtract
 {
   FeaturePtr m1_, m2_;
   
+  BooleanSubtract(FeaturePtr m1, FeaturePtr m2);
+
 public:
   declareType("BooleanSubtract");
   
   BooleanSubtract(const NoParameters& nop = NoParameters());
-  BooleanSubtract(FeaturePtr m1, FeaturePtr m2);
+  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
   
   virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual FeatureCmdInfoList ruleDocumentation() const;
+  
 };
 
 FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2);

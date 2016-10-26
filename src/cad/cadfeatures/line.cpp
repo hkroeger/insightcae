@@ -34,8 +34,12 @@ namespace cad
 {
 
 
+    
+    
 defineType(Line);
 addToFactoryTable(Feature, Line, NoParameters);
+
+
 
 
 Line::Line(const NoParameters& nop)
@@ -43,9 +47,22 @@ Line::Line(const NoParameters& nop)
 {
 }
 
+
+
+
 Line::Line(VectorPtr p0, VectorPtr p1)
 : p0_(p0), p1_(p1)
 {}
+
+
+
+FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )
+{
+    return FeaturePtr(new Line(p0, p1));
+}
+
+
+
 
 void Line::build()
 {
@@ -57,6 +74,9 @@ void Line::build()
   setShape(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0_->value()), to_Pnt(p1_->value()))));
 }
 
+
+
+
 void Line::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -65,21 +85,47 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Line>(qi::_1, qi::_2)) ]
+	[ qi::_val = phx::bind(&Line::create, qi::_1, qi::_2) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Line::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Line",
+         
+            "( <vector:p0>, <vector:p1> )",
+         
+            "Creates a line between point p0 and p1."
+        )
+    );
+}
+
+
 
 bool Line::isSingleCloseWire() const
 {
   return false;
 }
 
+
+
+
 bool Line::isSingleOpenWire() const
 {
   return true;
 }
+
+
+
 
 }
 }

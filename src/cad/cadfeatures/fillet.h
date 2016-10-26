@@ -25,20 +25,31 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Fillet
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeatureSetPtr edges_;
-  ScalarPtr r_;
-  
+    FeatureSetPtr edges_;
+    ScalarPtr r_;
+
+    Fillet ( FeatureSetPtr edges, ScalarPtr r );
+
 public:
-  declareType("Fillet");
-  Fillet(const NoParameters& nop = NoParameters());
-  Fillet(FeatureSetPtr edges, ScalarPtr r);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Fillet" );
+    Fillet ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeatureSetPtr edges, ScalarPtr r );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

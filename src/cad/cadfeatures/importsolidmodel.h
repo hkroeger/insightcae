@@ -25,20 +25,31 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Import
-: public Feature
+    : public Feature
 {
-  boost::filesystem::path filepath_;
+    boost::filesystem::path filepath_;
 //   ScalarPtr scale_;
-  
+
+    Import ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
+
 public:
-  declareType("Import");
-  Import(const NoParameters& nop = NoParameters());
-  Import(const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Import" );
+    Import ( const NoParameters& nop = NoParameters() );
+    
+    static FeaturePtr create ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

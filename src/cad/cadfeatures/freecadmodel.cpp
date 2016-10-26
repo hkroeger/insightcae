@@ -33,13 +33,21 @@ namespace insight
 namespace cad
 {
 
+    
+    
+    
 defineType(FreeCADModel);
 addToFactoryTable(Feature, FreeCADModel, NoParameters);
+
+
 
 
 FreeCADModel::FreeCADModel(const insight::NoParameters& nop)
 {
 }
+
+
+
 
 FreeCADModel::FreeCADModel
 (
@@ -53,42 +61,53 @@ FreeCADModel::FreeCADModel
 {
 }
 
+
+
+
+FeaturePtr FreeCADModel::create ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars )
+{
+    return FeaturePtr(new FreeCADModel(filename, solidname, vars));
+}
+
+
+
+
 void FreeCADModel::build()
 {
-  boost::filesystem::path infilename = filename_;
-  if (!exists(infilename))
-    infilename=sharedModelFilePath(filename_.string());
-  
-  boost::filesystem::path filename = filename_;
-  std::string solidname = solidname_;
-  
-  
-  filename =
-    boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.brep" );
-  boost::filesystem::path macrofilename =
-    boost::filesystem::unique_path( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
-    
-  {
-      
-      std::string vargs="";
-      for (FreeCADModelVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
-      {
-	std::vector<std::string> vpath=boost::fusion::at_c<0>(*it);
-	if (vpath.size()==0)
-	  throw insight::Exception("Internal error: zero length of parameter path!");
-	
-	double vval=boost::fusion::at_c<1>(*it)->value();
-	std::string cmd="doc";
-	for (int i=0; i<vpath.size()-1; i++)
-	{
-	  cmd+=str(format(".getObjectsByLabel(\"%s\")[0]")%vpath[i]);
-	}
-	cmd+=str(format(".setDatum(\"%s\", %g)")%vpath.back()%vval);
-	vargs+=cmd+"\n";
-      }
-      
-      std::ofstream mf(macrofilename.c_str());
-      mf << str( format(
+    boost::filesystem::path infilename = filename_;
+    if ( !exists ( infilename ) ) {
+        infilename=sharedModelFilePath ( filename_.string() );
+    }
+
+    boost::filesystem::path filename = filename_;
+    std::string solidname = solidname_;
+
+
+    filename =
+        boost::filesystem::unique_path ( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.brep" );
+    boost::filesystem::path macrofilename =
+        boost::filesystem::unique_path ( temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.FCMacro" );
+
+    {
+
+        std::string vargs="";
+        for ( FreeCADModelVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++ ) {
+            std::vector<std::string> vpath=boost::fusion::at_c<0> ( *it );
+            if ( vpath.size() ==0 ) {
+                throw insight::Exception ( "Internal error: zero length of parameter path!" );
+            }
+
+            double vval=boost::fusion::at_c<1> ( *it )->value();
+            std::string cmd="doc";
+            for ( int i=0; i<vpath.size()-1; i++ ) {
+                cmd+=str ( format ( ".getObjectsByLabel(\"%s\")[0]" ) %vpath[i] );
+            }
+            cmd+=str ( format ( ".setDatum(\"%s\", %g)" ) %vpath.back() %vval );
+            vargs+=cmd+"\n";
+        }
+
+        std::ofstream mf ( macrofilename.c_str() );
+        mf << str ( format (
 "import FreeCAD\n"
 "import Part\n"
 
@@ -98,43 +117,66 @@ void FreeCADModel::build()
 "doc.recompute()\n"
 "obj=doc.getObjectsByLabel('%s')\n"
 "Part.export(obj, \"%s\")\n"
-) 
-      % infilename.string() 
-      % infilename.filename().stem().string() 
-      % solidname
-      % filename.string() 
-      );
+                    )
+                    % infilename.string()
+                    % infilename.filename().stem().string()
+                    % solidname
+                    % filename.string()
+                  );
     }
-    
-    std::string cmd = str( format("FreeCADCmd %s") % macrofilename );
+
+    std::string cmd = str ( format ( "FreeCADCmd %s" ) % macrofilename );
 //     std::string cmd = str( format("fcstd2dxf.py %s %s %s") % fn % ln % filename );
     cout<<"CMD=\""<<cmd<<"\""<<endl;
-    if ( ::system( cmd.c_str() ) || !boost::filesystem::exists(filename) )
-    {
-      throw insight::Exception("Conversion of FreeCAD file "+infilename.string()+" into BREP "+filename.string()+" failed!");
+    if ( ::system ( cmd.c_str() ) || !boost::filesystem::exists ( filename ) ) {
+        throw insight::Exception ( "Conversion of FreeCAD file "+infilename.string()+" into BREP "+filename.string()+" failed!" );
     }
-    boost::filesystem::remove(macrofilename);
-      
-    loadShapeFromFile(filename);
+    boost::filesystem::remove ( macrofilename );
+
+    loadShapeFromFile ( filename );
 
 }
 
-void FreeCADModel::insertrule(parser::ISCADParser& ruleset) const
+
+
+
+void FreeCADModel::insertrule ( parser::ISCADParser& ruleset ) const
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "FreeCADModel",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    ruleset.modelstepFunctionRules.add
+    (
+        "FreeCADModel",
+        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
-    ( '(' > ruleset.r_path > ',' 
-	  > ruleset.r_string 
-	  > ( ( ',' > ( ( ruleset.r_identifier % '.' ) > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(FreeCADModelVarList()) )
-      > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<FreeCADModel>(qi::_1, qi::_2, qi::_3)) ]
-      
-    ))
-  );
+                    ( '(' 
+                      > ruleset.r_path > ','
+                      > ruleset.r_string
+                      > ( ( ',' > ( ( ruleset.r_identifier % '.' ) > '=' > ruleset.r_scalarExpression ) % ',' ) | qi::attr ( FreeCADModelVarList() ) )
+                      > ')' )
+                    [ qi::_val = phx::bind(&FreeCADModel::create, qi::_1, qi::_2, qi::_3 ) ]
+
+                ) )
+    );
 }
+
+
+
+
+FeatureCmdInfoList FreeCADModel::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "FreeCADModel",
+         
+            "( <path:filename>, <string:solidname> [, <identifier>[.<identifier>] = <scalar:value>, ... ] )",
+         
+            "Rebuild a model in FreeCAD and imports the result. An arbitrary number of parameter/value pairs can be passed into FreeCAD."
+        )
+    );
+}
+
+
 
 
 }

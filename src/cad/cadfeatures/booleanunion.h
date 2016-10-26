@@ -29,19 +29,25 @@ namespace cad
 {
 
 class BooleanUnion
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeaturePtr m1_, m2_;
-  
-public:
-  declareType("BooleanUnion");
-  BooleanUnion(const NoParameters& nop = NoParameters());
-  BooleanUnion(FeaturePtr m1);
-  BooleanUnion(FeaturePtr m1, FeaturePtr m2);
-  
-  virtual void build();
+    FeaturePtr m1_, m2_;
 
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    BooleanUnion(FeaturePtr m1);
+    BooleanUnion(FeaturePtr m1, FeaturePtr m2);
+
+public:
+    declareType("BooleanUnion");
+    BooleanUnion(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create(FeaturePtr m1);
+    static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
 };
 
 FeaturePtr operator|(FeaturePtr m1, FeaturePtr m2);

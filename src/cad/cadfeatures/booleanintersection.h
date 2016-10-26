@@ -35,15 +35,21 @@ class BooleanIntersection
   FeaturePtr m1_, m2_;
   DatumPtr m2pl_;
   
+  BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
+  BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
+
 public:
   declareType("BooleanIntersection");
   BooleanIntersection(const NoParameters& nop = NoParameters());
-  BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
-  BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
+  
+  static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
+  static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);
   
   virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual FeatureCmdInfoList ruleDocumentation() const;
+  
 };
 
 FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2);

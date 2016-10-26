@@ -32,17 +32,34 @@ namespace insight {
 namespace cad {
 
 
+    
 
 defineType(NacaFourDigit);
 addToFactoryTable(Feature, NacaFourDigit, NoParameters);
+
+
+
 
 NacaFourDigit::NacaFourDigit(const NoParameters&)
 {}
 
 
+
+
 NacaFourDigit::NacaFourDigit(const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez)
 : code_(code), p0_(p0), ex_(ex), ez_(ez)
 {}
+
+
+
+
+FeaturePtr NacaFourDigit::create(const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez)
+{
+    return FeaturePtr(new NacaFourDigit(code, p0, ex, ez));
+}
+
+
+
 
 void NacaFourDigit::build()
 {
@@ -136,10 +153,16 @@ void NacaFourDigit::build()
   setShape(fb.Face());
 }
 
+
+
+
 NacaFourDigit::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape());
 }
+
+
+
 
 void NacaFourDigit::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -149,11 +172,32 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '('  >> ruleset.r_string >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<NacaFourDigit>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+	[ qi::_val = phx::bind(&NacaFourDigit::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList NacaFourDigit::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Naca4",
+            "( <string:code>, <vector:p0>, <vector:L>, <vector:ez> )",
+            "Creates an airfoil section from the NACA four digit series. The four digit code is passed as a string."
+            " The leading edge is positioned at point p0. Length and direction of the chord line are specified by vector L."
+            " The normal direction of the foil section, i.e. spanwise direction of the wing, is given by vector ez."
+        )
+    );
+}
+
+
+
 
 }
 }

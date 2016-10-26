@@ -28,28 +28,40 @@ namespace cad {
 typedef boost::fusion::vector3<bool, bool, bool> BoxCentering;
 
 class Box
-: public SingleVolumeFeature
+    : public SingleVolumeFeature
 {
-  VectorPtr p0_;
-  VectorPtr L1_;
-  VectorPtr L2_;
-  VectorPtr L3_;
-  BoxCentering center_;
-  
+    VectorPtr p0_;
+    VectorPtr L1_;
+    VectorPtr L2_;
+    VectorPtr L3_;
+    BoxCentering center_;
+
+    Box
+    (
+        VectorPtr p0,
+        VectorPtr L1,
+        VectorPtr L2,
+        VectorPtr L3,
+        BoxCentering center=BoxCentering(false, false, false)
+    );
+
 public:
-  declareType("Box");
-  Box(const NoParameters& nop = NoParameters());
-  Box
-  (
-    VectorPtr p0, 
-    VectorPtr L1, 
-    VectorPtr L2, 
-    VectorPtr L3,
-    BoxCentering center=BoxCentering(false, false, false)
-  );
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
-  virtual void build();
+    declareType("Box");
+    Box(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create
+    (
+        VectorPtr p0,
+        VectorPtr L1,
+        VectorPtr L2,
+        VectorPtr L3,
+        BoxCentering center=BoxCentering(false, false, false)
+    );
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual void build();
 };
 
 

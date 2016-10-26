@@ -92,7 +92,8 @@ public:
   void operator=(const Bar& o);
 
   virtual void insertrule(parser::ISCADParser& ruleset) const;
-
+  virtual FeatureCmdInfoList ruleDocumentation() const;
+  
   virtual void build();
 };
 

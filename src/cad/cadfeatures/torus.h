@@ -27,21 +27,32 @@ namespace insight
 namespace cad 
 {
 
-class Torus 
-: public SingleVolumeFeature
+    
+    
+    
+class Torus
+    : public SingleVolumeFeature
 {
-  VectorPtr p0_;
-  VectorPtr axisTimesD_;
-  ScalarPtr d_;
-  
+    VectorPtr p0_;
+    VectorPtr axisTimesD_;
+    ScalarPtr d_;
+
+    Torus ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
+
 public:
-  declareType("Torus");
-  Torus(const NoParameters& nop = NoParameters());
-  Torus(VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Torus" );
+    Torus ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

@@ -25,33 +25,47 @@
 namespace insight {
 namespace cad {
   
+    
+    
 
 class Mirror
-: public DerivedFeature
+    : public DerivedFeature
 {
 public:
-  typedef enum { FlipX, FlipY, FlipXY } Shortcut;
+    typedef enum { FlipX, FlipY, FlipXY } Shortcut;
 
 protected:
-  FeaturePtr m1_;
-  DatumPtr pl_;
-  Shortcut s_;
-  
-  gp_Trsf tr_;
-  
+    FeaturePtr m1_;
+    DatumPtr pl_;
+    Shortcut s_;
+
+    gp_Trsf tr_;
+
+    Mirror ( FeaturePtr m1, DatumPtr pl );
+    Mirror ( FeaturePtr m1, Mirror::Shortcut s );
+
 public:
-  
-  declareType("Mirror");
-  Mirror(const NoParameters& nop = NoParameters());
-  Mirror(FeaturePtr m1, DatumPtr pl);
-  Mirror(FeaturePtr m1, Mirror::Shortcut s);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
-  virtual bool isTransformationFeature() const { return true; }
-  virtual gp_Trsf transformation() const;  
+
+    declareType ( "Mirror" );
+    Mirror ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr m1, DatumPtr pl );
+    static FeaturePtr create_short ( FeaturePtr m1, Mirror::Shortcut s );
+
+    virtual void build();
+    
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isTransformationFeature() const
+    {
+        return true;
+    }
+    virtual gp_Trsf transformation() const;
 };
+
+
+
 
 }
 }

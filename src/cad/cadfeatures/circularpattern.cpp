@@ -92,11 +92,6 @@ void CircularPattern::build()
     
     if (otherpat_)
     {
-//         boost::shared_ptr<CircularPattern> op = boost::dynamic_pointer_cast<CircularPattern, Feature>(otherpat_);
-//         if (!op)
-//         {
-//             throw insight::Exception("Construction of CircularPattern with copied parameters: provided feature is not a circular pattern feature!");
-//         }
         n=otherpat_->getDatumScalar("n");
         p0=otherpat_->getDatumPoint("p0");
         delta_phi=otherpat_->getDatumScalar("delta_phi");
@@ -171,10 +166,9 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
     "CircularPattern",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-//     ( 
       (
-      '(' >> 
-          ruleset.r_solidmodel_expression >> ',' 
+      '(' 
+        >> ruleset.r_solidmodel_expression >> ',' 
         >> ruleset.r_vectorExpression >> ',' 
         >> ruleset.r_vectorExpression >> ',' 
         >> ruleset.r_scalarExpression 
@@ -188,10 +182,32 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
           ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression 
         >> ')' 
       ) [ qi::_val = phx::bind(&CircularPattern::create, qi::_1, qi::_2) ]
-//      ) 
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList CircularPattern::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "CircularPattern",
+         
+            "( <feature:base>, ( <vector:p0>, <vector:deltaphi>, <scalar:n> [, centered] ) | <feature:other_pattern> )",
+         
+            "Copies the bease feature base into a circular pattern."
+            " The copies are rotated around the axis which goes through the point p0 and has the direction of deltaphi."
+            " The angular step between successive copies is given by the length of deltaphi and the number of copies is n."
+            " If the keyword centered is given, the pattern is created symmetrically in both directions of rotation (The total number of elements is kept)."
+            " Alternatively, the settings can be copied from an existing CircularPattern-feature other_pattern."
+        )
+    );
+}
+
 
 
 }

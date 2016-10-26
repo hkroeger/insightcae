@@ -31,39 +31,65 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Tri);
 addToFactoryTable(Feature, Tri, NoParameters);
 
+
+
+
 Tri::Tri(const NoParameters&)
 {}
+
+
+
 
 Tri::Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2)
 : p0_(p0), e1_(e1), e2_(e2)
 {}
 
+
+
+
+FeaturePtr Tri::create ( VectorPtr p0, VectorPtr e1, VectorPtr e2 )
+{
+    return FeaturePtr(new Tri(p0, e1, e2));
+}
+
+
+
+
 void Tri::build()
 {
-  gp_Pnt 
-    p1(to_Pnt(p0_->value())),
-    p2=p1.Translated(to_Vec(e1_->value())),
-    p3=p1.Translated(to_Vec(e2_->value()))
-  ;
-  
-  BRepBuilderAPI_MakeWire w;
-  w.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-  w.Add(BRepBuilderAPI_MakeEdge(p2, p3));
-  w.Add(BRepBuilderAPI_MakeEdge(p3, p1));
-  
+    gp_Pnt
+    p1 ( to_Pnt ( p0_->value() ) ),
+    p2=p1.Translated ( to_Vec ( e1_->value() ) ),
+    p3=p1.Translated ( to_Vec ( e2_->value() ) )
+       ;
+
+    BRepBuilderAPI_MakeWire w;
+    w.Add ( BRepBuilderAPI_MakeEdge ( p1, p2 ) );
+    w.Add ( BRepBuilderAPI_MakeEdge ( p2, p3 ) );
+    w.Add ( BRepBuilderAPI_MakeEdge ( p3, p1 ) );
+
 //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
-  providedSubshapes_["OuterWire"]=FeaturePtr(new Feature(w.Wire()));
-  
-  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+    providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
+
+    setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
 }
+
+
+
 
 Tri::operator const TopoDS_Face& () const
 {
   return TopoDS::Face(shape());
 }
+
+
+
 
 void Tri::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -73,11 +99,29 @@ void Tri::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Tri>(qi::_1, qi::_2, qi::_3)) ]
+	[ qi::_val = phx::bind(&Tri::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Tri::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Tri",
+            "( <vector:p0>, <vector:L1>, <vector:L2> )",
+            "Creates a triangle face from point p0 and spanned by vectors L1 and L2."
+        )
+    );
+}
+
+
 
 }
 }

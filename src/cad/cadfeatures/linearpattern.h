@@ -25,21 +25,32 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class LinearPattern
-: public Compound
+    : public Compound
 {
-  FeaturePtr m1_;
-  VectorPtr axis_;
-  ScalarPtr n_;
-  
+    FeaturePtr m1_;
+    VectorPtr axis_;
+    ScalarPtr n_;
+
+    LinearPattern ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
+
 public:
-  declareType("LinearPattern");
-  LinearPattern(const NoParameters& nop = NoParameters());
-  LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "LinearPattern" );
+    LinearPattern ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

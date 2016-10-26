@@ -30,122 +30,161 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
 
 defineType(FillingFace);
 addToFactoryTable(Feature, FillingFace, NoParameters);
 
 
-FillingFace::FillingFace(const NoParameters&)
+
+
+FillingFace::FillingFace ( const NoParameters& )
 {}
 
-FillingFace::FillingFace(FeaturePtr e1, FeaturePtr e2)
-: e1_(e1), e2_(e2)
+
+
+
+FillingFace::FillingFace ( FeaturePtr e1, FeaturePtr e2 )
+    : e1_ ( e1 ), e2_ ( e2 )
 {}
 
-FillingFace::FillingFace(FeatureSetPtr es1, FeatureSetPtr es2)
-: es1_(es1), es2_(es2)
+
+
+
+FillingFace::FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 )
+    : es1_ ( es1 ), es2_ ( es2 )
 {}
+
+
+
+
+FeaturePtr FillingFace::create ( FeaturePtr e1, FeaturePtr e2 )
+{
+    return FeaturePtr(new FillingFace(e1, e2));
+}
+
+
+
+
+FeaturePtr FillingFace::create_set ( FeatureSetPtr es1, FeatureSetPtr es2 )
+{
+    return FeaturePtr(new FillingFace(es1, es2));
+}
+
+
+
 
 void FillingFace::build()
 {
-  if (e1_ && e2_)
-  {  
-    TopoDS_Edge ee1, ee2;
-    bool ok=true;
-    if (e1_->isSingleEdge())
-    {
-      ee1=e1_->asSingleEdge();
-    }
-    else ok=false;
-    if (e2_->isSingleEdge())
-    {
-      ee2=e2_->asSingleEdge();
-    }
-    else ok=false;
+    if ( e1_ && e2_ ) {
+        TopoDS_Edge ee1, ee2;
+        bool ok=true;
+        if ( e1_->isSingleEdge() ) {
+            ee1=e1_->asSingleEdge();
+        } else {
+            ok=false;
+        }
+        if ( e2_->isSingleEdge() ) {
+            ee2=e2_->asSingleEdge();
+        } else {
+            ok=false;
+        }
 
-    if (!ok)
-      throw insight::Exception("Invalid edge given!");
+        if ( !ok ) {
+            throw insight::Exception ( "Invalid edge given!" );
+        }
 
-    TopoDS_Face f;
-    try
-    {
-      f=BRepFill::Face(ee1, ee2);
-    }
-    catch (...)
-    {
-      throw insight::Exception("Failed to generate face!");
-    }
-    
-    ShapeFix_Face FixShape;
-    FixShape.Init(f);
-    FixShape.Perform();
-    
-    setShape(FixShape.Face());
-  }
-  else if (es1_ && es2_)
-  {
-    TopoDS_Edge ee1, ee2;
-    if (es1_->size()!=1)
-    {
-      throw insight::Exception("first feature set has to contain only 1 edge!");
-    }
-    else
-    {
-      ee1=es1_->model()->edge(*es1_->data().begin());
-    }
-    
-    if (es2_->size()!=1)
-    {
-      throw insight::Exception("second feature set has to contain only 1 edge!");
-    }
-    else
-    {
-      ee2=es2_->model()->edge(*es2_->data().begin());
-    }
+        TopoDS_Face f;
+        try {
+            f=BRepFill::Face ( ee1, ee2 );
+        } catch ( ... ) {
+            throw insight::Exception ( "Failed to generate face!" );
+        }
 
-    TopoDS_Face f;
-    try
-    {
-      f=BRepFill::Face(ee1, ee2);
+        ShapeFix_Face FixShape;
+        FixShape.Init ( f );
+        FixShape.Perform();
+
+        setShape ( FixShape.Face() );
+    } else if ( es1_ && es2_ ) {
+        TopoDS_Edge ee1, ee2;
+        if ( es1_->size() !=1 ) {
+            throw insight::Exception ( "first feature set has to contain only 1 edge!" );
+        } else {
+            ee1=es1_->model()->edge ( *es1_->data().begin() );
+        }
+
+        if ( es2_->size() !=1 ) {
+            throw insight::Exception ( "second feature set has to contain only 1 edge!" );
+        } else {
+            ee2=es2_->model()->edge ( *es2_->data().begin() );
+        }
+
+        TopoDS_Face f;
+        try {
+            f=BRepFill::Face ( ee1, ee2 );
+        } catch ( ... ) {
+            throw insight::Exception ( "Failed to generate face!" );
+        }
+
+        ShapeFix_Face FixShape;
+        FixShape.Init ( f );
+        FixShape.Perform();
+
+        setShape ( FixShape.Face() );
+    } else {
+        throw insight::Exception ( "Improper specification of edges for FillingFace!" );
     }
-    catch (...)
-    {
-      throw insight::Exception("Failed to generate face!");
-    }
-    
-    ShapeFix_Face FixShape;
-    FixShape.Init(f);
-    FixShape.Perform();
-    
-    setShape(FixShape.Face());
-  }
-  else
-    throw insight::Exception("Improper specification of edges for FillingFace!");
 }
+
+
 
 
 FillingFace::operator const TopoDS_Face& () const
 {
-  return TopoDS::Face(shape());
+    return TopoDS::Face ( shape() );
 }
 
 
-void FillingFace::insertrule(parser::ISCADParser& ruleset) const
+
+
+void FillingFace::insertrule ( parser::ISCADParser& ruleset ) const
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "FillingFace",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    ruleset.modelstepFunctionRules.add
+    (
+        "FillingFace",
+        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<FillingFace>(qi::_1, qi::_2)) ]
-    |
-    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
-	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<FillingFace>(qi::_1, qi::_2)) ]
-      
-    ))
-  );
+                    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' )
+                    [ qi::_val = phx::bind(&FillingFace::create, qi::_1, qi::_2 ) ]
+                    |
+                    ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_edgeFeaturesExpression >> ')' )
+                    [ qi::_val = phx::bind(&FillingFace::create_set, qi::_1, qi::_2 ) ]
+
+                ) )
+    );
 }
+
+
+
+
+FeatureCmdInfoList FillingFace::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "FillingFace",
+         
+            "( (<feature:e0>, <feature:e1>) | (<edgeSelection:e0>, <edgeSelection:e1) )",
+         
+            "Creates an interpolated surface between two edges. The two edges e0 and e1 can be given either as edge features or edge selection sets."
+        )
+    );
+}
+
+
 
 }
 }

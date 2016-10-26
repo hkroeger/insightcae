@@ -31,17 +31,36 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Projected);
 addToFactoryTable(Feature, Projected, NoParameters);
 
+
+
+
 Projected::Projected(const NoParameters& nop): Feature(nop)
 {}
+
+
 
 
 Projected::Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir)
 : source_(source), target_(target), dir_(dir)
 {
 }
+
+
+
+
+FeaturePtr Projected::create ( FeaturePtr source, FeaturePtr target, VectorPtr dir )
+{
+    return FeaturePtr(new Projected(source, target, dir));
+}
+
+
+
+
 
 void Projected::build()
 {
@@ -53,6 +72,8 @@ void Projected::build()
 }
 
 
+
+
 void Projected::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -61,11 +82,29 @@ void Projected::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Projected>(qi::_1, qi::_2, qi::_3)) ]
+      [ qi::_val = phx::bind(&Projected::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Projected::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Projected",
+            "( <feature:base>, <feature:target>, <vector:dir> )",
+            "Projects the feature base onto the feature target. The direction has to be prescribed by vector dir."
+        )
+    );
+}
+
+
 
 }
 }

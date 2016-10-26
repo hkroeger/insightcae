@@ -27,20 +27,41 @@ namespace phx   = boost::phoenix;
 using namespace std;
 using namespace boost;
 
+
+
+
 namespace insight {
 namespace cad {
 
+    
+    
 
 defineType(Thicken);
 addToFactoryTable(Feature, Thicken, NoParameters);
+
+
+
 
 Thicken::Thicken(const NoParameters& nop): Feature(nop)
 {}
 
 
+
+
 Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 : shell_(shell), thickness_(thickness), tol_(tol)
 {}
+
+
+
+
+FeaturePtr Thicken::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol )
+{
+    return FeaturePtr(new Thicken(shell, thickness, tol));
+}
+
+
+
 
 void Thicken::build()
 {
@@ -57,6 +78,9 @@ void Thicken::build()
   setShape(maker.Shape());
 }
 
+
+
+
 void Thicken::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
@@ -64,12 +88,34 @@ void Thicken::insertrule(parser::ISCADParser& ruleset) const
     "Thicken",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Thicken>(qi::_1, qi::_2)) ]
+    ( '(' 
+        >> ruleset.r_solidmodel_expression >> ',' 
+        >> ruleset.r_scalarExpression 
+        >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
+        >> ')' ) 
+      [ qi::_val = phx::bind(&Thicken::create, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Thicken::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Thicken",
+            "( <feature:base>, <scalar:t> )",
+            "Creates a solid from a shell feature by adding thickness t."
+        )
+    );
+}
+
+
 
 }
 }

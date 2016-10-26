@@ -34,12 +34,19 @@ namespace cad
 {
 
 
+    
+    
 defineType(BooleanSubtract);
 addToFactoryTable(Feature, BooleanSubtract, NoParameters);
+
+
+
 
 BooleanSubtract::BooleanSubtract(const NoParameters& nop)
 : DerivedFeature(nop)
 {}
+
+
 
 
 BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
@@ -47,6 +54,17 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
   m1_(m1),
   m2_(m2)
 {}
+
+
+
+
+FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
+{
+    return FeaturePtr(new BooleanSubtract(m1, m2));
+}
+
+
+
 
 void BooleanSubtract::build()
 {
@@ -62,10 +80,15 @@ void BooleanSubtract::build()
 }
 
 
+
+
 FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2)
 {
-  return FeaturePtr(new BooleanSubtract(m1, m2));
+  return BooleanSubtract::create(m1, m2);
 }
+
+
+
 
 /*! \page BooleanSubtract BooleanSubtract
   * Return the subtraction of feat2 from feat1.
@@ -87,6 +110,17 @@ void BooleanSubtract::insertrule(parser::ISCADParser& ruleset) const
 //     ))
 //   );
 }
+
+
+
+
+FeatureCmdInfoList BooleanSubtract::ruleDocumentation() const
+{
+    return FeatureCmdInfoList();
+}
+
+
+
 
 }
 }

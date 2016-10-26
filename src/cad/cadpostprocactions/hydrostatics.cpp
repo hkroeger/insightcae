@@ -52,15 +52,15 @@ void Hydrostatics::build()
 {
   elat_=arma::cross(nsurf_->value(), elong_->value());
   
-  Cutaway submerged_volume(hullvolume_, psurf_, nsurf_);
-  submerged_volume.build();
-  V_=submerged_volume.modelVolume();
+  boost::shared_ptr<Cutaway> submerged_volume = boost::dynamic_pointer_cast<Cutaway,Feature>( Cutaway::create(hullvolume_, psurf_, nsurf_) );
+  submerged_volume->build();
+  V_=submerged_volume->modelVolume();
   cout<<"displacement V="<<V_<<endl;
   
   m_=shipmodel_->mass();
   cout<<"ship mass m="<<m_<<endl;
 
-  FeaturePtr csf = submerged_volume.providedSubshapes().find("CutSurface")->second;
+  FeaturePtr csf = submerged_volume->providedSubshapes().find("CutSurface")->second;
   if (!csf)
     throw insight::Exception("No cut surface present!");
 
@@ -87,7 +87,7 @@ void Hydrostatics::build()
   cout<<"BM="<<BM<<endl;
 
   G_ = shipmodel_->modelCoG();
-  B_ = submerged_volume.modelCoG();
+  B_ = submerged_volume->modelCoG();
   M_ = B_ + BM*(evert_->value());
   double GM = norm(M_ - G_, 2);
   cout<<"G="<<G_<<endl;

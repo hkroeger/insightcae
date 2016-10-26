@@ -35,6 +35,7 @@
 
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"
+#include "insertfeaturedlg.h"
 
 #include "datum.h"
 
@@ -222,6 +223,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     act = new QAction(("&Rebuild model"), this);
     act->setShortcut(Qt::ControlModifier + Qt::Key_Return);
     connect(act, SIGNAL(triggered()), this, SLOT(rebuildModel()));
+    mmenu->addAction(act);
+
+    act = new QAction(("Insert &feature..."), this);
+    act->setShortcut(Qt::ControlModifier + Qt::Key_F);
+    connect(act, SIGNAL(triggered()), this, SLOT(insertFeatureAtCursor()));
     mmenu->addAction(act);
 
     act = new QAction(("Insert &component name..."), this);
@@ -652,6 +658,15 @@ void ISCADMainWindow::toggleSkipPostprocActions(int state)
     }
 }
 
+
+void ISCADMainWindow::insertFeatureAtCursor()
+{
+    InsertFeatureDlg *dlg=new InsertFeatureDlg(this);
+    if ( dlg->exec() == QDialog::Accepted )
+    {
+        editor_->textCursor().insertText(dlg->insert_string_);
+    }
+}
 
 
 void ISCADMainWindow::insertComponentNameAtCursor()

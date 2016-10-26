@@ -206,5 +206,22 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
 
 
 
+FeatureCmdInfoList ModelFeature::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "loadmodel",
+            "( <identifier:modelname> [, <identifier> = <feature>|<datum>|<vector>|<scalar> ] )",
+            "Imports a submodel. It is read from the file modelname.iscad."
+            " The file is searched first in the directory of the current model and then throughout the shared file search path."
+            " An arbitrary number of parameters are passed from the current model into the submodel."
+        )
+    );
+}
+
+
+
 }
 }

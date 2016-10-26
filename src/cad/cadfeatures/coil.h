@@ -25,6 +25,8 @@
 namespace insight {
 namespace cad {
 
+    
+    
 
 class CoilPath
     : public Feature
@@ -44,7 +46,7 @@ class CoilPath
      * number of turns
      */
     ScalarPtr nr_;
-    
+
     /**
      * distance between two subsequent conductors on the same coil side
      */
@@ -65,9 +67,9 @@ class CoilPath
     );
 
 public:
-    declareType("CoilPath");
-    
-    CoilPath(const NoParameters& nop = NoParameters());
+    declareType ( "CoilPath" );
+
+    CoilPath ( const NoParameters& nop = NoParameters() );
     static FeaturePtr create
     (
         ScalarPtr l,
@@ -79,59 +81,70 @@ public:
 
     virtual void build();
 
-    virtual void insertrule(parser::ISCADParser& ruleset) const;
-    virtual bool isSingleEdge() const {
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;    
+    
+    virtual bool isSingleEdge() const
+    {
+        return true;
+    };
+    
+    virtual bool isSingleCloseWire() const;
+    virtual bool isSingleOpenWire() const;
+};
+
+
+
+
+class Coil
+    : public Feature
+{
+    VectorPtr p0_;
+    VectorPtr b_, l_;
+    ScalarPtr r_;
+
+    /**
+     * wire diameter
+     */
+    ScalarPtr d_;
+
+    /**
+     * number of layers in vertical direction
+     */
+    ScalarPtr nv_;
+
+    /**
+     * number of layers in radial direction
+     */
+    ScalarPtr nr_;
+
+public:
+    declareType ( "Coil" );
+    Coil ( const NoParameters& nop = NoParameters() );
+    Coil
+    (
+        VectorPtr p0,
+        VectorPtr b,
+        VectorPtr l,
+        ScalarPtr r,
+        ScalarPtr d,
+        ScalarPtr nv,
+        ScalarPtr nr
+    );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual bool isSingleEdge() const
+    {
         return true;
     };
     virtual bool isSingleCloseWire() const;
     virtual bool isSingleOpenWire() const;
 };
-    
-    
-    
-class Coil 
-: public Feature
-{
-  VectorPtr p0_;
-  VectorPtr b_, l_;
-  ScalarPtr r_;
-  
-  /**
-   * wire diameter
-   */
-  ScalarPtr d_;
-  
-  /**
-   * number of layers in vertical direction
-   */
-  ScalarPtr nv_;
 
-  /**
-   * number of layers in radial direction
-   */
-  ScalarPtr nr_;
-  
-public:
-  declareType("Coil");
-  Coil(const NoParameters& nop = NoParameters());
-  Coil
-  (
-    VectorPtr p0,
-    VectorPtr b,
-    VectorPtr l,
-    ScalarPtr r,
-    ScalarPtr d,
-    ScalarPtr nv, 
-    ScalarPtr nr
-  );
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleEdge() const { return true; };
-  virtual bool isSingleCloseWire() const;
-  virtual bool isSingleOpenWire() const;
-};
+
+
 
 }
 }

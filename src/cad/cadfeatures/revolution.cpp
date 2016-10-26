@@ -62,52 +62,69 @@ FeaturePtr Revolution::create(FeaturePtr sk, VectorPtr p0, VectorPtr axis, Scala
 
 void Revolution::build()
 {
-    if (!centered_)
-    {
-        BRepPrimAPI_MakeRevol mkr( *sk_, gp_Ax1(to_Pnt(p0_->value()), gp_Dir(to_Vec(axis_->value()))), angle_->value(), centered_ );
-        providedSubshapes_["frontFace"]=FeaturePtr(new Feature(mkr.FirstShape()));
-        providedSubshapes_["backFace"]=FeaturePtr(new Feature(mkr.LastShape()));
-        setShape(mkr.Shape());
-    }
-    else
-    {
+    if ( !centered_ ) {
+        BRepPrimAPI_MakeRevol mkr ( *sk_, gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( to_Vec ( axis_->value() ) ) ), angle_->value(), centered_ );
+        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkr.FirstShape() ) );
+        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkr.LastShape() ) );
+        setShape ( mkr.Shape() );
+    } else {
         gp_Trsf trsf;
-        gp_Vec ax=to_Vec(axis_->value());
+        gp_Vec ax=to_Vec ( axis_->value() );
         ax.Normalize();
-        trsf.SetRotation(gp_Ax1(to_Pnt(p0_->value()), ax), -0.5*angle_->value());
+        trsf.SetRotation ( gp_Ax1 ( to_Pnt ( p0_->value() ), ax ), -0.5*angle_->value() );
         BRepPrimAPI_MakeRevol mkr
         (
-            BRepBuilderAPI_Transform(*sk_, trsf).Shape(),
-            gp_Ax1(to_Pnt(p0_->value()), gp_Dir(ax)), angle_->value()
+            BRepBuilderAPI_Transform ( *sk_, trsf ).Shape(),
+            gp_Ax1 ( to_Pnt ( p0_->value() ), gp_Dir ( ax ) ), angle_->value()
         );
-        providedSubshapes_["frontFace"]=FeaturePtr(new Feature(mkr.FirstShape()));
-        providedSubshapes_["backFace"]=FeaturePtr(new Feature(mkr.LastShape()));
-        setShape(mkr.Shape());
+        providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkr.FirstShape() ) );
+        providedSubshapes_["backFace"]=FeaturePtr ( new Feature ( mkr.LastShape() ) );
+        setShape ( mkr.Shape() );
     }
 
-    copyDatums(*sk_);
+    copyDatums ( *sk_ );
 }
 
 
 
 
-void Revolution::insertrule(parser::ISCADParser& ruleset) const
+void Revolution::insertrule ( parser::ISCADParser& ruleset ) const
 {
-  ruleset.modelstepFunctionRules.add
-  (
-    "Revolution",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    ruleset.modelstepFunctionRules.add
+    (
+        "Revolution",
+        typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ',' 
-	  > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression 
-       > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false))
-       > ')' ) 
-      [ qi::_val = phx::bind(&Revolution::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
-      
-    ))
-  );
+                    ( '(' 
+                        > ruleset.r_solidmodel_expression > ',' 
+                        > ruleset.r_vectorExpression > ','
+                        > ruleset.r_vectorExpression > ',' 
+                        > ruleset.r_scalarExpression
+                        > ( ( ',' > qi::lit ( "centered" ) > qi::attr ( true ) ) | qi::attr ( false ) )
+                        > ')' )
+                    [ qi::_val = phx::bind ( &Revolution::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+
+                ) )
+    );
 }
 
+
+
+
+FeatureCmdInfoList Revolution::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Revolution",
+            "( <feature:xsec>, <vector:p0>, <vector:axis>, <scalar:angle> [, centered] )",
+            "Creates a revolution of the planar feature xsec."
+            " The rotation axis is specified by origin point p0 and the direction vector axis."
+            " Revolution angle is specified as angle. By giving the keyword centered, the revolution is created symmetrically around the base feature."
+        )
+    );
+}
 
 
 

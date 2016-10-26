@@ -31,8 +31,14 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Wire);
 addToFactoryTable(Feature, Wire, NoParameters);
+
+
+
 
 Wire::Wire(const NoParameters& nop): Feature(nop)
 {
@@ -40,26 +46,35 @@ Wire::Wire(const NoParameters& nop): Feature(nop)
 }
 
 
+
+
 Wire::Wire(FeatureSetPtr edges)
 : edges_(edges)
 {}
 
+
+
+ FeaturePtr Wire::create(FeatureSetPtr edges)
+ {
+     return FeaturePtr(new Wire(edges));
+ }
+
+
+
+
 void Wire::build()
 {
-  std::cout<<"create wire: start"<<std::endl;
-  
-  TopTools_ListOfShape ee;
-  BOOST_FOREACH(const FeatureID& fi, edges_->data())
-  {
-    std::cout<<"edge #"<<fi<<std::endl;
-    ee.Append(edges_->model()->edge(fi));
-  }
-  BRepBuilderAPI_MakeWire wb;
-  wb.Add(ee);
-  setShape(wb.Wire());
-  
-  std::cout<<"create wire: finished"<<std::endl;
+    TopTools_ListOfShape ee;
+    BOOST_FOREACH ( const FeatureID& fi, edges_->data() ) {
+        ee.Append ( edges_->model()->edge ( fi ) );
+    }
+    BRepBuilderAPI_MakeWire wb;
+    wb.Add ( ee );
+    setShape ( wb.Wire() );
 }
+
+
+
 
 void Wire::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -69,21 +84,45 @@ void Wire::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_edgeFeaturesExpression >> ')' ) 
-	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Wire>(qi::_1)) ]
+	  [ qi::_val = phx::bind(&Wire::create, qi::_1) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Wire::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Wire",
+            "( <edgeSelection> )",
+            "Creates a wire from a number of edges."
+        )
+    );
+}
+
+
 
 bool Wire::isSingleClosedWire() const
 {
   return TopoDS::Wire(shape()).Closed();
 }
 
+
+
+
 bool Wire::isSingleOpenWire() const
 {
   return !isSingleClosedWire();
 }
+
+
+
 
 }
 }

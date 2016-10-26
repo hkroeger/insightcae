@@ -162,6 +162,7 @@ protected slots:
     void toggleBgParsing(int state);
     void toggleSkipPostprocActions(int state);
     
+    void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
     
     void onBgParseFinished();

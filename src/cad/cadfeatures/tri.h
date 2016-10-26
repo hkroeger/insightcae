@@ -25,24 +25,33 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Tri
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  VectorPtr p0_;
-  VectorPtr e1_;
-  VectorPtr e2_;
-  
+    VectorPtr p0_;
+    VectorPtr e1_;
+    VectorPtr e2_;
+
+    Tri ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
+
 public:
-  declareType("Tri");
-  Tri(const NoParameters& nop = NoParameters());
-  Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2);
-  
-  virtual void build();
-  operator const TopoDS_Face& () const;
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  
+    declareType ( "Tri" );
+    Tri ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
+
+    virtual void build();
+    operator const TopoDS_Face& () const;
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
 };
+
+
 
 
 }

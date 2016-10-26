@@ -27,21 +27,23 @@ namespace cad {
 
 
 class ClipWire
-: public DerivedFeature
+    : public DerivedFeature
 {
-  FeaturePtr m1_;
-  ScalarPtr ls_, le_;
-  
-  ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
-  
+    FeaturePtr m1_;
+    ScalarPtr ls_, le_;
+
+    ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
+
 public:
-  declareType("ClipWire");
-  ClipWire(const NoParameters& nop = NoParameters());
-  
-  static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType("ClipWire");
+    ClipWire(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 

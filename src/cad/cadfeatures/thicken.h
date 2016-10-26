@@ -26,20 +26,26 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 class Thicken
-: public Feature
+    : public Feature
 {
-  FeaturePtr shell_;
-  ScalarPtr thickness_;
-  ScalarPtr tol_;
-  
+    FeaturePtr shell_;
+    ScalarPtr thickness_;
+    ScalarPtr tol_;
+
+    Thicken ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
+
 public:
-  declareType("Thicken");
-  Thicken(const NoParameters& nop = NoParameters());
-  Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst(Precision::Confusion()) );
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Thicken" );
+    Thicken ( const NoParameters& nop = NoParameters() );
+    static FeaturePtr create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 }

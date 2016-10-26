@@ -25,30 +25,40 @@
 namespace insight {
 namespace cad {
   
+    
+    
+    
 typedef boost::fusion::vector2<bool, bool> QuadCentering;
 
-class Quad
-: public SingleFaceFeature
-{
-  VectorPtr p0_;
-  VectorPtr L_;
-  VectorPtr W_;
-  
-  QuadCentering center_;
 
-  Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
-  
+
+
+class Quad
+    : public SingleFaceFeature
+{
+    VectorPtr p0_;
+    VectorPtr L_;
+    VectorPtr W_;
+
+    QuadCentering center_;
+
+    Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering ( false, false ) );
+
 public:
-  declareType("Quad");
-  Quad(const NoParameters& nop = NoParameters());
-  static FeaturePtr create(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering(false, false));
-  operator const TopoDS_Face& () const;
-  
-  void operator=(const Quad& o);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Quad" );
+    Quad ( const NoParameters& nop = NoParameters() );
+    static FeaturePtr create ( VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering ( false, false ) );
+    operator const TopoDS_Face& () const;
+
+    void operator= ( const Quad& o );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

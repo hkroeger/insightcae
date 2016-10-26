@@ -25,27 +25,33 @@
 namespace insight {
 namespace cad {
 
+    
+    
 
 class Revolution
-: public Feature
+    : public Feature
 {
-  FeaturePtr sk_;
-  VectorPtr p0_;
-  VectorPtr axis_;
-  ScalarPtr angle_;
-  bool centered_;
-  
-  Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
-  
-public:
-  declareType("Revolution");
-  Revolution(const NoParameters& nop = NoParameters());
+    FeaturePtr sk_;
+    VectorPtr p0_;
+    VectorPtr axis_;
+    ScalarPtr angle_;
+    bool centered_;
 
-  static FeaturePtr create(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    Revolution ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
+
+public:
+    declareType ( "Revolution" );
+    Revolution ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

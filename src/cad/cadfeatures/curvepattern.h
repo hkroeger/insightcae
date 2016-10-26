@@ -31,18 +31,23 @@ namespace cad {
 class CurvePattern
 : public Compound
 {
-  FeaturePtr m1_;
-  FeaturePtr curve_;
-  ScalarPtr delta_;
-  ScalarPtr n_;
-  
+    FeaturePtr m1_;
+    FeaturePtr curve_;
+    ScalarPtr delta_;
+    ScalarPtr n_;
+
+    CurvePattern ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
+
 public:
-  declareType("CurvePattern");
-  CurvePattern(const NoParameters& nop = NoParameters());
-  CurvePattern(FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "CurvePattern" );
+
+    CurvePattern ( const NoParameters& nop = NoParameters() );
+    static FeaturePtr create ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 

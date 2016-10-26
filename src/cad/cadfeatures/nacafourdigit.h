@@ -25,23 +25,35 @@
 namespace insight {
 namespace cad {
 
+    
+    
+
 class NacaFourDigit
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  std::string code_;
-  VectorPtr p0_;
-  VectorPtr ez_;
-  VectorPtr ex_;
-  
+    std::string code_;
+    VectorPtr p0_;
+    VectorPtr ez_;
+    VectorPtr ex_;
+
+    NacaFourDigit ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+
 public:
-  declareType("Naca4");
-  NacaFourDigit(const NoParameters& nop = NoParameters());
-  NacaFourDigit(const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Naca4" );
+    NacaFourDigit ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

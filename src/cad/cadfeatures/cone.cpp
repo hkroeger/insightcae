@@ -33,59 +33,61 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
+    
 defineType(Cone);
 addToFactoryTable(Feature, Cone, NoParameters);
 
+
+
+
 Cone::Cone(const NoParameters&)
 {}
+
+
+
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
 : p1_(p1), p2_(p2), D1_(D1), D2_(D2)
 {}
 
+
+
+
+FeaturePtr Cone::create(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
+{
+    return FeaturePtr(new Cone(p1, p2, D1, D2));
+}
+
+
+
+
 void Cone::build()
 {
-  refpoints_["p0"]=p1_->value();
-  refpoints_["p1"]=p2_->value();
-  refvalues_["D0"]=D1_->value();
-  refvalues_["D1"]=D2_->value();
-  
-  TopoDS_Shape cone=
-    BRepPrimAPI_MakeCone
-    (
-      gp_Ax2
-      (
-	gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
-	gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
-      ),
-      0.5*D1_->value(), 
-      0.5*D2_->value(), 
-      norm(p2_->value()-p1_->value(), 2)
-    ).Shape();
-    
-//   if (Di_)
-//   {
-//     cyl=BRepAlgoAPI_Cut
-//     (
-//       
-//       cyl,
-//      
-//       BRepPrimAPI_MakeCylinder
-//       (
-// 	gp_Ax2
-// 	(
-// 	  gp_Pnt(p1_->value()(0),p1_->value()(1),p1_->value()(2)), 
-// 	  gp_Dir(p2_->value()(0)-p1_->value()(0),p2_->value()(1)-p1_->value()(1),p2_->value()(2)-p1_->value()(2))
-// 	),
-// 	0.5*Di_->value(), 
-// 	norm(p2_->value()-p1_->value(), 2)
-//       ).Shape()
-//       
-//     );
-//   }
+    refpoints_["p0"]=p1_->value();
+    refpoints_["p1"]=p2_->value();
+    refvalues_["D0"]=D1_->value();
+    refvalues_["D1"]=D2_->value();
 
-  setShape(cone);
+    TopoDS_Shape cone=
+        BRepPrimAPI_MakeCone
+        (
+            gp_Ax2
+            (
+                gp_Pnt ( p1_->value() ( 0 ),p1_->value() ( 1 ),p1_->value() ( 2 ) ),
+                gp_Dir ( p2_->value() ( 0 )-p1_->value() ( 0 ),p2_->value() ( 1 )-p1_->value() ( 1 ),p2_->value() ( 2 )-p1_->value() ( 2 ) )
+            ),
+            0.5*D1_->value(),
+            0.5*D2_->value(),
+            norm ( p2_->value()-p1_->value(), 2 )
+        ).Shape();
+
+    setShape ( cone );
 }
+
+
+
 
 void Cone::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -100,11 +102,32 @@ void Cone::insertrule(parser::ISCADParser& ruleset) const
       >> ruleset.r_scalarExpression >> ','
       >> ruleset.r_scalarExpression
       >> ')' ) 
-     [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Cone>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
+     [ qi::_val = phx::bind(&Cone::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Cone::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Cone",
+         
+            "( <vector:p0>, <vector:p1>, <scalar:D0>, <scalar:D1> )",
+         
+            "Creates a cone between point p0 and p1. At point p0, the diameter is D0 and at p1 it is D1."
+        )
+    );
+}
+
+
+
 
 }
 }

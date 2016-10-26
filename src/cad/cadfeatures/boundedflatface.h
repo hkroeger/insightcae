@@ -27,24 +27,31 @@ namespace cad {
 
 
 class BoundedFlatFace
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
 public:
-  typedef boost::variant< std::vector<FeaturePtr>, std::vector<FeatureSetPtr> > EdgeSelection;
-  
+    typedef boost::variant< std::vector<FeaturePtr>, std::vector<FeatureSetPtr> > EdgeSelection;
+
 private:
-  EdgeSelection edges_;
-  
+    EdgeSelection edges_;
+
+    BoundedFlatFace(const std::vector<FeaturePtr>& edges);
+    BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
+
 public:
-  declareType("BoundedFlatFace");
-  BoundedFlatFace(const NoParameters& nop=NoParameters());
-  BoundedFlatFace(const std::vector<FeaturePtr>& edges);
-  BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType("BoundedFlatFace");
+    BoundedFlatFace(const NoParameters& nop=NoParameters());
+
+    static FeaturePtr create(const std::vector<FeaturePtr>& edges);
+    static FeaturePtr create_set(const std::vector<FeatureSetPtr>& edges);
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
 };
 
 

@@ -25,22 +25,33 @@
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Line
-: public Feature
+    : public Feature
 {
-  VectorPtr p0_, p1_;
-  
+    VectorPtr p0_, p1_;
+
+    Line ( VectorPtr p0, VectorPtr p1 );
+
 public:
-  declareType("Line");
-  Line(const NoParameters& nop = NoParameters());
-  Line(VectorPtr p0, VectorPtr p1);
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleCloseWire() const;
-  virtual bool isSingleOpenWire() const;
+    declareType ( "Line" );
+    Line ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isSingleCloseWire() const;
+    virtual bool isSingleOpenWire() const;
 };
+
+
+
 
 }
 }

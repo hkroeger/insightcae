@@ -25,22 +25,31 @@
 namespace insight {
 namespace cad {
   
+    
+    
 
 class SplineSurface
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  std::vector<std::vector<VectorPtr> > pts_;
-  
+    std::vector<std::vector<VectorPtr> > pts_;
+
+    SplineSurface ( const std::vector<std::vector<VectorPtr> >& pts );
+
 public:
-  declareType("SplineSurface");
-  SplineSurface(const NoParameters& nop = NoParameters());
-  SplineSurface(const std::vector<std::vector<VectorPtr> >& pts);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "SplineSurface" );
+    SplineSurface ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( const std::vector<std::vector<VectorPtr> >& pts );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
 
 
 }

@@ -27,20 +27,27 @@ namespace cad {
 
 
 class Circle
-: public SingleFaceFeature
+    : public SingleFaceFeature
 {
-  VectorPtr p0_;
-  VectorPtr n_;
-  ScalarPtr D_;
-  
+    VectorPtr p0_;
+    VectorPtr n_;
+    ScalarPtr D_;
+
+    Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
+
 public:
-  declareType("Circle");
-  Circle(const NoParameters& nop = NoParameters());
-  Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
-  operator const TopoDS_Face& () const;
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType("Circle");
+    Circle(const NoParameters& nop = NoParameters());
+
+    static FeaturePtr create(VectorPtr p0, VectorPtr n, ScalarPtr D);
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+    
 };
 
 

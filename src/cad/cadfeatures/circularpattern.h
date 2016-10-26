@@ -30,12 +30,12 @@ class CircularPattern
 {
 
     FeaturePtr m1_;
-  
+
     /**
      * pointer to another circular pattern feature, from which the parameters shall be copied
      */
     FeaturePtr otherpat_;
-    
+
     /**
      * alternative: parameters
      */
@@ -51,13 +51,14 @@ class CircularPattern
 public:
     declareType("CircularPattern");
     CircularPattern(const NoParameters& nop = NoParameters());
-    
+
     static FeaturePtr create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     static FeaturePtr create(FeaturePtr m1, FeaturePtr otherpat);
 
     virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
 
 

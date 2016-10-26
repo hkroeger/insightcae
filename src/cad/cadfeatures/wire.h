@@ -25,23 +25,32 @@
 namespace insight {
 namespace cad {
 
+    
+    
 
 class Wire
-: public Feature
+    : public Feature
 {
-  FeatureSetPtr edges_;
-  
+    FeatureSetPtr edges_;
+
+    Wire ( FeatureSetPtr edges );
+
 public:
-  declareType("Wire");
-  Wire(const NoParameters& nop = NoParameters());
-  Wire(FeatureSetPtr edges);
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
-  virtual bool isSingleClosedWire() const;
-  virtual bool isSingleOpenWire() const;
+    declareType ( "Wire" );
+    Wire ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeatureSetPtr edges );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isSingleClosedWire() const;
+    virtual bool isSingleOpenWire() const;
 };
+
+
 
 
 }

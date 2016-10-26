@@ -22,22 +22,35 @@
 
 #include "cadfeature.h"
 
+
+
 namespace insight {
 namespace cad {
 
+    
+    
+    
 class Sweep
-: public Feature
+    : public Feature
 {
-  std::vector<FeaturePtr> secs_;
-  
+    std::vector<FeaturePtr> secs_;
+
+    Sweep ( const std::vector<FeaturePtr>& secs );
+
 public:
-  declareType("Sweep");
-  Sweep(const NoParameters& nop = NoParameters());
-  Sweep(const std::vector<FeaturePtr>& secs);
-  
-  virtual void build();
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Sweep" );
+    Sweep ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( const std::vector<FeaturePtr>& secs );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
 
 }
 }

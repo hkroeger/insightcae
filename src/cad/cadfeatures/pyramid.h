@@ -27,21 +27,32 @@
 namespace insight {
 namespace cad {
 
-class Pyramid 
-: public insight::cad::Feature
+    
+    
+    
+class Pyramid
+    : public insight::cad::Feature
 {
-  FeaturePtr base_;
-  VectorPtr ptip_;
+    FeaturePtr base_;
+    VectorPtr ptip_;
+
+    Pyramid ( FeaturePtr base, VectorPtr ptip );
 
 public:
-  declareType("Pyramid");
-  Pyramid(const NoParameters& nop = NoParameters());
-  Pyramid(FeaturePtr base, VectorPtr ptip);
-  
-  virtual void build();
-  
-  virtual void insertrule(parser::ISCADParser& ruleset) const;
+    declareType ( "Pyramid" );
+    Pyramid ( const NoParameters& nop = NoParameters() );
+
+    static FeaturePtr create ( FeaturePtr base, VectorPtr ptip );
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
 };
+
+
+
+
 }
 }
 

@@ -26,7 +26,7 @@ namespace insight {
 namespace cad {
 
 class Chamfer
-: public DerivedFeature
+    : public DerivedFeature
 {
     FeatureSetPtr edges_;
     ScalarPtr l_;
@@ -41,7 +41,10 @@ public:
     static FeaturePtr create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
 
     virtual void build();
+
     virtual void insertrule(parser::ISCADParser& ruleset) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
 };
 
 

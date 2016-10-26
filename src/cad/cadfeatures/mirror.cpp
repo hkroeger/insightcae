@@ -31,49 +31,74 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
+    
+    
 
 defineType(Mirror);
 addToFactoryTable(Feature, Mirror, NoParameters);
 
+
+
+
 Mirror::Mirror(const NoParameters& nop): DerivedFeature(nop)
 {}
+
+
 
 
 Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
 : DerivedFeature(m1), m1_(m1), pl_(pl)
 {}
 
+
+
+
 Mirror::Mirror(FeaturePtr m1, Mirror::Shortcut s)
 : DerivedFeature(m1), m1_(m1), s_(s)
 {}
 
 
+
+
+FeaturePtr Mirror::create ( FeaturePtr m1, DatumPtr pl )
+{
+    return FeaturePtr(new Mirror(m1, pl));
+}
+
+
+
+
+FeaturePtr Mirror::create_short ( FeaturePtr m1, Mirror::Shortcut s )
+{
+    return FeaturePtr(new Mirror(m1, s));
+}
+
+
+
+
 void Mirror::build()
 {
 
-  if (pl_)
-  {
-    if (!pl_->providesPlanarReference())
-      throw insight::Exception("Mirror: planar reference required!");
-    
-    tr_.SetMirror(static_cast<gp_Ax3>(*pl_).Ax2());  
-  }
-  else if (s_==FlipY)
-  {
-    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(0,1,0)));
-  }
-  else if (s_==FlipX)
-  {
-    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(1,0,0)));
-  }
-  else if (s_==FlipXY)
-  {
-    tr_.SetMirror(gp_Ax2(gp_Pnt(0,0,0), gp_Dir(1,1,0)));
-  }
-  
-  setShape(BRepBuilderAPI_Transform(m1_->shape(), tr_).Shape());
-  copyDatumsTransformed(*m1_, tr_);
+    if ( pl_ ) {
+        if ( !pl_->providesPlanarReference() ) {
+            throw insight::Exception ( "Mirror: planar reference required!" );
+        }
+
+        tr_.SetMirror ( static_cast<gp_Ax3> ( *pl_ ).Ax2() );
+    } else if ( s_==FlipY ) {
+        tr_.SetMirror ( gp_Ax2 ( gp_Pnt ( 0,0,0 ), gp_Dir ( 0,1,0 ) ) );
+    } else if ( s_==FlipX ) {
+        tr_.SetMirror ( gp_Ax2 ( gp_Pnt ( 0,0,0 ), gp_Dir ( 1,0,0 ) ) );
+    } else if ( s_==FlipXY ) {
+        tr_.SetMirror ( gp_Ax2 ( gp_Pnt ( 0,0,0 ), gp_Dir ( 1,1,0 ) ) );
+    }
+
+    setShape ( BRepBuilderAPI_Transform ( m1_->shape(), tr_ ).Shape() );
+    copyDatumsTransformed ( *m1_, tr_ );
 }
+
+
+
 
 void Mirror::insertrule(parser::ISCADParser& ruleset) const
 {
@@ -83,7 +108,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(&Mirror::create, qi::_1, qi::_2) ]
       
     ))
   );
@@ -93,7 +118,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipY)) ]
+      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipY) ]
       
     ))
   );
@@ -103,7 +128,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipX)) ]
+      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipX) ]
       
     ))
   );
@@ -113,17 +138,64 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_solidmodel_expression > ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Mirror>(qi::_1, FlipXY)) ]
+      [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipXY) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Mirror::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Mirror",
+            "( <feature:base>, <datum:plane> )",
+            "Mirrors the base feature base over the given datum plane."
+        )
+    )
+    (
+        FeatureCmdInfo
+        (
+            "FlipX",
+            "( <feature> )",
+            "Mirrors the base feature over the YZ plane."
+        )
+    )
+    (
+        FeatureCmdInfo
+        (
+            "FlipY",
+            "( <feature> )",
+            "Mirrors the base feature over the XZ plane."
+        )
+    )
+    (
+        FeatureCmdInfo
+        (
+            "FlipXY",
+            "( <feature> )",
+            "Mirrors the base feature over the diagonal plane with n=[1,1,0]."
+        )
+    )
+    ;
+}
+
+
 
 gp_Trsf Mirror::transformation() const
 {
   checkForBuildDuringAccess();
   return tr_;
 }
+
+
+
+
 
 }
 }

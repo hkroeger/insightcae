@@ -31,30 +31,48 @@ namespace insight {
 namespace cad {
 
 
+    
+    
 defineType(Fillet);
 addToFactoryTable(Feature, Fillet, NoParameters);
 
+
+
+
 Fillet::Fillet(const NoParameters& nop): DerivedFeature(nop)
 {}
+
+  
+  
+  
+  
+Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
+: DerivedFeature(edges->model()), edges_(edges), r_(r)
+{}
+
+
+
+
+FeaturePtr Fillet::create(FeatureSetPtr edges, ScalarPtr r)
+{
+    return FeaturePtr(new Fillet(edges, r));
+}
 
 
 
 void Fillet::build()
 {
-  const Feature& m1=*(edges_->model());
-  m1.unsetLeaf();
-  BRepFilletAPI_MakeFillet fb(m1);
-  BOOST_FOREACH(FeatureID f, edges_->data())
-  {
-    fb.Add(r_->value(), m1.edge(f));
-  }
-  fb.Build();
-  setShape(fb.Shape());
+    const Feature& m1=* ( edges_->model() );
+    m1.unsetLeaf();
+    BRepFilletAPI_MakeFillet fb ( m1 );
+    BOOST_FOREACH ( FeatureID f, edges_->data() ) {
+        fb.Add ( r_->value(), m1.edge ( f ) );
+    }
+    fb.Build();
+    setShape ( fb.Shape() );
 }
-  
-Fillet::Fillet(FeatureSetPtr edges, ScalarPtr r)
-: DerivedFeature(edges->model()), edges_(edges), r_(r)
-{}
+
+
 
 /*! \page Fillet Fillet
   * Create a fillet on an edge.
@@ -72,11 +90,31 @@ void Fillet::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_edgeFeaturesExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
-      [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Fillet>(qi::_1, qi::_2)) ]
+      [ qi::_val = phx::bind(&Fillet::create, qi::_1, qi::_2) ]
       
     ))
   );
 }
+
+
+
+
+FeatureCmdInfoList Fillet::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Fillet",
+         
+            "( <edgesSelection:edges>, <scalar:r> )",
+         
+            "Creates fillets at selected edges of a solid. All edges in the selection set edges are rounded with width r."
+        )
+    );
+}
+
+
 
 }
 }

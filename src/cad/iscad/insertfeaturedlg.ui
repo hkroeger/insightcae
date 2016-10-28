@@ -55,14 +55,24 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
-      <widget class="QLabel" name="label_2">
+      <widget class="QLabel" name="featureNameLabel">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>Feature name</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="featureName"/>
+      <widget class="QLineEdit" name="featureName">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>newFeature</string>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QGroupBox" name="groupBox">
@@ -85,7 +95,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton">
+         <widget class="QRadioButton" name="onlyFeatureCommand">
           <property name="text">
            <string>Insert feature command only</string>
           </property>

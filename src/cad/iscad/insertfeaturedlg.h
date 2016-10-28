@@ -45,6 +45,10 @@ protected slots:
     void onItemSelectionChanged ();
     
    virtual void accept();
+   
+   virtual void onIsIntermediateStepActivated();
+   virtual void onIsFinalComponentActivated();
+   virtual void onOnlyFeatureCommandActivated();
 
 private:
     Ui::InsertFeatureDlg* ui;

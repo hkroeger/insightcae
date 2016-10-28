@@ -69,6 +69,10 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
     connect(ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
     
     connect(ui->featureCmdList, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
+    
+    connect(ui->isIntermediateStep, SIGNAL(clicked()), this, SLOT(onIsIntermediateStepActivated()));
+    connect(ui->isFinalComponent, SIGNAL(clicked()), this, SLOT(onIsFinalComponentActivated()));
+    connect(ui->onlyFeatureCommand, SIGNAL(clicked()), this, SLOT(onOnlyFeatureCommandActivated()));
 }
 
 void InsertFeatureDlg::onItemSelectionChanged ()
@@ -92,6 +96,35 @@ void InsertFeatureDlg::accept()
     if (Entry* e=dynamic_cast<Entry*>(sel))
     {
         insert_string_ = e->command()+e->signaturePlain();
+        
+        QString name = ui->featureName->text();
+        
+        if (ui->isIntermediateStep->isChecked())
+        {
+            insert_string_ = name + "=\n" + insert_string_ + "\n;\n";
+        }
+        else if (ui->isFinalComponent->isChecked())
+        {
+            insert_string_ = name + ":\n" + insert_string_ + "\n;\n";
+        }
     }
     QDialog::accept();
+}
+
+void InsertFeatureDlg::onIsIntermediateStepActivated()
+{
+    ui->featureNameLabel->setEnabled(true);
+    ui->featureName->setEnabled(true);
+}
+
+void InsertFeatureDlg::onIsFinalComponentActivated()
+{
+    ui->featureNameLabel->setEnabled(true);
+    ui->featureName->setEnabled(true);
+}
+
+void InsertFeatureDlg::onOnlyFeatureCommandActivated()
+{
+    ui->featureNameLabel->setEnabled(false);
+    ui->featureName->setEnabled(false);
 }

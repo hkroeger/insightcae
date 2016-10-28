@@ -28,6 +28,9 @@ namespace insight
 namespace cad 
 {
 
+    
+    
+    
 class PointFeatureProp 
 : public insight::cad::Vector
 {
@@ -38,6 +41,9 @@ public:
   PointFeatureProp(FeaturePtr model, const std::string& name);
   virtual arma::mat value() const;
 };
+
+
+
 
 class VectorFeatureProp 
 : public insight::cad::Vector
@@ -51,6 +57,8 @@ public:
 };
 
 
+
+
 class SinglePointCoords 
 : public insight::cad::Vector
 {
@@ -60,6 +68,9 @@ public:
   SinglePointCoords(ConstFeatureSetPtr pfs);
   virtual arma::mat value() const;
 };
+
+
+
 
 class CircleEdgeCenterCoords 
 : public insight::cad::Vector
@@ -71,6 +82,9 @@ public:
   virtual arma::mat value() const;
 };
 
+
+
+
 class DatumPointCoord
 : public insight::cad::Vector
 {
@@ -80,6 +94,9 @@ public:
   DatumPointCoord(ConstDatumPtr pfs);
   virtual arma::mat value() const;
 };
+
+
+
 
 class DatumDir
 : public insight::cad::Vector
@@ -91,6 +108,9 @@ public:
   virtual arma::mat value() const;
 };
 
+
+
+
 class DatumPlaneNormal
 : public insight::cad::Vector
 {
@@ -100,6 +120,9 @@ public:
   DatumPlaneNormal(ConstDatumPtr pfs);
   virtual arma::mat value() const;
 };
+
+
+
 
 class BBMin
 : public insight::cad::Vector
@@ -111,6 +134,9 @@ public:
   virtual arma::mat value() const;
 };
 
+
+
+
 class BBMax
 : public insight::cad::Vector
 {
@@ -120,6 +146,22 @@ public:
   BBMax(FeaturePtr model);
   virtual arma::mat value() const;
 };
+
+
+
+
+class COG
+: public insight::cad::Vector
+{
+  FeaturePtr model_;
+  
+public:
+  COG(FeaturePtr model);
+  virtual arma::mat value() const;
+};
+
+
+
 
 }
 }

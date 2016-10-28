@@ -795,6 +795,9 @@ ISCADParser::ISCADParser(Model* model)
         ( lit("bbmax") >> '(' >> r_solidmodel_expression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<BBMax>(qi::_1)) ]
         |
+        ( lit("cog") >> '(' >> r_solidmodel_expression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<COG>(qi::_1)) ]
+        |
         ( lit("scoord") > '(' >
           r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
                   phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))

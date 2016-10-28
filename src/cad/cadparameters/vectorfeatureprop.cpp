@@ -21,6 +21,9 @@
 #include "datum.h"
 #include "vectorfeatureprop.h"
 
+
+
+
 insight::cad::PointFeatureProp::PointFeatureProp
 (
   insight::cad::FeaturePtr model, 
@@ -29,6 +32,8 @@ insight::cad::PointFeatureProp::PointFeatureProp
 : model_(model),
   name_(name)
 {}
+
+
 
 
 arma::mat insight::cad::PointFeatureProp::value() const
@@ -49,6 +54,8 @@ insight::cad::VectorFeatureProp::VectorFeatureProp
 {}
 
 
+
+
 arma::mat insight::cad::VectorFeatureProp::value() const
 {
   return model_->getDatumVector(name_);
@@ -57,6 +64,9 @@ arma::mat insight::cad::VectorFeatureProp::value() const
 insight::cad::SinglePointCoords::SinglePointCoords(insight::cad::ConstFeatureSetPtr pfs)
 : pfs_(pfs)
 {}
+
+
+
 
 arma::mat insight::cad::SinglePointCoords::value() const
 {
@@ -67,9 +77,15 @@ arma::mat insight::cad::SinglePointCoords::value() const
   return pfs_->model()->vertexLocation(i);
 }
 
+
+
+
 insight::cad::CircleEdgeCenterCoords::CircleEdgeCenterCoords(insight::cad::ConstFeatureSetPtr pfs)
 : pfs_(pfs)
 {}
+
+
+
 
 arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 {
@@ -90,9 +106,13 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
 }
 
 
+
+
 insight::cad::DatumPointCoord::DatumPointCoord(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
+
+
 
 
 arma::mat insight::cad::DatumPointCoord::value() const
@@ -109,9 +129,14 @@ arma::mat insight::cad::DatumPointCoord::value() const
 }
 
 
+
+
 insight::cad::DatumDir::DatumDir(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
+
+
+
 
 arma::mat insight::cad::DatumDir::value() const
 {
@@ -127,9 +152,14 @@ arma::mat insight::cad::DatumDir::value() const
 }
 
 
+
+
 insight::cad::DatumPlaneNormal::DatumPlaneNormal(insight::cad::ConstDatumPtr pfs)
 : pfs_(pfs)
 {}
+
+
+
 
 arma::mat insight::cad::DatumPlaneNormal::value() const
 {
@@ -145,20 +175,47 @@ arma::mat insight::cad::DatumPlaneNormal::value() const
   return vec3(0,0,0);
 }
 
+
+
+
 insight::cad::BBMin::BBMin(FeaturePtr model)
 : model_(model)
 {}
+
+
+
 
 arma::mat insight::cad::BBMin::value() const
 {
   return model_->modelBndBox().col(0);
 }
 
+
+
+
 insight::cad::BBMax::BBMax(FeaturePtr model)
 : model_(model)
 {}
 
+
+
+
 arma::mat insight::cad::BBMax::value() const
 {
   return model_->modelBndBox().col(1);
+}
+
+
+
+
+insight::cad::COG::COG(FeaturePtr model)
+: model_(model)
+{}
+
+
+
+
+arma::mat insight::cad::COG::value() const
+{
+  return model_->modelCoG();
 }

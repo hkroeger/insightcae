@@ -170,6 +170,13 @@ struct ISCADParser
     
 
     ISCADParser(Model* model);
+    
+    void createScalarExpressions();
+    void createVectorExpressions();
+    void createPostProcExpressions();
+    void createFeatureExpressions();
+    void createDatumExpressions();
+    void createSelectionExpressions();
 };
 
 }

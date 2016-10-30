@@ -11,6 +11,12 @@ set(insightcad_SOURCES
   cadpostprocaction.cpp
   dxfwriter.cpp 
   parser.cpp 
+  parser_selectionexpressions.cpp
+  parser_datumexpressions.cpp
+  parser_featureexpressions.cpp
+  parser_postprocexpressions.cpp
+  parser_scalarexpressions.cpp
+  parser_vectorexpressions.cpp
   datum.cpp 
   sketch.cpp 
   geotest.cpp 

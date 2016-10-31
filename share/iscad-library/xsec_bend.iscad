@@ -1,0 +1,13 @@
+
+frontFace ?= Quad(O, 10*EX, 3*EY);
+R ?= 10*EY; # bending radius, vector pointing from face cog to bending center
+phi ?= 90*deg*EX; # bending angle, direction: bending axis
+
+bend:
+Revolution(
+ frontFace,
+ surfcog(frontFace) + R,
+ phi/mag(phi), mag(phi)
+);
+
+backFace = bend.backFace;

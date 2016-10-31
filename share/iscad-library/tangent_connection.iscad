@@ -1,0 +1,15 @@
+frontFace ?= Quad(O, 10*EX, 20*EY);
+backFace ?= Quad(O+10*EZ+4*EY, 3*EX, 7*EY);
+
+normaldir ?= EZ;
+
+x_tan?=0.05;
+delta=cog(backFace)-cog(frontFace);
+
+solid:
+Sweep(
+ frontFace,
+# frontFace << -x_tan*(delta&normaldir)*normaldir,
+# backFace << x_tan*(delta&normaldir)*normaldir,
+ backFace
+);

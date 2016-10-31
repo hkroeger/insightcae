@@ -1,0 +1,19 @@
+
+frontFace ?= Quad(O, 1*EX, 2*EY);
+L ?= 10*EZ;
+phi ?= 90*deg*L/mag(L);
+
+x_tan=0.01;
+
+coff=surfcog(frontFace);
+backFace = Rotate(frontFace, phi, coff) << L;
+extrusion:
+Sweep(
+ frontFace,
+ frontFace << x_tan*L,
+ Rotate(frontFace, 0.25*phi, coff) << 0.25*L, 
+ Rotate(frontFace, 0.5*phi, coff) << 0.5*L, 
+ Rotate(frontFace, 0.75*phi, coff) << 0.75*L, 
+ backFace << -x_tan*L,
+ backFace
+);

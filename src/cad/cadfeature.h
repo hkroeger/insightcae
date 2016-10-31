@@ -304,7 +304,22 @@ public:
   arma::mat faceCoG(FeatureID i) const;
   arma::mat subsolidCoG(FeatureID i) const;
   double subsolidVolume(FeatureID i) const;
+  
+  /**
+   * returns the center of gravity of the shape volume
+   */
   virtual arma::mat modelCoG(double density_ovr=-1.) const;
+  
+  /**
+   * returns the center of gravity of the shape surface
+   */
+  virtual arma::mat surfaceCoG(double areaWeight_ovr=-1.) const;
+
+  /**
+   * returns selected axes of inertia of the model surface only
+   */
+  virtual arma::mat surfaceInertia(int axis=0) const;
+  
   virtual double modelVolume() const;
   virtual double modelSurfaceArea() const;
   virtual double minDist(const arma::mat& p) const;

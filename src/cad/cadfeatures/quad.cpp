@@ -119,8 +119,8 @@ void Quad::build()
 
         setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
 
-        std::cout<<"quad"<<std::endl;
         cache.insert ( shared_from_this() );
+        
     } else {
         this->operator= ( *cache.markAsUsed<Quad> ( hash() ) );
     }

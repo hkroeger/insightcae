@@ -147,6 +147,18 @@ void ISCADParser::createVectorExpressions()
         ( lit("cog") >> '(' >> r_solidmodel_expression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<COG>(qi::_1)) ]
         |
+        ( lit("surfcog") >> '(' >> r_solidmodel_expression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceCOG>(qi::_1)) ]
+        |
+        ( lit("surfinert1") >> '(' >> r_solidmodel_expression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 0)) ]
+        |
+        ( lit("surfinert2") >> '(' >> r_solidmodel_expression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 1)) ]
+        |
+        ( lit("surfinert3") >> '(' >> r_solidmodel_expression >> ')' )
+        [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 2)) ]
+        |
         ( lit("scoord") > '(' >
           r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
                   phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))

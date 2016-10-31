@@ -624,6 +624,41 @@ arma::mat Feature::modelCoG(double density_ovr) const
   return vec3(cog);
 }
 
+arma::mat Feature::surfaceCoG(double areaWeight_ovr) const
+{
+  GProp_GProps props;
+  BRepGProp::SurfaceProperties(shape(), props);
+  gp_Pnt cog = props.CentreOfMass();
+  return insight::vec3( cog.X(), cog.Y(), cog.Z() );
+}
+
+arma::mat Feature::surfaceInertia(int axis) const
+{
+  GProp_GProps props;
+  BRepGProp::SurfaceProperties(shape(), props);
+  GProp_PrincipalProps pcp = props.PrincipalProperties();
+  double ix, iy, iz;
+  pcp.Moments(ix, iy, iz);
+  gp_Vec ax;
+  if (axis==0)
+  {
+      ax=pcp.FirstAxisOfInertia().Normalized()*std::max(1e-9, ix);
+  }
+  else if (axis==1)
+  {
+      ax=pcp.SecondAxisOfInertia().Normalized()*std::max(1e-9, iy);
+  }
+  else if (axis==2)
+  {
+      ax=pcp.ThirdAxisOfInertia().Normalized()*std::max(1e-9, iz);
+  }
+  else
+  {
+      throw insight::Exception(boost::str(boost::format("surfaceInertia: improper selection of axis (%d)!")%axis));
+  }
+  return insight::vec3( ax.X(), ax.Y(), ax.Z() );
+}
+
 double Feature::modelVolume() const
 {
   updateVolProps();

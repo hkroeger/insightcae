@@ -219,3 +219,33 @@ arma::mat insight::cad::COG::value() const
 {
   return model_->modelCoG();
 }
+
+
+
+
+insight::cad::SurfaceCOG::SurfaceCOG(FeaturePtr model)
+: model_(model)
+{}
+
+
+
+
+arma::mat insight::cad::SurfaceCOG::value() const
+{
+  return model_->surfaceCoG();
+}
+
+
+
+
+insight::cad::SurfaceInertiaAxis::SurfaceInertiaAxis(FeaturePtr model, int axis)
+: model_(model), axis_(axis)
+{}
+
+
+
+
+arma::mat insight::cad::SurfaceInertiaAxis::value() const
+{
+  return model_->surfaceInertia(axis_);
+}

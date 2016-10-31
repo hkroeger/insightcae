@@ -163,6 +163,32 @@ public:
 
 
 
+class SurfaceCOG
+: public insight::cad::Vector
+{
+  FeaturePtr model_;
+  
+public:
+  SurfaceCOG(FeaturePtr model);
+  virtual arma::mat value() const;
+};
+
+
+
+
+class SurfaceInertiaAxis
+: public insight::cad::Vector
+{
+  FeaturePtr model_;
+  int axis_;
+  
+public:
+  SurfaceInertiaAxis(FeaturePtr model, int axis);
+  virtual arma::mat value() const;
+};
+
+
+
 }
 }
 

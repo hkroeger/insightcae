@@ -48,15 +48,15 @@ Pipe::Pipe(const NoParameters& nop): Feature(nop)
 
 
 
-Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, bool orient, bool reapprox_spine)
-    : spine_(spine), xsec_(xsec), orient_(orient), reapprox_spine_(reapprox_spine)
+Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)
+    : spine_(spine), xsec_(xsec), orient_(orient), reapprox_spine_(reapprox_spine), fixed_binormal_(fixed_binormal)
 {}
 
 
 
-FeaturePtr Pipe::create(FeaturePtr spine, FeaturePtr xsec, bool orient, bool reapprox_spine)
+FeaturePtr Pipe::create(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)
 {
-    return FeaturePtr(new Pipe(spine, xsec, orient, reapprox_spine));
+    return FeaturePtr(new Pipe(spine, xsec, fixed_binormal, orient, reapprox_spine));
 }
 
 
@@ -92,7 +92,7 @@ void Pipe::build()
     double p1=w.LastParameter();
 
 
-    TopoDS_Shape xsec=xsec_->shape();
+    TopoDS_Shape xsec=BRepTools::OuterWire(TopoDS::Face(xsec_->shape()));
 
     gp_Trsf tr;
 
@@ -117,10 +117,16 @@ void Pipe::build()
     }
     TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
 
-
-    BRepOffsetAPI_MakePipe p(spinew, xsecs);
-
+    BRepOffsetAPI_MakePipeShell p(spinew);
+    p.Add(xsecs);
+    
+    if (fixed_binormal_)
+    {
+        p.SetMode(gp_Dir(to_Vec(fixed_binormal_->value())));
+    }
+    
     p.Build();
+    p.MakeSolid();
     
     providedSubshapes_["frontFace"]=FeaturePtr(new Feature(p.FirstShape()));
     providedSubshapes_["backFace"]=FeaturePtr(new Feature(p.LastShape()));
@@ -140,10 +146,11 @@ void Pipe::insertrule(parser::ISCADParser& ruleset) const
 
                     ( '(' >> ruleset.r_solidmodel_expression >> ','
                       >> ruleset.r_solidmodel_expression
+                      >> ( ( ',' >> qi::lit("fixedbinormal") >> ruleset.r_vectorExpression ) | qi::attr(VectorPtr()) ) 
                       >> ( ( ',' >> qi::lit("orient") >> qi::attr(true) ) | qi::attr(false) ) 
                       >> ( ( ',' >> qi::lit("reapprox") >> qi::attr(true) ) | qi::attr(false) ) 
                       >> ')' )
-                    [ qi::_val = phx::bind(&Pipe::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
+                    [ qi::_val = phx::bind(&Pipe::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
 
                 ))
     );
@@ -159,9 +166,10 @@ FeatureCmdInfoList Pipe::ruleDocumentation() const
         FeatureCmdInfo
         (
             "Pipe",
-            "( <feature:xsec>, <feature:spine> [, orient] [, reapprox] )",
+            "( <feature:xsec>, <feature:spine> [, fixedbinormal <vector>] [, orient] [, reapprox] )",
             "Sweeps the planar section xsec along the curve feature spine."
             " The xsec is expected at global origin [0,0,0] and is moved to the beginning of the spine."
+            " By fixing the binormal direction using keyword fixedbinormal and a fixed direction, problems with erratic twisting of the section on spiral paths can be avoided."
             " By default, the section is not rotated. If keyword reorient is given, the z-axis of the section is aligned with the tangent of the spine."
             " The keyword reapprox triggers an reapproximation of the spine wire into a single b-spline curve (experimental)."
         )

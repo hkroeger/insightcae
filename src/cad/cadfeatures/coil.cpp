@@ -25,6 +25,7 @@
 #include <boost/spirit/include/qi.hpp>
 
 #include "Geom_TrimmedCurve.hxx"
+#include "GC_MakeSegment.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -56,12 +57,15 @@ CoilPath::CoilPath(const NoParameters& nop)
 CoilPath::CoilPath
 (
     ScalarPtr l,
-    ScalarPtr r,
-    ScalarPtr nr,
+    ScalarPtr dcore,
+    ScalarPtr n,
     ScalarPtr d,
-    ScalarPtr R
+    ScalarPtr R,
+    ScalarPtr rmin,
+    ScalarPtr nl,
+    ScalarPtr dr
 )
-: l_(l), r_(r), nr_(nr), d_(d), R_(R)
+: l_(l), dcore_(dcore), n_(n), d_(d), R_(R), rmin_(rmin), nl_(nl), dr_(dr)
 {}
 
 
@@ -70,33 +74,64 @@ CoilPath::CoilPath
 FeaturePtr CoilPath::create
 (
     ScalarPtr l,
-    ScalarPtr r,
-    ScalarPtr nr,
+    ScalarPtr dcore,
+    ScalarPtr n,
     ScalarPtr d,
-    ScalarPtr R
+    ScalarPtr R,
+    ScalarPtr rmin,
+    ScalarPtr nl,
+    ScalarPtr dr
 )
 {
-    return FeaturePtr(new CoilPath(l, r, nr, d, R));
+    return FeaturePtr(new CoilPath(l, dcore, n, d, R, rmin, nl, dr));
 }
 
 
 
 
-Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, double R, gp_Pnt pc, gp_Vec el )
+Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, double R1, double R2, gp_Pnt pc, gp_Vec el, double rmin )
 {
-    Handle_Geom_TrimmedCurve ocrv=GC_MakeArcOfCircle ( p1, n1, p2 ).Value();
+    std::vector<Handle_Geom_Curve> ocrvs;
+    double dist=p1.Distance(p2);
+    gp_Vec eel = gp_Vec(p2.XYZ()-p1.XYZ()).Normalized(); // direction vector p1 => p2
 
-    int n=20;
-    TColgp_Array1OfPnt pts ( 1, n );
-    for ( int i=0; i<n; i++ ) {
-        double c = ( double ( i ) /double ( n-1 ) ) * ( ocrv->LastParameter()-ocrv->FirstParameter() ) + ocrv->FirstParameter();
-        gp_Pnt p=ocrv->Value ( c );
-        gp_Pnt p0cur ( pc.XYZ() + ( ( p.XYZ()-pc.XYZ() ).Dot ( el.XYZ() ) *el.XYZ() ) );
-        gp_Pnt pproj ( p0cur.XYZ() + ( p.XYZ()-p0cur.XYZ() ).Normalized() *R );
-        pts.SetValue ( i+1, pproj );
+    gp_Pnt pe1(p1.Translated(eel*rmin + n1*rmin));
+    gp_Pnt pe2(p2.Translated(-eel*rmin + n1*rmin));
+    
+    ocrvs.push_back(GC_MakeArcOfCircle ( p1, n1, pe1 ).Value());
+    if (dist>2.*rmin)
+    {
+        ocrvs.push_back(GC_MakeSegment(pe1, pe2).Value());
     }
+    ocrvs.push_back(GC_MakeArcOfCircle ( p2, n1, pe2 ).Value()->Reversed());
 
-    GeomAPI_PointsToBSpline ipol ( pts );
+
+    int n=10;
+    TColgp_Array1OfPnt pts ( 1, ocrvs.size()*n - (ocrvs.size()-1));
+    
+    int j=1;
+    for (int l=0; l<ocrvs.size(); l++)
+    {
+        const Handle_Geom_Curve& ocrv = ocrvs[l];
+        for ( int i=0; i<n; i++ ) {
+//             if ( ! ((l>0)&&(l<ocrvs.size()-1)&&((i==0)||(i==n-1))) ) {
+            if ( ! ((l>0)&&((i==0))) ) {
+                double c = ( double ( i ) /double ( n-1 ) ) * ( ocrv->LastParameter() - ocrv->FirstParameter() ) + ocrv->FirstParameter();
+                gp_Pnt p=ocrv->Value ( c );
+                 
+                double x=eel.XYZ().Dot(p.XYZ()-p1.XYZ())/dist; // project on connection line
+                double Rcur=x*R2+(1.-x)*R1;
+                
+                gp_Pnt p0cur ( pc.XYZ() + ( ( p.XYZ()-pc.XYZ() ).Dot ( el.XYZ() ) *el.XYZ() ) );
+                gp_Pnt pproj ( p0cur.XYZ() + ( p.XYZ()-p0cur.XYZ() ).Normalized() *Rcur );
+                pts.SetValue ( j++, pproj );
+                
+                std::cerr<<"j="<<j<<":"<<pproj.X()<<" "<<pproj.Y()<<" "<<pproj.Z()<<std::endl;
+            }
+        }
+    }
+    
+    GeomAPI_PointsToBSpline ipol ( pts, 2, 3 );
     return Handle_Geom_TrimmedCurve ( new Geom_TrimmedCurve ( ipol.Curve(), ipol.Curve()->FirstParameter(), ipol.Curve()->LastParameter() ) );
 }
 
@@ -113,22 +148,52 @@ void CoilPath::build()
     if ( l<=0 ) {
         throw insight::Exception ( str ( format ( "Negative coil length (L=%g) is invalid!" ) %l ) );
     }
-    double r=r_->value();
-    if ( r<=0 ) {
-        throw insight::Exception ( str ( format ( "Negative coil bending radius (r=%g) is invalid!" ) %r ) );
+    
+    double dcore=dcore_->value();
+    if ( dcore<=0 ) {
+        throw insight::Exception ( str ( format ( "Negative coil core width (dcore=%g) is invalid!" ) %dcore ) );
     }
+    
     double d=d_->value();
     if ( d<=0 ) {
         throw insight::Exception ( str ( format ( "Negative conductor distance (d=%g) is invalid!" ) %d ) );
     }
-    double nrd=nr_->value();
+    
+    double nrd=n_->value();
     if ( fabs ( nrd-round ( nrd ) ) > 0 ) {
         throw insight::Exception ( str ( format ( "number of turn has to be integer! (n=%g)" ) %nrd ) );
     }
     int nr=int ( nrd );
+    
     double R=R_->value();
-    if ( r<=0 ) {
+    if ( R<=0 ) {
         throw insight::Exception ( str ( format ( "Negative yoke radius radius (R=%g) is invalid!" ) %R ) );
+    }
+    
+    double rmin=rmin_->value();
+    if ( rmin<=0 ) {
+        throw insight::Exception ( str ( format ( "Negative coil bending radius (rmin=%g) is invalid!" ) %rmin ) );
+    }
+    if ( (dcore - 2*rmin)<0 ) {
+        throw insight::Exception ( str ( format ( "Core width must be larger than 2x coil bending radius (dcore=%g, rmin=%g)!" ) %dcore % rmin ) );
+    }
+        
+    double nld=nl_->value();
+    if ( fabs ( nld-round ( nld ) ) > 0 ) {
+        throw insight::Exception ( str ( format ( "number of layers has to be integer! (n=%g)" ) %nld ) );
+    }
+    int nl=int ( nld );
+    
+    double dr=0.0;
+    if (nl>1)
+    {
+        if ( !dr_ ) {
+            throw insight::Exception ( str ( format ( "Multiple layers were requested (nl=%d) but radial spacing is undefined!" ) %nl ) );
+        }       
+        else
+        {
+            dr=dr_->value();
+        }
     }
 
 #ifndef MCOMP
@@ -149,32 +214,42 @@ void CoilPath::build()
     arma::mat pc=p0-R*er;
     arma::mat L=l*el;
 
-
-//     double deltaL0=0.0;
     arma::mat l_ps_n;
+    double l_R;
+    double curR=R;
+    double direction=1.;
     for ( int j=0; j<nr; j++ ) {
-        double dc=0.5*r + double ( j+1 ) *d; // current distance from CL
-        double phic=::asin ( dc / R );
-        arma::mat ps_p=rotMatrix ( phic, el ) * ( p0+R*er ) - R*er;
-        arma::mat ps_n=rotMatrix ( -phic, el ) * ( p0+R*er ) - R*er;
+        
+        double dc=0.5*dcore + double ( j+1 ) *d; // current distance from CL
+        double rminc = rmin + double ( j+1 ) *d; // current bending radius
+        
+        for (int k=0; k<nl; k++)
+        {
+            if (k>0) curR += direction*dr;
+            double phic=::asin ( dc / curR );
+            arma::mat ps_p=rotMatrix ( phic, el ) * ( p0+curR*er ) - R*er;
+            arma::mat ps_n=rotMatrix ( -phic, el ) * ( p0+curR*er ) - R*er;
 
-        INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( GC_MakeSegment ( to_Pnt ( ps_p ), to_Pnt ( ps_p+L ) ).Value() ).Edge() );
+            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( GC_MakeSegment ( to_Pnt ( ps_p ), to_Pnt ( ps_p+L ) ).Value() ).Edge() );
 
-        if ( j==0 ) {
-            refpoints_["p0"]=ps_p;
-        } else {
-            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p ), to_Vec ( -el ), to_Pnt ( l_ps_n ), R, to_Pnt ( pc ), to_Vec ( el ) ) ) );
+            if ( (j==0) && (k==0) ) {
+                refpoints_["p0"]=ps_p;
+            } else {
+                INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p ), to_Vec ( -el ), to_Pnt ( l_ps_n ), curR, l_R, to_Pnt ( pc ), to_Vec ( el ), rminc ) ) );
+            }
+
+            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p+L ), to_Vec ( el ), to_Pnt ( ps_n+L ), curR, curR, to_Pnt ( pc ), to_Vec ( el ), rminc ) ) );
+
+            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( GC_MakeSegment ( to_Pnt ( ps_n+L ), to_Pnt ( ps_n ) ).Value() ).Edge() );
+
+            if ( (j==nr-1) && (k==nl-1) ) {
+                refpoints_["p1"]=ps_n;
+            }
+
+            l_ps_n=ps_n;
+            l_R=curR;
         }
-
-        INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p+L ), to_Vec ( el ), to_Pnt ( ps_n+L ), R, to_Pnt ( pc ), to_Vec ( el ) ) ) );
-
-        INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( GC_MakeSegment ( to_Pnt ( ps_n+L ), to_Pnt ( ps_n ) ).Value() ).Edge() );
-
-        if ( j==nr-1 ) {
-            refpoints_["p1"]=ps_n;
-        }
-
-        l_ps_n=ps_n;
+        direction*=-1.;
     }
 
 #ifndef MCOMP
@@ -201,9 +276,12 @@ void CoilPath::insertrule ( parser::ISCADParser& ruleset ) const
                       > ruleset.r_scalarExpression > ','
                       > ruleset.r_scalarExpression > ','
                       > ruleset.r_scalarExpression > ','
+                      > ruleset.r_scalarExpression > ','
+                      > ruleset.r_scalarExpression > ','
+                      > ruleset.r_scalarExpression > ',' 
                       > ruleset.r_scalarExpression
                       > ')' )
-                    [ qi::_val = phx::bind ( &CoilPath::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
+                    [ qi::_val = phx::bind ( &CoilPath::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8 ) ]
                 ) )
     );
 }
@@ -219,9 +297,9 @@ FeatureCmdInfoList CoilPath::ruleDocumentation() const
         (
             "CoilPath",
          
-            "( <scalar:l>, <scalar:r>, <scalar:nr>, <scalar:d>, <scalar:R> )",
+            "( <scalar:l>, <scalar:dcore>, <scalar:nr>, <scalar:d>, <scalar:R>, <scalar:rmin>, <scalar:nl>, <scalar:dr> )",
          
-            "Creates a wire which represents the path of a single layer coil in an electric motor. The straight part of the windings has length l, the minimum radius (thus minimum distance between opposed wires) is r, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R.\n\n"
+            "Creates a wire which represents the path of a coil in an electric motor. The straight part of the windings has length l, the core width is dcore, the number of turns nr and the wire distance (approx. equal to wire diameter) is d. The coil is wound on a yoke of radius R. The smallest bending radius is rmin. Multiple radial layers are activated by giving a value for nl. Radial spacing between layers is then dr.\n\n"
             "The motor axis is along EZ while the radial direction is EX."
         )
     );

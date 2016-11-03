@@ -38,14 +38,14 @@ class CoilPath
     ScalarPtr l_;
 
     /**
-     * minimal bending radius = distance between nearest opposite conductors in the center
+     * core width
      */
-    ScalarPtr r_;
+    ScalarPtr dcore_;
 
     /**
      * number of turns
      */
-    ScalarPtr nr_;
+    ScalarPtr n_;
 
     /**
      * distance between two subsequent conductors on the same coil side
@@ -56,14 +56,32 @@ class CoilPath
      * outer yoke radius
      */
     ScalarPtr R_;
+    
+    /**
+     * minimal bending radius
+     */
+    ScalarPtr rmin_;
+
+    /**
+     * number of layers
+     */
+    ScalarPtr nl_;
+
+    /**
+     * distance between two subsequent layers
+     */
+    ScalarPtr dr_;
 
     CoilPath
     (
         ScalarPtr l,
-        ScalarPtr r,
-        ScalarPtr nr,
+        ScalarPtr dcore,
+        ScalarPtr n,
         ScalarPtr d,
-        ScalarPtr R
+        ScalarPtr R,
+        ScalarPtr rmin,
+        ScalarPtr nl = scalarconst(1),
+        ScalarPtr dr = ScalarPtr()
     );
 
 public:
@@ -73,10 +91,13 @@ public:
     static FeaturePtr create
     (
         ScalarPtr l,
-        ScalarPtr r,
-        ScalarPtr nr,
+        ScalarPtr dcore,
+        ScalarPtr n,
         ScalarPtr d,
-        ScalarPtr R
+        ScalarPtr R,
+        ScalarPtr rmin,
+        ScalarPtr nl = scalarconst(1),
+        ScalarPtr dr = ScalarPtr()
     );
 
     virtual void build();

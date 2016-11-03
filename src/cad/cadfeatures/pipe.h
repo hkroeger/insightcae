@@ -35,14 +35,15 @@ class Pipe
     FeaturePtr xsec_;
     bool orient_;
     bool reapprox_spine_;
+    VectorPtr fixed_binormal_;
 
-    Pipe ( FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false );
+    Pipe ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 
 public:
     declareType ( "Pipe" );
     Pipe ( const NoParameters& nop = NoParameters() );
 
-    static FeaturePtr create ( FeaturePtr spine, FeaturePtr xsec, bool orient=false, bool reapprox_spine=false );
+    static FeaturePtr create ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 
     virtual void build();
 

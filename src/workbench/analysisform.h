@@ -24,6 +24,7 @@
 #ifndef Q_MOC_RUN
 #include "base/analysis.h"
 #include "base/resultset.h"
+#include "parametereditorwidget.h"
 #endif
 
 #include <QMdiSubWindow>
@@ -75,6 +76,7 @@ protected:
   QTreeWidget *rt_;
   QTreeWidgetItem* rtroot_;
 
+  ParameterEditorWidget* peditor_;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);

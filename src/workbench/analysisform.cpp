@@ -74,36 +74,11 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
   
 
-//   addWrapperToWidget(parameters_, ui->inputContents, this);
-  QTreeWidgetItem* root=new QTreeWidgetItem(0);
-  root->setText(0, "Parameters");
-  ui->ptree->setColumnCount(2);
-  ui->ptree->setHeaderLabels( QStringList() << "Parameter Name" << "Current Value" );
-  ui->ptree->addTopLevelItem(root);
-
-  DirectoryParameterWrapper *dp = 
-     new DirectoryParameterWrapper
-     ( 
-      ParameterWrapper::ConstrP
-      (
-        root, 
-        "execution directory", 
-        analysis_->executionPathParameter(),
-        ui->inputContents, 
-	this
-      ) 
-    );
-  QObject::connect(ui->ptree, SIGNAL(itemSelectionChanged()),
-	  dp, SLOT(onSelectionChanged()));
-  QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
-  QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
-  
-  addWrapperToWidget(parameters_, root, ui->inputContents, this);
-  
-  ui->ptree->expandAll();
-  ui->ptree->resizeColumnToContents(0);
-  ui->ptree->resizeColumnToContents(1);
-  ui->ptree->setContextMenuPolicy(Qt::CustomContextMenu);
+  peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
+  ui->inputTabLayout->addWidget(peditor_);
+  peditor_->insertParameter("execution directory", analysis_->executionPathParameter());
+  QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));
+  QObject::connect(this, SIGNAL(update()), peditor_, SLOT(onUpdate()));
   
   rtroot_=new QTreeWidgetItem(0);
   rtroot_->setText(0, "Results");

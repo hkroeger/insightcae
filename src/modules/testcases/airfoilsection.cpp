@@ -286,10 +286,10 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+  cm.insert(new simpleFoamNumerics(FVNumericsParameters(cm, simpleFoamNumerics::Parameters()
     .set_purgeWrite(2)
     .set_endTime(5000)
-  )); 
+  ))); 
   
   cm.insert(new forces(cm, forces::Parameters()
     .set_name("foilForces")

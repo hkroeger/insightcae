@@ -107,31 +107,29 @@ QString latex2QtHTML(const std::string& latex, QWidget* container)
 
 void addWrapperToWidget
 (
-  insight::ParameterSet& pset, 
-  QTreeWidgetItem *parentnode, 
-  QWidget *detaileditwidget,
-  QWidget *superform
+    insight::ParameterSet& pset,
+    QTreeWidgetItem *parentnode,
+    QWidget *detaileditwidget,
+    QWidget *superform
 )
 {
 //   QVBoxLayout *vlayout=new QVBoxLayout(widget);
-  for(insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++)
-      {
-	ParameterWrapper *wrapper = 
-	  ParameterWrapper::lookup
-	  (
-	    i->second->type(),
-	    ParameterWrapper::ConstrP(parentnode, i->first.c_str(), *i->second, detaileditwidget, superform)
-	  );
-	  
-	QObject::connect(parentnode->treeWidget(), SIGNAL(itemSelectionChanged()),
-		wrapper, SLOT(onSelectionChanged()));
+    for ( insight::ParameterSet::iterator i=pset.begin(); i!=pset.end(); i++ ) {
+        ParameterWrapper *wrapper =
+            ParameterWrapper::lookup
+            (
+                i->second->type(),
+                ParameterWrapper::ConstrP ( parentnode, i->first.c_str(), *i->second, detaileditwidget, superform )
+            );
+
+        QObject::connect ( parentnode->treeWidget(), SIGNAL ( itemSelectionChanged() ),
+                           wrapper, SLOT ( onSelectionChanged() ) );
 // 	vlayout->addWidget(wrapper);
-	if (superform) 
-	{
-	  QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
-	  QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
-	}
-      }
+        if ( superform ) {
+            QObject::connect ( superform, SIGNAL ( apply() ), wrapper, SLOT ( onApply() ) );
+            QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
+        }
+    }
 }
 
 

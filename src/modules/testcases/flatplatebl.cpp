@@ -524,32 +524,32 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
-    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
-      .set_hasCyclics(true)
-      .set_decompositionMethod("hierarchical")
-      .set_endTime(end_)
+    cm.insert(new simpleFoamNumerics(FVNumericsParameters(cm, simpleFoamNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(uinf_,0,0))
-      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_hasCyclics(true)
+      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
+      .set_endTime(end_)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
-    ));
+      .set_decompWeights(vec3(2,1,0))
+    )));
   } 
   else if (Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
-    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
-      .set_maxDeltaT(0.25*T_)
-      .set_writeControl("adjustableRunTime")
-      .set_writeInterval(0.25*T_)
-      .set_endTime(end_)
-      .set_decompositionMethod("hierarchical")
-      .set_deltaT(1e-3)
+    cm.insert( new pimpleFoamNumerics(FVNumericsParameters(cm, pimpleFoamNumerics::Parameters()
       .set_hasCyclics(true)
       .set_LESfilteredConvection(p.run.filteredconvection)
       .set_Uinternal(vec3(p.operation.uinf,0,0))
-      .set_decompWeights(std::make_tuple(2,1,0))
+      .set_maxDeltaT(0.25*T_)
+      .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
+      .set_writeInterval(0.25*T_)
+      .set_endTime(end_)
+      .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
+      .set_deltaT(1e-3)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
-    ) );
+      .set_decompWeights(vec3(2,1,0))
+    )));
   }
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )

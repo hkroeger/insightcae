@@ -144,10 +144,14 @@ std::vector<int> combinefactors
 
 void setDecomposeParDict
 (
-  OFdicts& dictionaries, int np, const std::string& method, 
-  const std::tuple<int,int,int>& po
+  OFdicts& dictionaries, 
+  int np, 
+  const FVNumerics::Parameters::decompositionMethod_type& method,
+  const arma::mat& pom
 )
 {
+  std::tuple<int,int,int> po(int(pom(0)), int(pom(1)), int(pom(2)));
+    
   OFDictData::dict& decomposeParDict=dictionaries.addDictionaryIfNonexistent("system/decomposeParDict");
  
 // #warning hack for testing
@@ -173,10 +177,13 @@ void setDecomposeParDict
   }
 }
 
+defineType(FVNumerics);
+defineFactoryTable(FVNumerics, FVNumericsParameters);
+defineStaticFunctionTable(FVNumerics, defaultParameters, ParameterSet);
 
-FVNumerics::FVNumerics(OpenFOAMCase& c, Parameters const& p)
-: OpenFOAMCaseElement(c, "FVNumerics"),
-  p_(p),
+FVNumerics::FVNumerics(const FVNumericsParameters& fnp)
+: OpenFOAMCaseElement(fnp.get<0>(), "FVNumerics"),
+  p_(fnp.get<1>()),
   isCompressible_(false)
 {
 }
@@ -186,17 +193,50 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["endTime"]=p_.endTime();
-  controlDict["deltaT"]=p_.deltaT();
-  controlDict["adjustTimeStep"]=p_.adjustTimeStep();
+  controlDict["deltaT"]=p_.deltaT;
+  controlDict["adjustTimeStep"]=p_.adjustTimeStep;
   controlDict["maxCo"]=0.5;
   controlDict["startFrom"]="latestTime";
   controlDict["startTime"]=0.0;
   controlDict["stopAt"]="endTime";
-  controlDict["endTime"]=p_.endTime();
-  controlDict["writeControl"]=p_.writeControl();
-  controlDict["writeInterval"]=p_.writeInterval();
-  controlDict["purgeWrite"]=p_.purgeWrite();
-  controlDict["writeFormat"]=p_.writeFormat();
+  controlDict["endTime"]=p_.endTime;
+  
+  std::string wfc("UNDEFINED");
+  if (p_.writeControl == Parameters::writeControl_type::adjustableRunTime)
+  {
+      wfc="adjustableRunTime";
+  } 
+  else if (p_.writeControl == Parameters::writeControl_type::clockTime)
+  {
+      wfc="clockTime";
+  }
+  else if (p_.writeControl == Parameters::writeControl_type::cpuTime)
+  {
+      wfc="cpuTime";
+  }
+  else if (p_.writeControl == Parameters::writeControl_type::runTime)
+  {
+      wfc="runTime";
+  }
+  else if (p_.writeControl == Parameters::writeControl_type::timeStep)
+  {
+      wfc="timeStep";
+  }
+  controlDict["writeControl"]=wfc;
+  
+  controlDict["writeInterval"]=p_.writeInterval;
+  controlDict["purgeWrite"]=p_.purgeWrite;
+  
+  std::string wfk("UNDEFINED");
+  if (p_.writeFormat == Parameters::writeFormat_type::ascii)
+  {
+      wfk="ascii";
+  } else if (p_.writeFormat == Parameters::writeFormat_type::binary)
+  {
+      wfk="binary";
+  }
+  controlDict["writeFormat"]=wfk;
+  
   controlDict["writePrecision"]=8;
   controlDict["writeCompression"]="compressed";
   controlDict["timeFormat"]="general";
@@ -229,11 +269,17 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fvSchemes.addSubDictIfNonexistent("snGradSchemes");
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
 
-  setDecomposeParDict( dictionaries, p_.np(), p_.decompositionMethod(), p_.decompWeights() );
+  setDecomposeParDict
+  ( 
+    dictionaries, 
+    p_.np, 
+    p_.decompositionMethod, 
+    p_.decompWeights
+  );
 }
 
-FaNumerics::FaNumerics(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "FaNumerics")
+FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
+: OpenFOAMCaseElement(c, "FaNumerics"), p_(p)
 {
 }
 
@@ -342,8 +388,17 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
 }
 
 
-MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p)
+defineType(MeshingNumerics);
+addToFactoryTable(FVNumerics, MeshingNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, MeshingNumerics, defaultParameters);
+
+MeshingNumerics::MeshingNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp)
+{
+}
+
+MeshingNumerics::MeshingNumerics(OpenFOAMCase& c)
+: FVNumerics(FVNumericsParameters(c, Parameters()))
 {
 }
 
@@ -421,17 +476,36 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";
   
-  setDecomposeParDict(dictionaries, p_.np(), "hierarchical", p_.decompWeights() );
+  setDecomposeParDict(dictionaries, p_.np, FVNumerics::Parameters::decompositionMethod_type::hierarchical, p_.decompWeights );
 }
 
-simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
+
+ParameterSet MeshingNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+defineType(simpleFoamNumerics);
+addToFactoryTable(FVNumerics, simpleFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, simpleFoamNumerics, defaultParameters);
+
+simpleFoamNumerics::simpleFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
+}
+
+simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal()), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal().begin(), p_.Uinternal().end()), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
- 
+
 void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   FVNumerics::addIntoDictionaries(dictionaries);
@@ -494,7 +568,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SIMPLE["pRefCell"]=0;
   SIMPLE["pRefValue"]=0.0;
   
-  if ( (OFversion()>=210) && p_.checkResiduals() )
+  if ( (OFversion()>=210) && p_.checkResiduals )
   {
     OFDictData::dict resCtrl;
     resCtrl["p"]=1e-4;
@@ -514,7 +588,7 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
 //   std::string bgrads="leastSquares2"; 
   std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !p_.hasCyclics() ) bgrads="pointCellsLeastSquares";
+  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
   
   grad["default"]=bgrads;
   grad["grad(p)"]="Gauss linear";
@@ -556,13 +630,32 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
-pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
+ParameterSet simpleFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+defineType(pimpleFoamNumerics);
+addToFactoryTable(FVNumerics, pimpleFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, pimpleFoamNumerics, defaultParameters);
+
+pimpleFoamNumerics::pimpleFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
+}
+
+pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal()), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal().begin(), p_.Uinternal().end()), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
+
  
 void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -572,8 +665,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="pimpleFoam";
-  controlDict["maxCo"]=p_.maxCo();
-  controlDict["maxDeltaT"]=p_.maxDeltaT();
+  controlDict["maxCo"]=p_.maxCo;
+  controlDict["maxDeltaT"]=p_.maxDeltaT;
   
   // ============ setup fvSolution ================================
   
@@ -595,16 +688,16 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors();
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
+  PIMPLE["nCorrectors"]=p_.nCorrectors;
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   PIMPLE["pRefCell"]=0;
   PIMPLE["pRefValue"]=0.0;
   
   // ============ setup fvSchemes ================================
   
   // check if LES required
-  bool LES=p_.forceLES();
+  bool LES=p_.forceLES;
   try 
   {
     const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
@@ -630,7 +723,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !(p_.hasCyclics())) bgrads="pointCellsLeastSquares";
+  if ( (OFversion()>=220) && !(p_.hasCyclics)) bgrads="pointCellsLeastSquares";
   grad["default"]="cellLimited "+bgrads+" 1";
   grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
@@ -639,7 +732,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (p_.nOuterCorrectors()>1)
+  if (p_.nOuterCorrectors>1)
   {
     // SIMPLE mode: add underrelaxation
     OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -671,7 +764,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     /*if (OFversion()>=220)
       div["div(phi,U)"]="Gauss LUST grad(U)";
     else*/
-    if (p_.LESfilteredConvection())
+    if (p_.LESfilteredConvection)
       div["div(phi,U)"]="Gauss filteredLinear";
     else
       div["div(phi,U)"]="Gauss linear";
@@ -716,14 +809,35 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
+ParameterSet pimpleFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
 
-potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
+defineType(potentialFreeSurfaceFoamNumerics);
+addToFactoryTable(FVNumerics, potentialFreeSurfaceFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, potentialFreeSurfaceFoamNumerics, defaultParameters);
+
+
+potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  
+  if (OFversion()<230)
+    throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
+}
+
+potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  c.addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
   
   if (OFversion()<230)
     throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
@@ -737,8 +851,8 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="potentialFreeSurfaceFoam";
-  controlDict["maxCo"]=p_.maxCo();
-  controlDict["maxDeltaT"]=p_.maxDeltaT();
+  controlDict["maxCo"]=p_.maxCo;
+  controlDict["maxDeltaT"]=p_.maxDeltaT;
     
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
@@ -769,9 +883,9 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors();
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
+  PIMPLE["nCorrectors"]=p_.nCorrectors;
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   PIMPLE["pRefCell"]=0;
   PIMPLE["pRefValue"]=0.0;
   
@@ -792,7 +906,7 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (p_.nOuterCorrectors()>1)
+  if (p_.nOuterCorrectors>1)
   {
     // SIMPLE mode: add underrelaxation
     OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -841,9 +955,23 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   fluxRequired["p_gh"]="";
 }
 
+ParameterSet potentialFreeSurfaceFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+defineType(simpleDyMFoamNumerics);
+addToFactoryTable(FVNumerics, simpleDyMFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, simpleDyMFoamNumerics, defaultParameters);
+
+
+simpleDyMFoamNumerics::simpleDyMFoamNumerics(const FVNumericsParameters& fnp)
+: simpleFoamNumerics(fnp),
+  p_(fnp.get<1>())
+{}
 
 simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: simpleFoamNumerics(c, p),
+: simpleFoamNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {}
  
@@ -855,25 +983,45 @@ void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="simpleDyMFoam";
-  controlDict["writeInterval"]=OFDictData::data( p_.FEMinterval() );
+  controlDict["writeInterval"]=OFDictData::data( p_.FEMinterval );
   
   // ============ setup fvSolution ================================
   
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
   SIMPLE["startTime"]=OFDictData::data( 0.0 );
-  SIMPLE["timeInterval"]=OFDictData::data( p_.FEMinterval() );
+  SIMPLE["timeInterval"]=OFDictData::data( p_.FEMinterval );
   
 }
 
+ParameterSet simpleDyMFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
 
-cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
+
+
+defineType(cavitatingFoamNumerics);
+addToFactoryTable(FVNumerics, cavitatingFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, cavitatingFoamNumerics, defaultParameters);
+
+
+cavitatingFoamNumerics::cavitatingFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb), volField ) );
+}
+
+cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {
-  c.addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb()), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb()), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb), volField ) );
 }
  
 void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -883,7 +1031,7 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName();
+  controlDict["application"]=p_.solverName;
   controlDict["maxCo"]=0.5;
   controlDict["maxAcousticCo"]=50.;
   
@@ -938,12 +1086,20 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["rho"]="";
 }
 
-interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
-  p_(p)
+ParameterSet cavitatingFoamNumerics::defaultParameters()
 {
-  
-  c.setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
+    return Parameters::makeDefault();
+}
+
+
+
+defineType(interFoamNumerics);
+addToFactoryTable(FVNumerics, interFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, interFoamNumerics, defaultParameters);
+
+void interFoamNumerics::init()
+{
+  OFcase().setRequiredMapMethod(OpenFOAMCase::cellVolumeWeightMapMethod);
   
   if (OFversion()<=160)
     pname_="pd";
@@ -955,11 +1111,25 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, Parameters const& p)
     alphaname_="alpha.phase1";
   
   // create pressure field to enable mapping from single phase cases
-  c.addField("p", 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  OFcase().addField("p", 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
   
-  c.addField(pname_, 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
-  c.addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
+  OFcase().addField(pname_, 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  OFcase().addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
+}
+
+interFoamNumerics::interFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+    init();
+}
+
+interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
+  p_(p)
+{
+    init();
 }
 
 const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
@@ -977,7 +1147,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["maxDeltaT"]=1.0;
   controlDict["maxCo"]=0.4;
   controlDict["maxAlphaCo"]=0.2;
-  if (p_.implicitPressureCorrection())
+  if (p_.implicitPressureCorrection)
   {
     controlDict["maxCo"]=10;
     controlDict["maxAlphaCo"]=5;
@@ -1031,7 +1201,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
   double Urelax=0.7, prelax=1.0, turbrelax=0.95;
-  if (p_.implicitPressureCorrection())
+  if (p_.implicitPressureCorrection)
   {
     prelax=0.3;
     turbrelax=0.9;
@@ -1066,10 +1236,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nCorrectors"]=2;
   SOL["nOuterCorrectors"]=1;
   
-  if (p_.implicitPressureCorrection())
+  if (p_.implicitPressureCorrection)
   {
     SOL["nCorrectors"]=1;
-    SOL["nOuterCorrectors"]=p_.nOuterCorrectors();
+    SOL["nOuterCorrectors"]=p_.nOuterCorrectors;
     
     OFDictData::dict tol;
     tol["tolerance"]=1e-4;
@@ -1146,6 +1316,13 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired[alphaname_]="";
 }
 
+
+ParameterSet interFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
 OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
 {
   OFDictData::dict d;
@@ -1169,8 +1346,20 @@ OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
   return d;
 }
 
-LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: interFoamNumerics(c, p)
+
+
+defineType(LTSInterFoamNumerics);
+addToFactoryTable(FVNumerics, LTSInterFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, LTSInterFoamNumerics, defaultParameters);
+
+
+LTSInterFoamNumerics::LTSInterFoamNumerics(const FVNumericsParameters& fnp)
+: interFoamNumerics(fnp)
+{
+}
+
+LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: interFoamNumerics(FVNumericsParameters(c, p))
 {
 }
 
@@ -1226,8 +1415,25 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 }
 
-interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: interFoamNumerics(c, p),
+ParameterSet LTSInterFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+defineType(interPhaseChangeFoamNumerics);
+addToFactoryTable(FVNumerics, interPhaseChangeFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, interPhaseChangeFoamNumerics, defaultParameters);
+
+
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(const FVNumericsParameters& fnp)
+: interFoamNumerics(fnp),
+  p_(fnp.get<1>())
+{
+}
+
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: interFoamNumerics(FVNumericsParameters(c, p)),
   p_(p)
 {
 }
@@ -1239,7 +1445,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName();
+  controlDict["application"]=p_.solverName;
 
   // ============ setup controlDict ================================
 
@@ -1247,7 +1453,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
   controlDict["maxCo"]=0.4;
   controlDict["maxAlphaCo"]=0.2;
-  if (p_.implicitPressureCorrection())
+  if (p_.implicitPressureCorrection)
   {
     controlDict["maxCo"]=5;
     controlDict["maxAlphaCo"]=2.5;
@@ -1264,18 +1470,42 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
 
 }
 
-reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(c, p),
-  p_(p)
+ParameterSet interPhaseChangeFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+defineType(reactingFoamNumerics);
+addToFactoryTable(FVNumerics, reactingFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, reactingFoamNumerics, defaultParameters);
+
+
+void reactingFoamNumerics::init()
 {
   isCompressible_=true;
   
   if (OFversion() < 230)
     throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
   
-  c.addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(1e5), volField ) );
-  c.addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  c.addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(1e5), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+}
+
+
+reactingFoamNumerics::reactingFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+    init();
+}
+
+reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
+  p_(p)
+{
+  init();
 }
 
 void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -1286,8 +1516,8 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["application"]="reactingFoam";
-  controlDict["maxCo"]=p_.maxCo();
-  controlDict["maxDeltaT"]=p_.maxDeltaT();
+  controlDict["maxCo"]=p_.maxCo;
+  controlDict["maxDeltaT"]=p_.maxDeltaT;
   
   // ============ setup fvSolution ================================
   
@@ -1314,16 +1544,16 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["Yi"]=stdAsymmSolverSetup(1e-8, 0);
 
   OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors();
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors();
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors();
+  PIMPLE["nCorrectors"]=p_.nCorrectors;
+  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
   PIMPLE["pRefCell"]=0;
   PIMPLE["pRefValue"]=1e5;
   
   // ============ setup fvSchemes ================================
   
   // check if LES required
-  bool LES=p_.forceLES();
+  bool LES=p_.forceLES;
   try 
   {
     const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
@@ -1352,7 +1582,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (p_.nOuterCorrectors()>1)
+  if (p_.nOuterCorrectors>1)
   {
     // SIMPLE mode: add underrelaxation
     OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -1419,10 +1649,25 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fluxRequired["p"]="";
 }
 
-reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: reactingFoamNumerics(c, p)
+ParameterSet reactingFoamNumerics::defaultParameters()
 {
+    return Parameters::makeDefault();
+}
 
+
+defineType(reactingParcelFoamNumerics);
+addToFactoryTable(FVNumerics, reactingParcelFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, reactingParcelFoamNumerics, defaultParameters);
+
+
+reactingParcelFoamNumerics::reactingParcelFoamNumerics(const FVNumericsParameters& fnp)
+: reactingFoamNumerics(fnp)
+{
+}
+
+reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: reactingFoamNumerics(FVNumericsParameters(c, p))
+{
 }
 
 void reactingParcelFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -1430,10 +1675,14 @@ void reactingParcelFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) cons
   reactingFoamNumerics::addIntoDictionaries(dictionaries);
 }
 
+ParameterSet reactingParcelFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
 
 
-FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c)
-: FaNumerics(c)
+FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c, const ParameterSet& p)
+: FaNumerics(c), p_(p)
 {
   //c.addField("displacement", FieldInfo(vectorField, 	dimLength, 	list_of(0.0)(0.0)(0.0), volField ) );
 }
@@ -1471,13 +1720,31 @@ void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictiona
 
 }
 
-magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, Parameters const& p)
-: FVNumerics(c, p),
-  p_(p)
+
+
+defineType(magneticFoamNumerics);
+addToFactoryTable(FVNumerics, magneticFoamNumerics, FVNumericsParameters);
+addToStaticFunctionTable(FVNumerics, magneticFoamNumerics, defaultParameters);
+
+void magneticFoamNumerics::init()
 {
-  c.addField("psi", FieldInfo(scalarField, 	dimCurrent, 	list_of(0.0), volField ) );
+  OFcase().addField("psi", FieldInfo(scalarField, 	dimCurrent, 	list_of(0.0), volField ) );
+}
+
+magneticFoamNumerics::magneticFoamNumerics(const FVNumericsParameters& fnp)
+: FVNumerics(fnp),
+  p_(fnp.get<1>())
+{
+  init();
 }
  
+magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const Parameters& p)
+: FVNumerics(FVNumericsParameters(c, p)),
+  p_(p)
+{
+  init();
+}
+
 void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   FVNumerics::addIntoDictionaries(dictionaries);
@@ -1485,7 +1752,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]=p_.solverName();
+  controlDict["application"]=p_.solverName;
   
   controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
@@ -1579,6 +1846,12 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   transportProperties.addListIfNonexistent("magnets");
 
 }
+
+ParameterSet magneticFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
 
 }
 

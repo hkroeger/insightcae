@@ -150,7 +150,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     boost::filesystem::path casedir=to.parent_path();
     std::cout<<"Creating case skeleton in "<<casedir<<endl;
     OpenFOAMCase cm(*env);
-    cm.insert(new MeshingNumerics(cm));
+    cm.insert(new MeshingNumerics(FVNumericsParameters(cm, MeshingNumerics::Parameters())));
     cm.createOnDisk(casedir);
   }
   

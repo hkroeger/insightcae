@@ -130,7 +130,7 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OF
 	+"\nIt will be recreated but the directional preferences cannot be taken into account.\n"
 	"Correct this by setting the np parameter in FVNumerics during case creation properly."
       );
-      setDecomposeParDict(*dicts, np, "scotch");
+      setDecomposeParDict(*dicts, np, FVNumerics::Parameters::decompositionMethod_type::scotch);
     }
   }
 }

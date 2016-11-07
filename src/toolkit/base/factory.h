@@ -92,7 +92,6 @@ public:
    return toc; \
  }
 
-
 #define addToFactoryTable(baseT, specT, paramS) \
 static struct add##specT##To##baseT##FactoryTable \
 {\
@@ -123,6 +122,35 @@ static struct add##specT##To##baseT##FactoryTable \
     }\
   }\
 } v_add##specT##To##baseT##FactoryTable;
+
+
+#define declareStaticFunctionTable(Name, ReturnT) \
+ typedef ReturnT (*Name##Ptr)(void); \
+ typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
+ static Name##FunctionTable Name##Functions_; \
+ static ReturnT Name(const std::string& key);
+ 
+
+#define defineStaticFunctionTable(baseT, Name, ReturnT) \
+ baseT::Name##FunctionTable baseT::Name##Functions_; \
+ ReturnT baseT::Name(const std::string& key) \
+ { \
+   baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_.find(key); \
+  if (i==baseT::Name##Functions_.end()) \
+    throw insight::Exception("Could not lookup static function for class "+key+" in table of type " +#baseT); \
+  return (*i->second)(); \
+ }
+ 
+#define addToStaticFunctionTable(baseT, specT, Name) \
+static struct add##specT##To##baseT##Name##FunctionTable \
+{\
+  add##specT##To##baseT##Name##FunctionTable()\
+  {\
+    std::string key(specT::typeName); \
+    baseT::Name##Functions_[key]=&specT::Name;\
+  }\
+} v_add##specT##To##baseT##Name##FunctionTable;
+
 
 }
 

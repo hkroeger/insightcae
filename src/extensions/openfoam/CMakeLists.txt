@@ -45,3 +45,5 @@ add_subdirectory(mappedWithSwirl)
 add_subdirectory(globalPatch)
 add_subdirectory(setProfile)
 add_subdirectory(constantPressureGradient)
+
+add_subdirectory(isutils/isofCreateNumerics)

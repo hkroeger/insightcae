@@ -59,12 +59,12 @@ namespace cad
     
     
 defineType(Arc);
-addToFactoryTable(Feature, Arc, NoParameters);
+addToFactoryTable(Feature, Arc);
 
 
 
-Arc::Arc(const NoParameters& nop)
-: Feature(nop)
+Arc::Arc()
+: Feature()
 {
 }
 

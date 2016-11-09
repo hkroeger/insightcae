@@ -50,7 +50,7 @@ class CircularPattern
 
 public:
     declareType("CircularPattern");
-    CircularPattern(const NoParameters& nop = NoParameters());
+    CircularPattern();
 
     static FeaturePtr create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     static FeaturePtr create(FeaturePtr m1, FeaturePtr otherpat);

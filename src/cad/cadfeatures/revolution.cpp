@@ -34,12 +34,12 @@ namespace cad {
     
   
 defineType(Revolution);
-addToFactoryTable(Feature, Revolution, NoParameters);
+addToFactoryTable(Feature, Revolution);
 
 
 
 
-Revolution::Revolution(const NoParameters& nop): Feature(nop)
+Revolution::Revolution(): Feature()
 {}
 
 

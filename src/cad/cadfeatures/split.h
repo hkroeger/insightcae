@@ -33,7 +33,7 @@ class Split
   
 public:
   declareType("Split");
-  Split(const NoParameters& nop = NoParameters());
+  Split();
   Split(FeaturePtr source, FeaturePtr target);
   
   virtual void build();

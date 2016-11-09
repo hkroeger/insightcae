@@ -42,9 +42,9 @@ class ResultElementWrapper
   Q_OBJECT
   
 public:
-  typedef boost::tuple<QTreeWidgetItem *, const QString&, insight::ResultElement&> ConstrP;
+//   typedef boost::tuple<QTreeWidgetItem *, const QString&, insight::ResultElement&> ConstrP;
   
-  declareFactoryTable(ResultElementWrapper, ResultElementWrapper::ConstrP);  
+  declareFactoryTable(ResultElementWrapper, LIST(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res), LIST(tree, name, res));  
 
 protected:
   QString name_;
@@ -52,7 +52,7 @@ protected:
   
 public:
   declareType("ResultElementWrapper");
-  ResultElementWrapper(const ConstrP& p);
+  ResultElementWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   virtual ~ResultElementWrapper();
 };
 
@@ -64,7 +64,7 @@ protected:
   QLabel *le_;
 public:
   declareType(insight::Comment::typeName_());
-  CommentWrapper(const ConstrP& p);
+  CommentWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::Comment& res() { return dynamic_cast<insight::Comment&>(p_); }
 };
 
@@ -76,7 +76,7 @@ protected:
   QLabel *le_;
 public:
   declareType(insight::ScalarResult::typeName_());
-  ScalarResultWrapper(const ConstrP& p);
+  ScalarResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ScalarResult& res() { return dynamic_cast<insight::ScalarResult&>(p_); }
 };
 
@@ -89,7 +89,7 @@ protected:
 public:
   declareType(insight::ResultSection::typeName_());
   
-  ResultSectionWrapper(const ConstrP& p);
+  ResultSectionWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ResultSection& res() { return dynamic_cast<insight::ResultSection&>(p_); }
 };
 
@@ -102,7 +102,7 @@ protected:
 public:
   declareType(insight::ResultSet::typeName_());
   
-  ResultSetWrapper(const ConstrP& p);
+  ResultSetWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::ResultSet& res() { return dynamic_cast<insight::ResultSet&>(p_); }
 };
 
@@ -114,7 +114,7 @@ protected:
   QLabel *le_;
 public:
   declareType(insight::Image::typeName_());
-  ImageWrapper(const ConstrP& p);
+  ImageWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::Image& res() { return dynamic_cast<insight::Image&>(p_); }
 };
 
@@ -127,7 +127,7 @@ protected:
   QLabel *le_;
 public:
   declareType(insight::Chart::typeName_());
-  ChartWrapper(const ConstrP& p);
+  ChartWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   ~ChartWrapper();
   inline insight::Chart& res() { return dynamic_cast<insight::Chart&>(p_); }
 };
@@ -140,7 +140,7 @@ protected:
   QTableWidget *le_;
 public:
   declareType(insight::TabularResult::typeName_());
-  TabularResultWrapper(const ConstrP& p);
+  TabularResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::TabularResult& res() { return dynamic_cast<insight::TabularResult&>(p_); }
 };
 
@@ -152,7 +152,7 @@ protected:
   QTableWidget *le_;
 public:
   declareType(insight::AttributeTableResult::typeName_());
-  AttributeTableResultWrapper(const ConstrP& p);
+  AttributeTableResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res);
   inline insight::AttributeTableResult& res() { return dynamic_cast<insight::AttributeTableResult&>(p_); }
 };
 

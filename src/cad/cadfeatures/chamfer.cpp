@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(Chamfer);
-addToFactoryTable(Feature, Chamfer, NoParameters);
+addToFactoryTable(Feature, Chamfer);
 
 
 
 
-Chamfer::Chamfer(const NoParameters& nop): DerivedFeature(nop)
+Chamfer::Chamfer(): DerivedFeature()
 {}
 
 

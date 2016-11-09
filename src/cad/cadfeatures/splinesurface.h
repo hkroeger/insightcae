@@ -37,7 +37,7 @@ class SplineSurface
 
 public:
     declareType ( "SplineSurface" );
-    SplineSurface ( const NoParameters& nop = NoParameters() );
+    SplineSurface ();
 
     static FeaturePtr create ( const std::vector<std::vector<VectorPtr> >& pts );
 

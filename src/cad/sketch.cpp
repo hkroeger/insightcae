@@ -313,10 +313,10 @@ TopoDS_Wire DXFReader::Wire(double tol) const
 // }
 
 defineType(Sketch);
-addToFactoryTable(Feature, Sketch, NoParameters);
+addToFactoryTable(Feature, Sketch);
 
-Sketch::Sketch(const NoParameters& nop)
-: Feature(nop)
+Sketch::Sketch()
+: Feature()
 {}
 
 

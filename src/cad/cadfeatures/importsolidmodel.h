@@ -38,7 +38,7 @@ class Import
 
 public:
     declareType ( "Import" );
-    Import ( const NoParameters& nop = NoParameters() );
+    Import ();
     
     static FeaturePtr create ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
 

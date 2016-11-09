@@ -33,9 +33,9 @@ namespace cad {
 
 
 defineType(Split);
-addToFactoryTable(Feature, Split, NoParameters);
+addToFactoryTable(Feature, Split);
 
-Split::Split(const NoParameters& nop): DerivedFeature(nop)
+Split::Split(): DerivedFeature()
 {}
 
 

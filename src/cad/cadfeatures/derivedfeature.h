@@ -37,7 +37,7 @@ class DerivedFeature
 public:
   declareType("DerivedFeature");
   
-  DerivedFeature(const NoParameters& nop = NoParameters());
+  DerivedFeature();
   DerivedFeature(ConstFeaturePtr basefeat);
   
   inline void setBaseFeat(ConstFeaturePtr basefeat) { basefeat_=basefeat; }

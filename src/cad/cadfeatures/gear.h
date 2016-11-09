@@ -41,7 +41,7 @@ class ExternalGear
 
 public:
     declareType ( "ExternalGear" );
-    ExternalGear ( const NoParameters& nop = NoParameters() );
+    ExternalGear ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z );
 

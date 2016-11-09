@@ -37,7 +37,7 @@ class SplineCurve
 
 public:
     declareType ( "SplineCurve" );
-    SplineCurve ( const NoParameters& nop = NoParameters() );
+    SplineCurve ();
 
     static FeaturePtr create ( const std::vector<VectorPtr>& pts );
 

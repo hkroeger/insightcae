@@ -178,12 +178,10 @@ void setDecomposeParDict
 }
 
 defineType(FVNumerics);
-defineFactoryTable(FVNumerics, FVNumericsParameters);
-defineStaticFunctionTable(FVNumerics, defaultParameters, ParameterSet);
 
-FVNumerics::FVNumerics(const FVNumericsParameters& fnp)
-: OpenFOAMCaseElement(fnp.get<0>(), "FVNumerics"),
-  p_(fnp.get<1>()),
+FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, "FVNumerics"),
+  p_(ps),
   isCompressible_(false)
 {
 }
@@ -278,6 +276,9 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   );
 }
 
+
+
+
 FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
 : OpenFOAMCaseElement(c, "FaNumerics"), p_(p)
 {
@@ -299,6 +300,9 @@ void FaNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   faSchemes.addSubDictIfNonexistent("snGradSchemes");
   faSchemes.addSubDictIfNonexistent("fluxRequired");
 }
+
+
+
 
 tetFemNumerics::tetFemNumerics(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "tetFemNumerics")
@@ -388,17 +392,14 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
 }
 
 
+
+
 defineType(MeshingNumerics);
-addToFactoryTable(FVNumerics, MeshingNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, MeshingNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, MeshingNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, MeshingNumerics, defaultParameters);
 
-MeshingNumerics::MeshingNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp)
-{
-}
-
-MeshingNumerics::MeshingNumerics(OpenFOAMCase& c)
-: FVNumerics(FVNumericsParameters(c, Parameters()))
+MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps)
 {
 }
 
@@ -486,25 +487,20 @@ ParameterSet MeshingNumerics::defaultParameters()
 }
 
 
+
+
 defineType(simpleFoamNumerics);
-addToFactoryTable(FVNumerics, simpleFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, simpleFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, simpleFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, simpleFoamNumerics, defaultParameters);
 
-simpleFoamNumerics::simpleFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
 
-simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-}
 
 void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -636,25 +632,20 @@ ParameterSet simpleFoamNumerics::defaultParameters()
 }
 
 
+
+
 defineType(pimpleFoamNumerics);
-addToFactoryTable(FVNumerics, pimpleFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, pimpleFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, pimpleFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, pimpleFoamNumerics, defaultParameters);
 
-pimpleFoamNumerics::pimpleFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
 
-pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-}
 
  
 void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -814,14 +805,17 @@ ParameterSet pimpleFoamNumerics::defaultParameters()
     return Parameters::makeDefault();
 }
 
+
+
+
 defineType(potentialFreeSurfaceFoamNumerics);
-addToFactoryTable(FVNumerics, potentialFreeSurfaceFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, potentialFreeSurfaceFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, potentialFreeSurfaceFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, potentialFreeSurfaceFoamNumerics, defaultParameters);
 
 
-potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
   OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
@@ -831,18 +825,7 @@ potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(const FVNumer
     throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
 }
 
-potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  
-  if (OFversion()<230)
-    throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
-}
- 
+
 void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   FVNumerics::addIntoDictionaries(dictionaries);
@@ -960,20 +943,19 @@ ParameterSet potentialFreeSurfaceFoamNumerics::defaultParameters()
     return Parameters::makeDefault();
 }
 
+
+
+
 defineType(simpleDyMFoamNumerics);
-addToFactoryTable(FVNumerics, simpleDyMFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, simpleDyMFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, simpleDyMFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, simpleDyMFoamNumerics, defaultParameters);
 
 
-simpleDyMFoamNumerics::simpleDyMFoamNumerics(const FVNumericsParameters& fnp)
-: simpleFoamNumerics(fnp),
-  p_(fnp.get<1>())
+simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: simpleFoamNumerics(c, ps),
+  p_(ps)
 {}
 
-simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: simpleFoamNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{}
  
 void simpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1002,27 +984,19 @@ ParameterSet simpleDyMFoamNumerics::defaultParameters()
 
 
 defineType(cavitatingFoamNumerics);
-addToFactoryTable(FVNumerics, cavitatingFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, cavitatingFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, cavitatingFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, cavitatingFoamNumerics, defaultParameters);
 
 
-cavitatingFoamNumerics::cavitatingFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
   OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb), volField ) );
 }
 
-cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb), volField ) );
-}
  
 void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1093,9 +1067,10 @@ ParameterSet cavitatingFoamNumerics::defaultParameters()
 
 
 
+
 defineType(interFoamNumerics);
-addToFactoryTable(FVNumerics, interFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, interFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, interFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, interFoamNumerics, defaultParameters);
 
 void interFoamNumerics::init()
 {
@@ -1118,19 +1093,13 @@ void interFoamNumerics::init()
   OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
 }
 
-interFoamNumerics::interFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
     init();
 }
 
-interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-    init();
-}
 
 const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
 const double icAlpha=0.1;
@@ -1348,20 +1317,17 @@ OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
 
 
 
+
 defineType(LTSInterFoamNumerics);
-addToFactoryTable(FVNumerics, LTSInterFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, LTSInterFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, LTSInterFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, LTSInterFoamNumerics, defaultParameters);
 
 
-LTSInterFoamNumerics::LTSInterFoamNumerics(const FVNumericsParameters& fnp)
-: interFoamNumerics(fnp)
+LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: interFoamNumerics(c, ps)
 {
 }
 
-LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: interFoamNumerics(FVNumericsParameters(c, p))
-{
-}
 
 void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1421,22 +1387,19 @@ ParameterSet LTSInterFoamNumerics::defaultParameters()
 }
 
 
+
+
 defineType(interPhaseChangeFoamNumerics);
-addToFactoryTable(FVNumerics, interPhaseChangeFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, interPhaseChangeFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, interPhaseChangeFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, interPhaseChangeFoamNumerics, defaultParameters);
 
 
-interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(const FVNumericsParameters& fnp)
-: interFoamNumerics(fnp),
-  p_(fnp.get<1>())
+interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: interFoamNumerics(c, ps),
+  p_(ps)
 {
 }
 
-interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: interFoamNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-}
  
 void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1476,9 +1439,11 @@ ParameterSet interPhaseChangeFoamNumerics::defaultParameters()
 }
 
 
+
+
 defineType(reactingFoamNumerics);
-addToFactoryTable(FVNumerics, reactingFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, reactingFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, reactingFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, reactingFoamNumerics, defaultParameters);
 
 
 void reactingFoamNumerics::init()
@@ -1494,19 +1459,13 @@ void reactingFoamNumerics::init()
 }
 
 
-reactingFoamNumerics::reactingFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
     init();
 }
 
-reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  init();
-}
 
 void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1655,20 +1614,18 @@ ParameterSet reactingFoamNumerics::defaultParameters()
 }
 
 
+
+
 defineType(reactingParcelFoamNumerics);
-addToFactoryTable(FVNumerics, reactingParcelFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, reactingParcelFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, reactingParcelFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, reactingParcelFoamNumerics, defaultParameters);
 
 
-reactingParcelFoamNumerics::reactingParcelFoamNumerics(const FVNumericsParameters& fnp)
-: reactingFoamNumerics(fnp)
+reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: reactingFoamNumerics(c, ps)
 {
 }
 
-reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: reactingFoamNumerics(FVNumericsParameters(c, p))
-{
-}
 
 void reactingParcelFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1679,6 +1636,8 @@ ParameterSet reactingParcelFoamNumerics::defaultParameters()
 {
     return Parameters::makeDefault();
 }
+
+
 
 
 FSIDisplacementExtrapolationNumerics::FSIDisplacementExtrapolationNumerics(OpenFOAMCase& c, const ParameterSet& p)
@@ -1722,28 +1681,23 @@ void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictiona
 
 
 
+
 defineType(magneticFoamNumerics);
-addToFactoryTable(FVNumerics, magneticFoamNumerics, FVNumericsParameters);
-addToStaticFunctionTable(FVNumerics, magneticFoamNumerics, defaultParameters);
+addToFactoryTable(OpenFOAMCaseElement, magneticFoamNumerics);
+addToStaticFunctionTable(OpenFOAMCaseElement, magneticFoamNumerics, defaultParameters);
 
 void magneticFoamNumerics::init()
 {
   OFcase().addField("psi", FieldInfo(scalarField, 	dimCurrent, 	list_of(0.0), volField ) );
 }
 
-magneticFoamNumerics::magneticFoamNumerics(const FVNumericsParameters& fnp)
-: FVNumerics(fnp),
-  p_(fnp.get<1>())
+magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
 {
   init();
 }
- 
-magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const Parameters& p)
-: FVNumerics(FVNumericsParameters(c, p)),
-  p_(p)
-{
-  init();
-}
+
 
 void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {

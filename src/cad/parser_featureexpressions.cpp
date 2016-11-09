@@ -133,7 +133,7 @@ void ISCADParser::createFeatureExpressions()
     for (Feature::FactoryTable::const_iterator i = Feature::factories_->begin();
             i != Feature::factories_->end(); i++)
     {
-        FeaturePtr sm(i->second->operator()(NoParameters()));
+        FeaturePtr sm(i->second->operator()());
         sm->insertrule(*this);
     }
 }

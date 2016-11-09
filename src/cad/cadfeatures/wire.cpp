@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(Wire);
-addToFactoryTable(Feature, Wire, NoParameters);
+addToFactoryTable(Feature, Wire);
 
 
 
 
-Wire::Wire(const NoParameters& nop): Feature(nop)
+Wire::Wire(): Feature()
 {
 
 }

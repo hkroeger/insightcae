@@ -57,7 +57,7 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
         i++
     )
     {
-        insight::cad::FeaturePtr sm(i->second->operator()(insight::NoParameters()));
+        insight::cad::FeaturePtr sm(i->second->operator()());
         insight::cad::FeatureCmdInfoList infos = sm->ruleDocumentation();
         BOOST_FOREACH(const insight::cad::FeatureCmdInfo& info, infos)
         {

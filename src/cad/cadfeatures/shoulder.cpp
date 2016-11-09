@@ -34,9 +34,9 @@ namespace cad {
 
 
 defineType(Shoulder);
-addToFactoryTable(Feature, Shoulder, NoParameters);
+addToFactoryTable(Feature, Shoulder);
 
-Shoulder::Shoulder(const NoParameters&)
+Shoulder::Shoulder()
 {}
 
 

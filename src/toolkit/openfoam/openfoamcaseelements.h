@@ -23,6 +23,7 @@
 
 #include "openfoam/numericscaseelements.h"
 #include "openfoam/basiccaseelements.h"
+#include "openfoam/turbulencemodelcaseelements.h"
 #include "openfoam/boundaryconditioncaseelements.h"
 #include "openfoam/analysiscaseelements.h"
 #include "openfoam/thermophysicalcaseelements.h"

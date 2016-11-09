@@ -41,7 +41,7 @@ class Torus
 
 public:
     declareType ( "Torus" );
-    Torus ( const NoParameters& nop = NoParameters() );
+    Torus ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d );
 

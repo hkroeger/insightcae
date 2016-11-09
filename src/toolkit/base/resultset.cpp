@@ -44,222 +44,232 @@ namespace insight
 {
   
   
-string latex_subsection(int level)
+    
+string latex_subsection ( int level )
 {
-  string cmd="\\";
-  if (level==2) cmd+="paragraph";
-  else if (level==3) cmd+="subparagraph";
-  else if (level>3) cmd="";
-  else
-  {
-    for (int i=0; i<min(2,level); i++)
-      cmd+="sub";
-    cmd+="section";
-  }
-  return cmd;
+    string cmd="\\";
+    if ( level==2 ) {
+        cmd+="paragraph";
+    } else if ( level==3 ) {
+        cmd+="subparagraph";
+    } else if ( level>3 ) {
+        cmd="";
+    } else {
+        for ( int i=0; i<min ( 2,level ); i++ ) {
+            cmd+="sub";
+        }
+        cmd+="section";
+    }
+    return cmd;
 }
 
-defineType(ResultElement);
-defineFactoryTable(ResultElement, ResultElement::ResultElementConstrP);
 
-ResultElement::ResultElement(const ResultElement::ResultElementConstrP& par)
-: shortDescription_(boost::get<0>(par)),
-  longDescription_(boost::get<1>(par)),
-  unit_(boost::get<2>(par)),
-  order_(0)
+
+
+defineType(ResultElement);
+defineFactoryTable(ResultElement, LIST(const std::string& shortdesc, const std::string& longdesc, const std::string& unit), LIST(shortdesc, longdesc, unit) );
+
+
+ResultElement::ResultElement ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : shortDescription_ ( shortdesc ),
+      longDescription_ ( longdesc ),
+      unit_ ( unit ),
+      order_ ( 0 )
 {}
+
 
 ResultElement::~ResultElement()
 {}
 
 
-void ResultElement::writeLatexHeaderCode(std::ostream& f) const
+void ResultElement::writeLatexHeaderCode ( std::ostream& f ) const
 {
 }
 
-void ResultElement::writeLatexCode(ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+void ResultElement::writeLatexCode ( ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
 }
 
-void ResultElement::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+void ResultElement::exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const
 {
 }
 
 rapidxml::xml_node< char >* ResultElement::appendToNode
 (
-  const string& name, 
- rapidxml::xml_document< char >& doc, 
- rapidxml::xml_node< char >& node  
+    const string& name,
+    rapidxml::xml_document< char >& doc,
+    rapidxml::xml_node< char >& node
 ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = doc.allocate_node(node_element, doc.allocate_string(this->type().c_str()));
-  node.append_node(child);
-  child->append_attribute(doc.allocate_attribute
-  (
-    "name", 
-    doc.allocate_string(name.c_str()))
-  );
+    using namespace rapidxml;
+    xml_node<>* child = doc.allocate_node ( node_element, doc.allocate_string ( this->type().c_str() ) );
+    node.append_node ( child );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "name",
+                                  doc.allocate_string ( name.c_str() ) )
+                            );
 //   child->append_attribute(doc.allocate_attribute
 //   (
-//     "type", 
+//     "type",
 //     doc.allocate_string( type().c_str() ))
 //   );
-  
-  child->append_attribute(doc.allocate_attribute
-  (
-    "shortDescription", 
-    doc.allocate_string( shortDescription_.c_str() ))
-  );
-  child->append_attribute(doc.allocate_attribute
-  (
-    "longDescription", 
-    doc.allocate_string( longDescription_.c_str() ))
-  );
-  child->append_attribute(doc.allocate_attribute
-  (
-    "unit", 
-    doc.allocate_string( unit_.c_str() ))
-  );
-  child->append_attribute(doc.allocate_attribute
-  (
-    "order", 
-    doc.allocate_string( str(format("%g") % order_).c_str() ))
-  );
-  
-  return child;
+
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "shortDescription",
+                                  doc.allocate_string ( shortDescription_.c_str() ) )
+                            );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "longDescription",
+                                  doc.allocate_string ( longDescription_.c_str() ) )
+                            );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "unit",
+                                  doc.allocate_string ( unit_.c_str() ) )
+                            );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "order",
+                                  doc.allocate_string ( str ( format ( "%g" ) % order_ ).c_str() ) )
+                            );
+
+    return child;
 }
 
-void ResultElement::readFromNode(const string& name, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node)
+
+void ResultElement::readFromNode ( const string& name, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node )
 {
 
 }
-
 
 
 ParameterPtr ResultElement::convertIntoParameter() const
 {
-  return ParameterPtr();
+    return ParameterPtr();
 }
 
-Ordering::Ordering(double ordering_base, double ordering_step_fraction)
-: ordering_(ordering_base),
-  step_(ordering_base*ordering_step_fraction)
+
+
+
+
+Ordering::Ordering ( double ordering_base, double ordering_step_fraction )
+    : ordering_ ( ordering_base ),
+      step_ ( ordering_base*ordering_step_fraction )
 {}
 
 double Ordering::next()
 {
-  ordering_+=step_;
-  return ordering_;
+    ordering_+=step_;
+    return ordering_;
 }
 
-defineType(ResultSection);
-addToFactoryTable(ResultElement, ResultSection, ResultElement::ResultElementConstrP);
 
-ResultSection::ResultSection(const ResultElement::ResultElementConstrP& par)
-: ResultElement(par)
+
+
+
+defineType ( ResultSection );
+addToFactoryTable ( ResultElement, ResultSection );
+
+ResultSection::ResultSection ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : ResultElement ( shortdesc, longdesc, unit )
 {}
 
-ResultSection::ResultSection(const std::string& sectionName, const std::string& introduction)
-: ResultElement(ResultElementConstrP("", "", "")),
-  sectionName_(sectionName),
-  introduction_(introduction)
+ResultSection::ResultSection ( const std::string& sectionName, const std::string& introduction )
+    : ResultElement ( "", "", "" ),
+      sectionName_ ( sectionName ),
+      introduction_ ( introduction )
 {}
 
 void ResultElementCollection::writeLatexCodeOfElements
 (
-  std::ostream& f, 
-  const string& name, 
-  int level, 
-  const boost::filesystem::path& outputfilepath
+    std::ostream& f,
+    const string& name,
+    int level,
+    const boost::filesystem::path& outputfilepath
 ) const
 {
-  std::vector<value_type> items;
-  
+    std::vector<value_type> items;
+
 //   std::transform
-//   ( 
-//     begin(), 
+//   (
+//     begin(),
 //     end(),
 //     std::back_inserter(items),
 //     boost::bind(&value_type, _1) // does not work...
 //   );
-  
-  std::for_each
-  (
-    begin(),
-    end(),
-    [&items](const value_type& p) 
-    { 
-      items.push_back(p);       
-    }
-  );
-  
-  std::sort
-  (
-    items.begin(), 
-    items.end(),
-    [](const value_type &left, const value_type &right) 
-    {
-      return left.second->order() < right.second->order();
-    }
-  );
-  
-  BOOST_FOREACH(const value_type& re, items)
-  {
-    const ResultElement* r = &(*re.second);
-    
-    std::cout<<re.first<<" order="<<re.second->order()<<std::endl;
 
-    std::string subelemname=re.first;
-    if (name!="")
-      subelemname=name+"__"+re.first;
-      
-    
-    if (const ResultSection* se=dynamic_cast<const ResultSection*>(r))
-    {
-      se->writeLatexCode(f, subelemname, level+1, outputfilepath);
+    std::for_each
+    (
+        begin(),
+        end(),
+    [&items] ( const value_type& p ) {
+        items.push_back ( p );
     }
-    else
-    {
-      f << latex_subsection(level+1) << "{" << cleanSymbols(re.first) << "}\n";
-      f << r->shortDescription() << "\n\n";
-      
-  //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
-      r->writeLatexCode(f, subelemname, level+2, outputfilepath);
-      
-      f << "\n\n" << r->longDescription() << "\n\n";
-      f << endl;
+    );
+
+    std::sort
+    (
+        items.begin(),
+        items.end(),
+    [] ( const value_type &left, const value_type &right ) {
+        return left.second->order() < right.second->order();
     }
-  }
+    );
+
+    BOOST_FOREACH ( const value_type& re, items ) {
+        const ResultElement* r = & ( *re.second );
+
+        std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
+
+        std::string subelemname=re.first;
+        if ( name!="" ) {
+            subelemname=name+"__"+re.first;
+        }
+
+
+        if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) ) {
+            se->writeLatexCode ( f, subelemname, level+1, outputfilepath );
+        } else {
+            f << latex_subsection ( level+1 ) << "{" << cleanSymbols ( re.first ) << "}\n";
+            f << r->shortDescription() << "\n\n";
+
+            //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
+            r->writeLatexCode ( f, subelemname, level+2, outputfilepath );
+
+            f << "\n\n" << r->longDescription() << "\n\n";
+            f << endl;
+        }
+    }
 }
 
-void ResultElementCollection::appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node) const
+void ResultElementCollection::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const
 {
-  for( const_iterator i=begin(); i!= end(); i++)
-  {
-    i->second->appendToNode(i->first, doc, node);
-  }
+    for ( const_iterator i=begin(); i!= end(); i++ ) {
+        i->second->appendToNode ( i->first, doc, node );
+    }
 }
 
-void ResultElementCollection::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node)
+void ResultElementCollection::readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node )
 {
-    for (xml_node<> *e = node.first_node(); e; e = e->next_sibling())
-    {
-      std::string tname(e->name());
-      std::string name(e->first_attribute("name")->value());
-      std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
-      
-      ResultElementPtr re
-      ( 
-	ResultElement::lookup
-	(
-	  tname,
-	  ResultElement::ResultElementConstrP("", "", "")
-	)
-      );
+    for ( xml_node<> *e = node.first_node(); e; e = e->next_sibling() ) {
+        std::string tname ( e->name() );
+        std::string name ( e->first_attribute ( "name" )->value() );
+        std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
 
-      re->readFromNode(name, doc, *e);
-      insert(name, re);
+        ResultElementPtr re
+        (
+            ResultElement::lookup
+            (
+                tname,
+                "", "", ""
+            )
+        );
+
+        re->readFromNode ( name, doc, *e );
+        insert ( name, re );
     }
 //   for( iterator i=begin(); i!= end(); i++)
 //   {
@@ -269,705 +279,725 @@ void ResultElementCollection::readFromNode(rapidxml::xml_document<>& doc, rapidx
 
 
 
-void ResultSection::writeLatexCode(ostream& f, const string& name, int level, const path& outputfilepath) const
+
+
+void ResultSection::writeLatexCode ( ostream& f, const string& name, int level, const path& outputfilepath ) const
 {
-  f << latex_subsection(level) << "{"<<sectionName_<<"}\n";
+    f << latex_subsection ( level ) << "{"<<sectionName_<<"}\n";
 //   f << "\\label{" << cleanSymbols(name) << "}" << std::endl;  // problem with underscores: "\_" as returned by cleanSymbols is wrong here
-  f << introduction_ << std::endl;
-  
-  writeLatexCodeOfElements(f, name, level, outputfilepath);
+    f << introduction_ << std::endl;
+
+    writeLatexCodeOfElements ( f, name, level, outputfilepath );
 }
 
-void ResultSection::writeLatexHeaderCode(ostream& f) const
+void ResultSection::writeLatexHeaderCode ( ostream& f ) const
 {
-  BOOST_FOREACH(const value_type& i, *this)
-  {
-    i.second->writeLatexHeaderCode(f);
-  }  
+    BOOST_FOREACH ( const value_type& i, *this ) {
+        i.second->writeLatexHeaderCode ( f );
+    }
 }
 
-void ResultSection::exportDataToFile(const string& name, const path& outputdirectory) const
+void ResultSection::exportDataToFile ( const string& name, const path& outputdirectory ) const
 {
-  boost::filesystem::path subdir=outputdirectory/name;
-  
-  if (!boost::filesystem::exists(subdir)) 
-    boost::filesystem::create_directories(subdir);
-  
-  BOOST_FOREACH(const value_type& re, *this)
-  {
-    re.second->exportDataToFile(re.first, subdir);
-  }
+    boost::filesystem::path subdir=outputdirectory/name;
+
+    if ( !boost::filesystem::exists ( subdir ) ) {
+        boost::filesystem::create_directories ( subdir );
+    }
+
+    BOOST_FOREACH ( const value_type& re, *this ) {
+        re.second->exportDataToFile ( re.first, subdir );
+    }
 }
 
-xml_node< char >* ResultSection::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+xml_node< char >* ResultSection::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-  
-  child->append_attribute(doc.allocate_attribute
-  (
-    "sectionName", 
-    doc.allocate_string( sectionName_.c_str() )
-  ));
-  
-  child->append_attribute(doc.allocate_attribute
-  (
-    "introduction", 
-    doc.allocate_string( introduction_.c_str() )
-  ));
-  
-  ResultElementCollection::appendToNode(doc, *child);
-  
-  return child;
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "sectionName",
+                                  doc.allocate_string ( sectionName_.c_str() )
+                              ) );
+
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "introduction",
+                                  doc.allocate_string ( introduction_.c_str() )
+                              ) );
+
+    ResultElementCollection::appendToNode ( doc, *child );
+
+    return child;
 }
 
 
 boost::shared_ptr< ResultElement > ResultSection::clone() const
 {
-  ResultSection *res=new ResultSection(sectionName_);
-  BOOST_FOREACH(const value_type& re, *this)
-  {
+    ResultSection *res=new ResultSection ( sectionName_ );
+    BOOST_FOREACH ( const value_type& re, *this ) {
 #warning Possible memory leak in case of exception
-    (*res)[re.first]=re.second->clone();
-  }
-  res->setOrder(order());
-  return ResultElementPtr(res);
+        ( *res ) [re.first]=re.second->clone();
+    }
+    res->setOrder ( order() );
+    return ResultElementPtr ( res );
 }
 
 
-defineType(Image);
-addToFactoryTable(ResultElement, Image, ResultElement::ResultElementConstrP);
 
 
-Image::Image(const ResultElementConstrP& par)
-: ResultElement(par)
+defineType ( Image );
+addToFactoryTable ( ResultElement, Image );
+
+
+Image::Image ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : ResultElement ( shortdesc, longdesc, unit )
 {
 }
 
-Image::Image(const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc)
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
-  imagePath_(absolute(value, location))
+Image::Image ( const boost::filesystem::path& location, const boost::filesystem::path& value, const std::string& shortDesc, const std::string& longDesc )
+    : ResultElement ( shortDesc, longDesc, "" ),
+      imagePath_ ( absolute ( value, location ) )
 {
 }
 
-void Image::writeLatexHeaderCode(std::ostream& f) const
+void Image::writeLatexHeaderCode ( std::ostream& f ) const
 {
-  f<<"\\usepackage{graphicx}\n";
-  f<<"\\usepackage{placeins}\n";
+    f<<"\\usepackage{graphicx}\n";
+    f<<"\\usepackage{placeins}\n";
 }
 
-void Image::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+void Image::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
-  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
-  f<< 
-  "\n\nSee figure below.\n"
-  "\\begin{figure}[!h]"
-  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, imagePath_).c_str() << "}\n"
-  "\\caption{"+shortDescription_+"}\n"
-  "\\end{figure}"
-  "\\FloatBarrier";
+    //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+    f<<
+     "\n\nSee figure below.\n"
+     "\\begin{figure}[!h]"
+     "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, imagePath_ ).c_str() << "}\n"
+     "\\caption{"+shortDescription_+"}\n"
+     "\\end{figure}"
+     "\\FloatBarrier";
 }
 
-xml_node< char >* Image::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+xml_node< char >* Image::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
 
-  child->value
-  (
-    doc.allocate_string
+    child->value
     (
-      base64_encode(imagePath_).c_str()
-    )
-  );
+        doc.allocate_string
+        (
+            base64_encode ( imagePath_ ).c_str()
+        )
+    );
 
-  return child;
+    return child;
 }
 
 
 ResultElementPtr Image::clone() const
 {
-  ResultElementPtr res(new Image(imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new Image ( imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_ ) );
+    res->setOrder ( order() );
+    return res;
 }
   
-defineType(Comment);
-addToFactoryTable(ResultElement, Comment, ResultElement::ResultElementConstrP);
+  
+  
+  
+defineType ( Comment );
+addToFactoryTable ( ResultElement, Comment );
 
-Comment::Comment(const ResultElementConstrP& par)
-: ResultElement(par)
+
+Comment::Comment ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : ResultElement ( shortdesc, longdesc, unit )
 {}
 
-Comment::Comment(const std::string& value, const std::string& shortDesc, const std::string& longDesc)
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
-  value_(value)
+
+Comment::Comment ( const std::string& value, const std::string& shortDesc )
+    : ResultElement ( shortDesc, "", "" ),
+      value_ ( value )
 {
 }
 
-void Comment::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+
+void Comment::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
-  f << value_ <<endl;
+    f << value_ <<endl;
 }
 
-void Comment::exportDataToFile(const string& name, const path& outputdirectory) const
+
+void Comment::exportDataToFile ( const string& name, const path& outputdirectory ) const
 {
-  boost::filesystem::path fname(outputdirectory/(name+".txt"));
-  std::ofstream f(fname.c_str());
-  f<<value_;
+    boost::filesystem::path fname ( outputdirectory/ ( name+".txt" ) );
+    std::ofstream f ( fname.c_str() );
+    f<<value_;
 }
 
-xml_node< char >* Comment::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+
+xml_node< char >* Comment::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-  
-  child->append_attribute(doc.allocate_attribute
-  (
-    "value", 
-    doc.allocate_string( value_.c_str() )
-  ));
-  
-  return child;
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "value",
+                                  doc.allocate_string ( value_.c_str() )
+                              ) );
+
+    return child;
 }
 
 
 ResultElementPtr Comment::clone() const
 {
-  ResultElementPtr res(new Comment(value_, shortDescription_, longDescription_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new Comment ( value_, shortDescription_, longDescription_ ) );
+    res->setOrder ( order() );
+    return res;
 }
   
-defineType(ScalarResult);
-addToFactoryTable(ResultElement, ScalarResult, ResultElement::ResultElementConstrP);
+  
+  
+  
+defineType ( ScalarResult );
+addToFactoryTable ( ResultElement, ScalarResult );
 
 
-ScalarResult::ScalarResult(const ResultElementConstrP& par)
-: NumericalResult< double >(par)
+ScalarResult::ScalarResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : NumericalResult< double > ( shortdesc, longdesc, unit )
 {
 }
 
-ScalarResult::ScalarResult(const double& value, const string& shortDesc, const string& longDesc, const string& unit)
-: NumericalResult< double >(value, shortDesc, longDesc, unit)
+
+ScalarResult::ScalarResult ( const double& value, const string& shortDesc, const string& longDesc, const string& unit )
+    : NumericalResult< double > ( value, shortDesc, longDesc, unit )
 {}
 
-void ScalarResult::writeLatexCode(ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+
+void ScalarResult::writeLatexCode ( ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
 //   f.setf(ios::fixed,ios::floatfield);
 //   f.precision(3);
-  f << str(format("%g") % value_) << unit_;
+    f << str ( format ( "%g" ) % value_ ) << unit_;
 }
+
 
 ResultElementPtr ScalarResult::clone() const
 {
-  ResultElementPtr res(new ScalarResult(value_, shortDescription_, longDescription_, unit_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new ScalarResult ( value_, shortDescription_, longDescription_, unit_ ) );
+    res->setOrder ( order() );
+    return res;
 }
 
 
-defineType(TabularResult);
-addToFactoryTable(ResultElement, TabularResult, ResultElement::ResultElementConstrP);
 
 
-TabularResult::TabularResult(const ResultElementConstrP& par)
-: ResultElement(par)
+defineType ( TabularResult );
+addToFactoryTable ( ResultElement, TabularResult );
+
+
+TabularResult::TabularResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : ResultElement ( shortdesc, longdesc, unit )
 {
 }
+
 
 TabularResult::TabularResult
 (
-  const std::vector<std::string>& headings, 
-  const Table& rows,
-  const std::string& shortDesc, 
-  const std::string& longDesc,
-  const std::string& unit
+    const std::vector<std::string>& headings,
+    const Table& rows,
+    const std::string& shortDesc,
+    const std::string& longDesc,
+    const std::string& unit
 )
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
+    : ResultElement ( shortDesc, longDesc, unit )
 {
-  setTableData(headings, rows);
+    setTableData ( headings, rows );
 }
+
 
 TabularResult::TabularResult
 (
-  const std::vector<std::string>& headings, 
-  const arma::mat& rows,
-  const std::string& shortDesc, 
-  const std::string& longDesc,
-  const std::string& unit
+    const std::vector<std::string>& headings,
+    const arma::mat& rows,
+    const std::string& shortDesc,
+    const std::string& longDesc,
+    const std::string& unit
 )
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
+    : ResultElement ( shortDesc, longDesc, unit )
 {
-  Table t;
-  for (int i=0; i<rows.n_rows; i++)
-  {
-    Row r;
-    for (int j=0; j<rows.n_cols; j++)
-    {
-      r.push_back(rows(i,j));
+    Table t;
+    for ( int i=0; i<rows.n_rows; i++ ) {
+        Row r;
+        for ( int j=0; j<rows.n_cols; j++ ) {
+            r.push_back ( rows ( i,j ) );
+        }
+        t.push_back ( r );
     }
-    t.push_back(r);
-  }
-  setTableData(headings, t);
+    setTableData ( headings, t );
 }
 
-void TabularResult::setCellByName(TabularResult::Row& r, const string& colname, double value)
+
+void TabularResult::setCellByName ( TabularResult::Row& r, const string& colname, double value )
 {
-  std::vector<std::string>::const_iterator ii=std::find(headings_.begin(), headings_.end(), colname);
-  if (ii==headings_.end())
-  {
-    std::ostringstream msg;
-    msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
-    BOOST_FOREACH(const std::string& n, headings_)
-    {
-      msg<<n<<endl;
+    std::vector<std::string>::const_iterator ii=std::find ( headings_.begin(), headings_.end(), colname );
+    if ( ii==headings_.end() ) {
+        std::ostringstream msg;
+        msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
+        BOOST_FOREACH ( const std::string& n, headings_ ) {
+            msg<<n<<endl;
+        }
+        insight::Exception ( msg.str() );
     }
-    insight::Exception(msg.str());
-  }
-  int i= ii - headings_.begin();
-  r[i]=value;
+    int i= ii - headings_.begin();
+    r[i]=value;
 }
 
-arma::mat TabularResult::getColByName(const string& colname) const
+
+arma::mat TabularResult::getColByName ( const string& colname ) const
 {
-  std::vector<std::string>::const_iterator ii=std::find(headings_.begin(), headings_.end(), colname);
-  if (ii==headings_.end())
-  {
-    std::ostringstream msg;
-    msg<<"Tried to get column "+colname+" but this does not exist! Existing columns are:"<<endl;
-    BOOST_FOREACH(const std::string& n, headings_)
-    {
-      msg<<n<<endl;
+    std::vector<std::string>::const_iterator ii=std::find ( headings_.begin(), headings_.end(), colname );
+    if ( ii==headings_.end() ) {
+        std::ostringstream msg;
+        msg<<"Tried to get column "+colname+" but this does not exist! Existing columns are:"<<endl;
+        BOOST_FOREACH ( const std::string& n, headings_ ) {
+            msg<<n<<endl;
+        }
+        insight::Exception ( msg.str() );
     }
-    insight::Exception(msg.str());
-  }
-  int i= ii - headings_.begin();
-  return toMat().col(i);
+    int i= ii - headings_.begin();
+    return toMat().col ( i );
 }
 
 
 arma::mat TabularResult::toMat() const
 {
-  arma::mat res;
-  res.resize(rows_.size(), rows_[0].size());
-  int i=0;
-  BOOST_FOREACH(const std::vector<double>& row, rows_)
-  {
-    int j=0;
-    BOOST_FOREACH(double v, row)
-    {
-      cout<<"res("<<i<<","<<j<<")="<<v<<endl;
-      res(i, j++)=v;
+    arma::mat res;
+    res.resize ( rows_.size(), rows_[0].size() );
+    int i=0;
+    BOOST_FOREACH ( const std::vector<double>& row, rows_ ) {
+        int j=0;
+        BOOST_FOREACH ( double v, row ) {
+            cout<<"res("<<i<<","<<j<<")="<<v<<endl;
+            res ( i, j++ ) =v;
+        }
+        i++;
     }
-    i++;
-  }
-  return res;
+    return res;
 }
 
-void TabularResult::writeGnuplotData(std::ostream& f) const
-{
-  f<<"#";
-  BOOST_FOREACH(const std::string& head, headings_)
-  {
-     f<<" \""<<head<<"\"";
-  }
-  f<<std::endl;
 
-  BOOST_FOREACH(const std::vector<double>& row, rows_)
-  {
-    BOOST_FOREACH(double v, row)
-    {
-      f<<" "<<v;
+void TabularResult::writeGnuplotData ( std::ostream& f ) const
+{
+    f<<"#";
+    BOOST_FOREACH ( const std::string& head, headings_ ) {
+        f<<" \""<<head<<"\"";
     }
     f<<std::endl;
-  }
+
+    BOOST_FOREACH ( const std::vector<double>& row, rows_ ) {
+        BOOST_FOREACH ( double v, row ) {
+            f<<" "<<v;
+        }
+        f<<std::endl;
+    }
 
 }
+
 
 ResultElementPtr TabularResult::clone() const
 {
-  ResultElementPtr res(new TabularResult(headings_, rows_, shortDescription_, longDescription_, unit_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new TabularResult ( headings_, rows_, shortDescription_, longDescription_, unit_ ) );
+    res->setOrder ( order() );
+    return res;
 }
 
-void TabularResult::writeLatexHeaderCode(ostream& f) const
+
+void TabularResult::writeLatexHeaderCode ( ostream& f ) const
 {
-  insight::ResultElement::writeLatexHeaderCode(f);
-  f<<"\\usepackage{longtable}\n";
-  f<<"\\usepackage{placeins}\n";
+    insight::ResultElement::writeLatexHeaderCode ( f );
+    f<<"\\usepackage{longtable}\n";
+    f<<"\\usepackage{placeins}\n";
 }
 
-void TabularResult::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+
+void TabularResult::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
 
-  f<<
-  "\\begin{longtable}{";
-  BOOST_FOREACH(const std::string& h, headings_)
-  {
-    f<<"c";
-  }
-  f<<"}\n";
-  
-  for (std::vector<std::string>::const_iterator i=headings_.begin(); i!=headings_.end(); i++)
-  {
-    if (i!=headings_.begin()) f<<" & ";
-    f<<*i;
-  }
-  f<<
-  "\\\\\n"
-  "\\hline\n"
-  "\\endfirsthead\n"
-  "\\endhead\n";
-  for (TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++)
-  {
-    if (i!=rows_.begin()) f<<"\\\\\n";
-    for (std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++)
-    {
-      if (j!=i->begin()) f<<" & ";
-      if (!std::isnan(*j))
-      {
-	f<<*j;
-      }
+    f<<
+     "\\begin{longtable}{";
+    BOOST_FOREACH ( const std::string& h, headings_ ) {
+        f<<"c";
     }
-  }
-  f<<
-  "\\end{longtable}\n"
-  "\\newpage\n";  // page break algorithm fails after too short "longtable"
+    f<<"}\n";
+
+    for ( std::vector<std::string>::const_iterator i=headings_.begin(); i!=headings_.end(); i++ ) {
+        if ( i!=headings_.begin() ) {
+            f<<" & ";
+        }
+        f<<*i;
+    }
+    f<<
+     "\\\\\n"
+     "\\hline\n"
+     "\\endfirsthead\n"
+     "\\endhead\n";
+    for ( TabularResult::Table::const_iterator i=rows_.begin(); i!=rows_.end(); i++ ) {
+        if ( i!=rows_.begin() ) {
+            f<<"\\\\\n";
+        }
+        for ( std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++ ) {
+            if ( j!=i->begin() ) {
+                f<<" & ";
+            }
+            if ( !std::isnan ( *j ) ) {
+                f<<*j;
+            }
+        }
+    }
+    f<<
+     "\\end{longtable}\n"
+     "\\newpage\n";  // page break algorithm fails after too short "longtable"
 }
 
-xml_node< char >* TabularResult::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
-{
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-  
-  xml_node<>* heads = doc.allocate_node(node_element, doc.allocate_string("headings"));
-  child->append_node(heads);
-  for (size_t i=0; i<headings_.size(); i++)
-  {
-    xml_node<>* chead = doc.allocate_node(node_element, doc.allocate_string(str(format("header_%i")%i).c_str()));
-    heads->append_node(chead);
-    
-    chead->append_attribute(doc.allocate_attribute
-    (
-      "title", 
-      doc.allocate_string( headings_[i].c_str() )
-    ));
-  }
 
-  xml_node<>* values = doc.allocate_node(node_element, doc.allocate_string("values"));
-  child->append_node(values);
-  writeMatToXMLNode(toMat(), doc, *values);
-  
-  return child;
+xml_node< char >* TabularResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+
+    xml_node<>* heads = doc.allocate_node ( node_element, doc.allocate_string ( "headings" ) );
+    child->append_node ( heads );
+    for ( size_t i=0; i<headings_.size(); i++ ) {
+        xml_node<>* chead = doc.allocate_node ( node_element, doc.allocate_string ( str ( format ( "header_%i" ) %i ).c_str() ) );
+        heads->append_node ( chead );
+
+        chead->append_attribute ( doc.allocate_attribute
+                                  (
+                                      "title",
+                                      doc.allocate_string ( headings_[i].c_str() )
+                                  ) );
+    }
+
+    xml_node<>* values = doc.allocate_node ( node_element, doc.allocate_string ( "values" ) );
+    child->append_node ( values );
+    writeMatToXMLNode ( toMat(), doc, *values );
+
+    return child;
 }
 
 
-void TabularResult::exportDataToFile(const string& name, const path& outputdirectory) const
+void TabularResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
 {
-  boost::filesystem::path fname(outputdirectory/(name+".csv"));
-  std::ofstream f(fname.c_str());
-  
-  std::string sep="";
-  BOOST_FOREACH(const std::string& h, headings_)
-  {
-    f<<sep<<"\""<<h<<"\"";
-    sep=";";
-  }
-  f<<endl;
-  
-  BOOST_FOREACH(const Row& r, rows_)
-  {
-    sep="";
-    BOOST_FOREACH(const double& v, r)
-    {
-      f<<sep<<v;
+    boost::filesystem::path fname ( outputdirectory/ ( name+".csv" ) );
+    std::ofstream f ( fname.c_str() );
+
+    std::string sep="";
+    BOOST_FOREACH ( const std::string& h, headings_ ) {
+        f<<sep<<"\""<<h<<"\"";
+        sep=";";
     }
     f<<endl;
-  }
+
+    BOOST_FOREACH ( const Row& r, rows_ ) {
+        sep="";
+        BOOST_FOREACH ( const double& v, r ) {
+            f<<sep<<v;
+        }
+        f<<endl;
+    }
 }
 
 
-defineType(AttributeTableResult);
-addToFactoryTable(ResultElement, AttributeTableResult, ResultElement::ResultElementConstrP);
 
-AttributeTableResult::AttributeTableResult(const ResultElementConstrP& par)
-: ResultElement(par)
+
+defineType ( AttributeTableResult );
+addToFactoryTable ( ResultElement, AttributeTableResult );
+
+
+AttributeTableResult::AttributeTableResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
+    : ResultElement ( shortdesc, longdesc, unit )
 {
 }
-  
+
+
 AttributeTableResult::AttributeTableResult
 (
-  AttributeNames names,
-  AttributeValues values, 
-  const std::string& shortDesc, 
-  const std::string& longDesc,
-  const std::string& unit
+    AttributeNames names,
+    AttributeValues values,
+    const std::string& shortDesc,
+    const std::string& longDesc,
+    const std::string& unit
 )
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, unit))
+    : ResultElement ( shortDesc, longDesc, unit )
 {
-  setTableData(names, values);
-}
-  
-  
-void AttributeTableResult::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
-{
-  f<<
-  "\\begin{tabular}{lc}\n"
-  "Attribute & Value \\\\\n"
-  "\\hline\\\\";
-  for(int i=0; i<names_.size(); i++)
-  {
-    f<<names_[i]<<" & "<<values_[i]<<"\\\\"<<endl;
-  }
-  f<<"\\end{tabular}\n";
-}
-
-void AttributeTableResult::exportDataToFile(const string& name, const path& outputdirectory) const
-{
-  boost::filesystem::path fname(outputdirectory/(name+".csv"));
-  std::ofstream f(fname.c_str());
-  
-  for(int i=0; i<names_.size(); i++)
-  {
-    f<<"\""<<names_[i]<<"\";"<<values_[i]<<endl;
-  }
+    setTableData ( names, values );
 }
 
 
-xml_node< char >* AttributeTableResult::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+void AttributeTableResult::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-
-  for (size_t i=0; i<names_.size(); i++)
-  {
-    xml_node<>* cattr = doc.allocate_node(node_element, doc.allocate_string(str(format("attribute_%i")%i).c_str()));
-    child->append_node(cattr);
-    
-    cattr->append_attribute(doc.allocate_attribute
-    (
-      "name", 
-      doc.allocate_string( names_[i].c_str() )
-    ));
-    
-    if (const int* v = boost::get<int>(&values_[i]))
-    {
-      cattr->append_attribute(doc.allocate_attribute(
-	"type", doc.allocate_string( "int" )
-      ));
-      cattr->append_attribute(doc.allocate_attribute(
-	"value", doc.allocate_string( boost::lexical_cast<std::string>(*v).c_str() )
-      ));
+    f<<
+     "\\begin{tabular}{lc}\n"
+     "Attribute & Value \\\\\n"
+     "\\hline\\\\";
+    for ( int i=0; i<names_.size(); i++ ) {
+        f<<names_[i]<<" & "<<values_[i]<<"\\\\"<<endl;
     }
-    else if (const double* v = boost::get<double>(&values_[i]))
-    {
-      cattr->append_attribute(doc.allocate_attribute(
-	"type", doc.allocate_string( "double" )
-      ));
-      cattr->append_attribute(doc.allocate_attribute(
-	"value", doc.allocate_string( boost::lexical_cast<std::string>(*v).c_str() )
-      ));
-    }
-    else if (const std::string* v = boost::get<std::string>(&values_[i]))
-    {
-      cattr->append_attribute(doc.allocate_attribute(
-	"type", doc.allocate_string( "string" )
-      ));
-      cattr->append_attribute(doc.allocate_attribute(
-	"value", doc.allocate_string( v->c_str() )
-      ));
-    }
-    
-  }
-  
-  return child;
+    f<<"\\end{tabular}\n";
 }
 
-  
+
+void AttributeTableResult::exportDataToFile ( const string& name, const path& outputdirectory ) const
+{
+    boost::filesystem::path fname ( outputdirectory/ ( name+".csv" ) );
+    std::ofstream f ( fname.c_str() );
+
+    for ( int i=0; i<names_.size(); i++ ) {
+        f<<"\""<<names_[i]<<"\";"<<values_[i]<<endl;
+    }
+}
+
+
+xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
+{
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+
+    for ( size_t i=0; i<names_.size(); i++ ) {
+        xml_node<>* cattr = doc.allocate_node ( node_element, doc.allocate_string ( str ( format ( "attribute_%i" ) %i ).c_str() ) );
+        child->append_node ( cattr );
+
+        cattr->append_attribute ( doc.allocate_attribute
+                                  (
+                                      "name",
+                                      doc.allocate_string ( names_[i].c_str() )
+                                  ) );
+
+        if ( const int* v = boost::get<int> ( &values_[i] ) ) {
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "type", doc.allocate_string ( "int" )
+                                      ) );
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "value", doc.allocate_string ( boost::lexical_cast<std::string> ( *v ).c_str() )
+                                      ) );
+        } else if ( const double* v = boost::get<double> ( &values_[i] ) ) {
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "type", doc.allocate_string ( "double" )
+                                      ) );
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "value", doc.allocate_string ( boost::lexical_cast<std::string> ( *v ).c_str() )
+                                      ) );
+        } else if ( const std::string* v = boost::get<std::string> ( &values_[i] ) ) {
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "type", doc.allocate_string ( "string" )
+                                      ) );
+            cattr->append_attribute ( doc.allocate_attribute (
+                                          "value", doc.allocate_string ( v->c_str() )
+                                      ) );
+        }
+
+    }
+
+    return child;
+}
+
+
 ResultElementPtr AttributeTableResult::clone() const
 {
-  ResultElementPtr res(new AttributeTableResult(names_, values_, 
-					       shortDescription_, longDescription_, unit_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new AttributeTableResult ( names_, values_,
+                           shortDescription_, longDescription_, unit_ ) );
+    res->setOrder ( order() );
+    return res;
 }
+
+
+
+
 
 ResultElementPtr polynomialFitResult
 (
-  const arma::mat& coeffs, 
-  const std::string& xvarName, 
-  const std::string& shortDesc, 
-  const std::string& longDesc,
-  int minorder  
+    const arma::mat& coeffs,
+    const std::string& xvarName,
+    const std::string& shortDesc,
+    const std::string& longDesc,
+    int minorder
 )
 {
-  std::vector<std::string> header=boost::assign::list_of("Term")("Coefficient");
-  AttributeTableResult::AttributeNames names;
-  AttributeTableResult::AttributeValues values;
-  
-  for (int i=coeffs.n_rows-1; i>=0; i--)
-  {
-    int order=minorder+i;
-    if (order==0)
-      names.push_back("$1$");
-    else if (order==1)
-      names.push_back("$"+xvarName+"$");
-    else
-      names.push_back("$"+xvarName+"^{"+lexical_cast<string>(order)+"}$");
-    values.push_back(coeffs(i));
-  }
-  
-  return ResultElementPtr
-  (
-    new AttributeTableResult
-    (
-      names, values,
-      shortDesc, longDesc, ""
-    )
-  );
+    std::vector<std::string> header=boost::assign::list_of ( "Term" ) ( "Coefficient" );
+    AttributeTableResult::AttributeNames names;
+    AttributeTableResult::AttributeValues values;
+
+    for ( int i=coeffs.n_rows-1; i>=0; i-- ) {
+        int order=minorder+i;
+        if ( order==0 ) {
+            names.push_back ( "$1$" );
+        } else if ( order==1 ) {
+            names.push_back ( "$"+xvarName+"$" );
+        } else {
+            names.push_back ( "$"+xvarName+"^{"+lexical_cast<string> ( order )+"}$" );
+        }
+        values.push_back ( coeffs ( i ) );
+    }
+
+    return ResultElementPtr
+           (
+               new AttributeTableResult
+               (
+                   names, values,
+                   shortDesc, longDesc, ""
+               )
+           );
 }
   
-defineType(ResultSet);
+  
+  
+
+defineType ( ResultSet );
+
 
 ResultSet::ResultSet
 (
-  const ParameterSet& p,
-  const std::string& title,
-  const std::string& subtitle,
-  const std::string* date,
-  const std::string* author
+    const ParameterSet& p,
+    const std::string& title,
+    const std::string& subtitle,
+    const std::string* date,
+    const std::string* author
 )
-: ResultElement(ResultElementConstrP("", "", "")),
-  p_(p),
-  title_(title),
-  subtitle_(subtitle),
-  introduction_()
+    : ResultElement ( "", "", "" ),
+      p_ ( p ),
+      title_ ( title ),
+      subtitle_ ( subtitle ),
+      introduction_()
 {
-  if (date) 
-    date_=*date;
-  else
-  {
-    using namespace boost::gregorian;
-    date_=to_iso_extended_string(day_clock::local_day());
-  }
-  
-  if (author) 
-    author_=*author;
-  else
-  {
-    char  *iu=getenv("INSIGHT_REPORT_AUTHOR");
-    if (iu) author_=iu;
-    else
-    {
-      char* iua=getenv("USER");
-      if (iua) author_=iua;
-      else author_="";
+    if ( date ) {
+        date_=*date;
+    } else {
+        using namespace boost::gregorian;
+        date_=to_iso_extended_string ( day_clock::local_day() );
     }
-  }
+
+    if ( author ) {
+        author_=*author;
+    } else {
+        char  *iu=getenv ( "INSIGHT_REPORT_AUTHOR" );
+        if ( iu ) {
+            author_=iu;
+        } else {
+            char* iua=getenv ( "USER" );
+            if ( iua ) {
+                author_=iua;
+            } else {
+                author_="";
+            }
+        }
+    }
 }
+
 
 ResultSet::~ResultSet()
 {}
 
-ResultSet::ResultSet(const ResultSet& other)
-: //ptr_map< std::string, ResultElement>(other),
-  ResultElementCollection(other),
-  ResultElement(ResultElementConstrP("", "", "")),
-  p_(other.p_),
-  title_(other.title_),
-  subtitle_(other.subtitle_),
-  author_(other.author_),
-  date_(other.date_),
-  introduction_(other.introduction_)
+
+ResultSet::ResultSet ( const ResultSet& other )
+    : //ptr_map< std::string, ResultElement>(other),
+    ResultElementCollection ( other ),
+    ResultElement ( "", "", "" ),
+    p_ ( other.p_ ),
+    title_ ( other.title_ ),
+    subtitle_ ( other.subtitle_ ),
+    author_ ( other.author_ ),
+    date_ ( other.date_ ),
+    introduction_ ( other.introduction_ )
 {
 }
 
 
-void ResultSet::transfer(const ResultSet& other)
+void ResultSet::transfer ( const ResultSet& other )
 {
 //   ptr_map< std::string, ResultElement>::operator=(other);
-  std::map< std::string, ResultElementPtr>::operator=(other);
-  p_=other.p_;
-  title_=other.title_;
-  subtitle_=other.subtitle_;
-  author_=other.author_;
-  date_=other.date_;
-  introduction_=other.introduction_;
+    std::map< std::string, ResultElementPtr>::operator= ( other );
+    p_=other.p_;
+    title_=other.title_;
+    subtitle_=other.subtitle_;
+    author_=other.author_;
+    date_=other.date_;
+    introduction_=other.introduction_;
 }
 
-void ResultSet::writeLatexHeaderCode(std::ostream& f) const
+
+void ResultSet::writeLatexHeaderCode ( std::ostream& f ) const
 {
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    i->second->writeLatexHeaderCode(f);
-  }  
+    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+        i->second->writeLatexHeaderCode ( f );
+    }
 }
 
-void ResultSet::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
-{
-  if (level>0)
-  {
-    f << title_ << "\n\n";
 
-    f << subtitle_ << "\n\n";
-  }
-  
-  if (!introduction_.empty())
-  {
-    f << latex_subsection(level) << "{Introduction}\n";
-    
-    f<<introduction_;
-  }
-  
-  if (p_.size()>0)
-  {
-    f << latex_subsection(level) << "{Input Parameters}\n";
-    
-    f<<p_.latexRepresentation();
-  }
-  
-  f << latex_subsection(level) << "{Numerical Result Summary}\n";
-  
-  writeLatexCodeOfElements(f, name, level, outputfilepath);
-  
+void ResultSet::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
+{
+    if ( level>0 ) {
+        f << title_ << "\n\n";
+
+        f << subtitle_ << "\n\n";
+    }
+
+    if ( !introduction_.empty() ) {
+        f << latex_subsection ( level ) << "{Introduction}\n";
+
+        f<<introduction_;
+    }
+
+    if ( p_.size() >0 ) {
+        f << latex_subsection ( level ) << "{Input Parameters}\n";
+
+        f<<p_.latexRepresentation();
+    }
+
+    f << latex_subsection ( level ) << "{Numerical Result Summary}\n";
+
+    writeLatexCodeOfElements ( f, name, level, outputfilepath );
+
 //   for (ResultSet::const_iterator i=begin(); i!=end(); i++)
 //   {
 //     f << latex_subsection(level+1) << "{" << cleanSymbols(i->first) << "}\n";
 //     f << cleanSymbols(i->second->shortDescription()) << "\n\n";
-//     
+//
 //     std::string subelemname=i->first;
 //     if (name!="")
 //       subelemname=name+"__"+i->first;
-//     
+//
 //     i->second->writeLatexCode(f, subelemname, level+2, outputfilepath);
-//     
+//
 //     f << "\n\n" << cleanSymbols(i->second->longDescription()) << "\n\n";
 //     f << endl;
 //   }
 }
 
-xml_node< char >* ResultSet::appendToNode(const string& name, xml_document< char >& doc, xml_node< char >& node) const
+
+xml_node< char >* ResultSet::appendToNode ( const string& name, xml_document< char >& doc, xml_node< char >& node ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-  
-  ResultElementCollection::appendToNode(doc, *child);
-  
-  return child;
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+
+    ResultElementCollection::appendToNode ( doc, *child );
+
+    return child;
 }
 
 
-void ResultSet::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+void ResultSet::exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const
 {
-  path outsubdir(outputdirectory/name);
-  create_directory(outsubdir);
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    i->second->exportDataToFile(i->first, outsubdir);
-  }
+    path outsubdir ( outputdirectory/name );
+    create_directory ( outsubdir );
+    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+        i->second->exportDataToFile ( i->first, outsubdir );
+    }
 }
+
 
 std::string builtin_template=
     "\\documentclass[a4paper,10pt]{scrartcl}\n"
@@ -986,115 +1016,114 @@ std::string builtin_template=
     "\\end{document}\n";
 
 
-void ResultSet::writeLatexFile(const boost::filesystem::path& file) const
+void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 {
-  path filepath(absolute(file));
-  
-  std::ostringstream header, content;
+    path filepath ( absolute ( file ) );
 
-  header<<"\\newcommand{\\PlotFrameB}[2]{%\n"
-    <<"\\includegraphics[#1]{#2}\\endgroup}\n"
-    <<"\\def\\PlotFrame{\\begingroup\n"
-    <<"\\catcode`\\_=12\n"
-    <<"\\PlotFrameB}\n"
-    
-    <<"\\usepackage{enumitem}\n"
-      "\\setlist[enumerate]{label*=\\arabic*.}\n"
-      "\\renewlist{enumerate}{enumerate}{10}\n"
-      
-      ;
-  writeLatexHeaderCode(header);
-  
-  writeLatexCode(content, "", 0, filepath.parent_path());
-  
-  // insert into template
-  std::string file_content=builtin_template;
-  
-  std::string envvarname="INSIGHT_REPORT_TEMPLATE";
-  if (char *TEMPL=getenv(envvarname.c_str()))
-  {
-    std::ifstream in(TEMPL);
-    in.seekg(0, std::ios::end);
-    file_content.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&file_content[0], file_content.size());
-  }
-  
-  boost::replace_all(file_content, "###AUTHOR###", author_);
-  boost::replace_all(file_content, "###DATE###", date_);
-  boost::replace_all(file_content, "###TITLE###", title_);
-  boost::replace_all(file_content, "###SUBTITLE###", subtitle_);
+    std::ostringstream header, content;
 
-  boost::replace_all(file_content, "###HEADER###", header.str());
-  boost::replace_all(file_content, "###CONTENT###", content.str());
-  
-  {
-    std::ofstream f(filepath.c_str());
-    f<<file_content;
-  }
-  
-  {
-    path outdir(filepath.parent_path()/("report_data_"+filepath.stem().string()));
-    create_directory(outdir);
-    for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-    {
-      i->second->exportDataToFile(i->first, outdir);
+    header<<"\\newcommand{\\PlotFrameB}[2]{%\n"
+          <<"\\includegraphics[#1]{#2}\\endgroup}\n"
+          <<"\\def\\PlotFrame{\\begingroup\n"
+          <<"\\catcode`\\_=12\n"
+          <<"\\PlotFrameB}\n"
+
+          <<"\\usepackage{enumitem}\n"
+          "\\setlist[enumerate]{label*=\\arabic*.}\n"
+          "\\renewlist{enumerate}{enumerate}{10}\n"
+
+          ;
+    writeLatexHeaderCode ( header );
+
+    writeLatexCode ( content, "", 0, filepath.parent_path() );
+
+    // insert into template
+    std::string file_content=builtin_template;
+
+    std::string envvarname="INSIGHT_REPORT_TEMPLATE";
+    if ( char *TEMPL=getenv ( envvarname.c_str() ) ) {
+        std::ifstream in ( TEMPL );
+        in.seekg ( 0, std::ios::end );
+        file_content.resize ( in.tellg() );
+        in.seekg ( 0, std::ios::beg );
+        in.read ( &file_content[0], file_content.size() );
     }
-  }
+
+    boost::replace_all ( file_content, "###AUTHOR###", author_ );
+    boost::replace_all ( file_content, "###DATE###", date_ );
+    boost::replace_all ( file_content, "###TITLE###", title_ );
+    boost::replace_all ( file_content, "###SUBTITLE###", subtitle_ );
+
+    boost::replace_all ( file_content, "###HEADER###", header.str() );
+    boost::replace_all ( file_content, "###CONTENT###", content.str() );
+
+    {
+        std::ofstream f ( filepath.c_str() );
+        f<<file_content;
+    }
+
+    {
+        path outdir ( filepath.parent_path() / ( "report_data_"+filepath.stem().string() ) );
+        create_directory ( outdir );
+        for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+            i->second->exportDataToFile ( i->first, outdir );
+        }
+    }
 }
 
 
-void ResultSet::saveToFile(const boost::filesystem::path& file ) const
+void ResultSet::saveToFile ( const boost::filesystem::path& file ) const
 {
 //   std::cout<<"Writing result set to file "<<file<<std::endl;
-  
-  xml_document<> doc;
-  
-  // xml declaration
-  xml_node<>* decl = doc.allocate_node(node_declaration);
-  decl->append_attribute(doc.allocate_attribute("version", "1.0"));
-  decl->append_attribute(doc.allocate_attribute("encoding", "utf-8"));
-  doc.append_node(decl);
 
-  xml_node<> *rootnode = doc.allocate_node(node_element, "root");
-  doc.append_node(rootnode);
-  
+    xml_document<> doc;
+
+    // xml declaration
+    xml_node<>* decl = doc.allocate_node ( node_declaration );
+    decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
+    decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
+    doc.append_node ( decl );
+
+    xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
+    doc.append_node ( rootnode );
+
 //   if (analysisName != "")
 //   {
 //     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
 //     rootnode->append_node(analysisnamenode);
 //     analysisnamenode->append_attribute(doc.allocate_attribute
 //     (
-//       "name", 
+//       "name",
 //       doc.allocate_string(analysisName.c_str())
 //     ));
 //   }
 
-  ResultElementCollection::appendToNode(doc, *rootnode);
-  
-  {
-    std::ofstream f(file.c_str());
-    f << doc << std::endl;
-    f << std::flush;
-    f.close();
-  }
+    ResultElementCollection::appendToNode ( doc, *rootnode );
+
+    {
+        std::ofstream f ( file.c_str() );
+        f << doc << std::endl;
+        f << std::flush;
+        f.close();
+    }
 }
 
-void ResultSet::readFromFile(const boost::filesystem::path& file)
-{
-  std::ifstream in(file.c_str());
-  std::string contents;
-  in.seekg(0, std::ios::end);
-  contents.resize(in.tellg());
-  in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
-  in.close();
 
-  xml_document<> doc;
-  doc.parse<0>(&contents[0]);
-  
-  xml_node<> *rootnode = doc.first_node("root");
-  
+void ResultSet::readFromFile ( const boost::filesystem::path& file )
+{
+    std::ifstream in ( file.c_str() );
+    std::string contents;
+    in.seekg ( 0, std::ios::end );
+    contents.resize ( in.tellg() );
+    in.seekg ( 0, std::ios::beg );
+    in.read ( &contents[0], contents.size() );
+    in.close();
+
+    xml_document<> doc;
+    doc.parse<0> ( &contents[0] );
+
+    xml_node<> *rootnode = doc.first_node ( "root" );
+
 //   std::string analysisName;
 //   xml_node<> *analysisnamenode = rootnode->first_node("analysis");
 //   if (analysisnamenode)
@@ -1102,42 +1131,46 @@ void ResultSet::readFromFile(const boost::filesystem::path& file)
 //     analysisName = analysisnamenode->first_attribute("name")->value();
 //   }
 
-  ResultElementCollection::readFromNode(doc, *rootnode);
-  
+    ResultElementCollection::readFromNode ( doc, *rootnode );
+
 //   return analysisName;
 }
 
+
 ParameterSetPtr ResultSet::convertIntoParameterSet() const
 {
-  ParameterSetPtr ps(new ParameterSet());
-  BOOST_FOREACH(const_iterator::value_type rp, *this)
-  {
-    ParameterPtr p=rp.second->convertIntoParameter();
-    if (p)
-    {
-      std::string key=rp.first;
-      ps->insert(key, p->clone());
+    ParameterSetPtr ps ( new ParameterSet() );
+    BOOST_FOREACH ( const_iterator::value_type rp, *this ) {
+        ParameterPtr p=rp.second->convertIntoParameter();
+        if ( p ) {
+            std::string key=rp.first;
+            ps->insert ( key, p->clone() );
+        }
     }
-  }
-  return ps;
+    return ps;
 }
+
 
 ParameterPtr ResultSet::convertIntoParameter() const
 {
-  ParameterPtr ps(new SubsetParameter());
-  static_cast<SubsetParameter*>(ps.get())->setParameterSet(*convertIntoParameterSet());
-  return ps;
+    ParameterPtr ps ( new SubsetParameter() );
+    static_cast<SubsetParameter*> ( ps.get() )->setParameterSet ( *convertIntoParameterSet() );
+    return ps;
 }
+
+
+
+
 
 ResultElementCollection::~ResultElementCollection()
 {}
 
 
-ResultElement& ResultElementCollection::insert(const string& key, ResultElement* elem)
+ResultElement& ResultElementCollection::insert ( const string& key, ResultElement* elem )
 {
-  std::pair< iterator, bool > res=
-    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, ResultElementPtr(elem)));
-  return *(*res.first).second;
+    std::pair< iterator, bool > res=
+        std::map<std::string, ResultElementPtr>::insert ( ResultSet::value_type ( key, ResultElementPtr ( elem ) ) );
+    return * ( *res.first ).second;
 }
 
 // void ResultSet::insert(const string& key, auto_ptr< ResultElement > elem)
@@ -1146,36 +1179,38 @@ ResultElement& ResultElementCollection::insert(const string& key, ResultElement*
 // }
 
 
-ResultElement& ResultElementCollection::insert(const string& key, ResultElementPtr elem)
+ResultElement& ResultElementCollection::insert ( const string& key, ResultElementPtr elem )
 {
-  std::pair< iterator, bool > res=
-    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem));
-  return *(*res.first).second;
+    std::pair< iterator, bool > res=
+        std::map<std::string, ResultElementPtr>::insert ( ResultSet::value_type ( key, elem ) );
+    return * ( *res.first ).second;
 }
 
 
-ResultElement& ResultElementCollection::insert(const string& key, const ResultElement& elem)
+ResultElement& ResultElementCollection::insert ( const string& key, const ResultElement& elem )
 {
-  std::pair< iterator, bool > res=
-    std::map<std::string, ResultElementPtr>::insert(ResultSet::value_type(key, elem.clone()));
-  return *(*res.first).second;
+    std::pair< iterator, bool > res=
+        std::map<std::string, ResultElementPtr>::insert ( ResultSet::value_type ( key, elem.clone() ) );
+    return * ( *res.first ).second;
 }
 
 
 
 ResultElementPtr ResultSet::clone() const
 {
-  std::auto_ptr<ResultSet> nr(new ResultSet(p_, title_, subtitle_, &author_, &date_));
-  for (ResultSet::const_iterator i=begin(); i!=end(); i++)
-  {
-    cout<<i->first<<endl;
-    std::string key(i->first);
-    nr->insert( key, i->second->clone() );
-  }
-  nr->setOrder(order());
-  nr->introduction()=introduction_;
-  return ResultElementPtr(nr.release());
+    std::auto_ptr<ResultSet> nr ( new ResultSet ( p_, title_, subtitle_, &author_, &date_ ) );
+    for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+        cout<<i->first<<endl;
+        std::string key ( i->first );
+        nr->insert ( key, i->second->clone() );
+    }
+    nr->setOrder ( order() );
+    nr->introduction() =introduction_;
+    return ResultElementPtr ( nr.release() );
 }
+
+
+
 
 PlotCurve::PlotCurve()
 {
@@ -1220,7 +1255,6 @@ std::string PlotCurve::title() const
 {
   boost::regex re(".*t *'(.*)'.*");
   boost::smatch str_matches;
-  std::cout<<plotcmd_<<std::endl;
   if (boost::regex_match(plotcmd_, str_matches, re))
   {
     std::cout<<" <> "<<str_matches[1]<<std::endl;
@@ -1228,45 +1262,48 @@ std::string PlotCurve::title() const
   }
   else return "";
 }
-  
+
+
+
+
 insight::ResultElement& addPlot
 (
-  boost::shared_ptr<ResultElementCollection> results, 
-  const boost::filesystem::path& workdir,
-  const std::string& resultelementname,
-  const std::string& xlabel,
-  const std::string& ylabel,
-  const PlotCurveList& plc,
-  const std::string& shortDescription,
-  const std::string& addinit,
-  const std::string& watermarktext
+    boost::shared_ptr<ResultElementCollection> results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit,
+    const std::string& watermarktext
 )
 {
-  std::string precmd=addinit+";";
-  if (watermarktext!="")
-  {
-    precmd+="set label \""+cleanSymbols(watermarktext)+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
-  }
-  
-  return results->insert( resultelementname,
-    new Chart
-    (
-      xlabel, ylabel, plc,
-      shortDescription, "",
-      precmd
-    ));
+    std::string precmd=addinit+";";
+    if ( watermarktext!="" ) {
+        precmd+="set label \""+cleanSymbols ( watermarktext )+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
+    }
+
+    return results->insert ( resultelementname,
+                             new Chart
+                             (
+                                 xlabel, ylabel, plc,
+                                 shortDescription, "",
+                                 precmd
+                             ) );
 }
 
 
 
 defineType(Chart);
-addToFactoryTable(ResultElement, Chart, ResultElement::ResultElementConstrP);
+addToFactoryTable(ResultElement, Chart);
 
-Chart::Chart(const ResultElement::ResultElementConstrP& par)
-: ResultElement(par)
+
+
+Chart::Chart(const std::string& shortdesc, const std::string& longdesc, const std::string& unit)
+: ResultElement(shortdesc, longdesc, unit)
 {
 }
-
 
 
 
@@ -1278,7 +1315,7 @@ Chart::Chart
   const std::string& shortDesc, const std::string& longDesc,
   const std::string& addinit
 )
-: ResultElement(ResultElementConstrP(shortDesc, longDesc, "")),
+: ResultElement(shortDesc, longDesc, ""),
   xlabel_(xlabel),
   ylabel_(ylabel),
   plc_(plc),
@@ -1286,64 +1323,64 @@ Chart::Chart
 {
 }
 
-void Chart::generatePlotImage(const path& imagepath) const
+
+
+void Chart::generatePlotImage ( const path& imagepath ) const
 {
 //   std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-  std::string bn(imagepath.filename().stem().string());
-  
-  TemporaryCaseDir tmp(false, bn+"-generate");
-  
-  {
-    Gnuplot gp;
-    
-    //gp<<"set terminal pngcairo; set termoption dash;";
-    gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
-    gp<<"set output '"+bn+".tex';";
-//     gp<<"set output '"<<absolute(imagepath).string()<<"';";
-/*
-    gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
-	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
-	"set linetype  3 lc rgb '#A52A2A' lw 1;"
-	"set linetype  4 lc rgb '#E9967A' lw 1;"
-	"set linetype  5 lc rgb '#5F9EA0' lw 1;"
-	"set linetype  6 lc rgb '#006400' lw 1;"
-	"set linetype  7 lc rgb '#8B008B' lw 1;"
-	"set linetype  8 lc rgb '#696969' lw 1;"
-	"set linetype  9 lc rgb '#DAA520' lw 1;"
-	"set linetype cycle  9;";
-*/
-    gp<<addinit_<<";";
-    gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
-    if (plc_.size()>0)
+    std::string bn ( imagepath.filename().stem().string() );
+
+    TemporaryCaseDir tmp ( false, bn+"-generate" );
+
     {
-      gp<<"plot 0 not lt -1";
-      BOOST_FOREACH(const PlotCurve& pc, plc_)
-      {
-	if (!pc.plotcmd_.empty())
-	{
-	  if (pc.xy_.n_rows>0)
-	    gp<<", '-' "<<pc.plotcmd_;
-	  else
-	    gp<<", "<<pc.plotcmd_;
-	}
-      }
-      gp<<endl;
-      BOOST_FOREACH(const PlotCurve& pc, plc_)
-      {
-	if (pc.xy_.n_rows>0)
-	  gp.send1d(pc.xy_);
-      }
+        Gnuplot gp;
+
+        //gp<<"set terminal pngcairo; set termoption dash;";
+        gp<<"set terminal epslatex standalone color dash linewidth 3 header \"\\\\usepackage{graphicx}\\n\\\\usepackage{epstopdf}\";";
+        gp<<"set output '"+bn+".tex';";
+//     gp<<"set output '"<<absolute(imagepath).string()<<"';";
+        /*
+            gp<<"set linetype  1 lc rgb '#0000FF' lw 1;"
+        	"set linetype  2 lc rgb '#8A2BE2' lw 1;"
+        	"set linetype  3 lc rgb '#A52A2A' lw 1;"
+        	"set linetype  4 lc rgb '#E9967A' lw 1;"
+        	"set linetype  5 lc rgb '#5F9EA0' lw 1;"
+        	"set linetype  6 lc rgb '#006400' lw 1;"
+        	"set linetype  7 lc rgb '#8B008B' lw 1;"
+        	"set linetype  8 lc rgb '#696969' lw 1;"
+        	"set linetype  9 lc rgb '#DAA520' lw 1;"
+        	"set linetype cycle  9;";
+        */
+        gp<<addinit_<<";";
+        gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
+        if ( plc_.size() >0 ) {
+            gp<<"plot 0 not lt -1";
+            BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+                if ( !pc.plotcmd_.empty() ) {
+                    if ( pc.xy_.n_rows>0 ) {
+                        gp<<", '-' "<<pc.plotcmd_;
+                    } else {
+                        gp<<", "<<pc.plotcmd_;
+                    }
+                }
+            }
+            gp<<endl;
+            BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+                if ( pc.xy_.n_rows>0 ) {
+                    gp.send1d ( pc.xy_ );
+                }
+            }
+        }
     }
-  }
-  
-  ::system(
-  (
-    "mv "+bn+".tex "+(tmp.dir/(bn+".tex")).string()+"; "
-    "mv "+bn+"-inc.eps "+(tmp.dir/(bn+"-inc.eps")).string()+"; "
-    "cd "+tmp.dir.string()+"; "
-    "pdflatex -shell-escape "+bn+".tex; "
-    "convert -density 600 "+bn+".pdf "+absolute(imagepath).string()
-  ).c_str());
+
+    ::system (
+        (
+            "mv "+bn+".tex "+ ( tmp.dir/ ( bn+".tex" ) ).string()+"; "
+            "mv "+bn+"-inc.eps "+ ( tmp.dir/ ( bn+"-inc.eps" ) ).string()+"; "
+            "cd "+tmp.dir.string()+"; "
+            "pdflatex -shell-escape "+bn+".tex; "
+            "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
+        ).c_str() );
 }
 
   
@@ -1353,97 +1390,98 @@ void Chart::writeLatexHeaderCode(std::ostream& f) const
   f<<"\\usepackage{placeins}\n";
 }
 
-void Chart::writeLatexCode(std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath) const
+
+void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
-  path chart_file=cleanLatexImageFileName(outputfilepath/(name+".png")).string();
-  
-  generatePlotImage(chart_file);
-  
-  //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
-  f<< 
-  "\n\nSee figure below.\n"
-  "\\begin{figure}[!h]"
-  "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative(outputfilepath, chart_file).c_str() << "}\n"
-  "\\caption{"+shortDescription_+"}\n"
-  "\\end{figure}"
-  "\\FloatBarrier";
+    path chart_file=cleanLatexImageFileName ( outputfilepath/ ( name+".png" ) ).string();
+
+    generatePlotImage ( chart_file );
+
+    //f<< "\\includegraphics[keepaspectratio,width=\\textwidth]{" << cleanSymbols(imagePath_.c_str()) << "}\n";
+    f<<
+     "\n\nSee figure below.\n"
+     "\\begin{figure}[!h]"
+     "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, chart_file ).c_str() << "}\n"
+     "\\caption{"+shortDescription_+"}\n"
+     "\\end{figure}"
+     "\\FloatBarrier";
 }
 
-void Chart::exportDataToFile(const std::string& name, const boost::filesystem::path& outputdirectory) const
+
+void Chart::exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const
 {
-  int curveID=0;
-  BOOST_FOREACH(const PlotCurve& pc, plc_)
-  {
-    std::string suf=pc.plaintextlabel();
-    replace_all(suf, "/", "_");
-    if (suf=="")
-      suf=str(format("curve%d")%curveID);
-    
-    boost::filesystem::path fname(outputdirectory/(name+"__"+suf+".xy"));
-    
-    std::ofstream f(fname.c_str());
-    pc.xy_.save(fname.string(), arma::raw_ascii);
-    curveID++;
-  }
+    int curveID=0;
+    BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+        std::string suf=pc.plaintextlabel();
+        replace_all ( suf, "/", "_" );
+        if ( suf=="" ) {
+            suf=str ( format ( "curve%d" ) %curveID );
+        }
+
+        boost::filesystem::path fname ( outputdirectory/ ( name+"__"+suf+".xy" ) );
+
+        std::ofstream f ( fname.c_str() );
+        pc.xy_.save ( fname.string(), arma::raw_ascii );
+        curveID++;
+    }
 }
 
 
 rapidxml::xml_node<>* Chart::appendToNode
 (
-  const std::string& name, 
-  rapidxml::xml_document<>& doc, 
-  rapidxml::xml_node<>& node
+    const std::string& name,
+    rapidxml::xml_document<>& doc,
+    rapidxml::xml_node<>& node
 ) const
 {
-  using namespace rapidxml;
-  xml_node<>* child = ResultElement::appendToNode(name, doc, node);
-  child->append_attribute(doc.allocate_attribute
-  (
-    "xlabel", 
-    doc.allocate_string( xlabel_.c_str() )
-  ));
-  child->append_attribute(doc.allocate_attribute
-  (
-    "ylabel", 
-    doc.allocate_string( xlabel_.c_str() )
-  ));
-  child->append_attribute(doc.allocate_attribute
-  (
-    "addinit", 
-    doc.allocate_string( xlabel_.c_str() )
-  ));
-  
-  BOOST_FOREACH(const PlotCurve& pc, plc_)
-  {
-    xml_node<> *pcnode = doc.allocate_node
-    (
-      node_element, 
-      "PlotCurve" 
-    );
-    child->append_node(pcnode);
-    
-    pcnode->append_attribute
-    (
-      doc.allocate_attribute
-      (
-	"plaintextlabel", 
-	doc.allocate_string( pc.plaintextlabel().c_str() )
-      )
-    );
+    using namespace rapidxml;
+    xml_node<>* child = ResultElement::appendToNode ( name, doc, node );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "xlabel",
+                                  doc.allocate_string ( xlabel_.c_str() )
+                              ) );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "ylabel",
+                                  doc.allocate_string ( xlabel_.c_str() )
+                              ) );
+    child->append_attribute ( doc.allocate_attribute
+                              (
+                                  "addinit",
+                                  doc.allocate_string ( xlabel_.c_str() )
+                              ) );
 
-    pcnode->append_attribute
-    (
-      doc.allocate_attribute
-      (
-	"plotcmd", 
-	doc.allocate_string( pc.plotcmd_.c_str() )
-      )
-    );
+    BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+        xml_node<> *pcnode = doc.allocate_node
+                             (
+                                 node_element,
+                                 "PlotCurve"
+                             );
+        child->append_node ( pcnode );
 
-    writeMatToXMLNode(pc.xy_, doc, *pcnode);
-  }
-  
-  return child;
+        pcnode->append_attribute
+        (
+            doc.allocate_attribute
+            (
+                "plaintextlabel",
+                doc.allocate_string ( pc.plaintextlabel().c_str() )
+            )
+        );
+
+        pcnode->append_attribute
+        (
+            doc.allocate_attribute
+            (
+                "plotcmd",
+                doc.allocate_string ( pc.plotcmd_.c_str() )
+            )
+        );
+
+        writeMatToXMLNode ( pc.xy_, doc, *pcnode );
+    }
+
+    return child;
 }
 
 
@@ -1451,10 +1489,12 @@ rapidxml::xml_node<>* Chart::appendToNode
   
 ResultElementPtr Chart::clone() const
 {
-  ResultElementPtr res(new Chart(xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_));
-  res->setOrder(order());
-  return res;
+    ResultElementPtr res ( new Chart ( xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_ ) );
+    res->setOrder ( order() );
+    return res;
 }
+
+
 
 
 
@@ -1462,62 +1502,64 @@ PlotField::PlotField()
 {
 }
 
-PlotField::PlotField(const arma::mat& xy, const std::string& plotcmd)
-: xy_(xy), plotcmd_(plotcmd)
+
+PlotField::PlotField ( const arma::mat& xy, const std::string& plotcmd )
+    : xy_ ( xy ), plotcmd_ ( plotcmd )
 {}
+
+
 
 
 void addContourPlot
 (
-  boost::shared_ptr<ResultElementCollection> results, 
-  const boost::filesystem::path& workdir,
-  const std::string& resultelementname,
-  const std::string& xlabel,
-  const std::string& ylabel,
-  const PlotFieldList& plc,
-  const std::string& shortDescription,
-  const std::string& addinit
+    boost::shared_ptr<ResultElementCollection> results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& xlabel,
+    const std::string& ylabel,
+    const PlotFieldList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit
 )
 {
-  std::string chart_file_name=(workdir/(resultelementname+".png")).string();
-  //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
-  
-  {
-    Gnuplot gp;
-    
-    //gp<<"set terminal postscript color;";
-    //gp<<"set output '"<<chart_file_name_i<<"';";
-    gp<<"set terminal pngcairo; set termoption dash;";
-    gp<<"set output '"<<chart_file_name<<"';";
+    std::string chart_file_name= ( workdir/ ( resultelementname+".png" ) ).string();
+    //std::string chart_file_name_i=(workdir/(resultelementname+".ps")).string();
 
-    gp<<addinit<<";";
-    gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
-    gp<<"splot ";
-    BOOST_FOREACH(const PlotCurve& pc, plc)
     {
-      gp<<"'-' "<<pc.plotcmd_;
+        Gnuplot gp;
+
+        //gp<<"set terminal postscript color;";
+        //gp<<"set output '"<<chart_file_name_i<<"';";
+        gp<<"set terminal pngcairo; set termoption dash;";
+        gp<<"set output '"<<chart_file_name<<"';";
+
+        gp<<addinit<<";";
+        gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
+        gp<<"splot ";
+        BOOST_FOREACH ( const PlotCurve& pc, plc ) {
+            gp<<"'-' "<<pc.plotcmd_;
+        }
+        gp<<endl;
+        BOOST_FOREACH ( const PlotCurve& pc, plc ) {
+            gp.send ( pc.xy_ );
+        }
     }
-    gp<<endl;
-    BOOST_FOREACH(const PlotCurve& pc, plc)
-    {
-      gp.send(pc.xy_);
-    }
-  }
- /*
-  std::string cmd="ps2pdf "+chart_file_name_i+" "+chart_file_name; 
-  int ret=::system(cmd.c_str());
-  if (ret || !exists(chart_file_name))
-   throw insight::Exception("Conversion from postscript chart to pdf failed! Command was:\n"+cmd);
-  else
-   remove(chart_file_name_i);
-   */
-  results->insert(resultelementname,
-    std::auto_ptr<Image>(new Image
-    (
-    workdir, chart_file_name, 
-    shortDescription, ""
-  )));
+    /*
+     std::string cmd="ps2pdf "+chart_file_name_i+" "+chart_file_name;
+     int ret=::system(cmd.c_str());
+     if (ret || !exists(chart_file_name))
+      throw insight::Exception("Conversion from postscript chart to pdf failed! Command was:\n"+cmd);
+     else
+      remove(chart_file_name_i);
+      */
+    results->insert ( resultelementname,
+                      std::auto_ptr<Image> ( new Image
+                              (
+                                  workdir, chart_file_name,
+                                  shortDescription, ""
+                              ) ) );
 }
+
 
 }
 

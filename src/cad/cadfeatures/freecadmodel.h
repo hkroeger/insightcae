@@ -45,7 +45,7 @@ class FreeCADModel
 public:
     declareType ( "FreeCADModel" );
 
-    FreeCADModel ( const insight::NoParameters& nop );
+    FreeCADModel ( );
     static FeaturePtr create ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
     virtual void build();

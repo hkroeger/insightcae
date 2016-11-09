@@ -41,7 +41,7 @@ class CurvePattern
 public:
     declareType ( "CurvePattern" );
 
-    CurvePattern ( const NoParameters& nop = NoParameters() );
+    CurvePattern ();
     static FeaturePtr create ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
 
     virtual void build();

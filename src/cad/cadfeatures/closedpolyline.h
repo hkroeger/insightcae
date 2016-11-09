@@ -35,7 +35,7 @@ class ClosedPolyline
 
 public:
     declareType("ClosedPolyline");
-    ClosedPolyline(const NoParameters& nop = NoParameters());
+    ClosedPolyline();
 
     static FeaturePtr create(std::vector<VectorPtr> pts);
 

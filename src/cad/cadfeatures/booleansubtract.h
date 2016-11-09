@@ -39,7 +39,7 @@ class BooleanSubtract
 public:
   declareType("BooleanSubtract");
   
-  BooleanSubtract(const NoParameters& nop = NoParameters());
+  BooleanSubtract();
   static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
   
   virtual void build();

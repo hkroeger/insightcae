@@ -480,7 +480,7 @@ namespace paraview
 class PVScene
 {
 public:
-  declareFactoryTable(PVScene, NoParameters);
+  declareFactoryTableNoArgs(PVScene);
 
 public:
 #include "openfoamtools__PVScene__Parameters.h"
@@ -524,7 +524,7 @@ command = string "" "Python snippet to execute in pvBatch"
 
   declareType("custom");
   
-  CustomPVScene(const NoParameters&);
+  CustomPVScene();
   CustomPVScene(const ParameterSet&);
   virtual ~CustomPVScene();
   
@@ -560,7 +560,7 @@ size = double 1.0 "size of the viewport (in the same units as the data set)"
 
   declareType("cutplane");
   
-  CutplanePVScene(const NoParameters&);
+  CutplanePVScene();
   CutplanePVScene(const ParameterSet&);
   virtual ~CutplanePVScene();
   
@@ -577,7 +577,7 @@ class ParaviewVisualization
 public:
   declareType("ParaviewVisualization");
 
-  ParaviewVisualization(const NoParameters&);
+  ParaviewVisualization();
   ParaviewVisualization(const ParameterSet& p);
 
   virtual ParameterSet defaultParameters() const;

@@ -37,12 +37,12 @@ namespace cad {
 
     
 defineType(ExternalGear);
-addToFactoryTable(Feature, ExternalGear, NoParameters);
+addToFactoryTable(Feature, ExternalGear);
 
 
 
 
-ExternalGear::ExternalGear(const NoParameters&)
+ExternalGear::ExternalGear()
 {}
 
 

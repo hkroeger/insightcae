@@ -37,13 +37,13 @@ namespace cad
     
     
 defineType(BooleanUnion);
-addToFactoryTable(Feature, BooleanUnion, NoParameters);
+addToFactoryTable(Feature, BooleanUnion);
 
 
 
 
-BooleanUnion::BooleanUnion(const NoParameters& nop)
-: DerivedFeature(nop)
+BooleanUnion::BooleanUnion()
+: DerivedFeature()
 {}
 
 

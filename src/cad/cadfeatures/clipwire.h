@@ -36,7 +36,7 @@ class ClipWire
 
 public:
     declareType("ClipWire");
-    ClipWire(const NoParameters& nop = NoParameters());
+    ClipWire();
 
     static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
 

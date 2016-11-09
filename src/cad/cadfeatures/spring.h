@@ -35,7 +35,7 @@ class Spring
   
 public:
   declareType("Spring");
-  Spring(const NoParameters& nop = NoParameters());
+  Spring();
   Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
   
   virtual void build();

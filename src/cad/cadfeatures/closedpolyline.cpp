@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(ClosedPolyline);
-addToFactoryTable(Feature, ClosedPolyline, NoParameters);
+addToFactoryTable(Feature, ClosedPolyline);
 
 
 
 
-ClosedPolyline::ClosedPolyline(const NoParameters&)
+ClosedPolyline::ClosedPolyline()
 {}
 
 

@@ -39,7 +39,7 @@ class LinearPattern
 
 public:
     declareType ( "LinearPattern" );
-    LinearPattern ( const NoParameters& nop = NoParameters() );
+    LinearPattern ();
 
     static FeaturePtr create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
 

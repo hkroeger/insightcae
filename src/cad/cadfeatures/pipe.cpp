@@ -37,12 +37,12 @@ namespace cad {
     
 
 defineType(Pipe);
-addToFactoryTable(Feature, Pipe, NoParameters);
+addToFactoryTable(Feature, Pipe);
 
 
 
 
-Pipe::Pipe(const NoParameters& nop): Feature(nop)
+Pipe::Pipe(): Feature()
 {}
 
 

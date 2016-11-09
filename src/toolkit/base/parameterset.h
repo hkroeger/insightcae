@@ -283,6 +283,7 @@ public:
   inline key_type& selection() { return selection_; }
   inline const key_type& selection() const { return selection_; }
   inline const ItemList& items() { return value_; }
+  inline void addItem(const key_type& key, const ParameterSet& ps) { value_.insert(key, ps.clone()); }
   inline ParameterSet& operator()() { return *(value_.find(selection_)->second); }
   inline const ParameterSet& operator()() const { return *(value_.find(selection_)->second); }
 

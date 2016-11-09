@@ -32,10 +32,10 @@ namespace cad {
 
 
 defineType(Spring);
-addToFactoryTable(Feature, Spring, NoParameters);
+addToFactoryTable(Feature, Spring);
 
-Spring::Spring(const NoParameters& nop)
-: Feature(nop)
+Spring::Spring()
+: Feature()
 {
 }
 

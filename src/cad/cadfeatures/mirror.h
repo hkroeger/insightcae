@@ -47,7 +47,7 @@ protected:
 public:
 
     declareType ( "Mirror" );
-    Mirror ( const NoParameters& nop = NoParameters() );
+    Mirror ();
 
     static FeaturePtr create ( FeaturePtr m1, DatumPtr pl );
     static FeaturePtr create_short ( FeaturePtr m1, Mirror::Shortcut s );

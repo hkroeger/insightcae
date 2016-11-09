@@ -182,7 +182,7 @@ protected:
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
-  FlatPlateBL(const NoParameters& p = NoParameters());
+  FlatPlateBL();
   
   virtual ParameterSet defaultParameters() const;
   

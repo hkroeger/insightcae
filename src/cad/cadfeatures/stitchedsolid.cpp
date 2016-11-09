@@ -34,9 +34,9 @@ namespace cad {
 
 
 defineType(StitchedSolid);
-addToFactoryTable(Feature, StitchedSolid, NoParameters);
+addToFactoryTable(Feature, StitchedSolid);
 
-StitchedSolid::StitchedSolid(const NoParameters&)
+StitchedSolid::StitchedSolid()
 {}
 
 

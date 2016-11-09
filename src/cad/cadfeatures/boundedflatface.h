@@ -40,7 +40,7 @@ private:
 
 public:
     declareType("BoundedFlatFace");
-    BoundedFlatFace(const NoParameters& nop=NoParameters());
+    BoundedFlatFace();
 
     static FeaturePtr create(const std::vector<FeaturePtr>& edges);
     static FeaturePtr create_set(const std::vector<FeatureSetPtr>& edges);

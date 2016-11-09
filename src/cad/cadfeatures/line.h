@@ -37,7 +37,7 @@ class Line
 
 public:
     declareType ( "Line" );
-    Line ( const NoParameters& nop = NoParameters() );
+    Line ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
 

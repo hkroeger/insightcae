@@ -29,11 +29,17 @@
 
 #include <iostream>
 
+
+
+
 namespace boost 
 { 
 namespace filesystem
 {
   
+    
+    
+    
 template < >
 // path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end, const codecvt_type& cvt)
 path& path::append< typename path::iterator >( typename path::iterator begin, typename path::iterator end)
@@ -42,6 +48,9 @@ path& path::append< typename path::iterator >( typename path::iterator begin, ty
 	  *this /= *begin;
   return *this;
 }
+
+
+
 // Return path when appended to a_From will resolve to same as a_To
 boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::filesystem::path a_To )
 {
@@ -65,7 +74,13 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 } 
 }
 
+
+
+
 //namespace boost { namespace filesystem { using filesystem3::make_relative; } }
+
+
+
 
 using namespace std;
 using namespace boost;
@@ -75,7 +90,13 @@ using namespace rapidxml;
 namespace insight 
 {
   
+    
+    
+    
 const std::string base64_padding[] = {"", "==","="};
+
+
+
 
 std::string base64_encode(const std::string& s) 
 {
@@ -145,7 +166,7 @@ void writeMatToXMLNode(const arma::mat& matrix, xml_document< char >& doc, xml_n
 
 
 defineType(Parameter);
-defineFactoryTable(Parameter, std::string);
+defineFactoryTable(Parameter, LIST(const std::string& desc), LIST(desc) );
 
 Parameter::Parameter()
 {
@@ -201,6 +222,9 @@ void stringToValue(const std::string& s, arma::mat& v)
   v=arma::mat(vals.data(), vals.size(), 1);
 }
  
+ 
+ 
+ 
 char DoubleName[] = "double";
 char IntName[] = "int";
 char BoolName[] = "bool";
@@ -208,8 +232,11 @@ char VectorName[] = "vector";
 char StringName[] = "string";
 char PathName[] = "pathbase";
 
+
+
+
 defineType(PathParameter);
-addToFactoryTable(Parameter, PathParameter, std::string);
+addToFactoryTable(Parameter, PathParameter);
 
 PathParameter::PathParameter(const string& description)
 : SimpleParameter<boost::filesystem::path, PathName>(description)
@@ -240,6 +267,7 @@ Parameter* PathParameter::clone() const
 }
 
 
+
   
 template<> defineType(DoubleParameter);
 template<> defineType(IntParameter);
@@ -249,12 +277,14 @@ template<> defineType(StringParameter);
 typedef SimpleParameter<boost::filesystem::path, PathName> PathParameterBase;
 template<> defineType(PathParameterBase);
 
-addToFactoryTable(Parameter, DoubleParameter, std::string);
-addToFactoryTable(Parameter, IntParameter, std::string);
-addToFactoryTable(Parameter, BoolParameter, std::string);
-addToFactoryTable(Parameter, VectorParameter, std::string);
-addToFactoryTable(Parameter, StringParameter, std::string);
+addToFactoryTable(Parameter, DoubleParameter);
+addToFactoryTable(Parameter, IntParameter);
+addToFactoryTable(Parameter, BoolParameter);
+addToFactoryTable(Parameter, VectorParameter);
+addToFactoryTable(Parameter, StringParameter);
 // addToFactoryTable(Parameter, PathParameter, std::string);
+
+
 
 
 rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const std::string& name)
@@ -329,8 +359,11 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
   std::cout<<"done."<<std::endl;
 }
 
+
+
+
 defineType(DirectoryParameter);
-addToFactoryTable(Parameter, DirectoryParameter, std::string);
+addToFactoryTable(Parameter, DirectoryParameter);
 
 DirectoryParameter::DirectoryParameter(const std::string& description)
 : PathParameter(".", description)
@@ -375,8 +408,11 @@ void DirectoryParameter::readFromNode(const std::string& name, rapidxml::xml_doc
     value_=boost::filesystem::path(child->first_attribute("value")->value());
 }
 
+
+
+
 defineType(SelectionParameter);
-addToFactoryTable(Parameter, SelectionParameter, std::string);
+addToFactoryTable(Parameter, SelectionParameter);
 
 SelectionParameter::SelectionParameter( const std::string& description)
 : SimpleParameter< int , IntName>(-1, description)
@@ -464,8 +500,11 @@ void SelectionParameter::readFromNode(const std::string& name, rapidxml::xml_doc
   }
 }
 
+
+
+
 defineType(DoubleRangeParameter);
-addToFactoryTable(Parameter, DoubleRangeParameter, std::string);
+addToFactoryTable(Parameter, DoubleRangeParameter);
 
 DoubleRangeParameter::DoubleRangeParameter(const std::string& description)
 : Parameter(description)
@@ -557,8 +596,11 @@ void DoubleRangeParameter::readFromNode(const std::string& name, rapidxml::xml_d
   }
 }
 
+
+
+
 defineType(ArrayParameter);
-addToFactoryTable(Parameter, ArrayParameter, std::string);
+addToFactoryTable(Parameter, ArrayParameter);
 
 ArrayParameter::ArrayParameter(const std::string& description)
 : Parameter(description)
@@ -631,8 +673,11 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
   }
 }
   
+  
+  
+  
 defineType(MatrixParameter);
-addToFactoryTable(Parameter, MatrixParameter, std::string);
+addToFactoryTable(Parameter, MatrixParameter);
 
 MatrixParameter::MatrixParameter(const std::string& description)
 : Parameter(description)

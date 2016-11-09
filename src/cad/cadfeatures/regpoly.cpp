@@ -37,12 +37,12 @@ namespace cad {
     
     
 defineType(RegPoly);
-addToFactoryTable(Feature, RegPoly, NoParameters);
+addToFactoryTable(Feature, RegPoly);
 
 
 
 
-RegPoly::RegPoly(const NoParameters&)
+RegPoly::RegPoly()
 {}
 
 

@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(Tri);
-addToFactoryTable(Feature, Tri, NoParameters);
+addToFactoryTable(Feature, Tri);
 
 
 
 
-Tri::Tri(const NoParameters&)
+Tri::Tri()
 {}
 
 

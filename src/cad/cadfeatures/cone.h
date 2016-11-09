@@ -41,7 +41,7 @@ class Cone
 public:
     declareType ( "Cone" );
     
-    Cone ( const NoParameters& nop = NoParameters() );
+    Cone ();
     static FeaturePtr create( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
 
     virtual void build();

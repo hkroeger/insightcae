@@ -40,13 +40,13 @@ namespace cad
     
     
 defineType(BooleanIntersection);
-addToFactoryTable(Feature, BooleanIntersection, NoParameters);
+addToFactoryTable(Feature, BooleanIntersection);
 
 
 
 
-BooleanIntersection::BooleanIntersection(const NoParameters& nop)
-    : DerivedFeature(nop)
+BooleanIntersection::BooleanIntersection()
+    : DerivedFeature()
 {}
 
 

@@ -87,7 +87,7 @@ class CoilPath
 public:
     declareType ( "CoilPath" );
 
-    CoilPath ( const NoParameters& nop = NoParameters() );
+    CoilPath ();
     static FeaturePtr create
     (
         ScalarPtr l,
@@ -141,7 +141,7 @@ class Coil
 
 public:
     declareType ( "Coil" );
-    Coil ( const NoParameters& nop = NoParameters() );
+    Coil ();
     Coil
     (
         VectorPtr p0,

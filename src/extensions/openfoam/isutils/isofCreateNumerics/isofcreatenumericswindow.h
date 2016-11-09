@@ -51,6 +51,7 @@ public:
     
 public slots:
     void onItemSelectionChanged();
+    virtual void done(int r);
 };
 
 #endif

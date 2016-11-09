@@ -39,7 +39,7 @@ class Projected
 
 public:
     declareType ( "Projected" );
-    Projected ( const NoParameters& nop = NoParameters() );
+    Projected ();
 
     static FeaturePtr create ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
 

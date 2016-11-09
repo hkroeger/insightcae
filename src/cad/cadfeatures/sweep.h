@@ -39,7 +39,7 @@ class Sweep
 
 public:
     declareType ( "Sweep" );
-    Sweep ( const NoParameters& nop = NoParameters() );
+    Sweep ();
 
     static FeaturePtr create ( const std::vector<FeaturePtr>& secs );
 

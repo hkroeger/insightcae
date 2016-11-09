@@ -60,17 +60,14 @@ void ParameterEditorWidget::onUpdate()
 
 void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter)
 {
-  DirectoryParameterWrapper *dp = 
-     new DirectoryParameterWrapper
-     ( 
-      ParameterWrapper::ConstrP
-      (
-        root_, 
-        name, 
+    DirectoryParameterWrapper *dp =
+        new DirectoryParameterWrapper
+    (
+        root_,
+        name,
         parameter,
-        inputContents_, 
-	this
-      ) 
+        inputContents_,
+        this
     );
      
   QObject::connect(ptree_, SIGNAL(itemSelectionChanged()), dp, SLOT(onSelectionChanged()));

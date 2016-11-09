@@ -33,7 +33,7 @@ protected:
 public:
   declareType("Free Shear Flow");
   
-    FreeShearFlow(const NoParameters& p = NoParameters() );
+    FreeShearFlow();
     FreeShearFlow(const std::string& name, const std::string& description);
     
     virtual insight::ParameterSet defaultParameters() const;

@@ -37,12 +37,12 @@ namespace cad {
     
     
 defineType(Torus);
-addToFactoryTable(Feature, Torus, NoParameters);
+addToFactoryTable(Feature, Torus);
 
 
 
 
-Torus::Torus(const NoParameters&)
+Torus::Torus()
 {}
 
 

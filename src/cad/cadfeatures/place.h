@@ -47,7 +47,7 @@ class Place
 
 public:
     declareType ( "Place" );
-    Place ( const NoParameters& nop = NoParameters() );
+    Place ();
     Place ( FeaturePtr m, const gp_Ax2& cs );
 
     static FeaturePtr create ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );

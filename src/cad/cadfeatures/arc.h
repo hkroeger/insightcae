@@ -42,7 +42,7 @@ class Arc
 
 public:
     declareType ( "Arc" );
-    Arc ( const NoParameters& nop = NoParameters() );
+    Arc ();
     
     static FeaturePtr create ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
 

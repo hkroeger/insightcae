@@ -35,9 +35,9 @@ namespace cad {
 
 
 defineType(ProjectedOutline);
-addToFactoryTable(Feature, ProjectedOutline, NoParameters);
+addToFactoryTable(Feature, ProjectedOutline);
 
-ProjectedOutline::ProjectedOutline(const NoParameters& nop): Feature(nop)
+ProjectedOutline::ProjectedOutline(): Feature()
 {}
 
 

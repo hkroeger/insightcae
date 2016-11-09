@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(Projected);
-addToFactoryTable(Feature, Projected, NoParameters);
+addToFactoryTable(Feature, Projected);
 
 
 
 
-Projected::Projected(const NoParameters& nop): Feature(nop)
+Projected::Projected(): Feature()
 {}
 
 

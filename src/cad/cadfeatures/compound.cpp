@@ -38,13 +38,13 @@ namespace cad
     
     
 defineType(Compound);
-addToFactoryTable(Feature, Compound, NoParameters);
+addToFactoryTable(Feature, Compound);
 
 
 
 
-Compound::Compound(const NoParameters& nop)
-: Feature(nop)
+Compound::Compound()
+: Feature()
 {}
 
 

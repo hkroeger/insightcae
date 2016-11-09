@@ -38,12 +38,12 @@
 using namespace boost;
 
 defineType(ResultElementWrapper);
-defineFactoryTable(ResultElementWrapper, ResultElementWrapper::ConstrP);
+defineFactoryTable(ResultElementWrapper, LIST(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res), LIST(tree, name, res));
 
-ResultElementWrapper::ResultElementWrapper(const ConstrP& p)
-: QTreeWidgetItem(get<0>(p)), // QWidget(get<0>(p)),
-  name_(get<1>(p)),
-  p_(get<2>(p))
+ResultElementWrapper::ResultElementWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& res)
+: QTreeWidgetItem(tree), // QWidget(get<0>(p)),
+  name_(name),
+  p_(res)
 {}
 
 ResultElementWrapper::~ResultElementWrapper()
@@ -51,10 +51,10 @@ ResultElementWrapper::~ResultElementWrapper()
 
 
 defineType(CommentWrapper);
-addToFactoryTable(ResultElementWrapper, CommentWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, CommentWrapper);
 
-CommentWrapper::CommentWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+CommentWrapper::CommentWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -73,10 +73,10 @@ CommentWrapper::CommentWrapper(const ConstrP& p)
 
 
 defineType(ScalarResultWrapper);
-addToFactoryTable(ResultElementWrapper, ScalarResultWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, ScalarResultWrapper);
 
-ScalarResultWrapper::ScalarResultWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+ScalarResultWrapper::ScalarResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -94,10 +94,10 @@ ScalarResultWrapper::ScalarResultWrapper(const ConstrP& p)
 
 
 defineType(ResultSectionWrapper);
-addToFactoryTable(ResultElementWrapper, ResultSectionWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, ResultSectionWrapper);
 
-ResultSectionWrapper::ResultSectionWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+ResultSectionWrapper::ResultSectionWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   frame_ = new QGroupBox(name_, this);
@@ -109,10 +109,10 @@ ResultSectionWrapper::ResultSectionWrapper(const ConstrP& p)
 }
 
 defineType(ResultSetWrapper);
-addToFactoryTable(ResultElementWrapper, ResultSetWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, ResultSetWrapper);
 
-ResultSetWrapper::ResultSetWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+ResultSetWrapper::ResultSetWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   frame_ = new QGroupBox(name_, this);
@@ -126,10 +126,10 @@ ResultSetWrapper::ResultSetWrapper(const ConstrP& p)
 }
 
 defineType(ImageWrapper);
-addToFactoryTable(ResultElementWrapper, ImageWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, ImageWrapper);
 
-ImageWrapper::ImageWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+ImageWrapper::ImageWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -157,10 +157,10 @@ ImageWrapper::ImageWrapper(const ConstrP& p)
 
 
 defineType(ChartWrapper);
-addToFactoryTable(ResultElementWrapper, ChartWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, ChartWrapper);
 
-ChartWrapper::ChartWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+ChartWrapper::ChartWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
   
     chart_file_=boost::filesystem::unique_path(boost::filesystem::temp_directory_path()/"%%%%-%%%%-%%%%-%%%%.png");
@@ -185,10 +185,10 @@ ChartWrapper::~ChartWrapper()
 
 
 defineType(TabularResultWrapper);
-addToFactoryTable(ResultElementWrapper, TabularResultWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, TabularResultWrapper);
 
-TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+TabularResultWrapper::TabularResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
     setText(1, res().shortDescription().c_str());
@@ -230,10 +230,10 @@ TabularResultWrapper::TabularResultWrapper(const ConstrP& p)
 
 
 defineType(AttributeTableResultWrapper);
-addToFactoryTable(ResultElementWrapper, AttributeTableResultWrapper, ResultElementWrapper::ConstrP);
+addToFactoryTable(ResultElementWrapper, AttributeTableResultWrapper);
 
-AttributeTableResultWrapper::AttributeTableResultWrapper(const ConstrP& p)
-: ResultElementWrapper(p)
+AttributeTableResultWrapper::AttributeTableResultWrapper(QTreeWidgetItem* tree, const QString& name, insight::ResultElement& re)
+: ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
     setText(1, res().shortDescription().c_str());
@@ -270,67 +270,61 @@ AttributeTableResultWrapper::AttributeTableResultWrapper(const ConstrP& p)
 }
 
 
-void addWrapperToWidget(insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform)
+void addWrapperToWidget ( insight::ResultElementCollection& rset, QTreeWidgetItem *node, QWidget *superform )
 {
 //   QVBoxLayout *vlayout=new QVBoxLayout(widget);
 
 //   for(insight::ResultSet::iterator i=rset.begin(); i!=rset.end(); i++)
-  std::vector<insight::ResultElementCollection::value_type> items;
-  
+    std::vector<insight::ResultElementCollection::value_type> items;
+
 //   std::transform
-//   ( 
-//     begin(), 
+//   (
+//     begin(),
 //     end(),
 //     std::back_inserter(items),
 //     boost::bind(&value_type, _1) // does not work...
 //   );
-  
-  std::for_each
-  (
-    rset.begin(),
-    rset.end(),
-    [&items](const insight::ResultElementCollection::value_type& p) 
-    { 
-      items.push_back(p);       
+
+    std::for_each
+    (
+        rset.begin(),
+        rset.end(),
+    [&items] ( const insight::ResultElementCollection::value_type& p ) {
+        items.push_back ( p );
     }
-  );
-  
-  std::sort
-  (
-    items.begin(), 
-    items.end(),
-    [](const insight::ResultElementCollection::value_type &left, const insight::ResultElementCollection::value_type &right) 
-    {
-      return left.second->order() < right.second->order();
+    );
+
+    std::sort
+    (
+        items.begin(),
+        items.end(),
+    [] ( const insight::ResultElementCollection::value_type &left, const insight::ResultElementCollection::value_type &right ) {
+        return left.second->order() < right.second->order();
     }
-  );
-  
-  BOOST_FOREACH(const insight::ResultElementCollection::value_type& i, items)
-  {
-    try
-    {
-      ResultElementWrapper *wrapper = 
-        ResultElementWrapper::lookup
-        (
-        i.second->type(),
-        ResultElementWrapper::ConstrP(node, i.first.c_str(), *i.second)
-        );
+    );
+
+    BOOST_FOREACH ( const insight::ResultElementCollection::value_type& i, items ) {
+        try {
+            ResultElementWrapper *wrapper =
+                ResultElementWrapper::lookup
+                (
+                    i.second->type(),
+                    node, i.first.c_str(), *i.second
+                );
 //       vlayout->addWidget(wrapper);
-    }
-    catch (insight::Exception e)
-    {
+        } catch ( insight::Exception e ) {
 //       QLabel *comment=new QLabel( (i.first+": "+e.message()).c_str());
 //       vlayout->addWidget(comment);
-      QString comment( (i.first+": "+e.message()).c_str() );
-      QTreeWidgetItem *it = new QTreeWidgetItem(node, QStringList() << "(error)" << " "<< comment);
+            QString comment ( ( i.first+": "+e.message() ).c_str() );
+            QTreeWidgetItem *it = new QTreeWidgetItem ( node, QStringList() << "(error)" << " "<< comment );
+        }
+        /*
+        if (superform)
+        {
+          QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
+          QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
+        }
+        */
     }
-    /*
-    if (superform) 
-    {
-      QObject::connect(superform, SIGNAL(apply()), wrapper, SLOT(onApply()));
-      QObject::connect(superform, SIGNAL(update()), wrapper, SLOT(onUpdate()));
-    }
-    */
-  }
-      
+
 }

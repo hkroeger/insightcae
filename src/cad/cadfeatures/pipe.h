@@ -41,7 +41,7 @@ class Pipe
 
 public:
     declareType ( "Pipe" );
-    Pipe ( const NoParameters& nop = NoParameters() );
+    Pipe ();
 
     static FeaturePtr create ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 

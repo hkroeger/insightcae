@@ -38,9 +38,9 @@ namespace insight
 {
   
 defineType(DecayingTurbulence);
-addToFactoryTable(Analysis, DecayingTurbulence, NoParameters);
+addToFactoryTable(Analysis, DecayingTurbulence);
 
-DecayingTurbulence::DecayingTurbulence(const NoParameters&)
+DecayingTurbulence::DecayingTurbulence()
 : OpenFOAMAnalysis
   (
     "Decaying Turbulence Test Case",

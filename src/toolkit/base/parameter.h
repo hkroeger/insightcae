@@ -40,6 +40,8 @@
 #include "rapidxml/rapidxml.hpp"
 
 
+
+
 namespace boost 
 { 
 namespace filesystem
@@ -53,7 +55,7 @@ boost::filesystem::path make_relative( boost::filesystem::path a_From, boost::fi
 } 
 }
 
-//namespace boost { namespace filesystem { using filesystem3::make_relative; } }
+
 
 
 namespace insight {
@@ -62,53 +64,68 @@ std::string base64_encode(const std::string& s);
 std::string base64_encode(const boost::filesystem::path& f);
 std::string base64_decode(const std::string& s);
 
+
+
+
 void writeMatToXMLNode(const arma::mat& matrix, rapidxml::xml_document< char >& doc, rapidxml::xml_node< char >& node);
 
+
+
+
 class Parameter
-: public boost::noncopyable
+    : public boost::noncopyable
 {
-  
+
 public:
-  declareFactoryTable(Parameter, std::string);  
-  
+    declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
+
 protected:
-  std::string description_;
-  
+    std::string description_;
+
 public:
-  declareType("Parameter");
-  
-  Parameter();
-  Parameter(const std::string& description);
-  virtual ~Parameter();
-  
-  inline const std::string& description() const
-  { return description_; }
-  inline std::string& description() { return description_; }
+    declareType ( "Parameter" );
 
-  virtual std::string latexRepresentation() const =0;
-  
-  virtual rapidxml::xml_node<>* appendToNode
-  (
-    const std::string& name, 
-    rapidxml::xml_document<>& doc, 
-    rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath
-  ) const;
-  
-  virtual void readFromNode
-  (
-    const std::string& name, 
-    rapidxml::xml_document<>& doc, 
-    rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath
-  ) =0;
+    Parameter();
+    Parameter ( const std::string& description );
+    virtual ~Parameter();
 
-  rapidxml::xml_node<> *findNode(rapidxml::xml_node<>& father, const std::string& name);
-  virtual Parameter* clone() const =0;
+    inline const std::string& description() const
+    {
+        return description_;
+    }
+    inline std::string& description()
+    {
+        return description_;
+    }
+
+    virtual std::string latexRepresentation() const =0;
+
+    virtual rapidxml::xml_node<>* appendToNode
+    (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath
+    ) const;
+
+    virtual void readFromNode
+    (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node,
+        boost::filesystem::path inputfilepath
+    ) =0;
+
+    rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
+    virtual Parameter* clone() const =0;
 };
 
 
+
+
 typedef boost::shared_ptr<Parameter> ParameterPtr;
+
+
 
 
 template<class V>
@@ -117,7 +134,13 @@ std::string valueToString(const V& value)
   return boost::lexical_cast<std::string>(value);
 }
 
+
+
+
 std::string valueToString(const arma::mat& value);
+
+
+
 
 template<class V>
 void stringToValue(const std::string& s, V& v)
@@ -125,73 +148,88 @@ void stringToValue(const std::string& s, V& v)
   v=boost::lexical_cast<V>(s);
 }
 
+
+
+
 void stringToValue(const std::string& s, arma::mat& v);
   
+
+
+
 template<class T, char const* N>
 class SimpleParameter
-: public Parameter
+    : public Parameter
 {
-  
+
 public:
-  typedef T value_type;
-  
+    typedef T value_type;
+
 protected:
-  T value_;
-  
+    T value_;
+
 public:
-  declareType(N);
+    declareType ( N );
 
-  SimpleParameter(const std::string& description)
-  : Parameter(description)
-  {}
+    SimpleParameter ( const std::string& description )
+        : Parameter ( description )
+    {}
 
-  SimpleParameter(const T& value, const std::string& description)
-  : Parameter(description),
-    value_(value)
-  {}
-  
-  virtual ~SimpleParameter()
-  {}
-  
-  inline T& operator()() { return value_; }
-  inline const T& operator()() const { return value_; }
+    SimpleParameter ( const T& value, const std::string& description )
+        : Parameter ( description ),
+          value_ ( value )
+    {}
 
-  virtual std::string latexRepresentation() const
-  {
-    return cleanSymbols(valueToString(value_));
-  }
+    virtual ~SimpleParameter()
+    {}
 
-  virtual Parameter* clone() const
-  {
-    return new SimpleParameter<T, N>(value_, description_);
-  }
-
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const
-  {
-    using namespace rapidxml;
-    xml_node<>* child = Parameter::appendToNode(name, doc, node, inputfilepath);
-    child->append_attribute(doc.allocate_attribute
-    (
-      "value", 
-      doc.allocate_string(valueToString(value_).c_str())
-    ));
-    return child;
-  }
-
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath)
-  {
-   std::cout<<"Reading simple "<<name<< std::endl;
-  using namespace rapidxml;
-    xml_node<>* child = findNode(node, name);
-    if (child)
+    inline T& operator() ()
     {
-      stringToValue(child->first_attribute("value")->value(), value_);
+        return value_;
     }
-  }
-  
+    inline const T& operator() () const
+    {
+        return value_;
+    }
+
+    virtual std::string latexRepresentation() const
+    {
+        return cleanSymbols ( valueToString ( value_ ) );
+    }
+
+    virtual Parameter* clone() const
+    {
+        return new SimpleParameter<T, N> ( value_, description_ );
+    }
+
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const
+    {
+        using namespace rapidxml;
+        xml_node<>* child = Parameter::appendToNode ( name, doc, node, inputfilepath );
+        child->append_attribute
+        (
+            doc.allocate_attribute
+            (
+                "value",
+                doc.allocate_string ( valueToString ( value_ ).c_str() )
+            )
+        );
+        return child;
+    }
+
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath )
+    {
+        std::cout<<"Reading simple "<<name<< std::endl;
+        using namespace rapidxml;
+        xml_node<>* child = findNode ( node, name );
+        if ( child ) {
+            stringToValue ( child->first_attribute ( "value" )->value(), value_ );
+        }
+    }
+
 };
+
 
 
   
@@ -209,28 +247,34 @@ typedef SimpleParameter<arma::mat, VectorName> VectorParameter;
 typedef SimpleParameter<std::string, StringName> StringParameter;
 // typedef SimpleParameter<boost::filesystem::path, PathName> PathParameter;
 
+
+
+
 class PathParameter
-: public SimpleParameter<boost::filesystem::path, PathName>
+    : public SimpleParameter<boost::filesystem::path, PathName>
 {
-  std::string file_content_;
+    std::string file_content_;
 public:
-  declareType("path");
+    declareType ( "path" );
 
-  PathParameter(const std::string& description);
-  PathParameter(const boost::filesystem::path& value, const std::string& description);
-  
-  bool isPacked() const;
-  void pack();
-  void unpack();
+    PathParameter ( const std::string& description );
+    PathParameter ( const boost::filesystem::path& value, const std::string& description );
 
-  virtual Parameter* clone() const;
-  
-//   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+    bool isPacked() const;
+    void pack();
+    void unpack();
+
+    virtual Parameter* clone() const;
+
+//   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
 //     boost::filesystem::path inputfilepath) const;
-// 
-//   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
+//
+//   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
 //     boost::filesystem::path inputfilepath);
 };
+
+
+
 
 #ifdef SWIG
 %template(DoubleParameter) SimpleParameter<double, DoubleName>;
@@ -241,171 +285,242 @@ public:
 // %template(PathParameter) SimpleParameter<boost::filesystem::path, PathName>;
 #endif
 
+
+
+
 template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
     boost::filesystem::path inputfilepath) const;
 
 template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
   boost::filesystem::path inputfilepath);
 
+
+
   
 class DirectoryParameter
-: public PathParameter
+    : public PathParameter
 {
 public:
-  declareType("directory");
-  
-  DirectoryParameter(const std::string& description);
-  DirectoryParameter(const boost::filesystem::path& value, const std::string& description);
-  virtual std::string latexRepresentation() const;
-  virtual Parameter* clone() const;
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath);
+    declareType ( "directory" );
+
+    DirectoryParameter ( const std::string& description );
+    DirectoryParameter ( const boost::filesystem::path& value, const std::string& description );
+    virtual std::string latexRepresentation() const;
+    virtual Parameter* clone() const;
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const;
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath );
 };
+
+
 
 
 class SelectionParameter
-: public IntParameter
+    : public IntParameter
 {
 public:
-  typedef std::vector<std::string> ItemList;
-  
+    typedef std::vector<std::string> ItemList;
+
 protected:
-  ItemList items_;
-  
+    ItemList items_;
+
 public:
-  declareType("selection");
-  
-  SelectionParameter(const std::string& description);
-  SelectionParameter(const int& value, const ItemList& items, const std::string& description);
-  SelectionParameter(const std::string& key, const ItemList& items, const std::string& description);
-  virtual ~SelectionParameter();
-  
-  inline ItemList& items() { return items_; };
-  virtual const ItemList& items() const;
-  inline void setSelection(const std::string& sel) { value_=selection_id(sel); }
-  inline const std::string& selection() const { return items_[value_]; }
-  inline int selection_id(const std::string& key) const { return  std::find(items_.begin(), items_.end(), key) - items_.begin(); }
+    declareType ( "selection" );
 
-  virtual std::string latexRepresentation() const;
-  
-  virtual Parameter* clone() const;
+    SelectionParameter ( const std::string& description );
+    SelectionParameter ( const int& value, const ItemList& items, const std::string& description );
+    SelectionParameter ( const std::string& key, const ItemList& items, const std::string& description );
+    virtual ~SelectionParameter();
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath);
+    inline ItemList& items()
+    {
+        return items_;
+    };
+    virtual const ItemList& items() const;
+    inline void setSelection ( const std::string& sel )
+    {
+        value_=selection_id ( sel );
+    }
+    inline const std::string& selection() const
+    {
+        return items_[value_];
+    }
+    inline int selection_id ( const std::string& key ) const
+    {
+        return  std::find ( items_.begin(), items_.end(), key ) - items_.begin();
+    }
+
+    virtual std::string latexRepresentation() const;
+
+    virtual Parameter* clone() const;
+
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const;
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath );
 };
+
+
+
 
 class DoubleRangeParameter
-: public Parameter
+    : public Parameter
 {
 public:
-  typedef std::set<double> RangeList;
-  
+    typedef std::set<double> RangeList;
+
 protected:
-  RangeList values_;
-  
+    RangeList values_;
+
 public:
-  typedef RangeList value_type;
+    typedef RangeList value_type;
 
-  declareType("doubleRange");
-  
-  DoubleRangeParameter(const std::string& description);
-  DoubleRangeParameter(const RangeList& value, const std::string& description);
-  DoubleRangeParameter(double defaultFrom, double defaultTo, int defaultNum, const std::string& description);
-  virtual ~DoubleRangeParameter();
-  
-  inline void insertValue(double v) { values_.insert(v); }
-  inline RangeList::iterator operator()() { return values_.begin(); }
-  inline RangeList::const_iterator operator()() const { return values_.begin(); }
-  
-  inline RangeList& values() { return values_; }
-  inline const RangeList& values() const { return values_; }
+    declareType ( "doubleRange" );
 
-  virtual std::string latexRepresentation() const;
-  
-  DoubleParameter* toDoubleParameter(RangeList::const_iterator i) const;
-  
-  virtual Parameter* clone() const;
+    DoubleRangeParameter ( const std::string& description );
+    DoubleRangeParameter ( const RangeList& value, const std::string& description );
+    DoubleRangeParameter ( double defaultFrom, double defaultTo, int defaultNum, const std::string& description );
+    virtual ~DoubleRangeParameter();
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath);
+    inline void insertValue ( double v )
+    {
+        values_.insert ( v );
+    }
+    inline RangeList::iterator operator() ()
+    {
+        return values_.begin();
+    }
+    inline RangeList::const_iterator operator() () const
+    {
+        return values_.begin();
+    }
+
+    inline RangeList& values()
+    {
+        return values_;
+    }
+    inline const RangeList& values() const
+    {
+        return values_;
+    }
+
+    virtual std::string latexRepresentation() const;
+
+    DoubleParameter* toDoubleParameter ( RangeList::const_iterator i ) const;
+
+    virtual Parameter* clone() const;
+
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const;
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath );
 };
+
+
 
 
 class ArrayParameter
-: public Parameter
+    : public Parameter
 {
 public:
-  typedef boost::ptr_vector<Parameter> value_type;
+    typedef boost::ptr_vector<Parameter> value_type;
 
 protected:
-  boost::shared_ptr<Parameter> defaultValue_;
-  boost::ptr_vector<Parameter> value_;
-  
-public:
-  declareType("array");
-  
-  ArrayParameter(const std::string& description);
-  ArrayParameter(const Parameter& defaultValue, int size, const std::string& description);
-  
-  //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
-  inline void setDefaultValue(const Parameter& defP) { defaultValue_.reset(defP.clone()); }
-  inline void eraseValue(int i) { value_.erase(value_.begin()+i); }
-  inline void appendValue(const Parameter& np) { value_.push_back(np.clone()); }
-  inline void appendEmpty() { value_.push_back(defaultValue_->clone()); }
-  inline Parameter& operator[](int i) { return value_[i]; }
-  inline const Parameter& operator[](int i) const { return value_[i]; }
-  inline int size() const { return value_.size(); }
-  inline void clear() { value_.clear(); }
-  
-  virtual std::string latexRepresentation() const;
-  
-  virtual Parameter* clone () const;
+    boost::shared_ptr<Parameter> defaultValue_;
+    boost::ptr_vector<Parameter> value_;
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath);
+public:
+    declareType ( "array" );
+
+    ArrayParameter ( const std::string& description );
+    ArrayParameter ( const Parameter& defaultValue, int size, const std::string& description );
+
+    //inline void setParameterSet(const ParameterSet& paramset) { value_.reset(paramset.clone()); }
+    inline void setDefaultValue ( const Parameter& defP )
+    {
+        defaultValue_.reset ( defP.clone() );
+    }
+    inline void eraseValue ( int i )
+    {
+        value_.erase ( value_.begin()+i );
+    }
+    inline void appendValue ( const Parameter& np )
+    {
+        value_.push_back ( np.clone() );
+    }
+    inline void appendEmpty()
+    {
+        value_.push_back ( defaultValue_->clone() );
+    }
+    inline Parameter& operator[] ( int i )
+    {
+        return value_[i];
+    }
+    inline const Parameter& operator[] ( int i ) const
+    {
+        return value_[i];
+    }
+    inline int size() const
+    {
+        return value_.size();
+    }
+    inline void clear()
+    {
+        value_.clear();
+    }
+
+    virtual std::string latexRepresentation() const;
+
+    virtual Parameter* clone () const;
+
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const;
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath );
 };
+
+
+
 
 class MatrixParameter
-: public Parameter
+    : public Parameter
 {
 public:
-  typedef arma::mat value_type;
+    typedef arma::mat value_type;
 
 protected:
-  arma::mat value_;
-  
+    arma::mat value_;
+
 public:
-  declareType("matrix");
-  
-  MatrixParameter(const std::string& description);
-  MatrixParameter(const arma::mat& defaultValue, const std::string& description);
+    declareType ( "matrix" );
 
-  arma::mat& operator()();
-  const arma::mat& operator()() const;
-  
-  virtual std::string latexRepresentation() const;
-  
-  virtual Parameter* clone () const;
+    MatrixParameter ( const std::string& description );
+    MatrixParameter ( const arma::mat& defaultValue, const std::string& description );
 
-  virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
-  virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath);
+    arma::mat& operator() ();
+    const arma::mat& operator() () const;
+
+    virtual std::string latexRepresentation() const;
+
+    virtual Parameter* clone () const;
+
+    virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+            boost::filesystem::path inputfilepath ) const;
+    virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+                                boost::filesystem::path inputfilepath );
 };
+
+
 
 
 inline Parameter* new_clone(const Parameter& p)
 {
   return p.clone();
 }
+
+
+
 
 }
 

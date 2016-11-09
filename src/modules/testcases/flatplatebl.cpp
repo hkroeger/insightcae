@@ -41,7 +41,7 @@ namespace insight
 {
   
 defineType(FlatPlateBL);
-addToFactoryTable(Analysis, FlatPlateBL, NoParameters);
+addToFactoryTable(Analysis, FlatPlateBL);
 
 const std::vector<double> FlatPlateBL::sec_locs_ 
  = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.9);
@@ -53,7 +53,7 @@ ParameterSet FlatPlateBL::defaultParameters() const
   return p;
 }
 
-FlatPlateBL::FlatPlateBL(const NoParameters&)
+FlatPlateBL::FlatPlateBL()
 : OpenFOAMAnalysis
   (
     "Flat Plate Boundary Layer Test Case",
@@ -524,7 +524,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
-    cm.insert(new simpleFoamNumerics(FVNumericsParameters(cm, simpleFoamNumerics::Parameters()
+    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_Uinternal(vec3(uinf_,0,0))
       .set_hasCyclics(true)
@@ -532,12 +532,12 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_endTime(end_)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
-    )));
+    ));
   } 
   else if (Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
-    cm.insert( new pimpleFoamNumerics(FVNumericsParameters(cm, pimpleFoamNumerics::Parameters()
+    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
       .set_hasCyclics(true)
       .set_LESfilteredConvection(p.run.filteredconvection)
       .set_Uinternal(vec3(p.operation.uinf,0,0))
@@ -549,7 +549,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_deltaT(1e-3)
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
-    )));
+    ));
   }
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("walls") )
@@ -1055,7 +1055,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 
 insight::Analysis* FlatPlateBL::clone()
 {
-  return new FlatPlateBL(NoParameters());
+  return new FlatPlateBL();
 }
 
 double FlatPlateBL::G(double Alpha, double D)

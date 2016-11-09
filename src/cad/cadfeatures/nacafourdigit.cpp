@@ -35,12 +35,12 @@ namespace cad {
     
 
 defineType(NacaFourDigit);
-addToFactoryTable(Feature, NacaFourDigit, NoParameters);
+addToFactoryTable(Feature, NacaFourDigit);
 
 
 
 
-NacaFourDigit::NacaFourDigit(const NoParameters&)
+NacaFourDigit::NacaFourDigit()
 {}
 
 

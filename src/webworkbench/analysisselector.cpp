@@ -64,7 +64,7 @@ void AnalysisSelector::newAnalysisSelected()
     
     std::string analysisName = asb_->currentText().toUTF8();
     
-    session_->analysis_.reset ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
+    session_->analysis_.reset ( insight::Analysis::lookup(analysisName) );
     session_->analysis_->setDefaults();
     session_->parameters_ = session_->analysis_->defaultParameters();
     
@@ -122,7 +122,7 @@ void AnalysisSelector::uploadAnalysisConfiguration()
         analysisName = analysisnamenode->first_attribute("name")->value();
     }
 
-    session_->analysis_.reset ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
+    session_->analysis_.reset ( insight::Analysis::lookup(analysisName) );
     session_->analysis_->setDefaults();
     session_->parameters_ = session_->analysis_->defaultParameters();
     session_->parameters_.readFromNode(doc, *rootnode, maininputfile.parent_path());

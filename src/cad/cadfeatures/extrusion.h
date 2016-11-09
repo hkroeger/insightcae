@@ -41,7 +41,7 @@ class Extrusion
 
 public:
     declareType ( "Extrusion" );
-    Extrusion ( const NoParameters& nop = NoParameters() );
+    Extrusion ();
 
     static FeaturePtr create ( FeaturePtr sk, VectorPtr L, bool centered=false );
 

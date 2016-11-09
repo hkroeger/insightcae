@@ -34,12 +34,12 @@ namespace cad {
     
 
 defineType(FillingFace);
-addToFactoryTable(Feature, FillingFace, NoParameters);
+addToFactoryTable(Feature, FillingFace);
 
 
 
 
-FillingFace::FillingFace ( const NoParameters& )
+FillingFace::FillingFace ()
 {}
 
 

@@ -21,6 +21,7 @@
 
 #include "boundaryconditioncaseelements.h"
 #include "openfoam/basiccaseelements.h"
+#include "openfoam/turbulencemodelcaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 
@@ -274,7 +275,7 @@ SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictDa
   className_(className)
 {
   if ( (OFversion()>=230) && (className_=="symmetryPlane")) className_="symmetry";
-  type_=className_;
+  BCtype_=className_;
 }
 
 void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -710,7 +711,7 @@ SuctionInletBC::SuctionInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void SuctionInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -797,7 +798,7 @@ MassflowBC::MassflowBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void MassflowBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -1030,7 +1031,7 @@ VelocityInletBC::VelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 
@@ -1150,7 +1151,7 @@ ExptDataInletBC::ExptDataInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void ExptDataInletBC::addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const
@@ -1319,7 +1320,7 @@ CompressibleInletBC::CompressibleInletBC
 : VelocityInletBC(c, patchName, boundaryDict, p),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
@@ -1630,7 +1631,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 const std::vector<std::string> TurbulentVelocityInletBC::inflowGenerator_types = boost::assign::list_of
@@ -1943,7 +1944,7 @@ PressureOutletBC::PressureOutletBC
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -2047,7 +2048,7 @@ PotentialFreeSurfaceBC::PotentialFreeSurfaceBC
 )
 : BoundaryCondition(c, patchName, boundaryDict)
 {
- type_="patch";
+ BCtype_="patch";
 }
 
 void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -2233,7 +2234,7 @@ WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::
 : BoundaryCondition(c, patchName, boundaryDict),
   p_(p)
 {
-  type_="wall";
+  BCtype_="wall";
 }
 
 void WallBC::addIntoDictionaries(OFdicts& dictionaries) const

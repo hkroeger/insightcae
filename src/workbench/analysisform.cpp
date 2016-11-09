@@ -52,7 +52,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     throw insight::Exception("Could not lookup analysis type "+analysisName);
   
   analysis_.reset( (*i->second)( insight::NoParameters() ) );*/
-  analysis_.reset ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
+  analysis_.reset ( insight::Analysis::lookup(analysisName) );
   analysis_->setDefaults();
   parameters_ = analysis_->defaultParameters();
   

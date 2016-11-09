@@ -36,15 +36,20 @@ using namespace insight::OFDictData;
 namespace insight
 {
   
-OFDictData::dictFile& OFdicts::addDictionaryIfNonexistent(const std::string& key)
+    
+    
+    
+OFDictData::dictFile& OFdicts::addDictionaryIfNonexistent ( const std::string& key )
 {
-  OFdicts::iterator i=find(key);
-  if (i==end())
-  {
-    (*this)[key]=OFDictData::dictFile();
-  }
-  return (*this)[key];
+    OFdicts::iterator i=find ( key );
+    if ( i==end() ) {
+        ( *this ) [key]=OFDictData::dictFile();
+    }
+    return ( *this ) [key];
 }
+
+
+
 
 OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, const FieldInfo& fi)
 {
@@ -73,6 +78,9 @@ OFDictData::dictFile& OFdicts::addFieldIfNonexistent(const std::string& key, con
   return d;
 }
 
+
+
+
 OFDictData::dictFile& OFdicts::lookupDict(const std::string& key)
 {
   OFdicts::iterator i=find(key);
@@ -83,6 +91,9 @@ OFDictData::dictFile& OFdicts::lookupDict(const std::string& key)
   return *(i->second);
 }
 
+  
+  
+  
   
 OFEnvironment::OFEnvironment(int version, const boost::filesystem::path& bashrc)
 : version_(version),
@@ -99,6 +110,9 @@ const boost::filesystem::path& OFEnvironment::bashrc() const
 {
   return bashrc_;
 }
+
+
+
 
 OFEs OFEs::list;
 
@@ -159,11 +173,18 @@ OFEs::~OFEs()
 {
 }
 
+
+
+
 /*
 int OFEnvironment::executeCommand(const std::vector<std::string>& args) const
 {
 }
 */
+
+defineType(OpenFOAMCaseElement);
+defineFactoryTable(OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ));
+defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, ParameterSet);
 
 
 int OpenFOAMCaseElement::OFversion() const 
@@ -178,6 +199,8 @@ void OpenFOAMCaseElement::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::
 void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
 {
 }
+
+
 
 OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name)
 : CaseElement(c, name)
@@ -196,7 +219,7 @@ bool OpenFOAMCaseElement::providesBCsForPatch(const std::string& patchName) cons
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
   patchName_(patchName),
-  type_(boundaryDict.subDict(patchName).getString("type")),
+  BCtype_(boundaryDict.subDict(patchName).getString("type")),
   nFaces_(boundaryDict.subDict(patchName).getInt("nFaces")),
   startFace_(boundaryDict.subDict(patchName).getInt("startFace"))  
 {
@@ -204,7 +227,7 @@ BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchNa
 
 void BoundaryCondition::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 {
-  bndDict["type"]=type_;
+  bndDict["type"]=BCtype_;
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
 }

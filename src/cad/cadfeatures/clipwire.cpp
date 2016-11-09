@@ -39,12 +39,12 @@ namespace cad {
     
 
 defineType(ClipWire);
-addToFactoryTable(Feature, ClipWire, NoParameters);
+addToFactoryTable(Feature, ClipWire);
 
 
 
 
-ClipWire::ClipWire(const NoParameters&)
+ClipWire::ClipWire()
 {
 }
 

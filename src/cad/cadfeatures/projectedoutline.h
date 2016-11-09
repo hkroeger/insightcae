@@ -34,7 +34,7 @@ class ProjectedOutline
   
 public:
   declareType("ProjectedOutline");
-  ProjectedOutline(const NoParameters& nop = NoParameters());
+  ProjectedOutline();
   ProjectedOutline(FeaturePtr source, DatumPtr target);
   
   virtual void build();

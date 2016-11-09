@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(Extrusion);
-addToFactoryTable(Feature, Extrusion, NoParameters);
+addToFactoryTable(Feature, Extrusion);
 
 
 
 
-Extrusion::Extrusion(const NoParameters& nop): Feature(nop)
+Extrusion::Extrusion(): Feature()
 {}
 
 

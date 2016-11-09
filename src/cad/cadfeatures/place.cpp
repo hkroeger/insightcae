@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(Place);
-addToFactoryTable(Feature, Place, NoParameters);
+addToFactoryTable(Feature, Place);
 
 
 
 
-Place::Place(const NoParameters& nop): DerivedFeature(nop)
+Place::Place(): DerivedFeature()
 {}
 
 

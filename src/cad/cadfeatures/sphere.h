@@ -38,7 +38,7 @@ class Sphere
 
 public:
     declareType ( "Sphere" );
-    Sphere ( const NoParameters& nop = NoParameters() );
+    Sphere ();
     static FeaturePtr create ( VectorPtr p, ScalarPtr D );
 
     virtual void build();

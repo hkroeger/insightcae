@@ -37,7 +37,7 @@ class RotatedHelicalSweep
   
 public:
   declareType("RotatedHelicalSweep");
-  RotatedHelicalSweep(const NoParameters& nop = NoParameters());
+  RotatedHelicalSweep();
   RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset=scalarconst(0.0));
   
   virtual void build();

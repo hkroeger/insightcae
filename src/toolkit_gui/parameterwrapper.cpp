@@ -119,7 +119,7 @@ void addWrapperToWidget
             ParameterWrapper::lookup
             (
                 i->second->type(),
-                ParameterWrapper::ConstrP ( parentnode, i->first.c_str(), *i->second, detaileditwidget, superform )
+                parentnode, i->first.c_str(), *i->second, detaileditwidget, superform
             );
 
         QObject::connect ( parentnode->treeWidget(), SIGNAL ( itemSelectionChanged() ),
@@ -134,7 +134,12 @@ void addWrapperToWidget
 
 
 defineType(ParameterWrapper);
-defineFactoryTable(ParameterWrapper, ParameterWrapper::ConstrP);
+defineFactoryTable
+(
+    ParameterWrapper, 
+    LIST(QTreeWidgetItem *parent, const QString& name, insight::Parameter& p, QWidget*detailw, QWidget*superform),
+    LIST(parent, name, p, detailw, superform)
+);
 
 
 void ParameterWrapper::focusInEvent(QFocusEvent* e)
@@ -144,13 +149,13 @@ void ParameterWrapper::focusInEvent(QFocusEvent* e)
 }
 
 
-ParameterWrapper::ParameterWrapper(const ConstrP& p)
-: QTreeWidgetItem(get<0>(p)),
+ParameterWrapper::ParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: QTreeWidgetItem(parent),
   QObject(),
-  name_(get<1>(p)),
-  p_(get<2>(p)),
-  detaileditwidget_(get<3>(p)),
-  superform_(get<4>(p)),
+  name_(name),
+  p_(p),
+  detaileditwidget_(detailw),
+  superform_(superform),
   widgetsDisplayed_(false)
 {
   setText(0, name_);
@@ -211,11 +216,13 @@ void ParameterWrapper::onDestruction()
 }
 
 
-defineType(IntParameterWrapper);
-addToFactoryTable(ParameterWrapper, IntParameterWrapper, ParameterWrapper::ConstrP);
 
-IntParameterWrapper::IntParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+
+defineType(IntParameterWrapper);
+addToFactoryTable(ParameterWrapper, IntParameterWrapper);
+
+IntParameterWrapper::IntParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform)
 {
   onUpdate();
 }
@@ -271,11 +278,12 @@ void IntParameterWrapper::onUpdate()
 
 
 
-defineType(DoubleParameterWrapper);
-addToFactoryTable(ParameterWrapper, DoubleParameterWrapper, ParameterWrapper::ConstrP);
 
-DoubleParameterWrapper::DoubleParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+defineType(DoubleParameterWrapper);
+addToFactoryTable(ParameterWrapper, DoubleParameterWrapper);
+
+DoubleParameterWrapper::DoubleParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   le_(NULL)
 {
   onUpdate();
@@ -341,12 +349,15 @@ void DoubleParameterWrapper::onUpdate()
   if (widgetsDisplayed_) le_->setText(QString::number(param()()));
 }
 
+
+
+
 defineType(StringParameterWrapper);
-addToFactoryTable(ParameterWrapper, StringParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, StringParameterWrapper);
 
 
-VectorParameterWrapper::VectorParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+VectorParameterWrapper::VectorParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   le_(NULL)
 {
   onUpdate();
@@ -414,12 +425,15 @@ void VectorParameterWrapper::onUpdate()
   //le_->setText(QString::number(param()()));
 }
 
+
+
+
 defineType(VectorParameterWrapper);
-addToFactoryTable(ParameterWrapper, VectorParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, VectorParameterWrapper);
 
 
-StringParameterWrapper::StringParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+StringParameterWrapper::StringParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   le_(NULL)
 {
   onUpdate();
@@ -481,11 +495,14 @@ void StringParameterWrapper::onUpdate()
   if (widgetsDisplayed_) le_->setText(param()().c_str());
 }
 
-defineType(BoolParameterWrapper);
-addToFactoryTable(ParameterWrapper, BoolParameterWrapper, ParameterWrapper::ConstrP);
 
-BoolParameterWrapper::BoolParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+
+
+defineType(BoolParameterWrapper);
+addToFactoryTable(ParameterWrapper, BoolParameterWrapper);
+
+BoolParameterWrapper::BoolParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   cb_(NULL)
 {
   onUpdate();
@@ -560,11 +577,14 @@ void BoolParameterWrapper::onUpdate()
   }
 }
 
-defineType(PathParameterWrapper);
-addToFactoryTable(ParameterWrapper, PathParameterWrapper, ParameterWrapper::ConstrP);
 
-PathParameterWrapper::PathParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+
+
+defineType(PathParameterWrapper);
+addToFactoryTable(ParameterWrapper, PathParameterWrapper);
+
+PathParameterWrapper::PathParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   le_(NULL)
 {
   onUpdate();
@@ -658,8 +678,11 @@ void PathParameterWrapper::onDataEntered()
   updateTooltip();
 }
 
+
+
+
 defineType(MatrixParameterWrapper);
-addToFactoryTable(ParameterWrapper, MatrixParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, MatrixParameterWrapper);
 
 QString mat2Str(const arma::mat& m)
 {
@@ -676,8 +699,8 @@ QString mat2Str(const arma::mat& m)
   return QString(oss.str().c_str());
 }
 
-MatrixParameterWrapper::MatrixParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+MatrixParameterWrapper::MatrixParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   le_(NULL)
 {
   onUpdate();
@@ -760,11 +783,13 @@ void MatrixParameterWrapper::openSelectionDialog()
 }
 
 
-defineType(DirectoryParameterWrapper);
-addToFactoryTable(ParameterWrapper, DirectoryParameterWrapper, ParameterWrapper::ConstrP);
 
-DirectoryParameterWrapper::DirectoryParameterWrapper(const ConstrP& p)
-: PathParameterWrapper(p)
+
+defineType(DirectoryParameterWrapper);
+addToFactoryTable(ParameterWrapper, DirectoryParameterWrapper);
+
+DirectoryParameterWrapper::DirectoryParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: PathParameterWrapper(parent, name, p, detailw, superform)
 {
 }
 
@@ -777,11 +802,14 @@ void DirectoryParameterWrapper::openSelectionDialog()
     le_->setText(fn);
 }
 
-defineType(SelectionParameterWrapper);
-addToFactoryTable(ParameterWrapper, SelectionParameterWrapper, ParameterWrapper::ConstrP);
 
-SelectionParameterWrapper::SelectionParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+
+
+defineType(SelectionParameterWrapper);
+addToFactoryTable(ParameterWrapper, SelectionParameterWrapper);
+
+SelectionParameterWrapper::SelectionParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   selBox_(NULL)
 {
   onUpdate();
@@ -850,12 +878,15 @@ void SelectionParameterWrapper::onUpdate()
   if (widgetsDisplayed_) selBox_->setCurrentIndex(param()());
 }
 
+
+
+
 defineType(SubsetParameterWrapper);
-addToFactoryTable(ParameterWrapper, SubsetParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, SubsetParameterWrapper);
 
 
-SubsetParameterWrapper::SubsetParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+SubsetParameterWrapper::SubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform)
 {
   addWrapperToWidget(param()(), this, detaileditwidget_, superform_);
 }
@@ -901,8 +932,11 @@ void SubsetParameterWrapper::onUpdate()
   emit(update());
 }
 
+
+
+
 defineType(ArrayParameterWrapper);
-addToFactoryTable(ParameterWrapper, ArrayParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, ArrayParameterWrapper);
 
 void ArrayParameterWrapper::addWrapper(int i)
 {
@@ -914,7 +948,7 @@ void ArrayParameterWrapper::addWrapper(int i)
     ParameterWrapper::lookup
     (
       pp.type(),
-      ParameterWrapper::ConstrP(this, "["+QString::number(i)+"]", pp, detaileditwidget_, superform_)
+      this, "["+QString::number(i)+"]", pp, detaileditwidget_, superform_
     );
     
 //   QPushButton *rmbtn=new QPushButton("-", cont);
@@ -942,8 +976,8 @@ void ArrayParameterWrapper::rebuildWrappers()
   }
 }
 
-ArrayParameterWrapper::ArrayParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)/*,
+ArrayParameterWrapper::ArrayParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform)/*,
   map_(new QSignalMapper(this))*/
 {
   setText(1, "array");
@@ -1057,11 +1091,14 @@ void ArrayParameterWrapper::onUpdate()
   //emit(update());
 }
 
-defineType(DoubleRangeParameterWrapper);
-addToFactoryTable(ParameterWrapper, DoubleRangeParameterWrapper, ParameterWrapper::ConstrP);
 
-DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p)
+
+
+defineType(DoubleRangeParameterWrapper);
+addToFactoryTable(ParameterWrapper, DoubleRangeParameterWrapper);
+
+DoubleRangeParameterWrapper::DoubleRangeParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform)
 {
   setText(1, "doubleRange");
 }
@@ -1171,8 +1208,8 @@ void DoubleRangeParameterWrapper::onUpdate()
 
 
 
-SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(const ConstrP& p)
-: ParameterWrapper(p),
+SelectableSubsetParameterWrapper::SelectableSubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform)
+: ParameterWrapper(parent, name, p, detailw, superform),
   selBox_(NULL)
 {
 //   setText(1, "selectableSubset");
@@ -1259,4 +1296,4 @@ void SelectableSubsetParameterWrapper::onUpdate()
 // }
 
 defineType(SelectableSubsetParameterWrapper);
-addToFactoryTable(ParameterWrapper, SelectableSubsetParameterWrapper, ParameterWrapper::ConstrP);
+addToFactoryTable(ParameterWrapper, SelectableSubsetParameterWrapper);

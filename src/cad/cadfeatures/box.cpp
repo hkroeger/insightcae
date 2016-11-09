@@ -36,12 +36,12 @@ namespace cad {
     
     
 defineType(Box);
-addToFactoryTable(Feature, Box, NoParameters);
+addToFactoryTable(Feature, Box);
 
 
 
 
-Box::Box(const NoParameters&)
+Box::Box()
 {}
 
 

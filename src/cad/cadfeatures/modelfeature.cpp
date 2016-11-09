@@ -40,7 +40,7 @@ namespace cad
     
     
 defineType(ModelFeature);
-addToFactoryTable(Feature, ModelFeature, NoParameters);
+addToFactoryTable(Feature, ModelFeature);
 
 
 
@@ -75,7 +75,7 @@ void ModelFeature::copyModelDatums()
 
 
 
-ModelFeature::ModelFeature(const NoParameters&): Compound()
+ModelFeature::ModelFeature(): Compound()
 {}
 
 

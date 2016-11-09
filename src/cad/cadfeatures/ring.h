@@ -36,7 +36,7 @@ class Ring
   
 public:
   declareType("Ring");
-  Ring(const NoParameters& nop = NoParameters());
+  Ring();
   Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
   
   virtual void build();

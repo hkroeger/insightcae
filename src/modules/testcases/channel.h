@@ -191,7 +191,7 @@ protected:
 public:
   declareType("Channel Flow Test Case");
   
-  ChannelBase(const NoParameters& p = NoParameters());
+  ChannelBase();
   ~ChannelBase();
   
   virtual ParameterSet defaultParameters() const;
@@ -230,7 +230,7 @@ class ChannelCyclic
 public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
   
-  ChannelCyclic(const NoParameters& p = NoParameters() );
+  ChannelCyclic();
   
   virtual ParameterSet defaultParameters() const;
 

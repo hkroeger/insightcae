@@ -37,12 +37,12 @@ namespace cad
     
     
 defineType(FreeCADModel);
-addToFactoryTable(Feature, FreeCADModel, NoParameters);
+addToFactoryTable(Feature, FreeCADModel);
 
 
 
 
-FreeCADModel::FreeCADModel(const insight::NoParameters& nop)
+FreeCADModel::FreeCADModel()
 {
 }
 

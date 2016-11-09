@@ -37,12 +37,12 @@ namespace cad {
     
     
 defineType(Cone);
-addToFactoryTable(Feature, Cone, NoParameters);
+addToFactoryTable(Feature, Cone);
 
 
 
 
-Cone::Cone(const NoParameters&)
+Cone::Cone()
 {}
 
 

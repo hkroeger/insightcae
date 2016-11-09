@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(Sphere);
-addToFactoryTable(Feature, Sphere, NoParameters);
+addToFactoryTable(Feature, Sphere);
 
 
 
 
-Sphere::Sphere(const NoParameters&)
+Sphere::Sphere()
 {}
 
 

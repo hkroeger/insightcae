@@ -100,7 +100,7 @@ class Sketch
 
 public:
   declareType("Sketch");
-  Sketch(const NoParameters& nop = NoParameters());
+  Sketch();
   
   static FeaturePtr create
   (

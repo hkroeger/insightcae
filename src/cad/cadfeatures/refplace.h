@@ -145,7 +145,7 @@ class RefPlace
 
 public:
     declareType ( "RefPlace" );
-    RefPlace ( const NoParameters& nop = NoParameters() );
+    RefPlace ();
     
     static FeaturePtr create_fix ( FeaturePtr m, const gp_Ax2& cs );
     static FeaturePtr create ( FeaturePtr m, ConditionList conditions );

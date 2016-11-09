@@ -37,38 +37,183 @@ namespace insight
 
 
 class gravity
-: public OpenFOAMCaseElement
+    : public OpenFOAMCaseElement
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (g, arma::mat, vec3(0, 0, -9.81))
+//   )
+
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (g, arma::mat, vec3(0, 0, -9.81))
-  )
+#include "basiccaseelements__gravity__Parameters.h"
+/*
+PARAMETERSET>>> gravity Parameters
+
+g = vector (0 0 -9.81) "Gravity acceleration"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  gravity(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "gravity" );
+    gravity ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
 
 
 
+
 class volumeDrag
-: public OpenFOAMCaseElement
+    : public OpenFOAMCaseElement
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (name, std::string, "volumeDrag")
+//     (CD, arma::mat, vec3(1, 0, 0))
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "volumeDrag")
-    (CD, arma::mat, vec3(1, 0, 0))
-  )
+#include "basiccaseelements__volumeDrag__Parameters.h"
+/*
+PARAMETERSET>>> volumeDrag Parameters
+
+name = string "volumeDrag" "Name of the volume drag element"
+CD = vector (1 0 0) "Volume drag coefficient for each direction"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  volumeDrag(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "volumeDrag" );
+    volumeDrag ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+};
+
+
+
+
+
+class MRFZone
+    : public OpenFOAMCaseElement
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (name, std::string, "rotor")
+//     (rpm, double, 1000.0)
+//     (nonRotatingPatches, std::vector<std::string>, std::vector<std::string>())
+//     (rotationCentre, arma::mat, vec3(0,0,0))
+//     (rotationAxis, arma::mat, vec3(0,0,1))
+//   )
+public:
+#include "basiccaseelements__MRFZone__Parameters.h"
+/*
+PARAMETERSET>>> MRFZone Parameters
+
+name = string "rotor" "Name of the MRF zone"
+rpm = double 1000.0 "Rotations per minute of the MRF zone"
+nonRotatingPatches = array [ string "patchName" "Name of the patch to exclude from rotation" ] *0 "Name of patches to exclude from rotation"
+rotationCentre = vector (0 0 0) "Base point of the rotation axis"
+rotationAxis = vector (0 0 1) "Direction of the rotation axis"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "MRFZone" );
+    MRFZone ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+};
+
+
+
+
+class PressureGradientSource
+    : public OpenFOAMCaseElement
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (Ubar, arma::mat, vec3(0,0,0))
+//   )
+
+public:
+#include "basiccaseelements__PressureGradientSource__Parameters.h"
+/*
+PARAMETERSET>>> PressureGradientSource Parameters
+
+Ubar = vector (0 0 0) "Average velocity"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "PressureGradientSource" );
+    PressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+};
+
+
+
+
+class ConstantPressureGradientSource
+    : public OpenFOAMCaseElement
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (gradp, arma::mat, vec3(0,0,0))
+//   )
+public:
+#include "basiccaseelements__ConstantPressureGradientSource__Parameters.h"
+/*
+PARAMETERSET>>> ConstantPressureGradientSource Parameters
+
+gradp = vector (0 0 0) "Constant pressure gradient"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "ConstantPressureGradientSource" );
+    ConstantPressureGradientSource ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
 
 
@@ -82,97 +227,81 @@ public:
 };
 
 
-class MRFZone
-: public OpenFOAMCaseElement
-{
-public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "rotor")
-    (rpm, double, 1000.0)
-    (nonRotatingPatches, std::vector<std::string>, std::vector<std::string>())
-    (rotationCentre, arma::mat, vec3(0,0,0))
-    (rotationAxis, arma::mat, vec3(0,0,1))
-  )
-
-protected:
-  Parameters p_;
-
-public:
-  MRFZone(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-};
-
-
-class PressureGradientSource
-: public OpenFOAMCaseElement
-{
-public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (Ubar, arma::mat, vec3(0,0,0))
-  )
-
-protected:
-  Parameters p_;
-
-public:
-  PressureGradientSource(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-};
-
-class ConstantPressureGradientSource
-: public OpenFOAMCaseElement
-{
-public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (gradp, arma::mat, vec3(0,0,0))
-  )
-
-protected:
-  Parameters p_;
-
-public:
-  ConstantPressureGradientSource(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-};
 
 
 class singlePhaseTransportProperties
-: public transportModel
+    : public transportModel
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (nu, double, 1e-6)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (nu, double, 1e-6)
-  )
+#include "basiccaseelements__singlePhaseTransportProperties__Parameters.h"
+/*
+PARAMETERSET>>> singlePhaseTransportProperties Parameters
+
+nu = double 1e-6 "Kinematic viscosity"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  singlePhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "singlePhaseTransportProperties" );
+    singlePhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
+
 
 
 
 class twoPhaseTransportProperties
-: public transportModel
+    : public transportModel
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (nu1, double, 1e-6)
+//     (rho1, double, 1025.0)
+//     (nu2, double, 1.5e-5)
+//     (rho2, double, 1.0)
+//     (sigma, double, 0.07)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (nu1, double, 1e-6)
-    (rho1, double, 1025.0)
-    (nu2, double, 1.5e-5)
-    (rho2, double, 1.0)
-    (sigma, double, 0.07)
-  )
+#include "basiccaseelements__twoPhaseTransportProperties__Parameters.h"
+/*
+PARAMETERSET>>> twoPhaseTransportProperties Parameters
+
+nu1 = double 1e-6 "Kinematic viscosity of fluid 1"
+rho1 = double 1025.0 "Density of fluid 1"
+nu2 = double 1.5e-5 "Kinematic viscosity of fluid 2"
+rho2 = double 1.0 "Density of fluid 2"
+sigma = double 0.07 "Surface tension"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  twoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "twoPhaseTransportProperties" );
+    twoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
+
 
 
 
@@ -180,33 +309,59 @@ namespace phaseChangeModels
 {
   
   
+    
   
 class phaseChangeModel
 {
+
 public:
-  virtual ~phaseChangeModel();
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
+    declareFactoryTable ( phaseChangeModel, LIST(const ParameterSet& p), LIST(p) );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareType ( "phaseChangeModel" );
+
+    virtual ~phaseChangeModel();
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
 };
 
-typedef boost::shared_ptr<phaseChangeModel> Ptr;
 
-class SchnerrSauer: public phaseChangeModel
+
+class SchnerrSauer
+    : public phaseChangeModel
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (n, double, 1.6e13)
+//     (dNuc, double, 2.0e-6)
+//     (Cc, double, 1.0)
+//     (Cv, double, 1.0)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (n, double, 1.6e13)
-    (dNuc, double, 2.0e-6)
-    (Cc, double, 1.0)
-    (Cv, double, 1.0)
-  )
+#include "basiccaseelements__SchnerrSauer__Parameters.h"
+/*
+PARAMETERSET>>> SchnerrSauer Parameters
+
+n = double 1.6e13 "n"
+dNuc = double 2.0e-6 "dNuc"
+Cc = double 1.0 "Cc"
+Cv = double 1.0 "Cv"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  SchnerrSauer(Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "SchnerrSauer" );
+    SchnerrSauer ( const ParameterSet& p );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
+
 
 
 
@@ -214,23 +369,40 @@ public:
 
 
 
+
 class cavitationTwoPhaseTransportProperties
-: public twoPhaseTransportProperties
+    : public twoPhaseTransportProperties
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, twoPhaseTransportProperties::Parameters,
+//     (model, phaseChangeModels::Ptr,
+//       phaseChangeModels::Ptr( new phaseChangeModels::SchnerrSauer() ))
+//     (psat, double, 2300.0)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, twoPhaseTransportProperties::Parameters,
-    (model, phaseChangeModels::Ptr, 
-      phaseChangeModels::Ptr( new phaseChangeModels::SchnerrSauer() ))
-    (psat, double, 2300.0)
-  )
+#include "basiccaseelements__cavitationTwoPhaseTransportProperties__Parameters.h"
+/*
+PARAMETERSET>>> cavitationTwoPhaseTransportProperties Parameters
+inherits twoPhaseTransportProperties::Parameters
+
+psat = double 2300.0 "Saturation pressure"
+
+model = selectableSubset {{ dummy set {} }} dummy "Cavitation model"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  cavitationTwoPhaseTransportProperties(OpenFOAMCase& c, Parameters const& p = Parameters() );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "cavitationTwoPhaseTransportProperties" );
+    cavitationTwoPhaseTransportProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters();
 };
+
 
 
 
@@ -240,6 +412,7 @@ class dynamicMesh
 public:
   dynamicMesh(OpenFOAMCase& c);
 };
+
 
 
 
@@ -254,6 +427,7 @@ public:
 
 
 
+
 class displacementFvMotionSolver
 : public dynamicMesh
 {
@@ -264,247 +438,10 @@ public:
 
 
 
-class turbulenceModel
-: public OpenFOAMCaseElement
-{
-public:
-  typedef boost::tuple<OpenFOAMCase&> ConstrP;
-  declareFactoryTable(turbulenceModel, ConstrP);  
-  
-  enum AccuracyRequirement { AC_RANS, AC_LES, AC_DNS };
-
-public:
-  declareType("turbulenceModel");
-
-  turbulenceModel(OpenFOAMCase& c);
-  turbulenceModel(const ConstrP& c);
-  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const =0;
-  
-  virtual AccuracyRequirement minAccuracyRequirement() const =0;
-};
-
-class RASModel
-: public turbulenceModel
-{
-
-public:
-  declareType("RASModel");
-
-  RASModel(OpenFOAMCase& c);
-  RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual AccuracyRequirement minAccuracyRequirement() const;
-};
-
-class LESModel
-: public turbulenceModel
-{
-
-public:
-  declareType("LESModel");
-
-  LESModel(OpenFOAMCase& c);
-  LESModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual AccuracyRequirement minAccuracyRequirement() const;
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class laminar_RASModel
-: public RASModel
-{
-public:
-  declareType("laminar");
-
-  laminar_RASModel(OpenFOAMCase& c);
-  laminar_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class oneEqEddy_LESModel
-: public LESModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("oneEqEddy");
-  
-  oneEqEddy_LESModel(OpenFOAMCase& c);
-  oneEqEddy_LESModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-};
-
-class dynOneEqEddy_LESModel
-: public LESModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("dynOneEqEddy");
-  
-  dynOneEqEddy_LESModel(OpenFOAMCase& c);
-  dynOneEqEddy_LESModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-};
-
-class dynSmagorinsky_LESModel
-: public LESModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("dynSmagorinsky");
-  
-  dynSmagorinsky_LESModel(OpenFOAMCase& c);
-  dynSmagorinsky_LESModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-};
-
-class kOmegaSST_RASModel
-: public RASModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("kOmegaSST");
-  
-  kOmegaSST_RASModel(OpenFOAMCase& c);
-  kOmegaSST_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class kEpsilonBase_RASModel
-: public RASModel
-{
-protected:
-  void addFields();
-  
-public:
-//   declareType("kEpsilon");
-  
-  kEpsilonBase_RASModel(OpenFOAMCase& c);
-  kEpsilonBase_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-
-
-
-class kEpsilon_RASModel
-: public kEpsilonBase_RASModel
-{
-public:
-  declareType("kEpsilon");
-  kEpsilon_RASModel(const ConstrP& c);
-};
-
-
-
-
-class realizablekEpsilon_RASModel
-: public kEpsilonBase_RASModel
-{
-public:
-  declareType("realizableKE");
-  realizablekEpsilon_RASModel(const ConstrP& c);
-};
-
-
-
-
-class SpalartAllmaras_RASModel
-: public RASModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("SpalartAllmaras");
-  
-  SpalartAllmaras_RASModel(OpenFOAMCase& c);
-  SpalartAllmaras_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class LEMOSHybrid_RASModel
-: public kOmegaSST_RASModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("LEMOSHybrid");
-  
-  LEMOSHybrid_RASModel(OpenFOAMCase& c);
-  LEMOSHybrid_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class kOmegaSST_LowRe_RASModel
-: public kOmegaSST_RASModel
-{
-public:
-  declareType("kOmegaSST_LowRe");
-  
-  kOmegaSST_LowRe_RASModel(OpenFOAMCase& c);
-  kOmegaSST_LowRe_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class kOmegaSST2_RASModel
-: public kOmegaSST_RASModel
-{
-protected:
-  void addFields();
-
-public:
-  declareType("kOmegaSST2");
-  
-  kOmegaSST2_RASModel(OpenFOAMCase& c);
-  kOmegaSST2_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-
-class kOmegaHe_RASModel
-: public kOmegaSST_RASModel
-{
-public:
-  declareType("kOmegaHe");
-  
-  kOmegaHe_RASModel(OpenFOAMCase& c);
-  kOmegaHe_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
-
-class LRR_RASModel
-: public RASModel
-{
-protected:
-  void addFields();
-  
-public:
-  declareType("LRR");
-  
-  LRR_RASModel(OpenFOAMCase& c);
-  LRR_RASModel(const ConstrP& c);
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
-};
 
 }
+
+
+
 
 #endif // INSIGHT_BASICCASEELEMENTS_H

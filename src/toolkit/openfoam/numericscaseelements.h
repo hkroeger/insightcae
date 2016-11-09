@@ -43,14 +43,11 @@ class OFdicts;
  Manages basic settings in controlDict, fvSchemes, fvSolution, list of fields
  */
 
-typedef boost::tuple<OpenFOAMCase&, const ParameterSet&> FVNumericsParameters;
 
 class FVNumerics
     : public OpenFOAMCaseElement
 {
 public:
-    declareFactoryTable ( FVNumerics, FVNumericsParameters );
-    declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareType ( "FVNumerics" );
 
 // public:
@@ -108,7 +105,7 @@ protected:
     bool isCompressible_;
 
 public:
-    FVNumerics ( const FVNumericsParameters& );
+    FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
 
     inline bool isCompressible() const
@@ -194,8 +191,7 @@ class MeshingNumerics
 public:
     declareType ( "MeshingNumerics" );
 
-    MeshingNumerics ( const FVNumericsParameters& );
-    MeshingNumerics ( OpenFOAMCase& c );
+    MeshingNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     
     static ParameterSet defaultParameters();
@@ -239,8 +235,7 @@ protected:
 
 public:
     declareType ( "simpleFoamNumerics" );
-    simpleFoamNumerics ( const FVNumericsParameters& );
-    simpleFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    simpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -295,8 +290,7 @@ protected:
 
 public:
     declareType ( "pimpleFoamNumerics" );
-    pimpleFoamNumerics ( const FVNumericsParameters& );
-    pimpleFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    pimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -342,8 +336,7 @@ protected:
 
 public:
     declareType ( "potentialFreeSurfaceFoamNumerics" );
-    potentialFreeSurfaceFoamNumerics ( const FVNumericsParameters& );
-    potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    potentialFreeSurfaceFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -379,8 +372,7 @@ protected:
 
 public:
     declareType ( "simpleDyMFoamNumerics" );
-    simpleDyMFoamNumerics ( const FVNumericsParameters& );
-    simpleDyMFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    simpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -420,8 +412,7 @@ protected:
 
 public:
     declareType ( "cavitatingFoamNumerics" );
-    cavitatingFoamNumerics ( const FVNumericsParameters& );
-    cavitatingFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    cavitatingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -464,8 +455,7 @@ protected:
 
 public:
     declareType ( "interFoamNumerics" );
-    interFoamNumerics ( const FVNumericsParameters& );
-    interFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    interFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
 
     inline const std::string& pressureFieldName() const
@@ -492,8 +482,7 @@ class LTSInterFoamNumerics
 {
 public:
     declareType ( "LTSInterFoamNumerics" );
-    LTSInterFoamNumerics ( const FVNumericsParameters& );
-    LTSInterFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    LTSInterFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -532,8 +521,7 @@ protected:
 
 public:
     declareType ( "interPhaseChangeFoamNumerics" );
-    interPhaseChangeFoamNumerics ( const FVNumericsParameters& );
-    interPhaseChangeFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    interPhaseChangeFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -583,8 +571,7 @@ protected:
 
 public:
     declareType ( "reactingFoamNumerics" );
-    reactingFoamNumerics ( const FVNumericsParameters& );
-    reactingFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    reactingFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -597,8 +584,7 @@ class reactingParcelFoamNumerics
 {
 public:
     declareType ( "reactingParcelFoamNumerics" );
-    reactingParcelFoamNumerics ( const FVNumericsParameters& );
-    reactingParcelFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    reactingParcelFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };
@@ -624,7 +610,7 @@ protected:
   Parameters p_;
    
 public:
-  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, const ParameterSet& p = Parameters::makeDefault() );
+  FSIDisplacementExtrapolationNumerics( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -661,8 +647,7 @@ protected:
     
 public:
     declareType ( "magneticFoamNumerics" );
-    magneticFoamNumerics ( const FVNumericsParameters& );
-    magneticFoamNumerics ( OpenFOAMCase& c, const Parameters& p = Parameters() );
+    magneticFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters();
 };

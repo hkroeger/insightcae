@@ -35,7 +35,7 @@ class Shoulder
   
 public:
   declareType("Shoulder");
-  Shoulder(const NoParameters& nop = NoParameters());
+  Shoulder();
   Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax);
   
   virtual void build();

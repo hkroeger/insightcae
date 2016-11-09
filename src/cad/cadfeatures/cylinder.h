@@ -45,7 +45,7 @@ class Cylinder
 
 public:
     declareType ( "Cylinder" );
-    Cylinder ( const NoParameters& nop = NoParameters() );
+    Cylinder ( );
 
     static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
     static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );

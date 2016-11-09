@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(SplineSurface);
-addToFactoryTable(Feature, SplineSurface, NoParameters);
+addToFactoryTable(Feature, SplineSurface);
 
 
 
 
-SplineSurface::SplineSurface(const NoParameters&)
+SplineSurface::SplineSurface()
 {}
 
 

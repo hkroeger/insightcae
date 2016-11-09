@@ -42,7 +42,7 @@ class FillingFace
 
 public:
     declareType ( "FillingFace" );
-    FillingFace ( const NoParameters& nop=NoParameters() );
+    FillingFace ();
 
     static FeaturePtr create ( FeaturePtr e1, FeaturePtr e2 );
     static FeaturePtr create_set ( FeatureSetPtr es1, FeatureSetPtr es2 );

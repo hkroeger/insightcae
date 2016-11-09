@@ -38,7 +38,7 @@ class BooleanUnion
 
 public:
     declareType("BooleanUnion");
-    BooleanUnion(const NoParameters& nop = NoParameters());
+    BooleanUnion();
 
     static FeaturePtr create(FeaturePtr m1);
     static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);

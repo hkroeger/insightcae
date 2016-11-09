@@ -168,7 +168,7 @@ class Feature
   friend class ParameterListHash;
   
 public:
-  declareFactoryTable(Feature, NoParameters); 
+  declareFactoryTableNoArgs(Feature); 
 
   
 //   typedef boost::shared_ptr<Feature> Ptr;
@@ -245,7 +245,7 @@ protected:
 public:
   declareType("Feature");
   
-  Feature(const NoParameters& nop = NoParameters());
+  Feature();
   Feature(const Feature& o);
   Feature(const TopoDS_Shape& shape);
 //   Feature(const boost::filesystem::path& filepath);

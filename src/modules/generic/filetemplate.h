@@ -62,7 +62,7 @@ protected:
   
 public:
     declareType("FileTemplate");
-    FileTemplate(const NoParameters&);
+    FileTemplate();
     
     virtual ParameterSet defaultParameters() const;
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);

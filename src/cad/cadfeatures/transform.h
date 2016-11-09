@@ -53,7 +53,7 @@ class Transform
 public:
     declareType ( "Transform" );
 
-    Transform ( const NoParameters& nop = NoParameters() );
+    Transform ();
     Transform ( FeaturePtr m1, const gp_Trsf& trsf );
 
     static FeaturePtr create ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );

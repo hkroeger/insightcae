@@ -46,7 +46,7 @@ class Quad
 
 public:
     declareType ( "Quad" );
-    Quad ( const NoParameters& nop = NoParameters() );
+    Quad ();
     static FeaturePtr create ( VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering ( false, false ) );
     operator const TopoDS_Face& () const;
 

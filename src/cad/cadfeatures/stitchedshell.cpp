@@ -33,10 +33,10 @@ namespace cad {
 
 
 defineType(StitchedShell);
-addToFactoryTable(Feature, StitchedShell, NoParameters);
+addToFactoryTable(Feature, StitchedShell);
 
-StitchedShell::StitchedShell(const NoParameters& nop)
-: Feature(nop)
+StitchedShell::StitchedShell()
+: Feature()
 {
 }
 

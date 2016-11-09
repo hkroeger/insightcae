@@ -32,9 +32,9 @@ namespace cad {
 
 
 defineType(Ring);
-addToFactoryTable(Feature, Ring, NoParameters);
+addToFactoryTable(Feature, Ring);
 
-Ring::Ring(const NoParameters&)
+Ring::Ring()
 {}
 
 

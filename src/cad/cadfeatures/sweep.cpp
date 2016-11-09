@@ -37,12 +37,12 @@ namespace cad {
     
     
 defineType(Sweep);
-addToFactoryTable(Feature, Sweep, NoParameters);
+addToFactoryTable(Feature, Sweep);
 
 
 
 
-Sweep::Sweep(const NoParameters& nop): Feature(nop)
+Sweep::Sweep(): Feature()
 {}
 
 

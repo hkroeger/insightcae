@@ -35,13 +35,13 @@ namespace cad {
     
     
 defineType(Pyramid);
-addToFactoryTable(Feature, Pyramid, NoParameters);
+addToFactoryTable(Feature, Pyramid);
 
 
 
 
-Pyramid::Pyramid(const NoParameters& nop)
-: Feature(nop)
+Pyramid::Pyramid()
+: Feature()
 {}
 
 

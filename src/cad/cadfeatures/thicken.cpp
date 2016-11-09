@@ -37,12 +37,12 @@ namespace cad {
     
 
 defineType(Thicken);
-addToFactoryTable(Feature, Thicken, NoParameters);
+addToFactoryTable(Feature, Thicken);
 
 
 
 
-Thicken::Thicken(const NoParameters& nop): Feature(nop)
+Thicken::Thicken(): Feature()
 {}
 
 

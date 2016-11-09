@@ -183,8 +183,8 @@ FeatureCmdInfo::FeatureCmdInfo
 
 
 defineType(Feature);
-defineFactoryTable(Feature, NoParameters);
-addToFactoryTable(Feature, Feature, NoParameters);
+defineFactoryTableNoArgs(Feature);
+addToFactoryTable(Feature, Feature);
 
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
@@ -348,7 +348,7 @@ void Feature::setShape(const TopoDS_Shape& shape)
 }
 
 
-Feature::Feature(const NoParameters&)
+Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),

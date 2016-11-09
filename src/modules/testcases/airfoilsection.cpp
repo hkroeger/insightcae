@@ -40,12 +40,12 @@ namespace insight
   
   
 defineType(AirfoilSection);
-addToFactoryTable(Analysis, AirfoilSection, NoParameters);
+addToFactoryTable(Analysis, AirfoilSection);
 
 
 
 
-AirfoilSection::AirfoilSection(const NoParameters&)
+AirfoilSection::AirfoilSection()
 : OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section"),
   in_("in"), 
   out_("out"), 
@@ -286,10 +286,10 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new simpleFoamNumerics(FVNumericsParameters(cm, simpleFoamNumerics::Parameters()
+  cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
     .set_purgeWrite(2)
     .set_endTime(5000)
-  ))); 
+  )); 
   
   cm.insert(new forces(cm, forces::Parameters()
     .set_name("foilForces")
@@ -450,14 +450,14 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 
 
 defineType(AirfoilSectionPolar);
-addToFactoryTable(Analysis, AirfoilSectionPolar, NoParameters);
+addToFactoryTable(Analysis, AirfoilSectionPolar);
 
-AirfoilSectionPolar::AirfoilSectionPolar(const NoParameters&)
+AirfoilSectionPolar::AirfoilSectionPolar()
 : OpenFOAMParameterStudy
   (
     "Polar of Airfoil",
     "Computes the polar of a 2D airfoil section using CFD",
-    AirfoilSection(NoParameters()),
+    AirfoilSection(),
     list_of<std::string>("geometry/alpha"),
     true
   )

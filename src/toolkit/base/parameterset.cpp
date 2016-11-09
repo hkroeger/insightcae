@@ -263,7 +263,7 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
 }
 
 defineType(SubsetParameter);
-addToFactoryTable(Parameter, SubsetParameter, std::string);
+addToFactoryTable(Parameter, SubsetParameter);
 
 
 SubsetParameter::SubsetParameter()
@@ -319,7 +319,7 @@ void SubsetParameter::readFromNode(const std::string& name, rapidxml::xml_docume
 }
 
 defineType(SelectableSubsetParameter);
-addToFactoryTable(Parameter, SelectableSubsetParameter, std::string);
+addToFactoryTable(Parameter, SelectableSubsetParameter);
 
 SelectableSubsetParameter::SelectableSubsetParameter(const std::string& description)
 : Parameter(description)

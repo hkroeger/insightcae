@@ -37,7 +37,7 @@ class Wire
 
 public:
     declareType ( "Wire" );
-    Wire ( const NoParameters& nop = NoParameters() );
+    Wire ();
 
     static FeaturePtr create ( FeatureSetPtr edges );
 

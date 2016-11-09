@@ -44,7 +44,7 @@ namespace cad {
 
   
 defineType(Bar);
-addToFactoryTable(Feature, Bar, NoParameters);
+addToFactoryTable(Feature, Bar);
 
 
 
@@ -183,8 +183,8 @@ void Bar::build()
 
 
 
-Bar::Bar(const NoParameters& nop)
-: Feature(nop)
+Bar::Bar()
+: Feature()
 {}
 
 

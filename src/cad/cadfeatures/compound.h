@@ -47,7 +47,7 @@ protected:
 
 public:
     declareType ( "Compound" );
-    Compound ( const NoParameters& nop = NoParameters() );
+    Compound ();
     
     static FeaturePtr create( const CompoundFeatureList& m1 );
     static FeaturePtr create_map( const CompoundFeatureMap& m1 );

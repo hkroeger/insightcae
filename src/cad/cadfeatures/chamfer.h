@@ -36,7 +36,7 @@ class Chamfer
 
 public:
     declareType("Chamfer");
-    Chamfer(const NoParameters& nop = NoParameters());
+    Chamfer();
 
     static FeaturePtr create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
 

@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(SplineCurve);
-addToFactoryTable(Feature, SplineCurve, NoParameters);
+addToFactoryTable(Feature, SplineCurve);
 
 
 
 
-SplineCurve::SplineCurve(const NoParameters& nop): Feature(nop)
+SplineCurve::SplineCurve(): Feature()
 {}
 
 

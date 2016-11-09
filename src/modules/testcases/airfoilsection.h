@@ -36,7 +36,7 @@ class AirfoilSection
 public:
   declareType("Airfoil 2D");
   
-  AirfoilSection(const NoParameters& p = NoParameters() );
+  AirfoilSection();
     
   virtual insight::ParameterSet defaultParameters() const;
 
@@ -52,7 +52,7 @@ class AirfoilSectionPolar
 public:
     declareType("Airfoil 2D Polar");
     
-    AirfoilSectionPolar(const NoParameters&);    
+    AirfoilSectionPolar();    
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 

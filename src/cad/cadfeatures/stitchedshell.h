@@ -34,7 +34,7 @@ class StitchedShell
   
 public:
   declareType("StitchedShell");
-  StitchedShell(const NoParameters& nop = NoParameters());
+  StitchedShell();
   StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
   
   virtual void build();

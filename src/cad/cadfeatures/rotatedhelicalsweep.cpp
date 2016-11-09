@@ -33,9 +33,9 @@ namespace cad {
 
 
 defineType(RotatedHelicalSweep);
-addToFactoryTable(Feature, RotatedHelicalSweep, NoParameters);
+addToFactoryTable(Feature, RotatedHelicalSweep);
 
-RotatedHelicalSweep::RotatedHelicalSweep(const NoParameters& nop): Feature(nop)
+RotatedHelicalSweep::RotatedHelicalSweep(): Feature()
 {}
 
 

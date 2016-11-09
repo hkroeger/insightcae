@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(LinearPattern);
-addToFactoryTable(Feature, LinearPattern, NoParameters);
+addToFactoryTable(Feature, LinearPattern);
 
 
 
 
-LinearPattern::LinearPattern(const NoParameters& nop): Compound(nop)
+LinearPattern::LinearPattern(): Compound()
 {}
 
 

@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(BoundedFlatFace);
-addToFactoryTable(Feature, BoundedFlatFace, NoParameters);
+addToFactoryTable(Feature, BoundedFlatFace);
 
 
 
 
-BoundedFlatFace::BoundedFlatFace(const NoParameters&)
+BoundedFlatFace::BoundedFlatFace()
 {}
 
 

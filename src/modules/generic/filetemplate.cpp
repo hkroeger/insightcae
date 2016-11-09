@@ -29,9 +29,9 @@ using namespace boost::filesystem;
 namespace insight {
 
 defineType(FileTemplate);
-addToFactoryTable(Analysis, FileTemplate, NoParameters);
+addToFactoryTable(Analysis, FileTemplate);
 
-FileTemplate::FileTemplate(const NoParameters&)
+FileTemplate::FileTemplate()
 : Analysis("FileTemplate", "File template based analysis")
 {
 }

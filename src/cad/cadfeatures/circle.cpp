@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(Circle);
-addToFactoryTable(Feature, Circle, NoParameters);
+addToFactoryTable(Feature, Circle);
 
 
 
 
-Circle::Circle(const NoParameters&)
+Circle::Circle()
 {
 }
 

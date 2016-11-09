@@ -33,12 +33,12 @@ namespace cad {
 
 
 defineType(Quad);
-addToFactoryTable(Feature, Quad, NoParameters);
+addToFactoryTable(Feature, Quad);
 
 
 
 
-Quad::Quad(const NoParameters&)
+Quad::Quad()
 {}
 
 

@@ -38,8 +38,8 @@ namespace cad
 defineType(DerivedFeature);
 
 
-DerivedFeature::DerivedFeature(const NoParameters& nop)
-: Feature(nop)
+DerivedFeature::DerivedFeature()
+: Feature()
 {}
 
 DerivedFeature::DerivedFeature(ConstFeaturePtr basefeat)

@@ -40,7 +40,7 @@ class NacaFourDigit
 
 public:
     declareType ( "Naca4" );
-    NacaFourDigit ( const NoParameters& nop = NoParameters() );
+    NacaFourDigit ();
 
     static FeaturePtr create ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez );
 

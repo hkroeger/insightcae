@@ -33,7 +33,7 @@ class StitchedSolid
   
 public:
   declareType("StitchedSolid");
-  StitchedSolid(const NoParameters& nop = NoParameters());
+  StitchedSolid();
   StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol=scalarconst(1e-3));
   
   virtual void build();

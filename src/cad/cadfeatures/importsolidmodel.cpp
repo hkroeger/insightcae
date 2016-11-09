@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(Import);
-addToFactoryTable(Feature, Import, NoParameters);
+addToFactoryTable(Feature, Import);
 
 
 
 
-Import::Import(const NoParameters& nop): Feature(nop)
+Import::Import(): Feature()
 {}
 
 

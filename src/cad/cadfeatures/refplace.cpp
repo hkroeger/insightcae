@@ -38,7 +38,7 @@ namespace cad {
     
 
 defineType(RefPlace);
-addToFactoryTable(Feature, RefPlace, NoParameters);
+addToFactoryTable(Feature, RefPlace);
 
 
 
@@ -205,7 +205,7 @@ double PointOnAxis::residual(const gp_Trsf& tr) const
 
 
 
-RefPlace::RefPlace(const NoParameters& nop): DerivedFeature(nop)
+RefPlace::RefPlace(): DerivedFeature()
 {}
 
 

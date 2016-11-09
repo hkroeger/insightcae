@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     
     AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
     */
-    AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, insight::NoParameters()) );
+    AnalysisPtr analysis ( insight::Analysis::lookup(analysisName) );
     analysis->setDefaults();
     
     boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();

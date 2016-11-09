@@ -39,7 +39,7 @@ class Thicken
 
 public:
     declareType ( "Thicken" );
-    Thicken ( const NoParameters& nop = NoParameters() );
+    Thicken ();
     static FeaturePtr create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
     virtual void build();

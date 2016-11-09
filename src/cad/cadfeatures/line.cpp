@@ -37,13 +37,13 @@ namespace cad
     
     
 defineType(Line);
-addToFactoryTable(Feature, Line, NoParameters);
+addToFactoryTable(Feature, Line);
 
 
 
 
-Line::Line(const NoParameters& nop)
-: Feature(nop)
+Line::Line()
+: Feature()
 {
 }
 

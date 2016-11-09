@@ -37,13 +37,13 @@ namespace cad
     
 
 defineType(Transform);
-addToFactoryTable(Feature, Transform, NoParameters);
+addToFactoryTable(Feature, Transform);
 
 
 
 
-Transform::Transform(const NoParameters& nop)
-: DerivedFeature(nop)
+Transform::Transform()
+: DerivedFeature()
 {}
 
 

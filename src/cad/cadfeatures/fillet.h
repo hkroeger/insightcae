@@ -38,7 +38,7 @@ class Fillet
 
 public:
     declareType ( "Fillet" );
-    Fillet ( const NoParameters& nop = NoParameters() );
+    Fillet ();
 
     static FeaturePtr create ( FeatureSetPtr edges, ScalarPtr r );
 

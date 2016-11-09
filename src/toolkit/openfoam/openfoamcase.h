@@ -30,7 +30,12 @@
 
 namespace insight {
 
+    
+    
+    
 class ProgressDisplayer;
+
+
 
 
 enum FieldType
@@ -40,12 +45,18 @@ enum FieldType
   symmTensorField
 };
 
+
+
+
 enum FieldGeoType
 {
   volField,
   pointField,
   tetField
 };
+
+
+
 
 extern const OFDictData::dimensionSet dimPressure;
 extern const OFDictData::dimensionSet dimKinPressure;
@@ -59,10 +70,14 @@ extern const OFDictData::dimensionSet dimDynViscosity;
 extern const OFDictData::dimensionSet dimTemperature;
 extern const OFDictData::dimensionSet dimCurrent;
 
+
+
+
 typedef std::vector<double> FieldValue;
 typedef boost::fusion::tuple<FieldType, OFDictData::dimensionSet, FieldValue, FieldGeoType > FieldInfo;
-
 typedef std::map<std::string, FieldInfo> FieldList;
+
+
 
 
 struct OFdicts
@@ -73,267 +88,309 @@ struct OFdicts
   OFDictData::dictFile& lookupDict(const std::string& key);
 };
 
+
+
+
 class OpenFOAMCase;
 
+
+
+
 class OFEnvironment
-: public SoftwareEnvironment
+    : public SoftwareEnvironment
 {
 protected:
-  int version_;
-  boost::filesystem::path bashrc_;
-  
+    int version_;
+    boost::filesystem::path bashrc_;
+
 public:
-  OFEnvironment(int version, const boost::filesystem::path& bashrc);
-  
-  virtual int version() const;
-  virtual const boost::filesystem::path& bashrc() const;
-  //virtual int executeCommand(const std::vector<std::string>& args) const;
+    OFEnvironment ( int version, const boost::filesystem::path& bashrc );
+
+    virtual int version() const;
+    virtual const boost::filesystem::path& bashrc() const;
+    //virtual int executeCommand(const std::vector<std::string>& args) const;
 };
 
+
+
+
 class OFEs
-: public boost::ptr_map<std::string, OFEnvironment>
+    : public boost::ptr_map<std::string, OFEnvironment>
 {
 public:
-  static OFEs list;
-  
-  static std::vector<std::string> all();
-  static const OFEnvironment& get(const std::string& name);
-  
-  OFEs();
-  ~OFEs();
+    static OFEs list;
+
+    static std::vector<std::string> all();
+    static const OFEnvironment& get ( const std::string& name );
+
+    OFEs();
+    ~OFEs();
 };
+
+
 
 
 class OpenFOAMCaseElement
-: public CaseElement
+    : public CaseElement
 {
 
 public:
-  OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name);
+    declareFactoryTable ( OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ) );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareType ( "OpenFOAMCaseElement" );
 
-  // defined below declaration of OpenFOAMCase
-  inline const OpenFOAMCase& OFcase() const;
-  inline OpenFOAMCase& OFcase();
-  
-  int OFversion() const;
-  virtual void modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
-  virtual void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const =0;
-  
-  virtual bool providesBCsForPatch(const std::string& patchName) const;
+    OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name );
+
+    // defined below declaration of OpenFOAMCase
+    inline const OpenFOAMCase& OFcase() const;
+    inline OpenFOAMCase& OFcase();
+
+    int OFversion() const;
+    virtual void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+    virtual void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
+
+    virtual bool providesBCsForPatch ( const std::string& patchName ) const;
 };
 
 
 
 
 /*
- * Manages the configuration of a single patch, i.e. one BoundaryCondition-object 
+ * Manages the configuration of a single patch, i.e. one BoundaryCondition-object
  * needs to know proper BC's for all fields on the given patch
  */
 class BoundaryCondition
-: public OpenFOAMCaseElement
+    : public OpenFOAMCaseElement
 {
 protected:
-  std::string patchName_;
-  std::string type_;
-  int nFaces_;
-  int startFace_;
-  
-public:
-  BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict);
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const =0;
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  
-  static void insertIntoBoundaryDict
-  (
-    OFdicts& dictionaries, 
-    const std::string& patchName,
-    const OFDictData::dict& bndsubd
-  );
+    std::string patchName_;
+    std::string BCtype_;
+    int nFaces_;
+    int startFace_;
 
-  inline const std::string patchName() const { return patchName_; }
-  inline const std::string type() const { return type_; }
-  
-  virtual bool providesBCsForPatch(const std::string& patchName) const;
+public:
+    BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const =0;
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static void insertIntoBoundaryDict
+    (
+        OFdicts& dictionaries,
+        const std::string& patchName,
+        const OFDictData::dict& bndsubd
+    );
+
+    inline const std::string patchName() const
+    {
+        return patchName_;
+    }
+    inline const std::string BCtype() const
+    {
+        return BCtype_;
+    }
+
+    virtual bool providesBCsForPatch ( const std::string& patchName ) const;
 };
+
 
 
 
 class SolverOutputAnalyzer
 {
-  
+
 protected:
-  ProgressDisplayer& pdisp_;
-  
-  double curTime_;
-  std::map<std::string, double> curProgVars_;
-  
-  /**
-   * name of currently tracked force output,
-   * emtpy, if no force output is currently expected
-   */
-  std::string curforcename_;
-  int curforcesection_;
-  arma::mat curforcevalue_;
-  
+    ProgressDisplayer& pdisp_;
+
+    double curTime_;
+    std::map<std::string, double> curProgVars_;
+
+    /**
+     * name of currently tracked force output,
+     * emtpy, if no force output is currently expected
+     */
+    std::string curforcename_;
+    int curforcesection_;
+    arma::mat curforcevalue_;
+
 //   std::map<std::string, std::vector<arma::mat> > trackedForces_;
-  
+
 public:
-  SolverOutputAnalyzer(ProgressDisplayer& pdisp);
-  
-  void update(const std::string& line);
-  
-  bool stopRun() const;
+    SolverOutputAnalyzer ( ProgressDisplayer& pdisp );
+
+    void update ( const std::string& line );
+
+    bool stopRun() const;
 };
 
 
-class OpenFOAMCase 
-: public Case
+
+
+class OpenFOAMCase
+    : public Case
 {
 public:
-  typedef enum {
-    cellVolumeWeightMapMethod,
-    directMapMethod
-  } MapMethod;
-  
+    typedef enum {
+        cellVolumeWeightMapMethod,
+        directMapMethod
+    } MapMethod;
+
 protected:
-  const OFEnvironment& env_;
-  FieldList fields_;
-  MapMethod requiredMapMethod_;
-  
+    const OFEnvironment& env_;
+    FieldList fields_;
+    MapMethod requiredMapMethod_;
+
 public:
-    OpenFOAMCase(const OFEnvironment& env);
-    OpenFOAMCase(const OpenFOAMCase& other);
+    OpenFOAMCase ( const OFEnvironment& env );
+    OpenFOAMCase ( const OpenFOAMCase& other );
     virtual ~OpenFOAMCase();
-    
-    inline void setRequiredMapMethod(const MapMethod mm) { requiredMapMethod_=mm; }
-    inline MapMethod requiredMapMethod() const { return requiredMapMethod_; }
-    
-    void addField(const std::string& name, const FieldInfo& field);
 
-    void parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const;
-    
-    std::set<std::string> getUnhandledPatches(OFDictData::dict& boundaryDict) const;
-    
-    template<class BC>
-    void addRemainingBCs(OFDictData::dict& boundaryDict, const typename BC::Parameters& params)
+    inline void setRequiredMapMethod ( const MapMethod mm )
     {
-      typedef std::set<std::string> StringSet;
-      StringSet unhandledPatches = getUnhandledPatches(boundaryDict);
-	  
-      for (StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++)
-      {
-	insert(new BC(*this, *i, boundaryDict, params));  
-      }
-    }  
-    
-    inline const OFEnvironment& ofe() const { return env_; }
-    inline int OFversion() const { return env_.version(); }
-    
-    bool isCompressible() const;
-    
-    boost::shared_ptr<OFdicts> createDictionaries() const;
-    void modifyMeshOnDisk(const boost::filesystem::path& location) const;
-    void modifyCaseOnDisk(const boost::filesystem::path& location) const;
+        requiredMapMethod_=mm;
+    }
+    inline MapMethod requiredMapMethod() const
+    {
+        return requiredMapMethod_;
+    }
 
-    virtual void createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
-    virtual void createOnDisk(const boost::filesystem::path& location );
-    
-    virtual bool meshPresentOnDisk( const boost::filesystem::path& location ) const;
-    virtual bool outputTimesPresentOnDisk( const boost::filesystem::path& location, bool checkpar=false ) const;
-    virtual void removeProcessorDirectories( const boost::filesystem::path& location ) const;
-    
+    void addField ( const std::string& name, const FieldInfo& field );
+
+    void parseBoundaryDict ( const boost::filesystem::path& location, OFDictData::dict& boundaryDict ) const;
+
+    std::set<std::string> getUnhandledPatches ( OFDictData::dict& boundaryDict ) const;
+
+    template<class BC>
+    void addRemainingBCs ( OFDictData::dict& boundaryDict, const typename BC::Parameters& params )
+    {
+        typedef std::set<std::string> StringSet;
+        StringSet unhandledPatches = getUnhandledPatches ( boundaryDict );
+
+        for ( StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++ ) {
+            insert ( new BC ( *this, *i, boundaryDict, params ) );
+        }
+    }
+
+    inline const OFEnvironment& ofe() const
+    {
+        return env_;
+    }
+    inline int OFversion() const
+    {
+        return env_.version();
+    }
+
+    bool isCompressible() const;
+
+    boost::shared_ptr<OFdicts> createDictionaries() const;
+    void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
+    void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
+
+    virtual void createOnDisk ( const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
+    virtual void createOnDisk ( const boost::filesystem::path& location );
+
+    virtual bool meshPresentOnDisk ( const boost::filesystem::path& location ) const;
+    virtual bool outputTimesPresentOnDisk ( const boost::filesystem::path& location, bool checkpar=false ) const;
+    virtual void removeProcessorDirectories ( const boost::filesystem::path& location ) const;
+
     std::string cmdString
     (
-      const boost::filesystem::path& location, 
-      const std::string& cmd,
-      std::vector<std::string> argv
+        const boost::filesystem::path& location,
+        const std::string& cmd,
+        std::vector<std::string> argv
     )
     const;
 
     void executeCommand
     (
-      const boost::filesystem::path& location, 
-      const std::string& cmd,
-      std::vector<std::string> argv = std::vector<std::string>(),
-      std::vector<std::string>* output = NULL,
-      int np=0,
-      std::string *ovr_machine=NULL
+        const boost::filesystem::path& location,
+        const std::string& cmd,
+        std::vector<std::string> argv = std::vector<std::string>(),
+        std::vector<std::string>* output = NULL,
+        int np=0,
+        std::string *ovr_machine=NULL
     ) const;
-    
+
     void runSolver
     (
-      const boost::filesystem::path& location, 
-      SolverOutputAnalyzer& analyzer,
-      std::string solverName,
-      bool *stopFlag = NULL,
-      int np=0,
-      const std::vector<std::string>& addopts = std::vector<std::string>()
+        const boost::filesystem::path& location,
+        SolverOutputAnalyzer& analyzer,
+        std::string solverName,
+        bool *stopFlag = NULL,
+        int np=0,
+        const std::vector<std::string>& addopts = std::vector<std::string>()
     ) const;
-    
+
     template<class stream>
     void forkCommand
     (
-      stream& p_in,      
-      const boost::filesystem::path& location, 
-      const std::string& cmd, 
-      std::vector<std::string> argv = std::vector<std::string>(),
-      std::string *ovr_machine=NULL
+        stream& p_in,
+        const boost::filesystem::path& location,
+        const std::string& cmd,
+        std::vector<std::string> argv = std::vector<std::string>(),
+        std::string *ovr_machine=NULL
     ) const
     {
-      env_.forkCommand(p_in, cmdString(location, cmd, argv), std::vector<std::string>(), ovr_machine );
+        env_.forkCommand ( p_in, cmdString ( location, cmd, argv ), std::vector<std::string>(), ovr_machine );
     }
-    
+
     inline const FieldList& fields() const
     {
-      return fields_;
-    }  
+        return fields_;
+    }
     inline FieldList& fields()
     {
-      return fields_;
+        return fields_;
     }
-    
+
     std::vector<std::string> fieldNames() const;
-    
-    inline FieldInfo& field(const std::string& fname)
+
+    inline FieldInfo& field ( const std::string& fname )
     {
-      return fields_.find(fname)->second;
+        return fields_.find ( fname )->second;
     }
-    
+
     template<class T>
     const T& findUniqueElement() const
     {
-      const T* the_e;
-      
-      bool found=false;
-      for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
-	  i!=elements_.end(); i++)
-	  {
-	    const T *e= dynamic_cast<const T*>(&(*i));
-	    if (e)
-	    {
-	      if (found) throw insight::Exception("OpenFOAMCase::findUniqueElement(): Multiple elements of requested type!");
-	      the_e=e;
-	      found=true;
-	    }
-	  }
-      if (!found)
-	throw insight::Exception("OpenFOAMCase::findUniqueElement(): No element of requested type found !");
-     
-      return *the_e;
+        const T* the_e;
+
+        bool found=false;
+        for ( boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+                i!=elements_.end(); i++ ) {
+            const T *e= dynamic_cast<const T*> ( & ( *i ) );
+            if ( e ) {
+                if ( found ) {
+                    throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): Multiple elements of requested type!" );
+                }
+                the_e=e;
+                found=true;
+            }
+        }
+        if ( !found ) {
+            throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): No element of requested type found !" );
+        }
+
+        return *the_e;
     }
 
     template<class T>
     T& getUniqueElement()
     {
-      return const_cast<T&>(findUniqueElement<T>());
+        return const_cast<T&> ( findUniqueElement<T>() );
     }
 
 };
 
+
+
+
 const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const { return *static_cast<OpenFOAMCase*>(&case_); }
 OpenFOAMCase& OpenFOAMCaseElement::OFcase() { return *static_cast<OpenFOAMCase*>(&case_); }
+
+
+
 
 }
 

@@ -71,7 +71,7 @@ double ChannelBase::UmaxByUbulk(double Retau)
 }
 
 
-ChannelBase::ChannelBase(const NoParameters&)
+ChannelBase::ChannelBase()
 : OpenFOAMAnalysis
   (
     "Channel Flow Test Case",
@@ -361,7 +361,7 @@ void ChannelBase::createCase
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
-    cm.insert(new simpleFoamNumerics(FVNumericsParameters(cm, simpleFoamNumerics::Parameters()
+    cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
       .set_hasCyclics(true)
       .set_Uinternal(vec3(Ubulk_,0,0))
@@ -369,12 +369,12 @@ void ChannelBase::createCase
       .set_endTime(end_)
       .set_decompWeights(vec3(2,1,0))
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
-    )));
+    ));
   } 
   else if (Parameters::run_type::regime_unsteady_type *unsteady 
 	= boost::get<Parameters::run_type::regime_unsteady_type>(&p.run.regime))
   {
-    cm.insert( new pimpleFoamNumerics(FVNumericsParameters(cm, pimpleFoamNumerics::Parameters()
+    cm.insert( new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
       .set_LESfilteredConvection(p.run.filteredconvection)
       .set_maxDeltaT(0.25*T_)
       .set_Uinternal(vec3(Ubulk_,0,0))
@@ -387,7 +387,7 @@ void ChannelBase::createCase
       .set_deltaT( double(L/nax_)/Ubulk_ ) // Co=1
       .set_decompWeights(vec3(2,1,0))
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
-    )));
+    ));
   }
   
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
@@ -960,8 +960,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 
 defineType(ChannelCyclic);
 
-ChannelCyclic::ChannelCyclic(const NoParameters& nop)
-: ChannelBase(nop)
+ChannelCyclic::ChannelCyclic()
+: ChannelBase()
 {
 }
 
@@ -1086,7 +1086,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdic
   controlDict["endTime"] = end_;
 }
 
-addToFactoryTable(Analysis, ChannelCyclic, NoParameters);
+addToFactoryTable(Analysis, ChannelCyclic);
 
 
 

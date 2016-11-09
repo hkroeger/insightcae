@@ -36,12 +36,12 @@ namespace cad {
     
 
 defineType ( Cylinder );
-addToFactoryTable ( Feature, Cylinder, NoParameters );
+addToFactoryTable ( Feature, Cylinder );
 
 
 
 
-Cylinder::Cylinder ( const NoParameters& )
+Cylinder::Cylinder ( )
 {}
 
 

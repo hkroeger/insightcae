@@ -37,12 +37,12 @@ namespace cad {
     
     
 defineType(CurvePattern);
-addToFactoryTable(Feature, CurvePattern, NoParameters);
+addToFactoryTable(Feature, CurvePattern);
 
 
 
 
-CurvePattern::CurvePattern(const NoParameters& nop): Compound(nop)
+CurvePattern::CurvePattern(): Compound()
 {}
 
 

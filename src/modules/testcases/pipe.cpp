@@ -70,7 +70,7 @@ double PipeBase::UmaxByUbulk(double Retau)
   return 1 + 0.7 * Retau/PipeBase::Re(Retau); // Constant not given explictly in Schlichting, taken from Rotta, p. 190
 }
 
-PipeBase::PipeBase(const NoParameters&)
+PipeBase::PipeBase()
 : OpenFOAMAnalysis
   (
     "Pipe Flow Test Case",
@@ -666,8 +666,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
 
 defineType(PipeCyclic);
 
-PipeCyclic::PipeCyclic(const NoParameters& nop)
-: PipeBase(nop)
+PipeCyclic::PipeCyclic()
+: PipeBase()
 {
 }
 
@@ -759,7 +759,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
-addToFactoryTable(Analysis, PipeCyclic, NoParameters);
+addToFactoryTable(Analysis, PipeCyclic);
 
 
 
@@ -776,8 +776,8 @@ const char* PipeInflow::tpc_names_[] =
 
 const double PipeInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
 
-PipeInflow::PipeInflow(const NoParameters& nop)
-: PipeBase(nop)
+PipeInflow::PipeInflow()
+: PipeBase()
 {
 }
 
@@ -1004,6 +1004,6 @@ void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
-addToFactoryTable(Analysis, PipeInflow, NoParameters);
+addToFactoryTable(Analysis, PipeInflow);
 
 }

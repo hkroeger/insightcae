@@ -40,7 +40,7 @@ class BooleanIntersection
 
 public:
   declareType("BooleanIntersection");
-  BooleanIntersection(const NoParameters& nop = NoParameters());
+  BooleanIntersection();
   
   static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
   static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);

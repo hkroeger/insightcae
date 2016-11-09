@@ -40,7 +40,7 @@ class Pyramid
 
 public:
     declareType ( "Pyramid" );
-    Pyramid ( const NoParameters& nop = NoParameters() );
+    Pyramid ();
 
     static FeaturePtr create ( FeaturePtr base, VectorPtr ptip );
 

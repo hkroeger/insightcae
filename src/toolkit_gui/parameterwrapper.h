@@ -51,9 +51,14 @@ class ParameterWrapper
   Q_OBJECT
   
 public:
-  typedef boost::tuple<QTreeWidgetItem *, const QString&, insight::Parameter&, QWidget*, QWidget*> ConstrP;
+//   typedef boost::tuple<QTreeWidgetItem *, const QString&, insight::Parameter&, QWidget*, QWidget*> ConstrP;
   
-  declareFactoryTable(ParameterWrapper, ParameterWrapper::ConstrP);  
+  declareFactoryTable
+  (
+      ParameterWrapper, 
+        LIST(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform),
+        LIST(parent, name, p, detailw, superform)
+  );  
 
 protected:
   QString name_;
@@ -67,7 +72,7 @@ protected:
   
 public:
   declareType("ParameterWrapper");
-  ParameterWrapper(const ConstrP& p);
+  ParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual ~ParameterWrapper();
     
   virtual void createWidgets();
@@ -90,7 +95,7 @@ protected:
 public:
   declareType(insight::IntParameter::typeName_());
   
-  IntParameterWrapper(const ConstrP& p);
+  IntParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::IntParameter& param() { return dynamic_cast<insight::IntParameter&>(p_); }
   
@@ -107,7 +112,7 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::DoubleParameter::typeName_());
-  DoubleParameterWrapper(const ConstrP& p);
+  DoubleParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::DoubleParameter& param() { return dynamic_cast<insight::DoubleParameter&>(p_); }
 public slots:
@@ -123,7 +128,7 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::VectorParameter::typeName_());
-  VectorParameterWrapper(const ConstrP& p);
+  VectorParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::VectorParameter& param() { return dynamic_cast<insight::VectorParameter&>(p_); }
 public slots:
@@ -139,7 +144,7 @@ protected:
   QLineEdit *le_;
 public:
   declareType(insight::StringParameter::typeName_());
-  StringParameterWrapper(const ConstrP& p);
+  StringParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::StringParameter& param() { return dynamic_cast<insight::StringParameter&>(p_); }
 public slots:
@@ -156,7 +161,7 @@ protected:
 
 public:
   declareType(insight::BoolParameter::typeName_());
-  BoolParameterWrapper(const ConstrP& p);
+  BoolParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::BoolParameter& param() { return dynamic_cast<insight::BoolParameter&>(p_); }
 
@@ -178,7 +183,7 @@ protected:
   
 public:
   declareType(insight::PathParameter::typeName_());
-  PathParameterWrapper(const ConstrP& p);
+  PathParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::PathParameter& param() { return dynamic_cast<insight::PathParameter&>(p_); }
 
@@ -202,7 +207,7 @@ protected:
   
 public:
   declareType(insight::MatrixParameter::typeName_());
-  MatrixParameterWrapper(const ConstrP& p);
+  MatrixParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::MatrixParameter& param() { return dynamic_cast<insight::MatrixParameter&>(p_); }
 
@@ -220,7 +225,7 @@ class DirectoryParameterWrapper
   Q_OBJECT
 public:
   declareType(insight::DirectoryParameter::typeName_());
-  DirectoryParameterWrapper(const ConstrP& p);
+  DirectoryParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   inline insight::DirectoryParameter& param() { return dynamic_cast<insight::DirectoryParameter&>(p_); }
 
 protected slots:
@@ -240,7 +245,7 @@ protected:
 
 public:
   declareType(insight::SelectionParameter::typeName_());
-  SelectionParameterWrapper(const ConstrP& p);
+  SelectionParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::SelectionParameter& param() { return dynamic_cast<insight::SelectionParameter&>(p_); }
 public slots:
@@ -255,7 +260,7 @@ class SubsetParameterWrapper
   
 public:
   declareType(insight::SubsetParameter::typeName_());
-  SubsetParameterWrapper(const ConstrP& p);
+  SubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::SubsetParameter& param() { return dynamic_cast<insight::SubsetParameter&>(p_); }
   
@@ -312,7 +317,7 @@ protected:
   
 public:
   declareType(insight::ArrayParameter::typeName_());
-  ArrayParameterWrapper(const ConstrP& p);
+  ArrayParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::ArrayParameter& param() { return dynamic_cast<insight::ArrayParameter&>(p_); }
   
@@ -342,7 +347,7 @@ protected:
 
 public:
   declareType(insight::DoubleRangeParameter::typeName_());
-  DoubleRangeParameterWrapper(const ConstrP& p);
+  DoubleRangeParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::DoubleRangeParameter& param() { return dynamic_cast<insight::DoubleRangeParameter&>(p_); }
   
@@ -371,7 +376,7 @@ class SelectableSubsetParameterWrapper
   
 public:
   declareType(insight::SelectableSubsetParameter::typeName_());
-  SelectableSubsetParameterWrapper(const ConstrP& p);
+  SelectableSubsetParameterWrapper(QTreeWidgetItem* parent, const QString& name, insight::Parameter& p, QWidget* detailw, QWidget* superform);
   virtual void createWidgets();
   inline insight::SelectableSubsetParameter& param() { return dynamic_cast<insight::SelectableSubsetParameter&>(p_); }
   

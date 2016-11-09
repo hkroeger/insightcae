@@ -35,12 +35,12 @@ namespace cad {
     
     
 defineType(CircularPattern);
-addToFactoryTable(Feature, CircularPattern, NoParameters);
+addToFactoryTable(Feature, CircularPattern);
 
 
 
 
-CircularPattern::CircularPattern(const NoParameters& nop): Compound(nop)
+CircularPattern::CircularPattern(): Compound()
 {}
 
 

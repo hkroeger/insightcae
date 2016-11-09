@@ -42,7 +42,7 @@ class RegPoly
 
 public:
     declareType ( "RegPoly" );
-    RegPoly ( const NoParameters& nop = NoParameters() );
+    RegPoly ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
                                VectorPtr ez = matconst ( arma::mat() ) );

@@ -37,7 +37,7 @@ class Circle
 
 public:
     declareType("Circle");
-    Circle(const NoParameters& nop = NoParameters());
+    Circle();
 
     static FeaturePtr create(VectorPtr p0, VectorPtr n, ScalarPtr D);
 

@@ -41,7 +41,7 @@ class Revolution
 
 public:
     declareType ( "Revolution" );
-    Revolution ( const NoParameters& nop = NoParameters() );
+    Revolution ();
 
     static FeaturePtr create ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
 

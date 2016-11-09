@@ -47,7 +47,7 @@ class Box
 
 public:
     declareType("Box");
-    Box(const NoParameters& nop = NoParameters());
+    Box();
 
     static FeaturePtr create
     (

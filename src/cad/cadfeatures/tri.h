@@ -39,7 +39,7 @@ class Tri
 
 public:
     declareType ( "Tri" );
-    Tri ( const NoParameters& nop = NoParameters() );
+    Tri ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
 

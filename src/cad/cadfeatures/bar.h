@@ -71,7 +71,7 @@ class Bar
 
 public:
   declareType("Bar");
-  Bar(const NoParameters& nop = NoParameters());
+  Bar();
   
   static FeaturePtr create(
     VectorPtr p0, VectorPtr p1, 

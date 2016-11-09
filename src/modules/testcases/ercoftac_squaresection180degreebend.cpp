@@ -37,9 +37,9 @@ namespace insight
 {
 
 defineType(ERCOFTAC_SquareSection180DegreeBend);
-addToFactoryTable(Analysis, ERCOFTAC_SquareSection180DegreeBend, NoParameters);
+addToFactoryTable(Analysis, ERCOFTAC_SquareSection180DegreeBend);
 
-ERCOFTAC_SquareSection180DegreeBend::ERCOFTAC_SquareSection180DegreeBend(const NoParameters&)
+ERCOFTAC_SquareSection180DegreeBend::ERCOFTAC_SquareSection180DegreeBend()
 : OpenFOAMAnalysis(typeName, "Test case for turbulence modelling")
 {
 

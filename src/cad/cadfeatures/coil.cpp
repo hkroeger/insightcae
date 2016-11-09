@@ -41,13 +41,13 @@ namespace cad {
 
 
 defineType(CoilPath);
-addToFactoryTable(Feature, CoilPath, NoParameters);
+addToFactoryTable(Feature, CoilPath);
 
 
 
 
-CoilPath::CoilPath(const NoParameters& nop)
-: Feature(nop)
+CoilPath::CoilPath()
+: Feature()
 {
 }
 
@@ -326,10 +326,10 @@ bool CoilPath::isSingleOpenWire() const
     
 
 defineType(Coil);
-addToFactoryTable(Feature, Coil, NoParameters);
+addToFactoryTable(Feature, Coil);
 
-Coil::Coil(const NoParameters& nop)
-: Feature(nop)
+Coil::Coil()
+: Feature()
 {
 }
 

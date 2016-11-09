@@ -46,7 +46,7 @@ class ModelFeature
 public:
     declareType ( "loadmodel" );
 
-    ModelFeature ( const NoParameters& );
+    ModelFeature ();
     static FeaturePtr create ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
 
     virtual void build();

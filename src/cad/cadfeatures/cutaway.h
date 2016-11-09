@@ -42,7 +42,7 @@ class Cutaway
 
 public:
     declareType ( "Cutaway" );
-    Cutaway ( const NoParameters& nop = NoParameters() );
+    Cutaway ();
 
     static FeaturePtr create ( FeaturePtr model, VectorPtr p0, VectorPtr n );
     static FeaturePtr create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inverted );

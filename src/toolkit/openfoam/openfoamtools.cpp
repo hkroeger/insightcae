@@ -150,7 +150,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
     boost::filesystem::path casedir=to.parent_path();
     std::cout<<"Creating case skeleton in "<<casedir<<endl;
     OpenFOAMCase cm(*env);
-    cm.insert(new MeshingNumerics(FVNumericsParameters(cm, MeshingNumerics::Parameters())));
+    cm.insert(new MeshingNumerics(cm));
     cm.createOnDisk(casedir);
   }
   
@@ -1298,15 +1298,15 @@ namespace paraview
 {
 
 defineType(PVScene);
-defineFactoryTable(PVScene, NoParameters);
+defineFactoryTableNoArgs(PVScene);
 
 defineType(CustomPVScene);
-addToFactoryTable(PVScene, CustomPVScene, NoParameters);
+addToFactoryTable(PVScene, CustomPVScene);
 
 PVScene::~PVScene()
 {}
 
-CustomPVScene::CustomPVScene(const NoParameters&)
+CustomPVScene::CustomPVScene()
 {}
 
 CustomPVScene::CustomPVScene(const ParameterSet& ps)
@@ -1329,9 +1329,9 @@ string CustomPVScene::pythonCommands() const
 }
 
 defineType(CutplanePVScene);
-addToFactoryTable(PVScene, CutplanePVScene, NoParameters);
+addToFactoryTable(PVScene, CutplanePVScene);
 
-CutplanePVScene::CutplanePVScene(const NoParameters&)
+CutplanePVScene::CutplanePVScene()
 {}
 
 CutplanePVScene::CutplanePVScene(const ParameterSet&)
@@ -1352,10 +1352,10 @@ string CutplanePVScene::pythonCommands() const
 
 
 defineType(ParaviewVisualization);
-addToFactoryTable(Analysis, ParaviewVisualization, NoParameters);
+addToFactoryTable(Analysis, ParaviewVisualization);
 
-ParaviewVisualization::ParaviewVisualization(const NoParameters&np)
-: Analysis(np)
+ParaviewVisualization::ParaviewVisualization()
+: Analysis()
 {
 }
 
@@ -1378,7 +1378,7 @@ ParameterSet ParaviewVisualization::defaultParameters() const
   {
     boost::shared_ptr<PVScene> pvs
     (
-      pvsf.second->operator()(NoParameters())
+      pvsf.second->operator()()
     );
     
     sels.push_back

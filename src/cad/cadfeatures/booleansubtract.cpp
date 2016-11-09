@@ -37,13 +37,13 @@ namespace cad
     
     
 defineType(BooleanSubtract);
-addToFactoryTable(Feature, BooleanSubtract, NoParameters);
+addToFactoryTable(Feature, BooleanSubtract);
 
 
 
 
-BooleanSubtract::BooleanSubtract(const NoParameters& nop)
-: DerivedFeature(nop)
+BooleanSubtract::BooleanSubtract()
+: DerivedFeature()
 {}
 
 

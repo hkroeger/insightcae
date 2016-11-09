@@ -26,64 +26,89 @@
 
 #include "boost/foreach.hpp"
 
+
 namespace insight {
-  
-struct NoParameters
-{
-};
 
-template<class baseT, class paramS>
-class Factory
-{
 
-public:
-    virtual ~Factory() {};
-    virtual baseT* operator()(const paramS& p) const =0;
-};
-
-template<class baseT, class specT, class paramS>
-class SpecFactory
-: public Factory<baseT, paramS>
-{
-public:
-  virtual ~SpecFactory() {};
-  
-  virtual baseT* operator()(const paramS& p) const
-  {
-    return new specT(p);
-  }
-};
 
 #define declareType(typenameStr) \
  static const char *typeName_() { return typenameStr; }; \
  static const std::string typeName; \
  virtual const std::string& type() const { return typeName; } 
  
+ 
+ 
+ 
 #define defineType(T) \
  const std::string T::typeName( T::typeName_() )
 
-#define declareFactoryTable(baseT, paramS) \
- typedef std::map<std::string, insight::Factory<baseT, paramS>* > FactoryTable; \
- static FactoryTable* factories_; \
- static baseT* lookup(const std::string& key, const paramS& cp); \
- static std::vector<std::string> factoryToC();
 
-// boost::ptr_map<std::string, insight::Factory<baseT, paramS> > baseT::factories_;
-#define defineFactoryTable(baseT, paramS) \
+ 
+#define LIST(...) __VA_ARGS__
+
+
+ 
+#define declareFactoryTable(baseT, argList, parList) \
+ class Factory\
+ {\
+ public:\
+   virtual ~Factory() {};\
+   virtual baseT* operator()(argList) const =0;\
+ };\
+ template<class SPEC> \
+class SpecFactory\
+: public Factory \
+{\
+public:\
+  virtual ~SpecFactory() {};\
+  virtual baseT* operator()(argList) const\
+  {\
+    return new SPEC(parList);\
+  }\
+};\
+typedef std::map<std::string, Factory* > FactoryTable; \
+static FactoryTable* factories_; \
+static baseT* lookup(const std::string& key, argList); \
+static std::vector<std::string> factoryToC();
+
+
+
+
+#define declareFactoryTableNoArgs(baseT) \
+ class Factory\
+ {\
+ public:\
+   virtual ~Factory() {};\
+   virtual baseT* operator()() const =0;\
+ };\
+ template<class SPEC> \
+class SpecFactory\
+: public Factory \
+{\
+public:\
+  virtual ~SpecFactory() {};\
+  virtual baseT* operator()() const\
+  {\
+    return new SPEC();\
+  }\
+};\
+typedef std::map<std::string, Factory* > FactoryTable; \
+static FactoryTable* factories_; \
+static baseT* lookup(const std::string& key); \
+static std::vector<std::string> factoryToC();
+
+
+
+
+#define defineFactoryTable(baseT, argList, parList) \
  baseT::FactoryTable* baseT::factories_; \
- /** \
-  * lookup a factory from the table and construct an instance with the given parameters \
-  */ \
- baseT* baseT::lookup(const std::string& key, const paramS& cp) \
+ baseT* baseT::lookup(const std::string& key , argList) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
-  if (i==baseT::factories_->end()) \
+   if (i==baseT::factories_->end()) \
     throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
-  return (*i->second)( cp ); \
+  return (*i->second)( parList ); \
  } \
- /** \
-  * return a list with the available factories \
-  */ \
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
@@ -92,36 +117,55 @@ public:
    return toc; \
  }
 
-#define addToFactoryTable(baseT, specT, paramS) \
+ 
+ 
+ 
+#define defineFactoryTableNoArgs(baseT) \
+ baseT::FactoryTable* baseT::factories_; \
+ baseT* baseT::lookup(const std::string& key) \
+ { \
+   baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
+   if (i==baseT::factories_->end()) \
+    throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
+  return (*i->second)(); \
+ } \
+ std::vector<std::string> baseT::factoryToC() \
+ { \
+   std::vector<std::string> toc; \
+   BOOST_FOREACH(const FactoryTable::value_type& e, *factories_) \
+   { toc.push_back(e.first); } \
+   return toc; \
+ }
+ 
+ 
+ 
+#define addToFactoryTable(baseT, specT) \
 static struct add##specT##To##baseT##FactoryTable \
 {\
   add##specT##To##baseT##FactoryTable()\
   {\
     if (!baseT::factories_) \
     {\
-     /*std::cout<<"creating factory of " #baseT <<std::endl;*/\
      baseT::factories_=new baseT::FactoryTable(); \
     } \
       \
     std::string key(specT::typeName); \
-    /*std::cout << "Adding entry " << key << " to " #baseT "FactoryTable" << std::endl;*/ \
-    /*baseT::factories_->insert(key, new insight::SpecFactory<baseT, specT, paramS>() );*/ \
-    (*baseT::factories_)[key]=new insight::SpecFactory<baseT, specT, paramS>();\
+    (*baseT::factories_)[key]=new baseT::SpecFactory<specT>();\
   }\
   ~add##specT##To##baseT##FactoryTable()\
   {\
     std::string key(specT::typeName); \
-    /*std::cout << "Removing entry " << key << " from " #baseT "FactoryTable" << std::endl;*/ \
     baseT::FactoryTable::iterator k=baseT::factories_->find(key); \
     delete k->second; \
     baseT::factories_->erase(k); \
     if (baseT::factories_->size()==0) \
     { \
-     /*std::cout << "deleting factory table of " #baseT << std::endl;*/ \
      delete baseT::factories_;\
     }\
   }\
 } v_add##specT##To##baseT##FactoryTable;
+
+
 
 
 #define declareStaticFunctionTable(Name, ReturnT) \
@@ -129,6 +173,8 @@ static struct add##specT##To##baseT##FactoryTable \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable Name##Functions_; \
  static ReturnT Name(const std::string& key);
+ 
+ 
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
@@ -141,6 +187,9 @@ static struct add##specT##To##baseT##FactoryTable \
   return (*i->second)(); \
  }
  
+ 
+ 
+ 
 #define addToStaticFunctionTable(baseT, specT, Name) \
 static struct add##specT##To##baseT##Name##FunctionTable \
 {\
@@ -150,6 +199,8 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     baseT::Name##Functions_[key]=&specT::Name;\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable;
+
+
 
 
 }

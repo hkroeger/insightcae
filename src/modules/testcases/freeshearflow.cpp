@@ -48,9 +48,9 @@ namespace insight
   
   
 defineType(FreeShearFlow);
-addToFactoryTable(Analysis, FreeShearFlow, NoParameters);
+addToFactoryTable(Analysis, FreeShearFlow);
 
-FreeShearFlow::FreeShearFlow(const NoParameters&)
+FreeShearFlow::FreeShearFlow()
 : OpenFOAMAnalysis("Free Shear Flow", "LES of Free Shear Flow")
 {
 }

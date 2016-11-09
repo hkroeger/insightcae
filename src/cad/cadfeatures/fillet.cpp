@@ -34,12 +34,12 @@ namespace cad {
     
     
 defineType(Fillet);
-addToFactoryTable(Feature, Fillet, NoParameters);
+addToFactoryTable(Feature, Fillet);
 
 
 
 
-Fillet::Fillet(const NoParameters& nop): DerivedFeature(nop)
+Fillet::Fillet(): DerivedFeature()
 {}
 
   

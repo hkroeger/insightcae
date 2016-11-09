@@ -20,12 +20,14 @@
 
 
 #include <QListWidgetItem>
+#include <QMessageBox>
 
 #include "isofcreatenumericswindow.h"
 
 #include "openfoam/openfoamcase.h"
 
 using namespace insight;
+using namespace boost;
 
 
 isofCreateNumericsWindow::isofCreateNumericsWindow()
@@ -34,8 +36,8 @@ isofCreateNumericsWindow::isofCreateNumericsWindow()
     ui = new Ui::isofCreateNumericsWindow;
     ui->setupUi(this);
     
-    for (insight::FVNumerics::FactoryTable::const_iterator i = insight::FVNumerics::factories_->begin();
-        i != insight::FVNumerics::factories_->end(); i++)
+    for (insight::OpenFOAMCaseElement::FactoryTable::const_iterator i = insight::OpenFOAMCaseElement::factories_->begin();
+        i != insight::OpenFOAMCaseElement::factories_->end(); i++)
     {
         new QListWidgetItem(i->first.c_str(), ui->listWidget);
     }
@@ -65,10 +67,52 @@ void isofCreateNumericsWindow::onItemSelectionChanged()
     std::string num_name = cur->text().toStdString();
     
     if (ped_) ped_->deleteLater();
-    parameters_=insight::FVNumerics::defaultParameters(num_name);
+    parameters_=insight::OpenFOAMCaseElement::defaultParameters(num_name);
     ped_ = new ParameterEditorWidget(parameters_, ui->splitter);
     ui->splitter->insertWidget(1, ped_);
     
 //     ParameterSet emptyps;
 //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
+}
+
+
+void isofCreateNumericsWindow::done(int r)
+{
+  if ( r == QDialog::Accepted)
+  {
+        QListWidgetItem* cur = ui->listWidget->currentItem();
+        if (cur)
+        {
+            std::string num_name = cur->text().toStdString();
+            boost::filesystem::path cwd = boost::filesystem::current_path();
+            if 
+            (
+                QMessageBox::question
+                (
+                    this, 
+                    "Confirm", 
+                    str(format("Press OK to write configuration for OF solver %s into current directory %d!")
+                        % num_name % cwd).c_str(),
+                    QMessageBox::Ok|QMessageBox::Cancel
+                ) 
+                == 
+                QMessageBox::Ok
+            )
+            {
+                ofc_->insert( OpenFOAMCaseElement::lookup(num_name, *ofc_, parameters_) );
+                ofc_->createOnDisk(cwd);
+                ofc_->modifyCaseOnDisk(cwd);
+            }
+            else
+            {
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+  }
+  
+  QDialog::done(r);
 }

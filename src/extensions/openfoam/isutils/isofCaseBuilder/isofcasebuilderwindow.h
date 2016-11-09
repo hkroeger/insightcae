@@ -39,6 +39,7 @@ class InsertedCaseElement
 public:
     InsertedCaseElement(QListWidget*, const std::string& type_name);
     
+    inline const std::string& type_name() const { return type_name_; }
     inline insight::ParameterSet& parameters() { return curp_; }
     void insertElement(insight::OpenFOAMCase& ofc) const;
 };
@@ -83,6 +84,9 @@ public slots:
     
     void onAddElement();
     void onRemoveElement();
+    
+    void onSave();
+    void onLoad();
 };
 
 

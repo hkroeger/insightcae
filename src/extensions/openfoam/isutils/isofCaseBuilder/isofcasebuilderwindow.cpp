@@ -20,14 +20,17 @@
 
 
 #include <QMessageBox>
+#include <QFileDialog>
 
 #include "isofcasebuilderwindow.h"
 
+#include "rapidxml/rapidxml.hpp"
+#include "rapidxml/rapidxml_print.hpp"
 
 
 using namespace insight;
 using namespace boost;
-
+using namespace rapidxml;
 
 
 
@@ -68,6 +71,12 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     
     connect(ui->add_btn, SIGNAL(clicked()), this, SLOT(onAddElement()));
     connect(ui->remove_btn, SIGNAL(clicked()), this, SLOT(onRemoveElement()));
+
+    connect(ui->create_btn, SIGNAL(clicked()), this, SLOT(accept()));
+    connect(ui->cancel_btn, SIGNAL(clicked()), this, SLOT(reject()));
+
+    connect(ui->save_btn, SIGNAL(clicked()), this, SLOT(onSave()));
+    connect(ui->load_btn, SIGNAL(clicked()), this, SLOT(onLoad()));
     
     ofc_.reset(new OpenFOAMCase(OFEs::get("OF23x")));
 }
@@ -163,4 +172,98 @@ void isofCaseBuilderWindow::done(int r)
   }
   
   QDialog::done(r);
+}
+
+
+
+
+void isofCaseBuilderWindow::onSave()
+{
+    
+    QString fn = QFileDialog::getSaveFileName
+                 (
+                     this,
+                     "Save Parameters",
+                     "",
+                     "Insight Case Builder Parameter File (*.iscb)"
+                 );
+
+    if ( !fn.isEmpty() ) {
+        
+        boost::filesystem::path file (fn.toStdString());
+
+        xml_document<> doc;
+
+        // xml declaration
+        xml_node<>* decl = doc.allocate_node ( node_declaration );
+        decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
+        decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
+        doc.append_node ( decl );
+
+        xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
+        doc.append_node ( rootnode );
+
+        for (int i=0; i < ui->selected_elements->count(); i++)
+        {
+            InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
+            if (elem)
+            {
+                xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
+                elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
+                rootnode->append_node ( elemnode );
+                
+                elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
+            }
+        }
+
+        {
+            std::ofstream f ( file.c_str() );
+            f << doc << std::endl;
+            f << std::flush;
+            f.close();
+        }
+    }
+}
+
+
+
+
+void isofCaseBuilderWindow::onLoad()
+{
+    
+    ui->selected_elements->clear();
+    
+    QString fn = QFileDialog::getOpenFileName
+                 (
+                     this,
+                     "Save Parameters",
+                     "",
+                     "Insight Case Builder Parameter File (*.iscb)"
+                 );
+
+    if ( !fn.isEmpty() ) {
+        
+        boost::filesystem::path file (fn.toStdString());
+
+        std::ifstream in(file.c_str());
+        std::string contents;
+        in.seekg(0, std::ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, std::ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+
+        xml_document<> doc;
+        doc.parse<0>(&contents[0]);
+        
+        xml_node<> *rootnode = doc.first_node("root");
+        
+        for (xml_node<> *e = rootnode->first_node(); e; e = e->next_sibling())
+        {
+            std::string type_name(e->first_attribute("type")->value());
+        
+            InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
+            ice->parameters().readFromNode(doc, *e, file.parent_path());
+        }
+    }
 }

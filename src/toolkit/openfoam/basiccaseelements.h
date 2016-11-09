@@ -387,13 +387,13 @@ inherits twoPhaseTransportProperties::Parameters
 
 psat = double 2300.0 "Saturation pressure"
 
-model = selectableSubset {{ dummy set {} }} dummy "Cavitation model"
+model = selectablesubset {{ dummy set { } }} dummy "Cavitation model"
 
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
+    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
 
 public:
     declareType ( "cavitationTwoPhaseTransportProperties" );

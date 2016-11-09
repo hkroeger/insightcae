@@ -154,6 +154,9 @@ public:
 };
 
 
+typedef boost::shared_ptr<OpenFOAMCaseElement> OpenFOAMCaseElementPtr;
+
+
 
 
 /*

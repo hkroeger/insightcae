@@ -354,30 +354,34 @@ addToStaticFunctionTable(OpenFOAMCaseElement, cavitationTwoPhaseTransportPropert
 
 cavitationTwoPhaseTransportProperties::cavitationTwoPhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
 : twoPhaseTransportProperties(c, ps),
-  p_(ps)
+  ps_(ps)
 {
 }
 
 void cavitationTwoPhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  Parameters p(ps_);   
   twoPhaseTransportProperties::addIntoDictionaries(dictionaries);
   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
-  transportProperties["pSat"]=OFDictData::dimensionedData("pSat", OFDictData::dimension(1, -1, -2), p_.psat);
+  transportProperties["pSat"]=OFDictData::dimensionedData("pSat", OFDictData::dimension(1, -1, -2), p.psat);
   
-  SelectableSubsetParameter& msp = ParameterSet(p_).get<SelectableSubsetParameter>("model"); 
+  const SelectableSubsetParameter& msp = ps_.get<SelectableSubsetParameter>("model"); 
   phaseChangeModels::phaseChangeModel::lookup(msp.selection(), msp()) ->addIntoDictionaries(dictionaries);
 }
 
 ParameterSet cavitationTwoPhaseTransportProperties::defaultParameters()
 {
     ParameterSet ps = Parameters::makeDefault();
+    
     SelectableSubsetParameter& msp = ps.get<SelectableSubsetParameter>("model");
     for (phaseChangeModels::phaseChangeModel::FactoryTable::const_iterator i = phaseChangeModels::phaseChangeModel::factories_->begin();
         i != phaseChangeModels::phaseChangeModel::factories_->end(); i++)
     {
-        msp.addItem( i->first, phaseChangeModels::phaseChangeModel::defaultParameters(i->first) );
+        ParameterSet defp = phaseChangeModels::phaseChangeModel::defaultParameters(i->first);
+        msp.addItem( i->first, defp );
     }
     msp.selection() = phaseChangeModels::phaseChangeModel::factories_->begin()->first;
+
     return ps;
 }
   

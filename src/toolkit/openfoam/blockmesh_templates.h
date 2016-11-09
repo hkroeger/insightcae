@@ -29,34 +29,33 @@ namespace insight {
 namespace bmd
 {
   
+    
+    
+    
 class BlockMeshTemplate
+    : public insight::bmd::blockMesh
 {
 public:
-  BlockMeshTemplate();
-  virtual ~BlockMeshTemplate();
-  
-  virtual void create_bmd(blockMesh& bmd) const =0;
+    BlockMeshTemplate(OpenFOAMCase& c);
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual void create_bmd () =0;
 };
 
-void create_bmd_file
-(
-  const boost::filesystem::path& casedir,
-  const std::string& ofename, 
-  const BlockMeshTemplate& bmt
-);
   
+
+
+
 /**
  * A cylinder meshed with an O-grid
  */
 
-
-class Cylinder
+class blockMeshDict_Cylinder
 : public BlockMeshTemplate
 {
 public:
-#include "blockmesh_templates__Cylinder__Parameters.h"
+#include "blockmesh_templates__blockMeshDict_Cylinder__Parameters.h"
 /*
-PARAMETERSET>>> Cylinder Parameters
+PARAMETERSET>>> blockMeshDict_Cylinder Parameters
 
 geometry = set
 {
@@ -83,14 +82,16 @@ mesh = set
 */
 
 protected:
-  Parameters p;
+  Parameters p_;
 
 public:
-  Cylinder(const ParameterSet& p);
+    declareType("blockMeshDict_Cylinder");
+    
+  blockMeshDict_Cylinder(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
   
-  virtual void create_bmd(blockMesh& bmd) const;
+  virtual void create_bmd();
   
-  inline static ParameterSet defaultParameterSet() 
+  inline static ParameterSet defaultParameters() 
     { return Parameters::makeDefault(); };
     
   double rCore() const;

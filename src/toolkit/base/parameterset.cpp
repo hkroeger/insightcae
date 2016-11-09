@@ -337,6 +337,11 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
   }
 }
 
+void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
+{ 
+    value_.insert(key, ps.cloneParameterSet()); 
+}
+
 std::string SelectableSubsetParameter::latexRepresentation() const
 {
 //  return "(Not implemented)";

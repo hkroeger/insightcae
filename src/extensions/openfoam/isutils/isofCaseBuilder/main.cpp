@@ -18,40 +18,36 @@
  *
  */
 
-#ifndef ISOFCREATENUMERICSWINDOW_H
-#define ISOFCREATENUMERICSWINDOW_H
+#include <locale>
+#include <QLocale>
+#include <QDir>
+#include <QSplashScreen>
+#include <QDialog>
+#include <QtGui/QApplication>
 
-#include "openfoam/numericscaseelements.h"
-#include "parametereditorwidget.h"
+#include "base/boost_include.h"
 
-namespace Ui
+#include "base/exception.h"
+#include "base/linearalgebra.h"
+
+#include <qthread.h>
+
+
+#include "isofcasebuilderwindow.h"
+
+int main(int argc, char** argv)
 {
-class isofCreateNumericsWindow;
-}
- 
-#include "ui_isofcreatenumericswindow.h"
-
-class isofCreateNumericsWindow
-: public QDialog
-{
-     Q_OBJECT
-     
-private:
-    Ui::isofCreateNumericsWindow* ui;
-    
-protected:
-    boost::shared_ptr<insight::OpenFOAMCase> ofc_;
-    insight::ParameterSet parameters_;
-    boost::shared_ptr<insight::FVNumerics> numerics_;
-    ParameterEditorWidget *ped_;
+  insight::UnhandledExceptionHandling ueh;
+  insight::GSLExceptionHandling gsl_errtreatment;
   
-public:
-    isofCreateNumericsWindow();
-    virtual ~isofCreateNumericsWindow();
-    
-public slots:
-    void onItemSelectionChanged();
-    virtual void done(int r);
-};
+  QApplication app(argc, argv);
 
-#endif
+  // After creation of application object!
+  std::locale::global(std::locale::classic());
+  QLocale::setDefault(QLocale::C);
+
+  isofCaseBuilderWindow window;
+  window.show();
+  return app.exec();
+}
+

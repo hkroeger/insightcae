@@ -202,7 +202,7 @@ std::string valueToString(const arma::mat& value)
   for (int i=0; i<value.n_elem; i++)
   {
     if (i>0) s+=" ";
-    s+=boost::lexical_cast<string>(value(i));
+    s+=boost::str(boost::format("%g") % value(i)); //boost::lexical_cast<string>(value(i));
   }
   return s;
 }

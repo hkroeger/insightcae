@@ -306,7 +306,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 //       ));
 
   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters().velocity(vec3(vinf,0,0)) ));
-  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters().pressure(0.0) ));
+  cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters().set_pressure(0.0) ));
    
   cm.insert(new SimpleBC(cm, up_, boundaryDict, "symmetryPlane" ));
   cm.insert(new SimpleBC(cm, down_, boundaryDict, "symmetryPlane" ));

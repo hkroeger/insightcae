@@ -173,6 +173,21 @@ protected:
     int startFace_;
 
 public:
+    declareFactoryTable 
+    ( 
+        BoundaryCondition, 
+        LIST 
+        (  
+            OpenFOAMCase& c, 
+            const std::string& patchName, 
+            const OFDictData::dict& boundaryDict, 
+            const ParameterSet& ps
+        ), 
+        LIST ( c, patchName, boundaryDict, ps ) 
+    );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareType ( "BoundaryCondition" );
+    
     BoundaryCondition ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const =0;
     virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
@@ -275,6 +290,8 @@ public:
         }
     }
 
+    void addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps );
+    
     inline const OFEnvironment& ofe() const
     {
         return env_;

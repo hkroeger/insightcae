@@ -189,137 +189,235 @@ public:
 class SimpleBC
 : public BoundaryCondition
 {
-protected:
-  std::string className_;
-  
+    
 public:
+#include "boundaryconditioncaseelements__SimpleBC__Parameters.h"
+/*
+PARAMETERSET>>> SimpleBC Parameters
+
+className = string "empty" "Class name of the boundary condition."
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+  
+    void init();
+    
+public:
+    declareType("SimpleBC");
   SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className);
+  SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p);
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+  
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
+
+
+
 
 class CyclicPairBC
-: public OpenFOAMCaseElement
+    : public OpenFOAMCaseElement
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (prefixName, std::string, "")
-//   )
-//   
-// protected:
-//   Parameters p_;
-//   
+
 protected:
-  std::string patchName_;
-  int nFaces_, nFaces1_;
-  int startFace_, startFace1_;
+    std::string patchName_;
+    int nFaces_, nFaces1_;
+    int startFace_, startFace1_;
 
 public:
-  CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict );
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "CyclicPairBC" );
+    CyclicPairBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
 
-  virtual bool providesBCsForPatch(const std::string& patchName) const;
+    virtual bool providesBCsForPatch ( const std::string& patchName ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return ParameterSet();
+    }
+
 };
+
+
 
 
 class GGIBCBase
-: public BoundaryCondition
+    : public BoundaryCondition
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (shadowPatch, std::string, "")
+//     (bridgeOverlap, bool, true)
+//     (zone, std::string, "")
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (shadowPatch, std::string, "")
-    (bridgeOverlap, bool, true)
-    (zone, std::string, "")
-  )
-  
+#include "boundaryconditioncaseelements__GGIBCBase__Parameters.h"
+/*
+PARAMETERSET>>> GGIBCBase Parameters
+
+shadowPatch = string "" "Name of the opposite patch"
+zone = string "" "Zone name. Usually equal to patch name."
+bridgeOverlap = bool true "Whether to fix small non-overlapping areas."
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p = Parameters() );
-  virtual void modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
+    GGIBCBase ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+                const ParameterSet&ps = Parameters::makeDefault() );
+    virtual void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
 };
+
+
+
 
 class GGIBC
-: public GGIBCBase
+    : public GGIBCBase
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+//     (separationOffset, arma::mat, vec3(0,0,0))
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-    (separationOffset, arma::mat, vec3(0,0,0))
-  )
-  
+#include "boundaryconditioncaseelements__GGIBC__Parameters.h"
+/*
+PARAMETERSET>>> GGIBC Parameters
+inherits GGIBCBase::Parameters
+
+separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p = Parameters() );
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "GGIBC" );
+    GGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+            const ParameterSet&ps = Parameters::makeDefault() );
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
+
+
+
 class CyclicGGIBC
-: public GGIBCBase
+    : public GGIBCBase
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+//     (separationOffset, arma::mat, vec3(0,0,0))
+//     (rotationCentre, arma::mat, vec3(0,0,0))
+//     (rotationAxis, arma::mat, vec3(0,0,1))
+//     (rotationAngle, double, 0.0)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-    (separationOffset, arma::mat, vec3(0,0,0))
-    (rotationCentre, arma::mat, vec3(0,0,0))
-    (rotationAxis, arma::mat, vec3(0,0,1))
-    (rotationAngle, double, 0.0)
-  )
-  
+#include "boundaryconditioncaseelements__CyclicGGIBC__Parameters.h"
+/*
+PARAMETERSET>>> CyclicGGIBC Parameters
+inherits GGIBCBase::Parameters
+
+separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
+rotationCentre = vector (0 0 0) "Origin of rotation axis"
+rotationAxis = vector (0 0 1) "Direction of rotation axis"
+rotationAngle = double 0.0 "[rad] Angle of rotation"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p = Parameters() );
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "CyclicGGIBC" );
+    CyclicGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+                  const ParameterSet&ps = Parameters::makeDefault() );
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
+
+
 
 
 class OverlapGGIBC
-: public GGIBCBase
+    : public GGIBCBase
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+//     (separationOffset, arma::mat, vec3(0,0,0))
+//     (rotationAxis, arma::mat, vec3(0,0,1))
+//     (nCopies, int, 1)
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-    (separationOffset, arma::mat, vec3(0,0,0))
-    (rotationAxis, arma::mat, vec3(0,0,1))
-    (nCopies, int, 1)
-  )
-  
+#include "boundaryconditioncaseelements__OverlapGGIBC__Parameters.h"
+/*
+PARAMETERSET>>> OverlapGGIBC Parameters
+inherits GGIBCBase::Parameters
+
+separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
+rotationAxis = vector (0 0 1) "Direction of rotation axis"
+nCopies = int 1 "number of copies"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  OverlapGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p = Parameters() );
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "OverlapGGIBC" );
+    OverlapGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+                   const ParameterSet&ps = Parameters::makeDefault() );
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
+
+
 
 
 class MixingPlaneGGIBC
-: public GGIBCBase
+    : public GGIBCBase
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
+//     (separationOffset, arma::mat, vec3(0,0,0))
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, GGIBCBase::Parameters,
-    (separationOffset, arma::mat, vec3(0,0,0))
-  )
-  
+#include "boundaryconditioncaseelements__MixingPlaneGGIBC__Parameters.h"
+/*
+PARAMETERSET>>> MixingPlaneGGIBC Parameters
+inherits GGIBCBase::Parameters
+
+separationOffset = vector (0 0 0) "Translational transformation from this patch to the opposite one."
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  MixingPlaneGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p = Parameters() );
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+    declareType ( "MixingPlaneGGIBC" );
+    MixingPlaneGGIBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+                       const ParameterSet&ps = Parameters::makeDefault() );
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
+
+
 
 
 namespace multiphaseBC
@@ -572,15 +670,15 @@ public:
 
 
 class TurbulentVelocityInletBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
 
 public:
-  
-  static const std::vector<std::string> inflowGenerator_types;
+
+    static const std::vector<std::string> inflowGenerator_types;
 
 #include "boundaryconditioncaseelements__TurbulentVelocityInletBC__Parameters.h"
-  
+
 /*
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
 
@@ -592,18 +690,18 @@ turbulence = selectablesubset {{
 
 uniformIntensityAndLengthScale
 set {
- intensity = double 0.05 "Turbulence intensity as fraction of mean velocity"
- lengthScale = double 0.1 "[m] Turbulence length scale"
+    intensity = double 0.05 "Turbulence intensity as fraction of mean velocity"
+    lengthScale = double 0.1 "[m] Turbulence length scale"
 }
 
 inflowGenerator
 set {
-  uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
-  
-  volexcess=double 2.0 "Volumetric overlapping of spots"
-  
-  type=selection ( 
-    hatSpot 
+    uniformConvection=bool false "Whether to use a uniform convection velocity instead of the local mean velocity"
+
+    volexcess=double 2.0 "Volumetric overlapping of spots"
+
+    type=selection (
+    hatSpot
     gaussianSpot
     decayingTurbulenceSpot
     decayingTurbulenceVorton
@@ -611,15 +709,15 @@ set {
     anisotropicVorton2
     combinedVorton
     modalTurbulence
-  ) anisotropicVorton "Type of inflow generator"
-  
-  R=set {
-  #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
-  } "Reynolds stresses specification"
+    ) anisotropicVorton "Type of inflow generator"
 
-  L=set {
-  #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
-  } "Length scale specification"
+    R=set {
+    #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+    } "Reynolds stresses specification"
+
+    L=set {
+    #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+    } "Length scale specification"
 
 }
 
@@ -628,60 +726,80 @@ set {
 <<<PARAMETERSET
 */
 
-  
+
 protected:
-  Parameters p_;
+    Parameters p_;
 
 public:
-  TurbulentVelocityInletBC
-  (
-    OpenFOAMCase& c,
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    ParameterSet const& p = Parameters::makeDefault()
-  );
-  
-  virtual void setField_U(OFDictData::dict& BC) const;
-  virtual void setField_p(OFDictData::dict& BC) const;
-  virtual void setField_k(OFDictData::dict& BC) const;
-  virtual void setField_epsilon(OFDictData::dict& BC) const;
-  virtual void setField_omega(OFDictData::dict& BC) const;
-  virtual void setField_nuTilda(OFDictData::dict& BC) const;
-  virtual void setField_R(OFDictData::dict& BC) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-  
+    declareType ( "TurbulentVelocityInletBC" );
+    TurbulentVelocityInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& p = Parameters::makeDefault()
+    );
+
+    virtual void setField_U ( OFDictData::dict& BC ) const;
+    virtual void setField_p ( OFDictData::dict& BC ) const;
+    virtual void setField_k ( OFDictData::dict& BC ) const;
+    virtual void setField_epsilon ( OFDictData::dict& BC ) const;
+    virtual void setField_omega ( OFDictData::dict& BC ) const;
+    virtual void setField_nuTilda ( OFDictData::dict& BC ) const;
+    virtual void setField_R ( OFDictData::dict& BC ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+
 //   virtual void initInflowBC(const boost::filesystem::path& location, const ParameterSet& iniparams) const;
 
-//   inline static ParameterSet defaultParameters()
-//    { return Parameters::makeWithDefaults(); }
-//   inline static ParameterSet defaultParameters();
+    inline static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
 
 
 class PressureOutletBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (pressure, double, 0.0)
-    (prohibitInflow, bool, true)
-    (fixMeanValue, bool, false)
-    (rho, double, 1025.0)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (pressure, double, 0.0)
+//     (prohibitInflow, bool, true)
+//     (fixMeanValue, bool, false)
+//     (rho, double, 1025.0)
+//   )
+#include "boundaryconditioncaseelements__PressureOutletBC__Parameters.h"
+/*
+PARAMETERSET>>> PressureOutletBC Parameters
+
+pressure = double 0.0 "Uniform static pressure at selected boundary patch"
+prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
+fixMeanValue = bool false "If true, only mean value of pressure is set"
+rho = double 1025.0 "Density"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  PressureOutletBC
-  (
-    OpenFOAMCase& c, 
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "PressureOutletBC" );
+    PressureOutletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& ps = Parameters::makeDefault()
+    );
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
+
+
 
 
 class PotentialFreeSurfaceBC
@@ -696,6 +814,8 @@ public:
   );
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
+
 
 
 class MeshMotionBC

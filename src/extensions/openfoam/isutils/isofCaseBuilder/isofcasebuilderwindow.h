@@ -45,6 +45,37 @@ public:
 };
 
 
+class Patch
+: public QListWidgetItem
+{
+protected:
+    std::string patch_name_;
+    std::string bc_type_;
+    insight::ParameterSet curp_;
+    
+public:
+    Patch(QListWidget*, const std::string& patch_name);
+    Patch(QListWidget*, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);
+    
+    virtual void set_bc_type(const std::string& type_name);
+    
+    inline const std::string& patch_name() const { return patch_name_; }
+    inline const std::string& bc_type() const { return bc_type_; }
+    inline insight::ParameterSet& parameters() { return curp_; }
+    inline const insight::ParameterSet& parameters() const { return curp_; }
+    virtual bool insertElement(insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict) const;
+    void appendToNode(rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);
+};
+
+class DefaultPatch
+: public Patch
+{
+public:
+    DefaultPatch(QListWidget*);
+    DefaultPatch(QListWidget*, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, boost::filesystem::path inputfilepath);
+    virtual bool insertElement(insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict) const;
+};
+
 
 namespace Ui
 {
@@ -66,13 +97,15 @@ class isofCaseBuilderWindow
      
 private:
     Ui::isofCaseBuilderWindow* ui;
-    QHBoxLayout *pe_layout_;
+    QHBoxLayout *pe_layout_, *bc_pe_layout_;
     
 protected:
+    boost::filesystem::path casepath_;
     boost::shared_ptr<insight::OpenFOAMCase> ofc_;
+    insight::OFDictData::dict boundaryDict_;
     insight::ParameterSet parameters_;
     boost::shared_ptr<insight::FVNumerics> numerics_;
-    ParameterEditorWidget *ped_;
+    ParameterEditorWidget *ped_, *bc_ped_;
   
 public:
     isofCaseBuilderWindow();
@@ -87,6 +120,9 @@ public slots:
     
     void onSave();
     void onLoad();
+    void onParseBF();
+    void onAssignBC();
+    void onPatchSelectionChanged();
 };
 
 

@@ -215,6 +215,21 @@ bool OpenFOAMCaseElement::providesBCsForPatch(const std::string& patchName) cons
 
 
 
+defineType(BoundaryCondition);
+defineFactoryTable
+(
+    BoundaryCondition, 
+    LIST 
+    (  
+        OpenFOAMCase& c, 
+        const std::string& patchName, 
+        const OFDictData::dict& boundaryDict, 
+        const ParameterSet& ps
+    ),
+    LIST ( c, patchName, boundaryDict, ps ) 
+);
+defineStaticFunctionTable(BoundaryCondition, defaultParameters, ParameterSet);
+
 
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
@@ -814,4 +829,15 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
       
    return unhandledPatches;
 }
+
+void OpenFOAMCase::addRemainingBCs ( const std::string& bc_type, OFDictData::dict& boundaryDict, const ParameterSet& ps )
+{
+    typedef std::set<std::string> StringSet;
+    StringSet unhandledPatches = getUnhandledPatches ( boundaryDict );
+
+    for ( StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++ ) {
+        insert ( BoundaryCondition::lookup ( bc_type, *this, *i, boundaryDict, ps ) );
+    }
+}
+
 }

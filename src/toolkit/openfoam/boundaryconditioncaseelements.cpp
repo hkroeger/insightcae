@@ -268,36 +268,59 @@ Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value, const 
 }
 
 
+defineType(SimpleBC);
+addToFactoryTable(BoundaryCondition, SimpleBC);
+addToStaticFunctionTable(BoundaryCondition, SimpleBC, defaultParameters);
 
-
-SimpleBC::SimpleBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className)
-: BoundaryCondition(c, patchName, boundaryDict),
-  className_(className)
+void SimpleBC::init()
 {
-  if ( (OFversion()>=230) && (className_=="symmetryPlane")) className_="symmetry";
-  BCtype_=className_;
-}
-
-void SimpleBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
-{
-  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
-  
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
-  {
-    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
-      .subDict("boundaryField").subDict(patchName_);
-    if ( (className_=="cyclic") && ((field.first=="motionU")||(field.first=="pointDisplacement")) )
-      noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
-    else
-    {
-      std::string tname=className_;
-      BC["type"]=OFDictData::data(tname);
+    BCtype_ = p_.className;
+    if ( ( OFversion() >=230 ) && ( BCtype_=="symmetryPlane" ) ) {
+        BCtype_="symmetry";
     }
-  }
+}
+
+SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const std::string className )
+    : BoundaryCondition ( c, patchName, boundaryDict )
+{
+    p_.className = className;
+    init();
+}
+
+SimpleBC::SimpleBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
+    : BoundaryCondition ( c, patchName, boundaryDict ),
+      p_ ( p )
+{
+    init();
+}
+
+void SimpleBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
+{
+
+    BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
+
+    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+        
+        OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
+                             .subDict ( "boundaryField" ).subDict ( patchName_ );
+                             
+        if ( ( BCtype_=="cyclic" ) && ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
+            noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+        } else {
+            std::string tname=BCtype_;
+            BC["type"]=OFDictData::data ( tname );
+        }
+        
+    }
 }
 
 
-CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
+
+defineType(CyclicPairBC);
+// addToFactoryTable(BoundaryCondition, CyclicPairBC);
+// addToStaticFunctionTable(BoundaryCondition, CyclicPairBC, defaultParameters);
+
+CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p)
 : OpenFOAMCaseElement(c, patchName+"CyclicBC"),
   patchName_(patchName)
 {
@@ -314,6 +337,7 @@ CyclicPairBC::CyclicPairBC(OpenFOAMCase& c, const std::string& patchName, const 
     startFace_=boundaryDict.subDict(patchName_).getInt("startFace");
   }
 }
+
 
 void CyclicPairBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -340,43 +364,33 @@ void CyclicPairBC::addIntoDictionaries(OFdicts& dictionaries) const
   }
 }
 
-void CyclicPairBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
-  {
-    OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
-    OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
-    
-    if (OFversion()>=210)
-    {
-      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_+"_half0");
-      OFDictData::dict& BC1=boundaryField.addSubDictIfNonexistent(patchName_+"_half1");
-      
-      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
-      {
-	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
-	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC1);
-      }
-      else
-      {
-	BC["type"]="cyclic";
-	BC1["type"]="cyclic";
-      }
+    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+        OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second );
+        OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent ( "boundaryField" );
+
+        if ( OFversion() >=210 ) {
+            OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent ( patchName_+"_half0" );
+            OFDictData::dict& BC1=boundaryField.addSubDictIfNonexistent ( patchName_+"_half1" );
+
+            if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
+                noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+                noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC1 );
+            } else {
+                BC["type"]="cyclic";
+                BC1["type"]="cyclic";
+            }
+        } else {
+            OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent ( patchName_ );
+
+            if ( ( ( field.first=="motionU" ) || ( field.first=="pointDisplacement" ) ) ) {
+                noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC );
+            } else {
+                BC["type"]="cyclic";
+            }
+        }
     }
-    else
-    {
-      OFDictData::dict& BC=boundaryField.addSubDictIfNonexistent(patchName_);
-      
-      if ( ((field.first=="motionU")||(field.first=="pointDisplacement")) )
-      {
-	noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC);
-      }
-      else
-      {
-	BC["type"]="cyclic";
-      }
-    }
-  }
 }
 
 bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
@@ -389,10 +403,12 @@ bool CyclicPairBC::providesBCsForPatch(const std::string& patchName) const
 
 
 
+
+
 GGIBCBase::GGIBCBase(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p )
+	const ParameterSet&ps )
 : BoundaryCondition(c, patchName, boundaryDict),
-  p_(p)
+  p_(ps)
 {
 }
 
@@ -404,17 +420,22 @@ void GGIBCBase::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem
     (
       cm, location,
       list_of<std::string>    
-      ("faceSet "+p_.zone()+" new patchToFace "+patchName_)
+      ("faceSet "+p_.zone+" new patchToFace "+patchName_)
     );
     cm.executeCommand(location, "setsToZones", list_of<std::string>("-noFlipMap") );
   }
 }
 
 
+
+defineType(GGIBC);
+addToFactoryTable(BoundaryCondition, GGIBC);
+addToStaticFunctionTable(BoundaryCondition, GGIBC, defaultParameters);
+
 GGIBC::GGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p )
-: GGIBCBase(c, patchName, boundaryDict, p),
-  p_(p)
+	const ParameterSet&ps )
+: GGIBCBase(c, patchName, boundaryDict, ps),
+  p_(ps)
 {
 }
 
@@ -425,7 +446,7 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   if (OFversion()>=210)
   {
     bndDict["type"]="cyclicAMI";
-    bndDict["neighbourPatch"]= p_.shadowPatch();
+    bndDict["neighbourPatch"]= p_.shadowPatch;
     bndDict["matchTolerance"]= 0.001;
     bndDict["lowWeightCorrection"]=0.1;
     //bndDict["transform"]= "rotational";    
@@ -433,10 +454,10 @@ void GGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   else
   {
     bndDict["type"]="ggi";
-    bndDict["shadowPatch"]= p_.shadowPatch();
-    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
-    bndDict["bridgeOverlap"]=p_.bridgeOverlap();
-    bndDict["zone"]=p_.zone();
+    bndDict["shadowPatch"]= p_.shadowPatch;
+    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
+    bndDict["bridgeOverlap"]=p_.bridgeOverlap;
+    bndDict["zone"]=p_.zone;
   }
 }
 
@@ -462,10 +483,14 @@ void GGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 }
 
 
-CyclicGGIBC::CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p )
-: GGIBCBase(c, patchName, boundaryDict, p),
-  p_(p)
+defineType(CyclicGGIBC);
+addToFactoryTable(BoundaryCondition, CyclicGGIBC);
+addToStaticFunctionTable(BoundaryCondition, CyclicGGIBC, defaultParameters);
+
+CyclicGGIBC::CyclicGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+                  const ParameterSet&ps )
+: GGIBCBase(c, patchName, boundaryDict, ps),
+  p_(ps)
 {
 }
 
@@ -476,23 +501,23 @@ void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   if (OFversion()>=210)
   {
     bndDict["type"]="cyclicAMI";
-    bndDict["neighbourPatch"]= p_.shadowPatch();
+    bndDict["neighbourPatch"]= p_.shadowPatch;
     bndDict["matchTolerance"]= 0.001;
     bndDict["transform"]= "rotational";    
-    bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre());
-    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
-    bndDict["rotationAngle"]=p_.rotationAngle();
+    bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre);
+    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
+    bndDict["rotationAngle"]=p_.rotationAngle;
     bndDict["lowWeightCorrection"]=0.1;
   }
   else
   {
     bndDict["type"]="cyclicGgi";
-    bndDict["shadowPatch"]= p_.shadowPatch();
-    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
-    bndDict["bridgeOverlap"]=p_.bridgeOverlap();
-    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
-    bndDict["rotationAngle"]=p_.rotationAngle();
-    bndDict["zone"]=p_.zone();
+    bndDict["shadowPatch"]= p_.shadowPatch;
+    bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
+    bndDict["bridgeOverlap"]=p_.bridgeOverlap;
+    bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
+    bndDict["rotationAngle"]=p_.rotationAngle;
+    bndDict["zone"]=p_.zone;
   }
 }
 
@@ -519,11 +544,14 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 
 
+defineType(OverlapGGIBC);
+addToFactoryTable(BoundaryCondition, OverlapGGIBC);
+addToStaticFunctionTable(BoundaryCondition, OverlapGGIBC, defaultParameters);
 
 OverlapGGIBC::OverlapGGIBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-	Parameters const &p )
-: GGIBCBase(c, patchName, boundaryDict, p),
-  p_(p)
+	const ParameterSet&ps )
+: GGIBCBase(c, patchName, boundaryDict, ps),
+  p_(ps)
 {
 }
 
@@ -533,12 +561,12 @@ void OverlapGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   bndDict["startFace"]=startFace_;
   
   bndDict["type"]="overlapGgi";
-  bndDict["shadowPatch"]= p_.shadowPatch();
-  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
-  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
-  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis());
-  bndDict["nCopies"]=p_.nCopies();
-  bndDict["zone"]=p_.zone();
+  bndDict["shadowPatch"]= p_.shadowPatch;
+  bndDict["bridgeOverlap"]=p_.bridgeOverlap;
+  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
+  bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
+  bndDict["nCopies"]=p_.nCopies;
+  bndDict["zone"]=p_.zone;
 }
 
 void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -561,14 +589,19 @@ void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 
 
+
+defineType(MixingPlaneGGIBC);
+addToFactoryTable(BoundaryCondition, MixingPlaneGGIBC);
+addToStaticFunctionTable(BoundaryCondition, MixingPlaneGGIBC, defaultParameters);
+
 MixingPlaneGGIBC::MixingPlaneGGIBC
 (
   OpenFOAMCase& c, 
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  Parameters const &p 
-) : GGIBCBase(c, patchName, boundaryDict, p),
-  p_(p)
+  const ParameterSet&ps 
+) : GGIBCBase(c, patchName, boundaryDict, ps),
+  p_(ps)
 {
   if ((OFversion()<160) || (OFversion()>=170))
   {
@@ -581,10 +614,10 @@ void MixingPlaneGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
   bndDict["nFaces"]=nFaces_;
   bndDict["startFace"]=startFace_;
   bndDict["type"]="mixingPlane";
-  bndDict["shadowPatch"]= p_.shadowPatch();
-  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset());
-  bndDict["bridgeOverlap"]=p_.bridgeOverlap();
-  bndDict["zone"]=p_.zone();
+  bndDict["shadowPatch"]= p_.shadowPatch;
+  bndDict["separationOffset"]=OFDictData::vector3(p_.separationOffset);
+  bndDict["bridgeOverlap"]=p_.bridgeOverlap;
+  bndDict["zone"]=p_.zone;
   
   OFDictData::dict csDict;
   csDict["type"]="cylindrical";
@@ -1621,15 +1654,20 @@ void CompressibleInletBC::setField_p(OFDictData::dict& BC) const
 //   inflowInitializer::addToInitializerList(d, patchName, Ubulk, params);
 // }
 
+
+defineType(TurbulentVelocityInletBC);
+addToFactoryTable(BoundaryCondition, TurbulentVelocityInletBC);
+addToStaticFunctionTable(BoundaryCondition, TurbulentVelocityInletBC, defaultParameters);
+
 TurbulentVelocityInletBC::TurbulentVelocityInletBC
 (
   OpenFOAMCase& c,
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  ParameterSet const& p
+  const ParameterSet& ps
 )
 : BoundaryCondition(c, patchName, boundaryDict),
-  p_(p)
+  p_(ps)
 {
  BCtype_="patch";
 }
@@ -1934,110 +1972,95 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
 //   }
 // }
   
+defineType(PressureOutletBC);
+addToFactoryTable(BoundaryCondition, PressureOutletBC);
+addToStaticFunctionTable(BoundaryCondition, PressureOutletBC, defaultParameters);
+
 PressureOutletBC::PressureOutletBC
 (
   OpenFOAMCase& c, 
   const std::string& patchName, 
   const OFDictData::dict& boundaryDict, 
-  const Parameters& p
+  const ParameterSet& ps
 )
 : BoundaryCondition(c, patchName, boundaryDict),
-  p_(p)
+  p_(ps)
 {
  BCtype_="patch";
 }
 
-void PressureOutletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
+void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-  BoundaryCondition::addIntoFieldDictionaries(dictionaries);
-  //p_.phasefractions()->addIntoDictionaries(dictionaries);
+    BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
+    //p_.phasefractions()->addIntoDictionaries(dictionaries);
 
-  if (p_.fixMeanValue() && (OFversion()!=160))
-  {
-    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-    controlDict.getList("libs").push_back( OFDictData::data("\"libfixedMeanValueBC.so\"") );
-  }
-  
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
-  {
-    OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
-      .subDict("boundaryField").subDict(patchName_);
-      
-    if ( (field.first=="U") && (get<0>(field.second)==vectorField) )
-    {
-      if (p_.prohibitInflow())
-      {
-	BC["type"]=OFDictData::data("inletOutlet");
-	BC["inletValue"]=OFDictData::data("uniform ( 0 0 0 )");
-	BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
-      }
-      else
-      {
-	BC["type"]=OFDictData::data("zeroGradient");
-	BC["value"]=OFDictData::data("uniform ( 0 0 0 )");
-      }
+    if ( p_.fixMeanValue && ( OFversion() !=160 ) ) {
+        OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent ( "system/controlDict" );
+        controlDict.getList ( "libs" ).push_back ( OFDictData::data ( "\"libfixedMeanValueBC.so\"" ) );
     }
-    else if ( 
-      (field.first=="T") 
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      BC["type"]="zeroGradient";
+
+    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+        OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
+                             .subDict ( "boundaryField" ).subDict ( patchName_ );
+
+        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+            if ( p_.prohibitInflow ) {
+                BC["type"]=OFDictData::data ( "inletOutlet" );
+                BC["inletValue"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+                BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+            } else {
+                BC["type"]=OFDictData::data ( "zeroGradient" );
+                BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+            }
+        } else if (
+            ( field.first=="T" )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            BC["type"]="zeroGradient";
+        } else if (
+            ( ( field.first=="p" ) || ( field.first=="pd" ) || ( field.first=="p_rgh" ) )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            if ( p_.fixMeanValue ) {
+                BC["type"]=OFDictData::data ( "fixedMeanValue" );
+                BC["meanValue"]=OFDictData::data ( p_.pressure );
+                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p_.pressure ) );
+            } else {
+                BC["type"]=OFDictData::data ( "fixedValue" );
+                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p_.pressure ) );
+            }
+        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+            BC["type"]=OFDictData::data ( "fixedValue" );
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p_.rho ) );
+        } else if
+        (
+            (
+                ( field.first=="k" ) ||
+                ( field.first=="epsilon" ) ||
+                ( field.first=="omega" ) ||
+                ( field.first=="nut" ) ||
+                ( field.first=="nuSgs" ) ||
+                ( field.first=="nuTilda" )
+            )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            BC["type"]=OFDictData::data ( "zeroGradient" );
+        } else {
+            if ( ! (
+                        noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        /*	  ||
+                        	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
+                    ) )
+                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+            {
+                BC["type"]=OFDictData::data ( "zeroGradient" );
+            }
+
+        }
     }
-    else if ( 
-      ( (field.first=="p") || (field.first=="pd") || (field.first=="p_rgh") )
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      if (p_.fixMeanValue())
-      {
-	BC["type"]=OFDictData::data("fixedMeanValue");
-	BC["meanValue"]=OFDictData::data( p_.pressure() );
-	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
-      }
-      else
-      {
-	BC["type"]=OFDictData::data("fixedValue");
-	BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.pressure()));
-      }
-    }
-    else if ( (field.first=="rho") && (get<0>(field.second)==scalarField) )
-    {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform "+lexical_cast<std::string>(p_.rho()) );
-    }
-    else if 
-    (
-      (
-	(field.first=="k") ||
-	(field.first=="epsilon") ||
-	(field.first=="omega") ||
-	(field.first=="nut") ||
-	(field.first=="nuSgs") ||
-	(field.first=="nuTilda")
-      )
-      && 
-      (get<0>(field.second)==scalarField) 
-    )
-    {
-      BC["type"]=OFDictData::data("zeroGradient");
-    }
-    else
-    {
-      if (!(
-	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
-/*	  ||
-	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)*/
-	  ))
-	//throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
-	{
-	  BC["type"]=OFDictData::data("zeroGradient");
-	}
-	  
-    }
-  }
 }
 
 PotentialFreeSurfaceBC::PotentialFreeSurfaceBC

@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -24,16 +24,17 @@
 using namespace boost;
 using namespace boost::assign;
 
-namespace insight {
-  
+namespace insight
+{
+
 namespace bmd
 {
 
-    
-    
-    
-BlockMeshTemplate::BlockMeshTemplate(OpenFOAMCase& c)
-: blockMesh(c)
+
+
+
+BlockMeshTemplate::BlockMeshTemplate ( OpenFOAMCase& c )
+    : blockMesh ( c )
 {
 }
 
@@ -42,105 +43,229 @@ BlockMeshTemplate::BlockMeshTemplate(OpenFOAMCase& c)
 
 void BlockMeshTemplate::addIntoDictionaries ( OFdicts& dictionaries ) const
 {
-  const_cast<BlockMeshTemplate*>(this) -> create_bmd();
-  blockMesh::addIntoDictionaries(dictionaries);
+    const_cast<BlockMeshTemplate*> ( this ) -> create_bmd();
+    blockMesh::addIntoDictionaries ( dictionaries );
 }
 
 
 
 
 
-defineType(blockMeshDict_Cylinder);
-addToFactoryTable(OpenFOAMCaseElement, blockMeshDict_Cylinder);
-addToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Cylinder, defaultParameters);
+defineType ( blockMeshDict_Cylinder );
+addToFactoryTable ( OpenFOAMCaseElement, blockMeshDict_Cylinder );
+addToStaticFunctionTable ( OpenFOAMCaseElement, blockMeshDict_Cylinder, defaultParameters );
 
-blockMeshDict_Cylinder::blockMeshDict_Cylinder(OpenFOAMCase& c, const ParameterSet& ps)
-: BlockMeshTemplate(c), p_(ps)
+
+blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps )
+    : BlockMeshTemplate ( c ), p_ ( ps )
 {}
+
 
 void blockMeshDict_Cylinder::create_bmd()
 {
-  double al = M_PI/2.;
-  
-  double Lc=p_.geometry.D*0.33;
-  
-  std::map<int, Point> pts;
-  pts = boost::assign::map_list_of   
-      (1, 	vec3(0, 0.5*p_.geometry.D, 0))
-      (0, 	vec3(0,  ::cos(al)*Lc, 0.))
-      .convert_to_container<std::map<int, Point> >()
-  ;
-  arma::mat vL=p_.geometry.L*p_.geometry.ex;
-  
-  Patch* base=NULL;
-  Patch* top=NULL;
-  Patch* outer=NULL;
-  
-  if (p_.mesh.basePatchName!="") base=&this->addOrDestroyPatch(p_.mesh.basePatchName, new bmd::Patch());
-  if (p_.mesh.topPatchName!="") top=&this->addOrDestroyPatch(p_.mesh.topPatchName, new bmd::Patch());
-  if (p_.mesh.outerPatchName!="") outer=&this->addOrDestroyPatch(p_.mesh.outerPatchName, new bmd::Patch());
-  
-  // core block
-  {
-    arma::mat r0=rotMatrix(0.5*al, p_.geometry.ex);
-    arma::mat r1=rotMatrix(1.5*al, p_.geometry.ex);
-    arma::mat r2=rotMatrix(2.5*al, p_.geometry.ex);
-    arma::mat r3=rotMatrix(3.5*al, p_.geometry.ex);
+    double al = M_PI/2.;
 
-    Block& bl = this->addBlock
-    (  
-      new Block(P_8(
-	  r1*pts[0], r2*pts[0], r3*pts[0], r0*pts[0],
-	  (r1*pts[0])+vL, (r2*pts[0])+vL, (r3*pts[0])+vL, (r0*pts[0])+vL
-	),
-	p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
-      )
-    );
-    if (base) base->addFace(bl.face("0321"));
-    if (top) top->addFace(bl.face("4567"));
-  }
+    double Lc=p_.geometry.D*0.33;
 
-  // radial blocks
-  for (int i=0; i<4; i++)
-  {
-    arma::mat r0=rotMatrix(double(i+0.5)*al, p_.geometry.ex);
-    arma::mat r1=rotMatrix(double(i+1.5)*al, p_.geometry.ex);
+    std::map<int, Point> pts;
+    pts = boost::assign::map_list_of
+          ( 1, 	vec3 ( 0, 0.5*p_.geometry.D, 0 ) )
+          ( 0, 	vec3 ( 0,  ::cos ( al ) *Lc, 0. ) )
+          .convert_to_container<std::map<int, Point> >()
+          ;
+    arma::mat vL=p_.geometry.L*p_.geometry.ex;
 
-    {    
-      Block& bl = this->addBlock
-      (
-	new Block(P_8(
-	    r1*pts[0], r0*pts[0], r0*pts[1], r1*pts[1],
-	    (r1*pts[0])+vL, (r0*pts[0])+vL, (r0*pts[1])+vL, (r1*pts[1])+vL
-	  ),
-	  p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
-	  list_of<double>(1)(1./p_.mesh.gradr)(1)
-	)
-      );
-      if (base) base->addFace(bl.face("0321"));
-      if (top) top->addFace(bl.face("4567"));
+    Patch* base=NULL;
+    Patch* top=NULL;
+    Patch* outer=NULL;
+
+    if ( p_.mesh.basePatchName!="" ) {
+        base=&this->addOrDestroyPatch ( p_.mesh.basePatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.topPatchName!="" ) {
+        top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.outerPatchName!="" ) {
+        outer=&this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
     }
 
+    // core block
+    {
+        arma::mat r0=rotMatrix ( 0.5*al, p_.geometry.ex );
+        arma::mat r1=rotMatrix ( 1.5*al, p_.geometry.ex );
+        arma::mat r2=rotMatrix ( 2.5*al, p_.geometry.ex );
+        arma::mat r3=rotMatrix ( 3.5*al, p_.geometry.ex );
 
-    arma::mat rmid=rotMatrix(double(i+1)*al, p_.geometry.ex);
-    this->addEdge(new ArcEdge(r1*pts[1], r0*pts[1], rmid*pts[1]));
-    this->addEdge(new ArcEdge((r1*pts[1])+vL, (r0*pts[1])+vL, (rmid*pts[1])+vL));
+        Block& bl = this->addBlock
+                    (
+                        new Block ( P_8 (
+                                        r1*pts[0], r2*pts[0], r3*pts[0], r0*pts[0],
+                                        ( r1*pts[0] )+vL, ( r2*pts[0] )+vL, ( r3*pts[0] )+vL, ( r0*pts[0] )+vL
+                                    ),
+                                    p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
+                                  )
+                    );
+        if ( base ) {
+            base->addFace ( bl.face ( "0321" ) );
+        }
+        if ( top ) {
+            top->addFace ( bl.face ( "4567" ) );
+        }
+    }
 
-    //inner core
+    // radial blocks
+    for ( int i=0; i<4; i++ ) {
+        arma::mat r0=rotMatrix ( double ( i+0.5 ) *al, p_.geometry.ex );
+        arma::mat r1=rotMatrix ( double ( i+1.5 ) *al, p_.geometry.ex );
+
+        {
+            Block& bl = this->addBlock
+                        (
+                            new Block ( P_8 (
+                                            r1*pts[0], r0*pts[0], r0*pts[1], r1*pts[1],
+                                            ( r1*pts[0] )+vL, ( r0*pts[0] )+vL, ( r0*pts[1] )+vL, ( r1*pts[1] )+vL
+                                        ),
+                                        p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
+                                        list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
+                                      )
+                        );
+            if ( base ) {
+                base->addFace ( bl.face ( "0321" ) );
+            }
+            if ( top ) {
+                top->addFace ( bl.face ( "4567" ) );
+            }
+        }
+
+
+        arma::mat rmid=rotMatrix ( double ( i+1 ) *al, p_.geometry.ex );
+        this->addEdge ( new ArcEdge ( r1*pts[1], r0*pts[1], rmid*pts[1] ) );
+        this->addEdge ( new ArcEdge ( ( r1*pts[1] )+vL, ( r0*pts[1] )+vL, ( rmid*pts[1] )+vL ) );
+
+        //inner core
 //     bmd->addEdge(new ArcEdge(r1*pts[0], r0*pts[0], rmid*pts[]));
 //     bmd->addEdge(new ArcEdge((r1*pts[0])+vL, (r0*pts[0])+vL, (rmid*pts[])+vL));
 
-  }
+    }
 
 }
+
 
 double blockMeshDict_Cylinder::rCore() const
 {
-  return p_.geometry.D*0.33;
+    return p_.geometry.D*0.33;
 }
 
 
-  
+
+
+
+defineType ( blockMeshDict_Box );
+addToFactoryTable ( OpenFOAMCaseElement, blockMeshDict_Box );
+addToStaticFunctionTable ( OpenFOAMCaseElement, blockMeshDict_Box, defaultParameters );
+
+
+blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )
+    : BlockMeshTemplate ( c ), p_ ( ps )
+{}
+
+
+void blockMeshDict_Box::create_bmd()
+{
+    double al = M_PI/2.;
+
+    arma::mat ex=p_.geometry.ex;
+    ex /= arma::norm(ex, 2);
+    
+    arma::mat ez=p_.geometry.ez;
+    ez/= arma::norm(ez,2);
+    
+    arma::mat ey = arma::cross(ex, ez);
+    double mey=arma::norm(ey,2);
+    if (mey<1e-6)
+    {
+        throw insight::Exception
+        (
+            str(format("blockMeshDict_Box: supplied vectors ex=(%g, %g, %g) and ez=(%g, %g, %g) have a vanishing cross product => cannot determine third direction!")
+                 % ex(0) % ex(1) % ex(2) % ez(0) % ez(1) % ez(2) )
+        );
+    }
+    ey/=mey;
+    
+    double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
+    if (fabs(90.-ang)>1e-3)
+    {
+        arma::mat eznew=arma::cross(ey, ex);
+        insight::Warning(str(format("blockMeshDict_Box: supplied vectors ex and ez do not make a right angle (angle is %gdeg). Rectifying ez from (%g, %g, %g) to (%g, %g, %g)!")
+                 % ang % ez(0) % ez(1) % ez(2) % eznew(0) % eznew(1) % eznew(2) )
+        );         
+        ez=eznew;
+    }
+
+    std::map<int, Point> pts;
+    pts = boost::assign::map_list_of
+          ( 0, 	p_.geometry.p0 )
+          ( 1, 	p_.geometry.p0 +p_.geometry.L*ex )
+          ( 2, 	p_.geometry.p0 +p_.geometry.L*ex +p_.geometry.W*ey )
+          ( 3, 	p_.geometry.p0 +p_.geometry.W*ey )
+          ( 4, 	p_.geometry.p0 +p_.geometry.H*ez )
+          ( 5, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex )
+          ( 6, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex +p_.geometry.W*ey )
+          ( 7, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.W*ey )
+          .convert_to_container<std::map<int, Point> >()
+          ;
+
+    Patch *Xp=NULL, *Xm=NULL, *Yp=NULL, *Ym=NULL, *Zp=NULL, *Zm=NULL;
+
+    if ( p_.mesh.XpPatchName!="" ) {
+        Xp=&this->addOrDestroyPatch ( p_.mesh.XpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.XmPatchName!="" ) {
+        Xm=&this->addOrDestroyPatch ( p_.mesh.XmPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.YpPatchName!="" ) {
+        Yp=&this->addOrDestroyPatch ( p_.mesh.YpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.YmPatchName!="" ) {
+        Ym=&this->addOrDestroyPatch ( p_.mesh.YmPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.ZpPatchName!="" ) {
+        Zp=&this->addOrDestroyPatch ( p_.mesh.ZpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.XmPatchName!="" ) {
+        Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
+    }
+
+    Block& bl = this->addBlock
+                (
+                    new Block ( P_8 (
+                                    pts[0], pts[1], pts[2], pts[3],
+                                    pts[4], pts[5], pts[6], pts[7]
+                                ),
+                                p_.mesh.nx, p_.mesh.ny, p_.mesh.nz
+                                )
+                );
+    if ( Xp ) {
+        Xp->addFace ( bl.face ( "1265" ) );
+    }
+    if ( Xm ) {
+        Xm->addFace ( bl.face ( "0473" ) );
+    }
+    if ( Yp ) {
+        Yp->addFace ( bl.face ( "0154" ) );
+    }
+    if ( Ym ) {
+        Ym->addFace ( bl.face ( "2376" ) );
+    }
+    if ( Zp ) {
+        Zp->addFace ( bl.face ( "4567" ) );
+    }
+    if ( Zm ) {
+        Zm->addFace ( bl.face ( "0321" ) );
+    }
+
+}
+
 }
 
 }

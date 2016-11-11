@@ -32,14 +32,15 @@ class SplineCurve
     : public Feature
 {
     std::vector<VectorPtr> pts_;
+    VectorPtr tan0_, tan1_;
 
-    SplineCurve ( const std::vector<VectorPtr>& pts );
+    SplineCurve ( const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1 );
 
 public:
     declareType ( "SplineCurve" );
     SplineCurve ();
 
-    static FeaturePtr create ( const std::vector<VectorPtr>& pts );
+    static FeaturePtr create ( const std::vector<VectorPtr>& pts, VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
 
     virtual void build();
 

@@ -20,6 +20,11 @@
 #include "splinecurve.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include <boost/phoenix/fusion.hpp>
+
+#include "TColgp_HArray1OfPnt.hxx"
+#include "GeomAPI_Interpolate.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -46,16 +51,16 @@ SplineCurve::SplineCurve(): Feature()
 
 
 
-SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts)
-: pts_(pts)
+SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1)
+: pts_(pts), tan0_(tan0), tan1_(tan1)
 {}
 
 
 
 
-FeaturePtr SplineCurve::create(const std::vector<VectorPtr>& pts)
+FeaturePtr SplineCurve::create(const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1)
 {
-    return FeaturePtr(new SplineCurve(pts));
+    return FeaturePtr(new SplineCurve(pts, tan0, tan1));
 }
 
 
@@ -63,11 +68,18 @@ FeaturePtr SplineCurve::create(const std::vector<VectorPtr>& pts)
 
 void SplineCurve::build()
 {
-    TColgp_Array1OfPnt pts_col ( 1, pts_.size() );
+//     TColgp_Array1OfPnt pts_col ( 1, pts_.size() );
+    Handle_TColgp_HArray1OfPnt pts_col = new TColgp_HArray1OfPnt( 1, pts_.size() );
     for ( int j=0; j<pts_.size(); j++ ) {
-        pts_col.SetValue ( j+1, to_Pnt ( pts_[j]->value() ) );
+        pts_col->SetValue ( j+1, to_Pnt ( pts_[j]->value() ) );
     }
-    GeomAPI_PointsToBSpline splbuilder ( pts_col );
+//     GeomAPI_PointsToBSpline splbuilder ( pts_col );
+    GeomAPI_Interpolate splbuilder ( pts_col, false, 1e-6 );
+    if (tan0_ && tan1_)
+    {
+        splbuilder.Load(to_Vec(tan0_->value()), to_Vec(tan1_->value()));
+    }
+    splbuilder.Perform();
     Handle_Geom_BSplineCurve crv=splbuilder.Curve();
     setShape ( BRepBuilderAPI_MakeEdge ( crv, crv->FirstParameter(), crv->LastParameter() ) );
 }
@@ -82,8 +94,11 @@ void SplineCurve::insertrule(parser::ISCADParser& ruleset) const
     "SplineCurve",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression % ',' >> ')' ) 
-	[ qi::_val = phx::bind(&SplineCurve::create, qi::_1) ]
+    ( '(' 
+        > ruleset.r_vectorExpression % ',' 
+        >> ( (',' >> qi::lit("der") >> ruleset.r_vectorExpression >> ruleset.r_vectorExpression ) | ( qi::attr(VectorPtr()) >> qi::attr(VectorPtr()) ) ) 
+        >> ')' ) 
+	[ qi::_val = phx::bind(&SplineCurve::create, qi::_1, phx::at_c<0>(qi::_2), phx::at_c<1>(qi::_2) ) ]
       
     ))
   );

@@ -180,5 +180,105 @@ bool Arc::isSingleOpenWire() const
 
 
 
+defineType(Arc3P);
+addToFactoryTable(Feature, Arc3P);
+
+
+
+Arc3P::Arc3P()
+: Feature()
+{
+}
+
+
+
+
+void Arc3P::build()
+{
+  Handle_Geom_TrimmedCurve crv=GC_MakeArcOfCircle(to_Pnt(*p0_), to_Pnt(*p1_), to_Pnt(*pm_));
+  
+  setShape(BRepBuilderAPI_MakeEdge(crv));
+  
+  gp_Pnt p;
+  gp_Vec v;
+  crv->D1(crv->FirstParameter(), p, v);
+  refpoints_["p0"]=vec3(p);
+  refvectors_["et0"]=vec3(v);
+  crv->D1(crv->LastParameter(), p, v);
+  refpoints_["p1"]=vec3(p);
+  refvectors_["et1"]=vec3(v);
+}
+
+
+
+
+Arc3P::Arc3P(VectorPtr p0, VectorPtr pm, VectorPtr p1)
+: p0_(p0), pm_(pm), p1_(p1)
+{
+}
+
+
+
+
+FeaturePtr Arc3P::create(VectorPtr p0, VectorPtr pm, VectorPtr p1)
+{
+    return FeaturePtr(new Arc3P(p0, pm, p1));
+}
+
+
+
+
+
+void Arc3P::insertrule(parser::ISCADParser& ruleset) const
+{
+  using boost::spirit::repository::qi::iter_pos;
+  
+  ruleset.modelstepFunctionRules.add
+  (
+    "Arc3P",	
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+
+    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+	 [ qi::_val = phx::bind(&Arc3P::create, qi::_1, qi::_2, qi::_3) ]
+      
+    ))
+  );
+}
+
+
+
+
+FeatureCmdInfoList Arc3P::ruleDocumentation() const
+{
+    return boost::assign::list_of
+    (
+        FeatureCmdInfo
+        (
+            "Arc3P",
+            "( <vector:p0>, <vector:pm>, <vector:p1> )",
+            "Creates an arc between point p0 and p1 through intermediate point pm."
+        )
+    );
+}
+
+
+
+
+bool Arc3P::isSingleCloseWire() const
+{
+  return false;
+}
+
+
+
+
+bool Arc3P::isSingleOpenWire() const
+{
+  return true;
+}
+
+
+
+
 }
 }

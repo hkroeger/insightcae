@@ -55,6 +55,32 @@ public:
     virtual void build();
 };
 
+    
+    
+    
+class Arc3P
+    : public Feature
+{
+    VectorPtr p0_;
+    VectorPtr pm_;
+    VectorPtr p1_;
+
+    Arc3P ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
+
+public:
+    declareType ( "Arc3P" );
+    Arc3P ();
+    
+    static FeaturePtr create ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+
+    virtual bool isSingleCloseWire() const;
+    virtual bool isSingleOpenWire() const;
+
+    virtual void build();
+};
 
 
 

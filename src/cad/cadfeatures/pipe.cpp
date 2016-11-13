@@ -63,13 +63,23 @@ FeaturePtr Pipe::create(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binor
 
 void Pipe::build()
 {
-    if (!spine_->isSingleWire())
-        throw insight::Exception("spine feature has to provide a singly connected wire!");  // not working for wires created from feature edge selection
-
+    TopoDS_Wire spinew;
+    if (spine_->isSingleWire())
+    {
+        spinew=spine_->asSingleWire();
+    }
+    else if (spine_->isSingleEdge())
+    {
+        spinew=BRepBuilderAPI_MakeWire(spine_->asSingleEdge());
+    }
+    else
+    {
+        throw insight::Exception("spine feature has to provide a single edge or a singly connected wire!");  // not working for wires created from feature edge selection
+    }
+    
     if (!xsec_->isSingleFace() || xsec_->isSingleWire() || xsec_->isSingleEdge())
         throw insight::Exception("xsec feature has to provide a face or wire!");
 
-    TopoDS_Wire spinew=spine_->asSingleWire();
 
     if (reapprox_spine_)
     {

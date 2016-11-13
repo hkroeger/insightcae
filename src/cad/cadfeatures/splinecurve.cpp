@@ -71,7 +71,9 @@ void SplineCurve::build()
 //     TColgp_Array1OfPnt pts_col ( 1, pts_.size() );
     Handle_TColgp_HArray1OfPnt pts_col = new TColgp_HArray1OfPnt( 1, pts_.size() );
     for ( int j=0; j<pts_.size(); j++ ) {
-        pts_col->SetValue ( j+1, to_Pnt ( pts_[j]->value() ) );
+        arma::mat pi=pts_[j]->value();
+        pts_col->SetValue ( j+1, to_Pnt ( pi ) );
+        refpoints_[str(format("p%d")%j)]=pi;
     }
 //     GeomAPI_PointsToBSpline splbuilder ( pts_col );
     GeomAPI_Interpolate splbuilder ( pts_col, false, 1e-6 );

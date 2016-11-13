@@ -486,13 +486,23 @@ public:
 };
 
 
+
+
+
 typedef boost::fusion::tuple<double, double> uniformIntensityAndLengthScale;
+
+
+
 
 enum oneEqnValueType { nuTilda, RS };
 typedef boost::fusion::tuple<oneEqnValueType, FieldData> oneEqn;
 
+
+
+
 enum twoEqnValueType { kEpsilon, kOmega, REpsilon, RSL };
 typedef boost::fusion::tuple<twoEqnValueType, FieldData, FieldData> twoEqn;
+
 
 
 
@@ -515,6 +525,7 @@ public:
     void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
     void setDirichletBC_R(OFDictData::dict& BC, double U) const;
 };
+
 
 
 
@@ -614,6 +625,7 @@ public:
 
 
 
+
 class ExptDataInletBC
 : public BoundaryCondition
 {
@@ -644,6 +656,7 @@ public:
 
 
 
+
 class CompressibleInletBC
 : public VelocityInletBC
 {
@@ -665,6 +678,7 @@ public:
   );
   virtual void setField_p(OFDictData::dict& BC) const;
 };
+
 
 
 
@@ -758,6 +772,9 @@ public:
 };
 
 
+
+
+
 class PressureOutletBC
     : public BoundaryCondition
 {
@@ -802,6 +819,7 @@ public:
 
 
 
+
 class PotentialFreeSurfaceBC
 : public BoundaryCondition
 {
@@ -814,6 +832,7 @@ public:
   );
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
 };
+
 
 
 
@@ -876,6 +895,8 @@ public:
 
 
 
+
+
 class WallBC
 : public BoundaryCondition
 {
@@ -902,6 +923,9 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
 };
+
+
+
 
 }
 

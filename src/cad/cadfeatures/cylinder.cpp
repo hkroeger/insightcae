@@ -122,11 +122,11 @@ void Cylinder::build()
                 (
                     gp_Ax2
                     (
-                        gp_Pnt ( p1_->value() ( 0 ),p1_->value() ( 1 ),p1_->value() ( 2 ) ),
-                        gp_Dir ( p2 ( 0 ) - p1_->value() ( 0 ), p2 ( 1 ) - p1_->value() ( 1 ), p2 ( 2 ) - p1_->value() ( 2 ) )
+                        to_Pnt ( p1 ),
+                        gp_Dir ( to_Vec(ax) )
                     ),
                     0.5*Di_->value(),
-                    norm ( p2 - p1_->value(), 2 )
+                    L
                 ).Shape()
 
             );

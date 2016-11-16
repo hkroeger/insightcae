@@ -382,14 +382,14 @@ public:
             const T *e= dynamic_cast<const T*> ( & ( *i ) );
             if ( e ) {
                 if ( found ) {
-                    throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): Multiple elements of requested type!" );
+                    throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): Multiple elements of requested type "+T::typeName+" in queried OpenFOAM case!" );
                 }
                 the_e=e;
                 found=true;
             }
         }
         if ( !found ) {
-            throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): No element of requested type found !" );
+            throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): No element of requested type "+T::typeName+" in queried OpenFOAM case found !" );
         }
 
         return *the_e;

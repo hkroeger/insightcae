@@ -24,6 +24,7 @@
 #include <QSplashScreen>
 #include <QDialog>
 #include <QtGui/QApplication>
+#include <QMessageBox>
 
 #include "base/boost_include.h"
 
@@ -35,12 +36,52 @@
 
 #include "isofcasebuilderwindow.h"
 
+
+class ISOFApp: public QApplication
+{
+public:
+  ISOFApp ( int &argc, char **argv )
+    : QApplication ( argc, argv )
+  {}
+
+  ~ISOFApp( )
+  {}
+
+  bool notify ( QObject *rec, QEvent *ev )
+  {
+    try
+      {
+        return QApplication::notify ( rec, ev );
+      }
+//   catch (Standard_Failure e)
+//   {
+//     QMessageBox msgBox;
+//     msgBox.setIcon(QMessageBox::Critical);
+//     msgBox.setText("OpenCascade error: "+QString(e.GetMessageString()));
+//
+//     msgBox.exec();
+//   }
+    catch ( insight::Exception e )
+      {
+        std::cout << e << std::endl;
+
+        QMessageBox msgBox;
+        msgBox.setIcon ( QMessageBox::Critical );
+        msgBox.setText ( QString ( e.as_string().c_str() ) );
+
+        msgBox.exec();
+      }
+
+    return true;
+  }
+};
+
 int main(int argc, char** argv)
 {
   insight::UnhandledExceptionHandling ueh;
   insight::GSLExceptionHandling gsl_errtreatment;
   
-  QApplication app(argc, argv);
+  ISOFApp app(argc, argv);
 
   // After creation of application object!
   std::locale::global(std::locale::classic());

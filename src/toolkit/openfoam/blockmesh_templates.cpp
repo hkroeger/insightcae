@@ -172,6 +172,8 @@ blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )
 
 void blockMeshDict_Box::create_bmd()
 {
+    this->setDefaultPatch(p_.mesh.defaultPatchName);
+    
     double al = M_PI/2.;
 
     arma::mat ex=p_.geometry.ex;
@@ -180,7 +182,7 @@ void blockMeshDict_Box::create_bmd()
     arma::mat ez=p_.geometry.ez;
     ez/= arma::norm(ez,2);
     
-    arma::mat ey = arma::cross(ex, ez);
+    arma::mat ey = -arma::cross(ex, ez);
     double mey=arma::norm(ey,2);
     if (mey<1e-6)
     {
@@ -232,7 +234,7 @@ void blockMeshDict_Box::create_bmd()
     if ( p_.mesh.ZpPatchName!="" ) {
         Zp=&this->addOrDestroyPatch ( p_.mesh.ZpPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.XmPatchName!="" ) {
+    if ( p_.mesh.ZmPatchName!="" ) {
         Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
     }
 

@@ -316,11 +316,19 @@ void ERCOFTAC_SquareSection180DegreeBend::createCase(insight::OpenFOAMCase& cm)
     if (epsilon(j)<thr) epsilon(j)=thr;
   }
   
+  ExptDataInletBC::Parameters::data_type data;
+  for (int j=0; j<tke.n_rows; j++)
+  {
+      ExptDataInletBC::Parameters::data_default_type ptd;
+      ptd.point=xyz.row(j);
+      ptd.velocity=uvw.row(j);
+      ptd.k=tke(j);
+      ptd.epsilon=epsilon(j);
+      data.push_back(ptd);
+  }  
+  
   cm.insert(new ExptDataInletBC(cm, in_, boundaryDict, ExptDataInletBC::Parameters()
-    .set_points(xyz)
-    .set_velocity(uvw)
-    .set_TKE(tke)
-    .set_epsilon(epsilon)
+        .set_data(data)
   ));
   
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters()

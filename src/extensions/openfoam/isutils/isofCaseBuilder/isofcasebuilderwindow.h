@@ -24,8 +24,10 @@
 
 #include <QListWidgetItem>
 
+#ifndef Q_MOC_RUN
 #include "openfoam/numericscaseelements.h"
 #include "openfoam/openfoamcase.h"
+#endif
 #include "parametereditorwidget.h"
 
 

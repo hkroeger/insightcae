@@ -98,7 +98,7 @@ void FarFieldBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     else
     {
       if (!(
-	  noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
+	  MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
 	{
 	  BC["type"]=OFDictData::data("zeroGradient");

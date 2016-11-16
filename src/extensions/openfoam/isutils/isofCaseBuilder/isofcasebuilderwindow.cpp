@@ -24,11 +24,12 @@
 
 #include "isofcasebuilderwindow.h"
 
+#ifndef Q_MOC_RUN
 #include "openfoam/boundaryconditioncaseelements.h"
 
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
-
+#endif
 
 using namespace insight;
 using namespace boost;

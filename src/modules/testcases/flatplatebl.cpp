@@ -481,8 +481,8 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
       }
     }
     
-    FieldData::Parameters inflow_velocity;
-    FieldData::Parameters::fielddata_linearProfile_type umean_data;
+    VelocityInletBC::Parameters inflow_velocity;
+    VelocityInletBC::Parameters::velocity_type::fielddata_linearProfile_type umean_data;
 
     // mean value profile
     umean_data.values.resize(1);
@@ -490,7 +490,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     umean_data.values[0].profile=inlet_velocity_profile_tabfile.filename(); // without path! otherwise problems after case copying!
 
     // data file column mapping
-    FieldData::Parameters::fielddata_linearProfile_type::cmap_default_type cmp;
+    VelocityInletBC::Parameters::velocity_type::fielddata_linearProfile_type::cmap_default_type cmp;
     cmp.column=0;
     cmp.component=0;
     umean_data.cmap.push_back(cmp);
@@ -501,11 +501,9 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     umean_data.ex=vec3(1,0,0);
     umean_data.ez=vec3(0,0,1);
       
-    inflow_velocity.fielddata=umean_data;
+    inflow_velocity.velocity.fielddata=umean_data;
     
-    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity(FieldData(inflow_velocity))
-    ));
+    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, inflow_velocity));
   }
 }
 

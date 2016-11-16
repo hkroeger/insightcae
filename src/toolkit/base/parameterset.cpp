@@ -84,7 +84,7 @@ void ParameterSet::extend(const EntryList& entries)
   }
 }
 
-void ParameterSet::merge(const ParameterSet& p)
+ParameterSet& ParameterSet::merge(const ParameterSet& p)
 {
   EntryList entries=p.entries();
   BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
@@ -340,6 +340,12 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
 void SelectableSubsetParameter::addItem(key_type key, const ParameterSet& ps)
 { 
     value_.insert(key, ps.cloneParameterSet()); 
+}
+
+void SelectableSubsetParameter::setSelection(const key_type& key, const ParameterSet& ps)
+{
+    selection()=key;
+    operator()().merge(ps);
 }
 
 std::string SelectableSubsetParameter::latexRepresentation() const

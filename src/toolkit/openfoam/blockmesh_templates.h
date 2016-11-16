@@ -131,6 +131,7 @@ mesh = set
     ny = int 10 "# cells in Y direction"
     nz = int 10 "# cells in Z direction"
 
+    defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     XpPatchName = string "" "name of patch on forward (+X) side"
     XmPatchName = string "" "name of patch on rearward (-X) side"
     YpPatchName = string "" "name of patch on right (+Y) side"

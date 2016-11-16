@@ -28,6 +28,7 @@
 #include "openfoam/openfoamcase.h"
 
 #include <map>
+#include <memory>
 #include "boost/utility.hpp"
 #include "boost/variant.hpp"
 #include "progrock/cppx/collections/options_boosted.h"
@@ -139,11 +140,18 @@ protected:
   Parameters p_;
   
 public:
+    
+
+  static Parameters uniformSteady(double uniformSteadyValue);
+  
   /**
    * sets all parameters for the most simple type of field data description (uniform, steady scalar value)
    */
   FieldData(double uniformSteadyValue);
   
+  static Parameters uniformSteady(double uniformSteadyX, double uniformSteadyY, double uniformSteadyZ);
+  static Parameters uniformSteady(const arma::mat& uniformSteadyValue);
+
   /**
    * sets all parameters for the most simple type of field data description (uniform, steady value)
    */
@@ -420,145 +428,272 @@ public:
 
 
 
+
 namespace multiphaseBC
 {
+
+    
+    
+class multiphaseBC;
+
+typedef boost::shared_ptr<multiphaseBC> multiphaseBCPtr;
   
 class multiphaseBC
 {
-public:
-  virtual ~multiphaseBC();
-  
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  // return true, if this field was handled, false otherwise
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
+public:    
+    declareType ( "multiphaseBC" );
+    declareFactoryTable ( multiphaseBC, LIST ( const ParameterSet& p ), LIST ( p ) );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter(const std::string& desc);
+    static multiphaseBCPtr getSelectableSubsetParameter(const SelectableSubsetParameter& ssp);
+    virtual ParameterSet getParameters() const =0;
+    
+    virtual ~multiphaseBC();
+    
+
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    // return true, if this field was handled, false otherwise
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
 };
 
-typedef boost::shared_ptr<multiphaseBC> Ptr;
 
-class uniformPhases : public multiphaseBC
+
+
+class uniformPhases
+    : public multiphaseBC
 {
+// public:
+//     typedef std::map<std::string, double> PhaseFractionList;
+
+// protected:
+//   PhaseFractionList phaseFractions_;
 public:
-  typedef std::map<std::string, double> PhaseFractionList;
+#include "boundaryconditioncaseelements__uniformPhases__Parameters.h"
+/*
+PARAMETERSET>>> uniformPhases Parameters
+
+phaseFractions = array [
+    set {
+    name = string "CO2" "Name of specie"
+    fraction = double 0.5 "Mass fraction of specie"
+} ] *0 "Mass fractions of species"
+
+<<<PARAMETERSET
+*/
 
 protected:
-  PhaseFractionList phaseFractions_;
+    Parameters p_;
 
 public:
-  uniformPhases();
-  uniformPhases( const uniformPhases& o);
-  uniformPhases( const PhaseFractionList& p0 );
-  uniformPhases& set(const std::string& name, double val);
-  inline Ptr toPtr() { return Ptr(new uniformPhases(*this)); }
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
+    declareType ( "uniformPhases" );
+    uniformPhases ( const ParameterSet& p );
+    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    static Parameters mixture( const std::map<std::string, double>& sp);
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+    virtual ParameterSet getParameters() const { return p_; }
 };
 
 }
 
 
-class SuctionInletBC
-: public BoundaryCondition
+
+
+
+namespace turbulenceBC
 {
-public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (pressure, double, 0.0)
-    (rho, double, 1025.0)
-    (T, double, 300.0)
-    (gamma, double, 1.0)
-    (phiName, std::string, "phi")
-    (psiName, std::string, "none")
-    (rhoName, std::string, "none")
-    (UName, std::string, "U")
-    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
-  )
-  
-protected:
-  Parameters p_;
-  
-public:
-  SuctionInletBC
-  (
-    OpenFOAMCase& c, 
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-};
-
-
-
-
-
-typedef boost::fusion::tuple<double, double> uniformIntensityAndLengthScale;
-
-
-
-
-enum oneEqnValueType { nuTilda, RS };
-typedef boost::fusion::tuple<oneEqnValueType, FieldData> oneEqn;
-
-
-
-
-enum twoEqnValueType { kEpsilon, kOmega, REpsilon, RSL };
-typedef boost::fusion::tuple<twoEqnValueType, FieldData, FieldData> twoEqn;
-
-
-
-
-
-class TurbulenceSpecification
-: public boost::variant<
-    uniformIntensityAndLengthScale,
-    oneEqn,
-    twoEqn
-    >
-{
-public:
-    TurbulenceSpecification(const uniformIntensityAndLengthScale& uil);
-    TurbulenceSpecification(const oneEqn&);
-    TurbulenceSpecification(const twoEqn&);
     
-    void setDirichletBC_k(OFDictData::dict& BC, double U) const;
-    void setDirichletBC_omega(OFDictData::dict& BC, double U) const;
-    void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const;
-    void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
-    void setDirichletBC_R(OFDictData::dict& BC, double U) const;
+class turbulenceBC;
+
+typedef boost::shared_ptr<turbulenceBC> turbulenceBCPtr;
+  
+class turbulenceBC
+{
+public:    
+    declareType ( "turbulenceBC" );
+    declareFactoryTable ( turbulenceBC, LIST ( const ParameterSet& p ), LIST ( p ) );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter(const std::string& desc);
+    static turbulenceBCPtr getSelectableSubsetParameter(const SelectableSubsetParameter& ssp);
+
+    virtual ~turbulenceBC();
+    
+    virtual ParameterSet getParameters() const =0;
+
+//     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    
+    // return true, if this field was handled, false otherwise
+//     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
+    
+    virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const =0;
+    virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const =0;
+    virtual void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const =0;
+    virtual void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const =0;
+    virtual void setDirichletBC_R(OFDictData::dict& BC, double U) const =0;
 };
+
+
+
+
+
+class uniformIntensityAndLengthScale
+: public turbulenceBC
+{
+public:
+#include "boundaryconditioncaseelements__uniformIntensityAndLengthScale__Parameters.h"
+/*
+PARAMETERSET>>> uniformIntensityAndLengthScale Parameters
+
+I = double 0.05 "Fluctuation intensity as fraction of mean velocity"
+l = double 0.1 "Length scale"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+    
+public:
+    declareType("uniformIntensityAndLengthScale");
+    uniformIntensityAndLengthScale(const ParameterSet& ps);
+    inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
+    
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+    virtual ParameterSet getParameters() const { return p_; }
+    
+    virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const;
+    virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const;
+    virtual void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const;
+    virtual void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
+    virtual void setDirichletBC_R(OFDictData::dict& BC, double U) const;
+};
+
+
+
+}
+
+
+
+
+
+class SuctionInletBC
+    : public BoundaryCondition
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (pressure, double, 0.0)
+//     (rho, double, 1025.0)
+//     (T, double, 300.0)
+//     (gamma, double, 1.0)
+//     (phiName, std::string, "phi")
+//     (psiName, std::string, "none")
+//     (rhoName, std::string, "none")
+//     (UName, std::string, "U")
+//     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+//   )
+public:
+#include "boundaryconditioncaseelements__SuctionInletBC__Parameters.h"
+/*
+PARAMETERSET>>> SuctionInletBC Parameters
+
+pressure = double 0.0 "Total pressure at boundary"
+rho = double 1025.0 "Density at boundary"
+T = double 300.0 "Temperature at boundary"
+gamma = double 1.0 "Ratio of specific heats at boundary"
+phiName = string "phi" "Name of flux field"
+psiName = string "none" "Name of compressibility field"
+rhoName = string "none" "Name of density field"
+UName = string "U" "Name of velocity field"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    ParameterSet ps_;
+
+public:
+    declareType ( "SuctionInletBC" );
+    SuctionInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet&ps = Parameters::makeDefault()
+    );
+    
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps(Parameters::makeDefault());
+//         ps.insert("phasefractions", multiphaseBC::multiphaseBC::createSelectableSubsetParameter("Definition of the multiphase mixture composition"));
+        return ps;
+    }
+};
+
 
 
 
 
 
 class MassflowBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (massflow, double, 1.0)
+//     (rho, double, 1025.0)
+//     (T, double, 300.0)
+//     (gamma, double, 1.0)
+//     (phiName, std::string, "phi")
+//     (psiName, std::string, "none")
+//     (rhoName, std::string, "none")
+//     (UName, std::string, "U")
+//     (turbulence, TurbulenceSpecification, TurbulenceSpecification(uniformIntensityAndLengthScale(0.01, 1e-3)) )
+//     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (massflow, double, 1.0)
-    (rho, double, 1025.0)
-    (T, double, 300.0)
-    (gamma, double, 1.0)
-    (phiName, std::string, "phi")
-    (psiName, std::string, "none")
-    (rhoName, std::string, "none")
-    (UName, std::string, "U")
-    (turbulence, TurbulenceSpecification, TurbulenceSpecification(uniformIntensityAndLengthScale(0.01, 1e-3)) )
-    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
-  )
-  
+#include "boundaryconditioncaseelements__MassflowBC__Parameters.h"
+/*
+PARAMETERSET>>> MassflowBC Parameters
+
+massflow = double 1.0 "mass flow through boundary"
+rho = double 1025.0 "Density at boundary"
+T = double 300.0 "Temperature at boundary"
+gamma = double 1.0 "Ratio of specific heats at boundary"
+phiName = string "phi" "Name of flux field"
+psiName = string "none" "Name of compressibility field"
+rhoName = string "none" "Name of density field"
+UName = string "U" "Name of velocity field"
+turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" "Definition of the turbulence state at the boundary"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    ParameterSet ps_;
+
 public:
-  MassflowBC
-  (
-    OpenFOAMCase& c, 
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType ( "MassflowBC" );
+    MassflowBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& ps = Parameters::makeDefault()
+    );
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps ( Parameters::makeDefault() );
+//         ps.insert("turbulence", turbulenceBC::turbulenceBC::createSelectableSubsetParameter("Definition of the turbulence state at the boundary"));
+//         ps.insert( "phasefractions", multiphaseBC::multiphaseBC::createSelectableSubsetParameter ( "Definition of the multiphase mixture composition" ) );
+        return ps;
+    }
+
 };
 
 
@@ -569,57 +704,58 @@ public:
  * No handling of turbulence at this stage.
  */
 class VelocityInletBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
- 
+//#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+
 public:
+#include "boundaryconditioncaseelements__VelocityInletBC__Parameters.h"
+/*
+PARAMETERSET>>> VelocityInletBC Parameters
 
-// #include "boundaryconditioncaseelements__VelocityInletBC__Parameters.h"
-// /*
-// PARAMETERSET>>> VelocityInletBC Parameters
-// 
-// velocity = selectablesubset {{
-// 
-//  uniform 
-//  set { 
-//    values=array
-//    [
-//     set {
-//      time=double 0 "time description"
-//      value=vector (1 0 0) "value description"
-//     } "desc"
-//    ] * 1  "values1 description"
-//  }
-// 
-// 
-// }} uniform "desc"
-// <<<PARAMETERSET
-// */
+velocity = includedset "FieldData::Parameters" "Velocity specification"
+T = includedset "FieldData::Parameters" "Temperature at boundary"
+rho = includedset "FieldData::Parameters" "Density at boundary"
+turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" "Definition of the turbulence state at the boundary"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+
+<<<PARAMETERSET
+*/
 
 
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (velocity, FieldData, FieldData(vec3(0,0,0)) )
-    (T, FieldData, FieldData(300.0) )
-    (rho, FieldData, FieldData(1025.0) )
-    (turbulence, TurbulenceSpecification, TurbulenceSpecification(uniformIntensityAndLengthScale(0.01, 1e-3)) )
-    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (velocity, FieldData, FieldData(vec3(0,0,0)) )
+//     (T, FieldData, FieldData(300.0) )
+//     (rho, FieldData, FieldData(1025.0) )
+//     (turbulence, TurbulenceSpecification, TurbulenceSpecification(uniformIntensityAndLengthScale(0.01, 1e-3)) )
+//     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+//   )
+
 protected:
-  Parameters p_;
-  
-public:
-  VelocityInletBC
-  (
-    OpenFOAMCase& c,
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
+    ParameterSet ps_;
 
-  virtual void setField_U(OFDictData::dict& BC) const;
-  virtual void setField_p(OFDictData::dict& BC) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+public:
+    declareType("VelocityInletBC");
+    
+    VelocityInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& p = Parameters::makeDefault()
+    );
+
+    virtual void setField_U ( OFDictData::dict& BC ) const;
+    virtual void setField_p ( OFDictData::dict& BC ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps ( Parameters::makeDefault() );
+//         ps.insert ( "turbulence", turbulenceBC::turbulenceBC::createSelectableSubsetParameter("Definition of the turbulence state at the boundary" ) );
+//         ps.insert ( "phasefractions", multiphaseBC::multiphaseBC::createSelectableSubsetParameter ( "Definition of the multiphase mixture composition" ) );
+        return ps;
+    }
 };
 
 
@@ -627,30 +763,55 @@ public:
 
 
 class ExptDataInletBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (points, arma::mat, vec3(0,0,0))
-    (velocity, arma::mat, vec3(0,0,0))
-    (TKE, arma::mat, arma::ones(1)*1e-3)
-    (epsilon, arma::mat, arma::ones(1)*1e-3)
-    (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (points, arma::mat, vec3(0,0,0))
+//     (velocity, arma::mat, vec3(0,0,0))
+//     (TKE, arma::mat, arma::ones(1)*1e-3)
+//     (epsilon, arma::mat, arma::ones(1)*1e-3)
+//     (phasefractions, multiphaseBC::Ptr, multiphaseBC::Ptr( new multiphaseBC::uniformPhases() ))
+//   )
+#include "boundaryconditioncaseelements__ExptDataInletBC__Parameters.h"
+/*
+PARAMETERSET>>> ExptDataInletBC Parameters
+
+data = array[ set {
+    point = vector (0 0 0) "Point coordinate"
+    velocity = vector (0 0 0) "Velocity at this point"
+    k = double 0.1 "Turbulent kinetic energy at this point"
+    epsilon = double 0.1 "Turbulent dissipation rate"
+} ] *1 "Velocity specification per point"
+
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    ParameterSet ps_;
+
 public:
-  ExptDataInletBC
-  (
-    OpenFOAMCase& c,
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
-  virtual void addDataDict(OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
+    declareType("ExptDataInletBC");
+    
+    ExptDataInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& p = Parameters::makeDefault()
+    );
+    
+    virtual void addDataDict ( OFdicts& dictionaries, const std::string& prefix, const std::string& fieldname, const arma::mat& data ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps ( Parameters::makeDefault() );
+//         ps.insert ( "phasefractions", multiphaseBC::multiphaseBC::createSelectableSubsetParameter ( "Definition of the multiphase mixture composition" ) );
+        return ps;
+    }
 };
 
 
@@ -658,25 +819,44 @@ public:
 
 
 class CompressibleInletBC
-: public VelocityInletBC
+    : public VelocityInletBC
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
-    (pressure, double, 1e5)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, VelocityInletBC::Parameters,
+//     (pressure, double, 1e5)
+//   )
+#include "boundaryconditioncaseelements__CompressibleInletBC__Parameters.h"
+/*
+PARAMETERSET>>> CompressibleInletBC Parameters
+inherits VelocityInletBC::Parameters
+
+pressure = double 1e5 "Static pressure at the inlet"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    ParameterSet ps_;
+
 public:
-  CompressibleInletBC
-  (
-    OpenFOAMCase& c,
-    const std::string& patchName, 
-    const OFDictData::dict& boundaryDict, 
-    Parameters const& p = Parameters()
-  );
-  virtual void setField_p(OFDictData::dict& BC) const;
+    declareType ( "CompressibleInletBC" );
+    
+    CompressibleInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet& p = Parameters::makeDefault()
+    );
+    virtual void setField_p ( OFDictData::dict& BC ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps ( VelocityInletBC::defaultParameters() );
+//         ps.merge ( Parameters::makeDefault() );
+        return ps;
+    }
+
 };
 
 
@@ -793,12 +973,13 @@ pressure = double 0.0 "Uniform static pressure at selected boundary patch"
 prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
 fixMeanValue = bool false "If true, only mean value of pressure is set"
 rho = double 1025.0 "Density"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
 
 protected:
-    Parameters p_;
+    ParameterSet ps_;
 
 public:
     declareType ( "PressureOutletBC" );
@@ -812,7 +993,9 @@ public:
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
     static ParameterSet defaultParameters()
     {
-        return Parameters::makeDefault();
+        ParameterSet ps( Parameters::makeDefault() );
+//         ps.insert ( "phasefractions", multiphaseBC::multiphaseBC::createSelectableSubsetParameter ( "Definition of the multiphase mixture composition" ) );
+        return ps;
     }
 };
 
@@ -836,92 +1019,165 @@ public:
 
 
 
+namespace MeshMotionBC
+{
+    
+    
+class MeshMotionBC;
 
+typedef boost::shared_ptr<MeshMotionBC> MeshMotionBCPtr;
+  
 class MeshMotionBC
 {
 public:
-  MeshMotionBC();
-  virtual ~MeshMotionBC();
-  
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const =0;
-  virtual MeshMotionBC* clone() const =0;
+    declareType ( "MeshMotionBC" );
+    declareFactoryTable ( MeshMotionBC, LIST ( const ParameterSet& p ), LIST ( p ) );
+    declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter ( const std::string& desc );
+    static MeshMotionBCPtr getSelectableSubsetParameter ( const SelectableSubsetParameter& ssp );
+    virtual ParameterSet getParameters() const =0;
+    
+    virtual ~MeshMotionBC();
+
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
 };
 
 
 
 class NoMeshMotion
-: public MeshMotionBC
+    : public MeshMotionBC
 {
 public:
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
-  virtual MeshMotionBC* clone() const;
+    declareType ( "NoMeshMotion" );
+    NoMeshMotion ( const ParameterSet& ps = ParameterSet() );
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    static ParameterSet defaultParameters()
+    {
+        return ParameterSet();
+    }
+    
+    virtual ParameterSet getParameters() const { return ParameterSet(); }
 };
-
-
 
 extern NoMeshMotion noMeshMotion;
 
 
-
 class CAFSIBC
-: public MeshMotionBC
+    : public MeshMotionBC
 {
 public:
-  typedef std::map<double, double> RelaxProfile;
-  
-  typedef boost::variant<double, RelaxProfile> RelaxParameter;
-  
-  CPPX_DEFINE_OPTIONCLASS( Parameters, CPPX_OPTIONS_NO_BASE,
-	(FEMScratchDir, boost::filesystem::path, "")
-	(clipPressure, double, -100.0)
-        (relax, RelaxParameter, RelaxParameter(0.2) )
-        (pressureScale, double, 1e-3)
-        (oldPressure, boost::shared_ptr<double>, boost::shared_ptr<double>() )
-  )
-  
+//   typedef std::map<double, double> RelaxProfile;
+//
+//   typedef boost::variant<double, RelaxProfile> RelaxParameter;
+//
+//   CPPX_DEFINE_OPTIONCLASS( Parameters, CPPX_OPTIONS_NO_BASE,
+// 	(FEMScratchDir, boost::filesystem::path, "")
+// 	(clipPressure, double, -100.0)
+//         (relax, RelaxParameter, RelaxParameter(0.2) )
+//         (pressureScale, double, 1e-3)
+//         (oldPressure, boost::shared_ptr<double>, boost::shared_ptr<double>() )
+//   )
+
+#include "boundaryconditioncaseelements__CAFSIBC__Parameters.h"
+/*
+PARAMETERSET>>> CAFSIBC Parameters
+
+FEMScratchDir = path "" "Directory for data exchange between OF and Code_Aster"
+clipPressure = double -100.0 "Lower pressure limit to consider cavitation"
+pressureScale = double 1e-3 "Pressure scaling value"
+
+oldPressure = selectablesubset {{
+
+    none set {}
+    
+    uniform set { value = double 1e5 "inital pressure value" }
+    
+}} none "inital pressure in relaxation process"
+
+relax = selectablesubset {{
+
+    constant set { value = double 0.2 "Constant relaxation factor" }
+
+    profile set { values = array [ set {
+    time = double 0 "Time instant"
+    value = double 0.2 "Relaxation factor at this instant"
+    } ]*1 "time/relaxation factor pairs" }
+
+}} constant "Relaxation"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    Parameters p_;
+
 public:
-  CAFSIBC(const Parameters& p);
+    declareType ( "CAFSIBC" );
+    CAFSIBC ( const ParameterSet& ps );
 
-  virtual ~CAFSIBC();
-
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const;
-  virtual MeshMotionBC* clone() const;
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+    
+    virtual ParameterSet getParameters() const { return p_; }
 };
 
 
+}
 
 
 
 class WallBC
-: public BoundaryCondition
+    : public BoundaryCondition
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (wallVelocity, arma::mat, vec3(0., 0., 0.)) // interpreted as omega vector, if "rotating" is set to true
-    (rotating, bool, false)
-    (CofR, arma::mat, vec3(0,0,0))
-    (roughness_z0,double, 0.0)
-    (meshmotion, boost::shared_ptr<MeshMotionBC>, boost::shared_ptr<MeshMotionBC>(noMeshMotion.clone()) )
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (wallVelocity, arma::mat, vec3(0., 0., 0.)) // interpreted as omega vector, if "rotating" is set to true
+//     (rotating, bool, false)
+//     (CofR, arma::mat, vec3(0,0,0))
+//     (roughness_z0,double, 0.0)
+//     (meshmotion, boost::shared_ptr<MeshMotionBC>, boost::shared_ptr<MeshMotionBC>(noMeshMotion.clone()) )
+//   )
+#include "boundaryconditioncaseelements__WallBC__Parameters.h"
+/*
+PARAMETERSET>>> WallBC Parameters
+
+wallVelocity = vector (0 0 0) "Velocity of the wlal surface"
+rotating = bool false "Whether the wall is rotating"
+CofR = vector (0 0 0) "Center of rotation"
+roughness_z0 = double 0 "Wall roughness height"
+meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" "Mesh motion properties at the boundary"
+
+<<<PARAMETERSET
+*/
+
 protected:
-  Parameters p_;
-  
+    ParameterSet ps_;
+
 public:
-  WallBC
-  (
-    OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, 
-    Parameters const &p = Parameters()
-  );
-  
-  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
-  virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
-  virtual void addOptionsToBoundaryDict(OFDictData::dict& bndDict) const;
+    declareType("WallBC");
+    
+    WallBC
+    (
+        OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict,
+        const ParameterSet &ps = Parameters::makeDefault()
+    );
+
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        ParameterSet ps ( Parameters::makeDefault() );
+//         ps.insert ( "meshmotion", MeshMotionBC::MeshMotionBC::createSelectableSubsetParameter ( "Mesh motion properties of this wall boundary" ) );
+        return ps;
+    }
+
 };
 
 

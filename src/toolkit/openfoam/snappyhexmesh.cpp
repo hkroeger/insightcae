@@ -555,12 +555,23 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
   setStdCastellatedCtrls(castellatedCtrls);
-  OFDictData::list PiM;
-  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+  
+  if (p.PiM.size()>1)
   {
-      PiM.push_back(OFDictData::vector3(pim));
+    OFDictData::list PiM;
+    BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+    {
+        PiM.push_back(OFDictData::vector3(pim));
+    }
+    castellatedCtrls["locationInMesh"]=PiM;
   }
-  castellatedCtrls["locationInMesh"]=PiM;
+  else if (p.PiM.size()==1)
+  {
+    castellatedCtrls["locationInMesh"]=OFDictData::vector3(p.PiM[0]);
+  }
+  else
+      throw insight::Exception("snappyHexMesh: at least one point in mesh has to be provided!");
+  
   setStdLayerCtrls(layerCtrls);
   layerCtrls["relativeSizes"]=p.relativeSizes;
   layerCtrls["finalLayerThickness"]=p.tlayer;
@@ -590,6 +601,14 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   
 }
 
+void snappyHexMeshConfiguration::modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const
+{
+  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::features_default_type& feat, p_.features)
+  {
+      feat->modifyFiles(cm, location);
+//       feat->addIntoDictionary(sHMDict);
+  }
+}
 
 
 
@@ -631,12 +650,22 @@ void snappyHexMesh
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
   setStdCastellatedCtrls(castellatedCtrls);
-  OFDictData::list PiM;
-  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+  if (p.PiM.size()>1)
   {
-      PiM.push_back(OFDictData::vector3(pim));
+    OFDictData::list PiM;
+    BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+    {
+        PiM.push_back(OFDictData::vector3(pim));
+    }
+    castellatedCtrls["locationInMesh"]=PiM;
   }
-  castellatedCtrls["locationInMesh"]=PiM;
+  else if (p.PiM.size()==1)
+  {
+    castellatedCtrls["locationInMesh"]=OFDictData::vector3(p.PiM[0]);
+  }
+  else
+      throw insight::Exception("snappyHexMesh: at least one point in mesh has to be provided!");
+  
   setStdLayerCtrls(layerCtrls);
   layerCtrls["relativeSizes"]=p.relativeSizes;
   layerCtrls["finalLayerThickness"]=p.tlayer;

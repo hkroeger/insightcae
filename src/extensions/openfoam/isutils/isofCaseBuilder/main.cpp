@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -78,20 +78,21 @@ public:
 
 
 
-int main(int argc, char** argv)
+int main ( int argc, char** argv )
 {
-  try {
-  insight::UnhandledExceptionHandling ueh;
-  insight::GSLExceptionHandling gsl_errtreatment;
+  try
+    {
+      insight::UnhandledExceptionHandling ueh;
+      insight::GSLExceptionHandling gsl_errtreatment;
 
-  namespace po = boost::program_options;
-  
-  typedef std::vector<std::string> StringList;
+      namespace po = boost::program_options;
 
-  // Declare the supported options.
-  po::options_description desc("Allowed options");
-  desc.add_options()
-      ("help,h", "produce help message")
+      typedef std::vector<std::string> StringList;
+
+      // Declare the supported options.
+      po::options_description desc ( "Allowed options" );
+      desc.add_options()
+      ( "help,h", "produce help message" )
 //       ("workdir,w", po::value<std::string>(), "execution directory")
 //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
 //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -101,44 +102,44 @@ int main(int argc, char** argv)
 //       ("double,d", po::value<StringList>(), "double variable assignment")
 //       ("int,i", po::value<StringList>(), "int variable assignment")
 //       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-       ("input-file,f", po::value< StringList >(),"Specifies input file.")
-  ;  
-  
-  po::positional_options_description p;
-  p.add("input-file", -1);
+      ( "input-file,f", po::value< StringList >(),"Specifies input file." )
+      ;
 
-  po::variables_map vm;
-  po::store
-  (
-    po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
-    vm
-  );
-  po::notify(vm);
-  
-  if (vm.count("help"))
-  {
-    std::cout << desc << std::endl;
-    exit(-1);
-  }
-  
-  ISOFApp app(argc, argv);
+      po::positional_options_description p;
+      p.add ( "input-file", -1 );
 
-  // After creation of application object!
-  std::locale::global(std::locale::classic());
-  QLocale::setDefault(QLocale::C);
+      po::variables_map vm;
+      po::store
+      (
+        po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+        vm
+      );
+      po::notify ( vm );
 
-  isofCaseBuilderWindow window;  
-  window.show();
-  if (vm.count("input-file"))
-  {
-      window.loadFile( vm["input-file"].as<StringList>()[0] );
-  }
-  
-  return app.exec();
-  }
-  catch (insight::Exception e)
-  {
+      if ( vm.count ( "help" ) )
+        {
+          std::cout << desc << std::endl;
+          exit ( -1 );
+        }
+
+      ISOFApp app ( argc, argv );
+
+      // After creation of application object!
+      std::locale::global ( std::locale::classic() );
+      QLocale::setDefault ( QLocale::C );
+
+      isofCaseBuilderWindow window;
+      window.show();
+      if ( vm.count ( "input-file" ) )
+        {
+          window.loadFile ( vm["input-file"].as<StringList>() [0] );
+        }
+
+      return app.exec();
+    }
+  catch ( insight::Exception e )
+    {
       std::cerr<<e<<std::endl;
-  }
+    }
 }
 

@@ -201,6 +201,10 @@ void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::
 }
 
 
+void OpenFOAMCaseElement::addFields( OpenFOAMCase& c ) const
+{
+}
+
 
 OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& name)
 : CaseElement(c, name)
@@ -493,6 +497,9 @@ boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
   boost::shared_ptr<OFdicts> dictionaries(new OFdicts);
 
+  // populate fields list
+  createFieldListIfRequired();
+  
   // create field dictionaries first
   BOOST_FOREACH( const FieldList::value_type& i, fields_)
   {
@@ -635,6 +642,7 @@ void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& lo
 
 std::vector< string > OpenFOAMCase::fieldNames() const
 {
+    createFieldListIfRequired();
   std::vector<std::string> fns;
   BOOST_FOREACH(const FieldList::value_type& v, fields_)
   {
@@ -643,6 +651,25 @@ std::vector< string > OpenFOAMCase::fieldNames() const
   return fns;
 }
 
+
+void OpenFOAMCase::createFieldListIfRequired() const
+{
+  if ( !fieldListCompleted_ )
+    {
+      FieldList& fields = const_cast<FieldList&> ( fields_ );
+
+      for ( boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+            i!=elements_.end(); i++ )
+        {
+          const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*> ( & ( *i ) );
+          if ( e )
+            {
+              e->addFields ( const_cast<OpenFOAMCase&> ( *this ) );
+            }
+        }
+      const_cast<bool&>(fieldListCompleted_)=true;
+    }
+}
 
 OpenFOAMCase::OpenFOAMCase(const OFEnvironment& env)
 : Case(),
@@ -664,6 +691,9 @@ OpenFOAMCase::~OpenFOAMCase()
 
 void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
 {
+    if (fieldListCompleted_)
+        throw insight::Exception("Internal error: tryed to add field "+name+" after field list was already build!");
+    
   fields_[name]=field;
 }
 

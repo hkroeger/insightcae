@@ -148,6 +148,7 @@ public:
     int OFversion() const;
     virtual void modifyMeshOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
     virtual void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
+    virtual void addFields( OpenFOAMCase& c ) const;
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
 
     virtual bool providesBCsForPatch ( const std::string& patchName ) const;
@@ -257,7 +258,10 @@ public:
 protected:
     const OFEnvironment& env_;
     FieldList fields_;
+    bool fieldListCompleted_ = false;
     MapMethod requiredMapMethod_;
+    
+    void createFieldListIfRequired() const;
 
 public:
     OpenFOAMCase ( const OFEnvironment& env );
@@ -357,10 +361,12 @@ public:
 
     inline const FieldList& fields() const
     {
+        createFieldListIfRequired();
         return fields_;
     }
     inline FieldList& fields()
     {
+        createFieldListIfRequired();
         return fields_;
     }
 
@@ -368,13 +374,14 @@ public:
 
     inline FieldInfo& field ( const std::string& fname )
     {
+        createFieldListIfRequired();
         return fields_.find ( fname )->second;
     }
 
     template<class T>
     const T& findUniqueElement() const
     {
-        const T* the_e;
+        const T* the_e = NULL;
 
         bool found=false;
         for ( boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();

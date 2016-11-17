@@ -99,13 +99,12 @@ public:
 class oneEqEddy_LESModel
 : public LESModel
 {
-protected:
-  void addFields();
   
 public:
   declareType("oneEqEddy");
   
   oneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
@@ -113,13 +112,12 @@ public:
 class dynOneEqEddy_LESModel
 : public LESModel
 {
-protected:
-  void addFields();
-  
+
 public:
   declareType("dynOneEqEddy");
   
   dynOneEqEddy_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
@@ -127,13 +125,11 @@ public:
 class dynSmagorinsky_LESModel
 : public LESModel
 {
-protected:
-  void addFields();
-  
 public:
   declareType("dynSmagorinsky");
   
   dynSmagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
@@ -141,13 +137,11 @@ public:
 class kOmegaSST_RASModel
 : public RASModel
 {
-protected:
-  void addFields();
-  
 public:
   declareType("kOmegaSST");
   
   kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
@@ -156,13 +150,12 @@ public:
 class kEpsilonBase_RASModel
 : public RASModel
 {
-protected:
-  void addFields();
   
 public:
 //   declareType("kEpsilon");
   
   kEpsilonBase_RASModel(OpenFOAMCase& c);
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };
@@ -197,13 +190,11 @@ public:
 class SpalartAllmaras_RASModel
 : public RASModel
 {
-protected:
-  void addFields();
-  
 public:
   declareType("SpalartAllmaras");
   
   SpalartAllmaras_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
@@ -212,13 +203,12 @@ public:
 class LEMOSHybrid_RASModel
 : public kOmegaSST_RASModel
 {
-protected:
-  void addFields();
   
 public:
   declareType("LEMOSHybrid");
   
   LEMOSHybrid_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
@@ -239,13 +229,11 @@ public:
 class kOmegaSST2_RASModel
 : public kOmegaSST_RASModel
 {
-protected:
-  void addFields();
-
 public:
   declareType("kOmegaSST2");
   
   kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
@@ -267,13 +255,11 @@ public:
 class LRR_RASModel
 : public RASModel
 {
-protected:
-  void addFields();
-  
 public:
   declareType("LRR");
   
   LRR_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
+  virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }

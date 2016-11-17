@@ -402,6 +402,7 @@ public:
     declareType ( "snappyHexMeshConfiguration" );
     snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    virtual void modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
 
     static ParameterSet defaultParameters()
     {

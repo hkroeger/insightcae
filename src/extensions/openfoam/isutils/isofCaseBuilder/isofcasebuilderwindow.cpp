@@ -117,9 +117,17 @@ DefaultPatch::DefaultPatch(QListWidget*parent, rapidxml::xml_document<>& doc, ra
 {
 }
 
-bool DefaultPatch::insertElement(insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict) const
+bool DefaultPatch::insertElement ( insight::OpenFOAMCase& ofc, insight::OFDictData::dict& boundaryDict ) const
 {
-    ofc.addRemainingBCs(bc_type_, boundaryDict, curp_);
+  if ( bc_type_!="" )
+    {
+      ofc.addRemainingBCs ( bc_type_, boundaryDict, curp_ );
+      return true;
+    }
+  else
+    {
+      return false;
+    }
 }
 
 

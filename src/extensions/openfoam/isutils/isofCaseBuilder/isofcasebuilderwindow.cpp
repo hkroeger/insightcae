@@ -183,6 +183,59 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 }
 
 
+void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
+{
+    std::ifstream in(file.c_str());
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+
+    xml_document<> doc;
+    doc.parse<0>(&contents[0]);
+    
+    xml_node<> *rootnode = doc.first_node("root");
+    
+    for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
+    {
+        std::string type_name = e->first_attribute("type")->value();
+    
+        InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
+        ice->parameters().readFromNode(doc, *e, file.parent_path());
+    }
+
+    xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
+    if (BCnode)
+    {
+        bool bdp=true;
+        try
+        {
+            // parse boundary information
+            ofc_->parseBoundaryDict(casepath_, boundaryDict_);
+        }
+        catch (...)
+        {
+            bdp=false;
+        }
+            
+        if (bdp)
+        {
+            xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
+            new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
+            
+            for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
+            {
+                new Patch(ui->patch_list, doc, *e, file.parent_path());
+            }
+        }
+        else
+        {
+            QMessageBox::information(this, "boundary file", "The boundary file could not be parsed! Skipping BC configuration.");
+        }
+    }
+}
 
 
 void isofCaseBuilderWindow::onItemSelectionChanged()
@@ -372,56 +425,7 @@ void isofCaseBuilderWindow::onLoad()
                 
         boost::filesystem::path file (fn.toStdString());
 
-        std::ifstream in(file.c_str());
-        std::string contents;
-        in.seekg(0, std::ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, std::ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-
-        xml_document<> doc;
-        doc.parse<0>(&contents[0]);
-        
-        xml_node<> *rootnode = doc.first_node("root");
-        
-        for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
-        {
-            std::string type_name = e->first_attribute("type")->value();
-        
-            InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
-            ice->parameters().readFromNode(doc, *e, file.parent_path());
-        }
-
-        xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
-        if (BCnode)
-        {
-            bool bdp=true;
-            try
-            {
-                // parse boundary information
-                ofc_->parseBoundaryDict(casepath_, boundaryDict_);
-            }
-            catch (...)
-            {
-                bdp=false;
-            }
-                
-            if (bdp)
-            {
-                xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
-                new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
-                
-                for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
-                {
-                    new Patch(ui->patch_list, doc, *e, file.parent_path());
-                }
-            }
-            else
-            {
-                QMessageBox::information(this, "boundary file", "The boundary file could not be parsed! Skipping BC configuration.");
-            }
-        }
+        loadFile(file);
     }
 }
 

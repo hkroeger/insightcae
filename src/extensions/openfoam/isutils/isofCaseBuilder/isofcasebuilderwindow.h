@@ -113,6 +113,8 @@ public:
     isofCaseBuilderWindow();
     virtual ~isofCaseBuilderWindow();
     
+    void loadFile(const boost::filesystem::path& file);
+    
 public slots:
     void onItemSelectionChanged();
     virtual void done(int r);

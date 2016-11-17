@@ -31,21 +31,35 @@
 
 namespace insight {
   
+    
+    
+    
 class ExternalGeometryFile
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( fileName, boost::filesystem::path, "" )
-      ( scale, arma::mat, vec3(1,1,1) )
-      ( translate, arma::mat, vec3(0,0,0) )
-      ( rollPitchYaw, arma::mat, vec3(0,0,0) )
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//       ( fileName, boost::filesystem::path, "" )
+//       ( scale, arma::mat, vec3(1,1,1) )
+//       ( translate, arma::mat, vec3(0,0,0) )
+//       ( rollPitchYaw, arma::mat, vec3(0,0,0) )
+//   )
+#include "snappyhexmesh__ExternalGeometryFile__Parameters.h"
+/*
+PARAMETERSET>>> ExternalGeometryFile Parameters
+
+fileName = path "" "Path to geometry file (STL format)"
+scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
+translate = vector (0 0 0) "Translation vector"
+rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  ExternalGeometryFile( const Parameters& p = Parameters() );
+  ExternalGeometryFile( const ParameterSet& ps = Parameters::makeDefault() );
   
   virtual void putIntoConstantTrisurface
   (
@@ -54,22 +68,31 @@ public:
   ) const;
 };
 
+
+
+
 namespace snappyHexMeshFeats
 {
-  
+
+class Feature;
+
+typedef boost::shared_ptr<Feature> FeaturePtr;
+    
+
+
+
 class Feature
 {
 public:
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const =0;
-  virtual void modifyFiles(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location) const;
-  virtual Feature* clone() const =0;
+  declareType ( "Feature" );
+  declareDynamicClass ( Feature );
+
+  virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const =0;
+  virtual void modifyFiles ( const OpenFOAMCase& ofc,
+                             const boost::filesystem::path& location ) const;
 };
 
-inline Feature* new_clone(const Feature& op)
-{
-  return op.clone();
-}
+
 
 
 class Geometry
@@ -77,185 +100,334 @@ class Geometry
   public ExternalGeometryFile
 {
 public:
-  typedef boost::tuple<std::string,int,int> RegionRefinement;
-  typedef std::vector<RegionRefinement> RegionRefinementList;
+//   typedef boost::tuple<std::string,int,int> RegionRefinement;
+//   typedef std::vector<RegionRefinement> RegionRefinementList;
   
-  CPPX_DEFINE_OPTIONCLASS(Parameters, ExternalGeometryFile::Parameters,
-      ( name, std::string, "" )
-      ( minLevel, int, 0 )
-      ( maxLevel, int, 4 )
-      ( nLayers, int, 2 )
-      ( regionRefinements, RegionRefinementList, RegionRefinementList() )
-      ( zoneName, std::string, "" )
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, ExternalGeometryFile::Parameters,
+//       ( name, std::string, "" )
+//       ( minLevel, int, 0 )
+//       ( maxLevel, int, 4 )
+//       ( nLayers, int, 2 )
+//       ( regionRefinements, RegionRefinementList, RegionRefinementList() )
+//       ( zoneName, std::string, "" )
+//   )
+#include "snappyhexmesh__Geometry__Parameters.h"
+/*
+PARAMETERSET>>> Geometry Parameters
+inherits insight::ExternalGeometryFile::Parameters
+
+name = string "" "Name of the geometry feature"
+minLevel = int 0 "Minimum refinement level"
+maxLevel = int 4 "Maximum refinement level"
+nLayers = int 2 "Number of prism layers"
+zoneName = string "" "Zone name"
+regionRefinements = array [ set {
+ regionname = string "" "Name of geometry region"
+ minLevel = int 0 "Minimum refinement level"
+ maxLevel = int 0 "Maximum refinement level"
+} ]*0 "Refinement regions"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  Geometry(Parameters const& p = Parameters() );
+    declareType("Geometry");
+  Geometry(const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
   
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   virtual void modifyFiles(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location) const;
-  
-  Feature* clone() const;
 };
+
+
 
 
 class PatchLayers
 : public Feature
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( name, std::string, "" )
-      ( nLayers, int, 2 )
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//       ( name, std::string, "" )
+//       ( nLayers, int, 2 )
+//   )
+#include "snappyhexmesh__PatchLayers__Parameters.h"
+/*
+PARAMETERSET>>> PatchLayers Parameters
+
+name = string "" "Name of the patch"
+nLayers = int 2 "Number of layers"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  PatchLayers(Parameters const& p = Parameters() );
+    declareType("PatchLayers");
+  PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
   
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-  
-  Feature* clone() const;
 };
+
+
 
 
 class ExplicitFeatureCurve
 : public Feature
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( fileName, boost::filesystem::path, "" )
-      ( level, int, 4 )
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//       ( fileName, boost::filesystem::path, "" )
+//       ( level, int, 4 )
+//   )
+#include "snappyhexmesh__ExplicitFeatureCurve__Parameters.h"
+/*
+PARAMETERSET>>> ExplicitFeatureCurve Parameters
+
+fileName = path "" "Filename of the feature curve"
+level = int 4 "Refinement level at curve"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  ExplicitFeatureCurve(Parameters const& p = Parameters() );
+    declareType("ExplicitFeatureCurve");
+  ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
   
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   virtual void modifyFiles(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location) const;
-  
-  Feature* clone() const;
 };
 
+
+
+
 class RefinementRegion
-: public Feature
+  : public Feature
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( name, std::string, "" )
-      ( distance, double, 1e15 )
-      ( mode, std::string, "inside" )
-      ( level, int, 1 )
-  )
+#include "snappyhexmesh__RefinementRegion__Parameters.h"
+/*
+PARAMETERSET>>> RefinementRegion Parameters
+
+name = string "" "Region name"
+dist = double 1e15 "Maximum distance for refinement"
+mode = selection ( inside outside distance ) inside "Refinement mode"
+level = int 1 "Refinement level"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  RefinementRegion(Parameters const& p = Parameters() );
-  
+  declareType ( "RefinementRegion" );
+  RefinementRegion ( const ParameterSet& ps = Parameters::makeDefault() );
+
+
   /**
    * create entry into geometry subdict.
    * supply handle to title, since it is not always equal to name and there might be need to change it
    */
-  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const =0;
-  virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const =0;
+  virtual void addIntoDictionary ( OFDictData::dict& sHMDict ) const;
 };
 
+
+
+
 class RefinementBox
-: public RefinementRegion
+  : public RefinementRegion
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
-      ( min, arma::mat, vec3(0,0,0) )
-      ( max, arma::mat, vec3(0,0,0) )
-  )
+#include "snappyhexmesh__RefinementBox__Parameters.h"
+/*
+PARAMETERSET>>> RefinementBox Parameters
+inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+
+min = vector (0 0 0) "Minimum corner of refinement box"
+max = vector (1 1 1) "Maximum corner of refinement box"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  RefinementBox(Parameters const& p = Parameters() );
-  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
-  Feature* clone() const;
+  declareType ( "RefinementBox" );
+  RefinementBox ( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters()
+  {
+    return Parameters::makeDefault();
+  }
+  virtual ParameterSet getParameters() const
+  {
+    return p_;
+  }
+
+  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
 };
+
+
+
 
 
 class RefinementGeometry
 : public RefinementRegion
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
-      ( fileName, boost::filesystem::path, "" )
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
+//       ( fileName, boost::filesystem::path, "" )
+//   )
+#include "snappyhexmesh__RefinementGeometry__Parameters.h"
+/*
+PARAMETERSET>>> RefinementGeometry Parameters
+inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+
+fileName = path "" "Path to geometry file (STL format)"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  RefinementGeometry(Parameters const& p = Parameters() );
+    declareType("RefinementGeometry");
+  RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
+
   virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
 //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
-  Feature* clone() const;
 };
+
+
+
 
 class NearSurfaceRefinement
 : public RefinementRegion
 {
 public:
-  NearSurfaceRefinement(Parameters const& p = Parameters() );
+    declareType("NearSurfaceRefinement");
+    NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
+
   virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
-  Feature* clone() const;
 };
 
+
+
+
 class NearTemplatePatchRefinement
-: public RefinementRegion
+  : public RefinementRegion
 {
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
+//       ( fileName, std::string, "" )
+//   )
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
-      ( fileName, std::string, "" )
-  )
+#include "snappyhexmesh__NearTemplatePatchRefinement__Parameters.h"
+/*
+PARAMETERSET>>> NearTemplatePatchRefinement Parameters
+inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+
+fileName = path "" "Path to geometry file (STL format)"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  NearTemplatePatchRefinement(Parameters const& p = Parameters() );
-  virtual void modifyFiles(const OpenFOAMCase& ofc, 
-		  const boost::filesystem::path& location) const;
-  virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
-  Feature* clone() const;
+  declareType ( "NearTemplatePatchRefinement" );
+  NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
+
+  virtual void modifyFiles ( const OpenFOAMCase& ofc,
+                             const boost::filesystem::path& location ) const;
+  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
 };
 
 }
 
 
 
-namespace snappyHexMeshOpts
+
+class snappyHexMeshConfiguration
+    : public OpenFOAMCaseElement
 {
-  typedef boost::shared_ptr<OFDictData::dict> DictPtr;
-  
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (doCastellatedMesh, bool, true)
-    (doSnap, bool, true)
-    (doAddLayers, bool, true)
-    (tlayer, double, 0.5)
-    (erlayer, double, 1.3)
-    (relativeSizes, bool, true)
-    (nLayerIter, int, 10 )
-    (stopOnBadPrismLayer, bool, false)
-    (qualityCtrls, DictPtr, DictPtr() )
-  )
+public:
+#include "snappyhexmesh__snappyHexMeshConfiguration__Parameters.h"
+/*
+PARAMETERSET>>> snappyHexMeshConfiguration Parameters
+
+doCastellatedMesh = bool true "Enable castellated meshing step"
+doSnap = bool true "Enable snapping step"
+doAddLayers = bool true "Enable layer addition step"
+tlayer= double 0.5 "Layer thickness value"
+erlayer = double 1.3 "Expansion ratio of layers"
+relativeSizes = bool true "Whether tlayer specifies relative thickness (absolute thickness if set to false)"
+nLayerIter= int 10 "Maximum number of layer iterations"
+stopOnBadPrismLayer = bool false "Whether to stop of too few layers get extruded"
+qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality requirements"
+PiM = array [ vector (0 0 0) "point inside mesh" ]*1 "One or more points inside meshing domain"
+features = array [ dynamicclassconfig "insight::snappyHexMeshFeats::Feature" "SnappyHexMesh feature" ]*0 "Mesh generation features"
+    
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "snappyHexMeshConfiguration" );
+    snappyHexMeshConfiguration ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
+
+
+
+
+// namespace snappyHexMeshOpts
+// {
+//   typedef boost::shared_ptr<OFDictData::dict> DictPtr;
+//   
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (doCastellatedMesh, bool, true)
+//     (doSnap, bool, true)
+//     (doAddLayers, bool, true)
+//     (tlayer, double, 0.5)
+//     (erlayer, double, 1.3)
+//     (relativeSizes, bool, true)
+//     (nLayerIter, int, 10 )
+//     (stopOnBadPrismLayer, bool, false)
+//     (qualityCtrls, DictPtr, DictPtr() )
+//   )
+// };
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls);
 void setStdSnapCtrls(OFDictData::dict& snapCtrls);
@@ -271,9 +443,10 @@ void snappyHexMesh
 (
   const OpenFOAMCase& ofc, 
   const boost::filesystem::path& location, 
-  const OFDictData::list& PiM,
-  const boost::ptr_vector<snappyHexMeshFeats::Feature>& ops,
-  snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
+//   const OFDictData::list& PiM,
+//   const std::vector<snappyHexMeshFeats::FeaturePtr>& ops,
+//   snappyHexMeshOpts::Parameters const& p = snappyHexMeshOpts::Parameters(),
+  const ParameterSet &ps = snappyHexMeshConfiguration::Parameters::makeDefault(),
   bool overwrite=true,
   bool isalreadydecomposed=false,
   bool keepdecomposedafterfinish=false

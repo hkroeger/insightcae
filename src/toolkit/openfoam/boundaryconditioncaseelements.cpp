@@ -717,30 +717,12 @@ namespace multiphaseBC
 {
     
 defineType(multiphaseBC);
-defineFactoryTable(multiphaseBC, LIST(const ParameterSet& ps), LIST(ps));
-defineStaticFunctionTable(multiphaseBC, defaultParameters, ParameterSet);
+defineDynamicClass(multiphaseBC);
+// defineFactoryTable(multiphaseBC, LIST(const ParameterSet& ps), LIST(ps));
+// defineStaticFunctionTable(multiphaseBC, defaultParameters, ParameterSet);
   
 multiphaseBC::~multiphaseBC()
 {
-}
-
-std::auto_ptr<SelectableSubsetParameter> multiphaseBC::createSelectableSubsetParameter(const std::string& descr)
-{
-    std::auto_ptr<SelectableSubsetParameter> ssp(new SelectableSubsetParameter(descr));
-    for (FactoryTable::const_iterator i = factories_->begin();
-        i != factories_->end(); i++)
-    {
-        ParameterSet defp = defaultParameters(i->first);
-        ssp->addItem( i->first, defp );
-    }
-    ssp->selection() = factories_->begin()->first;
-    return ssp;
-}
-
-
-multiphaseBCPtr multiphaseBC::getSelectableSubsetParameter(const SelectableSubsetParameter& ssp)
-{
-    return multiphaseBCPtr( lookup(ssp.selection(), ssp()) );
 }
 
 void multiphaseBC::addIntoDictionaries(OFdicts&) const
@@ -832,7 +814,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
     Parameters p(ps_);
     multiphaseBC::multiphaseBCPtr phasefractions = 
-        multiphaseBC::multiphaseBC::getSelectableSubsetParameter( ps_.get<SelectableSubsetParameter>("phasefractions") );
+        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
     
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
@@ -923,9 +905,9 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     Parameters p ( ps_ );
     
     turbulenceBC::turbulenceBCPtr turbulence =
-        turbulenceBC::turbulenceBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
+        turbulenceBC::turbulenceBC::create ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries ( dictionaries );
@@ -996,33 +978,14 @@ namespace turbulenceBC
 {
 
 defineType(turbulenceBC);
-defineFactoryTable(turbulenceBC, LIST(const ParameterSet& ps), LIST(ps));
-defineStaticFunctionTable(turbulenceBC, defaultParameters, ParameterSet);
+// defineFactoryTable(turbulenceBC, LIST(const ParameterSet& ps), LIST(ps));
+// defineStaticFunctionTable(turbulenceBC, defaultParameters, ParameterSet);
+defineDynamicClass(turbulenceBC);
 
  
 turbulenceBC::~turbulenceBC()
 {
 }
-
-std::auto_ptr<SelectableSubsetParameter> turbulenceBC::createSelectableSubsetParameter(const std::string& descr)
-{
-    std::auto_ptr<SelectableSubsetParameter> ssp(new SelectableSubsetParameter(descr));
-    for (FactoryTable::const_iterator i = factories_->begin();
-        i != factories_->end(); i++)
-    {
-        ParameterSet defp = defaultParameters(i->first);
-        ssp->addItem( i->first, defp );
-    }
-    ssp->selection() = factories_->begin()->first;
-    return ssp;
-}
-
-
-turbulenceBCPtr turbulenceBC::getSelectableSubsetParameter(const SelectableSubsetParameter& ssp)
-{
-    return turbulenceBCPtr( lookup(ssp.selection(), ssp()) );
-}
-
 
 
 
@@ -1134,9 +1097,9 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     Parameters p ( ps_ );
     
     turbulenceBC::turbulenceBCPtr turbulence =
-        turbulenceBC::turbulenceBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
+        turbulenceBC::turbulenceBC::create ( ps_.get<SelectableSubsetParameter> ( "turbulence" ) );
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
         
     FieldData velocity(ps_.getSubset("velocity")), T(ps_.getSubset("T")), rho(ps_.getSubset("rho"));
 
@@ -1257,7 +1220,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
     Parameters p ( ps_ );
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries ( dictionaries );
@@ -1759,7 +1722,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
     Parameters p ( ps_ );
     multiphaseBC::multiphaseBCPtr phasefractions =
-        multiphaseBC::multiphaseBC::getSelectableSubsetParameter ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries(dictionaries);
@@ -1923,30 +1886,10 @@ namespace MeshMotionBC
 {
     
 defineType(MeshMotionBC);
-defineFactoryTable(MeshMotionBC, LIST(const ParameterSet& ps), LIST(ps));
-defineStaticFunctionTable(MeshMotionBC, defaultParameters, ParameterSet);
+defineDynamicClass(MeshMotionBC);
   
 MeshMotionBC::~MeshMotionBC()
 {
-}
-
-std::auto_ptr<SelectableSubsetParameter> MeshMotionBC::createSelectableSubsetParameter(const std::string& descr)
-{
-    std::auto_ptr<SelectableSubsetParameter> ssp(new SelectableSubsetParameter(descr));
-    for (FactoryTable::const_iterator i = factories_->begin();
-        i != factories_->end(); i++)
-    {
-        ParameterSet defp = defaultParameters(i->first);
-        ssp->addItem( i->first, defp );
-    }
-    ssp->selection() = factories_->begin()->first;
-    return ssp;
-}
-
-
-MeshMotionBCPtr MeshMotionBC::getSelectableSubsetParameter(const SelectableSubsetParameter& ssp)
-{
-    return MeshMotionBCPtr( lookup(ssp.selection(), ssp()) );
 }
 
 
@@ -2067,7 +2010,7 @@ WallBC::WallBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::
 
 void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  MeshMotionBC::MeshMotionBC::getSelectableSubsetParameter(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoDictionaries(dictionaries);
+  MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoDictionaries(dictionaries);
   BoundaryCondition::addIntoDictionaries(dictionaries);
 }
 
@@ -2145,7 +2088,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
         else
         {
-            if (!MeshMotionBC::MeshMotionBC::getSelectableSubsetParameter(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoFieldDictionary(field.first, field.second, BC))
+            if (!MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoFieldDictionary(field.first, field.second, BC))
                 //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
             {
                 BC["type"]=OFDictData::data("zeroGradient");

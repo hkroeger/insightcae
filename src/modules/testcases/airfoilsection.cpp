@@ -230,35 +230,45 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   
   cm.executeCommand(dir, "blockMesh");  
 
-  boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
+//   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
+  snappyHexMeshConfiguration::Parameters shm_cfg;
   
-  shm_feats.push_back(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
+  shm_cfg
+      .set_tlayer(0.25)
+      .set_relativeSizes(true)
+      .set_nLayerIter(10)
+      ;
+  
+  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
     .set_name(foil_)
-    .set_fileName(targ_path)
     .set_minLevel(lmfoil)
     .set_maxLevel(lxfoil)
     .set_nLayers(nlayer)
+    
+    .set_fileName(targ_path)
     .set_scale(vec3(c, c, 1))
     .set_rollPitchYaw(vec3(0,0,-alpha))
-  ));
+  )));
   
-  shm_feats.push_back(new snappyHexMeshFeats::NearSurfaceRefinement( snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
+  shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::NearSurfaceRefinement( snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
     .set_name(foil_)
-    .set_mode("distance")
+    .set_mode( snappyHexMeshFeats::NearSurfaceRefinement::Parameters::distance )
     .set_level(lmfoil)
-    .set_distance(0.1*c)
-  ));
+    .set_dist(0.1*c)
+  )));
 
+  shm_cfg.PiM.push_back(PiM);
     
   snappyHexMesh
   (
     cm, dir,
-    OFDictData::vector3(PiM),
-    shm_feats,
-    snappyHexMeshOpts::Parameters()
-      .set_tlayer(0.25)
-      .set_relativeSizes(true)
-      .set_nLayerIter(10)
+    shm_cfg
+//     OFDictData::vector3(PiM),
+//     shm_feats,
+//     snappyHexMeshOpts::Parameters()
+//       .set_tlayer(0.25)
+//       .set_relativeSizes(true)
+//       .set_nLayerIter(10)
   );
   
   extrude2DMesh

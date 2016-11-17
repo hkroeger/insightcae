@@ -2385,57 +2385,69 @@ void createPrismLayers
   const boost::filesystem::path& casePath,
   double finalLayerThickness, 
   bool relativeSizes, 
-  const PatchLayers& nLayers,
+  const insight::PatchLayers& nLayers,
   double expRatio,
   bool twodForExtrusion,
   bool isalreadydecomposed,
   bool keepdecomposedafterfinish
 )
 {
-  boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
-  
-  BOOST_FOREACH(const PatchLayers::value_type& pl, nLayers)
-  {
-    shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
-      .set_name(pl.first)
-      .set_nLayers(pl.second)
-    ));
-  }
-
-  snappyHexMeshOpts::DictPtr qualityCtrls(new OFDictData::dict());
-  
-  if (twodForExtrusion)
-  {
-    setNoQualityCtrls(*qualityCtrls);
-  }
-  else
-  {
-    setRelaxedQualityCtrls(*qualityCtrls);
-    (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
-    (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
-  }
-  
-  snappyHexMesh
-  (
-    cm, casePath,
-    OFDictData::vector3(vec3(0,0,0)),
-    shm_feats,
-    snappyHexMeshOpts::Parameters()
-//       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
-      .set_erlayer(expRatio)
+    
+//   boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
+    snappyHexMeshConfiguration::Parameters shm_cfg;
+    
+    shm_cfg.set_erlayer(expRatio)
       .set_tlayer(finalLayerThickness)
       .set_relativeSizes(relativeSizes)
       
       .set_doCastellatedMesh(false)
       .set_doSnap(false)
       .set_doAddLayers(true)
-      
-      .set_qualityCtrls(qualityCtrls)
-/*
-      .set_tlayer(p.getDouble("mesh/mlayer"))
-      .set_relativeSizes(true)
-  */
-    ,
+  ;
+  BOOST_FOREACH(const PatchLayers::value_type& pl, nLayers)
+  {
+//     shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
+      shm_cfg.features.push_back( snappyHexMeshFeats::FeaturePtr( new snappyHexMeshFeats::PatchLayers( snappyHexMeshFeats::PatchLayers::Parameters()
+      .set_name(pl.first)
+      .set_nLayers(pl.second)
+    )));
+  }
+  
+  if (twodForExtrusion)
+  {
+//     setNoQualityCtrls(*qualityCtrls);
+      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::disabled;
+  }
+  else
+  {
+      shm_cfg.qualityCtrls = snappyHexMeshConfiguration::Parameters::relaxed;
+//     setRelaxedQualityCtrls(*qualityCtrls);
+//     (*qualityCtrls)["maxConcave"]=180.0; //85.0;  
+//     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
+  }
+  
+  snappyHexMesh
+  (
+    cm, casePath,
+//     OFDictData::vector3(vec3(0,0,0)),
+//     shm_feats,
+//     snappyHexMeshOpts::Parameters()
+// //       .set_stopOnBadPrismLayer(p.getBool("mesh/prismfailcheck"))
+//       .set_erlayer(expRatio)
+//       .set_tlayer(finalLayerThickness)
+//       .set_relativeSizes(relativeSizes)
+//       
+//       .set_doCastellatedMesh(false)
+//       .set_doSnap(false)
+//       .set_doAddLayers(true)
+//       
+//       .set_qualityCtrls(qualityCtrls)
+// /*
+//       .set_tlayer(p.getDouble("mesh/mlayer"))
+//       .set_relativeSizes(true)
+//   */
+//     ,
+    shm_cfg,
     true,
     isalreadydecomposed,
     keepdecomposedafterfinish

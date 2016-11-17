@@ -101,7 +101,7 @@ QString latex2QtHTML(const std::string& latex, QWidget* container)
   
   html.replace(QRegExp("\\\\\\\\"), "<br>");
   
-  std::cout<<html.toStdString()<<std::endl;
+//   std::cout<<html.toStdString()<<std::endl;
   return html;
 }
 
@@ -194,7 +194,7 @@ void ParameterWrapper::onSelectionChanged()
 
 void ParameterWrapper::onSelection()
 {
-  std::cout<<name_.toStdString()<<"!"<<detaileditwidget_<< std::endl;
+//   std::cout<<name_.toStdString()<<"!"<<detaileditwidget_<< std::endl;
   
   QList<QWidget*> widgets = detaileditwidget_->findChildren<QWidget*>();
   foreach(QWidget* widget, widgets)
@@ -940,8 +940,6 @@ addToFactoryTable(ParameterWrapper, ArrayParameterWrapper);
 
 void ArrayParameterWrapper::addWrapper(int i)
 {
-//   int i=entrywrappers_().size();
-  
   insight::Parameter& pp=param()[i];
   
   ParameterWrapper *wrapper = 
@@ -950,14 +948,8 @@ void ArrayParameterWrapper::addWrapper(int i)
       pp.type(),
       this, "["+QString::number(i)+"]", pp, detaileditwidget_, superform_
     );
-    
-//   QPushButton *rmbtn=new QPushButton("-", cont);
-//   map_->setMapping(rmbtn, i);
-//   connect(rmbtn, SIGNAL(clicked()), map_, SLOT(map()));
-    
-//   innerlayout->addWidget(rmbtn);
-//   vlayout_->addWidget(cont);
-//   entrywrappers_.push_back(cont);
+
+  QObject::connect(treeWidget(), SIGNAL(itemSelectionChanged()), wrapper, SLOT(onSelectionChanged()));
   QObject::connect(this, SIGNAL(apply()), wrapper, SLOT(onApply()));
   QObject::connect(this, SIGNAL(update()), wrapper, SLOT(onUpdate()));  
 }
@@ -992,49 +984,49 @@ ArrayParameterWrapper::ArrayParameterWrapper(QTreeWidgetItem* parent, const QStr
   rebuildWrappers();
 }
 
-void ArrayParameterWrapper::showContextMenuForWidget(const QPoint &p)
+void ArrayParameterWrapper::showContextMenuForWidget ( const QPoint &p )
 {
-  QTreeWidgetItem* sel=treeWidget()->itemAt(p);
-  if (sel)
-  {
-    ArrayParameterWrapper * mi =
-      dynamic_cast<ArrayParameterWrapper*>(sel->parent());
-
-    std::cout<<"sel="<<sel<<", mi="<<mi<<", this="<<this<<std::endl;
-      
-    if (mi==this)
+  QTreeWidgetItem* sel=treeWidget()->itemAt ( p );
+  if ( sel )
     {
-      QMenu myMenu;
-      myMenu.addAction("Delete");
+      ArrayParameterWrapper * mi =
+        dynamic_cast<ArrayParameterWrapper*> ( sel->parent() );
 
-      QAction* selectedItem = myMenu.exec(treeWidget()->mapToGlobal(p));
-      
-      if (selectedItem)
-      {
-	if (selectedItem->text()=="Delete")
-	{
-	  int todel=-1;
-	  for (int j=0; j<this->childCount(); j++)
-	  {
-	    if (this->child(j)==sel)
-	    {
-	      std::cout<<"j="<<j<<std::endl;
-	      todel=j;
-	      break;
-	    }
-	  }
-	  if (todel>=0)
-	  {
-	    onRemove(todel);
-	  }
-	}
-      }
-      else
-      {
-	  // nothing was chosen
-      }      
+//       std::cout<<"sel="<<sel<<", mi="<<mi<<", this="<<this<<std::endl;
+
+      if ( mi==this )
+        {
+          QMenu myMenu;
+          myMenu.addAction ( "Delete" );
+
+          QAction* selectedItem = myMenu.exec ( treeWidget()->mapToGlobal ( p ) );
+
+          if ( selectedItem )
+            {
+              if ( selectedItem->text() =="Delete" )
+                {
+                  int todel=-1;
+                  for ( int j=0; j<this->childCount(); j++ )
+                    {
+                      if ( this->child ( j ) ==sel )
+                        {
+//                           std::cout<<"j="<<j<<std::endl;
+                          todel=j;
+                          break;
+                        }
+                    }
+                  if ( todel>=0 )
+                    {
+                      onRemove ( todel );
+                    }
+                }
+            }
+          else
+            {
+              // nothing was chosen
+            }
+        }
     }
-  }
 }
 
 void ArrayParameterWrapper::createWidgets()

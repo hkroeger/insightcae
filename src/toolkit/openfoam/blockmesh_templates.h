@@ -39,6 +39,8 @@ public:
     BlockMeshTemplate(OpenFOAMCase& c);
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
     virtual void create_bmd () =0;
+    
+    static arma::mat correct_trihedron(arma::mat& ex, arma::mat &ez);
 };
 
   
@@ -61,7 +63,7 @@ geometry = set
 {
     D = double 1.0 "[m] Diameter"
     L = double 1.0 "[m] Length"
-    p0 = vector(0 0 0) "[m] Axis origin"
+    p0 = vector(0 0 0) "[m] Center point"
     ex = vector(0 0 1) "[m] Axial direction"
     er = vector(1 0 0) "[m] Radial direction"
 }
@@ -73,7 +75,8 @@ mesh = set
     nu = int 10 "# cells in circumferential direction (in one of four segments)"
     gradr = double 1 "grading towards outer boundary"
 
-    outerPatchName = string "" "name of patch on outer"
+    defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
+    circumPatchName = string "" "name of patch on circumferential surface"
     basePatchName = string "" "name of patch on base end"
     topPatchName = string "" "name of patch on top end"
 }

@@ -101,6 +101,11 @@ mat rotMatrix( double theta, mat u )
     return m;
 }
 
+arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const arma::mat& p0 )
+{
+    return p0 + rotMatrix(theta, axis)*(p-p0);
+}
+
 std::string toStr(const arma::mat& v3)
 {
   std::string s="";

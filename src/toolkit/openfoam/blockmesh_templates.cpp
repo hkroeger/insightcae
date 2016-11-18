@@ -48,7 +48,24 @@ void BlockMeshTemplate::addIntoDictionaries ( OFdicts& dictionaries ) const
 }
 
 
-
+arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
+{
+    ex /= arma::norm(ex, 2);    
+    ez/= arma::norm(ez,2);
+    
+    arma::mat ey = -arma::cross(ex, ez);
+    double mey=arma::norm(ey,2);
+    if (mey<1e-6)
+    {
+        throw insight::Exception
+        (
+            str(format("BlockMeshTemplate: supplied vectors ex=(%g, %g, %g) and ez=(%g, %g, %g) have a vanishing cross product => cannot determine third direction!")
+                 % ex(0) % ex(1) % ex(2) % ez(0) % ez(1) % ez(2) )
+        );
+    }
+    ey/=mey;
+    return ey;
+}
 
 
 defineType ( blockMeshDict_Cylinder );
@@ -63,18 +80,26 @@ blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, const Paramete
 
 void blockMeshDict_Cylinder::create_bmd()
 {
+    this->setDefaultPatch(p_.mesh.defaultPatchName);
+
+    arma::mat p0=p_.geometry.p0;
+    arma::mat ex=p_.geometry.ex;
+    arma::mat er=p_.geometry.er;
+    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
+
     double al = M_PI/2.;
 
-    double Lc=p_.geometry.D*0.33;
+    double Lc=rCore();
 
     std::map<int, Point> pts;
     pts = boost::assign::map_list_of
-          ( 1, 	vec3 ( 0, 0.5*p_.geometry.D, 0 ) )
-          ( 0, 	vec3 ( 0,  ::cos ( al ) *Lc, 0. ) )
+          ( 1, 	0.5*p_.geometry.D*ey )
+          ( 0, 	::cos ( al/2. ) *Lc*ey )
           .convert_to_container<std::map<int, Point> >()
           ;
-    arma::mat vL=p_.geometry.L*p_.geometry.ex;
+    arma::mat vL=p_.geometry.L*ex;
 
+    std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=NULL;
     Patch* top=NULL;
     Patch* outer=NULL;
@@ -85,22 +110,22 @@ void blockMeshDict_Cylinder::create_bmd()
     if ( p_.mesh.topPatchName!="" ) {
         top=&this->addOrDestroyPatch ( p_.mesh.topPatchName, new bmd::Patch() );
     }
-    if ( p_.mesh.outerPatchName!="" ) {
-        outer=&this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
+    if ( p_.mesh.circumPatchName!="" ) {
+        outer=&this->addOrDestroyPatch ( p_.mesh.circumPatchName, new bmd::Patch() );
     }
 
     // core block
     {
-        arma::mat r0=rotMatrix ( 0.5*al, p_.geometry.ex );
-        arma::mat r1=rotMatrix ( 1.5*al, p_.geometry.ex );
-        arma::mat r2=rotMatrix ( 2.5*al, p_.geometry.ex );
-        arma::mat r3=rotMatrix ( 3.5*al, p_.geometry.ex );
+        arma::mat r0=rotMatrix ( 0.5*al, ex );
+        arma::mat r1=rotMatrix ( 1.5*al, ex );
+        arma::mat r2=rotMatrix ( 2.5*al, ex );
+        arma::mat r3=rotMatrix ( 3.5*al, ex );
 
         Block& bl = this->addBlock
                     (
                         new Block ( P_8 (
-                                        r1*pts[0], r2*pts[0], r3*pts[0], r0*pts[0],
-                                        ( r1*pts[0] )+vL, ( r2*pts[0] )+vL, ( r3*pts[0] )+vL, ( r0*pts[0] )+vL
+                                        p0+r1*pts[0], p0+r2*pts[0], p0+r3*pts[0], p0+r0*pts[0],
+                                        p0+( r1*pts[0] )+vL, p0+( r2*pts[0] )+vL, p0+( r3*pts[0] )+vL, p0+( r0*pts[0] )+vL
                                     ),
                                     p_.mesh.nu, p_.mesh.nu, p_.mesh.nx
                                   )
@@ -115,15 +140,15 @@ void blockMeshDict_Cylinder::create_bmd()
 
     // radial blocks
     for ( int i=0; i<4; i++ ) {
-        arma::mat r0=rotMatrix ( double ( i+0.5 ) *al, p_.geometry.ex );
-        arma::mat r1=rotMatrix ( double ( i+1.5 ) *al, p_.geometry.ex );
+        arma::mat r0=rotMatrix ( double ( i+0.5 ) *al, ex );
+        arma::mat r1=rotMatrix ( double ( i+1.5 ) *al, ex );
 
         {
             Block& bl = this->addBlock
                         (
                             new Block ( P_8 (
-                                            r1*pts[0], r0*pts[0], r0*pts[1], r1*pts[1],
-                                            ( r1*pts[0] )+vL, ( r0*pts[0] )+vL, ( r0*pts[1] )+vL, ( r1*pts[1] )+vL
+                                            p0+r1*pts[0], p0+r0*pts[0], p0+r0*pts[1], p0+r1*pts[1],
+                                            p0+( r1*pts[0] )+vL, p0+( r0*pts[0] )+vL, p0+( r0*pts[1] )+vL, p0+( r1*pts[1] )+vL
                                         ),
                                         p_.mesh.nu, p_.mesh.nr, p_.mesh.nx,
                                         list_of<double> ( 1 ) ( 1./p_.mesh.gradr ) ( 1 )
@@ -135,12 +160,15 @@ void blockMeshDict_Cylinder::create_bmd()
             if ( top ) {
                 top->addFace ( bl.face ( "4567" ) );
             }
+            if ( outer ) {
+                outer->addFace ( bl.face ( "2376" ) );
+            }
         }
 
 
-        arma::mat rmid=rotMatrix ( double ( i+1 ) *al, p_.geometry.ex );
-        this->addEdge ( new ArcEdge ( r1*pts[1], r0*pts[1], rmid*pts[1] ) );
-        this->addEdge ( new ArcEdge ( ( r1*pts[1] )+vL, ( r0*pts[1] )+vL, ( rmid*pts[1] )+vL ) );
+        arma::mat rmid=rotMatrix ( double ( i+1 ) *al, ex );
+        this->addEdge ( new ArcEdge ( p0+r1*pts[1], p0+r0*pts[1], p0+rmid*pts[1] ) );
+        this->addEdge ( new ArcEdge ( p0+( r1*pts[1] )+vL, p0+( r0*pts[1] )+vL, p0+( rmid*pts[1] )+vL ) );
 
         //inner core
 //     bmd->addEdge(new ArcEdge(r1*pts[0], r0*pts[0], rmid*pts[]));
@@ -177,22 +205,8 @@ void blockMeshDict_Box::create_bmd()
     double al = M_PI/2.;
 
     arma::mat ex=p_.geometry.ex;
-    ex /= arma::norm(ex, 2);
-    
     arma::mat ez=p_.geometry.ez;
-    ez/= arma::norm(ez,2);
-    
-    arma::mat ey = -arma::cross(ex, ez);
-    double mey=arma::norm(ey,2);
-    if (mey<1e-6)
-    {
-        throw insight::Exception
-        (
-            str(format("blockMeshDict_Box: supplied vectors ex=(%g, %g, %g) and ez=(%g, %g, %g) have a vanishing cross product => cannot determine third direction!")
-                 % ex(0) % ex(1) % ex(2) % ez(0) % ez(1) % ez(2) )
-        );
-    }
-    ey/=mey;
+    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
     
     double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
     if (fabs(90.-ang)>1e-3)

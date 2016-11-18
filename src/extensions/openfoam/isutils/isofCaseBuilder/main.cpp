@@ -93,6 +93,7 @@ int main ( int argc, char** argv )
       po::options_description desc ( "Allowed options" );
       desc.add_options()
       ( "help,h", "produce help message" )
+      ( "batch,b", "create case from specified input file" )
 //       ("workdir,w", po::value<std::string>(), "execution directory")
 //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
 //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -129,13 +130,24 @@ int main ( int argc, char** argv )
       QLocale::setDefault ( QLocale::C );
 
       isofCaseBuilderWindow window;
-      window.show();
       if ( vm.count ( "input-file" ) )
         {
           window.loadFile ( vm["input-file"].as<StringList>() [0] );
+
+          if ( vm.count ( "batch" ) )
+            {
+              window.createCase();
+            }
+
         }
 
-      return app.exec();
+      if ( !vm.count ( "batch" ) )
+      {
+        window.show();
+        return app.exec();
+      }
+      else
+        return 0;
     }
   catch ( insight::Exception e )
     {

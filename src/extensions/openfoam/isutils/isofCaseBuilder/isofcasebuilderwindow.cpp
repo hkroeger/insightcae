@@ -246,6 +246,29 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
 }
 
 
+void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/ )
+{
+  for ( int i=0; i < ui->selected_elements->count(); i++ )
+    {
+      InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+      if ( cur )
+        {
+          cur->insertElement ( *ofc_ );
+        }
+    }
+  for ( int i=0; i < ui->patch_list->count(); i++ )
+    {
+      Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
+      if ( cur )
+        {
+          cur->insertElement ( *ofc_, boundaryDict_ );
+        }
+    }
+  ofc_->createOnDisk ( /*location*/ casepath_ );
+  ofc_->modifyCaseOnDisk ( /*location*/ casepath_ );
+}
+
+
 void isofCaseBuilderWindow::onItemSelectionChanged()
 {
     InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->currentItem());
@@ -304,24 +327,7 @@ void isofCaseBuilderWindow::done(int r)
                 QMessageBox::Ok
             )
             {
-                for (int i=0; i < ui->selected_elements->count(); i++)
-                {
-                    InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
-                    if (cur)
-                    {
-                        cur->insertElement(*ofc_);
-                    }
-                }
-                for (int i=0; i < ui->patch_list->count(); i++)
-                {
-                    Patch* cur = dynamic_cast<Patch*>(ui->patch_list->item(i));
-                    if (cur)
-                    {
-                        cur->insertElement(*ofc_, boundaryDict_);
-                    }
-                }
-                ofc_->createOnDisk(casepath_);
-                ofc_->modifyCaseOnDisk(casepath_);
+                createCase(/*casepath_*/);
             }
             else
             {

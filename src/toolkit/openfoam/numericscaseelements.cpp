@@ -159,7 +159,26 @@ void setDecomposeParDict
   cout<<"decomp "<<np<<": "<<ns[0]<<" "<<ns[1]<<" "<<ns[2]<<endl;
   decomposeParDict["numberOfSubdomains"]=np;
   
-  decomposeParDict["method"]=method; //"hierarchical";
+  if (method==FVNumerics::Parameters::hierarchical)
+  {
+    decomposeParDict["method"]="hierarchical";
+  }
+  else if (method==FVNumerics::Parameters::simple)
+  {
+    decomposeParDict["method"]="simple";
+  }
+  else if (method==FVNumerics::Parameters::scotch)
+  {
+    decomposeParDict["method"]="scotch";
+  }
+  else if (method==FVNumerics::Parameters::metis)
+  {
+    decomposeParDict["method"]="metis";
+  }
+  else
+  {
+      throw insight::Exception("setDecomposeParDict: internal error (unhandled decomposition method)!");
+  }
   
   {
     OFDictData::dict coeffs;

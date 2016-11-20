@@ -365,16 +365,16 @@ void PipeBase::createCase
 
   
   cm.insert(new cuttingPlane(cm, cuttingPlane::Parameters()
-    .set_name("plane")
+    .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
     .set_basePoint(vec3(0,1e-6,1e-6))
     .set_normal(vec3(0,0,1))
-    .set_fields(list_of<string>("p")("U")("UMean")("UPrime2Mean"))
+    .set_name("plane")
   ));
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U"))
     .set_timeStart(inittime*T_)
+    .set_name("zzzaveraging") // shall be last FO in list
   ));
   
   cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()

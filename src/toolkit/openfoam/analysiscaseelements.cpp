@@ -37,10 +37,11 @@ using namespace boost::fusion;
 namespace insight
 {
   
+defineType(outputFilterFunctionObject);
 
-outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, p.name()+"outputFilterFunctionObject"),
-  p_(p)
+outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject"),
+  p_(ps)
 {
 }
 
@@ -48,21 +49,24 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
 {
   OFDictData::dict fod=functionObjectDict();
   fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
-  fod["timeStart"]=p_.timeStart();
+  fod["outputControl"]=p_.outputControl;
+  fod["outputInterval"]=p_.outputInterval;
+  fod["timeStart"]=p_.timeStart;
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
 
 
 
+defineType(fieldAveraging);
+addToFactoryTable(OpenFOAMCaseElement, fieldAveraging);
+addToStaticFunctionTable(OpenFOAMCaseElement, fieldAveraging, defaultParameters);
 
 
-fieldAveraging::fieldAveraging(OpenFOAMCase& c, Parameters const &p )
-: outputFilterFunctionObject(c, p),
-  p_(p)
+fieldAveraging::fieldAveraging(OpenFOAMCase& c,  const ParameterSet& ps )
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
 {
 }
 
@@ -75,7 +79,7 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
   fod["enabled"]=true;
   
   OFDictData::list fl;
-  BOOST_FOREACH(const std::string& fln, p_.fields())
+  BOOST_FOREACH(const std::string& fln, p_.fields)
   {
     fl.push_back(fln);
     OFDictData::dict cod;
@@ -92,10 +96,13 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
   
   
   
-  
-probes::probes(OpenFOAMCase& c, Parameters const &p )
-: outputFilterFunctionObject(c, p),
-  p_(p)
+defineType(probes);
+addToFactoryTable(OpenFOAMCaseElement, probes);
+addToStaticFunctionTable(OpenFOAMCaseElement, probes, defaultParameters);
+
+probes::probes(OpenFOAMCase& c,  const ParameterSet& ps )
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
 {
 }
 
@@ -107,14 +114,14 @@ OFDictData::dict probes::functionObjectDict() const
   fod["functionObjectLibs"]=libl;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const arma::mat& lo, p_.probeLocations())
+  BOOST_FOREACH(const arma::mat& lo, p_.probeLocations)
   {
     pl.push_back(OFDictData::vector3(lo));
   }
   fod["probeLocations"]=pl;
   
-  OFDictData::list fl; fl.resize(p_.fields().size());
-  copy(p_.fields().begin(), p_.fields().end(), fl.begin());
+  OFDictData::list fl; fl.resize(p_.fields.size());
+  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
   fod["fields"]=fl;
   
   return fod;
@@ -123,10 +130,13 @@ OFDictData::dict probes::functionObjectDict() const
 
 
 
+defineType(cuttingPlane);
+addToFactoryTable(OpenFOAMCaseElement, cuttingPlane);
+addToStaticFunctionTable(OpenFOAMCaseElement, cuttingPlane, defaultParameters);
 
-cuttingPlane::cuttingPlane(OpenFOAMCase& c, Parameters const &p )
-: outputFilterFunctionObject(c, p),
-  p_(p)
+cuttingPlane::cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps)
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
 {
 }
 
@@ -143,7 +153,7 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
   fod["surfaceFormat"]="vtk";
 
         // Fields to be sampled
-  l.assign<string>(p_.fields());
+  l.assign<string>(p_.fields);
   fod["fields"]=l;
 
   OFDictData::dict pd;
@@ -156,7 +166,7 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
   pd["pointAndNormalDict"]=pand;
 
   OFDictData::list sl;
-  sl.push_back(p_.name());
+  sl.push_back(p_.name);
   sl.push_back(pd);
   fod["surfaces"]=sl;
   
@@ -166,10 +176,13 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
    
    
    
+defineType(twoPointCorrelation);
+addToFactoryTable(OpenFOAMCaseElement, twoPointCorrelation);
+addToStaticFunctionTable(OpenFOAMCaseElement, twoPointCorrelation, defaultParameters);
 
-twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
-: outputFilterFunctionObject(c, p),
-  p_(p)
+twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps)
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
 {
 }
 
@@ -207,15 +220,15 @@ OFDictData::dict twoPointCorrelation::functionObjectDict() const
   OFDictData::list libl; libl.push_back("\"libLESFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
   fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
-  fod["timeStart"]=p_.timeStart();
+  fod["outputControl"]=p_.outputControl;
+  fod["outputInterval"]=p_.outputInterval;
+  fod["timeStart"]=p_.timeStart;
   
-  fod["p0"]=OFDictData::vector3(p_.p0());
-  fod["directionSpan"]=OFDictData::vector3(p_.directionSpan());
-  fod["np"]=p_.np();
-  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p_.homogeneousTranslationUnit());
-  fod["nph"]=p_.nph();
+  fod["p0"]=OFDictData::vector3(p_.p0);
+  fod["directionSpan"]=OFDictData::vector3(p_.directionSpan);
+  fod["np"]=p_.np;
+  fod["homogeneousTranslationUnit"]=OFDictData::vector3(p_.homogeneousTranslationUnit);
+  fod["nph"]=p_.nph;
 
   fod["csys"]=csysConfiguration();
   
@@ -290,10 +303,13 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 
 
 
+defineType(cylindricalTwoPointCorrelation);
+addToFactoryTable(OpenFOAMCaseElement, cylindricalTwoPointCorrelation);
+addToStaticFunctionTable(OpenFOAMCaseElement, cylindricalTwoPointCorrelation, defaultParameters);
 
-cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p )
-: twoPointCorrelation(c, p),
-  p_(p)
+cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps )
+: twoPointCorrelation(c, ps),
+  p_(ps)
 {
 }
 
@@ -302,11 +318,11 @@ OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
   OFDictData::dict csys;
   csys["type"]="cylindrical";
   csys["origin"]=OFDictData::vector3(0,0,0);
-  csys["degrees"]=p_.degrees();
+  csys["degrees"]=p_.degrees;
   
   OFDictData::data 
-    e1=OFDictData::vector3(p_.er()), 
-    e3=OFDictData::vector3(p_.ez());
+    e1=OFDictData::vector3(p_.er), 
+    e3=OFDictData::vector3(p_.ez);
     
   if (OFversion()>=230)
   {
@@ -330,10 +346,13 @@ OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
 
 
 
+defineType(forces);
+addToFactoryTable(OpenFOAMCaseElement, forces);
+addToStaticFunctionTable(OpenFOAMCaseElement, forces, defaultParameters);
 
-forces::forces(OpenFOAMCase& c, Parameters const &p )
-: OpenFOAMCaseElement(c, p.name()+"forces"),
-  p_(p)
+forces::forces(OpenFOAMCase& c,  const ParameterSet& ps)
+: OpenFOAMCaseElement(c, Parameters(ps).name+"forces"),
+  p_(ps)
 {
 }
 
@@ -344,24 +363,24 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::list libl; libl.push_back("\"libforces.so\"");
   fod["functionObjectLibs"]=libl;
   fod["log"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
+  fod["outputControl"]=p_.outputControl;
+  fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const std::string& lo, p_.patches())
+  BOOST_FOREACH(const std::string& lo, p_.patches)
   {
     pl.push_back(lo);
   }
   fod["patches"]=pl;
-  fod["pName"]=p_.pName();
-  fod["UName"]=p_.UName();
-  fod["rhoName"]=p_.rhoName();
-  fod["rhoInf"]=p_.rhoInf();
+  fod["pName"]=p_.pName;
+  fod["UName"]=p_.UName;
+  fod["rhoName"]=p_.rhoName;
+  fod["rhoInf"]=p_.rhoInf;
   
-  fod["CofR"]=OFDictData::vector3(p_.CofR());
+  fod["CofR"]=OFDictData::vector3(p_.CofR);
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
 
 arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
@@ -431,8 +450,12 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
   return fl;
 }
 
-extendedForces::extendedForces(OpenFOAMCase& c, Parameters const &p)
-: forces(c, p)
+defineType(extendedForces);
+addToFactoryTable(OpenFOAMCaseElement, extendedForces);
+addToStaticFunctionTable(OpenFOAMCaseElement, extendedForces, defaultParameters);
+
+extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
+: forces(c, ps)
 {
 }
 
@@ -443,24 +466,24 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::list libl; libl.push_back("\"libextendedForcesFunctionObject.so\"");
   fod["functionObjectLibs"]=libl;
   fod["log"]=true;
-  fod["outputControl"]=p_.outputControl();
-  fod["outputInterval"]=p_.outputInterval();
+  fod["outputControl"]=p_.outputControl;
+  fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const std::string& lo, p_.patches())
+  BOOST_FOREACH(const std::string& lo, p_.patches)
   {
     pl.push_back(lo);
   }
   fod["patches"]=pl;
-  fod["pName"]=p_.pName();
-  fod["UName"]=p_.UName();
-  fod["rhoName"]=p_.rhoName();
-  fod["rhoInf"]=p_.rhoInf();
+  fod["pName"]=p_.pName;
+  fod["UName"]=p_.UName;
+  fod["rhoName"]=p_.rhoName;
+  fod["rhoInf"]=p_.rhoInf;
   
-  fod["CofR"]=OFDictData::vector3(p_.CofR());
+  fod["CofR"]=OFDictData::vector3(p_.CofR);
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict.addSubDictIfNonexistent("functions")[p_.name()]=fod;
+  controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
   
 CorrelationFunctionModel::CorrelationFunctionModel()
@@ -511,30 +534,34 @@ template<>
 typename twoPointCorrelation::Parameters LinearTPCArray::getTanParameters(int i) const
 {
   return 
-    typename twoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
+    typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
       .set_p0(vec3(p_.x(), r_.back(), p_.z()))
       .set_directionSpan(vec3(0, 0, p_.tanSpan())) 
       .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan()/double(p_.nph())))
       .set_nph( p_.nph() )
-      .set_timeStart( p_.timeStart() );
+
+      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
+      .set_outputControl("timeStep")
+      .set_timeStart( p_.timeStart() )
+    );
 }
 
 template<>
 typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) const
 {
   return
-    typename twoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
+    typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
       .set_p0(vec3(p_.x(), r_.back(), p_.z()))
       .set_directionSpan(vec3(p_.axSpan(), 0, 0)) 
       .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan()/double(p_.nph())))
       .set_nph(p_.nph())
-      .set_timeStart( p_.timeStart() );
+
+      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
+      .set_outputControl("timeStep")
+      .set_timeStart( p_.timeStart() )
+    );
 }
 
 template<>
@@ -560,36 +587,42 @@ template<>
 typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getTanParameters(int i) const
 {
   return 
-    typename cylindricalTwoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
+    typename cylindricalTwoPointCorrelation::Parameters(cylindricalTwoPointCorrelation::Parameters()
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+
       .set_p0(vec3(r_.back(), 0, p_.x()))
       .set_directionSpan(vec3(0, p_.tanSpan(), 0)) 
       .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
       .set_nph( p_.nph() )
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( p_.timeStart() );
+
+      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
+      .set_outputControl("timeStep")
+      .set_timeStart( p_.timeStart() )
+    );
 }
 
 template<>
 typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParameters(int i) const
 {
   return
-    typename cylindricalTwoPointCorrelation::Parameters()
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
-      .set_outputControl("timeStep")
+    typename cylindricalTwoPointCorrelation::Parameters(cylindricalTwoPointCorrelation::Parameters()
+      .set_er(vec3(0, 1, 0))
+      .set_ez(vec3(1, 0, 0))
+      .set_degrees(false)
+
       .set_p0(vec3(r_.back(), 0, p_.x()))
       .set_directionSpan(vec3(0, 0, p_.axSpan())) 
       .set_np(p_.np())
       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
       .set_nph(p_.nph())
-      .set_er(vec3(0, 1, 0))
-      .set_ez(vec3(1, 0, 0))
-      .set_degrees(false)
-      .set_timeStart( p_.timeStart() );
+
+      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
+      .set_outputControl("timeStep")
+      .set_timeStart( p_.timeStart() )
+    );
 }
 
 template<>

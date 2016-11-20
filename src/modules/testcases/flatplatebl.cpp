@@ -554,8 +554,8 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   ));
   
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
+    .set_name("zzzaveraging") // shall be last FO in list
     .set_timeStart(avgStart_)
   ));
   

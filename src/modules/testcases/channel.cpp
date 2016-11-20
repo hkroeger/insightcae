@@ -394,9 +394,9 @@ void ChannelBase::createCase
     .set_patches( list_of<string>("walls") )
   ));
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_name("zzzaveraging") // shall be last FO in list
     .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
     .set_timeStart(avgStart_)
+    .set_name("zzzaveraging") // shall be last FO in list
   ));
   
   if (p.run.eval2)
@@ -1031,9 +1031,9 @@ void ChannelCyclic::createCase
       pl.push_back(vec3(l*double(j)/double(np-1), 0, 0));
     }
     cm.insert(new probes(cm, probes::Parameters()
-    .set_name("center_probes")
     .set_fields( list_of<std::string>("p")("U") )
     .set_probeLocations(pl)
+    .set_name("center_probes")
     ));
   }
   

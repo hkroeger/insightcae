@@ -36,18 +36,35 @@ class outputFilterFunctionObject
 : public OpenFOAMCaseElement
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "unnamed")
-    (timeStart, double, 0.0)
-    (outputControl, std::string, "outputTime")    
-    (outputInterval, double, 1.0)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (name, std::string, "unnamed")
+//     (timeStart, double, 0.0)
+//     (outputControl, std::string, "outputTime")    
+//     (outputInterval, double, 1.0)
+//   )
+#include "analysiscaseelements__outputFilterFunctionObject__Parameters.h"
+
+/*
+PARAMETERSET>>> outputFilterFunctionObject Parameters
+
+name = string "unnamed" "Name of the function object"
+timeStart = double 0 "Time value, when the function object evaluation should start"
+outputControl = string "outputTime" "Output time control"
+outputInterval = double 1.0 "Time interval between outputs"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  outputFilterFunctionObject(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("outputFilterFunctionObject");
+  outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict functionObjectDict() const =0;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
@@ -62,15 +79,30 @@ class fieldAveraging
 : public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-    (fields, std::vector<std::string>, std::vector<std::string>())
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+//     (fields, std::vector<std::string>, std::vector<std::string>())
+//   )
+#include "analysiscaseelements__fieldAveraging__Parameters.h"
+
+/*
+PARAMETERSET>>> fieldAveraging Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "U" "Name of a field" ]*1 "Names of fields to average in time"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  fieldAveraging(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("fieldAveraging");
+  fieldAveraging(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict functionObjectDict() const;
 };
 
@@ -81,16 +113,32 @@ class probes
 : public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-    (fields, std::vector<std::string>, std::vector<std::string>())
-    (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+//     (fields, std::vector<std::string>, std::vector<std::string>())
+//     (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
+//   )
+#include "analysiscaseelements__probes__Parameters.h"
+
+/*
+PARAMETERSET>>> probes Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "U" "Name of a field" ]*1 "Names of fields to average in time"
+probeLocations = array [ vector (0 0 0) "Probe point location" ]*1 "Locations of probe points"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  probes(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("probes");
+  probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict functionObjectDict() const;
 };
 
@@ -104,18 +152,36 @@ class cuttingPlane
 : public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-    (fields, std::vector<std::string>, std::vector<std::string>())
-    (basePoint, arma::mat, vec3(0,0,0))
-    (normal, arma::mat, vec3(0,0,1))
-    (interpolate, bool, false)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+//     (fields, std::vector<std::string>, std::vector<std::string>())
+//     (basePoint, arma::mat, vec3(0,0,0))
+//     (normal, arma::mat, vec3(0,0,1))
+//     (interpolate, bool, false)
+//   )
+#include "analysiscaseelements__cuttingPlane__Parameters.h"
+
+/*
+PARAMETERSET>>> cuttingPlane Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "U" "Name of a field" ]*1 "Names of fields to average in time"
+basePoint = vector (0 0 0) "Cutting plane base point"
+normal = vector (0 0 1) "Cutting plane normal direction"
+interpolate = bool true "Whether to output VTKs with interpolated fields"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  cuttingPlane(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("cuttingPlane");
+  cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict functionObjectDict() const;
 };
 
@@ -128,23 +194,42 @@ class twoPointCorrelation
 : public outputFilterFunctionObject
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-    (p0, arma::mat, vec3(0,0,0))
-    (directionSpan, arma::mat, vec3(1,0,0))
-    (np, int, 50)
-    (homogeneousTranslationUnit, arma::mat, vec3(0,1,0))
-    (nph, int, 1)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
+//     (p0, arma::mat, vec3(0,0,0))
+//     (directionSpan, arma::mat, vec3(1,0,0))
+//     (np, int, 50)
+//     (homogeneousTranslationUnit, arma::mat, vec3(0,1,0))
+//     (nph, int, 1)
+//   )
+#include "analysiscaseelements__twoPointCorrelation__Parameters.h"
+
+/*
+PARAMETERSET>>> twoPointCorrelation Parameters
+inherits outputFilterFunctionObject::Parameters
+
+p0 = vector (0 0 0) "Base point"
+directionSpan = vector (1 0 0) "Direction and distance of correlation"
+homogeneousTranslationUnit = vector (0 1 0) "Translational distance between two subsequent correlation lines for homogeneous averaging"
+np = int 50 "Number of correlation points"
+nph = int 1 "Number of homogeneous averaging locations"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  twoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("twoPointCorrelation");
+  twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict functionObjectDict() const;
   virtual OFDictData::dict csysConfiguration() const;
 
-  inline const std::string& name() const { return p_.name(); }
+  inline const std::string& name() const { return p_.name; }
   static boost::ptr_vector<arma::mat> readCorrelations(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& tpcName);
 };
 
@@ -158,17 +243,34 @@ class cylindricalTwoPointCorrelation
 : public twoPointCorrelation
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, twoPointCorrelation::Parameters,
-    (ez, arma::mat, vec3(0,0,1))
-    (er, arma::mat, vec3(1,0,0))
-    (degrees, bool, false)
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, twoPointCorrelation::Parameters,
+//     (ez, arma::mat, vec3(0,0,1))
+//     (er, arma::mat, vec3(1,0,0))
+//     (degrees, bool, false)
+//   )
+#include "analysiscaseelements__cylindricalTwoPointCorrelation__Parameters.h"
+
+/*
+PARAMETERSET>>> cylindricalTwoPointCorrelation Parameters
+inherits twoPointCorrelation::Parameters
+
+ez = vector (0 0 1) "Axial direction"
+er = vector (1 0 0) "Radial direction"
+degrees = bool false ""
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  cylindricalTwoPointCorrelation(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("cylindricalTwoPointCorrelation");
+  cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual OFDictData::dict csysConfiguration() const;
 };
 
@@ -176,35 +278,66 @@ class forces
 : public OpenFOAMCaseElement
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name, std::string, "forces")
-    (patches, std::vector<std::string>, std::vector<std::string>())
-    (pName, std::string, "p")
-    (UName, std::string, "U")
-    (rhoName, std::string, "rhoInf")
-    (rhoInf, double, 1.0)
-    (outputControl, std::string, "timeStep")    
-    (outputInterval, double, 10.0)
-    (CofR, arma::mat, vec3(0,0,0))
-  )
-  
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (name, std::string, "forces")
+//     (patches, std::vector<std::string>, std::vector<std::string>())
+//     (pName, std::string, "p")
+//     (UName, std::string, "U")
+//     (rhoName, std::string, "rhoInf")
+//     (rhoInf, double, 1.0)
+//     (outputControl, std::string, "timeStep")    
+//     (outputInterval, double, 10.0)
+//     (CofR, arma::mat, vec3(0,0,0))
+//   )
+#include "analysiscaseelements__forces__Parameters.h"
+
+/*
+PARAMETERSET>>> forces Parameters
+
+name = string "forces" "Name of this forces function object"
+patches = array [ string "patch" "Name of patch" ] *1 "Name of patches for force integration"
+pName = string "p" "Name of pressure field"
+UName = string "U" "Name of velocity field"
+rhoName = string "rhoInf" "Name of density field. rhoInf for constant rho"
+rhoInf = double 1.0 "Value of constant density"
+outputControl = string "timeStep" "Output control"
+outputInterval = double 10.0 "Output interval"
+CofR = vector (0 0 0) "Center point for torque calculation"
+
+<<<PARAMETERSET
+*/
+
 protected:
   Parameters p_;
   
 public:
-  forces(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("forces");
+  forces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
 };
 
+
+
 class extendedForces
 : public forces
 {
 public:
-  extendedForces(OpenFOAMCase& c, Parameters const &p = Parameters() );
+    declareType("extendedForces");
+  extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
+
+
 
 class CorrelationFunctionModel
 : public RegressionModel
@@ -239,6 +372,8 @@ public:
     (R, double, 1.0)
   )
 };
+
+
 
 template<class TPC>
 class TPCArray

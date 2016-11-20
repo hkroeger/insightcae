@@ -1074,10 +1074,10 @@ struct DynamicClassSelectableSubsetParameterParser {
         typedef boost::fusion::vector2<std::string, ParserDataBase::Ptr> SubsetData;
         typedef std::vector<SubsetData> SubsetListData;
 
-        std::string base_type;
+        std::string base_type, default_sel_;
 
-        Data ( const std::string& base, const std::string& d )
-            : ParserDataBase ( d ), base_type( base )
+        Data ( const std::string& base,  const std::string& default_sel, const std::string& d )
+            : ParserDataBase ( d ), base_type( base ), default_sel_(default_sel)
         {}
 
         virtual void cppAddHeader ( std::set<std::string>& headers ) const
@@ -1133,9 +1133,14 @@ struct DynamicClassSelectableSubsetParameterParser {
                 "{"
                     "ParameterSet defp = "<<base_type<<"::defaultParameters(i->first);"
                     <<name<<"->addItem( i->first, defp );"
-                "}"
-                 <<name<<"->selection() = "<<base_type<<"::factories_->begin()->first;"
-                "}"
+                "}";
+            
+            if (default_sel_==std::string())
+                 os<<name<<"->selection() = "<<base_type<<"::factories_->begin()->first;";
+            else
+                 os<<name<<"->selection() = \""<<default_sel_<<"\";";
+                
+            os << "}"
             ;
         }
 
@@ -1184,8 +1189,8 @@ struct DynamicClassSelectableSubsetParameterParser {
         (
             "dynamicclassconfig",
             typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr ( new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule (
-                        ( ruleset.r_string >> ruleset.r_description_string )
-                        [ qi::_val = phx::construct<ParserDataBase::Ptr> ( new_<Data> ( qi::_1, qi::_2 ) ) ]
+                        ( ruleset.r_string >> ( (qi::lit("default") >> ruleset.r_string)|(qi::attr(std::string())) ) >> ruleset.r_description_string )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr> ( new_<Data> ( qi::_1, qi::_2, qi::_3) ) ]
                     ) )
         );
     }

@@ -593,7 +593,7 @@ phiName = string "phi" "Name of flux field"
 psiName = string "none" "Name of compressibility field"
 rhoName = string "none" "Name of density field"
 UName = string "U" "Name of velocity field"
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
@@ -640,8 +640,8 @@ phiName = string "phi" "Name of flux field"
 psiName = string "none" "Name of compressibility field"
 rhoName = string "none" "Name of density field"
 UName = string "U" "Name of velocity field"
-turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" "Definition of the turbulence state at the boundary"
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" default "uniformIntensityAndLengthScale" "Definition of the turbulence state at the boundary"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
@@ -685,8 +685,8 @@ PARAMETERSET>>> VelocityInletBC Parameters
 velocity = includedset "FieldData::Parameters" "Velocity specification"
 T = includedset "FieldData::Parameters" "Temperature at boundary"
 rho = includedset "FieldData::Parameters" "Density at boundary"
-turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" "Definition of the turbulence state at the boundary"
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+turbulence = dynamicclassconfig "turbulenceBC::turbulenceBC" default "uniformIntensityAndLengthScale" "Definition of the turbulence state at the boundary"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
@@ -734,7 +734,7 @@ data = array[ set {
     epsilon = double 0.1 "Turbulent dissipation rate"
 } ] *1 "Velocity specification per point"
 
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
@@ -907,7 +907,7 @@ pressure = double 0.0 "Uniform static pressure at selected boundary patch"
 prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
 fixMeanValue = bool false "If true, only mean value of pressure is set"
 rho = double 1025.0 "Density"
-phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" "Definition of the multiphase mixture composition"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */
@@ -1072,7 +1072,7 @@ wallVelocity = vector (0 0 0) "Velocity of the wlal surface"
 rotating = bool false "Whether the wall is rotating"
 CofR = vector (0 0 0) "Center of rotation"
 roughness_z0 = double 0 "Wall roughness height"
-meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" "Mesh motion properties at the boundary"
+meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
 
 <<<PARAMETERSET
 */

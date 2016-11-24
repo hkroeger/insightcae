@@ -60,7 +60,11 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
       IOobject::MUST_READ
   );
   
+#ifdef OFplus
+  if (addrHeader.typeHeaderOk<labelIOList>())
+#else
   if (addrHeader.headerOk())
+#endif
   {
     // There is a pointProcAddressing file so use it to get labels
     // on the original mesh

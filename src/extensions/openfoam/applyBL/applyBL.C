@@ -37,7 +37,13 @@ Description
 
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
+
+#if defined(OFplus)
+#include "turbulentTransportModel.H"
+#else
 #include "RASModel.H"
+#endif
+
 #include "wallDist.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -173,7 +179,13 @@ int main(int argc, char *argv[])
         // Calculate nut - reference nut is calculated by the turbulence model
         // on its construction
         tmp<volScalarField> tnut = turbulence->nut();
-        volScalarField& nut = tnut();
+        volScalarField& nut = 
+#if defined(OFplus)
+	  tnut.ref()
+#else
+	  tnut()
+#endif
+	  ;
         volScalarField S(mag(dev(symm(fvc::grad(U)))));
         nut = (1 - mask)*nut + mask*sqr(kappa*min(y, ybl))*::sqrt(2)*S;
 
@@ -191,7 +203,13 @@ int main(int argc, char *argv[])
 
         // Turbulence k
         tmp<volScalarField> tk = turbulence->k();
-        volScalarField& k = tk();
+        volScalarField& k = 
+#if defined(OFplus)
+	tk.ref()
+#else
+        tk()
+#endif
+	;
         scalar ck0 = ::pow(Cmu, 0.25)*kappa;
         k = (1 - mask)*k + mask*sqr(nut/(ck0*min(y, ybl)));
 
@@ -205,7 +223,13 @@ int main(int argc, char *argv[])
 
         // Turbulence epsilon
         tmp<volScalarField> tepsilon = turbulence->epsilon();
-        volScalarField& epsilon = tepsilon();
+        volScalarField& epsilon = 
+#if defined(OFplus)
+        tepsilon.ref()
+#else
+	tepsilon()
+#endif
+	;
         scalar ce0 = ::pow(Cmu, 0.75)/kappa;
         epsilon = (1 - mask)*epsilon + mask*ce0*k*sqrt(k)/min(y, ybl);
 
@@ -227,7 +251,11 @@ int main(int argc, char *argv[])
             false
         );
 
+#if defined(OFplus)
+        if (omegaHeader.typeHeaderOk<volScalarField>())
+#else
         if (omegaHeader.headerOk())
+#endif
         {
             volScalarField omega(omegaHeader, mesh);
             dimensionedScalar k0("VSMALL", k.dimensions(), VSMALL);
@@ -252,7 +280,11 @@ int main(int argc, char *argv[])
             false
         );
 
+#if defined(OFplus)
+        if (nuTildaHeader.typeHeaderOk<volScalarField>())
+#else
         if (nuTildaHeader.headerOk())
+#endif
         {
             volScalarField nuTilda(nuTildaHeader, mesh);
             nuTilda = nut;

@@ -24,6 +24,7 @@
 #include "gradScheme.H"
 #include "surfaceFields.H"
 #include "fvcAverage.H"
+#include "zeroGradientFvPatchField.H"
 
 #ifdef OF16ext
 #define LABELULIST unallocLabelList
@@ -74,7 +75,11 @@ surfaceMax
         )
     );
     
-    GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
+    GeometricField<Type, fvPatchField, volMesh>& vf = tvf
+#ifdef OFplus
+    .ref
+#endif
+    ();
 
     const LABELULIST& owner = mesh.owner();
     const LABELULIST& neighbour = mesh.neighbour();
@@ -148,7 +153,11 @@ class localCellLimitedGrad
 	    );
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
-	      k() = max(1e-3, surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_)));
+	      k
+#ifdef OFplus
+	      .ref
+#endif
+	      () = max(1e-3, surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_)));
 	    }
 	    else
 	    {

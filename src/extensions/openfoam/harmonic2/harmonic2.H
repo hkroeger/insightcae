@@ -124,7 +124,11 @@ public:
                 )
             );
 
-            surfaceScalarField& w = tw();
+            surfaceScalarField& w = tw
+#ifdef OFplus
+	    .ref
+#endif
+            ();
 
             const unallocLabelList& owner = this->mesh().owner();
             const unallocLabelList& neighbour = this->mesh().neighbour();

@@ -107,7 +107,14 @@ public:
     //- Runtime type information
     TypeName("consistentCurve");
 
+#if defined(OFplus)
+    // Static data
 
+        //- Tolerance when comparing points relative to difference between
+        //  start_ and end_
+        static const scalar tol;
+#endif
+	
     // Constructors
 
         //- Construct from components

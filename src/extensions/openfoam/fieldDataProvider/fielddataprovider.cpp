@@ -33,6 +33,12 @@
 #endif
 #include "boost/filesystem.hpp"
 
+#if defined(OFplus)
+#define ACCESSTMP(x) (x).ref()
+#else
+#define ACCESSTMP(x) (x)()
+#endif
+
 using namespace boost;
 using namespace insight;
 
@@ -256,7 +262,7 @@ template<class T>
 tmp<Field<T> > uniformField<T>::atInstant(int i, const pointField& target) const
 {
   tmp<Field<T> > res(new Field<T>(target.size()));
-  res()=values_[i];
+  ACCESSTMP(res)=values_[i];
   return res;
 }
 
@@ -368,7 +374,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
   }
   
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=resPtr();
+  Field<T>& res=ACCESSTMP(resPtr);
 
 //   vector ey = - (ex_ ^ ez_);
 //   tensor tt(ex_, ey, ez_);
@@ -472,7 +478,7 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
   }
 
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=resPtr();
+  Field<T>& res=ACCESSTMP(resPtr);
 
 //   vector ey = - (ex_ ^ ez_);
 //   tensor tt(ex_, ey, ez_);
@@ -590,7 +596,7 @@ template<class T>
 tmp<Field<T> > fittedProfile<T>::atInstant(int idx, const pointField& target) const
 {
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=resPtr();  
+  Field<T>& res=ACCESSTMP(resPtr);  
 
   forAll(target, pi)
   {

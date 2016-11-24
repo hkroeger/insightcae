@@ -21,13 +21,23 @@
 #include "fvCFD.H"
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
+
 #if defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
+#elif defined(OFplus)
+#include "immiscibleIncompressibleTwoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #endif
+
+#if defined(OFplus)
+#include "turbulentTransportModel.H"
+#include "nutWallFunctionFvPatchScalarField.H"
+#else
 #include "incompressible/RAS/RASModel/RASModel.H"
 #include "nutWallFunction/nutWallFunctionFvPatchScalarField.H"
+#endif
+
 
 // #include "fluidThermo.H"
 // #include "compressible/RAS/RASModel/RASModel.H"
@@ -48,6 +58,8 @@ void calcIncompressibleYPlus
     typedef 
 #if defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
+#elif defined(OFplus)
+    nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
 #endif
@@ -57,14 +69,26 @@ void calcIncompressibleYPlus
 
 #if defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
+#elif defined(OFplus)
+    immiscibleIncompressibleTwoPhaseMixture
 #else
     incompressibleTwoPhaseMixture
 #endif
     laminarTransport(U, phi);
 
-    autoPtr<incompressible::RASModel> RASModel
+#if defined(OFplus)
+    autoPtr<incompressible::turbulenceModel>
+#else
+    autoPtr<incompressible::RASModel>
+#endif
+    RASModel
     (
-        incompressible::RASModel::New(U, phi, laminarTransport)
+#if defined(OFplus)
+      incompressible::turbulenceModel::New
+#else
+        incompressible::RASModel::New
+#endif
+        (U, phi, laminarTransport)
     );
 
     const volScalarField::GeometricBoundaryField nutPatches =
@@ -236,7 +260,11 @@ int main(int argc, char *argv[])
             IOobject::NO_WRITE
         );
 
+#if defined(OFplus)
+        if (UHeader.typeHeaderOk<volVectorField>())
+#else
         if (UHeader.headerOk())
+#endif
         {
             Info<< "Reading field U\n" << endl;
             volVectorField U(UHeader, mesh);

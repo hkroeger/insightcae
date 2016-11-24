@@ -60,7 +60,23 @@ RASModel::RASModel(OpenFOAMCase& c)
 void RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-  turbProperties["simulationType"]="RASModel";
+  if (OFversion()>=300)
+    turbProperties["simulationType"]="RAS";
+  else
+    turbProperties["simulationType"]="RASModel";
+}
+
+OFDictData::dict& RASModel::modelPropsDict(OFdicts& dictionaries) const
+{
+  if (OFversion()>=300)
+  {
+      OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+      return turbProperties.addSubDictIfNonexistent("RAS");
+  }
+  else
+  {
+      return dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  }
 }
 
 turbulenceModel::AccuracyRequirement RASModel::minAccuracyRequirement() const
@@ -79,10 +95,26 @@ LESModel::LESModel(OpenFOAMCase& c)
 void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
     OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-    turbProperties["simulationType"]="LESModel";
+    if (OFversion()>=300)
+      turbProperties["simulationType"]="LES";
+    else
+      turbProperties["simulationType"]="LESModel";
 
     OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
     controlDict.getList("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
+}
+
+OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
+{
+  if (OFversion()>=300)
+  {
+      OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+      return turbProperties.addSubDictIfNonexistent("LES");
+  }
+  else
+  {
+      return dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  }
 }
 
 bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
@@ -134,7 +166,7 @@ void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="laminar";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -170,7 +202,7 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   LESModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   LESProperties["printCoeffs"]=true;
 
   LESProperties["LESModel"]="oneEqEddy";
@@ -215,7 +247,7 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   LESModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   LESProperties["printCoeffs"]=true;
 
   LESProperties["LESModel"]="dynOneEqEddy";
@@ -264,7 +296,7 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   LESModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   
   string modelName="dynSmagorinsky";
   if (OFversion()>160)
@@ -323,7 +355,7 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="kOmegaSST";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -411,7 +443,7 @@ void kEpsilonBase_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]=this->type(); //"kEpsilon";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -515,7 +547,7 @@ void SpalartAllmaras_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="SpalartAllmaras";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -571,7 +603,7 @@ void LEMOSHybrid_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   // add k-O stuff first, we will overwrite afterwards, where necessary
   kOmegaSST_RASModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
 
   string modelName="hybKOmegaSST2";
 
@@ -641,7 +673,7 @@ void kOmegaSST_LowRe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="kOmegaSST_LowRe";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -689,7 +721,7 @@ void kOmegaSST2_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="kOmegaSST2";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -749,7 +781,7 @@ void kOmegaHe_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict.getList("libs").push_back( OFDictData::data("\"libkOmegaHe.so\"") );
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="kOmegaHe";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";
@@ -812,7 +844,7 @@ void LRR_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   RASModel::addIntoDictionaries(dictionaries);
 
-  OFDictData::dict& RASProperties=dictionaries.addDictionaryIfNonexistent("constant/RASProperties");
+  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
   RASProperties["RASModel"]="LRR";
   RASProperties["turbulence"]="true";
   RASProperties["printCoeffs"]="true";

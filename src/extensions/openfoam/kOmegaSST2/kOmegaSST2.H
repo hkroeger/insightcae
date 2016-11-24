@@ -82,12 +82,28 @@ SourceFiles
 #include "RASModel.H"
 #include "wallDist.H"
 
+#if defined(OFplus)
+#include "IncompressibleTurbulenceModel.H"
+#include "incompressible/transportModel/transportModel.H"
+#include "eddyViscosity.H"
+#endif
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+  
+#if defined(OFplus)
+typedef IncompressibleTurbulenceModel<transportModel> transportModelIncompressibleTurbulenceModel;                                                                  
+typedef eddyViscosity<RASModel<transportModelIncompressibleTurbulenceModel> > RAStransportModelIncompressibleTurbulenceModel;
+#endif
+
+#if not defined(OFplus)
 namespace incompressible
 {
+#endif
+  
 namespace RASModels
 {
 
@@ -97,7 +113,11 @@ namespace RASModels
 
 class kOmegaSST2
 :
+#if defined(OFplus)
+    public RAStransportModelIncompressibleTurbulenceModel
+#else
     public RASModel
+#endif
 {
     // Private data
 
@@ -134,7 +154,11 @@ class kOmegaSST2
 #endif
         //- Wall distance field
         //  Note: different to wall distance in parent RASModel
+#if defined(OFplus)
+	const volScalarField& y_;
+#else
         wallDist y_;
+#endif
 
         // Fields
 
@@ -193,6 +217,9 @@ class kOmegaSST2
             return blend(F1, gamma1_, gamma2_);
         }
 
+	virtual void correctNut(const volScalarField& S2);
+
+        virtual void correctNut();
 
 public:
 
@@ -205,6 +232,16 @@ public:
         //- Construct from components
         kOmegaSST2
         (
+#if defined(OFplus)
+            const alphaField& alpha,
+            const rhoField& rho,
+            const volVectorField& U,
+            const surfaceScalarField& alphaRhoPhi,
+            const surfaceScalarField& phi,
+            const transportModel& transport,
+            const word& propertiesName = turbulenceModel::propertiesName,
+            const word& type = typeName	  
+#else
             const volVectorField& U,
             const surfaceScalarField& phi,
             transportModel& transport
@@ -212,6 +249,7 @@ public:
 			,
             const word& turbulenceModelName = turbulenceModel::typeName,
             const word& modelName = typeName
+#endif
 #endif
         );
 
@@ -332,7 +370,9 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
+#if not defined(OFplus)
 } // namespace incompressible
+#endif
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

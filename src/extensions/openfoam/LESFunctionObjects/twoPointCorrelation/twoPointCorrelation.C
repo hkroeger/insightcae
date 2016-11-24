@@ -94,7 +94,13 @@ Foam::twoPointCorrelation::twoPointCorrelation
 	  false
       );
       
-      if (propsDictHeader.headerOk())
+      if (
+#if defined(OFplus)
+	propsDictHeader.typeHeaderOk<IOdictionary>()
+#else
+	propsDictHeader.headerOk()
+#endif
+      )
       {
 	  IOdictionary propsDict(propsDictHeader);
 	  
@@ -140,7 +146,7 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
         dictionary csysDict(dict.subDict("csys"));
         csys_=coordinateSystem::New
               (
-#ifdef OF23x
+#if defined(OF23x) or defined(OFplus)
 		  obr_,
 #else
                   word(csysDict.lookup("type")),

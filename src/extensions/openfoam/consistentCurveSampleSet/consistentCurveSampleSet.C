@@ -46,6 +46,10 @@ namespace Foam
 {
     defineTypeNameAndDebug(consistentCurveSet, 0);
     addToRunTimeSelectionTable(sampledSet, consistentCurveSet, word);
+    
+#if defined(OFplus)
+    const scalar consistentCurveSet::tol = 1e-3;
+#endif
 }
 
 
@@ -236,10 +240,15 @@ void Foam::consistentCurveSet::calcSamples
             bool isSample =
                 getTrackingPoint
                 (
+#if not defined(OFplus)
                     sampleCoords_[sampleI+1] - sampleCoords_[sampleI],
+#endif
                     sampleCoords_[sampleI],
                     bPoint,
                     bFaceI,
+#if defined(OFplus)
+		    smallDist,
+#endif
 
                     trackPt,
                     trackCellI,
@@ -314,7 +323,7 @@ void Foam::consistentCurveSet::calcSamples
 
         bool bReached = trackToBoundary
         (
-#ifdef OF23x
+#if defined(OF23x)||defined (OFplus)
             particleCloud,
 #endif
             singleParticle,

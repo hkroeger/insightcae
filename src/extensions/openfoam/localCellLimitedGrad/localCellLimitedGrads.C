@@ -28,13 +28,19 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#if not defined(OFplus)
 namespace Foam
 {
 namespace fv
 {
+#endif
+  
     makeFvGradScheme(localCellLimitedGrad)
+
+#if not defined(OFplus)
 }
 }
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,7 +77,12 @@ calcGrad
 //         return tGrad;
 //     }
 
-    volVectorField& g = tGrad();
+    volVectorField& g = tGrad
+#ifdef OFplus
+    .ref
+#endif
+    ()
+    ;
 
     const LABELULIST& owner = mesh.owner();
     const LABELULIST& neighbour = mesh.neighbour();
@@ -256,7 +267,12 @@ calcGrad
 //         return tGrad;
 //     }
 
-    volTensorField& g = tGrad();
+    volTensorField& g = tGrad
+#ifdef OFplus
+    .ref
+#endif
+    ()
+    ;
 
     const LABELULIST& owner = mesh.owner();
     const LABELULIST& neighbour = mesh.neighbour();

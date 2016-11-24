@@ -362,7 +362,14 @@ symmTensor hinv(const symmTensor& t)
 tmp<symmTensorField> hinv(const symmTensorField& dd)
 {
   tmp<symmTensorField> res(new symmTensorField(dd.size()));
-  forAll(dd, i) res()[i]=hinv(dd[i]);
+  forAll(dd, i) 
+  {
+    res
+#ifdef OFplus
+    .ref
+#endif
+    ()[i]=hinv(dd[i]);
+  }
   return res;
 }
 

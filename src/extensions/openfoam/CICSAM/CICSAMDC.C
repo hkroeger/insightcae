@@ -158,7 +158,11 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
             vf.dimensions()
         )
     );
-    surfaceScalarField& corr = tcorr();
+    surfaceScalarField& corr = tcorr
+#ifdef OFplus
+    .ref
+#endif
+    ();
 
     volVectorField gradc = fvc::grad(vf);
 

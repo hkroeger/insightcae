@@ -91,7 +91,11 @@ leastSquares2Grad<Type>::
             zeroGradientFvPatchField<GradType>::typeName
         )
     );
-    GeometricField<GradType, fvPatchField, volMesh>& lsGrad = tlsGrad();
+    GeometricField<GradType, fvPatchField, volMesh>& lsGrad = tlsGrad
+#ifdef OFplus
+    .ref
+#endif
+    ();
 
     // Get reference to least square vectors
     const leastSquares2Vectors& lsv = leastSquares2Vectors::New(mesh);

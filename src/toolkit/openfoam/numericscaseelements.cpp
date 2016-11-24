@@ -285,6 +285,12 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
   fvSchemes.addSubDictIfNonexistent("snGradSchemes");
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
+  
+  if (OFversion()>=300)
+  {
+    OFDictData::dict& wd = fvSchemes.addSubDictIfNonexistent("wallDist");
+    wd["method"]="meshWave";
+  }
 
   setDecomposeParDict
   ( 
@@ -627,8 +633,15 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       
-  div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
-  div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  if (OFversion()>=300)
+  {
+    div["div((nuEff*dev2(T(grad(U)))))"]="Gauss linear";
+  }
+  else
+  {
+    div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
+    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";

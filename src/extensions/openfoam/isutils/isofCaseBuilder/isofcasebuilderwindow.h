@@ -128,6 +128,8 @@ public slots:
     void onParseBF();
     void onAssignBC();
     void onPatchSelectionChanged();
+    
+    void onOFVersionChanged(const QString & ofename);
 };
 
 

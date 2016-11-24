@@ -35,8 +35,10 @@ License
 
 namespace Foam
 {
+#if not defined(OFplus)
 namespace incompressible
 {
+#endif
 namespace RASModels
 {
 
@@ -94,7 +96,13 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
       rasModel.Utau().boundaryField()[patchI];
 
     tmp<scalarField> tnutw(new scalarField(patch().size(), 0.0));
-    scalarField& nutw = tnutw();
+    scalarField& nutw = 
+#if defined(OFplus)
+    tnutw.ref()
+#else
+    tnutw()
+#endif
+    ;
 
     const fvPatchVectorField& Uw =
       patch().lookupPatchField<volVectorField, vector>("U"); //UName_);
@@ -253,7 +261,9 @@ makePatchTypeField(fvPatchScalarField, nutHybridWallFunction2FvPatchScalarField)
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
+#if not defined(OFplus)
 } // End namespace incompressible
+#endif
 } // End namespace Foam
 
 // ************************************************************************* //

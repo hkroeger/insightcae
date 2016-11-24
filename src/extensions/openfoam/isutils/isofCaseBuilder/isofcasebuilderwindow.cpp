@@ -141,6 +141,17 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     pe_layout_ = new QHBoxLayout(ui->parameter_editor);
     bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
     
+    // populate list of available OF versions
+    BOOST_FOREACH(const insight::OFEs::value_type& ofe, insight::OFEs::list)
+    {
+      ui->OFversion->addItem(ofe.first.c_str());
+    }
+    connect
+    (
+      ui->OFversion, SIGNAL(currentIndexChanged(const QString &)), 
+      this, SLOT(onOFVersionChanged(const QString &))
+    );
+    
     // populate list of available case elements
     for (insight::OpenFOAMCaseElement::FactoryTable::const_iterator i = insight::OpenFOAMCaseElement::factories_->begin();
         i != insight::OpenFOAMCaseElement::factories_->end(); i++)
@@ -180,7 +191,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     );
     
     casepath_ = boost::filesystem::current_path();
-    ofc_.reset(new OpenFOAMCase(OFEs::get("OF23x")));
+    
+    onOFVersionChanged(ui->OFversion->currentText());
 }
 
 
@@ -205,6 +217,12 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
     doc.parse<0>(&contents[0]);
     
     xml_node<> *rootnode = doc.first_node("root");
+
+    {
+      xml_node<> *OFEnode = rootnode->first_node("OFE");
+      std::string name = OFEnode->first_attribute("name")->value();
+      ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
+    }
     
     for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
     {
@@ -372,6 +390,12 @@ void isofCaseBuilderWindow::onSave()
         xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
         doc.append_node ( rootnode );
 
+	{
+	  xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
+	  OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
+	  rootnode->append_node ( OFEnode );
+	}
+
         // insert selected case elements
         for (int i=0; i < ui->selected_elements->count(); i++)
         {
@@ -482,3 +506,11 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
     //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
     }
 }
+
+void isofCaseBuilderWindow::onOFVersionChanged(const QString& ofename)
+{
+  std::string ofen = ofename.toStdString();
+  std::cout<<ofen<<std::endl;
+  ofc_.reset(new OpenFOAMCase(OFEs::get(ofen)));
+}
+

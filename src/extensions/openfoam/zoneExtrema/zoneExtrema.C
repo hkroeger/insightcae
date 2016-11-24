@@ -76,32 +76,39 @@ int main(int argc, char *argv[])
 	    IOobject::NO_WRITE
 	);
 	
+// 	if (!fieldheader.headerOk())
+// 	  FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);	
+// 	Info<<fieldheader.headerClassName()<<endl;
+
+#if not defined(OFplus)	
 	if (!fieldheader.headerOk())
-	  FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);
-	
-	Info<<fieldheader.headerClassName()<<endl;
-	
-	if (fieldheader.headerClassName()=="volVectorField")
-	{
-	  Info << "Reading vector field "<<fieldName<<"\n" << endl;
-	  volVectorField field
-	  (
-	    fieldheader,
-	    mesh
-	  );	
+#endif
 	  
-	  vectorField sub(cells.size());
-	  forAll(cells, i)
+#if defined (OFplus)
+	  if (fieldheader.typeHeaderOk<volVectorField>())
+#else
+	  if (fieldheader.headerClassName()=="volVectorField")
+#endif
 	  {
-	    sub[i]=field[cells[i]];
+	    Info << "Reading vector field "<<fieldName<<"\n" << endl;
+	    volVectorField field
+	    (
+	      fieldheader,
+	      mesh
+	    );	
+	    
+	    vectorField sub(cells.size());
+	    forAll(cells, i)
+	    {
+	      sub[i]=field[cells[i]];
+	    }
+	    
+	    vector mi=gMin(sub);
+	    vector ma=gMax(sub);
+	    Info<<"@t="<<runTime.timeName()<<" : min / max ["<<fieldName<<"]= "
+	      <<mi.x()<<" "<<mi.y()<<" "<<mi.z()
+	      <<" / "
+	      <<ma.x()<<" "<<ma.y()<<" "<<ma.z()<<endl;
 	  }
-	  
-	  vector mi=gMin(sub);
-	  vector ma=gMax(sub);
-	  Info<<"@t="<<runTime.timeName()<<" : min / max ["<<fieldName<<"]= "
-	    <<mi.x()<<" "<<mi.y()<<" "<<mi.z()
-	    <<" / "
-	    <<ma.x()<<" "<<ma.y()<<" "<<ma.z()<<endl;
-	}
     }
 }

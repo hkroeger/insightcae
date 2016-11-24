@@ -48,10 +48,11 @@ class PlotNotebook(wx.Panel):
        self.nb.AddPage(page,name)
        return page.figure
 
-lines=open(sys.argv[1]).readlines()
-for l in lines:
-  if l.strip().startswith('#'):
-    lines.remove(l)
+lines_org=open(sys.argv[1]).readlines()
+#for l in lines:
+#  if l.strip().startswith('#'):
+#    lines.remove(l)
+lines=[l for l in lines_org if not l.strip().startswith('#')]
     
 #headings=lines[0].lstrip(' #').split()
 headings=[]

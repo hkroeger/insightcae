@@ -168,14 +168,22 @@ int main(int argc, char *argv[])
 	    IOobject::NO_WRITE
 	);
 	
+#if defined(OFplus)
+        if (vfheader.typeHeaderOk<volVectorField>())
+#else
         if (vfheader.headerOk())
+#endif
 	{
 	  volVectorField vf(vfheader, mesh);
 	  
 	  writeProfile(makeFile(runTime, "viscousForce"), x0, x1, n, sampleProfile(axis, x0, x1, n, vf)());
 	}
 
+#if defined(OFplus)
+        if (vfmeanheader.typeHeaderOk<volVectorField>())
+#else
         if (vfmeanheader.headerOk())
+#endif
 	{
 	  volVectorField vf(vfmeanheader, mesh);
 	  

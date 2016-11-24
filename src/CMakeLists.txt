@@ -133,6 +133,7 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-22x)
     find_package(OpenFOAM-22eng)
     find_package(OpenFOAM-23x)
+    find_package(OpenFOAM-plus)
     
     join("${INSIGHT_OFES_VARCONTENT}" ":" INSIGHT_OFES)
     message(STATUS "\"${INSIGHT_OFES}\"")
@@ -186,6 +187,9 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (OF23x_FOUND)
       list (APPEND OF_VERSIONS OF23x)
+    endif()
+    if (OFplus_FOUND)
+      list (APPEND OF_VERSIONS OFplus)
     endif()
   endif()
   message(STATUS ${OF_VERSIONS})
@@ -293,6 +297,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+    if (${_ofvers} STREQUAL "OFplus")
+      setup_exe_target_OFplus(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
    endif()
   endforeach()
 endmacro(setup_exe_target_OF)
@@ -322,6 +335,9 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (OF23x_FOUND)
       list (APPEND OF_VERSIONS OF23x)
+    endif()
+    if (OFplus_FOUND)
+      list (APPEND OF_VERSIONS OFplus)
     endif()
   endif()
   message(STATUS ${OF_VERSIONS})
@@ -422,6 +438,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
     endif()
     if (${_ofvers} STREQUAL "OF23x")
       setup_lib_target_OF23x(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
+    if (${_ofvers} STREQUAL "OFplus")
+      setup_lib_target_OFplus(
 	${PRJ_NAME}${_ofvers} 
 	"${sources}" 
 	"${PRJ_NAME}" 

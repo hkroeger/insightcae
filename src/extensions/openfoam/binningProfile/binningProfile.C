@@ -308,23 +308,46 @@ int main(int argc, char *argv[])
 	      IOobject::NO_WRITE
 	  );
 	  
+#if not defined(OFplus)
 	  if (fieldHeader.headerOk())
+#endif
 	  {
+	    
+#if defined(OFplus)
+	    if (fieldHeader.typeHeaderOk<volScalarField>())
+#else
 	    if (fieldHeader.headerClassName()=="volScalarField")
+#endif
 	      extractProfiles<scalar>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
-	    else if (fieldHeader.headerClassName()=="volVectorField")
+	    else 
+	      
+#if defined(OFplus)
+	    if (fieldHeader.typeHeaderOk<volVectorField>())
+#else
+	    if (fieldHeader.headerClassName()=="volVectorField")
+#endif
 	      extractProfiles<vector>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
-	    else if (fieldHeader.headerClassName()=="volSymmTensorField")
+	    else 
+	      
+#if defined(OFplus)
+	    if (fieldHeader.typeHeaderOk<volSymmTensorField>())
+#else	      
+	    if (fieldHeader.headerClassName()=="volSymmTensorField")
+#endif
 	      extractProfiles<symmTensor>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else
+	      
 	      FatalErrorIn("main")
 	       << "Unhandled field "<<fieldHeader.name()<<" of type "<<fieldHeader.headerClassName()<<endl<<abort(FatalError);
+	       
 	  }
+#if not defined(OFplus)
 	  else
 	  {
 	    FatalErrorIn("main")
 	      << "Field not found: "<<fieldHeader.name()<<" at time "<<runTime.timeName()<<endl<<abort(FatalError);
 	  }
+#endif
 	  
 	}
 // 	scalar x0=mesh.bounds().min() & axis;

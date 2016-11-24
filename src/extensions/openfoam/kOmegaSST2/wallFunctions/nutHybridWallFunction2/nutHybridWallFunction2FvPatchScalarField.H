@@ -44,8 +44,10 @@ SourceFiles
 
 namespace Foam
 {
+#if not defined(OFplus)
 namespace incompressible
 {
+#endif
 namespace RASModels
 {
 
@@ -179,7 +181,9 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
+#if not defined(OFplus)
 } // End namespace incompressible
+#endif
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

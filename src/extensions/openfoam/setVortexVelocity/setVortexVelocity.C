@@ -123,7 +123,11 @@ int main(int argc, char *argv[])
     {
       const fvPatch& patch = mesh.boundary()[patchI];
       fvPatchVectorField& Up = U.boundaryField()[patchI];
+#if defined(OFplus)
+      fvPatchScalarField& pp = pNew.ref().boundaryField()[patchI];
+#else
       fvPatchScalarField& pp = pNew().boundaryField()[patchI];
+#endif
       if (Up.fixesValue())
       {
 	vectorField r=(patch.Cf() - center);

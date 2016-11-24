@@ -37,18 +37,31 @@ Description
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
+
 #if defined(OF16ext) || defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
+
+#elif defined(OFplus)
+#include "immiscibleIncompressibleTwoPhaseMixture.H"
+#define TWOPHASEMIXTURE immiscibleIncompressibleTwoPhaseMixture
+
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
 
-#include "incompressible/RAS/RASModel/RASModel.H"
-
+#if defined(OFplus)
+#include "turbulentTransportModel.H"
+#include "turbulentFluidThermoModel.H"
+#define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel
+#else
 #include "basicThermo.H"
+#include "incompressible/RAS/RASModel/RASModel.H"
 #include "compressible/RAS/RASModel/RASModel.H"
+#define INCOMPRESSIBLERASMODEL incompressible::RASModel
+#endif
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,7 +83,11 @@ void calcIncompressibleTwoPhase
         IOobject::NO_WRITE
     );
 
+#if defined (OFplus)
+    if (!alpha1Header.typeHeaderOk<volScalarField>())
+#else
     if (!alpha1Header.headerOk())
+#endif
     {
         Info<< "    no alpha1 field" << endl;
         return;
@@ -84,9 +101,9 @@ void calcIncompressibleTwoPhase
 
     TWOPHASEMIXTURE laminarTransport(U, phi);
     
-    autoPtr<incompressible::RASModel> model
+    autoPtr<INCOMPRESSIBLERASMODEL> model
     (
-        incompressible::RASModel::New(U, phi, laminarTransport)
+        INCOMPRESSIBLERASMODEL::New(U, phi, laminarTransport)
     );
 
 
@@ -120,9 +137,9 @@ void calcIncompressible
 
     singlePhaseTransportModel laminarTransport(U, phi);
 
-    autoPtr<incompressible::RASModel> model
+    autoPtr<INCOMPRESSIBLERASMODEL> model
     (
-        incompressible::RASModel::New(U, phi, laminarTransport)
+        INCOMPRESSIBLERASMODEL::New(U, phi, laminarTransport)
     );
 
     const volSymmTensorField Reff(model->devReff());
@@ -250,7 +267,11 @@ int main(int argc, char *argv[])
             IOobject::NO_WRITE
         );
 
+#if defined(OFplus)
+        if (UHeader.typeHeaderOk<volVectorField>())
+#else
         if (UHeader.headerOk())
+#endif
         {
             Info<< "Reading field U\n" << endl;
             volVectorField U(UHeader, mesh);

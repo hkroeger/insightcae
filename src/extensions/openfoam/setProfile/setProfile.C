@@ -89,21 +89,31 @@ int main(int argc, char *argv[])
 	    IOobject::MUST_READ,
 	    IOobject::AUTO_WRITE
 	);
-
+#if not defined(OFplus)
     if (!header.headerOk())
     {
         FatalErrorIn("main")
          << "Could not find field "<<fieldname<<"!"
          <<abort(FatalError);
     }
-    
+#endif
+
+#ifdef OFplus
+    if (header.typeHeaderOk<volScalarField>())
+#else
     if (header.headerClassName() == volScalarField::typeName)
+#endif
     {
         volScalarField field(header, mesh);
         setProfileLinear<scalar>(field, p0, ey, ex, IStringStream(args.additionalArgs()[4])());    
         field.write();
     }
-    else if (header.headerClassName() == volVectorField::typeName)
+    else 
+#ifdef OFplus
+      if (header.typeHeaderOk<volVectorField>())
+#else
+      if (header.headerClassName() == volVectorField::typeName)
+#endif
     {
         volVectorField field(header, mesh);
         setProfileLinear<vector>(field, p0, ey, ex, IStringStream(args.additionalArgs()[4])());    

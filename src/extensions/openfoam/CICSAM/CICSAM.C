@@ -198,7 +198,11 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
             dimless
         )
     );
-    surfaceScalarField& lim = tLimiter();
+    surfaceScalarField& lim = tLimiter
+#ifdef OFplus
+    .ref
+#endif
+    ();
 
     volVectorField gradc = fvc::grad(phi);
 
@@ -304,7 +308,11 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
     (
         new surfaceScalarField(mesh.surfaceInterpolation::weights())
     );
-    surfaceScalarField& weightingFactors = tWeightingFactors();
+    surfaceScalarField& weightingFactors = tWeightingFactors
+#ifdef OFplus
+    .ref
+#endif
+    ();
 
 //     scalarField& weights = weightingFactors.internalField();
 

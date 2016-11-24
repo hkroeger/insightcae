@@ -52,6 +52,7 @@ public:
   turbulenceModel(OpenFOAMCase& c);
   
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const =0;
+  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const =0; 
   
   virtual AccuracyRequirement minAccuracyRequirement() const =0;
 };
@@ -68,6 +69,7 @@ public:
 
   RASModel(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
   virtual AccuracyRequirement minAccuracyRequirement() const;
 };
 
@@ -80,6 +82,7 @@ public:
 
   LESModel(OpenFOAMCase& c);
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
   virtual AccuracyRequirement minAccuracyRequirement() const;
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
 };

@@ -30,12 +30,18 @@ Description
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#if not defined(OFplus)
 namespace Foam
 {
 namespace fv
 {
+#endif
+  
     makeFvGradScheme(leastSquares2Grad)
+    
+#if not defined(OFplus)
 }
 }
+#endif
 
 // ************************************************************************* //

@@ -122,7 +122,13 @@ surfaceMax2
         )
     );
     
-    GeometricField<Type, fvPatchField, volMesh>& vf = tvf();
+    GeometricField<Type, fvPatchField, volMesh>& vf = 
+#if defined(OFplus)
+    tvf.ref()
+#else
+    tvf()
+#endif
+    ;
 
     const LABELULIST& owner = mesh.owner();
     const LABELULIST& neighbour = mesh.neighbour();
@@ -183,7 +189,13 @@ surfaceMax3
         )
     );
     
-    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf();
+    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = 
+#if defined(OFplus)
+    tsf.ref()
+#else
+    tsf()
+#endif
+    ;
 
     const LABELULIST& owner = mesh.owner();
     const LABELULIST& neighbour = mesh.neighbour();

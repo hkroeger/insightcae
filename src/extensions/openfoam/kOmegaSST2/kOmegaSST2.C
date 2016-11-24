@@ -24,24 +24,43 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "fvCFD.H"
 #include "kOmegaSST2.H"
 #include "addToRunTimeSelectionTable.H"
 #include "fixedInternalValueFvPatchFields.H"
-#include "backwardsCompatibilityWallFunctions.H"
 #include "gaussConvectionScheme.H"
+
+#if not defined(OFplus)
+#include "backwardsCompatibilityWallFunctions.H"
+#else
+#include "bound.H"
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
+#if not defined(OFplus)
 namespace incompressible
 {
+#endif
 namespace RASModels
 {
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 defineTypeNameAndDebug(kOmegaSST2, 0);
+#if defined(OFplus)
+addToRunTimeSelectionTable
+(
+    RAStransportModelIncompressibleTurbulenceModel,
+    kOmegaSST2,
+    dictionary
+);
+#else
 addToRunTimeSelectionTable(RASModel, kOmegaSST2, dictionary);
+#endif
+
 
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
@@ -93,10 +112,38 @@ scalar kOmegaSST2::yPlusLam(const scalar kappa, const scalar E) const
 #endif
 
 
+void kOmegaSST2::correctNut
+(
+    const volScalarField& S2
+)
+{
+    // Correct the turbulence viscosity
+//     this->nut_ = a1_*k_/max(a1_*omega_, b1_*F23()*sqrt(S2));
+    this->nut_ = a1_*k_/max(a1_*omega_, F2()*sqrt(2.0*S2));
+    this->nut_.correctBoundaryConditions();
+//     fv::options::New(this->mesh_).correct(this->nut_);
+}
+
+
+void kOmegaSST2::correctNut()
+{
+    correctNut(2*magSqr(symm(fvc::grad(this->U_))));
+}
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 kOmegaSST2::kOmegaSST2
 (
+#if defined(OFplus)
+     const alphaField& alpha,
+    const rhoField& rho,
+    const volVectorField& U,
+    const surfaceScalarField& alphaRhoPhi,
+    const surfaceScalarField& phi,
+    const transportModel& transport,
+    const word& propertiesName,
+    const word& type 
+#else
     const volVectorField& U,
     const surfaceScalarField& phi,
     transportModel& lamTransportModel
@@ -105,10 +152,23 @@ kOmegaSST2::kOmegaSST2
     const word& turbulenceModelName,
     const word& modelName
 #endif
+#endif
 )
 :
-#ifdef OF16ext
+#if defined(OF16ext)
     RASModel(typeName, U, phi, lamTransportModel),
+#elif defined(OFplus)
+    RAStransportModelIncompressibleTurbulenceModel
+    (
+      type,
+        alpha,
+        rho,
+        U,
+        alphaRhoPhi,
+        phi,
+        transport,
+        propertiesName
+    ),
 #else
     RASModel(modelName, U, phi, lamTransportModel, turbulenceModelName),
 #endif
@@ -254,7 +314,12 @@ kOmegaSST2::kOmegaSST2
 #ifndef OF16ext
     omegaSmall_("omegaSmall", omegaMin_.dimensions(), SMALL),
 #endif
+
+#if defined(OFplus)
+    y_(wallDist::New(this->mesh_).y()),
+#else
     y_(mesh_),
+#endif
 
     k_
     (
@@ -266,7 +331,11 @@ kOmegaSST2::kOmegaSST2
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
+#if defined(OFplus)
+	mesh_
+#else
         autoCreateK("k", mesh_)
+#endif
     ),
     omega_
     (
@@ -278,7 +347,11 @@ kOmegaSST2::kOmegaSST2
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
+#if defined(OFplus)
+	mesh_
+#else
         autoCreateOmega("omega", mesh_)
+#endif
     ),
     nut_
     (
@@ -290,7 +363,11 @@ kOmegaSST2::kOmegaSST2
             IOobject::NO_READ,
             IOobject::AUTO_WRITE
         ),
+#if defined(OFplus)
+	mesh_
+#else
         autoCreateNut("nut", mesh_)
+#endif
      ),
 
    yPlus_
@@ -331,8 +408,11 @@ kOmegaSST2::kOmegaSST2
 //     nut_.correctBoundaryConditions();
 
     //correct();
-
+#if defined(OFplus)
+    printCoeffs("kOmegaSST2");
+#else
     printCoeffs();
+#endif
 }
 
 
@@ -450,10 +530,12 @@ void kOmegaSST2::correct()
         return;
     }
 
+#if not defined (OFplus)
     if (mesh_.changing())
     {
         y_.correct();
     }
+#endif
 
     volScalarField S2 = magSqr(symm(fvc::grad(U_)));
     volScalarField G("RASModel::G", nut_*2*S2);
@@ -592,7 +674,7 @@ void kOmegaSST2::correct()
     volScalarField F1 = this->F1(CDkOmega);
 
     // Turbulent frequency equation
-    tmp<fvScalarMatrix> omegaEqn
+    tmp<fvScalarMatrix> tomegaEqn
     (
         fvm::ddt(omega_)
       + fvm::div(phi_, omega_)
@@ -607,14 +689,22 @@ void kOmegaSST2::correct()
             omega_
         )
     );
+    
+    fvScalarMatrix& omegaEqn = 
+#if defined(OFplus)
+    tomegaEqn.ref()
+#else
+    tomegaEqn()
+#endif
+    ;
 
-    omegaEqn().relax();
+    omegaEqn.relax();
 
 #if !(defined(Fx31)||defined(Fx32)||defined(Fx40))
-    omegaEqn().boundaryManipulate(omega_.boundaryField());
+    omegaEqn.boundaryManipulate(omega_.boundaryField());
 #endif
     
-    solve(omegaEqn);
+    solve(tomegaEqn);
 #ifdef OF16ext
     bound(omega_, omega0_);
 #else
@@ -622,7 +712,7 @@ void kOmegaSST2::correct()
 #endif
 
     // Turbulent kinetic energy equation
-    tmp<fvScalarMatrix> kEqn
+    tmp<fvScalarMatrix> tkEqn
     (
         fvm::ddt(k_)
       + fvm::div(phi_, k_)
@@ -632,9 +722,16 @@ void kOmegaSST2::correct()
         Frot*min(G, c1_*betaStar_*k_*omega_) // CC:Frot
       - fvm::Sp(betaStar_*omega_, k_)
     );
+    fvScalarMatrix& kEqn = 
+#if defined(OFplus)
+    tkEqn.ref()
+#else
+    tkEqn()
+#endif
+    ;
 
-    kEqn().relax();
-    solve(kEqn);
+    kEqn.relax();
+    solve(tkEqn);
 #ifdef OF16ext
     bound(k_, k0_);
 #else
@@ -650,7 +747,9 @@ void kOmegaSST2::correct()
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
+#if not defined(OFplus)
 } // End namespace incompressible
+#endif
 } // End namespace Foam
 
 // ************************************************************************* //

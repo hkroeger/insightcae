@@ -107,7 +107,7 @@ public:
     //- Runtime type information
     TypeName("consistentCurve");
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
     // Static data
 
         //- Tolerance when comparing points relative to difference between

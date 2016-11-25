@@ -36,11 +36,12 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
+#if not (defined(OFdev))
 namespace Foam
 {
 defineTypeNameAndDebug(writeData, 0);
 }
-
+#endif
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -76,6 +77,9 @@ Foam::writeData::writeData
     const bool loadFromFiles
 )
 :
+#if defined(OFdev)
+    functionObject(name),
+#endif
     name_(name),
     obr_(obr),
     writeFile_("$FOAM_CASE/" + name),
@@ -98,7 +102,12 @@ Foam::writeData::~writeData()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void Foam::writeData::read(const dictionary& dict)
+#ifdef OFdev
+bool
+#else
+void 
+#endif
+Foam::writeData::read(const dictionary& dict)
 {
     if (dict.readIfPresent("fileName", writeFile_))
     {
@@ -109,10 +118,18 @@ void Foam::writeData::read(const dictionary& dict)
     {
         abortFile_.expand();
     }
+#ifdef OFdev
+    return true;
+#endif
 }
 
 
-void Foam::writeData::execute()
+#ifdef OFdev
+bool
+#else
+void 
+#endif
+Foam::writeData::execute()
 {
     bool write = isFile(writeFile_);
     reduce(write, orOp<bool>());
@@ -149,7 +166,9 @@ void Foam::writeData::execute()
 	    << endl;
 #endif
     }
-    
+#ifdef OFdev
+    return true;
+#endif    
 }
 
 void Foam::writeData::updateMesh(const mapPolyMesh& mpm)
@@ -165,9 +184,17 @@ void Foam::writeData::movePoints(const polyMesh& mesh)
 }
 
 
-void Foam::writeData::end()
+
+#ifdef OFdev
+bool
+#else
+void 
+#endif
+Foam::writeData::end()
 {
-    //removeFile();
+#ifdef OFdev
+    return false;
+#endif    //removeFile();
 }
 
 
@@ -177,9 +204,17 @@ void Foam::writeData::timeSet()
 }
 
 
-void Foam::writeData::write()
+#ifdef OFdev
+bool
+#else
+void 
+#endif
+Foam::writeData::write()
 {
     // Do nothing - only valid on execute
+#ifdef OFdev
+    return false;
+#endif
 }
 
 

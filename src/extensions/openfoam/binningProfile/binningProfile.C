@@ -247,10 +247,22 @@ int main(int argc, char *argv[])
     if (args.optionFound("p0"))
       p0=point(IStringStream(args.options()["p0"])());
     
-    vector axis(IStringStream(args.additionalArgs()[0])());
+    vector axis(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
     axis/=mag(axis);
     
-    wordList fieldNames(IStringStream(args.additionalArgs()[1])());
+    wordList fieldNames(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
         
     label n=2;
     if (args.optionFound("n"))

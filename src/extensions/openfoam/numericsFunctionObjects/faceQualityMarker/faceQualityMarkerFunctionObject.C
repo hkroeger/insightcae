@@ -21,9 +21,11 @@
 #include "faceQualityMarkerFunctionObject.H"
 #include <boost/graph/graph_concepts.hpp>
 #include "fvCFD.H"
+
 #ifndef OF16ext
 #include "fvcSmooth.H"
 #endif
+
 #include "addToRunTimeSelectionTable.H"
 #include "surfaceFields.H"
 #include "volFields.H"
@@ -73,8 +75,17 @@ inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value
     label pI=mesh.boundaryMesh().whichPatch(fI);
     const polyPatch& patch=mesh.boundaryMesh()[pI];
 //       Info<<pI<<" "<<patch.start()<<" "<<fI<<endl;
+    
+    fvsPatchField<scalar>& UBFp = UBlendingFactor
+#ifdef OFdev
+    .boundaryFieldRef()
+#else
+    .boundaryField()
+#endif
+    [pI];
+    
     if (!isA<emptyFvPatch>(mesh.boundary()[pI]))
-      UBlendingFactor.boundaryField()[pI][fI-patch.start()]=1.0;
+      UBFp[fI-patch.start()]=1.0;
   }
 }
 
@@ -123,7 +134,7 @@ surfaceMax2
     );
     
     GeometricField<Type, fvPatchField, volMesh>& vf = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
     tvf.ref()
 #else
     tvf()
@@ -190,7 +201,7 @@ surfaceMax3
     );
     
     GeometricField<Type, fvsPatchField, surfaceMesh>& sf = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
     tsf.ref()
 #else
     tsf()
@@ -210,7 +221,13 @@ surfaceMax3
         const LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
-        fvsPatchField<Type>& pssf = sf.boundaryField()[patchi];
+        fvsPatchField<Type>& pssf = sf
+#ifdef OFdev
+	  .boundaryFieldRef()
+#else
+	  .boundaryField()
+#endif
+	[patchi];
 
         forAll(mesh.boundary()[patchi], facei)
         {
@@ -596,13 +613,18 @@ bool Foam::faceQualityMarkerFunctionObject::start()
 
 bool Foam::faceQualityMarkerFunctionObject::execute
 (
-#ifndef OF16ext
+#if !(defined(OF16ext) || defined(OFdev))
   bool
 #endif
 )
 {
   if (mesh_.changing() && updateOnMeshChange_) updateBlendingFactor();
   return true;
+}
+
+bool Foam::faceQualityMarkerFunctionObject::write()
+{
+    return false;
 }
 
 

@@ -39,8 +39,22 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    scalar Gamma=readScalar(IStringStream(args.additionalArgs()[0])());
-    point center(IStringStream(args.additionalArgs()[1])());
+    scalar Gamma=readScalar(IStringStream(
+#ifdef OFdev
+      args[1]
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
+    
+    IStringStream center_args(
+#ifdef OFdev
+      args[2]
+#else
+      args.additionalArgs()[1]
+#endif
+    );
+    point center(center_args);
     
     Info << "Reading field p\n" << endl;
     volScalarField p
@@ -84,7 +98,12 @@ int main(int argc, char *argv[])
 		new fixedGradientFvPatchScalarField
 		(
 		    mesh.boundary()[patchI],
-		    p.dimensionedInternalField()
+		    p.
+#ifdef OFdev
+		    internalField()
+#else
+		    dimensionedInternalField()
+#endif
 		)
 	    );
 	    newpPatchFields[patchI] == p.boundaryField()[patchI];
@@ -122,9 +141,16 @@ int main(int argc, char *argv[])
     forAll(mesh.boundary(), patchI)
     {
       const fvPatch& patch = mesh.boundary()[patchI];
+#ifdef OFdev
+      fvPatchVectorField& Up = U.boundaryFieldRef()[patchI];
+#else
       fvPatchVectorField& Up = U.boundaryField()[patchI];
+#endif
+      
 #if defined(OFplus)
       fvPatchScalarField& pp = pNew.ref().boundaryField()[patchI];
+#elif defined(OFdev)
+      fvPatchScalarField& pp = pNew.ref().boundaryFieldRef()[patchI];
 #else
       fvPatchScalarField& pp = pNew().boundaryField()[patchI];
 #endif

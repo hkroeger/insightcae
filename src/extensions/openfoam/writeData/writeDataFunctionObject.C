@@ -25,11 +25,20 @@ License
 
 #include "writeDataFunctionObject.H"
 
+#ifdef OFdev
+#include "addToRunTimeSelectionTable.H"
+#include "Time.H"
+#endif
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
 {
+#if defined(OFdev)
+    defineTypeNameAndDebug(writeDataFunctionObject, 0);
+#else
     defineNamedTemplateTypeNameAndDebug(writeDataFunctionObject, 0);
+#endif
 
     addToRunTimeSelectionTable
     (

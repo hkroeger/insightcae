@@ -81,9 +81,29 @@ int main(int argc, char *argv[])
         << " max = " << bb.max() << " metres."
         << endl;
     
-    point p0(IStringStream(args.additionalArgs()[0])());
-    word wp1(IStringStream(args.additionalArgs()[1])());
-    word wp2(IStringStream(args.additionalArgs()[2])());
+    point p0(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
+    
+    word wp1(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
+    
+    word wp2(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(3)
+#else
+      args.additionalArgs()[2]
+#endif
+    )());
     
     flattenPatch(points, mesh, wp1, p0);
     flattenPatch(points, mesh, wp2, p0);

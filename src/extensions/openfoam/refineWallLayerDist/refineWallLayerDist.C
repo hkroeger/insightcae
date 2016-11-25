@@ -73,9 +73,21 @@ int main(int argc, char *argv[])
 //     const word patchName = args[1];
 //     const scalar dist  = args.argRead<scalar>(2);
 //     const bool overwrite = args.optionFound("overwrite");
-    word patchName(args.additionalArgs()[0]);
+    word patchName(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    );
 
-    scalarList dists(IStringStream(args.additionalArgs()[1])());
+    scalarList dists(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
     bool overwrite = args.optionFound("overwrite");
 
     label patchID = mesh.boundaryMesh().findPatchID(patchName);

@@ -58,11 +58,23 @@ int main(int argc, char *argv[])
 	wordReList
 #endif
 	(
-	  IStringStream(args.additionalArgs()[0])()
+	  IStringStream(
+#if defined(OFplus)||defined(OFdev)
+	    args.arg(1)
+#else
+	    args.additionalArgs()[0]
+#endif
+	  )()
 	)
       )
     );
-    vector dir(IStringStream(args.additionalArgs()[1])());
+    vector dir(IStringStream(
+#if defined(OFplus)||defined(OFdev)
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
 
     forAll(timeDirs, timeI)
     {

@@ -520,7 +520,13 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
 
     forAll(lsP.boundaryField(), patchi)
     {
-        fvsPatchVectorField& patchLsP = lsP.boundaryField()[patchi];
+        fvsPatchVectorField& patchLsP = lsP
+#if defined(OFdev)
+	.boundaryFieldRef()
+#else
+        .boundaryField()
+#endif
+	[patchi];
 
         const fvsPatchScalarField& pw = w.boundaryField()[patchi];
         // Note: least squares in 1.4.1 and other OpenCFD versions

@@ -23,7 +23,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace Foam
 {
 namespace fv
@@ -32,7 +32,7 @@ namespace fv
   
     makeSnGradScheme(localLimitedSnGrad)
     
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 }
 }
 #endif

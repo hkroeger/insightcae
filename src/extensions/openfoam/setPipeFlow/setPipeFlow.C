@@ -40,7 +40,14 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 
 //     scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
-    vector Ubulk(IStringStream(args.additionalArgs()[0])());
+    IStringStream Ubulk_args(
+#ifdef OFdev
+      args[1]
+#else
+      args.additionalArgs()[0]
+#endif
+    );    
+    vector Ubulk(Ubulk_args);
     point center(0, 0, 0);
 
     Info << "Reading field U\n" << endl;

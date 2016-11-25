@@ -35,7 +35,7 @@ License
 
 namespace Foam
 {
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -97,7 +97,7 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
 
     tmp<scalarField> tnutw(new scalarField(patch().size(), 0.0));
     scalarField& nutw = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
     tnutw.ref()
 #else
     tnutw()
@@ -261,7 +261,7 @@ makePatchTypeField(fvPatchScalarField, nutHybridWallFunction2FvPatchScalarField)
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

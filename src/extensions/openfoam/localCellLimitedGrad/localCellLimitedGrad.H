@@ -76,7 +76,7 @@ surfaceMax
     );
     
     GeometricField<Type, fvPatchField, volMesh>& vf = tvf
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     .ref
 #endif
     ();
@@ -154,7 +154,7 @@ class localCellLimitedGrad
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
 	      k
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
 	      .ref
 #endif
 	      () = max(1e-3, surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_)));

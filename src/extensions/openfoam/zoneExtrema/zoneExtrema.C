@@ -48,8 +48,21 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 //#   include "createFvOptions.H"
     
-    word fieldName(IStringStream(args.additionalArgs()[0])());
-    word cellZoneName(IStringStream(args.additionalArgs()[1])());
+    word fieldName(IStringStream(
+#if defined(OFplus)||defined(OFdev)
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
+    
+    word cellZoneName(IStringStream(
+#if defined(OFplus)||defined(OFdev)
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
     
 
     forAll(timeDirs, timeI)

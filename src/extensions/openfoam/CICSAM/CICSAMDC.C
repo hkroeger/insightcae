@@ -159,7 +159,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
         )
     );
     surfaceScalarField& corr = tcorr
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();
@@ -180,7 +180,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
 
     const vectorField& C = mesh.C();
 
-    scalarField& corrIn = corr.internalField();
+    scalarField& corrIn = corr
+#ifdef OFdev
+      .ref().field()
+#else
+      .internalField()
+#endif
+      ;
 
     scalar w;
 
@@ -204,9 +210,31 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
         corrIn[faceI] = w*vf[own] + (1 - w)*vf[nei];
     }
 
-    surfaceScalarField::GeometricBoundaryField& bCorr = corr.boundaryField();
+#ifdef OFdev
+    surfaceScalarField::Boundary& 
+#else
+    surfaceScalarField::GeometricBoundaryField& 
+#endif
+      bCorr = corr
+#ifdef OFdev
+	.boundaryFieldRef()
+#else
+	.boundaryField()
+#endif
+	;
 
-    surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
+#ifdef OFdev
+    surfaceScalarField::Boundary& 
+#else
+    surfaceScalarField::GeometricBoundaryField& 
+#endif
+      bCof = Cof
+#ifdef OFdev
+	.boundaryFieldRef()
+#else
+	.boundaryField()
+#endif
+	;
 
     forAll(bCorr, patchI)
     {

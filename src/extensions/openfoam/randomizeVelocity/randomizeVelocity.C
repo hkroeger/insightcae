@@ -40,8 +40,14 @@ int main(int argc, char *argv[])
 #   include "setRootCase.H"
 #   include "createTime.H"
 #   include "createMesh.H"
-  
-   scalar RMS=readScalar(IStringStream(args.additionalArgs()[0])());
+   
+   scalar RMS=readScalar(IStringStream(
+#ifdef OFdev
+    args.arg(1)
+#else
+    args.additionalArgs()[0]
+#endif
+  )());
 
   Info << "Reading field U\n" << endl;
   volVectorField U

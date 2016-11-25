@@ -31,7 +31,11 @@
 #include "meshSearch.H"
 #include "coordinateSystem.H"
 
+#ifdef OFdev
+#include "functionObject.H"
+#else
 #include "OutputFilterFunctionObject.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 #include <boost/concept_check.hpp>
@@ -120,8 +124,16 @@ public:
     }
 };
 
+#ifdef OFdev
+#define RTYPE bool
+#else
+#define RTYPE void
+#endif
 
 class twoPointCorrelation
+#ifdef OFdev
+: public functionObject
+#endif
 {
 
 protected:
@@ -191,16 +203,16 @@ public:
     virtual const word& name() const { return name_; }
 
     //- Read and set the function object if its data have changed
-    virtual void read(const dictionary&);
+    virtual RTYPE read(const dictionary&);
 
     virtual void start();
-    virtual void execute();
-    virtual void end();
+    virtual RTYPE execute();
+    virtual RTYPE end();
 
     //- Called when time was set at the end of the Time::operator++
     virtual void timeSet();
 
-    virtual void write();
+    virtual RTYPE write();
 
     //- Update for changes of mesh
     virtual void updateMesh(const mapPolyMesh& mpm);
@@ -216,7 +228,12 @@ public:
     virtual void readUpdate(const polyMesh::readUpdateState state);
 };
 
-typedef OutputFilterFunctionObject<twoPointCorrelation>
+typedef 
+#ifdef OFdev
+    twoPointCorrelation
+#else
+    OutputFilterFunctionObject<twoPointCorrelation>
+#endif
     twoPointCorrelationFunctionObject;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -225,6 +242,7 @@ typedef OutputFilterFunctionObject<twoPointCorrelation>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#undef RTYPE
 #endif
 
 // ************************************************************************* //

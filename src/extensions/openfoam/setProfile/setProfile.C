@@ -74,11 +74,40 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    word fieldname(args.additionalArgs()[0]);
-    point p0(IStringStream(args.additionalArgs()[1])());
-    vector ey(IStringStream(args.additionalArgs()[2])());
+    word fieldname(
+#ifdef OFdev
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    );
+    
+    point p0(IStringStream(
+#ifdef OFdev
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
+    
+    vector ey(IStringStream(
+#ifdef OFdev
+      args.arg(3)
+#else
+      args.additionalArgs()[2]
+#endif
+    )());
+    
     ey/=mag(ey);
-    vector ex(IStringStream(args.additionalArgs()[3])());
+    
+    vector ex(IStringStream(
+#ifdef OFdev
+      args.arg(4)
+#else
+      args.additionalArgs()[3]
+#endif
+    )());
+    
     ex/=mag(ex);
     
     IOobject header
@@ -105,7 +134,13 @@ int main(int argc, char *argv[])
 #endif
     {
         volScalarField field(header, mesh);
-        setProfileLinear<scalar>(field, p0, ey, ex, IStringStream(args.additionalArgs()[4])());    
+        setProfileLinear<scalar>(field, p0, ey, ex, IStringStream(
+#ifdef OFdev
+      args.arg(5)
+#else
+      args.additionalArgs()[4]
+#endif
+	)());    
         field.write();
     }
     else 
@@ -116,7 +151,13 @@ int main(int argc, char *argv[])
 #endif
     {
         volVectorField field(header, mesh);
-        setProfileLinear<vector>(field, p0, ey, ex, IStringStream(args.additionalArgs()[4])());    
+        setProfileLinear<vector>(field, p0, ey, ex, IStringStream(
+#ifdef OFdev
+	  args.arg(5)
+#else	  
+	  args.additionalArgs()[4]
+#endif
+	)());    
         field.write();
     }
     else

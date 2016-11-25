@@ -48,6 +48,10 @@ SourceFiles
 #include "NamedEnum.H"
 #include "pointField.H"
 
+#if defined(OFdev)
+#include "functionObject.H"
+#endif
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -64,6 +68,9 @@ class mapPolyMesh;
 \*---------------------------------------------------------------------------*/
 
 class writeData
+#if defined(OFdev)
+: public functionObject
+#endif
 {
 private:
 
@@ -120,19 +127,43 @@ public:
         }
 
         //- Read the dictionary settings
-        virtual void read(const dictionary&);
+        virtual 
+#ifdef OFdev
+	bool
+#else
+        void 
+#endif
+        read(const dictionary&);
 
         //- Execute, check existence of abort file and take action
-        virtual void execute();
+        virtual 
+#ifdef OFdev
+	bool
+#else
+        void 
+#endif
+        execute();
 
         //- Execute at the final time-loop, used for cleanup
-        virtual void end();
+        virtual 
+#ifdef OFdev
+	bool
+#else
+        void 
+#endif
+        end();
 
         //- Called when time was set at the end of the Time::operator++
         virtual void timeSet();
 
         //- Execute, check existence of abort file and take action
-        virtual void write();
+        virtual 
+#ifdef OFdev
+	bool
+#else
+        void 
+#endif
+        write();
 
           //- Update for changes of mesh
         virtual void updateMesh(const mapPolyMesh& mpm);

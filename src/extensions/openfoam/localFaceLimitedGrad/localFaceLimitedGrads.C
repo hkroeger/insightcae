@@ -28,7 +28,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace Foam
 {
 namespace fv
@@ -37,7 +37,7 @@ namespace fv
   
     makeFvGradScheme(localFaceLimitedGrad)
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 }
 }
 #endif
@@ -77,7 +77,7 @@ calcGrad
 //     }
 
     volVectorField& g = tGrad
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();
@@ -124,7 +124,12 @@ calcGrad
         );
     }
 
-    const volScalarField::GeometricBoundaryField& bsf = vsf.boundaryField();
+#ifdef OFdev
+    const volScalarField::Boundary& 
+#else
+    const volScalarField::GeometricBoundaryField& 
+#endif
+      bsf = vsf.boundaryField();
 
     forAll(bsf, patchi)
     {
@@ -191,7 +196,12 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-    g.internalField() *= limiter;
+#ifdef OFdev
+    g.ref().field()
+#else
+    g.internalField()
+#endif
+      *= limiter;
     g.correctBoundaryConditions();
     gaussGrad<scalar>::correctBoundaryConditions(vsf, g);
 
@@ -231,7 +241,7 @@ calcGrad
 //     }
 
     volTensorField& g = tGrad
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();
@@ -292,8 +302,12 @@ calcGrad
         );
     }
 
-
-    const volVectorField::GeometricBoundaryField& bvf = vvf.boundaryField();
+#ifdef OFdev
+    const volVectorField::Boundary&
+#else
+    const volVectorField::GeometricBoundaryField&
+#endif
+      bvf = vvf.boundaryField();
 
     forAll(bvf, patchi)
     {
@@ -370,7 +384,13 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-    g.internalField() *= limiter;
+    g
+#ifdef OFdev
+      .ref().field()
+#else
+      .internalField() 
+#endif 
+      *= limiter;
     g.correctBoundaryConditions();
     gaussGrad<vector>::correctBoundaryConditions(vvf, g);
 

@@ -28,7 +28,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace Foam
 {
 namespace fv
@@ -37,7 +37,7 @@ namespace fv
   
     makeFvGradScheme(localCellLimitedGrad)
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 }
 }
 #endif
@@ -78,7 +78,7 @@ calcGrad
 //     }
 
     volVectorField& g = tGrad
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     .ref
 #endif
     ()
@@ -108,8 +108,12 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-
-    const volScalarField::GeometricBoundaryField& bsf = vsf.boundaryField();
+#ifdef OFdev
+    const volScalarField::Boundary&
+#else
+    const volScalarField::GeometricBoundaryField& 
+#endif
+     bsf = vsf.boundaryField();
 
     forAll(bsf, patchi)
     {
@@ -165,7 +169,7 @@ calcGrad
 //       {
 //         k = mesh.lookupObject<volScalarField>(kname_);
 //       }      
-        const scalarField maxMinVsf((1.0/min(1., max(1e-3, getk(mesh))) - 1.0)*(maxVsf - minVsf));
+        scalarField maxMinVsf((1.0/min(1., max(1e-3, getk(mesh))) - 1.0)*(maxVsf - minVsf));
         maxVsf += maxMinVsf;
         minVsf -= maxMinVsf;
 
@@ -228,7 +232,13 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-    g.internalField() *= limiter;
+#ifdef OFdev
+    g.ref().field() 
+#else
+    g.internalField() 
+#endif
+      *= limiter;
+      
     g.correctBoundaryConditions();
     gaussGrad<scalar>::correctBoundaryConditions(vsf, g);
 
@@ -268,7 +278,7 @@ calcGrad
 //     }
 
     volTensorField& g = tGrad
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     .ref
 #endif
     ()
@@ -298,8 +308,12 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-
-    const volVectorField::GeometricBoundaryField& bsf = vsf.boundaryField();
+#ifdef OFdev
+    const volVectorField::Boundary&
+#else
+    const volVectorField::GeometricBoundaryField& 
+#endif
+      bsf = vsf.boundaryField();
 
     forAll(bsf, patchi)
     {
@@ -418,7 +432,13 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-    tensorField& gIf = g.internalField();
+    tensorField& gIf = 
+#ifdef OFdev
+     g.ref().field()
+#else
+     g.internalField()
+#endif
+     ;
 
     forAll(gIf, celli)
     {

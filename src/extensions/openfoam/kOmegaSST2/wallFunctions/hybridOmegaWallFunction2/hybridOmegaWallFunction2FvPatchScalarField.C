@@ -39,7 +39,7 @@ License
 
 namespace Foam
 {
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -181,7 +181,13 @@ void hybridOmegaWallFunction2FvPatchScalarField::patchTypeFaceWeighting() const
 		    const gF& f
 		      (
 		       mesh.objectRegistry::lookupObject<gF>
-		       (this->dimensionedInternalField().name())
+		       (this->
+#ifdef OFdev
+		        internalField()
+#else
+		        dimensionedInternalField()
+#endif
+		       .name())
 		       );
 				
 		    if 
@@ -354,7 +360,13 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 
       volScalarField& omega = const_cast<volScalarField&>
 	(db().lookupObject<volScalarField>
-	 (dimensionedInternalField().name()));
+	 (
+#ifdef OFdev
+	      internalField()
+#else
+	      dimensionedInternalField()
+#endif      
+	   .name()));
 
 //       const scalarField& k = db().lookupObject<volScalarField>(kName_);
 
@@ -549,7 +561,7 @@ makePatchTypeField
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

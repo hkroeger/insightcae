@@ -92,7 +92,7 @@ leastSquares2Grad<Type>::
         )
     );
     GeometricField<GradType, fvPatchField, volMesh>& lsGrad = tlsGrad
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();

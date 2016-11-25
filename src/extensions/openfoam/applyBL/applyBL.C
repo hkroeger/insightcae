@@ -38,7 +38,7 @@ Description
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 #else
 #include "RASModel.H"
@@ -146,7 +146,13 @@ int main(int argc, char *argv[])
     
     forAll(U.boundaryField(), pi)
     {
-      fvPatchVectorField& Up=U.boundaryField()[pi];
+      fvPatchVectorField& Up=U
+#ifdef OFdev
+      .boundaryFieldRef()
+#else
+      .boundaryField()
+#endif
+      [pi];
       const labelList& fcs=Up.patch().faceCells();
       forAll(fcs, fi)
       {
@@ -180,7 +186,7 @@ int main(int argc, char *argv[])
         // on its construction
         tmp<volScalarField> tnut = turbulence->nut();
         volScalarField& nut = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 	  tnut.ref()
 #else
 	  tnut()
@@ -204,7 +210,7 @@ int main(int argc, char *argv[])
         // Turbulence k
         tmp<volScalarField> tk = turbulence->k();
         volScalarField& k = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 	tk.ref()
 #else
         tk()
@@ -224,7 +230,7 @@ int main(int argc, char *argv[])
         // Turbulence epsilon
         tmp<volScalarField> tepsilon = turbulence->epsilon();
         volScalarField& epsilon = 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
         tepsilon.ref()
 #else
 	tepsilon()

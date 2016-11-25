@@ -37,13 +37,20 @@ SourceFiles
 #define writeDataFunctionObject_H
 
 #include "writeData.H"
+#if not (defined(OFdev))
 #include "OutputFilterFunctionObject.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-    typedef OutputFilterFunctionObject<writeData>
+    typedef 
+#if defined(OFdev)
+	writeData
+#else
+        OutputFilterFunctionObject<writeData>
+#endif
         writeDataFunctionObject;
 }
 

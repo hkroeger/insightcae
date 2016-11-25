@@ -156,13 +156,18 @@ bool Foam::interfaceMarkerFunctionObject::start()
 
 bool Foam::interfaceMarkerFunctionObject::execute
 (
-#ifndef OF16ext
+#if not (defined(OF16ext)||defined(OFdev))
   bool
 #endif
 )
 {
   updateBlendingFactor();
   return true;
+}
+
+bool Foam::interfaceMarkerFunctionObject::write()
+{
+    return false;
 }
 
 

@@ -199,7 +199,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
         )
     );
     surfaceScalarField& lim = tLimiter
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();
@@ -220,7 +220,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
 
     const vectorField& C = mesh.C();
 
-    scalarField& pLim = lim.internalField();
+    scalarField& pLim = lim
+#ifdef OFdev
+      .ref().field()
+#else
+      .internalField()
+#endif
+      ;
 
     forAll(pLim, faceI)
     {
@@ -240,7 +246,18 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
         );
     }
 
-    surfaceScalarField::GeometricBoundaryField& bLim = lim.boundaryField();
+#ifdef OFdev
+    surfaceScalarField::Boundary& 
+#else
+    surfaceScalarField::GeometricBoundaryField& 
+#endif
+      bLim = lim
+#ifdef OFdev
+	.boundaryFieldRef()
+#else
+	.boundaryField()
+#endif
+      ;
 //     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
     forAll(bLim, patchi)
     {
@@ -309,7 +326,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
         new surfaceScalarField(mesh.surfaceInterpolation::weights())
     );
     surfaceScalarField& weightingFactors = tWeightingFactors
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
     .ref
 #endif
     ();
@@ -333,7 +350,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
 
     const vectorField& C = mesh.C();
 
-    scalarField& w = weightingFactors.internalField();
+    scalarField& w = weightingFactors
+#ifdef OFdev
+    .ref().field()
+#else
+    .internalField()
+#endif
+    ;
 
     forAll(w, faceI)
     {
@@ -353,8 +376,19 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
         );
     }
 
-    surfaceScalarField::GeometricBoundaryField& bWeights =
-        weightingFactors.boundaryField();
+#ifdef OFdev
+    surfaceScalarField::Boundary& 
+#else
+    surfaceScalarField::GeometricBoundaryField& 
+#endif
+     bWeights =
+        weightingFactors
+#ifdef OFdev
+	  .boundaryFieldRef()
+#else
+	  .boundaryField()
+#endif
+	  ;
 
 //     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
 

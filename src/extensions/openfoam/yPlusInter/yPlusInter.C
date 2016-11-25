@@ -24,13 +24,13 @@
 
 #if defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
-#elif defined(OFplus)
+#elif defined(OFplus)||defined(OFdev)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #endif
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 #include "nutWallFunctionFvPatchScalarField.H"
 #else
@@ -58,7 +58,7 @@ void calcIncompressibleYPlus
     typedef 
 #if defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
-#elif defined(OFplus)
+#elif defined(OFplus)||defined(OFdev)
     nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
@@ -69,21 +69,21 @@ void calcIncompressibleYPlus
 
 #if defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
-#elif defined(OFplus)
+#elif defined(OFplus)||defined(OFdev)
     immiscibleIncompressibleTwoPhaseMixture
 #else
     incompressibleTwoPhaseMixture
 #endif
     laminarTransport(U, phi);
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
     autoPtr<incompressible::turbulenceModel>
 #else
     autoPtr<incompressible::RASModel>
 #endif
     RASModel
     (
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
       incompressible::turbulenceModel::New
 #else
         incompressible::RASModel::New
@@ -91,7 +91,12 @@ void calcIncompressibleYPlus
         (U, phi, laminarTransport)
     );
 
-    const volScalarField::GeometricBoundaryField nutPatches =
+#ifdef OFdev
+    const volScalarField::Boundary
+#else
+    const volScalarField::GeometricBoundaryField 
+#endif
+      nutPatches =
         RASModel->nut()().boundaryField();
 
     bool foundNutPatch = false;
@@ -105,7 +110,13 @@ void calcIncompressibleYPlus
                 dynamic_cast<const wallFunctionPatchField&>
                     (nutPatches[patchi]);
 
-            yPlus.boundaryField()[patchi] = nutPw.yPlus();
+            yPlus
+#ifdef OFdev
+	      .boundaryFieldRef()
+#else
+	      .boundaryField()
+#endif
+	    [patchi] = nutPw.yPlus();
             const scalarField& Yp = yPlus.boundaryField()[patchi];
 
             Info<< "Patch " << patchi

@@ -33,7 +33,7 @@
 #endif
 #include "boost/filesystem.hpp"
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 #define ACCESSTMP(x) (x).ref()
 #else
 #define ACCESSTMP(x) (x)()

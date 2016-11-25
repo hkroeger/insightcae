@@ -62,7 +62,13 @@ int main(int argc, char *argv[])
 
     word patch
 	(
-	  IStringStream(args.additionalArgs()[0])()
+	  IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+	    args.arg(1)
+#else
+	    args.additionalArgs()[0]
+#endif
+	  )()
 	);
 	
     label pI=mesh.boundaryMesh().findPatchID(patch);
@@ -72,7 +78,13 @@ int main(int argc, char *argv[])
       <<"patch not found: "<<patch<<endl<<abort(FatalError);
     }
       
-    scalar Afrac=readScalar(IStringStream(args.additionalArgs()[1])());
+    scalar Afrac=readScalar(IStringStream(
+#if (defined(OFplus)||defined(OFdev))
+	    args.arg(2)
+#else
+	    args.additionalArgs()[1]
+#endif
+    )());
 
     forAll(timeDirs, timeI)
     {

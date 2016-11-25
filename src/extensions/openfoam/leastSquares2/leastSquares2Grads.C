@@ -30,7 +30,7 @@ Description
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 namespace Foam
 {
 namespace fv
@@ -39,7 +39,7 @@ namespace fv
   
     makeFvGradScheme(leastSquares2Grad)
     
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 }
 }
 #endif

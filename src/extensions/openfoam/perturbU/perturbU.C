@@ -69,8 +69,22 @@ int main(int argc, char *argv[])
 //     nh.rename("grad(y)");
 //     nh.write();
     
-    scalar Retau=readScalar(IStringStream(args.additionalArgs()[0])());
-    vector Ubar=vector(IStringStream(args.additionalArgs()[1])());
+    scalar Retau=readScalar(IStringStream(
+#ifdef OFdev
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
+    
+    vector Ubar=vector(IStringStream(
+#ifdef OFdev
+      args.arg(2)
+#else
+      args.additionalArgs()[1]
+#endif
+    )());
+    
     vector nflow=Ubar/mag(Ubar);
     
     volVectorField ntan = nh ^ nflow;

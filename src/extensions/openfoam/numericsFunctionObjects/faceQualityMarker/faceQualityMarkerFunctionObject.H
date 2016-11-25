@@ -107,10 +107,12 @@ public:
         //- execute is called at each ++ or += of the time-loop
         virtual bool execute
         (
-#ifndef OF16ext
+#if not (defined(OF16ext) || defined(OFdev))
 	  bool
 #endif
 	);
+	
+	virtual bool write();
 
         //- Read and set the function object if its data has changed
         virtual bool read(const dictionary& dict);

@@ -30,20 +30,23 @@
 #include "interpolation.H"
 
 #include "SortableList.H"
+#include "addToRunTimeSelectionTable.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-namespace Foam
-{
-  defineTypeNameAndDebug(twoPointCorrelation, 0);
-}
 
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 
-
+#ifdef OFdev
+#define RTYPE bool
+#define RET return true;
+#else
+#define RTYPE void
+#define RET
+#endif
 
 Foam::twoPointCorrelation::twoPointCorrelation
 (
@@ -53,6 +56,9 @@ Foam::twoPointCorrelation::twoPointCorrelation
     const bool loadFromFiles
 )
     :
+#ifdef OFdev
+    functionObject(name),
+#endif
     name_(name),
     obr_(obr),
     active_(true),
@@ -132,7 +138,7 @@ Foam::twoPointCorrelation::~twoPointCorrelation()
 {}
 
 
-void Foam::twoPointCorrelation::read(const dictionary& dict)
+RTYPE Foam::twoPointCorrelation::read(const dictionary& dict)
 {
     if (active_)
     {
@@ -146,7 +152,7 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
         dictionary csysDict(dict.subDict("csys"));
         csys_=coordinateSystem::New
               (
-#if defined(OF23x) or defined(OFplus)
+#if defined(OF23x) || defined(OFplus) || defined(OFdev)
 		  obr_,
 #else
                   word(csysDict.lookup("type")),
@@ -160,6 +166,7 @@ void Foam::twoPointCorrelation::read(const dictionary& dict)
 	    
 	createInterpolators();
     }
+    RET
 }
 
 void Foam::twoPointCorrelation::start()
@@ -323,7 +330,7 @@ void Foam::twoPointCorrelation::combineSampledSets
 
 
 
-void Foam::twoPointCorrelation::execute()
+RTYPE Foam::twoPointCorrelation::execute()
 {
   if (debug) Pout<<"twoPointCorrelation::execute "<<name_<<endl;
   
@@ -433,12 +440,15 @@ void Foam::twoPointCorrelation::execute()
     }
     
   if (debug) Pout<<"twoPointCorrelation::execute ended "<<name_<<endl;
+  
+  RET
 }
 
 
-void Foam::twoPointCorrelation::end()
+RTYPE Foam::twoPointCorrelation::end()
 {
     // Do nothing - only valid on write
+  RET
 }
 
 void Foam::twoPointCorrelation::makeFile()
@@ -494,7 +504,7 @@ void Foam::twoPointCorrelation::writeFileHeader()
     }
 }
 
-void Foam::twoPointCorrelation::write()
+RTYPE Foam::twoPointCorrelation::write()
 {
   
   if (debug) Pout<<"twoPointCorrelation::write "<<name_<<endl;
@@ -538,7 +548,7 @@ void Foam::twoPointCorrelation::write()
             filePtr_()<<endl;
         }
     }
-    
+  RET
 }
 
 void Foam::twoPointCorrelation::createInterpolators()
@@ -644,6 +654,18 @@ void Foam::twoPointCorrelation::timeSet()
 
 namespace Foam
 {
+#ifdef OFdev
+    defineTypeNameAndDebug(twoPointCorrelation, 0);
+
+    addToRunTimeSelectionTable
+    (
+        functionObject,
+        twoPointCorrelation,
+        dictionary
+    );
+#else
+    defineTypeNameAndDebug(twoPointCorrelation, 0);
+    
     defineNamedTemplateTypeNameAndDebug(twoPointCorrelationFunctionObject, 0);
 
     addToRunTimeSelectionTable
@@ -652,6 +674,7 @@ namespace Foam
         twoPointCorrelationFunctionObject,
         dictionary
     );
+#endif
 }
 
 

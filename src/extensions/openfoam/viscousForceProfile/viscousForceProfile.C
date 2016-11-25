@@ -123,7 +123,13 @@ int main(int argc, char *argv[])
 #   include "setRootCase.H"
 #   include "createTime.H"
     
-    vector axis(IStringStream(args.additionalArgs()[0])());
+    vector axis(IStringStream(
+#if defined(OFplus)||defined(OFdev)
+      args.arg(1)
+#else
+      args.additionalArgs()[0]
+#endif
+    )());
     axis/=mag(axis);
         
     label n=2;

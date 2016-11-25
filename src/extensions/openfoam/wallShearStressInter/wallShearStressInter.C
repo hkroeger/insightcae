@@ -42,7 +42,7 @@ Description
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
 
-#elif defined(OFplus)
+#elif defined(OFplus)||defined(OFdev)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE immiscibleIncompressibleTwoPhaseMixture
 
@@ -51,7 +51,7 @@ Description
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
 
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 #include "turbulentFluidThermoModel.H"
 #define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel
@@ -83,7 +83,7 @@ void calcIncompressibleTwoPhase
         IOobject::NO_WRITE
     );
 
-#if defined (OFplus)
+#if defined(OFplus)
     if (!alpha1Header.typeHeaderOk<volScalarField>())
 #else
     if (!alpha1Header.headerOk())
@@ -116,7 +116,13 @@ void calcIncompressibleTwoPhase
 
     forAll(wallShearStress.boundaryField(), patchI)
     {
-        wallShearStress.boundaryField()[patchI] =
+        wallShearStress
+#ifdef OFdev
+	  .boundaryFieldRef()
+#else
+	  .boundaryField()
+#endif
+	  [patchI] =
         (
            -mesh.Sf().boundaryField()[patchI]
            /mesh.magSf().boundaryField()[patchI]
@@ -146,7 +152,13 @@ void calcIncompressible
 
     forAll(wallShearStress.boundaryField(), patchI)
     {
-        wallShearStress.boundaryField()[patchI] =
+        wallShearStress
+#ifdef OFdev
+	  .boundaryFieldRef()
+#else
+	  .boundaryField()
+#endif
+	  [patchI] =
         (
            -mesh.Sf().boundaryField()[patchI]
            /mesh.magSf().boundaryField()[patchI]

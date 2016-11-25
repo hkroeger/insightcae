@@ -82,7 +82,7 @@ SourceFiles
 #include "RASModel.H"
 #include "wallDist.H"
 
-#if defined(OFplus)
+#if defined(OFplus) || defined(OFdev)
 #include "IncompressibleTurbulenceModel.H"
 #include "incompressible/transportModel/transportModel.H"
 #include "eddyViscosity.H"
@@ -94,12 +94,12 @@ SourceFiles
 namespace Foam
 {
   
-#if defined(OFplus)
+#if defined(OFplus) || defined(OFdev)
 typedef IncompressibleTurbulenceModel<transportModel> transportModelIncompressibleTurbulenceModel;                                                                  
 typedef eddyViscosity<RASModel<transportModelIncompressibleTurbulenceModel> > RAStransportModelIncompressibleTurbulenceModel;
 #endif
 
-#if not defined(OFplus)
+#if not (defined(OFplus) || defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -113,7 +113,7 @@ namespace RASModels
 
 class kOmegaSST2
 :
-#if defined(OFplus)
+#if defined(OFplus) || defined(OFdev)
     public RAStransportModelIncompressibleTurbulenceModel
 #else
     public RASModel
@@ -154,7 +154,7 @@ class kOmegaSST2
 #endif
         //- Wall distance field
         //  Note: different to wall distance in parent RASModel
-#if defined(OFplus)
+#if defined(OFplus) || defined(OFdev)
 	const volScalarField& y_;
 #else
         wallDist y_;
@@ -232,7 +232,7 @@ public:
         //- Construct from components
         kOmegaSST2
         (
-#if defined(OFplus)
+#if defined(OFplus) || defined(OFdev)
             const alphaField& alpha,
             const rhoField& rho,
             const volVectorField& U,
@@ -370,7 +370,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not defined(OFplus)
+#if not (defined(OFplus) || defined(OFdev))
 } // namespace incompressible
 #endif
 } // End namespace Foam

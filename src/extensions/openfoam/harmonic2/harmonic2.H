@@ -125,7 +125,7 @@ public:
             );
 
             surfaceScalarField& w = tw
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
 	    .ref
 #endif
             ();
@@ -135,7 +135,13 @@ public:
 
             scalarField magPhi = mag(phi);
 
-            scalarField& wIn = w.internalField();
+            scalarField& wIn = w
+#if defined(OFdev)
+	    .ref().field()
+#else
+            .internalField()
+#endif
+	    ;
 
             // Calculate internal weights using field magnitude
             forAll (owner, faceI)
@@ -158,7 +164,13 @@ public:
 
             forAll (phi.boundaryField(), pi)
             {
-                fvsPatchScalarField& wp = w.boundaryField()[pi];
+                fvsPatchScalarField& wp = w
+#if defined(OFdev)
+                .boundaryFieldRef()
+#else
+                .boundaryField()
+#endif
+		[pi];
 
                 const fvPatchField<Type>& patchPhi = phi.boundaryField()[pi];
 

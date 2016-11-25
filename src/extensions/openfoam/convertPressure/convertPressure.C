@@ -46,16 +46,47 @@ int main(int argc, char *argv[])
     
 #   include "createMesh.H"
     
-    word from_name(args.additionalArgs()[0]);
-    word to_name(args.additionalArgs()[2]);
-    
-    dimensionSet from_dim(IStringStream(args.additionalArgs()[1])());
+    word from_name(
+#if defined(OFdev)
+      args[1]
+#else
+      args.additionalArgs()[0]
+#endif
+    );
+    word to_name(
+#if defined(OFdev)
+      args[3]
+#else
+      args.additionalArgs()[2]
+#endif
+    );
+
+    IStringStream from_dim_args(
+#if defined(OFdev)
+      (args[2])
+#else
+      args.additionalArgs()[1]
+#endif
+    );
+    dimensionSet from_dim(from_dim_args);
 
     dimensionedScalar p0("p0", dimPressure, 1e5);
-    p0.value()=readScalar(IStringStream(args.additionalArgs()[3])());
+    p0.value()=readScalar(IStringStream(
+#if defined(OFdev)
+      args[4]
+#else
+      args.additionalArgs()[3]
+#endif
+    )());
     
     dimensionedScalar rho("rho", dimDensity, 1);
-    rho.value()=readScalar(IStringStream(args.additionalArgs()[4])());
+    rho.value()=readScalar(IStringStream(
+#if defined(OFdev)
+      args[5]
+#else
+      args.additionalArgs()[4]
+#endif
+    )());
     
     dimensionedScalar pclip("pclip", dimPressure, -GREAT);
     if (args.optionFound("pclip"))
@@ -119,7 +150,13 @@ int main(int argc, char *argv[])
 
       forAll(to_p().boundaryField(), pI)
       {
-        to_p().boundaryField()[pI]==max(pclip.value(), to_p().boundaryField()[pI]);
+	  to_p()
+#ifdef OFdev
+	  .boundaryFieldRef()
+#else
+	  .boundaryField()
+#endif
+	  [pI]=max(to_p().boundaryField()[pI], pclip.value());
       }
     }
     else

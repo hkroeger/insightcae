@@ -95,7 +95,7 @@ class localFaceLimitedGrad
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
 	      k
-#ifdef OFplus
+#if defined(OFplus)||defined(OFdev)
 	      .ref
 #endif
 	      () = min(1.0, max(1e-3, mesh.lookupObject<surfaceScalarField>(kname_)));

@@ -20,7 +20,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
-toolkit
+toolkit uniof
 )
 
 #set(OF_VERSIONS OF21x OF22x OF22eng OF23x)

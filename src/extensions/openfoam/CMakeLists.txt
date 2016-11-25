@@ -1,4 +1,4 @@
-
+add_subdirectory(uniof)
 add_subdirectory(FEMDisplacementBC)
 add_subdirectory(scripts)
 add_subdirectory(simpleDyMFoam)

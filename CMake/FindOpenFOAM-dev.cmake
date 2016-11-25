@@ -56,7 +56,7 @@ engine
 foamCalcFunctions
 genericPatchFields
 immiscibleIncompressibleTwoPhaseMixture
-#incompressibleTurbulenceModels
+#incompressibleTurbulenceModel
 jobControl
 lagrangianSpray
 #lagrangianTurbulence

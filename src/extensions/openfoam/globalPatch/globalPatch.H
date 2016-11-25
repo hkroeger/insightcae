@@ -36,6 +36,8 @@
 
 #include "PatchTools.H"
 
+#include "uniof.h"
+
 // #include "fielddataprovider.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -184,7 +186,7 @@ public:
       endI=procOfs_[pi+1]-1;
     
     tmp<Field<T> > tres(new Field<T>(endI-startI+1));
-    Field<T>& res=tres();
+    Field<T>& res=UNIOF_TMP_NONCONST(tres);
     
     label j=0;
     for(label i=startI; i<=endI; i++)

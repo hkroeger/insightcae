@@ -152,22 +152,24 @@ foam
 
   set(Fx40_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/foam-extend-4.0")
   set(Fx40_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.0")
-
-  list(APPEND INSIGHT_OFES_VARCONTENT "FX40@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.fx40 -print -quit`#163")
-  set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-alias fx40=\"source insight.bashrc.fx40\"
-")
-  create_script("insight.bashrc.fx40"
-"source ${Fx40_BASHRC}
-
-foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${Fx40_INSIGHT_LIB}
-#- Clean LD_LIBRARY_PATH
-cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-export PATH=$PATH:${Fx40_INSIGHT_BIN}
-#- Clean PATH
-cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-")
+  
+  addOFConfig(Fx40 fx40 163)
+  
+#   list(APPEND INSIGHT_OFES_VARCONTENT "FX40@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.fx40 -print -quit`#163")
+#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
+# alias fx40=\"source insight.bashrc.fx40\"
+# ")
+#   create_script("insight.bashrc.fx40"
+# "source ${Fx40_BASHRC}
+# 
+# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${Fx40_INSIGHT_LIB}
+# #- Clean LD_LIBRARY_PATH
+# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
+# export PATH=$PATH:${Fx40_INSIGHT_BIN}
+# #- Clean PATH
+# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
+# ")
 
   macro (setup_exe_target_Fx40 targetname sources exename includes)
     add_executable(${targetname} ${sources})

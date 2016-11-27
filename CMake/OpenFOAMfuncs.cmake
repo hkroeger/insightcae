@@ -37,6 +37,9 @@ macro(addOFConfig prefix shortcut versionnumber)
   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
 alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
 ")
+
+  set(${prefix}_ISCFG_BASHRC ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/insight.bashrc.${shortcut})
+  
   create_script("insight.bashrc.${shortcut}"
 "source ${${prefix}_BASHRC}
 

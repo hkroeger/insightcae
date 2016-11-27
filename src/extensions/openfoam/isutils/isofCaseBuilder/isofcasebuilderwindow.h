@@ -113,8 +113,8 @@ public:
     isofCaseBuilderWindow();
     virtual ~isofCaseBuilderWindow();
     
-    void loadFile(const boost::filesystem::path& file);
-    void createCase(/*const boost::filesystem::path& location*/);
+    void loadFile(const boost::filesystem::path& file, bool skipBCs=false);
+    void createCase(bool skipBCs=false);
     
 public slots:
     void onItemSelectionChanged();

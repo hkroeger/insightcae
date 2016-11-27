@@ -210,7 +210,7 @@ isofCaseBuilderWindow::~isofCaseBuilderWindow()
 }
 
 
-void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
+void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool skipBCs)
 {
     std::ifstream in(file.c_str());
     std::string contents;
@@ -242,39 +242,42 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
         ice->parameters().readFromNode(doc, *e, file.parent_path());
     }
 
-    xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
-    if (BCnode)
+    if (!skipBCs)
     {
-        bool bdp=true;
-        try
-        {
-            // parse boundary information
-            ofc_->parseBoundaryDict(casepath_, boundaryDict_);
-        }
-        catch (...)
-        {
-            bdp=false;
-        }
-            
-        if (bdp)
-        {
-            xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
-            new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
-            
-            for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
-            {
-                new Patch(ui->patch_list, doc, *e, file.parent_path());
-            }
-        }
-        else
-        {
-            QMessageBox::information(this, "boundary file", "The boundary file could not be parsed! Skipping BC configuration.");
-        }
+      xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
+      if (BCnode)
+      {
+	  bool bdp=true;
+	  try
+	  {
+	      // parse boundary information
+	      ofc_->parseBoundaryDict(casepath_, boundaryDict_);
+	  }
+	  catch (...)
+	  {
+	      bdp=false;
+	  }
+	      
+	  if (bdp)
+	  {
+	      xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
+	      new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
+	      
+	      for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
+	      {
+		  new Patch(ui->patch_list, doc, *e, file.parent_path());
+	      }
+	  }
+	  else
+	  {
+	      QMessageBox::information(this, "boundary file", "The boundary file could not be parsed! Skipping BC configuration.");
+	  }
+      }
     }
 }
 
 
-void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/ )
+void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/bool skipBCs )
 {
   for ( int i=0; i < ui->selected_elements->count(); i++ )
     {
@@ -284,14 +287,17 @@ void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& locati
           cur->insertElement ( *ofc_ );
         }
     }
-  for ( int i=0; i < ui->patch_list->count(); i++ )
-    {
-      Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
-      if ( cur )
-        {
-          cur->insertElement ( *ofc_, boundaryDict_ );
-        }
-    }
+  if (!skipBCs)
+  {
+    for ( int i=0; i < ui->patch_list->count(); i++ )
+      {
+	Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
+	if ( cur )
+	  {
+	    cur->insertElement ( *ofc_, boundaryDict_ );
+	  }
+      }
+  }
   ofc_->createOnDisk ( /*location*/ casepath_ );
   ofc_->modifyCaseOnDisk ( /*location*/ casepath_ );
 }

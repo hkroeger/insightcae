@@ -94,6 +94,7 @@ int main ( int argc, char** argv )
       desc.add_options()
       ( "help,h", "produce help message" )
       ( "batch,b", "create case from specified input file" )
+      ( "skipbcs,s", "skip BC creation during batch run" )
 //       ("workdir,w", po::value<std::string>(), "execution directory")
 //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
 //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -132,11 +133,11 @@ int main ( int argc, char** argv )
       isofCaseBuilderWindow window;
       if ( vm.count ( "input-file" ) )
         {
-          window.loadFile ( vm["input-file"].as<StringList>() [0] );
+          window.loadFile ( vm["input-file"].as<StringList>() [0], vm.count ( "skipbcs" ) );
 
           if ( vm.count ( "batch" ) )
             {
-              window.createCase();
+              window.createCase( vm.count ( "skipbcs" ) );
             }
 
         }

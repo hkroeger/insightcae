@@ -140,6 +140,34 @@ const OFEnvironment& OFEs::get(const std::string& name)
   return *(it->second);
 }
 
+std::string OFEs::detectCurrentOFE()
+{
+  const char *envvar=getenv("WM_PROJECT_DIR");
+  if (!envvar)
+  {
+    return std::string();
+  }
+  BOOST_FOREACH(const OFEs::value_type& ofe, list)
+  {
+    std::vector<std::string> output;
+    OpenFOAMCase(*ofe.second).executeCommand(".", "echo $WM_PROJECT_DIR", std::vector<std::string>(), &output);
+    if (output.size()!=1) return std::string();
+    boost::filesystem::path ofedir = boost::filesystem::absolute(boost::filesystem::path(*output.begin()));
+    
+    std::cout<<
+      ofedir
+      <<" =?= "<<
+      boost::filesystem::absolute( boost::filesystem::path(envvar))<<std::endl;
+    if (
+     ofedir
+      ==
+      boost::filesystem::absolute( boost::filesystem::path(envvar))
+    )
+      return ofe.first;
+  }
+  return std::string();
+}
+
 OFEs::OFEs()
 {
   const char *envvar=getenv("INSIGHT_OFES");

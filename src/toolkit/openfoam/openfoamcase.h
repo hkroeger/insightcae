@@ -122,6 +122,11 @@ public:
 
     static std::vector<std::string> all();
     static const OFEnvironment& get ( const std::string& name );
+    
+    /**
+     * inspects WM_PROJECT_DIR env variable and returns name of currently loaded OFE. Empty string, if none is set
+     */
+    static std::string detectCurrentOFE();
 
     OFEs();
     ~OFEs();

@@ -146,6 +146,13 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     {
       ui->OFversion->addItem(ofe.first.c_str());
     }
+    
+    std::string cofe=OFEs::detectCurrentOFE();
+    if ( cofe != std::string() )
+    {
+      ui->OFversion->setCurrentIndex(ui->OFversion->findText(cofe.c_str()));
+    }
+
     connect
     (
       ui->OFversion, SIGNAL(currentIndexChanged(const QString &)), 
@@ -220,8 +227,11 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file)
 
     {
       xml_node<> *OFEnode = rootnode->first_node("OFE");
-      std::string name = OFEnode->first_attribute("name")->value();
-      ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
+      if (OFEnode)
+      {
+	std::string name = OFEnode->first_attribute("name")->value();
+	ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
+      }
     }
     
     for (xml_node<> *e = rootnode->first_node("OpenFOAMCaseElement"); e; e = e->next_sibling("OpenFOAMCaseElement"))
@@ -390,6 +400,7 @@ void isofCaseBuilderWindow::onSave()
         xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
         doc.append_node ( rootnode );
 
+	if (ui->saveOFversion->checkState()==Qt::Checked)
 	{
 	  xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
 	  OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));

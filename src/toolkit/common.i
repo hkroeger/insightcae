@@ -103,6 +103,9 @@
     $1 = PyString_Check($input) ? 1 : 0;
 }
 
+%typemap(out) const boost::filesystem::path& {
+    $result = PyString_FromString($1->c_str());
+}
 %typemap(in) boost::filesystem::path& (boost::filesystem::path vIn) {
     vIn=PyString_AsString($input);
     $1 = &vIn;

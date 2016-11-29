@@ -102,7 +102,10 @@ public:
     // Member Functions
 
         //- start is called at the start of the time-loop
-        virtual bool start();
+#if not defined(OFdev)
+        virtual 
+#endif
+        bool start();
 
         //- execute is called at each ++ or += of the time-loop
         virtual bool execute

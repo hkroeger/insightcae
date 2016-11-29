@@ -724,7 +724,10 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   try 
   {
     const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
-    LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+    if (tm)
+    {
+      LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+    }
   }
   catch (...)
   {

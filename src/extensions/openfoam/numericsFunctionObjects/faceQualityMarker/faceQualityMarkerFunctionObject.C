@@ -563,6 +563,10 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
     {
         sets_=wordList(dict.lookup("sets"));
     }
+    
+#if defined(OFdev)
+    start();
+#endif
 }
 
 Foam::faceQualityMarkerFunctionObject::~faceQualityMarkerFunctionObject()

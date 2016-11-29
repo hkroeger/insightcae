@@ -236,7 +236,7 @@ public:
   declareType("kOmegaSST2");
   
   kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
-  virtual void addFields( OpenFOAMCase& c ) const;
+//   virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }

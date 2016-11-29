@@ -38,10 +38,11 @@ target_include_directories(toolkit
 
 add_PDL(toolkit "${toolkit_HEADERS}")
 
-install(TARGETS toolkit LIBRARY DESTINATION lib)
+install(TARGETS toolkit LIBRARY DESTINATION lib COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
   DESTINATION include
+  COMPONENT ${INSIGHT_INSTALL_COMPONENT}
   FILES_MATCHING PATTERN "*.h"
   )
 

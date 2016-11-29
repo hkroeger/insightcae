@@ -49,7 +49,7 @@ IF(OF22eng_BASHRC)
   set(OF22eng_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-2.2_engysEdition-beta")
   set(OF22eng_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.2_engysEdition-beta")
 
-  addOFConfig(Of22eng of22eng 220)
+  addOFConfig(OF22eng of22eng 220)
 #   list(APPEND INSIGHT_OFES_VARCONTENT "OF22eng@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of22eng -print -quit`#220")
 #   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
 # alias of22eng=\"source insight.bashrc.of22eng\"
@@ -87,7 +87,7 @@ IF(OF22eng_BASHRC)
       #${OF22eng_LIB_DIR}/libOpenFOAM.so 
       ${OF22eng_LIB_DIR}/${OF22eng_MPI}/libPstream.so 
       ${ARGN} ) 
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF22eng_FOAM_APPBIN})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF22eng_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -109,7 +109,7 @@ IF(OF22eng_BASHRC)
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF22eng_INSIGHT_LIB})
     target_link_libraries(${targetname} ${OF22eng_LIBRARIES} ${ARGN}) 
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF22eng_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF22eng_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

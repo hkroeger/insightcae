@@ -125,7 +125,7 @@ bool LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldI
         BC["value"]="uniform 1e-10";
         return true;
     }
-    else if (fieldname == "nuSgs")
+    else if ( (fieldname == "nuSgs")||((OFversion()>=300)&&(fieldname == "nut")) )
     {
         if (roughness_z0>0.)
         {            
@@ -187,7 +187,10 @@ addToStaticFunctionTable(OpenFOAMCaseElement, oneEqEddy_LESModel, defaultParamet
 void oneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
   c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  if (c.OFversion()>=300)
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  else
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
   
 
@@ -206,6 +209,7 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties["printCoeffs"]=true;
 
   LESProperties["LESModel"]="oneEqEddy";
+  LESProperties["turbulence"]="true";
   //LESProperties["delta"]="cubeRootVol";
   LESProperties["delta"]="vanDriest";
   
@@ -232,7 +236,10 @@ addToStaticFunctionTable(OpenFOAMCaseElement, dynOneEqEddy_LESModel, defaultPara
 void dynOneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
   c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  if (c.OFversion()>=300)
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  else
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
   
 
@@ -247,16 +254,21 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
   LESModel::addIntoDictionaries(dictionaries);
   
+  
   OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   LESProperties["printCoeffs"]=true;
 
-  LESProperties["LESModel"]="dynOneEqEddy";
+  std::string modelname="dynOneEqEddy";
+  if (OFversion()>=300) modelname="dynamicKEqn"; 
+ 
+  LESProperties["LESModel"]=modelname;
+  LESProperties["turbulence"]="true";
   LESProperties["delta"]="cubeRootVol";
 //   LESProperties["delta"]="vanDriest";
   
   OFDictData::dict doeec;
   doeec["filter"]="simple";
-  LESProperties["dynOneEqEddyCoeffs"]=doeec;
+  LESProperties[modelname+"Coeffs"]=doeec;
   
   OFDictData::dict crvc;
   crvc["deltaCoeff"]=1.0;
@@ -281,7 +293,10 @@ addToStaticFunctionTable(OpenFOAMCaseElement, dynSmagorinsky_LESModel, defaultPa
 void dynSmagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
 {
   c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  if (c.OFversion()>=300)
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  else
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
 
 dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -303,6 +318,7 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
     modelName="homogeneousDynSmagorinsky";
   
   LESProperties["LESModel"]=modelName;
+  LESProperties["turbulence"]="true";
   //LESProperties["delta"]="cubeRootVol";
   LESProperties["delta"]="vanDriest";
   LESProperties["printCoeffs"]=true;
@@ -705,10 +721,10 @@ addToFactoryTable(turbulenceModel, kOmegaSST2_RASModel);
 addToFactoryTable(OpenFOAMCaseElement, kOmegaSST2_RASModel);
 addToStaticFunctionTable(OpenFOAMCaseElement, kOmegaSST2_RASModel, defaultParameters);
 
-void kOmegaSST2_RASModel::addFields( OpenFOAMCase& c ) const
-{
-  c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
-}
+// void kOmegaSST2_RASModel::addFields( OpenFOAMCase& c ) const
+// {
+//   c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+// }
 
 kOmegaSST2_RASModel::kOmegaSST2_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
 : kOmegaSST_RASModel(c)

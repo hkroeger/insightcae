@@ -40,100 +40,196 @@ IF(OF23x_BASHRC)
   detectIncPaths(OF23x)
 
   setOFlibvar(OF23x 
-FVFunctionObjects
-IOFunctionObjects
-SloanRenumber
-autoMesh
-barotropicCompressibilityModel
-blockMesh
-cloudFunctionObjects
-coalCombustion
-combustionModels
-compressibleLESModels
-compressibleTransportModels
-#compressibleTurbulenceModels
-decompose
-distributed
-dsmc
-engine
-foamCalcFunctions
-genericPatchFields
-immiscibleIncompressibleTwoPhaseMixture
-#incompressibleTurbulenceModels
-jobControl
-lagrangianSpray
-#lagrangianTurbulence
-#lagrangianTurbulentSubModels
-laminarFlameSpeedModels
-molecularMeasurements
-molecule
-pairPatchAgglomeration
-pyrolysisModels
-randomProcesses
-reconstruct
-regionCoupled
-regionCoupling
-scotchDecomp
+incompressibleTurbulenceModels
+turbulenceModels
+compressibleTurbulenceModels
 sixDoFRigidBodyMotion
-solidParticle
+engine
+SLGThermo
+fluidThermophysicalModels
+laminarFlameSpeedModels
+solidThermo
+radiationModels
+liquidProperties
+solidMixtureProperties
+liquidMixtureProperties
+solidProperties
+barotropicCompressibilityModel
 solidSpecie
+specie
+reactionThermophysicalModels
+thermophysicalFunctions
+chemistryModel
+solidChemistryModel
+pairPatchAgglomeration
+reconstruct
+metisDecomp
+decompositionMethods
+decompose
+scotchDecomp
+distributed
+topoChangerFvMesh
+incompressibleRASModels
+incompressibleTurbulenceModel
+incompressibleLESModels
+turbulenceDerivedFvPatchFields
+LESfilters
+LESdeltas
+compressibleRASModels
+compressibleTurbulenceModel
+compressibleLESModels
+edgeMesh
+blockMesh
+autoMesh
+extrudeModel
+regionCoupled
+pyrolysisModels
+regionModels
+regionCoupling
 surfaceFilmDerivedFvPatchFields
 surfaceFilmModels
-systemCall
 thermalBaffleModels
-topoChangerFvMesh
-#turbulenceDerivedFvPatchFields
-twoPhaseProperties
-utilityFunctionObjects
-renumberMethods
-edgeMesh
-fvMotionSolvers
-interfaceProperties
-incompressibleTransportModels
-lagrangianIntermediate
-potential
-solidChemistryModel
-forces
-compressibleRASModels
-regionModels
-dynamicFvMesh
-fvOptions
-decompositionMethods
-twoPhaseMixture
-SLGThermo
-radiationModels
-distributionModels
-solidThermo
-chemistryModel
-#compressibleTurbulenceModel
-liquidMixtureProperties
-solidMixtureProperties
-ODE
-reactionThermophysicalModels
-liquidProperties
-solidProperties
-fluidThermophysicalModels
-thermophysicalFunctions
-specie
-#LEMOS-2.3.x
-fieldFunctionObjects
-incompressibleLESModels
-#incompressibleRASModels
-dynamicMesh
-sampling
-#LESdeltas
-#turbulenceModels
-#LESfilters
-#incompressibleTurbulenceModel
-extrudeModel
-lagrangian
-conversion
-finiteVolume
 meshTools
 triSurface
+finiteVolume
+dynamicMesh
+fvMotionSolvers
+dynamicFvMesh
+coalCombustion
+lagrangianTurbulentSubModels
+molecule
+potential
+molecularMeasurements
+lagrangian
+solidParticle
+lagrangianTurbulence
+lagrangianSpray
+lagrangianIntermediate
+distributionModels
+dsmc
+conversion
+sampling
+FVFunctionObjects
+jobControl
+systemCall
+utilityFunctionObjects
+forces
+fieldFunctionObjects
+IOFunctionObjects
+cloudFunctionObjects
+foamCalcFunctions
 surfMesh
-fileFormats
+ODE
+incompressibleTransportModels
+twoPhaseMixture
+interfaceProperties
+twoPhaseProperties
+immiscibleIncompressibleTwoPhaseMixture
+compressibleTransportModels
+combustionModels
+fvOptions
 OpenFOAM
+renumberMethods
+SloanRenumber
+fileFormats
+genericPatchFields
+randomProcesses
+
+
+# FVFunctionObjects
+# IOFunctionObjects
+# SloanRenumber
+# autoMesh
+# barotropicCompressibilityModel
+# blockMesh
+# cloudFunctionObjects
+# coalCombustion
+# combustionModels
+# compressibleLESModels
+# compressibleTransportModels
+# #compressibleTurbulenceModels
+# decompose
+# distributed
+# dsmc
+# engine
+# foamCalcFunctions
+# genericPatchFields
+# immiscibleIncompressibleTwoPhaseMixture
+# #incompressibleTurbulenceModels
+# jobControl
+# lagrangianSpray
+# #lagrangianTurbulence
+# #lagrangianTurbulentSubModels
+# laminarFlameSpeedModels
+# molecularMeasurements
+# molecule
+# pairPatchAgglomeration
+# pyrolysisModels
+# randomProcesses
+# reconstruct
+# regionCoupled
+# regionCoupling
+# scotchDecomp
+# sixDoFRigidBodyMotion
+# solidParticle
+# solidSpecie
+# surfaceFilmDerivedFvPatchFields
+# surfaceFilmModels
+# systemCall
+# thermalBaffleModels
+# topoChangerFvMesh
+# #turbulenceDerivedFvPatchFields
+# twoPhaseProperties
+# utilityFunctionObjects
+# renumberMethods
+# edgeMesh
+# fvMotionSolvers
+# interfaceProperties
+# incompressibleTransportModels
+# lagrangianIntermediate
+# potential
+# solidChemistryModel
+# forces
+# compressibleRASModels
+# regionModels
+# dynamicFvMesh
+# fvOptions
+# decompositionMethods
+# twoPhaseMixture
+# SLGThermo
+# radiationModels
+# distributionModels
+# solidThermo
+# chemistryModel
+# #compressibleTurbulenceModel
+# liquidMixtureProperties
+# solidMixtureProperties
+# ODE
+# reactionThermophysicalModels
+# liquidProperties
+# solidProperties
+# fluidThermophysicalModels
+# thermophysicalFunctions
+# specie
+# #LEMOS-2.3.x
+# fieldFunctionObjects
+# incompressibleLESModels
+# #incompressibleRASModels
+# dynamicMesh
+# sampling
+# #LESdeltas
+# #turbulenceModels
+# #LESfilters
+# #incompressibleTurbulenceModel
+# extrudeModel
+# lagrangian
+# conversion
+# finiteVolume
+# meshTools
+# triSurface
+# surfMesh
+# fileFormats
+# OpenFOAM
 )
 
   detectDepLib(OF23x "${OF23x_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
@@ -178,7 +274,7 @@ OpenFOAM
       ${OF23x_LIBRARIES}
       ${ARGN}
       ) 
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF23x_FOAM_APPBIN})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF23x_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -206,7 +302,7 @@ OpenFOAM
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF23x_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF23x_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

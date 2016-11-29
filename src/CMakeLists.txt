@@ -41,6 +41,9 @@ endif()
 
 set(CPACK_DEB_COMPONENT_INSTALL ON)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME base)
+set(INSIGHT_INSTALL_COMPONENT base)
+
+set(CPACK_COMPONENTS_IGNORE_GROUPS 1)
 SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
 SET(CPACK_PACKAGE_CONTACT "hannes.kroeger@silentdynamics.de")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "a workbench for Computer-Aided Engineering")
@@ -86,7 +89,7 @@ else(DPKG_PROGRAM)
 endif(DPKG_PROGRAM)
 
 SET(CPACK_SET_DESTDIR ON)
-INCLUDE(CPack)
+
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -97,7 +100,7 @@ macro(create_script SCRIPTFILE SCR_CONTENT)
 #   message(STATUS  "CTS: ${SCR_CONTENT}")
   set(SRC "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SCRIPTFILE}")
   file(WRITE "${SRC}" "${SCR_CONTENT}")
-  install(FILES "${SRC}" DESTINATION bin)
+  install(FILES "${SRC}" DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(create_script)
 
 find_package(Armadillo REQUIRED)
@@ -127,6 +130,7 @@ endfunction()
 if (INSIGHT_BUILD_OPENFOAM)
     SET(INSIGHT_OFES_VARCONTENT "")
     SET(INSIGHT_OF_ALIASES "")
+    
     find_package(OpenFOAM-16ext)
     find_package(FOAM-extend-31)
     find_package(FOAM-extend-32)
@@ -529,7 +533,7 @@ macro(install_script NAME SCRIPTFILE)
     TARGET ${NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
-  install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin)
+  install(PROGRAMS ${SCRIPTFILE} ${SRC} DESTINATION bin COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(install_script)
 
 macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
@@ -547,7 +551,7 @@ macro(install_shared_file NAME SHAREDFILE DSTLOCATION)
     TARGET ${NAME}
     COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
     )
-  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} )
+  install(FILES ${SHAREDFILE} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 endmacro(install_shared_file)
 
 macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
@@ -565,7 +569,7 @@ macro(install_shared_directory NAME SHAREDDIR DSTLOCATION)
      TARGET ${NAME}
      COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
      )
-   install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} )
+   install(FILES ${SHAREDDIR}/${file} DESTINATION share/insight/${DSTLOCATION} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endforeach()
 endmacro(install_shared_directory)
 
@@ -585,7 +589,7 @@ macro(install_package_script PACKAGENAME)
       TARGET ${PACKAGENAME}_${_src}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
       )
-    install(FILES ${_src} DESTINATION share/insight/python/Insight/${PACKAGENAME})
+    install(FILES ${_src} DESTINATION share/insight/python/Insight/${PACKAGENAME} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endforeach()
 endmacro(install_package_script)
 
@@ -706,3 +710,5 @@ if(BUILD_DOCUMENTATION)
   # IF you do NOT want the documentation to be generated EVERY time you build the project
   # then leave out the 'ALL' keyword from the above command.
 endif()
+
+INCLUDE(CPack)

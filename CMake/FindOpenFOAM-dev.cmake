@@ -175,7 +175,7 @@ OpenFOAM
       ${OFdev_LIBRARIES}
       ${ARGN}
       ) 
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OFdev_FOAM_APPBIN})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OFdev_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
@@ -203,7 +203,7 @@ OpenFOAM
       PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
       )
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OFdev_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OFdev_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

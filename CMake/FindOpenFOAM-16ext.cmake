@@ -79,7 +79,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
       ${OF16ext_SCOTCH_LIB_DIR}/libscotch.so
       ${OF16ext_MESQUITE_LIB_DIR}/libmesquite.so
       ${ARGN})
-     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF16ext_FOAM_APPBIN})
+     install(TARGETS ${targetname} RUNTIME DESTINATION ${OF16ext_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endmacro()
   
   macro (setup_lib_target_OF16ext targetname sources exename includes)
@@ -96,7 +96,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF16ext_INSIGHT_LIB})
     target_link_libraries(${targetname} ${OF16ext_LIBRARIES} ${ARGN}) 
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF16ext_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

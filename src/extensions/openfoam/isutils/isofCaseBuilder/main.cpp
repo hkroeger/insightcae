@@ -104,7 +104,7 @@ int main ( int argc, char** argv )
 //       ("double,d", po::value<StringList>(), "double variable assignment")
 //       ("int,i", po::value<StringList>(), "int variable assignment")
 //       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-      ( "input-file,f", po::value< StringList >(),"Specifies input file." )
+      ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
       ;
 
       po::positional_options_description p;
@@ -133,7 +133,10 @@ int main ( int argc, char** argv )
       isofCaseBuilderWindow window;
       if ( vm.count ( "input-file" ) )
         {
-          window.loadFile ( vm["input-file"].as<StringList>() [0], vm.count ( "skipbcs" ) );
+	  BOOST_FOREACH( const std::string& fn, vm["input-file"].as<StringList>())
+	  {
+	    window.loadFile ( fn, vm.count ( "skipbcs" ) );
+	  }
 
           if ( vm.count ( "batch" ) )
             {

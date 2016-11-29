@@ -41,7 +41,6 @@
 	<OpenFOAMCaseElement type="singlePhaseTransportProperties">
 		<double name="nu" value="9.9999999999999995e-07"/>
 	</OpenFOAMCaseElement>
-	<OpenFOAMCaseElement type="kOmegaSST"/>
 	<BoundaryConditions>
 		<UnassignedPatches patchName="[Unassigned Patches]" BCtype="WallBC">
 			<vector name="CofR" value="0 0 0"/>

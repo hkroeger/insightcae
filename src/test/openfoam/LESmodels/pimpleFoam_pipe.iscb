@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<OpenFOAMCaseElement type="pimpleFoamNumerics">
+		<bool name="LESfilteredConvection" value="0"/>
+		<vector name="Uinternal" value="10 0 0"/>
+		<bool name="adjustTimeStep" value="1"/>
+		<vector name="decompWeights" value="1 1 1"/>
+		<selection name="decompositionMethod" value="scotch"/>
+		<double name="deltaT" value="0.001"/>
+		<double name="endTime" value="0.01"/>
+		<bool name="forceLES" value="0"/>
+		<bool name="hasCyclics" value="0"/>
+		<double name="maxCo" value="0.45000000000000001"/>
+		<double name="maxDeltaT" value="1"/>
+		<int name="nCorrectors" value="2"/>
+		<int name="nNonOrthogonalCorrectors" value="0"/>
+		<int name="nOuterCorrectors" value="1"/>
+		<int name="np" value="1"/>
+		<double name="pinternal" value="0"/>
+		<int name="purgeWrite" value="10"/>
+		<selection name="writeControl" value="timeStep"/>
+		<selection name="writeFormat" value="ascii"/>
+		<double name="writeInterval" value="100"/>
+	</OpenFOAMCaseElement>
+	<OpenFOAMCaseElement type="singlePhaseTransportProperties">
+		<double name="nu" value="9.9999999999999995e-07"/>
+	</OpenFOAMCaseElement>
+	<OpenFOAMCaseElement type="blockMeshDict_Cylinder">
+		<subset name="geometry">
+			<double name="D" value="1"/>
+			<double name="L" value="5"/>
+			<vector name="er" value="0 0 1"/>
+			<vector name="ex" value="1 0 0"/>
+			<vector name="p0" value="0 0 0"/>
+		</subset>
+		<subset name="mesh">
+			<string name="basePatchName" value="inlet"/>
+			<string name="circumPatchName" value=""/>
+			<string name="defaultPatchName" value="walls"/>
+			<double name="gradr" value="1"/>
+			<int name="nr" value="8"/>
+			<int name="nu" value="10"/>
+			<int name="nx" value="20"/>
+			<string name="topPatchName" value="outlet"/>
+		</subset>
+	</OpenFOAMCaseElement>
+	<BoundaryConditions>
+		<UnassignedPatches patchName="[Unassigned Patches]" BCtype="WallBC">
+			<vector name="CofR" value="0 0 0"/>
+			<selectableSubset name="meshmotion" value="NoMeshMotion"/>
+			<bool name="rotating" value="0"/>
+			<double name="roughness_z0" value="0"/>
+			<vector name="wallVelocity" value="0 0 0"/>
+		</UnassignedPatches>
+		<Patch patchName="inlet" BCtype="TurbulentVelocityInletBC">
+			<selectableSubset name="turbulence" value="inflowGenerator">
+				<subset name="L">
+					<selectableSubset name="fielddata" value="uniform">
+						<array name="values">
+							<subset name="default">
+								<double name="time" value="0"/>
+								<vector name="value" value="1 0 0"/>
+							</subset>
+							<subset name="0">
+								<double name="time" value="0"/>
+								<vector name="value" value="0.1 0.1 0.1"/>
+							</subset>
+						</array>
+					</selectableSubset>
+				</subset>
+				<subset name="R">
+					<selectableSubset name="fielddata" value="uniform">
+						<array name="values">
+							<subset name="default">
+								<double name="time" value="0"/>
+								<vector name="value" value="1 0 0 1 0 0"/>
+							</subset>
+							<subset name="0">
+								<double name="time" value="0"/>
+								<vector name="value" value="5 0 0 1 0 1"/>
+							</subset>
+						</array>
+					</selectableSubset>
+				</subset>
+				<selection name="type" value="anisotropicVorton"/>
+				<bool name="uniformConvection" value="0"/>
+				<double name="volexcess" value="2"/>
+			</selectableSubset>
+			<subset name="umean">
+				<selectableSubset name="fielddata" value="uniform">
+					<array name="values">
+						<subset name="default">
+							<double name="time" value="0"/>
+							<vector name="value" value="1 0 0"/>
+						</subset>
+						<subset name="0">
+							<double name="time" value="0"/>
+							<vector name="value" value="10 0 0"/>
+						</subset>
+					</array>
+				</selectableSubset>
+			</subset>
+		</Patch>
+		<Patch patchName="outlet" BCtype="PressureOutletBC">
+			<bool name="fixMeanValue" value="0"/>
+			<selectableSubset name="phasefractions" value="uniformPhases">
+				<array name="phaseFractions">
+					<subset name="default">
+						<double name="fraction" value="0.5"/>
+						<string name="name" value="CO2"/>
+					</subset>
+				</array>
+			</selectableSubset>
+			<double name="pressure" value="0"/>
+			<bool name="prohibitInflow" value="1"/>
+			<double name="rho" value="1025"/>
+		</Patch>
+		<Patch patchName="walls" BCtype=""/>
+	</BoundaryConditions>
+</root>
+
+

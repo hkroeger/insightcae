@@ -91,7 +91,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
 
     set_directory_properties(LINK_DIRECTORIES ${temp})
     get_directory_property(temp LINK_DIRECTORIES)
-    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF21x_FOAM_APPBIN})
+    install(TARGETS ${targetname} RUNTIME DESTINATION ${OF21x_FOAM_APPBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
   endmacro()
   
   macro (setup_lib_target_OF21x targetname sources exename includes)
@@ -110,7 +110,7 @@ cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
     set_target_properties(${targetname} PROPERTIES OUTPUT_NAME ${exename})
     set_target_properties(${targetname} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OF21x_INSIGHT_LIB})
     target_link_libraries(${targetname} ${OF21x_LIBRARIES} ${ARGN}) 
-    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF21x_FOAM_LIBBIN})
+    install(TARGETS ${targetname} LIBRARY DESTINATION ${OF21x_FOAM_LIBBIN} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
     
     set_directory_properties(LINK_DIRECTORIES ${temp})
   endmacro()

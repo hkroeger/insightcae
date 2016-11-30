@@ -17,13 +17,13 @@ set(OF_LIBS
 )
 
 set(INCLUDE_DIRS 
-  ${insight_INCLUDE_DIR}
+#   ${insight_INCLUDE_DIR}
   ${ARMADILLO_INCLUDE_DIRS}
   ${GSL_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
-  ${toolkit_SOURCE_DIR}
+#   ${toolkit_SOURCE_DIR}
   ${CMAKE_CURRENT_LIST_DIR}
-  ${fieldDataProviderOF23x_SOURCE_DIR}
+#   ${fieldDataProviderOF23x_SOURCE_DIR}
 )
 
 set(LIBS 

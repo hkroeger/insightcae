@@ -401,6 +401,8 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   }
   else if (fieldname == "nut")
   {
+    if (OFversion()>=170)
+    {
       if (roughness_z0>0.)
       {
           BC["type"]="nutURoughWallFunction";
@@ -415,6 +417,12 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
         BC["type"]=OFDictData::data("nutUWallFunction");
         BC["value"]=OFDictData::data("uniform 1e-10");
       }
+    }
+    else
+    {
+      BC["type"]=OFDictData::data("nutWallFunction");
+      BC["value"]=OFDictData::data("uniform 1e-10");
+    }
     return true;
   }
   else if (fieldname == "mut")

@@ -43,96 +43,88 @@ IF(Fx40_BASHRC)
 
   #execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFLibs ${Fx40_BASHRC} OUTPUT_VARIABLE Fx40_LIBRARIES)
   setOFlibvar(Fx40 
-#EulerianInterfacialModels # app #uncommenting this and the others below causes segfault at program ends...
-IOFunctionObjects
-POD
-RBFMotionSolver
-autoMesh
+engine
+solids
+basicThermophysicalModels
+laminarFlameSpeedModels
+radiation
+solidMixture
 barotropicCompressibilityModel
-blockMesh
-cfMesh
-checkFunctionObjects
+liquids
+specie
+reactionThermophysicalModels
+thermophysicalFunctions
 chemistryModel
-coalCombustion
-combustionModels
-compressibleLESModels
+liquidMixture
+pdf
+MGridGenGAMGAgglomeration
+# metisDecomp
+decompositionMethods
+# parMetisDecomp
+# scotchDecomp
+incompressibleRASModels
+incompressibleTurbulenceModel
+incompressibleLESModels
+LESfilters
+LESdeltas
 compressibleRASModels
-#conjugateHeatTransfer # app
-conversion
-coupledLduMatrix
+compressibleTurbulenceModel
+compressibleLESModels
+edgeMesh
+blockMesh
+autoMesh
+extrudeModel
+cfMesh
+meshTools
+errorEstimation
+dbns
+finiteVolume
+equationReader
+dynamicTopoFvMesh
+topoChangerFvMesh
+dynamicMesh
+dynamicFvMesh
+RBFMotionSolver
+tetMotionSolver
+fvMotionSolver
+mesquiteMotionSolver
+solidBodyMotion
+finiteArea
+POD
+coalCombustion
+molecule
+potential
+molecularMeasurements
+lagrangian
+solidParticle
+lagrangianIntermediate
 dieselSpray
 dsmc
-dynamicTopoFvMesh
-engine
-equationReader
-errorEstimation
-extrudeModel
+solidModels
+coupledLduMatrix
+lduSolvers
+conversion
+foam
+sampling
+systemCall
+checkFunctionObjects
+utilityFunctionObjects
+forces
 fieldFunctionObjects
+IOFunctionObjects
 foamCalcFunctions
-freeSurface
+# immersedBoundaryForceFunctionObject
 immersedBoundaryDynamicFvMesh
-immersedBoundaryForceFunctionObject
-incompressibleLESModels
+immersedBoundary
+immersedBoundaryTurbulence
+surfMesh
+multiSolver
+ODE
 incompressibleTransportModels
 interfaceProperties
-kineticTheoryModel
-lagrangian
-laminarFlameSpeedModels
-lduSolvers
-#materialModels # deprecated solvers
-mesquiteMotionSolver
-molecularMeasurements
-molecule
-multiSolver
-phaseModel
-randomProcesses
-rhoCentralFoam
-#rhopSonicFoam #app: BCs
-sampling
-scotchDecomp
-solidModels
-solidParticle
-systemCall
-tecio
-userd-foam
-userd-newFoam
-utilityFunctionObjects
 viscoelasticTransportModels
-edgeMesh
-ODE
-reactionThermophysicalModels
-lagrangianIntermediate
-compressibleTurbulenceModel
-fvMotionSolver
-tetMotionSolver
-immersedBoundaryTurbulence
-forces
-LESdeltas
-LESfilters
-potential
-topoChangerFvMesh
-finiteArea
-basicThermophysicalModels
-radiation
-pdf
-liquidMixture
-solidMixture
-immersedBoundary
-incompressibleRASModels
-dynamicFvMesh
-specie
-thermophysicalFunctions
-liquids
-solids
-surfMesh
-incompressibleTurbulenceModel
 tetFiniteElement
-solidBodyMotion
-dynamicMesh
-finiteVolume
-meshTools
-decompositionMethods
-foam
+randomProcesses
 )
   message(STATUS "FX40_LIBS: " ${Fx40_LIBRARIES})
   
@@ -146,6 +138,8 @@ foam
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx40_BASHRC} print-LINKEXE OUTPUT_VARIABLE Fx40_LINKEXE_full)
   string(REGEX REPLACE "^[^ ]+" "" Fx40_LINKLIBSO ${Fx40_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" Fx40_LINKEXE ${Fx40_LINKEXE_full})
+  set(Fx40_LINKLIBSO "${Fx40_LINKLIBSO} -Xlinker --as-needed")
+  set(Fx40_LINKEXE "${Fx40_LINKEXE} -Xlinker --as-needed")
   message(STATUS "libso link flags = "  ${Fx40_LINKLIBSO})
   message(STATUS "exe link flags = "  ${Fx40_LINKEXE})
   execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${Fx40_BASHRC} print-FOAM_MPI_LIBBIN OUTPUT_VARIABLE Fx40_FOAM_MPI_LIBBIN)
@@ -154,22 +148,6 @@ foam
   set(Fx40_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/foam-extend-4.0")
   
   addOFConfig(Fx40 fx40 163)
-  
-#   list(APPEND INSIGHT_OFES_VARCONTENT "FX40@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.fx40 -print -quit`#163")
-#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-# alias fx40=\"source insight.bashrc.fx40\"
-# ")
-#   create_script("insight.bashrc.fx40"
-# "source ${Fx40_BASHRC}
-# 
-# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${Fx40_INSIGHT_LIB}
-# #- Clean LD_LIBRARY_PATH
-# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-# export PATH=$PATH:${Fx40_INSIGHT_BIN}
-# #- Clean PATH
-# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-# ")
 
   macro (setup_exe_target_Fx40 targetname sources exename includes)
     add_executable(${targetname} ${sources})

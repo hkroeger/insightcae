@@ -1,0 +1,10 @@
+
+setup_test_OF(simpleFoam_laminar runOFTest_laminar.sh)
+setup_test_OF(simpleFoam_kOmegaSST runOFTest_kOmegaSST.sh)
+setup_test_OF(simpleFoam_kEpsilon runOFTest_kEpsilon.sh)
+setup_test_OF(simpleFoam_SpalartAllmaras runOFTest_SpalartAllmaras.sh)
+setup_test_OF(simpleFoam_realizableKE runOFTest_realizableKE.sh)
+setup_test_OF(simpleFoam_kOmegaSST2 runOFTest_kOmegaSST2.sh)
+setup_test_OF(simpleFoam_LRR runOFTest_LRR.sh)
+setup_test_OF(simpleFoam_kOmegaSST_LowRe runOFTest_kOmegaSST_LowRe.sh)
+setup_test_OF(simpleFoam_kOmegaHe runOFTest_kOmegaHe.sh)

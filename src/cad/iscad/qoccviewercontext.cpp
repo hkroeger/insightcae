@@ -80,6 +80,7 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
 #if (OCC_VERSION_MINOR>6)
   Handle_Aspect_DisplayConnection displayConnection(new Aspect_DisplayConnection());
   defaultdevice = new OpenGl_GraphicDriver( displayConnection );
+  Handle_OpenGl_GraphicDriver::DownCast(defaultdevice)->ChangeOptions().ffpEnable=false; // fix to make clip planes work
 #else
   defaultdevice = new OpenGl_GraphicDriver(getenv(aDisplay));
 #endif

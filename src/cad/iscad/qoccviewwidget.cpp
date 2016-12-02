@@ -720,6 +720,7 @@ void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, doub
     mat.SetColor(Quantity_Color(Quantity_NOC_WHITE));
     clipPlane_->SetCapping(true);
     clipPlane_->SetCappingMaterial(mat);
+    clipPlane_->SetOn(true);
 //     clipPlane_->SetCappingHatchOn();
 //     clipPlane_->SetCappingHatch(Aspect_HS_DIAGONAL_45_WIDE);
 
@@ -727,6 +728,7 @@ void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, doub
 //     ca->SetEdgeOn();
 
     myView->AddClipPlane(clipPlane_);
+    myView->Redraw();
   }
   else
   {

@@ -633,14 +633,15 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       
+  div["div((nuEff*dev(grad(U).T())))"]="Gauss linear"; // kOmegaSST2
   if (OFversion()>=300)
   {
     div["div((nuEff*dev2(T(grad(U)))))"]="Gauss linear";
+    div["div((nu*dev2(T(grad(U)))))"]="Gauss linear"; // LRR
   }
   else
   {
     div["div((nuEff*dev(T(grad(U)))))"]="Gauss linear";
-    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
   }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
@@ -684,10 +685,29 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
   FVNumerics::addIntoDictionaries(dictionaries);
   
+  // check if LES required
+  bool LES=p_.forceLES;
+  try 
+  {
+    const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
+    if (tm)
+    {
+      LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
+    }
+  }
+  catch (...)
+  {
+    cout<<"Warning: unhandled exception during LES check!"<<endl;
+  }
+  
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="pimpleFoam";
+  if (LES)
+   controlDict["application"]="pisoFoam";
+  else
+   controlDict["application"]="pimpleFoam";
+  
   controlDict["maxCo"]=p_.maxCo;
   controlDict["maxDeltaT"]=p_.maxDeltaT;
   
@@ -710,29 +730,26 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
 
-  OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
-  PIMPLE["nCorrectors"]=p_.nCorrectors;
-  PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
-  PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
-  PIMPLE["pRefCell"]=0;
-  PIMPLE["pRefValue"]=0.0;
-  
+  if (LES)
+  {
+    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
+    PISO["nCorrectors"]=p_.nCorrectors;
+    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+    PISO["pRefCell"]=0;
+    PISO["pRefValue"]=0.0;
+  }
+  else
+  {
+    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+    PIMPLE["nCorrectors"]=p_.nCorrectors;
+    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+    PIMPLE["pRefCell"]=0;
+    PIMPLE["pRefValue"]=0.0;
+  }  
   // ============ setup fvSchemes ================================
   
-  // check if LES required
-  bool LES=p_.forceLES;
-  try 
-  {
-    const turbulenceModel* tm=this->OFcase().get<turbulenceModel>("turbulenceModel");
-    if (tm)
-    {
-      LES=LES || (tm->minAccuracyRequirement() >= turbulenceModel::AC_LES);
-    }
-  }
-  catch (...)
-  {
-    cout<<"Warning: unhandled exception during LES check!"<<endl;
-  }
+
   
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   
@@ -758,28 +775,34 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string suf;
   div["default"]="Gauss linear";
   
-  if (p_.nOuterCorrectors>1)
+  if (!LES && (p_.nOuterCorrectors>1) )
   {
     // SIMPLE mode: add underrelaxation
+    double prelax=0.3, Urelax=0.7;
+
     OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
     if (OFversion()<210)
     {
-      relax["p"]=0.3;
-      relax["U"]=0.7;
-      relax["k"]=0.7;
-      relax["omega"]=0.7;
-      relax["epsilon"]=0.7;
-      relax["nuTilda"]=0.7;
+      relax["p"]=prelax;
+      relax["U"]=Urelax;
+      relax["pFinal"]=prelax;
+      relax["UFinal"]=Urelax;
+      relax["k"]=Urelax;
+      relax["omega"]=Urelax;
+      relax["epsilon"]=Urelax;
+      relax["nuTilda"]=Urelax;
     }
     else
     {
       OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["p"]=0.3;
-      eqnRelax["U"]=0.7;
-      eqnRelax["k"]=0.7;
-      eqnRelax["omega"]=0.7;
-      eqnRelax["epsilon"]=0.7;
-      eqnRelax["nuTilda"]=0.7;
+      fieldRelax["p"]=prelax;
+      fieldRelax["pFinal"]=prelax;
+      eqnRelax["U"]=Urelax;
+      eqnRelax["UFinal"]=Urelax;
+      eqnRelax["k"]=Urelax;
+      eqnRelax["omega"]=Urelax;
+      eqnRelax["epsilon"]=Urelax;
+      eqnRelax["nuTilda"]=Urelax;
       relax["fields"]=fieldRelax;
       relax["equations"]=eqnRelax;
     }

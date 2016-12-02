@@ -11,6 +11,6 @@ if [ -d $OFID ]; then rm -rf $OFID; fi; mkdir $OFID && cd $OFID && (
 isofCaseBuilder -sb $DATADIR/pimpleFoam_pipe.iscb &&\
 blockMesh && \
 isofCaseBuilder -b $DATADIR/pimpleFoam_pipe.iscb $DATADIR/dynSmagorinsky.iscb &&\
-pimpleFoam
+pisoFoam
 
 )

@@ -50,21 +50,6 @@ IF(OF22eng_BASHRC)
   set(OF22eng_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-2.2_engysEdition-beta")
 
   addOFConfig(OF22eng of22eng 220)
-#   list(APPEND INSIGHT_OFES_VARCONTENT "OF22eng@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of22eng -print -quit`#220")
-#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-# alias of22eng=\"source insight.bashrc.of22eng\"
-# ")
-#   create_script("insight.bashrc.of22eng"
-# "source ${OF22eng_BASHRC}
-# 
-# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OF22eng_INSIGHT_LIB}
-# #- Clean LD_LIBRARY_PATH
-# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-# export PATH=$PATH:${OF22eng_INSIGHT_BIN}
-# #- Clean PATH
-# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-# ")
 
   macro (setup_exe_target_OF22eng targetname sources exename includes)
     #message(STATUS "target " ${targetname} ": includes=" ${includes})

@@ -52,41 +52,48 @@
 			<double name="roughness_z0" value="0"/>
 			<vector name="wallVelocity" value="0 0 0"/>
 		</UnassignedPatches>
-		<Patch patchName="inlet" BCtype="TurbulentVelocityInletBC">
-			<selectableSubset name="turbulence" value="inflowGenerator">
-				<subset name="L">
-					<selectableSubset name="fielddata" value="uniform">
-						<array name="values">
-							<subset name="default">
-								<double name="time" value="0"/>
-								<vector name="value" value="1 0 0"/>
-							</subset>
-							<subset name="0">
-								<double name="time" value="0"/>
-								<vector name="value" value="0.1 0.1 0.1"/>
-							</subset>
-						</array>
-					</selectableSubset>
-				</subset>
-				<subset name="R">
-					<selectableSubset name="fielddata" value="uniform">
-						<array name="values">
-							<subset name="default">
-								<double name="time" value="0"/>
-								<vector name="value" value="1 0 0 1 0 0"/>
-							</subset>
-							<subset name="0">
-								<double name="time" value="0"/>
-								<vector name="value" value="5 0 0 1 0 1"/>
-							</subset>
-						</array>
-					</selectableSubset>
-				</subset>
-				<selection name="type" value="anisotropicVorton"/>
-				<bool name="uniformConvection" value="0"/>
-				<double name="volexcess" value="2"/>
+		<Patch patchName="inlet" BCtype="VelocityInletBC">
+			<subset name="T">
+				<selectableSubset name="fielddata" value="uniform">
+					<array name="values">
+						<subset name="default">
+							<double name="time" value="0"/>
+							<vector name="value" value="1 0 0"/>
+						</subset>
+						<subset name="0">
+							<double name="time" value="0"/>
+							<vector name="value" value="1 0 0"/>
+						</subset>
+					</array>
+				</selectableSubset>
+			</subset>
+			<selectableSubset name="phasefractions" value="uniformPhases">
+				<array name="phaseFractions">
+					<subset name="default">
+						<double name="fraction" value="0.5"/>
+						<string name="name" value="CO2"/>
+					</subset>
+				</array>
 			</selectableSubset>
-			<subset name="umean">
+			<subset name="rho">
+				<selectableSubset name="fielddata" value="uniform">
+					<array name="values">
+						<subset name="default">
+							<double name="time" value="0"/>
+							<vector name="value" value="1 0 0"/>
+						</subset>
+						<subset name="0">
+							<double name="time" value="0"/>
+							<vector name="value" value="1 0 0"/>
+						</subset>
+					</array>
+				</selectableSubset>
+			</subset>
+			<selectableSubset name="turbulence" value="uniformIntensityAndLengthScale">
+				<double name="I" value="0.050000000000000003"/>
+				<double name="l" value="0.10000000000000001"/>
+			</selectableSubset>
+			<subset name="velocity">
 				<selectableSubset name="fielddata" value="uniform">
 					<array name="values">
 						<subset name="default">

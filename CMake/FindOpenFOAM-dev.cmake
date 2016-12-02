@@ -37,100 +37,86 @@ IF(OFdev_BASHRC)
   detectIncPaths(OFdev)
 
   setOFlibvar(OFdev 
-FVFunctionObjects
-IOFunctionObjects
-SloanRenumber
-autoMesh
-barotropicCompressibilityModel
-blockMesh
-cloudFunctionObjects
-coalCombustion
-combustionModels
-compressibleLESModels
-compressibleTransportModels
-#compressibleTurbulenceModels
-decompose
-distributed
-dsmc
-engine
-foamCalcFunctions
-genericPatchFields
-immiscibleIncompressibleTwoPhaseMixture
-#incompressibleTurbulenceModel
-jobControl
-lagrangianSpray
-#lagrangianTurbulence
-#lagrangianTurbulentSubModels
-laminarFlameSpeedModels
-molecularMeasurements
-molecule
-pairPatchAgglomeration
-pyrolysisModels
-randomProcesses
-reconstruct
-regionCoupled
-regionCoupling
-scotchDecomp
+incompressibleTurbulenceModels
+turbulenceModels
+compressibleTurbulenceModels
 sixDoFRigidBodyMotion
-solidParticle
+engine
+SLGThermo
+fluidThermophysicalModels
+laminarFlameSpeedModels
+solidThermo
+radiationModels
+liquidProperties
+solidMixtureProperties
+liquidMixtureProperties
+solidProperties
+barotropicCompressibilityModel
 solidSpecie
+specie
+reactionThermophysicalModels
+thermophysicalFunctions
+chemistryModel
+solidChemistryModel
+pairPatchAgglomeration
+reconstruct
+decompositionMethods
+decompose
+scotchDecomp
+distributed
+topoChangerFvMesh
+edgeMesh
+blockMesh
+extrudeModel
+snappyHexMesh
+regionCoupled
+pyrolysisModels
+regionModels
+regionCoupling
 surfaceFilmDerivedFvPatchFields
 surfaceFilmModels
-systemCall
 thermalBaffleModels
-topoChangerFvMesh
-#turbulenceDerivedFvPatchFields
-twoPhaseProperties
-utilityFunctionObjects
-renumberMethods
-edgeMesh
-fvMotionSolvers
-interfaceProperties
-incompressibleTransportModels
-lagrangianIntermediate
-potential
-solidChemistryModel
-forces
-compressibleRASModels
-regionModels
-dynamicFvMesh
-fvOptions
-decompositionMethods
-twoPhaseMixture
-SLGThermo
-radiationModels
-distributionModels
-solidThermo
-chemistryModel
-#compressibleTurbulenceModel
-liquidMixtureProperties
-solidMixtureProperties
-ODE
-reactionThermophysicalModels
-liquidProperties
-solidProperties
-fluidThermophysicalModels
-thermophysicalFunctions
-specie
-#LEMOS-2.3.x
-fieldFunctionObjects
-incompressibleLESModels
-#incompressibleRASModels
-dynamicMesh
-sampling
-#LESdeltas
-#turbulenceModels
-#LESfilters
-#incompressibleTurbulenceModel
-extrudeModel
-lagrangian
-conversion
-finiteVolume
 meshTools
 triSurface
+finiteVolume
+dynamicMesh
+fvMotionSolvers
+dynamicFvMesh
+coalCombustion
+molecule
+potential
+molecularMeasurements
+lagrangian
+solidParticle
+lagrangianTurbulence
+lagrangianSpray
+DSMC
+lagrangianIntermediate
+distributionModels
+rigidBodyMeshMotion
+conversion
+utilityFunctionObjects
+forces
+fieldFunctionObjects
+solverFunctionObjects
+lagrangianFunctionObjects
+sampling
 surfMesh
-fileFormats
+rigidBodyDynamics
+ODE
+incompressibleTransportModels
+twoPhaseMixture
+interfaceProperties
+twoPhaseProperties
+immiscibleIncompressibleTwoPhaseMixture
+compressibleTransportModels
+combustionModels
+fvOptions
 OpenFOAM
+renumberMethods
+fileFormats
+genericPatchFields
+randomProcesses
 )
 
   detectDepLib(OFdev "${OFdev_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
@@ -140,25 +126,9 @@ OpenFOAM
   set(OFdev_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OFdev_WM_PROJECT_VERSION}")
 
   addOFConfig(OFdev ofdev 400)
-#   list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
-#   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
-# alias of23x=\"source insight.bashrc.of23x\"
-# ")
-#   create_script("insight.bashrc.of23x"
-# "source ${OFdev_BASHRC}
-# 
-# foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
-# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OFdev_INSIGHT_LIB}
-# #- Clean LD_LIBRARY_PATH
-# cleaned=`$foamClean \"$LD_LIBRARY_PATH\"` && LD_LIBRARY_PATH=\"$cleaned\"
-# export PATH=$PATH:${OFdev_INSIGHT_BIN}
-# #- Clean PATH
-# cleaned=`$foamClean \"$PATH\"` && PATH=\"$cleaned\"
-# ")
 
-
-
-
+  
+  
   macro (setup_exe_target_OFdev targetname sources exename includes)
     get_directory_property(temp LINK_DIRECTORIES)
         

@@ -347,7 +347,13 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 //       const fvMesh& mesh(patch().boundaryMesh().mesh());
 
       const kOmegaSST2& rasModel 
-	= db().lookupObject<kOmegaSST2>("RASProperties");
+	= db().lookupObject<kOmegaSST2>(
+#if defined(OFplus)||defined(OFdev)
+	"turbulenceProperties"
+#else
+	"RASProperties"
+#endif
+	);
 
       const scalar yPlusLam = rasModel.yPlusLam(kappa_, E_);
       const scalarField& yw = rasModel.y()[patch().index()];

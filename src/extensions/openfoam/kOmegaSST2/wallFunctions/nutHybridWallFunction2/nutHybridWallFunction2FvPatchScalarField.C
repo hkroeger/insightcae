@@ -80,7 +80,13 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
     const label patchI = patch().index();
 
     const kOmegaSST2& rasModel 
-      = db().lookupObject<kOmegaSST2>("RASProperties");
+      = db().lookupObject<kOmegaSST2>(
+#if defined(OFplus)||defined(OFdev)
+	"turbulenceProperties"
+#else
+	"RASProperties"
+#endif
+      );
 
 //     const scalarField& y = rasModel.y()[patchI];
 #ifdef OF16ext

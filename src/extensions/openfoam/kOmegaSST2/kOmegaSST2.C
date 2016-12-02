@@ -328,7 +328,11 @@ kOmegaSST2::kOmegaSST2
             "k",
             runTime_.timeName(),
             mesh_,
+#if defined(OFplus) || defined(OFdev)
+            IOobject::MUST_READ,
+#else
             IOobject::NO_READ,
+#endif
             IOobject::AUTO_WRITE
         ),
 #if defined(OFplus) || defined(OFdev)
@@ -344,7 +348,11 @@ kOmegaSST2::kOmegaSST2
             "omega",
             runTime_.timeName(),
             mesh_,
+#if defined(OFplus) || defined(OFdev)
+            IOobject::MUST_READ,
+#else
             IOobject::NO_READ,
+#endif
             IOobject::AUTO_WRITE
         ),
 #if defined(OFplus) || defined(OFdev)
@@ -360,7 +368,11 @@ kOmegaSST2::kOmegaSST2
             "nut",
             runTime_.timeName(),
             mesh_,
+#if defined(OFplus) || defined(OFdev)
+            IOobject::MUST_READ,
+#else
             IOobject::NO_READ,
+#endif
             IOobject::AUTO_WRITE
         ),
 #if defined(OFplus) || defined(OFdev)

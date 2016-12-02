@@ -164,13 +164,20 @@ laminar_RASModel::laminar_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
   
 void laminar_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  RASModel::addIntoDictionaries(dictionaries);
   
-  OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
-  RASProperties["RASModel"]="laminar";
-  RASProperties["turbulence"]="true";
-  RASProperties["printCoeffs"]="true";
-  RASProperties.addSubDictIfNonexistent("laminarCoeffs");
+  if (OFversion()>=300)
+   {
+    OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
+    turbProperties["simulationType"]="laminar";
+  }
+  else{
+    RASModel::addIntoDictionaries(dictionaries);
+    OFDictData::dict& RASProperties=modelPropsDict(dictionaries);
+    RASProperties["RASModel"]="laminar";
+    RASProperties["turbulence"]="true";
+    RASProperties["printCoeffs"]="true";
+    RASProperties.addSubDictIfNonexistent("laminarCoeffs");
+  }
 }
 
 bool laminar_RASModel::addIntoFieldDictionary(const std::string&, const FieldInfo&, OFDictData::dict&, double) const
@@ -208,7 +215,10 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   LESProperties["printCoeffs"]=true;
 
-  LESProperties["LESModel"]="oneEqEddy";
+  std::string modelname="oneEqEddy";
+  if (OFversion()>=300) modelname="kEqn"; 
+ 
+  LESProperties["LESModel"]=modelname;
   LESProperties["turbulence"]="true";
   //LESProperties["delta"]="cubeRootVol";
   LESProperties["delta"]="vanDriest";
@@ -314,7 +324,7 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
   
   string modelName="dynSmagorinsky";
-  if (OFversion()>160)
+  if (OFversion()>=170)
     modelName="homogeneousDynSmagorinsky";
   
   LESProperties["LESModel"]=modelName;
@@ -594,8 +604,16 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
   }
   else if (fieldname == "nut")
   {
-    BC["type"]=OFDictData::data("nutUSpaldingWallFunction");
-    BC["value"]=OFDictData::data("uniform 0");
+    if (OFversion()>=170)
+    {
+      BC["type"]=OFDictData::data("nutUSpaldingWallFunction");
+      BC["value"]=OFDictData::data("uniform 0");
+    }
+    else
+    {
+      BC["type"]=OFDictData::data("nutSpalartAllmarasWallFunction");
+      BC["value"]=OFDictData::data("uniform 0");
+    }
     return true;
   }
   

@@ -63,6 +63,7 @@ void ISCADParser::createDatumExpressions()
     r_datumExpression =
 // 	  qi::lexeme[model_->datumSymbols()]
 // 	    [ _val =  phx::bind(&Model::lookupDatum, model_, qi::_1) ]
+      (
         model_->datumSymbols()[ qi::_val = qi::_1 ]
         |
         ( lit("Plane") >> '(' >> r_vectorExpression >> ',' >> r_vectorExpression >> ')' )
@@ -94,7 +95,8 @@ void ISCADParser::createDatumExpressions()
 //           ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' )
         ( ( r_solidmodel_expression >> '%' ) > r_identifier  )
         [ _val = phx::construct<DatumPtr>(new_<ProvidedDatum>(qi::_1, qi::_2)) ]
-        ;
+      )
+      >> -( lit("<<") >> r_vectorExpression ) [ _val = construct<DatumPtr>(new_<TransformedDatum>(_val, qi::_1)) ];
 
     r_datumExpression.name("datum expression");
 }

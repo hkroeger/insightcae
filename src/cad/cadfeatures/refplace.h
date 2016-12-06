@@ -66,8 +66,9 @@ class AlignedPlanes
     : public Condition
 {
     DatumPtr pl_org_,  pl_targ_;
+    bool inv_;
 public:
-    AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ );
+    AlignedPlanes ( DatumPtr pl_org, DatumPtr pl_targ, bool inv=false );
     virtual double residual ( const gp_Trsf& tr ) const;
 };
 

@@ -112,8 +112,25 @@ TransformedDatum::TransformedDatum(DatumPtr datum, gp_Trsf tr)
     hash_=plh.getHash();
 }
 
+TransformedDatum::TransformedDatum(DatumPtr datum, VectorPtr translation)
+: Datum(datum->providesPointReference(), datum->providesAxisReference(), datum->providesPlanarReference()),
+  base_(datum),
+  translation_(translation)
+{
+    ParameterListHash plh;
+    plh+=*base_;
+    plh+=translation_->value();
+    hash_=plh.getHash();
+}
+
+
 void TransformedDatum::build()
-{}
+{
+  if (translation_)
+  {
+    tr_.SetTranslation(to_Vec(translation_->value()));
+  }
+}
     
 gp_Pnt TransformedDatum::point() const
 {

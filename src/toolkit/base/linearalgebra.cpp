@@ -28,7 +28,8 @@
 #include "base/exception.h"
 #include "gsl/gsl_multimin.h"
 #include "gsl/gsl_integration.h"
-
+// #include "minpack.h"
+// #include <dlib/optimization.h>
 
 using namespace arma;
 using namespace boost;
@@ -395,15 +396,116 @@ double f_nonlinearMinimizeND(const gsl_vector * p, void * params)
   return m(x);
 }
 
+// const ObjectiveND* minpack_params;
+// void f_nonlinearMinimizeND2(int *n, double *p, double *fvec, int *iflag)
+// {
+//   
+//   const ObjectiveND& m = *minpack_params;
+//   
+//   if (*n != m.numP())
+//     throw insight::Exception("incompatible!");
+//   
+//   arma::mat x=arma::zeros(m.numP());
+//   for (int i=0; i<x.n_elem; i++)
+//   {
+//       x(i) = p[i];
+//   }
+//   
+// 
+//     std::cerr<<"F="<<m(x)<<std::endl;
+//   if (*iflag == 0) {
+//     /*      insert print statements here when nprint is positive. */
+//     /* if the nprint parameter to lmder is positive, the function is
+//        called every nprint iterations with iflag=0, so that the
+//        function may perform special operations, such as printing
+//        residuals. */
+//     return;
+//   }
+// 
+//   fvec[0]=m(x);
+// }
+
+// typedef dlib::matrix<double,0,1> column_vector;
+// class f_nonlinearMinimizeND3
+// {
+// public:
+//   const ObjectiveND* obj_;
+//   f_nonlinearMinimizeND3(const ObjectiveND* obj): obj_(obj) {}
+//   double operator()(const column_vector& arg) const
+//   {
+//     arma::mat p = arma::zeros(obj_->numP());
+//     for (int i=0; i<obj_->numP(); i++) p(i)=arg(i);
+//     double resi=(*obj_)(p);
+//     std::cerr<<"resi="<<resi<<std::endl;
+//     return resi;
+//   }
+// };
+    
 arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol)
 {
+//   int n=model.numP();
+//   column_vector starting_point(n);
+//   for (int i=0; i<n; i++) starting_point(i)=x0(i);
+//   double r = dlib::find_min_bobyqa(
+//     f_nonlinearMinimizeND3(&model), 
+//     starting_point, 
+//     10,    // number of interpolation points
+//     dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
+//     dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
+//     10,    // initial trust region radius
+//     1e-6,  // stopping trust region radius
+//     100000    // max number of objective function evaluations
+//   );
+//   arma::mat res=arma::zeros(n);
+//   for (int i=0; i<n; i++) res(i)=starting_point(i);
+//   
+//   return res;
+  
+//   minpack_params = &model;
+// 
+//     int j, n, info, lwa;
+//   n = model.numP();
+//   double tol2, fnorm;
+//   double x[n], fvec[1], wa[180];
+//   int one=1;
+// 
+// 
+// /*      the following starting values provide a rough solution. */
+// 
+//   for (j=0; j<n; j++) {
+//     x[j] = x0(j);
+//   }
+// 
+//   lwa = 180;
+// 
+// /*      set tol to the square root of the machine precision. */
+// /*      unless high solutions are required, */
+// /*      this is the recommended setting. */
+// 
+//   tol2 = sqrt(dpmpar_(&one));
+//   hybrd1_(&f_nonlinearMinimizeND2, &n, x, fvec, &tol2, &info, wa, &lwa);
+//   fnorm = enorm_(&n, fvec);
+// 
+//   printf("     final L2 norm of the residuals %15.7g\n", (double)fnorm);
+//   printf("     exit parameter                 %10i\n", info);
+//   printf("     final approximates solution\n");
+//   
+//         arma::mat res=arma::zeros(n);
+//         for (int i=0; i<n; i++)
+//         {
+//             res(i)=x[i];
+//         };
+// 	
+// 	return res;
+	
+
     try
     {
         const gsl_multimin_fminimizer_type *T =
             gsl_multimin_fminimizer_nmsimplex;
             
         gsl_multimin_fminimizer *s = NULL;
-        gsl_vector *ss, *p;
+        gsl_vector *ss, *p/*, *olditer_p*/;
         gsl_multimin_function minex_func;
 
         size_t iter = 0;
@@ -412,6 +514,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
         /* Starting point */
         p = gsl_vector_alloc (model.numP());
+//         olditer_p = gsl_vector_alloc (model.numP());
         //gsl_vector_set_all (p, 1.0);
         for (int i=0; i<model.numP(); i++)
         {
@@ -431,19 +534,28 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         s = gsl_multimin_fminimizer_alloc (T, model.numP());
         gsl_multimin_fminimizer_set (s, &minex_func, p, ss);
 
+// 	double relax=0.01;
         do
         {
+// 	    gsl_vector_memcpy(olditer_p, s->x);
+	    
             iter++;
             status = gsl_multimin_fminimizer_iterate(s);
-
             if (status)
                 break;
 
             size = gsl_multimin_fminimizer_size (s);
             status = gsl_multimin_test_size (size, tol);
-
+// 	    std::cerr<<"i="<<iter<<": F="<<s->fval<<std::endl;
+// 	    // relax
+// 	    for (int i=0; i<model.numP(); i++)
+// 	    {
+// 	      gsl_vector_set(s->x, i, 
+// 		      relax*gsl_vector_get(s->x, i) + (1.-relax)*gsl_vector_get(olditer_p, i) 
+// 	      );
+// 	    }
         }
-        while (status == GSL_CONTINUE && iter < 10000);
+        while (status == GSL_CONTINUE && iter < 1000);
         
         arma::mat res=arma::zeros(model.numP());
         for (int i=0; i<model.numP(); i++)
@@ -453,6 +565,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         
         gsl_vector_free(p);
         gsl_vector_free(ss);
+//         gsl_vector_free(olditer_p);
         gsl_multimin_fminimizer_free (s);
 
         return res; //model.computeQuality(y, x);

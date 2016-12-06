@@ -78,9 +78,11 @@ class TransformedDatum
 protected:
     DatumPtr base_;
     gp_Trsf tr_;
+    VectorPtr translation_;
     
 public:
     TransformedDatum(DatumPtr datum, gp_Trsf tr);
+    TransformedDatum(DatumPtr datum, VectorPtr translation);
     
     virtual void build();
     

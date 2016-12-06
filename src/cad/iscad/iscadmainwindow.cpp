@@ -90,7 +90,7 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 
 
-ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
+ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool nolog)
 : QMainWindow(parent, flags),
     unsaved_(false),
     doBgParsing_(true),
@@ -106,9 +106,12 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags)
     setCentralWidget(spl0);
     spl0->addWidget(spl);
     log_=new QTextEdit;
-    
-    logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
-    connect(logger_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+
+    if (!nolog)
+    {
+      logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
+      connect(logger_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+    }
     
     spl0->addWidget(log_);
     context_=new QoccViewerContext;

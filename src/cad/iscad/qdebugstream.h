@@ -60,19 +60,24 @@ protected:
     virtual std::streamsize xsputn(const char *p, std::streamsize n)
     {
         qdebugstream_mutex.lock();
-        QString str(p);
-        if(str.contains("\n")){
+        QString str = QString::fromUtf8(p);
+
+        if (str.contains("\n"))
+	{
             QStringList strSplitted = str.split("\n");
 
 //             log_window->moveCursor (QTextCursor::End);
 //             log_window->insertPlainText (strSplitted.at(0)); //Index 0 is still on the same old line
             emit appendText(strSplitted.at(0));
 
-            for(int i = 1; i < strSplitted.size(); i++){
+            for(int i = 1; i < strSplitted.size(); i++)
+	    {
                 //log_window->append(strSplitted.at(i));
                 emit appendText(strSplitted.at(i));
             }
-        }else{
+        }
+        else
+	{
             emit appendText(str);
 //             log_window->moveCursor (QTextCursor::End);
 //             log_window->insertPlainText (str);

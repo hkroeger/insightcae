@@ -22,7 +22,11 @@
 #include <boost/spirit/include/qi.hpp>
 #include "gp_Quaternion.hxx"
 
+#include <dlib/optimization.h>
+
 #include "datum.h"
+
+#include <chrono>
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -119,8 +123,8 @@ double ParallelAxis::residual(const gp_Trsf& tr) const
 
 
 
-AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ)
-: pl_org_(pl_org), pl_targ_(pl_targ)
+AlignedPlanes::AlignedPlanes(DatumPtr pl_org, DatumPtr pl_targ, bool inv)
+: pl_org_(pl_org), pl_targ_(pl_targ), inv_(inv)
 {}
 
 
@@ -130,7 +134,10 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
     gp_Pln ptarg(pl_targ_->plane());
 //     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
 //     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
-    return pow(pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
+    if (inv_)
+      return pow(M_PI-pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
+    else
+      return pow(pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
 }
 
 
@@ -244,9 +251,12 @@ FeaturePtr RefPlace::create ( FeaturePtr m, ConditionList conditions )
 
 
 
+typedef dlib::matrix<double,0,1> column_vector;
+
 
 void RefPlace::build()
 {
+    auto t_start = std::chrono::high_resolution_clock::now();
 
     if (conditions_.size()<=0)
     {
@@ -255,37 +265,92 @@ void RefPlace::build()
 
     if (!trsf_)
     {
-        class Obj : public ObjectiveND
+//         class Obj : public ObjectiveND
+//         {
+//         public:
+//             mutable int iter=0;
+//             const ConditionList& conditions;
+// 
+//             Obj(const ConditionList& co) : conditions(co) {} ;
+//             virtual double operator()(const arma::mat& x) const
+//             {
+//                 double Q=0.0;
+//                 for (size_t i=0; i<conditions.size(); i++)
+//                 {
+//                     Q += conditions[i]->residual(x);
+//                 }
+// //                 std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
+//                 return Q;
+//             }
+// 
+//             virtual int numP() const {
+//                 return 7;
+//             };
+// 
+//         } obj(conditions_);
+
+        class Obj
         {
         public:
             mutable int iter=0;
             const ConditionList& conditions;
 
             Obj(const ConditionList& co) : conditions(co) {} ;
-            virtual double operator()(const arma::mat& x) const
+	    
+            double operator()(const column_vector& curplacement) const
             {
+		iter++;
+	        arma::mat x=arma::zeros(7);
+		for (int i=0; i<7; i++) x(i)=curplacement(i);
+		
                 double Q=0.0;
                 for (size_t i=0; i<conditions.size(); i++)
                 {
                     Q += conditions[i]->residual(x);
                 }
-                std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
+//                 std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
                 return Q;
             }
 
-            virtual int numP() const {
-                return 7;
-            };
 
         } obj(conditions_);
 
-        arma::mat x0=arma::zeros(obj.numP()); //=vector_from_trsf(gp_Trsf());
-        arma::mat tp = nonlinearMinimizeND(obj, x0, 1e-10);
+	int n=7;
+	
+        arma::mat x0=arma::zeros(n); //=vector_from_trsf(gp_Trsf());
+        
+	column_vector starting_point(n);
+	for (int i=0; i<n; i++) starting_point(i)=x0(i);
+	auto ts_start = std::chrono::high_resolution_clock::now();
+	double r = dlib::find_min_bobyqa(
+	  obj, 
+	  starting_point, 
+	  10,    // number of interpolation points
+	  dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
+	  dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
+	  10,    // initial trust region radius
+	  1e-6,  // stopping trust region radius
+	  100000    // max number of objective function evaluations
+	);
+	auto ts_end = std::chrono::high_resolution_clock::now();
+	std::cout<<"solved placement after "<<obj.iter<<" function calls "
+	   "("<<std::chrono::duration_cast<std::chrono::milliseconds>(ts_end - ts_start).count()<<"ms)"
+	   "."<<std::endl;
+	arma::mat tp=arma::zeros(n);
+	for (int i=0; i<n; i++) tp(i)=starting_point(i);
+	
+//        arma::mat tp = nonlinearMinimizeND(obj, x0, 1e-10);
         trsf_.reset( new gp_Trsf(trsf_from_vector(tp)) );
     }
 
     setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
     copyDatumsTransformed(*m_, *trsf_);
+    
+    auto t_end = std::chrono::high_resolution_clock::now();
+    
+    std::cout << "RefPlace rebuild done in " 
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
+              << " ms" << std::endl;
 }
 
 
@@ -310,8 +375,9 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         (ruleset.r_vectorExpression >> qi::lit("parallel") >> ruleset.r_vectorExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<ParallelAxis>(qi::_1, qi::_2)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  )
-          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2)) ]
+        (ruleset.r_datumExpression >> qi::lit("aligned") >> ruleset.r_datumExpression  
+          >> ( ( qi::lit("inverted") >> qi::attr(true) ) | qi::attr(false) ) )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<AlignedPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
         (ruleset.r_datumExpression >> qi::lit("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<InclinedPlanes>(qi::_1, qi::_2, qi::_3)) ]

@@ -126,7 +126,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
                 gp_Pnt pproj ( p0cur.XYZ() + ( p.XYZ()-p0cur.XYZ() ).Normalized() *Rcur );
                 pts.SetValue ( j++, pproj );
                 
-                std::cerr<<"j="<<j<<":"<<pproj.X()<<" "<<pproj.Y()<<" "<<pproj.Z()<<std::endl;
+//                 std::cerr<<"j="<<j<<":"<<pproj.X()<<" "<<pproj.Y()<<" "<<pproj.Z()<<std::endl;
             }
         }
     }

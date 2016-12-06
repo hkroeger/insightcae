@@ -175,7 +175,7 @@ protected slots:
     void onSetClipPlane(QObject* datumplane);
 
 public:
-    ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+    ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
     ~ISCADMainWindow();
 
     void loadFile(const boost::filesystem::path& file);

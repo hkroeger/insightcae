@@ -28,6 +28,8 @@
 #include "TColStd_Array1OfInteger.hxx"
 #include "GC_MakeArcOfCircle.hxx"
 
+#include <chrono>
+
 using namespace boost;
 using namespace boost::filesystem;
 using namespace boost::algorithm;
@@ -384,6 +386,8 @@ FeaturePtr Sketch::create
 
 void Sketch::build()
 {
+    auto t_start = std::chrono::high_resolution_clock::now();
+    
     if (!cache.contains(hash()))
     {
         if (!pl_->providesPlanarReference())
@@ -515,6 +519,12 @@ void Sketch::build()
     {
         this->operator=(*cache.markAsUsed<Sketch>(hash()));
     }
+    
+    auto t_end = std::chrono::high_resolution_clock::now();
+
+    std::cout << "sketch rebuild done in " 
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
+              << " ms" << std::endl;
 }
 
 

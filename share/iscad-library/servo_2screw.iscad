@@ -52,3 +52,14 @@ Box(
 
 servo:
  housing|fl1|fl2|shaft;
+
+ax_scr1=RefAxis(pm1, EZ);
+ax_scr2=RefAxis(pm2, EZ);
+ax_lever=RefAxis(O, EZ);
+
+pl_attach=Plane(pm1 -tfl*EZ, EZ);
+pl_center=Plane(housing@p0+0.5*housing$L1*EX, EX);
+pl_side1=Plane(0.5*B*EY, EY);
+pl_side2=Plane(-0.5*B*EY, -EY);
+pl_lever=Plane(O, EZ);
+

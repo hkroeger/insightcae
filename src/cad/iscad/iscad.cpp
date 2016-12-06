@@ -27,6 +27,11 @@
 #include "iscadapplication.h"
 #include "iscadmainwindow.h"
 
+#ifndef Q_MOC_RUN
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+#endif
 
 #include "parser.h"
 
@@ -48,43 +53,84 @@ public:
 
 int main(int argc, char** argv)
 {
-  if (argc==3) 
-  {
-    if (std::string(argv[1])!="-batch")
+  
+      namespace po = boost::program_options;
+
+      typedef std::vector<std::string> StringList;
+
+      // Declare the supported options.
+      po::options_description desc ( "Allowed options" );
+      desc.add_options()
+	( "help,h", "produce help message" )
+	( "batch,b", "evaluate model from specified input file without starting GUI" )
+	( "nolog,l", "put debug output to console instead of log window" )
+  //       ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
+  //       ("workdir,w", po::value<std::string>(), "execution directory")
+  //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
+  //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
+  //       ("selection,l", po::value<StringList>(), "selection variable assignment")
+  //       ("string,s", po::value<StringList>(), "string variable assignment")
+  //       ("path,p", po::value<StringList>(), "path variable assignment")
+  //       ("double,d", po::value<StringList>(), "double variable assignment")
+  //       ("int,i", po::value<StringList>(), "int variable assignment")
+  //       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
+	( "input-file,f", po::value< std::string >(),"Specifies input file." )
+      ;
+      
+      po::positional_options_description p;
+      p.add ( "input-file", -1 );
+
+      po::variables_map vm;
+      po::store
+      (
+        po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+        vm
+      );
+      po::notify ( vm );
+      
+      if ( vm.count ( "help" ) )
+      {
+	std::cout << desc << std::endl;
+	exit ( -1 );
+      }
+      
+    if ( vm.count("input-file") && vm.count("batch") )
     {
-      cout<<"Invalid command line!"<<endl;
-      exit(-1);
+      std::string filename = vm["input-file"].as<std::string>();
+      
+      insight::cad::ModelPtr model(new insight::cad::Model);
+      return insight::cad::parseISCADModelFile(filename, model.get());
     }
-    insight::cad::ModelPtr model(new insight::cad::Model);
-    return insight::cad::parseISCADModelFile(argv[2], model.get());
-  }
-  else
-  {
-//     XInitThreads();
-    
-    ISCADApplication app(argc, argv);
-    std::locale::global(std::locale::classic());
-    QLocale::setDefault(QLocale::C);
-    
-    QPixmap pixmap(":/resources/insight_cad_splash.png");
-    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
-    splash.show();
-    splash.showMessage(/*propGeoVersion()+" - */"Wait...");
+    else
+    {
+  //     XInitThreads();
+      
+      ISCADApplication app(argc, argv);
+      std::locale::global(std::locale::classic());
+      QLocale::setDefault(QLocale::C);
+      
+      QPixmap pixmap(":/resources/insight_cad_splash.png");
+      QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+      splash.show();
+      splash.showMessage(/*propGeoVersion()+" - */"Wait...");
 
-    ISCADMainWindow window;
-    if (argc==2) 
-      window.loadFile(argv[1]);
+      ISCADMainWindow window(0, 0, vm.count("nolog"));
+      if (vm.count("input-file"))
+      {
+	std::string filename = vm["input-file"].as<std::string>();
+	window.loadFile(filename);
+      }
 
-    window.show();
+      window.show();
 
-    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+      app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
 
-    I w(&splash, &window);
-    w.start(); // splash is shown for 5 seconds
+      I w(&splash, &window);
+      w.start(); // splash is shown for 5 seconds
 
-//     splash.finish(&window);
-    window.raise();
+  //     splash.finish(&window);
+      window.raise();
 
-    return app.exec();
-  }
+      return app.exec();
+    }
 }

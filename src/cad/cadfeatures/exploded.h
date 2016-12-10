@@ -47,12 +47,14 @@ protected:
     ExplosionComponentList components_;
 
     Exploded ( DatumPtr axis, const ExplosionComponentList& m1 );
+    Exploded ( DatumPtr axis, FeaturePtr assy );
 
 public:
     declareType ( "Exploded" );
     Exploded ();
     
     static FeaturePtr create( DatumPtr axis, const ExplosionComponentList& m1 );
+    static FeaturePtr create_assy( DatumPtr axis, FeaturePtr assy );
 
     virtual void build();
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

@@ -23,6 +23,8 @@
 #include <boost/spirit/include/qi.hpp>
 #include "datum.h"
 
+#include <limits.h>
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -64,12 +66,38 @@ Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 
 
 
+Exploded::Exploded( DatumPtr axis, FeaturePtr assy)
+: axis_(axis)
+{
+  for (int i=0; i<INT_MAX; i++)
+  {
+    std::string cname=str(format("component%d")%(i+1));
+    try
+    {
+      components_.push_back(ExplosionComponent(assy->subshape(cname), ExplosionDirection_Axial, vec3const(0,0,0)));
+    }
+    catch( ...)
+    {
+      break;
+    }
+  }
+}
+
+
+
+
+
 FeaturePtr Exploded::create( DatumPtr axis, const ExplosionComponentList& m1 )
 {
     return FeaturePtr(new Exploded(axis, m1));
 }
 
 
+    
+FeaturePtr Exploded::create_assy( DatumPtr axis, FeaturePtr assy )
+{
+    return FeaturePtr(new Exploded(axis, assy));
+}
     
     
     
@@ -136,21 +164,22 @@ void Exploded::insertrule(parser::ISCADParser& ruleset) const
     (
         "Exploded",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
-
-                    ( 
                       '(' 
-		       > ruleset.r_datumExpression 
-		       > ','
-                       > ( ( ruleset.r_solidmodel_expression 
+                       > ( 
+                        (
+			 ( ( ruleset.r_solidmodel_expression 
                             > ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial)) 
 			        | (qi::lit("radial")>qi::attr(ExplosionDirection_Radial)) 
 				| qi::attr(ExplosionDirection_Axial) )
                             > (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0))) 
-			   ) % ',' ) 
-		       >> 
-		       ')' )
-                    [ qi::_val = phx::bind(&Exploded::create, qi::_1, qi::_2) ]
-
+			   ) % ',' )
+			 > ',' > ruleset.r_datumExpression > ')' )
+                      [ qi::_val = phx::bind(&Exploded::create, qi::_2, qi::_1) ]
+                        |
+                        
+                        (qi::lit("assembly") > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' )
+                      [ qi::_val = phx::bind(&Exploded::create_assy, qi::_2, qi::_1) ]
+                     ) 
                 ))
     );
 }

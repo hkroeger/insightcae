@@ -202,6 +202,17 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     vbox->addWidget(evaluationlist_);
     gb->setLayout(vbox);
     spl2->addWidget(gb);
+    
+    gb=new QGroupBox("Notepad");
+    vbox = new QVBoxLayout;
+    notepad_=new QTextEdit;
+//     connect(evaluationlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onEvaluationItemChanged(QListWidgetItem*)));
+    vbox->addWidget(notepad_);
+    QPushButton* copybtn=new QPushButton("<< Copy to cursor <<");
+    vbox->addWidget(copybtn);
+    connect(copybtn, SIGNAL(clicked()), this, SLOT(onCopyBtnClicked()));
+    gb->setLayout(vbox);
+    spl2->addWidget(gb);
 
     spl->addWidget(spl2);
 
@@ -622,6 +633,13 @@ void ISCADMainWindow::onSetClipPlane(QObject* datumplane)
     gp_Dir n = pl.Direction();
     viewer_->toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
 }
+
+void ISCADMainWindow::onCopyBtnClicked()
+{
+  editor_->textCursor().insertText(notepad_->toPlainText());  
+  notepad_->clear();
+}
+
 
 
 void ISCADMainWindow::editSketch(QObject* sk_ptr)

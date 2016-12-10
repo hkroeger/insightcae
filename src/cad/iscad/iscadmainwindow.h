@@ -106,6 +106,8 @@ protected:
     bool skipPostprocActions_;
     
     QMenu* clipplanemenu_;
+    
+    QTextEdit* notepad_;
 
 protected:
     void clearDerivedData();
@@ -173,6 +175,8 @@ protected slots:
     
     void updateClipPlaneMenu();
     void onSetClipPlane(QObject* datumplane);
+    
+    void onCopyBtnClicked();
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);

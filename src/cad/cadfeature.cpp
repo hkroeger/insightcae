@@ -777,7 +777,7 @@ arma::mat Feature::modelBndBox(double deflection) const
 
   arma::mat x=arma::zeros(3,2);
   double g=boundingBox.GetGap();
-  cout<<"gap="<<g<<endl;
+//   cout<<"gap="<<g<<endl;
   boundingBox.Get
   (
     x(0,0), x(1,0), x(2,0), 
@@ -1353,7 +1353,9 @@ void Feature::saveAs
     stlwriter.ASCIIMode() = (ext==".stl");
     //stlwriter.RelativeMode()=false;
     //stlwriter.SetDeflection(maxdefl);
+#if OCC_VERSION_MINOR<9
     stlwriter.SetCoefficient(5e-5);
+#endif
     stlwriter.Write(shape(), filename.c_str());
   }
   else
@@ -1374,8 +1376,11 @@ void Feature::exportSTL(const boost::filesystem::path& filename, double abstol) 
   StlAPI_Writer stlwriter;
 
   stlwriter.ASCIIMode() = false;
+#if OCC_VERSION_MINOR<9
+#warning control STL tolerance in newer OCC versions!
   stlwriter.RelativeMode()=false;
   stlwriter.SetDeflection(abstol);
+#endif
   stlwriter.Write(shape(), filename.c_str());
 }
 

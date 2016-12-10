@@ -155,7 +155,9 @@ void BoundedFlatFace::build()
     FixShape.FixOrientation();
     FixShape.FixIntersectingWires();
     FixShape.FixWiresTwoCoincEdges();
+#if OCC_VERSION_MINOR<9
     FixShape.FixSmallAreaWire();
+#endif
     FixShape.FixMissingSeam();
     FixShape.FixAddNaturalBound();
     FixShape.FixPeriodicDegenerated();

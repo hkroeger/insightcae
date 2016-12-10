@@ -24,6 +24,10 @@
 #if (OCC_VERSION_MINOR<6)
 #include "Graphic2d_Text.hxx"
 #endif
+#include "Select3D_SensitivePoint.hxx"
+#include "Font_NameOfFont.hxx"
+#include "Graphic3d_AspectText3d.hxx"
+#include "Font_FontAspect.hxx"
 
 namespace insight {
 namespace cad {
@@ -102,6 +106,7 @@ IMPLEMENT_STANDARD_TYPE_END (InteractiveText)
 // ------------------- Initialization and Deletion ---------------------
 InteractiveText::InteractiveText () :
     AIS_InteractiveObject (),
+    text_("?"),
     width_ (0), 
     height_ (0)
 {
@@ -125,6 +130,16 @@ InteractiveText::InteractiveText
   width_ (0), 
   height_ (0)
 {
+//   Handle_Prs3d_TextAspect aTextAspect( new Prs3d_TextAspect());
+//   aTextAspect->SetFont(Font_NOF_ASCII_MONO);
+//   aTextAspect->SetHeight(12);
+//   aTextAspect->SetColor(Quantity_NOC_BLUE1);
+//   aTextAspect->SetSpace(200);
+//   myDrawer->SetTextAspect (aTextAspect);
+  
+
+
+ SetDisplayMode (0);
 }
 
 InteractiveText::~InteractiveText ()
@@ -145,21 +160,28 @@ void InteractiveText::set_position (const arma::mat& pos)
 
 // -------------------------- Implementation ---------------------------
 
-void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& pm,
+void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/,
                                const Handle_Prs3d_Presentation& pres,
                                const Standard_Integer mode)
 {
-    Prs3d_Text::Draw (pres, myDrawer, (Standard_CString) text_.c_str (),
-                      gp_Pnt (position_(0),
-                              position_(1),
-                              position_(2)));
+  myDrawer->SetTextAspect (new Prs3d_TextAspect());
+
+  TCollection_ExtendedString aTCoText(text_.c_str());
+
+  Prs3d_Text::Draw 
+  (
+      pres, 
+      myDrawer,
+      aTCoText,
+      gp_Pnt (position_(0), position_(1), position_(2))
+  );
 }
 
-void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,
-                               const Handle_Prs3d_Presentation& pres)
-{
-
-}
+// void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,
+//                                const Handle_Prs3d_Presentation& pres)
+// {
+// 
+// }
 
 #if (OCC_VERSION_MINOR<6)
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
@@ -186,6 +208,11 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
 void InteractiveText::ComputeSelection (const Handle_SelectMgr_Selection& sel,
                                         const Standard_Integer mode)
 {
+  Handle(SelectMgr_EntityOwner)   anEntityOwner   = new SelectMgr_EntityOwner (this, 10);
+      Handle(Select3D_SensitivePoint) aSensitivePoint = new Select3D_SensitivePoint (anEntityOwner, gp_Pnt (position_(0),
+                              position_(1),
+                              position_(2)));
+      sel->Add (aSensitivePoint);
 }
 
 }

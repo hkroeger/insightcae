@@ -25,7 +25,7 @@
 using std::iostream;
 
 #include "Standard_Version.hxx"
-#include <AIS_Drawer.hxx>
+// #include <AIS_Drawer.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <AIS_ListOfInteractive.hxx>
@@ -45,7 +45,7 @@ using std::iostream;
 //#include <Aspect_TypeMap.hxx>
 //#include <Aspect_TypeMapEntry.hxx>
 #include <Aspect_TypeOfLine.hxx>
-#include <Aspect_TypeOfText.hxx>
+// #include <Aspect_TypeOfText.hxx>
 //#include <Aspect_WidthMapEntry.hxx>
 #include <Aspect_WidthOfLine.hxx>
 #include <Aspect_Window.hxx>
@@ -126,8 +126,8 @@ using std::iostream;
 #include <Select2D_SensitiveEntity.hxx>
 #include <Select2D_SensitiveSegment.hxx>
 */
-#include <SelectBasics_BasicTool.hxx>
-#include <SelectBasics_ListOfBox2d.hxx>
+// #include <SelectBasics_BasicTool.hxx>
+// #include <SelectBasics_ListOfBox2d.hxx>
 #include <SelectMgr_EntityOwner.hxx>
 #include <SelectMgr_SelectableObject.hxx>
 #include <SelectMgr_Selection.hxx>

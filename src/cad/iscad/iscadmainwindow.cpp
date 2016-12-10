@@ -61,7 +61,7 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
         {
             const std::string& name=p.first;
             const arma::mat& xyz=p.second;
-            std::cout<<name<<":"<<xyz<<std::endl;
+//             std::cout<<name<<":"<<xyz<<std::endl;
 
             trpts::iterator j=rpts.find(xyz);
             if (j!=rpts.end())
@@ -78,7 +78,11 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
         {
             const std::string& name=p.second;
             const arma::mat& xyz=p.first;
-            Handle_AIS_InteractiveObject o(new insight::cad::InteractiveText(name, xyz));
+            Handle_AIS_InteractiveObject o
+            (
+	      new insight::cad::InteractiveText(name, xyz)
+// 	      new AIS_LengthDimension(gp_Pnt(0,0,0), gp_Pnt(0.321,0,0), gp_Pln(gp_Pnt(0,0,0), gp_Vec(0,1,0)))
+	    );
             additionalDisplayObjectsForSelection_.push_back(o);
             aView->getContext()->Display(o, false);
         }

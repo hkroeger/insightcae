@@ -21,7 +21,7 @@
 #include "solidproperties.h"
 
 #include "AIS_Point.hxx"
-#include "AIS_Drawer.hxx"
+// #include "AIS_Drawer.hxx"
 #include "Prs3d_TextAspect.hxx"
 #include "occtools.h"
 

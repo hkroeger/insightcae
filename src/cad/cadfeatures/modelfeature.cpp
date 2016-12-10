@@ -124,6 +124,12 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 }
 
 
+ModelFeature::ModelFeature(ModelPtr model)
+: model_(model)
+{
+}
+
+
 
 FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariableTable& vars)
 {
@@ -137,11 +143,20 @@ FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariabl
 }
 
 
+FeaturePtr ModelFeature::create_model(ModelPtr model)
+{
+  return FeaturePtr(new ModelFeature(model));
+}
+
+
 void ModelFeature::build()
 {
     if (!cache.contains(hash()))
     {
-        model_.reset(new Model(modelname_, vars_));
+	if (!model_)
+	{
+	  model_.reset(new Model(modelname_, vars_));
+	}
         model_->checkForBuildDuringAccess();
 
         BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())

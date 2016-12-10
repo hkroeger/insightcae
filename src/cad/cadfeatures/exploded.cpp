@@ -74,7 +74,7 @@ Exploded::Exploded( DatumPtr axis, FeaturePtr assy)
     std::string cname=str(format("component%d")%(i+1));
     try
     {
-      components_.push_back(ExplosionComponent(assy->subshape(cname), ExplosionDirection_Axial, vec3const(0,0,0)));
+      components_.push_back(ExplosionComponent(assy->subshape(cname), ExplosionDirection_Axial, vec3const(0,0,0), scalarconst(1.)));
     }
     catch( ...)
     {
@@ -142,7 +142,8 @@ void Exploded::build()
       double axmax=boost::fusion::at_c<3>(c);
       double axextent=axmax-axmin;
       lastmax=std::max(axmin, lastmax);
-      double newmin = lastmax +0.2*axextent;
+      double fac=0.2*boost::fusion::at_c<3>(f)->value();
+      double newmin = lastmax +fac*axextent;
       double curtrans = newmin - axmin;
       gp_Trsf tr;
       tr.SetTranslation(to_Vec( curtrans*dir));
@@ -172,6 +173,7 @@ void Exploded::insertrule(parser::ISCADParser& ruleset) const
 			        | (qi::lit("radial")>qi::attr(ExplosionDirection_Radial)) 
 				| qi::attr(ExplosionDirection_Axial) )
                             > (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0))) 
+                            > (ruleset.r_scalarExpression|qi::attr(scalarconst(1.))) 
 			   ) % ',' )
 			 > ',' > ruleset.r_datumExpression > ')' )
                       [ qi::_val = phx::bind(&Exploded::create, qi::_2, qi::_1) ]

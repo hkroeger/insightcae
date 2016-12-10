@@ -813,7 +813,7 @@ void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
         vd=checked_datums_.find(sn)->second;
     }
 
-    datumlist_->addItem(new QDatumItem(sn, sm, context_, vd));
+    datumlist_->addItem(new QDatumItem(sn, sm, cur_model_, context_, vd));
 }
 
 

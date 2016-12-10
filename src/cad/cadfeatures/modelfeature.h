@@ -42,12 +42,14 @@ class ModelFeature
     void copyModelDatums();
 
     ModelFeature ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
+    ModelFeature ( ModelPtr model );
 
 public:
     declareType ( "loadmodel" );
 
     ModelFeature ();
     static FeaturePtr create ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
+    static FeaturePtr create_model ( ModelPtr model );
 
     virtual void build();
     void executeEditor();

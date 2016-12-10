@@ -36,11 +36,13 @@ class QDatumItem
   insight::cad::DatumPtr smp_;
   QoccViewerContext* context_;
   Handle_AIS_InteractiveObject ais_;
+  insight::cad::ModelPtr model_;
+  double ps_;
     
 public:
   ViewState state_;
 
-  QDatumItem(const std::string& name, insight::cad::DatumPtr smp, QoccViewerContext* context, 
+  QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context, 
 		 const ViewState& state, QListWidget* view = 0);
   
   void reset(insight::cad::DatumPtr smp);

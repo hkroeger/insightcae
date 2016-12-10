@@ -32,7 +32,7 @@ namespace cad
 
 
 typedef enum { ExplosionDirection_Axial, ExplosionDirection_Radial } ExplosionDirection;
-typedef boost::fusion::vector3<FeaturePtr,ExplosionDirection,VectorPtr> ExplosionComponent;  
+typedef boost::fusion::vector4<FeaturePtr,ExplosionDirection,VectorPtr,ScalarPtr> ExplosionComponent;  
 typedef std::vector<ExplosionComponent> ExplosionComponentList;
 
 

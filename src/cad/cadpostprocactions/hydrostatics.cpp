@@ -96,7 +96,7 @@ void Hydrostatics::build()
   cout<<"GM="<<GM<<endl;
 }
 
-AIS_InteractiveObject* Hydrostatics::createAISRepr() const
+Handle_AIS_InteractiveObject Hydrostatics::createAISRepr(const Handle_AIS_InteractiveContext& context) const
 {
   checkForBuildDuringAccess();
   
@@ -123,7 +123,7 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
     cG, str(format("G: m = %g") % m_)
   ));
 
-  std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
+  Handle_AIS_MultipleConnectedInteractive ais(new AIS_MultipleConnectedInteractive());
 
   ais->Connect(aisG);
   ais->Connect(aisB);
@@ -132,7 +132,7 @@ AIS_InteractiveObject* Hydrostatics::createAISRepr() const
   ais->Connect(aisGLabel);
   ais->Connect(aisBLabel);
   
-  return ais.release();
+  return ais;
 }
 
 void Hydrostatics::write(std::ostream& ) const

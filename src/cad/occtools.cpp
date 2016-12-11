@@ -21,6 +21,7 @@
 #include "occtools.h"
 
 #include "Prs3d_Text.hxx"
+#include "StdPrs_Point.hxx"
 #if (OCC_VERSION_MINOR<6)
 #include "Graphic2d_Text.hxx"
 #endif
@@ -70,7 +71,7 @@ Handle_AIS_InteractiveObject createLengthDimension
 #else
     pln->Pln()
   ));
-  dim->SetDisplayUnits(text.c_str());
+  if (text!="") dim->SetDisplayUnits(text.c_str());
 #endif
   return dim;
 }
@@ -167,14 +168,18 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/
   myDrawer->SetTextAspect (new Prs3d_TextAspect());
 
   TCollection_ExtendedString aTCoText(text_.c_str());
-
+  gp_Pnt location(position_(0), position_(1), position_(2));
+  
   Prs3d_Text::Draw 
   (
       pres, 
       myDrawer,
       aTCoText,
-      gp_Pnt (position_(0), position_(1), position_(2))
+      location
   );
+  
+  Handle_Geom_Point p(new Geom_CartesianPoint(location));
+  StdPrs_Point::Add(pres,p,myDrawer);
 }
 
 // void InteractiveText::Compute (const Handle_Prs3d_Projector& proj,

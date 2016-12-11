@@ -35,7 +35,7 @@ public:
   virtual void execute();
   
   virtual void write(std::ostream&) const =0;
-  virtual AIS_InteractiveObject* createAISRepr() const =0;
+  virtual Handle_AIS_InteractiveObject createAISRepr(const Handle_AIS_InteractiveContext& context) const =0;
 };
 
 }

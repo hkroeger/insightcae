@@ -177,10 +177,10 @@ void DrawingExport::build()
 
 
   
-AIS_InteractiveObject* DrawingExport::createAISRepr() const
+Handle_AIS_InteractiveObject DrawingExport::createAISRepr(const Handle_AIS_InteractiveContext&) const
 {
   checkForBuildDuringAccess();
-  return new AIS_Shape(shape_);
+  return Handle_AIS_InteractiveObject(new AIS_Shape(shape_));
 }
 
 

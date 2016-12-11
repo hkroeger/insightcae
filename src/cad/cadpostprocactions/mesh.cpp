@@ -50,10 +50,10 @@ Mesh::Mesh
 {}
 
 
-AIS_InteractiveObject* Mesh::createAISRepr() const
+Handle_AIS_InteractiveObject Mesh::createAISRepr(const Handle_AIS_InteractiveContext&) const
 {
   checkForBuildDuringAccess();
-  return NULL;
+  return Handle_AIS_InteractiveObject();
 }
 
 void Mesh::write(std::ostream& ) const

@@ -70,10 +70,10 @@ void Export::build()
   }
 }
 
-AIS_InteractiveObject* Export::createAISRepr() const
+Handle_AIS_InteractiveObject Export::createAISRepr(const Handle_AIS_InteractiveContext&) const
 {
   checkForBuildDuringAccess();
-  return NULL;
+  return Handle_AIS_InteractiveObject();
 }
 
 void Export::write(std::ostream& ) const

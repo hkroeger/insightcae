@@ -36,7 +36,7 @@ void QEvaluationItem::reset(insight::cad::PostprocActionPtr smp)
 {
   smp_=smp;
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
-  ais_=smp_->createAISRepr();
+  ais_=smp_->createAISRepr(context_->getContext());
   if (!ais_.IsNull()) 
   {
     context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );

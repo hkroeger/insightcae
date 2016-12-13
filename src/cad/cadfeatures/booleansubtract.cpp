@@ -72,7 +72,18 @@ void BooleanSubtract::build()
   h+=*m1_;
   h+=*m2_;
 
-  setShape(BRepAlgoAPI_Cut(*m1_, *m2_).Shape());
+  TopoDS_Shape subs=BRepAlgoAPI_Cut(*m1_, *m2_).Shape();
+//   try //if (subs.ShapeType() == TopAbs_SOLID)
+//   {
+//     std::cout<<"FIX SOLID AFTER SUBTRACT"<<std::endl;
+//     ShapeFix_Solid sfs;//(subs);
+//     sfs.Init(TopoDS::Solid(subs));
+//     sfs.Perform();
+//     subs=sfs.Shape();
+//     std::cout<<"FIXED"<<std::endl;
+//   }
+//   catch (...) {}
+  setShape(subs);
   
   copyDatums(*m1_);
   m1_->unsetLeaf();

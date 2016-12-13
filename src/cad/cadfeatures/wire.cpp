@@ -70,7 +70,12 @@ void Wire::build()
     }
     BRepBuilderAPI_MakeWire wb;
     wb.Add ( ee );
-    setShape ( wb.Wire() );
+    
+    ShapeFix_Wire wf;
+    wf.Load(wb.Wire());
+    wf.Perform();
+    
+    setShape ( wf.Wire() );
 }
 
 

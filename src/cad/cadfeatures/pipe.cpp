@@ -141,7 +141,10 @@ void Pipe::build()
     providedSubshapes_["frontFace"]=FeaturePtr(new Feature(p.FirstShape()));
     providedSubshapes_["backFace"]=FeaturePtr(new Feature(p.LastShape()));
     
-    setShape(p.Shape());
+    TopoDS_Shape res=p.Shape();
+    ShapeFix_Shape sfs(res);
+    sfs.Perform();
+    setShape(sfs.Shape());
 }
 
 
@@ -176,7 +179,7 @@ FeatureCmdInfoList Pipe::ruleDocumentation() const
         FeatureCmdInfo
         (
             "Pipe",
-            "( <feature:xsec>, <feature:spine> [, fixedbinormal <vector>] [, orient] [, reapprox] )",
+            "( <feature:spine>, <feature:xsec> [, fixedbinormal <vector>] [, orient] [, reapprox] )",
             "Sweeps the planar section xsec along the curve feature spine."
             " The xsec is expected at global origin [0,0,0] and is moved to the beginning of the spine."
             " By fixing the binormal direction using keyword fixedbinormal and a fixed direction, problems with erratic twisting of the section on spiral paths can be avoided."

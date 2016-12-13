@@ -68,7 +68,20 @@ void Projected::build()
 
   BRepProj_Projection proj(ow, target_->shape(), to_Vec(dir_->value()));
   
-  setShape(proj.Shape());
+     TopTools_ListOfShape ee;
+     TopoDS_Shape projs = proj.Shape();
+    for (TopExp_Explorer ex(projs, TopAbs_EDGE); ex.More(); ex.Next())
+    {
+        ee.Append ( TopoDS::Edge(ex.Current()) );
+    }
+    BRepBuilderAPI_MakeWire wb;
+    wb.Add ( ee ); 
+  
+    ShapeFix_Wire wf;
+    wf.Load(wb.Wire());
+    wf.Perform();
+    
+    setShape(/*proj.Shape()*/wf.Wire());
 }
 
 
@@ -105,6 +118,18 @@ FeatureCmdInfoList Projected::ruleDocumentation() const
 }
 
 
+bool Projected::isSingleClosedWire() const
+{
+  return TopoDS::Wire(shape()).Closed();
+}
+
+
+
+
+bool Projected::isSingleOpenWire() const
+{
+  return !isSingleClosedWire();
+}
 
 }
 }

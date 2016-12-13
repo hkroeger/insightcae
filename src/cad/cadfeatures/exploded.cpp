@@ -54,13 +54,7 @@ Exploded::Exploded()
 Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 : axis_(axis),
   components_(m1)
-{
-//   for (size_t i=0; i<m1.size(); i++)
-//   {
-// //     components_[str( format("component%d") % (i+1) )] = m1[i];
-//     components_.push_back(m1[i]);
-//   }
-}
+{}
 
 
 
@@ -107,50 +101,58 @@ void Exploded::build()
     TopoDS_Compound result;
     bb.MakeCompound ( result );
 
-    if (!axis_->providesAxisReference())
-      throw insight::Exception("Exploded: datum does not provide axis reference!");
-    
-    gp_Ax1 ax=axis_->axis();
-    arma::mat p0=vec3(ax.Location()), dir=vec3(ax.Direction());
-    
-    typedef boost::tuple<ExplosionComponent,double,double,double> Loc;
-    std::vector<Loc> axialOrdered;
-    BOOST_FOREACH ( const ExplosionComponentList::value_type& c, components_ ) 
+    if (components_.size()>0)
     {
-      arma::mat cog=boost::fusion::at_c<0>(c)->modelCoG();
-      arma::mat bb=boost::fusion::at_c<0>(c)->modelBndBox();
-      double axloc = arma::dot( cog - p0, dir );
-      double axmin = arma::dot( bb.col(0), dir );
-      double axmax = arma::dot( bb.col(1), dir );
-      axialOrdered.push_back(Loc(c, axloc, axmin, axmax));
-    }
-    
-//     std::sort
-//     (
-//       axialOrdered.begin(), axialOrdered.end(),
-//      
-//       [] (Loc const& a, Loc const& b) 
-//        { return boost::get<1>(a) < boost::get<1>(b); }
-//     );
-
-    double lastmax=-1e30, fac=1.2;
-    BOOST_FOREACH ( const Loc& c, axialOrdered ) 
-    {
-      ExplosionComponent f = boost::fusion::at_c<0>(c);
-      double axloc=boost::fusion::at_c<1>(c);
-      double axmin=boost::fusion::at_c<2>(c);
-      double axmax=boost::fusion::at_c<3>(c);
-      double axextent=axmax-axmin;
-      lastmax=std::max(axmin, lastmax);
-      double fac=0.2*boost::fusion::at_c<3>(f)->value();
-      double newmin = lastmax +fac*axextent;
-      double curtrans = newmin - axmin;
-      gp_Trsf tr;
-      tr.SetTranslation(to_Vec( curtrans*dir));
-      bb.Add ( result, BRepBuilderAPI_Transform(*boost::fusion::at_c<0>(f), tr).Shape() );
+      if (!axis_->providesAxisReference())
+	throw insight::Exception("Exploded: datum does not provide axis reference!");
       
-      lastmax=axmax+curtrans;
-//       curloc += fac*axextent;
+      gp_Ax1 ax=axis_->axis();
+      arma::mat p0=vec3(ax.Location()), dir=vec3(ax.Direction());
+      
+      typedef boost::tuple<ExplosionComponent,double,double,double> Loc;
+      std::vector<Loc> axialOrdered;
+      BOOST_FOREACH ( const ExplosionComponentList::value_type& c, components_ ) 
+      {
+	arma::mat cog=boost::fusion::at_c<0>(c)->modelCoG();
+	arma::mat bb=boost::fusion::at_c<0>(c)->modelBndBox();
+	double axloc = arma::dot( cog - p0, dir );
+	double axmin = arma::dot( bb.col(0) - p0, dir );
+	double axmax = arma::dot( bb.col(1) - p0, dir );
+	axialOrdered.push_back(Loc(c, axloc, std::min(axmin,axmax), std::max(axmin,axmax) ));
+      }
+      
+  //     std::sort
+  //     (
+  //       axialOrdered.begin(), axialOrdered.end(),
+  //      
+  //       [] (Loc const& a, Loc const& b) 
+  //        { return boost::get<1>(a) < boost::get<1>(b); }
+  //     );
+
+      // first shape remains at its location, all further
+      double lastmax=boost::fusion::at_c<3>(axialOrdered[0]);
+      bb.Add ( result, *boost::fusion::at_c<0>(boost::fusion::at_c<0>(axialOrdered[0])) );
+
+      for (size_t i=1; i<axialOrdered.size(); i++)
+      {
+	const Loc& c = axialOrdered[i];
+	
+	ExplosionComponent f = boost::fusion::at_c<0>(c);
+// 	double axloc=boost::fusion::at_c<1>(c);
+	double axmin=boost::fusion::at_c<2>(c);
+	double axmax=boost::fusion::at_c<3>(c);
+	double axextent=axmax-axmin;
+	
+// 	lastmax=std::max(axmin, lastmax);
+	double fac=0.2*boost::fusion::at_c<3>(f)->value();
+	double newmin = lastmax +fac*axextent;
+	double curtrans = newmin - axmin;
+	gp_Trsf tr;
+	tr.SetTranslation(to_Vec( curtrans*dir ));
+	bb.Add ( result, BRepBuilderAPI_Transform(*boost::fusion::at_c<0>(f), tr).Shape() );
+	
+	lastmax=axmax+curtrans;
+      }
     }
     
     setShape ( result );

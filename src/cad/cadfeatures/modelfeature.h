@@ -34,7 +34,7 @@ namespace cad
 class ModelFeature
     : public Compound
 {
-    std::string modelname_;
+    boost::variant<std::string, boost::filesystem::path> modelinput_;
     ModelVariableTable vars_;
 
     ModelPtr model_;
@@ -42,6 +42,7 @@ class ModelFeature
     void copyModelDatums();
 
     ModelFeature ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
+    ModelFeature ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
     ModelFeature ( ModelPtr model );
 
 public:
@@ -49,15 +50,14 @@ public:
 
     ModelFeature ();
     static FeaturePtr create ( const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable() );
+    static FeaturePtr create_file ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
     static FeaturePtr create_model ( ModelPtr model );
 
     virtual void build();
     void executeEditor();
 
-    inline const std::string& modelname() const
-    {
-        return modelname_;
-    }
+    std::string modelname() const;
+    boost::filesystem::path modelfile() const;
 
     inline ModelPtr model() const
     {

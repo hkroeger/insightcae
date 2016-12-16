@@ -85,7 +85,7 @@ protected:
     ModelTable		models_;
     PostprocActionTable	postprocActions_;
 
-    std::string modelname_;
+    boost::filesystem::path modelfile_;
 
 
     void defaultVariables();
@@ -95,6 +95,7 @@ public:
 
     Model(const ModelVariableTable& vars = ModelVariableTable());
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
+    Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
     virtual void build();
 

@@ -63,7 +63,16 @@ FeaturePtr Import::create ( const boost::filesystem::path& filepath/*, ScalarPtr
 
 void Import::build()
 {
-  loadShapeFromFile(filepath_);
+  boost::filesystem::path fp = filepath_;
+  if (!boost::filesystem::exists(fp))
+  {
+    fp=sharedModelFilePath(filepath_.string());
+    if (!boost::filesystem::exists(fp))
+    {
+      throw insight::Exception("File not found: "+filepath_.string());
+    }
+  }
+  loadShapeFromFile(fp);
 //   if (scale_)
 //   {
 //     gp_Trsf tr0;

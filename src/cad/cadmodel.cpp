@@ -17,6 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "base/tools.h"
 #include "cadmodel.h"
 #include "datum.h"
 #include "parser.h"
@@ -83,7 +84,7 @@ Model::Model(const ModelVariableTable& vars)
 
 
 Model::Model(const std::string& modelname, const ModelVariableTable& vars)
-    : modelname_(modelname)
+    : modelfile_(sharedModelFilePath(modelname+".iscad"))
 {
     defaultVariables();
     copyVariables(vars);
@@ -91,18 +92,25 @@ Model::Model(const std::string& modelname, const ModelVariableTable& vars)
 
 
 
+Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
+    : modelfile_(modelfile)
+{
+    insight::SharedPathList::searchPathList.insertFileDirectoyIfNotPresent(modelfile_);
+    defaultVariables();
+    copyVariables(vars);
+}
+
+
 
 void Model::build()
 {
-    std::string name=modelname_+".iscad";
-
     int failloc=-1;
-    if (!parseISCADModelFile(sharedModelFilePath(name), this, &failloc))
+    if (!parseISCADModelFile(modelfile_, this, &failloc))
     {
         throw insight::Exception
         (
             "Failed to parse model "
-            +name+
+            +modelfile_.string()+
             str(format(". Stopped at %d.")%failloc)
         );
     }

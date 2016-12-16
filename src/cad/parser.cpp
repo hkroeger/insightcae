@@ -84,9 +84,14 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
         boost::split(paths, e, boost::is_any_of(":"));
     }
     {
-        insight::SharedPathList spl;
-        BOOST_FOREACH(const path& p, spl)
-        paths.push_back(p/"iscad-library");
+//         insight::SharedPathList spl;
+        BOOST_FOREACH(const path& p, insight::SharedPathList::searchPathList)
+	{
+	  if (boost::filesystem::is_directory(p/"iscad-library"))
+	    paths.push_back(p/"iscad-library");
+	  else if (boost::filesystem::is_directory(p))
+	    paths.push_back(p);
+	}
     }
     paths.push_back(".");
 

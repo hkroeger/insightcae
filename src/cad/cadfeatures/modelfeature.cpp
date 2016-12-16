@@ -82,7 +82,7 @@ ModelFeature::ModelFeature(): Compound()
 
 
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
-: modelname_(modelname), vars_(vars)
+: modelinput_(modelname), vars_(vars)
 {
   // build the parameter hash
   ParameterListHash p(this);
@@ -124,6 +124,41 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 }
 
 
+
+
+ModelFeature::ModelFeature(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
+: modelinput_(modelfile), vars_(vars)
+{
+  // build the parameter hash
+  ParameterListHash p(this);
+  p+=modelfile;
+
+  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
+  {
+    p+=boost::fusion::at_c<0>(*it);
+    auto v=boost::fusion::at_c<1>(*it);
+    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+    {
+        p+=(*fp);
+    }
+    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+    {
+        p+=(*dp);
+    }
+    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+    {
+        p+=(*vp)->value();
+    }
+    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+    {
+        p+=(*sp)->value();
+    }
+  }
+}
+
+
+
+
 ModelFeature::ModelFeature(ModelPtr model)
 : model_(model)
 {
@@ -143,6 +178,18 @@ FeaturePtr ModelFeature::create(const std::string& modelname, const ModelVariabl
 }
 
 
+FeaturePtr ModelFeature::create_file(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
+{
+    return FeaturePtr
+           (
+               new ModelFeature
+               (
+                   modelfile, vars
+               )
+           );
+}
+
+
 FeaturePtr ModelFeature::create_model(ModelPtr model)
 {
   return FeaturePtr(new ModelFeature(model));
@@ -155,7 +202,16 @@ void ModelFeature::build()
     {
 	if (!model_)
 	{
-	  model_.reset(new Model(modelname_, vars_));
+	  if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+	  {
+	    model_.reset(new Model(*fp, vars_));
+	  } else if (std::string* mn = boost::get<std::string>(&modelinput_))
+	  {
+	    model_.reset(new Model(*mn, vars_));
+	  } else
+	  {
+	    throw insight::Exception("ModelFeature: Model input unspecified!");
+	  }
 	}
         model_->checkForBuildDuringAccess();
 
@@ -191,12 +247,48 @@ void ModelFeature::build()
 }
 
 
+std::string ModelFeature::modelname() const
+{
+    if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+    {
+      std::string fname = boost::filesystem::basename(*fp);
+      boost::erase_last(fname, ".iscad");
+      return fname;
+    } 
+    else if (std::string* mn = boost::get<std::string>(&modelinput_))
+    {
+      return *mn;
+    } 
+    else
+    {
+      throw insight::Exception("ModelFeature: Model input unspecified!");
+      return std::string();
+    }
+}
+
+
+boost::filesystem::path ModelFeature::modelfile() const
+{
+    if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+    {
+      return boost::filesystem::absolute(*fp);
+    } 
+    else if (std::string* mn = boost::get<std::string>(&modelinput_))
+    {
+      return boost::filesystem::absolute(sharedModelFilePath(*mn+".iscad"));
+    } 
+    else
+    {
+      throw insight::Exception("ModelFeature: Model input unspecified!");
+      return boost::filesystem::path();
+    }
+}
 
 
 void ModelFeature::executeEditor()
 {
-  std::string name=modelname_+".iscad";
-  boost::filesystem::path fp = boost::filesystem::absolute(sharedModelFilePath(name));
+//   std::string name=modelname_+".iscad";
+  boost::filesystem::path fp = modelfile()/*boost::filesystem::absolute(sharedModelFilePath(name))*/;
   ::system( ("iscad "+fp.string()+" &").c_str() );
 }
 
@@ -210,10 +302,16 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
     "loadmodel",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' >> ruleset.r_identifier >> 
-	*(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' ) 
-      [ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
-      
+     '(' >
+      ( 
+	( ruleset.r_identifier >>
+	  *(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' )  
+	[ qi::_val = phx::bind(&ModelFeature::create, qi::_1, qi::_2) ]
+	|
+	( ruleset.r_path >> 
+	  *(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' )  
+	[ qi::_val = phx::bind(&ModelFeature::create_file, qi::_1, qi::_2) ]
+      )
     ))
   );
 }

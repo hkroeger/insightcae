@@ -2426,6 +2426,7 @@ void createPrismLayers
 //     (*qualityCtrls)["minTetQuality"]=-1; //1e-40;  
   }
   
+  shm_cfg.PiM.push_back(vec3(0,0,0));
   snappyHexMesh
   (
     cm, casePath,

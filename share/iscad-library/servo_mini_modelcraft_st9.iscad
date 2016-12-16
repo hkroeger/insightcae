@@ -14,3 +14,21 @@ loadmodel(
  tslot=1.1 
 );
 
+lever_angle?=180*deg;
+Ol=O+1.6*EZ;
+p_act=rot(Ol+10.7*EY by lever_angle around EZ);
+p_act_lo=p_act-1.7*EZ;
+ax_act=RefAxis(p_act, EZ);
+pl_level_lo=Plane(p_act-1.7*EZ, EZ);
+pl_level_hi=Plane(p_act, EZ);
+lever:
+Rotate(
+(
+Cylinder(Ol, ax -4.3*EZ, 7.3)
+|
+Box(Ol, 15.5*EY, 5.5*EX, -1.7*EZ, center y)
+),
+lever_angle*EZ, O
+)
+-Cylinder(p_act, ax -2*refdir(ax_act), 1.9)
+;

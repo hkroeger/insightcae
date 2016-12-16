@@ -1501,6 +1501,7 @@ int main ( int argc, char *argv[] )
               f<<" : "<<base_type_name<<"()"<<endl;
             }
           f<<"{"<<endl;
+	  f<<" get(makeDefault());"<<endl;
           f<<"}"<<endl;
 
           //get from other ParameterSet
@@ -1513,6 +1514,9 @@ int main ( int argc, char *argv[] )
             <<" get(p);"<<endl
             <<"}"<<endl
             ;
+	    
+          f<<"virtual ~"<<name<<"()"<<endl;
+	  f<<"{}"<<endl;
 
           //set into other ParameterSet
           f<<"void set(insight::ParameterSet& p) const"<<endl
@@ -1587,7 +1591,7 @@ int main ( int argc, char *argv[] )
           f<<"return p;"<<endl<<"}"<<endl;
 
           // convert static data into a ParameterSet
-          f<<"operator ParameterSet() const"<<endl;
+          f<<"virtual operator ParameterSet() const"<<endl;
           f<<"{ ParameterSet p=makeDefault(); set(p); return p; }"<<endl;
 
           f<<"};"<<endl;

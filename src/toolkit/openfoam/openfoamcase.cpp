@@ -769,8 +769,14 @@ std::string OpenFOAMCase::cmdString
 )
 const
 {
-  std::string shellcmd;
-  shellcmd = 
+  std::string shellcmd="";
+  
+  if (char* DISPLAY=getenv("DISPLAY"))
+  {
+    shellcmd+="export DISPLAY="+std::string(DISPLAY)+";";
+  }
+  
+  shellcmd += 
     "source "+env_.bashrc().string()+";"
     "export PATH=$PATH:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
     "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"

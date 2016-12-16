@@ -203,10 +203,12 @@ FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps)
   p_(ps),
   isCompressible_(false)
 {
+  std::cerr<<"Constr. FVN "<<p_.decompWeights<<std::endl;
 }
 
 void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["endTime"]=p_.endTime();
@@ -426,6 +428,7 @@ addToStaticFunctionTable(OpenFOAMCaseElement, MeshingNumerics, defaultParameters
 MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps)
 {
+  std::cerr<<"Constr. MN "<<p_.decompWeights<<std::endl;
 }
 
 
@@ -442,73 +445,44 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["endTime"]=1000.0;
   controlDict["deltaT"]=1.0;
   
-  // ============ setup fvSolution ================================
+//   // ============ setup fvSolution ================================
+//   
+//   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+// 
+//   // ============ setup fvSchemes ================================
+//   
+//   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+//   
+//   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+//   ddt["default"]="steadyState";
+//   
+//   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//   grad["default"]="Gauss linear";
+//   
+//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+//   div["default"]="Gauss upwind";
+// 
+//   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+//   laplacian["default"]="Gauss linear limited 0.66";
+// 
+//   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+//   interpolation["default"]="linear";
+// 
+//   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+//   snGrad["default"]="limited 0.66";
+// 
+//   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+//   fluxRequired["default"]="no";
   
-  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
-  /*
-  OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["p"]=GAMGSolverSetup(1e-7, 0.01);
-  solvers["U"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["k"]=smoothSolverSetup(1e-8, 0.1);
-  solvers["omega"]=smoothSolverSetup(1e-12, 0.1);
-  solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
-
-  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
-  if (OFversion()<210)
-  {
-    relax["p"]=0.3;
-    relax["U"]=0.7;
-    relax["k"]=0.7;
-    relax["omega"]=0.7;
-    relax["epsilon"]=0.7;
-  }
-  else
-  {
-    OFDictData::dict fieldRelax, eqnRelax;
-    fieldRelax["p"]=0.3;
-    eqnRelax["U"]=0.7;
-    eqnRelax["k"]=0.7;
-    eqnRelax["omega"]=0.7;
-    eqnRelax["epsilon"]=0.7;
-    relax["fields"]=fieldRelax;
-    relax["equations"]=eqnRelax;
-  }
-
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
-  SIMPLE["nNonOrthogonalCorrectors"]=OFDictData::data( 0 );
-*/  
-  // ============ setup fvSchemes ================================
-  
-  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
-  
-  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-  ddt["default"]="steadyState";
-  
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  grad["default"]="Gauss linear";
-  
-  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-  div["default"]="Gauss upwind";
-
-  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["default"]="Gauss linear limited 0.66";
-
-  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-  interpolation["default"]="linear";
-
-  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="limited 0.66";
-
-  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
-  fluxRequired["default"]="no";
-  
-  setDecomposeParDict(dictionaries, p_.np, FVNumerics::Parameters::decompositionMethod_type::hierarchical, p_.decompWeights );
+//   setDecomposeParDict(dictionaries, p_.np, FVNumerics::Parameters::decompositionMethod_type::hierarchical, p_.decompWeights );
 }
 
 
 ParameterSet MeshingNumerics::defaultParameters()
 {
-    return Parameters::makeDefault();
+    ParameterSet p= Parameters::makeDefault();
+    std::cerr<<"DEF "<<p.get<VectorParameter>("decompWeights")()<<std::endl;
+    return p;
 }
 
 

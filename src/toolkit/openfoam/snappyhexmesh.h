@@ -389,7 +389,7 @@ relativeSizes = bool true "Whether tlayer specifies relative thickness (absolute
 nLayerIter= int 10 "Maximum number of layer iterations"
 stopOnBadPrismLayer = bool false "Whether to stop of too few layers get extruded"
 qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality requirements"
-PiM = array [ vector (0 0 0) "point inside mesh" ]*1 "One or more points inside meshing domain"
+PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside meshing domain"
 features = array [ dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature" ]*0 "Mesh generation features"
     
 <<<PARAMETERSET

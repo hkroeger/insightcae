@@ -92,8 +92,9 @@ class Coaxial
     : public Condition
 {
     DatumPtr ax_org_,  ax_targ_;
+    bool inv_;
 public:
-    Coaxial ( DatumPtr ax_org, DatumPtr ax_targ );
+    Coaxial ( DatumPtr ax_org, DatumPtr ax_targ, bool inv=false );
     virtual double residual ( const gp_Trsf& tr ) const;
 };
 

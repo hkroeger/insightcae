@@ -158,8 +158,8 @@ double InclinedPlanes::residual(const gp_Trsf& tr) const
 }
 
 
-Coaxial::Coaxial(DatumPtr ax_org, DatumPtr ax_targ)
-: ax_org_(ax_org), ax_targ_(ax_targ)
+Coaxial::Coaxial(DatumPtr ax_org, DatumPtr ax_targ, bool inv)
+: ax_org_(ax_org), ax_targ_(ax_targ), inv_(inv)
 {
 }
 
@@ -169,10 +169,13 @@ double Coaxial::residual(const gp_Trsf& tr) const
     gp_Ax1 ao = ax_org_->axis().Transformed(tr);
     gp_Ax1 at = ax_targ_->axis();
     
+    double fac=1.0;
+    if (inv_) fac=-1.;
+    
     gp_XYZ r = ao.Location().XYZ()-at.Location().XYZ();
     r -= r.Dot(at.Direction().XYZ())*at.Direction().XYZ();
 
-    return pow(ao.Direction().Angle(at.Direction()), 2) + r.SquareModulus();
+    return pow(ao.Direction().Angle(fac*at.Direction()), 2) + r.SquareModulus();
 }
     
     
@@ -382,8 +385,9 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         (ruleset.r_datumExpression >> qi::lit("inclined") >> ruleset.r_datumExpression >> ruleset.r_scalarExpression )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<InclinedPlanes>(qi::_1, qi::_2, qi::_3)) ]
         |
-        (ruleset.r_datumExpression >> qi::lit("coaxial") >> ruleset.r_datumExpression  )
-          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<Coaxial>(qi::_1, qi::_2)) ]
+        (ruleset.r_datumExpression >> qi::lit("coaxial") >> ruleset.r_datumExpression 
+	  >> ( ( qi::lit("inverted") >> qi::attr(true) ) | qi::attr(false) ) )
+          [ qi::_val = phx::construct<ConditionPtr>(phx::new_<Coaxial>(qi::_1, qi::_2, qi::_3)) ]
         |
         (ruleset.r_vectorExpression >> qi::lit("inplane") >> ruleset.r_datumExpression  )
           [ qi::_val = phx::construct<ConditionPtr>(phx::new_<PointInPlane>(qi::_1, qi::_2)) ]

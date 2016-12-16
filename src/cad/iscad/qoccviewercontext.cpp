@@ -35,14 +35,14 @@ QoccViewerContext::QoccViewerContext()
   myViewer->SetDefaultViewProj( V3d_Zpos );	// Top view
 
   myContext = new AIS_InteractiveContext( myViewer );
-  
+
   showGrid         = false;
   myGridType       = Aspect_GT_Rectangular;
   myGridMode       = Aspect_GDM_Lines;
   myGridColor      = Quantity_NOC_RED4;
   myGridTenthColor = Quantity_NOC_GRAY90;
 
-  myContext->SetHilightColor(Quantity_NOC_WHITE) ;
+  myContext->SetHilightColor(Quantity_NOC_RED) ;
 
   setGridOffset (0.0);
   gridXY();
@@ -92,15 +92,16 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
       defaultdevice = new Graphic3d_GraphicDevice( getenv(aDisplay) );
 //    }
 #endif
-  return new V3d_Viewer
+  Handle_V3d_Viewer viewer=
+  /*return */ new V3d_Viewer
     (	
      defaultdevice,
      aName,
      aDomain,
      ViewSize,
      V3d_XposYnegZpos,
-//       Quantity_NOC_WHITE,
-     Quantity_NOC_BLACK,
+      Quantity_NOC_WHITE,
+//      Quantity_NOC_BLACK,
      V3d_ZBUFFER,
      V3d_GOURAUD,
      V3d_WAIT 
@@ -112,20 +113,23 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
       defaultdevice = new Graphic3d_WNTGraphicDevice();
     }
 
-  return new V3d_Viewer
+  Handle_V3d_Viewer viewer=
+  /*return*/ new V3d_Viewer
     (	
      defaultdevice,
      aName,
      aDomain,
      ViewSize,
      V3d_XposYnegZpos,
-//      Quantity_NOC_WHITE,
-     Quantity_NOC_BLACK,
+     Quantity_NOC_WHITE,
+//      Quantity_NOC_BLACK,
      V3d_ZBUFFER,
      V3d_GOURAUD,
      V3d_WAIT 
     );
 #endif  // WNT
+    
+    return viewer;
 }
 
 /*! 

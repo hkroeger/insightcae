@@ -1562,8 +1562,10 @@ Feature::View Feature::createView
             }
             xsecs->Append(cxsecs);
         }
-        cout<<"Generated "<<j<<" cross-sections"<<endl;
+//         cout<<"Generated "<<j<<" cross-sections"<<endl;
         dispshape=dispshapes;
+// 	BRepTools::Write(dispshape, "dispshape.brep");
+// 	BRepTools::Write(xsecs, "xsecs.brep");
         result_view.crossSections = xsecs;
     }
 
@@ -1578,7 +1580,7 @@ Feature::View Feature::createView
         // extracting the result sets:
         Handle_HLRBRep_PolyAlgo aHlrPolyAlgo = new HLRBRep_PolyAlgo();
         HLRBRep_PolyHLRToShape shapes;
-        std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
+//         std::cout<<"TolCoef="<<aHlrPolyAlgo->TolCoef()<<endl;
         if (visresolution_)
             aHlrPolyAlgo->TolCoef(visresolution_->value());
         aHlrPolyAlgo->Load(dispshape);

@@ -127,6 +127,7 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
 	
   if (!myView.IsNull())
     {
+
       // Set my window (Hwnd) into the OCC view
       myView->SetWindow( myWindow, rc , paintCallBack, this  );
       // Set up axes (Trihedron) in lower left corner.
@@ -134,9 +135,9 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
       
       // Set up axes (Trihedron) in lower left corner.
 #ifdef OCC_PATCHED
-      myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_WHITE, 0.1, V3d_ZBUFFER );
+      myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_ZBUFFER );
 #else
-      myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_WHITE, 0.1, V3d_WIREFRAME );
+      myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1, V3d_WIREFRAME );
 #endif
       // For testing OCC patches
       // myView->ColorScaleDisplay();	
@@ -161,9 +162,9 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
       }
       Handle_V3d_Light myLight = new V3d_AmbientLight(myViewer,Quantity_NOC_WHITE);
       myView->SetLightOn(myLight);
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 1., 0.));
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 1., 0.));
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,-30000,-3000,-10000,  Quantity_NOC_ANTIQUEWHITE3, 1., 0.));
+      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
+      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
+      myView->SetLightOn(new V3d_PositionalLight (myViewer,-30000,-3000,-10000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
       myView->UpdateLights();
 
       //Handle_V3d_Light myDirectionalLight = new V3d_DirectionalLight( myViewer, 0,0,0, 1,-0.3,0.5 , Quantity_NOC_WHITE, Standard_True );//, V3d_TypeOfOrientation(-1, 0,0), Quantity_NOC_WHITE, Standard_False);
@@ -351,7 +352,7 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
 
 void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 {
-  std::cout<<e->modifiers()<<std::endl;
+//   std::cout<<e->modifiers()<<std::endl;
     if ( ( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_Nothing) )
     {
       setMode(CurAction3d_DynamicZooming);
@@ -370,7 +371,7 @@ void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 
 void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 {
-  std::cout<<e->modifiers()<<std::endl;
+//   std::cout<<e->modifiers()<<std::endl;
     if ( !( e->modifiers() & ZOOMSHORTCUTKEY ) && (myMode == CurAction3d_DynamicZooming) )
     {
       setMode(CurAction3d_Nothing);
@@ -1281,16 +1282,17 @@ void QoccViewWidget::paintOCC( void )
     }
 #endif
 
-  glBegin( GL_QUADS);
-  {
-    glColor4f  (  0.1f, 0.1f, 0.1f, 1.0f );
-    glVertex3d (  left, bottom, depth );
-    glVertex3d ( right, bottom, depth );
-    glColor4f  (  0.8f, 0.8f, 0.9f, 1.0f );
-    glVertex3d ( right,    top, depth );
-    glVertex3d (  left,    top, depth );
-  }
-  glEnd();
+//  // Gradient Background
+//   glBegin( GL_QUADS);
+//   {
+//     glColor4f  (  0.1f, 0.1f, 0.1f, 1.0f );
+//     glVertex3d (  left, bottom, depth );
+//     glVertex3d ( right, bottom, depth );
+//     glColor4f  (  0.8f, 0.8f, 0.9f, 1.0f );
+//     glVertex3d ( right,    top, depth );
+//     glVertex3d (  left,    top, depth );
+//   }
+//   glEnd();
 
   glPopMatrix();
   glMatrixMode( GL_MODELVIEW );

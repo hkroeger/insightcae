@@ -165,7 +165,9 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/
                                const Handle_Prs3d_Presentation& pres,
                                const Standard_Integer mode)
 {
-  myDrawer->SetTextAspect (new Prs3d_TextAspect());
+  Handle_Prs3d_TextAspect at=new Prs3d_TextAspect();
+  at->SetColor(Quantity_NOC_BLACK);
+  myDrawer->SetTextAspect (at);
 
   TCollection_ExtendedString aTCoText(text_.c_str());
   gp_Pnt location(position_(0), position_(1), position_(2));
@@ -178,6 +180,7 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/
       location
   );
   
+  myDrawer->PointAspect()->SetColor(Quantity_NOC_BLACK);
   Handle_Geom_Point p(new Geom_CartesianPoint(location));
   StdPrs_Point::Add(pres,p,myDrawer);
 }

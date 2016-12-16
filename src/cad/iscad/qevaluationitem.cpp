@@ -40,6 +40,7 @@ void QEvaluationItem::reset(insight::cad::PostprocActionPtr smp)
   if (!ais_.IsNull()) 
   {
     context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+    context_->getContext()->SetColor( ais_, Quantity_NOC_BLACK, false );
   }
   updateDisplay();
 }

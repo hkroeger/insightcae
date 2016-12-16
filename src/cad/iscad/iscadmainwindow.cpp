@@ -85,6 +85,7 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
 	    );
             additionalDisplayObjectsForSelection_.push_back(o);
             aView->getContext()->Display(o, false);
+//             aView->getContext()->SetColor(o, Quantity_NOC_BLACK, false);
         }
     }
 

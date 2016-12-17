@@ -1799,9 +1799,6 @@ void Feature::copyDatums(const Feature& m1, const std::string& prefix, std::set<
     {
         if (excludes.find(sf.first)==excludes.end())
         {
-#ifdef INSIGHT_CAD_DEBUG
-            std::cout<<"adding subshape "<<(prefix+sf.first)<<std::endl;
-#endif
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
             providedSubshapes_[prefix+sf.first]=sf.second;
@@ -1856,9 +1853,6 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
     {
         if (excludes.find(sf.first)==excludes.end())
         {
-#ifdef INSIGHT_CAD_DEBUG
-            std::cout<<"adding subshape (transformed) "<<(prefix+sf.first)<<std::endl;
-#endif
             if (providedSubshapes_.find(prefix+sf.first)!=providedSubshapes_.end())
                 throw insight::Exception("subshape "+prefix+sf.first+" already present!");
             providedSubshapes_[prefix+sf.first]=FeaturePtr(new Transform(sf.second, trsf));
@@ -1868,7 +1862,6 @@ void Feature::copyDatumsTransformed(const Feature& m1, const gp_Trsf& trsf, cons
     {
         if (excludes.find(df.first)==excludes.end())
         {
-            std::cout<<"adding datum (transformed) "<<(prefix+df.first)<<std::endl;
             if (providedDatums_.find(prefix+df.first)!=providedDatums_.end())
                 throw insight::Exception("datum "+prefix+df.first+" already present!");
             providedDatums_[prefix+df.first]=DatumPtr(new TransformedDatum(df.second, trsf));

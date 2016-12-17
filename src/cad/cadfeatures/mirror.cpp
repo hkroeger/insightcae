@@ -93,7 +93,11 @@ void Mirror::build()
         tr_.SetMirror ( gp_Ax2 ( gp_Pnt ( 0,0,0 ), gp_Dir ( 1,1,0 ) ) );
     }
 
-    setShape ( BRepBuilderAPI_Transform ( m1_->shape(), tr_ ).Shape() );
+    TopoDS_Shape ms = BRepBuilderAPI_Transform ( m1_->shape(), tr_ ).Shape();
+    ShapeFix_Shape fix;
+    fix.Init( ms );
+    fix.Perform();
+    setShape ( fix.Shape() );
     copyDatumsTransformed ( *m1_, tr_ );
 }
 

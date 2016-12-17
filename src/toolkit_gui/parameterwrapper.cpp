@@ -43,7 +43,7 @@ using namespace boost;
 
 std::string findSharedImageFile(const std::string& file)
 {
-  insight::SharedPathList spl;
+  insight::SharedPathList& spl = insight::SharedPathList::searchPathList;
   try { return spl.getSharedFilePath(file+".png").c_str(); } catch(...) {}
   try { return spl.getSharedFilePath(file+".jpg").c_str(); } catch(...) {}
   try { return spl.getSharedFilePath(file+".pdf").c_str(); } catch(...) {}

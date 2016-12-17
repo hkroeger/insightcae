@@ -99,7 +99,18 @@ int main(int argc, char** argv)
       std::string filename = vm["input-file"].as<std::string>();
       
       insight::cad::ModelPtr model(new insight::cad::Model);
-      return insight::cad::parseISCADModelFile(filename, model.get());
+      if (insight::cad::parseISCADModelFile(filename, model.get()))
+      {
+	auto postprocActions=model->postprocActions();
+	BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
+	{
+	    v.second->execute();
+	}
+	
+	return 0;
+      }
+      else
+	return -1;
     }
     else
     {

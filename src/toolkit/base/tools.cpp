@@ -81,4 +81,35 @@ path SharedPathList::getSharedFilePath(const path& file)
   return path();
 }
 
+void SharedPathList::insertIfNotPresent(const path& spr)
+{
+  path sp = boost::filesystem::absolute(spr);
+  if (std::find(begin(), end(), sp) == end())
+  {
+    std::cout<<"Extend search path: "<<sp.string()<<std::endl;
+    push_back(sp);
+  }
+  else
+  {
+    std::cout<<"Already included in search path: "<<sp.string()<<std::endl;
+  }
+}
+
+void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
+{
+  if (boost::filesystem::is_directory(sp))
+  {
+    insertIfNotPresent(sp);
+  }
+  else
+  {
+    insertIfNotPresent(sp.parent_path());
+  }
+}
+
+
+
+
+SharedPathList SharedPathList::searchPathList;
+
 }

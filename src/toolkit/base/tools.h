@@ -32,7 +32,13 @@ public:
   SharedPathList();
   virtual ~SharedPathList();
   virtual boost::filesystem::path getSharedFilePath(const boost::filesystem::path& file);
+  
+  void insertIfNotPresent(const boost::filesystem::path& sp);
+  void insertFileDirectoyIfNotPresent(const boost::filesystem::path& sp);
+  
+  static SharedPathList searchPathList;
 };
+
 
 }
 

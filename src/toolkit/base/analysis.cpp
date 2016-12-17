@@ -349,8 +349,8 @@ void SynchronisedAnalysisQueue::cancelAll()
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
 
-    SharedPathList paths;
-    BOOST_FOREACH ( const path& p, paths ) {
+//    SharedPathList paths;
+    BOOST_FOREACH ( const path& p, SharedPathList::searchPathList ) {
         if ( is_directory ( p ) ) {
             path userconfigdir ( p );
             userconfigdir /= "modules.d";

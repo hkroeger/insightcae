@@ -123,9 +123,6 @@ void Model::build()
 
 void Model::addScalar(const std::string& name, ScalarPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding scalar variable "<<name<<std::endl;
-#endif
   scalars_.add(name, value);
 }
 
@@ -137,9 +134,6 @@ void Model::addScalarIfNotPresent(const std::string& name, ScalarPtr value)
 
 void Model::addVector(const std::string& name, VectorPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding vector variable "<<name<<std::endl;
-#endif
   vectors_.add(name, value);
 }
 
@@ -151,9 +145,6 @@ void Model::addVectorIfNotPresent(const std::string& name, VectorPtr value)
 
 void Model::addDatum(const std::string& name, DatumPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding datum "<<name<<std::endl;
-#endif
   datums_.add(name, value);
 }
 
@@ -165,9 +156,6 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
 
 void Model::addModelstep(const std::string& name, FeaturePtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding model step "<<name<<std::endl;
-#endif
   modelsteps_.add(name, value);
 }
 
@@ -179,9 +167,6 @@ void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value)
 
 void Model::addComponent(const std::string& name, FeaturePtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding component "<<name<<std::endl;
-#endif
   components_.insert(name);
   addModelstep(name, value);
 }
@@ -194,49 +179,31 @@ void Model::removeScalar(const string& name)
 
 void Model::addVertexFeature(const std::string& name, FeatureSetPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding vertex feature set "<<name<<std::endl;
-#endif
   vertexFeatures_.add(name, value);
 }
 
 void Model::addEdgeFeature(const std::string& name, FeatureSetPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding edge feature set "<<name<<std::endl;
-#endif
   edgeFeatures_.add(name, value);
 }
 
 void Model::addFaceFeature(const std::string& name, FeatureSetPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding face feature set "<<name<<std::endl;
-#endif
   faceFeatures_.add(name, value);
 }
 
 void Model::addSolidFeature(const std::string& name, FeatureSetPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding solid feature set "<<name<<std::endl;
-#endif
   solidFeatures_.add(name, value);
 }
 
 void Model::addModel(const std::string& name, ModelPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding model "<<name<<std::endl;
-#endif
   models_.add(name, value);
 }
 
 void Model::addPostprocAction(const std::string& name, PostprocActionPtr value)
 {
-#ifdef INSIGHT_CAD_DEBUG
-  std::cout<<"adding postproc action "<<name<<std::endl;
-#endif
   postprocActions_.add(name, value);
 }
 

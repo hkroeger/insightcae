@@ -30,6 +30,42 @@ namespace insight
 std::string cleanSymbols(const std::string& s);
 boost::filesystem::path cleanLatexImageFileName(const boost::filesystem::path& s);
 
+/**
+ * Class for handling simplified LaTeX code. 
+ * Intended for unified treatment in Qt help and result reports with formulas.
+ * Difference to real LaTeX: 
+ * - no comments
+ * - Special chars "% # _ [ ]" allowed in text (shall be compatible with paths, common filenames, variable names etc)
+ * - \\n means line break (equal to double backslash)
+ * Only simple subset of latex supported:
+ * - inline formula $..$ and unnumbered display formula $$ .. $$
+ * - \\includegraphics
+ * - \\url
+ * Handling includes:
+ * - storing
+ * - correcting external file references (to files in insight shared directory)
+ * - compiling into PDF
+ * - converting into HTML
+ * - converting into plain text
+ */
+class SimpleLatex
+{
+  std::string simpleLatex_code_;
+  
+public:
+  SimpleLatex();
+  SimpleLatex(const std::string& simpleLatex);
+  
+  const std::string& simpleLatex() const;
+  std::string& simpleLatex();
+  
+  std::string toLaTeX() const;
+  std::string toHTML(double maxWidth) const;
+  std::string toPlainText() const;
+  
+  static std::string LaTeXFromPlainText(const std::string& plainText);
+};
+
 }
 
 #endif // INSIGHT_LATEXTOOLS_H

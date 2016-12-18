@@ -107,7 +107,7 @@ static std::vector<std::string> factoryToC();
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
    if (i==baseT::factories_->end()) \
     throw insight::Exception("Could not lookup type "+key+" in factory table of type " +#baseT); \
-  return (*i->second)( parList ); \
+   return (*i->second)( parList ); \
  } \
  std::vector<std::string> baseT::factoryToC() \
  { \

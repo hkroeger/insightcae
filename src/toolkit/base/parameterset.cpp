@@ -159,9 +159,9 @@ std::string ParameterSet::latexRepresentation() const
     {
       result+=
       "\\item "
-	+cleanSymbols(i->second->description())
+	+i->second->description().toLaTeX()
 	+"\\\\\n"
-	+"\\textbf{"+cleanSymbols(i->first)+"} = "
+	+"\\textbf{"+SimpleLatex(i->first).toLaTeX()+"} = "
 	+i->second->latexRepresentation()
 	+"\n";
     }
@@ -294,7 +294,7 @@ std::string SubsetParameter::latexRepresentation() const
 
 Parameter* SubsetParameter::clone() const
 {
-  return new SubsetParameter(*this, description_);
+  return new SubsetParameter(*this, description_.simpleLatex());
 }
 
 rapidxml::xml_node<>* SubsetParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -359,7 +359,7 @@ std::string SelectableSubsetParameter::latexRepresentation() const
 
 Parameter* SelectableSubsetParameter::clone () const
 {
-  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_);
+  SelectableSubsetParameter *np=new SelectableSubsetParameter(description_.simpleLatex());
   np->selection_=selection_;
   for (ItemList::const_iterator i=value_.begin(); i!=value_.end(); i++)
   {

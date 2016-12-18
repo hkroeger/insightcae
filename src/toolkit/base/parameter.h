@@ -80,7 +80,7 @@ public:
     declareFactoryTable ( Parameter, LIST ( const std::string& descr ), LIST ( descr ) );
 
 protected:
-    std::string description_;
+    SimpleLatex description_;
 
 public:
     declareType ( "Parameter" );
@@ -89,13 +89,14 @@ public:
     Parameter ( const std::string& description );
     virtual ~Parameter();
 
-    inline const std::string& description() const
+    inline const SimpleLatex& description() const
     {
         return description_;
     }
+    
     inline std::string& description()
     {
-        return description_;
+        return description_.simpleLatex();
     }
 
     virtual std::string latexRepresentation() const =0;
@@ -193,12 +194,12 @@ public:
 
     virtual std::string latexRepresentation() const
     {
-        return cleanSymbols ( valueToString ( value_ ) );
+        return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
 
     virtual Parameter* clone() const
     {
-        return new SimpleParameter<T, N> ( value_, description_ );
+        return new SimpleParameter<T, N> ( value_, description_.simpleLatex() );
     }
 
     virtual rapidxml::xml_node<>* appendToNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,

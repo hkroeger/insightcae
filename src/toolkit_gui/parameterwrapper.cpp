@@ -41,16 +41,9 @@
 
 using namespace boost;
 
-std::string findSharedImageFile(const std::string& file)
-{
-  insight::SharedPathList& spl = insight::SharedPathList::searchPathList;
-  try { return spl.getSharedFilePath(file+".png").c_str(); } catch(...) {}
-  try { return spl.getSharedFilePath(file+".jpg").c_str(); } catch(...) {}
-  try { return spl.getSharedFilePath(file+".pdf").c_str(); } catch(...) {}
-  return "";
-}
 
-QString latex2QtHTML(const std::string& latex, QWidget* container)
+
+QString latex2QtHTML(const insight::SimpleLatex& latex, QWidget* container)
 {
   int w =(container->width()/4)*3;
 //   using boost::spirit::qi::double_;
@@ -76,7 +69,7 @@ QString latex2QtHTML(const std::string& latex, QWidget* container)
 //     space
 //   );
   
-  QString lx(latex.c_str()), html("");
+  QString lx(latex.simpleLatex().c_str()), html("");
   QString imageExpr = "\\\\includegraphics\\[.*\\]\\{(.+)\\}";
   QRegExp rx(imageExpr);
   int pos = 0;

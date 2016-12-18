@@ -263,7 +263,7 @@ void PathParameter::unpack()
 
 Parameter* PathParameter::clone() const
 {
-    return new PathParameter(value_, description_);
+    return new PathParameter(value_, description_.simpleLatex());
 }
 
 
@@ -377,13 +377,13 @@ std::string DirectoryParameter::latexRepresentation() const
 {
     return std::string() 
       + "{\\ttfamily "
-      + cleanSymbols( boost::lexical_cast<std::string>(boost::filesystem::absolute(value_)) )
+      + SimpleLatex( boost::lexical_cast<std::string>(boost::filesystem::absolute(value_)) ).toLaTeX()
       + "}";
 }
 
 Parameter* DirectoryParameter::clone() const
 {
-  return new DirectoryParameter(value_, description_);
+  return new DirectoryParameter(value_, description_.simpleLatex());
 }
 
 rapidxml::xml_node<>* DirectoryParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -449,12 +449,12 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
 
 std::string SelectionParameter::latexRepresentation() const
 {
-  return cleanSymbols(items_[value_]);
+  return SimpleLatex(items_[value_]).toLaTeX();
 }
 
 Parameter* SelectionParameter::clone() const
 {
-  return new SelectionParameter(value_, items_, description_);
+  return new SelectionParameter(value_, items_, description_.simpleLatex());
 }
 
 rapidxml::xml_node<>* SelectionParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -553,7 +553,7 @@ DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterat
 
 Parameter* DoubleRangeParameter::clone() const
 {
-  return new DoubleRangeParameter(values_, description_);
+  return new DoubleRangeParameter(values_, description_.simpleLatex());
 }
 
 rapidxml::xml_node<>* DoubleRangeParameter::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
@@ -622,7 +622,7 @@ std::string ArrayParameter::latexRepresentation() const
   
 Parameter* ArrayParameter::clone () const
 {
-  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_);
+  ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex());
   for (int i=0; i<size(); i++)
   {
     np->appendValue(value_[i]);
@@ -756,7 +756,7 @@ void MatrixParameter::readFromNode(const string& name, xml_document< char >& doc
 
 Parameter* MatrixParameter::clone() const
 {
-  return new MatrixParameter(value_, description_);
+  return new MatrixParameter(value_, description_.simpleLatex());
 }
 
 

@@ -41,8 +41,6 @@ class ResultElement
     : public boost::noncopyable
 {
 public:
-//     typedef boost::tuple<const std::string&, const std::string&, const std::string&> ResultElementConstrP;
-
     declareFactoryTable
     (
         ResultElement,
@@ -51,9 +49,24 @@ public:
     );
 
 protected:
-    std::string shortDescription_;
-    std::string longDescription_;
-    std::string unit_;
+  /**
+   * short description of result quantity in LaTeX format
+   */
+    SimpleLatex shortDescription_;
+
+  /**
+   * detailed description of result quantity in LaTeX format
+   */
+    SimpleLatex longDescription_;
+    
+  /**
+   * unit of result quantity in LaTeX format
+   */
+    SimpleLatex unit_;
+    
+    /**
+     * numerical quantity which determines order relative to other result elements
+     */
     double order_;
 
 public:
@@ -62,26 +75,23 @@ public:
     ResultElement ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
     virtual ~ResultElement();
 
-    inline const std::string& shortDescription() const
-    {
-        return shortDescription_;
-    }
-    inline const std::string& longDescription() const
-    {
-        return longDescription_;
-    }
-    inline const std::string& unit() const
-    {
-        return unit_;
-    }
-    inline void setOrder ( double o )
-    {
-        order_=o;
-    }
-    inline double order() const
-    {
-        return order_;
-    }
+  /**
+   * short description of result quantity
+   */
+  const SimpleLatex& shortDescription() const;
+
+  /**
+   * detailed description of result quantity
+   */
+  const SimpleLatex& longDescription() const;
+  
+  /**
+   * unit of result quantity
+   */
+  const SimpleLatex& unit() const;
+  
+    inline void setOrder ( double o ) { order_=o; }
+    inline double order() const { return order_; }
 
     virtual void writeLatexHeaderCode ( std::ostream& f ) const;
     virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;

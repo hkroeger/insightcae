@@ -67,7 +67,12 @@ string latex_subsection ( int level )
 
 
 defineType(ResultElement);
-defineFactoryTable(ResultElement, LIST(const std::string& shortdesc, const std::string& longdesc, const std::string& unit), LIST(shortdesc, longdesc, unit) );
+defineFactoryTable
+(
+  ResultElement, 
+  LIST(const std::string& shortdesc, const std::string& longdesc, const std::string& unit), 
+  LIST(shortdesc, longdesc, unit) 
+);
 
 
 ResultElement::ResultElement ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit )
@@ -80,6 +85,24 @@ ResultElement::ResultElement ( const std::string& shortdesc, const std::string& 
 
 ResultElement::~ResultElement()
 {}
+
+
+const SimpleLatex& ResultElement::shortDescription() const
+{
+  return shortDescription_;
+}
+
+
+const SimpleLatex& ResultElement::longDescription() const
+{
+  return longDescription_;
+}
+
+
+const SimpleLatex& ResultElement::unit() const
+{
+  return unit_;
+}
 
 
 void ResultElement::writeLatexHeaderCode ( std::ostream& f ) const
@@ -118,17 +141,17 @@ rapidxml::xml_node< char >* ResultElement::appendToNode
     child->append_attribute ( doc.allocate_attribute
                               (
                                   "shortDescription",
-                                  doc.allocate_string ( shortDescription_.c_str() ) )
+                                  doc.allocate_string ( shortDescription_.simpleLatex().c_str() ) )
                             );
     child->append_attribute ( doc.allocate_attribute
                               (
                                   "longDescription",
-                                  doc.allocate_string ( longDescription_.c_str() ) )
+                                  doc.allocate_string ( longDescription_.simpleLatex().c_str() ) )
                             );
     child->append_attribute ( doc.allocate_attribute
                               (
                                   "unit",
-                                  doc.allocate_string ( unit_.c_str() ) )
+                                  doc.allocate_string ( unit_.simpleLatex().c_str() ) )
                             );
     child->append_attribute ( doc.allocate_attribute
                               (
@@ -233,13 +256,13 @@ void ResultElementCollection::writeLatexCodeOfElements
         if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) ) {
             se->writeLatexCode ( f, subelemname, level+1, outputfilepath );
         } else {
-            f << latex_subsection ( level+1 ) << "{" << cleanSymbols ( re.first ) << "}\n";
-            f << r->shortDescription() << "\n\n";
+            f << latex_subsection ( level+1 ) << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
+            f << r->shortDescription().toLaTeX() << "\n\n";
 
             //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
             r->writeLatexCode ( f, subelemname, level+2, outputfilepath );
 
-            f << "\n\n" << r->longDescription() << "\n\n";
+            f << "\n\n" << r->longDescription().toLaTeX() << "\n\n";
             f << endl;
         }
     }
@@ -283,7 +306,7 @@ void ResultElementCollection::readFromNode ( rapidxml::xml_document<>& doc, rapi
 
 void ResultSection::writeLatexCode ( ostream& f, const string& name, int level, const path& outputfilepath ) const
 {
-    f << latex_subsection ( level ) << "{"<<sectionName_<<"}\n";
+    f << latex_subsection ( level ) << "{"<<SimpleLatex(sectionName_).toLaTeX()<<"}\n";
 //   f << "\\label{" << cleanSymbols(name) << "}" << std::endl;  // problem with underscores: "\_" as returned by cleanSymbols is wrong here
     f << introduction_ << std::endl;
 
@@ -375,7 +398,7 @@ void Image::writeLatexCode ( std::ostream& f, const std::string& name, int level
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, imagePath_ ).c_str() << "}\n"
-     "\\caption{"+shortDescription_+"}\n"
+     "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
 }
@@ -399,7 +422,7 @@ xml_node< char >* Image::appendToNode ( const string& name, xml_document< char >
 
 ResultElementPtr Image::clone() const
 {
-    ResultElementPtr res ( new Image ( imagePath_.parent_path(), imagePath_, shortDescription_, longDescription_ ) );
+    ResultElementPtr res ( new Image ( imagePath_.parent_path(), imagePath_, shortDescription_.simpleLatex(), longDescription_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -454,7 +477,7 @@ xml_node< char >* Comment::appendToNode ( const string& name, xml_document< char
 
 ResultElementPtr Comment::clone() const
 {
-    ResultElementPtr res ( new Comment ( value_, shortDescription_, longDescription_ ) );
+    ResultElementPtr res ( new Comment ( value_, shortDescription_.simpleLatex(), longDescription_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -481,13 +504,13 @@ void ScalarResult::writeLatexCode ( ostream& f, const std::string& name, int lev
 {
 //   f.setf(ios::fixed,ios::floatfield);
 //   f.precision(3);
-    f << str ( format ( "%g" ) % value_ ) << unit_;
+    f << str ( format ( "%g" ) % value_ ) << unit_.toLaTeX();
 }
 
 
 ResultElementPtr ScalarResult::clone() const
 {
-    ResultElementPtr res ( new ScalarResult ( value_, shortDescription_, longDescription_, unit_ ) );
+    ResultElementPtr res ( new ScalarResult ( value_, shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -610,7 +633,7 @@ void TabularResult::writeGnuplotData ( std::ostream& f ) const
 
 ResultElementPtr TabularResult::clone() const
 {
-    ResultElementPtr res ( new TabularResult ( headings_, rows_, shortDescription_, longDescription_, unit_ ) );
+    ResultElementPtr res ( new TabularResult ( headings_, rows_, shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -809,7 +832,7 @@ xml_node< char >* AttributeTableResult::appendToNode ( const string& name, xml_d
 ResultElementPtr AttributeTableResult::clone() const
 {
     ResultElementPtr res ( new AttributeTableResult ( names_, values_,
-                           shortDescription_, longDescription_, unit_ ) );
+                           shortDescription_.simpleLatex(), longDescription_.simpleLatex(), unit_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -1402,7 +1425,7 @@ void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int level
      "\n\nSee figure below.\n"
      "\\begin{figure}[!h]"
      "\\PlotFrame{keepaspectratio,width=\\textwidth}{" << make_relative ( outputfilepath, chart_file ).c_str() << "}\n"
-     "\\caption{"+shortDescription_+"}\n"
+     "\\caption{"+shortDescription_.toLaTeX()+"}\n"
      "\\end{figure}"
      "\\FloatBarrier";
 }
@@ -1489,7 +1512,7 @@ rapidxml::xml_node<>* Chart::appendToNode
   
 ResultElementPtr Chart::clone() const
 {
-    ResultElementPtr res ( new Chart ( xlabel_, ylabel_, plc_, shortDescription(), longDescription(), addinit_ ) );
+    ResultElementPtr res ( new Chart ( xlabel_, ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), addinit_ ) );
     res->setOrder ( order() );
     return res;
 }

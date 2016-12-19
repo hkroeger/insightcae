@@ -42,62 +42,6 @@
 using namespace boost;
 
 
-/*
-QString latex2QtHTML(const insight::SimpleLatex& latex, QWidget* container)
-{
-  int w =(container->width()/4)*3;
-//   using boost::spirit::qi::double_;
-//   using boost::spirit::qi::_1;
-//   using boost::spirit::qi::phrase_parse;
-//   using boost::spirit::ascii::space;
-//   using boost::phoenix::ref; 
-//   
-//   bool r = 
-//   phrase_parse
-//   (
-//     latex.begin(), 
-//     latex.end(),
-// 
-//     //  Begin grammar
-//     (
-// 	    '(' >> double_[ref(rN) = _1]
-// 		>> -(',' >> double_[ref(iN) = _1]) >> ')'
-// 	|   double_[ref(rN) = _1]
-//     ),
-//     //  End grammar
-// 
-//     space
-//   );
-  
-  QString lx(latex.simpleLatex().c_str()), html("");
-  QString imageExpr = "\\\\includegraphics\\[.*\\]\\{(.+)\\}";
-  QRegExp rx(imageExpr);
-  int pos = 0;
-  int lpos=pos;
-  if (rx.indexIn(lx, pos) == -1)
-  {
-    html=lx;
-  }
-  else
-  {
-    while ((pos = rx.indexIn(lx, pos)) != -1) 
-    {
-      html+=lx.mid(lpos, pos-lpos);
-      QString fn(findSharedImageFile(rx.cap(1).toStdString()).c_str());
-//       html+="<img width=\""+QString::number(w)+"\" src=\""+fn+"\">";
-      html+="<img width=\"100%\" src=\"file://"+fn+"\">";
-//       html+="<img src=\"file://"+fn+"\">";
-      lpos=pos;
-      pos += rx.matchedLength();
-    }
-  }
-  
-  html.replace(QRegExp("\\\\\\\\"), "<br>");
-  
-//   std::cout<<html.toStdString()<<std::endl;
-  return html;
-}*/
-
 void addWrapperToWidget
 (
     insight::ParameterSet& pset,
@@ -242,6 +186,7 @@ void IntParameterWrapper::createWidgets()
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString::number(param()()));
   le_->setValidator(new QIntValidator());
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
@@ -304,6 +249,7 @@ void DoubleParameterWrapper::createWidgets()
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString::number(param()()));
   le_->setValidator(new QDoubleValidator());
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   layout2->addWidget(le_);
   
   layout->addLayout(layout2);
@@ -377,6 +323,7 @@ void VectorParameterWrapper::createWidgets()
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
   le_->setText(QString(insight::valueToString(param()()).c_str()));
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
@@ -452,6 +399,7 @@ void StringParameterWrapper::createWidgets()
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
@@ -603,6 +551,7 @@ void PathParameterWrapper::createWidgets()
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   le_->setText(param()().c_str());
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
@@ -663,7 +612,10 @@ void PathParameterWrapper::openSelectionDialog()
 						"Select file",
 						le_->text());
   if (!fn.isEmpty())
+  {
     le_->setText(fn);
+    onApply();
+  }
 }
 
 void PathParameterWrapper::onDataEntered()
@@ -719,6 +671,7 @@ void MatrixParameterWrapper::createWidgets()
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
   connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
   le_->setText(mat2Str(param()()));
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);

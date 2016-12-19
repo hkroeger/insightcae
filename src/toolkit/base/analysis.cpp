@@ -349,8 +349,8 @@ void SynchronisedAnalysisQueue::cancelAll()
 AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
 
-//    SharedPathList paths;
-    BOOST_FOREACH ( const path& p, SharedPathList::searchPathList ) {
+    SharedPathList paths;
+    BOOST_FOREACH ( const path& p, /*SharedPathList::searchPathList*/paths ) {
         if ( is_directory ( p ) ) {
             path userconfigdir ( p );
             userconfigdir /= "modules.d";
@@ -374,6 +374,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                                     std::cout<<"Omitted "<<itr->path() <<": Could not load module library "<<location<<": " << dlerror() << std::endl;
                                 } else {
                                     handles_.push_back ( handle );
+//                                     std::cout<<itr->path() <<": Loaded module library "<<location << std::endl;
                                 }
                             }
 

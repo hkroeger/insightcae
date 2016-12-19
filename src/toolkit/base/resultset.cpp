@@ -245,7 +245,7 @@ void ResultElementCollection::writeLatexCodeOfElements
     BOOST_FOREACH ( const value_type& re, items ) {
         const ResultElement* r = & ( *re.second );
 
-        std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
+//         std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
 
         std::string subelemname=re.first;
         if ( name!="" ) {
@@ -253,11 +253,15 @@ void ResultElementCollection::writeLatexCodeOfElements
         }
 
 
-        if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) ) {
+        if ( const ResultSection* se=dynamic_cast<const ResultSection*> ( r ) ) 
+	{
             se->writeLatexCode ( f, subelemname, level+1, outputfilepath );
-        } else {
+        } 
+        else 
+	{
             f << latex_subsection ( level+1 ) << "{" << SimpleLatex( re.first ).toLaTeX() << "}\n";
-            f << r->shortDescription().toLaTeX() << "\n\n";
+
+	    f << r->shortDescription().toLaTeX() << "\n\n";
 
             //     re.second->writeLatexCode(f, re.first, level+1, outputfilepath);
             r->writeLatexCode ( f, subelemname, level+2, outputfilepath );
@@ -280,7 +284,7 @@ void ResultElementCollection::readFromNode ( rapidxml::xml_document<>& doc, rapi
     for ( xml_node<> *e = node.first_node(); e; e = e->next_sibling() ) {
         std::string tname ( e->name() );
         std::string name ( e->first_attribute ( "name" )->value() );
-        std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
+//         std::cout<<"reading "<<name<<" of type "<<tname<<std::endl;
 
         ResultElementPtr re
         (
@@ -477,7 +481,7 @@ xml_node< char >* Comment::appendToNode ( const string& name, xml_document< char
 
 ResultElementPtr Comment::clone() const
 {
-    ResultElementPtr res ( new Comment ( value_, shortDescription_.simpleLatex(), longDescription_.simpleLatex() ) );
+    ResultElementPtr res ( new Comment ( value_, shortDescription_.simpleLatex() ) );
     res->setOrder ( order() );
     return res;
 }
@@ -604,7 +608,7 @@ arma::mat TabularResult::toMat() const
     BOOST_FOREACH ( const std::vector<double>& row, rows_ ) {
         int j=0;
         BOOST_FOREACH ( double v, row ) {
-            cout<<"res("<<i<<","<<j<<")="<<v<<endl;
+//             cout<<"res("<<i<<","<<j<<")="<<v<<endl;
             res ( i, j++ ) =v;
         }
         i++;
@@ -1223,7 +1227,7 @@ ResultElementPtr ResultSet::clone() const
 {
     std::auto_ptr<ResultSet> nr ( new ResultSet ( p_, title_, subtitle_, &author_, &date_ ) );
     for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-        cout<<i->first<<endl;
+//         cout<<i->first<<endl;
         std::string key ( i->first );
         nr->insert ( key, i->second->clone() );
     }
@@ -1280,7 +1284,7 @@ std::string PlotCurve::title() const
   boost::smatch str_matches;
   if (boost::regex_match(plotcmd_, str_matches, re))
   {
-    std::cout<<" <> "<<str_matches[1]<<std::endl;
+//     std::cout<<" <> "<<str_matches[1]<<std::endl;
     return str_matches[1];
   }
   else return "";
@@ -1304,7 +1308,11 @@ insight::ResultElement& addPlot
 {
     std::string precmd=addinit+";";
     if ( watermarktext!="" ) {
-        precmd+="set label \""+cleanSymbols ( watermarktext )+"\" center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";";
+        precmd+=
+	  "set label "
+	  "'"+SimpleLatex( watermarktext ).toLaTeX()+"'"
+	  " center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";"
+	  ;
     }
 
     return results->insert ( resultelementname,

@@ -1972,7 +1972,7 @@ void currentNumericalSettingsReport
 	std::auto_ptr<Comment>(new Comment
 	(
 	latexCode.str(), 
-	"Contents of "+dictname.string(), ""
+	"Contents of "+dictname.string()
       ))).setOrder(order);    
       order+=1.;
     }

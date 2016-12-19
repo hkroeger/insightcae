@@ -99,6 +99,9 @@ public:
         return description_;
     }
 
+    /**
+     * LaTeX representation of the parameter value
+     */
     virtual std::string latexRepresentation() const =0;
 
     virtual rapidxml::xml_node<>* appendToNode

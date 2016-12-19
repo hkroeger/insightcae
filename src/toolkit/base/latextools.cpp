@@ -322,7 +322,7 @@ std::string SimpleLatex::toLaTeX() const
 
 
 
-std::string SimpleLatex::toHTML(double maxWidth) const
+std::string SimpleLatex::toHTML() const
 {
   HTMLReplacements rep;
   return reformat(simpleLatex_code_, rep);

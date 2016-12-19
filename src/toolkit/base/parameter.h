@@ -94,9 +94,9 @@ public:
         return description_;
     }
     
-    inline std::string& description()
+    inline SimpleLatex& description()
     {
-        return description_.simpleLatex();
+        return description_;
     }
 
     virtual std::string latexRepresentation() const =0;

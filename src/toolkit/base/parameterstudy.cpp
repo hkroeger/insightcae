@@ -65,7 +65,7 @@ ParameterSet ParameterStudy::defaultParameters() const
   BOOST_FOREACH( const std::string& parname, varp_ )
   {
     double orgval=dfp.getDouble(parname);
-    dfp.replace( parname, new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description()) );
+    dfp.replace( parname, new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex()) );
   }
   
   dfp.getSubset("run").insert

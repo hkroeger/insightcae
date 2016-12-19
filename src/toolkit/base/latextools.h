@@ -60,7 +60,7 @@ public:
   std::string& simpleLatex();
   
   std::string toLaTeX() const;
-  std::string toHTML(double maxWidth) const;
+  std::string toHTML() const;
   std::string toPlainText() const;
   
   static std::string LaTeXFromPlainText(const std::string& plainText);

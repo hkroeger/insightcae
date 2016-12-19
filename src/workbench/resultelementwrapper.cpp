@@ -67,8 +67,8 @@ CommentWrapper::CommentWrapper(QTreeWidgetItem* tree, const QString& name, insig
 //   this->setLayout(layout);
   
   setText(0, name_);
-  setText(1, res().shortDescription().toHTML(600).c_str() );
-  setText(2, insight::SimpleLatex(res().value()).toHTML(600).c_str() );
+  setText(1, res().shortDescription().toHTML().c_str() );
+  setText(2, insight::SimpleLatex(res().value()).toHTML().c_str() );
 }
 
 
@@ -88,8 +88,8 @@ ScalarResultWrapper::ScalarResultWrapper(QTreeWidgetItem* tree, const QString& n
 //   layout->addWidget(le_);
 //   this->setLayout(layout);
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML(600).c_str());
-    setText(2, QString::number(res().value()) + " " + res().unit().toHTML(600).c_str() );
+    setText(1, res().shortDescription().toHTML().c_str());
+    setText(2, QString::number(res().value()) + " " + res().unit().toHTML().c_str() );
 }
 
 
@@ -151,7 +151,7 @@ ImageWrapper::ImageWrapper(QTreeWidgetItem* tree, const QString& name, insight::
 //   this->setLayout(layout);
     
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML(600).c_str());
+    setText(1, res().shortDescription().toHTML().c_str());
     setData(2, 1, QVariant(image));
 }
 
@@ -172,7 +172,7 @@ ChartWrapper::ChartWrapper(QTreeWidgetItem* tree, const QString& name, insight::
     image=image.scaledToWidth(w0/4, Qt::SmoothTransformation);
 
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML(600).c_str());
+    setText(1, res().shortDescription().toHTML().c_str());
     setData(2, 1, QVariant(image));
 
 }
@@ -191,7 +191,7 @@ TabularResultWrapper::TabularResultWrapper(QTreeWidgetItem* tree, const QString&
 : ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML(600).c_str());
+    setText(1, res().shortDescription().toHTML().c_str());
 
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);
@@ -236,7 +236,7 @@ AttributeTableResultWrapper::AttributeTableResultWrapper(QTreeWidgetItem* tree, 
 : ResultElementWrapper(tree, name, re)
 {
     setText(0, name_);
-    setText(1, res().shortDescription().toHTML(600).c_str());
+    setText(1, res().shortDescription().toHTML().c_str());
 
 //   QHBoxLayout *layout=new QHBoxLayout(this);
 //   QLabel *nameLabel = new QLabel(name_, this);

@@ -42,7 +42,7 @@
 using namespace boost;
 
 
-
+/*
 QString latex2QtHTML(const insight::SimpleLatex& latex, QWidget* container)
 {
   int w =(container->width()/4)*3;
@@ -96,7 +96,7 @@ QString latex2QtHTML(const insight::SimpleLatex& latex, QWidget* container)
   
 //   std::cout<<html.toStdString()<<std::endl;
   return html;
-}
+}*/
 
 void addWrapperToWidget
 (
@@ -232,7 +232,7 @@ void IntParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -294,7 +294,7 @@ void DoubleParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -368,7 +368,7 @@ void VectorParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -444,7 +444,7 @@ void StringParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -513,7 +513,7 @@ void BoolParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -595,7 +595,7 @@ void PathParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -636,7 +636,7 @@ void PathParameterWrapper::updateTooltip()
 {
   le_->setToolTip
   (
-    QString(param().description().c_str())
+    QString(param().description().toHTML().c_str())
     +"\n"+
     "(Evaluates to \""+boost::filesystem::absolute(le_->text().toStdString()).c_str()+"\")"
   );
@@ -711,7 +711,7 @@ void MatrixParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -820,7 +820,7 @@ void SelectionParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -896,7 +896,7 @@ void SubsetParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
   
 //   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
@@ -1033,7 +1033,7 @@ void ArrayParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
@@ -1100,7 +1100,7 @@ void DoubleRangeParameterWrapper::createWidgets()
   
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
@@ -1213,7 +1213,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
 
   QWebView *shortDescLabel = 
     new QWebView( detaileditwidget_ );
-  shortDescLabel->setHtml(latex2QtHTML(param().description(), detaileditwidget_));
+  shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
   
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);

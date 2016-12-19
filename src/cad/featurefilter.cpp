@@ -425,13 +425,13 @@ struct EdgeFeatureFilterExprParser
 	( lit("boundaryOfFace") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<boundaryOfFace>(*qi::_1)) ]
 	|
-	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isPartOfSolid") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidEdge>(*qi::_1)) ]
 	|
-	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isCoincident") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentEdge>(*qi::_1)) ]
 	|
-	( lit("isIdentical") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isIdentical") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalEdge>(*qi::_1)) ]
 	|
 	( lit("projectionIsCoincident") > '('
@@ -448,9 +448,9 @@ struct EdgeFeatureFilterExprParser
 	( lit("len") ) 
 	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
 	|
-	( lit("radialLen") >> 
-	    '(' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >> //ax
-	    ',' >> FeatureFilterExprParser<Iterator>::r_mat_qty_expression >>  //p0
+	( lit("radialLen") > 
+	    '(' > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > //ax
+	    ',' > FeatureFilterExprParser<Iterator>::r_mat_qty_expression >  //p0
 	    ')' ) 
 	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeRadialLen>(qi::_1, qi::_2)) ]
       ;
@@ -514,13 +514,13 @@ struct FaceFeatureFilterExprParser
 	( lit("isOtherSurface") ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<faceTopology>(GeomAbs_OtherSurface)) ]
 	|
-	( lit("isPartOfSolid") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isPartOfSolid") > '(' > FeatureFilterExprParser<Iterator>::r_featureset  > ')') 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<isPartOfSolidFace>(*qi::_1)) ]
 	|
-	( lit("isCoincident") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isCoincident") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<coincidentFace>(*qi::_1)) ]
 	|
-	( lit("isIdentical") >> FeatureFilterExprParser<Iterator>::r_featureset ) 
+	( lit("isIdentical") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 
 	  [ qi::_val = phx::construct<FilterPtr>(new_<identicalFace>(*qi::_1)) ]
 	|
 	( lit("adjacentToEdges") > '(' > FeatureFilterExprParser<Iterator>::r_featureset > ')' ) 

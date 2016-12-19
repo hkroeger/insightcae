@@ -16,7 +16,7 @@ int main(int argc, char*argv[])
   
   std::cout<<"=== Latex: ===\n" << sl.toLaTeX()<<"\n"<<std::endl;
   
-  std::cout<<"=== HTML: ===\n" << sl.toHTML(800)<<"\n"<<std::endl;
+  std::cout<<"=== HTML: ===\n" << sl.toHTML()<<"\n"<<std::endl;
 
   std::cout<<"=== Plaintext: ===\n" << sl.toPlainText()<<"\n"<<std::endl;
   

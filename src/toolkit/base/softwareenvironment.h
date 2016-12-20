@@ -29,8 +29,9 @@
 
 #include "pstreams/pstream.h"
 
-#include "boost/foreach.hpp"
-#include "boost/algorithm/string.hpp"
+// #include "boost/foreach.hpp"
+// #include "boost/algorithm/string.hpp"
+#include "base/boost_include.h"
 
 #include "base/exception.h"
 
@@ -76,12 +77,22 @@ public:
       argv.insert(argv.begin(), cmd);
       
       if (machine=="")
-      {
-	argv.insert(argv.begin(), "-lc");
-	argv.insert(argv.begin(), "bash");
-	argv.insert(argv.begin(), "-i");
-	argv.insert(argv.begin(), "env");
-      }
+        {
+            argv.insert(argv.begin(), "-lc");
+            argv.insert(argv.begin(), "bash");
+            // keep only a selected set of environment variables
+            std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER")("SHELL");
+            BOOST_FOREACH(const std::string& varname, keepvars)
+            {
+                if (char* varvalue=getenv(varname.c_str()))
+                {
+                    // shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
+                    argv.insert(argv.begin(), varname+"="+std::string(varvalue));
+                }
+            }
+            argv.insert(argv.begin(), "-i");
+            argv.insert(argv.begin(), "env");
+        }
       else if (boost::starts_with(machine, "qrsh-wrap"))
       {
 	//argv.insert(argv.begin(), "n");

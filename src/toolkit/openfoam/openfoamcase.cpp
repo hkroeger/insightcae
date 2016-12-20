@@ -770,16 +770,6 @@ std::string OpenFOAMCase::cmdString
 const
 {
   std::string shellcmd="";
-
-  // keep only a selected set of environment variables
-  std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER");
-  BOOST_FOREACH(const std::string& varname, keepvars)
-  {
-    if (char* varvalue=getenv(varname.c_str()))
-    {
-        shellcmd+="export "+varname+"=\""+std::string(varvalue)+"\";";
-    }
-  }
   
   shellcmd += 
     "source "+env_.bashrc().string()+";"

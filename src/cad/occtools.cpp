@@ -29,6 +29,12 @@
 #include "Font_NameOfFont.hxx"
 #include "Graphic3d_AspectText3d.hxx"
 #include "Font_FontAspect.hxx"
+#if (OCC_VERSION_MINOR<=6)
+#include "Prs3d_TextAspect.hxx"
+#include "Prs3d_PointAspect.hxx"
+#include "SelectMgr_Selection.hxx"
+#include "SelectMgr_EntityOwner.hxx"
+#endif
 
 namespace insight {
 namespace cad {

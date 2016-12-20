@@ -5,7 +5,10 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/cmake-2.8.12.2.tar.gz && cd cmake-2.8.12.2 && (
+#VERSION=2.8.12.2
+VERSION=3.5.1
+
+tar xzf TARBALLS/cmake-${VERSION}.tar.gz && cd cmake-$VERSION && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

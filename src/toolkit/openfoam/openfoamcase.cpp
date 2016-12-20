@@ -771,11 +771,6 @@ const
 {
   std::string shellcmd="";
   
-  if (char* DISPLAY=getenv("DISPLAY"))
-  {
-    shellcmd+="export DISPLAY="+std::string(DISPLAY)+";";
-  }
-  
   shellcmd += 
     "source "+env_.bashrc().string()+";"
     "export PATH=$PATH:$INSIGHT_BINDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"

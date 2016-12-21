@@ -6,10 +6,12 @@ if [ ! -d TARBALLS ]; then
 fi
 
 DIR=dlib-18.18
-tar xjf TARBALLS/i$DIR.tar.bz2 && cd $DIR && (
+tar xjf TARBALLS/$DIR.tar.bz2 && cd $DIR && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 
- PYTHONPATH=$INSTALLDIR/lib64/python2.7/site-packages/ python setup.py build -j 12 install --prefix=$INSTALLDIR
+ mkdir build && cd build && ( cmake ../dlib -DCMAKE_INSTALL_PREFIX="$INSTALLDIR" && make -j12 && make install ) 
+
+ #PYTHONPATH=$INSTALLDIR/lib64/python2.7/site-packages/ python setup.py build -j 12 install --prefix=$INSTALLDIR
 
 )

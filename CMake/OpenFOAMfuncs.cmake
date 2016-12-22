@@ -6,7 +6,7 @@ macro(setOFlibvar prefix)
       LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
     endif()
    ENDFOREACH(f)
-   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
+#   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
 endmacro()
 
 macro(detectEnvVar prefix varname outvarname)
@@ -27,7 +27,7 @@ macro(detectDepLib prefix fromlib pattern)
 endmacro()
 
 macro(detectIncPaths prefix)
- execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
+ execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/printOFincPath ${${prefix}_BASHRC} ${ARGN} OUTPUT_VARIABLE ${prefix}_INCLUDE_PATHS)
 endmacro()
 
 

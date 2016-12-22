@@ -37,7 +37,7 @@ IF(OF23x_BASHRC)
   string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKLIBSO ${OF23x_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" OF23x_LINKEXE ${OF23x_LINKEXE_full})
 
-  detectIncPaths(OF23x)
+  detectIncPaths(OF23x "src/TurbulenceModels/*") # skip (unfinished?) TurbulenceModels because of conflicting headers
 
   setOFlibvar(OF23x 
 #incompressibleTurbulenceModels

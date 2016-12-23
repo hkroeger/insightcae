@@ -1569,10 +1569,11 @@ Feature::View Feature::createView
         result_view.crossSections = xsecs;
     }
 
-    TopoDS_Compound allVisible;
-    TopoDS_Shape HiddenEdges;
-    BRep_Builder builder;
+    TopoDS_Compound allVisible, allHidden;
+//     TopoDS_Shape HiddenEdges;
+    BRep_Builder builder, builderh;
     builder.MakeCompound( allVisible );
+    builderh.MakeCompound( allHidden );
 
     if (poly)
     {
@@ -1595,7 +1596,13 @@ Feature::View Feature::createView
         TopoDS_Shape olvs = shapes.OutLineVCompound();
         if (!olvs.IsNull()) builder.Add(allVisible, olvs);
 
-        HiddenEdges = shapes.HCompound();
+//         HiddenEdges = shapes.HCompound();
+        TopoDS_Shape hs = shapes.HCompound();
+        if (!hs.IsNull()) builderh.Add(allHidden, hs);
+        TopoDS_Shape r1hs=shapes.Rg1LineHCompound();
+        if (!r1hs.IsNull()) builderh.Add(allHidden, r1hs);
+        TopoDS_Shape olhs = shapes.OutLineHCompound();
+        if (!olhs.IsNull()) builderh.Add(allHidden, olhs);
 
     }
     else
@@ -1614,13 +1621,18 @@ Feature::View Feature::createView
         TopoDS_Shape olvs = shapes.OutLineVCompound();
         if (!olvs.IsNull()) builder.Add(allVisible, olvs);
 
-        HiddenEdges = shapes.HCompound();
+        TopoDS_Shape hs = shapes.HCompound();
+        if (!hs.IsNull()) builderh.Add(allHidden, hs);
+        TopoDS_Shape r1hs=shapes.Rg1LineHCompound();
+        if (!r1hs.IsNull()) builderh.Add(allHidden, r1hs);
+        TopoDS_Shape olhs = shapes.OutLineHCompound();
+        if (!olhs.IsNull()) builderh.Add(allHidden, olhs);
     }
 
     result_view.visibleEdges=allVisible;
     if (!skiphl)
     {
-        result_view.hiddenEdges=HiddenEdges;
+        result_view.hiddenEdges=allHidden;
     }
     
     

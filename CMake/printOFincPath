@@ -3,12 +3,17 @@
 ARG_BRC=$1
 shift 1
 #ARGS=$*
+SKIPPATTERN=$1
 source $ARG_BRC
 FIRST=1
 for bd in "$FOAM_SRC" "$FOAM_APP"; do
  for d in `find "$bd" -name "Make" -a -type d`; do 
   p="$(cd $d; cd ..; pwd)"
-  if [ `basename $p` != "finiteArea" ]; then # skip this because of interfering header names, has to be included manually, if needed
+  SKIP=
+  for skip in $SKIPPATTERN; do
+   if [[ "$p" == *${skip} ]]; then SKIP=1; fi
+  done
+  if [ `basename $p` != "finiteArea" ] && [ ! "$SKIP" ]; then # skip this because of interfering header names, has to be included manually, if needed
    P="$p/lnInclude"
    if [ -d "$P" ]; then 
     if [ ! "$FIRST" ]; then echo -n ";"; else unset FIRST; fi

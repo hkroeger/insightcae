@@ -596,9 +596,24 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
 
         TopoDS_Face f=TopoDS::Face(exf.Current());
 
-        boost::ptr_vector<hatchLoopWriter> segments;
+        DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
+
+	int numw=0;
+	// count wire loops
+	for (TopExp_Explorer exw(f, TopAbs_WIRE); exw.More(); exw.Next()) 
+	{
+	  numw++; 
+	}
+	
+        // start hatch with one loop:
+        DL_HatchData curdata=data;
+	curdata.numLoops=numw;
+// 	std::cout<<"START HATCH nloop="<<numw<<std::endl;
+        dxf_.writeHatch1(*dw_, curdata, attributes);
+
         for (TopExp_Explorer exw(f, TopAbs_WIRE); exw.More(); exw.Next())
         {
+	    boost::ptr_vector<hatchLoopWriter> segments;
             //cout << "ADDING WIRE" << endl;
             // loop through edges of wire in ordered manner
             for (BRepTools_WireExplorer ex(TopoDS::Wire(exw.Current())); ex.More(); ex.Next())
@@ -608,7 +623,7 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
 
                 BRepAdaptor_Curve adapt(e);
 
-                cout<<"xsec drawing: processing curve of type "<<adapt.GetType()<<endl;
+//                 cout<<"xsec drawing: processing curve of type "<<adapt.GetType()<<endl;
 
                 switch (adapt.GetType())
                 {
@@ -637,51 +652,50 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
                     segments.push_back(new writerLine_HatchLoop(adapt, layer, ex.Orientation()==TopAbs_REVERSED));
                 }
             }
+            
+	    // start loop:
+	    int nsegs=0;
+	    BOOST_FOREACH(const hatchLoopWriter& w, segments)
+	    {
+		nsegs+=w.nsegments();
+	    }
+	    //cout<<"nsegs="<<nsegs<<endl;
+	    DL_HatchLoopData lData(nsegs);
+
+	    // start loop:
+// 	    std::cout<<"START HATCH LOOP nseg="<<nsegs<<std::endl;
+	    dxf_.writeHatchLoop1(*dw_, lData);
+
+	    for (int i=0; i<segments.size(); i++)
+	    {
+		hatchLoopWriter& w=segments[i];
+		if (i>0)
+		{
+		    gp_Pnt lpe=segments[i-1].end();
+		    w.alignStartWith(lpe);
+		    gp_Pnt ps=w.start();
+		    //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+		}
+		else
+		{
+		    gp_Pnt lpe=segments.back().end();
+		    w.alignStartWith(lpe);
+		    gp_Pnt ps=w.start();
+		    //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
+		}
+		w.write(dxf_, dw_);
+	    }
+	    
+	    // end loop:
+	    dxf_.writeHatchLoop2(*dw_, lData);
+// 	    std::cout<<"END HATCH LOOP"<<std::endl;
         }
 
-        DL_Attributes attributes(layer, 256, 0, -1, "BYLAYER");
-
-        // start loop:
-        int nsegs=0;
-        BOOST_FOREACH(const hatchLoopWriter& w, segments)
-        {
-            nsegs+=w.nsegments();
-        }
-        //cout<<"nsegs="<<nsegs<<endl;
-        DL_HatchLoopData lData(nsegs);
-
-        // start hatch with one loop:
-        dxf_.writeHatch1(*dw_, data, attributes);
-
-        // start loop:
-        dxf_.writeHatchLoop1(*dw_, lData);
-
-        for (int i=0; i<segments.size(); i++)
-        {
-            hatchLoopWriter& w=segments[i];
-            if (i>0)
-            {
-                gp_Pnt lpe=segments[i-1].end();
-                w.alignStartWith(lpe);
-                gp_Pnt ps=w.start();
-                //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
-            }
-            else
-            {
-                gp_Pnt lpe=segments.back().end();
-                w.alignStartWith(lpe);
-                gp_Pnt ps=w.start();
-                //cout<<lpe.X()<<" "<<lpe.Y()<<" "<<lpe.Z()<<" <=> "<<ps.X()<<" "<<ps.Y()<<" "<<ps.Z()<<" >> "<<lpe.Distance(ps)<<endl;
-            }
-            w.write(dxf_, dw_);
-        }
-
-        // end loop:
-        dxf_.writeHatchLoop2(*dw_, lData);
-
-        // end hatch:
-        dxf_.writeHatch2(*dw_, data, attributes);
+	// end hatch:
+	dxf_.writeHatch2(*dw_, curdata, attributes);
+// 	std::cout<<"END HATCH"<<std::endl;
     }
+    
 }
 
 

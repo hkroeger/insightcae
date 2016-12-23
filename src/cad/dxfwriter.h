@@ -114,6 +114,7 @@ protected:
 public:
   HatchGenerator();
   
+  /** generate with numloops=1 */
   DL_HatchData generate();
 };
 

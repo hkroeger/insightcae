@@ -18,7 +18,6 @@ Cylinder(
 );
 
 bore=
-(
 Cylinder(
  O, Lbore*EX,
  d1)
@@ -26,7 +25,6 @@ Cylinder(
 Cylinder(
  -Lbore*EX, O,
  D
-)
 );
 
 axis=RefAxis(O, EX);

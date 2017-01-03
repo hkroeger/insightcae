@@ -1298,52 +1298,34 @@ namespace paraview
 {
 
 defineType(PVScene);
-defineFactoryTableNoArgs(PVScene);
-
-defineType(CustomPVScene);
-addToFactoryTable(PVScene, CustomPVScene);
+// defineFactoryTableNoArgs(PVScene);
+defineDynamicClass(PVScene);
 
 PVScene::~PVScene()
 {}
 
-CustomPVScene::CustomPVScene()
-{}
+defineType(CustomPVScene);
+addToFactoryTable(PVScene, CustomPVScene);
+addToStaticFunctionTable(PVScene, CustomPVScene, defaultParameters);
 
 CustomPVScene::CustomPVScene(const ParameterSet& ps)
-{
-  Parameters p(ps);
-  command_=p.command;
-}
-
-CustomPVScene::~CustomPVScene()
+: p_(ps)
 {}
 
-ParameterSet CustomPVScene::defaultParameters() const
-{
-  return Parameters::makeDefault();
-}
 
 string CustomPVScene::pythonCommands() const
 {
-  return command_;
+  return p_.command;
 }
 
 defineType(CutplanePVScene);
 addToFactoryTable(PVScene, CutplanePVScene);
+addToStaticFunctionTable(PVScene, CutplanePVScene, defaultParameters);
 
-CutplanePVScene::CutplanePVScene()
+CutplanePVScene::CutplanePVScene(const ParameterSet& ps)
+: p_(ps)
 {}
 
-CutplanePVScene::CutplanePVScene(const ParameterSet&)
-{}
-
-CutplanePVScene::~CutplanePVScene()
-{}
-
-ParameterSet CutplanePVScene::defaultParameters() const
-{
-  return Parameters::makeDefault();
-}
 
 string CutplanePVScene::pythonCommands() const
 {
@@ -1367,50 +1349,7 @@ ParaviewVisualization::ParaviewVisualization(const ParameterSet& p)
 
 ParameterSet ParaviewVisualization::defaultParameters() const
 {
-  ParameterSet ps;
-  
-  SelectableSubsetParameter::SubsetList sels;
-  BOOST_FOREACH
-  (
-    const PVScene::FactoryTable::value_type& pvsf, 
-    *PVScene::factories_
-  )
-  {
-    boost::shared_ptr<PVScene> pvs
-    (
-      pvsf.second->operator()()
-    );
-    
-    sels.push_back
-    (
-      SelectableSubsetParameter::SingleSubset
-      (
-	pvsf.first, 
-        new ParameterSet
-        (
-	  pvs->defaultParameters()
-	)
-      )
-    );
-  }
-  
-  std::string id="scenes";
-  ps.insert
-  (
-    id, 
-    new ArrayParameter(
-      SelectableSubsetParameter
-      (
-	CustomPVScene::typeName,
-	sels, 
-	"Selection and parameters of a single scene."
-      ),
-      0,
-      "Array of scenes. The scenes will be created and overlayed in the order of their appearance."
-    )
-  );
-  
-  return ps;
+  return Parameters::makeDefault();
 }
 
 ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer* displayer)

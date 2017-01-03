@@ -480,9 +480,11 @@ namespace paraview
 class PVScene
 {
 public:
-  declareFactoryTableNoArgs(PVScene);
-
+//   declareFactoryTableNoArgs(PVScene);
+  declareDynamicClass(PVScene);
+  
 public:
+  
 #include "openfoamtools__PVScene__Parameters.h"
 /*
 PARAMETERSET>>> PVScene Parameters
@@ -497,7 +499,6 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
   
   virtual ~PVScene();
   
-  virtual ParameterSet defaultParameters() const =0;
   virtual std::string pythonCommands() const =0;
 };
 
@@ -507,8 +508,6 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
 class CustomPVScene
 : public PVScene
 {
-protected:
-  std::string command_;
   
 public:
 #include "openfoamtools__CustomPVScene__Parameters.h"
@@ -521,15 +520,18 @@ command = string "" "Python snippet to execute in pvBatch"
 
 <<<PARAMETERSET
 */
+protected:
+  Parameters p_;
 
+public:
   declareType("custom");
   
-  CustomPVScene();
   CustomPVScene(const ParameterSet&);
-  virtual ~CustomPVScene();
   
-  virtual ParameterSet defaultParameters() const;
   virtual std::string pythonCommands() const;
+  
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
 };
 
 
@@ -557,15 +559,18 @@ size = double 1.0 "size of the viewport (in the same units as the data set)"
 
 <<<PARAMETERSET
 */
-
+protected:
+  Parameters p_;
+  
+public:
   declareType("cutplane");
   
-  CutplanePVScene();
   CutplanePVScene(const ParameterSet&);
-  virtual ~CutplanePVScene();
   
-  virtual ParameterSet defaultParameters() const;
   virtual std::string pythonCommands() const;
+  
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
 };
 
 
@@ -575,6 +580,17 @@ class ParaviewVisualization
 : public Analysis
 {
 public:
+#include "openfoamtools__ParaviewVisualization__Parameters.h"
+/*
+PARAMETERSET>>> ParaviewVisualization Parameters
+
+scenes = array [
+ dynamicclassconfig "paraview::PVScene" default "custom" "Scene configuration"
+ ] *0 "Configuration of scenes"
+
+<<<PARAMETERSET
+*/
+
   declareType("ParaviewVisualization");
 
   ParaviewVisualization();

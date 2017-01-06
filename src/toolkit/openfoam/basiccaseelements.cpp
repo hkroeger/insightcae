@@ -181,14 +181,31 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
   {
     OFDictData::dict coeffs;    
     OFDictData::list flds; flds.push_back("U");
-    coeffs["fieldNames"]=flds;
     coeffs["Ubar"]=OFDictData::vector3(p_.Ubar);
 
     OFDictData::dict fod;
-    fod["type"]="pressureGradientExplicitSource";
+    if (OFversion()>=300)
+    {
+        fod["type"]="meanVelocityForce";
+        coeffs["selectionMode"]="all";
+        if (OFversion()>=400)
+        {
+            coeffs["fields"]=flds;
+        }
+        else
+        {
+            coeffs["fieldNames"]=flds;
+        }
+        fod["meanVelocityForceCoeffs"]=coeffs;
+    }
+    else
+    {
+        fod["type"]="pressureGradientExplicitSource";
+        fod["selectionMode"]="all";
+        coeffs["fieldNames"]=flds;
+        fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
+    }
     fod["active"]=true;
-    fod["selectionMode"]="all";
-    fod["pressureGradientExplicitSourceCoeffs"]=coeffs;
     
     OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
     fvOptions[name()]=fod;  

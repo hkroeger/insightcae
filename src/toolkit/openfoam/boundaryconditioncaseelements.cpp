@@ -534,9 +534,17 @@ void CyclicGGIBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
     bndDict["type"]="cyclicAMI";
     bndDict["neighbourPatch"]= p_.shadowPatch;
     bndDict["matchTolerance"]= 0.001;
-    bndDict["transform"]= "rotational";    
+    if (arma::norm(p_.separationOffset,2)<1e-10)
+    {
+        bndDict["transform"]= "rotational";    
+    }
+    else
+    {
+        bndDict["transform"]= "translational";    
+    }
     bndDict["rotationCentre"]=OFDictData::vector3(p_.rotationCentre);
     bndDict["rotationAxis"]=OFDictData::vector3(p_.rotationAxis);
+    bndDict["separationVector"]=OFDictData::vector3(p_.separationOffset);
     bndDict["rotationAngle"]=p_.rotationAngle;
     bndDict["lowWeightCorrection"]=0.1;
   }

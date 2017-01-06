@@ -704,7 +704,8 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);
 
-  if (LES)
+  // create both: PISO and PIMPLE
+//   if (LES)
   {
     OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
     PISO["nCorrectors"]=p_.nCorrectors;
@@ -712,7 +713,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     PISO["pRefCell"]=0;
     PISO["pRefValue"]=0.0;
   }
-  else
+//   else
   {
     OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
     PIMPLE["nCorrectors"]=p_.nCorrectors;

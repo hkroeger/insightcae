@@ -102,6 +102,8 @@ public:
   void addFace(const PointList& corners);
 
   void appendPatch(const Patch& opatch);
+  
+  Patch* transformed(const arma::mat& tm, bool inv=false) const;
 
   std::vector<OFDictData::data> 
   bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
@@ -439,6 +441,8 @@ class SplineEdge2D
 class blockMesh 
 : public insight::OpenFOAMCaseElement
 {
+public:
+  typedef boost::ptr_map<std::string, Patch> PatchMap;
 protected:
   double scaleFactor_;
   std::string defaultPatchName_;
@@ -447,13 +451,19 @@ protected:
   PointMap allPoints_;
   boost::ptr_vector<Block> allBlocks_;
   boost::ptr_vector<Edge> allEdges_;
-  boost::ptr_map<std::string, Patch> allPatches_;
+  PatchMap allPatches_;
   
 public:
   blockMesh(OpenFOAMCase& c);
   
   void setScaleFactor(double sf);
   void setDefaultPatch(const std::string& name, std::string type="patch");
+  
+  inline const boost::ptr_vector<Block>& allBlocks() const { return allBlocks_; }
+  inline const boost::ptr_vector<Edge>& allEdges() const { return allEdges_; }
+  inline const PatchMap& allPatches() const { return allPatches_; }
+  
+  inline Patch& patch(const std::string& name) { return allPatches_.at(name); }
   
   inline void addPoint(const Point& p) 
   { 
@@ -507,6 +517,8 @@ public:
       return *patch; 
     }
   }
+  
+  void removePatch(const std::string& name);
   
   virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
 };

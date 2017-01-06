@@ -127,6 +127,7 @@ inv_(inv)
 Block* Block::transformed(const arma::mat& tm, bool inv) const
 {
   PointList p2;
+  std::cout<<"#corners="<<corners_.size()<<std::endl;
   BOOST_FOREACH( const Point& p, corners_ )
   {
     p2 += tm*p;
@@ -717,6 +718,32 @@ void Patch::appendPatch(const Patch& opatch)
   faces_.insert(faces_.end(), opatch.faces_.begin(), opatch.faces_.end());
 }
 
+Patch* Patch::transformed(const arma::mat& tm, bool inv) const
+{
+  std::auto_ptr<Patch> np(new Patch(typ_));
+  BOOST_FOREACH( const PointList& pl, faces_)
+  {
+    PointList npl;
+    if (inv)
+    {
+      for (PointList::const_reverse_iterator it=pl.rbegin(); it!=pl.rend(); it++)
+      {
+	npl.push_back( tm * (*it) );
+      }
+    }
+    else
+    {
+      for (PointList::const_iterator it=pl.begin(); it!=pl.end(); it++)
+      {
+	npl.push_back( tm * (*it) );
+      }
+    }
+    np->addFace(npl);
+  }
+  return np.release();
+}
+
+
 std::vector<OFDictData::data> 
 Patch::bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const
 {
@@ -1017,6 +1044,16 @@ void blockMesh::setDefaultPatch(const std::string& name, std::string type)
 {
   defaultPatchName_=name;
   defaultPatchType_=type;
+}
+
+void blockMesh::removePatch(const std::string& name)
+{
+  std::string key(name);
+  auto elem = allPatches_.find(name);
+  if ( elem != allPatches_.end())
+  {
+    allPatches_.erase(elem);
+  }
 }
 
 void blockMesh::numberVertices(PointMap& pts) const

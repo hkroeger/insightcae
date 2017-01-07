@@ -103,6 +103,11 @@ public:
 
   void appendPatch(const Patch& opatch);
   
+  /**
+   * remove all faces from current patch
+   */
+  void clear();
+  
   Patch* transformed(const arma::mat& tm, bool inv=false) const;
 
   std::vector<OFDictData::data> 

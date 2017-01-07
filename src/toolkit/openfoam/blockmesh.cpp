@@ -718,6 +718,12 @@ void Patch::appendPatch(const Patch& opatch)
   faces_.insert(faces_.end(), opatch.faces_.begin(), opatch.faces_.end());
 }
 
+void Patch::clear()
+{
+  faces_.clear();
+}
+
+
 Patch* Patch::transformed(const arma::mat& tm, bool inv) const
 {
   std::auto_ptr<Patch> np(new Patch(typ_));

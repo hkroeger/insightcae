@@ -59,14 +59,11 @@ protected:
   Parameters p_;
   
 public:
-    declareType("outputFilterFunctionObject");
+  declareType("outputFilterFunctionObject");
   outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
   virtual OFDictData::dict functionObjectDict() const =0;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 
@@ -194,13 +191,6 @@ class twoPointCorrelation
 : public outputFilterFunctionObject
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-//     (p0, arma::mat, vec3(0,0,0))
-//     (directionSpan, arma::mat, vec3(1,0,0))
-//     (np, int, 50)
-//     (homogeneousTranslationUnit, arma::mat, vec3(0,1,0))
-//     (nph, int, 1)
-//   )
 #include "analysiscaseelements__twoPointCorrelation__Parameters.h"
 
 /*
@@ -220,12 +210,11 @@ protected:
   Parameters p_;
   
 public:
-    declareType("twoPointCorrelation");
+  declareType("twoPointCorrelation");
   twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
+    
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  
   virtual OFDictData::dict functionObjectDict() const;
   virtual OFDictData::dict csysConfiguration() const;
 
@@ -330,10 +319,7 @@ class extendedForces
 public:
     declareType("extendedForces");
   extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
-    {
-        return Parameters::makeDefault();
-    }
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
 };
 
@@ -358,24 +344,49 @@ public:
 class TPCArrayBase
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-    (name_prefix, std::string, "tpc")
-    (timeStart, double, 0.0)
-    (outputControl, std::string, "outputTime")    
-    (outputInterval, double, 10.0)
-    (x, double, 0.0)
-    (z, double, 0.0)
-    (tanSpan, double, M_PI)
-    (axSpan, double, 1.0)
-    (np, int, 50)
-    (nph, int, 8)
-    (R, double, 1.0)
-  )
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (name_prefix, std::string, "tpc")
+//     (timeStart, double, 0.0)
+//     (outputControl, std::string, "outputTime")    
+//     (outputInterval, double, 10.0)
+//     (x, double, 0.0)
+//     (z, double, 0.0)
+//     (tanSpan, double, M_PI)
+//     (axSpan, double, 1.0)
+//     (np, int, 50)
+//     (nph, int, 8)
+//     (R, double, 1.0)
+//   )
+#include "analysiscaseelements__TPCArrayBase__Parameters.h"
+
+// x = double 0.0 "X-coordinate of base point"
+// z = double 0.0 "Z-coordinate of base point"
+/*
+PARAMETERSET>>> TPCArrayBase Parameters
+
+name_prefix = string "tpc" "name prefix of individual autocorrelation sampling FOs"
+timeStart = double 0.0 "start time of sampling. A decent UMean field has to be available in database at that time."
+outputControl = string "outputTime" "output control selection"
+outputInterval = double 10.0 "output interval"
+p0 = vector (0 0 0) "base point of TPC array"
+tanSpan = double 3.14159265359 "length evaluation section in transverse direction"
+axSpan = double 1.0 "length evaluation section in longitudinal direction"
+np = int 50 "number of autocorrelation points"
+nph = int 8 "number of instances for averaging over homogeneous direction"
+R = double 1.0 "Maximum radius coordinate (or Y-coordinate) array. Minimum of range is always 0. Sampling locations are more concentrated at end point according to cosinus rule."
+e_ax = vector (1 0 0) "longitudinal direction"
+e_rad = vector (0 1 0) "radial direction"
+e_tan = vector (0 0 1) "transverse direction"
+grading = selection (towardsEnd towardsStart none) towardsEnd "Grading in placement of TPC sample FOs"
+
+<<<PARAMETERSET
+*/
+
 };
 
 
 
-template<class TPC>
+template<class TPC, const char* TypeName>
 class TPCArray
 : public OpenFOAMCaseElement,
   public TPCArrayBase
@@ -396,7 +407,9 @@ protected:
   std::string axisTitleAx() const;
   
 public:
-  TPCArray(OpenFOAMCase& c, Parameters const &p = Parameters() );
+  declareType(TypeName);
+  
+  TPCArray(OpenFOAMCase& c, ParameterSet const &ps = Parameters::makeDefault() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
 			const std::string& shortDescription) const;
@@ -410,10 +423,15 @@ public:
     const boost::ptr_vector<TPC>& tpcarray,
     const std::string& shortDescription
   ) const;
+
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+
 };
 
-typedef TPCArray<twoPointCorrelation> LinearTPCArray;
-typedef TPCArray<cylindricalTwoPointCorrelation> RadialTPCArray;
+extern const char LinearTPCArrayTypeName[];
+typedef TPCArray<twoPointCorrelation, LinearTPCArrayTypeName> LinearTPCArray;
+extern const char RadialTPCArrayTypeName[];
+typedef TPCArray<cylindricalTwoPointCorrelation, RadialTPCArrayTypeName> RadialTPCArray;
 
 }
 

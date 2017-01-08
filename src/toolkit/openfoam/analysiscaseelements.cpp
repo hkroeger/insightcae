@@ -535,15 +535,18 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getTanParameters(int i)
 {
   return 
     typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
-      .set_p0(vec3(p_.x(), r_.back(), p_.z()))
-      .set_directionSpan(vec3(0, 0, p_.tanSpan())) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan()/double(p_.nph())))
-      .set_nph( p_.nph() )
+//       .set_p0(vec3(p_.x, r_.back(), p_.z))
+      .set_p0( p_.p0 + r_.back()*p_.e_rad )
+//       .set_directionSpan(vec3(0, 0, p_.tanSpan)) 
+      .set_directionSpan( p_.tanSpan*p_.e_tan ) 
+      .set_np(p_.np)
+//       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan/double(p_.nph)))
+      .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
+      .set_nph( p_.nph )
 
-      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
+      .set_name(p_.name_prefix+"_tan_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart() )
+      .set_timeStart( p_.timeStart )
     );
 }
 
@@ -552,15 +555,18 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) 
 {
   return
     typename twoPointCorrelation::Parameters(twoPointCorrelation::Parameters()
-      .set_p0(vec3(p_.x(), r_.back(), p_.z()))
-      .set_directionSpan(vec3(p_.axSpan(), 0, 0)) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan()/double(p_.nph())))
-      .set_nph(p_.nph())
+//       .set_p0(vec3(p_.x, r_.back(), p_.z))
+      .set_p0( p_.p0 + r_.back()*p_.e_rad )
+//       .set_directionSpan(vec3(p_.axSpan, 0, 0)) 
+      .set_directionSpan( p_.axSpan*p_.e_ax ) 
+      .set_np(p_.np)
+//       .set_homogeneousTranslationUnit(vec3(0, 0, p_.tanSpan/double(p_.nph)))
+      .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
+      .set_nph(p_.nph)
 
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
+      .set_name(p_.name_prefix+"_ax_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart() )
+      .set_timeStart( p_.timeStart )
     );
 }
 
@@ -592,15 +598,18 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getTanParame
       .set_ez(vec3(1, 0, 0))
       .set_degrees(false)
 
-      .set_p0(vec3(r_.back(), 0, p_.x()))
-      .set_directionSpan(vec3(0, p_.tanSpan(), 0)) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
-      .set_nph( p_.nph() )
+//       .set_p0(vec3(r_.back(), 0, p_.x))
+      .set_p0( p_.p0 + r_.back()*p_.e_rad )
+//       .set_directionSpan(vec3(0, p_.tanSpan, 0)) 
+      .set_directionSpan( p_.tanSpan*p_.e_tan ) 
+      .set_np(p_.np)
+//       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph), 0))
+      .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
+      .set_nph( p_.nph )
 
-      .set_name(p_.name_prefix()+"_tan_"+lexical_cast<std::string>(i))
+      .set_name(p_.name_prefix+"_tan_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart() )
+      .set_timeStart( p_.timeStart )
     );
 }
 
@@ -613,15 +622,18 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParamet
       .set_ez(vec3(1, 0, 0))
       .set_degrees(false)
 
-      .set_p0(vec3(r_.back(), 0, p_.x()))
-      .set_directionSpan(vec3(0, 0, p_.axSpan())) 
-      .set_np(p_.np())
-      .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph()), 0))
-      .set_nph(p_.nph())
+//       .set_p0(vec3(r_.back(), 0, p_.x))
+      .set_p0( p_.p0 + r_.back()*p_.e_rad )
+//       .set_directionSpan(vec3(0, 0, p_.axSpan)) 
+      .set_directionSpan( p_.axSpan*p_.e_ax ) 
+      .set_np(p_.np)
+//       .set_homogeneousTranslationUnit(vec3(0, 2.*M_PI/double(p_.nph), 0))
+      .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
+      .set_nph(p_.nph)
 
-      .set_name(p_.name_prefix()+"_ax_"+lexical_cast<std::string>(i))
+      .set_name(p_.name_prefix+"_ax_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
-      .set_timeStart( p_.timeStart() )
+      .set_timeStart( p_.timeStart )
     );
 }
 
@@ -636,5 +648,17 @@ std::string RadialTPCArray::axisTitleAx() const
 {
    return "Axial distance [length]";
 }
+
+const char LinearTPCArrayTypeName[] = "LinearTPCArray";
+// defineType(LinearTPCArray);
+template<> const std::string LinearTPCArray::typeName( LinearTPCArray::typeName_() );
+addToFactoryTable(OpenFOAMCaseElement, LinearTPCArray);
+addToStaticFunctionTable(OpenFOAMCaseElement, LinearTPCArray, defaultParameters);
+
+const char RadialTPCArrayTypeName[] = "RadialTPCArray";
+// defineType(RadialTPCArray);
+template<> const std::string RadialTPCArray::typeName( RadialTPCArray::typeName_() );
+addToFactoryTable(OpenFOAMCaseElement, RadialTPCArray);
+addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, defaultParameters);
 
 }

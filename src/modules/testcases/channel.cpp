@@ -402,13 +402,13 @@ void ChannelBase::createCase
   if (p.run.eval2)
   {
     cm.insert(new LinearTPCArray(cm, LinearTPCArray::Parameters()
-      .set_name_prefix("tpc_interior")
       .set_R(0.5*H)
 //       .set_x(0.0) // middle x==0!
 //       .set_z(-0.49*B)
       .set_p0(vec3(0., 0., -0.49*B))
       .set_axSpan(0.5*L)
       .set_tanSpan(0.45*B)
+      .set_name("tpc_interior")
       .set_timeStart( avg2Start_ )
     ));
   }

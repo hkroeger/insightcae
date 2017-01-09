@@ -378,7 +378,6 @@ void PipeBase::createCase
   ));
   
   cm.insert(new RadialTPCArray(cm, typename RadialTPCArray::Parameters()
-    .set_name_prefix("tpc_interior")
     .set_R(0.5*D)
       .set_p0(vec3(0, 0, 0.5*L)) // in cyl coord sys
       .set_e_ax(vec3(0,0,1))
@@ -387,6 +386,7 @@ void PipeBase::createCase
 //     .set_x(0.5*L)
     .set_axSpan(0.5*L)
     .set_tanSpan(M_PI)
+    .set_name("tpc_interior")
     .set_timeStart( (inittime+meantime)*T_ )
   ));
   
@@ -853,7 +853,6 @@ void PipeInflow::createCase
   for (int i=0; i<ntpc_; i++)
   {
     cm.insert(new RadialTPCArray(cm, RadialTPCArray::Parameters()
-      .set_name_prefix(tpc_names_[i])
       .set_R(0.5*D)
 //       .set_x(tpc_xlocs_[i]*L)
       .set_p0(vec3(0, 0, tpc_xlocs_[i]*L)) // in cyl coord sys
@@ -862,6 +861,7 @@ void PipeInflow::createCase
       .set_e_tan(vec3(0,1,0))
       .set_axSpan(0.5*L)
       .set_tanSpan(M_PI)
+      .set_name(tpc_names_[i])
       .set_timeStart( (inittime+meantime)*T_ )
     ));
   }

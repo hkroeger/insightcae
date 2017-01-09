@@ -34,7 +34,7 @@ namespace insight
 
 template<class TPC, const char* TypeName>
 TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSet const &ps )
-: OpenFOAMCaseElement(cm, ps.get<StringParameter>("name_prefix")()+"TPCArray"),
+: outputFilterFunctionObject(cm, ps),
   p_(ps)
 {
   using namespace std;
@@ -61,12 +61,18 @@ TPCArray<TPC,TypeName>::TPCArray(OpenFOAMCase& cm, ParameterSet const &ps )
       r = x*p_.R;
     }
     
-    cout<<"Creating tpc FOs for set "<<p_.name_prefix<<" at r="<<r<<endl;
+    cout<<"Creating tpc FOs for set "<<p_.name<<" at r="<<r<<endl;
     r_.push_back(r);
     
     tpc_tan_.push_back(new TPC(cm, getTanParameters(i)));
     tpc_ax_.push_back(new TPC(cm, getAxParameters(i)));    
   }  
+}
+
+template<class TPC, const char* TypeName>
+OFDictData::dict TPCArray<TPC,TypeName>::functionObjectDict() const
+{
+  return OFDictData::dict();
 }
 
 template<class TPC, const char* TypeName>
@@ -99,14 +105,14 @@ void TPCArray<TPC,TypeName>::evaluate(
 ) const
 {
   evaluateSingle(cm, location, results, 
-		  p_.name_prefix+"_tan", 
+		  p_.name+"_tan", 
 		  p_.tanSpan, axisTitleTan(),
 		  tpc_tan_, 
 		  shortDescription+" (along tangential direction)"
 		);
   
   evaluateSingle(cm, location, results, 
-		  p_.name_prefix+"_ax", 
+		  p_.name+"_ax", 
 		  p_.axSpan,  axisTitleAx(),
 		  tpc_ax_, 
 		  shortDescription+" (along axial direction)" //"two-point correlation of velocity along axial direction at different radii"
@@ -170,7 +176,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
       data.col(1) /= data(0,1); // Normalize two-point correlation values (y)
       
       CorrelationFunctionModel m;
-      cout<<"Fitting tpc profile for set "<<p_.name_prefix<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
+      cout<<"Fitting tpc profile for set "<<p_.name<<" at radius "<<ir<<" (r="<<r_[ir]<<"), component k="<<k<<" ("<<cmptNames[k]<<")"<<endl;
       nonlinearRegression(data.col(1), data.col(0), m);
       arma::mat regressiondata
       (

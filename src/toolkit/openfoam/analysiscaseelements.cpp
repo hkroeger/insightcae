@@ -38,6 +38,17 @@ namespace insight
 {
   
 defineType(outputFilterFunctionObject);
+defineFactoryTable
+(
+    outputFilterFunctionObject, 
+    LIST 
+    (  
+        OpenFOAMCase& c, 
+        const ParameterSet& ps
+    ),
+    LIST ( c, ps ) 
+);
+defineStaticFunctionTable(outputFilterFunctionObject, defaultParameters, ParameterSet);
 
 outputFilterFunctionObject::outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, Parameters(ps).name+"outputFilterFunctionObject"),
@@ -57,6 +68,13 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
   controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
 
+void outputFilterFunctionObject::evaluate
+(
+  OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
+  const std::string& shortDescription
+) const
+{
+}
 
 
 defineType(fieldAveraging);
@@ -544,7 +562,7 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getTanParameters(int i)
       .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
       .set_nph( p_.nph )
 
-      .set_name(p_.name_prefix+"_tan_"+lexical_cast<std::string>(i))
+      .set_name(p_.name+"_tan_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
       .set_timeStart( p_.timeStart )
     );
@@ -564,7 +582,7 @@ typename twoPointCorrelation::Parameters LinearTPCArray::getAxParameters(int i) 
       .set_homogeneousTranslationUnit( (p_.tanSpan/double(p_.nph))*p_.e_tan )
       .set_nph(p_.nph)
 
-      .set_name(p_.name_prefix+"_ax_"+lexical_cast<std::string>(i))
+      .set_name(p_.name+"_ax_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
       .set_timeStart( p_.timeStart )
     );
@@ -607,7 +625,7 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getTanParame
       .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
       .set_nph( p_.nph )
 
-      .set_name(p_.name_prefix+"_tan_"+lexical_cast<std::string>(i))
+      .set_name(p_.name+"_tan_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
       .set_timeStart( p_.timeStart )
     );
@@ -631,7 +649,7 @@ typename cylindricalTwoPointCorrelation::Parameters RadialTPCArray::getAxParamet
       .set_homogeneousTranslationUnit( (2.*M_PI/double(p_.nph))*p_.e_tan )
       .set_nph(p_.nph)
 
-      .set_name(p_.name_prefix+"_ax_"+lexical_cast<std::string>(i))
+      .set_name(p_.name+"_ax_"+lexical_cast<std::string>(i))
       .set_outputControl("timeStep")
       .set_timeStart( p_.timeStart )
     );
@@ -654,11 +672,15 @@ const char LinearTPCArrayTypeName[] = "LinearTPCArray";
 template<> const std::string LinearTPCArray::typeName( LinearTPCArray::typeName_() );
 addToFactoryTable(OpenFOAMCaseElement, LinearTPCArray);
 addToStaticFunctionTable(OpenFOAMCaseElement, LinearTPCArray, defaultParameters);
+addToFactoryTable(outputFilterFunctionObject, LinearTPCArray);
+addToStaticFunctionTable(outputFilterFunctionObject, LinearTPCArray, defaultParameters);
 
 const char RadialTPCArrayTypeName[] = "RadialTPCArray";
 // defineType(RadialTPCArray);
 template<> const std::string RadialTPCArray::typeName( RadialTPCArray::typeName_() );
 addToFactoryTable(OpenFOAMCaseElement, RadialTPCArray);
 addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, defaultParameters);
+addToFactoryTable(outputFilterFunctionObject, RadialTPCArray);
+addToStaticFunctionTable(outputFilterFunctionObject, RadialTPCArray, defaultParameters);
 
 }

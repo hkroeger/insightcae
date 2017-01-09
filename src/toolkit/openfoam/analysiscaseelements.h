@@ -59,11 +59,28 @@ protected:
   Parameters p_;
   
 public:
+  declareFactoryTable 
+  ( 
+      outputFilterFunctionObject, 
+      LIST 
+      (  
+	  OpenFOAMCase& c, 
+	  const ParameterSet& ps
+      ), 
+      LIST ( c, ps ) 
+  );
+  declareStaticFunctionTable ( defaultParameters, ParameterSet );
   declareType("outputFilterFunctionObject");
+
   outputFilterFunctionObject(OpenFOAMCase& c, const ParameterSet & ps = Parameters::makeDefault() );
   virtual OFDictData::dict functionObjectDict() const =0;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual void evaluate
+  (
+    OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
+    const std::string& shortDescription
+  ) const;
 };
 
 
@@ -341,33 +358,31 @@ public:
   double lengthScale() const;
 };
 
-class TPCArrayBase
+
+
+
+
+template<class TPC, const char* TypeName>
+class TPCArray
+: public outputFilterFunctionObject
 {
+  
+  static const char * cmptNames[];
+  
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (name_prefix, std::string, "tpc")
-//     (timeStart, double, 0.0)
-//     (outputControl, std::string, "outputTime")    
-//     (outputInterval, double, 10.0)
-//     (x, double, 0.0)
-//     (z, double, 0.0)
-//     (tanSpan, double, M_PI)
-//     (axSpan, double, 1.0)
-//     (np, int, 50)
-//     (nph, int, 8)
-//     (R, double, 1.0)
-//   )
 #include "analysiscaseelements__TPCArrayBase__Parameters.h"
 
 // x = double 0.0 "X-coordinate of base point"
 // z = double 0.0 "Z-coordinate of base point"
+// name_prefix = string "tpc" "name prefix of individual autocorrelation sampling FOs"
+// timeStart = double 0.0 "start time of sampling. A decent UMean field has to be available in database at that time."
+// outputControl = string "outputTime" "output control selection"
+// outputInterval = double 10.0 "output interval"
+  
 /*
 PARAMETERSET>>> TPCArrayBase Parameters
+inherits outputFilterFunctionObject::Parameters
 
-name_prefix = string "tpc" "name prefix of individual autocorrelation sampling FOs"
-timeStart = double 0.0 "start time of sampling. A decent UMean field has to be available in database at that time."
-outputControl = string "outputTime" "output control selection"
-outputInterval = double 10.0 "output interval"
 p0 = vector (0 0 0) "base point of TPC array"
 tanSpan = double 3.14159265359 "length evaluation section in transverse direction"
 axSpan = double 1.0 "length evaluation section in longitudinal direction"
@@ -382,18 +397,6 @@ grading = selection (towardsEnd towardsStart none) towardsEnd "Grading in placem
 <<<PARAMETERSET
 */
 
-};
-
-
-
-template<class TPC, const char* TypeName>
-class TPCArray
-: public OpenFOAMCaseElement,
-  public TPCArrayBase
-{
-  
-  static const char * cmptNames[];
-  
 protected:
   Parameters p_;
   std::vector<double> r_;
@@ -410,6 +413,7 @@ public:
   declareType(TypeName);
   
   TPCArray(OpenFOAMCase& c, ParameterSet const &ps = Parameters::makeDefault() );
+  virtual OFDictData::dict functionObjectDict() const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void evaluate(OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
 			const std::string& shortDescription) const;

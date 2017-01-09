@@ -47,3 +47,4 @@ add_subdirectory(setProfile)
 add_subdirectory(constantPressureGradient)
 
 add_subdirectory(isutils/isofCaseBuilder)
+add_subdirectory(isutils/isofManageFunctionObject)

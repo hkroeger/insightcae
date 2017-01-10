@@ -60,7 +60,17 @@ Foam::twoPointCorrelation::twoPointCorrelation
     functionObject(name),
 #endif
     name_(name),
+#ifdef OFdev
+    obr_
+    (
+        refCast<const Time>(obr).lookupObject<objectRegistry>
+        (
+            dict.lookupOrDefault("region", polyMesh::defaultRegion)
+        )
+    ),
+#else
     obr_(obr),
+#endif
     active_(true),
 
     p0_(point::zero),

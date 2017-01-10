@@ -197,11 +197,8 @@ ISCADParser::ISCADParser(Model* model)
             |
             r_solidmodel_propertyAssignment
         )
-        >>
-        -(
-            lit("@post")
-            > *r_postproc
-        )
+        >> -( lit("@doc") > *r_doc )
+        >> -( lit("@post") > *r_postproc )
         ;
     r_model.name("model description");
 
@@ -224,11 +221,11 @@ ISCADParser::ISCADParser(Model* model)
      *
      */
     r_assignment =
-        ( r_identifier >> '=' >> r_solidmodel_expression >> ';' )
-        [ phx::bind(&Model::addModelstep, model_, qi::_1, qi::_2) ]
+        ( r_identifier >> '=' >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+        [ phx::bind(&Model::addModelstep, model_, qi::_1, qi::_2, qi::_3) ]
         |
-        ( r_identifier >> lit("?=") >> r_solidmodel_expression >> ';' )
-        [ phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_1, qi::_2) ]
+        ( r_identifier >> lit("?=") >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+        [ phx::bind(&Model::addModelstepIfNotPresent, model_, qi::_1, qi::_2, qi::_3) ]
         |
         ( r_identifier >> '='  >> r_datumExpression >> ';')
         [ phx::bind(&Model::addDatum, model_, qi::_1, qi::_2) ]
@@ -263,14 +260,15 @@ ISCADParser::ISCADParser(Model* model)
     r_assignment.name("assignment");
 
 
-    r_modelstep  =  ( r_identifier >> ':' >> r_solidmodel_expression > ';' )
-                    [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2) ]
+    r_modelstep  =  ( r_identifier >> ':' >> r_solidmodel_expression >> ( r_string | qi::attr(std::string()) ) >> ';' )
+                    [ phx::bind(&Model::addComponent, model_, qi::_1, qi::_2, qi::_3) ]
 //       [ (phx::bind(&Model::addComponent, model_, qi::_2, qi::_3), std::cout<<"POS="<<qi::_1<<std::endl ) ]
                     ;
     r_modelstep.name("modelling step");
 
 
     createPostProcExpressions();
+    createDocExpressions();
     createFeatureExpressions();
     createSelectionExpressions();
     createDatumExpressions();

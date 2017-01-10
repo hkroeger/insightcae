@@ -16,6 +16,7 @@ set(insightcad_SOURCES
   parser_datumexpressions.cpp
   parser_featureexpressions.cpp
   parser_postprocexpressions.cpp
+  parser_docexpressions.cpp
   parser_scalarexpressions.cpp
   parser_vectorexpressions.cpp
   datum.cpp 
@@ -28,6 +29,7 @@ set(insightcad_SOURCES
   featurefilter.cpp 
   feature.cpp
   occtools.cpp
+  caddocitem.cpp
 )
 
 set(INCLUDE_DIRS "")
@@ -37,6 +39,7 @@ add_subdirectory(featurefilters)
 add_subdirectory(cadfeatures)
 add_subdirectory(cadparameters)
 add_subdirectory(cadpostprocactions)
+add_subdirectory(docitems)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})

@@ -117,9 +117,9 @@ public:
     void addVectorIfNotPresent(const std::string& name, VectorPtr value);
     void addDatum(const std::string& name, DatumPtr value);
     void addDatumIfNotPresent(const std::string& name, DatumPtr value);
-    void addModelstep(const std::string& name, FeaturePtr value);
-    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value);
-    void addComponent(const std::string& name, FeaturePtr value);
+    void addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
+    void addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
+    void addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription = std::string() );
 
     void removeScalar(const std::string& name);
 

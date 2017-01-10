@@ -155,7 +155,7 @@ struct ISCADParser
     qi::rule<std::string::iterator, skip_grammar> r_model;
     qi::rule<std::string::iterator, skip_grammar> r_assignment;
     qi::rule<std::string::iterator, qi::locals<FeaturePtr>, skip_grammar> r_solidmodel_propertyAssignment;
-    qi::rule<std::string::iterator, skip_grammar> r_postproc;
+    qi::rule<std::string::iterator, skip_grammar> r_postproc, r_doc;
     qi::rule<std::string::iterator, DrawingViewDefinition(), skip_grammar> r_viewDef;
     qi::symbols<char, ModelstepRulePtr> modelstepFunctionRules;
     qi::rule<std::string::iterator, boost::fusion::vector3<std::size_t, std::size_t, FeaturePtr>(), skip_grammar, qi::locals<ModelstepRulePtr> > r_modelstepFunction;
@@ -174,6 +174,7 @@ struct ISCADParser
     void createScalarExpressions();
     void createVectorExpressions();
     void createPostProcExpressions();
+    void createDocExpressions();
     void createFeatureExpressions();
     void createDatumExpressions();
     void createSelectionExpressions();

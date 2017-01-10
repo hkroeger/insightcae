@@ -1195,7 +1195,7 @@ void Feature::saveAs
    // Translating document (conversion) to STEP Writer
    if ( !writer.Transfer ( aDoc, mode ) ) {
       throw insight::Exception("The document cannot be translated or gives no result");
-      return Standard_False;
+//       return Standard_False;
    }
 
 //    // This is just to see the difference of STEP Files with and without names :

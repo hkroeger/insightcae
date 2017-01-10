@@ -154,18 +154,18 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
         addDatum(name, value);
 }
 
-void Model::addModelstep(const std::string& name, FeaturePtr value)
+void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription)
 {
   modelsteps_.add(name, value);
 }
 
-void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value)
+void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& featureDescription)
 {
     if (!modelsteps_.find(name))
         addModelstep(name, value);
 }
 
-void Model::addComponent(const std::string& name, FeaturePtr value)
+void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription)
 {
   components_.insert(name);
   addModelstep(name, value);

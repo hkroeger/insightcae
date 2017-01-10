@@ -25,18 +25,22 @@ Cylinder(O, ax w*EX, Di+2*ti, Di)-tr;
 ring_i_0_inface=ring_i_0?face('minimal(cylRadius)');
 ring_i:
 Fillet(
- ring_i_0?edges('isCircle && isCoincident %0', asModel(ring_i_0_inface)?alledges), 
+ ring_i_0?edges('isCircle && isCoincident(%0)', asModel(ring_i_0_inface)?alledges), 
  0.25*ti
-);
+)
+'Inner ring'
+;
 
 ring_o_0=
 Cylinder(O, ax w*EX, Da, Da-2*ta)-tr;
 ring_o_0_inface=ring_o_0?face('maximal(cylRadius)');
 ring_o:
 Fillet(
- ring_o_0?edges('isCircle && isCoincident %0', asModel(ring_o_0_inface)?alledges), 
+ ring_o_0?edges('isCircle && isCoincident(%0)', asModel(ring_o_0_inface)?alledges), 
  0.25*ta
-);
+)
+'Outer ring'
+;
 
 ball=Sphere(ctr+rtraj*EY, db);
 ball->density=rho;
@@ -45,7 +49,9 @@ balls:
 CircularPattern(
  ball,
  O, (2*M_PI/nb)*EX, nb
-);
+)
+'Bearing balls'
+;
 
 Lbb?=3*Da;
 bore_set=
@@ -57,3 +63,13 @@ ring_o->density=rho;
 axis=RefAxis(O, EX);
 pl_side1=Plane(O, -EX);
 pl_side2=Plane(ctr_ops, EX);
+
+@doc
+
+diameter('Inner diameter', Di, 
+	O, Di*EX, inside);
+diameter('Outer diameter', Da, 
+	O, Da*EX, outside);
+length('Width', w, 
+	-0.5*w*EX +0.5*Da*EZ, 
+	0.5*w*EX +0.5*Da*EZ);

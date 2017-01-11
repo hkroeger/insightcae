@@ -104,18 +104,21 @@ void TPCArray<TPC,TypeName>::evaluate(
     const std::string& shortDescription
 ) const
 {
+    Ordering so;
     evaluateSingle(cm, location, results,
                    p_.name+"_tan",
                    p_.tanSpan, axisTitleTan(),
                    tpc_tan_,
-                   shortDescription+" (along tangential direction)"
+                   shortDescription+" (along tangential direction)",
+                   so
                   );
 
     evaluateSingle(cm, location, results,
                    p_.name+"_ax",
                    p_.axSpan,  axisTitleAx(),
                    tpc_ax_,
-                   shortDescription+" (along axial direction)" //"two-point correlation of velocity along axial direction at different radii"
+                   shortDescription+" (along axial direction)", //"two-point correlation of velocity along axial direction at different radii"
+                   so
                   );
 }
 
@@ -128,7 +131,8 @@ void TPCArray<TPC,TypeName>::evaluateSingle
     double span,
     const std::string& axisLabel,
     const boost::ptr_vector<TPC>& tpcarray,
-    const std::string& shortDescription
+    const std::string& shortDescription,
+    Ordering& so
 ) const
 {
     using namespace std;
@@ -219,7 +223,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
             axisLabel, "$\\langle R_{"+std::string(cmptNames[k])+"} \\rangle$",
             tpc_curves[k],
             shortDescription+", two-point correlation function for component "+cmptNames[k]
-        );
+        ).setOrder(so.next());
     }
 
 
@@ -246,7 +250,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
             "Radius [length]", "L [length]",
             L_diag_curves,
             shortDescription+", autocorrelation lengths"
-        );
+        ).setOrder(so.next());
     }
 
     //produce plots of off-diag L profiles
@@ -273,7 +277,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
             "Radius [length]", "L [length]",
             L_offdiag_curves,
             shortDescription+", cross-correlation lengths"
-        );
+        ).setOrder(so.next());
     }
 
 }

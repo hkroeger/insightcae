@@ -54,7 +54,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
       throw insight::Exception("OpenFOAM environment is not set!");
     OpenFOAMCase cm(OFEs::get(cofe));
     
-    ResultSetPtr results(new ResultSet(ParameterSet(), cfgfile.string(), "Result Report"));
+    ResultSetPtr results(new ResultSet(ParameterSet(), "Evaluation of function objects defined in "+SimpleLatex(cfgfile.string()).toLaTeX(), "Result Report"));
     Ordering o;
   
     // go through all defined case elements. Evaluate all FOs
@@ -69,7 +69,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
 	  fo->evaluate
 	  (
 	    cm, boost::filesystem::current_path(), results, 
-	    "Evaluation of FO"
+	    "Evaluation of function object "+ps.get<StringParameter>("name")()
 	  );
 	}
     }    
@@ -85,7 +85,7 @@ void evaluateFO(boost::filesystem::path cfgfile, bool skiplatex)
     {
      for (int i=0; i<2; i++)
      {
-       if ( ::system( str( format("cd %s && pdflatex \"%s\"") % outpath.parent_path().string() % outpath.string() ).c_str() ))
+       if ( ::system( str( format("cd %s && pdflatex \"%s\"") % boost::filesystem::absolute(outpath.parent_path()).string() % outpath.string() ).c_str() ))
        {
  	Warning("TeX input file was written but could not execute pdflatex successfully.");
  	break;

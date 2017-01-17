@@ -1,0 +1,84 @@
+<ServerManagerConfiguration>
+  <ProxyGroup name="filters">
+    <SourceProxy name="UnwrapCylSlice" class="vtkPythonProgrammableFilter" label="UnwrapCylSlice">
+      <Documentation
+        long_help="Unwrap a propeller blade section"
+        short_help="Unwrap a propeller blade section">
+      </Documentation>
+
+      <InputProperty
+        name="Input"
+        command="SetInputConnection">
+          <ProxyGroupDomain name="groups">
+            <Group name="sources"/>
+            <Group name="filters"/>
+          </ProxyGroupDomain>
+
+          <DataTypeDomain name="input_type">
+            <DataType value="vtkPolyData"/>
+          </DataTypeDomain>
+      </InputProperty>
+
+      <DoubleVectorProperty
+        name="eax"
+        label="eax"
+        initial_string="eax"
+        command="SetParameter"
+        animateable="1"
+        default_values="0.0 0.0 1.0"
+        number_of_elements="3">
+        <Documentation></Documentation>
+      </DoubleVectorProperty>
+
+
+      <DoubleVectorProperty
+        name="er"
+        label="er"
+        initial_string="er"
+        command="SetParameter"
+        animateable="1"
+        default_values="1.0 0.0 0.0"
+        number_of_elements="3">
+        <Documentation></Documentation>
+      </DoubleVectorProperty>
+
+
+      <DoubleVectorProperty
+        name="p0"
+        label="p0"
+        initial_string="p0"
+        command="SetParameter"
+        animateable="1"
+        default_values="0.0 0.0 0.0"
+        number_of_elements="3">
+        <Documentation></Documentation>
+      </DoubleVectorProperty>
+
+
+      <!-- Output data type: "vtkPolyData" -->
+      <IntVectorProperty command="SetOutputDataSetType"
+                         default_values="0"
+                         name="OutputDataSetType"
+                         number_of_elements="1"
+                         panel_visibility="never">
+        <Documentation>The value of this property determines the dataset type
+        for the output of the programmable filter.</Documentation>
+      </IntVectorProperty>
+
+      <StringVectorProperty
+        name="Script"
+        command="SetScript"
+        number_of_elements="1"
+        default_values="&#xA;import numpy as np  &#xA;&#xA;pdi = self.GetInputDataObject(0,0)&#xA;pdo = self.GetOutputDataObject(0)&#xA;pdo.ShallowCopy(pdi)&#xA;&#xA;newPoints = vtk.vtkPoints() &#xA;numPoints = pdi.GetNumberOfPoints() &#xA;Urel=pdi.GetPointData().GetArray(&quot;Urel&quot;)&#xA;&#xA;Urf=vtk.vtkDoubleArray()&#xA;Urf.SetName(&quot;Urel_flat&quot;)&#xA;Urf.SetNumberOfComponents(3) &#xA;&#xA;def nc(x,y,z):&#xA;    r=np.sqrt(x*x+y*y)&#xA;    t=np.arctan2(y,x)&#xA;    z=z&#xA;    return r,t,z&#xA;&#xA;for i in range(0, numPoints): &#xA;    coord = pdi.GetPoint(i) &#xA;    x, y, z = coord[:3] &#xA;    r,t,z=nc(x,y,z) &#xA;    newPoints.InsertNextPoint(r,r*t,z) &#xA;    ux,uy,uz=Urel.GetTuple3(i)&#xA;    Urf.InsertNextTupleValue([&#xA;        ux*np.cos(-t) - uy*np.sin(-t),&#xA;        ux*np.sin(-t) + uy*np.cos(-t),&#xA;        uz&#xA;        ])&#xA;&#xA;pdo.SetPoints(newPoints)&#xA;pdo.GetPointData().AddArray(Urf)&#xA;"
+        panel_visibility="advanced">
+        <Hints>
+         <Widget type="multi_line"/>
+       </Hints>
+      <Documentation>This property contains the text of a python program that
+      the programmable source runs.</Documentation>
+      </StringVectorProperty>
+
+
+    </SourceProxy>
+ </ProxyGroup>
+</ServerManagerConfiguration>

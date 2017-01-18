@@ -15,7 +15,7 @@
           </ProxyGroupDomain>
 
           <DataTypeDomain name="input_type">
-            <DataType value="vtkPolyData"/>
+            <DataType value="vtkUnstructuredGrid"/>
           </DataTypeDomain>
       </InputProperty>
 
@@ -55,9 +55,9 @@
       </DoubleVectorProperty>
 
 
-      <!-- Output data type: "vtkPolyData" -->
+      <!-- Output data type: "vtkUnstructuredGrid" -->
       <IntVectorProperty command="SetOutputDataSetType"
-                         default_values="0"
+                         default_values="4"
                          name="OutputDataSetType"
                          number_of_elements="1"
                          panel_visibility="never">
@@ -69,7 +69,7 @@
         name="Script"
         command="SetScript"
         number_of_elements="1"
-        default_values="&#xA;import numpy as np  &#xA;&#xA;pdi = self.GetInputDataObject(0,0)&#xA;pdo = self.GetOutputDataObject(0)&#xA;pdo.ShallowCopy(pdi)&#xA;&#xA;newPoints = vtk.vtkPoints() &#xA;numPoints = pdi.GetNumberOfPoints() &#xA;Urel=pdi.GetPointData().GetArray(&quot;Urel&quot;)&#xA;&#xA;Urf=vtk.vtkDoubleArray()&#xA;Urf.SetName(&quot;Urel_flat&quot;)&#xA;Urf.SetNumberOfComponents(3) &#xA;&#xA;def nc(x,y,z):&#xA;    r=np.sqrt(x*x+y*y)&#xA;    t=np.arctan2(y,x)&#xA;    z=z&#xA;    return r,t,z&#xA;&#xA;for i in range(0, numPoints): &#xA;    coord = pdi.GetPoint(i) &#xA;    x, y, z = coord[:3] &#xA;    r,t,z=nc(x,y,z) &#xA;    newPoints.InsertNextPoint(r,r*t,z) &#xA;    ux,uy,uz=Urel.GetTuple3(i)&#xA;    Urf.InsertNextTupleValue([&#xA;        ux*np.cos(-t) - uy*np.sin(-t),&#xA;        ux*np.sin(-t) + uy*np.cos(-t),&#xA;        uz&#xA;        ])&#xA;&#xA;pdo.SetPoints(newPoints)&#xA;pdo.GetPointData().AddArray(Urf)&#xA;"
+        default_values="&#xA;import numpy as np  &#xA;&#xA;pdi = self.GetInputDataObject(0,0)&#xA;pdo = self.GetOutputDataObject(0)&#xA;pdo.ShallowCopy(pdi)&#xA;&#xA;numPoints = pdi.GetNumberOfPoints() &#xA;Urel=pdi.GetPointData().GetArray(&quot;Urel&quot;)&#xA;&#xA;&#xA;# convert into numpy array for vector ops&#xA;eax=np.array(eax) &#xA;er=np.array(er)&#xA;etan=np.cross(eax,er)&#xA;&#xA;# copy fields into numpy lists&#xA;p=np.array([pdi.GetPoint(i)[:3] for i in range(0, numPoints)]) -p0&#xA;urel=np.array([Urel.GetTuple3(i) for i in range(0, numPoints)])&#xA;&#xA;r=np.sqrt(np.dot(p,er)**2+np.dot(p,etan)**2)&#xA;z=np.dot(p,eax)&#xA;theta=np.arctan2(np.dot(p,etan), np.dot(p,er))&#xA;&#xA;ct=np.cos(theta).reshape((numPoints,1))&#xA;st=np.sin(theta).reshape((numPoints,1))&#xA;&#xA;o=np.ones((numPoints,3))&#xA;er_local=(er*o)*ct + (etan*o)*st&#xA;etan_local=(etan*o)*ct - (er*o)*st&#xA;&#xA;#print np.dot(urel,er_local)&#xA;urel_flat = np.transpose( np.array([&#xA;    np.sum(urel*er_local,axis=1),&#xA;    np.sum(urel*etan_local,axis=1),&#xA;    np.dot(urel,eax)&#xA;    ]) )&#xA;&#xA;# create field for transformed points&#xA;newPoints = vtk.vtkPoints() &#xA;&#xA;# add new vector field&#xA;Urf=vtk.vtkDoubleArray()&#xA;Urf.SetName(&quot;Urel_flat&quot;)&#xA;Urf.SetNumberOfComponents(3) &#xA;&#xA;for i in range(0, numPoints):&#xA;    newPoints.InsertNextPoint(r[i], r[i]*theta[i], z[i])&#xA;    Urf.InsertNextTupleValue(urel_flat[i])&#xA;&#xA;pdo.SetPoints(newPoints)&#xA;pdo.GetPointData().AddArray(Urf)&#xA;"
         panel_visibility="advanced">
         <Hints>
          <Widget type="multi_line"/>

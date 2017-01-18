@@ -773,6 +773,9 @@ arma::mat surfaceProjectLine
   const arma::mat& projdir
 );
 
+std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem::path& basepath);
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

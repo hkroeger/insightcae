@@ -2444,5 +2444,48 @@ arma::mat surfaceProjectLine
 }
 
  
+int find_files( const boost::filesystem::path & dir_path,         // in this directory,
+                const std::string & file_name, // search for this name,
+                std::vector<boost::filesystem::path> & path_found )            // placing path here if found
+{
+  int num=0;
+  
+  if ( !boost::filesystem::exists( dir_path ) ) return num;
+  
+  boost::filesystem::directory_iterator end_itr; // default construction yields past-the-end
+  for ( directory_iterator itr( dir_path );
+        itr != end_itr;
+        ++itr )
+  {
+    if ( boost::filesystem::is_directory(itr->status()) )
+    {
+      num+=find_files( itr->path(), file_name, path_found );
+    }
+    else if ( boost::filesystem::is_regular_file ( itr->status() ) )
+    {
+      if ( itr->path().filename() == file_name ) 
+      {
+	path_found.push_back(itr->path());
+	num+=1;
+      }
+    }
+  }
+  return num;
+}
+
+std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem::path& basepath)
+{
+  std::vector<boost::filesystem::path> cds, cases;
+  find_files(basepath, "controlDict", cds);
+  BOOST_FOREACH(const boost::filesystem::path& cd, cds)
+  {
+    if ( boost::filesystem::basename(cd.parent_path()) == "system" )
+    {
+      cases.push_back( cd.parent_path().parent_path() );
+    }
+  }
+  
+  return cases;
+}
 
 }

@@ -776,6 +776,48 @@ arma::mat surfaceProjectLine
 std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem::path& basepath);
 
 
+
+class HomogeneousAveragedProfile
+: public Analysis
+{
+public:
+#include "openfoamtools__HomogeneousAveragedProfile__Parameters.h"
+/*
+PARAMETERSET>>> HomogeneousAveragedProfile Parameters
+
+OFEname = string "OF23x" "Name of OpenFOAM installation"
+casepath = path "." "Path to OpenFOAM case"
+
+p0 = vector (0 0 0) "start point of profile"
+L = vector (0 1 0) "length and direction of profile"
+np = int 100 "number of sampling points"
+grading = selection (
+  none towardsStart towardsEnd towardsBoth
+) none "Definition of grading direction"
+homdir1 = vector (3.14 0 0) "direction and span of homogeneous averaging direction 1"
+n_homavg1 = int 10 "number of homogeneous averaging samples in direction 1 (value 1 switches direction off)"
+homdir2 = vector (0 0 1) "direction and span of homogeneous averaging direction 2"
+n_homavg2 = int 1 "number of homogeneous averaging samples in direction 2  (value 1 switches direction off)"
+
+fields = array [
+ string "UMean" "Field name"
+ ]*1 "Names of fields for sampling"
+
+<<<PARAMETERSET
+*/
+
+public:
+  declareType("HomogeneousAveragedProfile");
+
+  HomogeneousAveragedProfile();
+  HomogeneousAveragedProfile(const ParameterSet& p);
+
+  virtual ParameterSet defaultParameters() const;
+  
+  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+};
+
+
 }
 
 #endif // OPENFOAMTOOLS_H

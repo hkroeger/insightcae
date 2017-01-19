@@ -2488,4 +2488,139 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
   return cases;
 }
 
+
+
+
+HomogeneousAveragedProfile::HomogeneousAveragedProfile()
+{}
+
+HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps)
+: Analysis("Homogeneous Averaged Profile", "")
+{
+  setParameters(ps);
+}
+
+ParameterSet HomogeneousAveragedProfile::defaultParameters() const
+{
+  return Parameters::makeDefault();
+}
+
+ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer)
+{
+  Parameters p(*parameters_);
+//   setExecutionPath(p.casepath);
+  
+  OpenFOAMCase cm(OFEs::get(p.OFEname));
+  
+  arma::mat xs;
+  
+  if ( Parameters::grading_type::none == p.grading )
+  {
+    xs=linspace(0., 1., p.np);
+  }
+  else if ( Parameters::grading_type::towardsEnd == p.grading )
+  {
+    xs=cos(0.5*M_PI*(linspace(0., 1., p.np)-1.0));
+  }
+  else if ( Parameters::grading_type::towardsStart == p.grading )
+  {
+    xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p.np));
+  }
+  
+  std::cout
+  <<p.L<<p.p0
+  <<linspace(0., 1., p.np)
+  <<arma::trans(xs) 
+  <<(p.L * arma::trans(xs) )
+  <<p.p0
+  <<(p.p0 * arma::ones(1,p.np))
+  <<std::endl;
+  
+  arma::mat pts = arma::trans(
+     p.L * arma::trans(xs) 
+     + 
+     p.p0 * arma::ones(1,p.np)
+  );
+  
+  std::cout<<pts<<std::endl;
+ 
+  boost::ptr_vector<sampleOps::set> sets;
+  sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
+    .set_name("radial")
+    .set_points( pts )
+    .set_dir1(p.homdir1)
+    .set_dir2(p.homdir2)
+    .set_nd1(p.n_homavg1)
+    .set_nd2(p.n_homavg2)
+  ));
+  
+  sample(cm, p.casepath, p.fields, sets);    
+      
+  sampleOps::ColumnDescription cd;
+  arma::mat data = dynamic_cast<sampleOps::linearAveragedPolyLine*>(&sets[0])
+    -> readSamples(cm, p.casepath, &cd);
+
+  ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
+  results->introduction() = description_;
+  Ordering so;
+  
+  BOOST_FOREACH(const std::string& fieldname, p.fields)
+  {
+    int c=cd[fieldname].col;
+    int ncmpt=cd[fieldname].ncmpt;
+    
+    std::vector<PlotCurve> crvs;
+    for (int i=0; i<ncmpt; i++)
+    {
+      
+      std::string cmptname;
+      if (ncmpt==1)
+      {
+	cmptname="";
+      }
+      else if (ncmpt==3)
+      {
+	switch (i) 
+	{
+	  case 0: cmptname="x"; break;
+	  case 1: cmptname="y"; break;
+	  case 2: cmptname="z"; break;
+	}
+      }
+      else if (ncmpt==6)
+      {
+	switch (i) 
+	{
+	  case 0: cmptname="xx"; break;
+	  case 1: cmptname="xy"; break;
+	  case 2: cmptname="xz"; break;
+	  case 3: cmptname="yx"; break;
+	  case 4: cmptname="yy"; break;
+	  case 5: cmptname="zz"; break;
+	}
+      }
+      
+      std::string lxcmptname="";
+      if (cmptname!="") lxcmptname="_{"+cmptname+"}";
+      
+      crvs.push_back(PlotCurve(data.col(0), data.col(c+i), fieldname+cmptname, "w l t '$"+fieldname+lxcmptname+"$'"));
+    }
+    
+    addPlot
+    (
+      results, p.casepath, "profiles_"+fieldname,
+      "$x / m$", fieldname,
+      crvs,
+      "Profiles of field "+fieldname
+    ) 
+    .setOrder(so.next());
+    
+  }
+  
+  return results;
+}
+
+defineType(HomogeneousAveragedProfile);
+addToFactoryTable(Analysis, HomogeneousAveragedProfile);
+
 }

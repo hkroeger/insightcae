@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, pprint, re
+import os, sys, subprocess, pprint, re, tempfile
 from optparse import OptionParser
 
 parser = OptionParser()
 parser.add_option("-s", "--statefile", dest="statefile", metavar='FILE', default="",
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-u", "--unchanged", dest="statefileunchanged",
+		  action='store_true',
+                  help="skip the removal of absolute paths to foam case entries in statefile")
 parser.add_option("-r", "--loadscript", dest="loadscript", metavar='FILE', default="",
                   help="include (append) the specified snippet into the loadscript")
 parser.add_option("-b", "--batch", dest="batch",
@@ -136,6 +139,7 @@ if opts.list:
   pprint.pprint(avail)
   sys.exit(0)
 
+# sed -e "s#value=\".*/\([^/]*\)\.foam\"#value=\"\\1\.foam\"#g" viz.pvsm
 statefile=None
 
 if (os.path.exists("default.pvsm")):
@@ -155,7 +159,12 @@ if (opts.statefile!=""):
     print "Specified state file not found: ", opts.statefile
     sys.exit(-1)
 
-
+remove_statefile=False
+if not statefile is None and not opts.statefileunchanged:
+  nsf,nsfname=tempfile.mkstemp(suffix='.pvsm', prefix='converted_statefile')
+  subprocess.call(["sed", "-e", "s#value=\".*/\([^/]*\)\.foam\"#value=\"%s\.foam\"#g" % split(3, os.getcwd()), statefile], stdout=nsf)
+  statefile=nsfname
+  remove_statefile=True
 
 if not statefile is None:
   if opts.batch:
@@ -170,3 +179,6 @@ else:
   touch(cn)
   subprocess.call(["paraview", "--data="+cn])
   os.remove(cn)
+  
+if remove_statefile:
+  os.remove(statefile)

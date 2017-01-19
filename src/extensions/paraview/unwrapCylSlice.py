@@ -38,7 +38,7 @@ def RequestData():
 
     r=np.sqrt(np.dot(p,er)**2+np.dot(p,etan)**2)
     z=np.dot(p,eax)
-    theta=np.arctan2(np.dot(p,etan), np.dot(p,er))
+    theta=np.arctan2(np.dot(p,er), np.dot(p,etan))
 
     ct=np.cos(theta).reshape((numPoints,1))
     st=np.sin(theta).reshape((numPoints,1))

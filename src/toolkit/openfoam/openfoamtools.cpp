@@ -2526,15 +2526,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
   {
     xs=1.0 - cos(0.5*M_PI*linspace(0., 1., p.np));
   }
-  
-  std::cout
-  <<p.L<<p.p0
-  <<linspace(0., 1., p.np)
-  <<arma::trans(xs) 
-  <<(p.L * arma::trans(xs) )
-  <<p.p0
-  <<(p.p0 * arma::ones(1,p.np))
-  <<std::endl;
+
   
   arma::mat pts = arma::trans(
      p.L * arma::trans(xs) 
@@ -2542,8 +2534,6 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
      p.p0 * arma::ones(1,p.np)
   );
   
-  std::cout<<pts<<std::endl;
- 
   boost::ptr_vector<sampleOps::set> sets;
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
     .set_name(p.profile_name)

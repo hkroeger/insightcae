@@ -787,6 +787,7 @@ PARAMETERSET>>> HomogeneousAveragedProfile Parameters
 
 OFEname = string "OF23x" "Name of OpenFOAM installation"
 casepath = path "." "Path to OpenFOAM case"
+profile_name= string "radial" "name of the profile (controls name of generated sample sets, please avoid interference with other profile names)"
 
 p0 = vector (0 0 0) "start point of profile"
 L = vector (0 1 0) "length and direction of profile"

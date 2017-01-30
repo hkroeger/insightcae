@@ -162,7 +162,7 @@ RTYPE Foam::twoPointCorrelation::read(const dictionary& dict)
         dictionary csysDict(dict.subDict("csys"));
         csys_=coordinateSystem::New
               (
-#if defined(OF23x) || defined(OFplus) || defined(OFdev)
+#if defined(OF23x) || defined(OF301) || defined(OFplus) || defined(OFdev)
 		  obr_,
 #else
                   word(csysDict.lookup("type")),

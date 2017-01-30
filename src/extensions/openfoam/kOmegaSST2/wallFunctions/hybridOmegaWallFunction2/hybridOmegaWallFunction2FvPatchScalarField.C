@@ -39,7 +39,7 @@ License
 
 namespace Foam
 {
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -348,7 +348,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 
       const kOmegaSST2& rasModel 
 	= db().lookupObject<kOmegaSST2>(
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301)||defined(OFplus)||defined(OFdev)
 	"turbulenceProperties"
 #else
 	"RASProperties"
@@ -567,7 +567,7 @@ makePatchTypeField
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

@@ -24,13 +24,13 @@
 
 #if defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
-#elif defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #endif
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 #include "nutWallFunctionFvPatchScalarField.H"
 #else
@@ -45,6 +45,8 @@
 
 #include "wallDist.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void calcIncompressibleYPlus
@@ -58,7 +60,7 @@ void calcIncompressibleYPlus
     typedef 
 #if defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
-#elif defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)
     nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
@@ -69,21 +71,21 @@ void calcIncompressibleYPlus
 
 #if defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
-#elif defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)
     immiscibleIncompressibleTwoPhaseMixture
 #else
     incompressibleTwoPhaseMixture
 #endif
     laminarTransport(U, phi);
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)
     autoPtr<incompressible::turbulenceModel>
 #else
     autoPtr<incompressible::RASModel>
 #endif
     RASModel
     (
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)
       incompressible::turbulenceModel::New
 #else
         incompressible::RASModel::New
@@ -110,13 +112,8 @@ void calcIncompressibleYPlus
                 dynamic_cast<const wallFunctionPatchField&>
                     (nutPatches[patchi]);
 
-            yPlus
-#ifdef OFdev
-	      .boundaryFieldRef()
-#else
-	      .boundaryField()
-#endif
-	    [patchi] = nutPw.yPlus();
+            UNIOF_BOUNDARY_NONCONST(yPlus)[patchi] = nutPw.yPlus();
+            
             const scalarField& Yp = yPlus.boundaryField()[patchi];
 
             Info<< "Patch " << patchi
@@ -271,11 +268,7 @@ int main(int argc, char *argv[])
             IOobject::NO_WRITE
         );
 
-#if defined(OFplus)
-        if (UHeader.typeHeaderOk<volVectorField>())
-#else
-        if (UHeader.headerOk())
-#endif
+        if (UNIOF_HEADEROK(UHeader,volVectorField))
         {
             Info<< "Reading field U\n" << endl;
             volVectorField U(UHeader, mesh);

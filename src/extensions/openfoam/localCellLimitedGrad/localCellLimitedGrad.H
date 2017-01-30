@@ -25,12 +25,8 @@
 #include "surfaceFields.H"
 #include "fvcAverage.H"
 #include "zeroGradientFvPatchField.H"
+#include "uniof.h"
 
-#ifdef OF16ext
-#define LABELULIST unallocLabelList
-#else
-#define LABELULIST labelUList
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -75,14 +71,10 @@ surfaceMax
         )
     );
     
-    GeometricField<Type, fvPatchField, volMesh>& vf = tvf
-#if (defined(OFplus)||defined(OFdev))
-    .ref
-#endif
-    ();
+    GeometricField<Type, fvPatchField, volMesh>& vf = UNIOF_TMP_NONCONST(tvf);
 
-    const LABELULIST& owner = mesh.owner();
-    const LABELULIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const Field<Type>& issf = ssf;
 
@@ -94,7 +86,7 @@ surfaceMax
 
     forAll(mesh.boundary(), patchi)
     {
-        const LABELULIST& pFaceCells =
+        const UNIOF_LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
@@ -153,11 +145,12 @@ class localCellLimitedGrad
 	    );
 	    if (mesh.foundObject<surfaceScalarField>(kname_))
 	    {
-	      k
-#if defined(OFplus)||defined(OFdev)
-	      .ref
-#endif
-	      () = max(1e-3, surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_)));
+	      UNIOF_TMP_NONCONST(k) = 
+	      max
+	      (
+              1e-3, 
+              surfaceMax(mesh.lookupObject<surfaceScalarField>(kname_))
+          );
 	    }
 	    else
 	    {

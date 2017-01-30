@@ -30,12 +30,13 @@ License
 #include "volFields.H"
 #include "addToRunTimeSelectionTable.H"
 #include "wallFvPatch.H"
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -81,7 +82,7 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
 
     const kOmegaSST2& rasModel 
       = db().lookupObject<kOmegaSST2>(
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301)||defined(OFplus)||defined(OFdev)
 	"turbulenceProperties"
 #else
 	"RASProperties"
@@ -102,13 +103,7 @@ tmp<scalarField> nutHybridWallFunction2FvPatchScalarField::calcNut() const
       rasModel.Utau().boundaryField()[patchI];
 
     tmp<scalarField> tnutw(new scalarField(patch().size(), 0.0));
-    scalarField& nutw = 
-#if defined(OFplus)||defined(OFdev)
-    tnutw.ref()
-#else
-    tnutw()
-#endif
-    ;
+    scalarField& nutw = UNIOF_TMP_NONCONST(tnutw);
 
     const fvPatchVectorField& Uw =
       patch().lookupPatchField<volVectorField, vector>("U"); //UName_);
@@ -267,7 +262,7 @@ makePatchTypeField(fvPatchScalarField, nutHybridWallFunction2FvPatchScalarField)
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

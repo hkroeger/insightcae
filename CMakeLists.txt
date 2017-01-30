@@ -147,6 +147,7 @@ if (INSIGHT_BUILD_OPENFOAM)
     find_package(OpenFOAM-22x)
     find_package(OpenFOAM-22eng)
     find_package(OpenFOAM-23x)
+    find_package(OpenFOAM-301)
     find_package(OpenFOAM-plus)
     find_package(OpenFOAM-dev)
     
@@ -205,6 +206,9 @@ macro(version_list_OF)
     if (OF23x_FOUND)
       list (APPEND OF_VERSIONS OF23x)
     endif()
+    if (OF301_FOUND)
+      list (APPEND OF_VERSIONS OF301)
+    endif()
     if (OFplus_FOUND)
       list (APPEND OF_VERSIONS OFplus)
     endif()
@@ -217,39 +221,6 @@ endmacro(version_list_OF)
 
 macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
   version_list_OF()
-#   if (NOT OF_VERSIONS)
-#     if (OF16ext_FOUND)
-#       list (APPEND OF_VERSIONS OF16ext)
-#     endif()
-#     if (Fx31_FOUND)
-#       list (APPEND OF_VERSIONS Fx31)
-#     endif()
-#     if (Fx32_FOUND)
-#       list (APPEND OF_VERSIONS Fx32)
-#     endif()
-#     if (Fx40_FOUND)
-#       list (APPEND OF_VERSIONS Fx40)
-#     endif()
-#     if (OF21x_FOUND)
-#       list (APPEND OF_VERSIONS OF21x)
-#     endif()
-#     if (OF22x_FOUND)
-#       list (APPEND OF_VERSIONS OF22x)
-#     endif()
-#     if (OF22eng_FOUND)
-#       list (APPEND OF_VERSIONS OF22eng)
-#     endif()
-#     if (OF23x_FOUND)
-#       list (APPEND OF_VERSIONS OF23x)
-#     endif()
-#     if (OFplus_FOUND)
-#       list (APPEND OF_VERSIONS OFplus)
-#     endif()
-#     if (OFdev_FOUND)
-#       list (APPEND OF_VERSIONS OFdev)
-#     endif()
-#   endif()
-#   message(STATUS ${OF_VERSIONS})
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
     message(STATUS "Adding program target ${PRJ_NAME}${_ofvers}")
@@ -354,6 +325,15 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+    if (${_ofvers} STREQUAL "OF301")
+      setup_exe_target_OF301(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
     if (${_ofvers} STREQUAL "OFplus")
       setup_exe_target_OFplus(
 	${PRJ_NAME}${_ofvers} 
@@ -381,7 +361,6 @@ endmacro(setup_exe_target_OF)
 
 macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs libs is_of_targets)
   version_list_OF()
-#   message(STATUS ${OF_VERSIONS})
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
     message(STATUS "Adding lib target ${PRJ_NAME}${_ofvers}")
@@ -486,6 +465,15 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
 	"${${PRJ_NAME}_LIBRARIES}"
       ) 
     endif()
+    if (${_ofvers} STREQUAL "OF301")
+      setup_lib_target_OF301(
+	${PRJ_NAME}${_ofvers} 
+	"${sources}" 
+	"${PRJ_NAME}" 
+	"${${PRJ_NAME}_INCLUDE_DIRS}"
+	"${${PRJ_NAME}_LIBRARIES}"
+      ) 
+    endif()
     if (${_ofvers} STREQUAL "OFplus")
       setup_lib_target_OFplus(
 	${PRJ_NAME}${_ofvers} 
@@ -511,11 +499,9 @@ endmacro(setup_lib_target_OF)
 
 macro(setup_test_OF PRJ_NAME cmd)
   version_list_OF()
-#   message(STATUS ${OF_VERSIONS})
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
     message(STATUS "Adding OpenFOAM test ${PRJ_NAME}${_ofvers} ${_ofvers}_ISCFG_BASHRC ${${_ofvers}_ISCFG_BASHRC}")
-#     project(${PRJ_NAME}${_ofvers})
         
     add_test(NAME ${PRJ_NAME}${_ofvers} 
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/${cmd} ${_ofvers} ${${_ofvers}_ISCFG_BASHRC} ${CMAKE_CURRENT_SOURCE_DIR}

@@ -27,6 +27,7 @@ License
 #include "surfaceFields.H"
 #include "volFields.H"
 #include "mapPolyMesh.H"
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -364,11 +365,7 @@ tmp<symmTensorField> hinv(const symmTensorField& dd)
   tmp<symmTensorField> res(new symmTensorField(dd.size()));
   forAll(dd, i) 
   {
-    res
-#ifdef OFplus
-    .ref
-#endif
-    ()[i]=hinv(dd[i]);
+    UNIOF_TMP_NONCONST(res)[i]=hinv(dd[i]);
   }
   return res;
 }
@@ -520,13 +517,7 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
 
     forAll(lsP.boundaryField(), patchi)
     {
-        fvsPatchVectorField& patchLsP = lsP
-#if defined(OFdev)
-	.boundaryFieldRef()
-#else
-        .boundaryField()
-#endif
-	[patchi];
+        fvsPatchVectorField& patchLsP = UNIOF_BOUNDARY_NONCONST(lsP)[patchi];
 
         const fvsPatchScalarField& pw = w.boundaryField()[patchi];
         // Note: least squares in 1.4.1 and other OpenCFD versions

@@ -24,6 +24,7 @@
 #include "cellSet.H"
 #include "faceSet.H"
 #include "cellToFace.H"
+#include "OFstream.H"
 
 #include "uniof.h"
 
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
     
     argList::validArgs.append("list of (identifier, (STL file name, outside point))");
     argList::validArgs.append("density [kg/m^3]");
-    argList::validArgs.append("static pressure p0 [Pa]");
+//     argList::validArgs.append("static pressure p0 [Pa]");
     
     #include "setRootCase.H"
     #include "createTime.H"
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
     setInfoMap setInfos(IStringStream(UNIOF_ADDARG(args,0))());
     
     scalar rho = readScalar(IStringStream(UNIOF_ADDARG(args,1))());
-    scalar p0 = readScalar(IStringStream(UNIOF_ADDARG(args,2))());
+//     scalar p0 = readScalar(IStringStream(UNIOF_ADDARG(args,2))());
 
     forAll(timeDirs, timeI)
     {
@@ -133,6 +134,7 @@ int main(int argc, char *argv[])
 	    bndfaces.write();
 	    Info<<"found "<<bndfaces.size()<<" bounding faces for "<<id<<endl;
 	    
+	    vectorField faceCenters(bndfaces.size(), vector::zero);
 	    vectorField faceArea(bndfaces.size(), vector::zero);
 	    vectorField velocity(bndfaces.size(), vector::zero);
 	    scalarField pressure(bndfaces.size(), 0);
@@ -143,33 +145,61 @@ int main(int argc, char *argv[])
 	      label faceI=j.key();
 // 	      Info<<"faceI="<<faceI<<endl;
 	      
-	      label ownci = mesh.owner()[faceI];
-	      label neici = mesh.neighbour()[faceI];
-	      if (cells.found(ownci))
+	      faceCenters[k]=mesh.faceCentres()[faceI];
+	      if (faceI>=mesh.nInternalFaces())
 	      {
 		faceArea[k]=mesh.faceAreas()[faceI];
 	      }
-	      else if (cells.found(neici))
-	      {
-		faceArea[k]=-mesh.faceAreas()[faceI];
-	      }
 	      else
 	      {
-		FatalErrorIn("main") << "Internal error: neither owner nor neighbour cell in cell set!" << abort(FatalError);
+		label ownci = mesh.owner()[faceI];
+		label neici = mesh.neighbour()[faceI];
+		bool hasown=cells.found(ownci);
+		bool hasnei=cells.found(neici);
+		if (hasown && !hasnei)
+		{
+		  faceArea[k]=mesh.faceAreas()[faceI];
+		}
+		else if (hasnei && !hasown)
+		{
+		  faceArea[k]=-mesh.faceAreas()[faceI];
+		}
+		else
+		{
+		  FatalErrorIn("main") << "Internal error: neither owner nor neighbour cell in cell set!" << abort(FatalError);
+		}
 	      }
 	      
 	      velocity[k]=getGlobalFaceValue(Uf, faceI);
 	      pressure[k]=getGlobalFaceValue(pf, faceI);
 	    }
-	    
-// 	    forAll(p, l)
-// 	    {
-// 	      Info<<"l="<<l<<": p="<<pressure[l]<<" faceArea="<<faceArea[l]<<" velocity="<<velocity[l]<<endl;
-// 	    }
-	    scalarField integrand = ( (0.5*magSqr(velocity)+pressure)*rho + p0) * (velocity&faceArea);
+
+	    {
+	      OFstream f(id+".csv");
+	      f<<"# id,x,y,z,ux,uy,uz,p,phi,sfx,sfy,sfz"<<endl;
+	      forAll(pressure, l)
+	      {
+		f
+		  <<l<<","
+		  <<faceCenters[l][0]<<","
+		  <<faceCenters[l][1]<<","
+		  <<faceCenters[l][2]<<","
+		  <<velocity[l][0]<<","
+		  <<velocity[l][1]<<","
+		  <<velocity[l][2]<<","
+		  <<pressure[l]<<","
+		  <<(faceArea[l]&velocity[l])<<","
+		  <<faceArea[l][0]<<","
+		  <<faceArea[l][1]<<","
+		  <<faceArea[l][2]
+		  <<endl;
+	      }
+	    }
+	    scalarField integrand = rho*(0.5*magSqr(velocity)+pressure) * (velocity&faceArea);
 // 	    Info<<integrand<<endl;
 	    scalar Wt = gSum( integrand );
-	    Info<<"volume integrated energy loss: Wt = "<<Wt<<endl;
+	    Info<<"volume integrated energy loss at "<<id<<": Wt = "<<Wt<<endl;
+	    Info<<"volume flux error at "<<id<<": delta V = "<<gSum(velocity&faceArea) <<endl;
 	  }
 	}
 	else

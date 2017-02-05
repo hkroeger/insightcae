@@ -25,19 +25,43 @@
 #include "faceSet.H"
 #include "cellToFace.H"
 
+#include "uniof.h"
+
+
+template<class T>
+T getGlobalFaceValue(const GeometricField<T, fvsPatchField, surfaceMesh>& f, label gfi)
+{
+  const fvMesh& mesh = f.mesh();
+  const fvPatchList & patches = mesh.boundary();
+  
+  if (gfi < mesh.nInternalFaces())
+  {
+    return f[gfi];
+  }
+  else
+  {
+    label pi = mesh.boundaryMesh().whichPatch(gfi);
+//     Info<<"pi="<<pi<<endl;
+    const fvPatch & curPatch = patches[pi];
+    
+    if (curPatch.type() == "empty") return pTraits<T>::zero;
+    
+    label start = curPatch.patch().start();
+    label localfacei=gfi-start;
+//     Info<<start<<" "<<localfacei<<" "<<curPatch.size()<<endl;
+    return f.boundaryField()[pi][localfacei];
+  }
+  FatalErrorIn("getGlobalFaceValue") << "invalid global face ID: "<<gfi<<abort(FatalError);
+  return pTraits<T>::zero;
+}
+
 int main(int argc, char *argv[])
 {
     timeSelector::addOptions();
-
-// #include "addRegionOption.H"
-
-//     argList::addBoolOption
-//     (
-//         "compressible",
-//         "calculate compressible y+"
-//     );
     
     argList::validArgs.append("list of (identifier, (STL file name, outside point))");
+    argList::validArgs.append("density [kg/m^3]");
+    argList::validArgs.append("static pressure p0 [Pa]");
     
     #include "setRootCase.H"
     #include "createTime.H"
@@ -47,102 +71,111 @@ int main(int argc, char *argv[])
 //     const bool compressible = args.optionFound("compressible");
     typedef Tuple2<fileName, point> setInfo;
     typedef HashTable<setInfo> setInfoMap;
-    setInfoMap setInfos(IStringStream(
-#ifdef OFdev
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    setInfoMap setInfos(IStringStream(UNIOF_ADDARG(args,0))());
+    
+    scalar rho = readScalar(IStringStream(UNIOF_ADDARG(args,1))());
+    scalar p0 = readScalar(IStringStream(UNIOF_ADDARG(args,2))());
 
     forAll(timeDirs, timeI)
     {
         runTime.setTime(timeDirs[timeI], timeI);
         Info<< "Time = " << runTime.timeName() << endl;
         fvMesh::readUpdateState state = mesh.readUpdate();
-	
-	forAllConstIter(setInfoMap, setInfos, i)
-	{
-	  word id = i.key();
-	  fileName sfn = i().first();
-	  point outpnt = i().second();
-	  pointField outpnts(1, outpnt);
-	  surfaceToCell stc(mesh, sfn, outpnts, false, true, false, 
-#ifndef Fx40
-			    false, 
-#endif
-			1e-4, 0);
-	  
-	  cellSet cells(mesh, id, 0);
-	  stc.applyToSet(topoSetSource::NEW, cells);
-	  Info<<"found "<<cells.size()<<" cells for "<<id<<endl;
-	  
-	  faceSet bndfaces(mesh, id, 0);
-	  cellToFace ctf1(mesh, id, cellToFace::ALL);
-	  ctf1.applyToSet(topoSetSource::NEW, bndfaces);
-	  cellToFace ctf2(mesh, id, cellToFace::BOTH);
-	  ctf2.applyToSet(topoSetSource::DELETE, bndfaces);
-	  Info<<"found "<<bndfaces.size()<<" bounding faces for "<<id<<endl;
-	}
 
-//         // Wall distance
-//         if (timeI == 0 || state != fvMesh::UNCHANGED)
-//         {
-//             Info<< "Calculating wall distance\n" << endl;
-//             wallDist y(mesh, true);
-//             Info<< "Writing wall distance to field " << y.name() << nl << endl;
-//             y.write();
-//         }
-// 
-//         volScalarField yPlus
-//         (
-//             IOobject
-//             (
-//                 "yPlus",
-//                 runTime.timeName(),
-//                 mesh,
-//                 IOobject::NO_READ,
-//                 IOobject::NO_WRITE
-//             ),
-//             mesh,
-//             dimensionedScalar("yPlus", dimless, 0.0)
-//         );
-// 
-//         IOobject UHeader
-//         (
-//             "U",
-//             runTime.timeName(),
-//             mesh,
-//             IOobject::MUST_READ,
-//             IOobject::NO_WRITE
-//         );
-// 
-// #if defined(OFplus)
-//         if (UHeader.typeHeaderOk<volVectorField>())
-// #else
-//         if (UHeader.headerOk())
-// #endif
-//         {
-//             Info<< "Reading field U\n" << endl;
-//             volVectorField U(UHeader, mesh);
-// 
-// //             if (compressible)
-// //             {
-// //                 calcCompressibleYPlus(mesh, runTime, U, yPlus);
-// //             }
-// //             else
-//             {
-//                 calcIncompressibleYPlus(mesh, runTime, U, yPlus);
-//             }
-//         }
-//         else
-//         {
-//             Info<< "    no U field" << endl;
-//         }
-// 
-//         Info<< "Writing yPlus to field " << yPlus.name() << nl << endl;
-// 
-//         yPlus.write();
+	IOobject Uheader
+	(
+	    "U",
+	    runTime.timeName(),
+	    mesh,
+	    IOobject::MUST_READ,
+	    IOobject::NO_WRITE
+	);
+	IOobject pheader
+	(
+	    "p",
+	    runTime.timeName(),
+	    mesh,
+	    IOobject::MUST_READ,
+	    IOobject::NO_WRITE
+	);
+	
+        if (UNIOF_HEADEROK(Uheader,volVectorField) && UNIOF_HEADEROK(pheader,volScalarField))
+	{
+	  volVectorField U(Uheader, mesh);
+	  volScalarField p(pheader, mesh);
+	  
+	  surfaceVectorField Uf=fvc::interpolate(U);
+	  surfaceScalarField pf=fvc::interpolate(p);
+	
+	  forAllConstIter(setInfoMap, setInfos, i)
+	  {
+	    word id = i.key();
+	    fileName sfn = i().first();
+	    point outpnt = i().second();
+	    pointField outpnts(1, outpnt);
+	    surfaceToCell stc(mesh, sfn, outpnts, false, true, false, 
+  #ifndef Fx40
+			      false, 
+  #endif
+			  1e-4, 0);
+	    
+	    cellSet cells(mesh, id+"_cells", 0);
+	    stc.applyToSet(topoSetSource::NEW, cells);
+	    Info<<"found "<<cells.size()<<" cells for "<<id<<endl;
+	    cells.write();
+	    
+	    faceSet bndfaces(mesh, id+"_faces", 0);
+	    cellToFace ctf1(mesh, id+"_cells", cellToFace::ALL);
+	    ctf1.applyToSet(topoSetSource::NEW, bndfaces);
+	    bndfaces.write();
+	    cellToFace ctf2(mesh, id+"_cells", cellToFace::BOTH);
+	    ctf2.applyToSet(topoSetSource::DELETE, bndfaces);
+	    bndfaces.write();
+	    Info<<"found "<<bndfaces.size()<<" bounding faces for "<<id<<endl;
+	    
+	    vectorField faceArea(bndfaces.size(), vector::zero);
+	    vectorField velocity(bndfaces.size(), vector::zero);
+	    scalarField pressure(bndfaces.size(), 0);
+	    label k=-1;
+	    forAllConstIter(faceSet, bndfaces, j)
+	    {
+	      k+=1;
+	      label faceI=j.key();
+// 	      Info<<"faceI="<<faceI<<endl;
+	      
+	      label ownci = mesh.owner()[faceI];
+	      label neici = mesh.neighbour()[faceI];
+	      if (cells.found(ownci))
+	      {
+		faceArea[k]=mesh.faceAreas()[faceI];
+	      }
+	      else if (cells.found(neici))
+	      {
+		faceArea[k]=-mesh.faceAreas()[faceI];
+	      }
+	      else
+	      {
+		FatalErrorIn("main") << "Internal error: neither owner nor neighbour cell in cell set!" << abort(FatalError);
+	      }
+	      
+	      velocity[k]=getGlobalFaceValue(Uf, faceI);
+	      pressure[k]=getGlobalFaceValue(pf, faceI);
+	    }
+	    
+// 	    forAll(p, l)
+// 	    {
+// 	      Info<<"l="<<l<<": p="<<pressure[l]<<" faceArea="<<faceArea[l]<<" velocity="<<velocity[l]<<endl;
+// 	    }
+	    scalarField integrand = ( (0.5*magSqr(velocity)+pressure)*rho + p0) * (velocity&faceArea);
+// 	    Info<<integrand<<endl;
+	    scalar Wt = gSum( integrand );
+	    Info<<"volume integrated energy loss: Wt = "<<Wt<<endl;
+	  }
+	}
+	else
+	{
+	  FatalErrorIn("main") << "Both fields U and p have to be present!" << abort(FatalError);
+	}
     }
 
     Info<< "End\n" << endl;

@@ -99,11 +99,20 @@ int main(int argc, char *argv[])
 	    IOobject::MUST_READ,
 	    IOobject::NO_WRITE
 	);
+	IOobject phiheader
+	(
+	    "phi",
+	    runTime.timeName(),
+	    mesh,
+	    IOobject::MUST_READ,
+	    IOobject::NO_WRITE
+	);
 	
-        if (UNIOF_HEADEROK(Uheader,volVectorField) && UNIOF_HEADEROK(pheader,volScalarField))
+        if (UNIOF_HEADEROK(Uheader,volVectorField) && UNIOF_HEADEROK(pheader,volScalarField) && UNIOF_HEADEROK(phiheader,surfaceScalarField))
 	{
 	  volVectorField U(Uheader, mesh);
 	  volScalarField p(pheader, mesh);
+	  surfaceScalarField phi(phiheader, mesh);
 	  
 	  surfaceVectorField Uf=fvc::interpolate(U);
 	  surfaceScalarField pf=fvc::interpolate(p);
@@ -138,6 +147,7 @@ int main(int argc, char *argv[])
 	    vectorField faceArea(bndfaces.size(), vector::zero);
 	    vectorField velocity(bndfaces.size(), vector::zero);
 	    scalarField pressure(bndfaces.size(), 0);
+	    scalarField flux(bndfaces.size(), 0);
 	    label k=-1;
 	    forAllConstIter(faceSet, bndfaces, j)
 	    {
@@ -146,6 +156,10 @@ int main(int argc, char *argv[])
 // 	      Info<<"faceI="<<faceI<<endl;
 	      
 	      faceCenters[k]=mesh.faceCentres()[faceI];
+	      velocity[k]=getGlobalFaceValue(Uf, faceI);
+	      pressure[k]=getGlobalFaceValue(pf, faceI);
+	      flux[k]=getGlobalFaceValue(phi, faceI);
+	      
 	      if (faceI>=mesh.nInternalFaces())
 	      {
 		faceArea[k]=mesh.faceAreas()[faceI];
@@ -163,6 +177,7 @@ int main(int argc, char *argv[])
 		else if (hasnei && !hasown)
 		{
 		  faceArea[k]=-mesh.faceAreas()[faceI];
+		  flux[k]*=-1.;
 		}
 		else
 		{
@@ -170,8 +185,6 @@ int main(int argc, char *argv[])
 		}
 	      }
 	      
-	      velocity[k]=getGlobalFaceValue(Uf, faceI);
-	      pressure[k]=getGlobalFaceValue(pf, faceI);
 	    }
 
 	    {
@@ -188,23 +201,23 @@ int main(int argc, char *argv[])
 		  <<velocity[l][1]<<","
 		  <<velocity[l][2]<<","
 		  <<pressure[l]<<","
-		  <<(faceArea[l]&velocity[l])<<","
+		  <<flux[l]<<","
 		  <<faceArea[l][0]<<","
 		  <<faceArea[l][1]<<","
 		  <<faceArea[l][2]
 		  <<endl;
 	      }
 	    }
-	    scalarField integrand = rho*(0.5*magSqr(velocity)+pressure) * (velocity&faceArea);
+	    scalarField integrand = rho*(0.5*magSqr(velocity)+pressure) * flux;
 // 	    Info<<integrand<<endl;
 	    scalar Wt = gSum( integrand );
 	    Info<<"volume integrated energy loss at "<<id<<": Wt = "<<Wt<<endl;
-	    Info<<"volume flux error at "<<id<<": delta V = "<<gSum(velocity&faceArea) <<endl;
+	    Info<<"volume flux error at "<<id<<": delta V = "<<gSum(flux) <<endl;
 	  }
 	}
 	else
 	{
-	  FatalErrorIn("main") << "Both fields U and p have to be present!" << abort(FatalError);
+	  FatalErrorIn("main") << "All fields U, p and phi have to be present!" << abort(FatalError);
 	}
     }
 

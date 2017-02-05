@@ -247,7 +247,7 @@ void Foam::consistentCurveSet::calcSamples
                     bPoint,
                     bFaceI,
 #if defined(OFplus)||defined(OFdev)
-		    smallDist,
+                    smallDist,
 #endif
 
                     trackPt,
@@ -323,7 +323,7 @@ void Foam::consistentCurveSet::calcSamples
 
         bool bReached = trackToBoundary
         (
-#if defined(OF23x)||defined (OFplus)||defined(OFdev)
+#if defined(OF23x)||defined(OF301)||defined (OFplus)||defined(OFdev)
             particleCloud,
 #endif
             singleParticle,

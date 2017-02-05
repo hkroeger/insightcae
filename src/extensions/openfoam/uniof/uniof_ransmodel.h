@@ -23,7 +23,7 @@
 
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301)||defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 // #include "turbulentFluidThermoModel.H"
 #define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel

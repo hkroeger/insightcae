@@ -36,6 +36,7 @@ SourceFiles
 #define leastSquares2Grad_H
 
 #include "gradScheme.H"
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

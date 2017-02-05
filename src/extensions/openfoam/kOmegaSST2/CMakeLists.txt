@@ -32,6 +32,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
+ uniof
 #toolkit
 )
 

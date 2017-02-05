@@ -36,7 +36,7 @@
 #endif
 
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)
 #define UNIOF_WALLDIST_Y(wd) (wd).y()
 #else
 #define UNIOF_WALLDIST_Y(wd) (wd)
@@ -48,10 +48,24 @@
 #define UNIOF_HEADEROK(ioo,typ) (ioo).headerOk()
 #endif
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OF301) || defined(OFplus)||defined(OFdev))
 #define UNIOF_ADDARG(args,j) (args).arg((j)+1)
 #else
 #define UNIOF_ADDARG(args,j) (args).additionalArgs()[j]
 #endif
+
+#if defined(OFdev)
+#define UNIOF_INTERNALFIELD_NONCONST(f) f.ref().field()
+#else
+#define UNIOF_INTERNALFIELD_NONCONST(f) f.internalField()
+#endif
+
+
+#ifdef OF16ext
+#define UNIOF_LABELULIST unallocLabelList
+#else
+#define UNIOF_LABELULIST labelUList
+#endif
+
 
 #endif

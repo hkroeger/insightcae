@@ -30,17 +30,19 @@ License
 #include "fixedInternalValueFvPatchFields.H"
 #include "gaussConvectionScheme.H"
 
-#if not (defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
 #include "backwardsCompatibilityWallFunctions.H"
 #else
 #include "bound.H"
 #endif
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-#if not (defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
 namespace incompressible
 {
 #endif
@@ -50,7 +52,7 @@ namespace RASModels
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 defineTypeNameAndDebug(kOmegaSST2, 0);
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
 addToRunTimeSelectionTable
 (
     RAStransportModelIncompressibleTurbulenceModel,
@@ -134,7 +136,7 @@ void kOmegaSST2::correctNut()
 
 kOmegaSST2::kOmegaSST2
 (
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
      const alphaField& alpha,
     const rhoField& rho,
     const volVectorField& U,
@@ -157,7 +159,7 @@ kOmegaSST2::kOmegaSST2
 :
 #if defined(OF16ext)
     RASModel(typeName, U, phi, lamTransportModel),
-#elif defined(OFplus) || defined(OFdev)
+#elif defined(OF301) || defined(OFplus) || defined(OFdev)
     RAStransportModelIncompressibleTurbulenceModel
     (
       type,
@@ -315,7 +317,7 @@ kOmegaSST2::kOmegaSST2
     omegaSmall_("omegaSmall", omegaMin_.dimensions(), SMALL),
 #endif
 
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
     y_(wallDist::New(this->mesh_).y()),
 #else
     y_(mesh_),
@@ -328,14 +330,14 @@ kOmegaSST2::kOmegaSST2
             "k",
             runTime_.timeName(),
             mesh_,
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
 	mesh_
 #else
         autoCreateK("k", mesh_)
@@ -348,14 +350,14 @@ kOmegaSST2::kOmegaSST2
             "omega",
             runTime_.timeName(),
             mesh_,
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
 	mesh_
 #else
         autoCreateOmega("omega", mesh_)
@@ -368,14 +370,14 @@ kOmegaSST2::kOmegaSST2
             "nut",
             runTime_.timeName(),
             mesh_,
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
 	mesh_
 #else
         autoCreateNut("nut", mesh_)
@@ -420,7 +422,7 @@ kOmegaSST2::kOmegaSST2
 //     nut_.correctBoundaryConditions();
 
     //correct();
-#if defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)
     printCoeffs("kOmegaSST2");
 #else
     printCoeffs();
@@ -542,7 +544,7 @@ void kOmegaSST2::correct()
         return;
     }
 
-#if not (defined (OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined (OFplus) || defined(OFdev))
     if (mesh_.changing())
     {
         y_.correct();
@@ -702,24 +704,12 @@ void kOmegaSST2::correct()
         )
     );
     
-    fvScalarMatrix& omegaEqn = 
-#if defined(OFplus) || defined(OFdev)
-    tomegaEqn.ref()
-#else
-    tomegaEqn()
-#endif
-    ;
+    fvScalarMatrix& omegaEqn = UNIOF_TMP_NONCONST(tomegaEqn);
 
     omegaEqn.relax();
 
 #if !(defined(Fx31)||defined(Fx32)||defined(Fx40))
-    omegaEqn.boundaryManipulate(omega_
-#ifdef OFdev
-    .boundaryFieldRef()
-#else
-    .boundaryField()
-#endif
-    );
+    omegaEqn.boundaryManipulate(UNIOF_BOUNDARY_NONCONST(omega_));
 #endif
     
     solve(tomegaEqn);
@@ -740,13 +730,7 @@ void kOmegaSST2::correct()
         Frot*min(G, c1_*betaStar_*k_*omega_) // CC:Frot
       - fvm::Sp(betaStar_*omega_, k_)
     );
-    fvScalarMatrix& kEqn = 
-#if defined(OFplus) || defined(OFdev)
-    tkEqn.ref()
-#else
-    tkEqn()
-#endif
-    ;
+    fvScalarMatrix& kEqn = UNIOF_TMP_NONCONST(tkEqn);
 
     kEqn.relax();
     solve(tkEqn);
@@ -765,7 +749,7 @@ void kOmegaSST2::correct()
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

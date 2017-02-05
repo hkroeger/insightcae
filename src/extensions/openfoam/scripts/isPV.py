@@ -41,9 +41,10 @@ def split(more, path):
   else:
     return tail
   
+casename = split(3, os.getcwd())
+
 def writeloadscript(scrname, path, batch=False, loadcmd=True, appendFile=""):
   fn=os.path.join(os.getcwd(), ".loadscript.py")
-  fnamestem=os.path.splitext(os.path.basename(scrname))[0]
   f=open(fn, "w")
   f.write("""\
 try: paraview.simple
@@ -122,7 +123,7 @@ for curtime in ftimes:
     SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)
 """%(
   "True" if opts.onlylatesttime else "False",
-  opts.fromt, opts.tot, rescalesnippet, fnamestem))
+  opts.fromt, opts.tot, rescalesnippet, casename))
   else:
     f.write("AnimationScene1.AnimationTime = times[-1]\n")
     
@@ -175,7 +176,7 @@ if not statefile is None:
     subprocess.call(["paraview", "--state="+statefile, "--script="+scrp])
   os.remove(scrp)
 else:
-  cn=split(3, os.getcwd())+".foam"
+  cn=casename+".foam"
   touch(cn)
   subprocess.call(["paraview", "--data="+cn])
   os.remove(cn)

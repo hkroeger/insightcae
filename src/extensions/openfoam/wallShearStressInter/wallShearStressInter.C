@@ -35,6 +35,8 @@ Description
 
 #include "fvCFD.H"
 
+#include "uniof.h"
+
 #include "incompressible/singlePhaseTransportModel/singlePhaseTransportModel.H"
 
 
@@ -42,7 +44,7 @@ Description
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
 
-#elif defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE immiscibleIncompressibleTwoPhaseMixture
 
@@ -51,7 +53,7 @@ Description
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)
 #include "turbulentTransportModel.H"
 #include "turbulentFluidThermoModel.H"
 #define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel
@@ -83,11 +85,7 @@ void calcIncompressibleTwoPhase
         IOobject::NO_WRITE
     );
 
-#if defined(OFplus)
-    if (!alpha1Header.typeHeaderOk<volScalarField>())
-#else
-    if (!alpha1Header.headerOk())
-#endif
+    if (!UNIOF_HEADEROK(alpha1Header, volScalarField))
     {
         Info<< "    no alpha1 field" << endl;
         return;
@@ -116,13 +114,7 @@ void calcIncompressibleTwoPhase
 
     forAll(wallShearStress.boundaryField(), patchI)
     {
-        wallShearStress
-#ifdef OFdev
-	  .boundaryFieldRef()
-#else
-	  .boundaryField()
-#endif
-	  [patchI] =
+      UNIOF_BOUNDARY_NONCONST(wallShearStress)[patchI] =
         (
            -mesh.Sf().boundaryField()[patchI]
            /mesh.magSf().boundaryField()[patchI]
@@ -152,13 +144,7 @@ void calcIncompressible
 
     forAll(wallShearStress.boundaryField(), patchI)
     {
-        wallShearStress
-#ifdef OFdev
-	  .boundaryFieldRef()
-#else
-	  .boundaryField()
-#endif
-	  [patchI] =
+        UNIOF_BOUNDARY_NONCONST(wallShearStress)[patchI] =
         (
            -mesh.Sf().boundaryField()[patchI]
            /mesh.magSf().boundaryField()[patchI]
@@ -279,11 +265,7 @@ int main(int argc, char *argv[])
             IOobject::NO_WRITE
         );
 
-#if defined(OFplus)
-        if (UHeader.typeHeaderOk<volVectorField>())
-#else
-        if (UHeader.headerOk())
-#endif
+        if (UNIOF_HEADEROK(UHeader,volVectorField))
         {
             Info<< "Reading field U\n" << endl;
             volVectorField U(UHeader, mesh);

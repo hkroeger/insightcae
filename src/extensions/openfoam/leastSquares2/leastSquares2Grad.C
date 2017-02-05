@@ -32,6 +32,7 @@ License
 #include "GeometricField.H"
 #include "zeroGradientFvPatchField.H"
 
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -91,11 +92,7 @@ leastSquares2Grad<Type>::
             zeroGradientFvPatchField<GradType>::typeName
         )
     );
-    GeometricField<GradType, fvPatchField, volMesh>& lsGrad = tlsGrad
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    GeometricField<GradType, fvPatchField, volMesh>& lsGrad = UNIOF_TMP_NONCONST(tlsGrad);
 
     // Get reference to least square vectors
     const leastSquares2Vectors& lsv = leastSquares2Vectors::New(mesh);

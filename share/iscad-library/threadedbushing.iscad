@@ -6,6 +6,8 @@ t?=0.85;
 
 Lbore?=10*l;
 
+mat=loadmodel(material_props);
+
 bushing:
 (
 Cylinder(
@@ -16,6 +18,7 @@ Cylinder(
  O, t*EX,
  d1)
 );
+bushing->density=mat$rho_steel;
 
 bore=
 Cylinder(

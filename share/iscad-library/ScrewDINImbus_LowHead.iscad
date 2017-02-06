@@ -10,6 +10,8 @@ e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L?=25;
 
+mat=loadmodel(material_props);
+
 screw0=
 (( 
  Cylinder(O, -k*EX, dk)
@@ -26,7 +28,7 @@ screw0=
 e=screw0?edges('isCircle')?edges('minimal(CoG.x)');
 screw:
 Fillet(e, 0.07*dk);
-
+screw->density=mat$rho_steel;
 
 Lthr?=L;
 throughhole=

@@ -8,6 +8,8 @@ e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L=24;
 
+mat=loadmodel(material_props);
+
 screw:
 ( 
  Extrusion(
@@ -22,7 +24,7 @@ screw:
  Tri([L,0.5*Dn,0], [0,-P,0], [-P,0,0]),
  O, EX, 2.*M_PI)
 ;
-screw->density=7.9e-6;
+screw->density=mat$rho_steel;
 
 Lthr?=L;
 throughhole=

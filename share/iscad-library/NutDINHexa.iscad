@@ -8,6 +8,8 @@ m=TableLookup(ScrewDIN, Dn, Dn, m);
 hk=0.5*P;
 L=24;
 
+mat=loadmodel(material_props);
+
 tool=Revolution(
  Tri(0.5*1.1548*s*EY, [0,-P,0], [P,0,0]),
  O, EX, 2.*M_PI);
@@ -22,7 +24,7 @@ Cylinder(O, m*EX, Dn)
 )
 - tool - Mirror(tool, Plane(0.5*m*EX, EX))
 ;
-nut->density=7.9e-6;
+nut->density=mat$rho_steel;
 
 Lhh?=5*m;
 headhole=

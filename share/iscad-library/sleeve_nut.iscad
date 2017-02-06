@@ -7,6 +7,8 @@ l2?=4; # Schaftlänge
 SW?=2; # Schlüsselweite
 tsl?=2; # Imbustiefe
 
+mat=loadmodel(material_props);
+
 nut1=
 Cylinder(
  O, (l1-k)*EX,
@@ -32,6 +34,7 @@ nut2
    RegPoly(l1*EX, EX, 6, SW/2.),
  -tsl*EX)
 ;
+nut->density=mat$rho_steel;
 
 Lh1Byl1?=3;
 Lh2Byl1?=3;

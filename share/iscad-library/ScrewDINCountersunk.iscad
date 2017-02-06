@@ -13,6 +13,8 @@ Rh=tan60*Lt;
 
 axis=RefAxis(O, -EX);
 
+mat=loadmodel(material_props);
+
 screw:
 ( 
  Cylinder(O+k*EX, O+(L)*EX, Dn)
@@ -29,7 +31,7 @@ Revolution(Tri(O,
  Tri(O+(L)*EX+0.5*Dn*EY, -P*EY, -P*EX),
  O, EX, 2.*M_PI)
 ;
-screw->density=7.9e-6;
+screw->density=mat$rho_steel;
 
 Lthr?=L;
 throughhole=

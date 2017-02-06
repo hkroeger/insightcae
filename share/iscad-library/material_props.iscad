@@ -1,0 +1,12 @@
+rho_steel=7.85E-06; # kg/mm^3
+rho_copper=8.92e-06; # kg/mm^3
+rho_alu=2.7e-06; # kg/mm^3
+rho_epox=1.95e-6; # kg/mm^3
+
+rho_NdFeB=7.5e-6; # kg/mm^3
+
+rho_PVC=1.38e-6; # kg/mm^3
+rho_PP=0.9e-6; # kg/mm^3
+rho_PS=1.04e-6; # kg/mm^3
+rho_EPDM=1.5e-6; # kg/mm^3
+

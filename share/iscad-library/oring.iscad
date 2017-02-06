@@ -1,4 +1,5 @@
 # O_Ring DIN 3771
+mat=loadmodel(material_props);
 
 Di?=60;
 d1?=TableLookup(ORing_DIN3771, d1, Di, d1, nearest);
@@ -9,6 +10,7 @@ b?=TableLookup(ORing_DIN3771_gland, d2, d2, b, nearest);
 
 oring:
 Torus(O, (d1+d2)*EX, d2);
+oring->density=mat$rho_EPDM;
 
 Dshaft=d1+2*d2-2*t;
 tool_gland_outer=

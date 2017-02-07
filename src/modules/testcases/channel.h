@@ -214,7 +214,9 @@ public:
   virtual void evaluateAtSection(
     OpenFOAMCase& cm,
     ResultSetPtr results, double x, int i,
-    Ordering& o
+    Ordering& o,
+    bool includeRefDataInCharts = true,
+    bool includeAllComponentsInCharts = false
   );
     
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);

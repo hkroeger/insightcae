@@ -444,7 +444,9 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts
 void ChannelBase::evaluateAtSection(
   OpenFOAMCase& cm, 
   ResultSetPtr results, double x, int i,
-  Ordering& o
+  Ordering& o,
+  bool includeRefDataInCharts,
+  bool includeAllComponentsInCharts
 )
 {
   Parameters p(*parameters_);
@@ -525,21 +527,30 @@ void ChannelBase::evaluateAtSection(
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
+    std::vector<PlotCurve> plotcurves = list_of
+      (PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"))
+      (PlotCurve(wallnormal, 	"V", "w l lt 1 lc 1 lw 2 t '$V^+$'"))
+      (PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 2 t '$W^+$'"))
+      ;
+      
+    if (includeRefDataInCharts)
+    {
+      std::vector<PlotCurve> pc = list_of
+        (PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc -1 t '$U_{ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t '$W_{ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc -1 t '$U_{ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_wmean395, 	"WMKM395", "w l lt 4 lc 3 t '$W_{ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_umean590, 	"UMKM590", "w l lt 3 lc -1 t '$U_{ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_wmean590, 	"WMKM590", "w l lt 3 lc 3 t '$W_{ref}^+(Re_{\\tau}=590)$'"))
+      ;
+      plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
+    }
+      
     addPlot
     (
       section, executionPath(), "chartMeanVelocity_"+title,
       "$y^+$", "$\\langle U^+ \\rangle$",
-      list_of
-      (PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"))
-      (PlotCurve(wallnormal, 		"V", "w l lt 1 lc 1 lw 2 t '$V^+$'"))
-      (PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 2 t '$W^+$'"))
-      (PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc -1 t '$U_{ref}^+(Re_{\\tau}=180)$'"))
-      (PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t '$W_{ref}^+(Re_{\\tau}=180)$'"))
-      (PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc -1 t '$U_{ref}^+(Re_{\\tau}=395)$'"))
-      (PlotCurve(refdata_wmean395, 	"WMKM395", "w l lt 4 lc 3 t '$W_{ref}^+(Re_{\\tau}=395)$'"))
-      (PlotCurve(refdata_umean590, 	"UMKM590", "w l lt 3 lc -1 t '$U_{ref}^+(Re_{\\tau}=590)$'"))
-      (PlotCurve(refdata_wmean590, 	"WMKM590", "w l lt 3 lc 3 t '$W_{ref}^+(Re_{\\tau}=590)$'"))
-      ,
+      plotcurves,
       "Wall normal profiles of averaged velocities at x/H=" + str(format("%g")%xByH),
       "set logscale x; set key top left"
     ) 
@@ -665,7 +676,9 @@ void ChannelBase::evaluateAtSection(
         arma::mat
             Rxx=arma::zeros(data.n_rows),
             Rxy=arma::zeros(data.n_rows),
+            Rxz=arma::zeros(data.n_rows),
             Ryy=arma::zeros(data.n_rows),
+            Ryz=arma::zeros(data.n_rows),
             Rzz=arma::zeros(data.n_rows);
 
         int c;
@@ -673,52 +686,88 @@ void ChannelBase::evaluateAtSection(
         {
             Rxx += data.col(c);
             Rxy += data.col(c+1);
+            Rxz += data.col(c+2);
             Ryy += data.col(c+3);
+            Ryz += data.col(c+4);
             Rzz += data.col(c+5);
         }
         if ( (c = cd.colIndex("R")) >=0 )
         {
             Rxx += data.col(c);
             Rxy += data.col(c+1);
+            Rxz += data.col(c+2);
             Ryy += data.col(c+3);
+            Ryz += data.col(c+4);
             Rzz += data.col(c+5);
         }
     
     
-    arma::mat axial(		join_rows(Re_tau-Re_tau*data.col(0), Rxx)	);
-    arma::mat wallnormal(	join_rows(Re_tau-Re_tau*data.col(0), Ryy)	);
-    arma::mat spanwise(		join_rows(Re_tau-Re_tau*data.col(0), Rzz)	);
-    arma::mat cross(		join_rows(Re_tau-Re_tau*data.col(0), Rxy)	);
+    arma::mat yplus=Re_tau-Re_tau*data.col(0);
+    
+    arma::mat axial(		join_rows(yplus, Rxx)	);
+    arma::mat wallnormal(	join_rows(yplus, Ryy)	);
+    arma::mat spanwise(		join_rows(yplus, Rzz)	);
+    arma::mat cross(		join_rows(yplus, Rxy)	);
 
     axial.save( 	( executionPath()/( "Raxial_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     wallnormal.save( 	( executionPath()/( "Rwallnormal_vs_yp_"	+title+".txt") ).c_str(), arma::raw_ascii);
     spanwise.save( 	( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     
-    double maxRp=std::max( max(axial.col(1)), max(refdata_Ruu590.col(1)) );
+    
+    std::vector<PlotCurve> plotcurves =
+      list_of
+       (PlotCurve(axial, 		"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
+       (PlotCurve(wallnormal, 	"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
+       (PlotCurve(spanwise, 	"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"))
+       (PlotCurve(cross, 		"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
+       ;
+       
+    if (includeAllComponentsInCharts)
+    {
+      std::vector<PlotCurve> pc =
+      list_of
+        (PlotCurve(join_rows(yplus, Rxz), 		"Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"))
+        (PlotCurve(join_rows(yplus, Ryz), 		"Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'"))
+        ;
+      plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
+    }
+       
+    if (includeRefDataInCharts)
+    {
+      std::vector<PlotCurve> pc =
+      list_of
+        (PlotCurve(refdata_Ruu, 		"RuuMKM180", "w l lt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_Rvv, 		"RvvMKM180", "w l lt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_Rww, 		"RwwMKM180", "w l lt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
+        
+        (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
+        
+        (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
+        ;
+      plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
+    }
+    
+    std::string maxRp;
+    if (includeRefDataInCharts)
+    {
+        maxRp="set yrange [:"+lexical_cast<string>(std::max( max(axial.col(1)), max(refdata_Ruu590.col(1)) ))+"]";
+    }
+    else
+    {
+        maxRp="";
+    }
+    
     addPlot
     (
       section, executionPath(), chart_name,
       "$y^+$", "$\\langle R^+ \\rangle$",
-      list_of
-       (PlotCurve(axial, 		"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
-       (PlotCurve(wallnormal, 		"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
-       (PlotCurve(spanwise, 		"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"))
-       (PlotCurve(cross, 		"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
-       
-       (PlotCurve(refdata_Ruu, 		"RuuMKM180", "w l lt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
-       (PlotCurve(refdata_Rvv, 		"RvvMKM180", "w l lt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
-       (PlotCurve(refdata_Rww, 		"RwwMKM180", "w l lt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
-       
-       (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
-       (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
-       (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
-       
-       (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
-       (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
-       (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
-       ,
-     "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
-     "set yrange [:"+lexical_cast<string>(maxRp)+"]"
+      plotcurves,
+      "Wall normal profiles of averaged reynolds stresses at x/H=" + str(format("%g")%xByH),
+      maxRp
     )
     .setOrder(so.next());
 

@@ -40,6 +40,7 @@ namespace insight
 class turbulenceModel
 : public OpenFOAMCaseElement
 {
+    
 public:
 
   declareFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc), LIST(ofc));  

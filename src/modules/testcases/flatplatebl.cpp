@@ -460,24 +460,24 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
     {
       std::ofstream f(inlet_velocity_profile_tabfile.c_str());
-      f<<0.0<<" "<<0.0<<endl;
+      f<<" 0.0 0.0 0.0 0.0"<<endl;
       
       double x0=Llam_-Lap_;
       double delta20=0.664*sqrt(p.fluid.nu*x0/uinf_);
       
       if (x0>0.)
       {
-	int n=10;
-	for (int i=1; i<n; i++)
-	{
-	  double eta=double(i)/double(n-1);
-	  double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
-	  f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<endl;
-	}
+        int n=10;
+        for (int i=1; i<n; i++)
+        {
+            double eta=double(i)/double(n-1);
+            double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
+            f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<" 0.0 0.0"<<endl;
+        }
       }
       if (H_>delta20)
       {
-	f<<H_<<" "<<uinf_<<endl;
+        f<<H_<<" "<<uinf_<<" 0.0 0.0"<<endl;
       }
     }
     
@@ -488,18 +488,9 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
     umean_data.values.resize(1);
     umean_data.values[0].time=0;
     umean_data.values[0].profile=inlet_velocity_profile_tabfile.filename(); // without path! otherwise problems after case copying!
-
-    // data file column mapping
-    VelocityInletBC::Parameters::velocity_type::fielddata_linearProfile_type::cmap_default_type cmp;
-    cmp.column=0;
-    cmp.component=0;
-    umean_data.cmap.push_back(cmp);
     
     umean_data.p0=vec3(0,0,0);      
-    umean_data.ep=vec3(0,1,0);
-    
-    umean_data.ex=vec3(1,0,0);
-    umean_data.ez=vec3(0,0,1);
+    umean_data.ep=vec3(0,1,0);    
       
     inflow_velocity.velocity.fielddata=umean_data;
     

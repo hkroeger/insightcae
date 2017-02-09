@@ -393,10 +393,10 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
 //     std::cout<<q<<std::endl;
     for (size_t c=0; c<q.n_elem; c++)
     {
-      if (cols_.found(c)) //(cmap[c]>=0) // if column is used
-      {
-	setComponent( res[pi], cols_[c] ) = q(c);
-      }
+//       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
+//       {
+	setComponent( res[pi], /*cols_[c]*/ c ) = q(c);
+//       }
     }
     res[pi]=base_(res[pi]); //transform(tt, res[pi]);
   }
@@ -408,7 +408,7 @@ template<class T>
 linearProfile<T>::linearProfile(const linearProfile<T>& o)
 : FieldDataProvider<T>(o),
   base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
-  cols_(o.cols_),
+//   cols_(o.cols_),
   filenames_(o.filenames_),
   values_(o.values_)
 {
@@ -418,7 +418,7 @@ template<class T>
 void linearProfile<T>::read(Istream& is)
 {
   base_.read(is);
-  is >> cols_;
+//   is >> cols_;
   FieldDataProvider<T>::read(is);
 }
   
@@ -426,7 +426,7 @@ template<class T>
 void linearProfile<T>::writeSup(Ostream& os) const
 {
   base_.writeSup(os);
-  os << token::SPACE << cols_;
+//   os << token::SPACE << cols_;
 }
   
 template<class T>
@@ -479,10 +479,6 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
 
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
   Field<T>& res=ACCESSTMP(resPtr);
-
-//   vector ey = - (ex_ ^ ez_);
-//   tensor tt(ex_, ey, ez_);
-// //   Info<<ey<<tt<<endl;
   
 
   forAll(target, pi)
@@ -497,10 +493,10 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
 //     std::cout<<q<<std::endl;
     for (size_t c=0; c<q.n_elem; c++)
     {
-      if (cols_.found(c)) //(cmap[c]>=0) // if column is used
-      {
-	setComponent( res[pi], cols_[c] ) = q(c);
-      }
+//       if (cols_.found(c)) //(cmap[c]>=0) // if column is used
+//       {
+	setComponent( res[pi], /*cols_[c]*/ c ) = q(c);
+//       }
     }
     res[pi]=base_(res[pi], target[pi]); //transform(tt, res[pi]);
   }
@@ -512,7 +508,7 @@ template<class T>
 radialProfile<T>::radialProfile(const radialProfile<T>& o)
 : FieldDataProvider<T>(o),
   base_(o.base_), //p0_(o.p0_), ep_(o.ep_), ex_(o.ex_), ez_(o.ez_),
-  cols_(o.cols_),
+//   cols_(o.cols_),
   filenames_(o.filenames_),
   values_(o.values_)
 {
@@ -522,7 +518,7 @@ template<class T>
 void radialProfile<T>::read(Istream& is)
 {
   base_.read(is);
-  is >> cols_;
+//   is >> cols_;
   FieldDataProvider<T>::read(is);
 }
   
@@ -530,7 +526,7 @@ template<class T>
 void radialProfile<T>::writeSup(Ostream& os) const
 {
   base_.writeSup(os);
-  os << token::SPACE << cols_;
+//   os << token::SPACE << cols_;
 }
   
 template<class T>

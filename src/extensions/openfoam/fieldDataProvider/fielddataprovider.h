@@ -147,7 +147,7 @@ class linearProfile
 //   point p0_;
 //   vector ep_, ex_, ez_;
   VectorSpaceBase base_;
-  Map<label> cols_;
+//   Map<label> cols_;
   std::vector<fileName> filenames_;
   mutable boost::ptr_map<int, insight::Interpolator> values_;
   
@@ -178,7 +178,7 @@ class radialProfile
 //   point p0_;
 //   vector ep_, ex_, ez_;
   CylCoordVectorSpaceBase base_;
-  Map<label> cols_;
+//   Map<label> cols_;
   std::vector<fileName> filenames_;
   mutable boost::ptr_map<int, insight::Interpolator> values_;
   

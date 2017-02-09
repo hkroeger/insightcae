@@ -26,12 +26,14 @@
 namespace Foam
 {
 
+    
+    
   
 class VectorSpaceBase
 {
 protected:
   point p0_;
-  vector ep_, ex_, ez_;
+  vector ep_/*, ex_, ez_*/;
 public:
   void read(Istream&is);
   void writeSup(Ostream& os) const;
@@ -46,23 +48,18 @@ public:
   template<class T>
   T operator()(const T& org) const
   {
-    vector ey = - (ex_ ^ ez_);
-    tensor tt(ex_, ey, ez_);    
-    
-    return transform(tt, org);
+//     vector ey = - (ex_ ^ ez_);
+//     tensor tt(ex_, ey, ez_);    
+//     
+//     return transform(tt, org);
+    return org;
   }
 
 };
 
-// template<>
-// diagTensor VectorSpaceBase::operator()(const diagTensor& org) const
-// {
-//   vector ey = - (ex_ ^ ez_);
-//   tensor tt(ex_, ey, ez_);    
-//   
-//   return org; //transform(tt, org);
-// }
-// 
+
+
+
 class CylCoordVectorSpaceBase
 : public VectorSpaceBase
 {
@@ -80,6 +77,7 @@ public:
   T operator()(const T& org, const point& p) const
   {
     vector er=p-origin();
+    er-=ax()*(er&ax());
     if (mag(er)<SMALL)
     {
      er=vector(1,0,0);
@@ -90,26 +88,15 @@ public:
     
     
     vector et = (ax() ^ er);
-    
     tensor tt(ax(), et, er);    
     
-//     Info<<p<<ax()<<et<<er<<" >> "<<org<<transform(tt, org)<<endl;
-    
-    return transform(tt, org);
+    return transform(tt.T(), org);
   }
 };
 
-// template<>
-// diagTensor CylCoordVectorSpaceBase::operator()(const diagTensor& org, const point& p) const
-// {
-//   vector er=p-origin();
-//   er/=mag(er)+SMALL;
-//   
-//   vector et = (ax() ^ er);
-//   tensor tt(ax(), et, er);    
-//   
-//   return org;//transform(tt, org);
-// }
+
+
+
 }
 
 #endif

@@ -117,18 +117,8 @@ OFDictData::data FieldData::sourceEntry() const
       <<OFDictData::to_OF(fd->p0)
       <<" "
       <<OFDictData::to_OF(fd->ep)
-      <<" "
-      <<OFDictData::to_OF(fd->ex)
-      <<" "
-      <<OFDictData::to_OF(fd->ez);
+      ;
 
-    os<<" (";
-    BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
-    {
-      os<<" "<<cm.column<<" "<<cm.component;
-    }
-    os<<")";
-    
     os<<" "
       <<"unsteady";
     
@@ -145,18 +135,8 @@ OFDictData::data FieldData::sourceEntry() const
       <<OFDictData::to_OF(fd->p0)
       <<" "
       <<OFDictData::to_OF(fd->ep)
-      <<" "
-      <<OFDictData::to_OF(fd->ex)
-      <<" "
-      <<OFDictData::to_OF(fd->ez);
+      ;
 
-    os<<" (";
-    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::cmap_default_type& cm, fd->cmap)
-    {
-      os<<" "<<cm.column<<" "<<cm.component;
-    }
-    os<<")";
-    
     os<<" "
       <<"unsteady";
     
@@ -173,10 +153,6 @@ OFDictData::data FieldData::sourceEntry() const
       <<OFDictData::to_OF(fd->p0)
       <<" "
       <<OFDictData::to_OF(fd->ep)
-      <<" "
-      <<OFDictData::to_OF(fd->ex)
-      <<" "
-      <<OFDictData::to_OF(fd->ez)
       <<" "
       <<"unsteady";
     
@@ -239,9 +215,10 @@ double FieldData::representativeValueMag() const
       xy.load(inst.profile.c_str(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
-      BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+      for (int c=0; c<I.n_cols-1; c++)
       {
-	avg_inst+=pow(I(cm.column),2);
+        avg_inst+=pow(I(/*cm.column*/c),2);
       }
       avg+=avg_inst;
       s++;
@@ -276,9 +253,10 @@ double FieldData::maxValueMag() const
       xy.load(inst.profile.c_str(), arma::raw_ascii);
       arma::mat mag_inst(arma::zeros(xy.n_rows));
       int i=0;
-      BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+      for (int c=0; c<mag_inst.n_cols-1; c++)
       {
-	mag_inst(i++) += pow(xy(i, 1+cm.column),2);
+	mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
       }
       maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
     }    

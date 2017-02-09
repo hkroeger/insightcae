@@ -24,12 +24,12 @@ namespace Foam
 
 void VectorSpaceBase::read(Istream& is)
 {
-  is >> p0_ >> ep_ >> ex_ >> ez_ ;
+  is >> p0_ >> ep_ /*>> ex_ >> ez_*/ ;
 }
 
 void VectorSpaceBase::writeSup(Ostream& os) const
 {
-  os << p0_  << token::SPACE << ep_  << token::SPACE << ex_ <<token::SPACE << ez_;
+  os << p0_  << token::SPACE << ep_  /*<< token::SPACE << ex_ <<token::SPACE << ez_*/;
 }
 
 }

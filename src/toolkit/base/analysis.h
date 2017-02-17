@@ -119,13 +119,24 @@ typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDispl
 
 /**
  * An analysis is the basic container in InsightCAE.
- * It take a set of parameters and computes from it a set of results.
+ * It take a set of parameters and its designation is to computes from it a set of results.
+ * An analysis always has an associated directory for outputting intermediate files and result data.
  */
 class Analysis
 {
 
 public:
-    declareFactoryTableNoArgs ( Analysis );
+    declareFactoryTable 
+    (
+        Analysis,
+        LIST(
+            const ParameterSet& ps,
+            const boost::filesystem::path& exePath
+        ),
+        LIST(ps, exePath)
+    );
+    
+    declareStaticFunctionTable(defaultParameters, ParameterSet);
 
 
 protected:
@@ -142,18 +153,18 @@ protected:
     SharedPathList sharedSearchPath_;
     void extendSharedSearchPath ( const std::string& name );
 
-public:
-    declareType ( "Analysis" );
-
-    //Analysis();
-    Analysis();
-    Analysis ( const std::string& name, const std::string& description );
-    virtual ~Analysis();
-
     void setDefaults();
     virtual boost::filesystem::path setupExecutionEnvironment();
     virtual void setExecutionPath ( const boost::filesystem::path& exePath );
     virtual void setParameters ( const ParameterSet& p );
+
+public:
+    declareType ( "Analysis" );
+
+    //Analysis();
+    Analysis(const ParameterSet& ps, const boost::filesystem::path& exePath, const std::string& name, const std::string& description );
+    virtual ~Analysis();
+
     virtual boost::filesystem::path executionPath() const;
 
     inline DirectoryParameter& executionPathParameter()

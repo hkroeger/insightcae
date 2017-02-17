@@ -347,7 +347,7 @@ void RefPlace::build()
     }
 
     setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
-    copyDatumsTransformed(*m_, *trsf_);
+    copyDatumsTransformed(*m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
     
     auto t_end = std::chrono::high_resolution_clock::now();
     

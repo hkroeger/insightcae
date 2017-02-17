@@ -117,7 +117,10 @@ typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDispl
 
 
 
-
+/**
+ * An analysis is the basic container in InsightCAE.
+ * It take a set of parameters and computes from it a set of results.
+ */
 class Analysis
 {
 

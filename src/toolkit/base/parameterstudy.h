@@ -28,6 +28,8 @@ namespace insight {
 typedef std::map<std::string, double> VarParameterList;
 typedef std::vector<std::string> RangeParameterList;
 
+
+template<class BaseAnalysis>
 class ParameterStudy 
 : public Analysis
 {
@@ -53,13 +55,14 @@ public:
   (
     const std::string& name, 
     const std::string& description, 
-    const Analysis& baseAnalysis, 
+    const ParameterSet& baseps,
+    const boost::filesystem::path& exePath,
     const RangeParameterList& varp = RangeParameterList()
   );
   
   void setRangeParameters(const RangeParameterList& varp);
   
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   /**
    * return a table of resutls in case the study runs only over a single parameter

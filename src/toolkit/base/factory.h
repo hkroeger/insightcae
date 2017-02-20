@@ -56,20 +56,21 @@ namespace insight {
    virtual baseT* operator()(argList) const =0;\
  };\
  template<class SPEC> \
-class SpecFactory\
-: public Factory \
-{\
-public:\
+ \
+ class SpecFactory\
+ : public Factory \
+ {\
+ public:\
   virtual ~SpecFactory() {};\
   virtual baseT* operator()(argList) const\
   {\
     return new SPEC(parList);\
   }\
-};\
-typedef std::map<std::string, Factory* > FactoryTable; \
-static FactoryTable* factories_; \
-static baseT* lookup(const std::string& key, argList); \
-static std::vector<std::string> factoryToC();
+ };\
+ typedef std::map<std::string, Factory* > FactoryTable; \
+ static FactoryTable* factories_; \
+ static baseT* lookup(const std::string& key, argList); \
+ static std::vector<std::string> factoryToC();
 
 
 

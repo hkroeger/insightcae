@@ -44,7 +44,8 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 }
 
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
-: QMdiSubWindow(parent)
+: QMdiSubWindow(parent),
+  executionPathParameter_(".", "Directory to store data files during analysis.\nLeave empty for temporary storage.")
 {
   /*
   insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
@@ -76,7 +77,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 
   peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
   ui->inputTabLayout->addWidget(peditor_);
-  peditor_->insertParameter("execution directory", analysis_->executionPathParameter());
+  peditor_->insertParameter("execution directory", executionPathParameter_);
   QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));
   QObject::connect(this, SIGNAL(update()), peditor_, SLOT(onUpdate()));
   
@@ -121,6 +122,7 @@ void AnalysisForm::onRunAnalysis()
   {
     emit apply();
     analysis_->setParameters(parameters_);
+    boost::filesystem::path exePath = executionPathParameter_();
     
     progdisp_->reset();
     

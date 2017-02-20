@@ -57,7 +57,7 @@ void ParameterStudy::setRangeParameters(const RangeParameterList& varp)
 }
 
 
-ParameterSet ParameterStudy::defaultParameters() const
+ParameterSet ParameterStudy::defaultParameters()
 {
 
   ParameterSet dfp = baseAnalysis_->defaultParameters();

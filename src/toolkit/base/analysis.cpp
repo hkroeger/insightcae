@@ -165,7 +165,18 @@ bool ConvergenceAnalysisDisplayer::stopRun() const
   
   
 defineType ( Analysis );
-defineFactoryTableNoArgs ( Analysis );
+defineFactoryTable 
+( 
+  Analysis,
+  LIST(
+      const ParameterSet& ps,
+      const boost::filesystem::path& exePath
+  ),
+  LIST(ps, exePath)
+);
+defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
+
+
 
 void Analysis::extendSharedSearchPath ( const std::string& name )
 {
@@ -175,65 +186,71 @@ void Analysis::extendSharedSearchPath ( const std::string& name )
 
 boost::filesystem::path Analysis::setupExecutionEnvironment()
 {
-    if ( executionPath_() =="" ) {
-        executionPath_() = boost::filesystem::unique_path();
+  if ( executionPath_ =="" )
+    {
+      executionPath_ = boost::filesystem::unique_path();
+      removeExecutionPath_=true;
     }
 
-    if ( !exists ( executionPath_() ) ) {
-        create_directories ( executionPath_() );
+  if ( !exists ( executionPath_ ) )
+    {
+      create_directories ( executionPath_ );
+      removeExecutionPath_=true;
     }
 
-    stepcachefile_=executionPath() / ( safe_name()+".stepcache" ); // set name, but...
-    performedsteps_=AnalysisStepList(); // reset list, don't support restart per default
-
-    return executionPath_();
+  return executionPath_;
 }
+
 
 void Analysis::setExecutionPath ( const boost::filesystem::path& exePath )
 {
-    executionPath_() =exePath;
+    executionPath_ =exePath;
 }
 
 void Analysis::setParameters ( const ParameterSet& p )
 {
-    parameters_.reset ( p.cloneParameterSet() );
+    parameters_ = p;
 }
 
 path Analysis::executionPath() const
 {
-    if ( executionPath_() =="" ) {
+    if ( executionPath_ =="" ) {
         throw insight::Exception ( "Temporary analysis storage requested but not yet created!" );
     }
-    return executionPath_();
+    return executionPath_;
 }
 
 
-Analysis::Analysis ( const std::string& name, const std::string& description )
-    : name_ ( name ),
-      description_ ( description ),
-      executionPath_ ( "Directory to store data files during analysis.\nLeave empty for temporary storage." )
+Analysis::Analysis ( const std::string& name, const std::string& description, const ParameterSet& ps, const boost::filesystem::path& exePath )
+: name_ ( name ),
+  description_ ( description ),
+  executionPath_ ( exePath ),
+  removeExecutionPath_(false)
 {
+  setParameters(ps);
+  setExecutionPath(exePath);
 }
 
-Analysis::Analysis ( )
-    : executionPath_ ( "Directory to store data files during analysis.\nLeave empty for temporary storage." )
-{
-}
 
-void Analysis::setDefaults()
-{
-//   std::string name(type());
-//   replace_all(name, " ", "_");
-//   replace_all(name, "/", "-");
-//   executionPath_()=path(".")/name;
-    executionPath_() =path ( "." );
-}
+// void Analysis::setDefaults()
+// {
+// //   std::string name(type());
+// //   replace_all(name, " ", "_");
+// //   replace_all(name, "/", "-");
+// //   executionPath_()=path(".")/name;
+//     executionPath_() =path ( "." );
+// }
 
 Analysis::~Analysis()
 {
+    if (removeExecutionPath_)
+    {
+        remove_all(executionPath_);
+    }
 }
 
-bool Analysis::checkParameters ( const ParameterSet& p )
+
+bool Analysis::checkParameters() const
 {
     return true;
 }
@@ -249,11 +266,7 @@ boost::filesystem::path Analysis::getSharedFilePath ( const boost::filesystem::p
 
 Analysis* Analysis::clone() const
 {
-    Analysis *newa=this->lookup ( this->type() );
-    if ( parameters_.get() ) {
-        newa->setParameters ( *parameters_ );
-    }
-    return newa;
+    return this->lookup ( this->type(), parameters_, executionPath_ );
 }
 
 

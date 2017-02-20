@@ -92,22 +92,22 @@ public:
 
 
 class ConvergenceAnalysisDisplayer
-    : public ProgressDisplayer
+  : public ProgressDisplayer
 {
-    std::string progvar_;
-    std::vector<double> trackedValues_;
+  std::string progvar_;
+  std::vector<double> trackedValues_;
 
-    int istart_, co_;
-    double threshold_;
+  int istart_, co_;
+  double threshold_;
 
-    bool converged_;
+  bool converged_;
 
 public:
-    ConvergenceAnalysisDisplayer ( const std::string& progvar, double threshold=1e-5 );
+  ConvergenceAnalysisDisplayer ( const std::string &progvar, double threshold = 1e-5 );
 
-    virtual void update ( const ProgressState& pi );
+  virtual void update ( const ProgressState &pi );
 
-    virtual bool stopRun() const;
+  virtual bool stopRun() const;
 };
 
 
@@ -120,7 +120,7 @@ typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDispl
 /**
  * An analysis is the basic container in InsightCAE.
  * It take a set of parameters and its designation is to computes from it a set of results.
- * An analysis always has an associated directory for outputting intermediate files and result data.
+ * An analysis always has an associated working directory for outputting intermediate files and result data.
  */
 class Analysis
 {
@@ -142,34 +142,47 @@ public:
 protected:
     std::string name_;
     std::string description_;
-    DirectoryParameter executionPath_;
-    ParameterSetPtr parameters_;
+    boost::filesystem::path executionPath_;
+    bool removeExecutionPath_;
+    ParameterSet parameters_;
 
-    bool writestepcache_ = false;
-    boost::filesystem::path stepcachefile_;
-    AnalysisStepList performedsteps_;
-    friend class AnalysisStep;
 
     SharedPathList sharedSearchPath_;
     void extendSharedSearchPath ( const std::string& name );
 
-    void setDefaults();
     virtual boost::filesystem::path setupExecutionEnvironment();
     virtual void setExecutionPath ( const boost::filesystem::path& exePath );
     virtual void setParameters ( const ParameterSet& p );
+    
+    /**
+     * check parameters
+     * returns true, of parameters are valid
+     */
+    virtual bool checkParameters () const;
 
 public:
     declareType ( "Analysis" );
 
-    //Analysis();
-    Analysis(const ParameterSet& ps, const boost::filesystem::path& exePath, const std::string& name, const std::string& description );
+    /**
+     * create analysis from components.
+     * @param name Analysis name
+     * @param description Short description of the analysis intent
+     * @param ps Analysis parameter set
+     * @param exePath Path of working directory. Empty path "" requests a temporary storage directory. If the directory is not existing, it will be created and removed when the analysis object is deleted. This behaviour can be overridden by calling setKeepExecutionDirectory or setRemoveExecutionDirectory.
+     */
+    Analysis(const std::string& name, const std::string& description, const ParameterSet& ps, const boost::filesystem::path& exePath );
     virtual ~Analysis();
 
     virtual boost::filesystem::path executionPath() const;
-
-    inline DirectoryParameter& executionPathParameter()
+    
+    inline void setKeepExecutionDirectory(bool keep = true)
     {
-        return executionPath_;
+        removeExecutionPath_=!keep;
+    }
+    
+    inline void setRemoveExecutionDirectory(bool remove = true)
+    {
+        removeExecutionPath_=remove;
     }
 
     inline const std::string& getName() const
@@ -199,12 +212,8 @@ public:
 
     inline const ParameterSet& parameters() const
     {
-        return *parameters_;
+        return parameters_;
     }
-
-    virtual ParameterSet defaultParameters() const =0;
-
-    virtual bool checkParameters ( const ParameterSet& p );
 
     virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=NULL ) =0;
     virtual void cancel();
@@ -214,6 +223,7 @@ public:
     virtual Analysis* clone() const;
 
 };
+
 
 
 

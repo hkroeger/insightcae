@@ -36,12 +36,21 @@
 
 #include "graphprogressdisplayer.h"
 
+
+
+
 namespace Ui
 {
 class AnalysisForm;
 }
 
+
+
+
 Q_DECLARE_METATYPE(insight::ParameterSet);
+
+
+
 
 class AnalysisWorker
 : public QObject
@@ -61,6 +70,9 @@ signals:
   void resultReady(insight::ResultSetPtr);
 };
 
+
+
+
 class AnalysisForm
 : public QMdiSubWindow
 {
@@ -76,6 +88,7 @@ protected:
   QTreeWidget *rt_;
   QTreeWidgetItem* rtroot_;
 
+  insight::DirectoryParameter executionPathParameter_;
   ParameterEditorWidget* peditor_;
   
 public:

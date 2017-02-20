@@ -182,9 +182,9 @@ protected:
 public:
   declareType("Flat Plate Boundary Layer Test Case");
   
-  FlatPlateBL();
+  FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath);
   
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   virtual void computeInitialLocation();
   virtual void calcDerivedInputData();

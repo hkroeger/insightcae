@@ -70,11 +70,12 @@ double PipeBase::UmaxByUbulk(double Retau)
   return 1 + 0.7 * Retau/PipeBase::Re(Retau); // Constant not given explictly in Schlichting, taken from Rotta, p. 190
 }
 
-PipeBase::PipeBase()
+PipeBase::PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (
     "Pipe Flow Test Case",
-    "Cylindrical domain with cyclic BCs on axial ends"
+    "Cylindrical domain with cyclic BCs on axial ends",
+    ps, exepath
   ),
   cycl_in_("cycl_half0"),
   cycl_out_("cycl_half1")
@@ -85,7 +86,7 @@ PipeBase::~PipeBase()
 
 }
 
-ParameterSet PipeBase::defaultParameters() const
+ParameterSet PipeBase::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -172,7 +173,7 @@ std::string PipeBase::cyclPrefix() const
 
 void PipeBase::calcDerivedInputData()
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -235,7 +236,7 @@ void PipeBase::createMesh
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -348,7 +349,7 @@ void PipeBase::createCase
   OpenFOAMCase& cm
 )
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -402,7 +403,7 @@ void PipeBase::evaluateAtSection(
   ResultSetPtr results, double x, int i
 )
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -592,7 +593,7 @@ void PipeBase::evaluateAtSection(
   
 ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -670,8 +671,8 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
 
 defineType(PipeCyclic);
 
-PipeCyclic::PipeCyclic()
-: PipeBase()
+PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: PipeBase(ps, exepath)
 {
 }
 
@@ -689,7 +690,7 @@ void PipeCyclic::createCase
   OpenFOAMCase& cm
 )
 {  
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -736,7 +737,7 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);
@@ -780,12 +781,12 @@ const char* PipeInflow::tpc_names_[] =
 
 const double PipeInflow::tpc_xlocs_[] = {0.0, 0.125, 0.25, 0.375};
 
-PipeInflow::PipeInflow()
-: PipeBase()
+PipeInflow::PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: PipeBase(ps, exepath)
 {
 }
 
-ParameterSet PipeInflow::defaultParameters() const
+ParameterSet PipeInflow::defaultParameters()
 {
   ParameterSet p(PipeBase::defaultParameters());
 
@@ -823,7 +824,7 @@ void PipeInflow::createCase
   OpenFOAMCase& cm
 )
 {  
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
@@ -870,7 +871,7 @@ void PipeInflow::createCase
 
 ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSDBL(p, "operation", Re_tau);
@@ -1001,7 +1002,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "evaluation", inittime);
   PSDBL(p, "evaluation", meantime);
   PSDBL(p, "evaluation", mean2time);

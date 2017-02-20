@@ -79,6 +79,7 @@ class AnalysisForm
   Q_OBJECT
   
 protected:
+  std::string analysisName_;
   insight::ParameterSet parameters_;
   boost::shared_ptr<insight::Analysis> analysis_;
   insight::ResultSetPtr results_;
@@ -97,6 +98,7 @@ public:
   
   inline insight::ParameterSet& parameters() { return parameters_; }
   inline insight::Analysis& analysis() { return *analysis_; }
+  inline insight::DirectoryParameter& executionPathParameter() { return executionPathParameter_; }
   
   inline void forceUpdate() { emit update(); }
     

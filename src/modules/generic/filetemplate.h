@@ -62,9 +62,9 @@ protected:
   
 public:
     declareType("FileTemplate");
-    FileTemplate();
+    FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir);
     
-    virtual ParameterSet defaultParameters() const;
+    static ParameterSet defaultParameters();
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
     
 };

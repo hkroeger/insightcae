@@ -1336,18 +1336,13 @@ string CutplanePVScene::pythonCommands() const
 defineType(ParaviewVisualization);
 addToFactoryTable(Analysis, ParaviewVisualization);
 
-ParaviewVisualization::ParaviewVisualization()
-: Analysis()
+
+ParaviewVisualization::ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: Analysis("", "", ps, exepath)
 {
 }
 
-
-ParaviewVisualization::ParaviewVisualization(const ParameterSet& p)
-: Analysis("", "")
-{
-}
-
-ParameterSet ParaviewVisualization::defaultParameters() const
+ParameterSet ParaviewVisualization::defaultParameters()
 {
   return Parameters::makeDefault();
 }
@@ -2491,23 +2486,20 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
 
 
 
-HomogeneousAveragedProfile::HomogeneousAveragedProfile()
-{}
-
-HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps)
-: Analysis("Homogeneous Averaged Profile", "")
+HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: Analysis("Homogeneous Averaged Profile", "", ps, exepath)
 {
   setParameters(ps);
 }
 
-ParameterSet HomogeneousAveragedProfile::defaultParameters() const
+ParameterSet HomogeneousAveragedProfile::defaultParameters()
 {
   return Parameters::makeDefault();
 }
 
 ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer)
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 //   setExecutionPath(p.casepath);
   
   OpenFOAMCase cm(OFEs::get(p.OFEname));

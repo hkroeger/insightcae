@@ -37,32 +37,35 @@ using namespace boost::filesystem;
 namespace insight
 {
 
-defineType(ParameterStudy);
+// defineType(ParameterStudy);
 
-ParameterStudy::ParameterStudy
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+  >
+ParameterStudy<BaseAnalysis,var_params>::ParameterStudy
 (
-  const std::string& name, 
-  const std::string& description, 
-  const Analysis& baseAnalysis, 
-  const RangeParameterList& varp
+  const std::string& name,
+  const std::string& description,
+  const ParameterSet& ps,
+  const boost::filesystem::path& exePath
 )
-: Analysis(name, description),
-  baseAnalysis_(baseAnalysis.clone()),
-  varp_(varp)
+  : Analysis ( name, description, ps, exePath )
 {}
 
-void ParameterStudy::setRangeParameters(const RangeParameterList& varp)
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
 {
-  varp_=varp;
-}
 
-
-ParameterSet ParameterStudy::defaultParameters()
-{
-
-  ParameterSet dfp = baseAnalysis_->defaultParameters();
+  ParameterSet dfp = Analysis::defaultParameters(BaseAnalysis::typeName);
   
-  BOOST_FOREACH( const std::string& parname, varp_ )
+  BOOST_FOREACH( const std::string& parname, var_params )
   {
     double orgval=dfp.getDouble(parname);
     dfp.replace( parname, new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex()) );
@@ -80,12 +83,26 @@ ParameterSet ParameterStudy::defaultParameters()
   return dfp;
 }
 
-void ParameterStudy::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+void ParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const
 {
   // reserved for derived classes
 }
 
-void ParameterStudy::generateInstances
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+void ParameterStudy<BaseAnalysis,var_params>::generateInstances
 (
   SynchronisedAnalysisQueue& instances, 
   const ParameterSet& templ, 
@@ -93,19 +110,19 @@ void ParameterStudy::generateInstances
   DoubleRangeParameter::RangeList::const_iterator i[]
 )
 {
-  if (myIdx == varp_.size())
+  if (myIdx == var_params.size())
   {
     // Put it all together
     std::ostringstream n; n<<"subcase";
-    ParameterSetPtr newp(templ.cloneParameterSet());
-    for (int j=0; j<varp_.size(); j++)
+    ParameterSetPtr newp( /*templ.cloneParameterSet()*/ Analysis::defaultParameters(BaseAnalysis::typeName).cloneParameterSet() );
+    for (int j=0; j<var_params.size(); j++)
     {
       // Replace RangeParameter by actual single value
-      const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(varp_[j]);
+      const DoubleRangeParameter& rp = templ.get<DoubleRangeParameter>(var_params[j]);
       DoubleParameter* p=rp.toDoubleParameter(i[j]);
-      newp->replace(varp_[j], p);
+      newp->replace(var_params[j], p);
       
-      std::string nmod(varp_[j]);
+      std::string nmod(var_params[j]);
       boost::replace_all(nmod, "/", "_");
       n<<"__"<<nmod<<"="<<(*p)();
     }
@@ -114,17 +131,17 @@ void ParameterStudy::generateInstances
     
     //append instance
     ResultSetPtr emptyresset( new ResultSet(*newp, name_, "Computation instance "+n.str()) );
-    AnalysisPtr newinst(baseAnalysis_->clone());
     modifyInstanceParameters(n.str(), newp);
-    newinst->setParameters(*newp);
     path ep=executionPath()/n.str();
-    newinst->setExecutionPath( ep );
+//     newinst->setExecutionPath( ep );
+    AnalysisPtr newinst( /*baseAnalysis_->clone()*/ Analysis::lookup(BaseAnalysis::typeName, *newp, ep) );
+//     newinst->setParameters(*newp);
     instances.enqueue( AnalysisInstance( n.str(), newinst, emptyresset ));
 
   }
   else
   {
-    const DoubleRangeParameter& crp = templ.get<DoubleRangeParameter>(varp_[myIdx]);
+    const DoubleRangeParameter& crp = templ.get<DoubleRangeParameter>(var_params[myIdx]);
     for (i[myIdx] = crp.values().begin(); i[myIdx] != crp.values().end(); ++i[myIdx])
     {
       generateInstances(instances, templ, myIdx+1, i);
@@ -132,13 +149,27 @@ void ParameterStudy::generateInstances
   }
 }
 
-void ParameterStudy::cancel()
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+void ParameterStudy<BaseAnalysis,var_params>::cancel()
 {
   workers_.interrupt_all();
   queue_.cancelAll();
 }
 
-ResultElementPtr ParameterStudy::table
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+ResultElementPtr ParameterStudy<BaseAnalysis,var_params>::table
 (
   std::string shortDescription,
   std::string longDescription,
@@ -180,20 +211,31 @@ ResultElementPtr ParameterStudy::table
   
 }
 
-void ParameterStudy::setupQueue()
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+void ParameterStudy<BaseAnalysis,var_params>::setupQueue()
 {
-  const ParameterSet& p = *parameters_;
-  
-  DoubleRangeParameter::RangeList::const_iterator iters[varp_.size()];
+  DoubleRangeParameter::RangeList::const_iterator iters[var_params.size()];
   
   queue_.clear();
-  generateInstances(queue_, p, 0, iters);
+  generateInstances(queue_, parameters(), 0, iters);
 }
 
-void ParameterStudy::processQueue(insight::ProgressDisplayer* displayer)
+
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisplayer* displayer)
 {
-  const ParameterSet& p = *parameters_;
-  int nt = std::min( p.getInt("run/numthread"), queue_.n_instances() );
+  int nt = std::min( parameters().getInt("run/numthread"), queue_.n_instances() );
   
   boost::ptr_vector<AnalysisWorkerThread> threads;
   for (int i=0; i<nt; i++)
@@ -210,11 +252,16 @@ void ParameterStudy::processQueue(insight::ProgressDisplayer* displayer)
   workers_.join_all();
 }
 
-insight::ResultSetPtr ParameterStudy::evaluateRuns()
-{  
-  const ParameterSet& p = *parameters_;
 
-  ResultSetPtr results(new ResultSet(p, name_, "Result Summary"));
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
+{  
+  ResultSetPtr results(new ResultSet(parameters(), name_, "Result Summary"));
   
   TabularResult::Table force_data;
   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
@@ -230,16 +277,24 @@ insight::ResultSetPtr ParameterStudy::evaluateRuns()
   return results;
 }
 
-insight::ResultSetPtr ParameterStudy::operator()(insight::ProgressDisplayer* displayer)
-{  
-  const ParameterSet& p = *parameters_;
 
+
+
+template<
+  class BaseAnalysis,
+  const RangeParameterList& var_params
+>
+insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::operator()(insight::ProgressDisplayer* displayer)
+{  
   path dir = setupExecutionEnvironment();
-  //p.saveToFile(dir/"parameters.ist", type());
+  //parameters().saveToFile(dir/"parameters.ist", type());
 
   setupQueue();
   processQueue(displayer);
   return evaluateRuns();
 }
+
+
+
 
 }

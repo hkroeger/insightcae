@@ -33,13 +33,13 @@ protected:
 public:
     declareType("Decaying Turbulence Test Case");
     
-    DecayingTurbulence();
+    DecayingTurbulence(const ParameterSet& ps, const boost::filesystem::path& exepath);
     ~DecayingTurbulence();
     
     int calcnh() const;
     double calcT() const;    
     
-    ParameterSet defaultParameters() const;
+    static ParameterSet defaultParameters();
     
     virtual void createCase(insight::OpenFOAMCase& cm);
     virtual void createMesh(insight::OpenFOAMCase& cm);

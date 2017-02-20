@@ -58,10 +58,10 @@ protected:
 public:
   declareType("Pipe Flow Test Case");
   
-  PipeBase();
+  PipeBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
   ~PipeBase();
   
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData();
@@ -103,7 +103,7 @@ class PipeCyclic
 public:
   declareType("Pipe Flow Test Case (Axial Cyclic)");
   
-  PipeCyclic();
+  PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath);
   
   virtual void createMesh
   (
@@ -136,9 +136,9 @@ class PipeInflow
 public:
   declareType("Pipe Flow Test Case (Inflow Generator)");
   
-  PipeInflow();
+  PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath);
   
-  ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   virtual void createMesh
   (

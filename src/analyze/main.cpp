@@ -123,20 +123,22 @@ int main(int argc, char *argv[])
 
         AnalysisPtr analysis( (*i->second)( insight::NoParameters() ) );
         */
-        AnalysisPtr analysis ( insight::Analysis::lookup(analysisName) );
-        analysis->setDefaults();
+//         AnalysisPtr analysis ( insight::Analysis::lookup(analysisName) );
+//         analysis->setDefaults();
 
-        boost::filesystem::path dir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
+        boost::filesystem::path exedir = boost::filesystem::absolute(boost::filesystem::path(fn)).parent_path();
         if (vm.count("workdir"))
         {
-            dir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
+            exedir=boost::filesystem::absolute(vm["workdir"].as<std::string>());
         }
         std::string filestem = boost::filesystem::path(fn).stem().string();
-        cout<< "Executing analysis in directory "<<dir<<endl;
-        analysis->setExecutionPath(dir);
+        cout<< "Executing analysis in directory "<<exedir<<endl;
+//         analysis->setExecutionPath(dir);
 
-        ParameterSet parameters = analysis->defaultParameters();
-        parameters.readFromNode(doc, *rootnode, dir);
+//         ParameterSet parameters = analysis->defaultParameters();
+        ParameterSet parameters = insight::Analysis::defaultParameters(analysisName);
+        
+        parameters.readFromNode(doc, *rootnode, exedir);
 
         if (vm.count("merge"))
         {
@@ -239,10 +241,12 @@ int main(int argc, char *argv[])
 
         if (vm.count("savecfg"))
         {
-            parameters.saveToFile( dir/ vm["savecfg"].as<std::string>() );
+            parameters.saveToFile( exedir/ vm["savecfg"].as<std::string>() );
         }
-        analysis->setParameters(parameters);
+//         analysis->setParameters(parameters);
 
+        AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, exedir) );        
+        
         // run analysis
         TextProgressDisplayer pd;
         ResultSetPtr results = (*analysis)(&pd);
@@ -257,7 +261,7 @@ int main(int argc, char *argv[])
         {
             for (int i=0; i<2; i++)
             {
-                if ( ::system( str( format("cd %s && pdflatex \"%s\"") % dir.string() % outpath.string() ).c_str() ))
+                if ( ::system( str( format("cd %s && pdflatex \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
                 {
                     Warning("TeX input file was written but could not execute pdflatex successfully.");
                     break;

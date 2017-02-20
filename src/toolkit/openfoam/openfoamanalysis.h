@@ -83,11 +83,17 @@ protected:
     std::vector<boost::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
-    OpenFOAMAnalysis(const std::string& name, const std::string& description);
+    OpenFOAMAnalysis
+    (
+        const std::string& name,
+        const std::string& description,
+        const ParameterSet& ps,
+        const boost::filesystem::path& exepath
+    );
     
     virtual void cancel();
     
-    virtual insight::ParameterSet defaultParameters() const;
+    static insight::ParameterSet defaultParameters();
     virtual boost::filesystem::path setupExecutionEnvironment();
     
     virtual void reportIntermediateParameter(const std::string& name, double value, const std::string& description="", const std::string& unit="");
@@ -127,29 +133,6 @@ public:
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 
-
-class OpenFOAMParameterStudy
-: public ParameterStudy
-{
-protected:
-  bool subcasesRemesh_;
-public:
-    declareType("OpenFOAM Parameter Study");
-    
-    OpenFOAMParameterStudy
-    (
-      const std::string& name, 
-      const std::string& description, 
-      const OpenFOAMAnalysis& baseAnalysis, 
-      const RangeParameterList& varp = RangeParameterList(),
-      bool subcasesRemesh=false
-    );
-
-    virtual void modifyInstanceParameters(const std::string& subcase_name, ParameterSetPtr& newp) const;
-    virtual ResultSetPtr operator()(ProgressDisplayer* displayer = 0);
-
-    virtual void evaluateCombinedResults(ResultSetPtr& results);
-};
 
 }
 

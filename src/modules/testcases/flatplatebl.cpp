@@ -46,25 +46,26 @@ addToFactoryTable(Analysis, FlatPlateBL);
 const std::vector<double> FlatPlateBL::sec_locs_ 
  = list_of (0.01)(0.05)(0.1)(0.2)(0.5)(0.7)(0.9);
   
-ParameterSet FlatPlateBL::defaultParameters() const
+ParameterSet FlatPlateBL::defaultParameters()
 {
   ParameterSet p(Parameters::makeDefault());
   p.merge(OpenFOAMAnalysis::defaultParameters());
   return p;
 }
 
-FlatPlateBL::FlatPlateBL()
+FlatPlateBL::FlatPlateBL(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (
     "Flat Plate Boundary Layer Test Case",
-    "Flat Plate with Evolving Boundary Layer"
+    "Flat Plate with Evolving Boundary Layer",
+    ps, exepath
   )
 {}
 
 
 void FlatPlateBL::computeInitialLocation()
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
   Retheta0_= p.geometry.Retheta0;
   
@@ -95,7 +96,7 @@ void FlatPlateBL::computeInitialLocation()
 void FlatPlateBL::calcDerivedInputData()
 {
   insight::OpenFOAMAnalysis::calcDerivedInputData();
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
   in_="inlet";
 //   out_="outlet";
@@ -249,7 +250,7 @@ void FlatPlateBL::calcDerivedInputData()
 
 void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
   
   cm.insert(new MeshingNumerics(cm));
   
@@ -454,7 +455,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 
 void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
   {
     boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
@@ -500,7 +501,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
 
 void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -640,7 +641,7 @@ void FlatPlateBL::evaluateAtSection
   const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section
 )
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
 
   double xByL= x/L_;
@@ -852,7 +853,7 @@ void FlatPlateBL::evaluateAtSection
 
 insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
 
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
@@ -1044,7 +1045,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
 
 insight::Analysis* FlatPlateBL::clone()
 {
-  return new FlatPlateBL();
+  return new FlatPlateBL(parameters(), executionPath());
 }
 
 double FlatPlateBL::G(double Alpha, double D)

@@ -30,29 +30,29 @@
 namespace insight
 {
   
-class Analysis;
- 
-typedef std::set<std::string> AnalysisStepList;
-
-#define INSIGHT_ANALYSIS_STEP_NOT_DONE(analysis, curstep) \
- AnalysisStep cs=AnalysisStep(analysis, curstep)
- 
-class AnalysisStep
-{
-  Analysis& analysis_;
-  std::string curstep_;
-  
-  void flushStepCache() const;
-  
-public:
-  AnalysisStep(Analysis& analysis, const std::string& curstep);
-  ~AnalysisStep();
-  
-  /**
-   * return true, if the step is ok to execute, i.e. has not been performed
-   */
-  operator bool() const;
-};
+// class Analysis;
+//  
+// typedef std::set<std::string> AnalysisStepList;
+// 
+// #define INSIGHT_ANALYSIS_STEP_NOT_DONE(analysis, curstep) \
+//  AnalysisStep cs=AnalysisStep(analysis, curstep)
+//  
+// class AnalysisStep
+// {
+//   Analysis& analysis_;
+//   std::string curstep_;
+//   
+//   void flushStepCache() const;
+//   
+// public:
+//   AnalysisStep(Analysis& analysis, const std::string& curstep);
+//   ~AnalysisStep();
+//   
+//   /**
+//    * return true, if the step is ok to execute, i.e. has not been performed
+//    */
+//   operator bool() const;
+// };
 
 }
 

@@ -50,17 +50,13 @@ namespace insight
 defineType(FreeShearFlow);
 addToFactoryTable(Analysis, FreeShearFlow);
 
-FreeShearFlow::FreeShearFlow()
-: OpenFOAMAnalysis("Free Shear Flow", "LES of Free Shear Flow")
+
+FreeShearFlow::FreeShearFlow(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: OpenFOAMAnalysis("Free Shear Flow", "", ps, exepath)
 {
 }
 
-FreeShearFlow::FreeShearFlow(const std::string& name, const std::string& description)
-: OpenFOAMAnalysis(name, description)
-{
-}
-
-insight::ParameterSet FreeShearFlow::defaultParameters() const
+insight::ParameterSet FreeShearFlow::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -127,7 +123,7 @@ insight::ParameterSet FreeShearFlow::defaultParameters() const
 
 void FreeShearFlow::calcDerivedInputData()
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
 
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", hs);
@@ -160,7 +156,7 @@ void FreeShearFlow::calcDerivedInputData()
 
 void FreeShearFlow::createMesh(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", hs);
   PSDBL(p, "geometry", W);

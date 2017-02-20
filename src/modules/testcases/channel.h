@@ -191,10 +191,10 @@ protected:
 public:
   declareType("Channel Flow Test Case");
   
-  ChannelBase();
+  ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath);
   ~ChannelBase();
   
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData();
@@ -232,9 +232,9 @@ class ChannelCyclic
 public:
   declareType("Channel Flow Test Case (Axial Cyclic)");
   
-  ChannelCyclic();
+  ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath);
   
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
 
   virtual void createMesh
   (

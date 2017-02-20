@@ -45,6 +45,7 @@ void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
 : QMdiSubWindow(parent),
+  analysisName_(analysisName),
   executionPathParameter_(".", "Directory to store data files during analysis.\nLeave empty for temporary storage.")
 {
   /*
@@ -53,9 +54,10 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     throw insight::Exception("Could not lookup analysis type "+analysisName);
   
   analysis_.reset( (*i->second)( insight::NoParameters() ) );*/
-  analysis_.reset ( insight::Analysis::lookup(analysisName) );
-  analysis_->setDefaults();
-  parameters_ = analysis_->defaultParameters();
+//   analysis_.reset ( insight::Analysis::lookup(analysisName) );
+//   analysis_->setDefaults();
+//   parameters_ = analysis_->defaultParameters();
+  parameters_ = insight::Analysis::defaultParameters(analysisName_);
   
   ui = new Ui::AnalysisForm;
   QWidget* iw=new QWidget(this);
@@ -65,7 +67,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   progdisp_=new GraphProgressDisplayer(ui->runTab);
   ui->runTabLayout->addWidget(progdisp_);
   
-  this->setWindowTitle(analysis_->getName().c_str());
+  this->setWindowTitle(/*analysis_->getName()*/analysisName_.c_str());
   connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
   connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
 
@@ -102,7 +104,8 @@ void AnalysisForm::onSaveParameters()
   QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())
   {
-    parameters_.saveToFile(fn.toStdString(), analysis_->type());
+//     parameters_.saveToFile(fn.toStdString(), analysis_->type());
+    parameters_.saveToFile(fn.toStdString(), analysisName_);
   }
 }
 
@@ -121,8 +124,10 @@ void AnalysisForm::onRunAnalysis()
   if (!workerThread_.isRunning())
   {
     emit apply();
-    analysis_->setParameters(parameters_);
+//     analysis_->setParameters(parameters_);
     boost::filesystem::path exePath = executionPathParameter_();
+    
+    analysis_.reset( insight::Analysis::lookup(analysisName_, parameters_, exePath) );
     
     progdisp_->reset();
     
@@ -180,7 +185,7 @@ void AnalysisForm::onCreateReport()
   (
       this, 
     "Save Latex Report", 
-    QString(analysis_->executionPath().c_str()), 
+    QString(executionPathParameter_().c_str()), 
     "LaTeX file (*.tex)"
   );
   if (!fn.isEmpty())

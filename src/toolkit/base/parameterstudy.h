@@ -29,7 +29,10 @@ typedef std::map<std::string, double> VarParameterList;
 typedef std::vector<std::string> RangeParameterList;
 
 
-template<class BaseAnalysis>
+template<
+ class BaseAnalysis,
+ const RangeParameterList& var_params = RangeParameterList()
+ >
 class ParameterStudy 
 : public Analysis
 {
@@ -44,9 +47,7 @@ protected:
   
   SynchronisedAnalysisQueue queue_;
   boost::thread_group workers_;
-  
-  boost::shared_ptr<Analysis> baseAnalysis_;
-  RangeParameterList varp_;
+
   
 public:
   declareType("Parameter Study");
@@ -55,13 +56,10 @@ public:
   (
     const std::string& name, 
     const std::string& description, 
-    const ParameterSet& baseps,
-    const boost::filesystem::path& exePath,
-    const RangeParameterList& varp = RangeParameterList()
+    const ParameterSet& ps,
+    const boost::filesystem::path& exePath
   );
-  
-  void setRangeParameters(const RangeParameterList& varp);
-  
+
   static ParameterSet defaultParameters();
   
   /**
@@ -86,5 +84,7 @@ public:
 };
 
 }
+
+#include "parameterstudy.cpp"
 
 #endif // INSIGHT_PARAMETERSTUDY_H

@@ -21,8 +21,48 @@
 project(toolkit)
 #find_package(Boost COMPONENTS filesystem regex date_time thread REQUIRED)
 
-file(GLOB_RECURSE toolkit_SOURCES "*.cpp")
+set(toolkit_SOURCES
+
+    base/analysis.cpp
+    base/parameter.cpp
+    base/exception.cpp
+    base/tools.cpp
+    base/latextools.cpp
+    base/linearalgebra.cpp
+    base/resultset.cpp
+    base/global.cpp
+    base/softwareenvironment.cpp
+#     base/parameterstudy.cpp
+    base/stltools.cpp
+    base/parameterset.cpp
+    base/analysisstepcontrol.cpp
+    base/plottools.cpp
+    base/vtktools.cpp
+    base/caseelement.cpp
+    base/case.cpp
+    
+    openfoam/blockmesh_templates.cpp
+    openfoam/analysiscaseelements.cpp
+    openfoam/openfoamanalysis.cpp
+    openfoam/openfoamcase.cpp
+    openfoam/snappyhexmesh.cpp
+    openfoam/numericscaseelements.cpp
+    openfoam/cfmesh.cpp
+    openfoam/basiccaseelements.cpp
+    openfoam/openfoamdict.cpp
+    openfoam/openfoamtools.cpp
+    openfoam/thermophysicalcaseelements.cpp
+    openfoam/boundaryconditioncaseelements.cpp
+    openfoam/blockmesh.cpp
+    openfoam/turbulencemodelcaseelements.cpp
+    openfoam/electromagneticscaseelements.cpp
+    
+    code_aster/caexportfile.cpp
+    code_aster/codeasterrun.cpp
+)
+
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
+
 
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})

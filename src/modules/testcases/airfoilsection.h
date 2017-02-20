@@ -21,6 +21,7 @@
 #define INSIGHT_AIRFOILSECTION_H
 
 #include "openfoam/openfoamanalysis.h"
+#include "openfoam/openfoamparameterstudy.h"
 #include "base/stltools.h"
 
 #include "base/boost_include.h"
@@ -36,9 +37,9 @@ class AirfoilSection
 public:
   declareType("Airfoil 2D");
   
-  AirfoilSection();
+  AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
-  virtual insight::ParameterSet defaultParameters() const;
+  static insight::ParameterSet defaultParameters();
 
   virtual void createCase(insight::OpenFOAMCase& cm);
   virtual void createMesh(insight::OpenFOAMCase& cm);
@@ -46,13 +47,16 @@ public:
   
 };
 
+
+extern RangeParameterList rpl_AirfoilSectionPolar;
+
 class AirfoilSectionPolar 
-: public OpenFOAMParameterStudy
+: public OpenFOAMParameterStudy<AirfoilSection, rpl_AirfoilSectionPolar>
 {
 public:
     declareType("Airfoil 2D Polar");
     
-    AirfoilSectionPolar();    
+    AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath);    
     virtual void evaluateCombinedResults(ResultSetPtr& results);
 };
 

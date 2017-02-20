@@ -593,10 +593,9 @@ scenes = array [
 
   declareType("ParaviewVisualization");
 
-  ParaviewVisualization();
-  ParaviewVisualization(const ParameterSet& p);
+  ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath);
 
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
@@ -810,10 +809,9 @@ fields = array [
 public:
   declareType("HomogeneousAveragedProfile");
 
-  HomogeneousAveragedProfile();
-  HomogeneousAveragedProfile(const ParameterSet& p);
+  HomogeneousAveragedProfile(const ParameterSet& p, const boost::filesystem::path& exepath);
 
-  virtual ParameterSet defaultParameters() const;
+  static ParameterSet defaultParameters();
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };

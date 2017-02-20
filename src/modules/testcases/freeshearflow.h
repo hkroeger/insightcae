@@ -33,10 +33,9 @@ protected:
 public:
   declareType("Free Shear Flow");
   
-    FreeShearFlow();
-    FreeShearFlow(const std::string& name, const std::string& description);
+    FreeShearFlow(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
-    virtual insight::ParameterSet defaultParameters() const;
+    static insight::ParameterSet defaultParameters();
     
     virtual void calcDerivedInputData();
     virtual void createMesh(insight::OpenFOAMCase& cm);

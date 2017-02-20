@@ -39,8 +39,8 @@ class ERCOFTAC_SquareSection180DegreeBend
 public:
   declareType("ERCOFTAC Square Section 180 Degree Bend");
   
-    ERCOFTAC_SquareSection180DegreeBend();
-    virtual insight::ParameterSet defaultParameters() const;
+    ERCOFTAC_SquareSection180DegreeBend(const ParameterSet& ps, const boost::filesystem::path& exepath);
+    static insight::ParameterSet defaultParameters();
     virtual void calcDerivedInputData();
     virtual void createMesh(insight::OpenFOAMCase& cm);
     virtual void createCase(insight::OpenFOAMCase& cm);

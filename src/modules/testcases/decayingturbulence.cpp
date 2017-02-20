@@ -40,11 +40,12 @@ namespace insight
 defineType(DecayingTurbulence);
 addToFactoryTable(Analysis, DecayingTurbulence);
 
-DecayingTurbulence::DecayingTurbulence()
+DecayingTurbulence::DecayingTurbulence(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (
     "Decaying Turbulence Test Case",
-    "Turbulent flow entering domain and decaying inside"
+    "Turbulent flow entering domain and decaying inside",
+    ps, exepath
   ),
   inlet_("inlet"),
   outlet_("outlet")
@@ -53,7 +54,7 @@ DecayingTurbulence::DecayingTurbulence()
 DecayingTurbulence::~DecayingTurbulence()
 {}
 
-ParameterSet DecayingTurbulence::defaultParameters() const
+ParameterSet DecayingTurbulence::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -112,7 +113,7 @@ double DecayingTurbulence::calcT() const
 
 void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
  // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
@@ -171,7 +172,7 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
 
 int DecayingTurbulence::calcnh() const
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
 
@@ -186,7 +187,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
 {
   // create local variables from ParameterSet
   path dir = executionPath();
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);

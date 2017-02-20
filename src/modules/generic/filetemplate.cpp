@@ -31,19 +31,19 @@ namespace insight {
 defineType(FileTemplate);
 addToFactoryTable(Analysis, FileTemplate);
 
-FileTemplate::FileTemplate()
-: Analysis("FileTemplate", "File template based analysis")
+FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir)
+: Analysis("FileTemplate", "File template based analysis", ps, exedir)
 {
 }
 
-ParameterSet FileTemplate::defaultParameters() const
+ParameterSet FileTemplate::defaultParameters()
 {
     return Parameters::makeDefault();
 }
 
 ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
 {
-    Parameters p(*parameters_);
+    Parameters p(parameters_);
     
     path dir = setupExecutionEnvironment();
     SoftwareEnvironment g;

@@ -45,8 +45,8 @@ addToFactoryTable(Analysis, AirfoilSection);
 
 
 
-AirfoilSection::AirfoilSection()
-: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section"),
+AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: OpenFOAMAnalysis("Airfoil 2D", "Steady RANS simulation of a 2-D flow over an airfoil section", ps, exepath),
   in_("in"), 
   out_("out"), 
   up_("up"), 
@@ -60,7 +60,7 @@ AirfoilSection::AirfoilSection()
 
 
 
-insight::ParameterSet AirfoilSection::defaultParameters() const
+insight::ParameterSet AirfoilSection::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
   
@@ -148,7 +148,7 @@ insight::ParameterSet AirfoilSection::defaultParameters() const
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p = *parameters_;
+  const ParameterSet& p = parameters_;
 
   PSPATH(p, "geometry", foilfile);
   PSINT(p, "mesh", nlayer);
@@ -357,7 +357,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 
 insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p = *parameters_;
+  const ParameterSet& p = parameters_;
   PSDBL(p, "geometry", c);
   PSDBL(p, "geometry", alpha);
   PSDBL(p, "operation", vinf);
@@ -464,13 +464,14 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 defineType(AirfoilSectionPolar);
 addToFactoryTable(Analysis, AirfoilSectionPolar);
 
-AirfoilSectionPolar::AirfoilSectionPolar()
+RangeParameterList rpl_AirfoilSectionPolar = list_of<std::string>("geometry/alpha");
+
+AirfoilSectionPolar::AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMParameterStudy
   (
     "Polar of Airfoil",
     "Computes the polar of a 2D airfoil section using CFD",
-    AirfoilSection(),
-    list_of<std::string>("geometry/alpha"),
+    ps, exepath, 
     true
   )
 {

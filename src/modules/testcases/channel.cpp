@@ -71,11 +71,12 @@ double ChannelBase::UmaxByUbulk(double Retau)
 }
 
 
-ChannelBase::ChannelBase()
+ChannelBase::ChannelBase(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis
   (
     "Channel Flow Test Case",
-    "Rectangular domain with cyclic BCs on axial ends"
+    "Rectangular domain with cyclic BCs on axial ends",
+    ps, exepath
   ),
   cycl_in_("cycl_half0"),
   cycl_out_("cycl_half1")
@@ -87,7 +88,7 @@ ChannelBase::~ChannelBase()
 
 }
 
-ParameterSet ChannelBase::defaultParameters() const
+ParameterSet ChannelBase::defaultParameters()
 {
   ParameterSet p(Parameters::makeDefault());
   p.merge(OpenFOAMAnalysis::defaultParameters());
@@ -104,7 +105,7 @@ std::string ChannelBase::cyclPrefix() const
 
 void ChannelBase::calcDerivedInputData()
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
   
   PSDBL(parameters(), "geometry", H);
   PSDBL(parameters(), "geometry", B);
@@ -210,7 +211,7 @@ void ChannelBase::createMesh
 {  
   // create local variables from ParameterSet
   path dir = executionPath();
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
   
   PSDBL(parameters(), "geometry", H);
   PSDBL(parameters(), "geometry", B);
@@ -341,7 +342,7 @@ void ChannelBase::createCase
   OpenFOAMCase& cm
 )
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
   // create local variables from ParameterSet
   PSDBL(parameters(), "geometry", H);
@@ -427,7 +428,7 @@ void ChannelBase::createCase
 
 void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
   
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   
@@ -449,7 +450,7 @@ void ChannelBase::evaluateAtSection(
   bool includeAllComponentsInCharts
 )
 {
-  Parameters p(*parameters_);
+  Parameters p(parameters_);
 
   PSDBL(parameters(), "geometry", B);
   PSDBL(parameters(), "geometry", H);
@@ -877,7 +878,7 @@ void ChannelBase::evaluateAtSection(
 
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   PSDBL(p, "geometry", B);
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", L);
@@ -951,8 +952,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       "cbi=loadOFCase('.')\n"
       "prepareSnapshots()\n";
     
-  if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_P"))
-  {	
+//   if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_P"))
+//   {	
     runPvPython
     (
       cm, executionPath(), list_of<std::string>
@@ -965,7 +966,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 	"WriteImage('pressure_longi.jpg')\n"
       )
     );
-  }
+//   }
   results->insert("contourPressure",
     std::auto_ptr<Image>(new Image
     (
@@ -976,8 +977,8 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   for(int i=0; i<3; i++)
   {
     std::string c("x"); c[0]+=i;
-    if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_U"+c))
-    {
+//     if (INSIGHT_ANALYSIS_STEP_NOT_DONE(*this, "EVAL_SNAPSHOT_U"+c))
+//     {
       runPvPython
       (
 	cm, executionPath(), list_of<std::string>
@@ -990,7 +991,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 	  "WriteImage('U"+c+"_longi.jpg')\n"
 	)
       );
-    }
+//     }
     results->insert("contourU"+c,
       std::auto_ptr<Image>(new Image
       (
@@ -1010,12 +1011,12 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 
 defineType(ChannelCyclic);
 
-ChannelCyclic::ChannelCyclic()
-: ChannelBase()
+ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
+: ChannelBase(ps, exepath)
 {
 }
 
-ParameterSet ChannelCyclic::defaultParameters() const
+ParameterSet ChannelCyclic::defaultParameters()
 {
   ParameterSet p(ChannelBase::defaultParameters());
   
@@ -1055,7 +1056,7 @@ void ChannelCyclic::createCase
   OpenFOAMCase& cm
 )
 {  
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
   // create local variables from ParameterSet
   PSDBL(p, "geometry", H);
   PSDBL(p, "geometry", B);
@@ -1095,7 +1096,7 @@ void ChannelCyclic::createCase
 
 void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
 
   if (p.getBool("run/perturbU"))
   {
@@ -1112,7 +1113,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 
 void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  const ParameterSet& p=*parameters_;
+  const ParameterSet& p=parameters_;
 
   ChannelBase::applyCustomOptions(cm, dicts);
   

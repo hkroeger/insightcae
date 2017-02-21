@@ -1,0 +1,67 @@
+H=112.5;
+W=60; 
+t=12;
+
+# clearances for buttons and other salient parts
+cl_front=0.25;
+cl_back=0.1;
+cl_top=0.15;
+cl_bot=0;
+cl_right=0.5;
+cl_left=0.6;
+
+body0=
+Box(
+ O,
+ H*EX, W*EY, t*EZ,
+ centered
+);
+
+bounding_box=
+Box(
+ O -(0.5*H+cl_bot)*EX -(0.5*W+cl_left)*EY -(0.5*t+cl_back)*EZ,
+ (H+cl_bot+cl_top)*EX, 
+ (W+cl_left+cl_right)*EY, 
+ (t+cl_back+cl_front)*EZ
+);
+
+body1=
+Fillet(
+ body0?edges('angleMag(start-end,[0,0,1])<0.01'),
+ 10
+);
+
+body2=
+Fillet(
+ body1?edges('CoG.z<%d0', -0.99*0.5*t),
+ 2
+);
+
+
+body: body2;
+
+ctr_usb=[0.5*H, 0, 0.5*t-6.7];
+ctr_earphone=[0.5*H, 0.5*W-14, 0.5*t-5.2];
+ctr_cam=[0.5*H-14, -0.5*W+13.5, -0.5*t];
+ctr_flash=[0.5*H-23, -0.5*W+13.5, -0.5*t];
+ctr_sw_onoff=[0.5*H-25, -0.5*W, 0.5*t-4.5];
+ctr_sw_loud=[0.5*H-41, 0.5*W, 0.5*t-4.5];
+d_cam=9;
+
+sw_onoff:
+Box(ctr_sw_onoff,
+ 12.5*EX, 2.3*EZ, -cl_right*EY,
+ center xy
+);
+
+sw_loud:
+Box(ctr_sw_loud,
+ 20*EX, 2.3*EZ, cl_left*EY,
+ center xy
+);
+
+cam:
+Cylinder(
+ ctr_cam,
+ ax -cl_back*EZ, d_cam
+);

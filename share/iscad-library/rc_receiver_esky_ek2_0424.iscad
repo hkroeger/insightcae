@@ -1,0 +1,44 @@
+L=50.5;
+W=24;
+H=15;
+
+bounding_box=
+Box(
+ O,
+ L*EX, W*EY, H*EZ,
+ center xy
+); 
+
+tool=Box(
+ 0.5*L*EX + H*EZ,
+ -1.55*EZ, -33*EX, 2*W*EY,
+ center z
+);
+body0=
+bounding_box
+-tool;
+
+body1=
+Chamfer(
+ body0?edges('isCoincident %0', tool?alledges)?edges('minimal(CoG.z)'),
+ 1
+);
+
+#body2=
+#Fillet(
+# body1?alledges,
+# 0.25
+#);
+
+body: body1;
+
+delta_plug=2.5*EY;
+ctr_plug1=[-0.5*L, 0.5*W-4.2, 8.5];
+ctr_plug2=ctr_plug1 -1*delta_plug;
+ctr_plug3=ctr_plug1 -2*delta_plug;
+ctr_plug4=ctr_plug1 -3*delta_plug;
+ctr_plug5=ctr_plug1 -4*delta_plug;
+ctr_plug6=ctr_plug1 -5*delta_plug;
+ctr_plug7=ctr_plug1 -6*delta_plug;
+
+ctr_antenna=[0.5*L, -0.5*W+4.4, 5];

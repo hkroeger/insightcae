@@ -1,0 +1,20 @@
+A=39;
+B=16;
+C=36.5;
+D=19;
+E=8;
+
+R=2*A;
+top:
+Cutaway(Cutaway(
+Sphere(
+ O +(B-R)*EX,
+ 2*R
+),
+O, -EX), D*EX, EX)
+
+-Cylinder(
+D*EX,
+ax -D*EX,
+E)
+;

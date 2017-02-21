@@ -30,6 +30,7 @@ namespace insight {
 
 defineType(FileTemplate);
 addToFactoryTable(Analysis, FileTemplate);
+addToStaticFunctionTable(Analysis, FileTemplate, defaultParameters);
 
 FileTemplate::FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir)
 : Analysis("FileTemplate", "File template based analysis", ps, exedir)

@@ -765,7 +765,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
 }
 
 addToFactoryTable(Analysis, PipeCyclic);
-
+addToStaticFunctionTable(Analysis, PipeCyclic, defaultParameters);
 
 
 
@@ -1014,5 +1014,5 @@ void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
 }
 
 addToFactoryTable(Analysis, PipeInflow);
-
+addToStaticFunctionTable(Analysis, PipeInflow, defaultParameters);
 }

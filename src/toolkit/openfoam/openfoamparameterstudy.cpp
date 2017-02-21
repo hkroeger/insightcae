@@ -84,7 +84,7 @@ template<
 >
 ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer* displayer)
 {
-  const ParameterSet& p = parameters();
+  ParameterSet& p = Analysis::parameters_;
   // generate the mesh in the top level case first
   path dir = setupExecutionEnvironment();
   //parameters_.saveToFile(dir/"parameters.ist", type());
@@ -127,11 +127,11 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
     }
   }
   
-  path old_lp=parameters().get<PathParameter>("mesh/linkmesh")();
+  path old_lp=p.get<PathParameter>("mesh/linkmesh")();
   if (!subcasesRemesh_)
-    parameters().get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
+    p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
   setupQueue();
-  parameters().get<PathParameter>("mesh/linkmesh")() = old_lp;
+  p.get<PathParameter>("mesh/linkmesh")() = old_lp;
   
   processQueue(displayer);
   ResultSetPtr results = evaluateRuns();

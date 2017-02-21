@@ -41,6 +41,7 @@ namespace insight
   
 defineType(AirfoilSection);
 addToFactoryTable(Analysis, AirfoilSection);
+addToStaticFunctionTable(Analysis, AirfoilSection, defaultParameters);
 
 
 
@@ -463,6 +464,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 
 defineType(AirfoilSectionPolar);
 addToFactoryTable(Analysis, AirfoilSectionPolar);
+addToStaticFunctionTable(Analysis, AirfoilSectionPolar, defaultParameters);
 
 RangeParameterList rpl_AirfoilSectionPolar = list_of<std::string>("geometry/alpha");
 

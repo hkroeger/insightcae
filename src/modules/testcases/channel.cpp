@@ -1138,7 +1138,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdic
 }
 
 addToFactoryTable(Analysis, ChannelCyclic);
-
+addToStaticFunctionTable(Analysis, ChannelCyclic, defaultParameters);
 
 
 

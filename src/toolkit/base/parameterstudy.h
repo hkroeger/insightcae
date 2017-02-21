@@ -50,7 +50,7 @@ protected:
 
   
 public:
-  declareType("Parameter Study");
+//   declareType("Parameter Study");
   
   ParameterStudy
   (

@@ -5,3 +5,5 @@ target_link_libraries(test_simplelatex toolkit)
 add_test(NAME test_toolkit_simplelatex
     COMMAND test_simplelatex
 ) 
+
+add_subdirectory(analysis_parameterstudy)

@@ -382,13 +382,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                             //cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
 
                             if ( type=="library" ) {
-                                void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
-                                if ( !handle ) {
-                                    std::cout<<"Omitted "<<itr->path() <<": Could not load module library "<<location<<": " << dlerror() << std::endl;
-                                } else {
-                                    handles_.push_back ( handle );
-//                                     std::cout<<itr->path() <<": Loaded module library "<<location << std::endl;
-                                }
+                                addLibrary(location);
                             }
 
                         }
@@ -423,6 +417,20 @@ AnalysisLibraryLoader::~AnalysisLibraryLoader()
         //dlclose(handle);
     }
 }
+
+void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
+{
+    void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
+    if ( !handle ) 
+    {
+        std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+    } else 
+    {
+        handles_.push_back ( handle );
+//                                     std::cout<<itr->path() <<": Loaded module library "<<location << std::endl;
+    }
+}
+
 
 AnalysisLibraryLoader loader;
 

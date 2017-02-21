@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
     ("vector,v", po::value<StringList>(), "vector variable assignment")
     ("int,i", po::value<StringList>(), "int variable assignment")
     ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
+    ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
     ("input-file,f", po::value< StringList >(),"Specifies input file.")
     ;
 
@@ -86,6 +87,15 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    if (vm.count("libs"))
+    {
+        StringList libs=vm["libs"].as<StringList>();
+        BOOST_FOREACH(const string& l, libs)
+        {
+            loader.addLibrary(l);
+        }
+    }
+        
     try
     {
         std::string fn = vm["input-file"].as<StringList>()[0];
@@ -276,6 +286,7 @@ int main(int argc, char *argv[])
     catch (insight::Exception e)
     {
         cout<<"Exception occured: "<<e<<endl;
+        exit(-1);
     }
 
     return 0;

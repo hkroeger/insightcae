@@ -24,54 +24,107 @@
 #include <QSplashScreen>
 #include <QtGui/QApplication>
 #include "base/boost_include.h"
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
 #include "workbench.h"
 
+#include "base/analysis.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
 
 #include <qthread.h>
  
+ 
+using namespace boost;
+using namespace std;
+ 
+ 
 class I : public QThread
 {
-  QSplashScreen* sp_;
-  QWidget win_;
+    QSplashScreen* sp_;
+    QWidget win_;
+    
 public:
-  I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) {}
-  
-  void run() { QThread::sleep(3); sp_->finish(&win_); }
+    I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) 
+    {}
+
+    void run() 
+    {
+        QThread::sleep(3);
+        sp_->finish(&win_);
+    }
 };
+
+
+
 
 int main(int argc, char** argv)
 {
-  insight::UnhandledExceptionHandling ueh;
-  insight::GSLExceptionHandling gsl_errtreatment;
-  
-  WorkbenchApplication app(argc, argv);
+    insight::UnhandledExceptionHandling ueh;
+    insight::GSLExceptionHandling gsl_errtreatment;
 
-  // After creation of application object!
-  std::locale::global(std::locale::classic());
-  QLocale::setDefault(QLocale::C);
+    namespace po = boost::program_options;
 
-  QPixmap pixmap(":/resources/insight_workbench_splash.png");
-  QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
-  splash.show();
-  splash.showMessage(/*propGeoVersion()+" - */"Wait...");
+    typedef std::vector<std::string> StringList;
 
-  workbench window;
-  
-  if (argc>1)
-  {
-    boost::filesystem::path fn(argv[1]);
-    window.openAnalysis(boost::filesystem::absolute(fn).c_str());
-  }
-  window.show();
-  
-  app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
-  
-  I w(&splash, &window);
-  w.start(); // splash is shown for 5 seconds
-  
-  window.raise();
+    // Declare the supported options.
+    po::options_description desc("Allowed options");
+    desc.add_options()
+    ("help", "produce help message")
+    ("libs", po::value< StringList >(),"Additional libraries with analysis modules to load")
+    ("input-file,f", po::value< StringList >(),"Specifies input file.")
+    ;
+    
+    po::positional_options_description p;
+    p.add("input-file", -1);
+    
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).
+              options(desc).positional(p).run(), vm);
+    po::notify(vm);
 
-  return app.exec();
+    if (vm.count("help"))
+    {
+        std::cout << desc << std::endl;
+        exit(-1);
+    }
+    
+    if (vm.count("libs"))
+    {
+        StringList libs=vm["libs"].as<StringList>();
+        BOOST_FOREACH(const string& l, libs)
+        {
+           insight::loader.addLibrary(l);
+        }
+    }
+    
+    WorkbenchApplication app(argc, argv);
+
+    // After creation of application object!
+    std::locale::global(std::locale::classic());
+    QLocale::setDefault(QLocale::C);
+
+    QPixmap pixmap(":/resources/insight_workbench_splash.png");
+    QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
+    splash.show();
+    splash.showMessage(/*propGeoVersion()+" - */"Wait...");
+
+    workbench window;
+
+    if (vm.count("input-file"))
+    {
+        boost::filesystem::path fn( vm["input-file"].as<StringList>()[0] );
+        window.openAnalysis(boost::filesystem::absolute(fn).c_str());
+    }
+    window.show();
+
+    app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+
+    I w(&splash, &window);
+    w.start(); // splash is shown for 5 seconds
+
+    window.raise();
+
+    return app.exec();
 }

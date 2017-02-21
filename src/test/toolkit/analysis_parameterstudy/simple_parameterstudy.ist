@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<analysis name="SimpleParameterStudy"/>
+	<subset name="run">
+		<int name="numthread" value="1"/>
+	</subset>
+	<doubleRange name="x" values="0 2.5 5 7.5 10"/>
+</root>
+
+

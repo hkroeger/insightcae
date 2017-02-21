@@ -71,7 +71,13 @@ ParameterSet ParameterStudy<BaseAnalysis,var_params>::defaultParameters()
     dfp.replace( parname, new DoubleRangeParameter(orgval, 0, 1, dfp.get<DoubleParameter>(parname).description().simpleLatex()) );
   }
   
-  dfp.getSubset("run").insert
+  std::string subname("run");
+  if (!dfp.contains(subname))
+  {
+      dfp.insert(subname, new SubsetParameter("run parameters"));
+  }
+  
+  dfp.getSubset(subname).insert
   (
     "numthread", 
     std::auto_ptr<IntParameter>

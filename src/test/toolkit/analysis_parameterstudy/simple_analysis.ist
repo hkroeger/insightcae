@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<analysis name="SimpleAnalysis"/>
+	<double name="x" value="3"/>
+</root>
+
+

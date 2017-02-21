@@ -1069,13 +1069,13 @@ void DoubleRangeParameterWrapper::createWidgets()
   
   QPushButton *addbtn=new QPushButton("Add...", detaileditwidget_);
   sublayout->addWidget(addbtn);
-  connect(addbtn, SIGNAL(clicked()), detaileditwidget_, SLOT(onAddSingle()));
+  connect(addbtn, SIGNAL(clicked()), this, SLOT(onAddSingle()));
   QPushButton *addrangebtn=new QPushButton("Add Range...", detaileditwidget_);
   sublayout->addWidget(addrangebtn);
-  connect(addrangebtn, SIGNAL(clicked()), detaileditwidget_, SLOT(onAddRange()));
+  connect(addrangebtn, SIGNAL(clicked()), this, SLOT(onAddRange()));
   QPushButton *clearbtn=new QPushButton("Clear", detaileditwidget_);
   sublayout->addWidget(clearbtn);
-  connect(clearbtn, SIGNAL(clicked()), detaileditwidget_, SLOT(onClear()));
+  connect(clearbtn, SIGNAL(clicked()), this, SLOT(onClear()));
   layout2->addLayout(sublayout);
   
   layout->addLayout(layout2);

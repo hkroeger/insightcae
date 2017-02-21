@@ -322,6 +322,8 @@ protected:
 public:
     AnalysisLibraryLoader();
     ~AnalysisLibraryLoader();
+    
+    void addLibrary(const boost::filesystem::path& lib);
 };
 
 

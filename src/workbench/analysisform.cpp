@@ -40,7 +40,9 @@ AnalysisWorker::AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analy
 
 void AnalysisWorker::doWork(insight::ProgressDisplayer* pd)
 {
-  emit resultReady( (*analysis_)(pd) );
+    insight::ResultSetPtr results = (*analysis_)(pd);
+    emit resultReady( results );
+    emit finished();
 }
 
 AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
@@ -48,53 +50,46 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
   analysisName_(analysisName),
   executionPathParameter_(".", "Directory to store data files during analysis.\nLeave empty for temporary storage.")
 {
-  /*
-  insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_.find(analysisName);
-  if (i==insight::Analysis::factories_.end())
-    throw insight::Exception("Could not lookup analysis type "+analysisName);
-  
-  analysis_.reset( (*i->second)( insight::NoParameters() ) );*/
-//   analysis_.reset ( insight::Analysis::lookup(analysisName) );
-//   analysis_->setDefaults();
-//   parameters_ = analysis_->defaultParameters();
-  parameters_ = insight::Analysis::defaultParameters(analysisName_);
-  
-  ui = new Ui::AnalysisForm;
-  QWidget* iw=new QWidget(this);
-  ui->setupUi(iw);
-  setWidget(iw);
-  
-  progdisp_=new GraphProgressDisplayer(ui->runTab);
-  ui->runTabLayout->addWidget(progdisp_);
-  
-  this->setWindowTitle(/*analysis_->getName()*/analysisName_.c_str());
-  connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
-  connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
 
-  connect(ui->saveParamBtn, SIGNAL(clicked()), this, SLOT(onSaveParameters()));
-  connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
+    // load default parameters
+    parameters_ = insight::Analysis::defaultParameters(analysisName_);
 
-  connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
-  
+    ui = new Ui::AnalysisForm;
+    QWidget* iw=new QWidget(this);
+    ui->setupUi(iw);
+    setWidget(iw);
 
-  peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
-  ui->inputTabLayout->addWidget(peditor_);
-  peditor_->insertParameter("execution directory", executionPathParameter_);
-  QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));
-  QObject::connect(this, SIGNAL(update()), peditor_, SLOT(onUpdate()));
-  
-  rtroot_=new QTreeWidgetItem(0);
-  rtroot_->setText(0, "Results");
-  ui->resultTree->setColumnCount(3);
-  ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
-  ui->resultTree->addTopLevelItem(rtroot_);
+    progdisp_=new GraphProgressDisplayer(ui->runTab);
+    ui->runTabLayout->addWidget(progdisp_);
+
+    this->setWindowTitle(analysisName_.c_str());
+    connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
+    connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
+
+    connect(ui->saveParamBtn, SIGNAL(clicked()), this, SLOT(onSaveParameters()));
+    connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
+
+    connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
+
+
+    peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
+    ui->inputTabLayout->addWidget(peditor_);
+    peditor_->insertParameter("execution directory", executionPathParameter_);
+    QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));
+    QObject::connect(this, SIGNAL(update()), peditor_, SLOT(onUpdate()));
+
+    rtroot_=new QTreeWidgetItem(0);
+    rtroot_->setText(0, "Results");
+    ui->resultTree->setColumnCount(3);
+    ui->resultTree->setHeaderLabels( QStringList() << "Result Element" << "Description" << "Current Value" );
+    ui->resultTree->addTopLevelItem(rtroot_);
 }
 
 AnalysisForm::~AnalysisForm()
 {
-  workerThread_.quit();
-  workerThread_.wait();
-  delete ui;
+    workerThread_.quit();
+    workerThread_.wait();
+    delete ui;
 }
 
 void AnalysisForm::onSaveParameters()
@@ -121,28 +116,54 @@ void AnalysisForm::onLoadParameters()
 
 void AnalysisForm::onRunAnalysis()
 {
-  if (!workerThread_.isRunning())
-  {
-    emit apply();
-//     analysis_->setParameters(parameters_);
-    boost::filesystem::path exePath = executionPathParameter_();
-    
-    analysis_.reset( insight::Analysis::lookup(analysisName_, parameters_, exePath) );
-    
-    progdisp_->reset();
-    
-    AnalysisWorker *worker = new AnalysisWorker(analysis_);
-    worker->moveToThread(&workerThread_);
-    connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
-    connect(this, SIGNAL(runAnalysis(insight::ProgressDisplayer*)), 
-	    worker, SLOT(doWork(insight::ProgressDisplayer*)));
-    connect(worker, SIGNAL(resultReady(insight::ResultSetPtr)), this, SLOT(onResultReady(insight::ResultSetPtr)));
-    workerThread_.start();
+    if (!workerThread_.isRunning())
+    {
 
-    ui->tabWidget->setCurrentWidget(ui->runTab);
+        if (analysis_ || results_)
+        {
+            QMessageBox msgBox;
+            if (results_)
+            {
+                msgBox.setText("There is currently a result set in memory!");
+            } else {
+                msgBox.setText("There is currently an analysis open.");
+            }
+            msgBox.setInformativeText("If you continue, the results will be deleted and the execution directory on disk will be removed (only if it was created). Continue?");
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+            msgBox.setDefaultButton(QMessageBox::Cancel);
 
-    emit runAnalysis(progdisp_);
-  }
+
+            if (msgBox.exec()==QMessageBox::Yes)
+            {
+                results_.reset();
+                analysis_.reset();
+            } else {
+                return;
+            }
+        }
+
+        emit apply(); // apply all changes into parameter set
+        boost::filesystem::path exePath = executionPathParameter_();
+
+        analysis_.reset( insight::Analysis::lookup(analysisName_, parameters_, exePath) );
+
+        progdisp_->reset();
+
+        AnalysisWorker *worker = new AnalysisWorker(analysis_);
+        worker->moveToThread(&workerThread_);
+        
+        connect(this, SIGNAL(runAnalysis(insight::ProgressDisplayer*)),
+                worker, SLOT(doWork(insight::ProgressDisplayer*)));
+        connect(worker, SIGNAL(resultReady(insight::ResultSetPtr)), this, SLOT(onResultReady(insight::ResultSetPtr)));
+        
+        connect(worker, SIGNAL(finished()), &workerThread_, SLOT(quit()));
+        connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
+        workerThread_.start();
+
+        ui->tabWidget->setCurrentWidget(ui->runTab);
+
+        emit runAnalysis(progdisp_);
+    }
 }
 
 void AnalysisForm::onKillAnalysis()

@@ -68,6 +68,7 @@ public slots:
   
 signals:
   void resultReady(insight::ResultSetPtr);
+  void finished();
 };
 
 
@@ -81,8 +82,10 @@ class AnalysisForm
 protected:
   std::string analysisName_;
   insight::ParameterSet parameters_;
-  boost::shared_ptr<insight::Analysis> analysis_;
+  
+  boost::shared_ptr<insight::Analysis> analysis_;  
   insight::ResultSetPtr results_;
+  
   GraphProgressDisplayer *progdisp_;
   QThread workerThread_;
   

@@ -37,9 +37,7 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-defineType(DecayingTurbulence);
-addToFactoryTable(Analysis, DecayingTurbulence);
-addToStaticFunctionTable(Analysis, DecayingTurbulence, defaultParameters);
+addToAnalysisFactoryTable(DecayingTurbulence);
 
 DecayingTurbulence::DecayingTurbulence(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis

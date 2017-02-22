@@ -1333,9 +1333,7 @@ string CutplanePVScene::pythonCommands() const
 }
 
 
-defineType(ParaviewVisualization);
-addToFactoryTable(Analysis, ParaviewVisualization);
-addToStaticFunctionTable(Analysis, ParaviewVisualization, defaultParameters);
+addToAnalysisFactoryTable(ParaviewVisualization);
 
 ParaviewVisualization::ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : Analysis("", "", ps, exepath)
@@ -2602,8 +2600,6 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
   return results;
 }
 
-defineType(HomogeneousAveragedProfile);
-addToFactoryTable(Analysis, HomogeneousAveragedProfile);
-addToStaticFunctionTable(Analysis, HomogeneousAveragedProfile, defaultParameters);
+addToAnalysisFactoryTable(HomogeneousAveragedProfile);
 
 }

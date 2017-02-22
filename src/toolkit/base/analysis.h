@@ -115,7 +115,11 @@ public:
 
 typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
 
-
+#define addToAnalysisFactoryTable(DerivedClass) \
+ defineType(DerivedClass); \
+ addToFactoryTable(Analysis, DerivedClass); \
+ addToStaticFunctionTable(Analysis, DerivedClass, defaultParameters); \
+ addToStaticFunctionTable(Analysis, DerivedClass, category);
 
 /**
  * An analysis is the basic container in InsightCAE.
@@ -137,6 +141,7 @@ public:
     );
     
     declareStaticFunctionTable(defaultParameters, ParameterSet);
+    declareStaticFunctionTable(category, std::string);
 
 
 protected:
@@ -162,6 +167,8 @@ protected:
 
 public:
     declareType ( "Analysis" );
+    
+    static std::string category();
 
     /**
      * create analysis from components.

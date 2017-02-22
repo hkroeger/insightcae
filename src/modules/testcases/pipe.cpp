@@ -669,8 +669,6 @@ ResultSetPtr PipeBase::evaluateResults(OpenFOAMCase& cm)
 
 
 
-defineType(PipeCyclic);
-
 PipeCyclic::PipeCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : PipeBase(ps, exepath)
 {
@@ -764,12 +762,7 @@ void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
-addToFactoryTable(Analysis, PipeCyclic);
-addToStaticFunctionTable(Analysis, PipeCyclic, defaultParameters);
-
-
-
-defineType(PipeInflow);
+addToAnalysisFactoryTable(PipeCyclic);
 
 const char* PipeInflow::tpc_names_[] = 
   {
@@ -1013,6 +1006,6 @@ void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>
   controlDict["endTime"] = (inittime+meantime+mean2time)*T_;
 }
 
-addToFactoryTable(Analysis, PipeInflow);
-addToStaticFunctionTable(Analysis, PipeInflow, defaultParameters);
+addToAnalysisFactoryTable(PipeInflow);
+
 }

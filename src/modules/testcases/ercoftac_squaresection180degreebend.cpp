@@ -36,9 +36,7 @@ using namespace boost::filesystem;
 namespace insight
 {
 
-defineType(ERCOFTAC_SquareSection180DegreeBend);
-addToFactoryTable(Analysis, ERCOFTAC_SquareSection180DegreeBend);
-addToStaticFunctionTable(Analysis, ERCOFTAC_SquareSection180DegreeBend, defaultParameters);
+addToAnalysisFactoryTable(ERCOFTAC_SquareSection180DegreeBend);
 
 ERCOFTAC_SquareSection180DegreeBend::ERCOFTAC_SquareSection180DegreeBend(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis(typeName, "Test case for turbulence modelling", ps, exepath)

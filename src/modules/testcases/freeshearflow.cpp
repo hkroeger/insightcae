@@ -47,9 +47,7 @@ namespace insight
 {
   
   
-defineType(FreeShearFlow);
-addToFactoryTable(Analysis, FreeShearFlow);
-addToStaticFunctionTable(Analysis, FreeShearFlow, defaultParameters);
+addToAnalysisFactoryTable(FreeShearFlow);
 
 FreeShearFlow::FreeShearFlow(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : OpenFOAMAnalysis("Free Shear Flow", "", ps, exepath)

@@ -165,6 +165,7 @@ bool ConvergenceAnalysisDisplayer::stopRun() const
   
   
 defineType ( Analysis );
+
 defineFactoryTable 
 ( 
   Analysis,
@@ -175,8 +176,12 @@ defineFactoryTable
   LIST(ps, exePath)
 );
 defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
+defineStaticFunctionTable(Analysis, category, std::string);
 
-
+std::string Analysis::category()
+{
+    return "";
+}
 
 void Analysis::extendSharedSearchPath ( const std::string& name )
 {

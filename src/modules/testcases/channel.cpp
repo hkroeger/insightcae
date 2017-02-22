@@ -1009,8 +1009,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 
 
 
-defineType(ChannelCyclic);
-
 ChannelCyclic::ChannelCyclic(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : ChannelBase(ps, exepath)
 {
@@ -1137,9 +1135,7 @@ void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdic
   controlDict["endTime"] = end_;
 }
 
-addToFactoryTable(Analysis, ChannelCyclic);
-addToStaticFunctionTable(Analysis, ChannelCyclic, defaultParameters);
-
+addToAnalysisFactoryTable(ChannelCyclic);
 
 
 

@@ -49,10 +49,7 @@ public:
 
 
 
-defineType(SimpleAnalysis);
-addToFactoryTable(Analysis, SimpleAnalysis);
-addToStaticFunctionTable(Analysis, SimpleAnalysis, defaultParameters);
-
+addToAnalysisFactoryTable(SimpleAnalysis);
 
 
 
@@ -119,7 +116,7 @@ public:
         
         addPlot
         (
-            results, executionPath(), "chartAirfoilCharacteristics",
+            results, executionPath(), "chartFunction",
             "$x$", "$y$",
             list_of<PlotCurve>
             (PlotCurve(arma::mat(join_rows(tabdat.col(0), tabdat.col(1))), 	"y_vs_x", "w lp t '$y=f(x)$"))
@@ -131,8 +128,6 @@ public:
     }
 };
 
-defineType(SimpleParameterStudy);
-addToFactoryTable(Analysis, SimpleParameterStudy);
-addToStaticFunctionTable(Analysis, SimpleParameterStudy, defaultParameters);
+addToAnalysisFactoryTable(SimpleParameterStudy);
 
 }

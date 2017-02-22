@@ -61,6 +61,8 @@ protected:
 public:
   ExternalGeometryFile( const ParameterSet& ps = Parameters::makeDefault() );
   
+  std::string fileName() const;
+  
   virtual void putIntoConstantTrisurface
   (
     const OpenFOAMCase& ofc,
@@ -299,13 +301,15 @@ public:
 PARAMETERSET>>> RefinementGeometry Parameters
 inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
 
-fileName = path "" "Path to geometry file (STL format)"
+geometry = includedset "insight::ExternalGeometryFile::Parameters" "Geometry file (STL format)"
 
 <<<PARAMETERSET
 */
+//fileName = path "" "Path to geometry file (STL format)"
 
 protected:
   Parameters p_;
+  ExternalGeometryFile geometryfile_;
 
 public:
     declareType("RefinementGeometry");
@@ -315,6 +319,9 @@ public:
 
   virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
 //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
+  virtual void modifyFiles(const OpenFOAMCase& ofc, 
+		  const boost::filesystem::path& location) const;
+
 };
 
 

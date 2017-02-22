@@ -39,6 +39,11 @@ ExternalGeometryFile::ExternalGeometryFile(const ParameterSet& ps)
 : p_(ps)
 {}
 
+std::string ExternalGeometryFile::fileName() const
+{
+    return p_.fileName.filename().string();
+}
+
 
 void ExternalGeometryFile::putIntoConstantTrisurface(const OpenFOAMCase& ofc, const path& location) const
 {
@@ -287,7 +292,8 @@ addToStaticFunctionTable(Feature, RefinementGeometry, defaultParameters);
 
 RefinementGeometry::RefinementGeometry(const ParameterSet& ps)
 : RefinementRegion(ps),
-  p_(ps)
+  p_(ps),
+  geometryfile_(p_.geometry)
 {}
 
 // void RefinementGeometry::addIntoDictionary(OFDictData::dict& sHMDict) const
@@ -308,14 +314,18 @@ RefinementGeometry::RefinementGeometry(const ParameterSet& ps)
 // }
 bool RefinementGeometry::setGeometrySubdict(OFDictData::dict& geodict, std::string& entryTitle) const
 {
-  entryTitle=p_.fileName.filename().c_str();
+  entryTitle=geometryfile_.fileName().c_str();
   geodict["type"]="triSurfaceMesh";
   geodict["name"]=p_.name;
 //   //boost::filesystem::path x; x.f
 //   sHMDict.subDict("geometry")[p_.fileName().filename().c_str()]=geodict;
 }
 
-
+void RefinementGeometry::modifyFiles(const OpenFOAMCase& ofc, 
+	      const boost::filesystem::path& location) const
+{
+  geometryfile_.putIntoConstantTrisurface(ofc, location);
+}
 
 
 

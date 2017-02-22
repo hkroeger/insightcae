@@ -23,8 +23,16 @@
 
 #include "base/analysis.h"
 
-#include <QListWidget>
-#include <QListWidgetItem>
+// #include <QListWidget>
+// #include <QListWidgetItem>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
+
+#include <map>
+#include <string>
+
+
+
 
 newAnalysisDlg::newAnalysisDlg(QWidget* parent)
 : QDialog(parent)
@@ -40,32 +48,87 @@ newAnalysisDlg::newAnalysisDlg(QWidget* parent)
   fillAnalysisList();
 }
 
+
+
+
 newAnalysisDlg::~newAnalysisDlg()
 {
   delete ui;
 }
 
+
+
+
+class HierarchyLevel
+: public std::map<std::string, HierarchyLevel>
+{
+public:
+    QTreeWidgetItem* parent_;
+    
+    HierarchyLevel(QTreeWidgetItem* parent)
+    : parent_(parent)
+    {}
+    
+    HierarchyLevel& sublevel(const std::string& entry)
+    {
+        iterator it = find(entry);
+        if (it == end())
+        {
+            QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
+            std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
+            it = ret.first;
+        }
+        return it->second;
+    }
+};
+
+
+
+
 void newAnalysisDlg::fillAnalysisList()
 {
-  for (insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_->begin();
-       i != insight::Analysis::factories_->end(); i++)
-  {
-    new QListWidgetItem(i->first.c_str(), ui->listWidget);
-  }
+
+  HierarchyLevel toplevel ( new QTreeWidgetItem ( ui->treeWidget, QStringList() << "Available Analyses" ) );
+
+  for ( insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_->begin();
+        i != insight::Analysis::factories_->end(); i++ )
+    {
+      std::string analysisName = i->first;
+      QStringList path = QString::fromStdString ( insight::Analysis::category ( analysisName ) ).split ( "/", QString::SkipEmptyParts );
+      HierarchyLevel* parent = &toplevel;
+      for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
+        {
+          parent = & ( parent->sublevel ( pit->toStdString() ) );
+        }
+      new QTreeWidgetItem ( parent->parent_, QStringList() << analysisName.c_str() );
+    }
+    
+  ui->treeWidget->expandAll();
 }
+
+
+
 
 std::string newAnalysisDlg::getAnalysisName() const
 {
-  return ui->listWidget->selectedItems()[0]->text().toStdString();
+    return ui->treeWidget->selectedItems()[0]->text(0).toStdString();
 }
-    
+   
+   
+   
+   
 void newAnalysisDlg::done(int r)
 {
   if ( r == QDialog::Accepted)
   {
-    if (ui->listWidget->selectedItems().size() == 1)
-      QDialog::done(r);
-    else return;
+    if (ui->treeWidget->selectedItems().size() == 1)
+    {
+        QTreeWidgetItem * curitem = ui->treeWidget->selectedItems()[0];
+        if (curitem->childCount()==0) // is leaf?
+        {
+            QDialog::done(r);
+        } else return;
+    } else return;
   }
   
   QDialog::done(r);

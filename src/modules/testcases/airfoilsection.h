@@ -40,6 +40,8 @@ public:
   AirfoilSection(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
   static insight::ParameterSet defaultParameters();
+  
+  static std::string category() { return "Generic Analyses"; }
 
   virtual void createCase(insight::OpenFOAMCase& cm);
   virtual void createMesh(insight::OpenFOAMCase& cm);
@@ -55,6 +57,8 @@ class AirfoilSectionPolar
 {
 public:
     declareType("Airfoil 2D Polar");
+    
+    static std::string category() { return "Generic Analyses"; }
     
     AirfoilSectionPolar(const ParameterSet& ps, const boost::filesystem::path& exepath);    
     virtual void evaluateCombinedResults(ResultSetPtr& results);

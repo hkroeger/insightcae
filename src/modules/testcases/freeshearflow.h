@@ -36,6 +36,7 @@ public:
     FreeShearFlow(const ParameterSet& ps, const boost::filesystem::path& exepath);
     
     static insight::ParameterSet defaultParameters();
+    static std::string category() { return "Validation Cases"; }
     
     virtual void calcDerivedInputData();
     virtual void createMesh(insight::OpenFOAMCase& cm);

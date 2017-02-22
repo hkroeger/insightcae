@@ -62,6 +62,7 @@ public:
   ~PipeBase();
   
   static ParameterSet defaultParameters();
+  static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData();
@@ -139,6 +140,7 @@ public:
   PipeInflow(const ParameterSet& ps, const boost::filesystem::path& exepath);
   
   static ParameterSet defaultParameters();
+  static std::string category() { return "Validation Cases/Inflow Generator"; }
   
   virtual void createMesh
   (

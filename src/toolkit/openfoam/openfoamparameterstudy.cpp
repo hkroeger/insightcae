@@ -113,7 +113,12 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
 //     base_case->setParameters(defp);
     
 //     base_case->setExecutionPath(exep);
-    OpenFOAMAnalysis* base_case=Analysis::lookup(BaseAnalysis::typeName, defp, exep);
+    OpenFOAMAnalysis* base_case = dynamic_cast<OpenFOAMAnalysis*>(Analysis::lookup(BaseAnalysis::typeName, defp, exep));
+    
+    if (!base_case)
+    {
+        throw insight::Exception("Internal Error: invalid base analysis type for OpenFOAMParameterStudy!");
+    }
     
     dir = base_case->setupExecutionEnvironment();
 

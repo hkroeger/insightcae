@@ -22,12 +22,14 @@
 #define NEWANALYSISDLG_H
 
 #include <QDialog>
+// #include <QTreeWidgetItem>
 
 
 namespace Ui
 {
 class newAnalysisDlg;
 }
+
 
 class newAnalysisDlg
 : public QDialog

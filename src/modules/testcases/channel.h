@@ -195,6 +195,7 @@ public:
   ~ChannelBase();
   
   static ParameterSet defaultParameters();
+  static std::string category() { return "Validation Cases"; }
   
   std::string cyclPrefix() const;
   virtual void calcDerivedInputData();

@@ -65,6 +65,9 @@ public:
     FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir);
     
     static ParameterSet defaultParameters();
+    
+    static std::string category() { return "Generic Analyses"; }
+    
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
     
 };

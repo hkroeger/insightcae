@@ -50,6 +50,7 @@ radiationModels
 liquidProperties
 solidMixtureProperties
 liquidMixtureProperties
+thermophysicalProperties
 solidProperties
 barotropicCompressibilityModel
 solidSpecie

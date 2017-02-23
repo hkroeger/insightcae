@@ -65,7 +65,57 @@ TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
   return list;
 }
 
-  
+
+std::string getOpenFOAMComponentLabel(int i, int ncmpt)
+{
+    std::string cmptname;
+    if (ncmpt==1)
+    {
+        cmptname="";
+    }
+    else if (ncmpt==3)
+    {
+        switch (i)
+        {
+        case 0:
+            cmptname="x";
+            break;
+        case 1:
+            cmptname="y";
+            break;
+        case 2:
+            cmptname="z";
+            break;
+        }
+    }
+    else if (ncmpt==6)
+    {
+        switch (i)
+        {
+        case 0:
+            cmptname="xx";
+            break;
+        case 1:
+            cmptname="xy";
+            break;
+        case 2:
+            cmptname="xz";
+            break;
+        case 3:
+            cmptname="yy";
+            break;
+        case 4:
+            cmptname="yz";
+            break;
+        case 5:
+            cmptname="zz";
+            break;
+        }
+    }
+    return cmptname;
+}
+
+
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds)
 {
   redi::opstream proc;
@@ -2483,7 +2533,6 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
 
 
 
-
 HomogeneousAveragedProfile::HomogeneousAveragedProfile(const ParameterSet& ps, const boost::filesystem::path& exepath)
 : Analysis("Homogeneous Averaged Profile", "", ps, exepath)
 {
@@ -2553,32 +2602,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
     for (int i=0; i<ncmpt; i++)
     {
       
-      std::string cmptname;
-      if (ncmpt==1)
-      {
-	cmptname="";
-      }
-      else if (ncmpt==3)
-      {
-	switch (i) 
-	{
-	  case 0: cmptname="x"; break;
-	  case 1: cmptname="y"; break;
-	  case 2: cmptname="z"; break;
-	}
-      }
-      else if (ncmpt==6)
-      {
-	switch (i) 
-	{
-	  case 0: cmptname="xx"; break;
-	  case 1: cmptname="xy"; break;
-	  case 2: cmptname="xz"; break;
-	  case 3: cmptname="yy"; break;
-	  case 4: cmptname="yz"; break;
-	  case 5: cmptname="zz"; break;
-	}
-      }
+      std::string cmptname = getOpenFOAMComponentLabel(i, ncmpt);
       
       std::string lxcmptname="";
       if (cmptname!="") lxcmptname="_{"+cmptname+"}";

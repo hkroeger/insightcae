@@ -25,6 +25,7 @@
 #include "openfoam/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
+#include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
 #include <map>
@@ -164,6 +165,15 @@ public:
    * @reasonable_value: the number of components determines the rank of the field
    */
   static Parameter* defaultParameter(const arma::mat& reasonable_value, const std::string& description="Origin of the prescribed value");
+  
+  /**
+   * insert graphs with prescribed profiles into result set (only, if profiles were prescribed, otherwise inserts nothing)
+   * @param results ResultSet to which the data is added
+   * @param name Name of result entry
+   * @param descr Description
+   * @param qtylabel Label (formula symbol) of the quantity. Will be interpreted as latex math expression
+   */
+  void insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
 };
   
 

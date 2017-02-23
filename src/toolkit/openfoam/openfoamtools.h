@@ -38,6 +38,8 @@ namespace insight
 typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
 
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
+
+std::string getOpenFOAMComponentLabel(int i, int ncmpt);
   
 void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, const std::vector<std::string>& cmds);
 

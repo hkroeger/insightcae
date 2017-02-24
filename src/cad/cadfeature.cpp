@@ -274,9 +274,41 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
                                 }
                                 else
                                 {
-                                    if (feats.find(n)==feats.end())
-                                        feats[n].reset(new FeatureSet(shared_from_this(), Face));
-                                    feats[n]->add(id);
+                                    std::string name="face_"+n;
+                                    if (feats.find(name)==feats.end())
+                                        feats[name].reset(new FeatureSet(shared_from_this(), Face));
+                                    feats[name]->add(id);
+                                }
+                            }
+                            else if (shape.ShapeType()==TopAbs_SOLID)
+                            {
+                                int found=0;
+                                FeatureID id=-1;
+                                for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
+                                {
+                                    TopoDS_Solid f=TopoDS::Solid(ex.Current());
+                                    if (f.IsPartner(shape))
+                                    {
+                                        found++;
+                                        id=solidID(f);
+                                        std::cout<<"MATCH! solid id="<<id<<std::endl;
+
+                                    }
+                                }
+                                if (!found)
+                                {
+                                    throw insight::Exception("could not identify named solid in model! ("+n+")");
+                                }
+                                else if (found>1)
+                                {
+                                    throw insight::Exception(boost::str(boost::format("identified too many named solids in model! (%s found %d times)") % n % found));
+                                }
+                                else
+                                {
+                                    std::string name="solid_"+n;
+                                    if (feats.find(name)==feats.end())
+                                        feats[name].reset(new FeatureSet(shared_from_this(), Solid));
+                                    feats[name]->add(id);
                                 }
                             }
                         }

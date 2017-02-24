@@ -43,12 +43,16 @@ void QDatumItem::reset(insight::cad::DatumPtr smp)
   ais_=smp_->createAISRepr();
   if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_.Access()))
   {
+    double size=1000;
+    try { 
+#warning fails for empty model. Needs better treatment
     insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
     arma::mat bb = mm->modelBndBox();
     arma::mat diag=bb.col(1)-bb.col(0);
-    double size=1.2*arma::norm(diag,2);
+    size=1.2*arma::norm(diag,2);
+    } catch (...) {}
 //     double size=std::max(fabs(diag(0)), std::max(fabs(diag(1)), fabs(diag(2))));
-    std::cout<<"plane size set: "<<size<<std::endl;
+//     std::cout<<"plane size set: "<<size<<std::endl;
 //     pl->SetSize(size);
     ps_=size;
   }

@@ -180,7 +180,7 @@ defineStaticFunctionTable(Analysis, category, std::string);
 
 std::string Analysis::category()
 {
-    return "";
+    return "Uncategorized";
 }
 
 void Analysis::extendSharedSearchPath ( const std::string& name )

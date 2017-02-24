@@ -69,14 +69,20 @@ public:
     : parent_(parent)
     {}
     
+    iterator addHierarchyLevel(const std::string& entry)
+    {
+        QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
+        { QFont f=newnode->font(0); f.setBold(true); newnode->setFont(0, f); }
+        std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
+        return ret.first;
+    }
+    
     HierarchyLevel& sublevel(const std::string& entry)
     {
         iterator it = find(entry);
         if (it == end())
         {
-            QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
-            std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
-            it = ret.first;
+            it=addHierarchyLevel(entry);
         }
         return it->second;
     }
@@ -87,8 +93,11 @@ public:
 
 void newAnalysisDlg::fillAnalysisList()
 {
-
-  HierarchyLevel toplevel ( new QTreeWidgetItem ( ui->treeWidget, QStringList() << "Available Analyses" ) );
+  QTreeWidgetItem *topitem = new QTreeWidgetItem ( ui->treeWidget, QStringList() << "Available Analyses" );
+  { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+2); topitem->setFont(0, f); }
+  HierarchyLevel toplevel ( topitem );
+  
+  HierarchyLevel::iterator i=toplevel.addHierarchyLevel("Uncategorized");
 
   for ( insight::Analysis::FactoryTable::const_iterator i = insight::Analysis::factories_->begin();
         i != insight::Analysis::factories_->end(); i++ )
@@ -100,10 +109,11 @@ void newAnalysisDlg::fillAnalysisList()
         {
           parent = & ( parent->sublevel ( pit->toStdString() ) );
         }
-      new QTreeWidgetItem ( parent->parent_, QStringList() << analysisName.c_str() );
+      QTreeWidgetItem* item = new QTreeWidgetItem ( parent->parent_, QStringList() << analysisName.c_str() );
+//       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
     }
     
-  ui->treeWidget->expandAll();
+  ui->treeWidget->expandItem(topitem);
 }
 
 

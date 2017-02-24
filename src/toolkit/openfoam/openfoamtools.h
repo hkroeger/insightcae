@@ -598,6 +598,7 @@ scenes = array [
   ParaviewVisualization(const ParameterSet& ps, const boost::filesystem::path& exepath);
 
   static ParameterSet defaultParameters();
+  static std::string category() { return "General Postprocessing"; }
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
@@ -814,6 +815,7 @@ public:
   HomogeneousAveragedProfile(const ParameterSet& p, const boost::filesystem::path& exepath);
 
   static ParameterSet defaultParameters();
+  static std::string category() { return "General Postprocessing"; }
   
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };

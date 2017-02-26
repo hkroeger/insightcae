@@ -3,11 +3,28 @@ if (INSIGHT_BUILD_ISCAD)
 project(iscad)
 
 set(iscad_SRCS 
- cadfeaturetransient.cpp  iscad.cpp                   pointertransient.cpp  qoccviewercontext.cpp
- datumlist.cpp            iscadmainwindow.cpp         qdatumitem.cpp        qoccviewwidget.cpp
- evaluationlist.cpp       iscadsyntaxhighlighter.cpp  qevaluationitem.cpp   qvariableitem.cpp
- iscadapplication.cpp     modelsteplist.cpp           qmodelstepitem.cpp    viewstate.cpp
- modelcomponentselectordlg.cpp qdebugstream.cpp insertfeaturedlg.cpp
+ cadfeaturetransient.cpp
+ iscad.cpp
+ pointertransient.cpp
+ qoccviewercontext.cpp
+ iscadmainwindow.cpp
+ qoccviewwidget.cpp
+ iscadsyntaxhighlighter.cpp
+ iscadapplication.cpp
+ viewstate.cpp
+ 
+ qvariableitem.cpp
+ qmodelstepitem.cpp
+ qdatumitem.cpp
+ qevaluationitem.cpp
+ 
+# modelsteplist.cpp
+# evaluationlist.cpp
+# datumlist.cpp
+ qmodeltree.cpp
+ modelcomponentselectordlg.cpp
+ qdebugstream.cpp
+ insertfeaturedlg.cpp
 )
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)

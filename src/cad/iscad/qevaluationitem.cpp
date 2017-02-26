@@ -23,12 +23,11 @@
 #include "qoccviewercontext.h"
 
 QEvaluationItem::QEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context, 
-		const ViewState& state, QListWidget* view = 0)
-: QListWidgetItem(QString::fromStdString(name), view),
-  context_(context),
-  state_(state)
+		const ViewState& state, QTreeWidgetItem* parent)
+: QDisplayableModelTreeItem(name, context, state, parent)
 {
-  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+    setText(COL_NAME, name_);
+  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
 }
 
@@ -65,19 +64,19 @@ void QEvaluationItem::randomizeColor()
 
 void QEvaluationItem::hide()
 {
-  setCheckState(Qt::Unchecked);
+  setCheckState(COL_VIS, Qt::Unchecked);
   updateDisplay();
 }
 
 void QEvaluationItem::show()
 {
-  setCheckState(Qt::Checked);
+  setCheckState(COL_VIS, Qt::Checked);
   updateDisplay();
 }
 
 void QEvaluationItem::updateDisplay()
 {
-  state_.visible = (checkState()==Qt::Checked);
+  state_.visible = (checkState(COL_VIS)==Qt::Checked);
   
   if (!ais_.IsNull())
   {
@@ -101,23 +100,26 @@ void QEvaluationItem::showContextMenu(const QPoint& gpos) // this is a slot
     // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
 
     QMenu myMenu;
-    myMenu.addAction("Shaded");
-    myMenu.addAction("Wireframe");
-    myMenu.addAction("Randomize Color");
-//       myMenu.addAction("Export...");
-    // ...
+    QAction *a;
+    
+    a=new QAction(name_, &myMenu);
+    a->setDisabled(true);
+    myMenu.addAction(a);
+    
+    myMenu.addSeparator();
+    
+    a=new QAction("Shaded", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Wireframe", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Randomize Color", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    myMenu.addAction(a);
 
-    QAction* selectedItem = myMenu.exec(gpos);
-    if (selectedItem)
-    {
-	if (selectedItem->text()=="Shaded") shaded();
-	if (selectedItem->text()=="Wireframe") wireframe();
-	if (selectedItem->text()=="Randomize Color") randomizeColor();
-// 	  if (selectedItem->text()=="Export...") exportShape();
-    }
-    else
-    {
-	// nothing was chosen
-    }
+    myMenu.exec(gpos);
 }
 

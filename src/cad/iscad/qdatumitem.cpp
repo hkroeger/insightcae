@@ -26,13 +26,12 @@
 #include "modelfeature.h"
 
 QDatumItem::QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context, 
-		const ViewState& state, QListWidget* view)
-: QListWidgetItem(QString::fromStdString(name), view),
-  context_(context),
-  state_(state),
+		 const ViewState& state, QTreeWidgetItem* parent)
+: QDisplayableModelTreeItem(name, context, state, parent),
   model_(model)
 {
-  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+    setText(COL_NAME, name_);
+  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
 }
 
@@ -80,7 +79,7 @@ void QDatumItem::randomizeColor()
 
 void QDatumItem::updateDisplay()
 {
-  state_.visible = (checkState()==Qt::Checked);
+  state_.visible = (checkState(COL_VIS)==Qt::Checked);
   
   if (state_.visible)
   {
@@ -102,26 +101,26 @@ void QDatumItem::updateDisplay()
 
 void QDatumItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
-    // for QAbstractScrollArea and derived classes you would use:
-    // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
-
     QMenu myMenu;
-    myMenu.addAction("Shaded");
-    myMenu.addAction("Wireframe");
-    myMenu.addAction("Randomize Color");
-//       myMenu.addAction("Export...");
-    // ...
+    QAction *a;
+    
+    a=new QAction(name_, &myMenu);
+    a->setDisabled(true);
+    myMenu.addAction(a);
+    
+    myMenu.addSeparator();
+    
+    a=new QAction("Shaded", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Wireframe", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Randomize Color", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    myMenu.addAction(a);
 
-    QAction* selectedItem = myMenu.exec(gpos);
-    if (selectedItem)
-    {
-	if (selectedItem->text()=="Shaded") shaded();
-	if (selectedItem->text()=="Wireframe") wireframe();
-	if (selectedItem->text()=="Randomize Color") randomizeColor();
-// 	  if (selectedItem->text()=="Export...") exportShape();
-    }
-    else
-    {
-	// nothing was chosen
-    }
+    myMenu.exec(gpos);
 }

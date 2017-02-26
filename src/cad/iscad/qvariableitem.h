@@ -23,7 +23,7 @@
 #include <QObject>
 #include <QListWidgetItem>
 
-#include "viewstate.h"
+#include "qmodeltree.h"
 
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
@@ -32,14 +32,36 @@
 
 class QoccViewerContext;
 
-class QVariableItem
-: public QObject, public QListWidgetItem
+
+class QScalarVariableItem
+: public QModelTreeItem
 {
   Q_OBJECT 
   
-  QString name_;
+  double value_;
+    
+signals:
+  void insertParserStatementAtCursor(const QString& statement);
+ 
+public:
+  QScalarVariableItem(const std::string& name, double value, 
+		QTreeWidgetItem* parent);
+  
+  void reset(double value);
+  
+public slots:
+  virtual void showContextMenu(const QPoint& gpos);
+  void insertName();
+};
+
+
+
+class QVectorVariableItem
+: public QDisplayableModelTreeItem
+{
+  Q_OBJECT 
+  
   arma::mat value_;
-  QoccViewerContext* context_;
   Handle_AIS_InteractiveObject ais_;
     
 signals:
@@ -49,18 +71,16 @@ protected:
   void createAISShape();
   
 public:
-  ViewState state_;
-
-  QVariableItem(const std::string& name, arma::mat value, 
+  QVectorVariableItem(const std::string& name, arma::mat value, 
 		QoccViewerContext* context, 
-		const ViewState& state, QListWidget* view = 0);
+		const ViewState& state, QTreeWidgetItem* parent);
   
   void reset(arma::mat value);
   void updateDisplay();
-  void insertName();
   
 public slots:
-  void showContextMenu(const QPoint& gpos);
+  virtual void showContextMenu(const QPoint& gpos);
+  void insertName();
 };
 
 

@@ -27,6 +27,7 @@
 #include "qoccviewwidget.h"
 #include "qdebugstream.h"
 #include "viewstate.h"
+#include "qmodeltree.h"
 
 #ifndef Q_MOC_RUN
 #include "pointertransient.h"
@@ -72,16 +73,17 @@ class ISCADMainWindow
 {
     Q_OBJECT
 
-    friend class ModelStepItemAdder;
+//     friend class QFeatureItemAdder;
 
 protected:
     boost::filesystem::path filename_;
     QoccViewerContext* context_;
     QoccViewWidget* viewer_;
-    QListWidget* modelsteplist_;
-    QListWidget* datumlist_;
-    QListWidget* evaluationlist_;
-    QListWidget* variablelist_;
+//     QListWidget* modelsteplist_;
+//     QListWidget* datumlist_;
+//     QListWidget* evaluationlist_;
+//     QListWidget* variablelist_;
+    QModelTree* modeltree_;
 
     QTextEdit* editor_;
     ISCADSyntaxHighlighter* highlighter_;
@@ -144,16 +146,11 @@ protected:
 
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
-    void onVariableItemChanged(QListWidgetItem * item);
-    void onModelStepItemChanged(QListWidgetItem * item);
-    void onDatumItemChanged(QListWidgetItem * item);
-    void onEvaluationItemChanged(QListWidgetItem * item);
+    void onModelTreeItemChanged(QTreeWidgetItem * item, int);
 
     void onEditorSelectionChanged();
 
     void jump_to(const QString& name);
-
-    void setUniformDisplayMode(const AIS_DisplayMode AM);
 
     void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
     void doBgParse();
@@ -171,7 +168,6 @@ protected slots:
     
     void allShaded();
     void allWireframe();
-    void resetViz();
     
     void updateClipPlaneMenu();
     void onSetClipPlane(QObject* datumplane);
@@ -187,7 +183,7 @@ public:
 public slots:
 
     // insert model step
-    void addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible, bool is_component);
+    void addFeature(std::string sn, insight::cad::FeaturePtr sm, bool is_component);
     void addDatum(std::string sn, insight::cad::DatumPtr dm);
     void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible=false);
     void addVariable(std::string sn, insight::cad::parser::scalar sv);

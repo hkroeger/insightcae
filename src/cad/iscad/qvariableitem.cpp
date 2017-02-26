@@ -28,22 +28,67 @@
 using namespace std;
 using namespace boost;
 
-QVariableItem::QVariableItem(const std::string& name, arma::mat vv, QoccViewerContext* context, 
-		const ViewState& state, QListWidget* view )
-: QListWidgetItem
-  (
-   QString::fromStdString(name+" = ["+lexical_cast<string>(vv(0))+", "+lexical_cast<string>(vv(1))+", "+lexical_cast<string>(vv(2))+"]"), 
-   view
-  ),
-  name_(QString::fromStdString(name)),
-  context_(context),
-  state_(state)
+QScalarVariableItem::QScalarVariableItem(const std::string& name, double v, QTreeWidgetItem* parent)
+: QModelTreeItem(name, parent)
 {
-  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
-  reset(vv);
+    setText(COL_NAME, name_);
+    setText(COL_VALUE, QString::number(v));
+    reset(v);
 }
 
-void QVariableItem::createAISShape()
+void QScalarVariableItem::reset(double v)
+{
+    value_=v;
+}
+
+
+void QScalarVariableItem::insertName()
+{
+  emit insertParserStatementAtCursor(name_);
+}
+
+void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
+{
+    QMenu myMenu;
+    QAction* a;
+    
+    a=new QAction(name_, &myMenu);
+    a->setDisabled(true);
+    myMenu.addAction(a);
+    
+    myMenu.addSeparator();
+    
+    a=new QAction("Insert name", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    myMenu.addAction(a);
+    
+    myMenu.exec(gpos);
+}
+
+
+
+
+QVectorVariableItem::QVectorVariableItem
+(
+ const std::string& name, 
+ arma::mat v, 
+ QoccViewerContext* context, 
+ const ViewState& state, 
+ QTreeWidgetItem* parent
+)
+: QDisplayableModelTreeItem(name, context, state, parent)
+{
+    setText(COL_NAME, name_);
+    setText(COL_VALUE, QString::fromStdString
+         (
+             str(format("[%g, %g, %g]") % v(0) % v(1) % v(2))
+         )
+    );
+    setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
+    reset(v);
+}
+
+void QVectorVariableItem::createAISShape()
 {
 //   TopoDS_Edge cP = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(value_),gp_Dir(0,0,1)), 1));
 //   Handle_AIS_Shape aisP = new AIS_Shape(cP);
@@ -65,7 +110,7 @@ void QVariableItem::createAISShape()
   ais_=aisP;
 }
 
-void QVariableItem::reset(arma::mat val)
+void QVectorVariableItem::reset(arma::mat val)
 {
   value_=val;
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
@@ -75,9 +120,9 @@ void QVariableItem::reset(arma::mat val)
   updateDisplay();
 }
 
-void QVariableItem::updateDisplay()
+void QVectorVariableItem::updateDisplay()
 {
-  state_.visible = (checkState()==Qt::Checked);
+  state_.visible = (checkState(COL_VIS)==Qt::Checked);
   
   if (state_.visible)
   {
@@ -91,31 +136,25 @@ void QVariableItem::updateDisplay()
   }
 }
 
-void QVariableItem::insertName()
+void QVectorVariableItem::insertName()
 {
   emit insertParserStatementAtCursor(name_);
 }
 
-void QVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
+void QVectorVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
-    // for QAbstractScrollArea and derived classes you would use:
-    // QPoint globalPos = myWidget->viewport()->mapToGlobal(pos);
-
     QMenu myMenu;
-    QAction *tit=new QAction(name_, &myMenu);
-    tit->setDisabled(true);
-    myMenu.addAction(tit);
+    QAction *a;
+    
+    a=new QAction(name_, &myMenu);
+    a->setDisabled(true);
+    myMenu.addAction(a);
+    
     myMenu.addSeparator();
-    myMenu.addAction("Insert name");
-    // ...
+    
+    a=new QAction("Insert name", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    myMenu.addAction(a);
 
-    QAction* selectedItem = myMenu.exec(gpos);
-    if (selectedItem)
-    {
-	if (selectedItem->text()=="Insert name") insertName();
-    }
-    else
-    {
-	// nothing was chosen
-    }
+    myMenu.exec(gpos);
 }

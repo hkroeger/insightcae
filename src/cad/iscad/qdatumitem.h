@@ -21,7 +21,7 @@
 #define QDATUMITEM_H
 
 #include <QListWidgetItem>
-#include "viewstate.h"
+#include "qmodeltree.h"
 
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
@@ -31,28 +31,27 @@
 class QoccViewerContext;
 
 class QDatumItem
-: public QListWidgetItem
+: public QDisplayableModelTreeItem
 {
+  Q_OBJECT
+  
   insight::cad::DatumPtr smp_;
-  QoccViewerContext* context_;
   Handle_AIS_InteractiveObject ais_;
   insight::cad::ModelPtr model_;
   double ps_;
     
 public:
-  ViewState state_;
 
   QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context, 
-		 const ViewState& state, QListWidget* view = 0);
+		 const ViewState& state, QTreeWidgetItem* parent);
   
   void reset(insight::cad::DatumPtr smp);
+  void updateDisplay();  
+
+public slots:
   void wireframe();
   void shaded();
   void randomizeColor();
-  void updateDisplay();
-  
-
-public slots:
   void showContextMenu(const QPoint& gpos);
   
 };

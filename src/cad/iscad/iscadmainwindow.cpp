@@ -19,9 +19,7 @@
 
 #include "iscadmainwindow.h"
 
-#include "modelsteplist.h"
-#include "datumlist.h"
-#include "evaluationlist.h"
+#include "qmodeltree.h"
 #include "qmodelstepitem.h"
 #include "qvariableitem.h"
 #include "qdatumitem.h"
@@ -49,7 +47,7 @@ void ISCADMainWindow::onGraphicalSelectionChanged(QoccViewWidget* aView)
     additionalDisplayObjectsForSelection_.clear();
 
     // Display sub objects for current selection
-    if (QModelStepItem* ms=checkGraphicalSelection<QModelStepItem>(aView))
+    if (QFeatureItem* ms = checkGraphicalSelection<QFeatureItem>(aView))
     {
         insight::cad::Feature& sm=ms->solidmodel();
         const insight::cad::Feature::RefPointsList& pts=sm.getDatumPoints();
@@ -171,38 +169,47 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
-    gb=new QGroupBox("Variables");
+    gb=new QGroupBox("Model Tree");
     vbox = new QVBoxLayout;
-    variablelist_=new QListWidget;
-    variablelist_->setMinimumHeight(20);
-    connect(variablelist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onVariableItemChanged(QListWidgetItem*)));
-    vbox->addWidget(variablelist_);
+    modeltree_=new QModelTree(gb);
+    modeltree_->setMinimumHeight(20);
+    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+    vbox->addWidget(modeltree_);
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
-    gb=new QGroupBox("Model steps");
-    vbox = new QVBoxLayout;
-    modelsteplist_=new ModelStepList;
-    connect(modelsteplist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onModelStepItemChanged(QListWidgetItem*)));
-    vbox->addWidget(modelsteplist_);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    gb=new QGroupBox("Datums");
-    vbox = new QVBoxLayout;
-    datumlist_=new DatumList;
-    connect(datumlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onDatumItemChanged(QListWidgetItem*)));
-    vbox->addWidget(datumlist_);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    gb=new QGroupBox("Evaluation reports");
-    vbox = new QVBoxLayout;
-    evaluationlist_=new EvaluationList;
-    connect(evaluationlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onEvaluationItemChanged(QListWidgetItem*)));
-    vbox->addWidget(evaluationlist_);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
+//     gb=new QGroupBox("Variables");
+//     vbox = new QVBoxLayout;
+//     variablelist_=new QListWidget;
+//     variablelist_->setMinimumHeight(20);
+//     connect(variablelist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onVariableItemChanged(QListWidgetItem*)));
+//     vbox->addWidget(variablelist_);
+//     gb->setLayout(vbox);
+//     spl2->addWidget(gb);
+// 
+//     gb=new QGroupBox("Model steps");
+//     vbox = new QVBoxLayout;
+//     modelsteplist_=new ModelStepList;
+//     connect(modelsteplist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onModelStepItemChanged(QListWidgetItem*)));
+//     vbox->addWidget(modelsteplist_);
+//     gb->setLayout(vbox);
+//     spl2->addWidget(gb);
+// 
+//     gb=new QGroupBox("Datums");
+//     vbox = new QVBoxLayout;
+//     datumlist_=new DatumList;
+//     connect(datumlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onDatumItemChanged(QListWidgetItem*)));
+//     vbox->addWidget(datumlist_);
+//     gb->setLayout(vbox);
+//     spl2->addWidget(gb);
+// 
+//     gb=new QGroupBox("Evaluation reports");
+//     vbox = new QVBoxLayout;
+//     evaluationlist_=new EvaluationList;
+//     connect(evaluationlist_, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(onEvaluationItemChanged(QListWidgetItem*)));
+//     vbox->addWidget(evaluationlist_);
+//     gb->setLayout(vbox);
+//     spl2->addWidget(gb);
     
     gb=new QGroupBox("Notepad");
     vbox = new QVBoxLayout;
@@ -290,7 +297,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     connect(act, SIGNAL(triggered()), this, SLOT(allWireframe()));
     vmenu->addAction(act);
     act = new QAction(("&Reset shading and visibility"), this);
-    connect(act, SIGNAL(triggered()), this, SLOT(resetViz()));
+    connect(act, SIGNAL(triggered()), modeltree_, SLOT(resetViz()));
 //     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act);
 
@@ -415,10 +422,9 @@ bool ISCADMainWindow::saveModelAs()
 void ISCADMainWindow::clearDerivedData()
 {
     context_->getContext()->EraseAll();
-    modelsteplist_->clear();
-    datumlist_->clear();
-    variablelist_->clear();
-    evaluationlist_->clear();
+    
+    modeltree_->storeViewStates();
+    modeltree_->clear();
 }
 
 
@@ -482,23 +488,6 @@ void ISCADMainWindow::jump_to(const QString& name)
         tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
         tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, i );
         editor_->setTextCursor(tmpCursor);
-    }
-}
-
-
-
-
-void ISCADMainWindow::setUniformDisplayMode(const AIS_DisplayMode AM)
-{
-    for (int i=0; i<modelsteplist_->count(); i++)
-    {
-        if (QModelStepItem *msi =dynamic_cast<QModelStepItem*>(modelsteplist_->item(i)))
-        {
-            if (AM==AIS_WireFrame)
-                msi->wireframe();
-            else if (AM==AIS_Shaded)
-                msi->shaded();
-        }
     }
 }
 
@@ -570,25 +559,15 @@ void ISCADMainWindow::onBgParseFinished()
 
 void ISCADMainWindow::allShaded()
 {
-    setUniformDisplayMode(AIS_Shaded);
+    modeltree_->setUniformDisplayMode(AIS_Shaded);
 }
 
 void ISCADMainWindow::allWireframe()
 {
-    setUniformDisplayMode(AIS_WireFrame);
+    modeltree_->setUniformDisplayMode(AIS_WireFrame);
 }
 
-void ISCADMainWindow::resetViz()
-{
-    for (int i=0; i<modelsteplist_->count(); i++)
-    {
-        if ( QModelStepItem *qmsi=dynamic_cast<QModelStepItem*>(modelsteplist_->item(i)) )
-        {
-            qmsi->resetDisplay();
-            qmsi->shaded();
-        }
-    }
-}
+
 
 
 void ISCADMainWindow::updateClipPlaneMenu()
@@ -707,9 +686,9 @@ void ISCADMainWindow::insertComponentNameAtCursor()
 
 
 
-void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
+void ISCADMainWindow::onModelTreeItemChanged(QTreeWidgetItem * item, int)
 {
-    QVariableItem* mi=dynamic_cast<QVariableItem*>(item);
+    QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(item);
     if (mi)
     {
         mi->updateDisplay();
@@ -719,63 +698,11 @@ void ISCADMainWindow::onVariableItemChanged(QListWidgetItem * item)
 
 
 
-void ISCADMainWindow::onModelStepItemChanged(QListWidgetItem * item)
+
+
+void ISCADMainWindow::addFeature(std::string sn, insight::cad::FeaturePtr sm, bool is_component)
 {
-    QModelStepItem* mi=dynamic_cast<QModelStepItem*>(item);
-    if (mi)
-    {
-        mi->updateDisplay();
-    }
-}
-
-
-
-
-void ISCADMainWindow::onDatumItemChanged(QListWidgetItem * item)
-{
-    QDatumItem* mi=dynamic_cast<QDatumItem*>(item);
-    if (mi)
-    {
-        mi->updateDisplay();
-    }
-}
-
-
-
-
-void ISCADMainWindow::onEvaluationItemChanged(QListWidgetItem * item)
-{
-    QEvaluationItem* mi=dynamic_cast<QEvaluationItem*>(item);
-    if (mi)
-    {
-        mi->updateDisplay();
-    }
-}
-
-
-
-
-void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, bool visible, bool is_component)
-{
-    ViewState vd;
-
-    if (visible)
-        vd.visible=true;
-    else
-        vd.visible=false;
-
-    if (checked_modelsteps_.find(sn)!=checked_modelsteps_.end())
-    {
-        vd=checked_modelsteps_.find(sn)->second;
-    }
-
-    QModelStepItem* msi=new QModelStepItem(sn, sm, context_, vd, 0, is_component);
-
-//   ModelStepItemAdder* ia
-//    = new ModelStepItemAdder(this, msi);
-//   connect(ia, SIGNAL(finished()),
-// 	  ia, SLOT(deleteLater()));
-//   ia->start();
+    QFeatureItem* msi=modeltree_->addFeatureItem(sn, sm, context_, is_component);
 
     connect
     (
@@ -790,14 +717,13 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
     connect
     (
         msi, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
-        this, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
+        modeltree_, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
     );
     connect
     (
         msi, SIGNAL(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool)),
         this, SLOT(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool))
     );
-    modelsteplist_->addItem(msi);
 }
 
 
@@ -805,16 +731,7 @@ void ISCADMainWindow::addModelStep(std::string sn, insight::cad::FeaturePtr sm, 
 
 void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
 {
-    ViewState vd;
-    vd.visible=false;
-//   if (sm->isleaf()) vd.visible=true; else vd.visible=false;
-
-    if (checked_datums_.find(sn)!=checked_datums_.end())
-    {
-        vd=checked_datums_.find(sn)->second;
-    }
-
-    datumlist_->addItem(new QDatumItem(sn, sm, cur_model_, context_, vd));
+    modeltree_->addDatumItem(sn, sm, cur_model_, context_);
 }
 
 
@@ -822,16 +739,7 @@ void ISCADMainWindow::addDatum(std::string sn, insight::cad::DatumPtr sm)
 
 void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm, bool visible)
 {
-    ViewState vd(0);
-    vd.visible=visible;
-//   if (sm->isleaf()) vd.visible=true; else vd.visible=false;
-
-    if (checked_evaluations_.find(sn)!=checked_evaluations_.end())
-    {
-        vd=checked_evaluations_.find(sn)->second;
-    }
-
-    evaluationlist_->addItem(new QEvaluationItem(sn, sm, context_, vd));
+    modeltree_->addEvaluationItem(sn, sm, context_);
 }
 
 
@@ -839,13 +747,7 @@ void ISCADMainWindow::addEvaluation(std::string sn, insight::cad::PostprocAction
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar sv)
 {
-    variablelist_->addItem
-    (
-        new QListWidgetItem
-        (
-            QString::fromStdString(sn+" = "+boost::lexical_cast<std::string>(sv->value()))
-        )
-    );
+    modeltree_->addScalarVariableItem(sn, sv->value());
 }
 
 
@@ -853,17 +755,12 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::scalar s
 
 void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector vv)
 {
-    ViewState vd;
-    vd.visible=false;
-
-    QVariableItem* msi=new QVariableItem(sn, vv->value(), context_, vd);
+    QVectorVariableItem* msi = modeltree_->addVectorVariableItem(sn, vv->value(), context_);
     connect
     (
         msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
         editor_, SLOT(insertPlainText(const QString&))
     );
-
-    variablelist_->addItem(msi);
 }
 
 
@@ -873,35 +770,9 @@ void ISCADMainWindow::addVariable(std::string sn, insight::cad::parser::vector v
 
 void ISCADMainWindow::rebuildModel()
 {
+    disconnect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+    
     log_->clear();
-
-    //checked_modelsteps_.clear();
-    for (int i=0; i<modelsteplist_->count(); i++)
-    {
-        QModelStepItem *qmsi=dynamic_cast<QModelStepItem*>(modelsteplist_->item(i));
-        if (qmsi)
-        {
-            checked_modelsteps_[qmsi->text().toStdString()]=qmsi->state_;
-        }
-    }
-
-    for (int i=0; i<datumlist_->count(); i++)
-    {
-        QDatumItem *qmsi=dynamic_cast<QDatumItem*>(datumlist_->item(i));
-        if (qmsi)
-        {
-            checked_datums_[qmsi->text().toStdString()]=qmsi->state_;
-        }
-    }
-
-    for (int i=0; i<evaluationlist_->count(); i++)
-    {
-        QEvaluationItem *qmsi=dynamic_cast<QEvaluationItem*>(evaluationlist_->item(i));
-        if (qmsi)
-        {
-            checked_evaluations_[qmsi->text().toStdString()]=qmsi->state_;
-        }
-    }
 
     clearDerivedData();
 
@@ -937,7 +808,7 @@ void ISCADMainWindow::rebuildModel()
             {
                 is_comp=true;
             }
-            addModelStep(v.first, v.second, is_comp, is_comp);
+            addFeature(v.first, v.second, is_comp);
         }
 
         auto datums=cur_model_->datums();
@@ -973,6 +844,9 @@ void ISCADMainWindow::rebuildModel()
 
         insight::cad::cache.finishRebuild();
     }
+    
+    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+
 }
 
 
@@ -997,12 +871,7 @@ void ISCADMainWindow::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
             {
                 if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
                 {
-                    if (QModelStepItem* mi=dynamic_cast<QModelStepItem*>(smo->getPointer()))
-                    {
-                        // an item exists under the requested position
-                        mi->showContextMenu(aView->mapToGlobal(aPoint));
-                    }
-                    else if (QVariableItem* mi=dynamic_cast<QVariableItem*>(smo->getPointer()))
+                    if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
                     {
                         // an item exists under the requested position
                         mi->showContextMenu(aView->mapToGlobal(aPoint));

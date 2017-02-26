@@ -23,7 +23,7 @@
 #include <QThread>
 #include <QListWidgetItem>
 
-#include "viewstate.h"
+#include "qmodeltree.h"
 
 #ifndef Q_MOC_RUN
 #include "occinclude.h"
@@ -31,40 +31,37 @@
 #endif
 
 class ISCADMainWindow;
-class QModelStepItem;
 class QoccViewerContext;
+class QFeatureItem;
 
-class ModelStepItemAdder
-: public QThread
+
+// class QFeatureItemAdder
+// : public QThread
+// {
+//   ISCADMainWindow* mw_;
+//   QFeatureItem* msi_;
+//   
+// public:
+//   QFeatureItemAdder
+//   (
+//     ISCADMainWindow* mw, 
+//     QFeatureItem* msi
+//   );
+//   
+//   void run();
+// };
+
+
+
+
+class QFeatureItem
+: public QDisplayableModelTreeItem
 {
-  ISCADMainWindow* mw_;
-  QModelStepItem* msi_;
-  
-public:
-  ModelStepItemAdder
-  (
-    ISCADMainWindow* mw, 
-    QModelStepItem* msi
-  );
-  
-  void run();
-};
-
-
-
-
-class QModelStepItem
-: //public QObject, 
-  public QObject, //QThread, 
-  public QListWidgetItem
-{
-  friend class ModelStepItemAdder;
+//   friend class QFeatureItemAdder;
   
   Q_OBJECT 
   
-  QString name_;
   insight::cad::FeaturePtr smp_;
-  QoccViewerContext* context_;
   Handle_AIS_Shape ais_;
   bool is_component_;
     
@@ -75,25 +72,14 @@ signals:
   void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible);
 
 public:
-  ViewState state_;
-
-  QModelStepItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
-		 const ViewState& state, QListWidget* view = 0, bool is_component=false);
+  QFeatureItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
+		 const ViewState& state, QTreeWidgetItem* parent, bool is_component);
   
 //   void run();
-  void rebuild();
   void reset(insight::cad::FeaturePtr smp);
-  void wireframe();
-  void shaded();
-  void onlyThisShaded();
-  void hide();
-  void show();
-  void randomizeColor();
+  
+  void rebuild();
   void updateDisplay();
-  void showProperties();
-  void exportShape();
-  void setResolution();
-  void insertName();
   void resetDisplay();
   
   inline insight::cad::Feature& solidmodel()
@@ -102,6 +88,17 @@ public:
   }
   
 public slots:
+  void jump();
+  void wireframe();
+  void shaded();
+  void onlyThisShaded();
+  void hide();
+  void show();
+  void randomizeColor();
+  void showProperties();
+  void exportShape();
+  void setResolution();
+  void insertName();
   void showContextMenu(const QPoint& gpos);
 };
 

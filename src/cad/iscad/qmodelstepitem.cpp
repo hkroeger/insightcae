@@ -24,65 +24,23 @@
 
 
 
-ModelStepItemAdder::ModelStepItemAdder
-(
-  ISCADMainWindow* mw,
-  QModelStepItem* msi
-)
-: QThread(), mw_(mw), msi_(msi)
-{}
 
 
-
-
-void ModelStepItemAdder::run()
-{
-  msi_->rebuild();
-  
-  connect
-  (
-    msi_, SIGNAL(insertParserStatementAtCursor(const QString&)),
-    mw_->editor_, SLOT(insertPlainText(const QString&))
-  );
-  connect
-  (
-    msi_, SIGNAL(jump_to(const QString&)),
-    mw_, SLOT(jump_to(const QString&))
-  );
-  connect
-  (
-    msi_, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
-    mw_, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
-  );
-  connect
-  (
-    msi_, SIGNAL(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool)),
-    mw_, SLOT(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool))
-  );
-  mw_->modelsteplist_->addItem(msi_);
-}
-
-
-
-
-QModelStepItem::QModelStepItem
+QFeatureItem::QFeatureItem
 (
   const std::string& name, 
   insight::cad::FeaturePtr smp, 
   QoccViewerContext* context, 
   const ViewState& state, 
-  QListWidget* view,
+  QTreeWidgetItem* parent,
   bool is_component
 )
-: QListWidgetItem(QString::fromStdString(name), view),
-  name_(QString::fromStdString(name)),
-  context_(context),
-  state_(state),
+: QDisplayableModelTreeItem(name, context, state, parent),
   is_component_(is_component)
 {
-  setCheckState(state_.visible ? Qt::Checked : Qt::Unchecked);
+  setText(COL_NAME, name_);
+  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
-//   smp_=smp;
 }
 
 
@@ -91,13 +49,13 @@ QModelStepItem::QModelStepItem
 //   rebuild();
 // }
 // 
-void QModelStepItem::reset(insight::cad::FeaturePtr smp)
+void QFeatureItem::reset(insight::cad::FeaturePtr smp)
 {
   smp_=smp;
   rebuild();
 }
 
-void QModelStepItem::rebuild()
+void QFeatureItem::rebuild()
 {
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
   ais_=new AIS_Shape(*smp_);
@@ -108,19 +66,19 @@ void QModelStepItem::rebuild()
   updateDisplay();
 }
 
-void QModelStepItem::wireframe()
+void QFeatureItem::wireframe()
 {
   state_.shading=0;
   updateDisplay();
 }
 
-void QModelStepItem::shaded()
+void QFeatureItem::shaded()
 {
   state_.shading=1;
   updateDisplay();
 }
 
-void QModelStepItem::onlyThisShaded()
+void QFeatureItem::onlyThisShaded()
 {
 //   qDebug()<<"all wireframe"<<endl;
   
@@ -129,28 +87,28 @@ void QModelStepItem::onlyThisShaded()
 }
 
 
-void QModelStepItem::hide()
+void QFeatureItem::hide()
 {
-  setCheckState(Qt::Unchecked);
+  setCheckState(COL_VIS, Qt::Unchecked);
   updateDisplay();
 }
 
-void QModelStepItem::show()
+void QFeatureItem::show()
 {
-  setCheckState(Qt::Checked);
+  setCheckState(COL_VIS, Qt::Checked);
   updateDisplay();
 }
 
 
-void QModelStepItem::randomizeColor()
+void QFeatureItem::randomizeColor()
 {
   state_.randomizeColor();
   updateDisplay();
 }
 
-void QModelStepItem::updateDisplay()
+void QFeatureItem::updateDisplay()
 {
-  state_.visible = (checkState()==Qt::Checked);
+  state_.visible = (checkState(COL_VIS)==Qt::Checked);
   
   if (state_.visible)
   {
@@ -164,23 +122,23 @@ void QModelStepItem::updateDisplay()
   }
 }
 
-void QModelStepItem::exportShape()
+void QFeatureItem::exportShape()
 {
   QString fn=QFileDialog::getSaveFileName
   (
-    listWidget(), 
+    treeWidget(), 
     "Export file name", 
     "", "BREP file (*,brep);;ASCII STL file (*.stl);;Binary STL file (*.stlb);;IGES file (*.igs);;STEP file (*.stp)"
   );
   if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
 }
 
-void QModelStepItem::insertName()
+void QFeatureItem::insertName()
 {
   emit insertParserStatementAtCursor(name_);
 }
 
-void QModelStepItem::resetDisplay()
+void QFeatureItem::resetDisplay()
 {
     if (is_component_)
     {
@@ -192,7 +150,7 @@ void QModelStepItem::resetDisplay()
     }
 }
 
-void QModelStepItem::showProperties()
+void QFeatureItem::showProperties()
 {
   emit addEvaluation
   (
@@ -202,52 +160,73 @@ void QModelStepItem::showProperties()
   );
 }
 
-void QModelStepItem::setResolution()
+void QFeatureItem::setResolution()
 {
   bool ok;
-  double res=QInputDialog::getDouble(listWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
+  double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
   if (ok)
   {
     context_->getContext()->SetDeviationCoefficient(ais_, res);
   }
 }
 
+void QFeatureItem::jump()
+{
+    emit(jump_to(name_));
+}
 
-void QModelStepItem::showContextMenu(const QPoint& gpos) // this is a slot
+void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
     QMenu myMenu;
-    QAction *tit=new QAction(name_, &myMenu);
-//     tit->setDisabled(true);
-    myMenu.addAction(tit);
+    QAction *a;
+    
+    a=new QAction(name_, &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(jump()));
+    myMenu.addAction(a);
+    
     myMenu.addSeparator();
-    myMenu.addAction("Insert name");
+    
+    a=new QAction("Insert name", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    myMenu.addAction(a);
+    
     myMenu.addSeparator();
-    myMenu.addAction("Show");
-    myMenu.addAction("Hide");
-    myMenu.addAction("Shaded");
-    myMenu.addAction("Only this shaded");
-    myMenu.addAction("Wireframe");
-    myMenu.addAction("Randomize Color");
-    myMenu.addAction("Show Properties");
-    myMenu.addAction("Set Resolution...");
-    myMenu.addAction("Export...");
 
-    QAction* selectedItem = myMenu.exec(gpos);
-    if (selectedItem)
-    {
-	if (selectedItem->text()==name_) emit(jump_to(name_));
-	if (selectedItem->text()=="Show") show();
-	if (selectedItem->text()=="Hide") hide();
-	if (selectedItem->text()=="Shaded") shaded();
-	if (selectedItem->text()=="Wireframe") wireframe();
-	if (selectedItem->text()=="Only this shaded") onlyThisShaded();
-	if (selectedItem->text()=="Randomize Color") randomizeColor();
-	if (selectedItem->text()=="Insert name") insertName();
-	if (selectedItem->text()=="Show Properties") showProperties();
-	if (selectedItem->text()=="Set Resolution...") setResolution();
-	if (selectedItem->text()=="Export...") exportShape();
-    }
-    else
-    {
-    }
+    a=new QAction("Show", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(show()));
+    myMenu.addAction(a);
+
+    a=new QAction("Hide", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(hide()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Shaded", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Only this shaded", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(onlyThisShaded()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Wireframe", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Randomize Color", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    myMenu.addAction(a);
+
+    a=new QAction("Show Properties", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(showProperties()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Set Resolution...", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(setResolution()));
+    myMenu.addAction(a);
+    
+    a=new QAction("Export...", &myMenu);
+    connect(a, SIGNAL(triggered()), this, SLOT(exportShape()));
+    myMenu.addAction(a);
+
+    myMenu.exec(gpos);
 }

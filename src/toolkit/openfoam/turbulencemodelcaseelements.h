@@ -56,6 +56,8 @@ public:
   virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const =0; 
   
   virtual AccuracyRequirement minAccuracyRequirement() const =0;
+
+  static std::string category() { return "Turbulence Model"; }
 };
 
 

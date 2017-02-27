@@ -69,8 +69,7 @@ arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
 
 
 defineType ( blockMeshDict_Cylinder );
-addToFactoryTable ( OpenFOAMCaseElement, blockMeshDict_Cylinder );
-addToStaticFunctionTable ( OpenFOAMCaseElement, blockMeshDict_Cylinder, defaultParameters );
+addToOpenFOAMCaseElementFactoryTable(blockMeshDict_Cylinder );
 
 
 blockMeshDict_Cylinder::blockMeshDict_Cylinder ( OpenFOAMCase& c, const ParameterSet& ps )
@@ -189,8 +188,7 @@ double blockMeshDict_Cylinder::rCore() const
 
 
 defineType ( blockMeshDict_Box );
-addToFactoryTable ( OpenFOAMCaseElement, blockMeshDict_Box );
-addToStaticFunctionTable ( OpenFOAMCaseElement, blockMeshDict_Box, defaultParameters );
+addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Box );
 
 
 blockMeshDict_Box::blockMeshDict_Box ( OpenFOAMCase& c, const ParameterSet& ps )

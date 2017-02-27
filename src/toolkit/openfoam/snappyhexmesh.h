@@ -415,6 +415,9 @@ public:
     {
         return Parameters::makeDefault();
     }
+
+    static std::string category() { return "Meshing"; }
+
 };
 
 

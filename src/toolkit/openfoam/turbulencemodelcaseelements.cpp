@@ -154,8 +154,7 @@ defineType(laminar_RASModel);
 addToFactoryTable(turbulenceModel, laminar_RASModel);
 
 
-addToFactoryTable(OpenFOAMCaseElement, laminar_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, laminar_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(laminar_RASModel);
 
 laminar_RASModel::laminar_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
 : RASModel(c)
@@ -188,8 +187,7 @@ bool laminar_RASModel::addIntoFieldDictionary(const std::string&, const FieldInf
 defineType(oneEqEddy_LESModel);
 addToFactoryTable(turbulenceModel, oneEqEddy_LESModel);
 
-addToFactoryTable(OpenFOAMCaseElement, oneEqEddy_LESModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, oneEqEddy_LESModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(oneEqEddy_LESModel);
 
 void oneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
@@ -240,8 +238,7 @@ void oneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 defineType(dynOneEqEddy_LESModel);
 addToFactoryTable(turbulenceModel, dynOneEqEddy_LESModel);
 
-addToFactoryTable(OpenFOAMCaseElement, dynOneEqEddy_LESModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, dynOneEqEddy_LESModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(dynOneEqEddy_LESModel);
 
 void dynOneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
@@ -297,8 +294,7 @@ void dynOneEqEddy_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 defineType(dynSmagorinsky_LESModel);
 addToFactoryTable(turbulenceModel, dynSmagorinsky_LESModel);
 
-addToFactoryTable(OpenFOAMCaseElement, dynSmagorinsky_LESModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, dynSmagorinsky_LESModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(dynSmagorinsky_LESModel);
 
 void dynSmagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
 {
@@ -352,8 +348,7 @@ void dynSmagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 defineType(kOmegaSST_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_RASModel);
 
-addToFactoryTable(OpenFOAMCaseElement, kOmegaSST_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, kOmegaSST_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(kOmegaSST_RASModel);
 
 void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
 {
@@ -539,22 +534,19 @@ bool kEpsilonBase_RASModel::addIntoFieldDictionary(const std::string& fieldname,
 
 defineType(kEpsilon_RASModel);
 addToFactoryTable(turbulenceModel, kEpsilon_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, kEpsilon_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, kEpsilon_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(kEpsilon_RASModel);
 kEpsilon_RASModel::kEpsilon_RASModel(OpenFOAMCase& c, const ParameterSet& ps): kEpsilonBase_RASModel(c) {}
 
 
 defineType(realizablekEpsilon_RASModel);
 addToFactoryTable(turbulenceModel, realizablekEpsilon_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, realizablekEpsilon_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, realizablekEpsilon_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(realizablekEpsilon_RASModel);
 realizablekEpsilon_RASModel::realizablekEpsilon_RASModel(OpenFOAMCase& c, const ParameterSet& ps): kEpsilonBase_RASModel(c) {}
 
 
 defineType(SpalartAllmaras_RASModel);
 addToFactoryTable(turbulenceModel, SpalartAllmaras_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, SpalartAllmaras_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, SpalartAllmaras_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(SpalartAllmaras_RASModel);
 
 void SpalartAllmaras_RASModel::addFields( OpenFOAMCase& c ) const
 {
@@ -622,8 +614,7 @@ bool SpalartAllmaras_RASModel::addIntoFieldDictionary(const std::string& fieldna
 
 defineType(LEMOSHybrid_RASModel);
 addToFactoryTable(turbulenceModel, LEMOSHybrid_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, LEMOSHybrid_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, LEMOSHybrid_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(LEMOSHybrid_RASModel);
 
 void LEMOSHybrid_RASModel::addFields( OpenFOAMCase& c ) const
 {
@@ -703,8 +694,7 @@ bool LEMOSHybrid_RASModel::addIntoFieldDictionary(const std::string& fieldname, 
 
 defineType(kOmegaSST_LowRe_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST_LowRe_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, kOmegaSST_LowRe_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, kOmegaSST_LowRe_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(kOmegaSST_LowRe_RASModel);
 
 kOmegaSST_LowRe_RASModel::kOmegaSST_LowRe_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
 : kOmegaSST_RASModel(c)
@@ -744,8 +734,7 @@ bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldna
 
 defineType(kOmegaSST2_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaSST2_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, kOmegaSST2_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, kOmegaSST2_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(kOmegaSST2_RASModel);
 
 // void kOmegaSST2_RASModel::addFields( OpenFOAMCase& c ) const
 // {
@@ -808,8 +797,7 @@ bool kOmegaSST2_RASModel::addIntoFieldDictionary(const std::string& fieldname, c
 
 defineType(kOmegaHe_RASModel);
 addToFactoryTable(turbulenceModel, kOmegaHe_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, kOmegaHe_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, kOmegaHe_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(kOmegaHe_RASModel);
 
 kOmegaHe_RASModel::kOmegaHe_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
 : kOmegaSST_RASModel(c)
@@ -864,8 +852,7 @@ bool kOmegaHe_RASModel::addIntoFieldDictionary(const std::string& fieldname, con
 
 defineType(LRR_RASModel);
 addToFactoryTable(turbulenceModel, LRR_RASModel);
-addToFactoryTable(OpenFOAMCaseElement, LRR_RASModel);
-addToStaticFunctionTable(OpenFOAMCaseElement, LRR_RASModel, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(LRR_RASModel);
 
 void LRR_RASModel::addFields( OpenFOAMCase& c ) const
 {

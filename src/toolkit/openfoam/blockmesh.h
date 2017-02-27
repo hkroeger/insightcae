@@ -526,6 +526,8 @@ public:
   void removePatch(const std::string& name);
   
   virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
+  
+  static std::string category() { return "Meshing"; }
 };
 
 typedef boost::shared_ptr<blockMesh> blockMeshPtr;

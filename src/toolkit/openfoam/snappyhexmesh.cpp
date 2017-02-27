@@ -529,8 +529,7 @@ double computeFinalLayerThickness(double totalLayerThickness, double expRatio, i
 
 
 defineType(snappyHexMeshConfiguration);
-addToFactoryTable(OpenFOAMCaseElement, snappyHexMeshConfiguration);
-addToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(snappyHexMeshConfiguration);
 
 snappyHexMeshConfiguration::snappyHexMeshConfiguration( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, "snappyHexMeshConfiguration"),

@@ -163,6 +163,8 @@ public:
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const =0;
 
     virtual bool providesBCsForPatch ( const std::string& patchName ) const;
+    
+    static std::string category() { return "Uncategorized"; }
 };
 
 

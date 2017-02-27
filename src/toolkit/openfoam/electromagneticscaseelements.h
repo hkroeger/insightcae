@@ -34,6 +34,8 @@
 namespace insight 
 {
 
+    
+    
 class magnet
 : public OpenFOAMCaseElement
 {
@@ -52,7 +54,11 @@ public:
   magnet(OpenFOAMCase& c, Parameters const& p = Parameters() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   virtual void modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const;
+  
+  static std::string category() { return "Magnetics"; }
 };
+
+
 
 
 class FarFieldBC

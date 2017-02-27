@@ -50,22 +50,7 @@ class FVNumerics
 public:
     declareType ( "FVNumerics" );
 
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (np, int, 1)
-//     (decompWeights, DecompositionWeights, std::make_tuple(1,1,1))
-//     (writeControl, std::string, "timeStep")
-//     (writeInterval, double, 100.0)
-//     (writeFormat, std::string, "ascii")
-//     (purgeWrite, int, 10)
-//     (deltaT, double, 1.0)
-//     (adjustTimeStep, bool, true)
-//     (endTime, double, 1000.0)
-//     (decompositionMethod, std::string, "scotch")
-//   )
-
 public:
-
 #include "numericscaseelements__FVNumerics__Parameters.h"
 
 /*
@@ -112,6 +97,8 @@ public:
     {
         return isCompressible_;
     }
+    
+    static std::string category() { return "Numerics"; }
 };
 
 
@@ -156,6 +143,7 @@ protected:
 public:
     FaNumerics ( OpenFOAMCase& c, const ParameterSet& p = Parameters::makeDefault() );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static std::string category() { return "Numerics"; }
 };
 
 
@@ -171,6 +159,7 @@ class tetFemNumerics
 public:
     tetFemNumerics ( OpenFOAMCase& c );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static std::string category() { return "Numerics"; }
 };
 
 
@@ -203,19 +192,8 @@ public:
 class simpleFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (checkResiduals, bool, true)
-//     (hasCyclics, bool, false)
-//     (pinternal, double, 0.0)
-//     (Uinternal, arma::mat, vec3(0,0,0))
-//   )
-//
-// protected:
-//   Parameters p_;
-
+    
 public:
-
 #include "numericscaseelements__simpleFoamNumerics__Parameters.h"
 
 /*
@@ -246,25 +224,8 @@ public:
 class pimpleFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (nCorrectors, int, 2)
-//     (nOuterCorrectors, int, 1)
-//     (nNonOrthogonalCorrectors, int, 0)
-//     (maxCo, double, 0.45)
-//     (maxDeltaT, double, 1.0)
-//     (forceLES, bool, false)
-//     (LESfilteredConvection, bool, false)
-//     (hasCyclics, bool, false)
-//     (pinternal, double, 0.0)
-//     (Uinternal, arma::mat, vec3(0,0,0))
-//   )
-//
-// protected:
-//   Parameters p_;
 
 public:
-
 #include "numericscaseelements__pimpleFoamNumerics__Parameters.h"
 
 /*
@@ -301,21 +262,8 @@ public:
 class potentialFreeSurfaceFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (nCorrectors, int, 2)
-//     (nOuterCorrectors, int, 1)
-//     (nNonOrthogonalCorrectors, int, 0)
-//     (deltaT, double, 1.0)
-//     (maxCo, double, 0.45)
-//     (maxDeltaT, double, 1.0)
-//   )
-//
-// protected:
-//   Parameters p_;
 
 public:
-
 #include "numericscaseelements__potentialFreeSurfaceFoamNumerics__Parameters.h"
 
 /*
@@ -347,15 +295,8 @@ public:
 class simpleDyMFoamNumerics
     : public simpleFoamNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, simpleFoamNumerics::Parameters,
-//       (FEMinterval, int, 10)
-//   )
-//
-// protected:
-//   Parameters p_;
-public:
 
+public:
 #include "numericscaseelements__simpleDyMFoamNumerics__Parameters.h"
 
 /*
@@ -383,17 +324,8 @@ public:
 class cavitatingFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//       (solverName, std::string, "cavitatingFoam")
-//       (pamb, double, 1e5)
-//       (rhoamb, double, 1)
-//   )
-//
-// protected:
-//   Parameters p_;
-public:
 
+public:
 #include "numericscaseelements__cavitatingFoamNumerics__Parameters.h"
 
 /*
@@ -423,17 +355,8 @@ public:
 class interFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//       (implicitPressureCorrection, bool, false)
-//       (nOuterCorrectors, int, 50)
-//   )
-//
-// protected:
-//   Parameters p_;
 
 public:
-
 #include "numericscaseelements__interFoamNumerics__Parameters.h"
 
 /*
@@ -493,17 +416,8 @@ public:
 class interPhaseChangeFoamNumerics
     : public interFoamNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, interFoamNumerics::Parameters,
-//       (solverName, std::string, "interPhaseChangeFoam")
-//       (pamb, double, 1e5)
-//   )
-//
-// protected:
-//   Parameters p_;
 
 public:
-
 #include "numericscaseelements__interPhaseChangeFoamNumerics__Parameters.h"
 
 /*
@@ -532,21 +446,8 @@ public:
 class reactingFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (nCorrectors, int, 2)
-//     (nOuterCorrectors, int, 1)
-//     (nNonOrthogonalCorrectors, int, 0)
-//     (deltaT, double, 1.0)
-//     (maxCo, double, 0.45)
-//     (maxDeltaT, double, 1.0)
-//     (forceLES, bool, false)
-//   )
-//
-// protected:
-//   Parameters p_;
-public:
 
+public:
 #include "numericscaseelements__reactingFoamNumerics__Parameters.h"
 
 /*
@@ -620,13 +521,6 @@ public:
 class magneticFoamNumerics
     : public FVNumerics
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, FVNumerics::Parameters,
-//     (solverName, std::string, "magneticFoam")
-//   )
-//
-// protected:
-//   Parameters p_;
 
 public:
 #include "numericscaseelements__magneticFoamNumerics__Parameters.h"

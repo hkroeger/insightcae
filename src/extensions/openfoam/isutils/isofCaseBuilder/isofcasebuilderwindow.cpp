@@ -132,6 +132,73 @@ bool DefaultPatch::insertElement ( insight::OpenFOAMCase& ofc, insight::OFDictDa
 
 
 
+
+
+class HierarchyLevel
+: public std::map<std::string, HierarchyLevel>
+{
+public:
+    QTreeWidgetItem* parent_;
+    
+    HierarchyLevel(QTreeWidgetItem* parent)
+    : parent_(parent)
+    {}
+    
+    iterator addHierarchyLevel(const std::string& entry)
+    {
+        QTreeWidgetItem* newnode = new QTreeWidgetItem(parent_, QStringList() << entry.c_str());
+        { QFont f=newnode->font(0); f.setBold(true); newnode->setFont(0, f); }
+        std::pair<iterator,bool> ret = insert(std::make_pair(entry, HierarchyLevel(newnode)));
+        return ret.first;
+    }
+    
+    HierarchyLevel& sublevel(const std::string& entry)
+    {
+        iterator it = find(entry);
+        if (it == end())
+        {
+            it=addHierarchyLevel(entry);
+        }
+        return it->second;
+    }
+};
+
+
+
+
+void isofCaseBuilderWindow::fillCaseElementList()
+{
+  QTreeWidgetItem *topitem = new QTreeWidgetItem ( ui->available_elements, QStringList() << "Available Case Elements" );
+  { QFont f=topitem->font(0); f.setBold(true); f.setPointSize(f.pointSize()+1); topitem->setFont(0, f); }
+  HierarchyLevel toplevel ( topitem );
+  
+  HierarchyLevel::iterator i=toplevel.addHierarchyLevel("Uncategorized");
+
+  for ( 
+      insight::OpenFOAMCaseElement::FactoryTable::const_iterator i =
+         insight::OpenFOAMCaseElement::factories_->begin();
+      i != insight::OpenFOAMCaseElement::factories_->end(); 
+      i++ 
+    )
+    {
+      std::string elemName = i->first;
+      QStringList path = QString::fromStdString 
+        ( 
+            insight::OpenFOAMCaseElement::category ( elemName ) 
+        ).split ( "/", QString::SkipEmptyParts );
+      HierarchyLevel* parent = &toplevel;
+      for ( QStringList::const_iterator pit = path.constBegin(); pit != path.constEnd(); ++pit )
+        {
+          parent = & ( parent->sublevel ( pit->toStdString() ) );
+        }
+      QTreeWidgetItem* item = new QTreeWidgetItem ( parent->parent_, QStringList() << elemName.c_str() );
+//       QFont f=item->font(0); f.setBold(true); item->setFont(0, f);
+    }
+    
+  ui->available_elements->expandItem(topitem);
+}
+
+
 isofCaseBuilderWindow::isofCaseBuilderWindow()
 : QDialog(), ped_(NULL), bc_ped_(NULL)
 {
@@ -159,12 +226,13 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       this, SLOT(onOFVersionChanged(const QString &))
     );
     
-    // populate list of available case elements
-    for (insight::OpenFOAMCaseElement::FactoryTable::const_iterator i = insight::OpenFOAMCaseElement::factories_->begin();
-        i != insight::OpenFOAMCaseElement::factories_->end(); i++)
-    {
-        new QListWidgetItem(i->first.c_str(), ui->available_elements);
-    }
+    fillCaseElementList();
+//     // populate list of available case elements
+//     for (insight::OpenFOAMCaseElement::FactoryTable::const_iterator i = insight::OpenFOAMCaseElement::factories_->begin();
+//         i != insight::OpenFOAMCaseElement::factories_->end(); i++)
+//     {
+//         new QListWidgetItem(i->first.c_str(), ui->available_elements);
+//     }
     
     // populate list of available boundary condition elements
     for (insight::BoundaryCondition::FactoryTable::const_iterator i = insight::BoundaryCondition::factories_->begin();
@@ -321,10 +389,10 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
 
 void isofCaseBuilderWindow::onAddElement()
 {
-    QListWidgetItem* cur = ui->available_elements->currentItem();
-    if (cur)
+    QTreeWidgetItem* cur = ui->available_elements->currentItem();
+    if (cur && (cur->childCount()==0))
     {
-        std::string type_name = cur->text().toStdString();
+        std::string type_name = cur->text(0).toStdString();
         InsertedCaseElement* ice = new InsertedCaseElement(ui->selected_elements, type_name);
     }
 }

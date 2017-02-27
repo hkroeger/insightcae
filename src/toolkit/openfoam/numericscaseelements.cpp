@@ -422,8 +422,7 @@ OFDictData::dict smoothSolverSetup(double tol, double reltol, int minIter)
 
 
 defineType(MeshingNumerics);
-addToFactoryTable(OpenFOAMCaseElement, MeshingNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, MeshingNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(MeshingNumerics);
 
 MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps)
@@ -489,8 +488,7 @@ ParameterSet MeshingNumerics::defaultParameters()
 
 
 defineType(simpleFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, simpleFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, simpleFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(simpleFoamNumerics);
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps),
@@ -642,8 +640,7 @@ ParameterSet simpleFoamNumerics::defaultParameters()
 
 
 defineType(pimpleFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, pimpleFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, pimpleFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(pimpleFoamNumerics);
 
 pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps),
@@ -842,8 +839,7 @@ ParameterSet pimpleFoamNumerics::defaultParameters()
 
 
 defineType(potentialFreeSurfaceFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, potentialFreeSurfaceFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, potentialFreeSurfaceFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(potentialFreeSurfaceFoamNumerics);
 
 
 potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -980,8 +976,7 @@ ParameterSet potentialFreeSurfaceFoamNumerics::defaultParameters()
 
 
 defineType(simpleDyMFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, simpleDyMFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, simpleDyMFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(simpleDyMFoamNumerics);
 
 
 simpleDyMFoamNumerics::simpleDyMFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1017,8 +1012,7 @@ ParameterSet simpleDyMFoamNumerics::defaultParameters()
 
 
 defineType(cavitatingFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, cavitatingFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, cavitatingFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(cavitatingFoamNumerics);
 
 
 cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1102,8 +1096,7 @@ ParameterSet cavitatingFoamNumerics::defaultParameters()
 
 
 defineType(interFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, interFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, interFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(interFoamNumerics);
 
 void interFoamNumerics::init()
 {
@@ -1352,8 +1345,7 @@ OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
 
 
 defineType(LTSInterFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, LTSInterFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, LTSInterFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(LTSInterFoamNumerics);
 
 
 LTSInterFoamNumerics::LTSInterFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1423,8 +1415,7 @@ ParameterSet LTSInterFoamNumerics::defaultParameters()
 
 
 defineType(interPhaseChangeFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, interPhaseChangeFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, interPhaseChangeFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(interPhaseChangeFoamNumerics);
 
 
 interPhaseChangeFoamNumerics::interPhaseChangeFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1475,8 +1466,7 @@ ParameterSet interPhaseChangeFoamNumerics::defaultParameters()
 
 
 defineType(reactingFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, reactingFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, reactingFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(reactingFoamNumerics);
 
 
 void reactingFoamNumerics::init()
@@ -1650,8 +1640,7 @@ ParameterSet reactingFoamNumerics::defaultParameters()
 
 
 defineType(reactingParcelFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, reactingParcelFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, reactingParcelFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(reactingParcelFoamNumerics);
 
 
 reactingParcelFoamNumerics::reactingParcelFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1716,8 +1705,7 @@ void FSIDisplacementExtrapolationNumerics::addIntoDictionaries(OFdicts& dictiona
 
 
 defineType(magneticFoamNumerics);
-addToFactoryTable(OpenFOAMCaseElement, magneticFoamNumerics);
-addToStaticFunctionTable(OpenFOAMCaseElement, magneticFoamNumerics, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(magneticFoamNumerics);
 
 void magneticFoamNumerics::init()
 {

@@ -213,6 +213,7 @@ int OFEnvironment::executeCommand(const std::vector<std::string>& args) const
 defineType(OpenFOAMCaseElement);
 defineFactoryTable(OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ));
 defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, ParameterSet);
+defineStaticFunctionTable(OpenFOAMCaseElement, category, std::string);
 
 
 int OpenFOAMCaseElement::OFversion() const 

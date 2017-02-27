@@ -78,8 +78,7 @@ void outputFilterFunctionObject::evaluate
 
 
 defineType(fieldAveraging);
-addToFactoryTable(OpenFOAMCaseElement, fieldAveraging);
-addToStaticFunctionTable(OpenFOAMCaseElement, fieldAveraging, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(fieldAveraging);
 
 
 fieldAveraging::fieldAveraging(OpenFOAMCase& c,  const ParameterSet& ps )
@@ -115,8 +114,7 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
   
   
 defineType(probes);
-addToFactoryTable(OpenFOAMCaseElement, probes);
-addToStaticFunctionTable(OpenFOAMCaseElement, probes, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(probes);
 
 probes::probes(OpenFOAMCase& c,  const ParameterSet& ps )
 : outputFilterFunctionObject(c, ps),
@@ -149,8 +147,7 @@ OFDictData::dict probes::functionObjectDict() const
 
 
 defineType(cuttingPlane);
-addToFactoryTable(OpenFOAMCaseElement, cuttingPlane);
-addToStaticFunctionTable(OpenFOAMCaseElement, cuttingPlane, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(cuttingPlane);
 
 cuttingPlane::cuttingPlane(OpenFOAMCase& c, const ParameterSet& ps)
 : outputFilterFunctionObject(c, ps),
@@ -195,8 +192,7 @@ OFDictData::dict cuttingPlane::functionObjectDict() const
    
    
 defineType(twoPointCorrelation);
-addToFactoryTable(OpenFOAMCaseElement, twoPointCorrelation);
-addToStaticFunctionTable(OpenFOAMCaseElement, twoPointCorrelation, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(twoPointCorrelation);
 
 twoPointCorrelation::twoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps)
 : outputFilterFunctionObject(c, ps),
@@ -322,8 +318,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
 
 
 defineType(cylindricalTwoPointCorrelation);
-addToFactoryTable(OpenFOAMCaseElement, cylindricalTwoPointCorrelation);
-addToStaticFunctionTable(OpenFOAMCaseElement, cylindricalTwoPointCorrelation, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(cylindricalTwoPointCorrelation);
 
 cylindricalTwoPointCorrelation::cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps )
 : twoPointCorrelation(c, ps),
@@ -365,8 +360,7 @@ OFDictData::dict cylindricalTwoPointCorrelation::csysConfiguration() const
 
 
 defineType(forces);
-addToFactoryTable(OpenFOAMCaseElement, forces);
-addToStaticFunctionTable(OpenFOAMCaseElement, forces, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(forces);
 
 forces::forces(OpenFOAMCase& c,  const ParameterSet& ps)
 : OpenFOAMCaseElement(c, Parameters(ps).name+"forces"),
@@ -469,8 +463,7 @@ arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::pat
 }
 
 defineType(extendedForces);
-addToFactoryTable(OpenFOAMCaseElement, extendedForces);
-addToStaticFunctionTable(OpenFOAMCaseElement, extendedForces, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(extendedForces);
 
 extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
 : forces(c, ps)
@@ -672,6 +665,7 @@ const char LinearTPCArrayTypeName[] = "LinearTPCArray";
 template<> const std::string LinearTPCArray::typeName( LinearTPCArray::typeName_() );
 addToFactoryTable(OpenFOAMCaseElement, LinearTPCArray);
 addToStaticFunctionTable(OpenFOAMCaseElement, LinearTPCArray, defaultParameters);
+addToStaticFunctionTable(OpenFOAMCaseElement, LinearTPCArray, category);
 addToFactoryTable(outputFilterFunctionObject, LinearTPCArray);
 addToStaticFunctionTable(outputFilterFunctionObject, LinearTPCArray, defaultParameters);
 
@@ -680,6 +674,7 @@ const char RadialTPCArrayTypeName[] = "RadialTPCArray";
 template<> const std::string RadialTPCArray::typeName( RadialTPCArray::typeName_() );
 addToFactoryTable(OpenFOAMCaseElement, RadialTPCArray);
 addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, defaultParameters);
+addToStaticFunctionTable(OpenFOAMCaseElement, RadialTPCArray, category);
 addToFactoryTable(outputFilterFunctionObject, RadialTPCArray);
 addToStaticFunctionTable(outputFilterFunctionObject, RadialTPCArray, defaultParameters);
 

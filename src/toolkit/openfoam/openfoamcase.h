@@ -134,6 +134,11 @@ public:
 
 
 
+#define addToOpenFOAMCaseElementFactoryTable(DerivedClass) \
+ addToFactoryTable(OpenFOAMCaseElement, DerivedClass); \
+ addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, defaultParameters); \
+ addToStaticFunctionTable(OpenFOAMCaseElement, DerivedClass, category)
+ 
 
 class OpenFOAMCaseElement
     : public CaseElement
@@ -142,6 +147,7 @@ class OpenFOAMCaseElement
 public:
     declareFactoryTable ( OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ) );
     declareStaticFunctionTable ( defaultParameters, ParameterSet );
+    declareStaticFunctionTable ( category, std::string );
     declareType ( "OpenFOAMCaseElement" );
 
     OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name );

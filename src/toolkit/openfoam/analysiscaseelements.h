@@ -36,12 +36,7 @@ class outputFilterFunctionObject
 : public OpenFOAMCaseElement
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (name, std::string, "unnamed")
-//     (timeStart, double, 0.0)
-//     (outputControl, std::string, "outputTime")    
-//     (outputInterval, double, 1.0)
-//   )
+
 #include "analysiscaseelements__outputFilterFunctionObject__Parameters.h"
 
 /*
@@ -81,6 +76,8 @@ public:
     OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
     const std::string& shortDescription
   ) const;
+  
+  static std::string category() { return "Postprocessing"; }
 };
 
 
@@ -92,10 +89,8 @@ public:
 class fieldAveraging
 : public outputFilterFunctionObject
 {
+    
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-//     (fields, std::vector<std::string>, std::vector<std::string>())
-//   )
 #include "analysiscaseelements__fieldAveraging__Parameters.h"
 
 /*
@@ -120,17 +115,17 @@ public:
   virtual OFDictData::dict functionObjectDict() const;
 };
 
+
+
+
 /** ===========================================================================
  * function object front end for probes
  */
 class probes
 : public outputFilterFunctionObject
 {
+    
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-//     (fields, std::vector<std::string>, std::vector<std::string>())
-//     (probeLocations, std::vector<arma::mat>, std::vector<arma::mat>())
-//   )
 #include "analysiscaseelements__probes__Parameters.h"
 
 /*
@@ -165,13 +160,8 @@ public:
 class cuttingPlane
 : public outputFilterFunctionObject
 {
+    
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, outputFilterFunctionObject::Parameters,
-//     (fields, std::vector<std::string>, std::vector<std::string>())
-//     (basePoint, arma::mat, vec3(0,0,0))
-//     (normal, arma::mat, vec3(0,0,1))
-//     (interpolate, bool, false)
-//   )
 #include "analysiscaseelements__cuttingPlane__Parameters.h"
 
 /*
@@ -198,6 +188,7 @@ public:
     }
   virtual OFDictData::dict functionObjectDict() const;
 };
+
 
 
 
@@ -248,12 +239,8 @@ public:
 class cylindricalTwoPointCorrelation
 : public twoPointCorrelation
 {
+    
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, twoPointCorrelation::Parameters,
-//     (ez, arma::mat, vec3(0,0,1))
-//     (er, arma::mat, vec3(1,0,0))
-//     (degrees, bool, false)
-//   )
 #include "analysiscaseelements__cylindricalTwoPointCorrelation__Parameters.h"
 
 /*
@@ -280,21 +267,14 @@ public:
   virtual OFDictData::dict csysConfiguration() const;
 };
 
+
+
+
 class forces
 : public OpenFOAMCaseElement
 {
+    
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (name, std::string, "forces")
-//     (patches, std::vector<std::string>, std::vector<std::string>())
-//     (pName, std::string, "p")
-//     (UName, std::string, "U")
-//     (rhoName, std::string, "rhoInf")
-//     (rhoInf, double, 1.0)
-//     (outputControl, std::string, "timeStep")    
-//     (outputInterval, double, 10.0)
-//     (CofR, arma::mat, vec3(0,0,0))
-//   )
 #include "analysiscaseelements__forces__Parameters.h"
 
 /*
@@ -326,7 +306,10 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
   
   static arma::mat readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
+  
+  static std::string category() { return "Postprocessing"; }
 };
+
 
 
 

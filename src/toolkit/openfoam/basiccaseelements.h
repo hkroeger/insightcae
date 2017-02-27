@@ -39,10 +39,6 @@ namespace insight
 class gravity
     : public OpenFOAMCaseElement
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (g, arma::mat, vec3(0, 0, -9.81))
-//   )
 
 public:
 #include "basiccaseelements__gravity__Parameters.h"
@@ -66,6 +62,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Body Force"; }
 };
 
 
@@ -74,11 +71,7 @@ public:
 class volumeDrag
     : public OpenFOAMCaseElement
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (name, std::string, "volumeDrag")
-//     (CD, arma::mat, vec3(1, 0, 0))
-//   )
+
 public:
 #include "basiccaseelements__volumeDrag__Parameters.h"
 /*
@@ -102,6 +95,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Body Force"; }
 };
 
 
@@ -111,14 +105,7 @@ public:
 class MRFZone
     : public OpenFOAMCaseElement
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (name, std::string, "rotor")
-//     (rpm, double, 1000.0)
-//     (nonRotatingPatches, std::vector<std::string>, std::vector<std::string>())
-//     (rotationCentre, arma::mat, vec3(0,0,0))
-//     (rotationAxis, arma::mat, vec3(0,0,1))
-//   )
+
 public:
 #include "basiccaseelements__MRFZone__Parameters.h"
 /*
@@ -145,6 +132,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Rotation"; }
 };
 
 
@@ -180,6 +168,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Body Force"; }
 };
 
 
@@ -214,6 +203,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Body Force"; }
 };
 
 
@@ -258,6 +248,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Material Properties"; }
 };
 
 
@@ -300,6 +291,7 @@ public:
     {
         return Parameters::makeDefault();
     }
+    static std::string category() { return "Material Properties"; }
 };
 
 
@@ -411,6 +403,7 @@ class dynamicMesh
 {
 public:
   dynamicMesh(OpenFOAMCase& c);
+  static std::string category() { return "Dynamic Mesh"; }
 };
 
 

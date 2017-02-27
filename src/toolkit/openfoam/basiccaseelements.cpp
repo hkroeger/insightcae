@@ -41,8 +41,7 @@ namespace insight
     
     
 defineType(gravity);
-addToFactoryTable(OpenFOAMCaseElement, gravity);
-addToStaticFunctionTable(OpenFOAMCaseElement, gravity, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(gravity);
 
 gravity::gravity( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, "gravity"),
@@ -62,8 +61,7 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 defineType(volumeDrag);
-addToFactoryTable(OpenFOAMCaseElement, volumeDrag);
-addToStaticFunctionTable(OpenFOAMCaseElement, volumeDrag, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(volumeDrag);
 
 volumeDrag::volumeDrag( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, ""),
@@ -102,8 +100,7 @@ transportModel::transportModel(OpenFOAMCase& c)
 
 
 defineType(MRFZone);
-addToFactoryTable(OpenFOAMCaseElement, MRFZone);
-addToStaticFunctionTable(OpenFOAMCaseElement, MRFZone, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(MRFZone);
 
 MRFZone::MRFZone( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, ""),
@@ -166,8 +163,7 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 defineType(PressureGradientSource);
-addToFactoryTable(OpenFOAMCaseElement, PressureGradientSource);
-addToStaticFunctionTable(OpenFOAMCaseElement, PressureGradientSource, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 
 PressureGradientSource::PressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, "PressureGradientSource"),
@@ -221,8 +217,7 @@ void PressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 defineType(ConstantPressureGradientSource);
-addToFactoryTable(OpenFOAMCaseElement, ConstantPressureGradientSource);
-addToStaticFunctionTable(OpenFOAMCaseElement, ConstantPressureGradientSource, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(ConstantPressureGradientSource);
 
 ConstantPressureGradientSource::ConstantPressureGradientSource( OpenFOAMCase& c, const ParameterSet& ps )
 : OpenFOAMCaseElement(c, "ConstantPressureGradientSource"),
@@ -265,8 +260,7 @@ throw insight::Exception("constantPressureGradient unavailable!");
 
 
 defineType(singlePhaseTransportProperties);
-addToFactoryTable(OpenFOAMCaseElement, singlePhaseTransportProperties);
-addToStaticFunctionTable(OpenFOAMCaseElement, singlePhaseTransportProperties, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(singlePhaseTransportProperties);
 
 singlePhaseTransportProperties::singlePhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
 : transportModel(c),
@@ -286,8 +280,7 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
 
 
 defineType(twoPhaseTransportProperties);
-addToFactoryTable(OpenFOAMCaseElement, twoPhaseTransportProperties);
-addToStaticFunctionTable(OpenFOAMCaseElement,twoPhaseTransportProperties , defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(twoPhaseTransportProperties);
 
 
 twoPhaseTransportProperties::twoPhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
@@ -366,8 +359,7 @@ void SchnerrSauer::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 defineType(cavitationTwoPhaseTransportProperties);
-addToFactoryTable(OpenFOAMCaseElement, cavitationTwoPhaseTransportProperties);
-addToStaticFunctionTable(OpenFOAMCaseElement, cavitationTwoPhaseTransportProperties, defaultParameters);
+addToOpenFOAMCaseElementFactoryTable(cavitationTwoPhaseTransportProperties);
 
 cavitationTwoPhaseTransportProperties::cavitationTwoPhaseTransportProperties( OpenFOAMCase& c, const ParameterSet& ps )
 : twoPhaseTransportProperties(c, ps),

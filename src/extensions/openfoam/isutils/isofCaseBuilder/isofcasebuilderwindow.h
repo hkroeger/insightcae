@@ -109,6 +109,8 @@ protected:
     boost::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
   
+    void fillCaseElementList();
+    
 public:
     isofCaseBuilderWindow();
     virtual ~isofCaseBuilderWindow();

@@ -92,6 +92,13 @@ int main(int argc, char *argv[])
         StringList libs=vm["libs"].as<StringList>();
         BOOST_FOREACH(const string& l, libs)
         {
+            if (!boost::filesystem::exists(l))
+            {
+                std::cerr << std::endl 
+                    << "Error: library file does not exist: "<<l
+                    <<std::endl<<std::endl;
+                exit(-1);
+            }
             loader.addLibrary(l);
         }
     }
@@ -100,6 +107,14 @@ int main(int argc, char *argv[])
     {
         std::string fn = vm["input-file"].as<StringList>()[0];
 
+        if (!boost::filesystem::exists(fn))
+        {
+            std::cerr << std::endl 
+                << "Error: input file does not exist: "<<fn
+                <<std::endl<<std::endl;
+            exit(-1);
+        }
+        
         std::string contents;
         try
         {

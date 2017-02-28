@@ -95,6 +95,13 @@ int main(int argc, char** argv)
         StringList libs=vm["libs"].as<StringList>();
         BOOST_FOREACH(const string& l, libs)
         {
+            if (!boost::filesystem::exists(l))
+            {
+                std::cerr << std::endl 
+                    << "Error: library file does not exist: "<<l
+                    <<std::endl<<std::endl;
+                exit(-1);
+            }
            insight::loader.addLibrary(l);
         }
     }
@@ -108,13 +115,20 @@ int main(int argc, char** argv)
     QPixmap pixmap(":/resources/insight_workbench_splash.png");
     QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
     splash.show();
-    splash.showMessage(/*propGeoVersion()+" - */"Wait...");
+    splash.showMessage("Wait...");
 
     workbench window;
 
     if (vm.count("input-file"))
     {
         boost::filesystem::path fn( vm["input-file"].as<StringList>()[0] );
+        if (!boost::filesystem::exists(fn))
+        {
+            std::cerr << std::endl 
+                << "Error: input file does not exist: "<<fn
+                <<std::endl<<std::endl;
+            exit(-1);
+        }
         window.openAnalysis(boost::filesystem::absolute(fn).c_str());
     }
     window.show();

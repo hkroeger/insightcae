@@ -98,6 +98,10 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
 
     Cd_.reset( new scalarField(mapper.interpolate(vals)) );
 
+    if (debug)
+    {
+        Pout<<"Cd = "<<Cd_()<<endl;
+    }
 }
 
 

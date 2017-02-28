@@ -347,6 +347,8 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 
 void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/bool skipBCs )
 {
+    recreateOFCase(ui->OFversion->currentText());
+    
   for ( int i=0; i < ui->selected_elements->count(); i++ )
     {
       InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
@@ -366,6 +368,12 @@ void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& locati
 	  }
       }
   }
+  
+  if (ofc_->getUnhandledPatches(boundaryDict_).size() > 0)
+  {
+      throw insight::Exception("Incorrect case setup: There are unhandled patches. Continuing would remain in an invalid boundary definition.");
+  }
+  
   ofc_->createOnDisk ( /*location*/ casepath_ );
   ofc_->modifyCaseOnDisk ( /*location*/ casepath_ );
 }
@@ -594,8 +602,14 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
 
 void isofCaseBuilderWindow::onOFVersionChanged(const QString& ofename)
 {
+    recreateOFCase(ofename);
+}
+
+
+void isofCaseBuilderWindow::recreateOFCase(const QString& ofename)
+{
   std::string ofen = ofename.toStdString();
-  std::cout<<ofen<<std::endl;
+//   std::cout<<ofen<<std::endl;
   ofc_.reset(new OpenFOAMCase(OFEs::get(ofen)));
 }
 

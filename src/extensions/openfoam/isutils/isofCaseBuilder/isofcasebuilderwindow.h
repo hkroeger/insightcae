@@ -132,6 +132,7 @@ public slots:
     void onPatchSelectionChanged();
     
     void onOFVersionChanged(const QString & ofename);
+    void recreateOFCase(const QString & ofename);
 };
 
 

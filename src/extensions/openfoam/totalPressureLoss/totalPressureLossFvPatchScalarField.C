@@ -30,7 +30,13 @@ License
 #include "surfaceFields.H"
 
 #include "IOField.H"
+#ifndef OF16ext
 #include "pointToPointPlanarInterpolation.H"
+#else
+#include "triSurface.H"
+#include "triSurfaceTools.H"
+#include "coordinateSystem.H"
+#endif
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -53,6 +59,161 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
 
     const fileName samplePointsFile = samplePoints.filePath();
 
+#ifdef OF16ext
+    // do it the hard way...
+    
+    // Determine coordinate system from samplePoints
+
+    if (samplePoints.size() < 3)
+    {
+        FatalErrorIn
+        (
+            "timeVaryingMappedFixedValueFvPatchField<Type>::readSamplePoints()"
+        )   << "Only " << samplePoints.size() << " points read from file "
+            << samplePoints.objectPath() << nl
+            << "Need at least three non-colinear samplePoints"
+            << " to be able to interpolate."
+            << "\n    on patch " << this->patch().name()
+            << " of field " << this->dimensionedInternalField().name()
+            << " in file " << this->dimensionedInternalField().objectPath()
+            << exit(FatalError);
+    }
+
+    const point& p0 = samplePoints[0];
+
+    // Find point separate from p0
+    vector e1;
+    label index1 = -1;
+
+    for (label i = 1; i < samplePoints.size(); i++)
+    {
+        e1 = samplePoints[i] - p0;
+
+        scalar magE1 = mag(e1);
+
+        if (magE1 > SMALL)
+        {
+            e1 /= magE1;
+            index1 = i;
+            break;
+        }
+    }
+
+    // Find point that makes angle with n1
+    label index2 = -1;
+    vector e2;
+    vector n;
+
+    for (label i = index1+1; i < samplePoints.size(); i++)
+    {
+        e2 = samplePoints[i] - p0;
+
+        scalar magE2 = mag(e2);
+
+        if (magE2 > SMALL)
+        {
+            e2 /= magE2;
+
+            n = e1^e2;
+
+            scalar magN = mag(n);
+
+            if (magN > SMALL)
+            {
+                index2 = i;
+                n /= magN;
+                break;
+            }
+        }
+    }
+
+    if (index2 == -1)
+    {
+        FatalErrorIn
+        (
+            "timeVaryingMappedFixedValueFvPatchField<Type>::readSamplePoints()"
+        )   << "Cannot find points that make valid normal." << nl
+            << "Need at least three sample points which are not in a line."
+            << "\n    on patch " << this->patch().name()
+            << " of points " << samplePoints.name()
+            << " in file " << samplePoints.objectPath()
+            << exit(FatalError);
+    }
+
+    if (debug)
+    {
+        Info<< "timeVaryingMappedFixedValueFvPatchField :"
+            << " Used points " << p0 << ' ' << samplePoints[index1]
+            << ' ' << samplePoints[index2]
+            << " to define coordinate system with normal " << n << endl;
+    }
+
+    autoPtr<coordinateSystem> referenceCS
+    (
+        new coordinateSystem
+        (
+            "reference",
+            p0,  // origin
+            n,   // normal
+            e1   // 0-axis
+        )
+    );
+    
+    tmp<vectorField> tlocalVertices
+    (
+        referenceCS().localPosition(samplePoints)
+    );
+    const vectorField& localVertices = tlocalVertices();
+
+    // Determine triangulation
+    List<vector2D> localVertices2D(localVertices.size());
+    forAll(localVertices, i)
+    {
+        localVertices2D[i][0] = localVertices[i][0];
+        localVertices2D[i][1] = localVertices[i][1];
+    }
+
+    triSurface s(triSurfaceTools::delaunay2D(localVertices2D));
+
+    tmp<pointField> localFaceCentres
+    (
+        referenceCS().localPosition
+        (
+            this->patch().patch().faceCentres()
+        )
+    );
+
+    if (debug)
+    {
+        Pout<< "readSamplePoints :"
+            <<" Dumping triangulated surface to triangulation.stl" << endl;
+        s.write(this->db().time().path()/"triangulation.stl");
+
+        OFstream str(this->db().time().path()/"localFaceCentres.obj");
+        Pout<< "readSamplePoints :"
+            << " Dumping face centres to " << str.name() << endl;
+
+        forAll(localFaceCentres(), i)
+        {
+            const point& p = localFaceCentres()[i];
+            str<< "v " << p.x() << ' ' << p.y() << ' ' << p.z() << nl;
+        }
+    }
+
+    List<FixedList<label, 3> > nearestVertex;
+    List<FixedList<scalar, 3> > nearestVertexWeight;
+    
+    // Determine interpolation onto face centres.
+    triSurfaceTools::calcInterpolationWeights
+    (
+        s,
+        localFaceCentres,   // points to interpolate to
+        nearestVertex,
+        nearestVertexWeight
+    );
+#else
+    // ... much more comfortable
+    
     // Allocate the interpolator
     pointToPointPlanarInterpolation mapper
     (
@@ -65,7 +226,9 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
             , false
 #endif
     );
-
+    
+#endif
+    
     const fileName samplePointsDir = samplePointsFile.path();
     instantList sampleTimes = Time::findTimes(samplePointsDir);
 
@@ -84,6 +247,43 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
         )
     );
 
+
+#ifdef OF16ext
+
+    Cd_.reset(new Field<scalar>(nearestVertex.size()));
+    Field<scalar>& fld = Cd_();
+
+    forAll(fld, i)
+    {
+        const FixedList<label, 3>& verts = nearestVertex[i];
+        const FixedList<scalar, 3>& w = nearestVertexWeight[i];
+
+        if (verts[2] == -1)
+        {
+            if (verts[1] == -1)
+            {
+                // Use vertex0 only
+                fld[i] = vals[verts[0]];
+            }
+            else
+            {
+                // Use vertex 0,1
+                fld[i] =
+                    w[0]*vals[verts[0]]
+                  + w[1]*vals[verts[1]];
+            }
+        }
+        else
+        {
+            fld[i] =
+                w[0]*vals[verts[0]]
+              + w[1]*vals[verts[1]]
+              + w[2]*vals[verts[2]];
+        }
+    }        
+    
+#else
+
     if (vals.size() != mapper.sourceSize())
     {
         FatalErrorIn
@@ -96,7 +296,11 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
             << ") in file " << vals.objectPath() << exit(FatalError);
     }
 
-    Cd_.reset( new scalarField(mapper.interpolate(vals)) );
+    Cd_.reset( new scalarField(
+        mapper.interpolate(vals)
+    ) );
+    
+#endif
 
     if (debug)
     {

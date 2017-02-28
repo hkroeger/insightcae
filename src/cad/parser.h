@@ -132,6 +132,17 @@ struct AddRuleContainer
     {}
 };
 
+class iscadParserException
+: public Exception
+{
+    int from_pos_, to_pos_;
+public:
+   iscadParserException(const std::string& reason, int from_pos, int to_pos);
+   
+   inline int from_pos() const { return from_pos_; }
+   inline int to_pos() const { return to_pos_; }
+};
+
 struct ISCADParser
   : qi::grammar<std::string::iterator, skip_grammar>
 {

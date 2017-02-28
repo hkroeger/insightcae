@@ -519,7 +519,14 @@ void BGParsingThread::run()
 
     model_.reset(new insight::cad::Model);
 
-    bool r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+    bool r=false;
+    try
+    {
+      r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+    }
+    catch (...)
+    {
+    }
     
     if (!r) // fail if we did not get a full match
     {
@@ -783,7 +790,18 @@ void ISCADMainWindow::rebuildModel()
     insight::cad::cache.initRebuild();
 
     cur_model_.reset(new insight::cad::Model);
-    bool r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc);
+    bool r=false;
+    
+    std::string reason="Failed: Syntax error";
+    try
+    {
+     r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc);
+    }
+    catch (insight::cad::parser::iscadParserException e)
+    {
+        reason="Expected: "+e.message();
+        failloc=e.from_pos();
+    }
 
     if (!r) // fail if we did not get a full match
     {
@@ -792,7 +810,8 @@ void ISCADMainWindow::rebuildModel()
         tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
         editor_->setTextCursor(tmpCursor);
 
-        statusBar()->showMessage("Model parsing failed => Cursor moved to location where parsing stopped!");
+        std::cout<<"Parser error at cursor location:"<<std::endl << reason <<std::endl;
+        statusBar()->showMessage(QString(reason.c_str())+" (Cursor moved to location where parsing stopped)!");
     }
     else
     {

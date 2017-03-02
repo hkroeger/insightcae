@@ -206,6 +206,12 @@ ResultSection::ResultSection ( const std::string& sectionName, const std::string
       introduction_ ( introduction )
 {}
 
+
+// ResultElementCollection::ResultElementCollection(const boost::filesystem::path & file)
+// {
+//     readFromFile(file);
+// }
+
 void ResultElementCollection::writeLatexCodeOfElements
 (
     std::ostream& f,
@@ -1099,7 +1105,7 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 }
 
 
-void ResultSet::saveToFile ( const boost::filesystem::path& file ) const
+void ResultElementCollection::saveToFile ( const boost::filesystem::path& file ) const
 {
 //   std::cout<<"Writing result set to file "<<file<<std::endl;
 
@@ -1136,7 +1142,7 @@ void ResultSet::saveToFile ( const boost::filesystem::path& file ) const
 }
 
 
-void ResultSet::readFromFile ( const boost::filesystem::path& file )
+void ResultElementCollection::readFromFile ( const boost::filesystem::path& file )
 {
     std::ifstream in ( file.c_str() );
     std::string contents;

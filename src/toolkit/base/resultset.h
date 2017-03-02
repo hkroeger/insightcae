@@ -152,6 +152,7 @@ class ResultElementCollection
     : public std::map<std::string, ResultElementPtr>
 {
 public:
+//     ResultElementCollection(const boost::filesystem::path & file);
     virtual ~ResultElementCollection();
 
 #ifndef SWIG
@@ -196,6 +197,16 @@ public:
      * restore the result elements from the given node
      */
     virtual void readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node );
+
+    /**
+     * save result set to XML file
+     */
+    virtual void saveToFile ( const boost::filesystem::path& file ) const;
+
+    /**
+     * read result set from xml file
+     */
+    virtual void readFromFile ( const boost::filesystem::path& file );
 
 };
 
@@ -608,16 +619,6 @@ public:
         rapidxml::xml_node<>& node
     ) const;
 
-
-    /**
-     * save result set to XML file
-     */
-    virtual void saveToFile ( const boost::filesystem::path& file ) const;
-
-    /**
-     * read result set from xml file
-     */
-    virtual void readFromFile ( const boost::filesystem::path& file );
 
 
     virtual ParameterSetPtr convertIntoParameterSet() const;

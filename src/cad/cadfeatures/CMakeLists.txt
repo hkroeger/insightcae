@@ -57,6 +57,7 @@ add_sources(insightcad_SOURCES
  curvepattern.cpp
  refplace.cpp
  exploded.cpp
+ partition.cpp
 )
 
 add_include_dir(INCLUDE_DIRS)

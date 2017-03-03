@@ -75,32 +75,33 @@ int main(int argc, char *argv[])
     try
     {
 
-    if (vm.count("libs"))
-    {
-        StringList libs=vm["libs"].as<StringList>();
-        BOOST_FOREACH(const string& l, libs)
+        if (vm.count("libs"))
         {
-            if (!boost::filesystem::exists(l))
+            StringList libs=vm["libs"].as<StringList>();
+            BOOST_FOREACH(const string& l, libs)
             {
-                std::cerr << std::endl 
-                    << "Error: library file does not exist: "<<l
-                    <<std::endl<<std::endl;
-                exit(-1);
+                if (!boost::filesystem::exists(l))
+                {
+                    std::cerr << std::endl
+                              << "Error: library file does not exist: "<<l
+                              <<std::endl<<std::endl;
+                    exit(-1);
+                }
+                loader.addLibrary(l);
             }
-            loader.addLibrary(l);
         }
-    }
-    
-    if (vm.count("list"))
-    {
-        boost::filesystem::path f(vm["list"].as<std::string>());
-        ResultElementCollection r;
-        r.readFromFile(f);
-        BOOST_FOREACH(ResultElementCollection::value_type& rel, r)
+
+        if (vm.count("list"))
         {
-            std::cout<<rel.first<<std::endl;
+            boost::filesystem::path f(vm["list"].as<std::string>());
+            ResultElementCollection r;
+            r.readFromFile(f);
+            BOOST_FOREACH(ResultElementCollection::value_type& rel, r)
+            {
+                std::cout<<rel.first<<std::endl;
+            }
         }
-    }
+
     }
     catch (insight::Exception e)
     {

@@ -306,6 +306,10 @@ void Foam::totalPressureLossFvPatchScalarField::readCd()
     {
         Pout<<"Cd = "<<Cd_()<<endl;
     }
+    else
+    {
+        Info << "Average Cd on patch " << this->patch().name() << " = " << gAverage(Cd_()) << endl;
+    }
 }
 
 

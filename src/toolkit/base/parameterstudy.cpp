@@ -141,6 +141,7 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstances
     path ep=executionPath()/n.str();
 //     newinst->setExecutionPath( ep );
     AnalysisPtr newinst( /*baseAnalysis_->clone()*/ Analysis::lookup(BaseAnalysis::typeName, *newp, ep) );
+    newinst -> setKeepExecutionDirectory();
 //     newinst->setParameters(*newp);
     instances.enqueue( AnalysisInstance( n.str(), newinst, emptyresset ));
 

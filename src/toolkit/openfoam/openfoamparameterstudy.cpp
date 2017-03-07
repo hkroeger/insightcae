@@ -79,71 +79,71 @@ void OpenFOAMParameterStudy<BaseAnalysis,var_params>::modifyInstanceParameters(c
 
 
 template<
-  class BaseAnalysis,
-  const RangeParameterList& var_params
->
+    class BaseAnalysis,
+    const RangeParameterList& var_params
+    >
 ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer* displayer)
 {
-  ParameterSet& p = Analysis::parameters_;
-  // generate the mesh in the top level case first
-  path dir = setupExecutionEnvironment();
-  //parameters_.saveToFile(dir/"parameters.ist", type());
+    ParameterSet& p = this->parameters_; //Analysis::parameters_;
+    // generate the mesh in the top level case first
+    path dir = setupExecutionEnvironment();
+    //parameters_.saveToFile(dir/"parameters.ist", type());
 
-  {  
+    {
 //     OpenFOAMAnalysis* base_case=static_cast<OpenFOAMAnalysis*>(baseAnalysis_.get());
-    
-    PSSTR(p, "run", machine);
-    PSSTR(p, "run", OFEname);
-    
-    OFEnvironment ofe = OFEs::get(OFEname);
-    ofe.setExecutionMachine(machine);
-    
-    path exep=executionPath();
-    
-    // Generate a valid parameterset with actual values for mesh mesh genration
-    // use first value from each range
-    ParameterSet defp(p);
-    for (int j=0; j<var_params.size(); j++)
-    {
-      // Replace RangeParameter by first actual single value
-      const DoubleRangeParameter& rp = p.get<DoubleRangeParameter>(var_params[j]);
-      DoubleParameter* dp=rp.toDoubleParameter(rp.values().begin());
-      defp.replace(var_params[j], dp);
-    }
+
+        PSSTR(p, "run", machine);
+        PSSTR(p, "run", OFEname);
+
+        OFEnvironment ofe = OFEs::get(OFEname);
+        ofe.setExecutionMachine(machine);
+
+        path exep=executionPath();
+
+        // Generate a valid parameterset with actual values for mesh mesh genration
+        // use first value from each range
+        ParameterSet defp(p);
+        for (int j=0; j<var_params.size(); j++)
+        {
+            // Replace RangeParameter by first actual single value
+            const DoubleRangeParameter& rp = p.get<DoubleRangeParameter>(var_params[j]);
+            DoubleParameter* dp=rp.toDoubleParameter(rp.values().begin());
+            defp.replace(var_params[j], dp);
+        }
 //     base_case->setParameters(defp);
-    
+
 //     base_case->setExecutionPath(exep);
-    OpenFOAMAnalysis* base_case = dynamic_cast<OpenFOAMAnalysis*>(Analysis::lookup(BaseAnalysis::typeName, defp, exep));
-    
-    if (!base_case)
-    {
-        throw insight::Exception("Internal Error: invalid base analysis type for OpenFOAMParameterStudy!");
-    }
-    
-    dir = base_case->setupExecutionEnvironment();
+        base_case_.reset( dynamic_cast<OpenFOAMAnalysis*>(Analysis::lookup(BaseAnalysis::typeName, defp, exep)) );
 
+        if (!base_case_)
+        {
+            throw insight::Exception("Internal Error: invalid base analysis type for OpenFOAMParameterStudy!");
+        }
+
+        dir = base_case_->setupExecutionEnvironment();
+
+        if (!subcasesRemesh_)
+        {
+            OpenFOAMCase meshCase(ofe);
+            if (!meshCase.meshPresentOnDisk(dir))
+                base_case_->createMesh(meshCase);
+            else
+                std::cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<std::endl;
+        }
+    }
+
+    path old_lp=p.get<PathParameter>("mesh/linkmesh")();
     if (!subcasesRemesh_)
-    {
-      OpenFOAMCase meshCase(ofe);
-      if (!meshCase.meshPresentOnDisk(dir))
-	base_case->createMesh(meshCase);
-      else
-	std::cout<<"case in "<<dir<<": mesh is already there, skipping mesh creation."<<std::endl;
-    }
-  }
-  
-  path old_lp=p.get<PathParameter>("mesh/linkmesh")();
-  if (!subcasesRemesh_)
-    p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
-  setupQueue();
-  p.get<PathParameter>("mesh/linkmesh")() = old_lp;
-  
-  processQueue(displayer);
-  ResultSetPtr results = evaluateRuns();
+        p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
+    setupQueue();
+    p.get<PathParameter>("mesh/linkmesh")() = old_lp;
 
-  evaluateCombinedResults(results);
-  
-  return results;
+    processQueue(displayer);
+    ResultSetPtr results = evaluateRuns();
+
+    evaluateCombinedResults(results);
+
+    return results;
 }
 
 

@@ -36,6 +36,8 @@ class OpenFOAMParameterStudy
 {
 protected:
   bool subcasesRemesh_;
+  boost::shared_ptr<OpenFOAMAnalysis> base_case_;
+  
 public:
 //     declareType("OpenFOAM Parameter Study");
     

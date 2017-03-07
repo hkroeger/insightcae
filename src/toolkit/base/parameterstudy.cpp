@@ -120,7 +120,7 @@ void ParameterStudy<BaseAnalysis,var_params>::generateInstances
   {
     // Put it all together
     std::ostringstream n; n<<"subcase";
-    ParameterSetPtr newp( /*templ.cloneParameterSet()*/ Analysis::defaultParameters(BaseAnalysis::typeName).cloneParameterSet() );
+    ParameterSetPtr newp( templ.cloneParameterSet() /*Analysis::defaultParameters(BaseAnalysis::typeName).cloneParameterSet()*/ );
     for (int j=0; j<var_params.size(); j++)
     {
       // Replace RangeParameter by actual single value

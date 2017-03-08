@@ -336,6 +336,10 @@ std::string SimpleLatex::toPlainText() const
   return simpleLatex_code_;
 }
 
-
+std::string SimpleLatex::LaTeXFromPlainText(const std::string& plainText)
+{
+    throw insight::Exception("SimpleLatex::LaTeXFromPlainText: Not Implemented");
+    return "";
+}
 
 }

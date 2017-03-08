@@ -194,13 +194,13 @@ boost::filesystem::path Analysis::setupExecutionEnvironment()
   if ( executionPath_ =="" )
     {
       executionPath_ = boost::filesystem::unique_path();
-      removeExecutionPath_=true;
+      if (!enforceExecutionPathRemovalBehaviour_) removeExecutionPath_=true;
     }
 
   if ( !exists ( executionPath_ ) )
     {
       create_directories ( executionPath_ );
-      removeExecutionPath_=true;
+      if (!enforceExecutionPathRemovalBehaviour_) removeExecutionPath_=true;
     }
 
   return executionPath_;
@@ -230,6 +230,7 @@ Analysis::Analysis ( const std::string& name, const std::string& description, co
 : name_ ( name ),
   description_ ( description ),
   executionPath_ ( exePath ),
+  enforceExecutionPathRemovalBehaviour_(false),
   removeExecutionPath_(false)
 {
   setParameters(ps);

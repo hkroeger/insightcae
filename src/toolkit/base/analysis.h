@@ -149,6 +149,7 @@ protected:
     std::string description_;
     boost::filesystem::path executionPath_;
     bool removeExecutionPath_;
+    bool enforceExecutionPathRemovalBehaviour_;
     ParameterSet parameters_;
 
 
@@ -184,11 +185,13 @@ public:
     
     inline void setKeepExecutionDirectory(bool keep = true)
     {
+        enforceExecutionPathRemovalBehaviour_=true;
         removeExecutionPath_=!keep;
     }
     
     inline void setRemoveExecutionDirectory(bool remove = true)
     {
+        enforceExecutionPathRemovalBehaviour_=true;
         removeExecutionPath_=remove;
     }
 

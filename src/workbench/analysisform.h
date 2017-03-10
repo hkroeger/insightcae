@@ -36,6 +36,8 @@
 
 #include "graphprogressdisplayer.h"
 
+#include "qdebugstream.h"
+
 
 
 
@@ -94,6 +96,9 @@ protected:
 
   insight::DirectoryParameter executionPathParameter_;
   ParameterEditorWidget* peditor_;
+  
+  Q_DebugStream *cout_log_, *cerr_log_;
+  QTextEdit *log_;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);

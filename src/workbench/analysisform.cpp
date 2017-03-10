@@ -59,8 +59,17 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     ui->setupUi(iw);
     setWidget(iw);
 
-    progdisp_=new GraphProgressDisplayer(ui->runTab);
-    ui->runTabLayout->addWidget(progdisp_);
+    QSplitter* spl=new QSplitter(Qt::Vertical);
+    progdisp_=new GraphProgressDisplayer;
+    log_=new QTextEdit;
+    spl->addWidget(progdisp_);
+    spl->addWidget(log_);
+    ui->runTabLayout->addWidget(spl);
+    
+    cout_log_ = new Q_DebugStream(std::cout);
+    connect(cout_log_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+    cerr_log_ = new Q_DebugStream(std::cerr);
+    connect(cerr_log_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
 
     this->setWindowTitle(analysisName_.c_str());
     connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));

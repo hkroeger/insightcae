@@ -6,7 +6,11 @@ find_package(Qwt REQUIRED)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(toolkit_gui_SRCS parameterwrapper.cpp parametereditorwidget.cpp)
+set(toolkit_gui_SRCS 
+    parameterwrapper.cpp 
+    parametereditorwidget.cpp
+    qdebugstream.cpp
+)
 #SET(toolkit_gui_FORMS newanalysisdlg.ui analysisform.ui)
 #QT4_WRAP_UI(toolkit_gui_FORMS_HEADERS ${workbench_FORMS})
 qt4_automoc(${toolkit_gui_SRCS})

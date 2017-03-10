@@ -23,7 +23,6 @@ set(iscad_SRCS
 # datumlist.cpp
  qmodeltree.cpp
  modelcomponentselectordlg.cpp
- qdebugstream.cpp
  insertfeaturedlg.cpp
 )
 find_package(Qt4 REQUIRED)
@@ -45,7 +44,7 @@ qt4_automoc(${iscad_SRCS})
 
 add_executable(iscad ${iscad_SRCS} ${iscad_FORMS_HEADERS} ${iscad_RCCS})
 target_link_libraries(iscad insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
-  ${Boost_LIBRARIES} toolkit 
+  ${Boost_LIBRARIES} toolkit toolkit_gui
   Qt4::QtCore Qt4::QtGui Qt4::QtWebKit
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
   ${DXFLIB_LIBRARIES}

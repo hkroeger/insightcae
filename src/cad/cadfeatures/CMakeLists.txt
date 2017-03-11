@@ -17,6 +17,7 @@ add_sources(insightcad_SOURCES
  cone.cpp
  torus.cpp
  extrusion.cpp
+ ellipse.cpp
  fillet.cpp
  fillingface.cpp
  importsolidmodel.cpp

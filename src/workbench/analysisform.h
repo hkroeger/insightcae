@@ -31,6 +31,7 @@
 #include <QThread>
 #include <QMetaType>
 #include <QTreeWidget>
+#include <QPushButton>
 
 #include "boost/shared_ptr.hpp"
 
@@ -100,6 +101,8 @@ protected:
   Q_DebugStream *cout_log_, *cerr_log_;
   QTextEdit *log_;
   
+  QPushButton *save_log_btn_, *send_log_btn_;
+  
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
   ~AnalysisForm();
@@ -117,6 +120,9 @@ private slots:
   void onKillAnalysis();
   void onResultReady(insight::ResultSetPtr);
   void onCreateReport();
+  
+  void saveLog();
+  void sendLog();
 
 signals:
   void apply();

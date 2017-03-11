@@ -29,6 +29,8 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QTemporaryFile>
+#include "email.h"
 
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
@@ -60,10 +62,22 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     setWidget(iw);
 
     QSplitter* spl=new QSplitter(Qt::Vertical);
+    QWidget* lower = new QWidget;
+    QHBoxLayout* hbl = new QHBoxLayout(lower);
     progdisp_=new GraphProgressDisplayer;
     log_=new QTextEdit;
     spl->addWidget(progdisp_);
-    spl->addWidget(log_);
+    spl->addWidget(lower); //log_);
+    hbl->addWidget(log_);
+    QVBoxLayout* vbl=new QVBoxLayout;
+    hbl->addLayout(vbl);
+    save_log_btn_=new QPushButton("Save...");
+    connect(save_log_btn_, SIGNAL(clicked()), this, SLOT(saveLog()));
+    send_log_btn_=new QPushButton("Email...");
+    connect(send_log_btn_, SIGNAL(clicked()), this, SLOT(sendLog()));
+    vbl->addWidget(save_log_btn_);
+    vbl->addWidget(send_log_btn_);
+    
     ui->runTabLayout->addWidget(spl);
     
     cout_log_ = new Q_DebugStream(std::cout);
@@ -225,8 +239,46 @@ void AnalysisForm::onCreateReport()
 
     QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
   }
-
-
 }
 
+void AnalysisForm::saveLog()
+{
+    QString fn=QFileDialog::getSaveFileName(
+        this, 
+        "Save Log to file",
+        "",
+        "*.txt"
+    );
+    
+    if (!fn.isEmpty())
+    {
+        QFile f(fn);
+        if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QMessageBox::critical(this, "Create file failed", "Could not create file "+fn);
+            return;
+        }
+        QTextStream out(&f);
+        out << log_->toPlainText();
+    }
+}
 
+void AnalysisForm::sendLog()
+{
+    QTemporaryFile f;
+    if (!f.open())
+    {
+        QMessageBox::critical(this, "Creation of temporary file failed", 
+                              "Could not create temporary file "+f.fileName());
+        return;
+    }
+    QTextStream out(&f);
+    out<< log_->toPlainText();
+    out.flush();
+    
+    Email e;
+    e.setReceiverAddress("info@silentdynamics.de");
+    e.setSubject("Analysis Log");
+    e.addAttachment(QFileInfo(f).canonicalFilePath());
+    e.openInDefaultProgram();
+}

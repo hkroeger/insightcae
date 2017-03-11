@@ -10,6 +10,8 @@ set(toolkit_gui_SRCS
     parameterwrapper.cpp 
     parametereditorwidget.cpp
     qdebugstream.cpp
+    email.cpp
+    mimetypemanager.cpp
 )
 #SET(toolkit_gui_FORMS newanalysisdlg.ui analysisform.ui)
 #QT4_WRAP_UI(toolkit_gui_FORMS_HEADERS ${workbench_FORMS})

@@ -25,16 +25,97 @@
 
 #include <QTreeWidgetItem>
 
-void addModelsteps(const insight::cad::SubfeatureMap& m, QTreeWidgetItem* parent, const std::string& basename)
+
+void addScalarSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent, const std::string& basename)
 {
-    BOOST_FOREACH(const insight::cad::SubfeatureMap::value_type& ms, m)
+    BOOST_FOREACH(const insight::cad::Feature::RefValuesList::value_type& v, feat.getDatumScalars())
     {
+        std::string thisname=basename+"$"+v.first;
+        QStringList sl; sl << v.first.c_str() << thisname.c_str();
+        QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
+        QFont f=curnode->font(0);
+        f.setItalic(true);
+        f.setPointSize(f.pointSize()-1);
+        
+        curnode->setFont(0, f);
+        curnode->setFont(1, f);
+        QBrush fb(Qt::darkCyan);
+        curnode->setForeground(0, fb);
+        curnode->setForeground(1, fb);
+    }    
+}
+
+
+void addPointSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent, const std::string& basename)
+{
+    QBrush fb(Qt::darkGray);
+    BOOST_FOREACH(const insight::cad::Feature::RefPointsList::value_type& p, feat.getDatumPoints())
+    {
+        std::string thisname=basename+"@"+p.first;
+        QStringList sl; sl << p.first.c_str() << thisname.c_str();
+        QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
+        QFont f=curnode->font(0);
+        f.setItalic(true);
+        f.setPointSize(f.pointSize()-1);
+        curnode->setFont(0, f);
+        curnode->setFont(1, f);
+        curnode->setForeground(0, fb);
+        curnode->setForeground(1, fb);
+    }
+    BOOST_FOREACH(const insight::cad::Feature::RefVectorsList::value_type& v, feat.getDatumVectors())
+    {
+        std::string thisname=basename+"^"+v.first;
+        QStringList sl; sl << v.first.c_str() << thisname.c_str();
+        QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
+        QFont f=curnode->font(0);
+        f.setItalic(true);
+        f.setPointSize(f.pointSize()-1);
+        
+        curnode->setFont(0, f);
+        curnode->setFont(1, f);
+        curnode->setForeground(0, fb);
+        curnode->setForeground(1, fb);
+    }
+}
+
+
+void addSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent, const std::string& basename)
+{
+    addScalarSymbols(feat, parent, basename);
+    addPointSymbols(feat, parent, basename);
+}
+
+
+void addModelsteps
+(
+    const insight::cad::Feature& feat, 
+    QTreeWidgetItem* parent, 
+    const std::string& basename,
+    std::set<std::string> components = std::set<std::string>()
+)
+{
+    BOOST_FOREACH(const insight::cad::SubfeatureMap::value_type& ms, feat.providedSubshapes())
+    {
+        insight::cad::FeaturePtr fp = ms.second;
         std::string thisname=basename+"."+ms.first;
         QStringList sl; sl << ms.first.c_str() << thisname.c_str();
         QTreeWidgetItem *curnode = new QTreeWidgetItem(parent, sl);
+        if (components.find(ms.first)!=components.end())
+        {
+            QFont f=curnode->font(0);
+            f.setBold(true);
+            curnode->setFont(0, f);
+            curnode->setFont(1, f);
+        }
         
         std::cerr<<"adding "<<ms.first<<std::endl;
-        addModelsteps( ms.second->providedSubshapes(), curnode, /*"("+*/thisname/*+")"*/ );
+        std::set<std::string> components;
+        if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(fp.get()) )
+        {
+            components = mf->model()->components();
+        }
+        addModelsteps( *fp, curnode, thisname, components );
+        addSymbols( *ms.second, curnode, thisname );
     }
 }
 
@@ -48,8 +129,21 @@ ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPt
         std::cerr<<"adding "<<ms.first<<std::endl;
         QStringList sl; sl << ms.first.c_str() <<  ms.first.c_str();
         QTreeWidgetItem *curnode = new QTreeWidgetItem(ui->component_tree, sl);
+        if (m->components().find(ms.first)!=m->components().end())
+        {
+            QFont f=curnode->font(0);
+            f.setBold(true);
+            curnode->setFont(0, f);
+            curnode->setFont(1, f);
+        }
         ui->component_tree->addTopLevelItem(curnode);
-        addModelsteps(ms.second->providedSubshapes(), curnode, ms.first );
+        std::set<std::string> components;
+        if ( insight::cad::ModelFeature* mf = dynamic_cast<insight::cad::ModelFeature*>(ms.second.get()) )
+        {
+            components = mf->model()->components();
+        }
+        addModelsteps( *ms.second, curnode, ms.first, components );
+        addSymbols( *ms.second, curnode, ms.first );
     }
     
     connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));

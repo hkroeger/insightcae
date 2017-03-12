@@ -94,6 +94,9 @@ void QVectorVariableItem::createAISShape()
 //   Handle_AIS_Shape aisP = new AIS_Shape(cP);
   TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
   Handle_AIS_Shape aisP(new AIS_Shape(cP));
+
+  context_->getContext()->Load(aisP);
+  context_->getContext()->SetColor(aisP, Quantity_Color(0, 0, 0, Quantity_TOC_RGB), false/*, Standard_True*/ );
   
 //   Handle_AIS_InteractiveObject aisPLabel (createArrow(
 //     cP, name_.toStdString())

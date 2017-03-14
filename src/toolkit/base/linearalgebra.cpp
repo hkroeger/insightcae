@@ -627,10 +627,9 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
 arma::mat sortedByCol(const arma::mat&m, int c)
 {
-  uvec indices = sort_index(m.col(c));
-//   arma::mat xy = xy_us.rows(indices);
-  
-  arma::mat xy = zeros(m.n_rows, m.n_cols);
+
+  arma::uvec indices = arma::sort_index(m.col(c));
+  arma::mat xy = arma::zeros(m.n_rows, m.n_cols);
   for (int r=0; r<m.n_rows; r++)
     xy.row(r)=m.row(indices(r));
   return xy;
@@ -638,43 +637,41 @@ arma::mat sortedByCol(const arma::mat&m, int c)
 
 Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
 {
-  try
-  {
-    //uvec indices = sort_index(xy_us.col(0));
-    arma::mat xy = sortedByCol(xy_us, 0);
-    xy_=xy;
-  
-    if (xy.n_cols<2)
-      throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
-    if (xy.n_rows<2)
-      throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
-//     spline.resize(xy.n_cols-1);
-    spline.clear();
-    
-    int nf=xy.n_cols-1;
-    int nrows=xy.n_rows;
-    
-    acc.reset( gsl_interp_accel_alloc () );
-    for (int i=0; i<nf; i++)
+    try
     {
-      //cout<<"building interpolator for col "<<i<<endl;
-      if ( (xy.n_rows==2) || force_linear )
-	spline.push_back( gsl_spline_alloc (gsl_interp_linear, nrows) );
-      else
-	spline.push_back( gsl_spline_alloc (gsl_interp_cspline, nrows) );
-      //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
-      gsl_spline_init (&spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+        arma::mat xy = sortedByCol(xy_us, 0);
+        xy_=xy;
+
+        if (xy.n_cols<2)
+            throw insight::Exception("Interpolate: interpolator requires at least 2 columns!");
+        if (xy.n_rows<2)
+            throw insight::Exception("Interpolate: interpolator requires at least 2 rows!");
+        spline.clear();
+
+        int nf=xy.n_cols-1;
+        int nrows=xy.n_rows;
+
+        acc.reset( gsl_interp_accel_alloc () );
+        for (int i=0; i<nf; i++)
+        {
+//             cout<<"building interpolator for col "<<i<<endl;
+            if ( (xy.n_rows==2) || force_linear )
+                spline.push_back( gsl_spline_alloc (gsl_interp_linear, nrows) );
+            else
+                spline.push_back( gsl_spline_alloc (gsl_interp_cspline, nrows) );
+            //cout<<"x="<<xy.col(0)<<endl<<"y="<<xy.col(i+1)<<endl;
+            gsl_spline_init (&spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
+        }
+
+        first=xy.row(0);
+        last=xy.row(xy.n_rows-1);
     }
-    
-    first=xy.row(0);
-    last=xy.row(xy.n_rows-1);
-  }
-  catch (...)
-  {
-    std::ostringstream os;
-    os<<xy_us;
-    throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
-  }
+    catch (...)
+    {
+        std::ostringstream os;
+        os<<xy_us;
+        throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
+    }
 }
 
 Interpolator::~Interpolator()

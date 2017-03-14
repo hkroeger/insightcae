@@ -830,7 +830,9 @@ set {
     gaussianSpot
     decayingTurbulenceSpot
     decayingTurbulenceVorton
-    anisotropicVorton
+    anisotropicVorton_Analytic
+    anisotropicVorton_PseudoInv
+    anisotropicVorton_NumOpt
     anisotropicVorton2
     combinedVorton
     modalTurbulence

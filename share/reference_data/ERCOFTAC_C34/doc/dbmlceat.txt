@@ -1,0 +1,1202 @@
+
+
+
+
+                        Description  of  the  data  base:
+
+
+           Plane  turbulent  mixing  layer  from  C.E.A.T.  Poitiers
+
+                             Joel Delville
+
+
+
+                              CEAT/LEA UMR CNRS 6609
+
+                 43, route de l'aerodrome F-86036 Poitiers cedex
+
+                                      - FRANCE -
+
+
+
+                           Email:  delville@univ-poitiers.fr
+
+
+
+                          June 1995       rev 2 (October 1997)
+
+
+Contents
+1   Brief description of the data base 
+    1.1    Quick overview 
+    1.2    Flow under study
+    1.3    Quantities provided 
+    1.4    Structure of the data base 
+           1.4.1    Directory data   
+           1.4.2    Directory balance 
+           1.4.3    Directory turb   
+           1.4.4    Directory doc  
+           1.4.5    Directory figures  
+           1.4.6    Directory pdf 
+           1.4.7    Directory spectra 
+           1.4.8    Directory ic  
+           1.4.9    Directory flow
+           1.4.10   Directory PDF2
+
+
+2   Experimental facility  
+    2.1    Wind Tunnel  
+    2.2    Generation of the flow 
+    2.3    Measurement Configuration 
+           2.3.1    Hot-wires and Constant Temperature Anemometry 
+           2.3.2    Temperature measurement 
+           2.3.3    Data Acquisition  
+    2.4    Calibrations 
+           2.4.1    Single wire probe 
+           2.4.2    "X" wires probe 
+
+
+3   Flow feature and notations.     
+    3.1    Coordinates 
+    3.2    Notations  
+    3.3    Data reduction
+    3.4    Pressure gradient
+    3.5    Boundary layers on the plate  
+
+
+4   Description of experiments   
+    4.1    Experiment I : single wire - analogic treatment 
+           4.1.1    Measurement grid  
+           4.1.2    Files 
+           4.1.3    Visualizing the raw data 
+           4.1.4    Related data 
+           4.1.5    Measurement at the trailing edge of the plate 
+    4.2    Experiment II : single wire - sampled data 
+           4.2.1    Measurement grid 
+
+
+
+
+
+
+           4.2.2    data acquisition configuration 
+           4.2.3    Files 
+    4.3    Experiment III : "X" wire - sampled data 
+           4.3.1    Measurement grid
+           4.3.2    data acquisition 
+    4.4    Comparison of moments obtained by the different experiments.
+           4.4.1    Files 
+           4.4.2    Drawing and comparison of measured quantities
+    4.5    Spectra
+           4.5.1    Files 
+           4.5.2    Figures 
+    4.6    Probability Density Function  
+           4.6.1    Files 
+           4.6.2    Figures
+
+
+5   Energy, Shear-stress and Momentum balance 
+    5.1    Files 
+    5.2    Energy balance
+           5.2.1    Convection
+           5.2.2    Diffusion 
+           5.2.3    Production
+           5.2.4    Dissipation 
+           5.2.5    Balance 
+    5.3    Shear stress balance
+           5.3.1    Files 
+           5.3.2    Balance
+    5.4    Momentum balance
+           5.4.1    Files  
+           5.4.2    balance
+
+
+A   Characteristic quantities for the mixing layer 
+
+
+List   of   Figures
+
+    2.1    Wind tunnel
+    3.1    Coordinates and notations in the mixing layer 
+    3.2    Typical mean velocity profile in a plane mixing layer
+    3.3    Mean velocity profile at x = 0:5mm from the trailing edge.
+           Experiment I
+    3.4    RMS velocity profile at x = 0:5mm from the trailing edge.
+           Experiment I 
+    4.1    Typical mean_velocity profile measured in the mixing layer. 
+    4.2    Typical u2  velocity profile in the plane mixing layer. 
+    4.3    downstream evolution of the vorticity thickness and momentum thickness
+    4.5    Sample of spectrum measured during experiment 2.  For a probe location 
+           in the high velocity side of the mixing layer.  X=200mm
+    4.6    Sample of spectrum measured during experiment 2.  For a probe location
+           in the high velocity side of_the mixing layer.  X=800mm
+    4.7    Comparison of U   obtained from the different experiments
+    4.8    Comparison of second order moments obtained from the different
+           experiments
+    4.9    Comparison of third order moments obtained from the different
+           experiments
+    4.10   Comparison of fourth order moments obtained from the different
+           experiments
+    4.11   Sample of spectrum of u measured during experiment 3. For a probe 
+           near the mixing  layer axis.  X=800mm 
+    4.12   Sample of spectrum of v measured during experiment 3. For a probe
+           near the mixing layer axis.  X=800mm
+    4.13   Sample  of  spectrum  of  w  measured  during  experiment  4.
+           For  a  probe  near  the   mixing layer axis.  X=800mm
+    4.14   Sample of PDF of u measured during experiment 3.  For a probe near 
+           the mixing layer axis.  X=800mm
+    4.15   Sample of PDF of v measured during experiment 3.  For a probe near
+           the mixing layer axis.  X=800mm
+    4.16   Sample of PDF of w measured during experiment 4.  For a probe near
+           the mixing layer axis.  X=800mm  
+    5.1    Evolution of k and <uv> around X = 200mm 
+    5.2    Evolution of k and <uv>  around X = 800mm
+    5.3    Evolution of the terms involved in the convective part of the balance
+           of k ; X = 800mm  
+    5.4    Evolution of the terms involved in the diffusive part of the balance 
+           of k ; X = 800mm 
+    5.5    Evolution of the terms involved in the productive part of the balance 
+           of k ; X = 800mm 
+    5.6    Evolution of the dissipation (experiment 2 and balance of k) ;
+           X = 800mm 
+    5.7    Energy balance at X = 200mm
+    5.8    Energy balance at X = 800mm
+    5.9    Shear-stress balance at X = 200mm 
+    5.10   Shear-stress balance at X = 800mm 
+    5.11   Momentum balance at X = 200mm 
+    5.12   Momentum balance at X = 800mm 
+
+
+
+
+
+
+Chapter   1
+
+
+Brief   description   of   the   data   base
+
+
+convention:  In this data base the main directory is noted:  SHL04
+
+
+
+1.1       Quick  overview
+
+
+This  data  base  of  a  plane  turbulent  mixing  layer  contains  two  levels  of
+data.  The main features of the flow,  the turbulent quantities and energy
+balance  are  contained  in  the  following  directories
+
+    o  SHL04/facility  :  wind  tunnel  and  notations
+    o  SHL04/ic  :  initial  longitudinal  velocity  profile
+    o  SHL04/turb  :  interesting  turbulent  quantities
+    o  SHL04/balance  :  turbulent  energy  balance
+
+
+More detailed data, including spectra and Probability Density Functions
+are  also  available.
+
+    To get a quick overview of what this data base contains, type SHL04/mkovrvw
+this  script  file  will  display  on  your  X  terminal  the  main  quantities 
+available.
+
+
+
+
+1.2        Flow  under  study
+
+This data base presents results concerning a plane  turbulent  incompressible 
+mixing  layer: air-air.  The mixing layer flow is generated from the confluence of
+two air streams merging from the  trailing  edge  of  a  thin  flat  plate.   
+The  boundary  layers  over  this  plate  are  turbulent.   The velocity ratio is 
+of the order of 0.6.  The mean velocity of the high speed stream is noted Ua  and
+the corresponding velocity for the low speed part is Ub.
+
+
+
+
+1.3        Quantities  provided
+
+
+Three experiments are performed by using hot wire anemometry (constant temperature
+anemometers). Single wire probes and X wires are used. From this set of experiments
+the following quantities are provided.
+
+    o  Mean an MS longitudinal velocity profiles measured at more than 20
+       downstream location
+    o  High order moments of the velocity fluctuations (up to order 4) measured 
+       at 6 downstream        locations
+    o  spectra of velocity
+    o  Probability density function of velocity
+    o  balance of kinetic energy and of the shear stress uv
+    o  velocity profile close downstream of the trailing edge
+
+
+
+1.4        Structure  of  the  data  base
+
+
+All the data are saved in ASCII format, in a way compatible with the Gnuplot 
+package.
+
+
+The directories hierarchy is as follows:
+
+           ./data
+           ./balance
+           ./turb
+           ./doc
+           ./figures/rawdata
+           ./figures/facility
+           ./figures/balance
+           ./figures/spectra
+           ./figures/pdf
+           ./pdf
+           ./spectra
+           ./ic
+           ./flow
+           ./prog
+           ./ps
+           ./tex
+           ./PDF2
+
+where ./ is the home directory SHL04
+
+
+
+1.4.1       Directory  data
+Contains the data files.  Generated by the measurements. The units used are metric.
+
+
+
+1.4.2       Directory  balance
+Contains data files where a few quantities have been calculated, and that are
+useful for the momentum balance.  This quantities are properly normalized. 
+See section 3.3.
+
+
+
+1.4.3       Directory  turb
+This directory contains the turbulent quantities properly normalized.  
+See section 3.3.
+
+
+
+1.4.4       Directory  doc
+Contains Files describing the data base.  Three versions are available: LATEX file,
+plain ASCII or ps files.
+
+
+
+1.4.5       Directory  figures
+This directory and the different subdirectories contains Gnuplot scripts   *.gp 
+allowing to generate the plots.  Three kinds of scripts are provided
+
+    o  for viewing on a X terminal:  first characters "xt"
+    o  generating LATEX files:  first characters "la"
+    o  generating Postscript files:  first characters "ps"
+
+    When ran these scripts will fill the subdirectories ps and tex
+
+
+Subdirectory rawdata
+Contains Gnuplot scripts to plot the raw data.
+
+
+Subdirectory facility
+Contains a few figures that describe the flow configuration.
+
+
+Subdirectory balance
+Contains Gnuplot scripts to plot the balance of the turbulent kinetic energy
+
+
+Subdirectory pdf
+Contains Gnuplot scripts to plot the Probability Density Function of u
+
+Subdirectory spectra
+Contains Gnuplot scripts to plot the Spectra of u
+
+
+
+1.4.6       Directory  pdf
+Contains the PDF of u
+
+1.4.7       Directory  spectra
+Contains the Spectra of u
+
+1.4.8       Directory  ic
+Contains the initial conditions of the flow.  A velocity profile measured
+downstream close to the trailing edge of the plate.
+
+1.4.9       Directory  flow
+Contains files summarizing the main features of the flow.
+
+1.4.10        Directory  PDF2
+Contains PDF of velocity differences.
+
+
+
+Chapter   2
+
+
+Experimental   facility
+
+
+
+2.1       Wind  Tunnel
+
+
+The experiments are performed in the E300 open loop wind tunnel of the C.E.A.T.
+Poitiers (see Fig- 2.1 for a description).  It is composed of the following parts,
+from upstream to downstream:
+
+
+o filters to avoid probes contamination
+o a converging part (contraction ratio 16) with a square section.
+o the test section.  The lower and upper walls can be slanted to adjust pressure 
+ gradients
+o a diffuser
+o an axial fan
+o a silencer
+
+                 WIND TUNNEL E300 of the C.E.A.T. Poitiers France
+
+
+             Type:                         open loop
+             Test section:                 square - 300mmx300mm - length :  1.2 m
+             Contraction ratio:            16
+             Motor and fan:                power :  4.2 kW up to 3,200 rpm
+             Rotation of the fan :         can be varied in a ratio of 10
+                                           (for probe calibration purposes)
+             Temperature:                  regulated  0.5 degrees Celcius
+             Probe holder:                 motions along 3 orthogonal axis via 
+                                           stepping  motors - accuracy 1/100mm
+
+
+2.2        Generation  of  the  flow
+
+
+A duraluminium flat plate separates the converging part of the wind tunnel in two 
+symmetrical parts.  Head loss filters are located at the entrance of one of the 
+halves.  The characteristics of this plate are:
+
+    o  length:  1m
+    o  thickness:  3mm
+    o  sand paper is glued on the upstream sides of the plate in order to 
+       stabilize the boundary  layers on this plate
+    o  downstream edge:  slanted symmetrically with a slope of about 3% - length 
+       of the beveled edge 50mm.
+
+The  head  loss  filters  create  a  velocity  difference  between  the  upper  
+and  lower  part  of  the  test section entrance.  This velocity difference
+creates a plane mixing layer.
+
+The roof and floor of the test section are slanted in order to get a zero pressure
+gradient.
+
+
+
+2.3        Measurement  Configuration
+
+2.3.1       Hot-wires  and  Constant  Temperature  Anemometry
+
+The experiments are performed by using hot wire anemometry and constant
+temperature anemometers.  Two kinds of probe are used
+
+    o  a single probe :  home modified DANTEC 55P11 - wire W-Pt length 0.5 mm ;
+        diameter 2.5 micrometers
+    o  a 2 wires miniature end flow "X" probe :  standard TSI 1248 - spacing 
+       between wires 0.5mm  - wires length 1mm ; diameter 5 micrometers
+
+Anemometers are built from TSI 1750.
+
+
+2.3.2       Temperature  measurement
+
+Temperatures are measured by using a K-type thermocouple and an Omega cold junction
+compensator
+
+
+2.3.3       Data  Acquisition
+
+Two data acquisition systems are used for the present experiments
+
+    o  The first one is devoted to measurements of Temperature,  mean and RMS 
+       voltages.  It is   built from a Keithley 705 10 channels scanner and a
+       Keithley 195A digital multimeter. These  devices are controlled via a GPIB
+       bus by a PC micro-computer.  This configuration is used  for experiment I 
+       only (see 4.1)
+
+    o  The second one is devoted to the data acquisition of instantaneous signals.
+       It presents the  following characteristics:
+
+         -signal conditioning by analog separation of mean and fluctuating voltages
+         -programmable amplification for gains up to 10240
+         -programmable anti-aliasing filters (-36dB/octave)
+         -Analog Digital Converters - 12 bits - Voltage range  5V
+	 -simultaneous sampling up to 100 kHz
+         -aximum continuous record size 512k samples
+         -these devices are controlled by a PC micro-computer via a GPIB bus, 
+          and a CAMAC  crate controller.
+
+
+2.4       Calibrations
+
+2.4.1       Single  wire  probe
+
+The calibration law which is used is:
+       e**2 (t) = (Tw  - Tf ) x (a + b*u(t)**n )                         (2.1)
+
+
+       e(t)        is     the instantaneous output voltage from the anemometer
+       u(t)        is     the instantaneous streamwise velocity
+       Tw          is     the wire constant temperature
+       Tf          is     the flow temperature
+       a, b, n     are    calibration coefficients
+
+The calibration is performed in the non turbulent high speed side of the wind 
+tunnel.  During the calibration the temperature of the mean flow Tf  and the
+global velocity Uc of the wind tunnel are varied in an uncoupled way.  This
+allows to determine the coefficients a, b, n and the temperature of the wire via 
+a regression procedure.
+
+
+
+2.4.2       "X"  wires  probe
+
+The calibration law used is for a wire i:
+
+
+            e**2 / (Tw  - Tf ) = Ca(alpha) + Cb(alpha) * u(t)**n       (2.2)
+
+
+where
+    e             is     the instantaneous output voltage from the anemometer
+    Tw            is     the constant temperature of wire 
+    u(t)          is     the instantneous velocity normal to wire 
+    alpha         is     the instantaneous angle between the velocity vector and
+                         the probe axis in the plane defined by the wires.
+    n             is     a calibration coefficient chosen independent of alpha
+    Ca, Cb        are    calibration coefficients
+
+
+The calibration is performed is a small jet facility.  During this calibration, 
+the mean velocity, the temperature of the flow and the yaw of the probe are varied.
+The coefficients Twi , ni and the laws Ca(alpha) and Cb(alpha) are calculated by
+a regression procedure.  The calibration is performed for a range of  30 degrees 
+for the angle alpha.
+
+   For the experiments involving X-wires (experiments 3, 4, 5), we use non
+linearized calibration laws.   In  the  single  wire  experiments  (experiments  1
+and  2)  we  use  a  linearized  version  of  the calibration law (equation 2.1)
+then the output fluctuating voltage of the anemometer is supposed
+to be linearly related to the fluctuating part of the velocity.
+
+
+
+Chapter   3
+
+
+Flow   feature   and   notations.
+
+
+
+3.1        Coordinates
+
+
+The frame of reference is described on figure 3.1.  The coordinates are:
+       Ox     streamwise direction starting from the trailing edge of the plate
+       Oy     normal to the plate starting from trailing edge
+              y > 0 for the high velocity side
+       Oz     spanwise direction
+
+
+
+3.2        Notations
+
+                      Ua          mean velocity (high speed side)
+                      Ub          mean velocity (low speed side)
+                      Uc          average convection velocity Uc = (Ua + Ub)=2
+                      Delta U     velocity difference:   Delta U = Ua - Ub
+                      delta_omega conventional vorticity thickness (see Fig-3.2)
+                      X0 ; Y0     virtual origin of the mixing layer (see Fig-4.4)
+                      Theta       momentum thickness
+                      sigma       expansion factor
+
+
+
+3.3        Data  reduction.
+
+
+When plotting normalized data, the velocity difference  Delta U  and the vorticity
+thickness delta_omega  will be used.
+                              
+3.4       Pressure  gradient
+
+The pressure gradient dp/dx is adjusted as close to zero as possible. This is
+performed by achieving a divergence between the roof and the floor of the test
+section.
+
+
+
+3.5       Boundary  layers  on  the  plate
+
+The use of the sand paper and of a long plate allows both boundary layers to be
+fully turbulent at the trailing edge of the plate.  Table 3.1 summarizes the main
+features of these boundary layers
+
+
+Characteristic quantity |  Notation  | High velocity side |   Low velocity side
+ measured_at_X=-10mm    |            |   boundary_layer   |   Boundary_layer   
+                        |            |                    |                    
+Velocity                | Ua, Ub     |   Ua=41.54m/s      |   Ub=22.40m/s      
+thickness (99%)         | delta      |   9.6mm            |   6.3mm 
+displacement thickness  | delta1     |   1.4mm            |   1.0mm 
+momentum thickness      | theta      |   1.0mm            |   0.73mm
+shape factor            | H          |   1.35             |   1.37
+Reynolds number theta   | Re         |   2900             |   1200
+turbulence level        | u'/U       |   ~0.3%            |   ~0.3%
+
+Table 3.1:  Main features of the boundary layers of the separating plate
+(measured at the trailing edge).
+
+
+Some velocity characteristics just downstream the trailing edge can be found in 
+Fig-3.3, Fig-3.4, where profiles of mean value and variance of the streamwise 
+component of the velocity are plotted respectively.
+
+
+
+Chapter   4
+
+
+Description   of   experiments
+
+
+The aim of the experiments provided in this data base was to check an experimental
+procedure allowing to obtain the balance of turbulent kinetic energy.  The use of 
+this procedure on a well documented flow:  the plane mixing layer seemed to be a
+reasonable check. To perform this check 3 sets of experiments are used
+
+ o Experiment I : single wire - analogic treatment:  main qualification of the flow
+ o Experiment II : single wire - sampled data:  estimation of dissipation
+ o Experiment III : "X" wire - sampled data:  estimation of various turbulent 
+   quantities, useful  for checking the energy balance.
+
+          -  Experiment III-a or (3)- wires in the xy plane
+          -  Experiment III-b or (4)- wires in the xz plane
+          -  Experiment III-c or (5)- wires in a 45 degrees plane
+
+During  all  these  experiments,  the  temperature  of  the  flow,  and  a 
+reference  velocity  (lower  side velocity) are continuously measured.  The mean
+temperature of the flow is kept close to 20o C
+
+
+4.1       Experiment  I  :  single  wire  -  analogic  treatment
+
+
+This experiment has been performed in order to characterize the main features of
+the flow.  The measurements provide:
+
+    o  The mean velocity
+    o  the variance value of the fluctuating velocity
+
+4.1.1       Measurement  grid
+
+The following X locations are investigated (measured from the trailing edge of the
+plate): X = 30.0, 40.0, 50.0, 70.0, 100.0, 130.0, 170.0, 200.0, 250.0, 300.0, 
+350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 725.0, 750.0, 800.0, 850.0, 
+900.0, 950.0, 1000.0 mm
+
+
+    For each X location, 201 measurement locations are used in the Y  direction. 
+The extent of the measurement domain is adapted to the mixing layer size.
+
+
+
+
+4.1.2       Files
+
+  The corresponding files are in the directory SHL04/data.
+
+  file names DDDD.ml1, where DDDD is the X  location written using 4 digits and 
+leading zeros.  (ie.   0005.ml1).
+      A header of 4 lines describes the file contents.  Then the data follow 
+organized in 4 columns:
+
+
+     1.  X location [mm]
+     2.  Y  location [mm]
+     3.  U  mean velocity [m/s]
+     4.  <u**2>    [m2/s2]
+
+
+      Example of file content:
+
+
+#  FILE  0030.mls
+#SINGLE  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#    X   [mm]          Y  [mm]          <U>  [m/s]       <u'u'>  [(m/s)**2]
+  0.300000E+02     -0.118200E+02      0.223847E+02      0.478949E-02
+  0.300000E+02     -0.116080E+02      0.223880E+02      0.606776E-02
+
+
+
+  4.1.3       Visualizing  the  raw  data
+
+  The raw data can be visualized by using the Gnuplot file 
+SHL04/figures/rawdata/xtml1.gp
+
+
+  The script file SHL04/figures/rawdata/makefigs creates
+
+
+      o  LATEX files (stored in SHL04/tex), names: ml1DDDDm.tex for mean 
+velocity and ml1DDDDf.tex  for fluctuating part.  DDDD is the X location written 
+using 4 digits and leading zeros.
+
+      o  a single Postscript file (stored in SHL04/ps), named psuml1.ps that 
+contains all the plots  directly printable.
+
+      o  Encapsulated  Postscript  files  (stored  in  SHL04/ps),  names  with 
+the  same  rules  as  the LATEX ones, but the extension is now   .eps.
+
+
+Figure  4.1 and  4.2 gives examples of such plots.
+
+
+
+      4.1.4       Related  data
+
+      From the mean velocity profiles the following quantities have been computed
+
+
+          o  downstream evolution of Ua  and Ub
+             The corresponding data file is SHL04/flow/uaub.ml1
+          o  vorticity thickness (Ua - Ub)=(@U=@y) on the mixing layer axis
+             The corresponding data file is SHL04/flow/delom.ml1
+          o  momentum thickness. The corresponding data file is
+             SHL04/flow/theta.ml1
+          o  expansion factor of the mixing layer
+          o  iso-velocity lines 
+             The corresponding data file is SHL04/flow/thephis.ml1
+          o  virtual origin of the mixing layer
+
+
+
+      Visualizing related data
+
+      These related data can be plotted by using 
+SHL04/figures/rawdata/xtscales.gp.  Figure 4.3  shows the downstream evolution
+of the vorticity thickness and momentum thickness.
+
+
+       The iso-velocities are plotted by using 
+SHL04/figures/rawdata/xtthephi.gp.  (Figure 4.4)
+
+
+
+
+4.1.5       Measurement  at  the  trailing  edge  of  the  plate
+
+Experiment  I  has  also  been  performed  close  downstream  the  trailing  edge
+(X  ~  0:5mm)  the corresponding data file is SHL04/data/0001.ml1 the 
+corresponding plot file is: SHL04/figures/rawdata/xtprofin (cf Fig. 3.3 and 3.4)
+
+
+4.2       Experiment  II  :  single  wire  -  sampled  data
+
+
+In this experiment we are mainly interested in the determination some statistics  
+concerning the longitudinal component of the velocity:
+
+    o  higher moments
+    o  spectra from which an estimation of the dissipation term epsilon can be 
+       provided
+
+
+
+4.2.1       Measurement  grid
+
+This experiment has been performed at two X  locations :  X=200mm and X=800mm from
+the trailing edge.  In the Y  direction, 41 positions are explored.
+
+    o  for X =200mm the measurement step is ffiy= 1.575 mm
+    o  for X =800mm the measurement step is ffiy= 2.15 mm
+
+
+
+4.2.2       data  acquisition  configuration
+
+At each Y  location, two samples of 512k instantaneous conversions are stored. 
+The sampling frequency is 50kHz.  An anti-aliasing filter is used with a cut-off 
+frequency fc=20kHz.
+
+4.2.3       Files
+
+Higher moments
+
+The data corresponding to the higher moments can be found in SHL04/data.  
+These files are: 0200.ml2  and  0800.ml2.   In  these  files,  are  found  4 
+lines  of  header,  followed  by  41  lines  of  6 columns.
+
+   1.  X location [mm]
+   2.  Y  position [mm]
+   3.  <u**2> [m2/s2]
+   4.  <u**3> [m3/s3]
+   5.  <u**4> [m4/s4]
+   6.  an estimation of the dissipation epsilon obtained from spectra [m2/s3]. 
+This dissipation is obtained by assuming isotropy of small dissipative scales and
+by using a Taylor hypothesis.  Following these assumptions:
+
+Example of file content:
+
+  FILE  0200.ml2
+#SINGLE  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#data  taker:  J.  Delville  CEAT  Poitiers  -  France
+# X [mm]   Y [mm]   <u**2>  [(m/s)**2]  <u**3>  [(m/s)**3]  <u**4>  [(m/s)**4]  eps
+0.200000E+03 -0.295600E+02  0.766937E-02  0.499922E-03      0.662172E-03  ....
+
+
+Spectra
+
+The spectra files are in the directory SHL04/spectra.  The generic name is
+s0200ml2.DDD for the location X=200mm.  Where DDD is a three digits representation
+of the probe location varying  from 001 to 041.
+    A header of 4 lines describes the file content. 1024 frequencies are available.
+  Then the data follow organized in 3 columns:
+
+   1.  f  frequency [Hz]
+   2.  Y  location [mm]
+   3.  S(f ) energy at frequency f . 
+
+Example of file contents:
+
+#  File  s0200ml2.016
+#SINGLE  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  f   [Hz]      y      [mm]              S(f)
+       6.10352     -5.93500      11.2115
+       30.5176     -5.93500      11.2115
+
+
+Data visualization
+
+    o  Spectra plots are generated by using the script file 
+       SHL04/figures/spectra/makefigs.   These plots can be viewed by using:  
+       gnuplot  xtspml2.gp Figures 4.5 and   4.6 show two typical spectra obtained
+       during this experiment.
+    o  Higher moments plots can be obtained by using the script-files described in
+       section  4.4.2
+
+4.3        Experiment  III  :  "X"  wire  -  sampled  data
+
+
+This experiment is performed with a X-wires probe.  Three configurations of probe 
+orientation are used:
+
+    o  wires in the xy plane:  experiment IIIa_(3) The probe provides u(t); v(t).
+       By this way one can measure the turbulent quantities <u** p>;  <v**p>;
+       <u**q*v**r>  for p = 1; 2; 3; 4 and q + r < 4.  (eg. <u**3*v> )
+    o  wires in the xz plane:  experiment IIIb_(4). The probe provides u(t); w(t).
+       By this way one can measure the turbulent quantities <u**p>; <v**p>;  
+       <u**q * w**r> for p = 1; 2; 3; 4 and q + r < 4.  (eg. <u**2 w**2> ).
+       The moments involving odd powers of w have been checked to be close to 
+       zero, as it should be due to the homogeneity in the Z direction.
+    o  wires  in  the  xt  plane:  experiment  IIIc  (5).  In  this  configuration,
+       the  probe  is  rotated  45 degrees on its axis.  The probe provides 
+       u(t); (v(t)-w(t)).  This experiment is performed in  order to get an 
+       estimation of the moment <v* w**2>.
+
+
+4.3.1       Measurement  grid
+
+Experiments  IIIa  (3)  and  and  IIIb  (4)  are  performed  at  6  downstream 
+locations:  X=150,  200, 250mm and X=650,800,950mm.  The first three are located
+upstream of the self similar region of the flow, while the last are located in the
+self similar region.  Experiment IIIc (5) is only performed at locations X=200 and
+800mm.
+
+4.3.2       data  acquisition
+
+At each Y  location,  two samples of 512k instantaneous conversions are stored for 
+each velocity component.  The sampling frequency is 50kHz.  An anti-aliasing 
+filter is used with a cut-off frequency fc=20kHz.
+
+4.4        Comparison  of  moments  obtained  by  the  different  experiments.
+
+
+4.4.1       Files
+
+Directory   SHL04/data
+
+
+File names:   DDDDX.mlY where
+
+    o  DDDD is the X location with leading zeros (DDDD=0150, 0200, 0250, 0650, 
+       0800 or 0950) 
+    o  X corresponds to the order of the moment:
+          -   a:  second order moments
+          -   b:  third order moments
+          -   c:  fourth order moments
+          -   m:  first order moment
+    o  Y: index of experiment:
+          -   Y=3 :  experiment IIIa
+          -   Y=4 :  experiment IIIb
+          -   Y=5 :  experiment IIIc
+
+Files  description
+
+   Here  are  the  headers  of  the  different  files  involved  in  this  
+experiment  for X=200mm
+
+
+#  FILE  0200a.ml3
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]   Y  [mm]      <u**2>  [(m/s)**2]   <v**2>  [(m/s)**2]  <uv>  [(m/s)**2]
+0.200000E+03  -0.295600E+02  0.957454E-02   0.113029E-01     -0.202307E-02
+
+#  FILE  0200b.ml3
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#X[mm] Y[mm] <u**3>[(m/s)**3] <v**3>[(m/s)**3] <u**2v>[(m/s)**3] <uv**2> [(m/s)**3]
+0.200000E+03 -0.295600E+02  0.156138E-02 -0.339162E-02 -0.152548E-02  0.158487E-02
+
+
+#  FILE  0200c.ml3
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#X[mm] Y[mm]  <u**4>[(m/s)**4]     <v**4>      <u**2v**2>      <u**3v>     <uv**3>
+0.200000E+03 -0.295600E+02 0.147914E-02 0.265662E-02 0.951231E-03 -0.824148E-03 ...
+
+#  FILE  0200m.ml3
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]   <U>  [m/s]  <V>  [m/s]
+    200.      -29.560   22.605499   -0.953397
+
+#  FILE  0200a.ml4
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]          <u**2>  [(m/s)**2]   <w**2>  [(m/s)**2]
+ 0.200000E+03     -0.295600E+02      0.143306E-01      0.683822E-02
+
+#  FILE  0200b.ml4
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]          <u**3>  [(m/s)**3]   <uw**2>  [(m/s)**3]
+ 0.200000E+03     -0.295600E+02      0.163858E-02      0.850425E-03
+
+#  FILE  0200c.ml4
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+# X[mm]   Y[mm]    <u**4>  [(m/s)**4]   <w**4>  [(m/s)**4]   <u**2w**2>  [(m/s)**4]
+0.200000E+03  -0.295600E+02      0.189589E-02      0.147619E-02      0.694260E-03
+
+#  FILE  0200m.ml4
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]   <U>  [m/s]
+    200.      -29.560   22.409800
+
+#  FILE  0200a.ml5
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]          <u**2>  [(m/s)**2]
+ 0.200000E+03     -0.295600E+02      0.160760E-01
+
+
+#  FILE  0200b.ml5
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+# X  [mm]  Y  [mm]      <u**3>  [(m/s)**3]          <v**3+  3  v  w**2>  [(m/s)**3]
+ 0.200000E+03     -0.295600E+02     -0.188325E-02     -0.743583E-04
+
+#  FILE  0200c.ml5
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]          <u**4>  [(m/s)**4]
+ 0.200000E+03     -0.295600E+02      0.114488E-02
+
+#  FILE  0200m.ml5
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  X  [mm]      Y  [mm]   <U>  [m/s]  <V>  [m/s]
+   200.      -29.560   22.538000
+
+4.4.2       Drawing  and  comparison  of  measured  quantities
+
+The data measured via experiments I to III can be compared by using the Gnuplot
+script: SHL04/figures/rawdata/xtprof.gp.
+
+    Figures  4.7 to  4.10 shows selected examples of these comparisons for X=800mm
+
+4.5        Spectra
+
+
+4.5.1       Files
+
+
+The spectra files are in the directory SHL04/spectra.  The generic name is
+s0200mlu.DDD for the location X=200mm, u component ; s0200mlv.DDD and s0200mlw.DDD
+for components v and w.  Where DDD is a three digits representation of the probe
+location varying from 001 to 041.
+    A header of 4 lines describes the file content. 1024 frequencies are available.
+Then the data  follow organized in 3 columns:
+
+   1.  f  frequency [Hz]
+   2.  Y  location [mm]
+   3.  S(f ) energy at frequency f .  The data are normalized by the energy
+
+
+4.5.2       Figures
+
+
+The spectra can be plotted by using SHL04/figures/spectra/xtspml*.gp Gnuplot
+script files. Examples of spectra are plotted figures 4.11 to  4.13.
+
+
+4.6        Probability  Density  Function
+
+
+The PDF are estimated for the 3 components of the velocity.  201 bins are used 
+regularly spaced between  5 x the standard deviation.
+
+
+
+4.6.1       Files
+
+The  PDF  files  are  in  the  directory  SHL04/pdf.  The  generic  name  is 
+p0200mlu.DDD  for  the location X=200mm, u component ; p0200mlv.DDD and
+p0200mlw.DDD for components v  and w. Where DDD is a three digits representation
+of the probe location varying from 001 to 041.
+
+
+headers
+
+#  File  p0200mlw.003
+#  X  WIRE  MEASUREMENTS  IN  PLANE  MIXING  LAYER
+#  data  taker:  J.  Delville  CEAT  Poitiers  -  France
+#  w/sigma          y      [mm]             sigma  P(w/sigma)
+      -5.00000     -26.5600      1.31225E-02
+
+
+4.6.2       Figures
+
+The PDF can be plotted by using SHL04/figures/spectra/xtpdf*.gp Gnuplot script 
+files.
+
+Examples of spectra are plotted figures 4.14 to  4.16.
+
+
+
+
+Chapter   5
+
+
+Energy,   Shear-stress   and
+
+
+
+Momentum   balance
+
+
+The flow is supposed to be homogeneous in the Z direction.  The balances are
+written:
+
+        ENERGY:  CONVECTION + DIFFUSION + PRODUCTION + DISSIPATION = 0
+
+
+DISSIPATION =estimated through the spectrum see equation 4.2; or by difference
+
+
+ SHEAR  STRESS:  CONVECTION + DIFFUSION + PRODUCTION + PRESSURE STRAIN = 0
+
+
+
+    These balances are established at two downstream locations : X=200 and X=800mm.
+
+    The first step is to select among the data the ones given the best estimation 
+of the turbulent quantity:
+
+
+                order     turbulent quantity      experiment used          files
+                   1         U                       3                     *m.ml3
+                   1         V                       3                     *m.ml3
+                   2         <uu>                    3                     *a.ml3
+                   2         <vv>                    3                     *a.ml3
+                   2         <uv>                    3                     *a.ml3
+                   2         <ww>                    4                     *a.ml4
+                   3         <uuu>                   3                     *b.ml3
+                   3         <uuuv>                  3                     *b.ml3
+                   3         <uvv>                   3                     *b.ml3
+                   3         <vvv>                   3                     *b.ml3
+                   3         <uww>                   4                     *b.ml4
+                   3         <vww>                   3, 4, 5               *b.ml5
+  
+
+    The partial derivatives are performed by a second order finite different 
+scheme. Before applying the derivatives, the data are smoothed in the Y  
+direction by a FFT procedure:  Fourier transform of size 128 of the profiles 
+then rejection of the 20 highest Fourier modes.
+
+
+5.1        Files
+
+The data corresponding to this part of the study are located in the directory
+SHL04/balance.
+
+
+The selected moments are in the directory SHL04/turb. In this directory can
+be also found the data corresponding to the profiles of k and <uv>.  These
+profiles are plotted figure 5.1 and 5.2 for the two X locations retained.
+
+
+All data are stored normalized:
+
+
+    o  by 1/delta_omega  for the y position
+    o  by delta_omega/ = Delta U **3 for the terms of the balance
+
+
+
+5.2        Energy  balance
+
+
+5.2.1       Convection
+
+Figure 5.3 shows for X=800 mm the contribution of the two terms involved in the 
+convective part of the balance of energy,  showing the dominant contribution of 
+the first term.
+
+
+Files:  convk.200    and    convk.800
+
+
+
+#   File  convk.200
+#   Terms  appearing  in  k  convection
+#
+#          y                u*  dk/dx          v  *dk/dy          convection
+
+
+5.2.2       Diffusion
+
+Figure 5.4 shows for X=800 mm the contribution of the two terms involved in the diffusive part of the balance of energy, showing the dominant contribution of the 
+second term.
+
+Files:  diffk.200    and    diffk.800
+
+#  File  diffk.200
+#  Terms  appearing  in  diff  of  k
+#
+#   y        -.5*d/dx(u3+uv2+uw2)   -.5*d/dy(u2v+v3+vw2)   diffusion
+
+
+5.2.3       Production
+
+Figure 5.5 shows for X=800 mm the contribution_of the two terms_involved_in the
+productive part of the balance of energy, showing the dominant contribution of
+the second term.
+
+    Files:  prodk200    and    prodk.800
+
+#  File  prodk.200
+#  Terms  appearing  in  production  of  k
+#
+#   y             -(u2-v2)*dudx          -uv*dudy          production
+
+
+
+5.2.4       Dissipation
+
+Figure 5.6 shows for X=800 mm the dissipation ffl estimated from the balance of k 
+and the one directly measured by assuming isotropy of the small dissipative scales
+and applying Taylor hypothesis (equation 4.2).  The dissipation obtained by the 
+second approach is largely underestimated. 
+
+  Files epsl.200    and    epsl.800
+
+
+
+#  file  epsl.200
+#  dissipation  from  experiment  2
+#
+#      y              epsilon
+
+
+5.2.5       Balance
+
+The turbulent kinetic energy balance is plotted on figures 5.7 and 5.8.
+Files balancek.200    and    balancek.800
+
+
+#  File  balancek.200
+#  Terms  appearing  in  the  balance  of  k
+#           y           remainder        dissipation          dissipation
+#                       of  balance     by  difference        from  exp  2
+
+
+5.3       Shear  stress  balance
+
+
+5.3.1       Files
+
+Files:  balancuv.200    and    balancuv.800
+
+
+
+#  File  balancuv.200
+#  Terms  appearing  in  the  balance  of  shear  stress
+#
+#  y   u*duvdx   v*duvdy   convection     diffusion     production   press`strain
+
+
+
+5.3.2       Balance
+
+The shear-stress balance is plotted on figures 5.9 and 5.10.
+
+
+
+5.4       Momentum  balance
+
+
+5.4.1       Files
+
+Files:  momentum.200      and      momentum.800
+
+#  File  momentum.200
+#  Terms  appearing  in  the  momentum  equation
+#
+#  y   u*dudx   v*dudy   -duvdy   -d(u2-v2)dx   u*dudx+v*dudy  -duvdy-d(u2-v2)dx"
+   should`be`0   v`from`mom.`bal.
+
+
+
+5.4.2       balance
+
+On Figures 5.11 and 5.12, the two terms of the momentum balance are compared.
+
+
+Bibliography
+
+
+[1] Delville,  J.,  Bellin,  S.,  Garem,  J.H.  &  Bonnet  J.P. 1988 Analysis of 
+structures in a     turbulent a turbulent plane mixing layer by use of a 
+pseudo-flow visualization method based     hot-wire anemometry. Advances in
+Turbulence II, Fernholz and Fiedler eds., Springer, pp 251.
+
+[2] Delville  J.  1995.  La  decomposition  orthogonale  aux  valeurs  propres 
+et  l'analyse  de  l'organisation tridimensionnelle des ecoulements turbulents
+cisailles libres. These Doctorat, Universite de Poitiers.
+
+
+
+
+
+

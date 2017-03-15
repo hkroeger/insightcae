@@ -591,18 +591,23 @@ endmacro(install_shared_directory)
 
 macro(install_package_script PACKAGENAME)
   foreach (_src ${ARGN})
+  
+    STRING(REPLACE "/" "_" TARGNAME ${PACKAGENAME}_${_src})
+    STRING(REPLACE "." "_" TARGNAME ${TARGNAME})
+    
     file(GLOB COPY_FILES
       RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
       ${_src})
       
-    add_custom_target(${PACKAGENAME}_${_src} ALL
+    add_custom_target(${TARGNAME} ALL
       COMMENT "Copying file: ${_src}")
 
     set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
     set(DST "${CMAKE_BINARY_DIR}/share/insight/python/Insight/${PACKAGENAME}/${_src}")
 
+    message(STATUS "target name: ${TARGNAME}")
     add_custom_command(
-      TARGET ${PACKAGENAME}_${_src}
+      TARGET ${TARGNAME}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
       )
     install(FILES ${_src} DESTINATION share/insight/python/Insight/${PACKAGENAME} COMPONENT ${INSIGHT_INSTALL_COMPONENT})

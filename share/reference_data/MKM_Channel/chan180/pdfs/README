@@ -1,0 +1,14 @@
+The files in this directory (chan180/pdfs) contain velocity and
+pressure probability density functions extracted from direct numerical
+simulations of fully developed plane turbulent channel flow at
+Re_tau=180. The simulations are reported in "DNS of Turbulent Channel
+Flow up to Re_tau=590," by R. D. Moser, J. Kim & N. N. Mansour, 1999
+(Phys. Fluids, vol 11, pg 943-945).
+
+This directory contains a set of files named chan180.pdf.<number>,
+where the number indicates the y-location of the pdf (in + units
+rounded to the nearest integer).
+
+Please report any problems with the data to R. D. Moser
+r-moser@uiuc.edu. 
+

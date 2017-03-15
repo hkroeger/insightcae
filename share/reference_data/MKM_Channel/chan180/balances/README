@@ -1,0 +1,28 @@
+The files in this directory (chan180/balances) contain terms in the
+balance equation for the reynolds stress and turbulent kinetic energy
+extracted from direct numerical simulations of fully developed plane
+turbulent channel flow at Re_tau=180. The simulations are reported in
+"DNS of Turbulent Channel Flow up to Re_tau=590," by R. D. Moser,
+J. Kim & N. N. Mansour, 1999 (Phys. Fluids, vol 11, pg 943-945).
+
+This directory contains 5 files named chan180.<extension>, where
+the extension indicates the contents of the file. The extensions are
+
+  kbal  -- balance of the turbulent kinetic energy
+
+  uubal -- balance of the streamwise velocity variance
+
+  vvbal -- balance of the wall-normal velocity variance
+
+  wwbal -- balance of the spanwise velocity variance
+
+  uvbal -- balance of the Reynolds shear stress
+
+Note that some of the quantities reported in these files should be
+zero by statistical symmetries (e.g. the reynolds stress components uw
+and vw). They are included as an indication of the quality of the
+statistics.
+
+Please report any problems with the data to R. D. Moser
+r-moser@uiuc.edu. 
+

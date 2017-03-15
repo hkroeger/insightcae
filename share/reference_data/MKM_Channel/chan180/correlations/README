@@ -1,0 +1,24 @@
+The files in this directory (chan180/correlations) contain
+one-dimensional two-point correlations extracted from direct numerical
+simulations of fully developed plane turbulent channel flow at
+Re_tau=180. The simulations are reported in "DNS of Turbulent Channel
+Flow up to Re_tau=590," by R. D. Moser, J. Kim & N. N. Mansour, 1999
+(Phys. Fluids, vol 11, pg 943-945).
+
+This directory contains a set of files named
+chan180.<extension>.<number>, where the number indicates the
+y-location of the correlations (in + units rounded to the nearest
+integer), and the extension indicates the type of correlations in the
+file. The extensions are
+
+  xcorr -- 1-D auto-correlations in the x-direction 
+
+  xccorr -- 1-D cross-correlations in the x-direction 
+
+  zcorr -- 1-D auto-correlations in the z-direction 
+
+  zccorr -- 1-D cross-correlations in the z-direction 
+
+Please report any problems with the data to R. D. Moser
+r-moser@uiuc.edu. 
+

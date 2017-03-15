@@ -46,6 +46,8 @@ protected:
   
   void startInterpreter();
   
+  void findDataSets();
+  
 public:
   ReferenceDataLibrary();
   virtual ~ReferenceDataLibrary();

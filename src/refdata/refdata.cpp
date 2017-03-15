@@ -70,117 +70,162 @@ ReferenceDataLibrary::ReferenceDataLibrary()
 
 void ReferenceDataLibrary::startInterpreter()
 {
-  if (!interpreterStarted_)
-  {
-    std::cout<<"start refdata init"<<std::endl;
+    if (!interpreterStarted_)
+    {
+        std::cout<<"start refdata init"<<std::endl;
 
-    path dir=path(getenv("HOME"))/"Referenzdaten";
-    
-    if ( exists( dir ) ) 
+//         path dir=path(getenv("HOME"))/"Referenzdaten";
+// 
+//         if ( exists( dir ) )
+//         {
+//             directory_iterator end_itr; // default construction yields past-the-end
+//             for ( directory_iterator itr( dir );
+//                     itr != end_itr;
+//                     ++itr )
+//             {
+//                 if ( is_directory(itr->status()) )
+//                 {
+//                     path mod=itr->path()/"__init__.py";
+//                     if (exists(mod))
+//                     {
+//                         datasets_[itr->path().filename().string()]=mod;
+//                         // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+//                     }
+//                 }
+//             }
+//         }
+
+        if (!Py_IsInitialized())
+        {
+            std::cout<<"Init python"<<std::endl;
+            Py_Initialize();
+            PyEval_InitThreads();
+            mainThreadState = PyEval_SaveThread();
+            ranInitialize_=true;
+        }
+        else
+        {
+            std::cout<<"Skipped python init"<<std::endl;
+            ranInitialize_=false;
+        }
+        std::cout<<"init python done"<<std::endl;
+
+        interpreterStarted_=true;
+        
+        findDataSets();
+    }
+}
+
+void ReferenceDataLibrary::findDataSets()
+{
+    aquire_py_GIL locker;
+
+    try
     {
-      directory_iterator end_itr; // default construction yields past-the-end
-      for ( directory_iterator itr( dir );
-	    itr != end_itr;
-	    ++itr )
-      {
-	if ( is_directory(itr->status()) )
-	{
-	  path mod=itr->path()/"__init__.py";
-	  if (exists(mod))
-	  {
-	    datasets_[itr->path().filename().string()]=mod;
-  // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
-	  }
-	}
-      }
+
+        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+        object main_namespace = main_module.attr("__dict__");
+        handle<> ignore(PyRun_String( "import Insight.ReferenceData as mod; modpath=mod.__file__;",
+                                      Py_file_input,
+                                      main_namespace.ptr(),
+                                      main_namespace.ptr() ));
+        
+        std::string mp = extract<std::string>(main_namespace["modpath"]);
+
+        path dir = path(mp).parent_path();
+
+        if ( exists( dir ) )
+        {
+            directory_iterator end_itr; // default construction yields past-the-end
+            for ( directory_iterator itr( dir );
+                    itr != end_itr;
+                    ++itr )
+            {
+                if ( is_directory(itr->status()) )
+                {
+                    path mod=itr->path()/"__init__.py";
+                    if (exists(mod))
+                    {
+                        datasets_[itr->path().filename().string()]=mod;
+                        // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+                    }
+                }
+            }
+        }
+    }
+    catch (const error_already_set &)
+    {
+        PyErr_Print();
     }
 
-    if (!Py_IsInitialized())
-    {
-      std::cout<<"Init python"<<std::endl;
-      Py_Initialize();
-      PyEval_InitThreads();
-      mainThreadState = PyEval_SaveThread();
-      ranInitialize_=true;
-    }
-    else
-    {
-      std::cout<<"Skipped python init"<<std::endl;
-      ranInitialize_=false;
-    }
-    std::cout<<"init python done"<<std::endl;
-    
-    interpreterStarted_=true;
-  }
 }
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
 {
-  if (interpreterStarted_)
-  {
-    std::cout<<"start refdata cleanup"<<std::endl;
-    if (ranInitialize_ && Py_IsInitialized())
+    if (interpreterStarted_)
     {
-      std::cout<<"del"<<std::endl;
-      PyEval_RestoreThread(mainThreadState);
-      Py_Finalize();
+        std::cout<<"start refdata cleanup"<<std::endl;
+        if (ranInitialize_ && Py_IsInitialized())
+        {
+            std::cout<<"del"<<std::endl;
+            PyEval_RestoreThread(mainThreadState);
+            Py_Finalize();
+        }
+        std::cout<<"refdata cleanup done"<<std::endl;
     }
-    std::cout<<"refdata cleanup done"<<std::endl;
-  }
 }
-  
+ 
+
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const
 {
-  const_cast<ReferenceDataLibrary*>(this)->startInterpreter();
-  
-  aquire_py_GIL locker;
-  
-  arma::mat profile;
-  try
-  {
+    const_cast<ReferenceDataLibrary*>(this)->startInterpreter();
 
-      DataSetList::const_iterator i=datasets_.find(dataSetName);
-      if (i==datasets_.end())
-      {
-	cout<<"Dataset "<<dataSetName<<" not found in library! Returning empty data array."<<endl;
-	return arma::zeros(1,2);
-      }
+    aquire_py_GIL locker;
 
-      std::ostringstream cmd;
-      cmd<<
-	  "import sys; sys.path+=['"<<getenv("HOME")<<"']; import Referenzdaten."<< dataSetName <<" as mod;"
-// 	  "import imp;"
-// 	  "mod=imp.load_source('mod', "<<i->second<<");"
-	  "result=mod.getProfile('"<<path<<"')";
-      cout<<cmd.str()<<endl;
+    arma::mat profile;
+    try
+    {
 
-      object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
-      object main_namespace = main_module.attr("__dict__");
-      handle<> ignore(PyRun_String( cmd.str().c_str(),
-				    Py_file_input,
-				    main_namespace.ptr(),
-				    main_namespace.ptr() ));
-      boost::python::list l = extract<boost::python::list>(main_namespace["result"]);
-      int nrows=boost::python::len(l), ncols;
-      for (int j=0; j<nrows; j++)
-      {
-	  boost::python::list row = extract<boost::python::list>(l[j]);
-	  ncols=boost::python::len(row);
-	  if (profile.n_rows==0) profile=arma::zeros(nrows, ncols);
-	  
-	  for (int i=0; i<ncols; i++)
-	  {
-	      profile(j,i)=extract<double>(row[i]);
-	  }
-      }
+        DataSetList::const_iterator i=datasets_.find(dataSetName);
+        if (i==datasets_.end())
+        {
+            cout<<"Dataset "<<dataSetName<<" not found in library! Returning empty data array."<<endl;
+            return arma::zeros(1,2);
+        }
 
-  }
-  catch (const error_already_set &)
-  {
-    PyErr_Print();
-  }
+        std::ostringstream cmd;
+        cmd<<
+           "import Insight.ReferenceData."<< dataSetName <<" as mod;"
+           "result=mod.getProfile('"<<path<<"')";
+        cout<<cmd.str()<<endl;
 
-  return profile;
+        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+        object main_namespace = main_module.attr("__dict__");
+        handle<> ignore(PyRun_String( cmd.str().c_str(),
+                                      Py_file_input,
+                                      main_namespace.ptr(),
+                                      main_namespace.ptr() ));
+        boost::python::list l = extract<boost::python::list>(main_namespace["result"]);
+        int nrows=boost::python::len(l), ncols;
+        for (int j=0; j<nrows; j++)
+        {
+            boost::python::list row = extract<boost::python::list>(l[j]);
+            ncols=boost::python::len(row);
+            if (profile.n_rows==0) profile=arma::zeros(nrows, ncols);
+
+            for (int i=0; i<ncols; i++)
+            {
+                profile(j,i)=extract<double>(row[i]);
+            }
+        }
+
+    }
+    catch (const error_already_set &)
+    {
+        PyErr_Print();
+    }
+
+    return profile;
 }
 
 ReferenceDataLibrary refdatalib;

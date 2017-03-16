@@ -6,10 +6,10 @@
 include(OpenFOAMfuncs)
 
 #FIND_PATH(OFdev_DIR NAMES etc/bashrc
-FIND_FILE(OFdev_BASHRC NAMES bashrc
+FIND_FILE(OFdev_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-dev/etc
-  /opt/OpenFOAM/OpenFOAM-dev/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-dev
+  /opt/OpenFOAM/OpenFOAM-dev
 )
 
 message(STATUS "Found OpenFOAM-dev installation: " ${OFdev_BASHRC})

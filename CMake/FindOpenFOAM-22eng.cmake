@@ -6,12 +6,12 @@
 
 
 #FIND_PATH(OF22eng_DIR NAMES etc/bashrc
-FIND_FILE(OF22eng_BASHRC NAMES bashrc
+FIND_FILE(OF22eng_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition/etc
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition-beta/etc
-  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition/etc
-  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition-beta/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.2_engysEdition-beta
+  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition
+  /opt/OpenFOAM/OpenFOAM-2.2_engysEdition-beta
 )
 message(STATUS ${OF22eng_BASHRC})
 

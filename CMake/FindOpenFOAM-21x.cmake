@@ -6,12 +6,12 @@
 
 
 #FIND_PATH(OF21x_DIR NAMES etc/bashrc
-FIND_FILE(OF21x_BASHRC NAMES bashrc
+FIND_FILE(OF21x_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.x/etc
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.0/etc
-  /opt/OpenFOAM/OpenFOAM-2.1.x/etc
-  /opt/OpenFOAM/OpenFOAM-2.1.0/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.x
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.1.0
+  /opt/OpenFOAM/OpenFOAM-2.1.x
+  /opt/OpenFOAM/OpenFOAM-2.1.0
 )
 message(STATUS ${OF21x_BASHRC})
 

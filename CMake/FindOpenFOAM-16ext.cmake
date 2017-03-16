@@ -4,10 +4,10 @@
 # OF16ext_FOUND          - system has OpenFOAM-1.6-ext installed
 
 #FIND_PATH(OF16ext_DIR NAMES etc/bashrc
-FIND_FILE(OF16ext_BASHRC NAMES bashrc
+FIND_FILE(OF16ext_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-1.6-ext/etc
-  /opt/OpenFOAM/OpenFOAM-1.6-ext/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-1.6-ext
+  /opt/OpenFOAM/OpenFOAM-1.6-ext
 )
 message(STATUS ${OF16ext_BASHRC})
 

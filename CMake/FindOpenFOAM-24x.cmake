@@ -6,13 +6,13 @@
 include(OpenFOAMfuncs)
 
 #FIND_PATH(OF24x_DIR NAMES etc/bashrc
-FIND_FILE(OF24x_BASHRC NAMES bashrc
+FIND_FILE(OF24x_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.4.x/etc
-  $ENV{HOME}/OpenFOAM/OpenFOAM-2.4.0/etc
-  /opt/OpenFOAM/OpenFOAM-2.4.x/etc
-  /opt/OpenFOAM/OpenFOAM-2.4.0/etc
-  /opt/openfoam240/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.4.x
+  $ENV{HOME}/OpenFOAM/OpenFOAM-2.4.0
+  /opt/OpenFOAM/OpenFOAM-2.4.x
+  /opt/OpenFOAM/OpenFOAM-2.4.0
+  /opt/openfoam240
 )
 
 message(STATUS "Found OpenFOAM 2.4.x installation: " ${OF24x_BASHRC})

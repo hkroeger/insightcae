@@ -6,10 +6,10 @@
 include(OpenFOAMfuncs)
 
 #FIND_PATH(OF301_DIR NAMES etc/bashrc
-FIND_FILE(OF301_BASHRC NAMES bashrc
+FIND_FILE(OF301_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-3.0.1/etc
-  /opt/OpenFOAM/OpenFOAM-3.0.1/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-3.0.1
+  /opt/OpenFOAM/OpenFOAM-3.0.1
 )
 
 message(STATUS "Found OpenFOAM-3.0.1 installation: " ${OF301_BASHRC})

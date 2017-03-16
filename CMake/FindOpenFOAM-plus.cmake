@@ -6,10 +6,10 @@
 include(OpenFOAMfuncs)
 
 #FIND_PATH(OFplus_DIR NAMES etc/bashrc
-FIND_FILE(OFplus_BASHRC NAMES bashrc
+FIND_FILE(OFplus_BASHRC NAMES etc/bashrc
   HINTS
-  $ENV{HOME}/OpenFOAM/OpenFOAM-plus/etc
-  /opt/OpenFOAM/OpenFOAM-plus/etc
+  $ENV{HOME}/OpenFOAM/OpenFOAM-plus
+  /opt/OpenFOAM/OpenFOAM-plus
 )
 
 message(STATUS "Found OpenFOAM-plus installation: " ${OFplus_BASHRC})

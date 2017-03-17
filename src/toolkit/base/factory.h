@@ -100,7 +100,6 @@ static std::vector<std::string> factoryToC();
 
 
 
-
 #define defineFactoryTable(baseT, argList, parList) \
  baseT::FactoryTable* baseT::factories_; \
  baseT* baseT::lookup(const std::string& key , argList) \

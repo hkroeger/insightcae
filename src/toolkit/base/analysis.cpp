@@ -276,6 +276,47 @@ Analysis* Analysis::clone() const
 }
 
 
+PythonAnalysis::PythonAnalysisFactory::PythonAnalysisFactory ( const boost::filesystem::path& scriptfile )
+: scriptfile_(scriptfile)
+{}
+
+PythonAnalysis::PythonAnalysisFactory::~PythonAnalysisFactory()
+{}
+
+Analysis* PythonAnalysis::PythonAnalysisFactory::operator() 
+(
+    const ParameterSet& ps,
+    const boost::filesystem::path& exePath
+) const
+{
+    return new PythonAnalysis ( scriptfile_, ps, exePath );
+}
+
+ParameterSet PythonAnalysis::PythonAnalysisFactory::defaultParameters() const
+{
+    return ParameterSet();
+}
+
+std::string PythonAnalysis::PythonAnalysisFactory::category() const
+{
+    return "User Defined";
+}
+
+std::set<PythonAnalysis::PythonAnalysisFactoryPtr> PythonAnalysis::pythonAnalysisFactories_;
+
+PythonAnalysis::PythonAnalysis(const boost::filesystem::path& scriptfile, const ParameterSet& ps, const boost::filesystem::path& exePath )
+: Analysis("", "", ps, exePath),
+  scriptfile_(scriptfile)
+{
+}
+ 
+ 
+ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer* )
+{
+}
+
+
+
 
 
 CollectingProgressDisplayer::CollectingProgressDisplayer ( const std::string& id, ProgressDisplayer* receiver )
@@ -400,12 +441,26 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
             pydir /= "python_modules";
             if ( is_directory ( pydir ) ) {
                 directory_iterator end_itr; // default construction yields past-the-end
-                for ( directory_iterator itr ( userconfigdir );
+                for ( directory_iterator itr ( pydir );
                         itr != end_itr;
                         ++itr ) {
                     if ( is_regular_file ( itr->status() ) ) {
-                        if ( itr->path().extension() == ".py" ) {
-// 	                        std::ifstream f(itr->path().c_str());
+                        if ( itr->path().extension() == ".py" ) 
+                        {
+                            if (!Analysis::factories_)
+                            {
+                                Analysis::factories_=new Analysis::FactoryTable(); 
+                            }
+                            
+                            PythonAnalysis::PythonAnalysisFactoryPtr fac(new PythonAnalysis::PythonAnalysisFactory( itr->path() ) );
+                            
+                            std::string key(itr->path().stem().string()); 
+                            (*Analysis::factories_)[key]=fac.get();
+                            (*Analysis::defaultParametersFunctions_)[key]=&fac->defaultParameters;
+                            (*Analysis::categoryFunctions_)[key]=&fac->category;
+                            
+                            PythonAnalysis::pythonAnalysisFactories_.insert(fac);
+                            
                         }
                     }
                 }

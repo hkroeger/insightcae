@@ -248,6 +248,7 @@ class PythonAnalysis
 {
     const boost::filesystem::path& scriptfile_;
     
+
 public:
     
   class PythonAnalysisFactory
@@ -256,6 +257,9 @@ public:
     const boost::filesystem::path scriptfile_;
     
   public:
+    boost::function<ParameterSet(void)> defaultParametersWrapper_;
+    boost::function<std::string(void)> categoryWrapper_;
+    
     PythonAnalysisFactory ( const boost::filesystem::path& scriptfile );
     virtual ~PythonAnalysisFactory();
     
@@ -264,8 +268,9 @@ public:
       const ParameterSet& ps,
       const boost::filesystem::path& exePath
     ) const;
-    
+  
     ParameterSet defaultParameters() const;
+    
     std::string category() const;
   };
   typedef boost::shared_ptr<PythonAnalysisFactory> PythonAnalysisFactoryPtr;

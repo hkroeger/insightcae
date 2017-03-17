@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 
 #include "base/boost_include.h"
+#include "boost/function.hpp"
 
 using namespace std;
 using namespace boost;
@@ -277,7 +278,9 @@ Analysis* Analysis::clone() const
 
 
 PythonAnalysis::PythonAnalysisFactory::PythonAnalysisFactory ( const boost::filesystem::path& scriptfile )
-: scriptfile_(scriptfile)
+: scriptfile_(scriptfile),
+  defaultParametersWrapper_(boost::bind(&PythonAnalysis::PythonAnalysisFactory::defaultParameters, this)),
+  categoryWrapper_(boost::bind(&PythonAnalysis::PythonAnalysisFactory::category, this))
 {}
 
 PythonAnalysis::PythonAnalysisFactory::~PythonAnalysisFactory()
@@ -404,6 +407,10 @@ void SynchronisedAnalysisQueue::cancelAll()
     }
 }
 
+ParameterSet testfunc()
+{
+    return ParameterSet();
+}
     
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()
@@ -456,8 +463,9 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                             
                             std::string key(itr->path().stem().string()); 
                             (*Analysis::factories_)[key]=fac.get();
-                            (*Analysis::defaultParametersFunctions_)[key]=&fac->defaultParameters;
-                            (*Analysis::categoryFunctions_)[key]=&fac->category;
+
+                            (*Analysis::defaultParametersFunctions_)[key] = fac->defaultParametersWrapper_;
+                            (*Analysis::categoryFunctions_)[key] = fac->categoryWrapper_;
                             
                             PythonAnalysis::pythonAnalysisFactories_.insert(fac);
                             

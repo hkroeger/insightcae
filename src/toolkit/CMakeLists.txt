@@ -37,6 +37,7 @@ set(toolkit_SOURCES
     base/parameterset.cpp
     base/analysisstepcontrol.cpp
     base/plottools.cpp
+    base/pythoninterface.cpp
     base/vtktools.cpp
     base/caseelement.cpp
     base/case.cpp
@@ -69,6 +70,7 @@ add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
 
 target_include_directories(toolkit 
+  PUBLIC ${PYTHON_INCLUDE_DIR}/python2.7
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC ${GSL_INCLUDE_DIR}

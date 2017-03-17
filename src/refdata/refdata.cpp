@@ -33,152 +33,71 @@ using namespace boost::python;
 namespace insight
 {
 
-struct aquire_py_GIL 
-{
-    PyGILState_STATE state;
-    aquire_py_GIL() 
-    {
-        state = PyGILState_Ensure();
-    }
- 
-    ~aquire_py_GIL() 
-    {
-        PyGILState_Release(state);
-    }
-};
 
-struct release_py_GIL 
-{
-    PyThreadState *state;
-    
-    release_py_GIL() 
-    {
-        state = PyEval_SaveThread();
-    }
-    ~release_py_GIL() 
-    {
-        PyEval_RestoreThread(state);
-    }
-};
+
+
   
-ReferenceDataLibrary::ReferenceDataLibrary()
-: interpreterStarted_(false),
-  ranInitialize_(false),
-  mainThreadState(NULL)
-{
-}
-
-void ReferenceDataLibrary::startInterpreter()
-{
-    if (!interpreterStarted_)
-    {
-        std::cout<<"start refdata init"<<std::endl;
-
-//         path dir=path(getenv("HOME"))/"Referenzdaten";
-// 
-//         if ( exists( dir ) )
-//         {
-//             directory_iterator end_itr; // default construction yields past-the-end
-//             for ( directory_iterator itr( dir );
-//                     itr != end_itr;
-//                     ++itr )
-//             {
-//                 if ( is_directory(itr->status()) )
-//                 {
-//                     path mod=itr->path()/"__init__.py";
-//                     if (exists(mod))
-//                     {
-//                         datasets_[itr->path().filename().string()]=mod;
-//                         // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
-//                     }
-//                 }
-//             }
-//         }
-
-        if (!Py_IsInitialized())
-        {
-            std::cout<<"Init python"<<std::endl;
-            Py_Initialize();
-            PyEval_InitThreads();
-            mainThreadState = PyEval_SaveThread();
-            ranInitialize_=true;
-        }
-        else
-        {
-            std::cout<<"Skipped python init"<<std::endl;
-            ranInitialize_=false;
-        }
-        std::cout<<"init python done"<<std::endl;
-
-        interpreterStarted_=true;
-        
-        findDataSets();
-    }
-}
-
 void ReferenceDataLibrary::findDataSets()
 {
-    aquire_py_GIL locker;
-
-    try
+    if (!datasetsloaded_)
     {
+        aquire_py_GIL locker;
 
-        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
-        object main_namespace = main_module.attr("__dict__");
-        handle<> ignore(PyRun_String( "import Insight.ReferenceData as mod; modpath=mod.__file__;",
-                                      Py_file_input,
-                                      main_namespace.ptr(),
-                                      main_namespace.ptr() ));
-        
-        std::string mp = extract<std::string>(main_namespace["modpath"]);
-
-        path dir = path(mp).parent_path();
-
-        if ( exists( dir ) )
+        try
         {
-            directory_iterator end_itr; // default construction yields past-the-end
-            for ( directory_iterator itr( dir );
-                    itr != end_itr;
-                    ++itr )
+
+            object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+            object main_namespace = main_module.attr("__dict__");
+            handle<> ignore(PyRun_String( "import Insight.ReferenceData as mod; modpath=mod.__file__;",
+                                        Py_file_input,
+                                        main_namespace.ptr(),
+                                        main_namespace.ptr() ));
+            
+            std::string mp = extract<std::string>(main_namespace["modpath"]);
+
+            path dir = path(mp).parent_path();
+
+            if ( exists( dir ) )
             {
-                if ( is_directory(itr->status()) )
+                directory_iterator end_itr; // default construction yields past-the-end
+                for ( directory_iterator itr( dir );
+                        itr != end_itr;
+                        ++itr )
                 {
-                    path mod=itr->path()/"__init__.py";
-                    if (exists(mod))
+                    if ( is_directory(itr->status()) )
                     {
-                        datasets_[itr->path().filename().string()]=mod;
-                        // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+                        path mod=itr->path()/"__init__.py";
+                        if (exists(mod))
+                        {
+                            datasets_[itr->path().filename().string()]=mod;
+                            // 	  cout<<"Added "<<itr->path().filename().string()<<": "<<mod<<endl;
+                        }
                     }
                 }
             }
+            datasetsloaded_=true;
         }
+        catch (const error_already_set &)
+        {
+            PyErr_Print();
+        }
+        
     }
-    catch (const error_already_set &)
-    {
-        PyErr_Print();
-    }
-
 }
+
+
+ReferenceDataLibrary::ReferenceDataLibrary()
+: datasetsloaded_(false)
+{}
+
 
 ReferenceDataLibrary::~ReferenceDataLibrary()
-{
-    if (interpreterStarted_)
-    {
-        std::cout<<"start refdata cleanup"<<std::endl;
-        if (ranInitialize_ && Py_IsInitialized())
-        {
-            std::cout<<"del"<<std::endl;
-            PyEval_RestoreThread(mainThreadState);
-            Py_Finalize();
-        }
-        std::cout<<"refdata cleanup done"<<std::endl;
-    }
-}
+{}
  
 
 arma::mat ReferenceDataLibrary::getProfile(const std::string& dataSetName, const std::string& path) const
 {
-    const_cast<ReferenceDataLibrary*>(this)->startInterpreter();
+    const_cast<ReferenceDataLibrary*>(this)->findDataSets();
 
     aquire_py_GIL locker;
 

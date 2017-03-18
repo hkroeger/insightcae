@@ -17,27 +17,24 @@
         PyObject *o = PySequence_GetItem($input, i);
         
         std::string n;
-	insight::Parameter* p;
-	
-	n = PyString_AsString
-	(
-	  PyTuple_GetItem(o, 0)
-	);
-	int res1 = SWIG_ConvertPtr
-	( 
-	  PyTuple_GetItem(o, 1), 
-	  &p,
-	  SWIGTYPE_p_insight__Parameter, 1 
-	);
-	
-	std::cout<<"res="<<res1<<std::endl;
-	if (res1!=-1) //(!SWIG_IsOK(res1)) 
-	{
-	  std::cout<<n<<": OK"<<std::endl;
-	  vIn.push_back( insight::ParameterSet::SingleEntry(n, p->clone()) );
-	}
+        insight::Parameter* p;
+        
+        n = PyString_AsString
+        (
+            PyTuple_GetItem(o, 0)
+        );
+        int res1 = SWIG_ConvertPtr
+        ( 
+            PyTuple_GetItem(o, 1), 
+            &p,
+            SWIGTYPE_p_insight__Parameter, 1 
+        );
+        
+        if (res1!=-1) //(!SWIG_IsOK(res1)) 
+        {
+            vIn.push_back( insight::ParameterSet::SingleEntry(n, p->clone()) );
+        }
     }
-    std::cout<<"size="<<vIn.size()<<std::endl;
     $1 = &vIn;
 }
 

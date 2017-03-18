@@ -88,6 +88,14 @@ install(
   FILES_MATCHING PATTERN "*.h"
   )
 
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+ add_custom_target(
+ SWIG_ExternalRuntimeHeader
+    COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+ )
+ add_dependencies(toolkit SWIG_ExternalRuntimeHeader)
+ENDIF()
 add_pybindings(toolkit "toolkit.i" toolkit)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

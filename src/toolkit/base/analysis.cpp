@@ -31,10 +31,12 @@
 #include "boost/python.hpp"
 
 #include "base/pythoninterface.h"
+#include "swigpyrun.h"
 
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+
 
 namespace insight
 {
@@ -321,8 +323,18 @@ ParameterSet PythonAnalysis::PythonAnalysisFactory::defaultParameters() const
             main_namespace.ptr(),
             main_namespace.ptr() )
         );
-        ParameterSet ps = extract<ParameterSet>(main_namespace["ps"]);
-        return ps;
+        object o =  extract<object>(main_namespace["ps"]);
+        ParameterSet *psp;
+        static void *descr = 0;
+        if (!descr) {
+            descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
+            std::cout<<descr<<std::endl;
+            assert(descr);
+        }
+        if ((SWIG_ConvertPtr(o.ptr(), (void **) &psp, descr, 0) == -1)) {
+            abort();
+        }
+        return ParameterSet(*psp);
     }
     catch (const error_already_set &)
     {
@@ -455,10 +467,6 @@ void SynchronisedAnalysisQueue::cancelAll()
     }
 }
 
-ParameterSet testfunc()
-{
-    return ParameterSet();
-}
     
 
 AnalysisLibraryLoader::AnalysisLibraryLoader()

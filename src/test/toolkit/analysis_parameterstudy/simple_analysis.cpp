@@ -43,6 +43,7 @@ public:
     declareType("SimpleAnalysis");
     SimpleAnalysis(const ParameterSet& ps, const boost::filesystem::path& exepath);
     static ParameterSet defaultParameters();
+    static std::string category() { return "Test"; }
     ResultSetPtr operator()(ProgressDisplayer* p=NULL);
 };
 
@@ -98,6 +99,7 @@ public:
     {
     }
     
+    static std::string category() { return "Test"; }
     
     virtual ResultSetPtr evaluateRuns()
     {

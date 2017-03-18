@@ -100,7 +100,6 @@ static std::vector<std::string> factoryToC();
 
 
 
-
 #define defineFactoryTable(baseT, argList, parList) \
  baseT::FactoryTable* baseT::factories_; \
  baseT* baseT::lookup(const std::string& key , argList) \
@@ -170,7 +169,7 @@ static struct add##specT##To##baseT##FactoryTable \
 
 
 #define declareStaticFunctionTable(Name, ReturnT) \
- typedef ReturnT (*Name##Ptr)(void); \
+ typedef boost::function0<ReturnT> Name##Ptr; \
  typedef std::map<std::string,Name##Ptr> Name##FunctionTable; \
  static Name##FunctionTable* Name##Functions_; \
  static ReturnT Name(const std::string& key);
@@ -184,8 +183,8 @@ static struct add##specT##To##baseT##FactoryTable \
  { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function for class "+key+" in table of type " +#baseT); \
-  return (*i->second)(); \
+    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " +#baseT); \
+  return i->second(); \
  }
  
  
@@ -201,7 +200,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
      baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
     } \
     std::string key(specT::typeName); \
-    (*baseT::Name##Functions_)[key]=&specT::Name;\
+    (*baseT::Name##Functions_)[key]=&(specT::Name);\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable;
 

@@ -387,8 +387,9 @@ public:
     virtual ResultElementPtr clone() const;
 };
 
-
-
+#ifdef SWIG
+%template(doubleNumericalResult) NumericalResult<double>;
+#endif
 
 class ScalarResult
     : public NumericalResult<double>

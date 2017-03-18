@@ -22,13 +22,12 @@
 #ifndef INSIGHT_REFDATA_H
 #define INSIGHT_REFDATA_H
 
+#include "base/pythoninterface.h"
 #include <base/linearalgebra.h>
 #include <map>
 #include "base/boost_include.h"
 
-class _ts;
 
-typedef struct _ts PyThreadState;
 
 namespace insight
 {
@@ -40,11 +39,8 @@ public:
   
 protected:
   DataSetList datasets_;
-  bool interpreterStarted_;
-  bool ranInitialize_;
-  PyThreadState* mainThreadState;
-  
-  void startInterpreter();
+  bool datasetsloaded_;
+  void findDataSets();
   
 public:
   ReferenceDataLibrary();

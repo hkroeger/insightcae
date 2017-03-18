@@ -1,0 +1,30 @@
+The files in this directory (chan395/profiles) contain profiles of
+mean, variance, skewness and flatness extracted from direct numerical
+simulations of fully developed plane turbulent channel flow at
+Re_tau=395. The simulations are reported in "DNS of Turbulent Channel
+Flow up to Re_tau=590," by R. D. Moser, J. Kim & N. N. Mansour, 1999
+(Phys. Fluids, vol 11, pg 943-945).
+
+This directory contains six files named chan395.<extension>, where
+the extension indicates the contents of the file. The extensions are
+
+  flat -- velocity and pressure flatness factors
+
+  means -- profiles of mean velocities and pressures and their derivatives
+
+  reystress -- components of the Reynolds stress tensor
+
+  skew -- velocity and pressure skewness
+ 
+  velp -- velocity-pressure correlations
+
+  vortvar -- variance of the vorticity fluctuations
+
+Note that some of the quantities reported in these files should be
+zero by statistical symmetries (e.g. the reynolds stress components uw
+and vw). They are included as an indication of the quality of the
+statistics.
+
+Please report any problems with the data to R. D. Moser
+r-moser@uiuc.edu. 
+

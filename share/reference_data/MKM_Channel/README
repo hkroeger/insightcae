@@ -1,0 +1,33 @@
+The files in this directory tree contain statistical data extracted
+from direct numerical simulations of fully developed plane turbulent
+channel flow. There are three cases at three different Reynolds
+numbers: nominal Reynolds numbers based on U_tau (the friction
+velocity) and h (channel half-width) are 180, 395 and 590.  The
+simulations are reported in "DNS of Turbulent Channel Flow up to
+Re_tau=590," by R. D. Moser, J. Kim & N. N. Mansour, 1998 (Phys. Fluids,
+vol 11, pg 943-945).
+
+The data for each case are in directories chan180, chan395 and chan590
+respectively.  Each of these directories contains 5 subdirectories
+containing the actual data:
+
+  balances -- Terms in the Reynolds stress and kinetic energy 
+              balance equations
+
+  correlations -- 1-D two-point correlations and cross correlations
+
+  pdfs -- probability density functions of velocity and pressure 
+
+  profiles -- Mean, variance, skewness and flatness profiles
+  
+  spectra -- 1-D energy spectra
+
+The file chandata.tar.gz in this directory is a gzipped tar file
+containing all the data.
+
+Please report any problems with the data to R. D. Moser
+r-moser@uiuc.edu. 
+
+
+
+

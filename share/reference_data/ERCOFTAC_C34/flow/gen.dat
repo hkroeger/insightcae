@@ -1,0 +1,14 @@
+# PLANE MIXING LAYER
+# Tables of constants driving the flow
+#
+#
+41.54	, Ua [m/s]
+22.40	, Ub [m/s]
+-97.10	, X0 [mm]
+-0.14	, Y0 [mm]
+35.48	, Sigma
+20.0	, Temperature of the flow degrees C
+
+#
+
+

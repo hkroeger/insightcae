@@ -90,6 +90,7 @@
 #include <boost/fusion/adapted.hpp>
 
 #include "boost/thread.hpp"
+#include "boost/function.hpp"
 
 #endif
 

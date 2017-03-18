@@ -37,6 +37,7 @@ set(toolkit_SOURCES
     base/parameterset.cpp
     base/analysisstepcontrol.cpp
     base/plottools.cpp
+    base/pythoninterface.cpp
     base/vtktools.cpp
     base/caseelement.cpp
     base/case.cpp
@@ -69,6 +70,7 @@ add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
 
 target_include_directories(toolkit 
+  PUBLIC ${PYTHON_INCLUDE_DIR}/python2.7
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}
   PUBLIC ${GSL_INCLUDE_DIR}
@@ -86,6 +88,14 @@ install(
   FILES_MATCHING PATTERN "*.h"
   )
 
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+ add_custom_target(
+ SWIG_ExternalRuntimeHeader
+    COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+ )
+ add_dependencies(toolkit SWIG_ExternalRuntimeHeader)
+ENDIF()
 add_pybindings(toolkit "toolkit.i" toolkit)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

@@ -20,6 +20,10 @@
 #include "thicken.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+// #include "BRepOffsetAPI_MakeThickSolid.hxx"
+#include "BRepOffset_MakeOffset.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -66,14 +70,33 @@ FeaturePtr Thicken::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr to
 void Thicken::build()
 {
 
-  BRepOffsetAPI_MakeOffsetShape maker
+  TopTools_ListOfShape ClosingFaces;
+  
+  TopoDS_Shape s=*shell_;
+  BRepOffset_MakeOffset maker;
+  
+  double offs=thickness_->value();
+  maker.Initialize
   (
-    *shell_, thickness_->value(), 
-    0.01, BRepOffset_Skin,
-    Standard_False,
-    Standard_False,
-    GeomAbs_Arc
+      s, offs, 1e-4,
+      BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_True
   );
+  for (TopExp_Explorer ex(s, TopAbs_FACE); ex.More(); ex.Next())
+  {
+      maker.SetOffsetOnFace(TopoDS::Face(ex.Current()), offs);
+  }
+//   BRepOffsetAPI_MakeThickSolid maker
+//   (
+//     *shell_, ClosingFaces, thickness_->value(), 
+//     Precision::Confusion(), 
+//     BRepOffset_Skin,
+//     Standard_True,
+//     Standard_False,
+//     GeomAbs_Arc
+//   );
+  
+  maker.MakeThickSolid();
+//   maker.MakeOffsetShape();
   
   setShape(maker.Shape());
 }

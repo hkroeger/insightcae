@@ -390,7 +390,7 @@ ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer* )
         }
         
         PyObject *paramobj;
-        if (!(paramobj = SWIG_NewPointerObj(SWIG_as_voidptr(&parameters_), descr, 0 |  0 )))
+        if (!(paramobj = SWIG_NewPointerObj(SWIG_as_voidptr(&parameters_), descr, 0 )))
         {
             throw insight::Exception("Could not create python parameter object!");
         }

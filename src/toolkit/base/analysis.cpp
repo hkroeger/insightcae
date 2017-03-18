@@ -32,6 +32,7 @@
 
 #include "base/pythoninterface.h"
 #include "swigpyrun.h"
+#define SWIG_as_voidptr(a) const_cast< void * >(static_cast< const void * >(a))
 
 using namespace std;
 using namespace boost;
@@ -376,6 +377,58 @@ PythonAnalysis::PythonAnalysis(const boost::filesystem::path& scriptfile, const 
  
 ResultSetPtr PythonAnalysis::operator() ( ProgressDisplayer* )
 {
+    setupExecutionEnvironment();
+    
+    aquire_py_GIL locker;
+    
+    try {
+        
+        static void *descr = 0;
+        if (!descr) {
+            descr = SWIG_TypeQuery("insight::ParameterSet *");    /* Get the type descriptor structure for Foo */
+            assert(descr);
+        }
+        
+        PyObject *paramobj;
+        if (!(paramobj = SWIG_NewPointerObj(SWIG_as_voidptr(&parameters_), descr, 0 |  0 )))
+        {
+            throw insight::Exception("Could not create python parameter object!");
+        }
+        
+        
+        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+        object main_namespace = main_module.attr("__dict__");
+        main_module.attr("parameters")=python::borrowed(paramobj);
+        main_module.attr("workdir")=executionPath_.string();
+        
+        handle<> ignore(PyRun_String( 
+            boost::str( boost::format(
+                "import imp;"
+                "mod = imp.load_source('module', '%s');"
+                "result=mod.executeAnalysis(parameters,workdir)"
+            ) % scriptfile_.string() ).c_str(),
+            Py_file_input,
+            main_namespace.ptr(),
+            main_namespace.ptr() )
+        );
+        
+        object o =  extract<object>(main_namespace["result"]);
+        ResultSet *res;
+        descr=0;
+        if (!descr) {
+            descr = SWIG_TypeQuery("insight::ResultSet *");    /* Get the type descriptor structure for Foo */
+            assert(descr);
+        }
+        if ((SWIG_ConvertPtr(o.ptr(), (void **) &res, descr, 0) == -1)) {
+            throw insight::Exception("Could not convert return value!");
+        }
+        return ResultSetPtr(new ResultSet(*res));
+    }
+    catch (const error_already_set &)
+    {
+        PyErr_Print();
+        return ResultSetPtr();
+    }
 }
 
 

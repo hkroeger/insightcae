@@ -54,6 +54,9 @@
     $1 = &vIn;
 }
 
+
+
+
 %typemap(out) arma::mat {
     PyObject *o = PyList_New($1.n_rows);
     for (unsigned int i=0; i<$1.n_rows; i++)

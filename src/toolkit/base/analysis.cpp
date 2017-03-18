@@ -28,6 +28,9 @@
 
 #include "base/boost_include.h"
 #include "boost/function.hpp"
+#include "boost/python.hpp"
+
+#include "base/pythoninterface.h"
 
 using namespace std;
 using namespace boost;
@@ -277,6 +280,16 @@ Analysis* Analysis::clone() const
 }
 
 
+
+
+
+
+
+
+using namespace boost::python;
+
+
+
 PythonAnalysis::PythonAnalysisFactory::PythonAnalysisFactory ( const boost::filesystem::path& scriptfile )
 : scriptfile_(scriptfile),
   defaultParametersWrapper_(boost::bind(&PythonAnalysis::PythonAnalysisFactory::defaultParameters, this)),
@@ -297,12 +310,47 @@ Analysis* PythonAnalysis::PythonAnalysisFactory::operator()
 
 ParameterSet PythonAnalysis::PythonAnalysisFactory::defaultParameters() const
 {
-    return ParameterSet();
+    aquire_py_GIL locker;
+    
+    try {
+        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+        object main_namespace = main_module.attr("__dict__");
+        handle<> ignore(PyRun_String( 
+            boost::str( boost::format("import imp; mod = imp.load_source('module', '%s'); ps=mod.defaultParameters()") % scriptfile_.string() ).c_str(),
+            Py_file_input,
+            main_namespace.ptr(),
+            main_namespace.ptr() )
+        );
+        ParameterSet ps = extract<ParameterSet>(main_namespace["ps"]);
+        return ps;
+    }
+    catch (const error_already_set &)
+    {
+        PyErr_Print();
+        return ParameterSet();
+    }
 }
 
 std::string PythonAnalysis::PythonAnalysisFactory::category() const
 {
-    return "User Defined";
+    aquire_py_GIL locker;
+    
+    try {
+        object main_module(handle<>(borrowed(PyImport_AddModule("__main__"))));
+        object main_namespace = main_module.attr("__dict__");
+        handle<> ignore(PyRun_String( 
+            boost::str( boost::format("import imp; mod = imp.load_source('module', '%s'); cat=mod.category()") % scriptfile_.string() ).c_str(),
+            Py_file_input,
+            main_namespace.ptr(),
+            main_namespace.ptr() )
+        );
+        return std::string( extract<std::string>(main_namespace["cat"]) );
+    }
+    catch (const error_already_set &)
+    {
+        PyErr_Print();
+        return "With Error";
+    }
 }
 
 std::set<PythonAnalysis::PythonAnalysisFactoryPtr> PythonAnalysis::pythonAnalysisFactories_;

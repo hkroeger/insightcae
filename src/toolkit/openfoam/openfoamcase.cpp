@@ -730,9 +730,9 @@ void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesyst
                 {
                   std::string patch_name = e->first_attribute ( "patchName" )->value();
                   std::string bc_type = e->first_attribute ( "BCtype" )->value();
-                  ParameterSet curp = BoundaryCondition::defaultParameters ( bc_type );
                   if ( bc_type!="" )
                     {
+                      ParameterSet curp = BoundaryCondition::defaultParameters ( bc_type );
                       curp.readFromNode ( doc, *e, file.parent_path() );
                       this->insert ( insight::BoundaryCondition::lookup ( bc_type, *this, patch_name, boundaryDict, curp ) );
                     }

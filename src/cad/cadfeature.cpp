@@ -1169,6 +1169,9 @@ void Feature::saveAs
   const std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >& namedfeats
 ) const
 {
+  checkForBuildDuringAccess();
+  
+
   std::string ext=filename.extension().string();
   std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
   cout<<filename<<" >> "<<ext<<endl;
@@ -1380,6 +1383,7 @@ void Feature::saveAs
   } 
   else if ( (ext==".stl") || (ext==".stlb") )
   {
+    BRepMesh_IncrementalMesh Inc(shape(), 1e-2);
     StlAPI_Writer stlwriter;
 
     stlwriter.ASCIIMode() = (ext==".stl");

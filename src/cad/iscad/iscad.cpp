@@ -1,5 +1,5 @@
 /*
- * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
+ * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -39,31 +39,35 @@
 #include <QLocale>
 
 #include <qthread.h>
- 
+
 class I : public QThread
 {
   QSplashScreen* sp_;
   QWidget win_;
 public:
-  I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) {}
-  
-  void run() { QThread::sleep(3); sp_->finish(&win_); }
+  I ( QSplashScreen* sp, QWidget* win ) :sp_ ( sp ), win_ ( win ) {}
+
+  void run()
+  {
+    QThread::sleep ( 3 );
+    sp_->finish ( &win_ );
+  }
 };
 
 
-int main(int argc, char** argv)
+int main ( int argc, char** argv )
 {
-  
-      namespace po = boost::program_options;
 
-      typedef std::vector<std::string> StringList;
+  namespace po = boost::program_options;
 
-      // Declare the supported options.
-      po::options_description desc ( "Allowed options" );
-      desc.add_options()
-	( "help,h", "produce help message" )
-	( "batch,b", "evaluate model from specified input file without starting GUI" )
-	( "nolog,l", "put debug output to console instead of log window" )
+  typedef std::vector<std::string> StringList;
+
+  // Declare the supported options.
+  po::options_description desc ( "Allowed options" );
+  desc.add_options()
+  ( "help,h", "produce help message" )
+  ( "batch,b", "evaluate model from specified input file without starting GUI" )
+  ( "nolog,l", "put debug output to console instead of log window" )
   //       ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
   //       ("workdir,w", po::value<std::string>(), "execution directory")
   //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
@@ -74,72 +78,73 @@ int main(int argc, char** argv)
   //       ("double,d", po::value<StringList>(), "double variable assignment")
   //       ("int,i", po::value<StringList>(), "int variable assignment")
   //       ("merge,m", po::value<StringList>(), "additional input file to merge into analysis parameters before variable assignments")
-	( "input-file,f", po::value< std::string >(),"Specifies input file." )
-      ;
-      
-      po::positional_options_description p;
-      p.add ( "input-file", -1 );
+  ( "input-file,f", po::value< std::string >(),"Specifies input file." )
+  ;
 
-      po::variables_map vm;
-      po::store
-      (
-        po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
-        vm
-      );
-      po::notify ( vm );
-      
-      if ( vm.count ( "help" ) )
-      {
-	std::cout << desc << std::endl;
-	exit ( -1 );
-      }
-      
-    if ( vm.count("input-file") && vm.count("batch") )
+  po::positional_options_description p;
+  p.add ( "input-file", -1 );
+
+  po::variables_map vm;
+  po::store
+  (
+    po::command_line_parser ( argc, argv ).options ( desc ).positional ( p ).run(),
+    vm
+  );
+  po::notify ( vm );
+
+  if ( vm.count ( "help" ) )
+    {
+      std::cout << desc << std::endl;
+      exit ( -1 );
+    }
+
+  if ( vm.count ( "input-file" ) && vm.count ( "batch" ) )
     {
       std::string filename = vm["input-file"].as<std::string>();
-      
-      insight::cad::ModelPtr model(new insight::cad::Model);
-      if (insight::cad::parseISCADModelFile(filename, model.get()))
-      {
-	auto postprocActions=model->postprocActions();
-	BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
-	{
-	    v.second->execute();
-	}
-	
-	return 0;
-      }
-      else
-	return -1;
-    }
-    else
-    {
-  //     XInitThreads();
-      
-      ISCADApplication app(argc, argv);
-      std::locale::global(std::locale::classic());
-      QLocale::setDefault(QLocale::C);
-      
-      QPixmap pixmap(":/resources/insight_cad_splash.png");
-      QSplashScreen splash(pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen);
-      splash.show();
-      splash.showMessage(/*propGeoVersion()+" - */"Wait...");
 
-      ISCADMainWindow window(0, 0, vm.count("nolog"));
-      if (vm.count("input-file"))
-      {
-	std::string filename = vm["input-file"].as<std::string>();
-	window.loadFile(filename);
-      }
+      insight::cad::ModelPtr model ( new insight::cad::Model );
+      if ( insight::cad::parseISCADModelFile ( filename, model.get() ) )
+        {
+          auto postprocActions=model->postprocActions();
+          BOOST_FOREACH ( decltype ( postprocActions ) ::value_type const& v, postprocActions )
+          {
+              std::cout<<"Executing ppo"<<std::endl;
+            v.second->execute();
+          }
+
+          return 0;
+        }
+      else
+        return -1;
+    }
+  else
+    {
+      //     XInitThreads();
+
+      ISCADApplication app ( argc, argv );
+      std::locale::global ( std::locale::classic() );
+      QLocale::setDefault ( QLocale::C );
+
+      QPixmap pixmap ( ":/resources/insight_cad_splash.png" );
+      QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
+      splash.show();
+      splash.showMessage ( /*propGeoVersion()+" - */"Wait..." );
+
+      ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
+      if ( vm.count ( "input-file" ) )
+        {
+          std::string filename = vm["input-file"].as<std::string>();
+          window.loadFile ( filename );
+        }
 
       window.show();
 
       app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
 
-      I w(&splash, &window);
+      I w ( &splash, &window );
       w.start(); // splash is shown for 5 seconds
 
-  //     splash.finish(&window);
+      //     splash.finish(&window);
       window.raise();
 
       return app.exec();

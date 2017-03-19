@@ -41,34 +41,6 @@ namespace bmd
 
 class blockMesh;
 
-/*
-class Point
-: public arma::mat
-{
-  
-public:
-  Point();
-  Point(const arma::mat& m);
-  Point(double x, double y, double z);*/
-/*
-    def __str__(self):
-        return "(%f %f %f)\n" % (self.x, self.y, self.z)
-
-    def bmdStr(self, pointOffsets):
-        return "(%f %f %f)\n" % (
-            self.x+pointOffsets[self][0], 
-            self.y+pointOffsets[self][1], 
-            self.z+pointOffsets[self][2])
-
-    def __hash__(self):
-        s=str(self)
-        return hash(s)
-
-    def __cmp__(self, other):
-        return cmp(hash(self), hash(other))
-*//*
-  void operator=(const arma::mat& m);
-};*/
 
 typedef arma::mat Point;
 
@@ -444,7 +416,7 @@ class SplineEdge2D
 */
 
 class blockMesh 
-: public insight::OpenFOAMCaseElement
+: public OpenFOAMCaseElement
 {
 public:
   typedef boost::ptr_map<std::string, Patch> PatchMap;

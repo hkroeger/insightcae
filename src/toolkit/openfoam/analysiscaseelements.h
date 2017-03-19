@@ -269,6 +269,9 @@ public:
 
 
 
+#ifdef SWIG
+%template(getforcesCaseElement) insight::OpenFOAMCase::get<const forces>;
+#endif
 
 class forces
 : public OpenFOAMCaseElement

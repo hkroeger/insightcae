@@ -2,6 +2,7 @@
 %include <std_vector.i>
 %include <boost_shared_ptr.i>
 
+
 %typemap(typecheck) insight::ParameterSet::EntryList& 
 {
     $1 = PySequence_Check($input) ? 1 : 0;
@@ -33,6 +34,37 @@
         if (res1!=-1) //(!SWIG_IsOK(res1)) 
         {
             vIn.push_back( insight::ParameterSet::SingleEntry(n, p->clone()) );
+        }
+    }
+    $1 = &vIn;
+}
+
+%typemap(typecheck) insight::PlotCurveList& 
+{
+    $1 = PySequence_Check($input) ? 1 : 0;
+}
+
+
+%typemap(in) insight::PlotCurveList& (insight::PlotCurveList vIn) 
+{
+    size_t iLen = PySequence_Length($input); 
+    vIn.clear();
+    for(unsigned int i = 0; i < iLen; i++) 
+    {
+        PyObject *o = PySequence_GetItem($input, i);
+        
+        insight::PlotCurve* c;
+        
+        int res1 = SWIG_ConvertPtr
+        ( 
+            o, 
+            &c,
+            SWIGTYPE_p_insight__PlotCurve, 1 
+        );
+        
+        if (res1!=-1) //(!SWIG_IsOK(res1)) 
+        {
+            vIn.push_back( insight::PlotCurve(*c) );
         }
     }
     $1 = &vIn;

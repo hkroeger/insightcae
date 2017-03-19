@@ -35,7 +35,7 @@
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
-//#include "openfoam/openfoamtools.h"
+#include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/blockmesh.h"
@@ -46,6 +46,7 @@
 #include "base/exception.h"
 
 using namespace insight;
+using namespace insight::bmd;
 %}
 
 %exception {
@@ -82,10 +83,11 @@ using namespace insight;
 
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"
-//%include "openfoam/openfoamtools.h"
+%include "openfoam/openfoamtools.h"
 //%include "openfoam/numericscaseelements.h"
+%include "openfoam/analysiscaseelements.h"
 %include "openfoam/openfoamanalysis.h"
-%include "openfoam/blockmesh.h"
+//%include "openfoam/blockmesh.h"
 
 %rename(Cylinder_Parameters) Cylinder::Parameters;
 

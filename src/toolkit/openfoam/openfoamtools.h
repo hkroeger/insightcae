@@ -65,6 +65,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
  */
 void copyFields(const boost::filesystem::path& from, const boost::filesystem::path& to);
 
+#ifndef SWIG
 namespace setFieldOps
 {
   
@@ -145,7 +146,10 @@ void setFields(const OpenFOAMCase& ofc,
 	       const std::vector<setFieldOps::FieldValueSpec>& defaultValues,
 	       const boost::ptr_vector<setFieldOps::setFieldOperator>& ops);
 
+#endif
 
+
+#ifndef SWIG
 namespace createPatchOps
 {
   
@@ -208,7 +212,10 @@ void createPatch(const OpenFOAMCase& ofc,
 		  const boost::ptr_vector<createPatchOps::createPatchOperator>& ops,
 		  bool overwrite=true
 		);
+#endif
 
+
+#ifndef SWIG
 namespace sampleOps
 {
 
@@ -438,6 +445,9 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::ptr_vector<sampleOps::set>& sets,
 	    const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
 	    );
+
+#endif 
+
 /**
  * Converts a pair of patches into a cyclic pair using createPatch.
  * The names of the two patches must be of the pattern (.*)_half[0,1]. 

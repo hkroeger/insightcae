@@ -423,9 +423,14 @@ public:
 
     void setFromXML(const std::string& xml, const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");
     void loadFromFile(const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");
+    
+
 };
 
 
+#ifdef SWIG
+%template(getOpenFOAMCaseElement) insight::OpenFOAMCase::get<const OpenFOAMCaseElement>;
+#endif
 
 
 const OpenFOAMCase& OpenFOAMCaseElement::OFcase() const { return *static_cast<OpenFOAMCase*>(&case_); }

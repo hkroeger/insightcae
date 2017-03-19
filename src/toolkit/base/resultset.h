@@ -792,5 +792,8 @@ void addContourPlot
 }
 
 
+#ifdef SWIG
+%template(vector_PlotCurve) std::vector<insight::PlotCurve>;
+#endif
 
 #endif // INSIGHT_RESULTSET_H

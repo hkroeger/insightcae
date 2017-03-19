@@ -669,6 +669,105 @@ void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& lo
   }  
 }
 
+
+void OpenFOAMCase::setFromXML(const std::string& contents, const boost::filesystem::path& file, bool skipOFE, bool skipBCs, const boost::filesystem::path& casepath)
+{
+  using namespace rapidxml;
+  
+  xml_document<> doc;
+  doc.parse<0> ( const_cast<char*>(&contents[0]) );
+
+  xml_node<> *rootnode = doc.first_node ( "root" );
+
+  if (!skipOFE)
+  {
+    xml_node<> *OFEnode = rootnode->first_node ( "OFE" );
+    if ( OFEnode )
+      {
+        std::string name = OFEnode->first_attribute ( "name" )->value();
+        env_=insight::OFEs::get(name.c_str());
+      }
+  }
+
+  for ( xml_node<> *e = rootnode->first_node ( "OpenFOAMCaseElement" ); e; e = e->next_sibling ( "OpenFOAMCaseElement" ) )
+    {
+      std::string type_name = e->first_attribute ( "type" )->value();
+
+      ParameterSet cp = OpenFOAMCaseElement::defaultParameters(type_name);
+      cp.readFromNode ( doc, *e, file.parent_path() );
+      this->insert(OpenFOAMCaseElement::lookup(type_name, *this, cp));
+    }
+
+  if ( !skipBCs )
+    {
+        insight::OFDictData::dict boundaryDict;
+        
+      xml_node<> *BCnode = rootnode->first_node ( "BoundaryConditions" );
+      if ( BCnode )
+        {
+          bool bdp=true;
+          try
+            {
+              // parse boundary information
+              this->parseBoundaryDict ( casepath, boundaryDict );
+            }
+          catch ( ... )
+            {
+              bdp=false;
+            }
+
+          if ( bdp )
+            {
+              xml_node<> *unassignedBCnode = BCnode->first_node ( "UnassignedPatches" );
+              std::string def_bc_type = unassignedBCnode->first_attribute ( "BCtype" )->value();
+              ParameterSet defp;
+              if ( def_bc_type!="" )
+                {
+                  defp = BoundaryCondition::defaultParameters ( def_bc_type );
+                }
+
+              for ( xml_node<> *e = BCnode->first_node ( "Patch" ); e; e = e->next_sibling ( "Patch" ) )
+                {
+                  std::string patch_name = e->first_attribute ( "patchName" )->value();
+                  std::string bc_type = e->first_attribute ( "BCtype" )->value();
+                  ParameterSet curp = BoundaryCondition::defaultParameters ( bc_type );
+                  if ( bc_type!="" )
+                    {
+                      curp.readFromNode ( doc, *e, file.parent_path() );
+                      this->insert ( insight::BoundaryCondition::lookup ( bc_type, *this, patch_name, boundaryDict, curp ) );
+                    }
+                }
+              if ( def_bc_type!="" )
+                {
+                  this->addRemainingBCs ( def_bc_type, boundaryDict, defp );
+                }
+            }
+          else
+            {
+              insight::Warning("The boundary file could not be parsed! Skipping BC configuration." );
+            }
+        }
+    }
+}
+
+
+void OpenFOAMCase::loadFromFile(const boost::filesystem::path& filename, bool skipOFE, bool skipBCs, const boost::filesystem::path& casepath)
+{
+    if (!boost::filesystem::exists(filename))
+        throw insight::Exception("Input file "+filename.string()+" does not exist!");
+    
+    std::ifstream in(filename.c_str());
+    std::string contents;
+    in.seekg(0, std::ios::end);
+    contents.resize(in.tellg());
+    in.seekg(0, std::ios::beg);
+    in.read(&contents[0], contents.size());
+    in.close();
+    
+    setFromXML(contents, filename, skipOFE, skipBCs, casepath);
+}
+
+
 std::vector< string > OpenFOAMCase::fieldNames() const
 {
     createFieldListIfRequired();

@@ -103,7 +103,15 @@ int main ( int argc, char** argv )
       std::string filename = vm["input-file"].as<std::string>();
 
       insight::cad::ModelPtr model ( new insight::cad::Model );
-      if ( insight::cad::parseISCADModelFile ( filename, model.get() ) )
+      bool success;
+      if (filename=="-")
+      {
+        success=insight::cad::parseISCADModelStream ( std::cin, model.get() );
+      } else
+      {
+        success=insight::cad::parseISCADModelFile ( filename, model.get() );
+      }
+      if ( success )
         {
           auto postprocActions=model->postprocActions();
           BOOST_FOREACH ( decltype ( postprocActions ) ::value_type const& v, postprocActions )

@@ -527,11 +527,11 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 
     SharedPathList paths;
     BOOST_FOREACH ( const path& p, /*SharedPathList::searchPathList*/paths ) {
-        if ( is_directory ( p ) ) {
+        if ( exists(p) && is_directory ( p ) ) {
             path userconfigdir ( p );
             userconfigdir /= "modules.d";
 
-            if ( is_directory ( userconfigdir ) ) {
+            if ( exists(userconfigdir) ) { if ( is_directory ( userconfigdir ) ) {
                 directory_iterator end_itr; // default construction yields past-the-end
                 for ( directory_iterator itr ( userconfigdir );
                         itr != end_itr;
@@ -551,11 +551,11 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                         }
                     }
                 }
-            }
+            }}
 
             path pydir ( p );
             pydir /= "python_modules";
-            if ( is_directory ( pydir ) ) {
+            if ( exists(pydir) ) { if (is_directory ( pydir ) ) {
                 directory_iterator end_itr; // default construction yields past-the-end
                 for ( directory_iterator itr ( pydir );
                         itr != end_itr;
@@ -567,13 +567,16 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                             {
                                 Analysis::factories_=new Analysis::FactoryTable(); 
                             }
-                            
                             PythonAnalysis::PythonAnalysisFactoryPtr fac(new PythonAnalysis::PythonAnalysisFactory( itr->path() ) );
                             
                             std::string key(itr->path().stem().string()); 
                             (*Analysis::factories_)[key]=fac.get();
 
+                            if (!Analysis::defaultParametersFunctions_) 
+                             { Analysis::defaultParametersFunctions_ = new Analysis::defaultParametersFunctionTable(); }
                             (*Analysis::defaultParametersFunctions_)[key] = fac->defaultParametersWrapper_;
+                            if (!Analysis::categoryFunctions_) 
+                             { Analysis::categoryFunctions_ = new Analysis::categoryFunctionTable(); }
                             (*Analysis::categoryFunctions_)[key] = fac->categoryWrapper_;
                             
                             PythonAnalysis::pythonAnalysisFactories_.insert(fac);
@@ -581,7 +584,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                         }
                     }
                 }
-            }
+            }}
 
         } else {
             //cout<<"Not existing: "<<p<<endl;

@@ -1,0 +1,31 @@
+HOM02
+
+Unpublished data,  A.A. Wray (1997)
+
+The data contained in this file derives from decaying incompressible
+isotropic turbulence from a DNS simulation with 512x512x512 nodes.
+The viscosity = 3.5014006E-04.
+The triply-periodic cubic computational box is 2*pi on each side.
+
+R_lambda = 60.41
+
+These data are moments of normalized longitudinal and transverse velocity differences,
+(u(x+dx)-u(x))/u_rms and |v(x+dx)-v(x)|/v_rms, where u is parallel and v perpendicular
+to the vector dx.
+
+The first column is the magnitude of the separation dx as a fraction of L, where
+
+   L is the integral scale (pi/2)*integral(E(k)/k)/integral(E(k)).
+
+The next six columns, from left to right, are:
+
+   the 2nd, 3rd, and 4th moment of the longitudinal velocity differences, and
+   the 2nd, 3rd, and 4th moment of the absolute value of the transverse velocity differences
+
+       L/dx           <du^2>         <du^3>            <du^4>        <d|v|^2>         <d|v|^3>        <d|v|^4>
+    -----------------------------------------------------------------------------------------------------------
+   7.5000000e-01   1.5417951e+00  -2.7139392e-01   7.3040504e+00   1.8003162e+00   3.9168613e+00   1.0049692e+01
+   1.5000000e+00   1.1513472e+00  -2.4489100e-01   4.2393165e+00   1.4306793e+00   2.8242013e+00   6.6385217e+00
+   2.2500000e+00   9.1903591e-01  -1.9597228e-01   2.7875755e+00   1.2022707e+00   2.2123857e+00   4.9015646e+00
+   3.0000000e+00   7.5481701e-01  -1.5930302e-01   1.9228910e+00   1.0354414e+00   1.7953829e+00   3.7781703e+00
+   3.7500000e+00   6.2943065e-01  -1.3095379e-01   1.3645101e+00   9.0211278e-01   1.4821357e+00   2.9753380e+00

@@ -227,7 +227,7 @@ macro(setup_exe_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-    message(STATUS "Adding program target ${PRJ_NAME}${_ofvers}")
+#     message(STATUS "Adding program target ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
     #assemble list of full include paths
@@ -376,7 +376,7 @@ macro(setup_lib_target_OF PRJ_NAME sources of_include_dirs of_libs include_dirs 
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-    message(STATUS "Adding lib target ${PRJ_NAME}${_ofvers}")
+#     message(STATUS "Adding lib target ${PRJ_NAME}${_ofvers}")
     project(${PRJ_NAME}${_ofvers})
     
     #assemble list of full include paths
@@ -523,7 +523,7 @@ macro(setup_test_OF PRJ_NAME cmd)
   version_list_OF()
   foreach (_ofvers ${OF_VERSIONS})
    if (${_ofvers}_FOUND)
-    message(STATUS "Adding OpenFOAM test ${PRJ_NAME}${_ofvers} ${_ofvers}_ISCFG_BASHRC ${${_ofvers}_ISCFG_BASHRC}")
+#     message(STATUS "Adding OpenFOAM test ${PRJ_NAME}${_ofvers} ${_ofvers}_ISCFG_BASHRC ${${_ofvers}_ISCFG_BASHRC}")
         
     add_test(NAME ${PRJ_NAME}${_ofvers} 
 	COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/${cmd} ${_ofvers} ${${_ofvers}_ISCFG_BASHRC} ${CMAKE_CURRENT_SOURCE_DIR}
@@ -605,7 +605,7 @@ macro(install_package_script PACKAGENAME)
     set(SRC "${CMAKE_CURRENT_SOURCE_DIR}/${_src}")
     set(DST "${CMAKE_BINARY_DIR}/share/insight/python/Insight/${PACKAGENAME}/${_src}")
 
-    message(STATUS "target name: ${TARGNAME}")
+#     message(STATUS "target name: ${TARGNAME}")
     add_custom_command(
       TARGET ${TARGNAME}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}

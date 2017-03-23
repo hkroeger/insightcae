@@ -5,6 +5,21 @@ __init__.py
 Schlichting/__init__.py
 Schlichting/universal_reystress_distrib.dat
 
+DIT_Wray/__init__.py
+DIT_Wray/CB512_12.hL5
+DIT_Wray/CB512_12.hLm
+DIT_Wray/CB512_14.hLm  
+DIT_Wray/CB512_19.hL6  
+DIT_Wray/CB512.els  
+DIT_Wray/CB512.ets  
+DIT_Wray/CB512.ts
+DIT_Wray/CB512_12.hL6  
+DIT_Wray/CB512_14.hL5  
+DIT_Wray/CB512_19.hL5  
+DIT_Wray/CB512_19.hLm  
+DIT_Wray/CB512.es   
+DIT_Wray/CB512.f_t
+
 Wieghardt1951_FlatPlate/__init__.py
 Wieghardt1951_FlatPlate/wieghardt1951_fig1_u17.8_cf_vs_x.csv
 Wieghardt1951_FlatPlate/wieghardt1951_fig1_u17.8_delta2_vs_x.csv

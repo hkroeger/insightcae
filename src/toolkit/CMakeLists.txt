@@ -62,6 +62,12 @@ set(toolkit_SOURCES
     code_aster/codeasterrun.cpp
 )
 
+IF(INSIGHT_BUILD_PYTHONBINDINGS)
+  LIST(APPEND toolkit_SOURCES
+   base/pythonanalysis.cpp
+  )
+ENDIF()
+
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
 

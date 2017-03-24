@@ -243,47 +243,6 @@ typedef boost::tuple<std::string, AnalysisPtr, ResultSetPtr> AnalysisInstance;
 
 
 
-class PythonAnalysis
-: public Analysis
-{
-    const boost::filesystem::path& scriptfile_;
-    
-
-public:
-    
-  class PythonAnalysisFactory
-    : public Analysis::Factory
-  {
-    const boost::filesystem::path scriptfile_;
-    
-  public:
-    boost::function<ParameterSet(void)> defaultParametersWrapper_;
-    boost::function<std::string(void)> categoryWrapper_;
-    
-    PythonAnalysisFactory ( const boost::filesystem::path& scriptfile );
-    virtual ~PythonAnalysisFactory();
-    
-    virtual Analysis* operator() 
-    (
-      const ParameterSet& ps,
-      const boost::filesystem::path& exePath
-    ) const;
-  
-    ParameterSet defaultParameters() const;
-    
-    std::string category() const;
-  };
-  typedef boost::shared_ptr<PythonAnalysisFactory> PythonAnalysisFactoryPtr;
-  
-  static std::set<PythonAnalysisFactoryPtr> pythonAnalysisFactories_;
-
-public:
-    PythonAnalysis(const boost::filesystem::path& scriptfile, const ParameterSet& ps, const boost::filesystem::path& exePath );
-    virtual ResultSetPtr operator() ( ProgressDisplayer* displayer=NULL );
-};
-
-
-
 // Queue class that has thread synchronisation
 class SynchronisedAnalysisQueue
 {

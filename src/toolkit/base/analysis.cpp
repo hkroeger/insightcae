@@ -553,39 +553,6 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
                 }
             }}
 
-            path pydir ( p );
-            pydir /= "python_modules";
-            if ( exists(pydir) ) { if (is_directory ( pydir ) ) {
-                directory_iterator end_itr; // default construction yields past-the-end
-                for ( directory_iterator itr ( pydir );
-                        itr != end_itr;
-                        ++itr ) {
-                    if ( is_regular_file ( itr->status() ) ) {
-                        if ( itr->path().extension() == ".py" ) 
-                        {
-                            if (!Analysis::factories_)
-                            {
-                                Analysis::factories_=new Analysis::FactoryTable(); 
-                            }
-                            PythonAnalysis::PythonAnalysisFactoryPtr fac(new PythonAnalysis::PythonAnalysisFactory( itr->path() ) );
-                            
-                            std::string key(itr->path().stem().string()); 
-                            (*Analysis::factories_)[key]=fac.get();
-
-                            if (!Analysis::defaultParametersFunctions_) 
-                             { Analysis::defaultParametersFunctions_ = new Analysis::defaultParametersFunctionTable(); }
-                            (*Analysis::defaultParametersFunctions_)[key] = fac->defaultParametersWrapper_;
-                            if (!Analysis::categoryFunctions_) 
-                             { Analysis::categoryFunctions_ = new Analysis::categoryFunctionTable(); }
-                            (*Analysis::categoryFunctions_)[key] = fac->categoryWrapper_;
-                            
-                            PythonAnalysis::pythonAnalysisFactories_.insert(fac);
-                            
-                        }
-                    }
-                }
-            }}
-
         } else {
             //cout<<"Not existing: "<<p<<endl;
         }

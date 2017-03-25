@@ -674,10 +674,10 @@ void Sketch::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' > ruleset.r_datumExpression > ',' 
-	  > ruleset.r_path > ',' 
-	  > ruleset.r_string 
-	  > ( ( ',' > (ruleset.r_identifier > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(SketchVarList()) )
-	  > ( ( ',' > qi::double_ ) | qi::attr(1e-3) ) > 
+	  > ruleset.r_path 
+	  > ( ( ',' >> ruleset.r_string ) | qi::attr(std::string("sketch")) )
+	  > ( ( ',' >> (ruleset.r_identifier > '=' > ruleset.r_scalarExpression )% ',' ) | qi::attr(SketchVarList()) )
+	  > ( ( ',' >> qi::double_ ) | qi::attr(1e-3) ) > 
       ')' ) 
 	[ qi::_val = phx::bind(&Sketch::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       

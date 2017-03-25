@@ -29,6 +29,7 @@
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "base/analysis.h"
+#include "base/pythonanalysis.h"
 #include "base/parameterstudy.h"
 #include "base/case.h"
 #include "base/caseelement.h"

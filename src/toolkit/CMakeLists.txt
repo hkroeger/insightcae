@@ -95,13 +95,17 @@ install(
   )
 
 IF(INSIGHT_BUILD_PYTHONBINDINGS)
- add_custom_target(
- SWIG_ExternalRuntimeHeader
-    COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
- )
- add_dependencies(toolkit SWIG_ExternalRuntimeHeader)
+    ADD_CUSTOM_COMMAND(
+        OUTPUT toolkit_swigpyrun.timestamp
+        COMMAND "${SWIG_EXECUTABLE}" -python -external-runtime
+        COMMAND touch toolkit_swigpyrun.timestamp
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+    ADD_CUSTOM_TARGET( toolkit_swigpyrun DEPENDS toolkit_swigpyrun.timestamp
+            COMMENT "Checking for swigpyrun.h generation" )
+    ADD_DEPENDENCIES( toolkit toolkit_swigpyrun )
 ENDIF()
+
 add_pybindings(toolkit "toolkit.i" toolkit)
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${SWIG_RUNTIME} DESTINATION include/toolkit)

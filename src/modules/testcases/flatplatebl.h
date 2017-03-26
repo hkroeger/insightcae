@@ -190,9 +190,9 @@ public:
   virtual void computeInitialLocation();
   virtual void calcDerivedInputData();
   
-  virtual void createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
-  virtual void createCase(insight::OpenFOAMCase& cm);
-  virtual void createMesh(insight::OpenFOAMCase& cm);
+  virtual void createInflowBC(OpenFOAMCase& cm, const OFDictData::dict& boundaryDict) const;
+  virtual void createCase(OpenFOAMCase& cm);
+  virtual void createMesh(OpenFOAMCase& cm);
 
   virtual void evaluateAtSection
   (
@@ -203,9 +203,9 @@ public:
     const std::string& RFieldName,
     const FlatPlateBL::Parameters::eval_type::bc_extractsections_default_type* extract_section=NULL
   );  
-  virtual insight::ResultSetPtr evaluateResults(insight::OpenFOAMCase& cm);
+  virtual ResultSetPtr evaluateResults(OpenFOAMCase& cm);
   
-  virtual insight::Analysis* clone();
+  virtual Analysis* clone();
   
   /**
    * solves the function G(Alpha,D) numerically

@@ -98,6 +98,7 @@ int main ( int argc, char** argv )
       exit ( -1 );
     }
 
+  try {
   if ( vm.count ( "input-file" ) && vm.count ( "batch" ) )
     {
       std::string filename = vm["input-file"].as<std::string>();
@@ -116,14 +117,16 @@ int main ( int argc, char** argv )
           auto postprocActions=model->postprocActions();
           BOOST_FOREACH ( decltype ( postprocActions ) ::value_type const& v, postprocActions )
           {
-              std::cout<<"Executing ppo"<<std::endl;
             v.second->execute();
           }
 
           return 0;
         }
       else
-        return -1;
+      {
+          std::cerr<<"Failed to parse ISCAD script!"<<std::endl;
+          return -1;
+      }
     }
   else
     {
@@ -157,4 +160,10 @@ int main ( int argc, char** argv )
 
       return app.exec();
     }
+  }
+  catch (insight::Exception e)
+  {
+      std::cerr<<e<<std::endl;
+      return -1;
+  }
 }

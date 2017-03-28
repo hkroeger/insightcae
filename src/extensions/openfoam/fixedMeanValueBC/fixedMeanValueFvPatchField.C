@@ -75,7 +75,7 @@ fixedMeanValueFvPatchField<Type>::fixedMeanValueFvPatchField
 )
 :
     fixedValueFvPatchField<Type>(p, iF),
-    meanValue_(DataEntry<Type>::New("meanValue", dict)),
+    meanValue_(DATAENTRY<Type>::New("meanValue", dict)),
     //meanValue_(pTraits<Type>(dict.lookup("meanValue"))),
     curTimeIndex_(-1)
 {

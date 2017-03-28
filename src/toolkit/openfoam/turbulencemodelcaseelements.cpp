@@ -109,7 +109,9 @@ OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
   if (OFversion()>=300)
   {
       OFDictData::dict& turbProperties=dictionaries.addDictionaryIfNonexistent("constant/turbulenceProperties");
-      return turbProperties.addSubDictIfNonexistent("LES");
+      OFDictData::dict& LESProperties = turbProperties.addSubDictIfNonexistent("LES");
+      LESProperties["turbulence"]=true;
+      return LESProperties;
   }
   else
   {

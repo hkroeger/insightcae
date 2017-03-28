@@ -36,7 +36,13 @@ SourceFiles
 #define fixedMeanValueFvPatchField_H
 
 #include "fixedValueFvPatchFields.H"
+#ifdef OFplus
+#include "Function1.H"
+#define DATAENTRY Function1
+#else
 #include "DataEntry.H"
+#define DATAENTRY DataEntry
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,7 +62,7 @@ class fixedMeanValueFvPatchField
 
         //- Mean value
 //        Type meanValue_;
-        autoPtr<DataEntry<Type> > meanValue_;
+        autoPtr< DATAENTRY<Type> > meanValue_;
 
         //- Current time index
         label curTimeIndex_;
@@ -129,13 +135,13 @@ public:
         // Access
 
             //- Return the ref value
-            const autoPtr<DataEntry<Type> >& meanValue() const
+            const autoPtr<DATAENTRY<Type> >& meanValue() const
             {
                 return meanValue_;
             }
 
             //- Return reference to the ref value to allow adjustment
-            autoPtr<DataEntry<Type> >& meanValue()
+            autoPtr<DATAENTRY<Type> >& meanValue()
             {
                 return meanValue_;
             }
@@ -177,6 +183,8 @@ public:
 #ifdef NoRepository
 #   include "fixedMeanValueFvPatchField.C"
 #endif
+
+#undef DATAENTRY
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

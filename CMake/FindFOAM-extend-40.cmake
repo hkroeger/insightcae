@@ -21,7 +21,7 @@ macro(setOFlibvar prefix)
       LIST(APPEND ${prefix}_LIBRARIES "${${prefix}_FOAM_LIBBIN}/lib${f}.so")
     endif()
    ENDFOREACH(f)
-   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES} PARENT_SCOPE)
+   set (${prefix}_LIBRARIES ${${prefix}_LIBRARIES})
 endmacro()
 
 SET(Fx40_FOUND FALSE)

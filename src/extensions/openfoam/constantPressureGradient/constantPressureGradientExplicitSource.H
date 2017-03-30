@@ -55,7 +55,11 @@ SourceFiles
 #include "cellSet.H"
 #include "fvMesh.H"
 #include "volFields.H"
+#if defined(OFplus)
+#include "cellSetOption.H"
+#else
 #include "fvOption.H"
+#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,7 +74,11 @@ namespace fv
 
 class constantPressureGradientExplicitSource
 :
+#if defined(OFplus)
+    public cellSetOption
+#else
     public option
+#endif
 {
     // Private data
 

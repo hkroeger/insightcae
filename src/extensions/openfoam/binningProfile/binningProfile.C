@@ -27,7 +27,7 @@
 
 #include "Tuple2.H"
 #include "token.H"
-
+#include "uniof.h"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -36,77 +36,93 @@ using namespace Foam;
 template<class T>
 class profileSampler
 {
-  scalarField cumWeights_;
-  Field<T> profile_;
-  
-  point p0_;
-  vector axis_;
-  scalar x0_, x1_;
-  label n_;
-  
-public:
-  profileSampler
-  ( 
-    const point& p0,
-    const vector& axis, 
-    scalar x0, scalar x1, label n
-  )
-  : cumWeights_(n-1, 0.0),
-    profile_(n-1, pTraits<T>::zero),
-    p0_(p0), axis_(axis),
-    x0_(x0), x1_(x1), n_(n)
-  {
-  }
+    scalarField cumWeights_;
+    Field<T> profile_;
 
-  void cumulateSample
-  (
-    const Field<T>& f,
-    const pointField& loc,
-    const scalarField& weights
-  )
-  {
-    forAll(f, j)
+    point p0_;
+    vector axis_;
+    scalar x0_, x1_;
+    label n_;
+
+public:
+    profileSampler
+    (
+        const point& p0,
+        const vector& axis,
+        scalar x0, scalar x1, label n
+    )
+        : cumWeights_(n-1, 0.0),
+          profile_(n-1, pTraits<T>::zero),
+          p0_(p0), axis_(axis),
+          x0_(x0), x1_(x1), n_(n)
     {
-      scalar x = (loc[j]-p0_)&axis_;
-      
-      int ib=floor(double(n_-1)*(x-x0_)/(x1_-x0_)); // bin index
-      
+    }
+
+    void cumulateSample
+    (
+        const Field<T>& f,
+        const pointField& loc,
+        const scalarField& weights
+    )
+    {
+        forAll(f, j)
+        {
+            scalar x = (loc[j]-p0_)&axis_;
+
+            int ib=floor(double(n_-1)*(x-x0_)/(x1_-x0_)); // bin index
+
 //       ib=max(0, min(n_-1, ib));
-      if ( (ib>=0) && (ib<=n_-2) )
-      {
-	profile_[ib]+=weights[ib]*f[j];
-	cumWeights_[ib]+=weights[ib];
-      }
+            if ( (ib>=0) && (ib<=n_-2) )
+            {
+                profile_[ib]+=weights[ib]*f[j];
+                cumWeights_[ib]+=weights[ib];
+            }
+        }
     }
-  }
-  
-  tmp<Field<T> > operator()() const
-  {
-    return tmp<Field<T> >(profile_/cumWeights_);
-  }
-  
-  bool validBin(label i) const
-  {
-    return mag(cumWeights_[i])>SMALL;
-  }
-  
-  void write(Ostream& f) const
-  {
-    tmp<Field<T> > prof=(*this)();
-    
-    for (int i=0; i<n_-1; i++)
+
+    Tuple2< tmp<scalarField>, tmp<Field<T> > >  operator()() const
     {
-      if (validBin(i))
-      {
-	f()
-	<< ( x0_ + (x1_-x0_)*(double(i+1)/double(n_)) )
-	;
-	for (int j=0; j<pTraits<T>::nComponents; j++)
-	  f()<< token::SPACE << component(prof()[i], j);
-	f() << nl;
-      }
+        int nb=0;
+        
+        forAll(profile_, i) if (validBin(i)) nb++;
+        
+        Tuple2< tmp<scalarField>, tmp<Field<T> > > ret(
+            tmp<scalarField>(new scalarField(nb,0)), 
+            tmp<Field<T> >(new Field<T>(nb, pTraits<T>::zero))
+        );
+        int j=0;
+        forAll(profile_, i)
+        {
+            if (validBin(i))
+            {
+                UNIOF_TMP_NONCONST(ret.first())[j] = x0_ + (x1_-x0_)*(double(i+1)/double(n_));
+                UNIOF_TMP_NONCONST(ret.second())[j]= profile_[i]/cumWeights_[i];
+                j++;
+            }
+        }
+        return  ret;
     }
-  }
+
+    bool validBin(label i) const
+    {
+        return mag(cumWeights_[i])>SMALL;
+    }
+
+    void write(Ostream& f) const
+    {
+        Tuple2< tmp<scalarField>, tmp<Field<T> > > prof=(*this)();
+
+        int nb=prof.first()().size();
+        for (int i=0; i<nb-1; i++)
+        {
+                f() << prof.first()()[i];
+                
+                for (int j=0; j<pTraits<T>::nComponents; j++)
+                    f()<< token::SPACE << component(prof.second()()[i], j);
+                
+                f() << nl;
+        }
+    }
 
 };
 
@@ -156,75 +172,75 @@ void extractProfiles
   const labelHashSet& samplePatches
 )
 {
-  GeometricField<T, fvPatchField, volMesh> field(fieldHeader, mesh);
-  
-  if (sampleWalls)
-  {
-    scalar x0=GREAT, x1=-GREAT;
-    
-    forAll(mesh.boundary(), patchI)
-      if (isA<wallFvPatch>(mesh.boundary()[patchI]))
-      {
-	x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
-	x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
-      }
-      Info<<x0<<" "<<x1<<endl;
-    profileSampler<T> ps(p0, axis, x0, x1, n);
-    
-    forAll(mesh.boundary(), patchI)
-      if (isA<wallFvPatch>(mesh.boundary()[patchI]))
-      {
-	ps.cumulateSample(field.boundaryField()[patchI], mesh.boundary()[patchI].Cf(), mesh.boundary()[patchI].magSf());
-      }
-      
-    {
-      autoPtr<OFstream> f(makeFile(mesh, "walls_"+fieldHeader.name()));
-      ps.write(f());
-    }
-  }
+    GeometricField<T, fvPatchField, volMesh> field(fieldHeader, mesh);
 
-  if (sampleInterior)
-  {
-    scalar 
-      x0=min(mesh.points()&axis), 
-      x1=max(mesh.points()&axis);
-          
-    profileSampler<T> ps(p0, axis, x0, x1, n);
-    
-    ps.cumulateSample(field.internalField(), mesh.C().internalField(), mesh.V());
-      
+    if (sampleWalls)
     {
-      autoPtr<OFstream> f(makeFile(mesh, "interior_"+fieldHeader.name()));
-      ps.write(f());
-    }
-  }
+        scalar x0=GREAT, x1=-GREAT;
 
-  if (samplePatches.size()>0)
-  {
-    scalar x0=GREAT, x1=-GREAT;
-    
-    word name="patches";
-    forAllConstIter(labelHashSet, samplePatches, iter)
-    {
-      label patchI = iter.key();
-      name += "_"+mesh.boundary()[patchI].name();
-      x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
-      x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
+        forAll(mesh.boundary(), patchI)
+        if (isA<wallFvPatch>(mesh.boundary()[patchI]))
+        {
+            x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
+            x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
+        }
+        Info<<x0<<" "<<x1<<endl;
+        profileSampler<T> ps(p0, axis, x0, x1, n);
+
+        forAll(mesh.boundary(), patchI)
+        if (isA<wallFvPatch>(mesh.boundary()[patchI]))
+        {
+            ps.cumulateSample(field.boundaryField()[patchI], mesh.boundary()[patchI].Cf(), mesh.boundary()[patchI].magSf());
+        }
+
+        {
+            autoPtr<OFstream> f(makeFile(mesh, "walls_"+fieldHeader.name()));
+            ps.write(f());
+        }
     }
-      
-    profileSampler<T> ps(p0, axis, x0, x1, n);
-    
-    forAllConstIter(labelHashSet, samplePatches, iter)
+
+    if (sampleInterior)
     {
-      label patchI = iter.key();
-      ps.cumulateSample(field.boundaryField()[patchI], mesh.boundary()[patchI].Cf(), mesh.boundary()[patchI].magSf());
+        scalar
+        x0=min(mesh.points()&axis),
+        x1=max(mesh.points()&axis);
+
+        profileSampler<T> ps(p0, axis, x0, x1, n);
+
+        ps.cumulateSample(field.internalField(), mesh.C().internalField(), mesh.V());
+
+        {
+            autoPtr<OFstream> f(makeFile(mesh, "interior_"+fieldHeader.name()));
+            ps.write(f());
+        }
     }
-      
+
+    if (samplePatches.size()>0)
     {
-      autoPtr<OFstream> f(makeFile(mesh, name+"_"+fieldHeader.name()));
-      ps.write(f());
+        scalar x0=GREAT, x1=-GREAT;
+
+        word name="patches";
+        forAllConstIter(labelHashSet, samplePatches, iter)
+        {
+            label patchI = iter.key();
+            name += "_"+mesh.boundary()[patchI].name();
+            x0=min(x0, min(mesh.boundaryMesh()[patchI].localPoints()&axis));
+            x1=max(x1, max(mesh.boundaryMesh()[patchI].localPoints()&axis));
+        }
+
+        profileSampler<T> ps(p0, axis, x0, x1, n);
+
+        forAllConstIter(labelHashSet, samplePatches, iter)
+        {
+            label patchI = iter.key();
+            ps.cumulateSample(field.boundaryField()[patchI], mesh.boundary()[patchI].Cf(), mesh.boundary()[patchI].magSf());
+        }
+
+        {
+            autoPtr<OFstream> f(makeFile(mesh, name+"_"+fieldHeader.name()));
+            ps.write(f());
+        }
     }
-  }
 
 }
 

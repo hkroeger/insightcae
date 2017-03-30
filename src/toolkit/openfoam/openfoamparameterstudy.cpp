@@ -86,7 +86,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
 {
     ParameterSet& p = this->parameters_; //Analysis::parameters_;
     // generate the mesh in the top level case first
-    path dir = setupExecutionEnvironment();
+    path dir = this->setupExecutionEnvironment();
     //parameters_.saveToFile(dir/"parameters.ist", type());
 
     {
@@ -98,7 +98,7 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
         OFEnvironment ofe = OFEs::get(OFEname);
         ofe.setExecutionMachine(machine);
 
-        path exep=executionPath();
+        path exep=this->executionPath();
 
         // Generate a valid parameterset with actual values for mesh mesh genration
         // use first value from each range
@@ -134,12 +134,12 @@ ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(Progres
 
     path old_lp=p.get<PathParameter>("mesh/linkmesh")();
     if (!subcasesRemesh_)
-        p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(executionPath());
-    setupQueue();
+        p.get<PathParameter>("mesh/linkmesh")() = boost::filesystem::absolute(this->executionPath());
+    this->setupQueue();
     p.get<PathParameter>("mesh/linkmesh")() = old_lp;
 
-    processQueue(displayer);
-    ResultSetPtr results = evaluateRuns();
+    this->processQueue(displayer);
+    ResultSetPtr results = this->evaluateRuns();
 
     evaluateCombinedResults(results);
 
@@ -153,7 +153,7 @@ template<
   class BaseAnalysis,
   const RangeParameterList& var_params
 >
-void OpenFOAMParameterStudy<BaseAnalysis,var_params>::evaluateCombinedResults(ResultSetPtr& results)
+void OpenFOAMParameterStudy<BaseAnalysis,var_params>::evaluateCombinedResults(ResultSetPtr&)
 {
 }
 

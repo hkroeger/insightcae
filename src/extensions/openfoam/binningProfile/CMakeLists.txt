@@ -15,4 +15,8 @@ set(INCLUDE_DIRS
   ${insight_INCLUDE_DIR}
 )
 
-setup_exe_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "" "")
+set(LIBS 
+ uniof
+)
+
+setup_exe_target_OF(${PRJ} "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")

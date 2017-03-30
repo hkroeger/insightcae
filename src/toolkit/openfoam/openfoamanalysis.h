@@ -46,7 +46,7 @@ PARAMETERSET>>> OpenFOAMAnalysis Parameters
 run = set 
 {	
  machine 	= 	string 	"" 	"machine or queue, where the external commands are executed on"
- OFEname 	= 	string 	"OF23x" "identifier of the OpenFOAM installation, that shall be used"
+ OFEname 	= 	string 	"OFplus" "identifier of the OpenFOAM installation, that shall be used"
  np 		= 	int 	1 	"number of processors for parallel run (less or equal 1 means serial execution)"
  deltaT 	= 	double 	1.0 	"simulation time step"
  endTime 	= 	double 	1000.0 	"simulation time at which the solver should stop"

@@ -61,7 +61,11 @@ Foam::fv::constantPressureGradientExplicitSource::constantPressureGradientExplic
     const fvMesh& mesh
 )
 :
+#if defined(OFplus)
+    cellSetOption(sourceName, modelType, dict, mesh),
+#else
     option(sourceName, modelType, dict, mesh),
+#endif
     gradP_(coeffs_.lookup("gradP"))
 {
      coeffs_.lookup("fieldNames") >> fieldNames_;

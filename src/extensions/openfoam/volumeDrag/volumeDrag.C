@@ -117,7 +117,11 @@ Foam::fv::volumeDrag::volumeDrag
     const fvMesh& mesh
 )
 :
+#if defined(OFplus)
+    cellSetOption(sourceName, modelType, dict, mesh),
+#else
     option(sourceName, modelType, dict, mesh),
+#endif
     CD_(coeffs_.lookup("CD"))
 {
     fieldNames_.setSize(1);
@@ -195,7 +199,12 @@ Foam::tmp<Foam::vectorField> Foam::fv::volumeDrag::computeSup(fvMatrix<vector>& 
     
     const vectorField& U = eqn.psi();
     
-    Su() = -0.5*CD_* magSqr(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
+#if defined(OFplus)
+    Su
+#else
+    Su()
+#endif
+     = -0.5*CD_* magSqr(UIndirectList<vector>(U, cells_)()) / computeAxialLength();
 
     return Su;
 }

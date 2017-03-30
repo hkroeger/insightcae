@@ -26,6 +26,7 @@ License
 
 #include "reconCentral.H"
 #include "fvMesh.H"
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -53,7 +54,7 @@ Foam::reconCentral<Type>::interpolate
         )
     );
 
-    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf();
+    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = UNIOF_TMP_NONCONST(tsf);
 
     const labelList& owner = mesh.owner();
     const labelList& neighbour = mesh.neighbour();

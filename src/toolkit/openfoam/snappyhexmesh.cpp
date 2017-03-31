@@ -210,7 +210,7 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
       create_directories(to.parent_path());
     
     std::cout<<"copy from "<<from<<" to "<<to<<std::endl;
-    copy_file(from, to);
+    copy_file(from, to, copy_option::overwrite_if_exists);
   }
 //   ofc.executeCommand(location, "surfaceTransformPoints",
 //     list_of<std::string>

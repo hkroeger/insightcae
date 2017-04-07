@@ -398,70 +398,140 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
 
-arma::mat forces::readForces(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName)
+
+arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
+{
+  std::string line;
+
+  getline ( f, line );
+  if ( f.fail() ) return arma::mat();
+
+  if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
+
+  erase_all ( line, "(" );
+  erase_all ( line, ")" );
+  replace_all ( line, ",", " " );
+  replace_all ( line, "  ", " " );
+
+  std::vector<string> strs;
+  boost::split ( strs, line, boost::is_any_of ( " \t" ) );
+
+  if ( strs.size() != nc_expected ) return arma::mat();
+
+  arma::mat row;
+  row.set_size ( 1, strs.size() );
+
+  int k=0;
+  BOOST_FOREACH ( const string& e, strs )
+  {
+    row ( 0, k++ ) =lexical_cast<double> ( e );
+  }
+  
+  return row;
+}
+
+arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName )
 {
   arma::mat fl;
-  
+
   path fp;
-  if (c.OFversion()<170)
-    fp=absolute(location)/foName;
+  if ( c.OFversion() <170 )
+    fp=absolute ( location ) /foName;
   else
-    fp=absolute(location)/"postProcessing"/foName;
-  
-  TimeDirectoryList tdl=listTimeDirectories(fp);
-  
-  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+    fp=absolute ( location ) /"postProcessing"/foName;
+
+  TimeDirectoryList tdl=listTimeDirectories ( fp );
+
+  int ncexp=13;
+  if ( c.OFversion() >=230 ) ncexp=19;
+  if ( c.OFversion() >=300 ) ncexp=10;
+
+  BOOST_FOREACH ( const TimeDirectoryList::value_type& td, tdl )
   {
-    std::ifstream f( (td.second/"forces.dat").c_str());
-    while (!f.eof())
-    {
-      string line;
-      getline(f, line);
-      if (f.fail()) break;
-      //cout<<line<<endl;
-      if (!starts_with(line, "#"))
+    std::ifstream f, f2;
+    if ( c.OFversion() >=300 )
       {
-	erase_all(line, "(");
-	erase_all(line, ")");
-	replace_all(line, ",", " ");
-	replace_all(line, "  ", " ");
-	
-	std::vector<string> strs;
-	boost::split(strs, line, boost::is_any_of(" \t"));
-	
-	if (strs.size()==19 || strs.size()==13)
-	{
-	  if (fl.n_rows==0) 
-	    fl.set_size(1, strs.size());
-	  else
-	    fl.resize(fl.n_rows+1, fl.n_cols);
-	  int j=fl.n_rows-1;
-	  
-	  int k=0;
-	  BOOST_FOREACH(const string& e, strs)
-	  {
-	    fl(j,k++)=lexical_cast<double>(e);
-	  }
-	}
-	else
-	{
-	  insight::Warning("Something is strange in forces.dat-file in "+td.second.string()+":\n"
-	  "number columns is not 19 or 13!\n"
-	  "Omitting the strange line.\n"
-	   "Contains garbage after crash?"
-	  );
-	}
+        f.open ( ( td.second/"force.dat" ).c_str() );
+        f2.open ( ( td.second/"moment.dat" ).c_str() );
       }
-    }
+    else
+      {
+        f.open ( ( td.second/"forces.dat" ).c_str() );
+      }
+
+    while ( !f.eof() )
+      {
+
+        bool skip=false;
+
+        arma::mat row;
+        if ( c.OFversion() >=300 )
+          {
+            arma::mat r1=readForcesLine ( f, ncexp, skip );
+            arma::mat r2=readForcesLine ( f2, ncexp, skip );
+            if ( (r1.n_cols==0) || (r2.n_cols==0) )
+            {
+                if ( !skip ) break;
+            }
+            else
+            {
+                // make compatible with earlier OF versions
+                r1.shed_cols(1,3); // remove total force
+                r2.shed_cols(1,3); // remove total moment
+                r2.shed_col(0); // remove time column
+//                 if (r1.n_cols==7) // append porosity columns, if not present
+//                 {
+//                     arma::mat rm=arma::join_rows(r1, arma::zeros(1,3));
+//                     r1=rm;
+//                 }
+//                 if (r2.n_cols==7) // append porosity columns, if not present
+//                 {
+//                     arma::mat rm=arma::join_rows(r2, arma::zeros(1,3));
+//                     r2=rm;
+//                 }
+                
+                row=arma::join_rows ( r1, r2 );
+    std::cout<<"r="<<row<<std::endl;
+                
+            }
+          }
+        else
+          {
+            row=readForcesLine ( f, ncexp, skip );
+            if ( row.n_cols==0 )
+            {
+                if ( !skip ) break;
+            }
+            else
+            {
+                if ( c.OFversion() >=220 )
+                {
+                    // remove porous forces
+                    row.shed_cols ( 16,18 );
+                    row.shed_cols ( 7,9 );
+                } 
+            }
+        }
+
+        if ( fl.n_rows==0 )
+          {
+            fl=row;
+          }
+        else
+          {
+            fl.resize ( fl.n_rows+1, fl.n_cols );
+            fl.row ( fl.n_rows-1 ) = row;
+          }
+      }
   }
-  
-  if (c.OFversion()>=220)
-  {
-    // remove porous forces
-    fl.shed_cols(16,18);
-    fl.shed_cols(7,9);
-  }
-  
+
+//   if ( c.OFversion() >=220 )
+//     {
+//       // remove porous forces
+//       fl.shed_cols ( 16,18 );
+//       fl.shed_cols ( 7,9 );
+//     }
+
   return fl;
 }
 

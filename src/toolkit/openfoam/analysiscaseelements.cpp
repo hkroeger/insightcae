@@ -513,15 +513,18 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
             }
         }
 
-        if ( fl.n_rows==0 )
-          {
-            fl=row;
-          }
-        else
-          {
-            fl.resize ( fl.n_rows+1, fl.n_cols );
-            fl.row ( fl.n_rows-1 ) = row;
-          }
+        if (row.n_cols>0)
+        {
+         if ( fl.n_rows==0 )
+           {
+             fl=row;
+           }
+         else
+           {
+             fl.resize ( fl.n_rows+1, fl.n_cols );
+             fl.row ( fl.n_rows-1 ) = row;
+           }
+        }
       }
   }
 

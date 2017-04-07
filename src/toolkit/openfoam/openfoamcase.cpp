@@ -380,124 +380,147 @@ SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 
 void SolverOutputAnalyzer::update(const string& line)
 {
-  boost::smatch match;
-  if (!curforcename_.empty())
-  {
-    boost::regex sw_pattern("^ *sum of moments:$");
-    if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) )
-    {
-      curforcesection_=2;
-    }
+    boost::smatch match;
     
-    boost::regex p_pattern("^ *pressure *: *\\((.*) (.*) (.*)\\)$");
-    boost::regex v_pattern("^ *viscous *: *\\((.*) (.*) (.*)\\)$");
-    boost::regex por_pattern("^ *porous *: *\\((.*) (.*) (.*)\\)$");
-    if ( boost::regex_search( line, match, p_pattern, boost::match_default ) )
-    {
-      double px=lexical_cast<double>(match[1]);
-      double py=lexical_cast<double>(match[2]);
-      double pz=lexical_cast<double>(match[3]);
-//       std::cout<<"pres ("<<curforcesection_<<") : "<<px<<" "<<py<<" "<<pz<<std::endl;
-      if (curforcesection_==1)
-      {
-	// force
-	curforcevalue_(0)=px;
-	curforcevalue_(1)=py;
-	curforcevalue_(2)=pz;
-      }
-      else if (curforcesection_==2)
-      {
-	// moment
-	curforcevalue_(6)=px;
-	curforcevalue_(7)=py;
-	curforcevalue_(8)=pz;
-      }
-    }
-    else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) )
-    {
-      double vx=lexical_cast<double>(match[1]);
-      double vy=lexical_cast<double>(match[2]);
-      double vz=lexical_cast<double>(match[3]);
-//       std::cout<<"pres ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
-      if (curforcesection_==1)
-      {
-	// force
-	curforcevalue_(3)=vx;
-	curforcevalue_(4)=vy;
-	curforcevalue_(5)=vz;
-      }
-      else if (curforcesection_==2)
-      {
-	// moment
-	curforcevalue_(9)=vx;
-	curforcevalue_(10)=vy;
-	curforcevalue_(11)=vz;
-      }
-    }
-    else if ( boost::regex_search( line, match, por_pattern, boost::match_default ) )
-    {
-      //
-//       std::cout<<"por ("<<curforcesection_<<") "<<std::endl;
-      
-      if (curforcesection_==2)
-      {
-	std::cout<<"force="<<curforcevalue_<<std::endl;
-	
-	// store
-	curProgVars_[curforcename_+"_fpx"]=curforcevalue_(0);
-	curProgVars_[curforcename_+"_fpy"]=curforcevalue_(1);
-	curProgVars_[curforcename_+"_fpz"]=curforcevalue_(2);
-	curProgVars_[curforcename_+"_fvx"]=curforcevalue_(3);
-	curProgVars_[curforcename_+"_fvy"]=curforcevalue_(4);
-	curProgVars_[curforcename_+"_fvz"]=curforcevalue_(5);
-	curProgVars_[curforcename_+"_mpx"]=curforcevalue_(6);
-	curProgVars_[curforcename_+"_mpy"]=curforcevalue_(7);
-	curProgVars_[curforcename_+"_mpz"]=curforcevalue_(8);
-	curProgVars_[curforcename_+"_mvx"]=curforcevalue_(9);
-	curProgVars_[curforcename_+"_mvy"]=curforcevalue_(10);
-	curProgVars_[curforcename_+"_mvz"]=curforcevalue_(11);
-	
-	// reset tracker
-	curforcename_="";
-      }
-    }
-  }
-  else
-  {
+    boost::regex p_pattern("^ *[Pp]ressure *: *\\((.*) (.*) (.*)\\)$");
+    boost::regex v_pattern("^ *[Vv]iscous *: *\\((.*) (.*) (.*)\\)$");
+    boost::regex por_pattern("^ *[Pp]orous *: *\\((.*) (.*) (.*)\\)$");
     boost::regex time_pattern("^Time = (.+)$");
     boost::regex solver_pattern("^(.+): +Solving for (.+), Initial residual = (.+), Final residual = (.+), No Iterations (.+)$");
     boost::regex cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$");
     boost::regex force_pattern("^forces (.+) output:$");
+    boost::regex sw_pattern("^ *[Ss]um of moments");
+    
+        if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) )
+        {
+//             std::cout<<"moments:"<<std::endl;
+            curforcesection_=2;
+        }
+        else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) )
+        {
+            double px=lexical_cast<double>(match[1]);
+            double py=lexical_cast<double>(match[2]);
+            double pz=lexical_cast<double>(match[3]);
+            std::cout<<"pres ("<<curforcesection_<<") : "<<px<<" "<<py<<" "<<pz<<std::endl;
+            if (curforcesection_==1)
+            {
+                // force
+                curforcevalue_(0)=px;
+                curforcevalue_(1)=py;
+                curforcevalue_(2)=pz;
+            }
+            else if (curforcesection_==2)
+            {
+                // moment
+                curforcevalue_(6)=px;
+                curforcevalue_(7)=py;
+                curforcevalue_(8)=pz;
+            }
+        }
+        else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) )
+        {
+            double vx=lexical_cast<double>(match[1]);
+            double vy=lexical_cast<double>(match[2]);
+            double vz=lexical_cast<double>(match[3]);
+            std::cout<<"pres ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
+            if (curforcesection_==1)
+            {
+                // force
+                curforcevalue_(3)=vx;
+                curforcevalue_(4)=vy;
+                curforcevalue_(5)=vz;
+            }
+            else if (curforcesection_==2)
+            {
+                // moment
+                curforcevalue_(9)=vx;
+                curforcevalue_(10)=vy;
+                curforcevalue_(11)=vz;
+            }
+        }
+        else if ( boost::regex_search( line, match, por_pattern, boost::match_default ) )
+        {
+            //
+//       std::cout<<"por ("<<curforcesection_<<") "<<std::endl;
 
-    if ( boost::regex_search( line, match, force_pattern, boost::match_default ) )
-    {
-      std::cout<<"force output recog"<<std::endl;
-      curforcename_=match[1];
-      curforcesection_=1;
-      curforcevalue_=arma::zeros(12);
-    }
-    else if ( boost::regex_search( line, match, time_pattern, boost::match_default ) )
-    {
-      if (curTime_ == curTime_)
-      {
-	pdisp_.update( ProgressState(curTime_, curProgVars_));
-	curProgVars_.clear();
-      }
-      curTime_=lexical_cast<double>(match[1]);
-    } 
-    else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
-    {
-      curProgVars_[match[2]] = lexical_cast<double>(match[3]);
-    }
-    else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
-    {
-      /*
-      curProgVars_["local cont. err"] = lexical_cast<double>(match[1]);
-      curProgVars_["global cont. err"] = lexical_cast<double>(match[2]);
-      curProgVars_["cumul cont. err"] = lexical_cast<double>(match[3]);
-      */
-    }
-  }
+
+        }
+        else if ( boost::regex_search( line, match, force_pattern, boost::match_default ) )
+        {
+            std::cout<<"force output recog"<<std::endl;
+            
+            if (!curforcename_.empty()) //(curforcesection_==2)
+            {
+                // end active 
+                std::cout<<"force="<<curforcevalue_<<std::endl;
+
+                // store
+                curProgVars_[curforcename_+"_fpx"]=curforcevalue_(0);
+                curProgVars_[curforcename_+"_fpy"]=curforcevalue_(1);
+                curProgVars_[curforcename_+"_fpz"]=curforcevalue_(2);
+                curProgVars_[curforcename_+"_fvx"]=curforcevalue_(3);
+                curProgVars_[curforcename_+"_fvy"]=curforcevalue_(4);
+                curProgVars_[curforcename_+"_fvz"]=curforcevalue_(5);
+                curProgVars_[curforcename_+"_mpx"]=curforcevalue_(6);
+                curProgVars_[curforcename_+"_mpy"]=curforcevalue_(7);
+                curProgVars_[curforcename_+"_mpz"]=curforcevalue_(8);
+                curProgVars_[curforcename_+"_mvx"]=curforcevalue_(9);
+                curProgVars_[curforcename_+"_mvy"]=curforcevalue_(10);
+                curProgVars_[curforcename_+"_mvz"]=curforcevalue_(11);
+
+                // reset tracker
+                curforcename_="";
+            }
+            
+            curforcename_=match[1];
+            curforcesection_=1;
+            curforcevalue_=arma::zeros(12);
+        }
+        else if ( boost::regex_search( line, match, time_pattern, boost::match_default ) )
+        {
+            if (!curforcename_.empty()) //(curforcesection_==2)
+            {
+                // end active 
+                std::cout<<"force="<<curforcevalue_<<std::endl;
+
+                // store
+                curProgVars_[curforcename_+"_fpx"]=curforcevalue_(0);
+                curProgVars_[curforcename_+"_fpy"]=curforcevalue_(1);
+                curProgVars_[curforcename_+"_fpz"]=curforcevalue_(2);
+                curProgVars_[curforcename_+"_fvx"]=curforcevalue_(3);
+                curProgVars_[curforcename_+"_fvy"]=curforcevalue_(4);
+                curProgVars_[curforcename_+"_fvz"]=curforcevalue_(5);
+                curProgVars_[curforcename_+"_mpx"]=curforcevalue_(6);
+                curProgVars_[curforcename_+"_mpy"]=curforcevalue_(7);
+                curProgVars_[curforcename_+"_mpz"]=curforcevalue_(8);
+                curProgVars_[curforcename_+"_mvx"]=curforcevalue_(9);
+                curProgVars_[curforcename_+"_mvy"]=curforcevalue_(10);
+                curProgVars_[curforcename_+"_mvz"]=curforcevalue_(11);
+
+                // reset tracker
+                curforcename_="";
+            }
+            
+            if (curTime_ == curTime_)
+            {
+            
+                pdisp_.update( ProgressState(curTime_, curProgVars_));
+                curProgVars_.clear();
+            }
+            curTime_=lexical_cast<double>(match[1]);
+        }
+        else if ( boost::regex_search( line, match, solver_pattern, boost::match_default ) )
+        {
+            curProgVars_[match[2]] = lexical_cast<double>(match[3]);
+        }
+        else if ( boost::regex_search( line, match, cont_pattern, boost::match_default ) )
+        {
+            /*
+            curProgVars_["local cont. err"] = lexical_cast<double>(match[1]);
+            curProgVars_["global cont. err"] = lexical_cast<double>(match[2]);
+            curProgVars_["cumul cont. err"] = lexical_cast<double>(match[3]);
+            */
+        }
 }
 
 bool SolverOutputAnalyzer::stopRun() const 

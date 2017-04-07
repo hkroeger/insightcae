@@ -71,15 +71,11 @@ std::vector<int> combinefactors
   const std::tuple<int,int,int>& po
 )
 {
-//   cout<<"GOT:"<<endl;
-//   BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
-  
   // count locked directions (without decomposition)
   int n_lock=0;
   if (std::get<0>(po)<=0.0) n_lock++;
   if (std::get<1>(po)<=0.0) n_lock++;
   if (std::get<2>(po)<=0.0) n_lock++;
-// if (n_lock==0) *static_cast<int*>(0)=23;
   // if less than 3 factors or directions are locked: extend with ones
   int n_add=std::max(3-int(facs.size()), n_lock);
   for (int k=0;k<n_add;k++)
@@ -88,7 +84,6 @@ std::vector<int> combinefactors
   // bring factors into descending order
   sort(facs.begin(), facs.end());
   std::reverse(facs.begin(), facs.end());
-//   BOOST_FOREACH(int f, facs) cout<<f<<" "; cout<<endl;
   
   // get initial number which was factored
   double totprod=1.0;
@@ -99,7 +94,6 @@ std::vector<int> combinefactors
     (double(std::get<0>(po))/potot)
     (double(std::get<1>(po))/potot)
     (double(std::get<2>(po))/potot);
-//   BOOST_FOREACH(double f, pof) cout<<f<<" "; cout<<endl;
   
   std::vector<std::size_t> pof_sorti(pof.size());
   std::iota(pof_sorti.begin(), pof_sorti.end(), 0);
@@ -107,7 +101,6 @@ std::vector<int> combinefactors
   {
       return pof[left] > pof[right];
   });
-//   BOOST_FOREACH(int f, pof_sorti) cout<<f<<" "; cout<<endl;
   
   std::vector<int> nf(3);
   int j=0;
@@ -115,30 +108,17 @@ std::vector<int> combinefactors
   for (int i=0; i<3; i++)
   {
     int dir_idx=pof_sorti[i];
-//     cout<<"cumulating for "<<dir_idx<<endl;
     double req_frac=pof[dir_idx];
     int cf=facs[j++];
-//     cout<<"cf="<<(log(cf)/log(totprod))<<endl;
     while (j<facs.size()-(2-i) && (cf>=0.0) && ( (log(cf)/log(totprod)) < req_frac) )
     {
-//       double frac=double(cf)/totprod;
-//       if ( frac<req_frac )
-// 	break;
-//       else
       {
-	cf*=facs[j++];
-// 	cout<<"inc: "<<cf<<endl;
-// 	cout<<"cf(*)="<<(log(cf)/log(totprod))<<endl;
+        cf*=facs[j++];
       }
     }
-//     cout<<cf<<endl;
     nf[dir_idx]=cf;
   }
   
-//   cout<<"combined"<<endl;
-//     BOOST_FOREACH(int i, nf)
-//       cout <<" > "<<i<<endl;
-      
   return nf;
 }
 
@@ -203,7 +183,6 @@ FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps)
   p_(ps),
   isCompressible_(false)
 {
-  std::cerr<<"Constr. FVN "<<p_.decompWeights<<std::endl;
 }
 
 void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
@@ -211,7 +190,6 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-//   controlDict["endTime"]=p_.endTime();
   controlDict["deltaT"]=p_.deltaT;
   controlDict["adjustTimeStep"]=p_.adjustTimeStep;
   controlDict["maxCo"]=0.5;
@@ -443,45 +421,12 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="none";
   controlDict["endTime"]=1000.0;
   controlDict["deltaT"]=1.0;
-  
-//   // ============ setup fvSolution ================================
-//   
-//   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
-// 
-//   // ============ setup fvSchemes ================================
-//   
-//   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
-//   
-//   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-//   ddt["default"]="steadyState";
-//   
-//   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-//   grad["default"]="Gauss linear";
-//   
-//   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-//   div["default"]="Gauss upwind";
-// 
-//   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-//   laplacian["default"]="Gauss linear limited 0.66";
-// 
-//   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
-//   interpolation["default"]="linear";
-// 
-//   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-//   snGrad["default"]="limited 0.66";
-// 
-//   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
-//   fluxRequired["default"]="no";
-  
-//   setDecomposeParDict(dictionaries, p_.np, FVNumerics::Parameters::decompositionMethod_type::hierarchical, p_.decompWeights );
 }
 
 
 ParameterSet MeshingNumerics::defaultParameters()
 {
-    ParameterSet p= Parameters::makeDefault();
-    std::cerr<<"DEF "<<p.get<VectorParameter>("decompWeights")()<<std::endl;
-    return p;
+    return Parameters::makeDefault();
 }
 
 
@@ -668,7 +613,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
   catch (...)
   {
-    cout<<"Warning: unhandled exception during LES check!"<<endl;
+    insight::Warning("Warning: unhandled exception during LES check!");
   }
   
   // ============ setup controlDict ================================
@@ -1114,7 +1059,7 @@ void interFoamNumerics::init()
   // create pressure field to enable mapping from single phase cases
   OFcase().addField("p", 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
   
-  OFcase().addField(pname_, 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  OFcase().addField(pname_, 	FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
   OFcase().addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
   OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
 }
@@ -1158,21 +1103,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   fqmc["upperNonOrthThreshold"]=60.0;
   controlDict.addSubDictIfNonexistent("functions")["fqm"]=fqmc;
 
-//   OFDictData::dict ifmc;
-//   ifmc["type"]="interfaceMarker";
-//   ifmc["functionObjectLibs"]= fol;
-//   ifmc["phaseFieldName"]=alphaname_;
-//   OFDictData::list bfn;
-//   bfn.push_back("interfaceBlendingFactor");
-//   ifmc["blendingFieldNames"]=bfn;
-//   controlDict.addSubDictIfNonexistent("functions")["ifm"]=ifmc;
-
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );  
   controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );  
-  controlDict.getList("libs").insertNoDuplicate( "\"liblocalFaceLimitedGrad.so\"" );  
-//   controlDict.getList("libs").insertNoDuplicate( "\"libreconCentral.so\"" );  
-//   controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );  
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalFaceLimitedGrad.so\"" );   
   
   // ============ setup fvSolution ================================
   
@@ -1285,10 +1219,16 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
   div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
   div["div(R)"]			= "Gauss linear";
-  if (OFversion()>=210)
-    div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
-  else
-    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  if (OFversion()>=300)
+  {
+    div["div(((rho*nuEff)*dev2(T(grad(U)))))"]="Gauss linear";
+  } else
+  {
+    if (OFversion()>=210)
+        div["div((muEff*dev(T(grad(U)))))"]="Gauss linear";
+    else
+        div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
   laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.66";
@@ -1361,7 +1301,10 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  controlDict["application"]="LTSInterFoam";
+  if (OFversion()<300)      
+  {
+    controlDict["application"]="LTSInterFoam";
+  }
   
   //double maxCo=10.0, maxAlphaCo=5.0;
   double maxCo=10.0, maxAlphaCo=2.0;
@@ -1401,7 +1344,14 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
   
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
-  ddt["default"]="localEuler rDeltaT";
+  if (OFversion()<300)
+  {
+    ddt["default"]="localEuler rDeltaT";
+  }
+  else
+  {
+    ddt["default"]="localEuler";
+  }
   
 //   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 }

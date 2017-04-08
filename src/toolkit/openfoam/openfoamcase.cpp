@@ -374,6 +374,7 @@ bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN")),
+  curforcesection_(1),
   curforcename_("")
 {
 }
@@ -391,12 +392,12 @@ void SolverOutputAnalyzer::update(const string& line)
     boost::regex force_pattern("^forces (.+) output:$");
     boost::regex sw_pattern("^ *[Ss]um of moments");
     
-        if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) )
+        if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
         {
 //             std::cout<<"moments:"<<std::endl;
             curforcesection_=2;
         }
-        else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) )
+        else if ( boost::regex_search( line, match, p_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
             double px=lexical_cast<double>(match[1]);
             double py=lexical_cast<double>(match[2]);
@@ -417,12 +418,12 @@ void SolverOutputAnalyzer::update(const string& line)
                 curforcevalue_(8)=pz;
             }
         }
-        else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) )
+        else if ( boost::regex_search( line, match, v_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
             double vx=lexical_cast<double>(match[1]);
             double vy=lexical_cast<double>(match[2]);
             double vz=lexical_cast<double>(match[3]);
-            std::cout<<"pres ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
+            std::cout<<"visc ("<<curforcesection_<<") : "<<vx<<" "<<vy<<" "<<vz<<std::endl;
             if (curforcesection_==1)
             {
                 // force
@@ -438,7 +439,7 @@ void SolverOutputAnalyzer::update(const string& line)
                 curforcevalue_(11)=vz;
             }
         }
-        else if ( boost::regex_search( line, match, por_pattern, boost::match_default ) )
+        else if ( boost::regex_search( line, match, por_pattern, boost::match_default ) && !curforcename_.empty()  )
         {
             //
 //       std::cout<<"por ("<<curforcesection_<<") "<<std::endl;
@@ -499,6 +500,8 @@ void SolverOutputAnalyzer::update(const string& line)
 
                 // reset tracker
                 curforcename_="";
+                curforcesection_=1;
+                curforcevalue_=arma::zeros(12);
             }
             
             if (curTime_ == curTime_)

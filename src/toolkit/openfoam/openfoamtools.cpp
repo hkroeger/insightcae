@@ -1234,7 +1234,11 @@ void runPotentialFoam
   
   OFDictData::dictFile fvSolution;
   OFDictData::dict& solvers=fvSolution.addSubDictIfNonexistent("solvers");
-  solvers["p"]=stdSymmSolverSetup(1e-7, 0.01);
+  
+  std::string fieldName="p";
+  if (cm.OFversion()>=300) fieldName="Phi";
+  solvers[fieldName]=stdSymmSolverSetup(1e-7, 0.01);
+  
   fvSolution.addSubDictIfNonexistent("relaxationFactors");
   std::string solkey="potentialFlow";
   if (cm.OFversion()<170) solkey="SIMPLE";

@@ -74,6 +74,7 @@ mesh = set
     nr = int 10 "# cells in radial direction (from edge of core block to outer radius)"
     nu = int 10 "# cells in circumferential direction (in one of four segments)"
     gradr = double 1 "grading towards outer boundary"
+    core_fraction = double 0.33 "radial extent of core block given as fraction of radius"
 
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     circumPatchName = string "" "name of patch on circumferential surface"

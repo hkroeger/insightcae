@@ -267,17 +267,23 @@ defineStaticFunctionTable(BoundaryCondition, defaultParameters, ParameterSet);
 BoundaryCondition::BoundaryCondition(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict)
 : OpenFOAMCaseElement(c, patchName+"BC"),
   patchName_(patchName),
-  BCtype_(boundaryDict.subDict(patchName).getString("type")),
-  nFaces_(boundaryDict.subDict(patchName).getInt("nFaces")),
-  startFace_(boundaryDict.subDict(patchName).getInt("startFace"))  
+  BCtype_("UNDEFINED"),
+  nFaces_(0),
+  startFace_(-1)  
 {
+    if (boundaryDict.find(patchName)!=boundaryDict.end())
+    {
+        BCtype_=boundaryDict.subDict(patchName).getString("type");
+        nFaces_=boundaryDict.subDict(patchName).getInt("nFaces");
+        startFace_=boundaryDict.subDict(patchName).getInt("startFace");
+    }
 }
 
 void BoundaryCondition::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
 {
-  bndDict["type"]=BCtype_;
-  bndDict["nFaces"]=nFaces_;
-  bndDict["startFace"]=startFace_;
+    bndDict["type"]=BCtype_;
+    bndDict["nFaces"]=nFaces_;
+    bndDict["startFace"]=startFace_;
 }
 
 void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
@@ -292,6 +298,12 @@ void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
 void BoundaryCondition::addIntoDictionaries(OFdicts& dictionaries) const
 {
+  if (startFace_<0)
+  {
+      insight::Warning("BC for patch \""+patchName_+"\" provided, but patch is not present in boundaryDict!\nConfiguration of \""+patchName_+"\" is omitted.");
+      return;
+  }
+  
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict.addListIfNonexistent("libs").insertNoDuplicate( OFDictData::data("\"libextendedFixedValueBC.so\"") );
 

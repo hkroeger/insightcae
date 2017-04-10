@@ -98,7 +98,7 @@ void blockMeshDict_Cylinder::create_bmd()
           ;
     arma::mat vL=p_.geometry.L*ex;
 
-    std::cout<<pts[0]<<pts[1]<<std::endl;
+//     std::cout<<pts[0]<<pts[1]<<std::endl;
     Patch* base=NULL;
     Patch* top=NULL;
     Patch* outer=NULL;
@@ -180,7 +180,7 @@ void blockMeshDict_Cylinder::create_bmd()
 
 double blockMeshDict_Cylinder::rCore() const
 {
-    return p_.geometry.D*0.33;
+    return p_.geometry.D*p_.mesh.core_fraction;
 }
 
 

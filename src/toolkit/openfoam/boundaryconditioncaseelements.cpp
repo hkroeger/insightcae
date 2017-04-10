@@ -253,6 +253,29 @@ double FieldData::representativeValueMag() const
     avg/=double(s);
     return sqrt(avg);
   }
+  else if (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+  {
+    double avg=0.0;
+    int s=0;
+    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
+    {
+      arma::mat xy;
+      xy.load(inst.profile.c_str(), arma::raw_ascii);
+      arma::mat I=integrate(xy);
+      double avg_inst=0.0;
+//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+      for (int c=0; c<I.n_cols-1; c++)
+      {
+        avg_inst+=pow(I(/*cm.column*/c),2);
+      }
+      avg+=avg_inst;
+      s++;
+    }    
+    if (s==0)
+      throw insight::Exception("Invalid data: no time instants prescribed!");
+    avg/=double(s);
+    return sqrt(avg);
+  }
   else
   {
     throw insight::Exception("not yet implemented!");
@@ -276,6 +299,22 @@ double FieldData::maxValueMag() const
     else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
     {
         BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+        {
+            arma::mat xy;
+            xy.load(inst.profile.c_str(), arma::raw_ascii);
+            arma::mat mag_inst(arma::zeros(xy.n_rows));
+            int i=0;
+//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
+            for (int c=0; c<mag_inst.n_cols-1; c++)
+            {
+                mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
+            }
+            maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
+        }
+    }
+    else if (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
+    {
+        BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
         {
             arma::mat xy;
             xy.load(inst.profile.c_str(), arma::raw_ascii);

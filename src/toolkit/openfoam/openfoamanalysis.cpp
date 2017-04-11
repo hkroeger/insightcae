@@ -158,11 +158,18 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
   {
     // check, if turbulence model is compatible in source case
     // run "createTurbulenceFields" on source case, if not
-    std::string omodel=readTurbulenceModelName(mapFromPath);
-    if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
+    try
     {
-      OpenFOAMCase oc(cm.ofe());
-      oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+        OpenFOAMCase oc(cm.ofe());
+        std::string omodel=readTurbulenceModelName(oc, mapFromPath);
+        if ( (rm->type()!=omodel) && (omodel!="kOmegaSST2"))
+        {
+        oc.executeCommand(mapFromPath, "createTurbulenceFields", list_of("-latestTime") );
+        }
+    }
+    catch (...)
+    {
+        insight::Warning("could not check turbulence model of source case. Continuing anyway.");
     }
   }
   

@@ -1147,7 +1147,7 @@ void mapFields
     }
   }
 
-  if (targetcase.OFversion()>=230 && (fields.size()>0) && (execname!="mapFields22") )
+  if (targetcase.OFversion()>=230 && targetcase.OFversion()<300 && (fields.size()>0) && (execname!="mapFields22") )
   {
     std::ostringstream os;
     os<<"(";
@@ -1694,13 +1694,20 @@ int readDecomposeParDict(const boost::filesystem::path& ofcloc)
   return decomposeParDict.getInt("numberOfSubdomains");
 }
 
-std::string readTurbulenceModelName(const boost::filesystem::path& ofcloc)
+std::string readTurbulenceModelName(const OpenFOAMCase& c, const boost::filesystem::path& ofcloc)
 {
   OFDictData::dict RASPropertiesDict;
   std::ifstream cdf( (ofcloc/"constant"/"RASProperties").c_str() );
   readOpenFOAMDict(cdf, RASPropertiesDict);
   //cout<<decomposeParDict<<endl;
-  return RASPropertiesDict.getString("RASModel");
+  if (c.OFversion()<300)
+  {
+    return RASPropertiesDict.getString("RASModel");
+  }
+  else
+  {
+    return RASPropertiesDict.subDict("RAS").getString("RASModel");
+  }
 }
 
 

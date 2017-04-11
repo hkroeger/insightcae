@@ -491,7 +491,7 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
 //                 }
                 
                 row=arma::join_rows ( r1, r2 );
-    std::cout<<"r="<<row<<std::endl;
+//     std::cout<<"r="<<row<<std::endl;
                 
             }
           }

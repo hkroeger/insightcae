@@ -632,7 +632,7 @@ std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetempl
 
 std::string readSolverName(const boost::filesystem::path& ofcloc);
 int readDecomposeParDict(const boost::filesystem::path& ofcloc);
-std::string readTurbulenceModelName(const boost::filesystem::path& ofcloc);
+std::string readTurbulenceModelName(const OpenFOAMCase& c, const boost::filesystem::path& ofcloc);
 
 void meshQualityReport(const OpenFOAMCase& cm, 
 		       const boost::filesystem::path& location, 

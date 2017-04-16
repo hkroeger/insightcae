@@ -54,6 +54,12 @@
 #define UNIOF_ADDARG(args,j) (args).additionalArgs()[j]
 #endif
 
+#if (defined(OF23x)||defined(OF301)||defined(OFplus)||defined(OFdev))
+#define UNIOF_ADDOPT(aa,name,typ,desc) aa::addOption(name,typ,desc)
+#else
+#define UNIOF_ADDOPT(aa,name,typ,desc) aa::validOptions.insert(name,desc)
+#endif
+
 #if defined(OFdev)
 #define UNIOF_INTERNALFIELD_NONCONST(f) f.ref().field()
 #else

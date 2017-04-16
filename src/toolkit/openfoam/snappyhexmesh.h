@@ -186,15 +186,14 @@ class ExplicitFeatureCurve
 : public Feature
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//       ( fileName, boost::filesystem::path, "" )
-//       ( level, int, 4 )
-//   )
 #include "snappyhexmesh__ExplicitFeatureCurve__Parameters.h"
 /*
 PARAMETERSET>>> ExplicitFeatureCurve Parameters
 
 fileName = path "" "Filename of the feature curve"
+scale = vector (1 1 1) "Geometry scaling factor for each spatial direction"
+translate = vector (0 0 0) "Translation vector"
+rollPitchYaw = vector (0 0 0) "Euler angles around X, Y and Z axis respectively"
 level = int 4 "Refinement level at curve"
 
 <<<PARAMETERSET

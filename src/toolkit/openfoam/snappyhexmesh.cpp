@@ -204,22 +204,22 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
   }
   boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());
   
-  if (to!=from) // might occur, if file path in target location is specified (e.g. after surfaceFeatureExtract)
-  {
-    if (!exists(to.parent_path()))
-      create_directories(to.parent_path());
-    
-    std::cout<<"copy from "<<from<<" to "<<to<<std::endl;
-    copy_file(from, to, copy_option::overwrite_if_exists);
-  }
-//   ofc.executeCommand(location, "surfaceTransformPoints",
-//     list_of<std::string>
-//     (absolute(from).string())
-//     (absolute(to).string())
-//     ("-scale")(OFDictData::to_OF(p_.scale()))
-//     ("-translate")(OFDictData::to_OF(p_.translate()))
-//     ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw()))
-//   );
+//   if (to!=from) // might occur, if file path in target location is specified (e.g. after surfaceFeatureExtract)
+//   {
+//     if (!exists(to.parent_path()))
+//       create_directories(to.parent_path());
+//     
+//     std::cout<<"copy from "<<from<<" to "<<to<<std::endl;
+//     copy_file(from, to, copy_option::overwrite_if_exists);
+//   }
+  ofc.executeCommand(location, "eMeshTransformPoints",
+    list_of<std::string>
+    (absolute(from).string())
+    (absolute(to).string())
+    ("-scale")(OFDictData::to_OF(p_.scale))
+    ("-translate")(OFDictData::to_OF(p_.translate))
+    ("-rollPitchYaw")(OFDictData::to_OF(p_.rollPitchYaw))
+  );
 }
 
 

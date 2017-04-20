@@ -61,6 +61,7 @@ public:
 
     inline ModelPtr model() const
     {
+        checkForBuildDuringAccess();
         return model_;
     }
 

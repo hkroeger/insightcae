@@ -42,7 +42,12 @@ StitchedShell::StitchedShell()
 
 StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
 :faces_(faces), tol_(tol)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*faces_;
+    h+=tol_->value();
+}
 
 void StitchedShell::build()
 {

@@ -56,7 +56,12 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
     : DerivedFeature(m1),
       m1_(m1),
       m2_(m2)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*m1_;
+    h+=*m2_;    
+}
 
 
 
@@ -89,8 +94,16 @@ FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
 void BooleanIntersection::build()
 {
     if (m2_)
-    {
-        setShape(BRepAlgoAPI_Common(*m1_, *m2_).Shape());
+    {        
+        if (!cache.contains(hash()))
+        {
+            setShape(BRepAlgoAPI_Common(*m1_, *m2_).Shape());
+            cache.insert(shared_from_this());
+        }
+        else
+        {
+            this->operator=(*cache.markAsUsed<BooleanIntersection>(hash()));
+        }
         m1_->unsetLeaf();
         m2_->unsetLeaf();
     }
@@ -146,6 +159,13 @@ void BooleanIntersection::build()
 }
 
 
+void BooleanIntersection::operator=(const BooleanIntersection& o)
+{
+  m1_=o.m1_;
+  m2_=o.m2_;
+  m2pl_=o.m2pl_;
+  Feature::operator=(o);
+}
 
 
 FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2)

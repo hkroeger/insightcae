@@ -27,8 +27,8 @@ namespace cad {
 
 
     
-    
-typedef std::vector<boost::fusion::vector2<std::vector<std::string>, ScalarPtr> > FreeCADModelVarList;
+typedef boost::fusion::vector2<std::vector<std::string>, ScalarPtr> FreeCADModelVar;
+typedef std::vector<FreeCADModelVar> FreeCADModelVarList;
 
 
 

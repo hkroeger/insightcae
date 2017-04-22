@@ -97,6 +97,11 @@ void Ellipse::build()
 Ellipse::Ellipse(VectorPtr p0, VectorPtr axmaj, VectorPtr axmin)
 : p0_(p0), axmaj_(axmaj), axmin_(axmin)
 {
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p0_->value();
+  h+=axmaj_->value();
+  h+=axmin_->value();
 }
 
 

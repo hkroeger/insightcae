@@ -48,6 +48,11 @@ Projected::Projected(): Feature()
 Projected::Projected(FeaturePtr source, FeaturePtr target, VectorPtr dir)
 : source_(source), target_(target), dir_(dir)
 {
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*source_;
+  h+=*target_;
+  h+=dir_->value();
 }
 
 

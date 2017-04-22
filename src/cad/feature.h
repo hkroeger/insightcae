@@ -211,6 +211,8 @@ public:
   FeatureSetPtr clone() const;
   
   void write() const;
+  
+  size_t hash() const;
 };
 
 

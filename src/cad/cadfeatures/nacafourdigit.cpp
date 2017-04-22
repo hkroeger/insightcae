@@ -47,8 +47,15 @@ NacaFourDigit::NacaFourDigit()
 
 
 NacaFourDigit::NacaFourDigit(const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez)
-: code_(code), p0_(p0), ex_(ex), ez_(ez)
-{}
+: code_(code), p0_(p0), ez_(ez), ex_(ex)
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=code_;
+  h+=p0_->value();
+  h+=ez_->value();
+  h+=ex_->value();
+}
 
 
 

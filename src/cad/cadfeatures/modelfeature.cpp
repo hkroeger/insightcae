@@ -86,6 +86,7 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 {
   // build the parameter hash
   ParameterListHash p(this);
+  p+=this->type();
   
   std::string fname=modelname+".iscad";
   try 
@@ -131,6 +132,7 @@ ModelFeature::ModelFeature(const boost::filesystem::path& modelfile, const Model
 {
   // build the parameter hash
   ParameterListHash p(this);
+  p+=this->type();
   p+=modelfile;
 
   for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)

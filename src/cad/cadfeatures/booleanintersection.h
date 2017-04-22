@@ -50,6 +50,7 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual FeatureCmdInfoList ruleDocumentation() const;
   
+  void operator=(const BooleanIntersection& o);
 };
 
 FeaturePtr operator&(FeaturePtr m1, FeaturePtr m2);

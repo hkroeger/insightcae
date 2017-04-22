@@ -123,7 +123,12 @@ TopoDS_Shape makeOutlineProjectionEdges
 
 ProjectedOutline::ProjectedOutline(FeaturePtr source, DatumPtr target)
 : source_(source), target_(target)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*source_;
+  h+=*target_;
+}
 
 void ProjectedOutline::build()
 {

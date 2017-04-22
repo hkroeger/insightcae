@@ -42,7 +42,15 @@ StitchedSolid::StitchedSolid()
 
 StitchedSolid::StitchedSolid(const std::vector<FeaturePtr>& faces, ScalarPtr tol)
 : faces_(faces), tol_(tol)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    BOOST_FOREACH(const FeaturePtr& f, faces_)
+    {
+        h+=*f;
+    }
+    h+=tol_->value();
+}
 
 void StitchedSolid::build()
 {

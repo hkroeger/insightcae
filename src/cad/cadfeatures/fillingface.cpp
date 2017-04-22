@@ -47,7 +47,12 @@ FillingFace::FillingFace ()
 
 FillingFace::FillingFace ( FeaturePtr e1, FeaturePtr e2 )
     : e1_ ( e1 ), e2_ ( e2 )
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*e1_;
+  h+=*e2_;
+}
 
 
 

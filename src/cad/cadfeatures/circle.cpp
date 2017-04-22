@@ -64,6 +64,11 @@ void Circle::build()
 Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
 : p0_(p0), n_(n), D_(D)
 {
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=p0_->value();
+    h+=n_->value();
+    h+=D_->value();
 }
 
 

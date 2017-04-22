@@ -66,7 +66,18 @@ CoilPath::CoilPath
     ScalarPtr dr
 )
 : l_(l), dcore_(dcore), n_(n), d_(d), R_(R), rmin_(rmin), nl_(nl), dr_(dr)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=l_->value();
+    h+=dcore_->value();
+    h+=n_->value();
+    h+=d_->value();
+    h+=R_->value();
+    h+=rmin_->value();
+    h+=nl_->value();
+    h+=dr_->value();
+}
 
 
 

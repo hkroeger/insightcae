@@ -42,7 +42,14 @@ Spring::Spring()
 
 Spring::Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
 : p0_(p0), p1_(p1), d_(d), winds_(winds)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p0_->value();
+  h+=p1_->value();
+  h+=d_->value();
+  h+=winds_->value();
+}
 
 void Spring::build()
 {

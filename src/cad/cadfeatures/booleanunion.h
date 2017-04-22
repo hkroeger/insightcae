@@ -47,6 +47,8 @@ public:
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
+    
+    void operator=(const BooleanUnion& o);
 
 };
 

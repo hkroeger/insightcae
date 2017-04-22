@@ -48,7 +48,11 @@ Import::Import(): Feature()
 Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
 : filepath_(filepath)/*,
   scale_(scale)*/
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=filepath_;
+}
 
 
 

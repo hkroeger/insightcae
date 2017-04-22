@@ -55,7 +55,12 @@ Partition::Partition(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
   m1_(m1),
   m2_(m2)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m1_;
+  h+=*m2_;
+}
 
 
 
@@ -71,6 +76,7 @@ FeaturePtr Partition::create(FeaturePtr m1, FeaturePtr m2)
 void Partition::build()
 {
   ParameterListHash h(this);
+  h+=this->type();
   h+=*m1_;
   h+=*m2_;
 

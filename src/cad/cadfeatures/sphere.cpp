@@ -48,7 +48,12 @@ Sphere::Sphere()
   
 Sphere::Sphere(VectorPtr p, ScalarPtr D)
 : p_(p), D_(D)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p_->value();
+  h+=D_->value();
+}
 
 
 

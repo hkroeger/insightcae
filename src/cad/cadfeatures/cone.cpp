@@ -50,7 +50,14 @@ Cone::Cone()
 
 Cone::Cone(VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2)
 : p1_(p1), p2_(p2), D1_(D1), D2_(D2)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p1_->value();
+  h+=p2_->value();
+  h+=D1_->value();
+  h+=D2_->value();
+}
 
 
 

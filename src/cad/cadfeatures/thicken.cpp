@@ -54,7 +54,13 @@ Thicken::Thicken(): Feature()
 
 Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 : shell_(shell), thickness_(thickness), tol_(tol)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*shell_;
+    h+=thickness_->value();
+    h+=tol_->value();
+}
 
 
 

@@ -51,7 +51,15 @@ RegPoly::RegPoly()
 RegPoly::RegPoly(VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a, 
 	  VectorPtr ez)
 : p0_(p0), n_(n), ne_(ne), a_(a), ez_(ez)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p0_->value();
+  h+=n_->value();
+  h+=ne_->value();
+  h+=a_->value();
+  h+=ez_->value();
+}
 
 
 

@@ -50,14 +50,18 @@ Wire::Wire(): Feature()
 
 Wire::Wire(FeatureSetPtr edges)
 : edges_(edges)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*edges_;
+}
 
 
 
- FeaturePtr Wire::create(FeatureSetPtr edges)
- {
-     return FeaturePtr(new Wire(edges));
- }
+FeaturePtr Wire::create(FeatureSetPtr edges)
+{
+    return FeaturePtr(new Wire(edges));
+}
 
 
 

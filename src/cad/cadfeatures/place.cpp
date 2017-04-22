@@ -60,14 +60,26 @@ Place::Place(FeaturePtr m, const gp_Ax2& cs)
 
 Place::Place(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
 : DerivedFeature(m), m_(m), p0_(p0), ex_(ex), ez_(ez)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m_;
+  h+=p0_->value();
+  h+=ex_->value();
+  h+=ez_->value();
+}
 
 
 
 
 Place::Place(FeaturePtr m, FeaturePtr other)
 : DerivedFeature(m), m_(m), other_(other)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m_;
+  h+=*other_;
+}
 
 
 

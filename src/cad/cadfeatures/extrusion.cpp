@@ -48,7 +48,13 @@ Extrusion::Extrusion(): Feature()
 
 Extrusion::Extrusion(FeaturePtr sk, VectorPtr L, bool centered)
 : sk_(sk), L_(L), centered_(centered)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*sk_;
+  h+=L_->value();
+  h+=centered_;
+}
 
 
 

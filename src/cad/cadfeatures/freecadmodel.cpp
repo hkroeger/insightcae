@@ -59,6 +59,15 @@ FreeCADModel::FreeCADModel
   solidname_(solidname),
   vars_(vars)
 {
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=filename_;
+  h+=solidname_;
+  BOOST_FOREACH(const FreeCADModelVar& v, vars)
+  {
+      h+=boost::fusion::at_c<0>(v);
+      h+=boost::fusion::at_c<1>(v)->value();
+  }
 }
 
 

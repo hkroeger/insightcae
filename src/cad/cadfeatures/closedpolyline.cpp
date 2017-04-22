@@ -48,7 +48,14 @@ ClosedPolyline::ClosedPolyline()
 
 ClosedPolyline::ClosedPolyline(std::vector<VectorPtr> pts)
 : pts_(pts)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    BOOST_FOREACH(const VectorPtr& p, pts)
+    {
+        h+=p->value();
+    }
+}
 
 
 

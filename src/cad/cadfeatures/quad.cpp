@@ -48,6 +48,7 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
 : p0_(p0), L_(L), W_(W), center_(center)
 {
   ParameterListHash h(this);
+  h+=this->type();
   h+=p0_->value();
   h+=L_->value();
   h+=W_->value();

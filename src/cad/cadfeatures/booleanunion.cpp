@@ -52,7 +52,11 @@ BooleanUnion::BooleanUnion()
 BooleanUnion::BooleanUnion(FeaturePtr m1)
 : DerivedFeature(m1), 
   m1_(m1)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*m1_;
+}
 
 
 
@@ -61,7 +65,12 @@ BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
   m1_(m1),
   m2_(m2)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=*m1_;
+    h+=*m2_;
+}
 
 
 
@@ -86,21 +95,23 @@ void BooleanUnion::build()
 {
     if (m1_ && m2_)
     {
-        ParameterListHash h(this);
-        h+=*m1_;
-        h+=*m2_;
 
-        copyDatums(*m1_, "m1_");
-        copyDatums(*m2_, "m2_");
+        if (!cache.contains(hash()))
+        {
+            copyDatums(*m1_, "m1_");
+            copyDatums(*m2_, "m2_");
+            setShape(BRepAlgoAPI_Fuse(*m1_, *m2_).Shape());
+            cache.insert(shared_from_this());
+        }
+        else
+        {
+            this->operator=(*cache.markAsUsed<BooleanUnion>(hash()));
+        }
         m1_->unsetLeaf();
         m2_->unsetLeaf();
-        setShape(BRepAlgoAPI_Fuse(*m1_, *m2_).Shape());
     }
     else
     {
-        ParameterListHash h(this);
-        h+=*m1_;
-
         copyDatums(*m1_);
         m1_->unsetLeaf();
 
@@ -167,6 +178,12 @@ FeatureCmdInfoList BooleanUnion::ruleDocumentation() const
     );
 }
 
+void BooleanUnion::operator=(const BooleanUnion& o)
+{
+    m1_=o.m1_;
+    m2_=o.m2_;
+    Feature::operator=(o);
+}
 
 
 

@@ -135,6 +135,11 @@ std::size_t hash<boost::filesystem::path>::operator()(const boost::filesystem::p
   return h;
 }
 
+std::size_t hash<insight::cad::FeatureSet>::operator()(const insight::cad::FeatureSet& m) const
+{
+  return m.hash();
+}
+
 }
 
 
@@ -2516,6 +2521,8 @@ void FeatureCache::finishRebuild()
 void FeatureCache::insert(FeaturePtr p)
 {
   size_t h=p->hash();
+  if (find(h)!=end())
+      throw insight::Exception("Internal error: trying to insert existing feature into CAD feature cache!");
   (*this)[h]=p;
   usedDuringRebuild_.insert(h);
 }

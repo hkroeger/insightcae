@@ -50,7 +50,12 @@ TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
 
 Split::Split(FeaturePtr source, FeaturePtr target)
 : DerivedFeature(target), source_(source), target_(target)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*source_;
+  h+=*target_;
+}
 
 void Split::build()
 {

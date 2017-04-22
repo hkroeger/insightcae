@@ -53,7 +53,16 @@ SplineCurve::SplineCurve(): Feature()
 
 SplineCurve::SplineCurve(const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1)
 : pts_(pts), tan0_(tan0), tan1_(tan1)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  BOOST_FOREACH(const VectorPtr& p, pts)
+  {
+      h+=p->value();
+  }
+  if (tan0_) h+=tan0_->value();
+  if (tan1_) h+=tan1_->value();
+}
 
 
 

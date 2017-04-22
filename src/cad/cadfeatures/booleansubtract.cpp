@@ -53,7 +53,12 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
   m1_(m1),
   m2_(m2)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m1_;
+  h+=*m2_;
+}
 
 
 
@@ -68,29 +73,30 @@ FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
 
 void BooleanSubtract::build()
 {
-  ParameterListHash h(this);
-  h+=*m1_;
-  h+=*m2_;
-
-  TopoDS_Shape subs=BRepAlgoAPI_Cut(*m1_, *m2_).Shape();
-//   try //if (subs.ShapeType() == TopAbs_SOLID)
-//   {
-//     std::cout<<"FIX SOLID AFTER SUBTRACT"<<std::endl;
-//     ShapeFix_Solid sfs;//(subs);
-//     sfs.Init(TopoDS::Solid(subs));
-//     sfs.Perform();
-//     subs=sfs.Shape();
-//     std::cout<<"FIXED"<<std::endl;
-//   }
-//   catch (...) {}
-  setShape(subs);
   
-  copyDatums(*m1_);
+  if (!cache.contains(hash()))
+  {
+    TopoDS_Shape subs=BRepAlgoAPI_Cut(*m1_, *m2_).Shape();
+    setShape(subs);
+  
+    copyDatums(*m1_);
+    cache.insert(shared_from_this());
+  }
+  else
+  {
+      this->operator=(*cache.markAsUsed<BooleanSubtract>(hash()));
+  }
   m1_->unsetLeaf();
   m2_->unsetLeaf();
 }
 
 
+void BooleanSubtract::operator=(const BooleanSubtract& o)
+{
+    m1_=o.m1_;
+    m2_=o.m2_;
+    Feature::operator=(o);
+}
 
 
 FeaturePtr operator-(FeaturePtr m1, FeaturePtr m2)

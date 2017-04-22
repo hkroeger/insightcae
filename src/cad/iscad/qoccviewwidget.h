@@ -127,6 +127,8 @@ public slots:
   void toggleClipXZ ( void );
   void toggleClip ( double px, double py, double pz, double nx, double ny, double nz );
   
+  void displayMessage(const QString& msg);
+  
 protected: // methods
 
   virtual void paintEvent        ( QPaintEvent* e );

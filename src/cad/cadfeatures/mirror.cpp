@@ -48,14 +48,24 @@ Mirror::Mirror(): DerivedFeature()
 
 Mirror::Mirror(FeaturePtr m1, DatumPtr pl)
 : DerivedFeature(m1), m1_(m1), pl_(pl)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m1_;
+  h+=*pl_;
+}
 
 
 
 
 Mirror::Mirror(FeaturePtr m1, Mirror::Shortcut s)
 : DerivedFeature(m1), m1_(m1), s_(s)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*m1_;
+  h+=int(s_);
+}
 
 
 

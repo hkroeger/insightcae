@@ -211,6 +211,7 @@ Bar::Bar
 {
   // build the parameter hash
   ParameterListHash h(this);
+  h+=this->type();
   h+=p0_->value();
   h+=p1_->value();
   h+=*xsec_;
@@ -246,6 +247,7 @@ Bar::Bar
 {
   // build the parameter hash
   ParameterListHash h(this);
+  h+=this->type();
   h+=p0_->value();
   h+=p1_->value();
   h+=*xsec_;

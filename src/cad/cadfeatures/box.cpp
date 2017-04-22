@@ -56,7 +56,17 @@ Box::Box
   BoxCentering center
 )
 : p0_(p0), L1_(L1), L2_(L2), L3_(L3), center_(center)
-{}
+{
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=p0_->value();
+    h+=L1_->value();
+    h+=L2_->value();
+    h+=L3_->value();
+    h+=boost::fusion::at_c<0>(center_);
+    h+=boost::fusion::at_c<1>(center_);
+    h+=boost::fusion::at_c<2>(center_);
+}
 
 
 

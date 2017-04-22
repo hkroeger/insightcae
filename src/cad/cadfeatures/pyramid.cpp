@@ -52,6 +52,10 @@ Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
   base_(base),
   ptip_(ptip)
 {
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*base_;
+  h+=ptip_->value();
 }
 
 

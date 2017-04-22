@@ -86,6 +86,11 @@ template<> struct hash<insight::cad::Feature>
   std::size_t operator()(const insight::cad::Feature& m) const;
 };
 
+template<> struct hash<insight::cad::FeatureSet>
+{
+  std::size_t operator()(const insight::cad::FeatureSet& m) const;
+};
+
 template<> struct hash<boost::filesystem::path>
 {
   std::size_t operator()(const boost::filesystem::path& fn) const;

@@ -740,6 +740,10 @@ void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, doub
 }
 
 
+void QoccViewWidget::displayMessage(const QString& msg)
+{
+}
+
 
 /*!
   \brief	This function handles left button down events from the mouse.

@@ -50,7 +50,14 @@ ExternalGear::ExternalGear()
 
 ExternalGear::ExternalGear(VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z)
 : p0_(p0), n_(n), m_(m), z_(z)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p0_->value();
+  h+=n_->value();
+  h+=m_->value();
+  h+=z_->value();
+}
 
 
 

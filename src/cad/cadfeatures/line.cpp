@@ -52,7 +52,12 @@ Line::Line()
 
 Line::Line(VectorPtr p0, VectorPtr p1)
 : p0_(p0), p1_(p1)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=p0_->value();
+  h+=p1_->value();
+}
 
 
 

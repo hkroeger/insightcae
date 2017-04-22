@@ -115,7 +115,7 @@ void Mesh::build()
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
-  c.doMeshing(volname_, outpath_/*, true*/);
+  c.doMeshing(volname_, outpath_, true);
 }
 
 }

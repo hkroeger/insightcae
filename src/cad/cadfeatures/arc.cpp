@@ -92,6 +92,11 @@ void Arc::build()
 Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 : p0_(p0), p0tang_(p0tang), p1_(p1)
 {
+    ParameterListHash h(this);
+    h+=this->type();
+    h+=p0_->value();
+    h+=p0tang_->value();
+    h+=p1_->value();
 }
 
 

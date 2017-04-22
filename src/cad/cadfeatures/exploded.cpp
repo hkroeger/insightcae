@@ -54,7 +54,18 @@ Exploded::Exploded()
 Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 : axis_(axis),
   components_(m1)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*axis_;
+  BOOST_FOREACH(const ExplosionComponent&ec, m1)
+  {
+      h+=*boost::fusion::at_c<0>(ec);
+      h+=int(boost::fusion::at_c<1>(ec));
+      h+=boost::fusion::at_c<2>(ec)->value();
+      h+=boost::fusion::at_c<3>(ec)->value();
+  }
+}
 
 
 
@@ -63,6 +74,11 @@ Exploded::Exploded( DatumPtr axis, const ExplosionComponentList& m1)
 Exploded::Exploded( DatumPtr axis, FeaturePtr assy)
 : axis_(axis)
 {
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=*axis_;
+  h+=*assy;
+  
   for (int i=0; i<INT_MAX; i++)
   {
     std::string cname=str(format("component%d")%(i+1));

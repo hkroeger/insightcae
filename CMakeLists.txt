@@ -6,6 +6,10 @@ enable_language (Fortran OPTIONAL)
 
 enable_testing()
 
+if (DEFINED ENV{WM_PROJECT_VERSION})
+ message(FATAL_ERROR "It seems that an OpenFOAM environment is loaded. Please build InsightCAE without any OpenFOAM environment variables set!")
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/")
 list(APPEND CMAKE_LIBRARY_PATH $ENV{INSIGHT_THIRDPARTYDIR}/lib)
 list(APPEND CMAKE_INCLUDE_PATH $ENV{INSIGHT_THIRDPARTYDIR}/include)

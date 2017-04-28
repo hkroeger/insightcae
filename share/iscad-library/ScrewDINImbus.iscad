@@ -34,7 +34,7 @@ screw->density=mat$rho_steel;
 Lthr?=L;
 throughhole=
 Cylinder(
- O,
+ O-ki*EX,
  O+Lthr*EX,
  dh
 );
@@ -57,7 +57,7 @@ Place(
 Lblind?=1.2*L;
 blindhole=
 Cylinder(
- O,
+ O-ki*EX,
  O+Lblind*EX,
  Dn
 )

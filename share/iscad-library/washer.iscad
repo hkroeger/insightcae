@@ -10,6 +10,7 @@ mat=loadmodel(material_props);
 axis=RefAxis(O, EX);
 pl_mate_side1=Plane(O, -EX);
 pl_mate_side2=Plane(h*EX, EX);
+p_end=h*EX;
 
 washer:
 Cylinder(

@@ -44,14 +44,15 @@ Quad::Quad()
 
 
 
-Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
-: p0_(p0), L_(L), W_(W), center_(center)
+Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
+: p0_(p0), L_(L), W_(W), t_(t), center_(center)
 {
   ParameterListHash h(this);
   h+=this->type();
   h+=p0_->value();
   h+=L_->value();
   h+=W_->value();
+  if (t_) h+=t_->value();
   h+=boost::fusion::at_c<0>(center_);
   h+=boost::fusion::at_c<1>(center_);
 }
@@ -59,13 +60,13 @@ Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
 
 
 
-FeaturePtr Quad::create(VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center)
+FeaturePtr Quad::create(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
 {
     return FeaturePtr
            (
                new Quad
                (
-                   p0, L, W, center
+                   p0, L, W, t, center
                )
            );
 }
@@ -78,6 +79,7 @@ void Quad::operator=(const Quad& o)
   p0_=o.p0_;
   L_=o.L_;
   W_=o.W_;
+  t_=o.t_;
   center_=o.center_;
   Feature::operator=(o);
 }
@@ -87,9 +89,24 @@ void Quad::operator=(const Quad& o)
 
 void Quad::build()
 {
-    if ( !cache.contains ( hash() ) ) {
+    if ( !cache.contains ( hash() ) ) 
+    {
+        double L=arma::norm(L_->value(), 2);
+        double W=arma::norm(W_->value(), 2);
+        
+        refvalues_["W"]=W;
+        refvalues_["L"]=L;
+        
+        refvectors_["L"]=L_->value();
+        refvectors_["W"]=W_->value();
+        
+        if (L<1e-10)
+            throw insight::Exception(str(format("Invalid parameter: Length of quad needs to be larger than 0 (is %g)!")%L));
+        if (W<1e-10)
+            throw insight::Exception(str(format("Invalid parameter: Width of quad needs to be larger than 0 (is %g)!")%W));
+        
         gp_Pnt
-        p1 ( to_Pnt ( p0_->value() ) );
+            p1 ( to_Pnt ( p0_->value() ) );
 
         if ( boost::fusion::at_c<0> ( center_ ) ) {
             p1.Translate ( to_Vec ( -0.5*L_->value() ) );
@@ -118,7 +135,47 @@ void Quad::build()
         //   providedSubshapes_["OuterWire"].reset(new SolidModel(w.Wire()));
         providedSubshapes_["OuterWire"]=FeaturePtr ( new Feature ( w.Wire() ) );
 
-        setShape ( BRepBuilderAPI_MakeFace ( w.Wire() ) );
+        TopoDS_Shape s = BRepBuilderAPI_MakeFace ( w.Wire() );
+        
+        if (t_)
+        {
+            double maxt=std::min(L,W)/2.;
+            double t=t_->value();
+            refvalues_["t"]=t;
+            
+            if (t<1e-10)
+                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad needs to be larger than 0 (is %g)!")%t));
+            if (t>maxt)
+                throw insight::Exception(str(format("Invalid parameter: Wall thickness of quad is larger than half width or half height (%g > %g)!")%t%maxt));
+            
+            gp_Pnt
+                p1 ( to_Pnt ( p0_->value() ) );
+                
+            p1.Translate ( to_Vec ( L_->value()*(t/L) + W_->value()*(t/W) ) );
+
+            if ( boost::fusion::at_c<0> ( center_ ) ) {
+                p1.Translate ( to_Vec ( -0.5*L_->value() ) );
+            }
+            if ( boost::fusion::at_c<1> ( center_ ) ) {
+                p1.Translate ( to_Vec ( -0.5*W_->value() ) );
+            }
+
+            gp_Pnt
+            p2=p1.Translated ( to_Vec ( W_->value()*((W-2*t)/W) ) ),
+            p3=p2.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) ),
+            p4=p1.Translated ( to_Vec ( L_->value()*((L-2*t)/L) ) )
+            ;
+
+            BRepBuilderAPI_MakeWire w;
+            w.Add ( BRepBuilderAPI_MakeEdge ( p1, p2 ) );
+            w.Add ( BRepBuilderAPI_MakeEdge ( p2, p3 ) );
+            w.Add ( BRepBuilderAPI_MakeEdge ( p3, p4 ) );
+            w.Add ( BRepBuilderAPI_MakeEdge ( p4, p1 ) );
+            
+            s = BRepAlgoAPI_Cut( s,  BRepBuilderAPI_MakeFace ( w.Wire() ) );
+        }
+        
+        setShape ( s );
 
         cache.insert ( shared_from_this() );
         
@@ -148,6 +205,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
                     ( '(' >> ruleset.r_vectorExpression
                       >> ',' >> ruleset.r_vectorExpression
                       >> ',' >> ruleset.r_vectorExpression
+                      >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
                       >> ( ( ',' >> (
                                  ( qi::lit ( "centered" ) >> qi::attr ( true ) >> qi::attr ( true ) )
                                  |
@@ -160,7 +218,7 @@ void Quad::insertrule(parser::ISCADParser& ruleset) const
                            ( qi::attr ( false ) >> qi::attr ( false ) )
                          )
                       >> ')' )
-                    [ qi::_val = phx::bind ( &Quad::create, qi::_1, qi::_2, qi::_3, qi::_4 ) ]
+                    [ qi::_val = phx::bind ( &Quad::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
                 ) )
     );
@@ -176,7 +234,7 @@ FeatureCmdInfoList Quad::ruleDocumentation() const
         FeatureCmdInfo
         (
             "Quad",
-            "( <vector:p0>, <vector:Lx>, <vector:Ly> [, centered | (center [x][y]) ] )",
+            "( <vector:p0>, <vector:Lx>, <vector:Ly> [, <thickness>] [, centered | (center [x][y]) ] )",
             "Creates a quad face. The quad is located at point p0 and direction and edge lengths are defined by the vector Lx, Ly.\n"
             "Optionally, the edges are centered around p0. Either all directions (option centered) or only selected directions (option center [x][y] where x,y is associated with L1, L2 respectively)."
         )

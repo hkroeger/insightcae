@@ -19,6 +19,7 @@
 
 #include "bar.h"
 #include "quad.h"
+#include "transform.h"
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
@@ -120,12 +121,16 @@ void Bar::build()
                 to_Vec(ex)
             )
         );
-        TopoDS_Shape xsecs =
-            BRepBuilderAPI_Transform
-            (
-                xsec_->shape(),
-                tr.Inverted()
-            ).Shape();
+        
+        FeaturePtr xsect ( new Transform(xsec_, tr.Inverted()) );
+//         TopoDS_Shape xsecs =
+//             BRepBuilderAPI_Transform
+//             (
+//                 xsec_->shape(),
+//                 tr.Inverted()
+//             ).Shape();
+        providedSubshapes_["xsec"]=xsect;
+        TopoDS_Shape xsecs = *xsect;
 
         //   BRepOffsetAPI_MakePipeShell p(spinew);
         //   Handle_Law_Constant law(new Law_Constant());

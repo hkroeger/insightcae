@@ -39,15 +39,16 @@ class Quad
     VectorPtr p0_;
     VectorPtr L_;
     VectorPtr W_;
+    ScalarPtr t_; // optional: hollow quad with thickness t
 
     QuadCentering center_;
 
-    Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering ( false, false ) );
+    Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
 
 public:
     declareType ( "Quad" );
     Quad ();
-    static FeaturePtr create ( VectorPtr p0, VectorPtr L, VectorPtr W, QuadCentering center=QuadCentering ( false, false ) );
+    static FeaturePtr create ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
     operator const TopoDS_Face& () const;
 
     void operator= ( const Quad& o );

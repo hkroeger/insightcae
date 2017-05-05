@@ -156,7 +156,7 @@ bool Foam::interfaceMarkerFunctionObject::start()
 
 bool Foam::interfaceMarkerFunctionObject::execute
 (
-#if not (defined(OF16ext)||defined(OFdev))
+#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus))
   bool
 #endif
 )

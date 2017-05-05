@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
    
    scalar RMS=readScalar(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     args.arg(1)
 #else
     args.additionalArgs()[0]

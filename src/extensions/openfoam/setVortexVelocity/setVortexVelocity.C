@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 
     scalar Gamma=readScalar(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args[1]
 #else
       args.additionalArgs()[0]
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     )());
     
     IStringStream center_args(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args[2]
 #else
       args.additionalArgs()[1]
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 		(
 		    mesh.boundary()[patchI],
 		    p.
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 		    internalField()
 #else
 		    dimensionedInternalField()
@@ -141,15 +141,15 @@ int main(int argc, char *argv[])
     forAll(mesh.boundary(), patchI)
     {
       const fvPatch& patch = mesh.boundary()[patchI];
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       fvPatchVectorField& Up = U.boundaryFieldRef()[patchI];
 #else
       fvPatchVectorField& Up = U.boundaryField()[patchI];
 #endif
       
-#if defined(OFplus)
-      fvPatchScalarField& pp = pNew.ref().boundaryField()[patchI];
-#elif defined(OFdev)
+// #if defined(OFplus)
+//       fvPatchScalarField& pp = pNew.ref().boundaryField()[patchI];
+#if defined(OFdev)||defined(OFplus)
       fvPatchScalarField& pp = pNew.ref().boundaryFieldRef()[patchI];
 #else
       fvPatchScalarField& pp = pNew().boundaryField()[patchI];

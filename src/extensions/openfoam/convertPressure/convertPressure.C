@@ -47,14 +47,14 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
     
     word from_name(
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
       args[1]
 #else
       args.additionalArgs()[0]
 #endif
     );
     word to_name(
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
       args[3]
 #else
       args.additionalArgs()[2]
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     );
 
     IStringStream from_dim_args(
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
       (args[2])
 #else
       args.additionalArgs()[1]
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     dimensionedScalar p0("p0", dimPressure, 1e5);
     p0.value()=readScalar(IStringStream(
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
       args[4]
 #else
       args.additionalArgs()[3]
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     
     dimensionedScalar rho("rho", dimDensity, 1);
     rho.value()=readScalar(IStringStream(
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
       args[5]
 #else
       args.additionalArgs()[4]

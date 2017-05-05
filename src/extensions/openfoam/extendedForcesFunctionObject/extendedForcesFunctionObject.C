@@ -20,7 +20,11 @@
 
 #include "fvCFD.H"
 #include "extendedForcesFunctionObject.H"
+#if defined(OFdev)||defined(OFplus)
+#include "functionObject.H"
+#else
 #include "OutputFilterFunctionObject.H"
+#endif
 #include "wallFvPatch.H"
 
 namespace Foam

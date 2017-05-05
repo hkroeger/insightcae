@@ -40,7 +40,7 @@ using namespace Foam;
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 #define RTYPE bool
 #define RET return true;
 #else
@@ -56,11 +56,11 @@ Foam::twoPointCorrelation::twoPointCorrelation
     const bool loadFromFiles
 )
     :
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     functionObject(name),
 #endif
     name_(name),
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     obr_
     (
         refCast<const Time>(obr).lookupObject<objectRegistry>
@@ -664,7 +664,7 @@ void Foam::twoPointCorrelation::timeSet()
 
 namespace Foam
 {
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     defineTypeNameAndDebug(twoPointCorrelation, 0);
 
     addToRunTimeSelectionTable

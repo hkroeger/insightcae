@@ -32,6 +32,12 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
+#if defined(OFplus)
+#define UNALLOCLABELLIST labelList
+#else
+#define UNALLOCLABELLIST unallocLabelList
+#endif
+
 Foam::scalar Foam::CICSAMDC::weight
 (
     const scalar cdWeight,
@@ -175,13 +181,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const unallocLabelList& owner = mesh.owner();
-    const unallocLabelList& neighbour = mesh.neighbour();
+    const UNALLOCLABELLIST& owner = mesh.owner();
+    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
     scalarField& corrIn = corr
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       .ref().field()
 #else
       .internalField()
@@ -210,26 +216,26 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
         corrIn[faceI] = w*vf[own] + (1 - w)*vf[nei];
     }
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
       bCorr = corr
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	.boundaryFieldRef()
 #else
 	.boundaryField()
 #endif
 	;
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
       bCof = Cof
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	.boundaryFieldRef()
 #else
 	.boundaryField()

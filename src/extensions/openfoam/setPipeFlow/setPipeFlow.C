@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 //     scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
     IStringStream Ubulk_args(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args[1]
 #else
       args.additionalArgs()[0]

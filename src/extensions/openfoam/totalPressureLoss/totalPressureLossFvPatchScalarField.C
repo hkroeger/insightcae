@@ -496,7 +496,7 @@ void Foam::totalPressureLossFvPatchScalarField::updateCoeffs
                "definition of total pressure." << nl
             << "    Set the unused variable(s) to 'none'.\n"
             << "    on patch " << this->patch().name()
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
             << " of field " << this->internalField().name()
             << " in file " << this->internalField().objectPath()
 #else

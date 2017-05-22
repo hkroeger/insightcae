@@ -61,6 +61,19 @@
 #endif
 
 #if defined(OFplus)||defined(OFdev)
+#define UNIOF_INTERNALFIELD(f) f.primitiveField()
+#else
+#define UNIOF_INTERNALFIELD(f) f.internalField()
+#endif
+
+
+#if defined(OFplus)||defined(OFdev)
+#define UNIOF_DIMINTERNALFIELD(f) f.internalField()
+#else
+#define UNIOF_DIMINTERNALFIELD(f) f.dimensionedInternalField()
+#endif
+
+#if defined(OFplus)||defined(OFdev)
 #define UNIOF_INTERNALFIELD_NONCONST(f) f.ref().field()
 #else
 #define UNIOF_INTERNALFIELD_NONCONST(f) f.internalField()

@@ -198,8 +198,8 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
   if (!exists(from))
   {
     boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
-    if (exists(alt_from)) from=alt_from;
-    else
+    if (!exists(alt_from)) //from=alt_from;
+//     else
       throw insight::Exception("feature edge file does not exist: neither "+from.string()+" nor "+alt_from.string());
   }
   boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());

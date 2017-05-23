@@ -115,9 +115,12 @@ int main(int argc, char *argv[])
     Info<< "Reading eMesh from " << inFileName << " ..." << nl
         << "Writing eMesh to " << outFileName << " ..." << endl;
 
-//     IFstream fi(inFileName);
-//     token headerKeyWord(fi);
-//     dictionary header(fi);
+#if defined(OF16ext)
+    IFstream fi(inFileName);
+    token headerKeyWord(fi);
+    dictionary header(fi);
+#endif
+    
 // #ifdef OF16ext
     edgeMesh edge1(inFileName); 
 // #else
@@ -204,10 +207,13 @@ int main(int argc, char *argv[])
     edgeMesh edge2( points, edge1.edges());
     
     { 
-//       OFstream f(outFileName);
-//       f<<headerKeyWord<<header;
-//       f<<edge2;
+#if defined(OF16ext)
+        OFstream f(outFileName);
+        f<<headerKeyWord<<header;
+        f<<edge2;
+#else
         edgeMesh::write(outFileName, edge2);
+#endif
     }
 
     Info<< "End\n" << endl;

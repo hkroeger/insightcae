@@ -402,7 +402,7 @@ public:
             gear_shape_,
             gp_Vec(0,0,rim_thickness)
         ).Shape();
-/*
+
         if (gear_thickness < rim_thickness)
         {
             gp_Trsf tr;
@@ -473,7 +473,7 @@ public:
                 );
             }
         }
-        */
+
         TopoDS_Shape::operator=( s1 );
 
     }

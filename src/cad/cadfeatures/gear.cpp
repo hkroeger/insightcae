@@ -596,7 +596,7 @@ public:
                 involute( base_radius*2,start_angle+(stop_angle - start_angle)*double(i)/double(resolution-1) );
             arma::mat side1_point = rotate_point (centre_angle, point);
             arma::mat side2_point = mirror_point (rotate_point (centre_angle, point));
-//             back_cone_radius*2+0.1, 0, cone_distance*2
+            arma::mat pend; pend << (back_cone_radius*2.+0.1) << 0 << (cone_distance*2.);
             
             std::cout<<i<<" "<<side1_point[0]<<" "<<side1_point[1]<<" "<<side2_point[0]<<" "<<side2_point[1]<<std::endl;
             
@@ -604,17 +604,19 @@ public:
             pts2->SetValue ( i+1, gp_Pnt( side2_point[0], side2_point[1], 0 ) );
 
             double f=0.1/(cone_distance*2.);
-            double ze=cone_distance*2.-0.1;
-            pts1a->SetValue ( i+1, gp_Pnt( f*side1_point[0], f*side1_point[1], ze ) );
-            pts2a->SetValue ( i+1, gp_Pnt( f*side2_point[0], f*side2_point[1], ze ) );
+            double ze=cone_distance*2.;
+            gp_Pnt ep1( f*side1_point[0]+(1.-f)*pend[0], f*side1_point[1]+(1.-f)*pend[1], pend[2] );
+            gp_Pnt ep2( f*side2_point[0]+(1.-f)*pend[0], f*side2_point[1]+(1.-f)*pend[1], pend[2] );
+            pts1a->SetValue ( i+1, ep1 );
+            pts2a->SetValue ( i+1, ep2 );
             
             if (i==0)
             {
                 e1.Append( BRepBuilderAPI_MakeEdge ( gp_Pnt( side1_point[0], side1_point[1], 0 ), gp_Pnt(0,0,0) ) );
                 e1.Append( BRepBuilderAPI_MakeEdge ( gp_Pnt( side2_point[0], side2_point[1], 0 ), gp_Pnt(0,0,0) ) );
                 
-                e2.Append( BRepBuilderAPI_MakeEdge ( gp_Pnt( f*side1_point[0], f*side1_point[1], ze ), gp_Pnt(0,0,ze) ) );
-                e2.Append( BRepBuilderAPI_MakeEdge ( gp_Pnt( f*side2_point[0], f*side2_point[1], ze ), gp_Pnt(0,0,ze) ) );
+                e2.Append( BRepBuilderAPI_MakeEdge ( ep1, gp_Pnt(0,0,pend[2]) ) );
+                e2.Append( BRepBuilderAPI_MakeEdge ( ep2, gp_Pnt(0,0,pend[2]) ) );
             }
             else if (i==resolution-1)
             {
@@ -634,12 +636,13 @@ public:
                 ( 
                     BRepBuilderAPI_MakeEdge 
                     ( 
-                        GC_MakeArcOfCircle
-                        (
-                            gp_Pnt(f*side2_point[0], f*side2_point[1], ze),
-                            gp_Pnt(2.*f*outer_radius, 0, ze),
-                            gp_Pnt(f*side1_point[0], f*side1_point[1], ze)
-                        ).Value() 
+                      ep1, ep2
+//                         GC_MakeArcOfCircle
+//                         (
+//                             ep1,
+//                             gp_Pnt(2.*f*outer_radius, 0, pend[2]),
+//                             ep2
+//                         ).Value() 
                     )
                 );
             }
@@ -677,11 +680,23 @@ public:
 //         bb.Add(result, f1);
 //         bb.Add(result, f2);
         
-        BRepOffsetAPI_ThruSections sb ( true );
-        sb.AddWire ( w1.Wire() );
-        sb.AddWire ( w2.Wire() );
+        BRepOffsetAPI_ThruSections sb1 ( true );
+        sb1.AddVertex(BRepBuilderAPI_MakeVertex(gp_Pnt(back_cone_radius*2+0.1,0,cone_distance*2)).Vertex());
+        sb1.AddWire ( w1.Wire() );
+        BRepOffsetAPI_ThruSections sb2 ( true );
+        sb2.AddWire ( w1.Wire() );
+        sb2.AddVertex(BRepBuilderAPI_MakeVertex(gp_Pnt(0.1,0,0)).Vertex());
+//         sb.AddWire ( w2.Wire() );
 //         bb.Add(result, sb.Shape());
-        TopoDS_Shape::operator=( sb.Shape() );
+        
+        TopoDS_Shape sb=BRepAlgoAPI_Fuse(sb1.Shape(), sb2.Shape()).Shape();
+        
+        gp_Trsf tr1, tr2, tr3;
+        tr1.SetTranslation(gp_Vec(0,0,pitch_apex));
+        tr2.SetRotation(gp::OY(), -::atan(back_cone_radius/cone_distance));
+        tr3.SetTranslation(gp_Vec(-back_cone_radius*2, 0, -cone_distance*2));
+        
+        TopoDS_Shape::operator=( BRepBuilderAPI_Transform(sb, tr1.Multiplied(tr2.Multiplied(tr3))).Shape() );
         
 /*
         translate ([0,0,pitch_apex])
@@ -806,42 +821,52 @@ public:
         // For the bevel_gear_flat finish option, calculate the height of a cube to select the portion of the gear that includes the full pitch face.
         double bevel_gear_flat_height = pitch_apex - (cone_distance - face_width) * ::cos (pitch_angle);
         
-        std::cout
-          <<outside_pitch_diameter<<std::endl
-          <<outside_pitch_radius<<std::endl
-          <<pitch_apex<<std::endl
-          <<pitch_angle<<std::endl
-          <<apex_to_apex<<std::endl
-          <<back_cone_radius<<std::endl
-          <<base_radius<<std::endl
-          <<pitch_diametrial<<std::endl
-          <<addendum<<std::endl
-          <<outer_radius<<std::endl
-          <<dedendum<<std::endl
-          <<dedendum_angle<<std::endl
-          <<root_angle<<std::endl
-
-          <<root_cone_full_radius<<std::endl
-          <<back_cone_full_radius<<std::endl
-
-          <<back_cone_end_radius<<std::endl
-          <<back_cone_descent<<std::endl
-
-        // Root diameter: Diameter of bottom of tooth spaces.
-          <<root_radius<<std::endl
-
-          <<half_tooth_thickness<<std::endl
-          <<half_thick_angle<<std::endl
-
-          <<face_cone_height<<std::endl
-          <<face_cone_full_radius<<std::endl
-          <<face_cone_descent <<std::endl
-          <<face_cone_end_radius<<std::endl
-
-        // For the bevel_gear_flat finish option, calculate the height of a cube to select the portion of the gear that includes the full pitch face.
-          <<bevel_gear_flat_height
-        <<std::endl;        
+//         std::cout
+//           <<outside_pitch_diameter<<std::endl
+//           <<outside_pitch_radius<<std::endl
+//           <<pitch_apex<<std::endl
+//           <<pitch_angle<<std::endl
+//           <<apex_to_apex<<std::endl
+//           <<back_cone_radius<<std::endl
+//           <<base_radius<<std::endl
+//           <<pitch_diametrial<<std::endl
+//           <<addendum<<std::endl
+//           <<outer_radius<<std::endl
+//           <<dedendum<<std::endl
+//           <<dedendum_angle<<std::endl
+//           <<root_angle<<std::endl
+// 
+//           <<root_cone_full_radius<<std::endl
+//           <<back_cone_full_radius<<std::endl
+// 
+//           <<back_cone_end_radius<<std::endl
+//           <<back_cone_descent<<std::endl
+// 
+//         // Root diameter: Diameter of bottom of tooth spaces.
+//           <<root_radius<<std::endl
+// 
+//           <<half_tooth_thickness<<std::endl
+//           <<half_thick_angle<<std::endl
+// 
+//           <<face_cone_height<<std::endl
+//           <<face_cone_full_radius<<std::endl
+//           <<face_cone_descent <<std::endl
+//           <<face_cone_end_radius<<std::endl
+// 
+//         // For the bevel_gear_flat finish option, calculate the height of a cube to select the portion of the gear that includes the full pitch face.
+//           <<bevel_gear_flat_height
+//         <<std::endl;        
         
+                std::cout << "PP" << std::endl 
+                <<back_cone_radius<< std::endl 
+            <<root_radius<< std::endl 
+            <<base_radius<< std::endl 
+            <<outer_radius<< std::endl 
+            <<pitch_apex<< std::endl 
+            <<cone_distance<< std::endl 
+            <<half_thick_angle<< std::endl 
+            <<resolution<< std::endl << "PP"<< std::endl ;
+            
         involute_bevel_gear_tooth tooth_
         (
             back_cone_radius,
@@ -854,26 +879,31 @@ public:
             resolution
         );
         
-    BRep_Builder bb;
-    TopoDS_Compound result;
-    bb.MakeCompound ( result );
+    
         
-//         TopoDS_Shape f;
+        
+        TopoDS_Shape result;
+        
         for (int i = 0; i<number_of_teeth; i++)
         {
             gp_Trsf tr;
             tr.SetRotation ( gp_Ax1 ( gp_Pnt ( 0,0,0 ), gp_Vec ( 0,0,1 ) ), double(i)*2.*M_PI/double ( number_of_teeth ) );
-//             f=BRepAlgoAPI_Fuse
-//             (
-//                 f,
-            bb.Add(result,
-                BRepBuilderAPI_Transform
+            TopoDS_Shape t =BRepBuilderAPI_Transform
+            (
+                tooth_,
+                tr
+            ).Shape();
+            if (i==0) 
+            {
+                result=t;
+            }
+            else 
+            {
+                result=BRepAlgoAPI_Fuse
                 (
-                    tooth_,
-                    tr
-                ).Shape()
-               );
-//             );
+                    result, t
+                ).Shape();
+            }
         }
             
     //	translate([0,0,-pitch_apex])

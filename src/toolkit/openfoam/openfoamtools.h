@@ -831,6 +831,15 @@ public:
 };
 
 
+
+std::vector<std::string> patchList
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const std::string& include=".*",
+    const std::vector<std::string>& exclude = std::vector<std::string>() // OF syntax: either string or regex (in quotes)
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

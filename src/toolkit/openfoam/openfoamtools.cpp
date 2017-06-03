@@ -2637,4 +2637,62 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
 
 addToAnalysisFactoryTable(HomogeneousAveragedProfile);
 
+
+std::vector<std::string> patchList
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const std::string& include,
+    const std::vector<std::string>& exclude
+)
+{
+  std::vector<std::string> result;
+  
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(caseDir, boundaryDict);
+  
+  const boost::regex filter( include );
+  
+  BOOST_FOREACH(const OFDictData::dict::value_type& patch, boundaryDict)
+  {
+      std::string patchname = patch.first;
+      
+      boost::smatch what;
+      if (boost::regex_match( patchname, what, filter ))
+      {
+          bool excl=false;
+          BOOST_FOREACH(std::string expat, exclude)
+          {
+              std::cout<<" ++ include patch "<<patchname<<" because of regex_rule "<<include<<std::endl;
+              if (expat[0]=='\"')
+              {
+                  expat.erase( 0, 1 ); // erase the first character
+                  expat.erase( expat.size() - 1 ); // erase the last character
+                  if (boost::regex_match( patchname, what, boost::regex(expat) )) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of regex_rule "<<expat<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+              else 
+              { 
+                  if (patchname==expat) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of direct match."<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+          }
+          if (!excl) result.push_back(patchname);  
+      } else
+      {
+          std::cout<<" no match for patch "<<patchname<<" for regex_rule "<<include<<std::endl;
+      }
+  }
+  
+  return result;
+}
+
 }

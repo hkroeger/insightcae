@@ -271,7 +271,7 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::dict& wd = fvSchemes.addSubDictIfNonexistent("wallDist");
     wd["method"]="meshWave";
     OFDictData::dict& wd2 = fvSchemes.addSubDictIfNonexistent("patchDist");
-    wd["method"]="meshWave";
+    wd2["method"]="meshWave";
   }
 
   setDecomposeParDict

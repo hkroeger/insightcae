@@ -29,6 +29,9 @@
 
 #include "boost/lexical_cast.hpp"
 
+#include "boost/iostreams/filtering_stream.hpp"
+#include "boost/iostreams/filter/gzip.hpp"
+
 using namespace std;
 using namespace boost;
 
@@ -161,6 +164,31 @@ bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
     
     return r;
 }
+
+
+void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict& d)
+{
+    boost::filesystem::path compressedDictFile = dictFile;
+    compressedDictFile.replace_extension(".gz");
+    
+    if (exists(dictFile))
+    {
+        std::ifstream f(dictFile.string());
+        
+        readOpenFOAMDict(f, d);
+    }
+    else if (exists(compressedDictFile))
+    {
+        std::ifstream compressedDict(compressedDictFile.string());
+        boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(compressedDict);     
+        std::istream f(&in);
+        
+        readOpenFOAMDict(f, d);
+    }
+}
+
 
 void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
 {

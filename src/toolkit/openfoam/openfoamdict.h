@@ -214,6 +214,12 @@ std::ostream& operator<<(std::ostream& os, const list& l);
 
 
 
+/**
+ * reads OF dict
+ * filename without possible ".gz". Will detect compressed dict and uncompress in temp dir
+ */
+void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict& d);
+
 void readOpenFOAMDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
 

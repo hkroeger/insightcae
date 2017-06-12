@@ -96,7 +96,11 @@ public:
     inline const ParameterSet& params() const
     { return parameters_; }
     
-    virtual void createOnDisk(const boost::filesystem::path& location) =0;
+    virtual void createOnDisk
+    (
+        const boost::filesystem::path& location, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    ) =0;
     
 //    virtual void run() =0;
 };

@@ -96,6 +96,7 @@ int main ( int argc, char** argv )
         ( "batch,b", "case creation from specified input file" )
         ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
         ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
+        ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
         ;
 
         po::positional_options_description p;
@@ -135,10 +136,18 @@ int main ( int argc, char** argv )
                 }
                 window.loadFile ( fn, vm.count ( "skipbcs" ) );
             }
+            
 
             if ( vm.count ( "batch" ) )
             {
-                window.createCase( vm.count ( "skipbcs" ) );
+                boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
+                
+                if ( vm.count ( "write-only" ) )
+                {
+                    restrictToFiles.reset(new std::vector<boost::filesystem::path>(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
+                }
+                
+                window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
             }
 
         }

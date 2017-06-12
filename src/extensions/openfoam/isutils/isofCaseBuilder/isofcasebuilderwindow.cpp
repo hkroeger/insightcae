@@ -345,7 +345,11 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 }
 
 
-void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/bool skipBCs )
+void isofCaseBuilderWindow::createCase 
+(
+    bool skipBCs,
+    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+)
 {
     recreateOFCase(ui->OFversion->currentText());
     
@@ -374,8 +378,8 @@ void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& locati
       throw insight::Exception("Incorrect case setup: There are unhandled patches. Continuing would remain in an invalid boundary definition.");
   }
   
-  ofc_->createOnDisk ( /*location*/ casepath_ );
-  ofc_->modifyCaseOnDisk ( /*location*/ casepath_ );
+  ofc_->createOnDisk ( casepath_, restrictToFiles );
+  if (!restrictToFiles) ofc_->modifyCaseOnDisk ( casepath_ );
 }
 
 

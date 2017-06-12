@@ -631,14 +631,23 @@ void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) con
 }
 
 
-void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location)
+void OpenFOAMCase::createOnDisk
+(
+    const boost::filesystem::path& location, 
+    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+)
 {
   boost::shared_ptr<OFdicts> dictionaries=createDictionaries();
-  createOnDisk(location, dictionaries);
+  createOnDisk(location, dictionaries, restrictToFiles);
 }
 
 
-void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries)
+void OpenFOAMCase::createOnDisk
+(
+    const boost::filesystem::path& location, 
+    boost::shared_ptr<OFdicts> dictionaries, 
+    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+)
 {
   boost::filesystem::path basepath(location);
 
@@ -646,14 +655,29 @@ void OpenFOAMCase::createOnDisk(const boost::filesystem::path& location, boost::
       i!=dictionaries->end(); i++)
   {
     boost::filesystem::path dictpath = basepath / i->first;
-    if (!exists(dictpath.parent_path())) 
+    
+    bool ok_to_create=true;
+    
+    if (restrictToFiles)
     {
-      boost::filesystem::create_directories(dictpath.parent_path());
+        ok_to_create=false;
+        BOOST_FOREACH(boost::filesystem::path fp, *restrictToFiles)
+        {
+            if ( dictpath == fp ) ok_to_create=true;
+        }
     }
     
+    if (ok_to_create)
     {
-      std::ofstream f(dictpath.c_str());
-      i->second->write(dictpath);
+        if (!exists(dictpath.parent_path())) 
+        {
+        boost::filesystem::create_directories(dictpath.parent_path());
+        }
+        
+        {
+        std::ofstream f(dictpath.c_str());
+        i->second->write(dictpath);
+        }
     }
   }
 }

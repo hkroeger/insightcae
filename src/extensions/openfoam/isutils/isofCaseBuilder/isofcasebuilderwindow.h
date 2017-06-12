@@ -116,7 +116,11 @@ public:
     virtual ~isofCaseBuilderWindow();
     
     void loadFile(const boost::filesystem::path& file, bool skipBCs=false);
-    void createCase(bool skipBCs=false);
+    void createCase
+    (
+        bool skipBCs=false, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    );
     
 public slots:
     void onItemSelectionChanged();

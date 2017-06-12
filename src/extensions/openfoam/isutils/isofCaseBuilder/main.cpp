@@ -144,7 +144,12 @@ int main ( int argc, char** argv )
                 
                 if ( vm.count ( "write-only" ) )
                 {
-                    restrictToFiles.reset(new std::vector<boost::filesystem::path>(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
+                    restrictToFiles.reset(new std::vector<boost::filesystem::path>);
+                    //(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
+                    StringList paths = vm["write-only"].as<StringList>();
+                    copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
+                    BOOST_FOREACH(const boost::filesystem::path& f, *restrictToFiles)
+                     std::cout<<f<<std::endl;
                 }
                 
                 window.createCase( vm.count ( "skipbcs" ), restrictToFiles );

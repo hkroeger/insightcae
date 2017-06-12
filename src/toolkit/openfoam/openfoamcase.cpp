@@ -655,6 +655,7 @@ void OpenFOAMCase::createOnDisk
       i!=dictionaries->end(); i++)
   {
     boost::filesystem::path dictpath = basepath / i->first;
+    std::cout<<"WRITE: "<<dictpath<<std::endl;
     
     bool ok_to_create=true;
     

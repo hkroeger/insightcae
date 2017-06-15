@@ -404,6 +404,8 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   std::string line;
 
   getline ( f, line );
+//   std::cout<<"RAW: "<<line<<std::endl;
+  
   if ( f.fail() ) return arma::mat();
 
   if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
@@ -411,12 +413,21 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   erase_all ( line, "(" );
   erase_all ( line, ")" );
   replace_all ( line, ",", " " );
-  replace_all ( line, "  ", " " );
+  replace_all ( line, "\t", " " );
+  while (line.find("  ")!=std::string::npos)
+  {
+    replace_all ( line, "  ", " " );
+  }
+//   std::cout<<"CLEAN: "<<line<<std::endl;
 
   std::vector<string> strs;
-  boost::split ( strs, line, boost::is_any_of ( " \t" ) );
+  boost::split ( strs, line, boost::is_any_of ( " " ) );
 
-  if ( strs.size() != nc_expected ) return arma::mat();
+  if ( strs.size() != nc_expected ) 
+  {
+//       std::cout<<"found "<<strs.size()<<" fields, expected "<<nc_expected<<std::endl;
+      return arma::mat();
+  }
 
   arma::mat row;
   row.set_size ( 1, strs.size() );
@@ -469,6 +480,7 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
           {
             arma::mat r1=readForcesLine ( f, ncexp, skip );
             arma::mat r2=readForcesLine ( f2, ncexp, skip );
+//             std::cout<<r1<<r2<<std::endl;
             if ( (r1.n_cols==0) || (r2.n_cols==0) )
             {
                 if ( !skip ) break;

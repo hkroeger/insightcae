@@ -472,7 +472,14 @@ void mapFields
   const std::vector<std::string>& fields = std::vector<std::string>()
 );
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false, bool include_zones=false);
+void resetMeshToLatestTimestep
+(
+    const OpenFOAMCase& c, 
+    const boost::filesystem::path& location, 
+    bool ignoremissing=false, 
+    bool include_zones=false, 
+    bool is_parallel=false
+);
 
 void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);
 

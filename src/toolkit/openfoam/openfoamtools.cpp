@@ -162,18 +162,18 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
       {
-	cout<<"Copying file "<<gzname<<endl;
-	if (exists(target/gzname)) remove(target/gzname);
-	copy_file(source/gzname, target/gzname);
+        cout<<"Copying file "<<gzname<<endl;
+        if (exists(target/gzname)) remove(target/gzname);
+        copy_file(source/gzname, target/gzname);
       }
       else if (exists(source/fname))
       {
-	cout<<"Copying file "<<fname<<endl;
-	if (exists(target/fname)) remove(target/fname);
-	copy_file(source/fname, target/fname);
+        cout<<"Copying file "<<fname<<endl;
+        if (exists(target/fname)) remove(target/fname);
+        copy_file(source/fname, target/fname);
       }
       else 
-	if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
     }
   }
   else
@@ -1169,21 +1169,54 @@ void mapFields
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
 {
-  TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
-  if (times.size()>0)
-  {
-    boost::filesystem::path lastTime = times.rbegin()->second;
-    
-    if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-    copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
-    
-    BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+    if (!is_parallel)
     {
-      remove_all(td.second);
+        TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
+        if (times.size()>0)
+        {
+            boost::filesystem::path lastTime = times.rbegin()->second;
+            
+            if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
+            copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
+            
+            BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+            {
+            remove_all(td.second);
+            }
+        }
     }
-  }
+    else
+    {
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( location ); itr != end_itr; ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string dn=itr->path().filename().string();
+                if ( starts_with(dn, "processor") )
+                {
+                    boost::filesystem::path curploc=itr->path();
+                    
+                    TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(curploc));
+                    if (times.size()>0)
+                    {
+                        boost::filesystem::path lastTime = times.rbegin()->second;
+                        
+                        if (!ignoremissing) remove_all(curploc/"constant"/"polyMesh");
+                        copyPolyMesh(lastTime, curploc/"constant", true, ignoremissing, include_zones);
+                        
+                        BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+                        {
+                            remove_all(td.second);
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
 }
 
 void runPotentialFoam
@@ -1688,8 +1721,7 @@ std::string readSolverName(const boost::filesystem::path& ofcloc)
 int readDecomposeParDict(const boost::filesystem::path& ofcloc)
 {
   OFDictData::dict decomposeParDict;
-  std::ifstream cdf( (ofcloc/"system"/"decomposeParDict").c_str() );
-  readOpenFOAMDict(cdf, decomposeParDict);
+  readOpenFOAMDict(ofcloc/"system"/"decomposeParDict", decomposeParDict);
   //cout<<decomposeParDict<<endl;
   return decomposeParDict.getInt("numberOfSubdomains");
 }

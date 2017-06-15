@@ -655,7 +655,7 @@ void OpenFOAMCase::createOnDisk
       i!=dictionaries->end(); i++)
   {
     boost::filesystem::path dictpath = basepath / i->first;
-    std::cout<<"WRITE: "<<dictpath<<std::endl;
+    std::cout<<"FILE "<<dictpath<<": ";
     
     bool ok_to_create=true;
     
@@ -679,6 +679,10 @@ void OpenFOAMCase::createOnDisk
         std::ofstream f(dictpath.c_str());
         i->second->write(dictpath);
         }
+        std::cout<<"CREATED."<<std::endl;
+    } else
+    {
+        std::cout<<"SKIPPED."<<std::endl;
     }
   }
 }
@@ -893,7 +897,8 @@ void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OF
   boost::filesystem::path basepath(location);
   boost::filesystem::path dictpath = basepath / "constant" / "polyMesh" / "boundary";
   std::ifstream f(dictpath.c_str());
-  readOpenFOAMBoundaryDict(f, boundaryDict);
+  if (!readOpenFOAMBoundaryDict(f, boundaryDict))
+      throw insight::Exception("Failed to parse boundary dict "+dictpath.string());
 }
 
 /*

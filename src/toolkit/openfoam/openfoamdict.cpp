@@ -227,6 +227,17 @@ bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
     return true;
 }
 
+void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict)
+{
+  if (!exists(dictpath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictpath.parent_path());
+  }
+
+  std::ofstream out(dictpath.c_str());
+  writeOpenFOAMDict( out, dict, boost::filesystem::basename(dictpath) );
+}
+
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
 {
   out /*<< std::scientific*/ << std::setprecision(18);

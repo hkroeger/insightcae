@@ -237,6 +237,7 @@ void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict&
 
 bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
+void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict);
 
 bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);

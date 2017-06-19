@@ -40,29 +40,29 @@ namespace insight
   
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
 {
-  TimeDirectoryList list;
-  if ( exists( dir ) ) 
-  {
-    directory_iterator end_itr; // default construction yields past-the-end
-    for ( directory_iterator itr( dir );
-          itr != end_itr;
-          ++itr )
+    TimeDirectoryList list;
+    if ( exists( dir ) )
     {
-      if ( is_directory(itr->status()) )
-      {
-        std::string fn=itr->path().filename().string();
-	try
-	{
-	  double time = lexical_cast<double>(fn);
-	  list[time]=itr->path();
-	}
-	catch (...)
-	{
-	}
-      }
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( dir );
+                itr != end_itr;
+                ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string fn=itr->path().filename().string();
+                try
+                {
+                    double time = lexical_cast<double>(fn);
+                    list[time]=itr->path();
+                }
+                catch (...)
+                {
+                }
+            }
+        }
     }
-  }
-  return list;
+    return list;
 }
 
 
@@ -1166,6 +1166,27 @@ void mapFields
   (
     target, execname, args
   );
+  
+  // latest OF versions rename fields, which were not mapped. Rename them back...
+  if (targetcase.OFversion()>=400)
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( target / "0" ); itr != end_itr; ++itr )
+    {
+        if ( is_regular_file(itr->status()) )
+        {
+            boost::filesystem::path fname = itr->path();
+            std::cout<<fname<<std::endl;
+            if (fname.extension().string()==".unmapped")
+            {
+                boost::filesystem::path orgname = fname;
+                orgname.replace_extension("");
+                std::cout<<"MOVE: "<<fname.string()<<" => "<<orgname.string()<<std::endl;
+                rename(fname, orgname);
+            }
+        }
+    }      
+  }
 }
 
 

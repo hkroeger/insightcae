@@ -2128,7 +2128,8 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             }
             else
             {
-                BC["type"]=OFDictData::data("fixedValue");
+//                 BC["type"]=OFDictData::data("fixedValue");
+                BC["type"]=OFDictData::data("movingWallVelocity");
                 BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p.wallVelocity));
             }
         }

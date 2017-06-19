@@ -106,7 +106,7 @@ struct OpenFOAMBoundaryDictParser
       
         rquery =  
          rpair >> 
-         qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rpair) >> qi::lit(')') >> ';';
+         qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rpair) >> qi::lit(')') >> (-qi::lit(';'));
     
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
@@ -197,6 +197,10 @@ void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict&
         std::istream f(&in);
         if (!readOpenFOAMDict(f, d))
             throw insight::Exception("Failed to read dictionary "+compressedDictFile.string());
+    }
+    else
+    {
+        throw insight::Exception("Neither dictionary "+dictFile.string()+" nor "+compressedDictFile.string()+" exist!");
     }
 }
 

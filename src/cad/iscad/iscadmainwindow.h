@@ -22,6 +22,9 @@
 
 #include <QMainWindow>
 #include <QTimer>
+#include <QTreeView>
+#include <QFileSystemModel>
+#include <QTabWidget>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
@@ -40,32 +43,7 @@
 #endif
 
 
-
-
-class ISCADSyntaxHighlighter;
-
-
-
-
-class BGParsingThread
-: public QThread
-{
-    Q_OBJECT
-    
-protected:
-    std::string script_;
-    
-public:
-    insight::cad::ModelPtr model_;
-    insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
-    
-    BGParsingThread();
-    
-    void launch(const std::string& script);
-    virtual void run();
-};
-
-
+class ISCADModel;
 
 
 class ISCADMainWindow
@@ -73,132 +51,61 @@ class ISCADMainWindow
 {
     Q_OBJECT
 
-//     friend class QFeatureItemAdder;
-
 protected:
-    boost::filesystem::path filename_;
-    QoccViewerContext* context_;
-    QoccViewWidget* viewer_;
-//     QListWidget* modelsteplist_;
-//     QListWidget* datumlist_;
-//     QListWidget* evaluationlist_;
-//     QListWidget* variablelist_;
-    QModelTree* modeltree_;
-
-    QTextEdit* editor_;
-    ISCADSyntaxHighlighter* highlighter_;
-
-    std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
-
-    std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
-
     Q_DebugStream* logger_;
     QTextEdit* log_;
+    
+    QTreeView* fileTree_;
+    QFileSystemModel* fileModel_;
+    
+    QTabWidget* modelTabs_;
 
-    QTimer *bgparseTimer_;
-    const int bgparseInterval=1000;
-    insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
-    bool unsaved_;
-    bool doBgParsing_;
-    
-    insight::cad::ModelPtr cur_model_;
-    
-    BGParsingThread bgparsethread_;
-    
-    bool skipPostprocActions_;
-    
+    QAction
+        *act_load_,
+        *act_save_,
+        *act_saveas_,
+        *act_rebuild_,
+        *act_insert_feat_,
+        *act_insert_component_name_,
+        *act_clear_cache_,
+        *act_fit_all_,
+        *act_toggle_grid_,
+        *act_toggle_clipxy_,
+        *act_toggle_clipyz_,
+        *act_toggle_clipxz_,
+        *act_background_color_,
+        *act_display_all_shaded_,
+        *act_display_all_wire_,
+        *act_reset_shading_;
+
     QMenu* clipplanemenu_;
-    
-    QTextEdit* notepad_;
 
-protected:
-    void clearDerivedData();
-    virtual void closeEvent(QCloseEvent *event);
-
-    inline void setFilename(const boost::filesystem::path& fn)
-    {
-        filename_=fn;
-        setWindowTitle(filename_.filename().c_str());
-    }
-
-    template<class PT>
-    PT* checkGraphicalSelection(QoccViewWidget* aView)
-    {
-        if (aView->getContext()->HasDetected())
-        {
-            if (aView->getContext()->DetectedInteractive()->HasOwner())
-            {
-                Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
-                if (!own.IsNull())
-                {
-                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
-                    {
-                        if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
-                        {
-                            return mi;
-                        }
-                    }
-                }
-            }
-        }
-        return NULL;
-    }
-
+    void connectMenuToModel(ISCADModel* model);
+        
 protected slots:
-    void onGraphicalSelectionChanged(QoccViewWidget* aView);
-    void onModelTreeItemChanged(QTreeWidgetItem * item, int);
-
-    void onEditorSelectionChanged();
-
-    void jump_to(const QString& name);
-
-    void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
-    void doBgParse();
-
-    void editSketch(QObject* sk_ptr);
-    void editModel(QObject* mo_ptr);
-
-    void toggleBgParsing(int state);
-    void toggleSkipPostprocActions(int state);
+    void onFileClicked(const QModelIndex &index);
     
-    void insertFeatureAtCursor();
-    void insertComponentNameAtCursor();
+public slots:
+    void loadModel();
     
-    void onBgParseFinished();
+    void activateModel(int tabindex);
+    void onUpdateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void onCloseModel(int tabindex);
+    void onUpdateClipPlaneMenu();
+    void onLoadModelFile(const boost::filesystem::path& modelfile);
     
-    void allShaded();
-    void allWireframe();
-    
-    void updateClipPlaneMenu();
-    void onSetClipPlane(QObject* datumplane);
-    
-    void onCopyBtnClicked();
+    void displayStatusMessage(const QString& message);
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
     ~ISCADMainWindow();
 
-    void loadFile(const boost::filesystem::path& file);
-
-public slots:
-
-    // insert model step
-    void addFeature(std::string sn, insight::cad::FeaturePtr sm, bool is_component);
-    void addDatum(std::string sn, insight::cad::DatumPtr dm);
-    void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible=false);
-    void addVariable(std::string sn, insight::cad::parser::scalar sv);
-    void addVariable(std::string sn, insight::cad::parser::vector vv);
-
-    void loadModel();
-    bool saveModel();
-    bool saveModelAs();
-    void rebuildModel();
-    void clearCache();
-    void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
-    void showEditorContextMenu(const QPoint&);
-
-    void setUnsavedState(int i1=0, int i2=1, int i3=1);
-    void unsetUnsavedState();
+    ISCADModel* insertEmptyModel();
+    ISCADModel* insertModel(const boost::filesystem::path& file);
+    virtual void closeEvent(QCloseEvent *event);
+   
+signals:
+    void fileSelectionChanged(const boost::filesystem::path& file);
 
 };
 

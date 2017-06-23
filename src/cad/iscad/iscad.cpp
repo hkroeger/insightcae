@@ -145,7 +145,7 @@ int main ( int argc, char** argv )
       if ( vm.count ( "input-file" ) )
         {
           std::string filename = vm["input-file"].as<std::string>();
-          window.loadFile ( filename );
+          window.insertModel ( filename );
         }
 
       window.show();

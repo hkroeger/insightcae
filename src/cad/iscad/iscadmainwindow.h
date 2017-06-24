@@ -84,6 +84,8 @@ protected:
         
 protected slots:
     void onFileClicked(const QModelIndex &index);
+    void onCreateNewModel(const QString& directory);
+    void onDeleteModel(const QString& filepath);
     
 public slots:
     void loadModel();
@@ -95,6 +97,7 @@ public slots:
     void onLoadModelFile(const boost::filesystem::path& modelfile);
     
     void displayStatusMessage(const QString& message);
+    void onShowFileTreeContextMenu(const QPoint&);
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);

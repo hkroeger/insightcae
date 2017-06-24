@@ -172,18 +172,22 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     spl0->addWidget(log_);
     
     const QString rootPath = QDir::currentPath();
-    fileModel_ = new QFileSystemModel(this);
-    fileModel_->setRootPath( rootPath );
+    fileModel_ = new QFileSystemModel;
+    fileTree_=new QTreeView;
+    fileTree_->setModel( fileModel_ );
     QStringList filter;
     filter << "*.iscad";
     fileModel_->setNameFilters( filter );
-    fileTree_=new QTreeView;
-    fileTree_->setModel( fileModel_ );
+    fileModel_->setNameFilterDisables(false);
+    fileModel_->setRootPath( rootPath );
     fileTree_->setRootIndex( fileModel_->index( rootPath ) );
     fileTree_->expandAll();
     for (int i = 1; i < fileModel_->columnCount(); ++i)
         fileTree_->hideColumn(i);
     connect(fileTree_, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(onFileClicked(const QModelIndex &)));
+    fileTree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(fileTree_, SIGNAL(customContextMenuRequested(QPoint)),
+            this, SLOT(onShowFileTreeContextMenu(QPoint)));
     spl->addWidget(fileTree_);
     
     modelTabs_=new QTabWidget;
@@ -321,4 +325,80 @@ void ISCADMainWindow::onFileClicked(const QModelIndex &index)
 void ISCADMainWindow::displayStatusMessage(const QString& message)
 {
     statusBar()->showMessage(message);
+}
+
+void ISCADMainWindow::onCreateNewModel(const QString& directory)
+{
+    QString fn=QFileDialog::getSaveFileName
+    (
+        this, 
+        "Select file", 
+        directory, 
+        "ISCAD Model Files (*.iscad)"
+    );
+    if (fn!="")
+    {
+        ISCADModel *model=insertEmptyModel();
+        model->setFilename(qPrintable(fn));
+        model->saveModel();
+    }
+}
+
+
+void ISCADMainWindow::onDeleteModel(const QString& filepath)
+{
+    QFileInfo fi(filepath);
+   
+    QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+
+    resBtn =
+        QMessageBox::question
+        (
+            this,
+            "ISCAD",
+            QString("Really delete file ")+fi.baseName()+"?\n",
+            QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+            QMessageBox::No
+        );
+
+    if (resBtn == QMessageBox::Yes)
+    {
+        QFile::remove(filepath);
+    }
+}
+
+
+void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
+{
+    QMenu myMenu;
+    QAction *a;
+    QSignalMapper* mapper;
+    
+    QFileInfo fi=fileModel_->fileInfo(fileTree_->currentIndex());
+    
+    a=new QAction("Create new file...", &myMenu);
+    mapper = new QSignalMapper(a) ;
+    connect(a, SIGNAL(triggered()), mapper, SLOT(map())) ;
+    QString dir;
+    if (fi.isDir())
+        dir=fi.absoluteFilePath();
+    else
+        dir=fi.absolutePath();
+    mapper->setMapping(a, dir);
+    connect(mapper, SIGNAL(mapped(const QString &)),
+            this, SLOT(onCreateNewModel(const QString&)));
+    myMenu.addAction(a);
+
+    if (!fi.isDir())
+    {
+        a=new QAction("Delete file "+fi.baseName(), &myMenu);
+        mapper = new QSignalMapper(a) ;
+        connect(a, SIGNAL(triggered()), mapper, SLOT(map())) ;
+        mapper->setMapping(a, fi.absoluteFilePath());
+        connect(mapper, SIGNAL(mapped(const QString &)),
+                this, SLOT(onDeleteModel(const QString&)));
+        myMenu.addAction(a);
+    }
+
+    myMenu.exec(fileTree_->mapToGlobal(p));
 }

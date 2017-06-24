@@ -1162,10 +1162,36 @@ void mapFields
   }
 
 //   if (targetcase.OFversion()>=220) execname="mapFields22";
-  targetcase.executeCommand
-  (
-    target, execname, args
-  );
+  try
+  {
+    targetcase.executeCommand
+    (
+        target, execname, args
+    );
+  }
+  catch (insight::Exception e)
+  {
+      if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
+      {
+          throw insight::Exception("mapFields failed! Error: "+e.message());
+      } else
+      {
+        // retry without interpolation
+        args.push_back("-mapMethod");
+        args.push_back("mapNearest");          
+        try
+        {
+            targetcase.executeCommand
+            (
+                target, execname, args
+            );
+        }
+        catch (insight::Exception e2)
+        {
+            throw insight::Exception("mapFields with interpolation failed. Retried with nearest cell matching and this attempt failed as well! Error: "+e2.message());
+        }
+      }
+  }
   
   // latest OF versions rename fields, which were not mapped. Rename them back...
   if (targetcase.OFversion()>=400)

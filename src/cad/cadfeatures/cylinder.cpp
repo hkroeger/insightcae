@@ -116,6 +116,7 @@ void Cylinder::build()
     refpoints_["p0"]=p1;
     refpoints_["p1"]=p2;
     refvalues_["Da"]=D_->value();
+    refvectors_["axis"]=(p2-p1)/L;
 
     TopoDS_Shape cyl=
         BRepPrimAPI_MakeCylinder

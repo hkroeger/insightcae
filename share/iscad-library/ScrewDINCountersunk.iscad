@@ -1,4 +1,5 @@
 Dn?=8;
+mult_dbore?=1;
 k=TableLookup(ScrewDIN, Dn, Dn, k5);
 s=TableLookup(ScrewDIN, Dn, Dn, s3);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
@@ -35,31 +36,31 @@ screw->density=mat$rho_steel;
 
 Lthr?=L;
 throughhole=
-Cylinder(O, O+(Lthr+k)*EX, dh);
+Cylinder(O, O+(Lthr+k)*EX, mult_dbore*dh);
 
 Lhh?=L;
 Lhhb?=L;
 headhole=
-Cylinder(O, O+(Lhhb+k)*EX, dh)
+Cylinder(O, O+(Lhhb+k)*EX, mult_dbore*dh)
 |
 Revolution(Tri(O, 
  EX*Lt,
- Rh*EY
+ mult_dbore*Rh*EY
 ), O, EX, 2.*M_PI)
 |
-Cylinder(O-Lhh*EX, O, 2.*Rh)
+Cylinder(O-Lhh*EX, O, mult_dbore*2.*Rh)
 ;
 
 headhole_conical=
-Cylinder(O, O+(Lhhb+k)*EX, dh)
+Cylinder(O, O+(Lhhb+k)*EX, mult_dbore*dh)
 |
 Revolution(Tri(EX*Lt, 
  -EX*Lhh,
- (Lhh/tan60)*(EY-EX)
+ (Lhh/tan60)*( mult_dbore*EY-EX)
 ), O, EX, 2.*M_PI)
 ;
 
-dbl=Dn-P;
+dbl=mult_dbore*(Dn-P);
 blindhole=
 Place(
  loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
@@ -67,8 +68,8 @@ Place(
 |
 Revolution(Tri(O, 
  Lt*EX,
- Rh*EY
+ mult_dbore*Rh*EY
 ), O, EX, 2.*M_PI)
 |
-Cylinder(O-Lhh*EX, O, 2.*Rh)
+Cylinder(O-Lhh*EX, O, mult_dbore*2.*Rh)
 ;

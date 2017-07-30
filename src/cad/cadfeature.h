@@ -390,7 +390,7 @@ public:
   ) const;
   
   void exportSTL(const boost::filesystem::path& filename, double abstol) const;
-  static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol, double maxlen=1e10);
+  static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol=1e-3, double maxlen=1e10);
   
   operator const TopoDS_Shape& () const;
   const TopoDS_Shape& shape() const;

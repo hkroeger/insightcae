@@ -36,6 +36,9 @@ typedef std::vector<GroupDesc> GroupsDesc;
 typedef boost::fusion::vector2<std::string, VectorPtr> NamedVertex;
 typedef std::vector<NamedVertex> NamedVertices;
 
+
+
+
 class Mesh 
 : public insight::cad::PostprocAction
 {
@@ -61,6 +64,42 @@ public:
     const GroupsDesc& edgeGroups,
     const GroupsDesc& faceGroups,
     const NamedVertices& namedVertices
+  );
+  
+  virtual void build();
+
+  virtual Handle_AIS_InteractiveObject createAISRepr(const Handle_AIS_InteractiveContext& context) const;
+  virtual void write(std::ostream& ) const;
+};
+
+
+
+typedef boost::fusion::vector4<FeaturePtr, std::string, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
+typedef std::vector<GeometryDesc> GeometrysDesc;
+
+typedef boost::fusion::vector3<std::string, FeatureSetPtr, ScalarPtr> EdgeRefineDesc;
+typedef std::vector<EdgeRefineDesc> EdgeRefineDescs;
+
+
+class SnappyHexMesh 
+: public insight::cad::PostprocAction
+{
+  boost::filesystem::path outpath_;
+  std::string OFEname_;
+  VectorPtr PiM_;
+  ScalarPtr templCellSize_;
+  GeometrysDesc geometries_;
+  EdgeRefineDescs edgerefines_;
+  
+public:
+  SnappyHexMesh
+  (
+    const boost::filesystem::path& outpath,
+    const std::string OFEname,
+    VectorPtr PiM,
+    ScalarPtr templCellSize,
+    GeometrysDesc geometries,
+    boost::optional<EdgeRefineDescs> edgerefines
   );
   
   virtual void build();

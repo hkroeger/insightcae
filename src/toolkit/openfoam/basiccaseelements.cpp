@@ -139,6 +139,23 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
       if (controlDict.getString("application")=="simpleFoam")
 	controlDict["application"]="MRFSimpleFoam";
   }
+  else if (OFversion()>=300)
+  {
+    OFDictData::dict fod;
+
+    fod["nonRotatingPatches"]=nrp;
+    fod["origin"]=OFDictData::vector3(p_.rotationCentre);
+    fod["axis"]=OFDictData::vector3(p_.rotationAxis);
+    fod["omega"]=2.*M_PI*p_.rpm/60.;
+
+    fod["active"]=true;
+    fod["selectionMode"]="cellZone";
+    fod["cellZone"]=p_.name;
+
+    OFDictData::dict& MRFProps=dictionaries.addDictionaryIfNonexistent("constant/MRFProperties");
+    MRFProps[p_.name]=fod;
+
+  }
   else
   {
     OFDictData::dict coeffs;

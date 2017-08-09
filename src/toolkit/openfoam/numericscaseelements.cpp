@@ -958,6 +958,37 @@ ParameterSet simpleDyMFoamNumerics::defaultParameters()
 
 
 
+
+
+
+defineType(pimpleDyMFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(pimpleDyMFoamNumerics);
+
+
+pimpleDyMFoamNumerics::pimpleDyMFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: pimpleFoamNumerics(c, ps),
+  p_(ps)
+{}
+
+ 
+void pimpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  pimpleFoamNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="pimpleDyMFoam";
+  
+}
+
+ParameterSet pimpleDyMFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+
 defineType(cavitatingFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(cavitatingFoamNumerics);
 

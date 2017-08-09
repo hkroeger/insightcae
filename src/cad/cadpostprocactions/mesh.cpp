@@ -166,7 +166,15 @@ void SnappyHexMesh::build()
         const std::string& name = boost::fusion::at_c<1>(geom);
         
         boost::filesystem::path filepath = outpath_/(name+".stlb");
-        geo->saveAs(filepath);
+        ScalarPtr res= boost::fusion::at_c<2>(geom);
+        if (res)
+        {
+            geo->exportSTL(filepath, res->value());
+        }
+        else
+        {
+            geo->saveAs(filepath);
+        }
         
         arma::mat bb = geo->modelBndBox();
         for (int i=0; i<3; i++)
@@ -178,15 +186,15 @@ void SnappyHexMesh::build()
         int minlevel=0, maxlevel=0;
         if (boost::fusion::at_c<2>(geom))
         {
-            const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<2>(geom);
+            const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
             minlevel=boost::fusion::at_c<0>(levels)->value();
             maxlevel=boost::fusion::at_c<1>(levels)->value();
         }
         
         int nlayers=0;
-        if (boost::fusion::at_c<3>(geom))
+        if (boost::fusion::at_c<4>(geom))
         {
-            nlayers=(*boost::fusion::at_c<3>(geom))->value();
+            nlayers=(*boost::fusion::at_c<4>(geom))->value();
         }
         
         shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(  

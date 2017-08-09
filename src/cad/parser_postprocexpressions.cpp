@@ -179,10 +179,17 @@ void ISCADParser::createPostProcExpressions()
         
         ( lit("snappyHexMesh") >> '(' >> r_path >> ',' >> r_identifier >> ')' >> lit("<<")
         
-          >> r_vectorExpression >> r_scalarExpression
-          >> *( r_solidmodel_expression >> lit("as") >> r_identifier >> -( '@' >> r_scalarExpression >> r_scalarExpression ) >> -( lit(">>") > r_scalarExpression ) )
+          >> lit("PiM") >> '=' >> r_vectorExpression
+          >> lit("dx") >> '=' >> r_scalarExpression
+          
+          >> *( r_solidmodel_expression >> lit("as") >> r_identifier 
+                >> ( ( lit("resolution") >> '=' >> r_scalarExpression ) | qi::attr(ScalarPtr()) ) 
+                >> -( '@' >> r_scalarExpression >> lit("to") >> r_scalarExpression ) 
+                >> -( lit(">>") > r_scalarExpression ) 
+              )
           
           >> -( lit("edgeRefinements") >> '(' >> *( r_identifier >> '=' >> r_edgeFeaturesExpression >> '@' >> r_scalarExpression ) >> ')' )
+          
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<cad::SnappyHexMesh>(

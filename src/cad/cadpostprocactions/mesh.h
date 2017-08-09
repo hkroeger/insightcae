@@ -74,7 +74,7 @@ public:
 
 
 
-typedef boost::fusion::vector4<FeaturePtr, std::string, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
+typedef boost::fusion::vector5<FeaturePtr, std::string, ScalarPtr, boost::optional<boost::fusion::vector2<ScalarPtr, ScalarPtr> >, boost::optional<ScalarPtr> > GeometryDesc;
 typedef std::vector<GeometryDesc> GeometrysDesc;
 
 typedef boost::fusion::vector3<std::string, FeatureSetPtr, ScalarPtr> EdgeRefineDesc;

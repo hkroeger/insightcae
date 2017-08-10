@@ -73,37 +73,7 @@ public:
   ParameterSet& merge ( const ParameterSet& other );
 
   template<class T>
-  T& get ( const std::string& name )
-  {
-    using namespace boost;
-    using namespace boost::algorithm;
-
-    if ( boost::contains ( name, "/" ) )
-      {
-        std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
-        std::string remain=name;
-        erase_head ( remain, prefix.size()+1 );
-        //std::cout<<prefix<<" >> "<<remain<<std::endl;
-        return this->getSubset ( prefix ).get<T> ( remain );
-      }
-    else
-      {
-        iterator i = find ( name );
-        if ( i==end() )
-          {
-            throw insight::Exception ( "Parameter "+name+" not found in parameterset" );
-          }
-        else
-          {
-            typedef T PT;
-            PT* const pt=dynamic_cast<PT* const> ( i->second );
-            if ( !pt )
-              throw insight::Exception ( "Parameter "+name+" not of requested type!" );
-            else
-              return ( *pt );
-          }
-      }
-  }
+  T& get ( const std::string& name );
 
   template<class T>
   const T& get ( const std::string& name ) const
@@ -402,6 +372,90 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
     ssp().merge(p);
     return *this;
 }
+
+  template<class T>
+  T& ParameterSet::get ( const std::string& name )
+  {
+    using namespace boost;
+    using namespace boost::algorithm;
+    typedef T PT;
+
+    if ( boost::contains ( name, "/" ) )
+      {
+        std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
+        std::string remain=name;
+        erase_head ( remain, prefix.size()+1 );
+        //std::cout<<prefix<<" >> "<<remain<<std::endl;
+        
+        std::vector<std::string> path;
+        boost::split(path, name, boost::is_any_of("/"));
+        insight::ArrayParameter* ap=NULL;
+        if (path.size()>=2)
+        {
+            if ( this->find(path[0]) != this->end() ) 
+                ap=dynamic_cast<insight::ArrayParameter*> ( find(path[0])->second );
+        }
+        
+        if (ap)
+        {
+            std::cout<<"found array "<<path[0]<<"/"<<path[1]<<std::endl;
+            int i=boost::lexical_cast<int>(path[1]);
+            if (path.size()==2)
+            {
+                PT* pt=dynamic_cast<PT*> ( &ap[i] );
+                if ( pt )
+                    return ( *pt );
+                else
+                {
+                    throw insight::Exception ( "Parameter "+name+" not of requested type!" );
+                }
+            }
+            else
+            {
+                std::string key=accumulate(path.begin()+2, path.end(), std::string(),
+                                           [](std::string &ss, std::string &s)
+                                {
+                                    return ss.empty() ? s : ss + "/" + s;
+                                });
+            std::cout<<key<<" size="<<ap->size()<<std::endl;
+                if (SubsetParameter* sps=dynamic_cast<SubsetParameter*>(&(*ap)[i]))
+                {
+                    return sps->get<T> ( key );
+                }
+                else
+                if (SelectableSubsetParameter* sps=dynamic_cast<SelectableSubsetParameter*>(&(*ap)[i]))
+                {
+                    return (*sps)().get<T> ( key );
+                }
+                else
+                {
+                    throw insight::Exception ( "Array "+path[0]+" does not contain parameter sets!" );
+                }
+            }
+        }
+        else
+            return this->getSubset ( prefix ).get<T> ( remain );
+      }
+    else
+      {
+        iterator i = find ( name );
+        if ( i==end() )
+          {
+            throw insight::Exception ( "Parameter "+name+" not found in parameterset" );
+          }
+        else
+          {
+            PT* const pt=dynamic_cast<PT* const> ( i->second );
+            if ( pt )
+              return ( *pt );
+            else
+            {
+              throw insight::Exception ( "Parameter "+name+" not of requested type!" );
+            }
+          }
+      }
+  }
+
 
 }
 

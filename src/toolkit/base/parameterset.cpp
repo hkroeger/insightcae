@@ -20,6 +20,7 @@
 
 
 #include "parameterset.h"
+#include "base/parameter.h"
 #include "base/latextools.h"
 
 #include "rapidxml/rapidxml.hpp"
@@ -27,6 +28,7 @@
 #include "boost/foreach.hpp"
 
 #include <fstream>
+#include <numeric>
 
 using namespace std;
 using namespace rapidxml;

@@ -352,9 +352,9 @@ void isofCaseBuilderWindow::createCase
     
   // insert BCs
   insight::OFDictData::dict boundaryDict;
-  ofc_->parseBoundaryDict ( casepath_, boundaryDict );
   if ( !skipBCs )
     {
+      ofc_->parseBoundaryDict ( casepath_, boundaryDict );
       
       for ( int i=0; i < ui->patch_list->count(); i++ )
         {

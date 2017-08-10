@@ -392,9 +392,9 @@ bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, 
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
 {
-  castellatedCtrls["maxLocalCells"]=1000000;
-  castellatedCtrls["maxGlobalCells"]=10000000;
-  castellatedCtrls["minRefinementCells"]=10;
+  castellatedCtrls["maxLocalCells"]  = 10000000;
+  castellatedCtrls["maxGlobalCells"] = 100000000;
+  castellatedCtrls["minRefinementCells"] = 10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
   castellatedCtrls["nCellsBetweenLevels"]=8;
   castellatedCtrls["resolveFeatureAngle"]=30.0;

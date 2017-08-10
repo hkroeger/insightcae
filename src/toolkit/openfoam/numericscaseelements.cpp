@@ -714,14 +714,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     else
     {
       OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["p"]=prelax;
-      fieldRelax["pFinal"]=prelax;
-      eqnRelax["U"]=Urelax;
-      eqnRelax["UFinal"]=Urelax;
-      eqnRelax["k"]=Urelax;
-      eqnRelax["omega"]=Urelax;
-      eqnRelax["epsilon"]=Urelax;
-      eqnRelax["nuTilda"]=Urelax;
+      fieldRelax["\"p.*\""]=prelax;
+      eqnRelax["\"U.*\""]=Urelax;
+      eqnRelax["\"k.*\""]=Urelax;
+      eqnRelax["\"omega.*\""]=Urelax;
+      eqnRelax["\"epsilon.*\""]=Urelax;
+      eqnRelax["\"nuTilda.*\""]=Urelax;
       relax["fields"]=fieldRelax;
       relax["equations"]=eqnRelax;
     }

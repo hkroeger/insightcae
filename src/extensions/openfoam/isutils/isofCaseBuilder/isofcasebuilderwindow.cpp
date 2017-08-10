@@ -361,7 +361,7 @@ void isofCaseBuilderWindow::createCase
           Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
           if ( cur )
           {
-            if ( boundaryDict.find(cur->patch_name()) != boundaryDict.end() )
+ //           if ( boundaryDict.find(cur->patch_name()) != boundaryDict.end() )
             {
               cur->insertElement ( *ofc_, boundaryDict );
             }

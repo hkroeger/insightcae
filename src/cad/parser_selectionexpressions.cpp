@@ -181,6 +181,12 @@ void ISCADParser::createSelectionExpressions()
               >> lit("allsolids")
             )
             [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid)) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
+              >> lit("sid") >> '=' >> r_scalarExpression
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Solid, phx::bind(&insight::cad::Scalar::value, *qi::_2))) ]
         )
         >>
         *(

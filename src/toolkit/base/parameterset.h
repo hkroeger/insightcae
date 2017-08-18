@@ -385,7 +385,6 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
         std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
         std::string remain=name;
         erase_head ( remain, prefix.size()+1 );
-        //std::cout<<prefix<<" >> "<<remain<<std::endl;
         
         std::vector<std::string> path;
         boost::split(path, name, boost::is_any_of("/"));
@@ -398,7 +397,6 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
         
         if (ap)
         {
-            std::cout<<"found array "<<path[0]<<"/"<<path[1]<<std::endl;
             int i=boost::lexical_cast<int>(path[1]);
             if (path.size()==2)
             {
@@ -412,12 +410,17 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
             }
             else
             {
-                std::string key=accumulate(path.begin()+2, path.end(), std::string(),
-                                           [](std::string &ss, std::string &s)
-                                {
-                                    return ss.empty() ? s : ss + "/" + s;
-                                });
-            std::cout<<key<<" size="<<ap->size()<<std::endl;
+                std::string key=accumulate
+                (
+                    path.begin()+2, 
+                    path.end(), 
+                    std::string(),
+                    [](std::string &ss, std::string &s)
+                    {
+                        return ss.empty() ? s : ss + "/" + s;
+                    }
+                );
+
                 if (SubsetParameter* sps=dynamic_cast<SubsetParameter*>(&(*ap)[i]))
                 {
                     return sps->get<T> ( key );

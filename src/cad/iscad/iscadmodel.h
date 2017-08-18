@@ -146,6 +146,7 @@ public:
     ~ISCADModel();
     
     void loadFile(const boost::filesystem::path& file);
+    void setScript(const std::string& contents);
     void populateClipPlaneMenu(QMenu* clipplanemenu);
 
 protected slots:

@@ -315,6 +315,12 @@ ISCADModel* ISCADMainWindow::insertModel(const boost::filesystem::path& file)
     return model;
 }
 
+ISCADModel* ISCADMainWindow::insertModelScript(const std::string& contents)
+{
+    ISCADModel* model = insertEmptyModel();
+    model->setScript(contents);
+    return model;
+}
 
     
 void ISCADMainWindow::onFileClicked(const QModelIndex &index)

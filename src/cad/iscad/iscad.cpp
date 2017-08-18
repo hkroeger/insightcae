@@ -101,17 +101,25 @@ int main ( int argc, char** argv )
   try {
   if ( vm.count ( "input-file" ) && vm.count ( "batch" ) )
     {
-      std::string filename = vm["input-file"].as<std::string>();
+      boost::filesystem::path filename( vm["input-file"].as<std::string>() );
 
       insight::cad::ModelPtr model ( new insight::cad::Model );
       bool success;
       if (filename=="-")
       {
         success=insight::cad::parseISCADModelStream ( std::cin, model.get() );
-      } else
+      } 
+      else if ( boost::filesystem::extension(filename) == ".iscad" )
       {
         success=insight::cad::parseISCADModelFile ( filename, model.get() );
       }
+      else
+      {
+        std::string script = "model: import(\""+filename.string()+"\");\n";
+        std::istringstream ms(script);
+        success=insight::cad::parseISCADModelStream ( ms, model.get() );
+      }
+      
       if ( success )
         {
           auto postprocActions=model->postprocActions();
@@ -144,9 +152,21 @@ int main ( int argc, char** argv )
       ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
       if ( vm.count ( "input-file" ) )
         {
-          std::string filename = vm["input-file"].as<std::string>();
-          window.insertModel ( filename );
+          boost::filesystem::path filename ( vm["input-file"].as<std::string>() );
+          if ( boost::filesystem::extension(filename) == ".iscad" )
+          {
+            window.insertModel ( filename );
+          }
+          else
+          {
+            std::string script = "model: import(\""+filename.string()+"\");\n";
+            window.insertModelScript ( script );
+          }
         }
+      else
+      {
+          window.insertEmptyModel();
+      }
 
       window.show();
 

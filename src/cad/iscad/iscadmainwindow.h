@@ -105,6 +105,7 @@ public:
 
     ISCADModel* insertEmptyModel();
     ISCADModel* insertModel(const boost::filesystem::path& file);
+    ISCADModel* insertModelScript(const std::string& contents);
     virtual void closeEvent(QCloseEvent *event);
    
 signals:

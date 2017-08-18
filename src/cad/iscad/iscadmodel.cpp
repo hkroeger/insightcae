@@ -351,6 +351,14 @@ void ISCADModel::loadFile(const boost::filesystem::path& file)
 }
 
 
+void ISCADModel::setScript(const std::string& contents)
+{
+    clearDerivedData();
+
+    disconnect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+    editor_->setPlainText(contents.c_str());
+    connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+}
 
 
 void ISCADModel::onEditorSelectionChanged()

@@ -35,14 +35,15 @@ class NacaFourDigit
     VectorPtr p0_;
     VectorPtr ez_;
     VectorPtr ex_;
+    ScalarPtr tofs_;
 
-    NacaFourDigit ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+    NacaFourDigit ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr tofs=scalarconst(0) );
 
 public:
     declareType ( "Naca4" );
     NacaFourDigit ();
 
-    static FeaturePtr create ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez );
+    static FeaturePtr create ( const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr tofs=scalarconst(0) );
 
     operator const TopoDS_Face& () const;
 

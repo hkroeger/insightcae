@@ -24,4 +24,9 @@ Cylinder(
  -0.5*b*EX, ax b*EX,
  Dbore, d1);
 
+tool_gland_ax=
+Cylinder(
+ 0.5*d2*EX, ax -t*EX,
+ d1+d2+b, d1);
+
 axis=RefAxis(O, EX);

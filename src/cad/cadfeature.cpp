@@ -438,6 +438,13 @@ Feature::~Feature()
 {
 }
 
+void Feature::setVisResolution( ScalarPtr r )
+{ 
+    checkForBuildDuringAccess();
+    visresolution_=r;
+}
+
+
 void Feature::setDensity(ScalarPtr rho) 
 { 
   density_=rho; 

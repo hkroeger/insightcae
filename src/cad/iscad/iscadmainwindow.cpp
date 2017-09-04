@@ -47,6 +47,7 @@ void ISCADMainWindow::connectMenuToModel(ISCADModel* model)
     act_save_->disconnect();
     act_saveas_->disconnect();
     act_rebuild_->disconnect();
+    act_rebuild_UTC_->disconnect();
     act_insert_feat_->disconnect();
     act_insert_component_name_->disconnect();
     act_clear_cache_->disconnect();
@@ -68,6 +69,7 @@ void ISCADMainWindow::connectMenuToModel(ISCADModel* model)
         connect(act_save_, SIGNAL(triggered()), model, SLOT(saveModel()));
         connect(act_saveas_, SIGNAL(triggered()), model, SLOT(saveModelAs()));
         connect(act_rebuild_, SIGNAL(triggered()), model, SLOT(rebuildModel()));
+        connect(act_rebuild_UTC_, SIGNAL(triggered()), model, SLOT(rebuildModelUpToCursor()));
         connect(act_insert_feat_, SIGNAL(triggered()), model, SLOT(insertFeatureAtCursor()));
         connect(act_insert_component_name_, SIGNAL(triggered()), model, SLOT(insertComponentNameAtCursor()));
         connect(act_clear_cache_, SIGNAL(triggered()), model, SLOT(clearCache()));
@@ -218,6 +220,10 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_rebuild_ = new QAction(("&Rebuild model"), this);
     act_rebuild_->setShortcut(Qt::ControlModifier + Qt::Key_Return);
     mmenu->addAction(act_rebuild_);
+
+    act_rebuild_UTC_ = new QAction(("&Rebuild model up to cursor"), this);
+    act_rebuild_UTC_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Return);
+    mmenu->addAction(act_rebuild_UTC_);
 
     act_insert_feat_ = new QAction(("Insert &feature..."), this);
     act_insert_feat_->setShortcut(Qt::ControlModifier + Qt::Key_F);

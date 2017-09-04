@@ -189,7 +189,8 @@ public slots:
 
     bool saveModel();
     bool saveModelAs();
-    void rebuildModel();
+    void rebuildModel(bool upToCursor=false);
+    void rebuildModelUpToCursor();
     void clearCache();
     void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
     void showEditorContextMenu(const QPoint&);

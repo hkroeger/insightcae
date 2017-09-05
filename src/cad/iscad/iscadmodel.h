@@ -166,6 +166,7 @@ protected slots:
     void toggleBgParsing(int state);
     void toggleSkipPostprocActions(int state);
     
+    void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
     

@@ -551,6 +551,11 @@ void ISCADModel::toggleSkipPostprocActions(int state)
 }
 
 
+void ISCADModel::insertSectionCommentAtCursor()
+{
+    editor_->textCursor().insertText("\n\n############################################################\n#####  ");
+}
+
 void ISCADModel::insertFeatureAtCursor()
 {
     InsertFeatureDlg *dlg=new InsertFeatureDlg(this);

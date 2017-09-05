@@ -66,6 +66,7 @@ protected:
         *act_saveas_,
         *act_rebuild_,
         *act_rebuild_UTC_,
+        *act_insert_section_comment_,
         *act_insert_feat_,
         *act_insert_component_name_,
         *act_clear_cache_,

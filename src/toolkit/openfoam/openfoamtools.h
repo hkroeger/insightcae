@@ -443,7 +443,7 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
 	    const boost::ptr_vector<sampleOps::set>& sets,
-	    const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
+	    std::vector<std::string> addopts = boost::assign::list_of<std::string>("-latestTime")
 	    );
 
 #endif 

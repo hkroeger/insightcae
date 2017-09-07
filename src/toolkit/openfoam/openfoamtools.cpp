@@ -565,9 +565,17 @@ arma::mat line::readSamples
   
   path fp;
   if (ofc.OFversion()<170)
+  {
     fp=absolute(location)/"sets";
+  }
+  else if (ofc.OFversion()>=400)
+  {
+    fp=absolute(location)/"postProcessing"/"sampleDict";
+  } 
   else
+  {
     fp=absolute(location)/"postProcessing"/"sets";
+  }
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
@@ -1024,7 +1032,7 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
 	    const boost::ptr_vector<sampleOps::set>& sets,
-	    const std::vector<std::string>& addopts
+	    std::vector<std::string> addopts
 	    )
 {
   using namespace sampleOps;
@@ -1047,6 +1055,17 @@ void sample(const OpenFOAMCase& ofc,
   {
     s.addIntoDictionary(ofc, sampleDict);
   }
+
+  if (ofc.OFversion()>=400)
+  {
+   sampleDict["type"]="sets";
+   OFDictData::list libs;
+   libs.push_back("\"libsampling.so\"");
+   sampleDict["libs"]=libs;
+
+   addopts.insert(addopts.begin(), "sampleDict");
+   addopts.insert(addopts.begin(), "-func");
+  }
   
   // then write to file
   sampleDict.write( location / "system" / "sampleDict" );
@@ -1055,7 +1074,14 @@ void sample(const OpenFOAMCase& ofc,
 //   opts.push_back("-latestTime");
   //if (overwrite) opts.push_back("-overwrite");
     
-  ofc.executeCommand(location, "sample", addopts);
+  if (ofc.OFversion()>=400)
+  {
+   ofc.executeCommand(location, "postProcess", addopts);
+  }
+  else
+  {
+   ofc.executeCommand(location, "sample", addopts);
+  }
   
 }
 

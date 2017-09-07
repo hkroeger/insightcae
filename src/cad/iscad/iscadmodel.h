@@ -166,6 +166,7 @@ protected slots:
     void toggleBgParsing(int state);
     void toggleSkipPostprocActions(int state);
     
+    void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
     
@@ -189,7 +190,8 @@ public slots:
 
     bool saveModel();
     bool saveModelAs();
-    void rebuildModel();
+    void rebuildModel(bool upToCursor=false);
+    void rebuildModelUpToCursor();
     void clearCache();
     void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
     void showEditorContextMenu(const QPoint&);

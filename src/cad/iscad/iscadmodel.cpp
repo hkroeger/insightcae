@@ -176,9 +176,16 @@ ISCADModel::ISCADModel(QWidget* parent)
 
     gb=new QGroupBox("Controls");
     vbox = new QVBoxLayout;
+    QWidget*shw=new QWidget;
+    QHBoxLayout *shbox = new QHBoxLayout;
     QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
+    QPushButton *rebuildBtnUTC=new QPushButton("Rbld to Cursor", gb);
     connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
-    vbox->addWidget(rebuildBtn);
+    connect(rebuildBtnUTC, SIGNAL(clicked()), this, SLOT(rebuildModelUpToCursor()));
+    shbox->addWidget(rebuildBtn);
+    shbox->addWidget(rebuildBtnUTC);
+    shw->setLayout(shbox);
+    vbox->addWidget(shw);
     
     QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
     toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
@@ -544,6 +551,11 @@ void ISCADModel::toggleSkipPostprocActions(int state)
 }
 
 
+void ISCADModel::insertSectionCommentAtCursor()
+{
+    editor_->textCursor().insertText("\n\n############################################################\n#####  ");
+}
+
 void ISCADModel::insertFeatureAtCursor()
 {
     InsertFeatureDlg *dlg=new InsertFeatureDlg(this);
@@ -648,101 +660,114 @@ void ISCADModel::addVariable(std::string sn, insight::cad::parser::vector vv)
 
 
 
-void ISCADModel::rebuildModel()
+void ISCADModel::rebuildModel(bool upToCursor)
 {
-    disconnect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
-    
-//     log_->clear();
-
-    clearDerivedData();
-
-    std::istringstream is(editor_->toPlainText().toStdString());
-
-    int failloc=-1;
-
-    insight::cad::cache.initRebuild();
-
-    cur_model_.reset(new insight::cad::Model);
-    bool r=false;
-    
-    std::string reason="Failed: Syntax error";
-    try
+    if (!bgparsethread_.isRunning())
     {
-     r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc);
-    }
-    catch (insight::cad::parser::iscadParserException e)
-    {
-        reason="Expected: "+e.message();
-        failloc=e.from_pos();
-    }
+        disconnect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
 
-    if (!r) // fail if we did not get a full match
-    {
-        QTextCursor tmpCursor = editor_->textCursor();
-        tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
-        tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
-        editor_->setTextCursor(tmpCursor);
+        clearDerivedData();
 
-        std::cout<<"Parser error at cursor location:"<<std::endl << reason <<std::endl;
-        emit displayStatus(QString(reason.c_str())+" (Cursor moved to location where parsing stopped)!");
+        std::string script_content = editor_->toPlainText().toStdString();
+        if (upToCursor)
+        {
+            QTextCursor c = editor_->textCursor();
+            script_content = script_content.substr(0, c.position());
+        }
+        std::istringstream is(script_content);
+
+        int failloc=-1;
+
+        insight::cad::cache.initRebuild();
+
+        cur_model_.reset(new insight::cad::Model);
+        bool r=false;
+        
+        std::string reason="Failed: Syntax error";
+        try
+        {
+        r=insight::cad::parseISCADModelStream(is, cur_model_.get(), &failloc);
+        }
+        catch (insight::cad::parser::iscadParserException e)
+        {
+            reason="Expected: "+e.message();
+            failloc=e.from_pos();
+        }
+
+        if (!r) // fail if we did not get a full match
+        {
+            QTextCursor tmpCursor = editor_->textCursor();
+            tmpCursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor, 1 );
+            tmpCursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, failloc );
+            editor_->setTextCursor(tmpCursor);
+
+            std::cout<<"Parser error at cursor location:"<<std::endl << reason <<std::endl;
+            emit displayStatus(QString(reason.c_str())+" (Cursor moved to location where parsing stopped)!");
+        }
+        else
+        {
+            emit displayStatus("Model parsed successfully. Now performing rebuild...");
+
+            context_->getContext()->EraseAll();
+
+            auto modelsteps=cur_model_->modelsteps();
+            BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
+            {
+                bool is_comp=false;
+                if (cur_model_->components().find(v.first)!=cur_model_->components().end())
+                {
+                    is_comp=true;
+                }
+                addFeature(v.first, v.second, is_comp);
+            }
+
+            auto datums=cur_model_->datums();
+            BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
+            {
+                addDatum(v.first, v.second);
+            }
+
+            if (!skipPostprocActions_)
+            {
+                auto postprocActions=cur_model_->postprocActions();
+                BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
+                {
+                    addEvaluation(v.first, v.second);
+                }
+            }
+
+            auto scalars=cur_model_->scalars();
+            BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
+            {
+                addVariable(v.first, v.second);
+            }
+
+            auto vectors=cur_model_->vectors();
+            BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
+            {
+                addVariable(v.first, v.second);
+            }
+            
+            updateClipPlaneMenu();
+
+            emit displayStatus("Model rebuild successfully finished.");
+
+            insight::cad::cache.finishRebuild();
+        }
+        
+        connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
     }
     else
     {
-        emit displayStatus("Model parsed successfully. Now performing rebuild...");
-
-        context_->getContext()->EraseAll();
-
-        auto modelsteps=cur_model_->modelsteps();
-        BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
-        {
-            bool is_comp=false;
-            if (cur_model_->components().find(v.first)!=cur_model_->components().end())
-            {
-                is_comp=true;
-            }
-            addFeature(v.first, v.second, is_comp);
-        }
-
-        auto datums=cur_model_->datums();
-        BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
-        {
-            addDatum(v.first, v.second);
-        }
-
-        if (!skipPostprocActions_)
-        {
-            auto postprocActions=cur_model_->postprocActions();
-            BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
-            {
-                addEvaluation(v.first, v.second);
-            }
-        }
-
-        auto scalars=cur_model_->scalars();
-        BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
-        {
-            addVariable(v.first, v.second);
-        }
-
-        auto vectors=cur_model_->vectors();
-        BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
-        {
-            addVariable(v.first, v.second);
-        }
-        
-        updateClipPlaneMenu();
-
-        emit displayStatus("Model rebuild successfully finished.");
-
-        insight::cad::cache.finishRebuild();
+        emit displayStatus("Background model parsing in progress, rebuild is currently disabled!...");
     }
-    
-    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
-
 }
 
 
-
+void ISCADModel::rebuildModelUpToCursor()
+{
+    rebuildModel(true);
+}
 
 void ISCADModel::clearCache()
 {

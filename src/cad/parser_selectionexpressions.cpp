@@ -79,6 +79,12 @@ void ISCADParser::createSelectionExpressions()
               >> lit("allvertices")
             )
             [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex)) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
+              >> lit("vid") >> '=' >> r_scalarExpression
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, phx::bind(&insight::cad::Scalar::value, *qi::_2))) ]
         )
         >>
         *(

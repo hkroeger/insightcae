@@ -265,7 +265,7 @@ public:
   
   inline size_t hash() const { return hash_; }
   
-  inline void setVisResolution( ScalarPtr r ) { visresolution_=r; }
+  virtual void setVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);
   virtual double density() const;
   

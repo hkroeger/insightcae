@@ -27,6 +27,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "GeomAPI_Interpolate.hxx"
+#include "TColgp_HArray1OfPnt.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

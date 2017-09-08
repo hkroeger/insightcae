@@ -20,17 +20,19 @@
 
 #include "fvCFD.H"
 #include "extendedForcesFunctionObject.H"
+
 #if defined(OFdev)||defined(OFplus)
 #include "functionObject.H"
 #else
 #include "OutputFilterFunctionObject.H"
 #endif
+
 #include "wallFvPatch.H"
+#include "addToRunTimeSelectionTable.H"
 
 namespace Foam
 {
 
-defineTypeNameAndDebug(extendedForces, 0);
 
 void extendedForces::createFields()
 {
@@ -80,23 +82,35 @@ extendedForces::extendedForces
 (
     const word& name,
     const objectRegistry& obr,
-    const dictionary& dict,
+    const dictionary& dict
+#ifndef OFplus
+    ,
     const bool loadFromFiles
+#endif
 #ifndef OF16ext
     ,
     const bool readFields
 #endif
 )
-: forces(name, obr, dict, loadFromFiles
+:
+
+#ifdef OFplus
+ functionObjects::
+#endif
+ forces(name, obr, dict
+#ifndef OFplus
+      , loadFromFiles
+#endif
 #ifndef OF16ext
 	  , readFields
 #endif
 	)
+
 {
   createFields();
 }
 
-#ifndef OF16ext
+#if !(defined(OF16ext)||defined(OFplus))
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -121,7 +135,12 @@ extendedForces::~extendedForces()
 {
 }
 
-void extendedForces::execute()
+#ifdef OFplus
+bool
+#else
+void 
+#endif
+extendedForces::execute()
 {
 //   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
 
@@ -131,10 +150,12 @@ void extendedForces::execute()
   initialise();
 #endif
   
+#ifndef OFplus
   if (!active_)
   {
       return;
   }
+#endif
   
   if (directForceDensity_)
   {
@@ -175,24 +196,55 @@ void extendedForces::execute()
 	  );
       }
     }
-  }    
+  }
+  
+#ifdef OFplus
+  return true;
+#endif
 }
 
-void extendedForces::end()
+#ifdef OFplus
+bool
+#else
+void 
+#endif 
+extendedForces::end()
 {
-  Foam::forces::end();
+#ifdef OFplus
+  return
+#endif    
+  Foam::
+#ifdef OFplus
+  functionObjects::
+#endif    
+  forces::end();
 }
 
 
+#ifdef OFplus
+
+defineTypeNameAndDebug(extendedForces, 0);
+addToRunTimeSelectionTable
+(
+    functionObject,
+    extendedForces,
+    dictionary
+);
+
+#else
+
+defineTypeNameAndDebug(extendedForces, 0);
 typedef OutputFilterFunctionObject<extendedForces> extendedForcesFunctionObject;
-
 defineNamedTemplateTypeNameAndDebug(extendedForcesFunctionObject, 0);
-
 addToRunTimeSelectionTable
 (
     functionObject,
     extendedForcesFunctionObject,
     dictionary
 );
+
+#endif
+
+
 
 }

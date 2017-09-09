@@ -602,7 +602,7 @@ void Airfoil::generateDiscreteThickness
     }
   }
 
-//   gsl_set_error_handler(oldhandler);
+  gsl_set_error_handler(oldhandler);
 }
 
 void Airfoil::generateDiscreteSection
@@ -660,7 +660,14 @@ void Airfoil::build()
  
   FoilShape f = lookupFoil(name_);
   
-  std::vector<double>& x = boost::get<0>(f);
+//   std::vector<double>& x = boost::get<0>(f);
+//   int np=x.size();
+  
+  int np=75;
+  std::vector<double> x;
+  for (int i=0; i<np; i++)
+    x.push_back( 0.5*(1.-::cos(M_PI*double(i) / double(np-1))) );
+
   
   arma::mat ex=ex_->value();
   arma::mat ez=ez_->value();
@@ -678,7 +685,6 @@ void Airfoil::build()
     
   // create support points
   // ===================================================
-  int np=x.size();
   double xs[2][np], ys[2][np]; //, ym2[n];
   
   generateDiscreteSection

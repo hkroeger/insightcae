@@ -423,7 +423,11 @@ Feature::Feature(const TopoDS_Shape& shape)
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=creashapes_->model();
+}
 
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {

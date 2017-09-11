@@ -47,6 +47,16 @@ public:
 
         //- Construct for given objectRegistry and dictionary.
         //  Allow the possibility to load fields from files
+#ifdef OFplus
+        extendedForces
+        (
+            const word& name,
+            const Time&,
+            const dictionary&,
+            const bool readFields = true
+        );
+#endif
+        
         extendedForces
         (
             const word& name,

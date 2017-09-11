@@ -75,6 +75,21 @@ void extendedForces::createFields()
   );
 }
 
+#ifdef OFplus
+//- Construct for given objectRegistry and dictionary.
+//  Allow the possibility to load fields from files
+extendedForces::extendedForces
+(
+    const word& name,
+    const Time& time,
+    const dictionary& dict,
+    const bool readFields
+)
+: functionObjects::forces(name, time, dict, readFields)
+{
+  createFields();
+}
+#endif
 
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files

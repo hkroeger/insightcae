@@ -576,7 +576,10 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["patches"]=pl;
   fod["pName"]=p_.pName;
   fod["UName"]=p_.UName;
-  fod["rhoName"]=p_.rhoName;
+  if (OFversion()>=400)
+    fod["rho"]=p_.rhoName;
+  else
+    fod["rhoName"]=p_.rhoName;
   fod["rhoInf"]=p_.rhoInf;
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);

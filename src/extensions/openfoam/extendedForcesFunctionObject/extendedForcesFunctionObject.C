@@ -194,22 +194,33 @@ extendedForces::execute()
     {
       if (isA<wallFvPatch>(mesh.boundary()[patchI]))
       {
-	const vectorField nfb =
-	    mesh.Sf().boundaryField()[patchI] / mesh.magSf().boundaryField()[patchI];
+        const vectorField nfb =
+            mesh.Sf().boundaryField()[patchI] / mesh.magSf().boundaryField()[patchI];
 
-	const symmTensorField& devRhoReffb
-	    = tdevRhoReff().boundaryField()[patchI];
+        const symmTensorField& devRhoReffb
+            = tdevRhoReff().boundaryField()[patchI];
 
-	  pressureForce_->boundaryField()[patchI]==
-	  (
-	      rho(p)*nfb*(p.boundaryField()[patchI] - pRef)
-	  );
+        pressureForce_->boundaryField()[patchI]
+#ifdef OFplus
+        =
+#else
+        ==
+#endif
+        (
+            rho(p)*nfb*(p.boundaryField()[patchI] - pRef)
+        );
 
-	  viscousForce_->boundaryField()[patchI]==
-	  (
-	    nfb & devRhoReffb
-	  );
+        viscousForce_->boundaryField()[patchI]
+#ifdef OFplus
+        =
+#else
+        ==
+#endif
+        (
+            nfb & devRhoReffb
+        );
       }
+
     }
   }
   

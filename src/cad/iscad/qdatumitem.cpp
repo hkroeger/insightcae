@@ -40,22 +40,25 @@ void QDatumItem::reset(insight::cad::DatumPtr smp)
   smp_=smp;
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
   ais_=smp_->createAISRepr();
+  
   if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_.Access()))
   {
     double size=1000;
     try { 
 #warning fails for empty model. Needs better treatment
-    insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
-    arma::mat bb = mm->modelBndBox();
-    arma::mat diag=bb.col(1)-bb.col(0);
-    size=1.2*arma::norm(diag,2);
-    } catch (...) {}
-//     double size=std::max(fabs(diag(0)), std::max(fabs(diag(1)), fabs(diag(2))));
-//     std::cout<<"plane size set: "<<size<<std::endl;
-//     pl->SetSize(size);
+        insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
+        arma::mat bb = mm->modelBndBox();
+        arma::mat diag=bb.col(1)-bb.col(0);
+        size=1.2*arma::norm(diag,2);
+    } 
+    catch (...) 
+    {
+        std::cout<<"Warning: could not determine model size for datum plane display!"<<std::endl;
+    }
+
     ps_=size;
   }
-//   context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
+
   updateDisplay();
 }
 

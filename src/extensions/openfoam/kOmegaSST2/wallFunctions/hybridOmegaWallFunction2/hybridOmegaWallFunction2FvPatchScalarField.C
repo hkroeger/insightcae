@@ -182,7 +182,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::patchTypeFaceWeighting() const
 		      (
 		       mesh.objectRegistry::lookupObject<gF>
 		       (this->
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 		        internalField()
 #else
 		        dimensionedInternalField()
@@ -367,7 +367,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
       volScalarField& omega = const_cast<volScalarField&>
 	(db().lookupObject<volScalarField>
 	 (
-#ifdef OFdev
+#if defined(OFplus)||defined(OFdev)
 	      internalField()
 #else
 	      dimensionedInternalField()

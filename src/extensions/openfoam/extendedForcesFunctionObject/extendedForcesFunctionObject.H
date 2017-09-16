@@ -27,7 +27,12 @@ namespace Foam
 {
   
 class extendedForces
-: public forces
+: public 
+#ifdef OFplus
+ functionObjects::
+#endif
+ forces
+     
 {
 protected:
   
@@ -42,19 +47,32 @@ public:
 
         //- Construct for given objectRegistry and dictionary.
         //  Allow the possibility to load fields from files
+#ifdef OFplus
+        extendedForces
+        (
+            const word& name,
+            const Time&,
+            const dictionary&,
+            const bool readFields = true
+        );
+#endif
+        
         extendedForces
         (
             const word& name,
             const objectRegistry&,
-            const dictionary&,
+            const dictionary&
+#ifndef OFplus
+            ,
             const bool loadFromFiles = false
+#endif
 #ifndef OF16ext
             ,
             const bool readFields = true
 #endif
         );
 
-#ifndef OF16ext
+#if !(defined(OF16ext)||defined(OFplus))
         //- Construct from components
         extendedForces
         (
@@ -73,8 +91,21 @@ public:
     //- Destructor
     virtual ~extendedForces();  
 
-    virtual void execute();
-    virtual void end();
+    virtual 
+#ifdef OFplus
+    bool
+#else
+    void 
+#endif
+    execute();
+    
+    virtual 
+#ifdef OFplus
+    bool
+#else
+    void 
+#endif
+    end();
   
 };
 

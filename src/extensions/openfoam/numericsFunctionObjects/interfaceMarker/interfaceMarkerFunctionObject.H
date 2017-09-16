@@ -89,7 +89,7 @@ public:
         //- execute is called at each ++ or += of the time-loop
         virtual bool execute
         (
-#if not (defined(OF16ext)||defined(OFdev))
+#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus))
 	  bool
 #endif
 	);

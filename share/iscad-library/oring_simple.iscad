@@ -2,11 +2,11 @@
 mat=loadmodel(material_props);
 
 Di?=60;
-d1?=TableLookup(ORing_DIN3771, d1, Di, d1, nearest);
-d2?=TableLookup(ORing_DIN3771, d1, d1, d2_klein, nearest);
+d1?=10;
+d2?=1.5;
 
-t?=TableLookup(ORing_DIN3771_gland, d2, d2, t, nearest);
-b?=TableLookup(ORing_DIN3771_gland, d2, d2, b, nearest);
+t?=0.77*d2; # 0.94 (dynamic) ... 0.7 (static)
+b?=1.3*d2;
 
 oring:
 Torus(O, (d1+d2)*EX, d2);

@@ -1,0 +1,27 @@
+Da?=5;
+L?=16;
+Dm?=6.7;
+tm?=0.7;
+cone_ang?=120*deg;
+
+pin1=
+Cylinder(
+ -0.5*L*EX, 0.5*L*EX,
+ Da);
+pin:
+Chamfer(pin1?alledges, 0.7)
+|
+Cylinder(-0.5*tm*EX, 0.5*tm*EX, Dm);
+
+bore_sf?=1; #scale factor for bore holes
+
+hb=loadmodel(drill_hole, 
+  D=Da*bore_sf, L=0.5*L,  cone_ang=cone_ang,
+ ofsTimesL=1, ofsTimesHtip=1);
+
+# matching hole geometry
+hole=
+hb
+|Cylinder(-0.5*tm*EX, 0.5*tm*EX, bore_sf*Dm)
+|Place(hb, O, -EX, EZ)
+;

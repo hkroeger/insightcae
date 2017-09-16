@@ -432,6 +432,49 @@ public:
 
 
 
+class solidBodyMotionDynamicMesh
+: public dynamicMesh
+{
+public:
+#include "basiccaseelements__solidBodyMotionDynamicMesh__Parameters.h"
+/*
+PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
+
+zonename = string "rotor" "name of the cell zone which moves"
+
+motion = selectablesubset
+{{
+ 
+ rotation
+ set {
+  origin = vector (0 0 0) "origin point"
+  axis = vector (0 0 1) "rotation axis"
+  rpm = double 1000 "rotation rate"
+ }
+
+}} rotation "type of motion"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+
+public:
+  declareType ( "solidBodyMotionDynamicMesh" );
+  
+  solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  
+  static ParameterSet defaultParameters()
+  {
+      return Parameters::makeDefault();
+  }
+  static std::string category() { return "Dynamic Mesh"; }
+};
+
+
+
 }
 
 

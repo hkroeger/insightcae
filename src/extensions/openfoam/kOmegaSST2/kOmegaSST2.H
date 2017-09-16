@@ -138,6 +138,7 @@ class kOmegaSST2
 
 	    Switch cc_;
             dimensionedScalar a1_;
+            dimensionedScalar b1_;
             dimensionedScalar cr1_;
             dimensionedScalar cr2_;
             dimensionedScalar cr3_;

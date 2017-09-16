@@ -45,6 +45,12 @@ SourceFiles
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+#if defined(OFplus)
+#define UNALLOCLABELLIST labelList
+#else
+#define UNALLOCLABELLIST unallocLabelList
+#endif
+
 namespace Foam
 {
 
@@ -130,13 +136,13 @@ public:
 #endif
             ();
 
-            const unallocLabelList& owner = this->mesh().owner();
-            const unallocLabelList& neighbour = this->mesh().neighbour();
+            const UNALLOCLABELLIST& owner = this->mesh().owner();
+            const UNALLOCLABELLIST& neighbour = this->mesh().neighbour();
 
             scalarField magPhi = mag(phi);
 
             scalarField& wIn = w
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
 	    .ref().field()
 #else
             .internalField()
@@ -165,7 +171,7 @@ public:
             forAll (phi.boundaryField(), pi)
             {
                 fvsPatchScalarField& wp = w
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
                 .boundaryFieldRef()
 #else
                 .boundaryField()

@@ -270,6 +270,8 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   {
     OFDictData::dict& wd = fvSchemes.addSubDictIfNonexistent("wallDist");
     wd["method"]="meshWave";
+    OFDictData::dict& wd2 = fvSchemes.addSubDictIfNonexistent("patchDist");
+    wd2["method"]="meshWave";
   }
 
   setDecomposeParDict
@@ -712,14 +714,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     else
     {
       OFDictData::dict fieldRelax, eqnRelax;
-      fieldRelax["p"]=prelax;
-      fieldRelax["pFinal"]=prelax;
-      eqnRelax["U"]=Urelax;
-      eqnRelax["UFinal"]=Urelax;
-      eqnRelax["k"]=Urelax;
-      eqnRelax["omega"]=Urelax;
-      eqnRelax["epsilon"]=Urelax;
-      eqnRelax["nuTilda"]=Urelax;
+      fieldRelax["\"p.*\""]=prelax;
+      eqnRelax["\"U.*\""]=Urelax;
+      eqnRelax["\"k.*\""]=Urelax;
+      eqnRelax["\"omega.*\""]=Urelax;
+      eqnRelax["\"epsilon.*\""]=Urelax;
+      eqnRelax["\"nuTilda.*\""]=Urelax;
       relax["fields"]=fieldRelax;
       relax["equations"]=eqnRelax;
     }
@@ -956,6 +956,37 @@ ParameterSet simpleDyMFoamNumerics::defaultParameters()
 
 
 
+
+
+
+defineType(pimpleDyMFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(pimpleDyMFoamNumerics);
+
+
+pimpleDyMFoamNumerics::pimpleDyMFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: pimpleFoamNumerics(c, ps),
+  p_(ps)
+{}
+
+ 
+void pimpleDyMFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  pimpleFoamNumerics::addIntoDictionaries(dictionaries);
+  
+  // ============ setup controlDict ================================
+  
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="pimpleDyMFoam";
+  
+}
+
+ParameterSet pimpleDyMFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+
 defineType(cavitatingFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(cavitatingFoamNumerics);
 
@@ -1085,8 +1116,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="interFoam";
 
   controlDict["maxDeltaT"]=1.0;
-  controlDict["maxCo"]=0.4;
-  controlDict["maxAlphaCo"]=0.2;
+  controlDict["maxCo"]=5; //0.4;
+  controlDict["maxAlphaCo"]=2.5; //0.2;
   if (p_.implicitPressureCorrection)
   {
     controlDict["maxCo"]=10;
@@ -1129,7 +1160,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
-  double Urelax=0.7, prelax=1.0, turbrelax=0.95;
+  double Urelax=1.0 /*0.7*/, prelax=1.0, turbrelax=1.0 /*0.95*/;
   if (p_.implicitPressureCorrection)
   {
     prelax=0.3;
@@ -1157,13 +1188,14 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   std::string solutionScheme("PISO");
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
-  SOL["momentumPredictor"]=true;
-  SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=4;
   SOL["cAlpha"]=cAlpha;
-  SOL["nCorrectors"]=2;
-  SOL["nOuterCorrectors"]=1;
+  
+  SOL["momentumPredictor"]=false; //true;
+  SOL["nCorrectors"]=1; //2;  
+  SOL["nOuterCorrectors"]=3; //1;
+  SOL["nNonOrthogonalCorrectors"]=1;
   
   if (p_.implicitPressureCorrection)
   {

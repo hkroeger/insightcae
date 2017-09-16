@@ -256,64 +256,58 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
                             std::cout<<"\""<<n<<"\""<<std::endl;
                             if (shape.ShapeType()==TopAbs_FACE)
                             {
-                                int found=0;
-                                FeatureID id=-1;
+                                std::vector<FeatureID> ids;
                                 for(TopExp_Explorer ex(res, TopAbs_FACE); ex.More(); ex.Next())
                                 {
                                     TopoDS_Face f=TopoDS::Face(ex.Current());
                                     if (f.IsPartner(shape))
                                     {
-                                        found++;
-                                        id=faceID(f);
-                                        std::cout<<"MATCH! face id="<<id<<std::endl;
+                                        ids.push_back(faceID(f));
+                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
 
                                     }
                                 }
-                                if (!found)
+                                if (ids.size()==0)
                                 {
                                     throw insight::Exception("could not identify named face in model! ("+n+")");
-                                }
-                                else if (found>1)
-                                {
-                                    throw insight::Exception(boost::str(boost::format("identified too many named faces in model! (%s found %d times)") % n % found));
                                 }
                                 else
                                 {
                                     std::string name="face_"+n;
                                     if (feats.find(name)==feats.end())
                                         feats[name].reset(new FeatureSet(shared_from_this(), Face));
-                                    feats[name]->add(id);
+                                    BOOST_FOREACH(const FeatureID& i, ids)
+                                    {
+                                        feats[name]->add(i);
+                                    }
                                 }
                             }
                             else if (shape.ShapeType()==TopAbs_SOLID)
                             {
-                                int found=0;
-                                FeatureID id=-1;
+                                std::vector<FeatureID> ids;
                                 for(TopExp_Explorer ex(res, TopAbs_SOLID); ex.More(); ex.Next())
                                 {
                                     TopoDS_Solid f=TopoDS::Solid(ex.Current());
                                     if (f.IsPartner(shape))
                                     {
-                                        found++;
-                                        id=solidID(f);
-                                        std::cout<<"MATCH! solid id="<<id<<std::endl;
+                                        ids.push_back(solidID(f));
+                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
 
                                     }
                                 }
-                                if (!found)
+                                if (ids.size()==0)
                                 {
                                     throw insight::Exception("could not identify named solid in model! ("+n+")");
-                                }
-                                else if (found>1)
-                                {
-                                    throw insight::Exception(boost::str(boost::format("identified too many named solids in model! (%s found %d times)") % n % found));
                                 }
                                 else
                                 {
                                     std::string name="solid_"+n;
                                     if (feats.find(name)==feats.end())
                                         feats[name].reset(new FeatureSet(shared_from_this(), Solid));
-                                    feats[name]->add(id);
+                                    BOOST_FOREACH(const FeatureID& i, ids)
+                                    {
+                                        feats[name]->add(i);
+                                    }
                                 }
                             }
                         }
@@ -429,7 +423,11 @@ Feature::Feature(const TopoDS_Shape& shape)
 
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes)
-{}
+{
+  ParameterListHash h(this);
+  h+=this->type();
+  h+=creashapes_->model();
+}
 
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
@@ -443,6 +441,13 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 Feature::~Feature()
 {
 }
+
+void Feature::setVisResolution( ScalarPtr r )
+{ 
+    checkForBuildDuringAccess();
+    visresolution_=r;
+}
+
 
 void Feature::setDensity(ScalarPtr rho) 
 { 

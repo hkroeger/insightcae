@@ -40,29 +40,29 @@ namespace insight
   
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
 {
-  TimeDirectoryList list;
-  if ( exists( dir ) ) 
-  {
-    directory_iterator end_itr; // default construction yields past-the-end
-    for ( directory_iterator itr( dir );
-          itr != end_itr;
-          ++itr )
+    TimeDirectoryList list;
+    if ( exists( dir ) )
     {
-      if ( is_directory(itr->status()) )
-      {
-        std::string fn=itr->path().filename().string();
-	try
-	{
-	  double time = lexical_cast<double>(fn);
-	  list[time]=itr->path();
-	}
-	catch (...)
-	{
-	}
-      }
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( dir );
+                itr != end_itr;
+                ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string fn=itr->path().filename().string();
+                try
+                {
+                    double time = lexical_cast<double>(fn);
+                    list[time]=itr->path();
+                }
+                catch (...)
+                {
+                }
+            }
+        }
     }
-  }
-  return list;
+    return list;
 }
 
 
@@ -162,18 +162,18 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
       {
-	cout<<"Copying file "<<gzname<<endl;
-	if (exists(target/gzname)) remove(target/gzname);
-	copy_file(source/gzname, target/gzname);
+        cout<<"Copying file "<<gzname<<endl;
+        if (exists(target/gzname)) remove(target/gzname);
+        copy_file(source/gzname, target/gzname);
       }
       else if (exists(source/fname))
       {
-	cout<<"Copying file "<<fname<<endl;
-	if (exists(target/fname)) remove(target/fname);
-	copy_file(source/fname, target/fname);
+        cout<<"Copying file "<<fname<<endl;
+        if (exists(target/fname)) remove(target/fname);
+        copy_file(source/fname, target/fname);
       }
       else 
-	if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
     }
   }
   else
@@ -565,9 +565,17 @@ arma::mat line::readSamples
   
   path fp;
   if (ofc.OFversion()<170)
+  {
     fp=absolute(location)/"sets";
+  }
+  else if (ofc.OFversion()>=400)
+  {
+    fp=absolute(location)/"postProcessing"/"sampleDict";
+  } 
   else
+  {
     fp=absolute(location)/"postProcessing"/"sets";
+  }
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
@@ -1024,7 +1032,7 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
 	    const boost::ptr_vector<sampleOps::set>& sets,
-	    const std::vector<std::string>& addopts
+	    std::vector<std::string> addopts
 	    )
 {
   using namespace sampleOps;
@@ -1047,6 +1055,17 @@ void sample(const OpenFOAMCase& ofc,
   {
     s.addIntoDictionary(ofc, sampleDict);
   }
+
+  if (ofc.OFversion()>=400)
+  {
+   sampleDict["type"]="sets";
+   OFDictData::list libs;
+   libs.push_back("\"libsampling.so\"");
+   sampleDict["libs"]=libs;
+
+   addopts.insert(addopts.begin(), "sampleDict");
+   addopts.insert(addopts.begin(), "-func");
+  }
   
   // then write to file
   sampleDict.write( location / "system" / "sampleDict" );
@@ -1055,7 +1074,14 @@ void sample(const OpenFOAMCase& ofc,
 //   opts.push_back("-latestTime");
   //if (overwrite) opts.push_back("-overwrite");
     
-  ofc.executeCommand(location, "sample", addopts);
+  if (ofc.OFversion()>=400)
+  {
+   ofc.executeCommand(location, "postProcess", addopts);
+  }
+  else
+  {
+   ofc.executeCommand(location, "sample", addopts);
+  }
   
 }
 
@@ -1162,28 +1188,108 @@ void mapFields
   }
 
 //   if (targetcase.OFversion()>=220) execname="mapFields22";
-  targetcase.executeCommand
-  (
-    target, execname, args
-  );
+  try
+  {
+    targetcase.executeCommand
+    (
+        target, execname, args
+    );
+  }
+  catch (insight::Exception e)
+  {
+      if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
+      {
+          throw insight::Exception("mapFields failed! Error: "+e.message());
+      } else
+      {
+        // retry without interpolation
+        args.push_back("-mapMethod");
+        args.push_back("mapNearest");          
+        try
+        {
+            targetcase.executeCommand
+            (
+                target, execname, args
+            );
+        }
+        catch (insight::Exception e2)
+        {
+            throw insight::Exception("mapFields with interpolation failed. Retried with nearest cell matching and this attempt failed as well! Error: "+e2.message());
+        }
+      }
+  }
+  
+  // latest OF versions rename fields, which were not mapped. Rename them back...
+  if (targetcase.OFversion()>=400)
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( target / "0" ); itr != end_itr; ++itr )
+    {
+        if ( is_regular_file(itr->status()) )
+        {
+            boost::filesystem::path fname = itr->path();
+            std::cout<<fname<<std::endl;
+            if (fname.extension().string()==".unmapped")
+            {
+                boost::filesystem::path orgname = fname;
+                orgname.replace_extension("");
+                std::cout<<"MOVE: "<<fname.string()<<" => "<<orgname.string()<<std::endl;
+                rename(fname, orgname);
+            }
+        }
+    }      
+  }
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
 {
-  TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
-  if (times.size()>0)
-  {
-    boost::filesystem::path lastTime = times.rbegin()->second;
-    
-    if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-    copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
-    
-    BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+    if (!is_parallel)
     {
-      remove_all(td.second);
+        TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
+        if (times.size()>0)
+        {
+            boost::filesystem::path lastTime = times.rbegin()->second;
+            
+            if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
+            copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
+            
+            BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+            {
+            remove_all(td.second);
+            }
+        }
     }
-  }
+    else
+    {
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( location ); itr != end_itr; ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string dn=itr->path().filename().string();
+                if ( starts_with(dn, "processor") )
+                {
+                    boost::filesystem::path curploc=itr->path();
+                    
+                    TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(curploc));
+                    if (times.size()>0)
+                    {
+                        boost::filesystem::path lastTime = times.rbegin()->second;
+                        
+                        if (!ignoremissing) remove_all(curploc/"constant"/"polyMesh");
+                        copyPolyMesh(lastTime, curploc/"constant", true, ignoremissing, include_zones);
+                        
+                        BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+                        {
+                            remove_all(td.second);
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
 }
 
 void runPotentialFoam
@@ -1688,8 +1794,7 @@ std::string readSolverName(const boost::filesystem::path& ofcloc)
 int readDecomposeParDict(const boost::filesystem::path& ofcloc)
 {
   OFDictData::dict decomposeParDict;
-  std::ifstream cdf( (ofcloc/"system"/"decomposeParDict").c_str() );
-  readOpenFOAMDict(cdf, decomposeParDict);
+  readOpenFOAMDict(ofcloc/"system"/"decomposeParDict", decomposeParDict);
   //cout<<decomposeParDict<<endl;
   return decomposeParDict.getInt("numberOfSubdomains");
 }
@@ -2636,5 +2741,63 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
 }
 
 addToAnalysisFactoryTable(HomogeneousAveragedProfile);
+
+
+std::vector<std::string> patchList
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const std::string& include,
+    const std::vector<std::string>& exclude
+)
+{
+  std::vector<std::string> result;
+  
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(caseDir, boundaryDict);
+  
+  const boost::regex filter( include );
+  
+  BOOST_FOREACH(const OFDictData::dict::value_type& patch, boundaryDict)
+  {
+      std::string patchname = patch.first;
+      
+      boost::smatch what;
+      if (boost::regex_match( patchname, what, filter ))
+      {
+          bool excl=false;
+          BOOST_FOREACH(std::string expat, exclude)
+          {
+              std::cout<<" ++ include patch "<<patchname<<" because of regex_rule "<<include<<std::endl;
+              if (expat[0]=='\"')
+              {
+                  expat.erase( 0, 1 ); // erase the first character
+                  expat.erase( expat.size() - 1 ); // erase the last character
+                  if (boost::regex_match( patchname, what, boost::regex(expat) )) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of regex_rule "<<expat<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+              else 
+              { 
+                  if (patchname==expat) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of direct match."<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+          }
+          if (!excl) result.push_back(patchname);  
+      } else
+      {
+          std::cout<<" no match for patch "<<patchname<<" for regex_rule "<<include<<std::endl;
+      }
+  }
+  
+  return result;
+}
 
 }

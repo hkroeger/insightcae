@@ -29,21 +29,21 @@ namespace cad {
 
     
     
-class ExternalGear
+class SpurGear
     : public SingleFaceFeature
 {
-    VectorPtr p0_;
-    VectorPtr n_;
     ScalarPtr m_;
     ScalarPtr z_;
+    ScalarPtr t_;
+    ScalarPtr clearance_;
 
-    ExternalGear ( VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z );
+    SpurGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
 public:
-    declareType ( "ExternalGear" );
-    ExternalGear ();
+    declareType ( "SpurGear" );
+    SpurGear ();
 
-    static FeaturePtr create ( VectorPtr p0, VectorPtr n, ScalarPtr m, ScalarPtr z );
+    static FeaturePtr create ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
     operator const TopoDS_Face& () const;
 
@@ -54,7 +54,29 @@ public:
 };
 
 
+class BevelGear
+    : public SingleFaceFeature
+{
+    ScalarPtr m_;
+    ScalarPtr z_;
+    ScalarPtr t_;
+    ScalarPtr clearance_;
 
+    BevelGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
+
+public:
+    declareType ( "BevelGear" );
+    BevelGear ();
+
+    static FeaturePtr create ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
+
+    operator const TopoDS_Face& () const;
+
+    virtual void build();
+
+    virtual void insertrule ( parser::ISCADParser& ruleset ) const;
+    virtual FeatureCmdInfoList ruleDocumentation() const;
+};
 
 }
 }

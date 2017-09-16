@@ -1,4 +1,5 @@
 Dn?=12;
+mult_dbore?=1;
 k=TableLookup(ScrewDIN, Dn, Dn, k);
 s=TableLookup(ScrewDIN, Dn, Dn, s);
 P=TableLookup(ScrewDIN, Dn, Dn, P);
@@ -31,7 +32,7 @@ throughhole=
 Cylinder(
  O,
  O+Lthr*EX,
- dh
+ mult_dbore*dh
 );
 
 Lhh?=2*L;
@@ -39,30 +40,16 @@ headhole=
 Cylinder(
  O,
  O-Lhh*EX,
- d3
+ mult_dbore*d3
 );
 
 #Lblind?=1.2*L;
-dbl=Dn-P;
+dbl=mult_dbore*(Dn-P);
 blindhole=
 Place(
  loadmodel(drill_hole, D=dbl, L=(L+e1), ofsTimesHtip=1, ofsTimesL=1), 
  O, -EX, EZ)
-/*
-Cylinder(
- O,
- O+Lblind*EX,
- Dn
-)
-|
-Revolution(
- Tri(
-  O+Lblind*EX, 
-  0.5*Dn*EY, 
-  (0.5*0.5*Dn)*EX
- ),
- O, EX, 2.*M_PI)
-*/;
+;
 
 pl_contact=YZ;
 axis=RefAxis(O, EX);

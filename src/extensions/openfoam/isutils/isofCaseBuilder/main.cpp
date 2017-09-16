@@ -41,6 +41,8 @@
 #include "isofcasebuilderwindow.h"
 
 
+using namespace std;
+using namespace insight;
 
 
 class ISOFApp: public QApplication
@@ -76,7 +78,32 @@ public:
 };
 
 
+insight::ParameterSet& split_and_check
+(
+    isofCaseBuilderWindow& wnd, 
+    std::vector<std::string>& pair,
+    const std::string& s
+)
+{
+    boost::split(pair, s, boost::is_any_of(":"));
+    if (pair.size()!=3)
+        throw insight::Exception
+        (
+            "Invalid specification of parameter value in command line!\n"
+            "Each parameter has to be given as:\n"
+            " (#<Case element ID>|<Patch Name>):<parameter set path>:<value>"
+        );
 
+    if (pair[0][0]=='#')
+    {
+        int ceid=boost::lexical_cast<int>(pair[0][1]);
+        return wnd.caseElementParameters(ceid);
+    } 
+    else
+    {
+        return wnd.BCParameters(pair[0]);
+    }
+}
 
 int main ( int argc, char** argv )
 {
@@ -96,6 +123,14 @@ int main ( int argc, char** argv )
         ( "batch,b", "case creation from specified input file" )
         ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
         ( "input-file,f", po::value< StringList >(),"Specifies input file. Multiple input files will append to the active configuration." )
+        ( "write-only,o", po::value< StringList >(),"restrict output in batch mode to specified files" )
+        ("bool", po::value<StringList>(), "boolean variable assignment")
+        ("selection,l", po::value<StringList>(), "selection variable assignment")
+        ("string", po::value<StringList>(), "string variable assignment")
+        ("path,p", po::value<StringList>(), "path variable assignment")
+        ("double,d", po::value<StringList>(), "double variable assignment")
+        ("vector,v", po::value<StringList>(), "vector variable assignment")
+        ("int,i", po::value<StringList>(), "int variable assignment")
         ;
 
         po::positional_options_description p;
@@ -135,10 +170,111 @@ int main ( int argc, char** argv )
                 }
                 window.loadFile ( fn, vm.count ( "skipbcs" ) );
             }
+            
+            if (vm.count("bool"))
+            {
+                StringList sets=vm["bool"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    bool v=boost::lexical_cast<bool>(pair[2]);
+                    cout << "Setting boolean '"<<pair[1]<<"' = "<<v<<endl;
+                    parameters.getBool(pair[1])=v;
+                }
+            }
 
+            if (vm.count("string"))
+            {
+                StringList sets=vm["string"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    cout << "Setting string '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
+                    parameters.getString(pair[1])=pair[2];
+                }
+            }
+
+            if (vm.count("selection"))
+            {
+                StringList sets=vm["selection"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    cout << "Setting selection '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
+                    parameters.get<SelectionParameter>(pair[1]).setSelection(pair[2]);
+                }
+            }
+
+            if (vm.count("path"))
+            {
+                StringList sets=vm["path"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    cout << "Setting path '"<<pair[1]<<"' = \""<<pair[2]<<"\""<<endl;
+                    parameters.getPath(pair[1])=pair[2];
+                }
+            }
+
+            if (vm.count("double"))
+            {
+                StringList sets=vm["double"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    double v=boost::lexical_cast<double>(pair[2]);
+                    cout << "Setting double '"<<pair[1]<<"' = "<<v<<endl;
+                    parameters.getDouble(pair[1])=v;
+                }
+            }
+
+            if (vm.count("vector"))
+            {
+                StringList sets=vm["vector"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    arma::mat v;
+                    stringToValue(pair[2], v);
+                    cout << "Setting vector '"<<pair[1]<<"' = "<<v<<endl;
+                    parameters.getVector(pair[1])=v;
+                }
+            }
+
+            if (vm.count("int"))
+            {
+                StringList sets=vm["int"].as<StringList>();
+                BOOST_FOREACH(const string& s, sets)
+                {
+                    std::vector<std::string> pair;
+                    insight::ParameterSet& parameters = split_and_check(window, pair, s);
+                    int v=boost::lexical_cast<int>(pair[2]);
+                    cout << "Setting int '"<<pair[1]<<"' = "<<v<<endl;
+                    parameters.getInt(pair[1])=v;
+                }
+            }
+        
             if ( vm.count ( "batch" ) )
             {
-                window.createCase( vm.count ( "skipbcs" ) );
+                boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
+                
+                if ( vm.count ( "write-only" ) )
+                {
+                    restrictToFiles.reset(new std::vector<boost::filesystem::path>);
+                    //(vm["write-only"].as<std::vector<boost::filesystem::path> >()) );
+                    StringList paths = vm["write-only"].as<StringList>();
+                    copy(paths.begin(), paths.end(), std::back_inserter(*restrictToFiles));
+                    BOOST_FOREACH(const boost::filesystem::path& f, *restrictToFiles)
+                     std::cout<<f<<std::endl;
+                }
+                
+                window.createCase( vm.count ( "skipbcs" ), restrictToFiles );
             }
 
         }

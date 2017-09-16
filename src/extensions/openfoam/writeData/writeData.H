@@ -48,7 +48,7 @@ SourceFiles
 #include "NamedEnum.H"
 #include "pointField.H"
 
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
 #include "functionObject.H"
 #endif
 
@@ -68,7 +68,7 @@ class mapPolyMesh;
 \*---------------------------------------------------------------------------*/
 
 class writeData
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
 : public functionObject
 #endif
 {
@@ -128,7 +128,7 @@ public:
 
         //- Read the dictionary settings
         virtual 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	bool
 #else
         void 
@@ -137,7 +137,7 @@ public:
 
         //- Execute, check existence of abort file and take action
         virtual 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	bool
 #else
         void 
@@ -146,7 +146,7 @@ public:
 
         //- Execute at the final time-loop, used for cleanup
         virtual 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	bool
 #else
         void 
@@ -158,7 +158,7 @@ public:
 
         //- Execute, check existence of abort file and take action
         virtual 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	bool
 #else
         void 

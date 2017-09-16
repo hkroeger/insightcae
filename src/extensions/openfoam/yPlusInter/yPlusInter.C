@@ -93,7 +93,7 @@ void calcIncompressibleYPlus
         (U, phi, laminarTransport)
     );
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     const volScalarField::Boundary
 #else
     const volScalarField::GeometricBoundaryField 

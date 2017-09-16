@@ -32,6 +32,12 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
+#if defined(OFplus)
+#define UNALLOCLABELLIST labelList
+#else
+#define UNALLOCLABELLIST unallocLabelList
+#endif
+
 Foam::scalar Foam::CICSAM::limiter
 (
     const scalar cdWeight,
@@ -215,13 +221,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const unallocLabelList& owner = mesh.owner();
-    const unallocLabelList& neighbour = mesh.neighbour();
+    const UNALLOCLABELLIST& owner = mesh.owner();
+    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
     scalarField& pLim = lim
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       .ref().field()
 #else
       .internalField()
@@ -246,13 +252,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
         );
     }
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
       bLim = lim
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	.boundaryFieldRef()
 #else
 	.boundaryField()
@@ -345,13 +351,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const unallocLabelList& owner = mesh.owner();
-    const unallocLabelList& neighbour = mesh.neighbour();
+    const UNALLOCLABELLIST& owner = mesh.owner();
+    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
     scalarField& w = weightingFactors
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     .ref().field()
 #else
     .internalField()
@@ -376,14 +382,14 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
         );
     }
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
      bWeights =
         weightingFactors
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	  .boundaryFieldRef()
 #else
 	  .boundaryField()

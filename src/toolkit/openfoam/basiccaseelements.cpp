@@ -139,6 +139,23 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
       if (controlDict.getString("application")=="simpleFoam")
 	controlDict["application"]="MRFSimpleFoam";
   }
+  else if (OFversion()>=300)
+  {
+    OFDictData::dict fod;
+
+    fod["nonRotatingPatches"]=nrp;
+    fod["origin"]=OFDictData::vector3(p_.rotationCentre);
+    fod["axis"]=OFDictData::vector3(p_.rotationAxis);
+    fod["omega"]=2.*M_PI*p_.rpm/60.;
+
+    fod["active"]=true;
+    fod["selectionMode"]="cellZone";
+    fod["cellZone"]=p_.name;
+
+    OFDictData::dict& MRFProps=dictionaries.addDictionaryIfNonexistent("constant/MRFProperties");
+    MRFProps[p_.name]=fod;
+
+  }
   else
   {
     OFDictData::dict coeffs;
@@ -451,6 +468,46 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
+
+
+
+defineType(solidBodyMotionDynamicMesh);
+addToOpenFOAMCaseElementFactoryTable(solidBodyMotionDynamicMesh);
+
+
+
+solidBodyMotionDynamicMesh::solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
+: dynamicMesh(c),
+  ps_(ps)
+{
+}
+
+
+void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
+{
+    Parameters p(ps_);
+    
+    OFDictData::dict& dynamicMeshDict
+      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+      
+    dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";    
+    dynamicMeshDict["solver"]="solidBody";
+    OFDictData::dict sbc;
+
+    sbc["cellZone"]=p.zonename;
+
+    if ( Parameters::motion_rotation_type* rp = boost::get<Parameters::motion_rotation_type>(&p.motion) )
+    {
+        sbc["solidBodyMotionFunction"]="rotatingMotion";
+        OFDictData::dict rmc;
+        rmc["origin"]=OFDictData::vector3(rp->origin);
+        rmc["axis"]=OFDictData::vector3(rp->axis);
+        rmc["omega"]=2.*M_PI*rp->rpm/60.;
+        sbc["rotatingMotionCoeffs"]=rmc;
+    }
+
+    dynamicMeshDict["solidBodyCoeffs"]=sbc;
+}
 
 }
 

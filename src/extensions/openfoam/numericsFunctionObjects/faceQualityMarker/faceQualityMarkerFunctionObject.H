@@ -102,7 +102,7 @@ public:
     // Member Functions
 
         //- start is called at the start of the time-loop
-#if not defined(OFdev)
+#if not (defined(OFdev)||defined(OFplus))
         virtual 
 #endif
         bool start();
@@ -110,7 +110,7 @@ public:
         //- execute is called at each ++ or += of the time-loop
         virtual bool execute
         (
-#if not (defined(OF16ext) || defined(OFdev))
+#if not (defined(OF16ext) || defined(OFdev)||defined(OFplus))
 	  bool
 #endif
 	);

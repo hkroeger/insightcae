@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 //     nh.write();
     
     scalar Retau=readScalar(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(1)
 #else
       args.additionalArgs()[0]
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     )());
     
     vector Ubar=vector(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(2)
 #else
       args.additionalArgs()[1]

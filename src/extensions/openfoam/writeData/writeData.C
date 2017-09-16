@@ -36,7 +36,7 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-#if not (defined(OFdev))
+#if not (defined(OFdev)||defined(OFplus))
 namespace Foam
 {
 defineTypeNameAndDebug(writeData, 0);
@@ -77,7 +77,7 @@ Foam::writeData::writeData
     const bool loadFromFiles
 )
 :
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
     functionObject(name),
 #endif
     name_(name),
@@ -102,7 +102,7 @@ Foam::writeData::~writeData()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 bool
 #else
 void 
@@ -118,13 +118,13 @@ Foam::writeData::read(const dictionary& dict)
     {
         abortFile_.expand();
     }
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     return true;
 #endif
 }
 
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 bool
 #else
 void 
@@ -166,7 +166,7 @@ Foam::writeData::execute()
 	    << endl;
 #endif
     }
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     return true;
 #endif    
 }
@@ -185,14 +185,14 @@ void Foam::writeData::movePoints(const polyMesh& mesh)
 
 
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 bool
 #else
 void 
 #endif
 Foam::writeData::end()
 {
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     return false;
 #endif    //removeFile();
 }
@@ -204,7 +204,7 @@ void Foam::writeData::timeSet()
 }
 
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 bool
 #else
 void 
@@ -212,7 +212,7 @@ void
 Foam::writeData::write()
 {
     // Do nothing - only valid on execute
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     return false;
 #endif
 }

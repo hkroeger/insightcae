@@ -153,6 +153,7 @@ void GmshCase::doMeshing
   if (ext==".msh") otype=1;
   else if (ext==".unv") otype=2;
   else if (ext==".med") otype=33;
+  else if (ext==".stl") otype=27;
   else if (ext==".geo") 
   {
     otype=-1;
@@ -229,18 +230,33 @@ void GmshCase::doMeshing
   "Mesh.Smoothing = 10;\n"
   "Mesh.SmoothNormals = 1;\n"
   "Mesh.Explode = 1;\n";
+  if (otype==27)
+  {
+      f<<"Mesh.CharacteristicLengthFromCurvature=1;\n";
+  }
   
   if (otype>=0)
   {
     f<<
     "Mesh.Format="<< otype <<"; /* 1=msh, 2=unv, 10=automatic, 19=vrml, 27=stl, 30=mesh, 31=bdf, 32=cgns, 33=med, 40=ply2 */\n";
+    if (otype==27)
+    {
+        f<<"Mesh.Binary=1;\n";
+    }
   }
 
   f.close();
 
   if (otype>=0)
   {
-    std::string cmd="gmsh -3 -v 2 "+boost::filesystem::absolute(inputFile).string()+" -o "+boost::filesystem::absolute(outputMeshFile).string();
+      
+    std::string cmd="gmsh";
+    if (otype==27)
+        cmd+=" -2 -v 2 ";
+    else
+        cmd+=" -3 -v 2 ";
+    cmd+=boost::filesystem::absolute(inputFile).string()+" -o "+boost::filesystem::absolute(outputMeshFile).string();
+    
     int r=system(cmd.c_str());
     if (r)
       throw insight::Exception("Execution of gmsh failed!");

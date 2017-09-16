@@ -101,6 +101,9 @@ void ISCADParser::createFeatureExpressions()
     r_modelstepFunction.name("feature function");
 
     r_solidmodel_primary =
+        ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) ) 
+        [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
+        |
         r_modelstepFunction
         [ ( _val = phx::at_c<2>(qi::_1),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),

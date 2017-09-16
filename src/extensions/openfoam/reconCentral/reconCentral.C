@@ -30,6 +30,8 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+
+
 template<class Type>
 Foam::tmp<Foam::GeometricField<Type, Foam::fvsPatchField, Foam::surfaceMesh> >
 Foam::reconCentral<Type>::interpolate
@@ -66,7 +68,7 @@ Foam::reconCentral<Type>::interpolate
         <typename outerProduct<vector, Type>::type, fvPatchField, volMesh>
         gradVf = gradScheme_().grad(vf);
 
-    Field<Type>& sfIn = sf.internalField();
+    Field<Type>& sfIn = UNIOF_INTERNALFIELD_NONCONST(sf);
 
     forAll(sfIn, facei)
     {
@@ -81,7 +83,7 @@ Foam::reconCentral<Type>::interpolate
 
 
     typename GeometricField<Type, fvsPatchField, surfaceMesh>::
-        GeometricBoundaryField& bSf = sf.boundaryField();
+        GeometricBoundaryField& bSf = UNIOF_BOUNDARY_NONCONST(sf);
 
     forAll(bSf, patchi)
     {
@@ -89,7 +91,7 @@ Foam::reconCentral<Type>::interpolate
 
         fvsPatchField<Type>& pSf = bSf[patchi];
 
-        const unallocLabelList& pOwner = p.faceCells();
+        const UNIOF_LABELULIST& pOwner = p.faceCells();
 
         const vectorField& pCf = Cf.boundaryField()[patchi];
 

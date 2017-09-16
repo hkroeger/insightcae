@@ -443,7 +443,7 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
 	    const boost::ptr_vector<sampleOps::set>& sets,
-	    const std::vector<std::string>& addopts = boost::assign::list_of<std::string>("-latestTime")
+	    std::vector<std::string> addopts = boost::assign::list_of<std::string>("-latestTime")
 	    );
 
 #endif 
@@ -472,7 +472,14 @@ void mapFields
   const std::vector<std::string>& fields = std::vector<std::string>()
 );
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing=false, bool include_zones=false);
+void resetMeshToLatestTimestep
+(
+    const OpenFOAMCase& c, 
+    const boost::filesystem::path& location, 
+    bool ignoremissing=false, 
+    bool include_zones=false, 
+    bool is_parallel=false
+);
 
 void runPotentialFoam(const OpenFOAMCase& cm, const boost::filesystem::path& location, bool* stopFlagPtr=NULL, int np=1);
 
@@ -830,6 +837,15 @@ public:
   virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 
+
+
+std::vector<std::string> patchList
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const std::string& include=".*",
+    const std::vector<std::string>& exclude = std::vector<std::string>() // OF syntax: either string or regex (in quotes)
+);
 
 }
 

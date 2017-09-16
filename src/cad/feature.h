@@ -169,6 +169,8 @@ class FeatureSet
 public:
   FeatureSet(const FeatureSet& o);
   FeatureSet(ConstFeaturePtr m, EntityType shape);
+
+  FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
   
   /**
    * query an entire feature

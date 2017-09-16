@@ -21,6 +21,7 @@
 
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QInputDialog>
 
 #include "isofcasebuilderwindow.h"
 
@@ -249,6 +250,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     
     connect(ui->add_btn, SIGNAL(clicked()), this, SLOT(onAddElement()));
     connect(ui->remove_btn, SIGNAL(clicked()), this, SLOT(onRemoveElement()));
+    connect(ui->up_btn, SIGNAL(clicked()), this, SLOT(onMoveElementUp()));
+    connect(ui->down_btn, SIGNAL(clicked()), this, SLOT(onMoveElementDown()));
 
     connect(ui->create_btn, SIGNAL(clicked()), this, SLOT(accept()));
     connect(ui->cancel_btn, SIGNAL(clicked()), this, SLOT(reject()));
@@ -257,6 +260,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     connect(ui->load_btn, SIGNAL(clicked()), this, SLOT(onLoad()));
 
     connect(ui->parse_bf_btn, SIGNAL(clicked()), this, SLOT(onParseBF()));
+    connect(ui->add_patch_btn, SIGNAL(clicked()), this, SLOT(onAddPatchManually()));
     connect(ui->assign_bc_btn, SIGNAL(clicked()), this, SLOT(onAssignBC()));
     
     QObject::connect 
@@ -315,67 +319,62 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       xml_node<> *BCnode = rootnode->first_node("BoundaryConditions");
       if (BCnode)
       {
-	  bool bdp=true;
-	  try
-	  {
-	      // parse boundary information
-	      ofc_->parseBoundaryDict(casepath_, boundaryDict_);
-	  }
-	  catch (...)
-	  {
-	      bdp=false;
-	  }
-	      
-	  if (bdp)
-	  {
 	      xml_node<> *unassignedBCnode = BCnode->first_node( "UnassignedPatches" );
 	      new DefaultPatch(ui->patch_list, doc, *unassignedBCnode, file.parent_path());
 	      
 	      for (xml_node<> *e = BCnode->first_node("Patch"); e; e = e->next_sibling("Patch"))
 	      {
-		  new Patch(ui->patch_list, doc, *e, file.parent_path());
+		    new Patch(ui->patch_list, doc, *e, file.parent_path());
 	      }
-	  }
-	  else
-	  {
-	      QMessageBox::information(this, "boundary file", "The boundary file could not be parsed! Skipping BC configuration.");
-	  }
       }
     }
 }
 
 
-void isofCaseBuilderWindow::createCase ( /*const boost::filesystem::path& location*/bool skipBCs )
+void isofCaseBuilderWindow::createCase 
+(
+    bool skipBCs,
+    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+)
 {
-    recreateOFCase(ui->OFversion->currentText());
-    
+  recreateOFCase ( ui->OFversion->currentText() );
+
+  // insert case elements
   for ( int i=0; i < ui->selected_elements->count(); i++ )
     {
-      InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
+      InsertedCaseElement* cur 
+        = dynamic_cast<InsertedCaseElement*> ( ui->selected_elements->item ( i ) );
       if ( cur )
         {
           cur->insertElement ( *ofc_ );
         }
     }
-  if (!skipBCs)
-  {
-    for ( int i=0; i < ui->patch_list->count(); i++ )
-      {
-	Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
-	if ( cur )
-	  {
-	    cur->insertElement ( *ofc_, boundaryDict_ );
-	  }
-      }
-  }
-  
-  if (ofc_->getUnhandledPatches(boundaryDict_).size() > 0)
-  {
-      throw insight::Exception("Incorrect case setup: There are unhandled patches. Continuing would remain in an invalid boundary definition.");
-  }
-  
-  ofc_->createOnDisk ( /*location*/ casepath_ );
-  ofc_->modifyCaseOnDisk ( /*location*/ casepath_ );
+    
+  // insert BCs
+  insight::OFDictData::dict boundaryDict;
+  if ( !skipBCs )
+    {
+      ofc_->parseBoundaryDict ( casepath_, boundaryDict );
+      
+      for ( int i=0; i < ui->patch_list->count(); i++ )
+        {
+          Patch* cur = dynamic_cast<Patch*> ( ui->patch_list->item ( i ) );
+          if ( cur )
+          {
+ //           if ( boundaryDict.find(cur->patch_name()) != boundaryDict.end() )
+            {
+              cur->insertElement ( *ofc_, boundaryDict );
+            }
+          }
+        }
+    }
+  if ( ofc_->getUnhandledPatches ( boundaryDict ).size() > 0 )
+    {
+      throw insight::Exception ( "Incorrect case setup: There are unhandled patches. Continuing would result in an invalid boundary definition." );
+    }
+
+  ofc_->createOnDisk ( casepath_, restrictToFiles );
+  if ( !restrictToFiles ) ofc_->modifyCaseOnDisk ( casepath_ );
 }
 
 
@@ -412,6 +411,36 @@ void isofCaseBuilderWindow::onRemoveElement()
     if (cur)
     {
         delete cur;
+    }
+}
+
+void isofCaseBuilderWindow::onMoveElementUp()
+{
+    QListWidgetItem* cur = ui->selected_elements->currentItem();
+    if (cur)
+    {
+        int r=ui->selected_elements->currentRow();
+        if (r>0)
+        {
+            QListWidgetItem* ci = ui->selected_elements->takeItem(r);
+            ui->selected_elements->insertItem(r - 1, ci);
+            ui->selected_elements->setCurrentRow(r-1);
+        }
+    }
+}
+
+void isofCaseBuilderWindow::onMoveElementDown()
+{
+    QListWidgetItem* cur = ui->selected_elements->currentItem();
+    if (cur)
+    {
+        int r=ui->selected_elements->currentRow();
+        if (r < ui->selected_elements->count())
+        {
+            QListWidgetItem* ci = ui->selected_elements->takeItem(r);
+            ui->selected_elements->insertItem(r + 1, ci);
+            ui->selected_elements->setCurrentRow(r+1);
+        }
     }
 }
 
@@ -562,13 +591,24 @@ void isofCaseBuilderWindow::onLoad()
 
 void isofCaseBuilderWindow::onParseBF()
 {
-    ofc_->parseBoundaryDict(casepath_, boundaryDict_);
+    insight::OFDictData::dict boundaryDict;
+
+    ofc_->parseBoundaryDict(casepath_, boundaryDict);
     ui->patch_list->clear();
     new DefaultPatch(ui->patch_list);
-    BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict_)
+    BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
     {
 //         unhandledPatches.insert(bde.first);
         new Patch(ui->patch_list, bde.first);
+    }
+}
+
+void isofCaseBuilderWindow::onAddPatchManually()
+{
+    QString pname = QInputDialog::getText(this, "Insert Patch", "Specify patch name:");
+    if (!pname.isEmpty())
+    {
+        new Patch(ui->patch_list, pname.toStdString());
     }
 }
 
@@ -613,3 +653,39 @@ void isofCaseBuilderWindow::recreateOFCase(const QString& ofename)
   ofc_.reset(new OpenFOAMCase(OFEs::get(ofen)));
 }
 
+ParameterSet& isofCaseBuilderWindow::caseElementParameters(int id)
+{
+    InsertedCaseElement* cur = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(id));
+    if (!cur)
+        throw insight::Exception
+        (
+            boost::str(boost::format("Error: Requested case element #%d is not valid!")%id)
+        );
+    
+    return cur->parameters();
+}
+
+ParameterSet& isofCaseBuilderWindow::BCParameters(const std::string& patchName)
+{
+    QList<QListWidgetItem *>  items 
+      = ui->patch_list->findItems(QString(patchName.c_str()), Qt::MatchStartsWith);
+    if (items.size()<1)
+        throw insight::Exception
+        (
+            "Error: patch \""+patchName+"\" was not found!"
+        );
+    if (items.size()>1)
+        throw insight::Exception
+        (
+            "Error: patch name \""+patchName+"\" matches multiple entries!"
+        );
+    
+    Patch* cur = dynamic_cast<Patch*>(items[0]);
+    if (!cur)
+        throw insight::Exception
+        (
+            "Error: Requested patch \""+patchName+"\" has no valid configuration!"
+        ); 
+    
+    return cur->parameters();
+}

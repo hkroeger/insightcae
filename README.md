@@ -1,4 +1,3 @@
-
 InsightCAE
 ==========
 
@@ -8,6 +7,7 @@ InsightCAE serves as a framework for the implementation of analysis procedures. 
 
 List of Contributors
 --------------------
+
 - Hannes Kröger
 - Ivan Shevshuk
 - Johann Turnow
@@ -17,8 +17,8 @@ Features
 
 - script-based, fully parametric CAD
 
-  - OpenCASCADE geometry kernel
-  - assemblies, constraint-based sketches, part library, drawing export
+    - OpenCASCADE geometry kernel
+    - assemblies, constraint-based sketches, part library, drawing export
 
 - OpenFOAM add-ons (schemes, boundary conditions, models, ...)
 - Pre- & Postprocessing tool (OpenFOAM Case Builder)
@@ -27,21 +27,21 @@ Features
 Installation
 ------------
 
-See INSTALL.rst
+See INSTALL.md
 
 Contribute
 ----------
 
-- Issue Tracker: https://github.com/hkroeger/insightcae/issues
-- Source Code: https://github.com/hkroeger/insightcae
+- [Issue Tracker](https://github.com/hkroeger/insightcae/issues)
+- [Source Code](https://github.com/hkroeger/insightcae)
 
 Support
 -------
 
 If you are having issues, please let us know.
-We have a forum located at: https://groups.google.com/forum/#!forum/insightcae
+We have a [forum located here](https://groups.google.com/forum/#!forum/insightcae)
 
 License
 -------
 
-The project is licensed under the GPL license.
+The project is licensed under the [version 2 of the GNU General Public License](http://www.gnu.org/licenses/old-licenses/gpl-2.0.html).

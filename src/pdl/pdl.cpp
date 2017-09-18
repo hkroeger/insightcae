@@ -20,6 +20,9 @@
 
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 
+#include <algorithm>
+#include <string>
+
 #include "boost/filesystem.hpp"
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -136,7 +139,10 @@ public:
 
     ParserDataBase(const std::string& d)
     : description(d) 
-    {}
+    {
+        boost::replace_all(description,
+                     "\n", "\\n");
+    }
 
     /* c++
     written by writeCppHeader:

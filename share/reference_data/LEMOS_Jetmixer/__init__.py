@@ -9,6 +9,7 @@ basedir=os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))
 
 def getToC():
   xDJ=[0, 0.1, 0.6, 1.1, 2.1, 3.1, 5.1, 7.1, 9.1]
+  xDJ_Ffilt=[0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 9.0]
   xDR=[0, 0.1, 0.6, 1.1, 1.6, 2.1, 2.6, 3.1, 5.1, 7.1, 9.1]
   toc={
       
@@ -16,6 +17,8 @@ def getToC():
     "J-Mode/uPrime_vs_xD": None,
     "J-Mode/U_vs_rD@": xDJ,
     "J-Mode/uPrime_vs_rD@": xDJ,
+    "J-Mode/G_vs_rD@": xDJ_Ffilt,
+    "J-Mode/gPrime_vs_rD@": xDJ_Ffilt,
     
     "R-Mode/U_vs_xD": None,
     "R-Mode/uPrime_vs_xD": None,
@@ -45,13 +48,20 @@ def getProfile(name):
     ycol=1
   elif yname=="uPrime":
     ycol=2
+  elif yname=="G":
+    ycol=1
+  elif yname=="gPrime":
+    ycol=2
     
   msn="jm" if mode=="J-Mode" else "rm"
   
   fname=None
   if xname.startswith("rD@"):
     xD=float(xname.split('@')[1])      
-    fname=os.path.join(mode, "LEMOS_jetmixer_%s_radial_xD%1.1f.csv"%(msn,xD))
+    if (yname=="U") or (yname=="uPrime"):
+        fname=os.path.join(mode, "LEMOS_jetmixer_%s_radial_xD%1.1f.csv"%(msn,xD))
+    elif yname=="G" or yname=="gPrime":
+        fname=os.path.join(mode, "LEMOS_jetmixer_%s_radial_mixfrac_filtered_xD%1.1f.csv"%(msn,xD))
   elif xname=="xD":
     fname=os.path.join(mode, "LEMOS_jetmixer_%s_axial.csv"%msn)
     

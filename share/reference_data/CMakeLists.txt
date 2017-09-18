@@ -410,6 +410,14 @@ LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_xD3.1.csv
 LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_xD0.6.csv
 LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_xD7.1.csv
 LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_axial.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD0.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD0.5.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD1.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD2.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD3.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD5.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD7.0.csv
+LEMOS_Jetmixer/J-Mode/LEMOS_jetmixer_jm_radial_mixfrac_filtered_xD9.0.csv
 
 ABL_Yeo/__init__.py
 ABL_Yeo/RwwByUtauSq_vs_zByH.csv

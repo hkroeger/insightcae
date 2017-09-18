@@ -489,12 +489,12 @@ void ChannelBase::evaluateAtSection(
   pts.col(2)+=-0.49*B;
  
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
-    .set_name("radial")
     .set_points( pts )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*B))
     .set_nd1(1)
     .set_nd2(n_hom_avg)
+    .set_name("radial")
   ));
   sample(cm, executionPath(),
     

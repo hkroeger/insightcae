@@ -78,34 +78,7 @@ public:
   template<class T>
   const T& get ( const std::string& name ) const
   {
-    using namespace boost;
-    using namespace boost::algorithm;
-
-    if ( boost::contains ( name, "/" ) )
-      {
-        std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
-        std::string remain=name;
-        erase_head ( remain, prefix.size()+1 );
-        //std::cout<<prefix<<" >> "<<remain<<std::endl;
-        return this->getSubset ( prefix ).get<T> ( remain );
-      }
-    else
-      {
-        const_iterator i = find ( name );
-        if ( i==end() )
-          {
-            throw insight::Exception ( "Parameter "+name+" not found in parameterset" );
-          }
-        else
-          {
-            typedef T PT;
-            const PT* const pt=dynamic_cast<const PT* const> ( i->second );
-            if ( !pt )
-              throw insight::Exception ( "Parameter "+name+" not of requested type!" );
-            else
-              return ( *pt );
-          }
-      }
+      return const_cast<ParameterSet&>(*this).get<T>(name);
   }
 
   template<class T>
@@ -157,6 +130,42 @@ public:
     return this->get<PathParameter> ( name ) ();
   }
   
+  inline ParameterSet& setInt ( const std::string& name, int v )
+  {
+    this->get<IntParameter> ( name ) () = v;
+    return *this;
+  }
+  
+  inline ParameterSet& setDouble ( const std::string& name, double v )
+  {
+    this->get<DoubleParameter> ( name ) () = v;
+    return *this;
+  }
+  
+  inline ParameterSet& setBool ( const std::string& name, bool v )
+  {
+    this->get<BoolParameter> ( name ) () = v;
+    return *this;
+  }
+  
+  inline ParameterSet& setString ( const std::string& name, const std::string& v )
+  {
+    this->get<StringParameter> ( name ) () = v;
+    return *this;
+  }
+  
+  inline ParameterSet& setVector ( const std::string& name, const arma::mat& v )
+  {
+    this->get<VectorParameter> ( name ) () = v;
+    return *this;
+  }
+  
+  inline ParameterSet& setPath ( const std::string& name, const boost::filesystem::path& fp)
+  {
+    this->get<PathParameter> ( name ) () = fp;
+    return *this;
+  }
+
   ParameterSet& getSubset ( const std::string& name );
 
   inline const int& getInt ( const std::string& name ) const

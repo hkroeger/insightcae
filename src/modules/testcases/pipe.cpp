@@ -415,10 +415,10 @@ void PipeBase::evaluateAtSection(
   boost::ptr_vector<sampleOps::set> sets;
   
   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-    .set_name("section"+lexical_cast<string>(i))
     .set_start( vec3(x, 0,  0.01* 0.5*D))
     .set_end(   vec3(x, 0, 0.997* 0.5*D))
     .set_axis(vec3(1,0,0))
+    .set_name("section"+lexical_cast<string>(i))
   ));
   
   sample(cm, executionPath(), 
@@ -896,10 +896,10 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
     boost::ptr_vector<sampleOps::set> sets;
     
     sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-      .set_name("longitudinal"+lexical_cast<string>(i))
       .set_start( vec3(0.001*L, 0, r*0.5*D))
       .set_end(   vec3(0.999*L, 0, r*0.5*D))
       .set_axis(vec3(1,0,0))
+      .set_name("longitudinal"+lexical_cast<string>(i))
     ));
     
     sample(cm, executionPath(), 

@@ -676,12 +676,12 @@ void FlatPlateBL::evaluateAtSection
   pts.col(2)+=0.01*W_;
   
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
-    .set_name("radial")
     .set_points( pts )
     .set_dir1(vec3(1,0,0))
     .set_dir2(vec3(0,0,0.98*W_))
     .set_nd1(1)
     .set_nd2(n_hom_avg_)
+    .set_name("radial")
   ));
   
   sample(cm, executionPath(), 

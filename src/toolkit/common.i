@@ -39,6 +39,39 @@
     $1 = &vIn;
 }
 
+
+%typemap(typecheck) boost::ptr_vector<insight::sampleOps::set>& 
+{
+    $1 = PySequence_Check($input) ? 1 : 0;
+}
+
+
+%typemap(in) boost::ptr_vector<insight::sampleOps::set>& (boost::ptr_vector<insight::sampleOps::set> vIn) 
+{
+    size_t iLen = PySequence_Length($input); 
+    vIn.clear();
+    for(unsigned int i = 0; i < iLen; i++) 
+    {
+        PyObject *o = PySequence_GetItem($input, i);
+        
+        std::string n;
+        insight::sampleOps::set* p;
+        
+        int res1 = SWIG_ConvertPtr
+        ( 
+            o, 
+            &p,
+            SWIGTYPE_p_insight__sampleOps__set, 1 
+        );
+        
+        if (res1!=-1) //(!SWIG_IsOK(res1)) 
+        {
+            vIn.push_back( p->clone() );
+        }
+    }
+    $1 = &vIn;
+}
+
 %typemap(typecheck) insight::PlotCurveList& 
 {
     $1 = PySequence_Check($input) ? 1 : 0;

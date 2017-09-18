@@ -215,35 +215,46 @@ void createPatch(const OpenFOAMCase& ofc,
 #endif
 
 
-#ifndef SWIG
+
 namespace sampleOps
 {
 
 class set
 {
+
+  
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-      ( name, std::string, "unnamed" )
-  )
+#include "openfoamtools__sampleOps_set__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_set Parameters
+
+name = string "unnamed" "Name of the set"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  set(Parameters const& p = Parameters() );
+  set(ParameterSet const& p = Parameters::makeDefault() );
   virtual ~set();
   
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const =0;
   
-  inline const std::string& name() const { return p_.name(); }
+  inline const std::string& name() const { return p_.name; }
+  
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   
   virtual set* clone() const =0;
 };
 
+#ifndef SWIG
 inline set* new_clone(const set& op)
 {
   return op.clone();
 }
+#endif
 
 /**
  * Creates a cyclic patch or cyclic patch pair (depending on OF version)
@@ -274,16 +285,23 @@ class line
 : public set
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
-      ( points, arma::mat, vec3(0,0,0) )
-  )
+#include "openfoamtools__sampleOps_line__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_line Parameters
+inherits set::Parameters
+
+points = vector (0 0 0) "Matrix of points"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
 
 public:
-  line(Parameters const& p = Parameters() );
+  line(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   /**
@@ -301,20 +319,27 @@ public:
 class uniformLine
 : public set
 {
-  line l_;
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
-      ( start, arma::mat, vec3(0,0,0) )
-      ( end, arma::mat, vec3(0,0,0) )
-      ( np, int, 100 )
-  )
+#include "openfoamtools__sampleOps_uniformLine__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_uniformLine Parameters
+inherits set::Parameters
+
+start = vector (0 0 0) "Start point of line"
+end = vector (0 0 0) "End point of line"
+np = int 100 "Number of points"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
+  line l_;
 
 public:
-  uniformLine(Parameters const& p = Parameters() );
+  uniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   /**
@@ -333,15 +358,23 @@ class circumferentialAveragedUniformLine
 : public set
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
-      ( start, arma::mat, vec3(0,0,0) )
-      ( end, arma::mat, vec3(1,0,0) )
-      ( axis, arma::mat, vec3(1,0,0) )
-      ( angle, double, 2.*M_PI )  // angular span for averaging
-      ( angularOffset, double, 0.0 ) // angle from radial axis to first profile
-      ( np, int, 100 )
-      ( nc, int, 10 )
-  )
+public:
+#include "openfoamtools__sampleOps_circumferentialAveragedUniformLine__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_circumferentialAveragedUniformLine Parameters
+inherits set::Parameters
+
+start = vector (0 0 0) "Start point of line"
+end = vector (1 0 0) "End point of line"
+axis = vector (0 0 1) "Axis of rotation for circumferential averaging"
+angle= double 6.28318530718 "Angular span for circumferential averaging"
+angularOffset = double 0 "Angle from radial axis to first profile"
+
+np = int 100 "Number of points along line"
+nc = int 100 "Number of line for homogeneous averaging"
+
+<<<PARAMETERSET
+*/
 
 protected:
   Parameters p_;
@@ -350,12 +383,13 @@ protected:
   boost::ptr_vector<line> lines_;
 
 public:
-  circumferentialAveragedUniformLine(Parameters const& p = Parameters() );
+  circumferentialAveragedUniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   arma::mat rotMatrix(int i, double angularOffset=0) const;
-  inline std::string setname(int i) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i); }
+  inline std::string setname(int i) const { return p_.name+"-"+boost::lexical_cast<std::string>(i); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       ColumnDescription* coldescr=NULL,
 			       const std::string& time="" // empty string means latest
@@ -366,13 +400,19 @@ class linearAveragedPolyLine
 : public set
 {
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
-      ( points, arma::mat, vec3(0,0,0) )
-      ( dir1, arma::mat, vec3(1,0,0) )
-      ( dir2, arma::mat, vec3(0,0,1) )
-      ( nd1, int, 10 )
-      ( nd2, int, 10 )
-  )
+#include "openfoamtools__sampleOps_linearAveragedPolyLine__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_linearAveragedPolyLine Parameters
+inherits set::Parameters
+
+points = vector (0 0 0) "Matrix of sample points"
+dir1=vector (1 0 0) "direction 1, defines spacing between profiles in direction 1"
+dir2=vector (0 0 1) "direction 2, defines spacing between profiles in direction 2"
+nd1 = int 10 "Number of profiles along dir1"
+nd2 = int 10 "Number of profiles along dir2"
+
+<<<PARAMETERSET
+*/
 
 protected:
   linearAveragedPolyLine::Parameters p_;
@@ -380,11 +420,12 @@ protected:
   boost::ptr_vector<line> lines_;
 
 public:
-  linearAveragedPolyLine(linearAveragedPolyLine::Parameters const& p = linearAveragedPolyLine::Parameters() );
+  linearAveragedPolyLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
-  inline std::string setname(int i, int j) const { return p_.name()+"-"+boost::lexical_cast<std::string>(i*p_.nd1()+j); }
+  inline std::string setname(int i, int j) const { return p_.name+"-"+boost::lexical_cast<std::string>(i*p_.nd1+j); }
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
 			       ColumnDescription* coldescr=NULL,
 			       const std::string& time="" // empty string means latest
@@ -394,25 +435,33 @@ public:
 class linearAveragedUniformLine
 : public set
 {
-  linearAveragedPolyLine pl_;
   
 public:
-  CPPX_DEFINE_OPTIONCLASS(Parameters, set::Parameters,
-      ( start, arma::mat, vec3(0,0,0) )
-      ( end, arma::mat, vec3(1,0,0) )
-      ( np, int, 100 )
-      ( dir1, arma::mat, vec3(1,0,0) )
-      ( dir2, arma::mat, vec3(0,0,1) )
-      ( nd1, int, 10 )
-      ( nd2, int, 10 )
-  )
+#include "openfoamtools__sampleOps_linearAveragedUniformLine__Parameters.h"
+/*
+PARAMETERSET>>> sampleOps_linearAveragedUniformLine Parameters
+inherits set::Parameters
+
+start = vector (0 0 0) "start point of base profile"
+end = vector (1 0 0) "end point of base profile"
+np = int 100 "Number of sample points on base profile"
+
+dir1=vector (1 0 0) "direction 1, defines spacing between profiles in direction 1"
+dir2=vector (0 0 1) "direction 2, defines spacing between profiles in direction 2"
+nd1 = int 10 "Number of profiles along dir1"
+nd2 = int 10 "Number of profiles along dir2"
+
+<<<PARAMETERSET
+*/
 
 protected:
   linearAveragedUniformLine::Parameters p_;
+  linearAveragedPolyLine pl_;
 
 public:
-  linearAveragedUniformLine(linearAveragedUniformLine::Parameters const& p = linearAveragedUniformLine::Parameters() );
+  linearAveragedUniformLine(ParameterSet const& p = Parameters::makeDefault() );
   virtual void addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const;
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual set* clone() const;
   
   arma::mat readSamples(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 
@@ -446,7 +495,7 @@ void sample(const OpenFOAMCase& ofc,
 	    std::vector<std::string> addopts = boost::assign::list_of<std::string>("-latestTime")
 	    );
 
-#endif 
+// #endif 
 
 /**
  * Converts a pair of patches into a cyclic pair using createPatch.

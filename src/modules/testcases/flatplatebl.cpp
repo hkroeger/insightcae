@@ -161,11 +161,8 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("deltax", deltax, "axial grid spacing (at the end of the plate)");
 
   
-  gradax_=deltax/dtrip_;
-  reportIntermediateParameter("gradax", gradax_, "axial grid stretching");
   
-//   nax_=std::max(1, int(round(L/deltax)));
-  nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, L_);
+  nax_=std::max(1, int(round(L_/deltax)));
   reportIntermediateParameter("nax", nax_, "number of cells in axial direction along the plate");
 
 
@@ -246,7 +243,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       new Block(
         PTS(10,11,2,3),
         nax_, p.mesh.nh-p.mesh.nl, nlat_,
-        list_of<double>(gradax_)(gradh_)(1.)
+        list_of<double>(1)(gradh_)(1.)
       )
     );
     
@@ -262,7 +259,7 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     (  
       new Block(PTS(0,1,11,10),
         nax_, p.mesh.nl, nlat_,
-        list_of<double>(gradax_)(gradl_)(1.)
+        list_of<double>(1)(gradl_)(1.)
       )
     );
     
@@ -487,7 +484,7 @@ void FlatPlateBL::evaluateAtSection
   
   double 
     miny=0.99*deltaywall_ref_,
-    maxy=std::min(1.5*delta99_e_, H_-deltaywall_ref_);
+    maxy=std::min(1.5*delta99_0_, H_-deltaywall_ref_);
     
   arma::mat pts=exp(linspace(log(miny), log(maxy), 101)) * vec3(0,1,0).t();
   pts.col(0)+=x;
@@ -942,12 +939,16 @@ double FlatPlateBL::Redelta2(double Rex, Redelta2_method method)
   switch (method)
   {
     case Redelta2_method_Schlichting:
+    {
       return 0.5*cw(Rex)*Rex; // Schlichting eq. (18.100), Kap. 18.2.5
       break;
-      
+    }
+    
     case Redelta2_method_Cengel:
+    {
       return 0.037*pow(Rex, 4./5.);
       break;
+    }
       
     default:
       throw insight::Exception("Unknown method for computation of Redelta2!");
@@ -961,7 +962,7 @@ double FlatPlateBL::Rex(double Redelta2, Redelta2_method method)
   switch (method)
   {
     case Redelta2_method_Schlichting:
-        
+    {
         struct Obj : public Objective1D
         {
             double Redelta2;
@@ -973,17 +974,24 @@ double FlatPlateBL::Rex(double Redelta2, Redelta2_method method)
         } o;
         o.Redelta2=Redelta2;
         return nonlinearSolve1D(o, o.Redelta2, 1e6);
-        break;
-      
+    } 
+    
     case Redelta2_method_Cengel:
+    {
       return pow(Redelta2/0.037, 5./4.);
-      break;
+    }
       
     default:
       throw insight::Exception("Unknown method for computation of Rex!");
   }
 
   return FP_NAN;
+}
+
+
+double FlatPlateBL::Retau(double Redelta2)
+{
+    return 1.13*pow(Redelta2, 0.843); // aus Schlatter, Örlü http://dx.doi.org/doi:doi:10.1017/S0022112010003113
 }
 
 

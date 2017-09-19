@@ -143,7 +143,12 @@ protected:
      */
     double Rex_e_;
     
-    double delta99_e_, Re_theta2e_, uinf_, ypfac_ref_, deltaywall_ref_, y_final_, gradl_, gradh_, T_, dtrip_, gradax_;
+    /**
+     * free stream velocity
+     */
+    double uinf_;
+    
+    double ypfac_ref_, deltaywall_ref_, y_final_, gradl_, gradh_, T_;
     int nax_, nlat_;
     
     double avgStart_, avg2Start_, end_;
@@ -218,6 +223,8 @@ public:
   
   static double Redelta2(double Rex, Redelta2_method method=Redelta2_method_Cengel);
   static double Rex(double Redelta2, Redelta2_method method=Redelta2_method_Cengel);
+  
+  static double Retau(double Redelta2);
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);

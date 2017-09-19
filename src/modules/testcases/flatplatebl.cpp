@@ -66,28 +66,16 @@ void FlatPlateBL::computeInitialLocation()
 {
   Parameters p(parameters_);
 
-  Retheta0_= p.geometry.Retheta0;
-  
-  struct Obj : public Objective1D
-  {
-    double Redelta2;
-    virtual double operator()(double Rex) const 
-    { 
-      return FlatPlateBL::Redelta2(Rex)-Redelta2; 
-    }
-    
-  } o;
-  o.Redelta2=Retheta0_;
-  Rex_0_=nonlinearSolve1D(o, o.Redelta2, 1e6);
+  Retheta0_= p.operation.Retheta0;
+  Rex_0_=Rex(Retheta0_);
 
-  uinf_= p.operation.uinf; //FieldData(p.getSubset("inflow").getSubset("umean")).maxValueMag();
+  uinf_= p.operation.uinf;
 
   // estimate (turbulent) friction coefficient at initial location
   cf_0_=cf(Rex_0_);
   utau_0_=uinf_*sqrt(0.5*cf_0_);
   
   theta0_=Retheta0_*p.fluid.nu/uinf_;
-  
   delta99_0_=Redelta99(Rex_0_)*p.fluid.nu/uinf_;
 }
 
@@ -107,37 +95,19 @@ void FlatPlateBL::calcDerivedInputData()
   
   computeInitialLocation();
   reportIntermediateParameter("uinf", uinf_, "free stream velocity", "m/s");
-  reportIntermediateParameter("Retheta0", Retheta0_, "Momentum thickness Reynolds number at tripping location", "");
-  reportIntermediateParameter("Rex_0", Rex_0_, "Reynolds number with turbulent running length at tripping location", "");
-  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the tripping location");
-  reportIntermediateParameter("utau_0", utau_0_, "Friction velocity at the tripping location", "m/s");
-  reportIntermediateParameter("theta_0", theta0_, "Momentum thickness at the tripping location", "m");
-  reportIntermediateParameter("delta99_0", delta99_0_, "Boundary layer thickness at the tripping location", "m");
+  reportIntermediateParameter("Retheta0", Retheta0_, "Momentum thickness Reynolds number at the inlet", "");
+  reportIntermediateParameter("Rex_0", Rex_0_, "Reynolds number with turbulent running length at the inlet", "");
+  reportIntermediateParameter("cf_0", cf_0_, "Expected wall friction coefficient at the inlet");
+  reportIntermediateParameter("utau_0", utau_0_, "Friction velocity at the inlet", "m/s");
+  reportIntermediateParameter("theta_0", theta0_, "Momentum thickness at the inlet", "m");
+  reportIntermediateParameter("delta99_0", delta99_0_, "Boundary layer thickness at the inlet", "m");
+    
+  L_ = p.geometry.LbyDelta99 * delta99_0_;
+  reportIntermediateParameter("L", L_, "Domain length", "m");
+    
   
-  Llam_=pow(Retheta0_/0.664, 2)*p.fluid.nu/uinf_;
-  reportIntermediateParameter("Llam", Llam_, "Length of laminar range upstream of tripping point", "m");
-  
-  L_=p.geometry.L;
-//   reportIntermediateParameter("L", L_, "Domain length", "m");
-  
-  Lap_=p.geometry.LapByL*L_;
-  if (Lap_>Llam_)
-  {
-    insight::Warning
-    (
-      str(format(
-	"Prescribed approach length (Lap=%g) is larger than the laminar range (Llam=%g) for prescribed Retheta0!\n"
-	"The length will be clipped to Llam."
-      ) % Lap_ % Llam_));
-    Lap_=Llam_;
-  }
-  reportIntermediateParameter("Lap", Lap_, "Length of (resolved) laminar range upstream of tripping point", "m");
-  
-  double Rexl_0=uinf_*Llam_/p.fluid.nu;
-  reportIntermediateParameter("Rexl_0", Rexl_0, "reynolds number with laminar running length at the tripping location");
-
-  Re_L_=Rex_0_ + uinf_*L_/p.fluid.nu;
-  reportIntermediateParameter("Re_L", Re_L_, "reynolds number with turbulent running length at the end of the plate");
+  Rex_e_=Rex_0_ + uinf_*L_/p.fluid.nu;
+  reportIntermediateParameter("Rex_e", Rex_e_, "Reynolds number with turbulent running length at the end of the domain", "");
 
   /**
    * compute estimated BL thicknesses
@@ -146,34 +116,30 @@ void FlatPlateBL::calcDerivedInputData()
   reportIntermediateParameter("Retau_0", Retau_0, "Friction velocity Reynolds number at the tripping location");
 
 
-  double thetae=Redelta2(Re_L_)*p.fluid.nu/uinf_;
+  double thetae=Redelta2(Rex_e_)*p.fluid.nu/uinf_;
   reportIntermediateParameter("thetae", thetae, "Momentum thickness at the end of the plate", "m");
-  double cf_e=cf(Re_L_);
+  double cf_e=cf(Rex_e_);
   reportIntermediateParameter("cf_e", cf_e, "Expected wall friction coefficient at the end of the plate");
   double tau_e=cf_e*0.5*pow(uinf_,2);
   reportIntermediateParameter("tau_e", tau_e, "Expected wall shear stress at the end of the plate", "$m^2/s^2$");
   double utau_e=sqrt(tau_e);
   reportIntermediateParameter("utau_e", utau_e, "Friction velocity at the end of the plate", "m/s");
-  delta99_e_=Redelta99(Re_L_)*p.fluid.nu/uinf_;
-  reportIntermediateParameter("delta99_e", delta99_e_, "Boundary layer thickness at the end of the plate", "m");
-  double Retau_e=utau_e*delta99_e_/p.fluid.nu;
-  reportIntermediateParameter("Retau_e", Retau_e, "Friction velocity Reynolds number at the end of the plate");
-
+  
 
   ypfac_ref_=sqrt(cf_0_/2.)*uinf_/p.fluid.nu;
-  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at tripping location)");
+  reportIntermediateParameter("ypfac_ref", ypfac_ref_, "yplus factor (y+/y, computed from friction coefficient at the inlet)");
 
-  H_=p.geometry.HBydelta99e*delta99_e_;
+  H_=p.geometry.HbyDelta99*delta99_0_;
   reportIntermediateParameter("H", H_, "height of the domain");
   reportIntermediateParameter("Hbytheta0", H_/theta0_, "height of the domain, divided by initial BL thickness");
 
-  W_=p.geometry.WBydelta99e*delta99_e_;
+  W_=p.geometry.WbyDelta99*delta99_0_;
   reportIntermediateParameter("W", W_, "width of the domain");
   reportIntermediateParameter("Wbytheta0", W_/theta0_, "width of the domain, divided by initial BL thickness");
 
   reportIntermediateParameter("Lbytheta0", L_/theta0_, "length of the domain, divided by initial BL thickness");
 
-  deltaywall_ref_=p.mesh.ypluswall/ypfac_ref_;
+  deltaywall_ref_=p.mesh.yplus0/ypfac_ref_;
   reportIntermediateParameter("deltaywall_ref", deltaywall_ref_, "near-wall grid spacing");
   
   gradl_=pow(p.mesh.layerratio, p.mesh.nl-1);
@@ -191,12 +157,9 @@ void FlatPlateBL::calcDerivedInputData()
   ).grad();
   reportIntermediateParameter("gradh", gradh_, "required vertical grid stretching");
   
-  double deltax=(p.mesh.dxplus/ypfac_ref_);
+  double deltax=(p.mesh.dxplus0/ypfac_ref_);
   reportIntermediateParameter("deltax", deltax, "axial grid spacing (at the end of the plate)");
 
-  dtrip_=1000*p.fluid.nu/uinf_; // Re(d_tripwire)=1000
-  reportIntermediateParameter("dtrip", dtrip_, "diameter of tripwire to fulfill Re_d=1000");
-  
   
   gradax_=deltax/dtrip_;
   reportIntermediateParameter("gradax", gradax_, "axial grid stretching");
@@ -205,24 +168,11 @@ void FlatPlateBL::calcDerivedInputData()
   nax_=bmd::GradingAnalyzer(gradax_).calc_n(dtrip_, L_);
   reportIntermediateParameter("nax", nax_, "number of cells in axial direction along the plate");
 
-  gradaxi_=p.mesh.gradaxi; //p.getDouble("mesh/gradaxi");
-  reportIntermediateParameter("gradaxi", gradaxi_, "axial grid stretching in approach zone upstream of plate");
-  
-//   naxi_=std::max(1, int(round(0.1*L/deltax)));
-  if (Lap_>1e-10)
-  {
-    naxi_=bmd::GradingAnalyzer(gradaxi_).calc_n(dtrip_, Lap_);
-    reportIntermediateParameter("naxi", naxi_, "number cells in approach zone upstream of plate");
-  }
-  else
-  {
-    naxi_=0;
-  }
 
   if (p.mesh.twod)
     nlat_=1;
   else
-    nlat_=std::max(1, int(round(W_/(p.mesh.dzplus/ypfac_ref_))));
+    nlat_=std::max(1, int(round(W_/(p.mesh.dzplus0/ypfac_ref_))));
   reportIntermediateParameter("nlat", nlat_, "number of cells in lateral direction");
   
   T_=L_/uinf_;
@@ -268,9 +218,6 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
       (2, 	vec3(L_, H_, 0))
       (3, 	vec3(0, H_, 0))
       
-      (4, 	vec3(-p.geometry.LapByL*L_, 0., 0))
-      (14, 	vec3(-p.geometry.LapByL*L_, y_final_, 0))
-      (5, 	vec3(-p.geometry.LapByL*L_, H_, 0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
@@ -292,94 +239,40 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 #define PTS(a,b,c,d) \
   P_8(pts[a], pts[b], pts[c], pts[d], \
       pts[a]+vH, pts[b]+vH, pts[c]+vH, pts[d]+vH)
-      
-  bool upstreamzone=(naxi_>0);
-      
-  if (upstreamzone)
-  {
-    {
-      Block& bl = bmd->addBlock
-      (  
-	new Block(
-  // 	PTS(4,0,3,5),
-	  PTS(14,10,3,5),
-	  naxi_, p.mesh.nh-p.mesh.nl, nlat_,
-	  list_of<double>(1./gradaxi_)(gradh_)(1.),
-	  approach_
-	)
-      );
-      in.addFace(bl.face("0473"));
-      approach.addFace(bl.face("0154"));
-      
-  //     top.addFace(bl.face("2376"));
-      out_top.addFace(bl.face("2376"));
-      
-      cycl_side_0.addFace(bl.face("0321"));
-      cycl_side_1.addFace(bl.face("4567"));
-    }
-    {
-      Block& bl = bmd->addBlock
-      (  
-	new Block(
-  // 	PTS(4,0,3,5),
-	  PTS(4,0,10,14),
-	  naxi_, p.mesh.nl, nlat_,
-	  list_of<double>(1./gradaxi_)(gradl_)(1.),
-	  approach_
-	)
-      );
-      in.addFace(bl.face("0473"));
-      approach.addFace(bl.face("0154"));
-      
-  //     top.addFace(bl.face("2376"));
-//       out_top.addFace(bl.face("2376"));
-      
-      cycl_side_0.addFace(bl.face("0321"));
-      cycl_side_1.addFace(bl.face("4567"));
-    }
-  }
 
   {
     Block& bl = bmd->addBlock
     (  
       new Block(
-// 	PTS(0,1,2,3),
-	PTS(10,11,2,3),
-	nax_, p.mesh.nh-p.mesh.nl, nlat_,
-	list_of<double>(gradax_)(gradh_)(1.)
+        PTS(10,11,2,3),
+        nax_, p.mesh.nh-p.mesh.nl, nlat_,
+        list_of<double>(gradax_)(gradh_)(1.)
       )
     );
     
-    if (!upstreamzone)
-      in.addFace(bl.face("0473"));
-    
+    in.addFace(bl.face("0473"));    
 //     out.addFace(bl.face("1265"));
 //     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
-    out_top.addFace(bl.face("2376"));
     
     cycl_side_0.addFace(bl.face("0321"));
-    cycl_side_1.addFace(bl.face("4567"));
   }
   {
     Block& bl = bmd->addBlock
     (  
       new Block(PTS(0,1,11,10),
-	nax_, p.mesh.nl, nlat_,
-	list_of<double>(gradax_)(gradl_)(1.)
+        nax_, p.mesh.nl, nlat_,
+        list_of<double>(gradax_)(gradl_)(1.)
       )
     );
     
-    if (!upstreamzone)
-      in.addFace(bl.face("0473"));
-    
+    in.addFace(bl.face("0473"));    
 //     out.addFace(bl.face("1265"));
 //     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
 //     out_top.addFace(bl.face("2376"));
     
     cycl_side_0.addFace(bl.face("0321"));
-    cycl_side_1.addFace(bl.face("4567"));
   }
 
   cycl_side.appendPatch(cycl_side_0);
@@ -389,66 +282,6 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
 
   cm.createOnDisk(executionPath());
   cm.executeCommand(executionPath(), "blockMesh");
-  
-//   const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
-//   if (tp.selection()=="blocks")
-  if (Parameters::mesh_type::tripping_blocks_type * blocks
-       = boost::get<Parameters::mesh_type::tripping_blocks_type>(&p.mesh.tripping))
-  {
-//     int n=tp().getInt("n");
-    double Reh=blocks->Reh;
-    double wbyh=blocks->wbyh;
-    double lbyh=blocks->lbyh;
-    
-    double dtrip=Reh*p.fluid.nu/uinf_;
-    double w=wbyh*dtrip; //W_/double(2*n);
-    int n=floor(W_/w/2.);
-    double Ltrip=lbyh*dtrip; //3.*dtrip;
-    
-    std::vector<std::string> cmds;
-    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") 
-	% trip_ 
-	% Ltrip % /*dtrip */0.0
-    ) );
-    for (int i=0; i<n; i++)
-    {
-      double w0=(double(2*i)+0.5)*w;
-      double w12=(double(2*i+1)+0.5)*w;
-      cmds.push_back( str( format("cellSet %s add boxToCell (%g %g %g) (%g %g %g)") 
-	% trip_ 
-	% (-1e-10)	% /*dtrip*/0.0 	% w0 
-	% Ltrip 	% (/*2.**/dtrip) 	% w12 
-      ) );
-    }
-    cmds.push_back( str( format("cellSet %s invert") % trip_ ) );
-    
-    setSet(cm, executionPath(), cmds);
-    
-    removeCellSetFromMesh(cm, executionPath(), trip_);
-  }
-  else if (Parameters::mesh_type::tripping_drag_type * drag
-       = boost::get<Parameters::mesh_type::tripping_drag_type>(&p.mesh.tripping))
-
-  {
-//     int n=tp().getInt("n");
-    double Reh=drag->Reh;
-//     double CD=tp().getDouble("CD");
-    double lbyh=drag->lbyh;
-    
-    double dtrip=Reh*p.fluid.nu/uinf_;
-    double Ltrip=lbyh*dtrip; //3.*dtrip;
-    
-    std::vector<std::string> cmds;
-    cmds.push_back( str( format("cellSet %s new boxToCell (-1e-10 0 -1e10) (%g %g 1e10)") 
-	% trip_ 
-	% Ltrip % dtrip
-    ) );
-    
-    setSet(cm, executionPath(), cmds);
-    
-    setsToZones(cm, executionPath(), true);
-  }
-
 //   cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite") );
 }
 
@@ -457,28 +290,27 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
   Parameters p(parameters_);
 
   {
-    boost::filesystem::path inlet_velocity_profile_tabfile(executionPath()/"inflow_velocity.dat");
+    boost::filesystem::path inlet_velocity_profile_tabfile(  "$FOAM_CASE/"/*executionPath()/*/  "inflow_velocity.dat");
     {
-      std::ofstream f(inlet_velocity_profile_tabfile.c_str());
-      f<<" 0.0 0.0 0.0 0.0"<<endl;
+        std::ofstream f(inlet_velocity_profile_tabfile.c_str());
+        f<<" 0.0 0.0 0.0 0.0"<<endl;
       
-      double x0=Llam_-Lap_;
-      double delta20=0.664*sqrt(p.fluid.nu*x0/uinf_);
-      
-      if (x0>0.)
-      {
-        int n=10;
+        int n=20;
         for (int i=1; i<n; i++)
         {
             double eta=double(i)/double(n-1);
-            double UByUinf = 2.*eta - 2.*pow(eta,3) + pow(eta,4);
-            f<<(delta20*eta)<<" "<<(uinf_*UByUinf)<<" 0.0 0.0"<<endl;
+            
+            double UByUinf = 
+                //2.*eta - 2.*pow(eta,3) + pow(eta,4);
+                pow(eta, 1./7.);
+                
+            f<<(delta99_0_*eta)<<" "<<(uinf_*UByUinf)<<" 0.0 0.0"<<endl;
         }
-      }
-      if (H_>delta20)
-      {
-        f<<H_<<" "<<uinf_<<" 0.0 0.0"<<endl;
-      }
+
+        if (H_>delta99_0_)
+        {
+            f<<H_<<" "<<uinf_<<" 0.0 0.0"<<endl;
+        }
     }
     
     VelocityInletBC::Parameters inflow_velocity;
@@ -506,10 +338,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
   
-//   double Umax=FieldData( p.getSubset("inflow").getSubset("umean")).maxValueMag();
-  
-//   std::string regime = p.get<SelectableSubsetParameter>("run/regime").selection();
-//   if (regime=="steady")
+
   if (Parameters::run_type::regime_steady_type *steady 
 	= boost::get<Parameters::run_type::regime_steady_type>(&p.run.regime))
   {
@@ -577,17 +406,6 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
 
 //   const SelectableSubsetParameter& tp = p.get<SelectableSubsetParameter>("mesh/tripping");
 //   if (tp.selection()=="drag")
-  
-  if (Parameters::mesh_type::tripping_drag_type * drag
-       = boost::get<Parameters::mesh_type::tripping_drag_type>(&p.mesh.tripping))  
-  {
-    double CD=drag->CD;
-
-    cm.insert(new volumeDrag(cm, volumeDrag::Parameters()
-      .set_name(trip_)
-      .set_CD(vec3(CD, 0, 0))
-    ));
-  }
   
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
   
@@ -1125,12 +943,44 @@ double FlatPlateBL::Redelta2(double Rex, Redelta2_method method)
   {
     case Redelta2_method_Schlichting:
       return 0.5*cw(Rex)*Rex; // Schlichting eq. (18.100), Kap. 18.2.5
+      break;
       
     case Redelta2_method_Cengel:
       return 0.037*pow(Rex, 4./5.);
+      break;
       
     default:
-      throw insight::Exception("Unknown method for computation of Redelta99!");
+      throw insight::Exception("Unknown method for computation of Redelta2!");
+  }
+
+  return FP_NAN;
+}
+
+double FlatPlateBL::Rex(double Redelta2, Redelta2_method method)
+{
+  switch (method)
+  {
+    case Redelta2_method_Schlichting:
+        
+        struct Obj : public Objective1D
+        {
+            double Redelta2;
+            virtual double operator()(double Rex) const 
+            { 
+            return FlatPlateBL::Redelta2(Rex)-Redelta2; 
+            }
+            
+        } o;
+        o.Redelta2=Redelta2;
+        return nonlinearSolve1D(o, o.Redelta2, 1e6);
+        break;
+      
+    case Redelta2_method_Cengel:
+      return pow(Redelta2/0.037, 5./4.);
+      break;
+      
+    default:
+      throw insight::Exception("Unknown method for computation of Rex!");
   }
 
   return FP_NAN;

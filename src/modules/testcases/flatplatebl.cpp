@@ -219,9 +219,8 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
   ;
   
   // create patches
-  Patch& approach= bmd->addPatch(approach_, new Patch());
   Patch& in= 	bmd->addPatch(in_, new Patch());
-//   Patch& out= 	bmd->addPatch(out_, new Patch());
+//  Patch& out= 	bmd->addPatch(out_, new Patch());
 //   Patch& top= 	bmd->addPatch(top_, new Patch(/*"symmetryPlane"*/));
   Patch& out_top= 	bmd->addPatch(out_top_, new Patch());
   Patch cycl_side_0=Patch();
@@ -248,11 +247,10 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     );
     
     in.addFace(bl.face("0473"));    
-//     out.addFace(bl.face("1265"));
-//     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
-    
+    out_top.addFace(bl.face("2376"));
     cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
   }
   {
     Block& bl = bmd->addBlock
@@ -264,12 +262,9 @@ void FlatPlateBL::createMesh(insight::OpenFOAMCase& cm)
     );
     
     in.addFace(bl.face("0473"));    
-//     out.addFace(bl.face("1265"));
-//     top.addFace(bl.face("2376"));
     out_top.addFace(bl.face("1265"));
-//     out_top.addFace(bl.face("2376"));
-    
     cycl_side_0.addFace(bl.face("0321"));
+    cycl_side_1.addFace(bl.face("4567"));
   }
 
   cycl_side.appendPatch(cycl_side_0);
@@ -287,7 +282,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
   Parameters p(parameters_);
 
   {
-    boost::filesystem::path inlet_velocity_profile_tabfile(  "$FOAM_CASE/"/*executionPath()/*/  "inflow_velocity.dat");
+    boost::filesystem::path inlet_velocity_profile_tabfile(  executionPath() / "inflow_velocity.dat");
     {
         std::ofstream f(inlet_velocity_profile_tabfile.c_str());
         f<<" 0.0 0.0 0.0 0.0"<<endl;

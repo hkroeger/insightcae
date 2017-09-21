@@ -2798,4 +2798,48 @@ std::vector<std::string> patchList
   return result;
 }
 
+void calcR
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts
+)
+{
+    if (cm.OFversion()<400)
+    {
+        cm.executeCommand( location, "R", addopts );
+    }
+    else
+    {
+        std::string solver = readSolverName(location);
+        
+        std::vector<std::string> opts = addopts;
+        opts.insert(opts.begin(), "R");
+        opts.insert(opts.begin(), "-func");
+        opts.insert(opts.begin(), "-postProcess");
+        cm.executeCommand( location, solver, opts );
+    }
+}
+
+void calcLambda2
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts
+)
+{
+    if (cm.OFversion()<400)
+    {
+        cm.executeCommand( location, "Lambda2", addopts );
+    }
+    else
+    {
+        std::vector<std::string> opts = addopts;
+        opts.insert(opts.begin(), "Lambda2");
+        opts.insert(opts.begin(), "-func");
+        cm.executeCommand( location, "postProcess", opts );
+    }
+}
+
+
 }

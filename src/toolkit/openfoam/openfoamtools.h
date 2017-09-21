@@ -896,6 +896,21 @@ std::vector<std::string> patchList
     const std::vector<std::string>& exclude = std::vector<std::string>() // OF syntax: either string or regex (in quotes)
 );
 
+
+void calcR
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+);
+
+void calcLambda2
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

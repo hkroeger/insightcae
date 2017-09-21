@@ -356,7 +356,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
       .set_writeInterval(0.25*T_)
       .set_endTime(end_)
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
-      .set_deltaT(1e-3)
+      .set_deltaT( 0.5 * /*std::min(*/ L_/double(nax_)/*, deltaywall_ref_ )*/ / uinf_ )
       .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
       .set_decompWeights(vec3(2,1,0))
     ));

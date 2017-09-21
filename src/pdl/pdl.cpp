@@ -1009,9 +1009,8 @@ struct SelectableSubsetParameterParser {
                 ParserDataBase::Ptr pd=boost::fusion::get<1> ( sd ); // should be a set
                 std::string seliname=name+"_"+sel_name;
                 os<<"if ( ";
-                os<<"const "
-                  <<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )
-                  <<"* "<<seliname<<"_static = boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
+                os<<"const "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )<<"* "<<seliname<<"_static = ";
+                os<<"boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
                   <<") {"<<endl;
                 os<<varname<<".selection() = \""<<sel_name<<"\";"<<endl;
                 os<<"ParameterSet& "<<seliname<<"_param = "<<name<<"();"<<endl;

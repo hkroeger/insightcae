@@ -635,7 +635,7 @@ arma::mat sortedByCol(const arma::mat&m, int c)
   return xy;
 }
 
-Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
+void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
 {
     try
     {
@@ -672,6 +672,22 @@ Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
         os<<xy_us;
         throw insight::Exception("Interpolator::Interpolator(): Failed to initialize interpolator.\nSupplied data: "+os.str());
     }
+}
+
+Interpolator::Interpolator(const arma::mat& xy_us, bool force_linear)
+{
+    initialize(xy_us, force_linear);
+}
+
+
+Interpolator::Interpolator(const arma::mat& x, const arma::mat& y, bool force_linear)
+{
+    arma::mat xy = arma::zeros(x.n_rows, 2);
+    if (x.n_rows!=y.n_rows)
+        throw insight::Exception(boost::str(boost::format("number of data points in x (%d) and y (%d) array differs!")%x.n_rows%y.n_rows));
+    xy.col(0)=x;
+    xy.col(1)=y;
+    initialize(xy, force_linear);
 }
 
 Interpolator::~Interpolator()

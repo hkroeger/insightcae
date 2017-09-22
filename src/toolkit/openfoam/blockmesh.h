@@ -224,6 +224,7 @@ protected:
   
 public:
   Edge(const Point& c0, const Point& c1);
+  virtual ~Edge();
   
   virtual std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, int OFversion) const =0;

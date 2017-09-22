@@ -122,10 +122,10 @@ void PipeBase::calcDerivedInputData()
   utau_=Re_tau*nu_/(0.5*D);
 
   Lc_ = x*D;
-  nax_=int(L*Re_tau/dxplus);  
-  nc_=int(M_PI*D*Re_tau/dzplus) /4;
+  nax_=int( (L/(0.5*D)) * Re_tau/dxplus);  
+  nc_=int( (M_PI*D/(0.5*D)) * Re_tau/dzplus) /4;
   
-  double rc=0.5*D-0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
+  double rc = 0.5*D - 0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
 
   ywall_ = ypluswall*0.5*D/Re_tau;
 
@@ -151,6 +151,7 @@ void PipeBase::calcDerivedInputData()
   cout<<"Viscosity \tnu="<<nu_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"# cells axial \tnax="<<nax_<<endl;
   cout<<"# cells circumferential \tnc="<<nc_<<endl;
   cout<<"# cells radial \tnr="<<nr_<<endl;
   cout<<"# grading vertical \tgradr="<<gradr_<<endl;
@@ -163,7 +164,8 @@ void PipeBase::insertBlocksAndPatches
     OpenFOAMCase& cm,
     std::auto_ptr<insight::bmd::blockMesh>& bmd,
     const std::string& prefix,
-    double xshift
+    double xshift,
+    double angleshift
 ) const
 {
   const ParameterSet& p=parameters_;
@@ -171,6 +173,8 @@ void PipeBase::insertBlocksAndPatches
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSBOOL(p, "mesh", fixbuf);
+  
+  std::cout<<D<<" "<<L<<std::endl;
   
   double al = M_PI/2.;
   
@@ -180,7 +184,7 @@ void PipeBase::insertBlocksAndPatches
   pts = boost::assign::map_list_of   
       (12, 	vec3(xshift, 0.5*D, 0))
       (11, 	vec3(xshift, 0.5*D-rbuf_, 0))
-      (10, 	vec3(xshift,  cos(0.5*al)*Lc_, 0.))
+      (10, 	vec3(xshift,  cos(0.5*al+angleshift)*Lc_, 0.))
       (9, 	vec3(xshift,  1.2*0.5*Lc_, 0.))
       .convert_to_container<std::map<int, Point> >()
   ;
@@ -193,18 +197,18 @@ void PipeBase::insertBlocksAndPatches
   
   // core block
   {
-    arma::mat r0=rotMatrix(0.5*al, ax);
-    arma::mat r1=rotMatrix(1.5*al, ax);
-    arma::mat r2=rotMatrix(2.5*al, ax);
-    arma::mat r3=rotMatrix(3.5*al, ax);
+    arma::mat r0=rotMatrix(0.5*al+angleshift, ax);
+    arma::mat r1=rotMatrix(1.5*al+angleshift, ax);
+    arma::mat r2=rotMatrix(2.5*al+angleshift, ax);
+    arma::mat r3=rotMatrix(3.5*al+angleshift, ax);
 
     Block& bl = bmd->addBlock
     (  
       new Block(P_8(
-	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
-	  (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
-	),
-	nc_, nc_, nax_
+        r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
+        (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
+        ),
+        nc_, nc_, nax_
       )
     );
     cycl_in.addFace(bl.face("0321"));
@@ -214,19 +218,19 @@ void PipeBase::insertBlocksAndPatches
   // radial blocks
   for (int i=0; i<4; i++)
   {
-    arma::mat r0=rotMatrix(double(i+0.5)*al, ax);
-    arma::mat r1=rotMatrix(double(i+1.5)*al, ax);
+    arma::mat r0=rotMatrix(double(i+0.5)*al+angleshift, ax);
+    arma::mat r1=rotMatrix(double(i+1.5)*al+angleshift, ax);
 
     {    
       Block& bl = bmd->addBlock
       (
-	new Block(P_8(
-	    r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
-	    (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
-	  ),
-	  nc_, nr_, nax_,
-	  list_of<double>(1)(1./gradr_)(1)
-	)
+        new Block(P_8(
+            r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
+            (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
+        ),
+        nc_, nr_, nax_,
+        list_of<double>(1)(1./gradr_)(1)
+        )
       );
       cycl_in.addFace(bl.face("0321"));
       cycl_out.addFace(bl.face("4567"));
@@ -236,24 +240,27 @@ void PipeBase::insertBlocksAndPatches
     {    
       Block& bl = bmd->addBlock
       (
-	new Block(P_8(
-	    r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
-	    (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
-	  ),
-	  nc_, nrbuf_, nax_,
-	  list_of<double>(1)(1)(1)
-	)
+        new Block(P_8(
+            r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
+            (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
+        ),
+        nc_, nrbuf_, nax_,
+        list_of<double>(1)(1)(1)
+        )
       );
       cycl_in.addFace(bl.face("0321"));
       cycl_out.addFace(bl.face("4567"));
     }
 
-    arma::mat rmid=rotMatrix(double(i+1)*al, ax);
+    arma::mat rmid=rotMatrix(double(i+1)*al+angleshift, ax);
     bmd->addEdge(new ArcEdge(r1*pts[12], r0*pts[12], rmid*pts[12]));
     bmd->addEdge(new ArcEdge((r1*pts[12])+vL, (r0*pts[12])+vL, (rmid*pts[12])+vL));
 
-    bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
-    bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
+    if (fixbuf)
+    {
+        bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
+        bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
+    }
 
     //inner core
     bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
@@ -271,10 +278,6 @@ void PipeBase::createMesh
   path dir = executionPath();
   const ParameterSet& p=parameters_;
   
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSBOOL(p, "mesh", fixbuf);
-
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;

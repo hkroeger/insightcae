@@ -120,7 +120,8 @@ public:
     OpenFOAMCase& cm,
     std::auto_ptr<insight::bmd::blockMesh>& bmd,
     const std::string& prefix = "",
-    double xshift = 0.
+    double xshift = 0.,
+    double angleshift = 0.
   ) const;
   
   virtual void createMesh

@@ -513,6 +513,9 @@ Edge::Edge(const Point& c0, const Point& c1)
 {
 }
 
+Edge::~Edge()
+{}
+
 void Edge::registerPoints(blockMesh& bmd) const
 {
   bmd.addPoint(c0_);

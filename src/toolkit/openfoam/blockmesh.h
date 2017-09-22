@@ -91,7 +91,15 @@ class GradingAnalyzer
   double grad_;
 public:
   GradingAnalyzer(double grad);
+  
+  /**
+   * compute grading from cell size at beginning and end
+   */
   GradingAnalyzer(double delta0, double delta1);
+  
+  /**
+   * grading from condition: minimum cell length delta0 on edge of length L discretized with n cells
+   */
   GradingAnalyzer(double delta0, double L, int n);
   
   inline double grad() const { return grad_; }

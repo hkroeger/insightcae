@@ -621,7 +621,7 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   // ============ setup controlDict ================================
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-  if (LES)
+  if (LES && (OFversion()<200))
    controlDict["application"]="pisoFoam";
   else
    controlDict["application"]="pimpleFoam";

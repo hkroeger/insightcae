@@ -1484,6 +1484,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   const ParameterSet& ps
 )
 : BoundaryCondition(c, patchName, boundaryDict),
+  ps_(ps),
   p_(ps)
 {
  BCtype_="patch";
@@ -1645,12 +1646,16 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
+  multiphaseBC::multiphaseBCPtr phasefractions =
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+    
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   
   if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))  
     controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  phasefractions->addIntoDictionaries ( dictionaries );  
 //   p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
@@ -1732,8 +1737,8 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     {
       if (!(
 	  MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
-// 	  ||
-// 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  phasefractions->addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
 	{
 	  BC["type"]=OFDictData::data("zeroGradient");

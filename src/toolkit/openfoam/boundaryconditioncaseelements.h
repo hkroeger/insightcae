@@ -850,11 +850,14 @@ set {
 
 }} uniformIntensityAndLengthScale "Properties of turbulence"
 
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
+
 <<<PARAMETERSET
 */
 
 
 protected:
+    ParameterSet ps_;
     Parameters p_;
 
 public:

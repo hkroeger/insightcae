@@ -179,6 +179,51 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 
+defineType(PassiveScalar);
+addToOpenFOAMCaseElementFactoryTable(PassiveScalar);
+
+PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, "PassiveScalar"),
+  p_(ps)
+{
+}
+
+void PassiveScalar::addFields( OpenFOAMCase& c ) const
+{
+  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	list_of(0.0), volField ) );
+}
+
+
+void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
+{  
+    OFDictData::dict Fd;
+    Fd["type"]="scalarTransport";
+    Fd["field"]=p_.fieldname;
+    Fd["resetOnStartUp"]=false;
+    Fd["autoSchemes"]=false;
+    Fd["fvOptions"]=OFDictData::dict();
+    
+    OFDictData::list fol;
+    fol.push_back("\"libutilityFunctionObjects.so\"");
+    Fd["functionObjectLibs"]=fol;
+    
+    
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    controlDict.addSubDictIfNonexistent("functions")[p_.fieldname+"_transport"]=Fd;
+    
+    
+    OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
+    OFDictData::dict& divSchemes = fvSchemes.addSubDictIfNonexistent("divSchemes");
+    divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
+
+    OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+    OFDictData::dict& solvers=fvSolution.subDict("solvers");
+    solvers[p_.fieldname]=smoothSolverSetup(1e-6, 0.);
+
+}
+
+
+
 defineType(PressureGradientSource);
 addToOpenFOAMCaseElementFactoryTable(PressureGradientSource);
 

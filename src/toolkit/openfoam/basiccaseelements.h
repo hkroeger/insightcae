@@ -137,6 +137,37 @@ public:
 
 
 
+class PassiveScalar
+    : public OpenFOAMCaseElement
+{
+
+public:
+#include "basiccaseelements__PassiveScalar__Parameters.h"
+/*
+PARAMETERSET>>> PassiveScalar Parameters
+
+fieldname = string "F" "Name of the passive scalar field"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "PassiveScalar" );
+    PassiveScalar ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addFields( OpenFOAMCase& c ) const;
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+    static std::string category() { return "Numerics"; }
+};
+
+
 
 class PressureGradientSource
     : public OpenFOAMCaseElement

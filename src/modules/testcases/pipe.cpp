@@ -21,7 +21,6 @@
 
 #include "base/factory.h"
 #include "refdata.h"
-#include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
 
@@ -89,76 +88,7 @@ PipeBase::~PipeBase()
 ParameterSet PipeBase::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      ("geometry", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("D",		new DoubleParameter(2.0, "[m] Diameter of the pipe"))
-	    ("L",		new DoubleParameter(12.0, "[m] Length of the pipe"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Geometrical properties of the bearing"
-	))
-      
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("x",	new DoubleParameter(0.33, "Edge length of core block as fraction of diameter"))
-	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
-	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
-	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
-	    ("ypluswall", new DoubleParameter(0.5, "yPlus at the wall grid layer"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-      
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Re_tau",		new DoubleParameter(180, "[-] Friction-Velocity-Reynolds number"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      ("run", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Execution parameters"
-      ))
-
-      ("evaluation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(10, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
-	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
-	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Options for statistical evaluation"
-	))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
+  p.extend(Parameters::makeDefault().entries());
   return p;
 }
 
@@ -228,44 +158,38 @@ void PipeBase::calcDerivedInputData()
 }
 
 
-
-void PipeBase::createMesh
+void PipeBase::insertBlocksAndPatches
 (
-  OpenFOAMCase& cm
-)
-{  
-  // create local variables from ParameterSet
-  path dir = executionPath();
+    OpenFOAMCase& cm,
+    std::auto_ptr<insight::bmd::blockMesh>& bmd,
+    const std::string& prefix,
+    double xshift
+) const
+{
   const ParameterSet& p=parameters_;
   
   PSDBL(p, "geometry", D);
   PSDBL(p, "geometry", L);
   PSBOOL(p, "mesh", fixbuf);
-
-  cm.insert(new MeshingNumerics(cm));
-  
-  using namespace insight::bmd;
-  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
-  bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("walls", "wall");
-  
   
   double al = M_PI/2.;
   
+  using namespace insight::bmd;
+  
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
-      (12, 	vec3(0, 0.5*D, 0))
-      (11, 	vec3(0, 0.5*D-rbuf_, 0))
-      (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
-      (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
+      (12, 	vec3(xshift, 0.5*D, 0))
+      (11, 	vec3(xshift, 0.5*D-rbuf_, 0))
+      (10, 	vec3(xshift,  cos(0.5*al)*Lc_, 0.))
+      (9, 	vec3(xshift,  1.2*0.5*Lc_, 0.))
       .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
   
   // create patches
-  Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
-  Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
+  Patch& cycl_in= 	bmd->addPatch(prefix+cycl_in_, new Patch());
+  Patch& cycl_out= 	bmd->addPatch(prefix+cycl_out_, new Patch());
   
   // core block
   {
@@ -336,6 +260,29 @@ void PipeBase::createMesh
     bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
 
   }
+}
+
+void PipeBase::createMesh
+(
+  OpenFOAMCase& cm
+)
+{  
+  // create local variables from ParameterSet
+  path dir = executionPath();
+  const ParameterSet& p=parameters_;
+  
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSBOOL(p, "mesh", fixbuf);
+
+  cm.insert(new MeshingNumerics(cm));
+  
+  using namespace insight::bmd;
+  std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
+  bmd->setScaleFactor(1.0);
+  bmd->setDefaultPatch("walls", "wall");
+
+  insertBlocksAndPatches(cm, bmd);  
 
   cm.insert(bmd.release());
 

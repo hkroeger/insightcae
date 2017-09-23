@@ -71,23 +71,23 @@ void ISCADParser::createPostProcExpressions()
 
 
     r_viewDef =
-        (r_identifier > '('
-         > r_vectorExpression > ','
-         > r_vectorExpression
-         > ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
-         > ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
-         > ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
-         > ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
-         > ( ( ',' >> lit("add")
-               >> (( 'l' > qi::attr(true) )|qi::attr(false))
-               >> (( 'r' > qi::attr(true) )|qi::attr(false))
-               >> (( 't' > qi::attr(true) )|qi::attr(false))
-               >> (( 'b' > qi::attr(true) )|qi::attr(false))
-               >> (( 'k' > qi::attr(true) )|qi::attr(false))
+        (r_identifier >> '('
+         >> r_vectorExpression >> ','
+         >> r_vectorExpression
+         >> ( ( ',' >> lit("up") >> r_vectorExpression ) | attr(VectorPtr()) )
+         >> ( ( ',' >> lit("section") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> lit("poly") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> lit("skiphl") >> qi::attr(true) ) | attr(false) )
+         >> ( ( ',' >> lit("add")
+               >> (( 'l' >> qi::attr(true) )|qi::attr(false))
+               >> (( 'r' >> qi::attr(true) )|qi::attr(false))
+               >> (( 't' >> qi::attr(true) )|qi::attr(false))
+               >> (( 'b' >> qi::attr(true) )|qi::attr(false))
+               >> (( 'k' >> qi::attr(true) )|qi::attr(false))
              ) |
-             ( qi::attr(false) > qi::attr(false) > qi::attr(false) > qi::attr(false) > qi::attr(false) )
+             ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
            )
-         > ')'
+         >> ')'
         )
         ;
     r_viewDef.name("view definition");
@@ -112,7 +112,7 @@ void ISCADParser::createPostProcExpressions()
         *     [\ref iscad_identifier_expression "<identifier:viewname>" ...] </b>
         *
         */
-        ( lit("DXF") > '(' > r_path > ')' > lit("<<") > ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' )
+        ( lit("DXF") >> '(' >> r_path >> ')' >> lit("<<") >> ( (r_solidmodel_expression >> *r_viewDef) % ',' ) >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<DrawingExport>(qi::_1, qi::_2))) ]
         |
@@ -124,19 +124,19 @@ void ISCADParser::createPostProcExpressions()
         * <b>saveAs(\ref iscad_filename_expression "<filename>") << \ref iscad_feature_expression "<feature:feature to save>" </b>
         *
         */
-        ( lit("saveAs") > '(' > r_path > ')' > lit("<<")
-          > r_solidmodel_expression
-          > *( r_identifier > '=' > r_faceFeaturesExpression )
-          > ';' )
+        ( lit("saveAs") >> '(' >> r_path >> ')' >> lit("<<")
+          >> r_solidmodel_expression
+          >> *( r_identifier >> '=' >> r_faceFeaturesExpression )
+          >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1, qi::_3))) ]
         |
-        ( lit("exportSTL") > '(' > r_path > ',' > r_scalarExpression > ')' > lit("<<") > r_solidmodel_expression > ';' )
+        ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Export>(qi::_3, qi::_1, qi::_2))) ]
         |
-        ( lit("exportEMesh") > '(' > r_path > ',' > r_scalarExpression > ',' > r_scalarExpression > ')'
-          > lit("<<") > r_edgeFeaturesExpression > ';' )
+        ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')'
+          >> lit("<<") >> r_edgeFeaturesExpression >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Export>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
         |
@@ -200,16 +200,16 @@ void ISCADParser::createPostProcExpressions()
         |
         
         
-        ( lit("SolidProperties") > '(' > r_identifier > ')' > lit("<<") > r_solidmodel_expression > ';' )
+        ( lit("SolidProperties") >> '(' >> r_identifier >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
         [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
                     phx::construct<PostprocActionPtr>(new_<SolidProperties>(qi::_2)))
         ]
         |
-        ( lit("Hydrostatics") > '('
-          > r_identifier > ','
-          > r_vectorExpression > ',' > r_vectorExpression > ','
-          > r_vectorExpression > ',' > r_vectorExpression
-          > ')' > lit("<<") > '(' > r_solidmodel_expression > ',' > r_solidmodel_expression > ')' > ';' ) // (1) hull and (2) ship
+        ( lit("Hydrostatics") >> '('
+          >> r_identifier >> ','
+          >> r_vectorExpression >> ',' >> r_vectorExpression >> ','
+          >> r_vectorExpression >> ',' >> r_vectorExpression
+          >> ')' >> lit("<<") >> '(' >> r_solidmodel_expression >> ',' >> r_solidmodel_expression >> ')' >> ';' ) // (1) hull and (2) ship
         [ phx::bind(&Model::addPostprocAction, model_, qi::_1,
                     phx::construct<PostprocActionPtr>(new_<Hydrostatics>(qi::_6, qi::_7, qi::_2, qi::_3, qi::_4, qi::_5)))
         ]

@@ -80,7 +80,7 @@ void ISCADParser::createVectorExpressions()
                     [ _val=phx::construct<VectorPtr>(phx::new_<ScalarDividedVector>(qi::_val, qi::_1)) ] )
                 | ( '^' >> r_vector_primary
                     [ _val=phx::construct<VectorPtr>(phx::new_<CrossMultipliedVector>(qi::_val, qi::_1)) ] )
-                | lit(">>") >
+                | lit(">>") >>
                 (
                     ( '(' >> r_datumExpression >> ',' >> r_vectorExpression >> ')' )
                     [ _val = phx::construct<VectorPtr>(phx::new_<ProjectedPoint>(qi::_val, qi::_1, qi::_2)) ]
@@ -102,10 +102,10 @@ void ISCADParser::createVectorExpressions()
 //        ( lit("modelCoG") )
 //         [ _val = phx::bind(&Model::modelCoG, model_) ]
 //       |
-        ( lit("rot") > '('
-          > r_vectorExpression
-          > lit("by") > r_scalarExpression
-          > ( (lit("around") > r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) )> ')' )
+        ( lit("rot") >> '('
+          >> r_vectorExpression
+          >> lit("by") >> r_scalarExpression
+          >> ( (lit("around") >> r_vectorExpression) | attr(VectorPtr( new ConstantVector(vec3(0,0,1)))) ) >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<RotatedVector>(qi::_1, qi::_2, qi::_3)) ]
         |
 //        qi::lexeme[model_->vectorSymbols()]
@@ -117,21 +117,21 @@ void ISCADParser::createVectorExpressions()
 // 	     lit("CoG") [ lazy( _val = phx::bind(&getModelCoG, *_a)) ]
 // 	   )
         |
-        ( lit("Mechanism_CrankDrive") > '('
-          > r_scalarExpression > ','
-          > r_vectorExpression > ','
-          > r_scalarExpression > ','
-          > r_vectorExpression > ','
-          > r_vectorExpression
-          > ')' )
+        ( lit("Mechanism_CrankDrive") >> '('
+          >> r_scalarExpression >> ','
+          >> r_vectorExpression >> ','
+          >> r_scalarExpression >> ','
+          >> r_vectorExpression >> ','
+          >> r_vectorExpression
+          >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_CrankDrive>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5)) ]
         |
-        ( lit("Mechanism_Slider") > '('
-          > r_scalarExpression > ','
-          > r_vectorExpression > ','
-          > r_vectorExpression > ','
-          > r_vectorExpression
-          > ')' )
+        ( lit("Mechanism_Slider") >> '('
+          >> r_scalarExpression >> ','
+          >> r_vectorExpression >> ','
+          >> r_vectorExpression >> ','
+          >> r_vectorExpression
+          >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<Mechanism_Slider>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
         |
         ( lit("coord") >> '(' >>
@@ -159,11 +159,11 @@ void ISCADParser::createVectorExpressions()
         ( lit("surfinert3") >> '(' >> r_solidmodel_expression >> ')' )
         [ _val = phx::construct<VectorPtr>(phx::new_<SurfaceInertiaAxis>(qi::_1, 2)) ]
         |
-        ( lit("scoord") > '(' >
+        ( lit("scoord") >> '(' >>
           r_solidmodel_expression [ _val = phx::construct<VectorPtr>(phx::new_<SinglePointCoords>(
                   phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex))
                                            )) ]
-          > ')' )
+          >> ')' )
 
         |
         ( /*lit("refpt") >> '(' >>*/ r_datumExpression /*>> ')'*/ )

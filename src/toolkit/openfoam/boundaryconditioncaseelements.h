@@ -657,6 +657,50 @@ public:
 };
 
 
+class MappedVelocityInletBC
+    : public BoundaryCondition
+{
+public:
+#include "boundaryconditioncaseelements__MappedVelocityInletBC__Parameters.h"
+/*
+PARAMETERSET>>> MappedVelocityInletBC Parameters
+
+distance = vector (1 0 0) "distance of sampling plane"
+average =  vector (1 0 0) "average"
+rho = double 1025.0 "Density at boundary"
+T = double 300.0 "Temperature at boundary"
+gamma = double 1.0 "Ratio of specific heats at boundary"
+phiName = string "phi" "Name of flux field"
+psiName = string "none" "Name of compressibility field"
+rhoName = string "none" "Name of density field"
+UName = string "U" "Name of velocity field"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    ParameterSet ps_;
+
+public:
+    declareType ( "MappedVelocityInletBC" );
+    MappedVelocityInletBC
+    (
+        OpenFOAMCase& c,
+        const std::string& patchName,
+        const OFDictData::dict& boundaryDict,
+        const ParameterSet&ps = Parameters::makeDefault()
+    );
+    
+    virtual void addOptionsToBoundaryDict ( OFDictData::dict& bndDict ) const;    
+    virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
+    
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+};
+
 
 /**
  * The base class for inlet boundaries in OpenFOAM.

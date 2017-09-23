@@ -185,7 +185,7 @@ void PipeBase::insertBlocksAndPatches
       (12, 	vec3(xshift, 0.5*D, 0))
       (11, 	vec3(xshift, 0.5*D-rbuf_, 0))
       (10, 	vec3(xshift,  cos(0.5*al+angleshift)*Lc_, 0.))
-      (9, 	vec3(xshift,  1.2*0.5*Lc_, 0.))
+      (9, 	vec3(xshift,  0.5*Lc_, 0.))
       .convert_to_container<std::map<int, Point> >()
   ;
   arma::mat vL=vec3(L, 0, 0);
@@ -263,8 +263,8 @@ void PipeBase::insertBlocksAndPatches
     }
 
     //inner core
-    bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
-    bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
+//     bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
+//     bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
 
   }
 }

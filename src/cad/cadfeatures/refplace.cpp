@@ -135,9 +135,9 @@ double AlignedPlanes::residual(const gp_Trsf& tr) const
 //     std::cerr<<"sqdist="<<pl.SquareDistance(ptarg.Location())<<std::endl;
 //     std::cerr<<"angle="<<pl.Axis().Direction().Angle(ptarg.Axis().Direction())*180./M_PI<<std::endl;
     if (inv_)
-      return pow(M_PI-pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
+      return pow(1. + pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) + pl.SquareDistance(ptarg.Location());
     else
-      return pow(pl.Axis().Direction().Angle(ptarg.Axis().Direction()), 2) + pl.SquareDistance(ptarg.Location());
+      return pow(1. - pl.Axis().Direction().XYZ().Dot(ptarg.Axis().Direction().XYZ()), 2) + pl.SquareDistance(ptarg.Location());
 }
 
 

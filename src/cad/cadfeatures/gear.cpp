@@ -266,16 +266,6 @@ public:
     double backlash_angle;
     double half_thick_angle;
 
-    // Variables controlling the rim.
-//     double rim_radius;
-
-    // Variables controlling the circular holes in the gear.
-//     double circle_orbit_diameter;
-//     double circle_orbit_curcumference;
-
-    // Limit the circle size to 90% of the gear face.
-//     double circle_diameter;
-
     gear_shape gear_shape_;
 
     gear
@@ -284,19 +274,14 @@ public:
         int number_of_teeth=17,
         double gear_thickness=5,
         double clearance = 0.2,
-//         double rim_thickness=8,
-//         double rim_width=5,
-//         double hub_thickness=10,
-//         double hub_diameter=15,
-//         double bore_diameter=5,
-//         double circles=8,
         double backlash=0,
         double pressure_angle=20.*M_PI/180.,
         double twist=0,
         int resolution=10
     )
+    :
         // Pitch diameter: Diameter of pitch circle.
-    :   pitch_diameter(number_of_teeth * module),
+        pitch_diameter(number_of_teeth * module),
         pitch_radius(pitch_diameter/2.),
 
         // Base Circle
@@ -318,19 +303,6 @@ public:
         root_radius(pitch_radius-dedendum),
         backlash_angle(backlash / pitch_radius),
         half_thick_angle((2.*M_PI / number_of_teeth - backlash_angle) / 4.),
-
-        // Variables controlling the rim.
-//         rim_radius(root_radius - rim_width),
-
-        // Variables controlling the circular holes in the gear.
-//         circle_orbit_diameter(hub_diameter/2.+rim_radius),
-//         circle_orbit_curcumference(M_PI*circle_orbit_diameter),
-
-        // Limit the circle size to 90% of the gear face.
-//         circle_diameter(
-//             min (
-//                 0.70*circle_orbit_curcumference/circles,
-//                 (rim_radius-hub_diameter/2.)*0.9)),
     
         gear_shape_
         (
@@ -485,10 +457,13 @@ void SpurGear::build()
 {
     gear g( m_->value(), z_->value(), t_->value(), clearance_->value() );
     
+    refvalues_["outer_radius"] = g.outer_radius;
     refvalues_["pitch_radius"] = g.pitch_radius;
+    refvalues_["root_radius"] = g.root_radius;
     refvalues_["thick_angle"] = g.half_thick_angle*2.;
     
     providedSubshapes_["pitch_circle"]=Circle::create( vec3const(0,0,0), vec3const(0,0,1), scalarconst(g.pitch_diameter));
+    providedSubshapes_["tooth"].reset( new Feature( g.gear_shape_.tooth_ ) );
     
     setShape( g );
 

@@ -144,6 +144,167 @@ OFDictData::dict probes::functionObjectDict() const
 }
 
 
+arma::mat readProbesLine(std::istream& f, int nc_expected, bool& skip)
+{
+  std::string line;
+
+  getline ( f, line );
+//   std::cout<<"RAW: "<<line<<std::endl;
+  
+  if ( f.fail() ) return arma::mat();
+
+  if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
+
+  erase_all ( line, "(" );
+  erase_all ( line, ")" );
+  replace_all ( line, ",", " " );
+  replace_all ( line, "\t", " " );
+  while (line.find("  ")!=std::string::npos)
+  {
+    replace_all ( line, "  ", " " );
+  }
+//   std::cout<<"CLEAN: "<<line<<std::endl;
+
+  std::vector<string> strs;
+  boost::split ( strs, line, boost::is_any_of ( " " ) );
+
+  if ( strs.size() != nc_expected ) 
+  {
+//       std::cout<<"found "<<strs.size()<<" fields, expected "<<nc_expected<<std::endl;
+      return arma::mat();
+  }
+
+  arma::mat row;
+  row.set_size ( 1, strs.size() );
+
+  int k=0;
+  BOOST_FOREACH ( const string& e, strs )
+  {
+    row ( 0, k++ ) =lexical_cast<double> ( e );
+  }
+  
+  return row;
+}
+
+arma::mat probes::readProbes ( const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName )
+{
+  typedef boost::shared_ptr<arma::mat> MatPtr;
+  std::map< std::string, MatPtr > probes_data;
+
+  path fp = absolute ( location ) /"postProcessing"/foName;
+  
+  if ( c.OFversion() < 400 )
+      insight::Warning("readProbes has not been tested for the current OF version "+boost::lexical_cast<std::string>(c.OFversion()));
+
+  TimeDirectoryList tdl=listTimeDirectories ( fp );
+
+  BOOST_FOREACH ( const TimeDirectoryList::value_type& td, tdl )
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( td.second );
+            itr != end_itr;
+            ++itr )
+    {
+        if ( is_regular_file(itr->status()) )
+        {
+            std::string fieldname=itr->path().filename().string();
+            
+            std::ifstream f( (td.second/fieldname ).c_str() );
+            while ( !f.eof() )
+            {
+                std::string line;
+
+                getline ( f, line );                
+                if ( f.fail() ) break;
+
+                if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
+            }
+        }
+    }
+        
+    std::ifstream f;
+    f.open ( ( td.second/fieldname ).c_str() );
+    
+    while ( !f.eof() )
+      {
+
+        bool skip=false;
+
+        arma::mat row;
+        if ( c.OFversion() >=300 )
+          {
+            arma::mat r1=readForcesLine ( f, ncexp, skip );
+            arma::mat r2=readForcesLine ( f2, ncexp, skip );
+//             std::cout<<r1<<r2<<std::endl;
+            if ( (r1.n_cols==0) || (r2.n_cols==0) )
+            {
+                if ( !skip ) break;
+            }
+            else
+            {
+                // make compatible with earlier OF versions
+                r1.shed_cols(1,3); // remove total force
+                r2.shed_cols(1,3); // remove total moment
+                r2.shed_col(0); // remove time column
+//                 if (r1.n_cols==7) // append porosity columns, if not present
+//                 {
+//                     arma::mat rm=arma::join_rows(r1, arma::zeros(1,3));
+//                     r1=rm;
+//                 }
+//                 if (r2.n_cols==7) // append porosity columns, if not present
+//                 {
+//                     arma::mat rm=arma::join_rows(r2, arma::zeros(1,3));
+//                     r2=rm;
+//                 }
+                
+                row=arma::join_rows ( r1, r2 );
+//     std::cout<<"r="<<row<<std::endl;
+                
+            }
+          }
+        else
+          {
+            row=readForcesLine ( f, ncexp, skip );
+            if ( row.n_cols==0 )
+            {
+                if ( !skip ) break;
+            }
+            else
+            {
+                if ( c.OFversion() >=220 )
+                {
+                    // remove porous forces
+                    row.shed_cols ( 16,18 );
+                    row.shed_cols ( 7,9 );
+                } 
+            }
+        }
+
+        if (row.n_cols>0)
+        {
+         if ( fl.n_rows==0 )
+           {
+             fl=row;
+           }
+         else
+           {
+             fl.resize ( fl.n_rows+1, fl.n_cols );
+             fl.row ( fl.n_rows-1 ) = row;
+           }
+        }
+      }
+  }
+
+//   if ( c.OFversion() >=220 )
+//     {
+//       // remove porous forces
+//       fl.shed_cols ( 16,18 );
+//       fl.shed_cols ( 7,9 );
+//     }
+
+  return fl;
+}
+
 
 
 defineType(cuttingPlane);

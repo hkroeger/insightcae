@@ -1112,6 +1112,8 @@ void ChannelCyclic::createCase
     .set_fields( list_of<std::string>("p")("U") )
     .set_probeLocations(pl)
     .set_name("center_probes")
+    .set_outputControl("timeStep")
+    .set_outputInterval(10.0)
     ));
   }
   

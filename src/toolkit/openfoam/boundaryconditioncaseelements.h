@@ -452,11 +452,6 @@ public:
 class uniformPhases
     : public multiphaseBC
 {
-// public:
-//     typedef std::map<std::string, double> PhaseFractionList;
-
-// protected:
-//   PhaseFractionList phaseFractions_;
 public:
 #include "boundaryconditioncaseelements__uniformPhases__Parameters.h"
 /*
@@ -482,6 +477,17 @@ public:
     static Parameters mixture( const std::map<std::string, double>& sp);
     static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
     virtual ParameterSet getParameters() const { return p_; }
+};
+
+class uniformWallTiedPhases
+: public uniformPhases
+{
+public:
+    declareType ( "uniformWallTiedPhases" );
+    uniformWallTiedPhases ( const ParameterSet& p );
+    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
+    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 }
@@ -1111,6 +1117,7 @@ rotating = bool false "Whether the wall is rotating"
 CofR = vector (0 0 0) "Center of rotation"
 roughness_z0 = double 0 "Wall roughness height"
 meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
+phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
 */

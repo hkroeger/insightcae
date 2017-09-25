@@ -116,7 +116,7 @@ struct OpenFOAMBoundaryDictParser
         rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier );
         rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
-        rlist = qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
+        rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 /*
 	BOOST_SPIRIT_DEBUG_NODE(rquery);
 	BOOST_SPIRIT_DEBUG_NODE(rpair);   

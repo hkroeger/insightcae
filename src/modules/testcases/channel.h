@@ -59,6 +59,7 @@ operation=set
 {
  Re_tau = double 180 "[-] Friction-Velocity-Reynolds number"
  y0 = double 0 "[m] aerodynamic roughness height at the walls"
+ wscalar=bool false "include scalar transport (1 at lower wall, 0 at upper wall)"
 } "Definition of the operation point under consideration"
 
 fluid = set 
@@ -116,7 +117,10 @@ public:
   const int n_hom_avg=10;
 
 protected:
-  std::string cycl_in_, cycl_out_;
+    /** 
+     * patch names
+     */
+  std::string cycl_in_, cycl_out_, wall_up_, wall_lo_;
   
   // Derived input data
   /**

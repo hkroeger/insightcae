@@ -79,7 +79,9 @@ ChannelBase::ChannelBase(const ParameterSet& ps, const boost::filesystem::path& 
     ps, exepath
   ),
   cycl_in_("cycl_half0"),
-  cycl_out_("cycl_half1")
+  cycl_out_("cycl_half1"),
+  wall_up_("wall_upper"),
+  wall_lo_("wall_lower")
 {
 }
 
@@ -223,7 +225,7 @@ void ChannelBase::createMesh
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
-  bmd->setDefaultPatch("walls", "wall");
+//   bmd->setDefaultPatch("walls", "wall");
   
   
   double al = M_PI/2.;
@@ -236,6 +238,8 @@ void ChannelBase::createMesh
       (3, 	vec3(0.5*L, -0.5*H, 0.5*B))
       .convert_to_container<std::map<int, Point> >()
   ;
+  arma::mat vHbuf=vec3(0, 0, 0);
+  arma::mat vH=vec3(0, H, 0);
   
   // create patches
   Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
@@ -247,8 +251,11 @@ void ChannelBase::createMesh
   if (p.mesh.twod) side_type="empty";
   Patch& cycl_side= 	bmd->addPatch("cycl_side", new Patch(side_type));
   
-  arma::mat vHbuf=vec3(0, 0, 0);
-  arma::mat vH=vec3(0, H, 0);
+  Patch& wall_up= 	bmd->addPatch(wall_up_, new Patch("wall"));
+  wall_up.addFace(pts[0]+vH, pts[1]+vH, pts[2]+vH, pts[3]+vH);
+  Patch& wall_lo= 	bmd->addPatch(wall_lo_, new Patch("wall"));
+  wall_lo.addFace(pts[0], pts[1], pts[2], pts[3]);
+  
   int nh=nh_;
   
   if (nhbuf_>0)
@@ -348,8 +355,6 @@ void ChannelBase::createCase
   PSDBL(parameters(), "geometry", H);
   PSDBL(parameters(), "geometry", B);
   PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", Re_tau);
-  PSINT(parameters(), "fluid", turbulenceModel);
     
   path dir = executionPath();
 
@@ -391,11 +396,34 @@ void ChannelBase::createCase
     ));
   }
   
+  std::vector<std::string> fields_to_average = list_of("p")("U")("pressureForce")("viscousForce");
+  
+  if (p.operation.wscalar)
+  {
+    cm.insert(new PassiveScalar(cm, PassiveScalar::Parameters()
+        .set_fieldname("theta")
+    ));
+    fields_to_average.push_back("theta");
+    multiphaseBC::multiphaseBCPtr temp_hi(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
+        map_list_of("theta", 1.0)
+    )));
+    multiphaseBC::multiphaseBCPtr temp_lo(new multiphaseBC::uniformWallTiedPhases( multiphaseBC::uniformWallTiedPhases::mixture(
+        map_list_of("theta", 0.0)
+    )));
+    
+    cm.insert(new WallBC(cm, wall_lo_, boundaryDict, WallBC::Parameters()
+     .set_phasefractions(temp_hi) 
+    ));
+    cm.insert(new WallBC(cm, wall_up_, boundaryDict, WallBC::Parameters()
+     .set_phasefractions(temp_lo) 
+    ));
+  }
+  
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
-    .set_patches( list_of<string>("walls") )
+    .set_patches( list_of<string>("\"wall_.*\"") )
   ));
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
-    .set_fields(list_of<std::string>("p")("U")("pressureForce")("viscousForce"))
+    .set_fields(fields_to_average)
     .set_timeStart(avgStart_)
     .set_name("zzzaveraging") // shall be last FO in list
   ));

@@ -1083,14 +1083,7 @@ void ChannelCyclic::createCase
   OpenFOAMCase& cm
 )
 {  
-  const ParameterSet& p=parameters_;
-  // create local variables from ParameterSet
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", B);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
-    
+  Parameters p(parameters_);
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -1101,15 +1094,22 @@ void ChannelCyclic::createCase
   ChannelBase::createCase(cm);
   
   {
+    std::vector<std::string> sample_fields = list_of<std::string>("p")("U");
+    
+    if (p.operation.wscalar)
+    {
+        sample_fields.push_back("theta");
+    }
+    
     std::vector<arma::mat> pl;
-    double l=0.25*H;
     int np=25;
     for (int j=0; j<np; j++)
     {
-      pl.push_back(vec3(l*double(j)/double(np-1), 0, 0));
+      pl.push_back(vec3( 0., -0.5*p.geometry.H + 0.5*p.geometry.H*(1.-::cos(0.5*M_PI*double(j)/double(np-1))), 0.));
     }
+    
     cm.insert(new probes(cm, probes::Parameters()
-    .set_fields( list_of<std::string>("p")("U") )
+    .set_fields( sample_fields )
     .set_probeLocations(pl)
     .set_name("center_probes")
     .set_outputControl("timeStep")

@@ -145,7 +145,19 @@ public:
     declareType("probes");
     probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
-    static arma::mat readProbes(const OpenFOAMCase& c, const boost::filesystem::path& location, const std::string& foName);
+    static arma::cube readProbes
+    (
+        const OpenFOAMCase& c, 
+        const boost::filesystem::path& location, 
+        const std::string& foName, 
+        const std::string& fieldName
+    );
+    static arma::mat readProbesLocations
+    (
+        const OpenFOAMCase& c, 
+        const boost::filesystem::path& location, 
+        const std::string& foName
+    );
     static std::string category() {
         return "Postprocessing";
     }

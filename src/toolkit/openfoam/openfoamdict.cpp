@@ -73,13 +73,15 @@ struct OpenFOAMDictParser
         rstring = '"' >> *(~qi::char_('"')) >> '"';
         rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
-        rentry = ( strict_double | rlist | qi::int_ |  rdimensionedData | rstring | ridentifier );
+        rentry = ( strict_double | rlist | qi::int_ |  rdimensionedData | rstring | ridentifier | rsubdict );
         rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 
+//     	BOOST_SPIRIT_DEBUG_NODE(rpair);   
+//     	BOOST_SPIRIT_DEBUG_NODE(rentry);   
     }
-    
+
     qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
     qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
     qi::rule<Iterator, std::string()> ridentifier;
@@ -113,7 +115,7 @@ struct OpenFOAMBoundaryDictParser
         rstring = '"' >> *(~qi::char_('"')) >> '"';
         rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
         qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
-        rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier );
+        rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier| rsubdict );
         rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
         rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
         rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
@@ -368,6 +370,23 @@ std::vector<int> dimension(int d0, int d1, int d2, int d3, int d4, int d5, int d
   d[5]=d5;
   d[6]=d6;
   return d;
+}
+
+double as_scalar(const data& d)
+{
+    if (const double *v = boost::get<double>(&d))
+    {
+        return *v;
+    }
+    else if (const int *v = boost::get<int>(&d))
+    {
+        return *v;
+    }
+    else 
+    {
+        throw insight::Exception("could not cast dict entry into scalar!");
+        return nan("NAN");
+    }
 }
 
 dimensionedData::dimensionedData()

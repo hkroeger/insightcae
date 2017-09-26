@@ -60,6 +60,8 @@ typedef boost::variant<
     boost::recursive_wrapper<list>
     > data;
     
+double as_scalar(const data& d);
+    
 typedef std::pair<std::string, data> entry;
 
 struct dimensionedData

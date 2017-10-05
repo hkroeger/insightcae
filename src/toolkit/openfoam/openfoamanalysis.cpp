@@ -285,10 +285,15 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
+  Parameters p(parameters_);
+  
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
   results->introduction() = description_;
   
-  meshQualityReport(cm, executionPath(), results);
+  if (!p.eval.skipmeshquality)
+  {
+    meshQualityReport(cm, executionPath(), results);
+  }
   
   if (parameters().getBool("eval/reportdicts"))
   {

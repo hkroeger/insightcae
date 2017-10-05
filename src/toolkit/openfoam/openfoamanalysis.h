@@ -71,6 +71,7 @@ fluid = set
 eval = set
 {
  reportdicts 	= 	bool 	true 	"Include dictionaries into report"
+ skipmeshquality 	= 	bool 	false 	"check to exclude mesh check during evaluation"
 } "Parameters for evaluation after solver run"
 
 <<<PARAMETERSET

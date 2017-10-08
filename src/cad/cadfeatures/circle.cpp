@@ -96,7 +96,7 @@ void Circle::insertrule(parser::ISCADParser& ruleset) const
     "Circle",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
 	[ qi::_val = phx::bind(&Circle::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

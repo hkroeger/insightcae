@@ -87,8 +87,8 @@ void Shoulder::insertrule(parser::ISCADParser& ruleset) const
     "Shoulder",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > 
-			    ',' > ruleset.r_scalarExpression > ((',' > ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) > ')' )
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> 
+			    ',' >> ruleset.r_scalarExpression >> ((',' >> ruleset.r_scalarExpression)|qi::attr(scalarconst(1e6))) >> ')' )
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Shoulder>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))

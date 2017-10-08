@@ -304,7 +304,7 @@ void ModelFeature::insertrule(parser::ISCADParser& ruleset) const
     "loadmodel",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-     '(' >
+     '(' >>
       ( 
 	( ruleset.r_identifier >>
 	  *(',' >> (ruleset.r_identifier >> '=' >> (ruleset.r_solidmodel_expression|ruleset.r_datumExpression|ruleset.r_vectorExpression|ruleset.r_scalarExpression) ) ) >> ')' )  

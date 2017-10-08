@@ -51,43 +51,29 @@ gp_Trsf trsf_from_vector(const arma::mat& v)
 {
     gp_Trsf t; // final transform
     
-    /*
-    //Euler angles
-    gp_Trsf trsf1Probe, trsf2Probe, trsf3Probe;
-    trsf1Probe.SetRotation(gp::OX(), v(0));
-    trsf2Probe.SetRotation(gp::OY(), v(1));
-    trsf3Probe.SetRotation(gp::OZ(), v(2));
-    t = trsf1Probe * trsf2Probe * trsf3Probe;
-    */
-//     std::cerr<<"v="<<v<<std::endl;
-    double vx=v(4);
-    double mag=pow(vx,2)+pow(v(5),2)+pow(v(6),2);
-    if (mag<1e-16) vx=1e-16;
-//     gp_Quaternion q(vx, v(5), v(6), v(3));
-//     t.SetRotation(q);
-    t.SetRotation(gp_Ax1(gp_Pnt(0,0,0), gp_Dir(vx, v(5), v(6))), v(3));
+
+    double x=v(3), y=v(4), z=v(5), w=v(6);
+    double m=::sqrt(w*w+x*x+y*y+z*z);
+    if (m<Precision::Confusion()) 
+    { 
+        w=1.; x=0.; y=0.; z=0.; 
+        m=1.;
+    } else
+    {
+        x/=m;
+        y/=m;
+        z/=m;
+        w/=m;
+    }
     
-    t.SetTranslationPart(gp_Vec(v(0), v(1), v(2)));
-//     t.SetValues
-//     (
-//         v(0), v(1), v(2), v(3),
-//         v(4), v(5), v(6), v(7),
-//         v(8), v(9), v(10), v(11),
-//         Precision::Confusion(), Precision::Confusion()
-//     );    
+    t.SetValues(
+        (1.-2.*y*y-2.*z*z), (2.*x*y-2.*z*w), (2.*x*z+2.*y*w), v(0),
+        (2.*x*y+2.*z*w), (1.-2.*x*x-2.*z*z), (2.*y*z-2.*x*w), v(1),
+        (2.*x*z-2.*y*w), (2.*y*z+2.*x*w), (1.-2.*x*x-2.*y*y), v(2)
+    );
+
     return t;
 }
-
-// arma::mat vector_from_trsf(const gp_Trsf& t)
-// {
-//     arma::mat v;
-//     v
-//      << t.Value(1,1) << t.Value(1,2) << t.Value(1,3) << t.Value(1,4)
-//      << t.Value(2,1) << t.Value(2,2) << t.Value(2,3) << t.Value(2,4)
-//      << t.Value(3,1) << t.Value(3,2) << t.Value(3,3) << t.Value(3,4) 
-//      ;
-//     return v;
-// }
 
 
 double Condition::residual(const arma::mat& values) const
@@ -268,29 +254,6 @@ void RefPlace::build()
 
     if (!trsf_)
     {
-//         class Obj : public ObjectiveND
-//         {
-//         public:
-//             mutable int iter=0;
-//             const ConditionList& conditions;
-// 
-//             Obj(const ConditionList& co) : conditions(co) {} ;
-//             virtual double operator()(const arma::mat& x) const
-//             {
-//                 double Q=0.0;
-//                 for (size_t i=0; i<conditions.size(); i++)
-//                 {
-//                     Q += conditions[i]->residual(x);
-//                 }
-// //                 std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
-//                 return Q;
-//             }
-// 
-//             virtual int numP() const {
-//                 return 7;
-//             };
-// 
-//         } obj(conditions_);
 
         class Obj
         {
@@ -302,16 +265,16 @@ void RefPlace::build()
 	    
             double operator()(const column_vector& curplacement) const
             {
-		iter++;
-	        arma::mat x=arma::zeros(7);
-		for (int i=0; i<7; i++) x(i)=curplacement(i);
-		
+                iter++;
+                
+                arma::mat x=arma::zeros(7);
+                for (int i=0; i<7; i++) x(i)=curplacement(i);
+
                 double Q=0.0;
                 for (size_t i=0; i<conditions.size(); i++)
                 {
                     Q += conditions[i]->residual(x);
                 }
-//                 std::cerr<<"i="<<(iter++)<<" x:"<<x<<" -> Q="<<Q<<std::endl;
                 return Q;
             }
 
@@ -320,7 +283,7 @@ void RefPlace::build()
 
 	int n=7;
 	
-        arma::mat x0=arma::zeros(n); //=vector_from_trsf(gp_Trsf());
+    arma::mat x0=arma::zeros(n); //=vector_from_trsf(gp_Trsf());
         
 	column_vector starting_point(n);
 	for (int i=0; i<n; i++) starting_point(i)=x0(i);
@@ -332,12 +295,12 @@ void RefPlace::build()
 	  dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
 	  dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
 	  10,    // initial trust region radius
-	  1e-6,  // stopping trust region radius
+	  1e-8,  // stopping trust region radius
 	  100000    // max number of objective function evaluations
 	);
 	auto ts_end = std::chrono::high_resolution_clock::now();
 	std::cout<<"solved placement after "<<obj.iter<<" function calls "
-	   "("<<std::chrono::duration_cast<std::chrono::milliseconds>(ts_end - ts_start).count()<<"ms)"
+	   "("<<std::chrono::duration_cast<std::chrono::milliseconds>(ts_end - ts_start).count()<<"ms, residual r="<<r<<")"
 	   "."<<std::endl;
 	arma::mat tp=arma::zeros(n);
 	for (int i=0; i<n; i++) tp(i)=starting_point(i);
@@ -402,8 +365,8 @@ void RefPlace::insertrule(parser::ISCADParser& ruleset) const
         "RefPlace",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-                    ( '(' > ruleset.r_solidmodel_expression >
-                      ',' > r_condition % ','  >
+                    ( '(' >> ruleset.r_solidmodel_expression >>
+                      ',' >> r_condition % ','  >>
                       ')' )
                     [ qi::_val = phx::bind(&RefPlace::create, qi::_1, qi::_2) ]
 

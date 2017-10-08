@@ -124,7 +124,7 @@ void Ellipse::insertrule(parser::ISCADParser& ruleset) const
     "Ellipse",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
 	 [ qi::_val = phx::bind(&Ellipse::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

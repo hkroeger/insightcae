@@ -117,7 +117,7 @@ void Pyramid::insertrule(parser::ISCADParser& ruleset) const
     "Pyramid",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' )
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' )
       [ qi::_val = phx::bind(&Pyramid::create, qi::_1, qi::_2) ]
       
     ))

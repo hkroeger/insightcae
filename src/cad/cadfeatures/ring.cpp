@@ -89,7 +89,7 @@ void Ring::insertrule(parser::ISCADParser& ruleset) const
     "Ring",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_scalarExpression > ',' > ruleset.r_scalarExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ')' ) 
 	  [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Ring>(qi::_1, qi::_2, qi::_3, qi::_4)) ]
       
     ))

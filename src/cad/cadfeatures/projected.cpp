@@ -99,7 +99,7 @@ void Projected::insertrule(parser::ISCADParser& ruleset) const
     "Projected",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
       [ qi::_val = phx::bind(&Projected::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

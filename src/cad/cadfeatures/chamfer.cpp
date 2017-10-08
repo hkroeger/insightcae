@@ -89,10 +89,10 @@ void Chamfer::insertrule(parser::ISCADParser& ruleset) const
         "Chamfer",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
             ( '(' 
-                > ruleset.r_edgeFeaturesExpression > ',' 
-                > ruleset.r_scalarExpression 
-                > ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) ) 
-                > ')' )
+                >> ruleset.r_edgeFeaturesExpression >> ',' 
+                >> ruleset.r_scalarExpression 
+                >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(45.*M_PI/180.)) ) 
+                >> ')' )
             [ qi::_val = phx::bind(&Chamfer::create, qi::_1, qi::_2, qi::_3) ]
 
         ))

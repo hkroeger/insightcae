@@ -479,11 +479,11 @@ void SpurGear::insertrule(parser::ISCADParser& ruleset) const
     "SpurGear",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_scalarExpression > ',' 
-      > ruleset.r_scalarExpression > ',' 
-      > ruleset.r_scalarExpression
-      > ( ( ',' > ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
-      > ')'
+    ( '(' >> ruleset.r_scalarExpression >> ',' 
+      >> ruleset.r_scalarExpression >> ',' 
+      >> ruleset.r_scalarExpression
+      >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
+      >> ')'
     ) 
 	[ qi::_val = phx::bind(&SpurGear::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
@@ -1018,11 +1018,11 @@ void BevelGear::insertrule(parser::ISCADParser& ruleset) const
     "BevelGear",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_scalarExpression > ',' 
-      > ruleset.r_scalarExpression > ',' 
-      > ruleset.r_scalarExpression
-      > ( ( ',' > ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
-      > ')'
+    ( '(' >> ruleset.r_scalarExpression >> ',' 
+      >> ruleset.r_scalarExpression >> ',' 
+      >> ruleset.r_scalarExpression
+      >> ( ( ',' >> ruleset.r_scalarExpression ) | (qi::attr(scalarconst(0.2))) )
+      >> ')'
     ) 
 	[ qi::_val = phx::bind(&BevelGear::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       

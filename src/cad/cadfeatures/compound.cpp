@@ -116,7 +116,7 @@ void Compound::insertrule(parser::ISCADParser& ruleset) const
         "Compound",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-                    ( '(' > ( ruleset.r_solidmodel_expression % ',' ) > ')' )
+                    ( '(' >> ( ruleset.r_solidmodel_expression % ',' ) >> ')' )
                     [ qi::_val = phx::bind(&Compound::create, qi::_1) ]
 
                 ))

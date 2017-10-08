@@ -93,8 +93,8 @@ void StitchedSolid::insertrule(parser::ISCADParser& ruleset) const
     "StitchedSolid",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > (ruleset.r_solidmodel_expression % ',') 
-	  > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) > ')' )
+    ( '(' >> (ruleset.r_solidmodel_expression % ',') 
+	  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedSolid>(qi::_1, qi::_2)) ]
       
     ))

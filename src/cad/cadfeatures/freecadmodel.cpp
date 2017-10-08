@@ -157,10 +157,10 @@ void FreeCADModel::insertrule ( parser::ISCADParser& ruleset ) const
         typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
                     ( '(' 
-                      > ruleset.r_path > ','
-                      > ruleset.r_string
-                      > ( ( ',' > ( ( ruleset.r_identifier % '.' ) > '=' > ruleset.r_scalarExpression ) % ',' ) | qi::attr ( FreeCADModelVarList() ) )
-                      > ')' )
+                      >> ruleset.r_path >> ','
+                      >> ruleset.r_string
+                      >> ( ( ',' >> ( ( ruleset.r_identifier % '.' ) >> '=' >> ruleset.r_scalarExpression ) % ',' ) | qi::attr ( FreeCADModelVarList() ) )
+                      >> ')' )
                     [ qi::_val = phx::bind(&FreeCADModel::create, qi::_1, qi::_2, qi::_3 ) ]
 
                 ) )

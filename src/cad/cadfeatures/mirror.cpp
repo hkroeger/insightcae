@@ -121,7 +121,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     "Mirror",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' ) 
       [ qi::_val = phx::bind(&Mirror::create, qi::_1, qi::_2) ]
       
     ))
@@ -131,7 +131,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     "FlipY",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
       [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipY) ]
       
     ))
@@ -141,7 +141,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     "FlipX",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
       [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipX) ]
       
     ))
@@ -151,7 +151,7 @@ void Mirror::insertrule(parser::ISCADParser& ruleset) const
     "FlipXY",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
       [ qi::_val = phx::bind(&Mirror::create_short, qi::_1, FlipXY) ]
       
     ))

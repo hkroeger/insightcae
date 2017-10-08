@@ -911,6 +911,22 @@ void calcLambda2
   const std::vector<std::string>& addopts= boost::assign::list_of<std::string>("-latestTime")
 );
 
+/**
+ * check, if any file in orig is not existing in copy or newer in orig.
+ */
+bool checkIfAnyFileIsNewerOrNonexistent
+(
+    boost::filesystem::path orig,
+    boost::filesystem::path copy,
+    bool recursive=true
+);
+
+bool checkIfReconstructLatestTimestepNeeded
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location
+);
+
 }
 
 #endif // OPENFOAMTOOLS_H

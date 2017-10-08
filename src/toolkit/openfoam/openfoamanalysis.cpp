@@ -275,7 +275,10 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
   {
     if (exists(executionPath()/"processor0"))
     {
-      cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+        if (checkIfReconstructLatestTimestepNeeded(cm, executionPath()))
+        {
+            cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+        }
 //       cm.removeProcessorDirectories(executionPath());  //will remove proc dirs, if evaluation is executed while solution is still running...
     }
     else

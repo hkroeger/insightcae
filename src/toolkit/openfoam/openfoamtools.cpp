@@ -2842,4 +2842,109 @@ void calcLambda2
 }
 
 
+bool checkIfAnyFileIsNewerOrNonexistent
+(
+    boost::filesystem::path orig,
+    boost::filesystem::path copy,
+    bool recursive
+)
+{
+    using namespace boost::filesystem;
+    
+    bool anynewerornonexistent=false;
+    directory_iterator end_itr; // default construction yields past-the-end
+    for 
+    ( 
+        directory_iterator itr( orig );
+        itr != end_itr;
+        ++itr 
+    )
+    {
+        boost::filesystem::path curname=itr->path().filename();
+        
+        if ( is_directory(itr->status()) )
+        {
+            if (recursive)
+            {
+                anynewerornonexistent |= checkIfAnyFileIsNewerOrNonexistent(orig/curname, copy/curname);
+            }
+        }
+        else
+        {
+            if (!exists(copy/curname))
+            {
+                std::cout<<"NOT EXISTING IN "<<copy<<": "<<curname<<std::endl;
+                anynewerornonexistent = true;
+            }
+            else if ( last_write_time(orig/curname) > last_write_time(copy/curname) )
+            {
+                std::cout<<"NEWER IN "<<orig<<": "<<curname<<std::endl;
+                anynewerornonexistent = true;
+            }
+        }
+    }
+    
+    return anynewerornonexistent;
+}
+
+bool checkIfReconstructLatestTimestepNeeded
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location
+)
+{
+  using namespace boost::filesystem;
+  
+  path proc0 = location/"processor0";
+  if (!exists(proc0)) 
+  {
+      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
+      return false; // no reconst, if no processor directories exist
+  }
+  
+  // find last timestep in proc*0
+  TimeDirectoryList tdl = listTimeDirectories( proc0 );  
+  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
+  
+  if (tdl.size()==0) 
+  {
+      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
+      return false; // no reconst, if not time dirs in proc dirs
+  }
+
+  path timedirname = proc0latestTimeDir.filename();
+  path latestTimeDir = location/timedirname;
+  
+  if (!exists(latestTimeDir)) 
+  {
+      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
+      return true; // reconst needed, if latest time is only existing in proc dir
+  }
+  else
+  {
+      // time dir exists also in case; check if files in proc dir are newer
+      
+      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
+      {
+          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;          
+          return true;
+      }
+      
+      if (exists(proc0latestTimeDir/"polyMesh"))
+      {
+          if (!exists(latestTimeDir/"polyMesh"))
+          {
+            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;          
+            return true;              
+          }
+          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
+          {
+            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;          
+            return true;
+          }
+      }
+  }
+  return false;
+}
+
 }

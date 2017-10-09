@@ -3,6 +3,16 @@
 %include <std_map.i>
 %include <boost_shared_ptr.i>
 
+%shared_ptr(insight::Image);
+%shared_ptr(insight::Comment);
+%shared_ptr(insight::Chart);
+%shared_ptr(insight::ScalarResult);
+%shared_ptr(insight::NumericalResult<double> );
+%shared_ptr(insight::TabularResult);
+%shared_ptr(insight::AttributeTableResult);
+%shared_ptr(insight::ResultSection);
+%shared_ptr(insight::ResultElement);
+%shared_ptr(insight::ResultElementCollection);
 %shared_ptr(insight::ResultSet);
 
 %typemap(typecheck) insight::ParameterSet::EntryList& 

@@ -148,102 +148,6 @@ typedef boost::shared_ptr<ResultElement> ResultElementPtr;
 
 
 
-class ResultElementCollection
-    : public std::map<std::string, ResultElementPtr>
-{
-public:
-//     ResultElementCollection(const boost::filesystem::path & file);
-    virtual ~ResultElementCollection();
-
-#ifndef SWIG
-    /**
-     * insert elem into the set.
-     * elem is put into a shared_ptr but not clone. So don't delete it!
-     */
-    ResultElement& insert ( const std::string& key, ResultElement* elem );
-#endif
-
-//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
-    ResultElement& insert ( const std::string& key, ResultElementPtr elem );
-
-    /**
-     * insert elem into the set.
-     * elem is cloned.
-     */
-    ResultElement& insert ( const std::string& key, const ResultElement& elem );
-
-    void writeLatexCodeOfElements ( std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath ) const;
-
-    template<class T>
-    inline T& get ( const std::string& name )
-    {
-        std::map<std::string, ResultElementPtr>::iterator i=find ( name );
-        if ( i==end() ) {
-            insight::Exception ( "ResultSet does not contain element "+name );
-        }
-        T* ret=dynamic_cast<T*> ( i->second.get() );
-        if ( !ret ) {
-            insight::Exception ( "ResultSet does contain element "+name+" but it is not of requested type "+T::typeName );
-        }
-        return *ret;
-    }
-
-    /**
-     * append the result elements to the given xml node
-     */
-    virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const;
-
-    /**
-     * restore the result elements from the given node
-     */
-    virtual void readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node );
-
-    /**
-     * save result set to XML file
-     */
-    virtual void saveToFile ( const boost::filesystem::path& file ) const;
-
-    /**
-     * read result set from xml file
-     */
-    virtual void readFromFile ( const boost::filesystem::path& file );
-
-};
-
-
-
-
-class ResultSection
-    : public ResultElementCollection,
-      public ResultElement
-{
-    std::string sectionName_, introduction_;
-
-public:
-    declareType ( "ResultSection" );
-
-    ResultSection ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
-    ResultSection ( const std::string& sectionName, const std::string& introduction=std::string() );
-
-    virtual void writeLatexHeaderCode ( std::ostream& f ) const;
-    virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;
-    virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
-
-    /**
-     * append the contents of this element to the given xml node
-     */
-    virtual rapidxml::xml_node<>* appendToNode
-    (
-        const std::string& name,
-        rapidxml::xml_document<>& doc,
-        rapidxml::xml_node<>& node
-    ) const;
-
-    virtual boost::shared_ptr<ResultElement> clone() const;
-};
-
-
-
 
 class Image
     : public ResultElement
@@ -558,6 +462,145 @@ ResultElementPtr polynomialFitResult
 
 
 
+
+class ResultElementCollection
+    : public std::map<std::string, ResultElementPtr>
+{
+public:
+//     ResultElementCollection(const boost::filesystem::path & file);
+    virtual ~ResultElementCollection();
+
+#ifndef SWIG
+    /**
+     * insert elem into the set.
+     * elem is put into a shared_ptr but not clone. So don't delete it!
+     */
+    ResultElement& insert ( const std::string& key, ResultElement* elem );
+#endif
+
+//   void insert(const std::string& key, std::auto_ptr<ResultElement> elem);
+    ResultElement& insert ( const std::string& key, ResultElementPtr elem );
+
+    /**
+     * insert elem into the set.
+     * elem is cloned.
+     */
+    ResultElement& insert ( const std::string& key, const ResultElement& elem );
+
+    void writeLatexCodeOfElements ( std::ostream& f, const std::string&, int level, const boost::filesystem::path& outputfilepath ) const;
+
+    template<class T>
+    T& get ( const std::string& name );
+    
+    template<class T>
+    const T& get ( const std::string& name ) const
+    {
+        return const_cast<ResultElementCollection&>(*this).get<T>(name);
+    }
+    
+    double getScalar(const std::string& path) const;
+  
+    /**
+     * append the result elements to the given xml node
+     */
+    virtual void appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const;
+
+    /**
+     * restore the result elements from the given node
+     */
+    virtual void readFromNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node );
+
+    /**
+     * save result set to XML file
+     */
+    virtual void saveToFile ( const boost::filesystem::path& file ) const;
+
+    /**
+     * read result set from xml file
+     */
+    virtual void readFromFile ( const boost::filesystem::path& file );
+
+};
+
+
+
+
+
+template<class T>
+T& ResultElementCollection::get ( const std::string& name )
+{
+  using namespace boost;
+  using namespace boost::algorithm;
+
+  if ( boost::contains ( name, "/" ) )
+    {
+      std::string prefix = copy_range<std::string> ( *make_split_iterator ( name, first_finder ( "/" ) ) );
+      std::string remain=name;
+      erase_head ( remain, prefix.size()+1 );
+
+      std::vector<std::string> path;
+      boost::split ( path, name, boost::is_any_of ( "/" ) );
+      
+      return this->get<ResultElementCollection>( prefix ) .get<T> ( remain );
+    }
+  else
+    {
+      iterator i = find ( name );
+      if ( i==end() )
+        {
+          throw insight::Exception ( "Result "+name+" not found in result set" );
+        }
+      else
+        {
+          boost::shared_ptr<T> pt
+          ( 
+            boost::dynamic_pointer_cast<T>( i->second ) 
+          );
+          if ( pt )
+          {
+            return ( *pt );
+          }
+          else
+          {
+            throw insight::Exception ( "Parameter "+name+" not of requested type!" );
+          }
+        }
+    }
+}
+
+
+
+
+class ResultSection
+    : public ResultElementCollection,
+      public ResultElement
+{
+    std::string sectionName_, introduction_;
+
+public:
+    declareType ( "ResultSection" );
+
+    ResultSection ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
+    ResultSection ( const std::string& sectionName, const std::string& introduction=std::string() );
+
+    virtual void writeLatexHeaderCode ( std::ostream& f ) const;
+    virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;
+    virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
+
+    /**
+     * append the contents of this element to the given xml node
+     */
+    virtual rapidxml::xml_node<>* appendToNode
+    (
+        const std::string& name,
+        rapidxml::xml_document<>& doc,
+        rapidxml::xml_node<>& node
+    ) const;
+
+    virtual boost::shared_ptr<ResultElement> clone() const;
+};
+
+
 class ResultSet
     :
     public ResultElementCollection,
@@ -632,9 +675,6 @@ public:
 
 
 typedef boost::shared_ptr<ResultSet> ResultSetPtr;
-#ifdef SWIG
-// %template(ResultSetPtr) boost::shared_ptr<insight::ResultSet>;
-#endif
 
 
 

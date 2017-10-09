@@ -100,8 +100,8 @@ void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
     else
       turbProperties["simulationType"]="LESModel";
 
-    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-    controlDict.getList("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
+    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    controlDict.addListIfNonexistent("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
 }
 
 OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const

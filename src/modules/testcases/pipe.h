@@ -118,7 +118,7 @@ public:
   void insertBlocksAndPatches
   (
     OpenFOAMCase& cm,
-    std::auto_ptr<insight::bmd::blockMesh>& bmd,
+    std::auto_ptr<bmd::blockMesh>& bmd,
     const std::string& prefix = "",
     double xshift = 0.,
     double angleshift = 0.

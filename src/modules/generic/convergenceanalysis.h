@@ -21,14 +21,15 @@
 #ifndef CONVERGENCEANALYSIS_H
 #define CONVERGENCEANALYSIS_H
 
-#include <base/analysis.h>
+#include "base/analysis.h"
+
 
 namespace insight
 {
   
   
 class ConvergenceAnalysis
-: public Analysis
+: public insight::Analysis
 {
 public:
 #include "convergenceanalysis__ConvergenceAnalysis__Parameters.h"

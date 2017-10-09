@@ -632,6 +632,9 @@ public:
 
 
 typedef boost::shared_ptr<ResultSet> ResultSetPtr;
+#ifdef SWIG
+// %template(ResultSetPtr) boost::shared_ptr<insight::ResultSet>;
+#endif
 
 
 

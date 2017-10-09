@@ -18,6 +18,9 @@
  *
  */
 
+%include <boost_shared_ptr.i>
+%shared_ptr(ResultSet);
+
 %include "common.i"
 
 %module(directors="1") GenericModules
@@ -25,8 +28,12 @@
 %import(module="toolkit") "toolkit.i"
 
 %{
+#include <boost/shared_ptr.hpp>
 #include "filetemplate.h"
+#include "convergenceanalysis.h"
 using namespace insight;
 %}
 
+
 %include "filetemplate.h"
+%include "convergenceanalysis.h"

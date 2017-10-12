@@ -131,6 +131,7 @@ public:
 	GradingList grading = GradingList(3, 1), 
 	std::string zone="", 
 	bool inv=false);
+  virtual ~Block();
 
   void registerPoints(blockMesh& bmd) const;
 
@@ -162,6 +163,7 @@ protected:
   
 public:
     transform2D(int idx=2);
+    virtual ~transform2D();
   
     arma::mat mapped3D(const arma::mat& p) const;
     
@@ -182,6 +184,8 @@ protected:
   
 public:
     plane2D(double thick, int idx=2); 
+    virtual ~plane2D();
+    
     virtual arma::mat fwd(const arma::mat& p) const;
     virtual arma::mat rvs(const arma::mat& p) const;
 };
@@ -194,6 +198,8 @@ class wedge2D
   
 public:
     wedge2D(int idx=2);
+    virtual ~wedge2D();
+    
     virtual arma::mat fwd(const arma::mat& p) const;
     virtual arma::mat rvs(const arma::mat& p) const;
 };

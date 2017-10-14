@@ -39,6 +39,15 @@ protected:
   volVectorField* pressureForce_;
   volVectorField* viscousForce_;
   
+  word maskFieldName_;
+  autoPtr<OFstream> maskedForceFile_, maskedForceFile2_;
+  vector pr_force_;
+  vector vi_force_;
+  vector po_force_;
+  vector pr_moment_;
+  vector vi_moment_;
+  vector po_moment_;
+  
   void createFields();
   
 public:
@@ -106,7 +115,14 @@ public:
     void 
 #endif
     end();
-  
+
+    virtual 
+#ifdef OFplus
+    bool
+#else
+    void 
+#endif
+    write();
 };
 
 }

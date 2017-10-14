@@ -85,7 +85,8 @@ extendedForces::extendedForces
     const dictionary& dict,
     const bool readFields
 )
-: functionObjects::forces(name, time, dict, readFields)
+: functionObjects::forces(name, time, dict, readFields),
+  maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
 }
@@ -119,8 +120,8 @@ extendedForces::extendedForces
 #ifndef OF16ext
 	  , readFields
 #endif
-	)
-
+	),
+  maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
 }
@@ -139,7 +140,8 @@ extendedForces::extendedForces
     const scalar pRef,
     const coordinateSystem& coordSys
 )
-: forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys)
+: forces(name, obr, patchSet, pName, UName, rhoName, rhoInf, pRef, coordSys),
+  maskFieldName_("")
 {
   createFields();
 }
@@ -180,7 +182,7 @@ extendedForces::execute()
   {
     const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
     const volScalarField& p = obr_.lookupObject<volScalarField>(pName_);
-
+    
     const fvMesh& mesh = U.mesh();
 
 
@@ -189,13 +191,27 @@ extendedForces::execute()
     // Scale pRef by density for incompressible simulations
     scalar pRef = pRef_/rho(p);
 
+    pr_force_ = vector::zero;
+    vi_force_ = vector::zero;
+    po_force_ = vector::zero;
+    pr_moment_ = vector::zero;
+    vi_moment_ = vector::zero;
+    po_moment_ = vector::zero;
+
     //forAllConstIter(labelHashSet, patchSet_, iter)
     forAll(mesh.boundaryMesh(), patchI)
     {
       if (isA<wallFvPatch>(mesh.boundary()[patchI]))
       {
-        const vectorField nfb =
-            mesh.Sf().boundaryField()[patchI] / mesh.magSf().boundaryField()[patchI];
+        scalarField mask(mesh.boundary()[patchI].size(), 1.0);
+        if (maskFieldName_!="")
+        {
+            const volScalarField& vmask = obr_.lookupObject<volScalarField>(maskFieldName_);
+            mask = vmask.boundaryField()[patchI];
+        }
+
+        const vectorField& Sfb = mesh.Sf().boundaryField()[patchI];
+        const vectorField nfb = Sfb / mesh.magSf().boundaryField()[patchI];
 
         const symmTensorField& devRhoReffb
             = tdevRhoReff().boundaryField()[patchI];
@@ -219,9 +235,50 @@ extendedForces::execute()
         (
             nfb & devRhoReffb
         );
+        
+        if ( (maskFieldName_!="") && (patchSet_.found(patchI)) )
+        {
+            vectorField Md
+            (
+                mesh.C().boundaryField()[patchI] - coordSys_.origin()
+            );
+
+            vectorField fN
+            (
+                mask*rho(p)*Sfb*(p.boundaryField()[patchI] - pRef)
+            );
+
+            vectorField fT(mask*(Sfb & devRhoReffb));
+
+            vectorField fP(Md.size(), vector::zero);
+            
+            pr_force_ += sum(fN);
+            vi_force_ += sum(fT);
+            po_force_ += sum(fP);
+            pr_moment_ += sum(Md^fN);
+            vi_moment_ += sum(Md^fT);
+            po_moment_ += sum(Md^fP);
+
+        }
       }
 
     }
+    
+    Pstream::combineGather(pr_force_, plusEqOp<vector>());
+    Pstream::combineGather(vi_force_, plusEqOp<vector>());
+    Pstream::combineGather(po_force_, plusEqOp<vector>());
+    Pstream::combineGather(pr_moment_, plusEqOp<vector>());
+    Pstream::combineGather(vi_moment_, plusEqOp<vector>());
+    Pstream::combineGather(po_moment_, plusEqOp<vector>());
+    Pstream::combineScatter(pr_force_);
+    Pstream::combineScatter(vi_force_);
+    Pstream::combineScatter(po_force_);
+    Pstream::combineScatter(pr_moment_);
+    Pstream::combineScatter(vi_moment_);
+    Pstream::combineScatter(po_moment_);
+    
+    Info<<pr_force_<<vi_force_<<endl;
+
   }
   
 #ifdef OFplus
@@ -246,6 +303,98 @@ extendedForces::end()
   forces::end();
 }
 
+#ifdef OFplus
+bool
+#else
+void 
+#endif
+extendedForces::write()
+{
+//   const fvMesh& mesh = static_cast<const fvMesh&>(obr_);
+
+  forces::write();
+  
+#ifndef OFplus
+  if (!active_)
+  {
+      return;
+  }
+#endif
+
+  if (maskFieldName_!="")
+  {
+    const volVectorField& U = obr_.lookupObject<volVectorField>(UName_);
+    const fvMesh& mesh = U.mesh();
+    
+    if (!maskedForceFile_.valid())
+    {
+        if (Pstream::master())
+        {
+            fileName outdir;
+            
+            word startTimeName =
+                mesh.time().timeName(mesh.time().startTime().value());
+
+            if (Pstream::parRun())
+            {
+                // Put in undecomposed case (Note: gives problems for
+                // distributed data running)
+                outdir = obr_.path()/".."/"postProcessing"/(name()+"_masked")/startTimeName;
+            }
+            else
+            {
+                outdir = mesh.time().path()/"postProcessing"/(name()+"_masked")/startTimeName;
+            }
+
+            // Create directory if does not exist.
+            mkDir(outdir);
+
+            // Open new file at start up
+#ifdef OFplus
+            maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
+            maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
+#else
+            maskedForceFile_.reset(new OFstream(outdir/"forces.dat"));
+#endif
+        }
+    }
+    
+#ifdef OFplus
+    maskedForceFile_() << obr_.time().value()
+            << tab << (pr_force_+vi_force_)
+            << tab << pr_force_
+            << tab << vi_force_;
+    if (porosity_)
+        {
+            maskedForceFile_()  << tab << po_force_;
+        }
+    maskedForceFile_()  << endl;
+
+    maskedForceFile2_() << obr_.time().value()
+            << tab << (pr_moment_+vi_moment_)
+            << tab << pr_moment_
+            << tab << vi_moment_;
+    if (porosity_)
+        {
+            maskedForceFile2_()  << tab << po_moment_;
+        }
+    maskedForceFile2_()  << endl;
+#else
+    maskedForceFile_() << obr_.time().value() << tab << setw(1) << '('
+        << (pr_force_) << setw(1) << ' '
+        << (vi_force_) << setw(1) << ' '
+        << (po_force_) << setw(3) << ") ("
+        << (pr_moment_) << setw(1) << ' '
+        << (vi_moment_) << setw(1) << ' '
+        << (po_moment_) << setw(1) << ')'
+        << endl;
+#endif
+  }
+  
+#ifdef OFplus
+  return true;
+#endif
+}
 
 #ifdef OFplus
 

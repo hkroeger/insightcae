@@ -422,6 +422,7 @@ void ChannelBase::createCase
   cm.insert(new extendedForces(cm, extendedForces::Parameters()
     .set_patches( list_of<string>("\"wall_.*\"") )
   ));
+
   cm.insert(new fieldAveraging(cm, fieldAveraging::Parameters()
     .set_fields(fields_to_average)
     .set_timeStart(avgStart_)
@@ -765,17 +766,17 @@ void ChannelBase::evaluateAtSection(
     {
       std::vector<PlotCurve> pc =
       list_of
-        (PlotCurve(refdata_Ruu, 		"RuuMKM180", "w l lt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_Rvv, 		"RvvMKM180", "w l lt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
-        (PlotCurve(refdata_Rww, 		"RwwMKM180", "w l lt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_Ruu, 	"RuuMKM180", "w l lt 2 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_Rvv, 	"RvvMKM180", "w l lt 2 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
+        (PlotCurve(refdata_Rww, 	"RwwMKM180", "w l lt 2 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=180)$'"))
         
-        (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
-        (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_Ruu395, 	"RuuMKM395", "w l lt 4 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_Rvv395, 	"RvvMKM395", "w l lt 4 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=395)$'"))
+        (PlotCurve(refdata_Rww395, 	"RwwMKM395", "w l lt 4 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=395)$'"))
         
-        (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
-        (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
-        (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_Ruu590, 	"RuuMKM590", "w l lt 3 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_Rvv590, 	"RvvMKM590", "w l lt 3 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=590)$'"))
+        (PlotCurve(refdata_Rww590, 	"RwwMKM590", "w l lt 3 dt 2 lc 3 t '$R_{ww,ref}^+(Re_{\\tau}=590)$'"))
         ;
       plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
     }
@@ -823,9 +824,9 @@ void ChannelBase::evaluateAtSection(
       "$y_{\\delta}$", "$\\langle k^+ \\rangle$",
       list_of
        (PlotCurve( Kp, 			"TKE", "w l lt -1 t 'TKE'" ))
-       (PlotCurve( refdata_K, 		"TKEMKM180", "u 1:2 w l lt 1 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
-       (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
-       (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
+       (PlotCurve( refdata_K, 		"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
+       (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
+       (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
        ,
      "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
     )

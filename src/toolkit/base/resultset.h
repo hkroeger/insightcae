@@ -522,7 +522,7 @@ public:
 
 };
 
-
+typedef boost::shared_ptr<ResultElementCollection> ResultElementCollectionPtr;
 
 
 

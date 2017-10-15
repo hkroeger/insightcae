@@ -721,7 +721,8 @@ defineType(extendedForces);
 addToOpenFOAMCaseElementFactoryTable(extendedForces);
 
 extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
-: forces(c, ps)
+: forces(c, ps),
+  p_(ps)
 {
 }
 
@@ -748,6 +749,9 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   else
     fod["rhoName"]=p_.rhoName;
   fod["rhoInf"]=p_.rhoInf;
+  
+  if (p_.maskField!="")
+      fod["maskField"]=p_.maskField;
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   

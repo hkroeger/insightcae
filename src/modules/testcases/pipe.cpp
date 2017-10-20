@@ -21,7 +21,6 @@
 
 #include "base/factory.h"
 #include "refdata.h"
-#include "openfoam/blockmesh.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/openfoamcaseelements.h"
 
@@ -89,76 +88,7 @@ PipeBase::~PipeBase()
 ParameterSet PipeBase::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      ("geometry", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("D",		new DoubleParameter(2.0, "[m] Diameter of the pipe"))
-	    ("L",		new DoubleParameter(12.0, "[m] Length of the pipe"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Geometrical properties of the bearing"
-	))
-      
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("x",	new DoubleParameter(0.33, "Edge length of core block as fraction of diameter"))
-	    ("fixbuf",	new BoolParameter(false, "fix cell layer size inside buffer layer"))
-	    ("dzplus",	new DoubleParameter(15, "Dimensionless grid spacing in spanwise direction"))
-	    ("dxplus",	new DoubleParameter(60, "Dimensionless grid spacing in axial direction"))
-	    ("ypluswall", new DoubleParameter(0.5, "yPlus at the wall grid layer"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-      
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("Re_tau",		new DoubleParameter(180, "[-] Friction-Velocity-Reynolds number"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      ("run", new SubsetParameter	
-	    (
-		  ParameterSet
-		  (
-		    boost::assign::list_of<ParameterSet::SingleEntry>
-		    ("perturbU", 	new BoolParameter(true, "Whether to impose artifical perturbations on the initial velocity field"))
-		    .convert_to_container<ParameterSet::EntryList>()
-		  ), 
-		  "Execution parameters"
-      ))
-
-      ("evaluation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("inittime",	new DoubleParameter(10, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
-	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
-	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Options for statistical evaluation"
-	))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
+  p.extend(Parameters::makeDefault().entries());
   return p;
 }
 
@@ -192,10 +122,10 @@ void PipeBase::calcDerivedInputData()
   utau_=Re_tau*nu_/(0.5*D);
 
   Lc_ = x*D;
-  nax_=int(L*Re_tau/dxplus);  
-  nc_=int(M_PI*D*Re_tau/dzplus) /4;
+  nax_=int( (L/(0.5*D)) * Re_tau/dxplus);  
+  nc_=int( (M_PI*D/(0.5*D)) * Re_tau/dzplus) /4;
   
-  double rc=0.5*D-0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
+  double rc = 0.5*D - 0.5*sqrt(2.*Lc_*Lc_); // radial distance core block edge => outer wall
 
   ywall_ = ypluswall*0.5*D/Re_tau;
 
@@ -221,6 +151,7 @@ void PipeBase::calcDerivedInputData()
   cout<<"Viscosity \tnu="<<nu_<<endl;
   cout<<"Friction velocity \tutau="<<utau_<<endl;
   cout<<"Wall distance of first grid point \tywall="<<ywall_<<endl;
+  cout<<"# cells axial \tnax="<<nax_<<endl;
   cout<<"# cells circumferential \tnc="<<nc_<<endl;
   cout<<"# cells radial \tnr="<<nr_<<endl;
   cout<<"# grading vertical \tgradr="<<gradr_<<endl;
@@ -228,6 +159,115 @@ void PipeBase::calcDerivedInputData()
 }
 
 
+void PipeBase::insertBlocksAndPatches
+(
+    OpenFOAMCase& cm,
+    std::auto_ptr<insight::bmd::blockMesh>& bmd,
+    const std::string& prefix,
+    double xshift,
+    double angleshift
+) const
+{
+  const ParameterSet& p=parameters_;
+  
+  PSDBL(p, "geometry", D);
+  PSDBL(p, "geometry", L);
+  PSBOOL(p, "mesh", fixbuf);
+  
+  std::cout<<D<<" "<<L<<std::endl;
+  
+  double al = M_PI/2.;
+  
+  using namespace insight::bmd;
+  
+  std::map<int, Point> pts;
+  pts = boost::assign::map_list_of   
+      (12, 	vec3(xshift, 0.5*D, 0))
+      (11, 	vec3(xshift, 0.5*D-rbuf_, 0))
+      (10, 	vec3(xshift,  cos(0.5*al+angleshift)*Lc_, 0.))
+      (9, 	vec3(xshift,  0.5*Lc_, 0.))
+      .convert_to_container<std::map<int, Point> >()
+  ;
+  arma::mat vL=vec3(L, 0, 0);
+  arma::mat ax=vec3(1, 0, 0);
+  
+  // create patches
+  Patch& cycl_in= 	bmd->addPatch(prefix+cycl_in_, new Patch());
+  Patch& cycl_out= 	bmd->addPatch(prefix+cycl_out_, new Patch());
+  
+  // core block
+  {
+    arma::mat r0=rotMatrix(0.5*al+angleshift, ax);
+    arma::mat r1=rotMatrix(1.5*al+angleshift, ax);
+    arma::mat r2=rotMatrix(2.5*al+angleshift, ax);
+    arma::mat r3=rotMatrix(3.5*al+angleshift, ax);
+
+    Block& bl = bmd->addBlock
+    (  
+      new Block(P_8(
+        r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
+        (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
+        ),
+        nc_, nc_, nax_
+      )
+    );
+    cycl_in.addFace(bl.face("0321"));
+    cycl_out.addFace(bl.face("4567"));
+  }
+
+  // radial blocks
+  for (int i=0; i<4; i++)
+  {
+    arma::mat r0=rotMatrix(double(i+0.5)*al+angleshift, ax);
+    arma::mat r1=rotMatrix(double(i+1.5)*al+angleshift, ax);
+
+    {    
+      Block& bl = bmd->addBlock
+      (
+        new Block(P_8(
+            r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
+            (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
+        ),
+        nc_, nr_, nax_,
+        list_of<double>(1)(1./gradr_)(1)
+        )
+      );
+      cycl_in.addFace(bl.face("0321"));
+      cycl_out.addFace(bl.face("4567"));
+    }
+
+    if (fixbuf)
+    {    
+      Block& bl = bmd->addBlock
+      (
+        new Block(P_8(
+            r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
+            (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
+        ),
+        nc_, nrbuf_, nax_,
+        list_of<double>(1)(1)(1)
+        )
+      );
+      cycl_in.addFace(bl.face("0321"));
+      cycl_out.addFace(bl.face("4567"));
+    }
+
+    arma::mat rmid=rotMatrix(double(i+1)*al+angleshift, ax);
+    bmd->addEdge(new ArcEdge(r1*pts[12], r0*pts[12], rmid*pts[12]));
+    bmd->addEdge(new ArcEdge((r1*pts[12])+vL, (r0*pts[12])+vL, (rmid*pts[12])+vL));
+
+    if (fixbuf)
+    {
+        bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
+        bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
+    }
+
+    //inner core
+//     bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
+//     bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
+
+  }
+}
 
 void PipeBase::createMesh
 (
@@ -238,104 +278,14 @@ void PipeBase::createMesh
   path dir = executionPath();
   const ParameterSet& p=parameters_;
   
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSBOOL(p, "mesh", fixbuf);
-
   cm.insert(new MeshingNumerics(cm));
   
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
-  
-  
-  double al = M_PI/2.;
-  
-  std::map<int, Point> pts;
-  pts = boost::assign::map_list_of   
-      (12, 	vec3(0, 0.5*D, 0))
-      (11, 	vec3(0, 0.5*D-rbuf_, 0))
-      (10, 	vec3(0,  cos(0.5*al)*Lc_, 0.))
-      (9, 	vec3(0,  1.2*0.5*Lc_, 0.))
-      .convert_to_container<std::map<int, Point> >()
-  ;
-  arma::mat vL=vec3(L, 0, 0);
-  arma::mat ax=vec3(1, 0, 0);
-  
-  // create patches
-  Patch& cycl_in= 	bmd->addPatch(cycl_in_, new Patch());
-  Patch& cycl_out= 	bmd->addPatch(cycl_out_, new Patch());
-  
-  // core block
-  {
-    arma::mat r0=rotMatrix(0.5*al, ax);
-    arma::mat r1=rotMatrix(1.5*al, ax);
-    arma::mat r2=rotMatrix(2.5*al, ax);
-    arma::mat r3=rotMatrix(3.5*al, ax);
 
-    Block& bl = bmd->addBlock
-    (  
-      new Block(P_8(
-	  r1*pts[10], r2*pts[10], r3*pts[10], r0*pts[10],
-	  (r1*pts[10])+vL, (r2*pts[10])+vL, (r3*pts[10])+vL, (r0*pts[10])+vL
-	),
-	nc_, nc_, nax_
-      )
-    );
-    cycl_in.addFace(bl.face("0321"));
-    cycl_out.addFace(bl.face("4567"));
-  }
-
-  // radial blocks
-  for (int i=0; i<4; i++)
-  {
-    arma::mat r0=rotMatrix(double(i+0.5)*al, ax);
-    arma::mat r1=rotMatrix(double(i+1.5)*al, ax);
-
-    {    
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    r1*pts[10], r0*pts[10], r0*pts[11], r1*pts[11],
-	    (r1*pts[10])+vL, (r0*pts[10])+vL, (r0*pts[11])+vL, (r1*pts[11])+vL
-	  ),
-	  nc_, nr_, nax_,
-	  list_of<double>(1)(1./gradr_)(1)
-	)
-      );
-      cycl_in.addFace(bl.face("0321"));
-      cycl_out.addFace(bl.face("4567"));
-    }
-
-    if (fixbuf)
-    {    
-      Block& bl = bmd->addBlock
-      (
-	new Block(P_8(
-	    r1*pts[11], r0*pts[11], r0*pts[12], r1*pts[12],
-	    (r1*pts[11])+vL, (r0*pts[11])+vL, (r0*pts[12])+vL, (r1*pts[12])+vL
-	  ),
-	  nc_, nrbuf_, nax_,
-	  list_of<double>(1)(1)(1)
-	)
-      );
-      cycl_in.addFace(bl.face("0321"));
-      cycl_out.addFace(bl.face("4567"));
-    }
-
-    arma::mat rmid=rotMatrix(double(i+1)*al, ax);
-    bmd->addEdge(new ArcEdge(r1*pts[12], r0*pts[12], rmid*pts[12]));
-    bmd->addEdge(new ArcEdge((r1*pts[12])+vL, (r0*pts[12])+vL, (rmid*pts[12])+vL));
-
-    bmd->addEdge(new ArcEdge(r1*pts[11], r0*pts[11], rmid*pts[11]));
-    bmd->addEdge(new ArcEdge((r1*pts[11])+vL, (r0*pts[11])+vL, (rmid*pts[11])+vL));
-
-    //inner core
-    bmd->addEdge(new ArcEdge(r1*pts[10], r0*pts[10], rmid*pts[9]));
-    bmd->addEdge(new ArcEdge((r1*pts[10])+vL, (r0*pts[10])+vL, (rmid*pts[9])+vL));
-
-  }
+  insertBlocksAndPatches(cm, bmd);  
 
   cm.insert(bmd.release());
 
@@ -415,10 +365,10 @@ void PipeBase::evaluateAtSection(
   boost::ptr_vector<sampleOps::set> sets;
   
   sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-    .set_name("section"+lexical_cast<string>(i))
     .set_start( vec3(x, 0,  0.01* 0.5*D))
     .set_end(   vec3(x, 0, 0.997* 0.5*D))
     .set_axis(vec3(1,0,0))
+    .set_name("section"+lexical_cast<string>(i))
   ));
   
   sample(cm, executionPath(), 
@@ -896,10 +846,10 @@ ResultSetPtr PipeInflow::evaluateResults(OpenFOAMCase& cm)
     boost::ptr_vector<sampleOps::set> sets;
     
     sets.push_back(new sampleOps::circumferentialAveragedUniformLine(sampleOps::circumferentialAveragedUniformLine::Parameters()
-      .set_name("longitudinal"+lexical_cast<string>(i))
       .set_start( vec3(0.001*L, 0, r*0.5*D))
       .set_end(   vec3(0.999*L, 0, r*0.5*D))
       .set_axis(vec3(1,0,0))
+      .set_name("longitudinal"+lexical_cast<string>(i))
     ));
     
     sample(cm, executionPath(), 

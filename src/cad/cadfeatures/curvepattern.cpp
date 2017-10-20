@@ -140,10 +140,10 @@ void CurvePattern::insertrule(parser::ISCADParser& ruleset) const
     "CurvePattern",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > 
-      ',' > ruleset.r_solidmodel_expression > 
-      ',' > ruleset.r_scalarExpression > 
-      ',' > ruleset.r_scalarExpression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> 
+      ',' >> ruleset.r_solidmodel_expression >> 
+      ',' >> ruleset.r_scalarExpression >> 
+      ',' >> ruleset.r_scalarExpression >> ')' ) 
       [ qi::_val = phx::bind(&CurvePattern::create, qi::_1, qi::_2, qi::_3, qi::_4) ]
       
     ))

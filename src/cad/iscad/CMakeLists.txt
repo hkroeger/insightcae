@@ -8,6 +8,7 @@ set(iscad_SRCS
  pointertransient.cpp
  qoccviewercontext.cpp
  iscadmainwindow.cpp
+ iscadmodel.cpp
  qoccviewwidget.cpp
  iscadsyntaxhighlighter.cpp
  iscadapplication.cpp

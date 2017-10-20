@@ -243,7 +243,7 @@ void Arc3P::insertrule(parser::ISCADParser& ruleset) const
     "Arc3P",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
 	 [ qi::_val = phx::bind(&Arc3P::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

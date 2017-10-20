@@ -143,12 +143,29 @@ protected:
   
 public:
     declareType("probes");
-  probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
-    {
+    probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+
+    static arma::cube readProbes
+    (
+        const OpenFOAMCase& c, 
+        const boost::filesystem::path& location, 
+        const std::string& foName, 
+        const std::string& fieldName
+    );
+    static arma::mat readProbesLocations
+    (
+        const OpenFOAMCase& c, 
+        const boost::filesystem::path& location, 
+        const std::string& foName
+    );
+    static std::string category() {
+        return "Postprocessing";
+    }
+
+    static ParameterSet defaultParameters() {
         return Parameters::makeDefault();
     }
-  virtual OFDictData::dict functionObjectDict() const;
+    virtual OFDictData::dict functionObjectDict() const;
 };
 
 
@@ -258,9 +275,9 @@ protected:
   Parameters p_;
   
 public:
-    declareType("cylindricalTwoPointCorrelation");
+  declareType("cylindricalTwoPointCorrelation");
   cylindricalTwoPointCorrelation(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
+  static ParameterSet defaultParameters()
     {
         return Parameters::makeDefault();
     }
@@ -300,9 +317,9 @@ protected:
   Parameters p_;
   
 public:
-    declareType("forces");
+  declareType("forces");
   forces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
-    static ParameterSet defaultParameters()
+  static ParameterSet defaultParameters()
     {
         return Parameters::makeDefault();
     }
@@ -320,7 +337,22 @@ class extendedForces
 : public forces
 {
 public:
-    declareType("extendedForces");
+#include "analysiscaseelements__extendedForces__Parameters.h"
+
+/*
+PARAMETERSET>>> extendedForces Parameters
+inherits insight::forces::Parameters
+
+maskField = string "" "Optional: name of field which masks the force evaluation. The local force density is multiplied by this field."
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+  
+public:
+  declareType("extendedForces");
   extendedForces(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;

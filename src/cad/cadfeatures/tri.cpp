@@ -104,7 +104,7 @@ void Tri::insertrule(parser::ISCADParser& ruleset) const
     "Tri",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ',' > ruleset.r_vectorExpression > ')' ) 
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
 	[ qi::_val = phx::bind(&Tri::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

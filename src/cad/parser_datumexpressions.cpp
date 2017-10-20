@@ -93,7 +93,7 @@ void ISCADParser::createDatumExpressions()
                                          qi::_3)) ]
         |
 //           ( lit("datum") > '(' > r_solidmodel_expression > '%' > r_identifier > ')' )
-        ( ( r_solidmodel_expression >> '%' ) > r_identifier  )
+        ( ( r_solidmodel_expression >> '%' ) >> r_identifier  )
         [ _val = phx::construct<DatumPtr>(new_<ProvidedDatum>(qi::_1, qi::_2)) ]
       )
       >> -( lit("<<") >> r_vectorExpression ) [ _val = construct<DatumPtr>(new_<TransformedDatum>(_val, qi::_1)) ];

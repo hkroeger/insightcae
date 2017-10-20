@@ -1,0 +1,32 @@
+# O_Ring DIN 3771
+mat=loadmodel(material_props);
+
+Di?=60;
+d1?=10;
+d2?=1.5;
+
+t?=0.77*d2; # 0.94 (dynamic) ... 0.7 (static)
+b?=1.3*d2;
+
+oring:
+Torus(O, (d1+d2)*EX, d2);
+oring->density=mat$rho_EPDM;
+
+Dshaft=d1+2*d2-2*t;
+tool_gland_outer=
+Cylinder(
+ -0.5*b*EX, ax b*EX,
+ d1+2*d2, Dshaft);
+
+Dbore=d1+2*t;
+tool_gland_inner=
+Cylinder(
+ -0.5*b*EX, ax b*EX,
+ Dbore, d1);
+
+tool_gland_ax=
+Cylinder(
+ 0.5*d2*EX, ax -t*EX,
+ d1+d2+b, d1);
+
+axis=RefAxis(O, EX);

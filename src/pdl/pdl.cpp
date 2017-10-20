@@ -20,6 +20,9 @@
 
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 
+#include <algorithm>
+#include <string>
+
 #include "boost/filesystem.hpp"
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -136,7 +139,10 @@ public:
 
     ParserDataBase(const std::string& d)
     : description(d) 
-    {}
+    {
+        boost::replace_all(description,
+                     "\n", "\\n");
+    }
 
     /* c++
     written by writeCppHeader:
@@ -1003,9 +1009,8 @@ struct SelectableSubsetParameterParser {
                 ParserDataBase::Ptr pd=boost::fusion::get<1> ( sd ); // should be a set
                 std::string seliname=name+"_"+sel_name;
                 os<<"if ( ";
-                os<<"const "
-                  <<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )
-                  <<"* "<<seliname<<"_static = boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
+                os<<"const "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) )<<"* "<<seliname<<"_static = ";
+                os<<"boost::get< "<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" >(&"<< staticname <<")"
                   <<") {"<<endl;
                 os<<varname<<".selection() = \""<<sel_name<<"\";"<<endl;
                 os<<"ParameterSet& "<<seliname<<"_param = "<<name<<"();"<<endl;

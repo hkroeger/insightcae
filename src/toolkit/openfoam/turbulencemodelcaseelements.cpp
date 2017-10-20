@@ -100,8 +100,8 @@ void LESModel::addIntoDictionaries(OFdicts& dictionaries) const
     else
       turbProperties["simulationType"]="LESModel";
 
-    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
-    controlDict.getList("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
+    OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+    controlDict.addListIfNonexistent("libs").insertNoDuplicate( "\"libnuSgsABLRoughWallFunction.so\"" );
 }
 
 OFDictData::dict& LESModel::modelPropsDict(OFdicts& dictionaries) const
@@ -942,5 +942,74 @@ bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const Fi
 
     return false;
 }
+
+
+
+
+
+defineType(WALE_LESModel);
+addToFactoryTable(turbulenceModel, WALE_LESModel);
+
+void WALE_LESModel::addFields(OpenFOAMCase& c) const
+{
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  if (c.OFversion()>=300)
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  else
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+}
+
+WALE_LESModel::WALE_LESModel(OpenFOAMCase& c)
+: LESModel(c)
+{
+//   addFields();
+}
+
+
+void WALE_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  LESModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict.getList("libs").insertNoDuplicate("\"libdynamicMixedModelLESModel.so\"");
+
+//   OFDictData::dict& LESProperties=dictionaries.addDictionaryIfNonexistent("constant/LESProperties");
+  OFDictData::dict& LESProperties=modelPropsDict(dictionaries);  
+  
+  string modelName="WALE";
+  
+  LESProperties["LESModel"]=modelName;
+  LESProperties["delta"]="cubeRootVol";
+//   LESProperties["delta"]="vanDriest";
+  LESProperties["printCoeffs"]=true;
+  
+  OFDictData::dict crvc;
+  crvc["deltaCoeff"]=1.0;
+  LESProperties["cubeRootVolCoeffs"]=crvc;
+
+//   OFDictData::dict& cd=LESProperties.addSubDictIfNonexistent(modelName+"Coeffs");
+//   cd["filter"]="simple";
+}
+
+bool WALE_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
+{
+    if (roughness_z0>0.)
+        throw insight::Exception("WALE_LESModel: non-smooth walls are not supported!");
+    
+    if (fieldname == "k")
+  {
+    BC["type"]="fixedValue";
+    BC["value"]="uniform 1e-10";
+    return true;
+  }
+  else if ( (fieldname == "nuSgs") || (fieldname == "nut") )
+  {
+    BC["type"]="zeroGradient";
+    return true;
+  }
+  
+  return false;
+}
+
 
 }

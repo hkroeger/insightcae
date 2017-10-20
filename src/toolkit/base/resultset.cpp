@@ -278,6 +278,11 @@ void ResultElementCollection::writeLatexCodeOfElements
     }
 }
 
+double ResultElementCollection::getScalar(const std::string& path) const 
+{ 
+    return this->get<NumericalResult<double> >(path).value(); 
+}
+
 void ResultElementCollection::appendToNode ( rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node ) const
 {
     for ( const_iterator i=begin(); i!= end(); i++ ) {

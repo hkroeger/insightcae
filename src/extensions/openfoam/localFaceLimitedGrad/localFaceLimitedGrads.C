@@ -124,7 +124,7 @@ calcGrad
         );
     }
 
-#ifdef OFdev
+#if defined(OFplus)||defined(OFdev)
     const volScalarField::Boundary& 
 #else
     const volScalarField::GeometricBoundaryField& 
@@ -196,7 +196,7 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-#ifdef OFdev
+#if defined(OFplus)||defined(OFdev)
     g.ref().field()
 #else
     g.internalField()
@@ -302,7 +302,7 @@ calcGrad
         );
     }
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     const volVectorField::Boundary&
 #else
     const volVectorField::GeometricBoundaryField&
@@ -385,7 +385,7 @@ calcGrad
     }
 
     g
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       .ref().field()
 #else
       .internalField() 

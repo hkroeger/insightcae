@@ -31,7 +31,7 @@
 #include "meshSearch.H"
 #include "coordinateSystem.H"
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 #include "functionObject.H"
 #else
 #include "OutputFilterFunctionObject.H"
@@ -124,14 +124,14 @@ public:
     }
 };
 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 #define RTYPE bool
 #else
 #define RTYPE void
 #endif
 
 class twoPointCorrelation
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 : public functionObject
 #endif
 {
@@ -229,7 +229,7 @@ public:
 };
 
 typedef 
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     twoPointCorrelation
 #else
     OutputFilterFunctionObject<twoPointCorrelation>

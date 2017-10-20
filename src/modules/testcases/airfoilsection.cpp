@@ -51,9 +51,7 @@ AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::
   down_("down"), 
   fb_("frontAndBack"),
   foil_("foil")
-{
-
-}
+{}
 
 
 
@@ -61,84 +59,8 @@ AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::
 insight::ParameterSet AirfoilSection::defaultParameters()
 {
   ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      ("geometry", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("c",		new DoubleParameter(1.0, "[m] chord length"))
-	    ("alpha",		new DoubleParameter(0.0, "[deg] angle of attack"))
-	    ("LinByc",		new DoubleParameter(1.0, "[-] Upstream extent of the channel"))
-	    ("LoutByc",		new DoubleParameter(4.0, "[-] Downstream extent of the channel"))
-	    ("HByc",		new DoubleParameter(2.0, "[-] Height of the channel"))
-	    ("foilfile",	new PathParameter("foil.csv", "File with tabulated coordinates on the foil surface"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Geometrical properties of the numerical tunnel"
-	))
-      
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nc",	new IntParameter(15, "# cells along span"))
-	    ("lmfoil",	new IntParameter(5, "min refinement level at foil surface"))
-	    ("lxfoil",	new IntParameter(6, "min refinement level at foil surface"))
-	    ("nlayer",	new IntParameter(10, "number of prism layers"))
-// 	    ("ypluswall", new DoubleParameter(2, "yPlus at the wall grid layer"))
-// 	    ("2d",	new BoolParameter(false, "Whether to create a two-dimensional case"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-      
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("vinf",		new DoubleParameter(30.8, "[m/s] inflow velocity"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      ("fluid", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("rho",	new DoubleParameter(1.0, "[kg/m^3] Density of the fluid"))
-	    ("nu",	new DoubleParameter(1.5e-5, "[m^2/s] Viscosity of the fluid"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Parameters of the fluid"
-	))
-      
-      //       ("evaluation", new SubsetParameter
-// 	(
-// 	  ParameterSet
-// 	  (
-// 	    boost::assign::list_of<ParameterSet::SingleEntry>
-// 	    ("inittime",	new DoubleParameter(5, "[T] length of grace period before averaging starts (as multiple of flow-through time)"))
-// 	    ("meantime",	new DoubleParameter(10, "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"))
-// 	    ("mean2time",	new DoubleParameter(10, "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"))
-// 	    ("eval2", 		new BoolParameter(true, "Whether to evaluate second order statistics"))
-// 	    .convert_to_container<ParameterSet::EntryList>()
-// 	  ), 
-// 	  "Options for statistical evaluation"
-// 	))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
-  return p;
+  p.extend(Parameters::makeDefault().entries());
+  return p;  
 }
 
 
@@ -146,22 +68,11 @@ insight::ParameterSet AirfoilSection::defaultParameters()
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p = parameters_;
+  Parameters p(parameters_);
 
-  PSPATH(p, "geometry", foilfile);
-  PSINT(p, "mesh", nlayer);
-  PSINT(p, "mesh", lmfoil);
-  PSINT(p, "mesh", lxfoil);
-  PSINT(p, "mesh", nc);
-  PSDBL(p, "geometry", c);
-  PSDBL(p, "geometry", alpha);
-  PSDBL(p, "geometry", LinByc);
-  PSDBL(p, "geometry", LoutByc);
-  PSDBL(p, "geometry", HByc);
-  
   arma::mat contour;
-  contour.load(foilfile.string(), arma::auto_detect);
-  cout<<contour<<endl;
+  contour.load(p.geometry.foilfile.string(), arma::auto_detect);
+//   cout<<contour<<endl;
   
   path dir = executionPath();
     
@@ -172,19 +83,19 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
   
-  double delta=c/double(nc);
+  double delta=p.geometry.c/double(p.mesh.nc);
   
   std::map<int, Point> pts;
   double z0=0, h=delta;
   pts = boost::assign::map_list_of   
-      (0, 	vec3(-(LinByc+0.5)*c, -HByc*c, z0))
-      (1, 	vec3((LoutByc+0.5)*c, -HByc*c, z0))
-      (2, 	vec3((LoutByc+0.5)*c, HByc*c, z0))
-      (3, 	vec3(-(LinByc+0.5)*c, HByc*c, z0))
+      (0, 	vec3(-(p.geometry.LinByc+0.5)*p.geometry.c, -p.geometry.HByc*p.geometry.c, z0))
+      (1, 	vec3((p.geometry.LoutByc+0.5)*p.geometry.c, -p.geometry.HByc*p.geometry.c, z0))
+      (2, 	vec3((p.geometry.LoutByc+0.5)*p.geometry.c, p.geometry.HByc*p.geometry.c, z0))
+      (3, 	vec3(-(p.geometry.LinByc+0.5)*p.geometry.c, p.geometry.HByc*p.geometry.c, z0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
-  arma::mat PiM=vec3(-(LinByc+0.4)*c, 0.01*c, z0+0.0001*h);
+  arma::mat PiM=vec3(-(p.geometry.LinByc+0.4)*p.geometry.c, 0.01*p.geometry.c, z0+0.0001*h);
   
   int nx=(pts[1][0]-pts[0][0])/delta;
   int ny=(pts[2][1]-pts[1][1])/delta;
@@ -239,20 +150,20 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
     .set_name(foil_)
-    .set_minLevel(lmfoil)
-    .set_maxLevel(lxfoil)
-    .set_nLayers(nlayer)
+    .set_minLevel(p.mesh.lmfoil)
+    .set_maxLevel(p.mesh.lxfoil)
+    .set_nLayers(p.mesh.nlayer)
     
     .set_fileName(targ_path)
-    .set_scale(vec3(c, c, 1))
-    .set_rollPitchYaw(vec3(0,0,-alpha))
+    .set_scale(vec3(p.geometry.c, p.geometry.c, 1))
+    .set_rollPitchYaw(vec3(0,0,-p.geometry.alpha))
   )));
   
   shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::NearSurfaceRefinement( snappyHexMeshFeats::NearSurfaceRefinement::Parameters()
     .set_name(foil_)
     .set_mode( snappyHexMeshFeats::NearSurfaceRefinement::Parameters::distance )
-    .set_level(lmfoil)
-    .set_dist(0.1*c)
+    .set_level(p.mesh.lmfoil)
+    .set_dist(0.1*p.geometry.c)
   )));
 
   shm_cfg.PiM.push_back(PiM);
@@ -281,14 +192,8 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 
 void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 {
-  // create local variables from ParameterSet
-  PSDBL(parameters(), "geometry", c);
-  PSDBL(parameters(), "geometry", alpha);
-  PSDBL(parameters(), "operation", vinf);
-  PSINT(parameters(), "fluid", turbulenceModel);
-  PSDBL(parameters(), "fluid", nu);
-  PSDBL(parameters(), "fluid", rho);
-  
+  Parameters p(parameters_);
+ 
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
@@ -302,7 +207,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   cm.insert(new forces(cm, forces::Parameters()
     .set_name("foilForces")
     .set_patches( list_of("\""+foil_+".*\"") )
-    .set_rhoInf(rho)
+    .set_rhoInf(p.fluid.rho)
     .set_CofR(vec3(0,0,0))
     ));  
 
@@ -314,7 +219,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 //       ));
 
   cm.insert(new VelocityInletBC(cm, in_, boundaryDict, VelocityInletBC::Parameters()
-    .set_velocity( FieldData::uniformSteady(vinf, 0, 0) ) 
+    .set_velocity( FieldData::uniformSteady(p.operation.vinf, 0, 0) ) 
     ));
   cm.insert(new PressureOutletBC(cm, out_, boundaryDict, PressureOutletBC::Parameters().set_pressure(0.0) ));
    
@@ -344,7 +249,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 //     .set_timeStart( (inittime+meantime)*T_ )
 //   ));
 //   
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
@@ -355,18 +260,13 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
 
 insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p = parameters_;
-  PSDBL(p, "geometry", c);
-  PSDBL(p, "geometry", alpha);
-  PSDBL(p, "operation", vinf);
-  PSDBL(p, "fluid", nu);
-  PSDBL(p, "fluid", rho);
-  
+  Parameters p(parameters_);
+
   ResultSetPtr results = OpenFOAMAnalysis::evaluateResults(cm);
   
   arma::mat f_vs_iter=forces::readForces(cm, executionPath(), "foilForces");
   
-  double Aref=1.*c, Re=c*vinf/nu;
+  double Aref=1.*p.geometry.c, Re=p.geometry.c*p.operation.vinf/p.fluid.nu;
   
   ptr_map_insert<ScalarResult>(*results) 
     ("Aref", Aref, "Reference area", "", "$m^2$");
@@ -374,13 +274,13 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
     ("Re", Re, "Reynolds number", "", "");
   
   arma::mat cl = (f_vs_iter.col(2)+f_vs_iter.col(5))
-		  / ( 0.5*rho * pow(vinf,2) * Aref );
+		  / ( 0.5*p.fluid.rho * pow(p.operation.vinf,2) * Aref );
   arma::mat cd = (f_vs_iter.col(1)+f_vs_iter.col(4))
-		  / ( 0.5*rho * pow(vinf,2) * Aref );
+		  / ( 0.5*p.fluid.rho * pow(p.operation.vinf,2) * Aref );
   arma::mat eps = cl/cd;
   
   double minPbyrho=minPatchPressure(cm, executionPath(), "foil")(0,1);
-  double cpmin=minPbyrho/(0.5*pow(vinf,2));
+  double cpmin=minPbyrho/(0.5*pow(p.operation.vinf,2));
   
   ptr_map_insert<ScalarResult>(*results) 
     ("cl", cl(cl.n_elem-1), "Lift coefficient", "", "");
@@ -442,7 +342,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 "Show(streamTracerWithCustomSource1)\n"
 "streamTracerWithCustomSource1Display = GetDisplayProperties(streamTracerWithCustomSource1, view=GetActiveView())\n"
 "ColorBy(streamTracerWithCustomSource1Display, None)\n"
-"setCam(["+lexical_cast<std::string>(0.5*c)+",0,1], ["+lexical_cast<std::string>(0.5*c)+",0,0], [0,1,0], "+lexical_cast<std::string>(c)+")\n"
+"setCam(["+lexical_cast<std::string>(0.5*p.geometry.c)+",0,1], ["+lexical_cast<std::string>(0.5*p.geometry.c)+",0,0], [0,1,0], "+lexical_cast<std::string>(p.geometry.c)+")\n"
   
 	"WriteImage('"+fname+"')\n"
     )
@@ -452,7 +352,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
     std::auto_ptr<Image>(new Image
     (
     executionPath(), fname, 
-    str(format("Relative velocity (angle of attack %gdeg)")%alpha), ""
+    str(format("Relative velocity (angle of attack %gdeg)")%p.geometry.alpha), ""
   )));  
   
   return results;
@@ -471,8 +371,7 @@ AirfoilSectionPolar::AirfoilSectionPolar(const ParameterSet& ps, const boost::fi
     ps, exepath, 
     true
   )
-{
-}
+{}
 
 void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
 {

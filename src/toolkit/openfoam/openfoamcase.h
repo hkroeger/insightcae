@@ -324,8 +324,17 @@ public:
     void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
     void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
 
-    virtual void createOnDisk ( const boost::filesystem::path& location, boost::shared_ptr<OFdicts> dictionaries );
-    virtual void createOnDisk ( const boost::filesystem::path& location );
+    virtual void createOnDisk 
+    ( 
+        const boost::filesystem::path& location, 
+        boost::shared_ptr<OFdicts> dictionaries, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    );
+    virtual void createOnDisk 
+    ( 
+        const boost::filesystem::path& location, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    );
 
     virtual bool meshPresentOnDisk ( const boost::filesystem::path& location ) const;
     virtual bool outputTimesPresentOnDisk ( const boost::filesystem::path& location, bool checkpar=false ) const;

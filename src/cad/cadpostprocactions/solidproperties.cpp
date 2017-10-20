@@ -51,7 +51,7 @@ void insight::cad::SolidProperties::build()
        <<inertia_
        <<" ]"<<endl;
   
-  arma::mat bb=model_->modelBndBox(0.01);
+  arma::mat bb=model_->modelBndBox(/*0.01*/);
   bb_pmin_=bb.col(0);
   bb_pmax_=bb.col(1);
 }

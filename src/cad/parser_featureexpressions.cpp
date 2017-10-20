@@ -71,17 +71,17 @@ void ISCADParser::createFeatureExpressions()
     r_solidmodel_term =
         r_solidmodel_primary [_val=qi::_1 ]
         >>
-        *( '.' > r_identifier
+        *( '.' >> r_identifier
            [ _val = phx::construct<FeaturePtr>(phx::new_<Subfeature>(qi::_val, qi::_1)) ] )
         >>
-        -( lit("<<") > r_vectorExpression [ _val = phx::bind(&Transform::create_translate, qi::_val, qi::_1) ] )
+        -( lit("<<") >> r_vectorExpression [ _val = phx::bind(&Transform::create_translate, qi::_val, qi::_1) ] )
         >>
-        -( lit("*") > r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
+        -( lit("*") >> r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
         >>
         *(
-            ('|' > r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, _val, qi::_1) ] )
+            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, _val, qi::_1) ] )
             |
-            ('&' > (
+            ('&' >> (
                  r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create, _val, qi::_1) ]
                  |
                  r_datumExpression [ _val = phx::bind(&BooleanIntersection::create_plane, _val, qi::_1) ]
@@ -101,6 +101,9 @@ void ISCADParser::createFeatureExpressions()
     r_modelstepFunction.name("feature function");
 
     r_solidmodel_primary =
+        ( '*' >> ( r_vertexFeaturesExpression | r_edgeFeaturesExpression | r_faceFeaturesExpression | r_solidFeaturesExpression ) ) 
+        [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Feature>(qi::_1)) ]
+        |
         r_modelstepFunction
         [ ( _val = phx::at_c<2>(qi::_1),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
@@ -110,7 +113,7 @@ void ISCADParser::createFeatureExpressions()
         |
         model_->modelstepSymbols()[_val=qi::_1 ]
         |
-        ( '(' >> r_solidmodel_expression > ')' )
+        ( '(' >> r_solidmodel_expression >> ')' )
         [ _val = qi::_1]
         // try identifiers last, since exceptions are generated, if symbols don't exist
         ;
@@ -118,15 +121,15 @@ void ISCADParser::createFeatureExpressions()
 
     r_solidmodel_propertyAssignment =
         qi::lexeme[ model_->modelstepSymbols() ] [ _a = qi::_1 ]
-        >> lit("->") >
+        >> lit("->") >>
         (
-            ( lit("density") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
+            ( lit("density") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setDensity, *_a, qi::_1) ) ]
             |
-            ( lit("areaWeight") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
+            ( lit("areaWeight") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setAreaWeight, *_a, qi::_1) ) ]
             |
-            ( lit("visresolution") > '=' > r_scalarExpression ) [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
+            ( lit("visresolution") >> '=' >> r_scalarExpression ) [ lazy( phx::bind(&Feature::setVisResolution, *_a, qi::_1) ) ]
         )
-        > ';'
+        >> ';'
         ;
     r_solidmodel_propertyAssignment.name("feature property assignment");
     

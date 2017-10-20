@@ -139,6 +139,23 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
       if (controlDict.getString("application")=="simpleFoam")
 	controlDict["application"]="MRFSimpleFoam";
   }
+  else if (OFversion()>=300)
+  {
+    OFDictData::dict fod;
+
+    fod["nonRotatingPatches"]=nrp;
+    fod["origin"]=OFDictData::vector3(p_.rotationCentre);
+    fod["axis"]=OFDictData::vector3(p_.rotationAxis);
+    fod["omega"]=2.*M_PI*p_.rpm/60.;
+
+    fod["active"]=true;
+    fod["selectionMode"]="cellZone";
+    fod["cellZone"]=p_.name;
+
+    OFDictData::dict& MRFProps=dictionaries.addDictionaryIfNonexistent("constant/MRFProperties");
+    MRFProps[p_.name]=fod;
+
+  }
   else
   {
     OFDictData::dict coeffs;
@@ -158,6 +175,51 @@ void MRFZone::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
     fvOptions[p_.name]=fod;     
   }
+}
+
+
+
+defineType(PassiveScalar);
+addToOpenFOAMCaseElementFactoryTable(PassiveScalar);
+
+PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, "PassiveScalar"),
+  p_(ps)
+{
+}
+
+void PassiveScalar::addFields( OpenFOAMCase& c ) const
+{
+  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	list_of(0.0), volField ) );
+}
+
+
+void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
+{  
+    OFDictData::dict Fd;
+    Fd["type"]="scalarTransport";
+    Fd["field"]=p_.fieldname;
+    Fd["resetOnStartUp"]=false;
+    Fd["autoSchemes"]=false;
+    Fd["fvOptions"]=OFDictData::dict();
+    
+    OFDictData::list fol;
+    fol.push_back("\"libutilityFunctionObjects.so\"");
+    Fd["functionObjectLibs"]=fol;
+    
+    
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+    controlDict.addSubDictIfNonexistent("functions")[p_.fieldname+"_transport"]=Fd;
+    
+    
+    OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
+    OFDictData::dict& divSchemes = fvSchemes.addSubDictIfNonexistent("divSchemes");
+    divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
+
+    OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+    OFDictData::dict& solvers=fvSolution.subDict("solvers");
+    solvers[p_.fieldname]=smoothSolverSetup(1e-6, 0.);
+
 }
 
 
@@ -451,6 +513,46 @@ void displacementFvMotionSolver::addIntoDictionaries(OFdicts& dictionaries) cons
   }
 }
 
+
+
+
+defineType(solidBodyMotionDynamicMesh);
+addToOpenFOAMCaseElementFactoryTable(solidBodyMotionDynamicMesh);
+
+
+
+solidBodyMotionDynamicMesh::solidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
+: dynamicMesh(c),
+  ps_(ps)
+{
+}
+
+
+void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
+{
+    Parameters p(ps_);
+    
+    OFDictData::dict& dynamicMeshDict
+      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+      
+    dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";    
+    dynamicMeshDict["solver"]="solidBody";
+    OFDictData::dict sbc;
+
+    sbc["cellZone"]=p.zonename;
+
+    if ( Parameters::motion_rotation_type* rp = boost::get<Parameters::motion_rotation_type>(&p.motion) )
+    {
+        sbc["solidBodyMotionFunction"]="rotatingMotion";
+        OFDictData::dict rmc;
+        rmc["origin"]=OFDictData::vector3(rp->origin);
+        rmc["axis"]=OFDictData::vector3(rp->axis);
+        rmc["omega"]=2.*M_PI*rp->rpm/60.;
+        sbc["rotatingMotionCoeffs"]=rmc;
+    }
+
+    dynamicMeshDict["solidBodyCoeffs"]=sbc;
+}
 
 }
 

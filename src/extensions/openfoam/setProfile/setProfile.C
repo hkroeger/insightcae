@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 
     word fieldname(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(1)
 #else
       args.additionalArgs()[0]
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     );
     
     point p0(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(2)
 #else
       args.additionalArgs()[1]
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
     )());
     
     vector ey(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(3)
 #else
       args.additionalArgs()[2]
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     ey/=mag(ey);
     
     vector ex(IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(4)
 #else
       args.additionalArgs()[3]
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     {
         volScalarField field(header, mesh);
         setProfileLinear<scalar>(field, p0, ey, ex, IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
       args.arg(5)
 #else
       args.additionalArgs()[4]
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     {
         volVectorField field(header, mesh);
         setProfileLinear<vector>(field, p0, ey, ex, IStringStream(
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	  args.arg(5)
 #else	  
 	  args.additionalArgs()[4]

@@ -27,6 +27,8 @@
 #include <stack>
 #include <functional>
 #include <string>
+#include <typeinfo>
+#include <cxxabi.h>
 
 #include "base/boost_include.h"
 
@@ -57,6 +59,8 @@ typedef boost::variant<
     boost::recursive_wrapper<dict>,
     boost::recursive_wrapper<list>
     > data;
+    
+double as_scalar(const data& d);
     
 typedef std::pair<std::string, data> entry;
 
@@ -95,11 +99,18 @@ struct dict
   {
     dict::iterator i=this->find(key);
     if (i==this->end())
-      throw Exception("key "+key+" not found!");
+    {
+        std::string keys=" ";
+        BOOST_FOREACH(const value_type& it, *this) { keys+=it.first+" "; }
+        throw Exception("key "+key+" not found! Available keys:"+keys);
+    }
     if (T *d = boost::get<T>(&i->second))
       return *d;
     else
-      throw Exception("entry "+key+" is there but not of the requested type!");
+      throw Exception("entry "+key+" is there but not of the requested type!"
+                 " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
+//               "(requested: "+std::string(typeid(T)::name())+", actual: "+std::string(typeid(i->second)::name())+")" 
+                );
   }
   
   template<class T>
@@ -107,11 +118,17 @@ struct dict
   {
     dict::const_iterator i=this->find(key);
     if (i==this->end())
-      throw Exception("key "+key+" not found!");
+    {
+        std::string keys=" ";
+        BOOST_FOREACH(const value_type& it, *this) { keys+=it.first+" "; }
+        throw Exception("key "+key+" not found! Available: "+keys);
+    }
     if (const T *d = boost::get<T>(&i->second))
       return *d;
     else
-      throw Exception("entry "+key+" is there but not of the requested type!");
+      throw Exception("entry "+key+" is there but not of the requested type!"
+                 " (actual type:"+boost::lexical_cast<std::string>(i->second.which())+")"
+                );
   }
   
   /**
@@ -214,10 +231,17 @@ std::ostream& operator<<(std::ostream& os, const list& l);
 
 
 
-void readOpenFOAMDict(std::istream& in, OFDictData::dict& d);
-void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
+/**
+ * reads OF dict
+ * filename without possible ".gz". Will detect compressed dict and uncompress in temp dir
+ */
+void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict& d);
 
-void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
+bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d);
+void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);
+void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict);
+
+bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d);
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d);
 
 void writeOpenFOAMSequentialDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname);

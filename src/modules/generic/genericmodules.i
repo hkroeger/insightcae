@@ -21,12 +21,15 @@
 %include "common.i"
 
 %module(directors="1") GenericModules
-
-%import(module="toolkit") "toolkit.i"
+%import "toolkit.i"
 
 %{
+#include "convergenceanalysis.h"
 #include "filetemplate.h"
+
 using namespace insight;
 %}
 
+
+%include "convergenceanalysis.h"
 %include "filetemplate.h"

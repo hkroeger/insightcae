@@ -198,8 +198,8 @@ void ExplicitFeatureCurve::modifyFiles(const OpenFOAMCase& ofc, const path& loca
   if (!exists(from))
   {
     boost::filesystem::path alt_from=from; alt_from.replace_extension(".eMesh.gz");
-    if (exists(alt_from)) from=alt_from;
-    else
+    if (!exists(alt_from)) //from=alt_from;
+//     else
       throw insight::Exception("feature edge file does not exist: neither "+from.string()+" nor "+alt_from.string());
   }
   boost::filesystem::path to(location/"constant"/"triSurface"/from.filename());
@@ -392,9 +392,9 @@ bool NearTemplatePatchRefinement::setGeometrySubdict(OFDictData::dict& geodict, 
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls)
 {
-  castellatedCtrls["maxLocalCells"]=1000000;
-  castellatedCtrls["maxGlobalCells"]=10000000;
-  castellatedCtrls["minRefinementCells"]=10;
+  castellatedCtrls["maxLocalCells"]  = 10000000;
+  castellatedCtrls["maxGlobalCells"] = 100000000;
+  castellatedCtrls["minRefinementCells"] = 10;
   castellatedCtrls["maxLoadUnbalance"]=0.1;
   castellatedCtrls["nCellsBetweenLevels"]=8;
   castellatedCtrls["resolveFeatureAngle"]=30.0;

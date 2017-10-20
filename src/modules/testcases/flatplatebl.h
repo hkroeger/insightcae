@@ -38,51 +38,25 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry=set
 {
- HBydelta99e = double 6.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
- WBydelta99e = double 4.0 "Domain height above plate, divided by (laminar) BL thickness at tripping location"
- L = double 5.0 "[m] Length of the domain"
- LapByL = double 0.05 "Length of the upstream extension of the plate, divided by length of plate"
- Retheta0 = double 350 "Momentum-thickness reynolds number at initial (tripping) station x=0."
+ HbyDelta99 = double 6.0 "Domain height above plate, divided by initial BL thickness at the inlet"
+ WbyDelta99 = double 4.0 "Domain height above plate, divided by initial BL thickness at the inlet"
+ LbyDelta99 = double 20.0 "Length of the domain, divided by initial BL thickness at the inlet"
 } "Geometrical properties of the domain"
 
 mesh=set
 {
+ dxplus0 = double 40 "dimensionless streamwise mesh spacing $\\delta x^+$ at the inlet"
+ yplus0 = double 2 "dimensionless wall-normal mesh spacing at the inlet"
+ dzplus0 = double 20 "dimensionless spanwise mesh spacing at the inlet"
  nh = int 64 "# cells in vertical direction"
  nl = int 20 "# number of near wall layers"
  layerratio = double 1.2 "near wall layer grading"
- ypluswall = double 1 "yPlus of first cell at the wall grid layer at the final station"
- dxplus = double 1000 "streamwise mesh spacing at the final station"
- dzplus = double 1000 "spanwise mesh spacing at the final station"
  twod = bool false "select method of transition enforcement"
- gradaxi = double 50 "grading from plate beginning towards inlet boundary"
-
- tripping = selectablesubset
- {{
-    none
-    set {
-    }
-    
-    blocks
-    set {
-     n = int 4 "number of evenly distributed tripping block across plate width"
-     wbyh = double 6 "width of the blocks"
-     lbyh = double 3 "length of the blocks"
-     Reh = double 1000 "Reynolds number (formulated with height) of the tripping box"
-    }
-    
-    drag
-    set {
-      CD = double 1 "Drag coefficient"
-      lbyh = double 3 "length of the blocks"
-      Reh = double 1000 "Reynolds number (formulated with height) of the tripping zone"
-    }
-    
-  }} none "Tripping from laminar to turbulent flow"
-  
 } "Properties of the computational mesh"
     
 operation=set
 {
+  Retheta0 = double 1200 "Momentum-thickness reynolds number at x=0."
   uinf = double 17.78 "[m/s] free-stream velocity"   
 } "Definition of the operation point under consideration"
 
@@ -105,7 +79,7 @@ run = set
   
   unsteady
   set{
-   inittime = double 10 "[T] length of grace period before averaging starts (as multiple of flow-through time)"
+   inittime = double 2 "[T] length of grace period before averaging starts (as multiple of flow-through time)"
    meantime = double 10 "[T] length of time period for averaging of velocity and RMS (as multiple of flow-through time)"
    mean2time = double 10 "[T] length of time period for averaging of second order statistics (as multiple of flow-through time)"
   }
@@ -162,11 +136,20 @@ protected:
      */
     double Rex_0_;
     
-    double L_, Lap_, Llam_;
-
-    double H_, W_;
-    double delta99_e_, Re_theta2e_, uinf_, Re_L_, ypfac_ref_, deltaywall_ref_, y_final_, gradl_, gradh_, T_, dtrip_, gradax_, gradaxi_;
-    int nax_, naxi_, nlat_;
+    double L_, H_, W_;
+    
+    /**
+     * the Reynolds number with the (virtual) turbulent running length at the end of the domain
+     */
+    double Rex_e_;
+    
+    /**
+     * free stream velocity
+     */
+    double uinf_;
+    
+    double ypfac_ref_, deltaywall_ref_, y_final_, gradl_, gradh_, T_;
+    int nax_, nlat_;
     
     double avgStart_, avg2Start_, end_;
     
@@ -238,7 +221,10 @@ public:
    */
   enum Redelta2_method {Redelta2_method_Cengel, Redelta2_method_Schlichting};
   
-  static double Redelta2(double Rex, Redelta2_method=Redelta2_method_Cengel);
+  static double Redelta2(double Rex, Redelta2_method method=Redelta2_method_Cengel);
+  static double Rex(double Redelta2, Redelta2_method method=Redelta2_method_Cengel);
+  
+  static double Retau(double Redelta2);
   
   static arma::mat integrateDelta123(const arma::mat& uByUinf_vs_y);
   static double searchDelta99(const arma::mat& uByUinf_vs_y);

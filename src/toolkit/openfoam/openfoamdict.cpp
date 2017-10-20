@@ -29,6 +29,9 @@
 
 #include "boost/lexical_cast.hpp"
 
+#include "boost/iostreams/filtering_stream.hpp"
+#include "boost/iostreams/filter/gzip.hpp"
+
 using namespace std;
 using namespace boost;
 
@@ -67,18 +70,18 @@ struct OpenFOAMDictParser
         rquery =  *( rpair );
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
-	rstring = '"' >> *(~qi::char_('"')) >> '"';
-	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
-	qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
-	rentry = ( strict_double | qi::int_ |  rdimensionedData | rlist | rstring | ridentifier );
-	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
-        rsubdict = qi::lit('{')
-	      >> *(rpair) >> qi::lit('}');
-        rlist = /*b*qi::char_("0-9") >> */ qi::lit('(')
-	      >> *(rentry) >> qi::lit(')');
+        rstring = '"' >> *(~qi::char_('"')) >> '"';
+        rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
+        qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
+        rentry = ( strict_double | rlist | qi::int_ |  rdimensionedData | rstring | ridentifier | rsubdict );
+        rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
+        rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
+        rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 
+//     	BOOST_SPIRIT_DEBUG_NODE(rpair);   
+//     	BOOST_SPIRIT_DEBUG_NODE(rentry);   
     }
-    
+
     qi::rule<Iterator, OFDictData::dict(), Skipper> rquery;
     qi::rule<Iterator, OFDictData::entry(), Skipper> rpair;
     qi::rule<Iterator, std::string()> ridentifier;
@@ -103,21 +106,19 @@ struct OpenFOAMBoundaryDictParser
     {
       using namespace qi;
       
-        rquery =  rpair >> 
-        *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9')) 
-	>> qi::lit('(') >> *(rpair) >> qi::lit(')');
+        rquery =  
+         rpair >> 
+         qi::omit[ qi::int_ ] >> qi::lit('(') >> *(rpair) >> qi::lit(')') >> (-qi::lit(';'));
+    
         rpair  =  ridentifier >> ( (rentry>>qi::lit(';')) | rsubdict | (rraw>>qi::lit(';'))) ;
         ridentifier  =  qi::lexeme[ alpha >> *(~char_("\"\\/;{}")-(eol|space)) >> !(~char_("\"\\/;{}")-(eol|space)) ];
-	rstring = '"' >> *(~qi::char_('"')) >> '"';
-	rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
-	rentry = (qi::int_ | qi::double_ | rdimensionedData | rlist | rstring | ridentifier );
-	rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
-        rsubdict = qi::lit('{')
-	      >> *(rpair) >> qi::lit('}');
-        rlist = /*qi::char_("0-9") >>*/
-	      *(qi::lit('0')|qi::lit('1')|qi::lit('2')|qi::lit('3')|qi::lit('4')|qi::lit('5')|qi::lit('6')|qi::lit('7')|qi::lit('8')|qi::lit('9'))
-	      >> qi::lit('(')
-	      >> *(rentry) >> qi::lit(')');
+        rstring = '"' >> *(~qi::char_('"')) >> '"';
+        rraw = (~qi::char_("\"{}();") >> *(~qi::char_(';')) )|qi::string("");
+        qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
+        rentry = (strict_double | rlist | rdimensionedData | qi::int_ | rstring | ridentifier| rsubdict );
+        rdimensionedData = ridentifier >> qi::lit('[') >> qi::repeat(7)[qi::int_] >> qi::lit(']') >> rentry;
+        rsubdict = qi::lit('{') >> *(rpair) >> qi::lit('}');
+        rlist = qi::omit[ -qi::int_ ] >> qi::lit('(') >> *(rentry) >> qi::lit(')');
 /*
 	BOOST_SPIRIT_DEBUG_NODE(rquery);
 	BOOST_SPIRIT_DEBUG_NODE(rpair);   
@@ -145,33 +146,76 @@ struct OpenFOAMBoundaryDictParser
 template <typename Parser, typename Result, typename Iterator>
 bool parseOpenFOAMDict(Iterator first, Iterator last, Result& d)
 {
-  Parser parser;
-  skip_grammar<Iterator> skip;
-  
-     bool r = qi::phrase_parse(
-        first,
-        last,
-        parser,
-	skip,
-	d
-    );
-     
+    Iterator orgbegin=first;
+    bool r=false;
+    try
+    {
+        Parser parser;
+        skip_grammar<Iterator> skip;
+
+        r = qi::phrase_parse(
+                     first,
+                     last,
+                     parser,
+                     skip,
+                     d
+                 );
+    }
+    catch ( qi::expectation_failure<std::string::iterator> e )
+    {
+        std::ostringstream os;
+        os << e.what_;
+//         throw insight::Exception(os.str(), int(e.first-orgbegin), int(e.last-orgbegin));
+        r=false;
+    }
+
     if (first != last) // fail if we did not get a full match
-        return false;
+        r=false;
     
     return r;
 }
 
-void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
+
+void readOpenFOAMDict(const boost::filesystem::path& dictFile, OFDictData::dict& d)
 {
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    //in.close();
+    boost::filesystem::path compressedDictFile = dictFile;
+    compressedDictFile.replace_extension(".gz");
     
-    cout<<parseOpenFOAMDict<OpenFOAMDictParser<std::string::iterator> >(contents.begin(), contents.end(), d)<<endl;
+    if (exists(dictFile))
+    {
+//         cout<<"reading ascii dictionary "<<dictFile.string()<<endl;
+        std::ifstream f(dictFile.string());
+        if (!readOpenFOAMDict(f, d))
+            throw insight::Exception("Failed to read dictionary "+dictFile.string());
+    }
+    else if (exists(compressedDictFile))
+    {
+//         cout<<"reading gz dictionary "<<compressedDictFile.string()<<endl;
+        std::ifstream compressedDict(compressedDictFile.string());
+        boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(compressedDict);     
+
+        std::istream f(&in);
+        if (!readOpenFOAMDict(f, d))
+            throw insight::Exception("Failed to read dictionary "+compressedDictFile.string());
+    }
+    else
+    {
+        throw insight::Exception("Neither dictionary "+dictFile.string()+" nor "+compressedDictFile.string()+" exist!");
+    }
+}
+
+
+bool readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
+{
+    std::istreambuf_iterator<char> eos;
+    std::string contents(std::istreambuf_iterator<char>(in), eos);
+    
+    if (!parseOpenFOAMDict<OpenFOAMDictParser<std::string::iterator> >(contents.begin(), contents.end(), d))
+    {
+        return false;
+    }
     
     // remove "FoamFile" entry, if present
     OFDictData::dict::iterator i=d.find("FoamFile");
@@ -180,11 +224,24 @@ void readOpenFOAMDict(std::istream& in, OFDictData::dict& d)
       d.erase(i);
     }
     
-    for(OFDictData::dict::const_iterator i=d.begin();
-	i!=d.end(); i++)
-	{
-	  std::cout << i->first << std::endl;
-	}
+//     for(OFDictData::dict::const_iterator i=d.begin();
+// 	i!=d.end(); i++)
+// 	{
+// 	  std::cout << i->first << std::endl;
+// 	}
+
+    return true;
+}
+
+void writeOpenFOAMDict(const boost::filesystem::path& dictpath, const OFDictData::dictFile& dict)
+{
+  if (!exists(dictpath.parent_path())) 
+  {
+    boost::filesystem::create_directories(dictpath.parent_path());
+  }
+
+  std::ofstream out(dictpath.c_str());
+  writeOpenFOAMDict( out, dict, boost::filesystem::basename(dictpath) );
 }
 
 void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const std::string& objname)
@@ -207,17 +264,15 @@ void writeOpenFOAMDict(std::ostream& out, const OFDictData::dictFile& d, const s
     }
 }
 
-void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
+bool readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
 {
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(in.tellg());
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    //in.close();
+    std::istreambuf_iterator<char> eos;
+    std::string contents(std::istreambuf_iterator<char>(in), eos);
 
-    //OFDictData::dict d; 
-    cout << parseOpenFOAMDict<OpenFOAMBoundaryDictParser<std::string::iterator> >(contents.begin(), contents.end(), d) << endl;
+    if (!parseOpenFOAMDict<OpenFOAMBoundaryDictParser<std::string::iterator> >(contents.begin(), contents.end(), d))
+    {
+        return false;
+    }
     
     // remove "FoamFile" entry, if present
     OFDictData::dict::iterator i=d.find("FoamFile");
@@ -226,8 +281,7 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
       d.erase(i);
     }
     
-    for(OFDictData::dict::const_iterator i=d.begin();
-	i!=d.end(); i++)
+    for ( OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
 	{
 	  std::cout << "\"" << i->first << "\"" << std::endl;
 	}
@@ -242,6 +296,7 @@ void readOpenFOAMBoundaryDict(std::istream& in, OFDictData::dict& d)
 	}
     d2[""]=bl;
     */
+   return true;
 }
 
 void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
@@ -266,12 +321,12 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
 	<< "(" << endl;
 	
     //for (OFDictData::dict::const_iterator i=d.begin(); i!=d.end(); i++)
-    BOOST_FOREACH( const Ordering::value_type& i, ord )
-    {
-      std::cout<<i.first<<" = "<<i.second<<std::endl;
-      const OFDictData::dict& di = d.subDict(i.second);
-      out<< i.second << " " << di << ";\n";
-    }
+//     BOOST_FOREACH( const Ordering::value_type& i, ord )
+//     {
+//       std::cout<<i.first<<" = "<<i.second<<std::endl;
+//       const OFDictData::dict& di = d.subDict(i.second);
+//       out<< i.second << " " << di << ";\n";
+//     }
     
     out << ")" << endl;
 }
@@ -315,6 +370,23 @@ std::vector<int> dimension(int d0, int d1, int d2, int d3, int d4, int d5, int d
   d[5]=d5;
   d[6]=d6;
   return d;
+}
+
+double as_scalar(const data& d)
+{
+    if (const double *v = boost::get<double>(&d))
+    {
+        return *v;
+    }
+    else if (const int *v = boost::get<int>(&d))
+    {
+        return *v;
+    }
+    else 
+    {
+        throw insight::Exception("could not cast dict entry into scalar!");
+        return nan("NAN");
+    }
 }
 
 dimensionedData::dimensionedData()

@@ -272,6 +272,18 @@ public:
 };
 
 
+class WALE_LESModel
+: public LESModel
+{
+public:
+  declareType("WALE");
+  
+  WALE_LESModel(OpenFOAMCase& c);
+  virtual void addFields( OpenFOAMCase& c ) const;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+};
+
 }
 
 #endif

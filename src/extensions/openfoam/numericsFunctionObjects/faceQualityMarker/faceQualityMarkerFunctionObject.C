@@ -77,7 +77,7 @@ inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value
 //       Info<<pI<<" "<<patch.start()<<" "<<fI<<endl;
     
     fvsPatchField<scalar>& UBFp = UBlendingFactor
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
     .boundaryFieldRef()
 #else
     .boundaryField()
@@ -222,7 +222,7 @@ surfaceMax3
             mesh.boundary()[patchi].faceCells();
 
         fvsPatchField<Type>& pssf = sf
-#ifdef OFdev
+#if defined(OFdev)||defined(OFplus)
 	  .boundaryFieldRef()
 #else
 	  .boundaryField()
@@ -564,7 +564,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
         sets_=wordList(dict.lookup("sets"));
     }
     
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
     start();
 #endif
 }
@@ -617,7 +617,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
 
 bool Foam::faceQualityMarkerFunctionObject::execute
 (
-#if !(defined(OF16ext) || defined(OFdev))
+#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus))
   bool
 #endif
 )

@@ -104,12 +104,12 @@ void Revolution::insertrule ( parser::ISCADParser& ruleset ) const
         typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
 
                     ( '(' 
-                        > ruleset.r_solidmodel_expression > ',' 
-                        > ruleset.r_vectorExpression > ','
-                        > ruleset.r_vectorExpression > ',' 
-                        > ruleset.r_scalarExpression
-                        > ( ( ',' > qi::lit ( "centered" ) > qi::attr ( true ) ) | qi::attr ( false ) )
-                        > ')' )
+                        >> ruleset.r_solidmodel_expression >> ',' 
+                        >> ruleset.r_vectorExpression >> ','
+                        >> ruleset.r_vectorExpression >> ',' 
+                        >> ruleset.r_scalarExpression
+                        >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
+                        >> ')' )
                     [ qi::_val = phx::bind ( &Revolution::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5 ) ]
 
                 ) )

@@ -21,8 +21,7 @@
 %include "common.i"
 
 %module(directors="1") TestcaseModules
-
-%import(module="toolkit") "toolkit.i"
+%import "toolkit.i"
 
 %{
 #include "channel.h"

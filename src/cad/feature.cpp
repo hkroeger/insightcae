@@ -70,6 +70,12 @@ FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape)
 {
 }
 
+FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id)
+: model_(m),
+  shape_(shape)
+{
+    add(id);
+}
 
 FeatureSet::FeatureSet
 (

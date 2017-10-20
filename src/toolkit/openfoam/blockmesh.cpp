@@ -124,6 +124,9 @@ inv_(inv)
   if (inv) swapGrad();
 }
 
+Block::~Block()
+{}
+
 Block* Block::transformed(const arma::mat& tm, bool inv) const
 {
   PointList p2;
@@ -384,6 +387,9 @@ transform2D::transform2D(int idx)
     }
 }
 
+transform2D::~transform2D()
+{}
+
 mat transform2D::mapped3D(const mat& p) const
 {
 //   cout<<"Mapped "<<p<<flush;
@@ -414,6 +420,9 @@ plane2D::plane2D(double thick, int idx)
   rvsPatch_=Patch("empty");
 }
 
+plane2D::~plane2D()
+{}
+
 mat plane2D::fwd(const mat& p) const
 {
     return mapped3D(p)+ofs_;
@@ -437,6 +446,9 @@ wedge2D::wedge2D(int idx)
     fwdPatch_=Patch("wedge");
     rvsPatch_=Patch("wedge");
 }
+
+wedge2D::~wedge2D()
+{}
 
 mat wedge2D::fwd(const mat& p) const
 {
@@ -512,6 +524,9 @@ Edge::Edge(const Point& c0, const Point& c1)
 : c0_(c0), c1_(c1)
 {
 }
+
+Edge::~Edge()
+{}
 
 void Edge::registerPoints(blockMesh& bmd) const
 {

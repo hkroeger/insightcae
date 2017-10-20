@@ -103,7 +103,7 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-#ifdef OFdev
+#if defined(OFplus)||defined(OFdev)
     const volScalarField::Boundary&
 #else
     const volScalarField::GeometricBoundaryField& 
@@ -293,7 +293,7 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-#ifdef OFdev
+#if defined(OFplus)||defined(OFdev)
     const volVectorField::Boundary&
 #else
     const volVectorField::GeometricBoundaryField& 

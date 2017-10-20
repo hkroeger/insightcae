@@ -94,4 +94,6 @@
 
 #endif
 
+typedef boost::filesystem::path bfs_path;
+
 #endif

@@ -26,7 +26,7 @@ namespace insight
 {
   
 class FileTemplate
-: public insight::Analysis
+: public Analysis
 {
   
 public:
@@ -53,16 +53,19 @@ protected:
     EVALSCRIPT,
     EVALRESULTS
   };
-  std::vector<std::string> ReservedFileNames = boost::assign::list_of<std::string>
+  std::vector<std::string> ReservedFileNames 
+#ifndef SWIG
+  = boost::assign::list_of<std::string>
    ("INSIGHT_RUN")
    ("INSIGHT_EVAL")
    ("INSIGHT_RESULTS.isr")
+#endif
    ;
     // derived data
   
 public:
     declareType("FileTemplate");
-    FileTemplate(const ParameterSet& ps, const boost::filesystem::path& exedir);
+    FileTemplate(const ParameterSet& ps, const bfs_path& exedir);
     
     static ParameterSet defaultParameters();
     

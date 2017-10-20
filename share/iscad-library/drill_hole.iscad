@@ -1,8 +1,9 @@
 D?=5;
 L?=10;
+cone_ang?=120*deg;
 ofsTimesHtip?=0;
 ofsTimesL?=0;
-htip=0.5*D/tan(60*deg);
+htip=0.5*D/tan(cone_ang/2.);
 hole:
 (
 Cylinder(

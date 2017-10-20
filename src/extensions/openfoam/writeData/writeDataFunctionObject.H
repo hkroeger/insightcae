@@ -37,7 +37,7 @@ SourceFiles
 #define writeDataFunctionObject_H
 
 #include "writeData.H"
-#if not (defined(OFdev))
+#if not (defined(OFdev)||defined(OFplus))
 #include "OutputFilterFunctionObject.H"
 #endif
 
@@ -46,7 +46,7 @@ SourceFiles
 namespace Foam
 {
     typedef 
-#if defined(OFdev)
+#if defined(OFdev)||defined(OFplus)
 	writeData
 #else
         OutputFilterFunctionObject<writeData>

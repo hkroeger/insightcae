@@ -40,29 +40,29 @@ namespace insight
   
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir)
 {
-  TimeDirectoryList list;
-  if ( exists( dir ) ) 
-  {
-    directory_iterator end_itr; // default construction yields past-the-end
-    for ( directory_iterator itr( dir );
-          itr != end_itr;
-          ++itr )
+    TimeDirectoryList list;
+    if ( exists( dir ) )
     {
-      if ( is_directory(itr->status()) )
-      {
-        std::string fn=itr->path().filename().string();
-	try
-	{
-	  double time = lexical_cast<double>(fn);
-	  list[time]=itr->path();
-	}
-	catch (...)
-	{
-	}
-      }
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( dir );
+                itr != end_itr;
+                ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string fn=itr->path().filename().string();
+                try
+                {
+                    double time = lexical_cast<double>(fn);
+                    list[time]=itr->path();
+                }
+                catch (...)
+                {
+                }
+            }
+        }
     }
-  }
-  return list;
+    return list;
 }
 
 
@@ -162,18 +162,18 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
       {
-	cout<<"Copying file "<<gzname<<endl;
-	if (exists(target/gzname)) remove(target/gzname);
-	copy_file(source/gzname, target/gzname);
+        cout<<"Copying file "<<gzname<<endl;
+        if (exists(target/gzname)) remove(target/gzname);
+        copy_file(source/gzname, target/gzname);
       }
       else if (exists(source/fname))
       {
-	cout<<"Copying file "<<fname<<endl;
-	if (exists(target/fname)) remove(target/fname);
-	copy_file(source/fname, target/fname);
+        cout<<"Copying file "<<fname<<endl;
+        if (exists(target/fname)) remove(target/fname);
+        copy_file(source/fname, target/fname);
       }
       else 
-	if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
+        if (!ignoremissing) throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
     }
   }
   else
@@ -511,7 +511,7 @@ void createPatch(const OpenFOAMCase& ofc,
 namespace sampleOps
 {
 
-set::set(Parameters const& p)
+set::set(ParameterSet const& p)
 : p_(p)
 {
 }
@@ -520,7 +520,7 @@ set::~set()
 {
 }
 
-line::line(Parameters const& p )
+line::line(ParameterSet const& p )
 : set(p),
   p_(p)
 {
@@ -541,11 +541,11 @@ void line::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDi
 //   sd["end"]=OFDictData::vector3(p_.end());
 //   sd["nPoints"]=p_.np();
   OFDictData::list pl;
-  for (int i=0; i<p_.points().n_rows; i++)
-    pl.push_back(OFDictData::vector3(p_.points().row(i).t()));
+  for (int i=0; i<p_.points.n_rows; i++)
+    pl.push_back(OFDictData::vector3(p_.points.row(i).t()));
   sd["points"]=pl;
   
-  l.push_back(p_.name());
+  l.push_back(p_.name);
   l.push_back(sd);
 }
 
@@ -565,9 +565,17 @@ arma::mat line::readSamples
   
   path fp;
   if (ofc.OFversion()<170)
+  {
     fp=absolute(location)/"sets";
+  }
+  else if (ofc.OFversion()>=400)
+  {
+    fp=absolute(location)/"postProcessing"/"sampleDict";
+  } 
   else
+  {
     fp=absolute(location)/"postProcessing"/"sets";
+  }
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
@@ -596,7 +604,7 @@ arma::mat line::readSamples
       if ( is_regular_file(itr->status()) )
       {
 	std::string fn=itr->path().filename().string();
-	if (starts_with(fn, p_.name()+"_")) files.push_back(fn);
+	if (starts_with(fn, p_.name+"_")) files.push_back(fn);
       }
     }
       
@@ -660,9 +668,9 @@ arma::mat line::readSamples
     // compute expected length coordinates from prescribed sampling points => coords
     std::vector<double> d;
     d.push_back(0.0);
-    for (int k=1; k<p_.points().n_rows; k++)
+    for (int k=1; k<p_.points.n_rows; k++)
     {
-      d.push_back( d[k-1] + norm( p_.points().row(k) - p_.points().row(k-1), 2) );
+      d.push_back( d[k-1] + norm( p_.points.row(k) - p_.points.row(k-1), 2) );
     }
     arma::mat coords=arma::mat(d.data(), d.size(), 1);
     
@@ -686,18 +694,16 @@ arma::mat line::readSamples
 }
 
 
-uniformLine::uniformLine(const uniformLine::Parameters& p)
+uniformLine::uniformLine(ParameterSet const& p)
 : set(p),
+  p_(p),
   l_
   (
     line::Parameters()
-      .set_name(p.name())
-      .set_points( linspace(0,1.,p.np())*(p.end()-p.start()).t() + ones(p.np(),1)*p.start().t() )
-  ),
-  p_(p)
-{
-
-}
+      .set_points( linspace(0,1.,p_.np)*(p_.end-p_.start).t() + ones(p_.np,1)*p_.start.t() )
+      .set_name(p_.set::Parameters::name)
+  )
+{}
 
 void uniformLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData::dict& sampleDict) const
 {
@@ -718,23 +724,23 @@ arma::mat uniformLine::readSamples(const OpenFOAMCase& ofc, const path& location
 
 
 
-circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(Parameters const& p )
+circumferentialAveragedUniformLine::circumferentialAveragedUniformLine(ParameterSet const& p )
 : set(p),
   p_(p)
 {
-  dir_=p_.end()-p_.start();
+  dir_=p_.end-p_.start;
   L_=norm(dir_,2);
   dir_/=L_;
-  x_=linspace(0, L_, p_.np());
-  for (int i=0; i<p_.nc(); i++)
+  x_=linspace(0, L_, p_.np);
+  for (int i=0; i<p_.nc; i++)
   {
     arma::mat raddir = rotMatrix(i) * dir_;
-    arma::mat pts=x_ * raddir.t() + ones(p.np(),1)*(rotMatrix(i)*p.start()).t();
+    arma::mat pts=x_ * raddir.t() + ones(p_.np,1)*(rotMatrix(i)*p_.start).t();
     
     lines_.push_back(new line( line::Parameters().set_points(pts).set_name(setname(i)) ));
   }
 
-  if (p.name().find('_') != std::string::npos)
+  if (p_.name.find('_') != std::string::npos)
   {
     throw insight::Exception("circumferentialAveragedUniformLine: set name must not contains underscores (_)!");
   }
@@ -757,7 +763,7 @@ set* circumferentialAveragedUniformLine::clone() const
 
 arma::mat circumferentialAveragedUniformLine::rotMatrix(int i, double angularOffset) const
 {
-  return insight::rotMatrix( angularOffset + p_.angle()*(double(i)+0.5)/double(p_.nc()), p_.axis());
+  return insight::rotMatrix( angularOffset + p_.angle*(double(i)+0.5)/double(p_.nc), p_.axis);
 }
 
 arma::mat circumferentialAveragedUniformLine::readSamples
@@ -774,13 +780,13 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   BOOST_FOREACH(const line& l, lines_)
   {
     arma::mat datai = l.readSamples(ofc, location, &cd, time);
-    arma::mat Ri=rotMatrix(i++, p_.angularOffset()).t();
+    arma::mat Ri=rotMatrix(i++, p_.angularOffset).t();
     
     if (datai.n_cols>1)
     {
       if (!cd_set)
       {
-	std::ofstream f( (p_.name()+"_circularinstance_colheader.txt").c_str() );
+	std::ofstream f( (p_.name+"_circularinstance_colheader.txt").c_str() );
 	f<<"#";
 	BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
 	{
@@ -869,35 +875,35 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 
 
 
-linearAveragedPolyLine::linearAveragedPolyLine(linearAveragedPolyLine::Parameters const& p )
+linearAveragedPolyLine::linearAveragedPolyLine(ParameterSet const& p)
 : set(p),
   p_(p)
 {
 
   arma::mat 
-    dx=p_.points().col(0) - p_.points()(0,0), 
-    dy=p_.points().col(1) - p_.points()(0,1), 
-    dz=p_.points().col(2) - p_.points()(0,2);
+    dx=p_.points.col(0) - p_.points(0,0), 
+    dy=p_.points.col(1) - p_.points(0,1), 
+    dz=p_.points.col(2) - p_.points(0,2);
     
   x_ = sqrt( pow(dx,2) + pow(dy,2) + pow(dz,2) );
   
-  for (int i=0; i<p_.nd1(); i++)
-    for (int j=0; j<p_.nd2(); j++)
+  for (int i=0; i<p_.nd1; i++)
+    for (int j=0; j<p_.nd2; j++)
     {
-      arma::mat ofs = p_.dir1()*(double(i)/double(max(1,p_.nd1()-1))) + p_.dir2()*(double(j)/double(max(1,p_.nd2()-1)));
+      arma::mat ofs = p_.dir1*(double(i)/double(max(1,p_.nd1-1))) + p_.dir2*(double(j)/double(max(1,p_.nd2-1)));
       arma::mat tp =
 	join_rows(join_rows( 
-	    p_.points().col(0)+ofs(0), 
-	    p_.points().col(1)+ofs(1) ), 
-	    p_.points().col(2)+ofs(2)
+	    p_.points.col(0)+ofs(0), 
+	    p_.points.col(1)+ofs(1) ), 
+	    p_.points.col(2)+ofs(2)
 	);
       lines_.push_back(new line(line::Parameters()
-	.set_name(setname(i,j))
 	.set_points( tp )
+	.set_name(setname(i,j))
       ));
     }
     
-  if (p.name().find('_') != std::string::npos)
+  if (p_.set::Parameters::name.find('_') != std::string::npos)
   {
     throw insight::Exception("linearAveragedPolyLine: set name must not contains underscores (_)!");
   }
@@ -957,12 +963,12 @@ arma::mat linearAveragedPolyLine::readSamples
   }
   else
   {
-    if ( valid_lines != (p_.nd1()*p_.nd2()) ) 
+    if ( valid_lines != (p_.nd1*p_.nd2) ) 
     {
       insight::Warning
       (
 	str(format("linearAveragedPolyLine: Only %d out of %d dataset for averaging contained valid data!") 
-	      % valid_lines % (p_.nd1()*p_.nd2()) )
+	      % valid_lines % (p_.nd1*p_.nd2) )
       );
     }
   }
@@ -974,23 +980,23 @@ arma::mat linearAveragedPolyLine::readSamples
 
 
 
-linearAveragedUniformLine::linearAveragedUniformLine(linearAveragedUniformLine::Parameters const& p )
+linearAveragedUniformLine::linearAveragedUniformLine(ParameterSet const& p)
 : set(p),
+  p_(p),
   pl_
   (
     linearAveragedPolyLine::Parameters()
-    .set_name(p.name())
-    .set_points( arma::linspace(0.0, 1.0, p.np()) * (p.end()-p.start()).t() 
-      + ones(p.np(),1)*p.start().t()
+    .set_points( arma::linspace(0.0, 1.0, p_.np) * (p_.end-p_.start).t() 
+      + ones(p_.np,1)*p_.start.t()
      )
-    .set_dir1(p.dir1())
-    .set_dir2(p.dir2())
-    .set_nd1(p.nd1())
-    .set_nd2(p.nd2())
-  ),
-  p_(p)
+    .set_dir1(p_.dir1)
+    .set_dir2(p_.dir2)
+    .set_nd1(p_.nd1)
+    .set_nd2(p_.nd2)
+    .set_name(p_.name)
+  )
 {
-  if (p.name().find('_') != std::string::npos)
+  if (p_.set::Parameters::name.find('_') != std::string::npos)
   {
     throw insight::Exception("linearAveragedUniformLine: set name must not contains underscores (_)!");
   }
@@ -1024,7 +1030,7 @@ void sample(const OpenFOAMCase& ofc,
 	    const boost::filesystem::path& location, 
 	    const std::vector<std::string>& fields,
 	    const boost::ptr_vector<sampleOps::set>& sets,
-	    const std::vector<std::string>& addopts
+	    std::vector<std::string> addopts
 	    )
 {
   using namespace sampleOps;
@@ -1047,6 +1053,17 @@ void sample(const OpenFOAMCase& ofc,
   {
     s.addIntoDictionary(ofc, sampleDict);
   }
+
+  if (ofc.OFversion()>=400)
+  {
+   sampleDict["type"]="sets";
+   OFDictData::list libs;
+   libs.push_back("\"libsampling.so\"");
+   sampleDict["libs"]=libs;
+
+   addopts.insert(addopts.begin(), "sampleDict");
+   addopts.insert(addopts.begin(), "-func");
+  }
   
   // then write to file
   sampleDict.write( location / "system" / "sampleDict" );
@@ -1055,7 +1072,14 @@ void sample(const OpenFOAMCase& ofc,
 //   opts.push_back("-latestTime");
   //if (overwrite) opts.push_back("-overwrite");
     
-  ofc.executeCommand(location, "sample", addopts);
+  if (ofc.OFversion()>=400)
+  {
+   ofc.executeCommand(location, "postProcess", addopts);
+  }
+  else
+  {
+   ofc.executeCommand(location, "sample", addopts);
+  }
   
 }
 
@@ -1162,28 +1186,108 @@ void mapFields
   }
 
 //   if (targetcase.OFversion()>=220) execname="mapFields22";
-  targetcase.executeCommand
-  (
-    target, execname, args
-  );
+  try
+  {
+    targetcase.executeCommand
+    (
+        target, execname, args
+    );
+  }
+  catch (insight::Exception e)
+  {
+      if (targetcase.requiredMapMethod()==OpenFOAMCase::directMapMethod)
+      {
+          throw insight::Exception("mapFields failed! Error: "+e.message());
+      } else
+      {
+        // retry without interpolation
+        args.push_back("-mapMethod");
+        args.push_back("mapNearest");          
+        try
+        {
+            targetcase.executeCommand
+            (
+                target, execname, args
+            );
+        }
+        catch (insight::Exception e2)
+        {
+            throw insight::Exception("mapFields with interpolation failed. Retried with nearest cell matching and this attempt failed as well! Error: "+e2.message());
+        }
+      }
+  }
+  
+  // latest OF versions rename fields, which were not mapped. Rename them back...
+  if (targetcase.OFversion()>=400)
+  {
+    directory_iterator end_itr; // default construction yields past-the-end
+    for ( directory_iterator itr( target / "0" ); itr != end_itr; ++itr )
+    {
+        if ( is_regular_file(itr->status()) )
+        {
+            boost::filesystem::path fname = itr->path();
+            std::cout<<fname<<std::endl;
+            if (fname.extension().string()==".unmapped")
+            {
+                boost::filesystem::path orgname = fname;
+                orgname.replace_extension("");
+                std::cout<<"MOVE: "<<fname.string()<<" => "<<orgname.string()<<std::endl;
+                rename(fname, orgname);
+            }
+        }
+    }      
+  }
 }
 
 
-void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones)
+void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::path& location, bool ignoremissing, bool include_zones, bool is_parallel)
 {
-  TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
-  if (times.size()>0)
-  {
-    boost::filesystem::path lastTime = times.rbegin()->second;
-    
-    if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
-    copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
-    
-    BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+    if (!is_parallel)
     {
-      remove_all(td.second);
+        TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(location));
+        if (times.size()>0)
+        {
+            boost::filesystem::path lastTime = times.rbegin()->second;
+            
+            if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
+            copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
+            
+            BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+            {
+            remove_all(td.second);
+            }
+        }
     }
-  }
+    else
+    {
+        directory_iterator end_itr; // default construction yields past-the-end
+        for ( directory_iterator itr( location ); itr != end_itr; ++itr )
+        {
+            if ( is_directory(itr->status()) )
+            {
+                std::string dn=itr->path().filename().string();
+                if ( starts_with(dn, "processor") )
+                {
+                    boost::filesystem::path curploc=itr->path();
+                    
+                    TimeDirectoryList times = listTimeDirectories(boost::filesystem::absolute(curploc));
+                    if (times.size()>0)
+                    {
+                        boost::filesystem::path lastTime = times.rbegin()->second;
+                        
+                        if (!ignoremissing) remove_all(curploc/"constant"/"polyMesh");
+                        copyPolyMesh(lastTime, curploc/"constant", true, ignoremissing, include_zones);
+                        
+                        BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+                        {
+                            remove_all(td.second);
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
 }
 
 void runPotentialFoam
@@ -1688,8 +1792,7 @@ std::string readSolverName(const boost::filesystem::path& ofcloc)
 int readDecomposeParDict(const boost::filesystem::path& ofcloc)
 {
   OFDictData::dict decomposeParDict;
-  std::ifstream cdf( (ofcloc/"system"/"decomposeParDict").c_str() );
-  readOpenFOAMDict(cdf, decomposeParDict);
+  readOpenFOAMDict(ofcloc/"system"/"decomposeParDict", decomposeParDict);
   //cout<<decomposeParDict<<endl;
   return decomposeParDict.getInt("numberOfSubdomains");
 }
@@ -2586,12 +2689,12 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
   
   boost::ptr_vector<sampleOps::set> sets;
   sets.push_back(new sampleOps::linearAveragedPolyLine(sampleOps::linearAveragedPolyLine::Parameters()
-    .set_name(p.profile_name)
     .set_points( pts )
     .set_dir1(p.homdir1)
     .set_dir2(p.homdir2)
     .set_nd1(p.n_homavg1)
     .set_nd2(p.n_homavg2)
+    .set_name(p.profile_name)
   ));
   
   sample(cm, p.casepath, p.fields, sets);    
@@ -2636,5 +2739,212 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
 }
 
 addToAnalysisFactoryTable(HomogeneousAveragedProfile);
+
+
+std::vector<std::string> patchList
+(
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& caseDir,
+    const std::string& include,
+    const std::vector<std::string>& exclude
+)
+{
+  std::vector<std::string> result;
+  
+  OFDictData::dict boundaryDict;
+  cm.parseBoundaryDict(caseDir, boundaryDict);
+  
+  const boost::regex filter( include );
+  
+  BOOST_FOREACH(const OFDictData::dict::value_type& patch, boundaryDict)
+  {
+      std::string patchname = patch.first;
+      
+      boost::smatch what;
+      if (boost::regex_match( patchname, what, filter ))
+      {
+          bool excl=false;
+          BOOST_FOREACH(std::string expat, exclude)
+          {
+              std::cout<<" ++ include patch "<<patchname<<" because of regex_rule "<<include<<std::endl;
+              if (expat[0]=='\"')
+              {
+                  expat.erase( 0, 1 ); // erase the first character
+                  expat.erase( expat.size() - 1 ); // erase the last character
+                  if (boost::regex_match( patchname, what, boost::regex(expat) )) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of regex_rule "<<expat<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+              else 
+              { 
+                  if (patchname==expat) 
+                    { 
+                        std::cout<<"  -- exclude patch "<<patchname<<" because of direct match."<<std::endl;
+                        excl=true; 
+                        break; 
+                    }
+              }
+          }
+          if (!excl) result.push_back(patchname);  
+      } else
+      {
+          std::cout<<" no match for patch "<<patchname<<" for regex_rule "<<include<<std::endl;
+      }
+  }
+  
+  return result;
+}
+
+void calcR
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts
+)
+{
+    if (cm.OFversion()<400)
+    {
+        cm.executeCommand( location, "R", addopts );
+    }
+    else
+    {
+        std::string solver = readSolverName(location);
+        
+        std::vector<std::string> opts = addopts;
+        opts.insert(opts.begin(), "R");
+        opts.insert(opts.begin(), "-func");
+        opts.insert(opts.begin(), "-postProcess");
+        cm.executeCommand( location, solver, opts );
+    }
+}
+
+void calcLambda2
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location,
+  const std::vector<std::string>& addopts
+)
+{
+    if (cm.OFversion()<400)
+    {
+        cm.executeCommand( location, "Lambda2", addopts );
+    }
+    else
+    {
+        std::vector<std::string> opts = addopts;
+        opts.insert(opts.begin(), "Lambda2");
+        opts.insert(opts.begin(), "-func");
+        cm.executeCommand( location, "postProcess", opts );
+    }
+}
+
+
+bool checkIfAnyFileIsNewerOrNonexistent
+(
+    boost::filesystem::path orig,
+    boost::filesystem::path copy,
+    bool recursive
+)
+{
+    using namespace boost::filesystem;
+    
+    bool anynewerornonexistent=false;
+    directory_iterator end_itr; // default construction yields past-the-end
+    for 
+    ( 
+        directory_iterator itr( orig );
+        itr != end_itr;
+        ++itr 
+    )
+    {
+        boost::filesystem::path curname=itr->path().filename();
+        
+        if ( is_directory(itr->status()) )
+        {
+            if (recursive)
+            {
+                anynewerornonexistent |= checkIfAnyFileIsNewerOrNonexistent(orig/curname, copy/curname);
+            }
+        }
+        else
+        {
+            if (!exists(copy/curname))
+            {
+                std::cout<<"NOT EXISTING IN "<<copy<<": "<<curname<<std::endl;
+                anynewerornonexistent = true;
+            }
+            else if ( last_write_time(orig/curname) > last_write_time(copy/curname) )
+            {
+                std::cout<<"NEWER IN "<<orig<<": "<<curname<<std::endl;
+                anynewerornonexistent = true;
+            }
+        }
+    }
+    
+    return anynewerornonexistent;
+}
+
+bool checkIfReconstructLatestTimestepNeeded
+(
+  const OpenFOAMCase& cm, 
+  const boost::filesystem::path& location
+)
+{
+  using namespace boost::filesystem;
+  
+  path proc0 = location/"processor0";
+  if (!exists(proc0)) 
+  {
+      std::cout<<"No processor directories in case "<<location.string()<<" => no reconstruct possible"<<std::endl;
+      return false; // no reconst, if no processor directories exist
+  }
+  
+  // find last timestep in proc*0
+  TimeDirectoryList tdl = listTimeDirectories( proc0 );  
+  boost::filesystem::path proc0latestTimeDir = tdl.rbegin()->second;
+  
+  if (tdl.size()==0) 
+  {
+      std::cout<<"No time directories in procesor0 => no reconstruct possible"<<std::endl;
+      return false; // no reconst, if not time dirs in proc dirs
+  }
+
+  path timedirname = proc0latestTimeDir.filename();
+  path latestTimeDir = location/timedirname;
+  
+  if (!exists(latestTimeDir)) 
+  {
+      std::cout<<"Latest time directory "<<timedirname.string()<<" in procesor0 not existing in case "<<location.string()<<" => reconstruct required"<<std::endl;
+      return true; // reconst needed, if latest time is only existing in proc dir
+  }
+  else
+  {
+      // time dir exists also in case; check if files in proc dir are newer
+      
+      if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir, latestTimeDir, false))
+      {
+          std::cout<<"There are newer or non-existing field files in case time dir => reconstruct required"<<std::endl;          
+          return true;
+      }
+      
+      if (exists(proc0latestTimeDir/"polyMesh"))
+      {
+          if (!exists(latestTimeDir/"polyMesh"))
+          {
+            std::cout<<"polyMesh folder in case time dir not existing => reconstruct required"<<std::endl;          
+            return true;              
+          }
+          else if (checkIfAnyFileIsNewerOrNonexistent(proc0latestTimeDir/"polyMesh", latestTimeDir/"polyMesh", false))
+          {
+            std::cout<<"There are newer or non-existing files in polyMesh folder => reconstruct required"<<std::endl;          
+            return true;
+          }
+      }
+  }
+  return false;
+}
 
 }

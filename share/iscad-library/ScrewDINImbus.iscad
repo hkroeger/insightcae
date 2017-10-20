@@ -11,6 +11,8 @@ e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L=25;
 
+axis=RefAxis(O, EX);
+
 mat=loadmodel(material_props);
 
 screw0=

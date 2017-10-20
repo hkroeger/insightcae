@@ -152,7 +152,7 @@ void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
     "MergeSolids",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
       [ qi::_val = phx::bind(&BooleanUnion::create, qi::_1) ]
       
     ))

@@ -4,7 +4,8 @@ project(genericmodules)
 
 set(genericmodules_SOURCES 
   filetemplate.cpp 
-  )
+  convergenceanalysis.cpp
+)
   
 file(GLOB_RECURSE genericmodules_HEADERS "*.h")
 include_directories(${toolkit_SOURCE_DIR})
@@ -30,4 +31,4 @@ install(TARGETS genericmodules LIBRARY DESTINATION lib)
 
 install_shared_file(genericmodules_module_cfg genericmodules.module modules.d)
 
-# add_pybindings(GenericModules "genericmodules.i" genericmodules)
+add_pybindings(GenericModules "genericmodules.i" genericmodules)

@@ -34,6 +34,20 @@ using namespace boost::filesystem;
 using namespace boost::assign;
 using namespace boost::fusion;
 
+namespace std
+{
+bool operator==(const insight::OFDictData::data& d, const std::string& s)
+{
+    const std::string* s1=boost::get<std::string>(&d);
+    if (!s1) return false;
+    return (*s1==s);
+}
+bool operator==(const std::string& s, const insight::OFDictData::data& d)
+{
+    return d==s;
+}
+}
+
 namespace insight
 {
   
@@ -144,7 +158,160 @@ OFDictData::dict probes::functionObjectDict() const
 }
 
 
+arma::mat readTensor(std::istream& is)
+{
+  std::vector<double> data;
+  string s;
+  do {
+    is >> s;
+    if (is.fail()) break;
+    double d; std::istringstream(s) >> d;
+    data.push_back(d);
+  } while (!is.eof() && !ends_with(s, ")"));
+  
+  return arma::mat(data.data(), 1, data.size());
+}
 
+arma::cube probes::readProbes 
+( 
+    const OpenFOAMCase& c,
+    const boost::filesystem::path& location,
+    const std::string& foName, 
+    const std::string& fieldName 
+)
+{
+  typedef std::vector<arma::mat> Instant;
+  typedef std::map<double, Instant> History;
+  
+  History sample_history;
+  int ncmpt=-1, npts=-1;
+  
+  
+  path fp = absolute ( location ) /"postProcessing"/foName;
+  
+  if ( c.OFversion() < 400 )
+      insight::Warning("readProbes has not been tested for the current OF version "+boost::lexical_cast<std::string>(c.OFversion()));
+
+  if (!exists(fp))
+      throw insight::Exception("data path of function object "+foName+" does not exist!");
+  
+  // find all time directories
+  TimeDirectoryList tdl=listTimeDirectories ( fp );
+  BOOST_FOREACH ( const TimeDirectoryList::value_type& td, tdl )
+  {
+    boost::filesystem::path ffp = td.second/fieldName;
+
+    if (!exists(ffp))
+        insight::Warning("field "+fieldName+" was not found in time directory "+td.second.string()+" of probes function object "+foName+"!");
+        
+    std::ifstream f( ffp.c_str() );
+    while ( !f.eof() )
+    {
+        std::string line;
+
+        getline ( f, line );
+        if ( f.fail() ) break;
+        if ( !starts_with ( line, "#" ) )
+        {
+            std::istringstream os(line);
+
+            double time;
+            os >> time;
+
+            Instant cur_data;
+            while (!os.eof())
+            {
+                arma::mat v;
+                char c;
+                os >> c;
+                if (c=='(')
+                {
+                    v = readTensor(os);
+                }
+                else
+                {
+                    os.unget();
+                    v=arma::zeros(1);
+                    os >> v(0);
+                }
+
+                if (ncmpt>0) // check num of compt
+                {
+                    if (ncmpt!=v.n_elem)
+                        throw std::string("incorrect number of components in probes data! (@time %g: found %d, expected %d)");
+                }
+                else
+                {
+                    ncmpt=v.n_elem;
+                }
+
+                cur_data.push_back(v);
+            }
+
+            if (npts>0) // check number of sample points
+            {
+                if (npts!=cur_data.size())
+                    throw std::string("incorrect number of sample points in probes data! (@time %g: found %d, expected %d)");
+            }
+            else
+            {
+                npts=cur_data.size();
+            }
+
+            sample_history[time]=cur_data;
+
+        }
+    }
+  }
+
+  int ninstants=sample_history.size();
+
+  arma::cube data = arma::zeros(ninstants, npts+1, ncmpt);
+  int i=0;
+  BOOST_FOREACH(const History::value_type& instant, sample_history)
+  {
+    int j=0;
+    for (int k=0; k<ncmpt; k++) data(i, 0, k)=instant.first;
+        
+    BOOST_FOREACH(const Instant::value_type& sample, instant.second)
+    {
+        for (int k=0; k<ncmpt; k++) data(i, j+1, k)=sample(k);
+        j+=1;
+    }
+    i+=1;
+  }
+    
+  return data;
+}
+
+
+
+arma::mat probes::readProbesLocations
+(
+    const OpenFOAMCase& c, 
+    const boost::filesystem::path& location, 
+    const std::string& foName
+)
+{
+  OFDictData::dict controlDict;
+  readOpenFOAMDict(location/"system"/"controlDict", controlDict);
+  
+  OFDictData::dict& fol = controlDict.subDict("functions");
+  
+  if (fol.find(foName)==fol.end())
+      throw insight::Exception("Function object \""+foName+"\" not found in controlDict!");
+  OFDictData::dict& fod = fol.subDict(foName);
+  OFDictData::list& plo=fod.getList("probeLocations");
+  
+  arma::mat data = arma::zeros(plo.size(), 3);
+  for (int i=0; i<plo.size(); i++)
+  {
+      OFDictData::list& row = boost::get<OFDictData::list>(plo[i]);
+      cout<<row.size()<<endl;
+      for (int k=0; k<3; k++) data(i,k)=as_scalar(row[k]);
+  }
+  return data;
+}
 
 defineType(cuttingPlane);
 addToOpenFOAMCaseElementFactoryTable(cuttingPlane);
@@ -404,6 +571,8 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   std::string line;
 
   getline ( f, line );
+//   std::cout<<"RAW: "<<line<<std::endl;
+  
   if ( f.fail() ) return arma::mat();
 
   if ( starts_with ( line, "#" ) ) { skip=true; return arma::mat(); };
@@ -411,12 +580,21 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   erase_all ( line, "(" );
   erase_all ( line, ")" );
   replace_all ( line, ",", " " );
-  replace_all ( line, "  ", " " );
+  replace_all ( line, "\t", " " );
+  while (line.find("  ")!=std::string::npos)
+  {
+    replace_all ( line, "  ", " " );
+  }
+//   std::cout<<"CLEAN: "<<line<<std::endl;
 
   std::vector<string> strs;
-  boost::split ( strs, line, boost::is_any_of ( " \t" ) );
+  boost::split ( strs, line, boost::is_any_of ( " " ) );
 
-  if ( strs.size() != nc_expected ) return arma::mat();
+  if ( strs.size() != nc_expected ) 
+  {
+//       std::cout<<"found "<<strs.size()<<" fields, expected "<<nc_expected<<std::endl;
+      return arma::mat();
+  }
 
   arma::mat row;
   row.set_size ( 1, strs.size() );
@@ -469,6 +647,7 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
           {
             arma::mat r1=readForcesLine ( f, ncexp, skip );
             arma::mat r2=readForcesLine ( f2, ncexp, skip );
+//             std::cout<<r1<<r2<<std::endl;
             if ( (r1.n_cols==0) || (r2.n_cols==0) )
             {
                 if ( !skip ) break;
@@ -542,7 +721,8 @@ defineType(extendedForces);
 addToOpenFOAMCaseElementFactoryTable(extendedForces);
 
 extendedForces::extendedForces(OpenFOAMCase& c, const ParameterSet& ps)
-: forces(c, ps)
+: forces(c, ps),
+  p_(ps)
 {
 }
 
@@ -564,8 +744,14 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["patches"]=pl;
   fod["pName"]=p_.pName;
   fod["UName"]=p_.UName;
-  fod["rhoName"]=p_.rhoName;
+  if (OFversion()>=400)
+    fod["rho"]=p_.rhoName;
+  else
+    fod["rhoName"]=p_.rhoName;
   fod["rhoInf"]=p_.rhoInf;
+  
+  if (p_.maskField!="")
+      fod["maskField"]=p_.maskField;
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);
   

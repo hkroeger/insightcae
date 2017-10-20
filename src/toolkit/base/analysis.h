@@ -30,6 +30,7 @@
 
 #include <queue>
 
+#include "base/boost_include.h"
 #include "boost/thread.hpp"
 
 namespace insight

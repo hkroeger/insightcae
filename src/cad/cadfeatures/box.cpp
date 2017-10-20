@@ -93,6 +93,7 @@ void Box::build()
     if (boost::fusion::at_c<2>(center_))  p0-=0.5*+L3_->value();
 
     refpoints_["p0"]=p0;
+    refpoints_["p1"]=p0+L1_->value()+L2_->value()+L3_->value();
 
     refvalues_["L1"]=arma::norm(L1_->value(), 2);
     refvalues_["L2"]=arma::norm(L2_->value(), 2);
@@ -135,11 +136,11 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' 
-        > ruleset.r_vectorExpression > ',' 
-        > ruleset.r_vectorExpression > ',' 
-        > ruleset.r_vectorExpression > ',' 
-        > ruleset.r_vectorExpression 
-        > ( ( ',' >> (
+        >> ruleset.r_vectorExpression >> ',' 
+        >> ruleset.r_vectorExpression >> ',' 
+        >> ruleset.r_vectorExpression >> ',' 
+        >> ruleset.r_vectorExpression 
+        >> ( ( ',' >> (
             (  qi::lit("centered") >> qi::attr(true) >> qi::attr(true) >> qi::attr(true) )
             |
             (  qi::lit("center") 
@@ -151,7 +152,7 @@ void Box::insertrule(parser::ISCADParser& ruleset) const
             |
             ( qi::attr(false) >> qi::attr(false) >> qi::attr(false) )
           )
-        > ')' ) 
+        >> ')' ) 
       [ qi::_val = phx::bind(&Box::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5) ]
       
     ))

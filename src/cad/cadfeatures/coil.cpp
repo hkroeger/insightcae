@@ -283,15 +283,15 @@ void CoilPath::insertrule ( parser::ISCADParser& ruleset ) const
         "CoilPath",
         typename parser::ISCADParser::ModelstepRulePtr ( new typename parser::ISCADParser::ModelstepRule (
                     ( '('
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ','
-                      > ruleset.r_scalarExpression > ',' 
-                      > ruleset.r_scalarExpression
-                      > ')' )
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ','
+                      >> ruleset.r_scalarExpression >> ',' 
+                      >> ruleset.r_scalarExpression
+                      >> ')' )
                     [ qi::_val = phx::bind ( &CoilPath::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_8 ) ]
                 ) )
     );
@@ -451,13 +451,13 @@ void Coil::insertrule(parser::ISCADParser& ruleset) const
   (
     "Coil",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
-      ( '(' > ruleset.r_vectorExpression > ',' 
-	    > ruleset.r_vectorExpression > ',' 
-	    > ruleset.r_vectorExpression > ',' 
-	    > ruleset.r_scalarExpression > ',' 
-	    > ruleset.r_scalarExpression > ',' 
-	    > ruleset.r_scalarExpression > ',' 
-	    > ruleset.r_scalarExpression > ')' ) 
+      ( '(' >> ruleset.r_vectorExpression >> ',' 
+	    >> ruleset.r_vectorExpression >> ',' 
+	    >> ruleset.r_vectorExpression >> ',' 
+	    >> ruleset.r_scalarExpression >> ',' 
+	    >> ruleset.r_scalarExpression >> ',' 
+	    >> ruleset.r_scalarExpression >> ',' 
+	    >> ruleset.r_scalarExpression >> ')' ) 
 	[ qi::_val = phx::construct<FeaturePtr>(phx::new_<Coil>(qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7)) ]
     ))
   );

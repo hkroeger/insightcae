@@ -321,6 +321,35 @@ public:
 
 
 
+class pimpleDyMFoamNumerics
+    : public pimpleFoamNumerics
+{
+
+public:
+#include "numericscaseelements__pimpleDyMFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> pimpleDyMFoamNumerics Parameters
+inherits pimpleFoamNumerics::Parameters
+
+FEMinterval = int 10 "Interval between successive FEM updates"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "pimpleDyMFoamNumerics" );
+    pimpleDyMFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
+
+
 class cavitatingFoamNumerics
     : public FVNumerics
 {

@@ -78,7 +78,7 @@ void Split::insertrule(parser::ISCADParser& ruleset) const
     "Split",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_solidmodel_expression > ')' ) 
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression >> ')' ) 
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<Split>(qi::_1, qi::_2)) ]
       
     ))

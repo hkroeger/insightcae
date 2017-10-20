@@ -80,7 +80,7 @@ void StitchedShell::insertrule(parser::ISCADParser& ruleset) const
     "StitchedShell",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_faceFeaturesExpression  > ( (',' > ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) > ')' )
+    ( '(' >> ruleset.r_faceFeaturesExpression  >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(1e-3)) ) >> ')' )
       [ qi::_val = phx::construct<FeaturePtr>(phx::new_<StitchedShell>(qi::_1, qi::_2)) ]
       
     ))

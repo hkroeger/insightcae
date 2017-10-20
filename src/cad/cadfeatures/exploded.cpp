@@ -184,20 +184,20 @@ void Exploded::insertrule(parser::ISCADParser& ruleset) const
         "Exploded",
         typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
                       '(' 
-                       > ( 
+                       >> ( 
                         (
 			 ( ( ruleset.r_solidmodel_expression 
-                            > ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial)) 
+                            >> ( (qi::lit("axial")>qi::attr(ExplosionDirection_Axial)) 
 			        | (qi::lit("radial")>qi::attr(ExplosionDirection_Radial)) 
 				| qi::attr(ExplosionDirection_Axial) )
-                            > (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0))) 
-                            > (ruleset.r_scalarExpression|qi::attr(scalarconst(1.))) 
+                            >> (ruleset.r_vectorExpression|qi::attr(vec3const(0,0,0))) 
+                            >> (ruleset.r_scalarExpression|qi::attr(scalarconst(1.))) 
 			   ) % ',' )
-			 > ',' > ruleset.r_datumExpression > ')' )
+			 >> ',' >> ruleset.r_datumExpression >> ')' )
                       [ qi::_val = phx::bind(&Exploded::create, qi::_2, qi::_1) ]
                         |
                         
-                        (qi::lit("assembly") > ruleset.r_solidmodel_expression > ',' > ruleset.r_datumExpression > ')' )
+                        (qi::lit("assembly") >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_datumExpression >> ')' )
                       [ qi::_val = phx::bind(&Exploded::create_assy, qi::_2, qi::_1) ]
                      ) 
                 ))

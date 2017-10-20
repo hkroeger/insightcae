@@ -37,9 +37,93 @@ IF(OFplus_BASHRC)
   detectIncPaths(OFplus)
 
   setOFlibvar(OFplus 
+# incompressibleTurbulenceModels
+# turbulenceModels
+# turbulenceModelSchemes
+# compressibleTurbulenceModels
+# sixDoFRigidBodyMotion
+# engine
+# SLGThermo
+# fluidThermophysicalModels
+# laminarFlameSpeedModels
+# solidThermo
+# radiationModels
+# liquidProperties
+# solidMixtureProperties
+# liquidMixtureProperties
+# liquidPropertiesFvPatchFields
+# solidProperties
+# barotropicCompressibilityModel
+# solidSpecie
+# specie
+# reactionThermophysicalModels
+# thermophysicalFunctions
+# chemistryModel
+# solidChemistryModel
+# pairPatchAgglomeration
+# reconstruct
+# decompositionMethods
+# decompose
+# scotchDecomp
+# distributed
+# topoChangerFvMesh
+# edgeMesh
+# blockMesh
+# extrudeModel
+# snappyHexMesh
+# regionCoupled
+# pyrolysisModels
+# regionModels
+# regionCoupling
+# surfaceFilmDerivedFvPatchFields
+# surfaceFilmModels
+# thermalBaffleModels
+# meshTools
+# triSurface
+# finiteVolume
+# dynamicMesh
+# fvMotionSolvers
+# dynamicFvMesh
+# coalCombustion
+# molecule
+# potential
+# molecularMeasurements
+# lagrangian
+# solidParticle
+# lagrangianTurbulence
+# lagrangianSpray
+# DSMC
+# lagrangianIntermediate
+# distributionModels
+# rigidBodyMeshMotion
+# conversion
+# sampling
+# FVFunctionObjects
+# jobControl
+# systemCall
+# utilityFunctionObjects
+# forces
+# fieldFunctionObjects
+# IOFunctionObjects
+# cloudFunctionObjects
+# foamCalcFunctions
+# surfMesh
+# rigidBodyDynamics
+# ODE
+# incompressibleTransportModels
+# twoPhaseMixture
+# interfaceProperties
+# twoPhaseProperties
+# immiscibleIncompressibleTwoPhaseMixture
+# compressibleTransportModels
+# combustionModels
+# fvOptions
+# OpenFOAM
+# renumberMethods
+# fileFormats
+# genericPatchFields
 incompressibleTurbulenceModels
 turbulenceModels
-turbulenceModelSchemes
 compressibleTurbulenceModels
 sixDoFRigidBodyMotion
 engine
@@ -51,7 +135,7 @@ radiationModels
 liquidProperties
 solidMixtureProperties
 liquidMixtureProperties
-liquidPropertiesFvPatchFields
+thermophysicalProperties
 solidProperties
 barotropicCompressibilityModel
 solidSpecie
@@ -97,16 +181,12 @@ lagrangianIntermediate
 distributionModels
 rigidBodyMeshMotion
 conversion
-sampling
-FVFunctionObjects
-jobControl
-systemCall
 utilityFunctionObjects
 forces
 fieldFunctionObjects
-IOFunctionObjects
-cloudFunctionObjects
-foamCalcFunctions
+solverFunctionObjects
+lagrangianFunctionObjects
+sampling
 surfMesh
 rigidBodyDynamics
 ODE
@@ -122,100 +202,7 @@ OpenFOAM
 renumberMethods
 fileFormats
 genericPatchFields
-# FVFunctionObjects
-# IOFunctionObjects
-# SloanRenumber
-# autoMesh
-# barotropicCompressibilityModel
-# blockMesh
-# cloudFunctionObjects
-# coalCombustion
-# combustionModels
-# compressibleLESModels
-# compressibleTransportModels
-# #compressibleTurbulenceModels
-# decompose
-# distributed
-# DSMC
-# engine
-# foamCalcFunctions
-# genericPatchFields
-# immiscibleIncompressibleTwoPhaseMixture
-# #incompressibleTurbulenceModels
-# jobControl
-# lagrangianSpray
-# lagrangianTurbulence
-# #lagrangianTurbulentSubModels
-# laminarFlameSpeedModels
-# molecularMeasurements
-# molecule
-# pairPatchAgglomeration
-# pyrolysisModels
-# randomProcesses
-# reconstruct
-# regionCoupled
-# regionCoupling
-# scotchDecomp
-# sixDoFRigidBodyMotion
-# solidParticle
-# solidSpecie
-# surfaceFilmDerivedFvPatchFields
-# surfaceFilmModels
-# systemCall
-# thermalBaffleModels
-# topoChangerFvMesh
-# #turbulenceDerivedFvPatchFields
-# twoPhaseProperties
-# utilityFunctionObjects
-# renumberMethods
-# edgeMesh
-# fvMotionSolvers
-# interfaceProperties
-# incompressibleTransportModels
-# lagrangianIntermediate
-# potential
-# solidChemistryModel
-# forces
-# compressibleRASModels
-# regionModels
-# dynamicFvMesh
-# fvOptions
-# decompositionMethods
-# twoPhaseMixture
-# SLGThermo
-# radiationModels
-# distributionModels
-# solidThermo
-# chemistryModel
-# #compressibleTurbulenceModel
-# liquidMixtureProperties
-# solidMixtureProperties
-# ODE
-# reactionThermophysicalModels
-# liquidProperties
-# solidProperties
-# fluidThermophysicalModels
-# thermophysicalFunctions
-# specie
-# #LEMOS-2.3.x
-# fieldFunctionObjects
-# incompressibleLESModels
-# #incompressibleRASModels
-# dynamicMesh
-# sampling
-# #LESdeltas
-# turbulenceModels
-# #LESfilters
-# #incompressibleTurbulenceModel
-# extrudeModel
-# lagrangian
-# conversion
-# finiteVolume
-# meshTools
-# triSurface
-# surfMesh
-# fileFormats
-# OpenFOAM
+randomProcesses
 )
 
   detectDepLib(OFplus "${OFplus_FOAM_LIBBIN}/libfiniteVolume.so" "Pstream")
@@ -224,7 +211,7 @@ genericPatchFields
   set(OFplus_INSIGHT_BIN "${CMAKE_BINARY_DIR}/bin/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
   set(OFplus_INSIGHT_LIB "${CMAKE_BINARY_DIR}/lib/OpenFOAM-${OFplus_WM_PROJECT_VERSION}")
 
-  addOFConfig(OFplus ofplus 302)
+  addOFConfig(OFplus ofplus 400)
 #   list(APPEND INSIGHT_OFES_VARCONTENT "OF23x@`find \\\${PATH//:/ } -maxdepth 1 -name insight.bashrc.of23x -print -quit`#230")
 #   set(INSIGHT_OF_ALIASES "${INSIGHT_OF_ALIASES}
 # alias of23x=\"source insight.bashrc.of23x\"

@@ -857,6 +857,7 @@ bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const
 
 }
 
+
 uniformPhases::Parameters uniformPhases::mixture( const std::map<std::string, double>& sps )
 {
     Parameters pf;
@@ -869,6 +870,44 @@ uniformPhases::Parameters uniformPhases::mixture( const std::map<std::string, do
         pf.phaseFractions.push_back(s);
     }
     return pf;
+}
+
+
+defineType(uniformWallTiedPhases);
+addToFactoryTable(multiphaseBC, uniformWallTiedPhases);
+addToStaticFunctionTable(multiphaseBC, uniformWallTiedPhases, defaultParameters);
+
+uniformWallTiedPhases::uniformWallTiedPhases(const ParameterSet& ps)
+: uniformPhases(ps)
+{}
+
+bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
+{
+    const Parameters::phaseFractions_default_type* pf =NULL;
+    BOOST_FOREACH ( const Parameters::phaseFractions_default_type& c, p_.phaseFractions ) {
+        if ( c.name == fieldname ) {
+            pf=&c;
+            break;
+        }
+    }
+    if
+    (
+//     (f.find(fieldname)!=f.end())
+        ( pf!=NULL )
+        &&
+        ( get<0> ( fieldinfo ) ==scalarField )
+    ) {
+        std::ostringstream entry;
+        entry << "uniform " << pf->fraction;
+//     BC["type"]="fixedValue";
+//     BC["value"]=entry.str();
+        BC["type"]="fixedValue";
+        BC["value"]=entry.str();
+        return true;
+    } else {
+        return false;
+    }
+
 }
 
 
@@ -1060,6 +1099,117 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         }
     }
 }
+
+
+
+defineType(MappedVelocityInletBC);
+addToFactoryTable(BoundaryCondition, MappedVelocityInletBC);
+addToStaticFunctionTable(BoundaryCondition, MappedVelocityInletBC, defaultParameters);
+
+
+
+
+MappedVelocityInletBC::MappedVelocityInletBC
+(
+  OpenFOAMCase& c, 
+  const std::string& patchName, 
+  const OFDictData::dict& boundaryDict, 
+  const ParameterSet& ps
+)
+: BoundaryCondition(c, patchName, boundaryDict),
+  ps_(ps)
+{
+ BCtype_="patch";
+}
+
+
+void MappedVelocityInletBC::addOptionsToBoundaryDict(OFDictData::dict& bndDict) const
+{
+  Parameters p(ps_);
+  
+  bndDict["nFaces"]=nFaces_;
+  bndDict["startFace"]=startFace_;
+//   if (OFversion()>=210)
+//   {
+        bndDict["type"]="mappedPatch";
+        bndDict["inGroups"]="1(mappedPatch)";
+        bndDict["sampleMode"]="nearestCell";
+        bndDict["sampleRegion"]="region0";
+        bndDict["samplePatch"]="none";
+        bndDict["offsetMode"]="uniform";
+        bndDict["offset"]=OFDictData::vector3(p.distance);
+    //bndDict["transform"]= "rotational";    
+//   }
+//   else
+//   {
+//   }
+}
+
+void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
+{
+    Parameters p(ps_);
+    multiphaseBC::multiphaseBCPtr phasefractions = 
+        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
+    
+    BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
+
+        
+    phasefractions->addIntoDictionaries ( dictionaries );
+
+    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+        OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
+                             .subDict ( "boundaryField" ).subDict ( patchName_ );
+        if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
+            BC["type"]="mapped";
+            BC["fieldName"]="U";
+            BC["setAverage"]=true;
+            BC["interpolationScheme"]="cell";
+            BC["average"]=OFDictData::vector3(p.average);
+            BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
+        } else if (
+            ( field.first=="T" )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            BC["type"]=OFDictData::data ( "fixedValue" );
+            BC["value"]="uniform "+lexical_cast<string> ( p.T );
+        } else if (
+            ( ( field.first=="p" ) || ( field.first=="pd" ) || ( field.first=="p_rgh" ) )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            BC["type"]=OFDictData::data ( "zeroGradient" );
+        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+            BC["type"]=OFDictData::data ( "fixedValue" );
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.rho ) );
+        } else if
+        (
+            (
+                ( field.first=="k" ) ||
+                ( field.first=="epsilon" ) ||
+                ( field.first=="omega" ) ||
+                ( field.first=="nut" ) ||
+                ( field.first=="nuSgs" ) ||
+                ( field.first=="nuTilda" )
+            )
+            &&
+            ( get<0> ( field.second ) ==scalarField )
+        ) {
+            BC["type"]=OFDictData::data ( "zeroGradient" );
+        } else {
+            if ( ! (
+                        MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
+                        ||
+                        phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
+                    ) )
+                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+            {
+                BC["type"]=OFDictData::data ( "zeroGradient" );
+            }
+        }
+    }
+}
+
 
 
 namespace turbulenceBC
@@ -1484,6 +1634,7 @@ TurbulentVelocityInletBC::TurbulentVelocityInletBC
   const ParameterSet& ps
 )
 : BoundaryCondition(c, patchName, boundaryDict),
+  ps_(ps),
   p_(ps)
 {
  BCtype_="patch";
@@ -1645,12 +1796,16 @@ void TurbulentVelocityInletBC::setField_R(OFDictData::dict& BC) const
 
 void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
+  multiphaseBC::multiphaseBCPtr phasefractions =
+        multiphaseBC::multiphaseBC::create ( ps_.get<SelectableSubsetParameter> ( "phasefractions" ) );
+    
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   
   if (boost::get<Parameters::turbulence_inflowGenerator_type>(&p_.turbulence))  
     controlDict.addListIfNonexistent("libs").push_back( OFDictData::data("\"libinflowGeneratorBC.so\"") );
 
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+  phasefractions->addIntoDictionaries ( dictionaries );  
 //   p_.phasefractions()->addIntoDictionaries(dictionaries);
   
   BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
@@ -1732,8 +1887,8 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
     {
       if (!(
 	  MeshMotionBC::noMeshMotion.addIntoFieldDictionary(field.first, field.second, BC)
-// 	  ||
-// 	  p_.phasefractions()->addIntoFieldDictionary(field.first, field.second, BC)
+	  ||
+	  phasefractions->addIntoFieldDictionary(field.first, field.second, BC)
 	  ))
 	{
 	  BC["type"]=OFDictData::data("zeroGradient");
@@ -2107,7 +2262,13 @@ void WallBC::addIntoDictionaries(OFdicts& dictionaries) const
 void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
     Parameters p(ps_);
+    
+    multiphaseBC::multiphaseBCPtr phasefractions = 
+        multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
+    
     BoundaryCondition::addIntoFieldDictionaries(dictionaries);
+    
+    phasefractions->addIntoDictionaries ( dictionaries );
 
     BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
     {
@@ -2128,7 +2289,8 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             }
             else
             {
-                BC["type"]=OFDictData::data("fixedValue");
+//                 BC["type"]=OFDictData::data("fixedValue");
+                BC["type"]=OFDictData::data("movingWallVelocity");
                 BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p.wallVelocity));
             }
         }
@@ -2170,15 +2332,21 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC, p.roughness_z0);
         }
 
-        // any other scalar field
-        else if (get<0>(field.second)==scalarField)
-        {
-            BC["type"]=OFDictData::data("zeroGradient");
-        }
+//         // any other scalar field
+//         else if (get<0>(field.second)==scalarField)
+//         {
+//             BC["type"]=OFDictData::data("zeroGradient");
+//         }
 
         else
         {
-            if (!MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoFieldDictionary(field.first, field.second, BC))
+            if (!(
+                MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoFieldDictionary(field.first, field.second,
+ BC)
+                ||
+                phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
+                )
+            )
                 //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
             {
                 BC["type"]=OFDictData::data("zeroGradient");

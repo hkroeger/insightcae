@@ -104,7 +104,6 @@ private:
 protected:
     boost::filesystem::path casepath_;
     boost::shared_ptr<insight::OpenFOAMCase> ofc_;
-    insight::OFDictData::dict boundaryDict_;
     insight::ParameterSet parameters_;
     boost::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
@@ -116,7 +115,11 @@ public:
     virtual ~isofCaseBuilderWindow();
     
     void loadFile(const boost::filesystem::path& file, bool skipBCs=false);
-    void createCase(bool skipBCs=false);
+    void createCase
+    (
+        bool skipBCs=false, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    );
     
 public slots:
     void onItemSelectionChanged();
@@ -124,15 +127,21 @@ public slots:
     
     void onAddElement();
     void onRemoveElement();
+    void onMoveElementUp();
+    void onMoveElementDown();
     
     void onSave();
     void onLoad();
     void onParseBF();
+    void onAddPatchManually();
     void onAssignBC();
     void onPatchSelectionChanged();
     
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);
+    
+    insight::ParameterSet& caseElementParameters(int id);
+    insight::ParameterSet& BCParameters(const std::string& patchName);
 };
 
 

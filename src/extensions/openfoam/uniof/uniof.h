@@ -29,7 +29,7 @@
 #endif
 
 
-#if defined(OFdev)
+#if defined(OFplus)||defined(OFdev)
 #define UNIOF_BOUNDARY_NONCONST(x) (x).boundaryFieldRef()
 #else
 #define UNIOF_BOUNDARY_NONCONST(x) (x).boundaryField()
@@ -60,15 +60,30 @@
 #define UNIOF_ADDOPT(aa,name,typ,desc) aa::validOptions.insert(name,desc)
 #endif
 
-#if defined(OFdev)
+#if defined(OFplus)||defined(OFdev)
+#define UNIOF_INTERNALFIELD(f) f.primitiveField()
+#else
+#define UNIOF_INTERNALFIELD(f) f.internalField()
+#endif
+
+
+#if defined(OFplus)||defined(OFdev)
+#define UNIOF_DIMINTERNALFIELD(f) f.internalField()
+#else
+#define UNIOF_DIMINTERNALFIELD(f) f.dimensionedInternalField()
+#endif
+
+#if defined(OFplus)||defined(OFdev)
 #define UNIOF_INTERNALFIELD_NONCONST(f) f.ref().field()
 #else
 #define UNIOF_INTERNALFIELD_NONCONST(f) f.internalField()
 #endif
 
 
-#ifdef OF16ext
+#if defined(OF16ext)
 #define UNIOF_LABELULIST unallocLabelList
+#elif defined(OFplus)
+#define UNIOF_LABELULIST labelList
 #else
 #define UNIOF_LABELULIST labelUList
 #endif

@@ -275,7 +275,10 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
   {
     if (exists(executionPath()/"processor0"))
     {
-      cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+        if (checkIfReconstructLatestTimestepNeeded(cm, executionPath()))
+        {
+            cm.executeCommand(executionPath(), "reconstructPar", list_of<string>("-latestTime") );
+        }
 //       cm.removeProcessorDirectories(executionPath());  //will remove proc dirs, if evaluation is executed while solution is still running...
     }
     else
@@ -285,10 +288,15 @@ void OpenFOAMAnalysis::finalizeSolverRun(OpenFOAMCase& cm)
 
 ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 {
+  Parameters p(parameters_);
+  
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Report"));
   results->introduction() = description_;
   
-  meshQualityReport(cm, executionPath(), results);
+  if (!p.eval.skipmeshquality)
+  {
+    meshQualityReport(cm, executionPath(), results);
+  }
   
   if (parameters().getBool("eval/reportdicts"))
   {

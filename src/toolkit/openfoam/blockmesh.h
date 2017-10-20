@@ -91,7 +91,15 @@ class GradingAnalyzer
   double grad_;
 public:
   GradingAnalyzer(double grad);
+  
+  /**
+   * compute grading from cell size at beginning and end
+   */
   GradingAnalyzer(double delta0, double delta1);
+  
+  /**
+   * grading from condition: minimum cell length delta0 on edge of length L discretized with n cells
+   */
   GradingAnalyzer(double delta0, double L, int n);
   
   inline double grad() const { return grad_; }
@@ -123,6 +131,7 @@ public:
 	GradingList grading = GradingList(3, 1), 
 	std::string zone="", 
 	bool inv=false);
+  virtual ~Block();
 
   void registerPoints(blockMesh& bmd) const;
 
@@ -154,6 +163,7 @@ protected:
   
 public:
     transform2D(int idx=2);
+    virtual ~transform2D();
   
     arma::mat mapped3D(const arma::mat& p) const;
     
@@ -174,6 +184,8 @@ protected:
   
 public:
     plane2D(double thick, int idx=2); 
+    virtual ~plane2D();
+    
     virtual arma::mat fwd(const arma::mat& p) const;
     virtual arma::mat rvs(const arma::mat& p) const;
 };
@@ -186,6 +198,8 @@ class wedge2D
   
 public:
     wedge2D(int idx=2);
+    virtual ~wedge2D();
+    
     virtual arma::mat fwd(const arma::mat& p) const;
     virtual arma::mat rvs(const arma::mat& p) const;
 };
@@ -216,6 +230,7 @@ protected:
   
 public:
   Edge(const Point& c0, const Point& c1);
+  virtual ~Edge();
   
   virtual std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, int OFversion) const =0;

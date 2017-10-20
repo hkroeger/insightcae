@@ -182,9 +182,11 @@ class Interpolator
   boost::ptr_vector<gsl_spline> spline ;
   
 //   Interpolator(const Interpolator&);
+  void initialize(const arma::mat& xy, bool force_linear=false);
   
 public:
   Interpolator(const arma::mat& xy, bool force_linear=false);
+  Interpolator(const arma::mat& x, const arma::mat& y, bool force_linear=false);
   ~Interpolator();
   
   /**

@@ -68,11 +68,11 @@ public:
       T* res=NULL;
       BOOST_FOREACH(CaseElement& el, elements_)
       {
-	if ( boost::regex_match(el.name(), re_name) )
-	{
-	  res=dynamic_cast<T*>(&el);
-	  if (res) break;
-	}
+        if ( boost::regex_match(el.name(), re_name) )
+        {
+        res=dynamic_cast<T*>(&el);
+        if (res) break;
+        }
       }
       return res;
     }
@@ -84,19 +84,42 @@ public:
       const T* res=NULL;
       BOOST_FOREACH(const CaseElement& el, elements_)
       {
-	if ( boost::regex_match(el.name(), re_name) )
-	{
-	  res=dynamic_cast<const T*>(&el);
-	  if (res) break;
-	}
+        if ( boost::regex_match(el.name(), re_name) )
+        {
+        res=dynamic_cast<const T*>(&el);
+        if (res) break;
+        }
       }
       return res;
     }
     
+    template<class T>
+    void remove(const std::string& name)
+    {
+      boost::regex re_name(name);
+      T* res=NULL;
+      for(boost::ptr_vector<CaseElement>::iterator i=elements_.begin(); i!=elements_.end(); i++)
+      {
+        if ( boost::regex_match((*i).name(), re_name) )
+        {
+            res=dynamic_cast<T*>(&(*i));
+            if (res) 
+            {
+                elements_.erase(i);
+                return;
+            }
+        }
+      }
+    }
+
     inline const ParameterSet& params() const
     { return parameters_; }
     
-    virtual void createOnDisk(const boost::filesystem::path& location) =0;
+    virtual void createOnDisk
+    (
+        const boost::filesystem::path& location, 
+        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+    ) =0;
     
 //    virtual void run() =0;
 };

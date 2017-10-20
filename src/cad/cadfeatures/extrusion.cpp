@@ -101,9 +101,9 @@ void Extrusion::insertrule(parser::ISCADParser& ruleset) const
     "Extrusion",	
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
-    ( '(' > ruleset.r_solidmodel_expression > ',' > ruleset.r_vectorExpression
-      > ( (  ',' > qi::lit("centered") > qi::attr(true) ) | qi::attr(false) ) 
-      > ')' )
+    ( '(' >> ruleset.r_solidmodel_expression >> ',' >> ruleset.r_vectorExpression
+      >> ( (  ',' >> qi::lit("centered") >> qi::attr(true) ) | qi::attr(false) ) 
+      >> ')' )
       [ qi::_val = phx::bind(&Extrusion::create, qi::_1, qi::_2, qi::_3) ]
       
     ))

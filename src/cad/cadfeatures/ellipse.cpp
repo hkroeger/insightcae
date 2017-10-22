@@ -150,6 +150,12 @@ FeatureCmdInfoList Ellipse::ruleDocumentation() const
 
 
 
+bool Ellipse::isSingleEdge() const
+{
+    return true;
+}
+
+
 
 bool Ellipse::isSingleCloseWire() const
 {

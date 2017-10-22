@@ -614,7 +614,16 @@ macro(install_package_script PACKAGENAME)
       TARGET ${TARGNAME}
       COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
       )
-    install(FILES ${_src} DESTINATION share/insight/python/Insight/${PACKAGENAME} COMPONENT ${INSIGHT_INSTALL_COMPONENT})
+      
+    get_filename_component(
+        DST_DIR 
+        share/insight/python/Insight/${PACKAGENAME}/${_src}
+        DIRECTORY)
+    install(
+      FILES ${_src} 
+      DESTINATION ${DST_DIR} #share/insight/python/Insight/${PACKAGENAME}
+      COMPONENT ${INSIGHT_INSTALL_COMPONENT}
+      )
   endforeach()
 endmacro(install_package_script)
 

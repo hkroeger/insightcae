@@ -1805,8 +1805,14 @@ TopoDS_Wire Feature::asSingleClosedWire() const
 
 TopoDS_Wire Feature::asSingleWire() const
 {
-  if (isSingleWire())
+  if (isSingleEdge())
+  {
+      return BRepBuilderAPI_MakeWire(asSingleEdge()).Wire();
+  }
+  else if (isSingleWire())
+  {
     return TopoDS::Wire(shape());
+  }
   else
     throw insight::Exception("Feature "+type()+" does not provide a single wire!");
 }

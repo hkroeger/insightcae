@@ -116,6 +116,12 @@ FeatureCmdInfoList Line::ruleDocumentation() const
 
 
 
+bool Line::isSingleEdge() const
+{
+    return true;
+}
+
+
 bool Line::isSingleCloseWire() const
 {
   return false;

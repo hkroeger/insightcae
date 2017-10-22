@@ -167,6 +167,13 @@ FeatureCmdInfoList Arc::ruleDocumentation() const
 }
 
 
+bool Arc::isSingleEdge() const
+{
+    return true;
+}
+
+
+
 
 
 bool Arc::isSingleCloseWire() const
@@ -266,6 +273,12 @@ FeatureCmdInfoList Arc3P::ruleDocumentation() const
     );
 }
 
+
+
+bool Arc3P::isSingleEdge() const
+{
+    return true;
+}
 
 
 

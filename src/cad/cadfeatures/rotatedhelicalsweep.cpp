@@ -47,7 +47,18 @@ TopoDS_Shape makeRotatedHelicalSweep(const Feature& sk, const arma::mat& p0, con
 
   BRepOffsetAPI_ThruSections sb(true);
   
-  TopoDS_Wire ow=BRepTools::OuterWire(TopoDS::Face(sk));
+  TopoDS_Wire ow;
+  
+  if (sk.isSingleFace())
+  {
+      ow=BRepTools::OuterWire(TopoDS::Face(sk));
+  } else if (sk.isSingleWire())
+  {
+      ow=sk.asSingleWire();
+  } else
+  {
+      throw insight::Exception("Incompatible input shape for RotatedHelicalSweep!");
+  }
   
   double dz=arma::norm(axis, 2);
   arma::mat ez=axis/norm(axis, 2);

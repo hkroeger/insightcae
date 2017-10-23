@@ -373,13 +373,12 @@ xml_node< char >* ResultSection::appendToNode ( const string& name, xml_document
 
 boost::shared_ptr< ResultElement > ResultSection::clone() const
 {
-    ResultSection *res=new ResultSection ( sectionName_ );
+    boost::shared_ptr<ResultSection> res( new ResultSection ( sectionName_ ) );
     BOOST_FOREACH ( const value_type& re, *this ) {
-#warning Possible memory leak in case of exception
-        ( *res ) [re.first]=re.second->clone();
+        ( *res ) [re.first] = re.second->clone();
     }
     res->setOrder ( order() );
-    return ResultElementPtr ( res );
+    return boost::dynamic_pointer_cast<ResultElement>( res );
 }
 
 

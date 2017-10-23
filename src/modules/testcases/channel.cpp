@@ -190,6 +190,17 @@ void ChannelBase::calcDerivedInputData()
     end_=avg2Start_+unsteady->mean2time*T_;
   }
 
+  int np=25;
+  probe_locations_.clear();
+  for (int j=0; j<np; j++)
+  {
+      probe_locations_.push_back(vec3( 
+        0., 
+        -0.5*p.geometry.H + 0.5*p.geometry.H*(1.-::cos(0.5*M_PI*double(j)/double(np-1))), 
+        0.
+      ));
+  }
+  
   cout<<"Derived data:"<<endl
       <<"============================================="<<endl;
   cout<<"Reynolds number \tRe="<<Re_<<endl;
@@ -476,7 +487,8 @@ void ChannelBase::evaluateAtSection(
   ResultSetPtr results, double x, int i,
   Ordering& o,
   bool includeRefDataInCharts,
-  bool includeAllComponentsInCharts
+  bool includeAllComponentsInCharts,
+  const std::string& vertical_probes_array_name
 )
 {
   Parameters p(parameters_);
@@ -503,6 +515,96 @@ void ChannelBase::evaluateAtSection(
   
   string title="section__xByH_" + str(format("%04.2f") % xByH);
   replace_all(title, ".", "_");
+  
+  if (vertical_probes_array_name!="")
+  {
+      arma::cube U_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "U");
+      
+      arma::mat yp=arma::zeros(probe_locations_.size());
+      for(size_t i=0; i<probe_locations_.size(); i++) yp(i)=Re_tau*(1.+probe_locations_[i](1));
+      int npts=yp.n_elem;
+      int ictr=npts-1;
+      
+      arma::mat t, U[3], U_mean[3], U_var[3], Uprime[3];
+      for(int i=0; i<3; i++)
+      {
+        t=U_vs_t.slice(i).col(0);
+        U[i]=U_vs_t.slice(i).cols(1, npts);
+        U_mean[i]= arma::mean(U[i]);
+        Uprime[i] = U[i] - (arma::ones(U[i].n_rows, 1) * U_mean[i]);
+        U_var[i]= arma::mean(Uprime[i] % Uprime[i]);
+      }
+
+      // output time history of u in centerline
+      addPlot
+      (
+        section, executionPath(), "chartUVarianceCenter",
+        "$t$", "$U$",
+        list_of
+        
+        (PlotCurve( t, U[0].col(ictr),                          "Ux_vs_t", "w l lt -1 lc 1 t '$U_x$'" ))
+        (PlotCurve( t, U_mean[0](ictr),                         "Uxmean",  "w l lt -1 lc 1 lw 2 t '$\\langle U_x \\rangle$'" ))
+        (PlotCurve( t, U_mean[0](ictr) + sqrt(U_var[0](ictr)),  "Uxvar_up",  "w l lt -1 lc 1 dt 2 t '$\\langle u^{\\prime 2}_x \\rangle$'" ))
+        (PlotCurve( t, U_mean[0](ictr) - sqrt(U_var[0](ictr)), 	"Uxvar_lo",  "w l lt -1 lc 1 dt 2 not" ))
+        
+        (PlotCurve( t, U[1].col(ictr),			                "Uy_vs_t", "w l lt -1 lc 2 t '$U_y$'" ))
+        (PlotCurve( t, U_mean[1](ictr),                         "Uymean",  "w l lt -1 lc 2 lw 2 t '$\\langle U_y \\rangle$'" ))
+        (PlotCurve( t, U_mean[1](ictr) + sqrt(U_var[1](ictr)), 	"Uyvar_up",  "w l lt -1 lc 2 dt 2 t '$\\langle u^{\\prime 2}_y \\rangle$'" ))
+        (PlotCurve( t, U_mean[1](ictr) - sqrt(U_var[1](ictr)), 	"Uyvar_lo",  "w l lt -1 lc 2 dt 2 not" ))
+        
+        (PlotCurve( t, U[2].col(ictr),			                "Uz_vs_t", "w l lt -1 lc 4 t '$U_z$'" ))
+        (PlotCurve( t, U_mean[2](ictr),                         "Uzmean",  "w l lt -1 lc 4 lw 2 t '$\\langle U_z \\rangle$'" ))
+        (PlotCurve( t, U_mean[2](ictr) + sqrt(U_var[2](ictr)), 	"Uzvar_up",  "w l lt -1 lc 4 dt 2 t '$\\langle u^{\\prime 2}_z \\rangle$'" ))
+        (PlotCurve( t, U_mean[2](ictr) - sqrt(U_var[2](ictr)), 	"Uzvar_lo",  "w l lt -1 lc 4 dt 2 not" ))
+        ,
+        ""
+      )
+      .setOrder(so.next());
+
+      // output time history of u in centerline
+      addPlot
+      (
+        section, executionPath(), "chartUVariance",
+        "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
+        list_of
+        (PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u\\prime 2} \\rangle$'" ))
+        (PlotCurve( yp, U_var[1],  "Uyvar_vs_yp", "w l lt -1 lc 2 t '$\\langle u\\prime 2} \\rangle$'" ))
+        (PlotCurve( yp, U_var[2],  "Uzvar_vs_yp", "w l lt -1 lc 4 t '$\\langle u\\prime 2} \\rangle$'" ))
+        ,
+       ""
+      );
+        
+      if (p.operation.wscalar)
+      {
+        arma::mat s_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "theta").slice(0);
+        arma::mat t=s_vs_t.col(0);
+        arma::mat s=s_vs_t.cols(1,npts);
+        arma::mat s_mean = arma::mean(s);
+        arma::mat sprime = s - (arma::ones(s.n_rows, 1) * s_mean);
+        
+        arma::mat s_var = arma::mean(sprime % sprime);
+        
+        arma::mat s_flux[3];
+        for (int i=0; i<3; i++)
+        {
+            s_flux[i] = arma::mean(Uprime[i] % sprime);
+        }
+        
+        addPlot
+        (
+            section, executionPath(), "chartThetaVariance",
+            "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
+            list_of
+            (PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ))
+            (PlotCurve( yp, s_flux[0]/utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
+            (PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
+            (PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
+            ,
+            ""
+        );
+      }
+  }
+  
     
   boost::ptr_vector<sampleOps::set> sets;
   
@@ -902,8 +1004,12 @@ void ChannelBase::evaluateAtSection(
     }
   }
   
+
   results->insert(title, section) .setOrder(o.next());
 }
+
+
+
 
 ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
 {
@@ -918,7 +1024,6 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
   if ( const RASModel *rm = cm.get<RASModel>(".*") )
   {
     std::cout<<"Case included RASModel "<<rm->name()<<". Computing R field"<<std::endl;
-    //cm.executeCommand( executionPath(), "R"/*, list_of("-latestTime")*/ );
     calcR(cm, executionPath());
     RFieldName_="R";
     UMeanName_="U";
@@ -940,7 +1045,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       "two-point correlation of velocity at different radii at x/H="+str(format("%g")%(0.5*L/H))
     );
   }
- 
+
   try
   {
     
@@ -1029,7 +1134,7 @@ ResultSetPtr ChannelBase::evaluateResults(OpenFOAMCase& cm)
       "Contour of "+c+"-Velocity", ""
     ))) .setOrder(o.next());
   }
-  
+
   Ordering xseco(10.);
   evaluateAtSection(cm, results, 1e-4, 0, xseco);
 
@@ -1102,16 +1207,9 @@ void ChannelCyclic::createCase
         sample_fields.push_back("theta");
     }
     
-    std::vector<arma::mat> pl;
-    int np=25;
-    for (int j=0; j<np; j++)
-    {
-      pl.push_back(vec3( 0., -0.5*p.geometry.H + 0.5*p.geometry.H*(1.-::cos(0.5*M_PI*double(j)/double(np-1))), 0.));
-    }
-    
     cm.insert(new probes(cm, probes::Parameters()
     .set_fields( sample_fields )
-    .set_probeLocations(pl)
+    .set_probeLocations(probe_locations_)
     .set_name("center_probes")
     .set_outputControl("timeStep")
     .set_outputInterval(10.0)
@@ -1130,13 +1228,16 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
 
   if (p.getBool("run/perturbU"))
   {
-    PSDBL(p, "operation", Re_tau);
+    if (!cm.outputTimesPresentOnDisk(executionPath()))
+    {
+        PSDBL(p, "operation", Re_tau);
 
-    cm.executeCommand(executionPath(), "perturbU", 
-		      list_of<string>
-		      (lexical_cast<string>(Re_tau))
-		      ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
-		    );
+        cm.executeCommand(executionPath(), "perturbU", 
+                list_of<string>
+                (lexical_cast<string>(Re_tau))
+                ("("+lexical_cast<string>(Ubulk_)+" 0 0)") 
+                );
+    }
   }
   OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }

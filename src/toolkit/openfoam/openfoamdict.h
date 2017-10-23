@@ -158,9 +158,21 @@ struct dict
     return this->lookup<double>(key);
   }
 
-  inline const double& getDouble(const std::string& key) const
+  inline double getDouble(const std::string& key) const
   {
-    return this->lookup<double>(key);
+     return this->lookup<double>(key);
+  }
+
+  inline double getDoubleOrInt(const std::string& key) const
+  {
+    try
+    {
+        return this->lookup<double>(key);
+    }
+    catch (const insight::Exception& e)
+    {
+        return this->lookup<int>(key);
+    }
   }
 
   inline int& getInt(const std::string& key)

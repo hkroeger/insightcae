@@ -715,6 +715,11 @@ struct PlotCurve {
     PlotCurve ( const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd );
 
     /**
+     * construct a horizontal line spanning xrange with value y
+     */
+    PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd );
+
+    /**
      * construct from matrix containing two columns with x and y values
      */
     PlotCurve ( const arma::mat& xy, const std::string& plaintextlabel, const std::string& plotcmd = "w l" );

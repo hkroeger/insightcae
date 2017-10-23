@@ -1276,6 +1276,14 @@ PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& 
 : xy_(join_rows(x, y)), plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {}
 
+PlotCurve::PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd )
+: plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
+{
+    xy_ 
+     << arma::as_scalar(arma::min(xrange)) << y << arma::endr
+     << arma::as_scalar(arma::max(xrange)) << y << arma::endr
+     ;
+}
 
 
 PlotCurve::PlotCurve(const arma::mat& xy, const std::string& plaintextlabel, const std::string& plotcmd)

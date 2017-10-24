@@ -600,8 +600,8 @@ void ChannelBase::evaluateAtSection(
             list_of
             (PlotCurve( yp, s_var,            "svar_vs_yp",   "w l lt -1 lc 1 t '$\\langle \\vartheta^{\\prime 2}/\\vartheta_{max} \\rangle$'" ))
             (PlotCurve( yp, s_flux[0]/utau_,  "sfluxx_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
-            (PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
-            (PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime}_x \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
+            (PlotCurve( yp, s_flux[1]/utau_,  "sfluxy_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime}_y \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
+            (PlotCurve( yp, s_flux[2]/utau_,  "sfluxz_vs_yp", "w l lt -1 lc 6 t '$\\langle u^{\\prime}_z \\vartheta^{\\prime} \\rangle/(u_\\tau \\vartheta_{max})$'" ))
             ,
             ""
         );

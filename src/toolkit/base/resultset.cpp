@@ -1264,17 +1264,34 @@ PlotCurve::PlotCurve(const std::string& plaintextlabel, const char* plotcmd)
 }
 
 PlotCurve::PlotCurve(const std::vector<double>& x, const std::vector<double>& y, const std::string& plaintextlabel, const std::string& plotcmd)
-: xy_
-  (
-    join_rows( arma::mat(x.data(), x.size(), 1), arma::mat(y.data(), y.size(), 1) )
-  ), 
-  plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
+: plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
 {
+  if (x.size()!=y.size())
+  {
+      throw insight::Exception
+      ( 
+        boost::str(boost::format("plot curve %s: number of point x (%d) != number of points y (%d)!")
+          % plaintextlabel_ % x.size() % y.size() )
+      );
+  }
+
+  xy_ = join_rows( arma::mat(x.data(), x.size(), 1), arma::mat(y.data(), y.size(), 1) );
 }
 
 PlotCurve::PlotCurve(const arma::mat& x, const arma::mat& y, const std::string& plaintextlabel, const std::string& plotcmd)
-: xy_(join_rows(x, y)), plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)
-{}
+: plotcmd_(plotcmd), 
+  plaintextlabel_(plaintextlabel)
+{
+  if (x.n_rows!=y.n_rows)
+  {
+      throw insight::Exception
+      ( 
+        boost::str(boost::format("plot curve %s: number of point x (%d) != number of points y (%d)!")
+          % plaintextlabel_ % x.n_rows % y.n_rows )
+      );
+  }
+  xy_ = join_rows(x, y);
+}
 
 PlotCurve::PlotCurve ( const arma::mat& xrange, double y, const std::string& plaintextlabel, const std::string& plotcmd )
 : plotcmd_(plotcmd), plaintextlabel_(plaintextlabel)

@@ -520,7 +520,7 @@ void ChannelBase::evaluateAtSection(
   {
       arma::cube U_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "U");
       
-      arma::mat yp=arma::zeros(probe_locations_.size());
+      arma::mat yp=arma::zeros(probe_locations_.size(),1);
       for(size_t i=0; i<probe_locations_.size(); i++) yp(i)=Re_tau*(1.+probe_locations_[i](1));
       int npts=yp.n_elem;
       int ictr=npts-1;
@@ -530,9 +530,12 @@ void ChannelBase::evaluateAtSection(
       {
         t=U_vs_t.slice(i).col(0);
         U[i]=U_vs_t.slice(i).cols(1, npts);
+        cout<<"U"<<U[i]<<endl;
         U_mean[i]= arma::mean(U[i]);
         Uprime[i] = U[i] - (arma::ones(U[i].n_rows, 1) * U_mean[i]);
-        U_var[i]= arma::mean(Uprime[i] % Uprime[i]);
+        cout<<"Uprime"<<Uprime[i]<<endl;
+        U_var[i]= arma::mean(Uprime[i] % Uprime[i]).t();
+        cout<<"U_var"<<U_var[i]<<endl;
       }
 
       // output time history of u in centerline
@@ -567,9 +570,9 @@ void ChannelBase::evaluateAtSection(
         section, executionPath(), "chartUVariance",
         "$y^+$", "$\\langle u^{\\prime 2} \\rangle$",
         list_of
-        (PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u\\prime 2} \\rangle$'" ))
-        (PlotCurve( yp, U_var[1],  "Uyvar_vs_yp", "w l lt -1 lc 2 t '$\\langle u\\prime 2} \\rangle$'" ))
-        (PlotCurve( yp, U_var[2],  "Uzvar_vs_yp", "w l lt -1 lc 4 t '$\\langle u\\prime 2} \\rangle$'" ))
+        (PlotCurve( yp, U_var[0],  "Uxvar_vs_yp", "w l lt -1 lc 1 t '$\\langle u^{\\prime 2} \\rangle$'" ))
+        (PlotCurve( yp, U_var[1],  "Uyvar_vs_yp", "w l lt -1 lc 2 t '$\\langle u^{\\prime 2} \\rangle$'" ))
+        (PlotCurve( yp, U_var[2],  "Uzvar_vs_yp", "w l lt -1 lc 4 t '$\\langle u^{\\prime 2} \\rangle$'" ))
         ,
        ""
       );
@@ -582,12 +585,12 @@ void ChannelBase::evaluateAtSection(
         arma::mat s_mean = arma::mean(s);
         arma::mat sprime = s - (arma::ones(s.n_rows, 1) * s_mean);
         
-        arma::mat s_var = arma::mean(sprime % sprime);
+        arma::mat s_var = arma::mean(sprime % sprime).t();
         
         arma::mat s_flux[3];
         for (int i=0; i<3; i++)
         {
-            s_flux[i] = arma::mean(Uprime[i] % sprime);
+            s_flux[i] = arma::mean(Uprime[i] % sprime).t();
         }
         
         addPlot

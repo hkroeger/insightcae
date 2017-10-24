@@ -1520,97 +1520,112 @@ arma::mat patchIntegrate
   const std::vector<std::string>& addopts
 )
 {
-  boost::regex pat(patchNamePattern);
-  
+  boost::regex pat ( patchNamePattern );
+
   // get all patch name candidates
   OFDictData::dict boundaryDict;
-  cm.parseBoundaryDict(location, boundaryDict);
-  
+  cm.parseBoundaryDict ( location, boundaryDict );
+
   std::vector<std::string> patches;
-  BOOST_FOREACH(const OFDictData::dict::value_type& de, boundaryDict)
+  BOOST_FOREACH ( const OFDictData::dict::value_type& de, boundaryDict )
   {
-    if (regex_match(de.first, pat))
-    {
-      patches.push_back(de.first);
-      break;
-    }
+    if ( regex_match ( de.first, pat ) )
+      {
+        patches.push_back ( de.first );
+        break;
+      }
   }
-  
+
   arma::mat result;
-  BOOST_FOREACH(const std::string& patchName, patches)
+  BOOST_FOREACH ( const std::string& patchName, patches )
   {
     std::vector<std::string> opts;
-    opts.push_back(fieldName);
-    opts.push_back(patchName);
-    copy(addopts.begin(), addopts.end(), back_inserter(opts));
-    
-    std::vector<std::string> output;
-    cm.executeCommand(location, "patchIntegrate", opts, &output);
-// >>     Area vector of patch rot_upstream[3] = (2.9166954e-37 0 0.013666426)
-// >>     Area magnitude of patch rot_upstream[3] = 0.013666426
-// >>     Reading surfaceScalarField phi
-// >>     Integral of phi over patch rot_upstream[3] = -0.033370145
+    copy ( addopts.begin(), addopts.end(), back_inserter ( opts ) );
 
-    boost::regex re_time("^ *Time = (.+)$");
-    boost::regex re_mag_sum, re_mag_int;
-//     if (cm.OFversion()>=230)
-      re_mag_sum=boost::regex("^ *Integral of (.+) over patch (.+)\\[(.+)\\] = (.+)$");
-//     else
-      re_mag_int=boost::regex("^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
-    boost::regex re_area("^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$");
+    std::vector<std::string> output;
+    if (cm.OFversion()<400)
+    {
+        opts.push_back ( fieldName );
+        opts.push_back ( patchName );
+        cm.executeCommand ( location, "patchIntegrate", opts, &output );
+    }
+    else
+    {
+        opts.insert(opts.begin(), 
+            boost::str( boost::format("patchIntegrate(name=%s,%s)") % patchName % fieldName )
+        );
+        opts.insert(opts.begin(), "-func");
+        cm.executeCommand ( location, "postProcess", opts, &output );
+    }
+
+    boost::regex 
+        re_time ( "^ *Time = (.+)$" ),
+        re_mag_sum ( "^ *Integral of (.+) over patch (.+)\\[(.+)\\] = (.+)$" ),
+        re_mag_int ( "^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$" ),
+        re_mag_int4 ( "^ *areaIntegrate\\((.+)\\) of (.+) = (.+)$" ),
+        re_area ( "^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$" ),
+        re_area4 ( "^ *total area   = (.+)$" )
+        ;
+    
     boost::match_results<std::string::const_iterator> what;
     double time=0;
     std::vector<double> times, data, areadata;
-    BOOST_FOREACH(const std::string& line, output)
+    BOOST_FOREACH ( const std::string& line, output )
     {
-      if (boost::regex_match(line, what, re_time))
-      {
-	cout<< what[1]<<endl;
-	time=lexical_cast<double>(what[1]);
-	times.push_back(time);
-      }
-      
-      if (boost::regex_match(line, what, re_mag_int))
-      {
-	cout<<what[1]<<" : "<<what[4]<<endl;
-	data.push_back(lexical_cast<double>(what[4]));
-      }
-      else if (boost::regex_match(line, what, re_mag_sum))
-      {
-	cout<<what[1]<<" : "<<what[4]<<endl;
-	data.push_back(lexical_cast<double>(what[4]));
-      }
-      
-      if (boost::regex_match(line, what, re_area))
-      {
-	cout<<what[1]<<" : "<<what[3]<<endl;
-	areadata.push_back(lexical_cast<double>(what[3]));
-      }
+      if ( boost::regex_match ( line, what, re_time ) )
+        {
+//           cout<< what[1]<<endl;
+          time=lexical_cast<double> ( what[1] );
+          times.push_back ( time );
+        }
+
+      if ( boost::regex_match ( line, what, re_mag_int ) )
+        {
+//           cout<<what[1]<<" : "<<what[4]<<endl;
+          data.push_back ( lexical_cast<double> ( what[4] ) );
+        }
+      if ( boost::regex_match ( line, what, re_mag_int4 ) )
+        {
+          cout<<what[1]<<" : "<<what[3]<<endl;
+          data.push_back ( lexical_cast<double> ( what[3] ) );
+        }
+      else if ( boost::regex_match ( line, what, re_mag_sum ) )
+        {
+//           cout<<what[1]<<" : "<<what[4]<<endl;
+          data.push_back ( lexical_cast<double> ( what[4] ) );
+        }
+
+      if ( boost::regex_match ( line, what, re_area ) )
+        {
+//           cout<<what[1]<<" : "<<what[3]<<endl;
+          areadata.push_back ( lexical_cast<double> ( what[3] ) );
+        }
+      if ( boost::regex_match ( line, what, re_area4 ) )
+        {
+          cout<<" Area : "<<what[1]<<endl;
+          areadata.push_back ( lexical_cast<double> ( what[1] ) );
+        }
     }
-    
-    if ((data.size()!=areadata.size()) || (data.size()!=times.size()))
-      throw insight::Exception("Inconsistent information returned by patchIntegrate: number of values not equal to number of areas and number of times.");
-    
-    arma::mat res=zeros(data.size(), 3);
-    for (int i=0; i<data.size(); i++)
-    {
-      res(i,0)=times[i];
-      res(i,1)=data[i];
-      res(i,2)=areadata[i];
-    }
-//     arma::mat d(data.data(), 2, data.size()/2);
-//     arma::mat ad(areadata.data(), 1, areadata.size());
-//     cout<<patchName<<d<<ad<<endl;
-//     arma::mat res( join_rows(d.t(), ad.t()) );
+
+    if ( ( data.size() !=areadata.size() ) || ( data.size() !=times.size() ) )
+      throw insight::Exception ( "Inconsistent information returned by patchIntegrate: number of values not equal to number of areas and number of times." );
+
+    arma::mat res=zeros ( data.size(), 3 );
+    for ( int i=0; i<data.size(); i++ )
+      {
+        res ( i,0 ) =times[i];
+        res ( i,1 ) =data[i];
+        res ( i,2 ) =areadata[i];
+      }
       
-    cout<<patchName<<endl<<res<<endl;
-      
-    if (result.n_cols==0 && result.n_rows==0)
+//     cout<<patchName<<endl<<res<<endl;
+
+    if ( result.n_cols==0 && result.n_rows==0 )
       result=res;
     else
       result+=res;
   }
-  
+
   return result;
 }
 

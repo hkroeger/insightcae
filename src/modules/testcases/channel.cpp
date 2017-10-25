@@ -549,12 +549,9 @@ void ChannelBase::evaluateAtSection(
         {
             t=U_vs_t.slice(i).col(0);
             U[i]=U_vs_t.slice(i).cols(1, npts);
-            cout<<"U"<<U[i]<<endl;
             U_mean[i]= arma::mean(U[i]);
             Uprime[i] = U[i] - (arma::ones(U[i].n_rows, 1) * U_mean[i]);
-            cout<<"Uprime"<<Uprime[i]<<endl;
             U_var[i]= arma::mean(Uprime[i] % Uprime[i]).t();
-            cout<<"U_var"<<U_var[i]<<endl;
         }
 
         // output time history of u in centerline

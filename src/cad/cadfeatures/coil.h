@@ -105,11 +105,7 @@ public:
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;    
     
-    virtual bool isSingleEdge() const
-    {
-        return true;
-    };
-    
+    virtual bool isSingleEdge() const;
     virtual bool isSingleCloseWire() const;
     virtual bool isSingleOpenWire() const;
 };

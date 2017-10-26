@@ -318,6 +318,11 @@ FeatureCmdInfoList CoilPath::ruleDocumentation() const
 
 
 
+bool CoilPath::isSingleEdge() const
+{
+    return false;
+}
+
 
 bool CoilPath::isSingleCloseWire() const
 {

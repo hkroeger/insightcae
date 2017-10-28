@@ -192,6 +192,11 @@ protected:
    */
   std::string UMeanName_, RFieldName_;
   
+  /**
+   * locations of probe points. x=0
+   */
+  std::vector<arma::mat> probe_locations_;
+  
 public:
   declareType("Channel Flow Test Case");
   
@@ -221,7 +226,8 @@ public:
     ResultSetPtr results, double x, int i,
     Ordering& o,
     bool includeRefDataInCharts = true,
-    bool includeAllComponentsInCharts = false
+    bool includeAllComponentsInCharts = false,
+    const std::string& vertical_probes_array_name="center_probes"
   );
     
   virtual ResultSetPtr evaluateResults(OpenFOAMCase& cmp);

@@ -702,6 +702,19 @@ bool OpenFOAMCase::meshPresentOnDisk( const boost::filesystem::path& location ) 
 
 bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& location, bool checkpar ) const
 {
+
+  OFDictData::dict controlDict;
+  try
+  {
+    readOpenFOAMDict(location/"system"/"controlDict", controlDict);
+  }
+  catch (const insight::Exception& e)
+  {
+    return false;
+  }
+
+  double startTime = controlDict.getDoubleOrInt("startTime");
+  
   TimeDirectoryList timedirs;
   if (checkpar)
   {
@@ -711,7 +724,15 @@ bool OpenFOAMCase::outputTimesPresentOnDisk( const boost::filesystem::path& loca
   }
   else
     timedirs=listTimeDirectories(location);
-  return (timedirs.size()>1);
+  
+  if (timedirs.size()<1)
+      return false;
+  
+  if (fabs(timedirs.rbegin()->first - startTime)<1e-10)
+      return false;
+  else
+      return true;
+//   return (timedirs.size()>1);
 }
 
 void OpenFOAMCase::removeProcessorDirectories( const boost::filesystem::path& location ) const

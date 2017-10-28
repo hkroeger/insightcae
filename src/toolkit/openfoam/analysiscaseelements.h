@@ -145,6 +145,10 @@ public:
     declareType("probes");
     probes(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
+    /**
+     * reads and returns probe sample data.
+     * Matrix dimensions: [ninstants, npts, ncmpt]
+     */
     static arma::cube readProbes
     (
         const OpenFOAMCase& c, 
@@ -152,6 +156,10 @@ public:
         const std::string& foName, 
         const std::string& fieldName
     );
+    
+    /**
+     * read sample locations from controlDict
+     */
     static arma::mat readProbesLocations
     (
         const OpenFOAMCase& c, 

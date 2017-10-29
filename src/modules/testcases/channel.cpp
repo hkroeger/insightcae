@@ -547,8 +547,11 @@ void ChannelBase::evaluateAtSection(
         arma::mat t, U[3], U_mean[3], U_var[3], Uprime[3];
         for(int i=0; i<3; i++)
         {
-            t=U_vs_t.slice(i).col(0);
-            U[i]=U_vs_t.slice(i).cols(1, npts);
+            arma::mat t_full=U_vs_t.slice(i).col(0);
+            arma::uvec valid_rows=arma::find(t_full>avgStart_);
+            t=t_full.rows(valid_rows);
+            arma::mat U_full=U_vs_t.slice(i).cols(1, npts);
+            U[i]=U_full.rows(valid_rows);
             U_mean[i]= arma::mean(U[i]);
             Uprime[i] = U[i] - (arma::ones(U[i].n_rows, 1) * U_mean[i]);
             U_var[i]= arma::mean(Uprime[i] % Uprime[i]).t();
@@ -596,8 +599,11 @@ void ChannelBase::evaluateAtSection(
         if (p.operation.wscalar)
         {
             arma::mat s_vs_t = probes::readProbes(cm, executionPath(), vertical_probes_array_name, "theta").slice(0);
-            arma::mat t=s_vs_t.col(0);
-            arma::mat s=s_vs_t.cols(1,npts);
+            arma::mat t_full=s_vs_t.col(0);
+            arma::uvec valid_rows=arma::find(t_full>avgStart_);
+            arma::mat t=t_full.rows(valid_rows);
+            arma::mat s_full=s_vs_t.cols(1,npts);
+            arma::mat s=s_full.rows(valid_rows);
             arma::mat s_mean = arma::mean(s);
             arma::mat sprime = s - (arma::ones(s.n_rows, 1) * s_mean);
             

@@ -354,7 +354,7 @@ std::string SelectableSubsetParameter::latexRepresentation() const
 {
 //  return "(Not implemented)";
   std::ostringstream os;
-  os<<"selected as ``"<<selection_<<"''\\\\"<<endl;
+  os<<"selected as ``"<<SimpleLatex(selection_).toLaTeX()<<"''\\\\"<<endl;
   os<<operator()().latexRepresentation();
   return os.str();
 }

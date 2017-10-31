@@ -201,8 +201,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 
   double Lupstream = L_*p.geometry.LupstreamByL;
   double Ldownstream = L_*p.geometry.LdownstreamByL;
-  double Lup = L_*p.geometry.LupByL-h_;
-  double Laside = L_*p.geometry.LasideByL-0.5*w; 
+  double Lup = h_*p.geometry.LupByH;
+  double Laside = w*p.geometry.LasideByW; 
   
   if (Lup<=0) throw insight::Exception("LupByL*L has to be larger than h!");
   if (Laside<=0) throw insight::Exception("LasideByL*L has to be larger than 0.5*w!");
@@ -213,8 +213,8 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
   int nz=int(h_/dx);
   int n_upstream=bmd::GradingAnalyzer(p.mesh.grad_upstream).calc_n(dx, Lupstream);
   int n_downstream=bmd::GradingAnalyzer(p.mesh.grad_downstream).calc_n(dx, Ldownstream);
-  int n_up=bmd::GradingAnalyzer(p.mesh.grad_up).calc_n(dx, Lup);
-  int n_aside=bmd::GradingAnalyzer(p.mesh.grad_aside).calc_n(dx, Laside);
+  int n_up=bmd::GradingAnalyzer(p.mesh.grad_up).calc_n(dx, Lup-h_);
+  int n_aside=bmd::GradingAnalyzer(p.mesh.grad_aside).calc_n(dx, Laside-0.5*w);
   
 
   using namespace insight::bmd;
@@ -247,7 +247,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
     ;
   arma::mat Lv=vec3(0,1,0);
 
-  int nzs[]={n_aside, nz, n_aside};
+  int nzs[]={n_aside, ny, n_aside};
   double grads[]={1./p.mesh.grad_aside, 1, p.mesh.grad_aside};
   arma::mat y0[]={vec3(0,Laside,0), vec3(0,0.5*w,0), vec3(0,-0.5*w,0), vec3(0,-Laside,0)};
   
@@ -260,7 +260,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 	    pts[0]+y0[i], pts[1]+y0[i], pts[5]+y0[i], pts[4]+y0[i],
 	    pts[0]+y0[i+1], pts[1]+y0[i+1], pts[5]+y0[i+1], pts[4]+y0[i+1]
 	  ),
-	  n_upstream, ny, nzs[i],
+	  n_upstream, nz, nzs[i],
 	  list_of<Block::Grading> (1./p.mesh.grad_upstream) (1.) (grads[i])
 	)
       );
@@ -277,7 +277,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 	    pts[1]+y0[i], pts[2]+y0[i], pts[6]+y0[i], pts[5]+y0[i],
 	    pts[1]+y0[i+1], pts[2]+y0[i+1], pts[6]+y0[i+1], pts[5]+y0[i+1]
 	  ),
-	  p.mesh.nx, ny, nzs[i],
+	  p.mesh.nx, nz, nzs[i],
 	  list_of<Block::Grading> (1.) (1.) (grads[i])
 	)
       );
@@ -292,7 +292,7 @@ void NumericalWindtunnel::createMesh(insight::OpenFOAMCase& cm)
 	    pts[2]+y0[i], pts[3]+y0[i], pts[7]+y0[i], pts[6]+y0[i],
 	    pts[2]+y0[i+1], pts[3]+y0[i+1], pts[7]+y0[i+1], pts[6]+y0[i+1]
 	  ),
-	  n_downstream, ny, nzs[i],
+	  n_downstream, nz, nzs[i],
 	  list_of<Block::Grading> (p.mesh.grad_downstream) (1.) (grads[i])
 	)
       );

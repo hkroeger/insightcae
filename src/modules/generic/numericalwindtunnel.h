@@ -37,10 +37,10 @@ inherits OpenFOAMAnalysis::Parameters
 
 geometry = set {
 
- LupstreamByL   = double 5 "[-] upstream domain extent"
- LdownstreamByL = double 5 "[-] downstream domain extent"
- LasideByL      = double 5 "[-] lateral domain extent"
- LupByL         = double 5 "[-] height of the domain (above floor)"
+ LupstreamByL   = double 4 "[-] upstream domain extent"
+ LdownstreamByL = double 10 "[-] downstream domain extent"
+ LasideByW      = double 3 "[-] lateral domain extent"
+ LupByH         = double 3 "[-] height of the domain (above floor)"
  forwarddir     = vector (0 -1 0) "direction from rear to forward end in CAD geometry CS"
  upwarddir      = vector (0 0 1) "vertical direction in CAD geometry CS"
  
@@ -93,7 +93,7 @@ protected:
   boost::filesystem::path objectSTLFile_;
   
 public:
-  declareType("Car Resistance");
+  declareType("Numerical Windtunnel");
   
   NumericalWindtunnel(const ParameterSet& ps, const boost::filesystem::path& exepath);
   

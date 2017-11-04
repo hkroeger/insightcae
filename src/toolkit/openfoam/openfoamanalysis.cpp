@@ -115,28 +115,22 @@ void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<O
 
 void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
-  PSINT(parameters(), "run", np);
-//   PSDBL(p, "run", deltaT);
-//   PSDBL(p, "run", endTime);
-// 
-//   OFDictData::dict& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
-//   controlDict["deltaT"]=deltaT;
-//   controlDict["endTime"]=endTime;
+    Parameters p(parameters_);
   
   OFDictData::dict& decomposeParDict=dicts->addDictionaryIfNonexistent("system/decomposeParDict");
   if (decomposeParDict.find("numberOfSubdomains")!=decomposeParDict.end())
   {
     int cnp=boost::get<int>(decomposeParDict["numberOfSubdomains"]);
-    if (cnp!=np)
+    if (cnp!=p.run.np)
     {
       insight::Warning
       (
 	"decomposeParDict does not contain proper number of processors!\n"
-	+str(format("(%d != %d)") % cnp % np) 
+	+str(format("(%d != %d)") % cnp % p.run.np) 
 	+"\nIt will be recreated but the directional preferences cannot be taken into account.\n"
 	"Correct this by setting the np parameter in FVNumerics during case creation properly."
       );
-      setDecomposeParDict(*dicts, np, FVNumerics::Parameters::decompositionMethod_type::scotch);
+      setDecomposeParDict(*dicts, p.run.np, FVNumerics::Parameters::decompositionMethod_type::scotch);
     }
   }
 }
@@ -179,11 +173,11 @@ void OpenFOAMAnalysis::mapFromOther(OpenFOAMCase& cm, const boost::filesystem::p
 
 void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
 {
+  Parameters p(parameters_);
+    
   int np=readDecomposeParDict(executionPath());
   bool is_parallel = np>1;
-  
-  path mapFromPath=parameters().getPath("run/mapFrom");
-  
+    
 //   if (mapFromPath!="")
 //   {
 //     if (const RASModel* rm=cm.get<RASModel>(".*"))
@@ -201,10 +195,10 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), false))
   {
-    if ((cm.OFversion()>=230) && (mapFromPath!=""))
+    if ((cm.OFversion()>=230) && (p.run.mapFrom!=""))
     {
       // parallelTarget option is not present in OF2.3.x
-      mapFromOther(cm, mapFromPath, false);
+      mapFromOther(cm, p.run.mapFrom, false);
     }
   }
 
@@ -216,14 +210,14 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   
   if (!cm.outputTimesPresentOnDisk(executionPath(), is_parallel))
   {
-    if ( (!(cm.OFversion()>=230)) && (mapFromPath!="") )
+    if ( (!(cm.OFversion()>=230)) && (p.run.mapFrom!="") )
     {
-      mapFromOther(cm, mapFromPath, is_parallel);
+      mapFromOther(cm, p.run.mapFrom, is_parallel);
     }
     else
     {
-      if (parameters().getBool("run/potentialinit"))
-	runPotentialFoam(cm, executionPath(), &stopFlag_, np);
+      if (p.run.potentialinit)
+        runPotentialFoam(cm, executionPath(), &stopFlag_, np);
     }
   }
   else
@@ -317,17 +311,14 @@ ResultSetPtr OpenFOAMAnalysis::evaluateResults(OpenFOAMCase& cm)
 
 void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 {
-    const ParameterSet& p = parameters_;
+    Parameters p(parameters_);
 
-    PSSTR(p, "run", machine);
-    PSSTR(p, "run", OFEname);
-
-    OFEnvironment ofe = OFEs::get(OFEname);
-    ofe.setExecutionMachine(machine);
+    OFEnvironment ofe = OFEs::get(p.run.OFEname);
+    ofe.setExecutionMachine(p.run.machine);
 
     path dir = setupExecutionEnvironment();
 
-    bool evaluateonly=p.getBool("run/evaluateonly");
+    bool evaluateonly=p.run.evaluateonly;
     if (evaluateonly)
         cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
 
@@ -342,9 +333,9 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
             if (!meshCase->meshPresentOnDisk(dir))
             {
                 meshcreated=true;
-                if (!p.getPath("mesh/linkmesh").empty())
+                if (!p.mesh.linkmesh.empty())
                 {
-                    linkPolyMesh(p.getPath("mesh/linkmesh")/"constant", dir/"constant", &ofe);
+                    linkPolyMesh(p.mesh.linkmesh/"constant", dir/"constant", &ofe);
                 }
                 else
                 {
@@ -380,20 +371,17 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
 
 ResultSetPtr OpenFOAMAnalysis::operator()(ProgressDisplayer* displayer)
 {  
-  const ParameterSet& p = parameters_;
+  Parameters p(parameters_);
   
-  PSSTR(p, "run", machine);
-  PSSTR(p, "run", OFEname);
-  
-  OFEnvironment ofe = OFEs::get(OFEname);
-  ofe.setExecutionMachine(machine);
+  OFEnvironment ofe = OFEs::get(p.run.OFEname);
+  ofe.setExecutionMachine(p.run.machine);
 
   OpenFOAMCase runCase(ofe);
   createCaseOnDisk(runCase);
   
   path dir = executionPath();
   
-  if (!p.getBool("run/evaluateonly"))
+  if (!p.run.evaluateonly)
   {
     initializeSolverRun(runCase);
     runSolver(displayer, runCase);

@@ -905,10 +905,12 @@ double f_calc_n(double n, void* ga)
   if (grad<1.) grad=1./grad;
   
   double G=pow(grad, 1./(n-1.));
-  int n_c=1+log( 1./G + L*(G-1.)/delta0)/(1e-12+log(G));
+  //int n_c=1+log( 1./G + L*(G-1.)/delta0)/(1e-12+log(G));
+  
+  double L_c=delta0*( pow(G,n)-1. )/(G-1.);
   
 //   cout << L<< " "<<delta0 << " "<<n<<" "<<G<<" "<<n_c<<endl;
-  return n_c-n;
+  return L_c-L; //n_c-n;
 }
 
 int GradingAnalyzer::calc_n(double delta0, double L) const

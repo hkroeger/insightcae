@@ -570,6 +570,7 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
   virtual std::string pythonCommands() const =0;
 };
 
+typedef boost::shared_ptr<PVScene> PVScenePtr;
 
 
 

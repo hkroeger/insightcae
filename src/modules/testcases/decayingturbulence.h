@@ -27,6 +27,34 @@ namespace insight {
 class DecayingTurbulence 
 : public insight::OpenFOAMAnalysis
 {
+public:
+#include "decayingturbulence__DecayingTurbulence__Parameters.h"
+/*
+PARAMETERSET>>> DecayingTurbulence Parameters
+inherits OpenFOAMAnalysis::Parameters
+
+geometry = set {
+ H = double 1.0 "[m] Height and width of the domain"
+ L = double 2.0 "[m] Length of the domain"
+} "Geometrical properties of the domain"
+      
+mesh = set {
+ nax = int 100 "# cells in axial direction"
+ s = double 1.0 "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"
+} "Properties of the computational mesh"
+
+fluid = set 
+{
+  nu = double 1.8e-5 "[m^2/s] Viscosity of the fluid"
+} "Parameters of the fluid"
+   
+operation = set {
+ U = double 1 "[m/s] Inflow velocity"
+} "Definition of the operation point under consideration"
+     
+<<<PARAMETERSET
+*/
+
 protected:
   std::string inlet_, outlet_;
   

@@ -21,6 +21,7 @@ add_sources(insightcad_SOURCES
  ellipse.cpp
  fillet.cpp
  fillingface.cpp
+ gluefaces.cpp
  importsolidmodel.cpp
  linearpattern.cpp
  line.cpp

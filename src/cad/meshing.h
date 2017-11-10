@@ -38,7 +38,7 @@ private:
   const Feature& part_;
   double Lmax_, Lmin_;
   
-  NamedFeatureSet namedVertices_, namedEdges_, namedFaces_;
+  NamedFeatureSet namedVertices_, namedEdges_, namedFaces_, namedSolids_;
   std::vector<std::string> options_;
   
   int elementOrder_;
@@ -55,6 +55,7 @@ public:
   void nameVertices(const std::string& name, const FeatureSet& vertices);
   void nameEdges(const std::string& name, const FeatureSet& edges);
   void nameFaces(const std::string& name, const FeatureSet& faces);
+  void nameSolids(const std::string& name, const FeatureSet& solids);
 
   void addSingleNamedVertex(const std::string& vn, const arma::mat& p);
   void setVertexLen(const std::string& vn, double L);
@@ -63,7 +64,7 @@ public:
   
   void doMeshing
   (
-    const std::string& volname,
+//     const std::string& volname,
     const boost::filesystem::path& outputMeshFile,
     bool keeptmpdir=false
   );

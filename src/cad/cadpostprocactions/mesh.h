@@ -50,6 +50,7 @@ class Mesh
   GroupsDesc vertexGroups_;
   GroupsDesc edgeGroups_;
   GroupsDesc faceGroups_;
+  GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
   
 public:
@@ -57,12 +58,13 @@ public:
   (
     const boost::filesystem::path& outpath,
     FeaturePtr model,
-    const std::string& volname,
+//     const std::string& volname,
     std::vector<ScalarPtr> L,
     bool quad,
     const GroupsDesc& vertexGroups,
     const GroupsDesc& edgeGroups,
     const GroupsDesc& faceGroups,
+    const GroupsDesc& solidGroups_,
     const NamedVertices& namedVertices
   );
   

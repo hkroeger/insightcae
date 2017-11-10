@@ -1505,7 +1505,17 @@ ParameterSet ParaviewVisualization::defaultParameters()
 
 ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer* displayer)
 {
-
+    Parameters p(parameters_);
+    
+    std::string pvscript=
+     "openfoam_case=loadOFCase('.')\n"
+     "prepareSnapshots()\n"
+    ;
+    
+//    BOOST_FOREACH(const PVScene& scn, p.scenes)
+//    {
+//        pvscript += scn.pythonCommands();
+//    }
 }
 
   

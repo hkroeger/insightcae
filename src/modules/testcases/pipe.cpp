@@ -789,7 +789,7 @@ void PipeInflow::createCase
   
   cm.insert(new PressureOutletBC(cm, cycl_out_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
-    .set_fixMeanValue(true)
+    .set_behaviour(PressureOutletBC::Parameters::behaviour_fixMeanValue_type())
   ));
   
   PipeBase::createCase(cm);

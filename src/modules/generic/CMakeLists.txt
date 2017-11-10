@@ -3,6 +3,7 @@ project(genericmodules)
 #find_package(OpenCasCade REQUIRED)
 
 set(genericmodules_SOURCES 
+  numericalwindtunnel.cpp
   filetemplate.cpp 
   convergenceanalysis.cpp
 )
@@ -20,6 +21,7 @@ add_PDL(genericmodules "${genericmodules_HEADERS}")
 set(genericmodules_LIBS
   toolkit
   refdata
+  insightcad
   ${GSL_LIBRARIES}
 )
 target_link_libraries(genericmodules ${genericmodules_LIBS})

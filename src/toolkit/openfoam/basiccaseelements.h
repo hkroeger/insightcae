@@ -285,6 +285,47 @@ public:
 
 
 
+class perfectGasSinglePhaseThermophysicalProperties
+    : public transportModel
+{
+// public:
+//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
+//     (nu, double, 1e-6)
+//   )
+public:
+#include "basiccaseelements__perfectGasSinglePhaseThermophysicalProperties__Parameters.h"
+/*
+PARAMETERSET>>> perfectGasSinglePhaseThermophysicalProperties Parameters
+
+Tref = double 300 "Reference temperature $T_{ref}$"
+pref = double 1e5 "Reference pressure $p_{ref}$"
+
+rho = double 1.0 "Density at $T_{ref}$ and $p_{ref}$"
+nu = double 1.8e-5 "Kinematic viscosity at $T_{ref}$"
+kappa = double 1.4 "Heat capacity reatio"
+Pr = double 0.7 "Prandtl number"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "perfectGasSinglePhaseThermophysicalProperties" );
+    perfectGasSinglePhaseThermophysicalProperties ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+    static std::string category() { return "Material Properties"; }
+};
+
+
+
+
 class twoPhaseTransportProperties
     : public transportModel
 {

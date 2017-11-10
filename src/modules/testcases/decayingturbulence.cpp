@@ -55,69 +55,22 @@ DecayingTurbulence::~DecayingTurbulence()
 
 ParameterSet DecayingTurbulence::defaultParameters()
 {
-  ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  
-  p.extend
-  (
-    boost::assign::list_of<ParameterSet::SingleEntry>
-    
-      ("geometry", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("H",		new DoubleParameter(1.0, "[m] Width and height of the domain"))
-	    ("L",		new DoubleParameter(2.0, "[m] Length of the domain"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Geometrical properties of the domain"
-	))
-      
-      ("mesh", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("nax",	new IntParameter(100, "# cells in axial direction"))
-	    ("s",	new DoubleParameter(1.0, "Axial grid anisotropy (ratio of axial cell edge length to lateral edge length)"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Properties of the computational mesh"
-	))
-      
-      ("operation", new SubsetParameter
-	(
-	  ParameterSet
-	  (
-	    boost::assign::list_of<ParameterSet::SingleEntry>
-	    ("U",		new DoubleParameter(1, "[m/s] Inflow velocity"))
-	    .convert_to_container<ParameterSet::EntryList>()
-	  ), 
-	  "Definition of the operation point under consideration"
-	))
-      
-      .convert_to_container<ParameterSet::EntryList>()
-  );
-  
+  ParameterSet p(Parameters::makeDefault());
+  p.merge(OpenFOAMAnalysis::defaultParameters());
   return p;
 }
 
 double DecayingTurbulence::calcT() const
 {
-  PSDBL(parameters(), "geometry", L);
-  PSDBL(parameters(), "operation", U);
-  return L/U;
+  Parameters p(parameters_);
+  return p.geometry.L/p.operation.U;
 }
 
 
 void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
 {
-  const ParameterSet& p=parameters_;
+  Parameters p(parameters_);
  // create local variables from ParameterSet
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", U);
-  PSINT(p, "fluid", turbulenceModel);
   
   path dir = executionPath();
 
@@ -152,7 +105,7 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
     )
   ));
   */
-  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(1e-5) ));
+  cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
   
   cm.insert(new TurbulentVelocityInletBC(cm, inlet_, boundaryDict/*, TurbulentVelocityInletBC::Parameters()
     .set_velocity(FieldData(vec3(U, 0, 0)))
@@ -165,34 +118,23 @@ void DecayingTurbulence::createCase(insight::OpenFOAMCase& cm)
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters_.get<SelectionParameter>("fluid/turbulenceModel").selection());
 }
 
 
 int DecayingTurbulence::calcnh() const
 {
-  const ParameterSet& p=parameters_;
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", L);
-
-  PSINT(p, "mesh", nax);
-  PSDBL(p, "mesh", s);
-  
-  double Delta=L/double(nax);
-  return H/(Delta/s);
+  Parameters p(parameters_);
+  double Delta=p.geometry.L/double(p.mesh.nax);
+  return p.geometry.H/(Delta/p.mesh.s);
 }
 
 void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
 {
   // create local variables from ParameterSet
   path dir = executionPath();
-  const ParameterSet& p=parameters_;
-  
-  PSDBL(p, "geometry", H);
-  PSDBL(p, "geometry", L);
-
-  PSINT(p, "mesh", nax);
-  
+  Parameters p(parameters_);
+    
   int nh=calcnh();
     
   cm.insert(new MeshingNumerics(cm));
@@ -207,13 +149,13 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
   
   std::map<int, Point> pts;
   pts = boost::assign::map_list_of   
-      (0, 	vec3(0, -0.5*H, -0.5*H))
-      (1, 	vec3(0, -0.5*H, 0.5*H))
-      (2, 	vec3(0, 0.5*H, 0.5*H))
-      (3, 	vec3(0, 0.5*H, -0.5*H))
+      (0, 	vec3(0, -0.5*p.geometry.H, -0.5*p.geometry.H))
+      (1, 	vec3(0, -0.5*p.geometry.H, 0.5*p.geometry.H))
+      (2, 	vec3(0, 0.5*p.geometry.H, 0.5*p.geometry.H))
+      (3, 	vec3(0, 0.5*p.geometry.H, -0.5*p.geometry.H))
       .convert_to_container<std::map<int, Point> >()
   ;
-  arma::mat vL=vec3(L, 0, 0);
+  arma::mat vL=vec3(p.geometry.L, 0, 0);
   arma::mat ax=vec3(1, 0, 0);
   
   // create patches
@@ -229,7 +171,7 @@ void DecayingTurbulence::createMesh(insight::OpenFOAMCase& cm)
 	  pts[0]+vL, pts[1]+vL, pts[2]+vL, pts[3]+vL,
 	  pts[0], pts[1], pts[2], pts[3]
 	),
-	nh, nh, nax
+	nh, nh, p.mesh.nax
       )
     );
     in.addFace(bl.face("0321"));

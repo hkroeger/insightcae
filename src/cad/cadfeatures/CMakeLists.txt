@@ -21,6 +21,7 @@ add_sources(insightcad_SOURCES
  ellipse.cpp
  fillet.cpp
  fillingface.cpp
+ gluefaces.cpp
  importsolidmodel.cpp
  linearpattern.cpp
  line.cpp
@@ -40,6 +41,7 @@ add_sources(insightcad_SOURCES
  splinesurface.cpp
  split.cpp
  spring.cpp
+ helix.cpp
  stitchedshell.cpp
  stitchedsolid.cpp
  sweep.cpp

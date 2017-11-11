@@ -797,6 +797,7 @@ rhoPimpleFoamNumerics::rhoPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(p_.pinternal), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
   OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	list_of(p_.Tinternal), volField ) );
+  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	list_of(0.0), volField ) );
 }
 
 
@@ -837,6 +838,7 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["p"]=GAMGSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=smoothSolverSetup(1e-8, 0.1);
   solvers["k"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["e"]=smoothSolverSetup(1e-8, 0.1);
   solvers["omega"]=smoothSolverSetup(1e-12, 0.1, 1);
   solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
   solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
@@ -845,6 +847,7 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["pFinal"]=GAMGPCGSolverSetup(1e-8, 0.0); //GAMGSolverSetup(1e-8, 0.0); //stdSymmSolverSetup(1e-7, 0.0);
   solvers["UFinal"]=smoothSolverSetup(1e-8, 0.0);
   solvers["kFinal"]=smoothSolverSetup(1e-8, 0);
+  solvers["eFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["omegaFinal"]=smoothSolverSetup(1e-14, 0, 1);
   solvers["epsilonFinal"]=smoothSolverSetup(1e-8, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-8, 0);

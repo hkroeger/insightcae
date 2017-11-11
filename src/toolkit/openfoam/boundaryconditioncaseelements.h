@@ -949,7 +949,23 @@ PARAMETERSET>>> PressureOutletBC Parameters
 
 pressure = double 0.0 "Uniform static pressure at selected boundary patch"
 prohibitInflow = bool true "Whether to clip velocities to zero in case of flow reversal"
-fixMeanValue = bool false "If true, only mean value of pressure is set"
+
+behaviour = selectablesubset {{
+
+ uniform
+ set { }
+ 
+ fixMeanValue
+ set { }
+
+ waveTransmissive 
+ set {
+  kappa = double 1.4 "Specific heat ratio"
+  L = double 1 "Reference length"
+ }
+ 
+}} uniform "Behaviour of the pressure BC"
+
 rho = double 1025.0 "Density"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 

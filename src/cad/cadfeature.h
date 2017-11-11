@@ -161,7 +161,18 @@ struct FeatureCmdInfo
 };
 typedef std::vector<FeatureCmdInfo> FeatureCmdInfoList;
 
-
+class FreelyIndexedMapOfShape
+ : public std::map<int, TopoDS_Shape>
+{
+public:
+    int Add(const TopoDS_Shape& s, int index=-1);
+    bool contains (const TopoDS_Shape& K)  const;
+    const  TopoDS_Shape& FindKey (const Standard_Integer I)  const;
+    const  TopoDS_Shape& operator () (const Standard_Integer I)  const;
+    int FindIndex (const TopoDS_Shape& K)  const;
+    int getMaxIndex() const;
+};
+ 
 /**
  * Base class of all CAD modelling features
  */
@@ -216,7 +227,9 @@ private:
   
 protected:
   // all the (sub) TopoDS_Shapes in 'shape'
-  TopTools_IndexedMapOfShape fmap_, emap_, vmap_, somap_, shmap_, wmap_;
+  /*TopTools_IndexedMapOfShape*/
+  FreelyIndexedMapOfShape
+   fmap_, emap_, vmap_, somap_, shmap_, wmap_;
   
   SubfeatureMap providedSubshapes_;
   FeatureSetPtrMap providedFeatureSets_;

@@ -187,6 +187,73 @@ FeatureCmdInfo::FeatureCmdInfo
 {}
 
 
+int FreelyIndexedMapOfShape::Add(const TopoDS_Shape& s, int index)
+{
+    // ensure that entity is only contained once
+    int i=FindIndex(s);
+    if (i>0) erase(find(i));
+    
+    if (index<=0) index=getMaxIndex()+1;
+    
+    (*this)[index]=s;
+}
+
+bool FreelyIndexedMapOfShape::contains (const TopoDS_Shape& K)  const
+{
+    return FindIndex(K)>0;
+}
+
+const TopoDS_Shape& FreelyIndexedMapOfShape::FindKey (const Standard_Integer I)  const
+{
+    const_iterator i=find(I);
+    if (i==end())
+        throw insight::Exception(boost::str(boost::format("No shape with tag %d") % I));
+    return i->second;
+}
+
+const  TopoDS_Shape& FreelyIndexedMapOfShape::operator() (const Standard_Integer I)  const
+{
+    return FindKey(I);
+} 
+
+int FreelyIndexedMapOfShape::FindIndex (const TopoDS_Shape& K)  const
+{
+    if (size()==0) return -1;
+    
+    int k=-1;
+    BOOST_FOREACH(const value_type& i, *this)
+    {
+        if (K.IsSame(i.second))
+        {
+            if (k>=0)
+            {
+                insight::Warning(
+                    boost::str(boost::format("Multiple keys for shape! (at least at %d and %d)") % k % i.first)
+                );
+//                 return k;
+            }
+//             else
+//             {
+                k=i.first;
+//             }
+        }
+    }
+    return k;
+}
+
+int FreelyIndexedMapOfShape::getMaxIndex() const
+{
+    if (size()==0)
+    {
+        return 0;
+    }
+    else
+    {
+        return rbegin()->first;
+    }
+}
+    
+
 defineType(Feature);
 defineFactoryTableNoArgs(Feature);
 addToFactoryTable(Feature, Feature);
@@ -340,8 +407,8 @@ void Feature::setShapeHash()
   // 4. vertex locations
   
   boost::hash_combine(hash_, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash_, boost::hash<int>()(vmap_.Extent()));
-  boost::hash_combine(hash_, boost::hash<int>()(fmap_.Extent()));
+  boost::hash_combine(hash_, boost::hash<int>()(vmap_.size()));
+  boost::hash_combine(hash_, boost::hash<int>()(fmap_.size()));
 
   FeatureSetData vset=allVerticesSet();
   BOOST_FOREACH(const insight::cad::FeatureID& j, vset)
@@ -850,9 +917,16 @@ FeatureSetData Feature::allVerticesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( vmap_.Extent()+1 ) 
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ), 
+//     boost::counting_iterator<int>( vmap_.Extent()+1 ) 
+//   );
+  std::transform
+  (
+      vmap_.begin(),
+      vmap_.end(), 
+      std::inserter(fsd, fsd.begin()), 
+      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
   );
   return fsd;
 }
@@ -861,9 +935,16 @@ FeatureSetData Feature::allEdgesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( emap_.Extent()+1 ) 
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ), 
+//     boost::counting_iterator<int>( emap_.Extent()+1 ) 
+//   );
+  std::transform
+  (
+      emap_.begin(),
+      emap_.end(), 
+      std::inserter(fsd, fsd.begin()), 
+      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
   );
   return fsd;
 }
@@ -872,9 +953,16 @@ FeatureSetData Feature::allFacesSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( fmap_.Extent()+1 ) 
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ), 
+//     boost::counting_iterator<int>( fmap_.Extent()+1 ) 
+//   );
+  std::transform
+  (
+      fmap_.begin(),
+      fmap_.end(), 
+      std::inserter(fsd, fsd.begin()), 
+      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
   );
   return fsd;
 }
@@ -883,9 +971,16 @@ FeatureSetData Feature::allSolidsSet() const
 {
   checkForBuildDuringAccess();
   FeatureSetData fsd;  
-  fsd.insert(
-    boost::counting_iterator<int>( 1 ), 
-    boost::counting_iterator<int>( somap_.Extent()+1 ) 
+//   fsd.insert(
+//     boost::counting_iterator<int>( 1 ), 
+//     boost::counting_iterator<int>( somap_.Extent()+1 ) 
+//   );
+  std::transform
+  (
+      somap_.begin(),
+      somap_.end(), 
+      std::inserter(fsd, fsd.begin()), 
+      [](const FreelyIndexedMapOfShape::value_type& i) { return i.first; } 
   );
   return fsd;
 }
@@ -2014,16 +2109,20 @@ arma::mat Feature::getDatumVector(const std::string& name) const
   }
 }
 
+#undef GMSH_NUMBERING_V1
+#undef GMSH_DEBUG
+
 void Feature::nameFeatures()
 {
   // Don't call "shape()" here!
-  fmap_.Clear();
-  emap_.Clear(); 
-  vmap_.Clear(); 
-  somap_.Clear(); 
-  shmap_.Clear(); 
-  wmap_.Clear();
+  fmap_.clear();
+  emap_.clear(); 
+  vmap_.clear(); 
+  somap_.clear(); 
+  shmap_.clear(); 
+  wmap_.clear();
   
+#ifdef GMSH_NUMBERING_V1
   // Solids
   TopExp_Explorer exp0, exp1, exp2, exp3, exp4, exp5;
   for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next()) {
@@ -2172,6 +2271,112 @@ void Feature::nameFeatures()
 	  vmap_.Add(vertex);
   }
   
+
+#else
+
+  int tag=0;
+
+  TopExp_Explorer exp0;
+  bool first = true;
+  for(exp0.Init(shape_, TopAbs_SOLID); exp0.More(); exp0.Next())
+  {
+    int t = tag;
+    if(t <= 0)
+    { 
+//         t = getMaxTag(3) + 1; 
+        t=somap_.getMaxIndex() +1;
+    }
+    else if (first)
+    { 
+        first = false; 
+    }
+    else
+    { 
+        throw insight::Exception(boost::str(boost::format("Cannot bind multiple regions to single tag %d")% t));
+    }
+//     bind(TopoDS::Solid(exp0.Current()), t);
+//     outTags[3].push_back(t);
+#ifdef GMSH_DEBUG
+    std::cout<<"solid "<<t<<std::endl;
+#endif
+    somap_.Add(exp0.Current(), t);
+  }
+//   if(highestDimOnly && outTags[3].size()) return;
+  for(exp0.Init(shape_, TopAbs_FACE); exp0.More(); exp0.Next())
+  {
+    int t = tag;
+    if(t <= 0)
+    { 
+//         t = getMaxTag(2) + 1; 
+        t=fmap_.getMaxIndex()+1;
+    }
+    else if (first)
+    { 
+        first = false;
+    }
+    else
+    { 
+        throw insight::Exception(boost::str(boost::format("Cannot bind multiple faces to single tag %d")% t));
+//         Msg::Error("Cannot bind multiple faces to single tag %d", t); return; 
+    }
+//     bind(TopoDS::Face(exp0.Current()), t);
+//     outTags[2].push_back(t);
+#ifdef GMSH_DEBUG
+    std::cout<<"face "<<t<<std::endl;
+#endif
+    fmap_.Add(exp0.Current(), t);
+  }
+//   if(highestDimOnly && outTags[2].size()) return;
+  for(exp0.Init(shape_, TopAbs_EDGE); exp0.More(); exp0.Next())
+  {
+    int t = tag;
+    if(t <= 0)
+    { 
+        t = emap_.getMaxIndex() + 1; 
+    }
+    else if(first)
+    { 
+        first = false;
+    }
+    else
+    { 
+//         Msg::Error("Cannot bind multiple edges to single tag %d", t); return; 
+        throw insight::Exception(boost::str(boost::format("Cannot bind multiple edges to single tag %d")% t));        
+    }
+//     bind(TopoDS::Edge(exp0.Current()), t);
+//     outTags[1].push_back(t);
+#ifdef GMSH_DEBUG
+    std::cout<<"edge "<<t<<std::endl;
+#endif
+    emap_.Add(exp0.Current(), t);
+  }
+//   if(highestDimOnly && outTags[1].size()) return;
+  for(exp0.Init(shape_, TopAbs_VERTEX); exp0.More(); exp0.Next())
+  {
+    int t = tag;
+    if(t <= 0)
+    { 
+        t = vmap_.getMaxIndex() + 1; 
+    }
+    else if(first)
+    { 
+        first = false; 
+    }
+    else
+    { 
+//         Msg::Error("Cannot bind multiple vertices to single tag %d", t); return; 
+        throw insight::Exception(boost::str(boost::format("Cannot bind multiple vertices to single tag %d")% t));                
+    }
+//     bind(TopoDS::Vertex(exp0.Current()), t);
+//     outTags[0].push_back(t);
+#ifdef GMSH_DEBUG
+    std::cout<<"vertex "<<t<<std::endl;
+#endif
+    vmap_.Add(exp0.Current(), t);
+  }
+
+
+#endif
 //   extractReferenceFeatures();
 }
 
@@ -2180,9 +2385,10 @@ void Feature::extractReferenceFeatures()
   ///////////////////////////////////////////////////////////////////////////////
   /////////////// save reference points
 
-  for (int i=1; i<=vmap_.Extent(); i++)
+//   for (int i=1; i<=vmap_.Extent(); i++)
+  BOOST_FOREACH(const FreelyIndexedMapOfShape::value_type& i, vmap_)
   {
-    refpoints_[ str(format("v%d")%i) ] = vertexLocation(i);
+    refpoints_[ str(format("v%d")%i.first) ] = vertexLocation(i.first);
   }
 }
 

@@ -39,22 +39,25 @@ Mesh::Mesh
 (
   const boost::filesystem::path& outpath, 
   insight::cad::FeaturePtr model, 
-  const std::string& volname, 
+//   const std::string& volname, 
   std::vector< insight::cad::ScalarPtr > L,
   bool quad, 
   const insight::cad::GroupsDesc& vertexGroups, 
   const insight::cad::GroupsDesc& edgeGroups, 
   const insight::cad::GroupsDesc& faceGroups, 
+  const insight::cad::GroupsDesc& solidGroups, 
   const insight::cad::NamedVertices& namedVertices
 )
-: model_(model),
+: 
   outpath_(outpath),
-  volname_(volname),
+  model_(model),
+//   volname_(volname),
   L_(L),
   quad_(quad),
   vertexGroups_(vertexGroups),
   edgeGroups_(edgeGroups),
   faceGroups_(faceGroups),
+  solidGroups_(solidGroups),
   namedVertices_(namedVertices)
 {}
 
@@ -91,6 +94,12 @@ void Mesh::build()
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameFaces(gname, *gfs);
   }
+  BOOST_FOREACH(const GroupDesc& gd, solidGroups_)
+  {
+    const std::string& gname=boost::fusion::at_c<0>(gd);
+    const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
+    c.nameSolids(gname, *gfs);
+  }
   BOOST_FOREACH(const NamedVertex& gd, namedVertices_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
@@ -123,7 +132,7 @@ void Mesh::build()
       c.setFaceEdgeLen(gname, (*gs)->value());
     }
   }
-  c.doMeshing(volname_, outpath_, true);
+  c.doMeshing(/*volname_,*/ outpath_, true);
 }
 
 

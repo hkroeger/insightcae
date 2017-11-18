@@ -17,15 +17,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_SPRING_H
-#define INSIGHT_CAD_SPRING_H
+#ifndef INSIGHT_CAD_HELIX_H
+#define INSIGHT_CAD_HELIX_H
 
 #include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
-class Spring
+class Helix
 : public Feature
 {
   VectorPtr p0_;
@@ -34,16 +34,18 @@ class Spring
   ScalarPtr winds_;
   
 public:
-  declareType("Spring");
-  Spring();
-  Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
+  declareType("Helix");
+  Helix();
+  Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
   
   virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
+  virtual bool isSingleEdge() const { return true; };
 };
 
 }
 }
 
-#endif // INSIGHT_CAD_SPRING_H
+#endif // INSIGHT_CAD_HELIX_H
+

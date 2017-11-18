@@ -300,6 +300,7 @@ arma::mat probes::readProbesLocations
   
   if (fol.find(foName)==fol.end())
       throw insight::Exception("Function object \""+foName+"\" not found in controlDict!");
+  
   OFDictData::dict& fod = fol.subDict(foName);
   OFDictData::list& plo=fod.getList("probeLocations");
   
@@ -307,7 +308,6 @@ arma::mat probes::readProbesLocations
   for (int i=0; i<plo.size(); i++)
   {
       OFDictData::list& row = boost::get<OFDictData::list>(plo[i]);
-      cout<<row.size()<<endl;
       for (int k=0; k<3; k++) data(i,k)=as_scalar(row[k]);
   }
   return data;

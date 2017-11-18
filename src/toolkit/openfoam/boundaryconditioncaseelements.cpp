@@ -1972,7 +1972,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries(dictionaries);
 
-    if ( p.fixMeanValue && ( OFversion() !=160 ) ) {
+    if ( (boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour)) && ( OFversion() !=160 ) ) {
         OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent ( "system/controlDict" );
         controlDict.getList ( "libs" ).push_back ( OFDictData::data ( "\"libfixedMeanValueBC.so\"" ) );
     }
@@ -2001,12 +2001,25 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            if ( p.fixMeanValue ) {
+            if ( boost::get<Parameters::behaviour_uniform_type>(&p.behaviour) ) 
+            {
+                BC["type"]=OFDictData::data ( "fixedValue" );
+                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );                
+            } 
+            else if ( boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour) ) 
+            {
                 BC["type"]=OFDictData::data ( "fixedMeanValue" );
                 BC["meanValue"]=OFDictData::data ( p.pressure );
                 BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
-            } else {
-                BC["type"]=OFDictData::data ( "fixedValue" );
+            } 
+            else if ( const Parameters::behaviour_waveTransmissive_type* wt = 
+                 boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) ) 
+            {
+                BC["type"]="waveTransmissive";
+                BC["psi"]="thermo:psi";
+                BC["gamma"]=wt->kappa;
+                BC["lInf"]=wt->L;
+                BC["fieldInf"]=OFDictData::data ( p.pressure );
                 BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
             }
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {

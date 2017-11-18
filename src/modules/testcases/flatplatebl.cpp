@@ -426,7 +426,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   
   cm.insert(new PressureOutletBC(cm, out_top_, boundaryDict, PressureOutletBC::Parameters()
     .set_pressure(0.0)
-    .set_fixMeanValue(false)
+    .set_behaviour(PressureOutletBC::Parameters::behaviour_uniform_type())
     .set_prohibitInflow(false)
   ));
   

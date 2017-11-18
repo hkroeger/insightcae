@@ -341,6 +341,53 @@ void singlePhaseTransportProperties::addIntoDictionaries(OFdicts& dictionaries) 
 
 
 
+defineType(perfectGasSinglePhaseThermophysicalProperties);
+addToOpenFOAMCaseElementFactoryTable(perfectGasSinglePhaseThermophysicalProperties);
+
+perfectGasSinglePhaseThermophysicalProperties::perfectGasSinglePhaseThermophysicalProperties( OpenFOAMCase& c, const ParameterSet& ps )
+: transportModel(c),
+  p_(ps)
+{
+}
+ 
+void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+
+  OFDictData::dict& thermophysicalProperties=dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+  
+  OFDictData::dict tt;
+  tt["type"]="hePsiThermo";
+  tt["mixture"]="pureMixture";
+  tt["transport"]="const";
+  tt["thermo"]="eConst";
+  tt["equationOfState"]="perfectGas";
+  tt["specie"]="specie";
+  tt["energy"]="sensibleInternalEnergy";
+  thermophysicalProperties["thermoType"]=tt;
+  
+  const double R=8.3144598;
+  double M = p_.rho*R*p_.Tref/p_.pref;
+  double cv = R/(p_.kappa-1.) / M;
+
+  OFDictData::dict mixture, mix_sp, mix_td, mix_tr;
+  mix_sp["nMoles"]=1.;
+  mix_sp["molWeight"]=1e3*M;
+  
+  mix_td["Cv"]=cv;
+  mix_td["Hf"]=0.;
+  
+  mix_tr["mu"]=p_.nu*p_.rho;
+  mix_tr["Pr"]=p_.Pr;
+  
+  mixture["specie"]=mix_sp;
+  mixture["thermodynamics"]=mix_td;
+  mixture["transport"]=mix_tr;
+  thermophysicalProperties["mixture"]=mixture;
+}
+
+
+
+
 defineType(twoPhaseTransportProperties);
 addToOpenFOAMCaseElementFactoryTable(twoPhaseTransportProperties);
 

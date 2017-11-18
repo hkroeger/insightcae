@@ -17,26 +17,24 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_SPRING_H
-#define INSIGHT_CAD_SPRING_H
+#ifndef INSIGHT_CAD_GLUEFACES_H
+#define INSIGHT_CAD_GLUEFACES_H
 
 #include "cadfeature.h"
 
 namespace insight {
 namespace cad {
 
-class Spring
+class GlueFaces
 : public Feature
 {
-  VectorPtr p0_;
-  VectorPtr p1_;
-  ScalarPtr d_;
-  ScalarPtr winds_;
+  FeaturePtr feat_;
+  ScalarPtr tol_;
   
 public:
-  declareType("Spring");
-  Spring();
-  Spring(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
+  declareType("GlueFaces");
+  GlueFaces();
+  GlueFaces(FeaturePtr faces, ScalarPtr tol=scalarconst(1e-7));
   
   virtual void build();
   
@@ -46,4 +44,5 @@ public:
 }
 }
 
-#endif // INSIGHT_CAD_SPRING_H
+#endif // INSIGHT_CAD_GLUEFACES_H
+

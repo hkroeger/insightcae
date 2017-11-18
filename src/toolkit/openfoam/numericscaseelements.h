@@ -258,6 +258,44 @@ public:
 
 
 
+class rhoPimpleFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "numericscaseelements__rhoPimpleFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> rhoPimpleFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+nCorrectors = int 2 "Number of correctors"
+nOuterCorrectors = int 1 "Number of outer correctors"
+nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+maxCo = double 0.45 "Maximum courant number"
+maxDeltaT = double 1.0 "Maximum time step size"
+forceLES = bool false "Whether to enforce LES numerics"
+LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
+hasCyclics = bool false "Whether the model contains cyclic boundaries"
+pinternal = double 1e5 "Internal pressure field value"
+Tinternal = double 300 "Internal temperature field value"
+Uinternal = vector (0 0 0) "Internal velocity field value"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "rhoPimpleFoamNumerics" );
+    rhoPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
+
 
 class potentialFreeSurfaceFoamNumerics
     : public FVNumerics

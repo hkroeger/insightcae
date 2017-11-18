@@ -1,4 +1,4 @@
-/*
+    /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering 
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
@@ -155,13 +155,14 @@ void ISCADParser::createPostProcExpressions()
         * </b>
         */
         ( lit("gmsh") >> '(' >> r_path >> ')' >> lit("<<")
-          >> r_solidmodel_expression >> lit("as") >> r_identifier
-          >> ( lit("L") >> '=' >> '(' >> repeat(2)[r_scalarExpression] ) >> ')'
+          >> r_solidmodel_expression //>> lit("as") >> r_identifier
+          >> ( lit("L") >> '=' >> '(' >> repeat(2)[r_scalarExpression] ) >> ')'  // Lmax, Lmin
           >> ( ( lit("linear") >> attr(false) ) | attr(true) )
-          >> lit("vertexGroups") >> '(' >> *( ( r_identifier >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')'
-          >> lit("edgeGroups") >> '(' >> *( ( r_identifier >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
-          >> lit("faceGroups") >> '(' >> *( ( r_identifier >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')'
-          >> ( lit("vertices") >> '(' >> *( r_identifier >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
+          >> ( lit("vertexGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_vertexFeaturesExpression >> -( '@' > r_scalarExpression ) ) ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("edgeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_edgeFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("faceGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_faceFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("volumeGroups") >> '(' >> *( ( (r_identifier|r_string) >> '=' >> r_solidFeaturesExpression >> -( '@' > r_scalarExpression ) )  ) >> ')' | attr(GroupsDesc()) )
+          >> ( lit("vertices") >> '(' >> *( (r_identifier|r_string) >> '=' >> r_vectorExpression ) >> ')' | attr(NamedVertices()) )
 //         >> ( (lit("keeptmpdir")>attr(true)) | attr(false) )
           >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,

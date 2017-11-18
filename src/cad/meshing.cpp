@@ -75,6 +75,19 @@ void GmshCase::nameFaces(const std::string& name, const FeatureSet& faces)
   }
 }
 
+void GmshCase::nameSolids(const std::string& name, const FeatureSet& solids)
+{
+  NamedFeatureSet::iterator i=namedSolids_.find(name);
+  if (i!=namedSolids_.end())
+  {
+    i->second->safe_union(solids);
+  }
+  else 
+  {
+    namedSolids_.insert(NamedFeatureSet::value_type(name, solids.clone()));
+  }
+}
+
 void GmshCase::addSingleNamedVertex(const std::string& vn, const arma::mat& p)
 {
   additionalPoints_++;
@@ -140,7 +153,7 @@ void GmshCase::setFaceEdgeLen(const std::string& fn, double L)
 
 void GmshCase::doMeshing
 (
-  const std::string& vname,
+//   const std::string& vname,
   const boost::filesystem::path& outputMeshFile,
   bool keeptmpdir
 )
@@ -218,7 +231,17 @@ void GmshCase::doMeshing
     f<<"};\n";
   }
 
-  f<<"Physical Volume(\"" << vname << "\") = {1};\n";
+//   f<<"Physical Volume(\"" << vname << "\") = {1};\n";
+  BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedSolids_)
+  {
+    f<<"Physical Volume(\""<< nf.first <<"\") = {";
+    for (FeatureSetData::const_iterator j=nf.second->data().begin(); j!=nf.second->data().end(); j++)
+    {
+      if (j!=nf.second->data().begin()) f<<",";
+      f<<*j;
+    }
+    f<<"};\n";
+  }
 
   f<<
   "Mesh.Algorithm = 1; /* 1=MeshAdapt, 2=Automatic, 5=Delaunay, 6=Frontal, 7=bamg, 8=delquad */\n"

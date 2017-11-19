@@ -32,8 +32,9 @@ namespace cad
 {
 
 
-template<> coincident<Edge>::coincident(FeaturePtr m)
-: f_(m->allEdges())
+template<> coincident<Edge>::coincident(FeaturePtr m, scalarQuantityComputer::Ptr tol)
+: f_(m->allEdges()),
+  tol_(tol)
 {
 }
 
@@ -46,14 +47,15 @@ bool coincident<Edge>::checkMatch(FeatureID feature) const
   {
     TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
     TopoDS_Edge e2=TopoDS::Edge(f_.model()->edge(f));
-    match |= isPartOf(e2, e1);
+    match |= isPartOf(e2, e1, tol_->evaluate(feature) );
   }
   
   return match;
 }
 
-template<> coincident<Face>::coincident(FeaturePtr m)
-: f_(m->allFaces())
+template<> coincident<Face>::coincident(FeaturePtr m, scalarQuantityComputerPtr tol)
+: f_(m->allFaces()),
+  tol_(tol)
 {
 }
 
@@ -66,7 +68,7 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
     TopoDS_Face e2=TopoDS::Face(f_.model()->face(f));
-    match |= isPartOf(e2, e1);
+    match |= isPartOf(e2, e1, tol_->evaluate(feature) );
   }
   
   return match;

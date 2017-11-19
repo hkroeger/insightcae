@@ -32,7 +32,7 @@ namespace cad
     
     
 class Ellipse
-    : public Feature
+    : public SingleFaceFeature
 {
     VectorPtr p0_;
     VectorPtr axmaj_;
@@ -49,9 +49,9 @@ public:
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
 
-    virtual bool isSingleEdge() const;
-    virtual bool isSingleCloseWire() const;
-    virtual bool isSingleOpenWire() const;
+//     virtual bool isSingleEdge() const;
+//     virtual bool isSingleCloseWire() const;
+//     virtual bool isSingleOpenWire() const;
 
     virtual void build();
 };
@@ -61,4 +61,4 @@ public:
 }
 }
 
-#endif // INSIGHT_CAD_ARC_H
+#endif // INSIGHT_CAD_ELLIPSE_H

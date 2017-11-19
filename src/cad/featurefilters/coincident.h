@@ -22,6 +22,7 @@
 
 #include "feature.h"
 #include "base/exception.h"
+#include "constantquantity.h"
 
 namespace insight 
 {
@@ -34,16 +35,17 @@ class coincident
 {
 protected:
     FeatureSet f_;
+    scalarQuantityComputerPtr tol_;
 
 public:
-    coincident(FeaturePtr m)
-    : f_(m, T)
+    coincident(FeaturePtr m, scalarQuantityComputerPtr tol = scalarQuantityComputerPtr(new constantQuantity<double>(1e-3) ) )
+    : f_(m, T), tol_(tol)
     {
         throw insight::Exception("coincident filter: not implemented!");
     }
 
-    coincident(FeatureSet f)
-    : f_(f)
+    coincident(FeatureSet f, scalarQuantityComputerPtr tol = scalarQuantityComputerPtr(new constantQuantity<double>(1e-3) ) )
+    : f_(f), tol_(tol)
     {}
 
     bool checkMatch(FeatureID feature) const
@@ -53,17 +55,17 @@ public:
 
     FilterPtr clone() const
     {
-        return FilterPtr(new coincident(f_));
+        return FilterPtr(new coincident(f_, tol_));
     }
 
 };
 
 
-template<> coincident<Edge>::coincident(FeaturePtr m);
+template<> coincident<Edge>::coincident(FeaturePtr m, scalarQuantityComputerPtr tol);
 template<> bool coincident<Edge>::checkMatch(FeatureID feature) const;
-template<> coincident<Face>::coincident(FeaturePtr m);
+template<> coincident<Face>::coincident(FeaturePtr m, scalarQuantityComputerPtr tol);
 template<> bool coincident<Face>::checkMatch(FeatureID feature) const;
-template<> coincident<Solid>::coincident(FeaturePtr m);
+template<> coincident<Solid>::coincident(FeaturePtr m, scalarQuantityComputerPtr tol);
 template<> bool coincident<Solid>::checkMatch(FeatureID feature) const;
 
 typedef coincident<Edge> coincidentEdge;

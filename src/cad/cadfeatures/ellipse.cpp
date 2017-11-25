@@ -65,7 +65,7 @@ addToFactoryTable(Feature, Ellipse);
 
 
 Ellipse::Ellipse()
-: Feature()
+// : Feature()
 {
 }
 
@@ -79,8 +79,11 @@ void Ellipse::build()
 
   gp_Ax2 ecs ( to_Pnt ( *p0_ ), to_Vec ( arma::cross ( axmaj, axmin ) ), to_Vec ( axmaj ) );
   Handle_Geom_Ellipse crv=GC_MakeEllipse ( gp_Elips(ecs, arma::norm ( axmaj, 2 ), arma::norm ( axmin,2 )) );
-  setShape ( BRepBuilderAPI_MakeEdge ( crv ) );
   
+  BRepBuilderAPI_MakeWire w;
+  w.Add(BRepBuilderAPI_MakeEdge(crv));
+  setShape(BRepBuilderAPI_MakeFace(w.Wire()));
+
 //   gp_Pnt p;
 //   gp_Vec v;
 //   crv->D1(crv->FirstParameter(), p, v);
@@ -150,25 +153,25 @@ FeatureCmdInfoList Ellipse::ruleDocumentation() const
 
 
 
-bool Ellipse::isSingleEdge() const
-{
-    return true;
-}
-
-
-
-bool Ellipse::isSingleCloseWire() const
-{
-  return false;
-}
-
-
-
-
-bool Ellipse::isSingleOpenWire() const
-{
-  return true;
-}
+// bool Ellipse::isSingleEdge() const
+// {
+//     return true;
+// }
+// 
+// 
+// 
+// bool Ellipse::isSingleCloseWire() const
+// {
+//   return false;
+// }
+// 
+// 
+// 
+// 
+// bool Ellipse::isSingleOpenWire() const
+// {
+//   return true;
+// }
 
 
 

@@ -34,8 +34,7 @@ namespace insight
 //  
 // typedef std::set<std::string> AnalysisStepList;
 // 
-// #define INSIGHT_ANALYSIS_STEP_NOT_DONE(analysis, curstep) \
-//  AnalysisStep cs=AnalysisStep(analysis, curstep)
+// #define INSIGHT_ANALYSIS_STEP_NOT_DONE(analysis, curstep) AnalysisStep cs=AnalysisStep(analysis, curstep)
 //  
 // class AnalysisStep
 // {

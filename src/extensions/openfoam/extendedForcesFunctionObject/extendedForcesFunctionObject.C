@@ -359,6 +359,7 @@ extendedForces::write()
         }
     }
     
+    if (Pstream::master()) {
 #ifdef OFplus
     maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
@@ -389,6 +390,7 @@ extendedForces::write()
         << (po_moment_) << setw(1) << ')'
         << endl;
 #endif
+   }
   }
   
 #ifdef OFplus

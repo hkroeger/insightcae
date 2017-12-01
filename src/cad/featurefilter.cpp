@@ -284,6 +284,8 @@ public:
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqrt<double> >(*qi::_1)) ]
 	  | ( lit("sqr") > '(' > r_scalar_qty_expression > ')' ) 
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<sqr<double> >(*qi::_1)) ]
+	  | ( lit("pow") > '(' > r_scalar_qty_expression > ',' > r_scalar_qty_expression > ')' ) 
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<powed<double,double> >(*qi::_1,*qi::_2)) ]
 	  | ( lit("angleMag") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) // before "angle"!
 	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<angleMag<arma::mat,arma::mat> >(*qi::_1, *qi::_2)) ]
 	  | ( lit("angle") > '(' > r_mat_qty_expression > ',' > r_mat_qty_expression > ')' ) 

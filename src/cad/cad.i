@@ -12,7 +12,7 @@
     for(unsigned int i = 0; i < iLen; i++) 
     {
 	insight::cad::FeatureSet* p;
-	
+    
 	int res1 = SWIG_ConvertPtr
 	(
 	  PySequence_GetItem($input, i), 

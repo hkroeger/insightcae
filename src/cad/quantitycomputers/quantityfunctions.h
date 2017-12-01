@@ -171,6 +171,10 @@ template<> struct SubtractionResult<arma::mat, arma::mat> {
 template<> struct SubtractionResult<double, double> {
     typedef double type;
 };
+template<class T1, class T2> struct PowResult {};
+template<> struct PowResult<double, double> {
+    typedef double type;
+};
 
 template<class T1, class T2> struct DotResult {};
 template<> struct DotResult<arma::mat, arma::mat> {
@@ -200,6 +204,7 @@ BINARY_FUNCTION_QTC(added, (value1+value2), AdditionResult );
 // BINARY_FUNCTION_QTC_OP(added, operator+ );
 BINARY_FUNCTION_QTC(subtracted, (value1-value2), SubtractionResult );
 // BINARY_FUNCTION_QTC_OP(subtracted, operator- );
+BINARY_FUNCTION_QTC(powed, (pow(value1,value2)), PowResult );
 BINARY_FUNCTION_QTC(dotted, (arma::dot(value1,value2)), DotResult );
 BINARY_FUNCTION_QTC(angle, ( ::acos(std::min(1.0, arma::norm_dot(value1, value2)))), DotResult );
 BINARY_FUNCTION_QTC(angleMag, (::acos( std::min(1.0, ::fabs(arma::norm_dot(value1, value2))) )), DotResult );

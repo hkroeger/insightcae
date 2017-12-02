@@ -30,6 +30,7 @@ set(insightcad_SOURCES
   feature.cpp
   occtools.cpp
   caddocitem.cpp
+  cadtypes.cpp
 )
 
 set(INCLUDE_DIRS "")

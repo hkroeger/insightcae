@@ -53,8 +53,10 @@ void Circle::build()
   
   refpoints_["p0"]=p0_->value();
   
+  BRepBuilderAPI_MakeEdge e(c);
   BRepBuilderAPI_MakeWire w;
-  w.Add(BRepBuilderAPI_MakeEdge(c));
+  w.Add(e.Edge());
+  providedSubshapes_["OuterWire"].reset(new Feature(e.Edge()));
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
 }
 

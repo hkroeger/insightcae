@@ -60,7 +60,8 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
     ParameterListHash h(this);
     h+=this->type();
     h+=*m1_;
-    h+=*m2_;    
+    h+=*m2_;   
+    setFeatureSymbolName( "("+m1->featureSymbolName()+" & "+m2->featureSymbolName()+")" );
 }
 
 
@@ -70,7 +71,9 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, DatumPtr m2pl)
     : DerivedFeature(m1),
       m1_(m1),
       m2pl_(m2pl)
-{}
+{
+    setFeatureSymbolName( "("+m1->featureSymbolName()+" & datum)" );
+}
 
 
 
@@ -93,11 +96,22 @@ FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
 
 void BooleanIntersection::build()
 {
-    if (m2_)
+    if (m1_ && m2_)
     {        
         if (!cache.contains(hash()))
         {
-            setShape(BRepAlgoAPI_Common(*m1_, *m2_).Shape());
+            BRepAlgoAPI_Common intersector(*m1_, *m2_);
+            intersector.Build();
+            if (Standard_Integer err = intersector.ErrorStatus() != 0)
+            {
+                throw CADException
+                (
+                    *this,
+                    boost::str(boost::format("could not perform intersection operation: error code %d.")
+                    % err )
+                );
+            }
+            setShape(intersector.Shape());
             cache.insert(shared_from_this());
         }
         else
@@ -112,7 +126,7 @@ void BooleanIntersection::build()
         if (m2pl_)
         {
             if (!m2pl_->providesPlanarReference())
-                throw insight::Exception("BooleanIntersection: given reference does not provide planar reference!");
+                throw CADException(*this, "intersection: given reference does not provide planar reference!");
 
             if (m1_->isSingleWire() || m1_->isSingleEdge())
             {
@@ -123,7 +137,6 @@ void BooleanIntersection::build()
                 Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
                 for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
                 {
-                    std::cout<<"..edge"<<std::endl;
                     TopoDS_Edge e=TopoDS::Edge(ex.Current());
                     GeomAPI_IntCS	intersection;
                     double x0, x1;
@@ -131,12 +144,11 @@ void BooleanIntersection::build()
 
                     // For debugging only
                     if (!intersection.IsDone() )
-                        throw insight::Exception("intersection not successful!");
+                        throw CADException(*this, "intersection: edge intersection not successful!");
 
                     // Get intersection curve
                     for (int j=1; j<=intersection.NbPoints(); j++)
                     {
-                        std::cout<<"..ixsecpt"<<std::endl;
                         builder.Add(res, BRepBuilderAPI_MakeVertex(intersection.Point(j)));;
                     }
                 }
@@ -145,16 +157,29 @@ void BooleanIntersection::build()
             }
             else
             {
-                TopoDS_Shape isecsh = BRepAlgoAPI_Section(*m1_,
-                                      m2pl_->plane()
-                                                         ).Shape();
+                BRepAlgoAPI_Section intersector
+                (
+                    *m1_,
+                    m2pl_->plane()
+                );
+                intersector.Build();
+                if (Standard_Integer err = intersector.ErrorStatus() != 0)
+                {
+                    throw CADException
+                    (
+                        *this,
+                        boost::str(boost::format("could not perform shape/plane intersection operation: error code %d.")
+                        % err )
+                    );
+                }                
+                TopoDS_Shape isecsh = intersector.Shape();
 
                 setShape(isecsh);
             }
             m1_->unsetLeaf();
         }
         else
-            throw insight::Exception("Internal error: second object undefined!");
+            throw CADException(*this, "intersection: tool object undefined!");
     }
 }
 

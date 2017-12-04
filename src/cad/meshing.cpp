@@ -200,17 +200,20 @@ void GmshCase::doMeshing
 
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedVertices_)
   {
+    if (ne.first!="") {
     f<<"Physical Point(\""<< ne.first <<"\") = {";
     for (FeatureSetData::const_iterator j=ne.second->data().begin(); j!=ne.second->data().end(); j++)
     {
       if (j!=ne.second->data().begin()) f<<",";
       f<<*j;
     }
-    f<<"};\n";
+    f<<"};\n"; 
+    }
   }
   
   BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedEdges_)
   {
+    if (ne.first!="") {
     f<<"Physical Line(\""<< ne.first <<"\") = {";
     for (FeatureSetData::const_iterator j=ne.second->data().begin(); j!=ne.second->data().end(); j++)
     {
@@ -218,10 +221,12 @@ void GmshCase::doMeshing
       f<<*j;
     }
     f<<"};\n";
+    }
   }
   
   BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedFaces_)
   {
+    if (nf.first!="") {
     f<<"Physical Surface(\""<< nf.first <<"\") = {";
     for (FeatureSetData::const_iterator j=nf.second->data().begin(); j!=nf.second->data().end(); j++)
     {
@@ -229,11 +234,13 @@ void GmshCase::doMeshing
       f<<*j;
     }
     f<<"};\n";
+    }
   }
 
 //   f<<"Physical Volume(\"" << vname << "\") = {1};\n";
   BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedSolids_)
   {
+    if (nf.first!="") {
     f<<"Physical Volume(\""<< nf.first <<"\") = {";
     for (FeatureSetData::const_iterator j=nf.second->data().begin(); j!=nf.second->data().end(); j++)
     {
@@ -241,6 +248,7 @@ void GmshCase::doMeshing
       f<<*j;
     }
     f<<"};\n";
+    }
   }
 
   f<<
@@ -280,7 +288,22 @@ void GmshCase::doMeshing
         cmd+=" -3 -v 2 ";
     cmd+=boost::filesystem::absolute(inputFile).string()+" -o "+boost::filesystem::absolute(outputMeshFile).string();
     
-    int r=system(cmd.c_str());
+    cmd += " 2>&1";
+    
+    //int r=system(cmd.c_str());
+    
+    std::array<char, 128> buffer;
+    
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+    {
+        throw insight::Exception( "Could not execute start command:\n"+cmd );
+    }
+    while (fgets(buffer.data(), 128, pipe) != NULL) {
+        std::cout << std::string(buffer.data());
+    }
+    auto r = pclose(pipe);
+    
     if (r)
       throw insight::Exception("Execution of gmsh failed!");
   }

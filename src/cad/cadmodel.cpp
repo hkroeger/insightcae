@@ -19,6 +19,7 @@
 
 #include "base/tools.h"
 #include "cadmodel.h"
+#include "cadfeature.h"
 #include "datum.h"
 #include "parser.h"
 
@@ -156,13 +157,17 @@ void Model::addDatumIfNotPresent(const std::string& name, DatumPtr value)
 
 void Model::addModelstep(const std::string& name, FeaturePtr value, const std::string& featureDescription)
 {
+  value->setFeatureSymbolName(name);
   modelsteps_.add(name, value);
 }
 
 void Model::addModelstepIfNotPresent(const std::string& name, FeaturePtr value, const std::string& featureDescription)
 {
     if (!modelsteps_.find(name))
+    {
+        value->setFeatureSymbolName(name);
         addModelstep(name, value);
+    }
 }
 
 void Model::addComponent(const std::string& name, FeaturePtr value, const std::string& featureDescription)

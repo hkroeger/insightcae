@@ -27,7 +27,9 @@
 #include <string>
 #include <vector>
 
+#include "base/exception.h"
 #include "base/boost_include.h"
+
 #ifndef Q_MOC_RUN
 #include "boost/variant.hpp"
 #include "boost/fusion/container.hpp"
@@ -81,6 +83,13 @@ typedef std::vector<boost::fusion::vector2<std::string, ModelVariable> > ModelVa
 
 
 boost::filesystem::path sharedModelFilePath(const std::string& name);
+
+class CADException
+: public insight::Exception
+{
+public:
+    CADException(const Feature& errorfeat, const std::string message);
+};
 
 }
 }

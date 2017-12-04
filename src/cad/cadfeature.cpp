@@ -450,7 +450,8 @@ Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  hash_(0)
+  hash_(0),
+  featureSymbolName_("anonymous_"+type())
 {
 }
 
@@ -461,7 +462,8 @@ Feature::Feature(const Feature& o)
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
-  hash_(o.hash_)
+  hash_(o.hash_),
+  featureSymbolName_(o.featureSymbolName_)
 {
   setShape(o.shape_);
 }
@@ -470,7 +472,8 @@ Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  hash_(0)
+  hash_(0),
+  featureSymbolName_("anonymousShape")
 {
   setShape(shape);
   setShapeHash();
@@ -489,7 +492,8 @@ Feature::Feature(const TopoDS_Shape& shape)
 // }
 
 Feature::Feature(FeatureSetPtr creashapes)
-: creashapes_(creashapes)
+: creashapes_(creashapes),
+  featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
 {
   ParameterListHash h(this);
   h+=this->type();
@@ -502,12 +506,25 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
   f->loadShapeFromFile(filepath);
   f->setShapeHash();
   f->setValid();
+  f->setFeatureSymbolName("importedFrom_"+filepath.string());
   return f;
 }
 
 Feature::~Feature()
 {
 }
+
+
+void Feature::setFeatureSymbolName( const std::string& name)
+{
+    featureSymbolName_ = name;
+}
+
+const std::string& Feature::featureSymbolName() const
+{
+    return featureSymbolName_;
+}
+
 
 void Feature::setVisResolution( ScalarPtr r )
 { 
@@ -1626,7 +1643,7 @@ Feature::operator const TopoDS_Shape& () const
 const TopoDS_Shape& Feature::shape() const
 {
   if (building())
-    throw insight::Exception("Internal error: recursion during build!");
+    throw insight::cad::CADException(*this, "Internal error: recursion during build!");
   checkForBuildDuringAccess();
   if (visresolution_)
   {

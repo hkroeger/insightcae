@@ -80,18 +80,11 @@ void Ellipse::build()
   gp_Ax2 ecs ( to_Pnt ( *p0_ ), to_Vec ( arma::cross ( axmaj, axmin ) ), to_Vec ( axmaj ) );
   Handle_Geom_Ellipse crv=GC_MakeEllipse ( gp_Elips(ecs, arma::norm ( axmaj, 2 ), arma::norm ( axmin,2 )) );
   
+  BRepBuilderAPI_MakeEdge e(crv);
   BRepBuilderAPI_MakeWire w;
-  w.Add(BRepBuilderAPI_MakeEdge(crv));
+  w.Add(e.Edge());
+  providedSubshapes_["OuterWire"].reset(new Feature(e.Edge()));
   setShape(BRepBuilderAPI_MakeFace(w.Wire()));
-
-//   gp_Pnt p;
-//   gp_Vec v;
-//   crv->D1(crv->FirstParameter(), p, v);
-//   refpoints_["p0"]=vec3(p);
-//   refvectors_["et0"]=vec3(v);
-//   crv->D1(crv->LastParameter(), p, v);
-//   refpoints_["p1"]=vec3(p);
-//   refvectors_["et1"]=vec3(v);
 }
 
 

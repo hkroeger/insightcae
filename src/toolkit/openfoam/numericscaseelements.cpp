@@ -1369,6 +1369,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
+  solvers["\"alpha.*\""]=stdMULESSolverSetup();
+  
   double Urelax=1.0 /*0.7*/, prelax=1.0, turbrelax=1.0 /*0.95*/;
   if (p_.implicitPressureCorrection)
   {

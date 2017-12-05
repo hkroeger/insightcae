@@ -245,6 +245,11 @@ protected:
 
   size_t hash_;
   
+  /**
+   * symbol name of this feature in the defining model
+   */
+  std::string featureSymbolName_;
+  
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   
@@ -277,6 +282,9 @@ public:
   inline void unsetLeaf() const { isleaf_=false; }
   
   inline size_t hash() const { return hash_; }
+  
+  void setFeatureSymbolName( const std::string& name);
+  const std::string& featureSymbolName() const;
   
   virtual void setVisResolution( ScalarPtr r );
   virtual void setDensity(ScalarPtr rho);

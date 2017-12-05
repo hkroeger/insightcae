@@ -58,6 +58,7 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
   h+=this->type();
   h+=*m1_;
   h+=*m2_;
+  setFeatureSymbolName( "("+m1->featureSymbolName()+" - "+m2->featureSymbolName()+")" );
 }
 
 
@@ -76,7 +77,20 @@ void BooleanSubtract::build()
   
   if (!cache.contains(hash()))
   {
-    TopoDS_Shape subs=BRepAlgoAPI_Cut(*m1_, *m2_).Shape();
+    if (!m1_) throw insight::cad::CADException(*this, "invalid input: base shape" );
+    if (!m2_) throw insight::cad::CADException(*this, "invalid input: tool shape" );
+    BRepAlgoAPI_Cut cutter(*m1_, *m2_);
+    cutter.Build();
+    if (Standard_Integer err = cutter.ErrorStatus() != 0)
+    {
+        throw insight::cad::CADException
+        (
+            *this, 
+            boost::str(boost::format("could not perform cut operation: error code %d")
+             % err )
+        );
+    }
+    TopoDS_Shape subs=cutter.Shape();
     setShape(subs);
   
     copyDatums(*m1_);

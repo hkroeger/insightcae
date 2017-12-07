@@ -45,17 +45,17 @@ PARAMETERSET>>> OpenFOAMAnalysis Parameters
 
 run = set 
 {	
- machine 	= 	string 	"" 	"machine or queue, where the external commands are executed on"
- OFEname 	= 	string 	"OFplus" "identifier of the OpenFOAM installation, that shall be used"
- np 		= 	int 	1 	"number of processors for parallel run (less or equal 1 means serial execution)"
- mapFrom 	= 	path 	"" 	"Map solution from specified case, potentialinit is skipped when specified"
+ machine 	= 	string 	"" 	"Machine or queue, where the external commands are executed on. Defaults to 'localhost', if left empty."
+ OFEname 	= 	string 	"OFplus" "Identifier of the OpenFOAM installation, that shall be used"
+ np 		= 	int 	1 	"Number of processors for parallel run (less or equal 1 means serial execution)"
+ mapFrom 	= 	path 	"" 	"Map solution from specified case, if not empty. potentialinit is skipped if specified."
  potentialinit 	= 	bool 	false 	"Whether to initialize the flow field by potentialFoam when no mapping is done"
  evaluateonly	= 	bool 	false 	"Whether to skip solver run and do only the evaluation"
 } "Execution parameters"
 
 mesh = set
 {
- linkmesh 	= 	path 	"" 	"path to another case, from what the mesh shall be linked"
+ linkmesh 	= 	path 	"" 	"If not empty, the mesh will not be generated, but a symbolic link to the polyMesh folder of the specified OpenFOAM case will be created."
 } "Properties of the computational mesh"
 
 fluid = set
@@ -69,7 +69,7 @@ fluid = set
 eval = set
 {
  reportdicts 	= 	bool 	true 	"Include dictionaries into report"
- skipmeshquality 	= 	bool 	false 	"check to exclude mesh check during evaluation"
+ skipmeshquality 	= 	bool 	false 	"Check to exclude mesh check during evaluation"
 } "Parameters for evaluation after solver run"
 
 <<<PARAMETERSET

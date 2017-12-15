@@ -351,6 +351,14 @@ void isofCaseBuilderWindow::createCase
     }
     
   // insert BCs
+  
+  if (!boost::filesystem::exists(ofc_->boundaryDictPath(casepath_)))
+  {
+      skipBCs=true;
+      
+      QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
+  }
+  
   insight::OFDictData::dict boundaryDict;
   if ( !skipBCs )
     {
@@ -466,7 +474,8 @@ void isofCaseBuilderWindow::done(int r)
                 QMessageBox::Ok
             )
             {
-                createCase(/*casepath_*/);
+                bool skipBCs = ui->skipBCswitch->isChecked();
+                createCase(skipBCs);
             }
             else
             {

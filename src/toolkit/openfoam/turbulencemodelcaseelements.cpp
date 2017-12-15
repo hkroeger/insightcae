@@ -403,6 +403,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     BC["kappa"]=0.41;
     BC["E"]=9.8;
     BC["beta1"]=0.075;
+    BC["blended"]=true;
     BC["value"]="uniform 1";
     return true;
   }
@@ -728,6 +729,7 @@ bool kOmegaSST_LowRe_RASModel::addIntoFieldDictionary(const std::string& fieldna
   else if ( fieldname == "omega")
   {
     BC["type"]=OFDictData::data("omegaWallFunction");
+    BC["blended"]=true;
     BC["value"]="uniform "+str(format("%g") % 1e-10);
     return true;
   }

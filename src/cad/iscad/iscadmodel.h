@@ -49,33 +49,58 @@ class ISCADSyntaxHighlighter;
 class ISCADMainWindow;
 
 
-
-
+/**
+ * the parsing and rebuilding processor.
+ * To be started in a separate thread to keep GUI responsive
+ */
 class BGParsingThread
 : public QThread
 {
     Q_OBJECT
     
+public:
+    enum Action { ParseOnly, ParseAndRebuild };
+    
 protected:
     std::string script_;
+    Action action_;
     
 public:
     insight::cad::ModelPtr model_;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     
+    /**
+     * is created upon model construction
+     */
     BGParsingThread();
     
-    void launch(const std::string& script);
+    /**
+     * restarts the actions
+     */
+    void launch(const std::string& script, Action act = ParseOnly);
     virtual void run();
+    void extendActionToRebuild();
+    
+signals:
+    void addFeature(QString sn, insight::cad::FeaturePtr sm, bool is_component);
+    void addDatum(QString sn, insight::cad::DatumPtr dm);
+    void addEvaluation(QString sn, insight::cad::PostprocActionPtr em, bool visible=false);
+    void addVariable(QString sn, insight::cad::parser::scalar sv);
+    void addVariable(QString sn, insight::cad::parser::vector vv);
+
+    void scriptError(int failpos, QString errorMsg);
+    
+    void statusMessage(QString msg);
+    void statusProgress(int step, int totalSteps);
 };
 
 
 
-
-
-
+/**
+ * the container for the CAD modeling data, is also the text editor widget
+ */
 class ISCADModel
-: public QWidget
+: public QTextEdit
 {
     Q_OBJECT
     
@@ -83,11 +108,6 @@ class ISCADModel
     
 protected:
     boost::filesystem::path filename_;
-    QoccViewerContext* context_;
-    QoccViewWidget* viewer_;
-    QModelTree* modeltree_;
-
-    QTextEdit* editor_;
     ISCADSyntaxHighlighter* highlighter_;
 
     std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
@@ -155,7 +175,7 @@ protected slots:
 
     void onEditorSelectionChanged();
 
-    void jump_to(const QString& name);
+    void jump_to(const QString& featurename);
 
     void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
     void doBgParse();
@@ -181,12 +201,6 @@ protected slots:
     
 public slots:
 
-    // insert model step
-    void addFeature(std::string sn, insight::cad::FeaturePtr sm, bool is_component);
-    void addDatum(std::string sn, insight::cad::DatumPtr dm);
-    void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible=false);
-    void addVariable(std::string sn, insight::cad::parser::scalar sv);
-    void addVariable(std::string sn, insight::cad::parser::vector vv);
 
     bool saveModel();
     bool saveModelAs();
@@ -205,6 +219,33 @@ signals:
     void updateClipPlaneMenu();
     void openModel(const boost::filesystem::path& modelfile);
 
+    // insert new features
+    void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
+    void addDatum(const QString& sn, insight::cad::DatumPtr dm);
+    void addEvaluation(const QString& sn, insight::cad::PostprocActionPtr em, bool visible=false);
+    void addVariable(const QString& sn, insight::cad::parser::scalar sv);
+    void addVariable(const QString& sn, insight::cad::parser::vector vv);
+
+};
+
+
+
+/**
+ * a widget, which arranges all widgets, required for editing a model:
+ * text editor, graphical window, model tree and buttons
+ */
+class ISCADModelEditor
+: public QWidget
+{
+    Q_OBJECT
+protected:
+    QoccViewerContext* context_;
+    QoccViewWidget* viewer_;
+    QModelTree* modeltree_;
+    ISCADModel* model_;
+
+public:
+    ISCADModelEditor(QWidget* parent = 0);
 };
 
 

@@ -45,24 +45,7 @@ public:
     CurAction3d_DynamicRotation 
   };
 
-/*
-	enum ViewAction {	ViewFitAllId, 
-						ViewFitAreaId, 
-						ViewZoomId, 
-						ViewPanId, 
-						ViewGlobalPanId,
-						ViewFrontId, 
-						ViewBackId, 
-						ViewTopId, 
-						ViewBottomId, 
-						ViewLeftId, 
-						ViewRightId,
-						ViewAxoId, 
-						ViewRotationId, 
-						ViewResetId, 
-						ViewHlrOffId, 
-						ViewHlrOnId };
-*/
+
 public:
 
   QoccViewWidget

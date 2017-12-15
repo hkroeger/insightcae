@@ -40,17 +40,21 @@
 
 #include <qthread.h>
 
-class I : public QThread
+class SplashScreenThread : public QThread
 {
   QSplashScreen* sp_;
-  QWidget win_;
+  QWidget* win_;
+  
 public:
-  I ( QSplashScreen* sp, QWidget* win ) :sp_ ( sp ), win_ ( win ) {}
+  SplashScreenThread ( QSplashScreen* sp, QWidget* win ) 
+  :sp_ ( sp ), 
+   win_ ( win ) 
+  {}
 
   void run()
   {
     QThread::sleep ( 3 );
-    sp_->finish ( &win_ );
+    sp_->finish ( win_ );
   }
 };
 
@@ -147,7 +151,7 @@ int main ( int argc, char** argv )
       QPixmap pixmap ( ":/resources/insight_cad_splash.png" );
       QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
       splash.show();
-      splash.showMessage ( /*propGeoVersion()+" - */"Wait..." );
+      splash.showMessage ( "Wait..." );
 
       ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
       if ( vm.count ( "input-file" ) )
@@ -172,7 +176,7 @@ int main ( int argc, char** argv )
 
       app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
 
-      I w ( &splash, &window );
+      SplashScreenThread w ( &splash, &window );
       w.start(); // splash is shown for 5 seconds
 
       //     splash.finish(&window);

@@ -352,7 +352,11 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
     createDictsInMemory(runCase, dicts);
     applyCustomOptions(runCase, dicts);
 
-    int np=readDecomposeParDict(executionPath());
+    int np=1;
+    if (boost::filesystem::exists(executionPath()/"system"/"decomposeParDict"))
+    {
+        np=readDecomposeParDict(executionPath());
+    }
     bool is_parallel = np>1;
     if (!runCase.outputTimesPresentOnDisk(dir, is_parallel) && !evaluateonly)
     {

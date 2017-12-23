@@ -254,6 +254,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="skipBCswitch">
+        <property name="text">
+         <string>Skip BCs</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="save_btn">
         <property name="text">
          <string>Save config...</string>

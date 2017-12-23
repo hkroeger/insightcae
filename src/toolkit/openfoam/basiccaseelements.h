@@ -512,7 +512,8 @@ public:
 /*
 PARAMETERSET>>> solidBodyMotionDynamicMesh Parameters
 
-zonename = string "rotor" "name of the cell zone which moves"
+zonename = string "none" "Name of the cell zone which moves.
+Enter 'none', if the entire mesh shall be moved."
 
 motion = selectablesubset
 {{

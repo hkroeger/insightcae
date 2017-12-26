@@ -28,10 +28,12 @@ QoccViewerContext::QoccViewerContext()
   // Create the OCC Viewers
   TCollection_ExtendedString a3DName("Visual3D");
   myViewer = createViewer( "DISPLAY", a3DName.ToExtString(), "", 1000.0 );
-#if (OCC_VERSION_MINOR<6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<6))
   myViewer->Init();
 #endif
+#if (OCC_VERSION_MAJOR<7)
   myViewer->SetZBufferManagment(Standard_False);
+#endif
   myViewer->SetDefaultViewProj( V3d_Zpos );	// Top view
 
   myContext = new AIS_InteractiveContext( myViewer );
@@ -42,7 +44,11 @@ QoccViewerContext::QoccViewerContext()
   myGridColor      = Quantity_NOC_RED4;
   myGridTenthColor = Quantity_NOC_GRAY90;
 
+#if (OCC_VERSION_MAJOR<7)
   myContext->SetHilightColor(Quantity_NOC_RED) ;
+#else
+  //myContext->Se
+#endif
 
   setGridOffset (0.0);
   gridXY();
@@ -75,9 +81,9 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
 {
 #ifndef WNT
   
-#if (OCC_VERSION_MINOR>=6)
+#if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>=6))
   static Handle_Graphic3d_GraphicDriver defaultdevice;
-#if (OCC_VERSION_MINOR>6)
+#if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>6))
   Handle_Aspect_DisplayConnection displayConnection(new Aspect_DisplayConnection());
   defaultdevice = new OpenGl_GraphicDriver( displayConnection );
 //   Handle_OpenGl_GraphicDriver::DownCast(defaultdevice)->ChangeOptions().ffpEnable=false; // fix to make clip planes work
@@ -103,8 +109,7 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
       Quantity_NOC_WHITE,
 //      Quantity_NOC_BLACK,
      V3d_ZBUFFER,
-     V3d_GOURAUD,
-     V3d_WAIT 
+     V3d_GOURAUD
     );
 #else
   static Handle( Graphic3d_WNTGraphicDevice ) defaultdevice;

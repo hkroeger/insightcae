@@ -116,7 +116,7 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
   // rc = (Aspect_RenderingContext) glXGetCurrentContext(); // Untested!
   myWindow = new Xw_Window
     (
-#if (OCC_VERSION_MINOR>=6)
+#if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>=6))
       myContext->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
 #else
      Handle_Graphic3d_GraphicDevice::DownCast( myContext->CurrentViewer()->Device() ),
@@ -129,7 +129,11 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
     {
 
       // Set my window (Hwnd) into the OCC view
-      myView->SetWindow( myWindow, rc , paintCallBack, this  );
+      myView->SetWindow( myWindow, rc
+#if (OCC_VERSION_MAJOR<7)
+                         , paintCallBack, this  
+#endif
+                       );
       // Set up axes (Trihedron) in lower left corner.
       myView->SetScale( 2 );			// Choose a "nicer" intial scale
       
@@ -153,7 +157,9 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
       // This is to signal any connected slots that the view is ready.
       myViewInitialized = Standard_True;
 
+#if (OCC_VERSION_MAJOR<7)
       myView->EnableGLLight(false);
+#endif
       myViewer->InitActiveLights();
       while ( myViewer->MoreActiveLights ()) {
         Handle_V3d_Light myLight = myViewer->ActiveLight();
@@ -696,7 +702,7 @@ void QoccViewWidget::toggleClipYZ(void)
 
 void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, double ny, double nz)
 {
-#if OCC_VERSION_MINOR<7
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<7))
   if (clipPlane_.IsNull())
   {
     gp_Pln pl( gp_Pnt(px,py,pz), gp_Dir(nx,ny,nz) );
@@ -1037,7 +1043,11 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
 {
   AIS_StatusOfDetection status;
-  status = myContext->MoveTo( point.x(), point.y(), myView );
+  status = myContext->MoveTo( point.x(), point.y(), myView 
+#if (OCC_VERSION_MAJOR>=7)
+   , false
+#endif
+);
   return status;
 }
 
@@ -1057,7 +1067,11 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 				     std::min (startPoint.y(), endPoint.y()),
 				     std::max (startPoint.x(), endPoint.x()),
 				     std::max (startPoint.y(), endPoint.y()),
-				     myView );
+				     myView
+#if (OCC_VERSION_MAJOR>=7)
+                    , false
+#endif
+      );
     }
   else
     {
@@ -1065,7 +1079,11 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 				std::min (startPoint.y(), endPoint.y()),
 				std::max (startPoint.x(), endPoint.x()),
 				std::max (startPoint.y(), endPoint.y()),
-				myView );
+				myView
+#if (OCC_VERSION_MAJOR>=7)
+                    , false
+#endif
+        );
     }
   emit selectionChanged(this);
   return pick;
@@ -1081,11 +1099,19 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
 
   if (multi)
     {
-      pick = myContext->ShiftSelect();
+      pick = myContext->ShiftSelect(
+#if (OCC_VERSION_MAJOR>=7)
+                    false
+#endif          
+            );
     }
   else
     {
-      pick = myContext->Select();
+      pick = myContext->Select(
+#if (OCC_VERSION_MAJOR>=7)
+                    false
+#endif                    
+            );
     }
   if ( pick != AIS_SOP_NothingSelected )
     {
@@ -1242,6 +1268,8 @@ void QoccViewWidget::hideRubberBand( void )
       myRubberBand->hide();
     }
 }
+
+#if (OCC_VERSION_MAJOR<7)
 /*!
   \brief	Static OpenCascade callback proxy
 */
@@ -1303,6 +1331,8 @@ void QoccViewWidget::paintOCC( void )
   glPopMatrix();
 
 }
+#endif
+
 /*!
   \brief	This routine calculates the minimum sensible precision for the point 
   selection routines, by setting an minumum resolution to a decade one

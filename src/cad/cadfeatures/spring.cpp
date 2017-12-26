@@ -67,8 +67,20 @@ void Spring::build()
     
   BRepBuilderAPI_MakeWire wb;
   wb.Add(ec);
-  wb.Add(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0_->value()), BRep_Tool::Pnt(TopExp::FirstVertex(ec)))));
-  wb.Add(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p1_->value()), BRep_Tool::Pnt(TopExp::LastVertex(ec)))));
+  wb.Add(
+      BRepBuilderAPI_MakeEdge(
+          GC_MakeSegment(
+              to_Pnt(p0_->value()), BRep_Tool::Pnt(TopExp::FirstVertex(ec))
+          ).Value()
+      )
+  );
+  wb.Add(
+      BRepBuilderAPI_MakeEdge(
+          GC_MakeSegment(
+              to_Pnt(p1_->value()), BRep_Tool::Pnt(TopExp::LastVertex(ec))
+          ).Value()
+      )
+  );
 //   BOOST_FOREACH(const FeatureID& fi, edges)
 //   {
 //     wb.Add(edges.model().edge(fi));

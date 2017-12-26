@@ -34,7 +34,11 @@ QEvaluationItem::QEvaluationItem(const std::string& name, insight::cad::Postproc
 void QEvaluationItem::reset(insight::cad::PostprocActionPtr smp)
 {
   smp_=smp;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                      
+  );
   ais_=smp_->createAISRepr(context_->getContext());
   if (!ais_.IsNull()) 
   {
@@ -82,13 +86,21 @@ void QEvaluationItem::updateDisplay()
   {
     if (state_.visible)
     {
-      context_->getContext()->Display(ais_);
+      context_->getContext()->Display(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                          
+      );
       context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
       context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
     }
     else
     {
-      context_->getContext()->Erase(ais_);
+      context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                          
+      );
     }
   }
 }

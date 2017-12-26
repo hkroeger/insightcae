@@ -105,13 +105,12 @@ void BooleanUnion::build()
             copyDatums(*m2_, "m2_");
             BRepAlgoAPI_Fuse fuser(*m1_, *m2_);
             fuser.Build();
-            if (Standard_Integer err = fuser.ErrorStatus() != 0)
+            if (!fuser.IsDone())
             {
                 throw CADException
                 (
                     *this,
-                    boost::str(boost::format("could not perform fuse operation: error code %d.")
-                    % err )
+                    "could not perform fuse operation."
                 );
             }
             setShape(fuser.Shape());
@@ -140,13 +139,12 @@ void BooleanUnion::build()
             {
                 BRepAlgoAPI_Fuse fuser(res, TopoDS::Solid(ex.Current()));
                 fuser.Build();
-                if (Standard_Integer err = fuser.ErrorStatus() != 0)
+                if (!fuser.IsDone())
                 {
                     throw CADException
                     (
                         *this,
-                        boost::str(boost::format("could not perform merge operation: error code %d.")
-                        % err )
+                        "could not perform merge operation."
                     );
                 }                
                 res=fuser.Shape();

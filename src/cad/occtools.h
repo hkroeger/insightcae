@@ -75,8 +75,12 @@ public:
     //! Destruct the instance and free any allocated resources.
     virtual ~InteractiveText ();
 
-    DEFINE_STANDARD_RTTI (InteractiveText)
-
+#if (OCC_VERSION_MAJOR>=7)
+    DEFINE_STANDARD_RTTIEXT (InteractiveText,AIS_InteractiveObject);
+#else
+    DEFINE_STANDARD_RTTI (InteractiveText);
+#endif
+    
 // ----------------------------- Access --------------------------------
 public:
     //! Position of the text displayed.
@@ -113,7 +117,7 @@ private:
 //! -- from PrsMgr_PresentableObject.
 //     void Compute (const Handle_Prs3d_Projector& proj,
 //                   const Handle_Prs3d_Presentation& pres);
-#if (OCC_VERSION_MINOR<6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<6))
 //! -- from PrsMgr_PresentableObject.
     void Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                   const Handle_Graphic2d_GraphicObject& gr_obj,

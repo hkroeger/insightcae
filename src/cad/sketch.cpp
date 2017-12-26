@@ -168,7 +168,7 @@ void DXFReader::addVertex(const DL_VertexData &pv)
 	gp_XYZ er=(pb-pa).Crossed(gp_XYZ(0,0,1)).Normalized();
 	gp_XYZ pt( pa + 0.5*(pb-pa) + i*er );
 	TopoDS_Edge e=BRepBuilderAPI_MakeEdge(
-	  GC_MakeArcOfCircle(gp_Pnt(pa), gp_Pnt(pt), gp_Pnt(pb)), 
+	  GC_MakeArcOfCircle(gp_Pnt(pa), gp_Pnt(pt), gp_Pnt(pb)).Value(), 
 	  gp_Pnt(pa), gp_Pnt(pb)
 	).Edge();
 	std::cout<<"bulge="<<bulge<<" i="<<i<<std::endl

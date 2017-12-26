@@ -116,7 +116,11 @@ void QVectorVariableItem::createAISShape()
 void QVectorVariableItem::reset(arma::mat val)
 {
   value_=val;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                
+    );
   createAISShape();
 //     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
 //   context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
@@ -129,13 +133,21 @@ void QVectorVariableItem::updateDisplay()
   
   if (state_.visible)
   {
-    context_->getContext()->Display(ais_);
+    context_->getContext()->Display(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                        
+    );
 //     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
 //     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
   }
   else
   {
-    context_->getContext()->Erase(ais_);
+    context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                        
+    );
   }
 }
 

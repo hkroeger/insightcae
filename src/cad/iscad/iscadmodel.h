@@ -128,7 +128,13 @@ protected:
                 Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
                 if (!own.IsNull())
                 {
-                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
+                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+#if (OCC_VERSION_MAJOR<7)
+                        .Access()
+#else
+                        .get()
+#endif
+                    ))
                     {
                         if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
                         {

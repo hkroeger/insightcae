@@ -49,7 +49,7 @@ Circle::Circle()
 
 void Circle::build()
 {
-  Handle_Geom_Curve c=GC_MakeCircle(to_Pnt(p0_->value()), to_Vec(n_->value()), 0.5*D_->value());
+  Handle_Geom_Circle c=GC_MakeCircle(to_Pnt(p0_->value()), to_Vec(n_->value()), 0.5*D_->value()).Value();
   
   refpoints_["p0"]=p0_->value();
   

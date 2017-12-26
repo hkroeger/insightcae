@@ -207,7 +207,7 @@
 #include <AIS_RadiusDimension.hxx>
 #include <AIS_Shape.hxx>
 
-#include "GEOMAlgo_Splitter.hxx"
+//#include "GEOMAlgo_Splitter.hxx"
 
 #include <armadillo>
 

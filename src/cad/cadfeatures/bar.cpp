@@ -87,7 +87,7 @@ void Bar::build()
                           (
                               BRepBuilderAPI_MakeEdge
                               (
-                                  GC_MakeSegment(to_Pnt(p0), to_Pnt(p1))
+                                  GC_MakeSegment(to_Pnt(p0), to_Pnt(p1)).Value()
                               )
                           );
         //   TopoDS_Vertex pfirst, plast;

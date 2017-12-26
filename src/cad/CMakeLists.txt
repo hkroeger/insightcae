@@ -3,7 +3,7 @@ project(insightcad)
 find_package(OpenCasCade REQUIRED)
 find_package(OpenGL)
 find_package(DXFlib)
-find_package(GEOM)
+#find_package(GEOM)
 find_package(dlib)
 
 
@@ -46,7 +46,14 @@ include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${toolkit_SOURCE_DIR})
 
 add_library(insightcad SHARED ${insightcad_SOURCES})
-target_link_libraries(insightcad toolkit ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${DXFLIB_LIBRARY} ${GEOM_LIBRARIES} ${DLIB_LIBRARIES})
+target_link_libraries(insightcad 
+ toolkit 
+ ${OCC_LIBRARIES} 
+ ${OCC_OCAF_LIBRARIES} 
+ ${DXFLIB_LIBRARY} 
+ #${GEOM_LIBRARIES}
+ ${DLIB_LIBRARIES}
+ )
 
 ## PROFILING
 # set_target_properties(insightcad PROPERTIES COMPILE_FLAGS -g0)
@@ -56,7 +63,7 @@ target_include_directories(insightcad
   PUBLIC ${Boost_INCLUDE_DIRS}
   PUBLIC ${OCC_INCLUDE_DIR}
   PUBLIC ${DXFLIB_INCLUDE_DIR}
-  PUBLIC ${GEOM_INCLUDE_DIRS}
+  #PUBLIC ${GEOM_INCLUDE_DIRS}
   PUBLIC ${DLIB_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

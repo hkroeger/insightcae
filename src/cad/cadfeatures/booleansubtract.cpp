@@ -81,13 +81,12 @@ void BooleanSubtract::build()
     if (!m2_) throw insight::cad::CADException(*this, "invalid input: tool shape" );
     BRepAlgoAPI_Cut cutter(*m1_, *m2_);
     cutter.Build();
-    if (Standard_Integer err = cutter.ErrorStatus() != 0)
+    if (!cutter.IsDone())
     {
         throw insight::cad::CADException
         (
             *this, 
-            boost::str(boost::format("could not perform cut operation: error code %d")
-             % err )
+            "could not perform cut operation."
         );
     }
     TopoDS_Shape subs=cutter.Shape();

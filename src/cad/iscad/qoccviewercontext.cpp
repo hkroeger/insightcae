@@ -133,7 +133,7 @@ Handle_V3d_Viewer QoccViewerContext::createViewer
      V3d_WAIT 
     );
 #endif  // WNT
-    
+        
     return viewer;
 }
 

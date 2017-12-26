@@ -157,21 +157,30 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
       // This is to signal any connected slots that the view is ready.
       myViewInitialized = Standard_True;
 
+#if (OCC_VERSION_MAJOR>=7)
+    myView->SetShadingModel(V3d_PHONG);
+#endif
+
 #if (OCC_VERSION_MAJOR<7)
       myView->EnableGLLight(false);
 #endif
-      myViewer->InitActiveLights();
-      while ( myViewer->MoreActiveLights ()) {
-        Handle_V3d_Light myLight = myViewer->ActiveLight();
-        myViewer->SetLightOff(myLight);
-        myViewer->NextActiveLights();
-      }
-      Handle_V3d_Light myLight = new V3d_AmbientLight(myViewer,Quantity_NOC_WHITE);
-      myView->SetLightOn(myLight);
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
-      myView->SetLightOn(new V3d_PositionalLight (myViewer,-30000,-3000,-10000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
-      myView->UpdateLights();
+//       myViewer->InitActiveLights();
+//       while ( myViewer->MoreActiveLights ()) {
+//         Handle_V3d_Light myLight = myViewer->ActiveLight();
+//         myViewer->SetLightOff(myLight);
+//         myViewer->NextActiveLights();
+//       }
+//       myViewer->SetDefaultLights();
+      
+Handle(V3d_AmbientLight) L1 = new V3d_AmbientLight(myViewer,Quantity_NOC_ANTIQUEWHITE3);
+Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(myViewer,V3d_Zneg,Quantity_NOC_ANTIQUEWHITE3);
+Handle(V3d_DirectionalLight) L3 = new V3d_DirectionalLight(myViewer,V3d_Zpos,Quantity_NOC_ANTIQUEWHITE3);
+
+    //       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
+//       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
+//       myView->SetLightOn(new V3d_PositionalLight (myViewer,-30000,-3000,-10000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
+//       myView->UpdateLights();
+      myViewer->SetLightOn();
 
       //Handle_V3d_Light myDirectionalLight = new V3d_DirectionalLight( myViewer, 0,0,0, 1,-0.3,0.5 , Quantity_NOC_WHITE, Standard_True );//, V3d_TypeOfOrientation(-1, 0,0), Quantity_NOC_WHITE, Standard_False);
       //myView->SetLightOn(myDirectionalLight);
@@ -1045,7 +1054,7 @@ AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
   AIS_StatusOfDetection status;
   status = myContext->MoveTo( point.x(), point.y(), myView 
 #if (OCC_VERSION_MAJOR>=7)
-   , false
+   , true
 #endif
 );
   return status;
@@ -1069,7 +1078,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 				     std::max (startPoint.y(), endPoint.y()),
 				     myView
 #if (OCC_VERSION_MAJOR>=7)
-                    , false
+                    , true
 #endif
       );
     }
@@ -1081,7 +1090,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 				std::max (startPoint.y(), endPoint.y()),
 				myView
 #if (OCC_VERSION_MAJOR>=7)
-                    , false
+                    , true
 #endif
         );
     }
@@ -1101,7 +1110,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     {
       pick = myContext->ShiftSelect(
 #if (OCC_VERSION_MAJOR>=7)
-                    false
+                    true
 #endif          
             );
     }
@@ -1109,7 +1118,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     {
       pick = myContext->Select(
 #if (OCC_VERSION_MAJOR>=7)
-                    false
+                    true
 #endif                    
             );
     }

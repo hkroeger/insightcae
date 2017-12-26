@@ -59,7 +59,7 @@ void QFeatureItem::rebuild()
 {
   if (!ais_.IsNull()) context_->getContext()->Erase(ais_
 #if (OCC_VERSION_MAJOR>=7)
-                   , false
+                   , true
 #endif                      
   );
   ais_=new AIS_Shape(*smp_);
@@ -118,7 +118,7 @@ void QFeatureItem::updateDisplay()
   {
     context_->getContext()->Display(ais_
 #if (OCC_VERSION_MAJOR>=7)
-                   , false
+                   , true
 #endif                        
     );
     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
@@ -128,7 +128,7 @@ void QFeatureItem::updateDisplay()
   {
     context_->getContext()->Erase(ais_
 #if (OCC_VERSION_MAJOR>=7)
-                   , false
+                   , true
 #endif                        
     );
   }
@@ -180,7 +180,7 @@ void QFeatureItem::setResolution()
   {
     context_->getContext()->SetDeviationCoefficient(ais_, res
 #if (OCC_VERSION_MAJOR>=7)
-                   , false
+                   , true
 #endif                        
     );
   }

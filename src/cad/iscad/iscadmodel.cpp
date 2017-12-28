@@ -325,7 +325,11 @@ bool ISCADModel::saveModelAs()
 
 void ISCADModel::clearDerivedData()
 {
-    context_->getContext()->EraseAll();
+    context_->getContext()->EraseAll(
+#if (OCC_VERSION_MAJOR>=7)
+                   false
+#endif                        
+    );
     
     modeltree_->storeViewStates();
     modeltree_->clear();
@@ -708,7 +712,11 @@ void ISCADModel::rebuildModel(bool upToCursor)
         {
             emit displayStatus("Model parsed successfully. Now performing rebuild...");
 
-            context_->getContext()->EraseAll();
+            context_->getContext()->EraseAll(
+#if (OCC_VERSION_MAJOR>=7)
+                   false
+#endif                
+            );
 
             auto modelsteps=cur_model_->modelsteps();
             BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
@@ -786,7 +794,13 @@ void ISCADModel::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
             Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
             if (!own.IsNull())
             {
-                if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own.Access()))
+                if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+#if (OCC_VERSION_MAJOR<7)
+                        .Access()
+#else
+                        .get()
+#endif
+                ))
                 {
                     if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
                     {

@@ -57,7 +57,11 @@ void QFeatureItem::reset(insight::cad::FeaturePtr smp)
 
 void QFeatureItem::rebuild()
 {
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , true
+#endif                      
+  );
   ais_=new AIS_Shape(*smp_);
 //     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
   Handle_Standard_Transient owner_container(new PointerTransient(this));
@@ -112,13 +116,21 @@ void QFeatureItem::updateDisplay()
   
   if (state_.visible)
   {
-    context_->getContext()->Display(ais_);
+    context_->getContext()->Display(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , true
+#endif                        
+    );
     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
   }
   else
   {
-    context_->getContext()->Erase(ais_);
+    context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , true
+#endif                        
+    );
   }
 }
 
@@ -166,7 +178,11 @@ void QFeatureItem::setResolution()
   double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
   if (ok)
   {
-    context_->getContext()->SetDeviationCoefficient(ais_, res);
+    context_->getContext()->SetDeviationCoefficient(ais_, res
+#if (OCC_VERSION_MAJOR>=7)
+                   , true
+#endif                        
+    );
   }
 }
 

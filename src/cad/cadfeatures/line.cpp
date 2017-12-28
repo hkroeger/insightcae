@@ -76,7 +76,9 @@ void Line::build()
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
   refvectors_["ex"]=(p1_->value() - p0_->value())/arma::norm(p1_->value() - p0_->value(), 2);
   
-  setShape(BRepBuilderAPI_MakeEdge(GC_MakeSegment(to_Pnt(p0_->value()), to_Pnt(p1_->value()))));
+  setShape(BRepBuilderAPI_MakeEdge(
+      GC_MakeSegment(to_Pnt(p0_->value()), to_Pnt(p1_->value())).Value()
+  ));
 }
 
 

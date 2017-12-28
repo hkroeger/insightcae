@@ -18,6 +18,7 @@
  */
 
 #include "splinesurface.h"
+#include "Geom_BSplineSurface.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 namespace qi = boost::spirit::qi;

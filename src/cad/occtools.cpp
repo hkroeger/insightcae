@@ -22,14 +22,14 @@
 
 #include "Prs3d_Text.hxx"
 #include "StdPrs_Point.hxx"
-#if (OCC_VERSION_MINOR<6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<6))
 #include "Graphic2d_Text.hxx"
 #endif
 #include "Select3D_SensitivePoint.hxx"
 #include "Font_NameOfFont.hxx"
 #include "Graphic3d_AspectText3d.hxx"
 #include "Font_FontAspect.hxx"
-#if (OCC_VERSION_MINOR<=6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
 #include "Prs3d_TextAspect.hxx"
 #include "Prs3d_PointAspect.hxx"
 #include "SelectMgr_Selection.hxx"
@@ -44,7 +44,7 @@ Handle_AIS_InteractiveObject createArrow(const TopoDS_Shape& shape, const std::s
   Handle_AIS_RadiusDimension dim=new AIS_RadiusDimension
   (
    shape
-#if (OCC_VERSION_MINOR<=6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
    , 1e-6, text.c_str()
   );
 #else
@@ -69,7 +69,7 @@ Handle_AIS_InteractiveObject createLengthDimension
   Handle_AIS_LengthDimension dim(new AIS_LengthDimension(
     from,
     to,
-#if (OCC_VERSION_MINOR<=6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<=6))
     pln,
     L, 
     text.c_str()
@@ -86,7 +86,11 @@ Handle_AIS_InteractiveObject createLengthDimension
 
 IMPLEMENT_STANDARD_HANDLE (InteractiveText, AIS_InteractiveObject)
 // IMPLEMENT_STANDARD_RTTI (InteractiveText, AIS_InteractiveObject)
+#if (OCC_VERSION_MAJOR>=7)
+IMPLEMENT_STANDARD_RTTIEXT (InteractiveText,AIS_InteractiveObject)
+#else
 IMPLEMENT_STANDARD_RTTI (InteractiveText)
+#endif
 //
 // Foreach ancestors, we add a IMPLEMENT_STANDARD_SUPERTYPE and
 // a IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY macro.
@@ -100,11 +104,11 @@ IMPLEMENT_STANDARD_SUPERTYPE (PrsMgr_PresentableObject)
 IMPLEMENT_STANDARD_SUPERTYPE (MMgt_TShared)
 IMPLEMENT_STANDARD_SUPERTYPE (Standard_Transient)
 IMPLEMENT_STANDARD_SUPERTYPE_ARRAY ()
-IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (AIS_InteractiveObject)
-IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (SelectMgr_SelectableObject)
-IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (PrsMgr_PresentableObject)
-IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (MMgt_TShared)
-IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (Standard_Transient)
+// IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (AIS_InteractiveObject)
+// IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (SelectMgr_SelectableObject)
+// IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (PrsMgr_PresentableObject)
+// IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (MMgt_TShared)
+// IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_ENTRY (Standard_Transient)
 IMPLEMENT_STANDARD_SUPERTYPE_ARRAY_END ()
 IMPLEMENT_STANDARD_TYPE_END (InteractiveText)
 
@@ -197,7 +201,7 @@ void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager3d& /*pm*/
 // 
 // }
 
-#if (OCC_VERSION_MINOR<6)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<6))
 void InteractiveText::Compute (const Handle_PrsMgr_PresentationManager2d& pres,
                                const Handle_Graphic2d_GraphicObject& gr_obj,
                                const Standard_Integer mode)

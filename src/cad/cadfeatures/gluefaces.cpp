@@ -24,7 +24,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
-#include "GEOM/GEOMAlgo_Gluer2.hxx"
+#include "GEOMAlgo_Gluer2.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;

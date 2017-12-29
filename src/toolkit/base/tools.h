@@ -40,6 +40,13 @@ public:
 };
 
 
+class ExecTimer
+: public boost::timer::auto_cpu_timer
+{
+public:
+    ExecTimer(const std::string& name);
+};
+
 }
 
 #endif // TOOLS_H

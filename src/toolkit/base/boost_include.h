@@ -92,6 +92,7 @@
 #include "boost/thread.hpp"
 #include "boost/function.hpp"
 
+#include "boost/timer/timer.hpp"
 #endif
 
 typedef boost::filesystem::path bfs_path;

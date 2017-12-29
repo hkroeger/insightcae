@@ -22,6 +22,7 @@
 #include "base/exception.h"
 #include "boost/algorithm/string.hpp"
 #include "boost/format.hpp"
+#include "base/tools.h"
 
 #include "datum.h"
 
@@ -386,6 +387,8 @@ FeaturePtr Sketch::create
 
 void Sketch::build()
 {
+    ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
+
     auto t_start = std::chrono::high_resolution_clock::now();
     
     if (!cache.contains(hash()))

@@ -20,6 +20,7 @@
 #include "partition.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 #include "BOPAlgo_Builder.hxx"
 
@@ -75,6 +76,8 @@ FeaturePtr Partition::create(FeaturePtr m1, FeaturePtr m2)
 
 void Partition::build()
 {
+  ExecTimer t("Partition::build() ["+featureSymbolName()+"]");
+
   ParameterListHash h(this);
   h+=this->type();
   h+=*m1_;

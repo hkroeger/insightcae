@@ -20,6 +20,8 @@
 #include "sweep.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -72,6 +74,8 @@ FeaturePtr Sweep::create ( const std::vector<FeaturePtr>& secs )
 
 void Sweep::build()
 {
+    ExecTimer t("Sweep::build() ["+featureSymbolName()+"]");
+    
     if ( secs_.size() <2 ) {
         throw insight::Exception ( "Insufficient number of sections given!" );
     }

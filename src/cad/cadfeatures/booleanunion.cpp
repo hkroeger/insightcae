@@ -20,6 +20,7 @@
 #include "booleanunion.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -96,6 +97,8 @@ FeaturePtr BooleanUnion::create(FeaturePtr m1, FeaturePtr m2)
      
 void BooleanUnion::build()
 {
+    ExecTimer t("BooleanUnion::build() ["+featureSymbolName()+"]");
+    
     if (m1_ && m2_)
     {
 

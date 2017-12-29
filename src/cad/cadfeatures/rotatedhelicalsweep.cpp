@@ -20,6 +20,8 @@
 #include "rotatedhelicalsweep.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -115,6 +117,8 @@ RotatedHelicalSweep::RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr 
 
 void RotatedHelicalSweep::build()
 {
+  ExecTimer t("RotatedHelicalSweep::build() ["+featureSymbolName()+"]");
+
   setShape(makeRotatedHelicalSweep(*sk_, p0_->value(), axis_->value(), P_->value(), revoffset_->value()));
 }
 

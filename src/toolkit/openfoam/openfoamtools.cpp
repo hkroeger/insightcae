@@ -2397,7 +2397,13 @@ arma::mat STLBndBox
 )
 {
   std::vector<std::string> output;
-  OpenFOAMCase(ofe).executeCommand(path.parent_path(), "surfaceCheck", list_of(path.string()), &output);
+  std::vector<std::string> params = list_of(path.string());
+  if (ofe.version()>=400)
+  {
+      params.push_back("-outputThreshold");
+      params.push_back("0");
+  }
+  OpenFOAMCase(ofe).executeCommand(path.parent_path(), "surfaceCheck", params, &output);
   
   boost::regex re_bb("^Bounding Box : \\((.+) (.+) (.+)\\) \\((.+) (.+) (.+)\\)$");
   boost::match_results<std::string::const_iterator> what;

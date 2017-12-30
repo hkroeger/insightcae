@@ -253,7 +253,15 @@ Bnd_Box getBoundingBox(const TopoDS_Shape& shape, double deflection)
 
     if (deflection>0){
         Bnd_Box box;
+#if (OCC_VERSION_MAJOR>=7)
+        BRepMesh_FastDiscret::Parameters p;
+        p.Angle=0.5;
+        p.Deflection=deflection;
+        p.Relative=false;    
+        BRepMesh_FastDiscret m(box, p);
+#else
         BRepMesh_FastDiscret m(deflection, 0.5, box, true, false, false, false);
+#endif
         m.Perform(shape);
         //    BRepMesh_IncrementalMesh Inc(shape, deflection);
     }
@@ -389,8 +397,16 @@ bool isPartOf(const TopoDS_Face& big, const TopoDS_Face& small, double tolerance
               BRepTools::Clean(small);
               BRep_Builder b;
               b.UpdateFace(small, tolerance);
+#if (OCC_VERSION_MAJOR>=7)
+              BRepMesh_FastDiscret::Parameters p;
+              p.Angle=0.5;
+              p.Deflection=0.1;
+              p.Relative=false;    
+              BRepMesh_FastDiscret m(box, p);
+#else
               BRepMesh_FastDiscret m(0.1, 0.5, box, true, true, false, false);
-
+#endif
+              
 //              m.UpdateFace(small, TNull)
 
 //              BRepMesh_FastDiscret m(0.001, small, box, 0.5, false, false, true, false);

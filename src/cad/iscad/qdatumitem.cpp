@@ -38,10 +38,20 @@ QDatumItem::QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insi
 void QDatumItem::reset(insight::cad::DatumPtr smp)
 {
   smp_=smp;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_);
+  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                
+      );
   ais_=smp_->createAISRepr();
   
-  if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_.Access()))
+  if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_
+#if (OCC_VERSION_MAJOR>=7)
+      .get()
+#else
+      .Access()
+#endif                
+  ))
   {
     double size=1000;
     try { 
@@ -88,15 +98,29 @@ void QDatumItem::updateDisplay()
   {
     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), false/*, Standard_True*/ );
     context_->getContext()->SetDisplayMode(ais_, state_.shading, false/*Standard_True */);
-    if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_.Access()))
+    if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_
+#if (OCC_VERSION_MAJOR>=7)
+        .get()
+#else
+        .Access()
+#endif                
+    ))
     {
       pl->SetSize(ps_);
     }
-    context_->getContext()->Display(ais_);
+    context_->getContext()->Display(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                        
+    );
   }
   else
   {
-    context_->getContext()->Erase(ais_);
+    context_->getContext()->Erase(ais_
+#if (OCC_VERSION_MAJOR>=7)
+                   , false
+#endif                        
+    );
   }
 }
 

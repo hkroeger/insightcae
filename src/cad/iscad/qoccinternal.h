@@ -132,7 +132,7 @@ using std::iostream;
 #include <SelectMgr_SelectableObject.hxx>
 #include <SelectMgr_Selection.hxx>
 #include <SelectMgr_SelectionManager.hxx>
-#include <ShapeSchema.hxx>
+// #include <ShapeSchema.hxx>
 #include <Standard_Boolean.hxx>
 #include <Standard_CString.hxx>
 #include <Standard_ErrorHandler.hxx>
@@ -173,13 +173,15 @@ using std::iostream;
 #include <V2d_View.hxx>
 #include <V2d_Viewer.hxx>
 */
+#if (OCC_VERSION_MAJOR<7)
 #include <V3d_ColorScale.hxx>
+#include <Visual3d_View.hxx>
+#include <Visual3d_ViewManager.hxx>
+#endif
 #include <V3d_RectangularGrid.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
-#include <Visual3d_View.hxx>
 //#include <Visual3d_ViewMapping.hxx>
-#include <Visual3d_ViewManager.hxx>
 
 // specific to ISession2D_Shape
 #include <TopTools_ListOfShape.hxx>
@@ -216,10 +218,12 @@ using std::iostream;
 
 // specific CSFDB
 #include <FSD_File.hxx>
+#if (OCC_VERSION_MAJOR<7)
 #include <MgtBRep.hxx>
 #include <PTColStd_PersistentTransientMap.hxx>
 #include <PTColStd_TransientPersistentMap.hxx>
 #include <PTopoDS_HShape.hxx>
+#endif
 #include <Storage_Data.hxx>
 #include <Storage_Error.hxx>
 #include <Storage_HSeqOfRoot.hxx>
@@ -245,7 +249,7 @@ using std::iostream;
  #undef QT_CLEAN_NAMESPACE
  #include <Xw_Window.hxx>
  //#include <Xw_GraphicDevice.hxx>
- #if (OCC_VERSION_MINOR>=6)
+ #if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>=6))
   #include <Graphic3d_GraphicDriver.hxx>
   #include <OpenGl_GraphicDriver.hxx>
  #else

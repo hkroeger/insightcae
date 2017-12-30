@@ -20,6 +20,7 @@
 #include "booleanunion.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -96,6 +97,8 @@ FeaturePtr BooleanUnion::create(FeaturePtr m1, FeaturePtr m2)
      
 void BooleanUnion::build()
 {
+    ExecTimer t("BooleanUnion::build() ["+featureSymbolName()+"]");
+    
     if (m1_ && m2_)
     {
 
@@ -105,13 +108,12 @@ void BooleanUnion::build()
             copyDatums(*m2_, "m2_");
             BRepAlgoAPI_Fuse fuser(*m1_, *m2_);
             fuser.Build();
-            if (Standard_Integer err = fuser.ErrorStatus() != 0)
+            if (!fuser.IsDone())
             {
                 throw CADException
                 (
                     *this,
-                    boost::str(boost::format("could not perform fuse operation: error code %d.")
-                    % err )
+                    "could not perform fuse operation."
                 );
             }
             setShape(fuser.Shape());
@@ -140,13 +142,12 @@ void BooleanUnion::build()
             {
                 BRepAlgoAPI_Fuse fuser(res, TopoDS::Solid(ex.Current()));
                 fuser.Build();
-                if (Standard_Integer err = fuser.ErrorStatus() != 0)
+                if (!fuser.IsDone())
                 {
                     throw CADException
                     (
                         *this,
-                        boost::str(boost::format("could not perform merge operation: error code %d.")
-                        % err )
+                        "could not perform merge operation."
                     );
                 }                
                 res=fuser.Shape();

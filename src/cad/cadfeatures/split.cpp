@@ -20,6 +20,9 @@
 #include "split.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+#include "GEOMAlgo_Splitter.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -42,8 +45,11 @@ Split::Split(): DerivedFeature()
 TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
 {
   GEOMAlgo_Splitter spl;
-  spl.AddShape(target);
+//   spl.AddShape(target);
+  spl.AddArgument(target);
+  
   spl.AddTool(tool);
+  
   spl.Perform();
   return spl.Shape();
 }

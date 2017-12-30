@@ -22,7 +22,9 @@
 #define INSIGHT_CAD_CADFEATURETRANSIENT_H
 
 #include "cadfeature.h"
+#if (OCC_VERSION_MAJOR<7)
 #include "Standard_Transient_proto.hxx"
+#endif
 
 namespace insight {
 namespace cad {

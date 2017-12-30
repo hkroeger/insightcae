@@ -21,6 +21,8 @@
 #include "occinclude.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -51,6 +53,8 @@ StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
 
 void StitchedShell::build()
 {
+  ExecTimer t("StitchedShell::build() ["+featureSymbolName()+"]");
+
   BRepBuilderAPI_Sewing sew(tol_->value());
   
 //   TopoDS_Compound aRes;

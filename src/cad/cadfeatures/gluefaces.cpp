@@ -23,8 +23,10 @@
 #include "BRepCheck_Shell.hxx"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
-#include "GEOM/GEOMAlgo_Gluer2.hxx"
+
+#include "GEOMAlgo_Gluer2.hxx"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -55,6 +57,8 @@ GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
 
 void GlueFaces::build()
 {
+  ExecTimer t("GlueFaces::build() ["+featureSymbolName()+"]");
+
   // Example: https://github.com/FedoraScientific/salome-geom/blob/master/src/GEOMImpl/GEOMImpl_GlueDriver.cxx
   GEOMAlgo_Gluer2 ggl;
   

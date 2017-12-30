@@ -913,10 +913,15 @@ void OpenFOAMCase::addField(const std::string& name, const FieldInfo& field)
   fields_[name]=field;
 }
 
-void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const
+boost::filesystem::path OpenFOAMCase::boundaryDictPath(const boost::filesystem::path& location) const
 {
   boost::filesystem::path basepath(location);
-  boost::filesystem::path dictpath = basepath / "constant" / "polyMesh" / "boundary";
+  return basepath / "constant" / "polyMesh" / "boundary";
+}
+
+void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OFDictData::dict& boundaryDict) const
+{
+  boost::filesystem::path dictpath = boundaryDictPath(location);
   std::ifstream f(dictpath.c_str());
   if (!readOpenFOAMBoundaryDict(f, boundaryDict))
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());

@@ -8,7 +8,7 @@
 #include <QtOpenGL/QGLWidget>
 
 
-#if (OCC_VERSION_MINOR>=7)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR>=7))
 #include "Graphic3d_ClipPlane.hxx"
 #endif
 
@@ -23,8 +23,8 @@
 
 #define ValZWMin 1 /** For elastic bean selection */
 
-class Handle_AIS_InteractiveContext;
-class Handle_V3d_View;
+// class Handle_AIS_InteractiveContext;
+// class Handle_V3d_View;
 
 class QOCC_DECLSPEC QoccViewWidget : 
 public QWidget
@@ -137,7 +137,7 @@ private: // members
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
 
-#if (OCC_VERSION_MINOR<7)
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<7))
   Handle_V3d_Plane		clipPlane_;
 #else
   Handle_Graphic3d_ClipPlane	clipPlane_;  
@@ -211,6 +211,7 @@ private: // methods
      Standard_Real& Z
      );
   
+#if (OCC_VERSION_MAJOR<7)
   void paintOCC();
   static int paintCallBack 
     (
@@ -218,7 +219,8 @@ private: // methods
      void*, 
      Aspect_GraphicCallbackStruct*
      );
-  
+#endif
+    
 public:
 
   bool dump(Standard_CString theFile);

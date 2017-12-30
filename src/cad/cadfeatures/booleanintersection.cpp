@@ -20,6 +20,7 @@
 #include "GeomAPI_IntCS.hxx"
 #include "booleanintersection.h"
 #include "base/boost_include.h"
+#include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
 
 #include "datum.h"
@@ -96,19 +97,20 @@ FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
 
 void BooleanIntersection::build()
 {
+    ExecTimer t("BooleanIntersection::build() ["+featureSymbolName()+"]");
+    
     if (m1_ && m2_)
     {        
         if (!cache.contains(hash()))
         {
             BRepAlgoAPI_Common intersector(*m1_, *m2_);
             intersector.Build();
-            if (Standard_Integer err = intersector.ErrorStatus() != 0)
+            if (!intersector.IsDone())
             {
                 throw CADException
                 (
                     *this,
-                    boost::str(boost::format("could not perform intersection operation: error code %d.")
-                    % err )
+                    "Could not perform intersection operation."
                 );
             }
             setShape(intersector.Shape());
@@ -163,13 +165,12 @@ void BooleanIntersection::build()
                     m2pl_->plane()
                 );
                 intersector.Build();
-                if (Standard_Integer err = intersector.ErrorStatus() != 0)
+                if (!intersector.IsDone())
                 {
                     throw CADException
                     (
                         *this,
-                        boost::str(boost::format("could not perform shape/plane intersection operation: error code %d.")
-                        % err )
+                        "could not perform shape/plane intersection operation."
                     );
                 }                
                 TopoDS_Shape isecsh = intersector.Shape();

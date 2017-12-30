@@ -25,16 +25,22 @@
 #undef Status
 #undef Opposite
 
+#include <Standard_Version.hxx>
 #include <AIS_StatusOfDetection.hxx>
 #include <AIS_StatusOfPick.hxx>
 #include <Aspect_Drawable.hxx>
 #include <Aspect_GridDrawMode.hxx>
 #include <Aspect_GridType.hxx>
+#include <AIS_InteractiveContext.hxx>
+#include <V3d_View.hxx>
+#include <V3d_Viewer.hxx>
+#if (OCC_VERSION_MAJOR<7)
 #include <Aspect_GraphicCallbackProc.hxx>
 #include <Handle_AIS_InteractiveContext.hxx>
 #include <Handle_V3d_View.hxx>
 #include <Handle_V3d_Viewer.hxx>
 #include <Handle_TopTools_HSequenceOfShape.hxx>
+#endif
 #include <Standard_TypeDef.hxx>
 #include <Quantity_Factor.hxx>
 #include <Quantity_Length.hxx>

@@ -72,7 +72,7 @@ int main ( int argc, char** argv )
   ( "help,h", "produce help message" )
   ( "batch,b", "evaluate model from specified input file without starting GUI" )
   ( "nolog,l", "put debug output to console instead of log window" )
-  //       ( "skipbcs,s", "skip BC configuration during input file read and batch case creation" )
+  ( "nobgparse,g", "deactivate background parsing" )
   //       ("workdir,w", po::value<std::string>(), "execution directory")
   //       ("savecfg,c", po::value<std::string>(), "save final configuration (including command line overrides) to this file")
   //       ("bool,b", po::value<StringList>(), "boolean variable assignment")
@@ -154,22 +154,25 @@ int main ( int argc, char** argv )
       splash.showMessage ( "Wait..." );
 
       ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
+      
+      bool dobgparsing = (vm.count ( "nobgparse" ) == 0);
+      
       if ( vm.count ( "input-file" ) )
         {
           boost::filesystem::path filename ( vm["input-file"].as<std::string>() );
           if ( boost::filesystem::extension(filename) == ".iscad" )
           {
-            window.insertModel ( filename );
+            window.insertModel ( filename, dobgparsing );
           }
           else
           {
             std::string script = "model: import(\""+filename.string()+"\");\n";
-            window.insertModelScript ( script );
+            window.insertModelScript ( script, dobgparsing );
           }
         }
       else
       {
-          window.insertEmptyModel();
+          window.insertEmptyModel( dobgparsing );
       }
 
       window.show();

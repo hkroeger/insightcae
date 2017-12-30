@@ -57,7 +57,10 @@
 #include "XSControl_TransferWriter.hxx"
 #include "StepData_StepModel.hxx"
 #include "TDF_LabelSequence.hxx"
+#if (OCC_VERSION_MAJOR>=7)
+#else
 #include "Handle_StepRepr_RepresentationItem.hxx"
+#endif
 #include "STEPConstruct.hxx"
 #include "STEPCAFControl_Writer.hxx"
 #include "STEPCAFControl_Reader.hxx"
@@ -1511,7 +1514,7 @@ void Feature::saveAs
     stlwriter.ASCIIMode() = (ext==".stl");
     //stlwriter.RelativeMode()=false;
     //stlwriter.SetDeflection(maxdefl);
-#if OCC_VERSION_MINOR<9
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
     stlwriter.SetCoefficient(5e-5);
 #endif
     stlwriter.Write(shape(), filename.c_str());
@@ -1534,7 +1537,7 @@ void Feature::exportSTL(const boost::filesystem::path& filename, double abstol) 
   StlAPI_Writer stlwriter;
 
   stlwriter.ASCIIMode() = false;
-#if OCC_VERSION_MINOR<9
+#if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
 #warning control STL tolerance in newer OCC versions!
   stlwriter.RelativeMode()=false;
   stlwriter.SetDeflection(abstol);

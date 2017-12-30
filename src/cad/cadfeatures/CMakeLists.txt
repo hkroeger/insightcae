@@ -62,6 +62,26 @@ add_sources(insightcad_SOURCES
  refplace.cpp
  exploded.cpp
  partition.cpp
+ 
+  GEOMAlgo_Splitter.cxx
+  
+  GEOMAlgo_Gluer2.cxx
+  GEOMAlgo_Gluer2_1.cxx
+  GEOMAlgo_Gluer2_2.cxx
+  GEOMAlgo_Gluer2_3.cxx
+  GEOMAlgo_GluerAlgo.cxx
+  GEOMAlgo_BuilderShape.cxx
+  GEOMAlgo_Algo.cxx
+  GEOMAlgo_GlueDetector.cxx
+  GEOMAlgo_AlgoTools.cxx
+  GEOMAlgo_AlgoTools_1.cxx
+  GEOMAlgo_BndSphereTree.cxx
+  GEOMAlgo_BndSphere.cxx
+  GEOMAlgo_PassKey.cxx
+  GEOMAlgo_PassKeyShape.cxx
+  GEOMAlgo_PassKeyMapHasher.cxx
+  GEOMAlgo_PassKeyShapeMapHasher.cxx
+  GEOMAlgo_CoupleOfShapes.cxx
 )
 
 add_include_dir(INCLUDE_DIRS)

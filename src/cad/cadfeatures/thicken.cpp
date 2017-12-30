@@ -20,6 +20,7 @@
 #include "thicken.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 // #include "BRepOffsetAPI_MakeThickSolid.hxx"
 #include "BRepOffset_MakeOffset.hxx"
@@ -75,6 +76,7 @@ FeaturePtr Thicken::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr to
 
 void Thicken::build()
 {
+  ExecTimer t("Thicken::build() ["+featureSymbolName()+"]");
 
   TopTools_ListOfShape ClosingFaces;
   

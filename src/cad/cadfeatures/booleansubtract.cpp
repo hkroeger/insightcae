@@ -20,6 +20,7 @@
 #include "booleansubtract.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -74,6 +75,7 @@ FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
 
 void BooleanSubtract::build()
 {
+  ExecTimer t("BooleanSubtract::build() ["+featureSymbolName()+"]");
   
   if (!cache.contains(hash()))
   {
@@ -81,13 +83,12 @@ void BooleanSubtract::build()
     if (!m2_) throw insight::cad::CADException(*this, "invalid input: tool shape" );
     BRepAlgoAPI_Cut cutter(*m1_, *m2_);
     cutter.Build();
-    if (Standard_Integer err = cutter.ErrorStatus() != 0)
+    if (!cutter.IsDone())
     {
         throw insight::cad::CADException
         (
             *this, 
-            boost::str(boost::format("could not perform cut operation: error code %d")
-             % err )
+            "could not perform cut operation."
         );
     }
     TopoDS_Shape subs=cutter.Shape();

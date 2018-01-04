@@ -269,7 +269,7 @@ public:
     } MapMethod;
 
 protected:
-    const OFEnvironment& env_;
+    OFEnvironment env_;
     FieldList fields_;
     bool fieldListCompleted_ = false;
     MapMethod requiredMapMethod_;

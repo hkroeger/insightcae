@@ -47,7 +47,7 @@ public:
   
   void deleteAllObjects();
 
-  void setGridOffset (Quantity_Length offset);
+  void setGridOffset (double offset);
 
 public slots:
 

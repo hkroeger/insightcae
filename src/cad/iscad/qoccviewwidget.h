@@ -143,11 +143,11 @@ private: // members
   Handle_Graphic3d_ClipPlane	clipPlane_;  
 #endif
 
-  Standard_Boolean		myViewResized;
-  Standard_Boolean		myViewInitialized;
+  bool		myViewResized;
+  bool		myViewInitialized;
   CurrentAction3d               myMode;
-  Quantity_Factor               myCurZoom;
-  Standard_Boolean		myGridSnap;
+  double               myCurZoom;
+  bool		myGridSnap;
   AIS_StatusOfDetection		myDetection;
   
   V3d_Coordinate					
@@ -159,9 +159,9 @@ private: // members
   QPoint			myStartPoint;
   QPoint			myCurrentPoint;
   
-  Standard_Real			myPrecision;
-  Standard_Real			myViewPrecision;
-  Standard_Boolean		myMapIsValid;
+  double			myPrecision;
+  double			myViewPrecision;
+  bool		myMapIsValid;
   Qt::KeyboardModifiers		myKeyboardFlags;
   Qt::MouseButton		myButtonFlags;
   QCursor			myCrossCursor;

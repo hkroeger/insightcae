@@ -96,6 +96,8 @@ signals:
 
 
 
+
+
 /**
  * the container for the CAD modeling data, is also the text editor widget
  */
@@ -110,7 +112,7 @@ protected:
     boost::filesystem::path filename_;
     ISCADSyntaxHighlighter* highlighter_;
 
-    std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
+//     std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
 
     std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
 
@@ -173,46 +175,110 @@ public:
     
     void loadFile(const boost::filesystem::path& file);
     void setScript(const std::string& contents);
+    
+    /**
+     * add all defined planes to the clip plane menu
+     */
     void populateClipPlaneMenu(QMenu* clipplanemenu);
 
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
-    void onModelTreeItemChanged(QTreeWidgetItem * item, int);
+//     void onModelTreeItemChanged(QTreeWidgetItem * item, int);
 
+    /**
+     * some text has been selected. Highlight all identical occurrences
+     */
     void onEditorSelectionChanged();
 
+    /**
+     * jump to definition of feature symbol
+     */
     void jump_to(const QString& featurename);
 
+    /**
+     * switch BG parsing on/off
+     */
+    void toggleBgParsing(int state);
+
+    /**
+     * trigger countdown timer for background parsing
+     */
     void restartBgParseTimer(int i1=0,int i2=0,int i3=0);
+    
+    /**
+     * execute background parsing
+     */
     void doBgParse();
 
+    /**
+     * BG parsing thread has finished
+     */
+    void onBgParseFinished();
+
+    /**
+     * execute sketch editor for selected insight::cad::Sketch
+     * triggered from QAction (menu) through a signalMapper
+     */
     void editSketch(QObject* sk_ptr);
+    
+    /**
+     * open another insight::cad::ModelFeature in a new tab
+     * triggered from QAction (menu) through a signalMapper
+     */
     void editModel(QObject* mo_ptr);
 
-    void toggleBgParsing(int state);
+    /**
+     * switch evaluation of Postproc Actions on/off
+     */
     void toggleSkipPostprocActions(int state);
     
     void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
-    
-    void onBgParseFinished();
-    
     void onCopyBtnClicked();
     
+    /**
+     * display everything shaded
+     */
     void allShaded();
+    
+    /**
+     * display everything in wireframe
+     */
     void allWireframe();
     
     void onSetClipPlane(QObject* datumplane);
     
 public slots:
 
-
+    /**
+     * save model under the file name from which is was loaded
+     */
     bool saveModel();
+    
+    /**
+     * save under new file name. Dialog will be displayed
+     */
     bool saveModelAs();
+    
+    /**
+     * trigger rebuilding of entire model
+     */
     void rebuildModel(bool upToCursor=false);
+    
+    /**
+     * rebuild only up to cursor
+     */
     void rebuildModelUpToCursor();
+    
+    /**
+     * clear the cache
+     */
     void clearCache();
+    
+    /**
+     * create a context menu in editor widget
+     */
     void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
     void showEditorContextMenu(const QPoint&);
 
@@ -220,17 +286,37 @@ public slots:
     void unsetUnsavedState();
     
 signals:
-    void displayStatus(const QString&);
+    
+    /**
+     * user status informations
+     */
+    void displayStatusMessage(const QString&);
+    
+    /**
+     * change of model file name or save state (asterisk in front of name)
+     */
     void updateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
-    void updateClipPlaneMenu();
+    
+    /**
+     * the model has been reevaluated and menu entries etc. may have changed:
+     * 
+     * - clip planes
+     * 
+     * errorState != 0 indicates that an error occurred and the model may be incomplete
+     */
+    void modelUpdated(int errorState =0);
+    
+    /**
+     * open another model for editing
+     */
     void openModel(const boost::filesystem::path& modelfile);
 
-    // insert new features
-    void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
-    void addDatum(const QString& sn, insight::cad::DatumPtr dm);
-    void addEvaluation(const QString& sn, insight::cad::PostprocActionPtr em, bool visible=false);
-    void addVariable(const QString& sn, insight::cad::parser::scalar sv);
-    void addVariable(const QString& sn, insight::cad::parser::vector vv);
+//     // insert new features
+//     void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
+//     void addDatum(const QString& sn, insight::cad::DatumPtr dm);
+//     void addEvaluation(const QString& sn, insight::cad::PostprocActionPtr em, bool visible=false);
+//     void addVariable(const QString& sn, insight::cad::parser::scalar sv);
+//     void addVariable(const QString& sn, insight::cad::parser::vector vv);
 
 };
 

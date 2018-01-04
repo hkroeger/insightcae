@@ -94,8 +94,7 @@ class QModelTree
 : public QTreeWidget
 {
     Q_OBJECT
-    
-public:
+protected:
     QTreeWidgetItem 
         *scalars_, 
         *vectors_, 
@@ -112,6 +111,7 @@ public:
         datum_vs_,
         postprocaction_vs_;
     
+public:
     QModelTree(QWidget* parent);
     
     void storeViewStates();

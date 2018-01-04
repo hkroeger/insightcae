@@ -76,112 +76,112 @@ void BGParsingThread::run()
     
     
     
-        std::istringstream is(script_);
+    std::istringstream is(script_);
 
-        int failloc=-1;
+    int failloc=-1;
 
-        insight::cad::cache.initRebuild();
+    insight::cad::cache.initRebuild();
 
-        model_.reset(new insight::cad::Model);
-        bool r=false;
-        
-        std::string reason="Failed: Syntax error";
-        try
-        {
-            r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
-        }
-        catch (insight::cad::parser::iscadParserException e)
-        {
-            reason="Expected: "+e.message();
-            failloc=e.from_pos();
-            emit scriptError(failloc, reason);
-        }
+    model_.reset(new insight::cad::Model);
+    bool r=false;
+    
+    std::string reason="Failed: Syntax error";
+    try
+    {
+        r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+    }
+    catch (insight::cad::parser::iscadParserException e)
+    {
+        reason="Expected: "+e.message();
+        failloc=e.from_pos();
+        emit scriptError(failloc, reason);
+    }
 
-        if (!r) // fail if we did not get a full match
-        {
-            emit scriptError(failloc, "Syntax error");
-        }
-        else
-        {
+    if (!r) // fail if we did not get a full match
+    {
+        emit scriptError(failloc, "Syntax error");
+    }
+    else
+    {
 
-            emit statusMessage("Model parsed successfully.");
+        emit statusMessage("Model parsed successfully.");
 //             context_->getContext()->EraseAll();
 
-            if (action_==ParseAndRebuild)
+        if (action_==ParseAndRebuild)
+        {
             {
+                auto scalars=model_->scalars();
+                int is=0, ns=scalars.size();
+                BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
                 {
-                    auto scalars=model_->scalars();
-                    int is=0, ns=scalars.size();
-                    BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
-                    {
-                        emit statusMessage("Building scalar "+QString::fromStdString(v.first));
-                        emit statusProgress(is++, ns);
-                        emit addVariable(QString::fromStdString(v.first), v.second);
-                    }
+                    emit statusMessage("Building scalar "+QString::fromStdString(v.first));
+                    emit statusProgress(is++, ns);
+                    emit addVariable(QString::fromStdString(v.first), v.second);
                 }
+            }
 
+            {
+                auto vectors=model_->vectors();
+                int is=0, ns=vectors.size();
+                BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
                 {
-                    auto vectors=model_->vectors();
-                    int is=0, ns=vectors.size();
-                    BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
-                    {
-                        emit statusMessage("Building vector "+QString::fromStdString(v.first));
-                        emit statusProgress(is++, ns);
-                        emit addVariable(QString::fromStdString(v.first), v.second);
-                    }
+                    emit statusMessage("Building vector "+QString::fromStdString(v.first));
+                    emit statusProgress(is++, ns);
+                    emit addVariable(QString::fromStdString(v.first), v.second);
                 }
+            }
 
+            {
+                auto datums=model_->datums();
+                int is=0, ns=datums.size();
+                BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
                 {
-                    auto datums=model_->datums();
-                    int is=0, ns=datums.size();
-                    BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
-                    {
-                        emit statusMessage("Building datum "+QString::fromStdString(v.first));
-                        emit statusProgress(is++, ns);
-                        emit addDatum(QString::fromStdString(v.first), v.second);
-                    }
+                    emit statusMessage("Building datum "+QString::fromStdString(v.first));
+                    emit statusProgress(is++, ns);
+                    emit addDatum(QString::fromStdString(v.first), v.second);
                 }
-                
-                {
-                    auto modelsteps=model_->modelsteps();
-                    int is=0, ns=modelsteps.size();
-                    BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
-                    {
-                        bool is_comp=false;
-                        if (model_->components().find(v.first) != model_->components().end())
-                        {
-                            is_comp=true;
-                            emit statusMessage("Building component "+QString::fromStdString(v.first));
-                        } else
-                        {
-                            emit statusMessage("Building feature "+QString::fromStdString(v.first));
-                        }
-                        emit statusProgress(is++, ns);
-                        emit addFeature(QString::fromStdString(v.first), v.second, is_comp);
-                    }
-                }
-
-    //             if (!skipPostprocActions_)
-    //             {
-                {
-                    auto postprocActions=model_->postprocActions();
-                    int is=0, ns=postprocActions.size();
-                    BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
-                    {
-                        emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
-                        emit statusProgress(is++, ns);
-                        emit addEvaluation(QString::fromStdString(v.first), v.second);
-                    }
-                }
-    //             }
-
-    //             updateClipPlaneMenu();
-
-                emit statusMessage("Model rebuild successfully finished.");
             }
             
-            insight::cad::cache.finishRebuild();
+            {
+                auto modelsteps=model_->modelsteps();
+                int is=0, ns=modelsteps.size();
+                BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
+                {
+                    bool is_comp=false;
+                    if (model_->components().find(v.first) != model_->components().end())
+                    {
+                        is_comp=true;
+                        emit statusMessage("Building component "+QString::fromStdString(v.first));
+                    } else
+                    {
+                        emit statusMessage("Building feature "+QString::fromStdString(v.first));
+                    }
+                    emit statusProgress(is++, ns);
+                    emit addFeature(QString::fromStdString(v.first), v.second, is_comp);
+                }
+            }
+
+//             if (!skipPostprocActions_)
+//             {
+            {
+                auto postprocActions=model_->postprocActions();
+                int is=0, ns=postprocActions.size();
+                BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
+                {
+                    emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
+                    emit statusProgress(is++, ns);
+                    emit addEvaluation(QString::fromStdString(v.first), v.second);
+                }
+            }
+//             }
+
+//             updateClipPlaneMenu();
+
+            emit statusMessage("Model rebuild successfully finished.");
         }
+        
+        insight::cad::cache.finishRebuild();
+    }
 }
 
 
@@ -313,7 +313,7 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
     vbox = new QVBoxLayout;
     modeltree_=new QModelTree(gb);
     modeltree_->setMinimumHeight(20);
-    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+//     connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
     vbox->addWidget(modeltree_);
     gb->setLayout(vbox);
     spl2->addWidget(gb);

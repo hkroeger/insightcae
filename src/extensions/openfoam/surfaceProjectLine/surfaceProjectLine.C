@@ -12,6 +12,8 @@
 #include "indexedOctree.H"
 
 #include "MeshedSurfaces.H"
+#include "PackedBoolList.H"
+#include "uniof.h"
 
 using namespace Foam;
 
@@ -30,11 +32,11 @@ int main(int argc, char *argv[])
 
     argList args(argc, argv);
 
-    fileName surfFileName = args.additionalArgs()[0];
-    point start(IStringStream(args.additionalArgs()[1])());
-    point end(IStringStream(args.additionalArgs()[2])());
-    label npts(readLabel(IStringStream(args.additionalArgs()[3])()));
-    vector projdir(IStringStream(args.additionalArgs()[4])());
+    fileName surfFileName = UNIOF_ADDARG(args, 0); //args.additionalArgs()[0];
+    point start(IStringStream(UNIOF_ADDARG(args, 1))()); //args.additionalArgs()[1])());
+    point end(IStringStream(UNIOF_ADDARG(args, 2))()); //args.additionalArgs()[2])());
+    label npts(readLabel(IStringStream(UNIOF_ADDARG(args, 3))())); //args.additionalArgs()[3])()));
+    vector projdir(IStringStream(UNIOF_ADDARG(args, 4))()); //args.additionalArgs()[4])());
     projdir/=mag(projdir);
     vector axis=end-start;
     axis/=mag(axis);
@@ -92,7 +94,16 @@ int main(int argc, char *argv[])
 
         indexedOctree<treeDataTriSurface> tree
 	(
-	    treeDataTriSurface(true, surf1, 1e-6),
+	    treeDataTriSurface(
+#if !(defined(OF22eng)||defined(Fx40))
+            true, 
+#endif
+            surf1
+#if !defined(Fx40)
+            , 
+            1e-6
+#endif
+        ),
 	    bb,
 	    10, //maxTreeDepth_,  // maxLevel
 	    10,             // leafsize

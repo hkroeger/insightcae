@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     
     forAll(U.boundaryField(), pi)
     {
-      fvPatchVectorField& Up=UNIOF_BOUNDARY_NONCONST(U)[pi];
+      const fvPatchVectorField& Up=U.boundaryField()[pi]; //UNIOF_BOUNDARY_NONCONST(U)[pi];
       const labelList& fcs=Up.patch().faceCells();
       forAll(fcs, fi)
       {
@@ -179,8 +179,8 @@ int main(int argc, char *argv[])
     {
         // Calculate nut - reference nut is calculated by the turbulence model
         // on its construction
-        tmp<volScalarField> tnut = turbulence->nut();
-        volScalarField& nut = UNIOF_TMP_NONCONST(tnut);
+        volScalarField nut = turbulence->nut();
+        //volScalarField& nut = UNIOF_TMP_NONCONST(tnut);
         volScalarField S(mag(dev(symm(fvc::grad(U)))));
         nut = (1 - mask)*nut + mask*sqr(kappa*min(y, ybl))*::sqrt(2)*S;
 
@@ -197,8 +197,8 @@ int main(int argc, char *argv[])
         //--- Read and modify turbulence fields
 
         // Turbulence k
-        tmp<volScalarField> tk = turbulence->k();
-        volScalarField& k = UNIOF_TMP_NONCONST(tk);
+        volScalarField k = turbulence->k();
+        //volScalarField& k = UNIOF_TMP_NONCONST(tk);
         
         scalar ck0 = ::pow(Cmu, 0.25)*kappa;
         k = (1 - mask)*k + mask*sqr(nut/(ck0*min(y, ybl)));
@@ -212,8 +212,8 @@ int main(int argc, char *argv[])
 
 
         // Turbulence epsilon
-        tmp<volScalarField> tepsilon = turbulence->epsilon();
-        volScalarField& epsilon = UNIOF_TMP_NONCONST(tepsilon);
+        volScalarField epsilon = turbulence->epsilon();
+        //volScalarField& epsilon = UNIOF_TMP_NONCONST(tepsilon);
         scalar ce0 = ::pow(Cmu, 0.75)/kappa;
         epsilon = (1 - mask)*epsilon + mask*ce0*k*sqrt(k)/min(y, ybl);
 

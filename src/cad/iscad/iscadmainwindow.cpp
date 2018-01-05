@@ -309,9 +309,9 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
 
 
 
-ISCADModel* ISCADMainWindow::insertEmptyModel()
+ISCADModel* ISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
-    ISCADModel *model = new ISCADModel;
+    ISCADModel *model = new ISCADModel(0, bgparsing);
     modelTabs_->addTab(model, "(unnamed)");
     
     connect(model, SIGNAL(displayStatus(const QString&)), this, SLOT(displayStatusMessage(const QString&)));
@@ -321,16 +321,16 @@ ISCADModel* ISCADMainWindow::insertEmptyModel()
     return model;
 }
 
-ISCADModel* ISCADMainWindow::insertModel(const boost::filesystem::path& file)
+ISCADModel* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
 {
-    ISCADModel* model = insertEmptyModel();
+    ISCADModel* model = insertEmptyModel(bgparsing);
     model->loadFile(file);
     return model;
 }
 
-ISCADModel* ISCADMainWindow::insertModelScript(const std::string& contents)
+ISCADModel* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
 {
-    ISCADModel* model = insertEmptyModel();
+    ISCADModel* model = insertEmptyModel(bgparsing);
     model->setScript(contents);
     return model;
 }

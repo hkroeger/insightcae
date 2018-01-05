@@ -24,6 +24,8 @@
 #include "booleanintersection.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -94,6 +96,8 @@ FeaturePtr Cutaway::create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inve
 
 void Cutaway::build()
 {
+    ExecTimer t("Cutaway::build() ["+featureSymbolName()+"]");
+
 //   ParameterListHash h(this);
 //   h+=*model_;
 //   h+=p0_->value();

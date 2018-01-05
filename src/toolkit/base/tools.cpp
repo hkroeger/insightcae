@@ -112,4 +112,14 @@ void SharedPathList::insertFileDirectoyIfNotPresent(const path& sp)
 
 SharedPathList SharedPathList::searchPathList;
 
+
+
+
+ExecTimer::ExecTimer(const std::string& name)
+: boost::timer::auto_cpu_timer(boost::timer::default_places, name+": END %ws wall, %us usr + %ss sys = %ts CPU (%p%)\n")
+{
+    std::cout<< ( name+": BEGIN\n" );
+}
+
+
 }

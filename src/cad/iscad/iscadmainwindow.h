@@ -105,9 +105,9 @@ public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
     ~ISCADMainWindow();
 
-    ISCADModel* insertEmptyModel();
-    ISCADModel* insertModel(const boost::filesystem::path& file);
-    ISCADModel* insertModelScript(const std::string& contents);
+    ISCADModel* insertEmptyModel(bool bgparsing=true);
+    ISCADModel* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
+    ISCADModel* insertModelScript(const std::string& contents, bool bgparsing=true);
     virtual void closeEvent(QCloseEvent *event);
    
 signals:

@@ -20,6 +20,7 @@
 #include "booleansubtract.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -74,6 +75,7 @@ FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
 
 void BooleanSubtract::build()
 {
+  ExecTimer t("BooleanSubtract::build() ["+featureSymbolName()+"]");
   
   if (!cache.contains(hash()))
   {

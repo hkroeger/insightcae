@@ -20,6 +20,8 @@
 #include "place.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -102,6 +104,8 @@ FeaturePtr Place::create(FeaturePtr m, FeaturePtr other)
 
 void Place::build()
 {
+  ExecTimer t("Place::build() ["+featureSymbolName()+"]");
+
   if (!trsf_)
   {
       

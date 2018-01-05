@@ -130,10 +130,10 @@ void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 
 
-ISCADModel::ISCADModel(QWidget* parent)
+ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
 : QWidget(parent),
     unsaved_(false),
-    doBgParsing_(true),
+    doBgParsing_(dobgparsing),
     bgparsethread_(),
     skipPostprocActions_(true)
 {

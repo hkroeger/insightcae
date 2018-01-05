@@ -20,6 +20,8 @@
 #include "importsolidmodel.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -67,6 +69,8 @@ FeaturePtr Import::create ( const boost::filesystem::path& filepath/*, ScalarPtr
 
 void Import::build()
 {
+  ExecTimer t("Import::build() ["+featureSymbolName()+"]");
+
   boost::filesystem::path fp = filepath_;
   if (!boost::filesystem::exists(fp))
   {

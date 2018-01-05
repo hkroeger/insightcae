@@ -23,6 +23,8 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -71,6 +73,8 @@ FeaturePtr Pipe::create(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binor
 
 void Pipe::build()
 {
+    ExecTimer t("Pipe::build() ["+featureSymbolName()+"]");
+
     TopoDS_Wire spinew;
     if (spine_->isSingleWire())
     {

@@ -2334,12 +2334,20 @@ void rotateMesh
   extrDict["nLayers"]=nc;
   extrDict["expansionRatio"]=1.0;
 
-  extrDict["extrudeModel"]="wedge";
   OFDictData::dict wc;
   wc["axisPt"]=OFDictData::vector3(p0);
   wc["axis"]=OFDictData::vector3(axis);
   wc["angle"]=360.0;
-  extrDict["wedgeCoeffs"]=wc;
+  if (cm.OFversion()<400)
+  {
+    extrDict["extrudeModel"]="wedge";
+    extrDict["wedgeCoeffs"]=wc;
+  } 
+  else
+  {
+    extrDict["extrudeModel"]="sector";
+    extrDict["sectorCoeffs"]=wc;
+  }
 
 
   extrDict["mergeFaces"]=true;

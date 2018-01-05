@@ -148,7 +148,7 @@ protected:
     }
     
 public:
-    ISCADModel(QWidget* parent = 0);
+    ISCADModel(QWidget* parent = 0, bool dobgparsing=true);
     ~ISCADModel();
     
     void loadFile(const boost::filesystem::path& file);

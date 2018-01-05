@@ -20,6 +20,7 @@
 #include "extrusion.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+#include "base/tools.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -69,6 +70,8 @@ FeaturePtr Extrusion::create(FeaturePtr sk, VectorPtr L, bool centered)
 
 void Extrusion::build()
 {
+    ExecTimer t("Extrusion::build() ["+featureSymbolName()+"]");
+
     if ( !centered_ ) {
         BRepPrimAPI_MakePrism mkp ( sk_->shape(), to_Vec ( L_->value() ) );
         providedSubshapes_["frontFace"]=FeaturePtr ( new Feature ( mkp.FirstShape() ) );

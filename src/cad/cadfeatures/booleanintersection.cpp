@@ -20,6 +20,7 @@
 #include "GeomAPI_IntCS.hxx"
 #include "booleanintersection.h"
 #include "base/boost_include.h"
+#include "base/tools.h"
 #include <boost/spirit/include/qi.hpp>
 
 #include "datum.h"
@@ -96,6 +97,8 @@ FeaturePtr BooleanIntersection::create_plane(FeaturePtr m1, DatumPtr m2pl)
 
 void BooleanIntersection::build()
 {
+    ExecTimer t("BooleanIntersection::build() ["+featureSymbolName()+"]");
+    
     if (m1_ && m2_)
     {        
         if (!cache.contains(hash()))

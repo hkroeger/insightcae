@@ -19,6 +19,7 @@
 
 #include "freecadmodel.h"
 #include "base/boost_include.h"
+#include "base/tools.h"
 
 using namespace boost;
 using namespace boost::filesystem;
@@ -83,6 +84,8 @@ FeaturePtr FreeCADModel::create ( const boost::filesystem::path& filename, const
 
 void FreeCADModel::build()
 {
+    ExecTimer t("FreeCADModel::build() ["+featureSymbolName()+"]");
+
     boost::filesystem::path infilename = filename_;
     if ( !exists ( infilename ) ) {
         infilename=sharedModelFilePath ( filename_.string() );

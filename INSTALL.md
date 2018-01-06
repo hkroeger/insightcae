@@ -40,10 +40,9 @@ and/or
 
 For InsightCAD:
 
-* [OpenCASCADE Community Edition, OCE](https://github.com/tpaviot/oce) (0.18, liboce-insightcae, available through http://downloads.silentdynamics.de)
+* [OpenCASCADE](https://www.opencascade.com/content/latest-release) (7.2.0, liboce-insightcae, available through http://downloads.silentdynamics.de)
 * [FreeCAD](https://www.freecadweb.org/), (0.17, freecad-insightcae, available through http://downloads.silentdynamics.de)
 * [DXFlib](http://www.ribbonsoft.com/de/what-is-dxflib) (3.7, libdxflib, available through http://downloads.silentdynamics.de)
-* [Salome GEOM](https://github.com/sfotis/geom.git) (7.2, libsalomegeom, available through http://downloads.silentdynamics.de))
 
 For the web workbench (yet experimental)
 

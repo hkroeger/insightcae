@@ -59,9 +59,7 @@ AnalysisSelector::AnalysisSelector(SessionPtr session, Wt::WContainerWidget *par
 }
 
 void AnalysisSelector::newAnalysisSelected()
-{
-    session_.reset(new Session);
-    
+{    
     std::string analysisName = asb_->currentText().toUTF8();
     
 //     session_->analysis_.reset ( insight::Analysis::lookup(analysisName) );

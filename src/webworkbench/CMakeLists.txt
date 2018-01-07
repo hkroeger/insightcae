@@ -11,6 +11,7 @@ set(webworkbench_SRCS
  inputform.cpp
  results.cpp
  analysisselector.cpp
+ webparameterwrapper.cpp
 )
 
 INCLUDE_DIRECTORIES(${WT_INCLUDE_DIR})

@@ -289,10 +289,10 @@ ConstantPressureGradientSource::ConstantPressureGradientSource( OpenFOAMCase& c,
 
 void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  if (OFversion()==230)
+  if (OFversion()>=230)
   {
-  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
-  controlDict.getList("libs").insertNoDuplicate( "\"libconstantPressureGradient.so\"" );  
+    OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");  
+    controlDict.getList("libs").insertNoDuplicate( "\"libconstantPressureGradient.so\"" );  
 
     OFDictData::dict coeffs;
     OFDictData::list flds; flds.push_back("U");
@@ -310,7 +310,7 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
   }
   else
   {
-throw insight::Exception("constantPressureGradient unavailable!");
+    throw insight::Exception("constantPressureGradient unavailable!");
     // for channelFoam:
  //   OFDictData::dict& transportProperties=dictionaries.addDictionaryIfNonexistent("constant/transportProperties");
  //   transportProperties["Ubar"]=OFDictData::dimensionedData("Ubar", dimVelocity, OFDictData::vector3(p_.Ubar()));

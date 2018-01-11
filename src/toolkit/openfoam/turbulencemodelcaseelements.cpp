@@ -995,10 +995,8 @@ void WALE_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool WALE_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-    if (roughness_z0>0.)
-        throw insight::Exception("WALE_LESModel: non-smooth walls are not supported!");
     
-    if (fieldname == "k")
+  if (fieldname == "k")
   {
     BC["type"]="fixedValue";
     BC["value"]="uniform 1e-10";
@@ -1006,7 +1004,15 @@ bool WALE_LESModel::addIntoFieldDictionary(const std::string& fieldname, const F
   }
   else if ( (fieldname == "nuSgs") || (fieldname == "nut") )
   {
-    BC["type"]="zeroGradient";
+    if (roughness_z0>0.)
+    {
+        BC["type"]="nuSgsABLRoughWallFunction";
+        BC["z0"]=str(format("uniform %g")%roughness_z0);
+    }
+    else
+    {
+        BC["type"]="zeroGradient";
+    }
     return true;
   }
   

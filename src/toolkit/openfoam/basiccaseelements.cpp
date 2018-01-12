@@ -302,7 +302,14 @@ void ConstantPressureGradientSource::addIntoDictionaries(OFdicts& dictionaries) 
     OFDictData::dict fod;
     fod["type"]="constantPressureGradientExplicitSource";
     fod["active"]=true;
-    fod["selectionMode"]="all";
+    if (OFversion()>=400)
+    {
+        coeffs["selectionMode"]="all";
+    }
+    else
+    {
+        fod["selectionMode"]="all";
+    }
     fod["constantPressureGradientExplicitSourceCoeffs"]=coeffs;
 
     OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");

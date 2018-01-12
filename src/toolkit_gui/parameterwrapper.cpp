@@ -37,7 +37,7 @@
 #endif
 
 #include "base/tools.h"
-#include "boost/spirit.hpp"
+#include "boost/spirit/include/classic.hpp"
 
 using namespace boost;
 

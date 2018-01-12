@@ -13,13 +13,22 @@ namespace Wt {
   class WAnchor;
 }
 
+
+
+
 namespace insight
 {
 namespace web
 {
-    
+
+
+
+
 class InputForm;
 class Results;
+
+
+
 
 class InsightAnalysis
 : public Wt::WContainerWidget
@@ -30,6 +39,9 @@ class InsightAnalysis
   Wt::WAnchor *inputFormAnchor_;
   Wt::WAnchor *resultsAnchor_;
   
+  /**
+   * session contains parameter set and analysis object
+   */
   SessionPtr session_;
   
   InputForm *inputForm_;
@@ -43,6 +55,9 @@ public:
   void showInputForm();
   void showResults();
 };
+
+
+
 
 }
 }

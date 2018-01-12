@@ -1008,6 +1008,7 @@ bool WALE_LESModel::addIntoFieldDictionary(const std::string& fieldname, const F
     {
         BC["type"]="nuSgsABLRoughWallFunction";
         BC["z0"]=str(format("uniform %g")%roughness_z0);
+        BC["value"]="uniform 1e-8";
     }
     else
     {

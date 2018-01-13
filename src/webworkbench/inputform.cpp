@@ -30,9 +30,20 @@ void InputForm::createForm()
 			 100);
     
     new WText("<h2>Input Parameters</h2>", this);
-    WTree* tree=new WTree(this);
+    
+    Wt::WTree* tree=new Wt::WTree(this);
+    tree->setSelectionMode(Wt::SingleSelection);
+
     WTreeNode* root=new WTreeNode("Parameters");
+//     root->setStyleClass("example-tree");
+    root->label()->setTextFormat(Wt::PlainText);
+//     root->setImagePack("resources/");
+    root->setLoadPolicy(Wt::WTreeNode::NextLevelLoading);
+
+    addWrapperToWidget(session_->parameters_, root);
+    
     tree->setTreeRoot(root);
+    root->expand();
 }
 
 }

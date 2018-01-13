@@ -18,9 +18,13 @@ namespace insight
 {
 namespace web
 {
-    
+
+
+
+
 InsightAnalysis::InsightAnalysis(WContainerWidget *parent)
 : WContainerWidget(parent),
+  session_(new Session),
   inputForm_(0),
   results_(0)
 {
@@ -53,6 +57,8 @@ InsightAnalysis::InsightAnalysis(WContainerWidget *parent)
 }
 
 
+
+
 void InsightAnalysis::handleInternalPath(const std::string &internalPath)
 {
     if (internalPath == "/input")
@@ -63,11 +69,17 @@ void InsightAnalysis::handleInternalPath(const std::string &internalPath)
         WApplication::instance()->setInternalPath("/input",  true);
 }
 
+
+
+
 void InsightAnalysis::analysisSelectionFinished()
 {
     links_->show();
     showInputForm();
 }
+
+
+
 
 void InsightAnalysis::showInputForm()
 {
@@ -77,6 +89,9 @@ void InsightAnalysis::showInputForm()
     }
     mainStack_->setCurrentWidget(inputForm_);
 }
+
+
+
 
 void InsightAnalysis::showResults()
 {

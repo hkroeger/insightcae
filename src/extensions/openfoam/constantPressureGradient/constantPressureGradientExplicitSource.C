@@ -107,7 +107,7 @@ void Foam::fv::constantPressureGradientExplicitSource::addSup
        << "incompatible dimensions: "<<Su.dimensions()<<" <=> "<<gradP_.dimensions()
        << abort(FatalError);
     }
-Info<<"EXEC"<<endl;
+
     UIndirectList<vector>(Su, cells_) = gradP_.value();
 
     eqn += Su;

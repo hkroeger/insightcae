@@ -31,15 +31,14 @@ QFeatureItem::QFeatureItem
   const std::string& name, 
   insight::cad::FeaturePtr smp, 
   QoccViewerContext* context, 
-  const ViewState& state, 
+  bool visible,
   QTreeWidgetItem* parent,
   bool is_component
 )
-: QDisplayableModelTreeItem(name, context, state, parent),
+: QDisplayableModelTreeItem(name, visible, parent),
   is_component_(is_component)
 {
   setText(COL_NAME, name_);
-  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
   reset(smp);
 }
 
@@ -88,19 +87,6 @@ void QFeatureItem::onlyThisShaded()
   
   emit(setUniformDisplayMode(AIS_WireFrame));
   shaded();
-}
-
-
-void QFeatureItem::hide()
-{
-  setCheckState(COL_VIS, Qt::Unchecked);
-  updateDisplay();
-}
-
-void QFeatureItem::show()
-{
-  setCheckState(COL_VIS, Qt::Checked);
-  updateDisplay();
 }
 
 

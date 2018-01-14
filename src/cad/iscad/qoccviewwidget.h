@@ -7,6 +7,10 @@
 #include "qocc.h"
 #include <QtOpenGL/QGLWidget>
 
+#include "qmodelstepitem.h"
+
+
+class QDisplayableModelTreeItem;
 
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR>=7))
 #include "Graphic3d_ClipPlane.hxx"
@@ -26,8 +30,8 @@
 // class Handle_AIS_InteractiveContext;
 // class Handle_V3d_View;
 
-class QOCC_DECLSPEC QoccViewWidget : 
-public QWidget
+class QOCC_DECLSPEC QoccViewWidget
+: public QWidget
 {
 	Q_OBJECT
 
@@ -111,7 +115,10 @@ public slots:
   void toggleClip ( double px, double py, double pz, double nx, double ny, double nz );
   
   void displayMessage(const QString& msg);
-  
+
+  void onShow(QDisplayableModelTreeItem* di);
+  void onErase(QDisplayableModelTreeItem* di);
+
 protected: // methods
 
   virtual void paintEvent        ( QPaintEvent* e );
@@ -120,10 +127,10 @@ protected: // methods
   virtual void mouseReleaseEvent ( QMouseEvent* e );
   virtual void mouseMoveEvent    ( QMouseEvent* e );
   virtual void wheelEvent        ( QWheelEvent* e );
-  virtual void keyPressEvent        ( QKeyEvent* e );
-  virtual void keyReleaseEvent        ( QKeyEvent* e );
+  virtual void keyPressEvent     ( QKeyEvent* e );
+  virtual void keyReleaseEvent   ( QKeyEvent* e );
   
-  virtual void leaveEvent		   ( QEvent * );
+  virtual void leaveEvent	 ( QEvent * );
   
 private: // members
   

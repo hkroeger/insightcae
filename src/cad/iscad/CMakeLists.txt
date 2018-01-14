@@ -25,6 +25,8 @@ set(iscad_SRCS
  qmodeltree.cpp
  modelcomponentselectordlg.cpp
  insertfeaturedlg.cpp
+
+ bgparsingthread.cpp
 )
 find_package(Qt4 REQUIRED)
 find_package(Qwt REQUIRED)

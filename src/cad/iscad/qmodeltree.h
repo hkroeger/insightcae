@@ -29,6 +29,7 @@
 #ifndef Q_MOC
 #include "cadtypes.h"
 #include "AIS_DisplayMode.hxx"
+#include "AIS_InteractiveObject.hxx"
 #endif
 
 
@@ -67,24 +68,40 @@ public slots:
 };
 
 
-
-
 class QDisplayableModelTreeItem
 : public QModelTreeItem
 {
     Q_OBJECT
-    
+
 protected:
-    QoccViewerContext* context_;
-    
+    Handle_AIS_InteractiveObject ais_;
+    int shadingMode_;
+    double r_, g_, b_;
+
 public:
-    ViewState state_;
-    
-    QDisplayableModelTreeItem(const std::string& name, QoccViewerContext* context, 
-		const ViewState& state, QTreeWidgetItem* parent);
-    
-    inline const ViewState& viewstate() const { return state_; }
-    virtual void updateDisplay() =0;
+    QDisplayableModelTreeItem
+    (
+            const std::string& name,
+            bool visible,
+            QTreeWidgetItem* parent
+    );
+
+    bool isVisible() const;
+    bool isHidden() const;
+
+    inline Handle_AIS_InteractiveObject ais() const { return ais_; }
+    inline int shadingMode() const { return shadingMode_; }
+    inline double red() const { return r_; }
+    inline double green() const { return g_; }
+    inline double blue() const { return b_; }
+    Quantity_Color color() const;
+
+    void show();
+    void hide();
+
+signals:
+    void show(QDisplayableModelTreeItem* di);
+    void hide(QDisplayableModelTreeItem* di);
 };
 
 
@@ -95,33 +112,106 @@ class QModelTree
 {
     Q_OBJECT
 protected:
-    QTreeWidgetItem 
-        *scalars_, 
-        *vectors_, 
-        *features_, 
-        *componentfeatures_, 
-        *datums_, 
-        *postprocactions_;
+
+    /**
+     * @brief scalars_
+     * root node for scalar entries
+     */
+    QTreeWidgetItem *scalars_;
+
+    /**
+     * @brief vectors_
+     * root node for vectors
+     */
+    QTreeWidgetItem *vectors_;
+
+    /**
+     * @brief features_
+     * root node for model features
+     */
+    QTreeWidgetItem *features_;
+
+    /**
+     * @brief componentfeatures_
+     * root node for components
+     */
+    QTreeWidgetItem *componentfeatures_;
+
+    /**
+     * @brief datums_
+     * root node for datums
+     */
+    QTreeWidgetItem *datums_;
+
+    /**
+     * @brief postprocactions_
+     * root node for postproc actions
+     */
+    QTreeWidgetItem *postprocactions_;
         
-    std::vector<QTreeWidgetItem*> featurenodes_;
+//    std::vector<QTreeWidgetItem*> featurenodes_;
         
-    std::map<std::string, ViewState>
-        vector_vs_,
-        feature_vs_,
-        datum_vs_,
-        postprocaction_vs_;
-    
+//    std::map<std::string, ViewState>
+//        vector_vs_,
+//        feature_vs_,
+//        datum_vs_,
+//        postprocaction_vs_;
+
+    template<class ItemType>
+    ItemType* findItem(QTreeWidgetItem *parent, const QString& name)
+    {
+        ItemType *found=NULL;
+
+        for (int i=0; i<p->childCount(); i++)
+        {
+            if (ItemType *mti =dynamic_cast<ItemType*>(p->child(i)))
+            {
+                if (mti->text(0) == name)
+                  {
+                    if (!found) found=mti;
+                    else
+                      {
+                        throw insight::Exception("Internal error: duplicate identifier in model tree!");
+                      }
+                  }
+            }
+        }
+        return found;
+    }
+
+    void replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi=NULL);
+
+
 public:
     QModelTree(QWidget* parent);
     
-    void storeViewStates();
     void clear();
         
-    QScalarVariableItem* addScalarVariableItem(const std::string& name, double value);
-    QVectorVariableItem* addVectorVariableItem(const std::string& name, const arma::mat& value, QoccViewerContext* context);
-    QFeatureItem* addFeatureItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, bool is_component);
-    QDatumItem* addDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context);
-    QEvaluationItem* addEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context);
+public slots:
+    void onAddScalar     (const QString& name, insight::cad::parser::scalar sv);
+    void onAddVector     (const QString& name, insight::cad::parser::vector vv);
+    void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
+    void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
+    void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp);
+
+    void onRemoveScalar      (const QString& sn);
+    void onRemoveVector      (const QString& sn);
+    void onRemoveFeature     (const QString& sn);
+    void onRemoveDatum       (const QString& sn);
+    void onRemoveEvaluation  (const QString& sn);
+
+signals:
+    void show(QFeatureItem*);
+    void hide(QFeatureItem*);
+
+private slots:
+    /**
+     * @brief onItemChanged
+     * @param item
+     * @param column
+     * if visualization state changed: emit signals for view widget(s)
+     */
+    void onItemChanged( QTreeWidgetItem * item, int column );
 
 public slots:
     void setUniformDisplayMode(const AIS_DisplayMode AM);

@@ -5,6 +5,7 @@
 #include <QtGui>
 #include "qoccinternal.h"
 #include "qoccviewwidget.h"
+#include "qmodeltree.h"
 
 
 
@@ -757,6 +758,26 @@ void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, doub
 
 void QoccViewWidget::displayMessage(const QString& msg)
 {
+}
+
+
+void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
+{
+  Handle_AIS_InteractiveObject ais = di->ais();
+  getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
+  getContext()->SetColor(ais, di->color(), Standard_True );
+}
+
+
+void QoccViewWidget::onErase(QDisplayableModelTreeItem* di)
+{
+  getContext()->Erase
+      (
+        di->ais()
+#if (OCC_VERSION_MAJOR>=7)
+        , true
+#endif
+      );
 }
 
 

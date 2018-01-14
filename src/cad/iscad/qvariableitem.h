@@ -62,7 +62,6 @@ class QVectorVariableItem
   Q_OBJECT 
   
   arma::mat value_;
-  Handle_AIS_InteractiveObject ais_;
     
 signals:
   void insertParserStatementAtCursor(const QString& statement);
@@ -71,9 +70,7 @@ protected:
   void createAISShape();
   
 public:
-  QVectorVariableItem(const std::string& name, arma::mat value, 
-		QoccViewerContext* context, 
-		const ViewState& state, QTreeWidgetItem* parent);
+  QVectorVariableItem(const std::string& name, arma::mat value, QTreeWidgetItem* parent);
   
   void reset(arma::mat value);
   void updateDisplay();

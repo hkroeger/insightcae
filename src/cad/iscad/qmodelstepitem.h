@@ -62,7 +62,6 @@ class QFeatureItem
   Q_OBJECT 
   
   insight::cad::FeaturePtr smp_;
-  Handle_AIS_Shape ais_;
   bool is_component_;
     
 signals:
@@ -72,8 +71,8 @@ signals:
   void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible);
 
 public:
-  QFeatureItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, 
-		 const ViewState& state, QTreeWidgetItem* parent, bool is_component);
+  QFeatureItem(const std::string& name, insight::cad::FeaturePtr smp,
+         bool visible, QTreeWidgetItem* parent, bool is_component);
   
 //   void run();
   void reset(insight::cad::FeaturePtr smp);
@@ -92,8 +91,6 @@ public slots:
   void wireframe();
   void shaded();
   void onlyThisShaded();
-  void hide();
-  void show();
   void randomizeColor();
   void showProperties();
   void exportShape();

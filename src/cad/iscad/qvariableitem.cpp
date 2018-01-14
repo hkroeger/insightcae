@@ -90,26 +90,12 @@ QVectorVariableItem::QVectorVariableItem
 
 void QVectorVariableItem::createAISShape()
 {
-//   TopoDS_Edge cP = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(to_Pnt(value_),gp_Dir(0,0,1)), 1));
-//   Handle_AIS_Shape aisP = new AIS_Shape(cP);
   TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
   Handle_AIS_Shape aisP(new AIS_Shape(cP));
 
   context_->getContext()->Load(aisP);
   context_->getContext()->SetColor(aisP, Quantity_Color(0, 0, 0, Quantity_TOC_RGB), false/*, Standard_True*/ );
   
-//   Handle_AIS_InteractiveObject aisPLabel (createArrow(
-//     cP, name_.toStdString())
-//   );
-// 
-//   std::auto_ptr<AIS_MultipleConnectedInteractive> ais(new AIS_MultipleConnectedInteractive());
-// 
-//   Handle_Standard_Transient owner_container(new PointerTransient(this));
-//   aisP->SetOwner(owner_container);
-//   aisPLabel->SetOwner(owner_container);
-//   ais->Connect(aisP);
-//   ais->Connect(aisPLabel);
-//   ais_=ais.release();
   ais_=aisP;
 }
 
@@ -122,8 +108,6 @@ void QVectorVariableItem::reset(arma::mat val)
 #endif                
     );
   createAISShape();
-//     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
-//   context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
   updateDisplay();
 }
 

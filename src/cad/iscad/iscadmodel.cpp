@@ -39,152 +39,6 @@
 
 
 
-BGParsingThread::BGParsingThread()
-: action_(ParseOnly)
-{
-}
-
-void BGParsingThread::launch(const std::string& script, Action action)
-{
-    script_=script;
-    action_=action;
-    start();
-}
-
-void BGParsingThread::run()
-{
-//     std::istringstream is(script_);
-// 
-//     int failloc=-1;
-// 
-//     model_.reset(new insight::cad::Model);
-// 
-//     bool r=false;
-//     try
-//     {
-//       r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
-//     }
-//     catch (...)
-//     {
-//     }
-//     
-//     if (!r) // fail if we did not get a full match
-//     {
-//         model_.reset();
-//         syn_elem_dir_.reset();
-//     }
-    
-    
-    
-    std::istringstream is(script_);
-
-    int failloc=-1;
-
-    insight::cad::cache.initRebuild();
-
-    model_.reset(new insight::cad::Model);
-    bool r=false;
-    
-    std::string reason="Failed: Syntax error";
-    try
-    {
-        r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
-    }
-    catch (insight::cad::parser::iscadParserException e)
-    {
-        reason="Expected: "+e.message();
-        failloc=e.from_pos();
-        emit scriptError(failloc, reason);
-    }
-
-    if (!r) // fail if we did not get a full match
-    {
-        emit scriptError(failloc, "Syntax error");
-    }
-    else
-    {
-
-        emit statusMessage("Model parsed successfully.");
-//             context_->getContext()->EraseAll();
-
-        if (action_==ParseAndRebuild)
-        {
-            {
-                auto scalars=model_->scalars();
-                int is=0, ns=scalars.size();
-                BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
-                {
-                    emit statusMessage("Building scalar "+QString::fromStdString(v.first));
-                    emit statusProgress(is++, ns);
-                    emit addVariable(QString::fromStdString(v.first), v.second);
-                }
-            }
-
-            {
-                auto vectors=model_->vectors();
-                int is=0, ns=vectors.size();
-                BOOST_FOREACH(decltype(vectors)::value_type const& v, vectors)
-                {
-                    emit statusMessage("Building vector "+QString::fromStdString(v.first));
-                    emit statusProgress(is++, ns);
-                    emit addVariable(QString::fromStdString(v.first), v.second);
-                }
-            }
-
-            {
-                auto datums=model_->datums();
-                int is=0, ns=datums.size();
-                BOOST_FOREACH(decltype(datums)::value_type const& v, datums)
-                {
-                    emit statusMessage("Building datum "+QString::fromStdString(v.first));
-                    emit statusProgress(is++, ns);
-                    emit addDatum(QString::fromStdString(v.first), v.second);
-                }
-            }
-            
-            {
-                auto modelsteps=model_->modelsteps();
-                int is=0, ns=modelsteps.size();
-                BOOST_FOREACH(decltype(modelsteps)::value_type const& v, modelsteps)
-                {
-                    bool is_comp=false;
-                    if (model_->components().find(v.first) != model_->components().end())
-                    {
-                        is_comp=true;
-                        emit statusMessage("Building component "+QString::fromStdString(v.first));
-                    } else
-                    {
-                        emit statusMessage("Building feature "+QString::fromStdString(v.first));
-                    }
-                    emit statusProgress(is++, ns);
-                    emit addFeature(QString::fromStdString(v.first), v.second, is_comp);
-                }
-            }
-
-//             if (!skipPostprocActions_)
-//             {
-            {
-                auto postprocActions=model_->postprocActions();
-                int is=0, ns=postprocActions.size();
-                BOOST_FOREACH(decltype(postprocActions)::value_type const& v, postprocActions)
-                {
-                    emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
-                    emit statusProgress(is++, ns);
-                    emit addEvaluation(QString::fromStdString(v.first), v.second);
-                }
-            }
-//             }
-
-//             updateClipPlaneMenu();
-
-            emit statusMessage("Model rebuild successfully finished.");
-        }
-        
-        insight::cad::cache.finishRebuild();
-    }
-}
-
-
 
 void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
 {
@@ -544,7 +398,12 @@ void ISCADModel::onBgParseFinished()
         emit displayStatus("Background model parsing finished successfully.");
         cur_model_ = bgparsethread_.model_;
         syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
-        updateClipPlaneMenu();
+
+        if (bgparsethread_.action()==BGParsingThread::Rebuild)
+        {
+        }
+
+        emit modelUpdated();
     }
     else
     {
@@ -602,6 +461,33 @@ void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu)
             clipplanemenu->setDisabled(true);
         }
     }
+}
+
+
+
+void ISCADModel::connectModelTree(QModelTree* mt) const
+{
+  connect(&bgparsethread_, SIGNAL(createdVariable(QString,insight::cad::parser::scalar)),
+          mt, SLOT(onAddScalar(QString,insight::cad::parser::scalar)));
+  connect(&bgparsethread_, SIGNAL(createdVariable(QString,insight::cad::parser::vector)),
+          mt, SLOT(onAddVector(QString,insight::cad::parser::vector)));
+  connect(&bgparsethread_, SIGNAL(createdFeature(QString,insight::cad::FeaturePtr,bool)),
+          mt, SLOT(onAddFeature(QString,insight::cad::FeaturePtr,bool)));
+  connect(&bgparsethread_, SIGNAL(createdDatum(QString,insight::cad::DatumPtr)),
+          mt, SLOT(onAddDatum(QString,insight::cad::DatumPtr)));
+  connect(&bgparsethread_, SIGNAL(createdEvaluation(QString,insight::cad::PostprocActionPtr)),
+          mt, SLOT(onAddEvaluation(QString,insight::cad::PostprocActionPtr)));
+
+  connect(&bgparsethread_, SIGNAL(removedScalar(QString)),
+          mt, SLOT(onRemoveScalar(QString)));
+  connect(&bgparsethread_, SIGNAL(removedVector(QString)),
+          mt, SLOT(onRemoveVector(QString)));
+  connect(&bgparsethread_, SIGNAL(removedFeature(QString)),
+          mt, SLOT(onRemoveFeature(QString)));
+  connect(&bgparsethread_, SIGNAL(removedDatum(QString)),
+          mt, SLOT(onRemoveDatum(QString)));
+  connect(&bgparsethread_, SIGNAL(removedEvaluation(QString)),
+          mt, SLOT(onRemoveEvaluation(QString)));
 }
 
 
@@ -1006,28 +892,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     spl->addWidget(viewer_);
     
     model_=new ISCADModel(spl);
-//     editor_->setFontFamily("Monospace");
-//     editor_->setContextMenuPolicy(Qt::CustomContextMenu);
     spl->addWidget(model_);
-
-    connect(viewer_,
-            SIGNAL(popupMenu( QoccViewWidget*, const QPoint)),
-            this,
-            SLOT(popupMenu(QoccViewWidget*,const QPoint))
-           );
-    connect(viewer_,
-            SIGNAL(selectionChanged(QoccViewWidget*)),
-            this,
-            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
-           );
-
-    
-    connect(model_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
-    connect(model_, SIGNAL(customContextMenuRequested(const QPoint&)),
-            this, SLOT(showEditorContextMenu(const QPoint&)));
-
-
-//     highlighter_=new ISCADSyntaxHighlighter(model_->document());
 
     QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
     QGroupBox *gb;
@@ -1040,8 +905,6 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     QHBoxLayout *shbox = new QHBoxLayout;
     QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
     QPushButton *rebuildBtnUTC=new QPushButton("Rbld to Cursor", gb);
-    connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
-    connect(rebuildBtnUTC, SIGNAL(clicked()), this, SLOT(rebuildModelUpToCursor()));
     shbox->addWidget(rebuildBtn);
     shbox->addWidget(rebuildBtnUTC);
     shw->setLayout(shbox);
@@ -1049,12 +912,10 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     
     QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
     toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
-    connect(toggleBgParse, SIGNAL(stateChanged(int)), this, SLOT(toggleBgParsing(int)));
     vbox->addWidget(toggleBgParse);
     
     QCheckBox *toggleSkipPostprocActions=new QCheckBox("Skip Postproc Actions", gb);
     toggleSkipPostprocActions->setCheckState( skipPostprocActions_ ? Qt::Checked : Qt::Unchecked );
-    connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)), this, SLOT(toggleSkipPostprocActions(int)));
     vbox->addWidget(toggleSkipPostprocActions);
     
     gb->setLayout(vbox);
@@ -1064,7 +925,6 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     vbox = new QVBoxLayout;
     modeltree_=new QModelTree(gb);
     modeltree_->setMinimumHeight(20);
-    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
     vbox->addWidget(modeltree_);
     gb->setLayout(vbox);
     spl2->addWidget(gb);
@@ -1076,7 +936,6 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     vbox->addWidget(notepad_);
     QPushButton* copybtn=new QPushButton("<< Copy to cursor <<");
     vbox->addWidget(copybtn);
-    connect(copybtn, SIGNAL(clicked()), this, SLOT(onCopyBtnClicked()));
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
@@ -1085,11 +944,48 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     QList<int> sizes;
     sizes << 500 << 350 << 150;
     spl->setSizes(sizes);
-    
-    connect(&bgparsethread_, SIGNAL(finished()), this, SLOT(onBgParseFinished()));
-    bgparseTimer_=new QTimer(this);
-    connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
-    restartBgParseTimer();
+
+
+    connect(rebuildBtn, SIGNAL(clicked()),
+            this, SLOT(rebuildModel()));
+    connect(rebuildBtnUTC, SIGNAL(clicked()),
+            this, SLOT(rebuildModelUpToCursor()));
+    connect(toggleBgParse, SIGNAL(stateChanged(int)),
+            this, SLOT(toggleBgParsing(int)));
+    connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)),
+            this, SLOT(toggleSkipPostprocActions(int)));
+    connect(copybtn, SIGNAL(clicked()),
+            this, SLOT(onCopyBtnClicked()));
+
+    connect(viewer_,
+            SIGNAL(popupMenu( QoccViewWidget*, const QPoint)),
+            this,
+            SLOT(popupMenu(QoccViewWidget*,const QPoint))
+           );
+    connect(viewer_,
+            SIGNAL(selectionChanged(QoccViewWidget*)),
+            this,
+            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
+           );
+
+    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
+            this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+
+    connect(model_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
+    connect(model_, SIGNAL(customContextMenuRequested(const QPoint&)),
+            this, SLOT(showEditorContextMenu(const QPoint&)));
+
     connect(model_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
-    connect(model_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));   
+    connect(model_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+
+    model_->connectModelTree(modeltree_);
+
+    connect(&bgparsethread_, SIGNAL(finished()),
+            this, SLOT(onBgParseFinished()));
+
+    bgparseTimer_=new QTimer(this);
+    connect(bgparseTimer_, SIGNAL(timeout()),
+            this, SLOT(doBgParse()));
+    restartBgParseTimer();
+
 }

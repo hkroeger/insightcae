@@ -34,7 +34,6 @@ class QEvaluationItem
 : public QDisplayableModelTreeItem
 {
   insight::cad::PostprocActionPtr smp_;
-  Handle_AIS_InteractiveObject ais_;
     
 public:
   QEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context, 

@@ -36,7 +36,6 @@ class QDatumItem
   Q_OBJECT
   
   insight::cad::DatumPtr smp_;
-  Handle_AIS_InteractiveObject ais_;
   insight::cad::ModelPtr model_;
   double ps_;
     

@@ -42,33 +42,84 @@ QModelTreeItem::QModelTreeItem
 QDisplayableModelTreeItem::QDisplayableModelTreeItem
 (
   const std::string& name,
-  QoccViewerContext* context,
-  const ViewState& state,
+  bool visible,
   QTreeWidgetItem* parent
 )
-  : QModelTreeItem ( name, parent ),
-    context_ ( context ),
-    state_ ( state )
+: QModelTreeItem ( name, parent )
 {
+    setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
 }
 
 
+bool QDisplayableModelTreeItem::isVisible()
+{
+    return (checkState(COL_VIS) == Qt::Checked);
+}
+
+
+bool QDisplayableModelTreeItem::isHidden()
+{
+    return (checkState(COL_VIS) == Qt::Unchecked);
+}
+
+
+Quantity_Color QDisplayableModelTreeItem::color() const
+{
+  return Quantity_Color(r_, g_, b_, Quantity_TOC_RGB);
+}
+
+void QDisplayableModelTreeItem::show()
+{
+  setCheckState(COL_VIS, Qt::Checked);
+  emit show(this);
+}
+
+
+void QDisplayableModelTreeItem::hide()
+{
+  setCheckState(COL_VIS, Qt::Unchecked);
+  emit hide(this);
+}
+
+
+void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi)
+{
+  if (oldi)
+    {
+      parent = oldi->parent();
+      int itemIndex = parent->indexOfChid(oldi);
+      parent->removeChild(oldi);
+      parent->insertChild(itemIndex, newi);
+    }
+  else
+    {
+      parent->addChild(newi);
+    }
+}
 
 
 QModelTree::QModelTree(QWidget* parent)
-: QTreeWidget(parent)
+  : QTreeWidget(parent)
 {
-    setHeaderLabels( QStringList() << "Symbol Name"<< ""  << "Value" );
-//     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    setMinimumHeight(20);
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect
-    (
+  setHeaderLabels( QStringList() << "Symbol Name"<< ""  << "Value" );
+  //     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+  setMinimumHeight(20);
+  setContextMenuPolicy(Qt::CustomContextMenu);
+  connect
+      (
         this,
         SIGNAL(customContextMenuRequested(const QPoint &)),
         this,
         SLOT(showContextMenuForWidget(const QPoint &))
-    );
+        );
+
+  connect
+      (
+        this,
+        SIGNAL(itemChanged(QTreeWidgetItem*,int)),
+        this,
+        SLOT(onItemChanged(QTreeWidgetItem*,int))
+        );
     
     int COL_NAME=QModelTreeItem::COL_NAME;
     componentfeatures_ = new QTreeWidgetItem( this, QStringList() << "Components" << ""  << "" );
@@ -99,46 +150,9 @@ QModelTree::QModelTree(QWidget* parent)
     { QFont f=postprocactions_->font(COL_NAME); f.setBold(true); postprocactions_->setFont(COL_NAME, f); }
     postprocactions_->setFirstColumnSpanned(true);
     postprocactions_->setExpanded(true);
-    
-    featurenodes_ = boost::assign::list_of<QTreeWidgetItem*>
-        (features_)
-        (componentfeatures_)
-        .convert_to_container<std::vector<QTreeWidgetItem*> >();
+
 }
 
-void QModelTree::storeViewStates()
-{
-    feature_vs_.clear();
-    vector_vs_.clear();
-    datum_vs_.clear();
-    postprocaction_vs_.clear();
-    
-    for (int i=0; i<features_->childCount(); i++)
-    {
-        QDisplayableModelTreeItem *it = dynamic_cast<QDisplayableModelTreeItem*>(features_->child(i));
-        if (it) feature_vs_[it->name().toStdString()] = it->viewstate();
-    }
-    for (int i=0; i<componentfeatures_->childCount(); i++)
-    {
-        QDisplayableModelTreeItem *it = dynamic_cast<QDisplayableModelTreeItem*>(componentfeatures_->child(i));
-        if (it) feature_vs_[it->name().toStdString()] = it->viewstate();
-    }
-    for (int i=0; i<vectors_->childCount(); i++)
-    {
-        QDisplayableModelTreeItem *it = dynamic_cast<QDisplayableModelTreeItem*>(vectors_->child(i));
-        if (it) vector_vs_[it->name().toStdString()] = it->viewstate();
-    }
-    for (int i=0; i<datums_->childCount(); i++)
-    {
-        QDisplayableModelTreeItem *it = dynamic_cast<QDisplayableModelTreeItem*>(datums_->child(i));
-        if (it) datum_vs_[it->name().toStdString()] = it->viewstate();
-    }
-    for (int i=0; i<postprocactions_->childCount(); i++)
-    {
-        QDisplayableModelTreeItem *it = dynamic_cast<QDisplayableModelTreeItem*>(postprocactions_->child(i));
-        if (it) postprocaction_vs_[it->name().toStdString()] = it->viewstate();
-    }
-}
 
 void QModelTree::clear()
 {
@@ -151,51 +165,85 @@ void QModelTree::clear()
 }
 
 
-QScalarVariableItem* QModelTree::addScalarVariableItem(const std::string& name, double value)
+void QModelTree::onAddScalar(const QString& name, insight::cad::parser::scalar sv)
 {
-    return new QScalarVariableItem(name, value, scalars_);
+  QScalarVariableItem* old = findItem<QScalarVariableItem>(scalars_, name);
+  replaceOrAdd(scalars_, new QScalarVariableItem(name, sv->value(), scalars_), old);
 }
 
-QVectorVariableItem* QModelTree::addVectorVariableItem(const std::string& name, const arma::mat& value, QoccViewerContext* context)
+void QModelTree::onAddVector(const std::string& name, insight::cad::parser::vector vv)
 {
-    ViewState vs;
-    auto itr = vector_vs_.find(name);
-    if (itr == vector_vs_.end())
-    {
-        vs.visible=false;
-    }
-    else
-    {
-        vs=itr->second;
-    }
-    return new QVectorVariableItem(name, value, context, vs, vectors_);
+  QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
+  replaceOrAdd(vectors_, new QVectorVariableItem(name, vv->value(), vectors_), old);
 }
 
-QFeatureItem* QModelTree::addFeatureItem(const std::string& name, insight::cad::FeaturePtr smp, QoccViewerContext* context, bool is_component)
+void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
 {
-    ViewState vs;
-    auto itr = feature_vs_.find(name);
-    if (itr == feature_vs_.end())
-    {
-        vs.visible=is_component;
-    }
-    else
-    {
-        vs=itr->second;
-    }
-    return new QFeatureItem(name, smp, context, vs, 
-                            is_component ? componentfeatures_ : features_, 
-                            is_component);
+//    ViewState vs;
+//    auto itr = feature_vs_.find(name);
+//    if (itr == feature_vs_.end())
+//    {
+//        vs.visible=is_component;
+//    }
+//    else
+//    {
+//        vs=itr->second;
+//    }
+//    return new QFeatureItem(name, smp, context, vs,
+//                            is_component ? componentfeatures_ : features_,
+//                            is_component);
 }
 
-QDatumItem* QModelTree::addDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context)
+void QModelTree::onAddDatum(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context)
 {
-    return new QDatumItem(name, smp, model, context, datum_vs_[name], datums_);
+//    return new QDatumItem(name, smp, model, context, datum_vs_[name], datums_);
 }
 
-QEvaluationItem* QModelTree::addEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context)
+void QModelTree::onAddEvaluation(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context)
 {
-    return new QEvaluationItem(name, smp, context, postprocaction_vs_[name], postprocactions_);
+//    return new QEvaluationItem(name, smp, context, postprocaction_vs_[name], postprocactions_);
+}
+
+
+void QModelTree::onRemoveScalar      (const QString& sn)
+{
+  if (QScalarVariableItem* item = findItem<QScalarVariableItem>(scalars_, sn))
+    scalars_->removeChild(item);
+}
+
+void QModelTree::onRemoveVector      (const QString& sn)
+{
+  if (QVectorVariableItem* item = findItem<QVectorVariableItem>(vectors_, sn))
+    vectors_->removeChild(item);
+}
+
+void QModelTree::onRemoveFeature     (const QString& sn)
+{
+  if (QFeatureItem* item = findItem<QFeatureItem>(features_, sn))
+    features_->removeChild(item);
+  else if (QFeatureItem* item = findItem<QFeatureItem>(componentfeatures_, sn))
+    componentfeatures_->removeChild(item);
+}
+
+void QModelTree::onRemoveDatum       (const QString& sn)
+{
+  if (QDatumItem* item = findItem<QDatumItem>(datums_, sn))
+    datums_->removeChild(item);
+}
+
+void QModelTree::onRemoveEvaluation  (const QString& sn)
+{
+  if (QEvaluationItem* item = findItem<QEvaluationItem>(postprocactions_, sn))
+    postprocactions_->removeChild(item);
+}
+
+void QModelTree::onItemChanged( QTreeWidgetItem * item, int column )
+{
+    if (QDisplayableModelTreeItem *msi =dynamic_cast<QDisplayableModelTreeItem*>(p->child(i)))
+    {
+        if (msi->isVisible())
+
+    }
 }
 
 void QModelTree::setUniformDisplayMode(const AIS_DisplayMode AM)

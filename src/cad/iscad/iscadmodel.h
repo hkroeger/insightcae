@@ -31,6 +31,7 @@
 #include "qdebugstream.h"
 #include "viewstate.h"
 #include "qmodeltree.h"
+#include "bgparsingthread.h"
 
 #ifndef Q_MOC_RUN
 #include "pointertransient.h"
@@ -41,59 +42,6 @@
 #include "sketch.h"
 #include "cadmodel.h"
 #endif
-
-
-
-
-class ISCADSyntaxHighlighter;
-class ISCADMainWindow;
-
-
-/**
- * the parsing and rebuilding processor.
- * To be started in a separate thread to keep GUI responsive
- */
-class BGParsingThread
-: public QThread
-{
-    Q_OBJECT
-    
-public:
-    enum Action { ParseOnly, ParseAndRebuild };
-    
-protected:
-    std::string script_;
-    Action action_;
-    
-public:
-    insight::cad::ModelPtr model_;
-    insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
-    
-    /**
-     * is created upon model construction
-     */
-    BGParsingThread();
-    
-    /**
-     * restarts the actions
-     */
-    void launch(const std::string& script, Action act = ParseOnly);
-    virtual void run();
-    void extendActionToRebuild();
-    
-signals:
-    void addFeature(QString sn, insight::cad::FeaturePtr sm, bool is_component);
-    void addDatum(QString sn, insight::cad::DatumPtr dm);
-    void addEvaluation(QString sn, insight::cad::PostprocActionPtr em, bool visible=false);
-    void addVariable(QString sn, insight::cad::parser::scalar sv);
-    void addVariable(QString sn, insight::cad::parser::vector vv);
-
-    void scriptError(int failpos, QString errorMsg);
-    
-    void statusMessage(QString msg);
-    void statusProgress(int step, int totalSteps);
-};
-
 
 
 
@@ -181,6 +129,8 @@ public:
      */
     void populateClipPlaneMenu(QMenu* clipplanemenu);
 
+    void connectModelTree(QModelTree* mt) const;
+
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
 //     void onModelTreeItemChanged(QTreeWidgetItem * item, int);
@@ -237,15 +187,15 @@ protected slots:
     void insertComponentNameAtCursor();
     void onCopyBtnClicked();
     
-    /**
-     * display everything shaded
-     */
-    void allShaded();
+//    /**
+//     * display everything shaded
+//     */
+//    void allShaded();
     
-    /**
-     * display everything in wireframe
-     */
-    void allWireframe();
+//    /**
+//     * display everything in wireframe
+//     */
+//    void allWireframe();
     
     void onSetClipPlane(QObject* datumplane);
     

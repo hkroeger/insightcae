@@ -216,7 +216,8 @@ void Smagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
   LESProperties["delta"]="vanDriest";
   
   OFDictData::dict smc;
-  smc["Ck"]=OFDictData::dimensionedData("Ck", dimless, p_.C);
+  //smc["Ck"]=OFDictData::dimensionedData("Ck", dimless, p_.C);
+  smc["Ck"]=p_.C;
   LESProperties[modelname+"Coeffs"]=smc;
   
   

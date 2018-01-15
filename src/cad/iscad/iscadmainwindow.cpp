@@ -170,7 +170,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     if (!nolog)
     {
       logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
-      connect(logger_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+      connect(logger_, SIGNAL(appendText(const QString&)),
+              log_, SLOT(append(const QString&)));
     }
     
     spl0->addWidget(log_);
@@ -311,28 +312,28 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
 
 ISCADModel* ISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
-    ISCADModel *model = new ISCADModel(0, bgparsing);
-    modelTabs_->addTab(model, "(unnamed)");
+    ISCADModelEditor *me = new ISCADModelEditor(0, bgparsing);
+    modelTabs_->addTab(me, "(unnamed)");
     
-    connect(model, SIGNAL(displayStatus(const QString&)), this, SLOT(displayStatusMessage(const QString&)));
-    connect(model, SIGNAL(updateTabTitle(ISCADModel*, const boost::filesystem::path&, bool)), 
+    connect(me->model(), SIGNAL(displayStatus(const QString&)), this, SLOT(displayStatusMessage(const QString&)));
+    connect(me->model(), SIGNAL(updateTitle(ISCADModel*, const boost::filesystem::path&, bool)),
             this, SLOT(onUpdateTabTitle(ISCADModel*, const boost::filesystem::path&, bool)));
 
-    return model;
+    return me;
 }
 
-ISCADModel* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
+ISCADModelEditor* ISCADMainWindow::insertModel(const boost::filesystem::path& file, bool bgparsing)
 {
-    ISCADModel* model = insertEmptyModel(bgparsing);
-    model->loadFile(file);
-    return model;
+    ISCADModelEditor* me = insertEmptyModel(bgparsing);
+    me->model()->loadFile(file);
+    return me;
 }
 
-ISCADModel* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
+ISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents, bool bgparsing)
 {
-    ISCADModel* model = insertEmptyModel(bgparsing);
-    model->setScript(contents);
-    return model;
+    ISCADModelEditor* me = insertEmptyModel(bgparsing);
+    me->model()->setScript(contents);
+    return me;
 }
 
     
@@ -357,9 +358,9 @@ void ISCADMainWindow::onCreateNewModel(const QString& directory)
     );
     if (fn!="")
     {
-        ISCADModel *model=insertEmptyModel();
-        model->setFilename(qPrintable(fn));
-        model->saveModel();
+        ISCADModelEditor *me=insertEmptyModel();
+        me->model()->setFilename(qPrintable(fn));
+        me->model()->saveModel();
     }
 }
 

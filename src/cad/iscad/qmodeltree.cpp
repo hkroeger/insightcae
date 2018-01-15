@@ -29,19 +29,28 @@
 
 QModelTreeItem::QModelTreeItem
 (
-  const std::string& name,
+  const QString& name,
   QTreeWidgetItem* parent
 
 )
   : QTreeWidgetItem ( parent ),
-    name_ ( QString::fromStdString ( name ) )
+    name_ ( name )
 {
+    setText(COL_NAME, name_);
 }
+
+
+void QModelTreeItem::insertName()
+{
+  emit insertParserStatementAtCursor(name_);
+}
+
+
 
 
 QDisplayableModelTreeItem::QDisplayableModelTreeItem
 (
-  const std::string& name,
+  const QString& name,
   bool visible,
   QTreeWidgetItem* parent
 )
@@ -49,6 +58,8 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 {
     setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
 }
+
+
 
 
 bool QDisplayableModelTreeItem::isVisible()
@@ -80,6 +91,8 @@ void QDisplayableModelTreeItem::hide()
   setCheckState(COL_VIS, Qt::Unchecked);
   emit hide(this);
 }
+
+
 
 
 void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi)

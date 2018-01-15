@@ -81,7 +81,6 @@ signals:
   void pointClicked ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
   void sendStatus   ( const QString aMessage );
   //! Just a placeholder for now
-  void popupMenu ( QoccViewWidget* aView, const QPoint aPoint ); 
   void error ( int errorCode, QString& errorDescription );
   
 public slots:
@@ -131,6 +130,8 @@ protected: // methods
   virtual void keyReleaseEvent   ( QKeyEvent* e );
   
   virtual void leaveEvent	 ( QEvent * );
+
+  void displayContextMenu( const QPoint& p);
   
 private: // members
   

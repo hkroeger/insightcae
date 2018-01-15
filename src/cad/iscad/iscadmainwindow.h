@@ -44,6 +44,7 @@
 
 
 class ISCADModel;
+class ISCADModelEditor;
 
 
 class ISCADMainWindow
@@ -82,7 +83,7 @@ protected:
 
     QMenu* clipplanemenu_;
 
-    void connectMenuToModel(ISCADModel* model);
+    void connectMenuToModel(ISCADModelEditor* model);
         
 protected slots:
     void onFileClicked(const QModelIndex &index);
@@ -105,9 +106,9 @@ public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);
     ~ISCADMainWindow();
 
-    ISCADModel* insertEmptyModel(bool bgparsing=true);
-    ISCADModel* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
-    ISCADModel* insertModelScript(const std::string& contents, bool bgparsing=true);
+    ISCADModelEditor* insertEmptyModel(bool bgparsing=true);
+    ISCADModelEditor* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
+    ISCADModelEditor* insertModelScript(const std::string& contents, bool bgparsing=true);
     virtual void closeEvent(QCloseEvent *event);
    
 signals:

@@ -26,7 +26,7 @@
 #include "viewstate.h"
 #include "qoccviewercontext.h"
 
-#ifndef Q_MOC
+#ifndef Q_MOC_RUN
 #include "cadtypes.h"
 #include "AIS_DisplayMode.hxx"
 #include "AIS_InteractiveObject.hxx"
@@ -54,18 +54,25 @@ protected:
     QString name_;
     
 public:
-    const static int COL_VIS=1;
     const static int COL_NAME=0;
+    const static int COL_VIS=1;
     const static int COL_VALUE=2;
     
-    QModelTreeItem(const std::string& name, QTreeWidgetItem* parent);
+    QModelTreeItem(const QString& name, QTreeWidgetItem* parent);
     
     inline const QString& name() const { return name_; }
 
+signals:
+    void insertParserStatementAtCursor(const QString& statement);
+
 public slots:
+    void insertName();
+
     virtual void showContextMenu(const QPoint& gpos) =0;
 
 };
+
+
 
 
 class QDisplayableModelTreeItem
@@ -81,7 +88,7 @@ protected:
 public:
     QDisplayableModelTreeItem
     (
-            const std::string& name,
+            const QString& name,
             bool visible,
             QTreeWidgetItem* parent
     );
@@ -158,7 +165,7 @@ protected:
 //        postprocaction_vs_;
 
     template<class ItemType>
-    ItemType* findItem(QTreeWidgetItem *parent, const QString& name)
+    ItemType* findItem(QTreeWidgetItem *p, const QString& name)
     {
         ItemType *found=NULL;
 
@@ -188,8 +195,8 @@ public:
     void clear();
         
 public slots:
-    void onAddScalar     (const QString& name, insight::cad::parser::scalar sv);
-    void onAddVector     (const QString& name, insight::cad::parser::vector vv);
+    void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
+    void onAddVector     (const QString& name, insight::cad::VectorPtr vv);
     void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
     void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp);
@@ -200,9 +207,6 @@ public slots:
     void onRemoveDatum       (const QString& sn);
     void onRemoveEvaluation  (const QString& sn);
 
-signals:
-    void show(QFeatureItem*);
-    void hide(QFeatureItem*);
 
 private slots:
     /**

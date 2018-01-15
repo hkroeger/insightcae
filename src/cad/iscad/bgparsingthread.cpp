@@ -64,29 +64,6 @@ public:
 
 void BGParsingThread::run()
 {
-//     std::istringstream is(script_);
-//
-//     int failloc=-1;
-//
-//     model_.reset(new insight::cad::Model);
-//
-//     bool r=false;
-//     try
-//     {
-//       r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
-//     }
-//     catch (...)
-//     {
-//     }
-//
-//     if (!r) // fail if we did not get a full match
-//     {
-//         model_.reset();
-//         syn_elem_dir_.reset();
-//     }
-
-
-
     std::istringstream is(script_);
 
     int failloc=-1;

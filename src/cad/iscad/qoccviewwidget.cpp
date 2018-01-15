@@ -13,7 +13,7 @@
 #include <V3d_DirectionalLight.hxx>
 #include <V3d_PositionalLight.hxx>
 #include "Graphic3d_AspectFillArea3d.hxx"
-
+#include "pointertransient.h"
 
 QoccViewWidget::QoccViewWidget
 ( 
@@ -70,6 +70,7 @@ QoccViewWidget::QoccViewWidget
       // take this line out if you don't believe me.
       myRubberBand->setStyle( (QStyle*) new QPlastiqueStyle() );
     }
+
 }
 
 /*!
@@ -340,6 +341,35 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
 void QoccViewWidget::leaveEvent ( QEvent* /* e */ )
 {
   myButtonFlags = Qt::NoButton;
+}
+
+
+void QoccViewWidget::displayContextMenu( const QPoint& p)
+{
+  if (myContext->HasDetected())
+  {
+      if (myContext->DetectedInteractive()->HasOwner())
+      {
+          Handle_Standard_Transient own=myContext->DetectedInteractive()->GetOwner();
+          if (!own.IsNull())
+          {
+              if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+#if (OCC_VERSION_MAJOR<7)
+                      .Access()
+#else
+                      .get()
+#endif
+              ))
+              {
+                  if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
+                  {
+                      // an item exists under the requested position
+                      mi->showContextMenu(mapToGlobal(p));
+                  }
+              }
+          }
+      }
+  }
 }
 
 /*!
@@ -864,9 +894,9 @@ void QoccViewWidget::onRightButtonDown(  Qt::KeyboardModifiers, const QPoint poi
 {
   myStartPoint = point;
   //  else
-    {
-      emit popupMenu ( this, point );
-    }
+//    {
+//      emit popupMenu ( this, point );
+//    }
 }
 
 /*!
@@ -966,8 +996,9 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
     {
       if ( myMode == CurAction3d_Nothing )
 	{
-	  emit popupMenu ( this, point );
-	}
+	  displayContextMenu(point);
+//	  emit popupMenu ( this, point );
+        }
       else
 	{
 	  setMode( CurAction3d_Nothing );

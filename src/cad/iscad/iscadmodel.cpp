@@ -94,108 +94,36 @@ void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
 
 
 ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
-: QWidget(parent),
+: QTextEdit(parent),
     unsaved_(false),
     doBgParsing_(dobgparsing),
     bgparsethread_(),
     skipPostprocActions_(true)
 {
-    QHBoxLayout* layout = new QHBoxLayout(this);
-    QSplitter *spl=new QSplitter(Qt::Horizontal);
-    layout->addWidget(spl);
+//    connect(viewer_,
+//            SIGNAL(selectionChanged(QoccViewWidget*)),
+//            this,
+//            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
+//           );
 
-    context_=new QoccViewerContext;
-
-    viewer_=new QoccViewWidget(context_->getContext(), spl);
-    spl->addWidget(viewer_);
-    
-    connect(viewer_,
-            SIGNAL(popupMenu( QoccViewWidget*, const QPoint)),
-            this,
-            SLOT(popupMenu(QoccViewWidget*,const QPoint))
-           );
-    connect(viewer_,
-            SIGNAL(selectionChanged(QoccViewWidget*)),
-            this,
-            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
-           );
-
-    editor_=new QTextEdit(spl);
-    editor_->setFontFamily("Monospace");
-    editor_->setContextMenuPolicy(Qt::CustomContextMenu);
-    spl->addWidget(editor_);
+    setFontFamily("Monospace");
+    setContextMenuPolicy(Qt::CustomContextMenu);
     
     connect(editor_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
     connect(editor_, SIGNAL(customContextMenuRequested(const QPoint&)),
             this, SLOT(showEditorContextMenu(const QPoint&)));
 
 
-    highlighter_=new ISCADSyntaxHighlighter(editor_->document());
+    highlighter_=new ISCADSyntaxHighlighter(document());
 
-    QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
-    QGroupBox *gb;
-    QVBoxLayout *vbox;
-
-
-    gb=new QGroupBox("Controls");
-    vbox = new QVBoxLayout;
-    QWidget*shw=new QWidget;
-    QHBoxLayout *shbox = new QHBoxLayout;
-    QPushButton *rebuildBtn=new QPushButton("Rebuild", gb);
-    QPushButton *rebuildBtnUTC=new QPushButton("Rbld to Cursor", gb);
-    connect(rebuildBtn, SIGNAL(clicked()), this, SLOT(rebuildModel()));
-    connect(rebuildBtnUTC, SIGNAL(clicked()), this, SLOT(rebuildModelUpToCursor()));
-    shbox->addWidget(rebuildBtn);
-    shbox->addWidget(rebuildBtnUTC);
-    shw->setLayout(shbox);
-    vbox->addWidget(shw);
-    
-    QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
-    toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
-    connect(toggleBgParse, SIGNAL(stateChanged(int)), this, SLOT(toggleBgParsing(int)));
-    vbox->addWidget(toggleBgParse);
-    
-    QCheckBox *toggleSkipPostprocActions=new QCheckBox("Skip Postproc Actions", gb);
-    toggleSkipPostprocActions->setCheckState( skipPostprocActions_ ? Qt::Checked : Qt::Unchecked );
-    connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)), this, SLOT(toggleSkipPostprocActions(int)));
-    vbox->addWidget(toggleSkipPostprocActions);
-    
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    gb=new QGroupBox("Model Tree");
-    vbox = new QVBoxLayout;
-    modeltree_=new QModelTree(gb);
-    modeltree_->setMinimumHeight(20);
-//     connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)), this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
-    vbox->addWidget(modeltree_);
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    gb=new QGroupBox("Notepad");
-    vbox = new QVBoxLayout;
-    notepad_=new QTextEdit;
-
-    vbox->addWidget(notepad_);
-    QPushButton* copybtn=new QPushButton("<< Copy to cursor <<");
-    vbox->addWidget(copybtn);
-    connect(copybtn, SIGNAL(clicked()), this, SLOT(onCopyBtnClicked()));
-    gb->setLayout(vbox);
-    spl2->addWidget(gb);
-
-    spl->addWidget(spl2);
-    
-    QList<int> sizes;
-    sizes << 500 << 350 << 150;
-    spl->setSizes(sizes);
     
     connect(&bgparsethread_, SIGNAL(finished()), this, SLOT(onBgParseFinished()));
     bgparseTimer_=new QTimer(this);
     connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
     restartBgParseTimer();
-    connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
-    connect(editor_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
-   
+    connect(document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
+    connect(document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+
 }
 
 
@@ -780,42 +708,43 @@ void ISCADModel::clearCache()
 
 
 
-void ISCADModel::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
-{
-    if (aView->getContext()->HasDetected())
-    {
-        if (aView->getContext()->DetectedInteractive()->HasOwner())
-        {
-            Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
-            if (!own.IsNull())
-            {
-                if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
-#if (OCC_VERSION_MAJOR<7)
-                        .Access()
-#else
-                        .get()
-#endif
-                ))
-                {
-                    if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
-                    {
-                        // an item exists under the requested position
-                        mi->showContextMenu(aView->mapToGlobal(aPoint));
-                    }
-                }
-            }
-        }
-    }
-}
+//void ISCADModel::popupMenu( QoccViewWidget* aView, const QPoint aPoint )
+//{
+//    if (aView->getContext()->HasDetected())
+//    {
+//        if (aView->getContext()->DetectedInteractive()->HasOwner())
+//        {
+//            Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
+//            if (!own.IsNull())
+//            {
+//                if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+//#if (OCC_VERSION_MAJOR<7)
+//                        .Access()
+//#else
+//                        .get()
+//#endif
+//                ))
+//                {
+//                    if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
+//                    {
+//                        // an item exists under the requested position
+//                        mi->showContextMenu(aView->mapToGlobal(aPoint));
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
 
 
 void ISCADModel::showEditorContextMenu(const QPoint& pt)
 {
-    QMenu * menu = editor_->createStandardContextMenu();
+    QMenu * menu = createStandardContextMenu();
 
     if (syn_elem_dir_)
     {
-        QTextCursor cursor = editor_->cursorForPosition(pt);
+        QTextCursor cursor = cursorForPosition(pt);
+
         std::size_t po=/*editor_->textCursor()*/cursor.position();
         insight::cad::FeaturePtr fp=syn_elem_dir_->findElement(po);
         if (fp)
@@ -845,14 +774,15 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
 
             if (act)
             {
-                connect(act, SIGNAL(triggered()), signalMapper, SLOT(map()));
+                connect(act, SIGNAL(triggered()),
+                        signalMapper, SLOT(map()));
                 menu->addSeparator();
                 menu->addAction(act);
             }
         }
     }
 
-    menu->exec(editor_->mapToGlobal(pt));
+    menu->exec(mapToGlobal(pt));
 }
 
 
@@ -911,11 +841,11 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     vbox->addWidget(shw);
     
     QCheckBox *toggleBgParse=new QCheckBox("Do BG parsing", gb);
-    toggleBgParse->setCheckState( doBgParsing_ ? Qt::Checked : Qt::Unchecked );
+    toggleBgParse->setCheckState( Qt::Checked );
     vbox->addWidget(toggleBgParse);
     
     QCheckBox *toggleSkipPostprocActions=new QCheckBox("Skip Postproc Actions", gb);
-    toggleSkipPostprocActions->setCheckState( skipPostprocActions_ ? Qt::Checked : Qt::Unchecked );
+    toggleSkipPostprocActions->setCheckState( Qt::Checked );
     vbox->addWidget(toggleSkipPostprocActions);
     
     gb->setLayout(vbox);
@@ -947,45 +877,29 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
 
     connect(rebuildBtn, SIGNAL(clicked()),
-            this, SLOT(rebuildModel()));
+            model_, SLOT(rebuildModel()));
     connect(rebuildBtnUTC, SIGNAL(clicked()),
-            this, SLOT(rebuildModelUpToCursor()));
+            model_, SLOT(rebuildModelUpToCursor()));
     connect(toggleBgParse, SIGNAL(stateChanged(int)),
-            this, SLOT(toggleBgParsing(int)));
+            model_, SLOT(toggleBgParsing(int)));
     connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)),
-            this, SLOT(toggleSkipPostprocActions(int)));
-    connect(copybtn, SIGNAL(clicked()),
-            this, SLOT(onCopyBtnClicked()));
+            model_, SLOT(toggleSkipPostprocActions(int)));
+//    connect(copybtn, SIGNAL(clicked()),
+//            this, SLOT(onCopyBtnClicked()));
 
-    connect(viewer_,
-            SIGNAL(popupMenu( QoccViewWidget*, const QPoint)),
-            this,
-            SLOT(popupMenu(QoccViewWidget*,const QPoint))
-           );
-    connect(viewer_,
-            SIGNAL(selectionChanged(QoccViewWidget*)),
-            this,
-            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
-           );
+//    connect(viewer_,
+//            SIGNAL(selectionChanged(QoccViewWidget*)),
+//            this,
+//            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
+//           );
 
-    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
-            this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
+//    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
+//            this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
 
-    connect(model_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
-    connect(model_, SIGNAL(customContextMenuRequested(const QPoint&)),
-            this, SLOT(showEditorContextMenu(const QPoint&)));
-
-    connect(model_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
-    connect(model_->document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+//    connect(model_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
+//    connect(model_, SIGNAL(customContextMenuRequested(const QPoint&)),
+//            this, SLOT(showEditorContextMenu(const QPoint&)));
 
     model_->connectModelTree(modeltree_);
-
-    connect(&bgparsethread_, SIGNAL(finished()),
-            this, SLOT(onBgParseFinished()));
-
-    bgparseTimer_=new QTimer(this);
-    connect(bgparseTimer_, SIGNAL(timeout()),
-            this, SLOT(doBgParse()));
-    restartBgParseTimer();
 
 }

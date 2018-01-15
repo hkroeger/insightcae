@@ -22,8 +22,10 @@
 
 #include <QString>
 
+#ifndef Q_MOC_RUN
 #include "cadmodel.h"
 #include "parser.h"
+#endif
 
 class ISCADSyntaxHighlighter;
 class ISCADMainWindow;

@@ -76,7 +76,6 @@ protected:
     
     bool skipPostprocActions_;
 
-    QTextEdit* notepad_;
     
 protected:
     void clearDerivedData();
@@ -85,37 +84,37 @@ protected:
     inline void setFilename(const boost::filesystem::path& fn)
     {
         filename_=fn;
-        emit updateTabTitle(this, filename_, false);
+        emit updateTitle(this, filename_, false);
     }
 
-    template<class PT>
-    PT* checkGraphicalSelection(QoccViewWidget* aView)
-    {
-        if (aView->getContext()->HasDetected())
-        {
-            if (aView->getContext()->DetectedInteractive()->HasOwner())
-            {
-                Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
-                if (!own.IsNull())
-                {
-                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
-#if (OCC_VERSION_MAJOR<7)
-                        .Access()
-#else
-                        .get()
-#endif
-                    ))
-                    {
-                        if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
-                        {
-                            return mi;
-                        }
-                    }
-                }
-            }
-        }
-        return NULL;
-    }
+//    template<class PT>
+//    PT* checkGraphicalSelection(QoccViewWidget* aView)
+//    {
+//        if (aView->getContext()->HasDetected())
+//        {
+//            if (aView->getContext()->DetectedInteractive()->HasOwner())
+//            {
+//                Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
+//                if (!own.IsNull())
+//                {
+//                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+//#if (OCC_VERSION_MAJOR<7)
+//                        .Access()
+//#else
+//                        .get()
+//#endif
+//                    ))
+//                    {
+//                        if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
+//                        {
+//                            return mi;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        return NULL;
+//    }
     
 public:
     ISCADModel(QWidget* parent = 0, bool dobgparsing=true);
@@ -229,8 +228,13 @@ public slots:
     /**
      * create a context menu in editor widget
      */
-    void popupMenu( QoccViewWidget* aView, const QPoint aPoint );
     void showEditorContextMenu(const QPoint&);
+
+    /**
+     * insert some text at the cursor
+     */
+    void insertTextAtCursor(const QString& snippet);
+
 
     void setUnsavedState(int i1=0, int i2=1, int i3=1);
     void unsetUnsavedState();
@@ -245,7 +249,7 @@ signals:
     /**
      * change of model file name or save state (asterisk in front of name)
      */
-    void updateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void updateTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
     
     /**
      * the model has been reevaluated and menu entries etc. may have changed:
@@ -280,14 +284,18 @@ class ISCADModelEditor
 : public QWidget
 {
     Q_OBJECT
+
 protected:
     QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
     ISCADModel* model_;
+    QTextEdit* notepad_;
 
 public:
     ISCADModelEditor(QWidget* parent = 0);
+
+    inline ISCADModel* model() { return model_; }
 };
 
 

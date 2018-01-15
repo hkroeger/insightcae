@@ -40,18 +40,14 @@ class QScalarVariableItem
   
   double value_;
     
-signals:
-  void insertParserStatementAtCursor(const QString& statement);
- 
 public:
-  QScalarVariableItem(const std::string& name, double value, 
+  QScalarVariableItem(const QString& name, double value,
 		QTreeWidgetItem* parent);
   
   void reset(double value);
   
 public slots:
   virtual void showContextMenu(const QPoint& gpos);
-  void insertName();
 };
 
 
@@ -63,21 +59,16 @@ class QVectorVariableItem
   
   arma::mat value_;
     
-signals:
-  void insertParserStatementAtCursor(const QString& statement);
- 
 protected:
   void createAISShape();
   
 public:
-  QVectorVariableItem(const std::string& name, arma::mat value, QTreeWidgetItem* parent);
+  QVectorVariableItem(const QString& name, const arma::mat& value, QTreeWidgetItem* parent);
   
   void reset(arma::mat value);
-  void updateDisplay();
   
 public slots:
   virtual void showContextMenu(const QPoint& gpos);
-  void insertName();
 };
 
 

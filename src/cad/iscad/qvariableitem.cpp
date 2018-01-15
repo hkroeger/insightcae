@@ -28,10 +28,10 @@
 using namespace std;
 using namespace boost;
 
-QScalarVariableItem::QScalarVariableItem(const std::string& name, double v, QTreeWidgetItem* parent)
+QScalarVariableItem::QScalarVariableItem(const QString& name, double value,
+                                         QTreeWidgetItem* parent)
 : QModelTreeItem(name, parent)
 {
-    setText(COL_NAME, name_);
     setText(COL_VALUE, QString::number(v));
     reset(v);
 }
@@ -42,10 +42,7 @@ void QScalarVariableItem::reset(double v)
 }
 
 
-void QScalarVariableItem::insertName()
-{
-  emit insertParserStatementAtCursor(name_);
-}
+
 
 void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
@@ -70,75 +67,66 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 
 QVectorVariableItem::QVectorVariableItem
 (
- const std::string& name, 
- arma::mat v, 
- QoccViewerContext* context, 
- const ViewState& state, 
+ const QString& name,
+ const arma::mat& v,
  QTreeWidgetItem* parent
 )
-: QDisplayableModelTreeItem(name, context, state, parent)
+: QDisplayableModelTreeItem(name, false, parent)
 {
-    setText(COL_NAME, name_);
     setText(COL_VALUE, QString::fromStdString
          (
              str(format("[%g, %g, %g]") % v(0) % v(1) % v(2))
          )
     );
-    setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
     reset(v);
 }
 
 void QVectorVariableItem::createAISShape()
 {
   TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
-  Handle_AIS_Shape aisP(new AIS_Shape(cP));
-
-  context_->getContext()->Load(aisP);
-  context_->getContext()->SetColor(aisP, Quantity_Color(0, 0, 0, Quantity_TOC_RGB), false/*, Standard_True*/ );
-  
-  ais_=aisP;
+  ais_ = Handle_AIS_Shape(new AIS_Shape(cP));
 }
 
 void QVectorVariableItem::reset(arma::mat val)
 {
   value_=val;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                
-    );
-  createAISShape();
-  updateDisplay();
+//  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
+//#if (OCC_VERSION_MAJOR>=7)
+//                   , false
+//#endif
+//    );
+//  createAISShape();
+//  updateDisplay();
 }
 
-void QVectorVariableItem::updateDisplay()
-{
-  state_.visible = (checkState(COL_VIS)==Qt::Checked);
+//void QVectorVariableItem::updateDisplay()
+//{
+//  state_.visible = (checkState(COL_VIS)==Qt::Checked);
   
-  if (state_.visible)
-  {
-    context_->getContext()->Display(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                        
-    );
-//     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-//     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
-  }
-  else
-  {
-    context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                        
-    );
-  }
-}
+//  if (state_.visible)
+//  {
+//    context_->getContext()->Display(ais_
+//#if (OCC_VERSION_MAJOR>=7)
+//                   , false
+//#endif
+//    );
+////     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
+////     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
+//  }
+//  else
+//  {
+//    context_->getContext()->Erase(ais_
+//#if (OCC_VERSION_MAJOR>=7)
+//                   , false
+//#endif
+//    );
+//  }
+//}
 
-void QVectorVariableItem::insertName()
-{
-  emit insertParserStatementAtCursor(name_);
-}
+//void QVectorVariableItem::insertName()
+//{
+//  emit insertParserStatementAtCursor(name_);
+//}
 
 void QVectorVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
@@ -152,7 +140,8 @@ void QVectorVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
     
     a=new QAction("Insert name", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    connect(a, SIGNAL(triggered()),
+            this, SLOT(insertName()));
     myMenu.addAction(a);
 
     myMenu.exec(gpos);

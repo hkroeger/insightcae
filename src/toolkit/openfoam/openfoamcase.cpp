@@ -383,6 +383,16 @@ bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
 
 
 
+defineType(turbulenceModel);
+defineFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc, const ParameterSet& ps), LIST(ofc, ps));
+
+turbulenceModel::turbulenceModel(OpenFOAMCase& c, const ParameterSet&)
+: OpenFOAMCaseElement(c, "turbulenceModel")
+{
+}
+
+
+
 SolverOutputAnalyzer::SolverOutputAnalyzer(ProgressDisplayer& pdisp)
 : pdisp_(pdisp),
   curTime_(nan("NAN")),

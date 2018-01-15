@@ -29,11 +29,6 @@
 
 namespace insight {
   
-//class OpenFOAMCase;
-class turbulenceModel;
-  
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name);
-
 class OpenFOAMAnalysis
 : public Analysis
 {
@@ -60,10 +55,7 @@ mesh = set
 
 fluid = set
 {
- turbulenceModel = 	selection 
- ( 
-  kOmegaSST 
- ) kOmegaSST 				"Turbulence model"
+ turbulenceModel = dynamicclassparameters "insight::turbulenceModel" default "kOmegaSST" "Turbulence model"
 } "Parameters of the fluid"
 
 eval = set
@@ -132,6 +124,9 @@ public:
     virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
 };
 
+
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params );
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name, const ParameterSet& ps = ParameterSet() );
 
 }
 

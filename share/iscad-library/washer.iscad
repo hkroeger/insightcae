@@ -1,8 +1,8 @@
 Dn?=12;
 D=TableLookup(washer_DIN125B, Dn, Dn, Dn, nearest);
 
-d1=TableLookup(washer_DIN125B, Dn, D, d1);
-d2=TableLookup(washer_DIN125B, Dn, D, d2);
+d1?=TableLookup(washer_DIN125B, Dn, D, d1);
+d2?=TableLookup(washer_DIN125B, Dn, D, d2);
 h=TableLookup(washer_DIN125B, Dn, D, h);
 
 mat=loadmodel(material_props);

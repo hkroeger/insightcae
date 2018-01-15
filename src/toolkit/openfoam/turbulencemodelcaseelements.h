@@ -37,31 +37,6 @@ namespace insight
 
 
 
-class turbulenceModel
-: public OpenFOAMCaseElement
-{
-    
-public:
-
-  declareFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc), LIST(ofc));  
-  
-  enum AccuracyRequirement { AC_RANS, AC_LES, AC_DNS };
-
-public:
-  declareType("turbulenceModel");
-
-  turbulenceModel(OpenFOAMCase& c);
-  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const =0;
-  virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const =0; 
-  
-  virtual AccuracyRequirement minAccuracyRequirement() const =0;
-
-  static std::string category() { return "Turbulence Model"; }
-};
-
-
-
 
 class RASModel
 : public turbulenceModel
@@ -70,7 +45,7 @@ class RASModel
 public:
   declareType("RASModel");
 
-  RASModel(OpenFOAMCase& c);
+  RASModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
   virtual AccuracyRequirement minAccuracyRequirement() const;
@@ -83,7 +58,7 @@ class LESModel
 public:
   declareType("LESModel");
 
-  LESModel(OpenFOAMCase& c);
+  LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual OFDictData::dict& modelPropsDict(OFdicts& dictionaries) const; 
   virtual AccuracyRequirement minAccuracyRequirement() const;
@@ -100,6 +75,30 @@ public:
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
   virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
   inline static ParameterSet defaultParameters() { return ParameterSet(); }
+};
+
+class Smagorinsky_LESModel
+: public LESModel
+{
+public:
+#include "turbulencemodelcaseelements__Smagorinsky_LESModel__Parameters.h"
+/* 
+PARAMETERSET>>> Smagorinsky_LESModel Parameters
+
+C = double 0.1 "Smagorinsky constant"
+
+<<<PARAMETERSET
+*/
+protected:
+    Parameters p_;
+  
+public:
+  declareType("Smagorinsky");
+  
+  Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault());
+  virtual void addFields( OpenFOAMCase& c ) const;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
+  inline static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
 };
 
 class oneEqEddy_LESModel
@@ -278,10 +277,10 @@ class WALE_LESModel
 public:
   declareType("WALE");
   
-  WALE_LESModel(OpenFOAMCase& c);
+  WALE_LESModel(OpenFOAMCase& c, const ParameterSet& ps = ParameterSet());
   virtual void addFields( OpenFOAMCase& c ) const;
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;  
-  virtual bool addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const;
+  inline static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
 }

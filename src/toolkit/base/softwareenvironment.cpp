@@ -33,8 +33,8 @@ SoftwareEnvironment::SoftwareEnvironment()
 }
 
 SoftwareEnvironment::SoftwareEnvironment(const SoftwareEnvironment& other)
+: executionMachine_(other.executionMachine_)
 {
-
 }
 
 SoftwareEnvironment::~SoftwareEnvironment()

@@ -204,7 +204,7 @@ void Foam::consistentCurveSet::calcSamples
     label sampleI = 0;
 
     point lastSample(GREAT, GREAT, GREAT);
-    scalar totaldist=0.0;
+//    scalar totaldist=0.0;
     while (true)
     {
         // Get boundary intersection

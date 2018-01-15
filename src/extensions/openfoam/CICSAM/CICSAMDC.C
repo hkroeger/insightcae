@@ -229,18 +229,18 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
 #endif
 	;
 
-#if defined(OFdev)||defined(OFplus)
-    surfaceScalarField::Boundary& 
-#else
-    surfaceScalarField::GeometricBoundaryField& 
-#endif
-      bCof = Cof
-#if defined(OFdev)||defined(OFplus)
-	.boundaryFieldRef()
-#else
-	.boundaryField()
-#endif
-	;
+//#if defined(OFdev)||defined(OFplus)
+//    surfaceScalarField::Boundary&
+//#else
+//    surfaceScalarField::GeometricBoundaryField&
+//#endif
+//      bCof = Cof
+//#if defined(OFdev)||defined(OFplus)
+//	.boundaryFieldRef()
+//#else
+//	.boundaryField()
+//#endif
+//	;
 
     forAll(bCorr, patchI)
     {

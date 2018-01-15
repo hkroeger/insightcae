@@ -39,20 +39,10 @@ namespace insight
 
 
 
-defineType(turbulenceModel);
-defineFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc), LIST(ofc));
-
-turbulenceModel::turbulenceModel(OpenFOAMCase& c)
-: OpenFOAMCaseElement(c, "turbulenceModel")
-{
-}
-
-
-
 defineType(RASModel);
 
-RASModel::RASModel(OpenFOAMCase& c)
-: turbulenceModel(c)
+RASModel::RASModel(OpenFOAMCase& c, const ParameterSet& ps)
+: turbulenceModel(c, ps)
 {
 }
 
@@ -86,8 +76,8 @@ turbulenceModel::AccuracyRequirement RASModel::minAccuracyRequirement() const
 
 defineType(LESModel);
 
-LESModel::LESModel(OpenFOAMCase& c)
-: turbulenceModel(c)
+LESModel::LESModel(OpenFOAMCase& c, const ParameterSet& ps)
+: turbulenceModel(c, ps)
 {
 }
 
@@ -185,6 +175,65 @@ bool laminar_RASModel::addIntoFieldDictionary(const std::string&, const FieldInf
 {
   return false;
 }
+
+
+
+defineType(Smagorinsky_LESModel);
+addToFactoryTable(turbulenceModel, Smagorinsky_LESModel);
+
+addToOpenFOAMCaseElementFactoryTable(Smagorinsky_LESModel);
+
+void Smagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
+{
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  if (c.OFversion()>=300)
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  else
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+}
+  
+
+Smagorinsky_LESModel::Smagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
+: LESModel(c),
+  p_(ps)
+{
+//   addFields();
+}
+
+
+void Smagorinsky_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  LESModel::addIntoDictionaries(dictionaries);
+  
+  OFDictData::dict& LESProperties=modelPropsDict(dictionaries);
+  LESProperties["printCoeffs"]=true;
+
+  std::string modelname="Smagorinsky";
+ 
+  LESProperties["LESModel"]=modelname;
+  LESProperties["turbulence"]="true";
+  //LESProperties["delta"]="cubeRootVol";
+  LESProperties["delta"]="vanDriest";
+  
+  OFDictData::dict smc;
+  //smc["Ck"]=OFDictData::dimensionedData("Ck", dimless, p_.C);
+  smc["Ck"]=p_.C;
+  LESProperties[modelname+"Coeffs"]=smc;
+  
+  
+  OFDictData::dict crvc;
+  crvc["deltaCoeff"]=1.0;
+  LESProperties["cubeRootVolCoeffs"]=crvc;
+  
+  OFDictData::dict vdc;
+  vdc["deltaCoeff"]=1.0;
+  vdc["delta"]="cubeRootVol";
+  vdc["cubeRootVolCoeffs"]=crvc;
+  LESProperties["vanDriestCoeffs"]=vdc;
+  
+  LESProperties.addSubDictIfNonexistent("laminarCoeffs");
+}
+
 
 defineType(oneEqEddy_LESModel);
 addToFactoryTable(turbulenceModel, oneEqEddy_LESModel);
@@ -951,6 +1000,7 @@ bool LRR_RASModel::addIntoFieldDictionary(const std::string& fieldname, const Fi
 
 defineType(WALE_LESModel);
 addToFactoryTable(turbulenceModel, WALE_LESModel);
+addToOpenFOAMCaseElementFactoryTable(WALE_LESModel);
 
 void WALE_LESModel::addFields(OpenFOAMCase& c) const
 {
@@ -961,7 +1011,7 @@ void WALE_LESModel::addFields(OpenFOAMCase& c) const
     c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
 }
 
-WALE_LESModel::WALE_LESModel(OpenFOAMCase& c)
+WALE_LESModel::WALE_LESModel(OpenFOAMCase& c, const ParameterSet&)
 : LESModel(c)
 {
 //   addFields();
@@ -993,32 +1043,6 @@ void WALE_LESModel::addIntoDictionaries(OFdicts& dictionaries) const
 //   cd["filter"]="simple";
 }
 
-bool WALE_LESModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
-{
-    
-  if (fieldname == "k")
-  {
-    BC["type"]="fixedValue";
-    BC["value"]="uniform 1e-10";
-    return true;
-  }
-  else if ( (fieldname == "nuSgs") || (fieldname == "nut") )
-  {
-    if (roughness_z0>0.)
-    {
-        BC["type"]="nuSgsABLRoughWallFunction";
-        BC["z0"]=str(format("uniform %g")%roughness_z0);
-        BC["value"]="uniform 1e-8";
-    }
-    else
-    {
-        BC["type"]="zeroGradient";
-    }
-    return true;
-  }
-  
-  return false;
-}
 
 
 }

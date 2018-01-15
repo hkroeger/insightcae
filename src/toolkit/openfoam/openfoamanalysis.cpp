@@ -19,9 +19,9 @@
  */
 
 
-#include "openfoamanalysis.h"
-#include "openfoamtools.h"
 #include "openfoamcaseelements.h"
+#include "openfoamtools.h"
+#include "openfoamanalysis.h"
 
 #include "base/boost_include.h"
 
@@ -33,9 +33,17 @@ using namespace std;
 namespace insight
 {
 
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name)
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params)
 {
-  turbulenceModel* model = turbulenceModel::lookup(name, cm);
+  const OpenFOAMAnalysis::Parameters::fluid_type::turbulenceModel_type& tmp
+      = params.fluid.turbulenceModel;
+
+  return insertTurbulenceModel(cm, tmp.selection, tmp.parameters);
+}
+
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name, const ParameterSet& ps )
+{
+  turbulenceModel* model = turbulenceModel::lookup(name, cm, ps);
   
   if (!model) 
     throw insight::Exception("Unrecognized RASModel selection: "+name);
@@ -63,8 +71,8 @@ OpenFOAMAnalysis::OpenFOAMAnalysis
 ParameterSet OpenFOAMAnalysis::defaultParameters()
 {
   ParameterSet p(Parameters::makeDefault());
-  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").items()=turbulenceModel::factoryToC();
-  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").setSelection("kOmegaSST");
+//  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").items()=turbulenceModel::factoryToC();
+//  p.getSubset("fluid").get<SelectionParameter>("turbulenceModel").setSelection("kOmegaSST");
   return p;
 }
 

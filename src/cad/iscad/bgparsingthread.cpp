@@ -19,8 +19,13 @@
 
 #include "bgparsingthread.h"
 
+#include "cadfeature.h"
+#include "cadmodel.h"
+#include "datum.h"
+
+
 BGParsingThread::BGParsingThread()
-: action_(ParseOnly)
+: action_(Parse)
 {
 }
 
@@ -41,13 +46,13 @@ class MapDirectory
 : public std::set<std::string>
 {
 public:
-  MapDirectory(const std::map<std::string, T>& map)
+  MapDirectory(const T& map)
   {
     transform
         (
           map.begin(), map.end(),
           inserter( *this, this->begin() ),
-          bind(&std::map<std::string, T>::value_type::first, _1 )
+          bind(&T::value_type::first, _1 )
         );
   }
 
@@ -83,7 +88,7 @@ void BGParsingThread::run()
     {
         reason="Expected: "+e.message();
         failloc=e.from_pos();
-        emit scriptError(failloc, reason);
+        emit scriptError(failloc, QString::fromStdString(reason));
     }
 
     if (!r) // fail if we did not get a full match
@@ -100,72 +105,72 @@ void BGParsingThread::run()
 
             {
                 // get set with scalar symbols before rebuild (for finding out which have vanished)
-                MapDirectory removedScalars(oldmodel->scalars());
+                MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars(oldmodel->scalars());
 
-                insight::cad::ScalarTableContents scalars=model_->scalars();
+                insight::cad::Model::ScalarTableContents scalars=model_->scalars();
                 int is=0, ns=scalars.size();
-                BOOST_FOREACH(insight::cad::ScalarTableContents::value_type const& v, scalars)
+                BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
                 {
                     emit statusMessage("Building scalar "+QString::fromStdString(v.first));
                     v.second->value(); // Trigger evaluation
                     emit statusProgress(is++, ns);
-                    emit addVariable(QString::fromStdString(v.first), v.second);
+                    emit createdVariable(QString::fromStdString(v.first), v.second);
                     removedScalars.removeIfPresent(v.first);
                 }
 
                 BOOST_FOREACH(const std::string& sn, removedScalars)
                 {
-                  emit removedScalar(sn);
+                  emit removedScalar(QString::fromStdString(sn));
                 }
             }
 
 
             {
-                MapDirectory removedVectors(oldmodel->vectors());
+                MapDirectory<insight::cad::Model::VectorTableContents> removedVectors(oldmodel->vectors());
 
-                insight::cad::VectorTableContents vectors=model_->vectors();
+                insight::cad::Model::VectorTableContents vectors=model_->vectors();
                 int is=0, ns=vectors.size();
-                BOOST_FOREACH(insight::cad::VectorTableContents::value_type const& v, vectors)
+                BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type const& v, vectors)
                 {
                     emit statusMessage("Building vector "+QString::fromStdString(v.first));
                     v.second->value(); // Trigger evaluation
                     emit statusProgress(is++, ns);
-                    emit addVariable(QString::fromStdString(v.first), v.second);
+                    emit createdVariable(QString::fromStdString(v.first), v.second);
                     removedVectors.removeIfPresent(v.first);
                 }
 
                 BOOST_FOREACH(const std::string& sn, removedVectors)
                 {
-                  emit removedVector(sn);
+                  emit removedVector(QString::fromStdString(sn));
                 }
             }
 
             {
-                MapDirectory removedDatums(oldmodel->datums());
+                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums(oldmodel->datums());
 
-                insight::cad::DatumTableContents datums=model_->datums();
+                insight::cad::Model::DatumTableContents datums=model_->datums();
                 int is=0, ns=datums.size();
-                BOOST_FOREACH(insight::cad::DatumTableContents::value_type const& v, datums)
+                BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
                 {
                     emit statusMessage("Building datum "+QString::fromStdString(v.first));
                     v.second->checkForBuildDuringAccess(); // Trigger rebuild
                     emit statusProgress(is++, ns);
-                    emit addDatum(QString::fromStdString(v.first), v.second);
+                    emit createdDatum(QString::fromStdString(v.first), v.second);
                     removedDatums.removeIfPresent(v.first);
                 }
 
                 BOOST_FOREACH(const std::string& sn, removedDatums)
                 {
-                  emit removedDatum(sn);
+                  emit removedDatum(QString::fromStdString(sn));
                 }
             }
 
             {
-                MapDirectory removedFeatures(oldmodel->modelsteps());
+                MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures(oldmodel->modelsteps());
 
-                insight::cad::ModelstepTableContents modelsteps=model_->modelsteps();
+                insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
                 int is=0, ns=modelsteps.size();
-                BOOST_FOREACH(insight::cad::ModelstepTableContents::value_type const& v, modelsteps)
+                BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type const& v, modelsteps)
                 {
                     bool is_comp=false;
                     if (model_->components().find(v.first) != model_->components().end())
@@ -178,35 +183,35 @@ void BGParsingThread::run()
                     }
                     v.second->checkForBuildDuringAccess(); // Trigger rebuild
                     emit statusProgress(is++, ns);
-                    emit addFeature(QString::fromStdString(v.first), v.second, is_comp);
+                    emit createdFeature(QString::fromStdString(v.first), v.second, is_comp);
 
                     removedFeatures.removeIfPresent(v.first);
                 }
 
                 BOOST_FOREACH(const std::string& sn, removedFeatures)
                 {
-                  emit removedFeature(sn);
+                  emit removedFeature(QString::fromStdString(sn));
                 }
 
             }
 
             {
-                MapDirectory removedPostprocActions(oldmodel->postprocActions());
+                MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions(oldmodel->postprocActions());
 
-                insight::cad::PostprocActionTableContents postprocActions=model_->postprocActions();
+                insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
                 int is=0, ns=postprocActions.size();
-                BOOST_FOREACH(insight::cad::PostprocActionTableContents::value_type const& v, postprocActions)
+                BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type const& v, postprocActions)
                 {
                     emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
                     if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
                     emit statusProgress(is++, ns);
-                    emit addEvaluation(QString::fromStdString(v.first), v.second);
+                    emit createdEvaluation(QString::fromStdString(v.first), v.second);
                     removedPostprocActions.removeIfPresent(v.first);
                 }
 
                 BOOST_FOREACH(const std::string& sn, removedPostprocActions)
                 {
-                  emit removedEvaluation(sn);
+                  emit removedEvaluation(QString::fromStdString(sn));
                 }
             }
 

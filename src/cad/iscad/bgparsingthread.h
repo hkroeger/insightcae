@@ -20,6 +20,7 @@
 #ifndef BGPARSINGTHREAD_H
 #define BGPARSINGTHREAD_H
 
+#include <QThread>
 #include <QString>
 
 #ifndef Q_MOC_RUN
@@ -41,7 +42,7 @@ class BGParsingThread
     Q_OBJECT
 
 public:
-    enum Action { Parse, Rebuild, PostProc };
+    enum Action { Parse, Rebuild, Post };
 
 protected:
     std::string script_;

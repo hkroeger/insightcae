@@ -222,7 +222,7 @@ public slots:
     void resetViz();
     
 protected slots:
-    void showContextMenuForWidget(const QPoint &);    
+    void showContextMenu(const QPoint &);
 };
 
 

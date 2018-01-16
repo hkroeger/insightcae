@@ -62,13 +62,13 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 
 
 
-bool QDisplayableModelTreeItem::isVisible()
+bool QDisplayableModelTreeItem::isVisible() const
 {
     return (checkState(COL_VIS) == Qt::Checked);
 }
 
 
-bool QDisplayableModelTreeItem::isHidden()
+bool QDisplayableModelTreeItem::isHidden() const
 {
     return (checkState(COL_VIS) == Qt::Unchecked);
 }
@@ -100,7 +100,7 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
   if (oldi)
     {
       parent = oldi->parent();
-      int itemIndex = parent->indexOfChid(oldi);
+      int itemIndex = parent->indexOfChild(oldi);
       parent->removeChild(oldi);
       parent->insertChild(itemIndex, newi);
     }
@@ -118,20 +118,19 @@ QModelTree::QModelTree(QWidget* parent)
   //     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
   setMinimumHeight(20);
   setContextMenuPolicy(Qt::CustomContextMenu);
+
+  // handle right clicks
   connect
       (
-        this,
-        SIGNAL(customContextMenuRequested(const QPoint &)),
-        this,
-        SLOT(showContextMenuForWidget(const QPoint &))
+        this, SIGNAL(customContextMenuRequested(const QPoint &)),
+        this, SLOT(showContextMenu(const QPoint &))
         );
 
+  // handle visible/hide checkbox changes
   connect
       (
-        this,
-        SIGNAL(itemChanged(QTreeWidgetItem*,int)),
-        this,
-        SLOT(onItemChanged(QTreeWidgetItem*,int))
+        this, SIGNAL(itemChanged(QTreeWidgetItem*,int)),
+        this, SLOT(onItemChanged(QTreeWidgetItem*,int))
         );
     
     int COL_NAME=QModelTreeItem::COL_NAME;
@@ -184,7 +183,7 @@ void QModelTree::onAddScalar(const QString& name, insight::cad::parser::scalar s
   replaceOrAdd(scalars_, new QScalarVariableItem(name, sv->value(), scalars_), old);
 }
 
-void QModelTree::onAddVector(const std::string& name, insight::cad::parser::vector vv)
+void QModelTree::onAddVector(const QString& name, insight::cad::parser::vector vv)
 {
   QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
   replaceOrAdd(vectors_, new QVectorVariableItem(name, vv->value(), vectors_), old);
@@ -207,12 +206,12 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
 //                            is_component);
 }
 
-void QModelTree::onAddDatum(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context)
+void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 {
 //    return new QDatumItem(name, smp, model, context, datum_vs_[name], datums_);
 }
 
-void QModelTree::onAddEvaluation(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context)
+void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp)
 {
 //    return new QEvaluationItem(name, smp, context, postprocaction_vs_[name], postprocactions_);
 }
@@ -250,48 +249,42 @@ void QModelTree::onRemoveEvaluation  (const QString& sn)
     postprocactions_->removeChild(item);
 }
 
-void QModelTree::onItemChanged( QTreeWidgetItem * item, int column )
+void QModelTree::onItemChanged( QTreeWidgetItem *item, int)
 {
-    if (QDisplayableModelTreeItem *msi =dynamic_cast<QDisplayableModelTreeItem*>(p->child(i)))
+    if (QDisplayableModelTreeItem *msi =dynamic_cast<QDisplayableModelTreeItem*>(item))
     {
-        if (msi->isVisible())
-
+        if (msi->isVisible()) msi->show();
+        if (msi->isHidden()) msi->hide();
     }
 }
 
 void QModelTree::setUniformDisplayMode(const AIS_DisplayMode AM)
 {
-    BOOST_FOREACH(QTreeWidgetItem* p, featurenodes_)
+    for (int i=0; i<features_->childCount(); i++)
     {
-        for (int i=0; i<p->childCount(); i++)
+        if (QFeatureItem *msi =dynamic_cast<QFeatureItem*>(features_->child(i)))
         {
-            if (QFeatureItem *msi =dynamic_cast<QFeatureItem*>(p->child(i)))
-            {
-                if (AM==AIS_WireFrame)
-                    msi->wireframe();
-                else if (AM==AIS_Shaded)
-                    msi->shaded();
-            }
+            if (AM==AIS_WireFrame)
+                msi->wireframe();
+            else if (AM==AIS_Shaded)
+                msi->shaded();
         }
     }
 }
 
 void QModelTree::resetViz()
 {
-    BOOST_FOREACH(QTreeWidgetItem* p, featurenodes_)
+    for (int i=0; i<features_->childCount(); i++)
     {
-        for (int i=0; i<p->childCount(); i++)
+        if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(features_->child(i)) )
         {
-            if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(p->child(i)) )
-            {
-                qmsi->resetDisplay();
-                qmsi->shaded();
-            }
+            qmsi->resetDisplay();
+            qmsi->shaded();
         }
     }
 }
 
-void QModelTree::showContextMenuForWidget(const QPoint &p)
+void QModelTree::showContextMenu(const QPoint &p)
 {
     QModelTreeItem * mi=dynamic_cast<QModelTreeItem*>(itemAt(p));
     if (mi)

@@ -41,7 +41,7 @@
 
  
 
-void ISCADMainWindow::connectMenuToModel(ISCADModel* model)
+void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
 {
     act_load_->disconnect();
     act_save_->disconnect();
@@ -65,9 +65,10 @@ void ISCADMainWindow::connectMenuToModel(ISCADModel* model)
     disconnect(this, SLOT(onUpdateClipPlaneMenu()));
     disconnect(this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
         
-    if (model)
+    if (me)
     {
-        connect(act_save_, SIGNAL(triggered()), model, SLOT(saveModel()));
+        connect(act_save_, SIGNAL(triggered()),
+                me->model(), SLOT(saveModel()));
         connect(act_saveas_, SIGNAL(triggered()), model, SLOT(saveModelAs()));
         connect(act_rebuild_, SIGNAL(triggered()), model, SLOT(rebuildModel()));
         connect(act_rebuild_UTC_, SIGNAL(triggered()), model, SLOT(rebuildModelUpToCursor()));
@@ -100,7 +101,7 @@ void ISCADMainWindow::loadModel()
     QString fn=QFileDialog::getOpenFileName(this, "Select file", "", "ISCAD Model Files (*.iscad)");
     if (fn!="")
     {
-        insertModel(qPrintable(fn))->unsetUnsavedState();
+        insertModel(qPrintable(fn))->model()->unsetUnsavedState();
     }
 }
 
@@ -109,7 +110,7 @@ void ISCADMainWindow::activateModel(int tabindex)
 {
     if (tabindex>=0)
     {
-        connectMenuToModel(static_cast<ISCADModel*>(modelTabs_->widget(tabindex)));
+        connectMenuToModel(static_cast<ISCADModelEditor*>(modelTabs_->widget(tabindex)));
     }
 }
 
@@ -310,7 +311,7 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
 
 
 
-ISCADModel* ISCADMainWindow::insertEmptyModel(bool bgparsing)
+ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
     ISCADModelEditor *me = new ISCADModelEditor(0, bgparsing);
     modelTabs_->addTab(me, "(unnamed)");

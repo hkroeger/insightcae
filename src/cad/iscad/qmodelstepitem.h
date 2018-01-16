@@ -30,27 +30,11 @@
 #include "cadfeature.h"
 #endif
 
+
+
 class ISCADMainWindow;
 class QoccViewerContext;
 class QFeatureItem;
-
-
-// class QFeatureItemAdder
-// : public QThread
-// {
-//   ISCADMainWindow* mw_;
-//   QFeatureItem* msi_;
-//   
-// public:
-//   QFeatureItemAdder
-//   (
-//     ISCADMainWindow* mw, 
-//     QFeatureItem* msi
-//   );
-//   
-//   void run();
-// };
-
 
 
 
@@ -70,14 +54,14 @@ signals:
   void setUniformDisplayMode(const AIS_DisplayMode AM);
   void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible);
 
+protected:
+  virtual Handle_AIS_InteractiveObject createAIS();
+
 public:
-  QFeatureItem(const std::string& name, insight::cad::FeaturePtr smp,
+  QFeatureItem(const QString& name, insight::cad::FeaturePtr smp,
          bool visible, QTreeWidgetItem* parent, bool is_component);
   
-//   void run();
-  void reset(insight::cad::FeaturePtr smp);
   
-  void rebuild();
   void updateDisplay();
   void resetDisplay();
   
@@ -95,7 +79,7 @@ public slots:
   void showProperties();
   void exportShape();
   void setResolution();
-  void insertName();
+
   void showContextMenu(const QPoint& gpos);
 };
 

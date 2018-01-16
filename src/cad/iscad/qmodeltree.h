@@ -85,6 +85,8 @@ protected:
     int shadingMode_;
     double r_, g_, b_;
 
+    virtual Handle_AIS_InteractiveObject createAIS() =0;
+
 public:
     QDisplayableModelTreeItem
     (
@@ -96,7 +98,7 @@ public:
     bool isVisible() const;
     bool isHidden() const;
 
-    inline Handle_AIS_InteractiveObject ais() const { return ais_; }
+    Handle_AIS_InteractiveObject ais();
     inline int shadingMode() const { return shadingMode_; }
     inline double red() const { return r_; }
     inline double green() const { return g_; }

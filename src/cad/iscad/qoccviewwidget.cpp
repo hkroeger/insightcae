@@ -71,6 +71,11 @@ QoccViewWidget::QoccViewWidget
       myRubberBand->setStyle( (QStyle*) new QPlastiqueStyle() );
     }
 
+  connect
+      (
+        this, SIGNAL(graphicalSelectionChanged(QDisplayableModelTreeItem*,QoccViewWidget*)),
+        this, SLOT(onGraphicalSelectionChanged(QDisplayableModelTreeItem*,QoccViewWidget*))
+      );
 }
 
 /*!
@@ -346,29 +351,10 @@ void QoccViewWidget::leaveEvent ( QEvent* /* e */ )
 
 void QoccViewWidget::displayContextMenu( const QPoint& p)
 {
-  if (myContext->HasDetected())
+  if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(getSelectedItem()))
   {
-      if (myContext->DetectedInteractive()->HasOwner())
-      {
-          Handle_Standard_Transient own=myContext->DetectedInteractive()->GetOwner();
-          if (!own.IsNull())
-          {
-              if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
-#if (OCC_VERSION_MAJOR<7)
-                      .Access()
-#else
-                      .get()
-#endif
-              ))
-              {
-                  if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(smo->getPointer()))
-                  {
-                      // an item exists under the requested position
-                      mi->showContextMenu(mapToGlobal(p));
-                  }
-              }
-          }
-      }
+      // an item exists under the requested position
+      mi->showContextMenu(mapToGlobal(p));
   }
 }
 
@@ -434,6 +420,60 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
       QWidget::keyReleaseEvent(e);
 }
 
+
+
+void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer)
+{
+    // Remove previously displayed sub objects from display
+    BOOST_FOREACH(Handle_AIS_InteractiveObject& o, additionalDisplayObjectsForSelection_)
+    {
+        getContext()->Erase(o, false);
+    }
+    additionalDisplayObjectsForSelection_.clear();
+
+    // Display sub objects for current selection
+    if (QFeatureItem* ms = dynamic_cast<QFeatureItem*>(selection))
+    {
+        insight::cad::Feature& sm=ms->solidmodel();
+        const insight::cad::Feature::RefPointsList& pts=sm.getDatumPoints();
+
+        // reverse storage to detect collocated points
+        typedef std::map<arma::mat, std::string, insight::compareArmaMat> trpts;
+        trpts rpts;
+        BOOST_FOREACH(const insight::cad::Feature::RefPointsList::value_type& p, pts)
+        {
+            const std::string& name=p.first;
+            const arma::mat& xyz=p.second;
+//             std::cout<<name<<":"<<xyz<<std::endl;
+
+            trpts::iterator j=rpts.find(xyz);
+            if (j!=rpts.end())
+            {
+                j->second = j->second+"="+name;
+            }
+            else
+            {
+                rpts[xyz]=name;
+            }
+        }
+
+        BOOST_FOREACH(const trpts::value_type& p, rpts)
+        {
+            const std::string& name=p.second;
+            const arma::mat& xyz=p.first;
+            Handle_AIS_InteractiveObject o
+            (
+                new insight::cad::InteractiveText(name, xyz)
+            );
+            additionalDisplayObjectsForSelection_.push_back(o);
+            getContext()->Display(o, false);
+        }
+    }
+
+    getContext()->UpdateCurrentViewer();
+}
+
+
 /*!
   \brief	Go idle
   This called from various locations, and also exposed as a slot.
@@ -467,6 +507,37 @@ void QoccViewWidget::redraw( bool isPainting )
     }
   myViewResized = Standard_False;
 }
+
+
+QDisplayableModelTreeItem* QoccViewWidget::getSelectedItem()
+{
+  if (myContext->HasDetected())
+  {
+      if (myContext->DetectedInteractive()->HasOwner())
+      {
+          Handle_Standard_Transient own=myContext->DetectedInteractive()->GetOwner();
+          if (!own.IsNull())
+          {
+              if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+#if (OCC_VERSION_MAJOR<7)
+                      .Access()
+#else
+                      .get()
+#endif
+              ))
+              {
+                  if (QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(smo->getPointer()))
+                  {
+                      return mi;
+                  }
+              }
+          }
+      }
+  }
+
+  return NULL;
+}
+
 
 /*!
 \brief	Just fits the current window

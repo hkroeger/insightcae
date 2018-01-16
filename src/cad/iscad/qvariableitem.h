@@ -41,13 +41,16 @@ class QScalarVariableItem
   double value_;
     
 public:
-  QScalarVariableItem(const QString& name, double value,
-		QTreeWidgetItem* parent);
-  
-  void reset(double value);
+  QScalarVariableItem
+  (
+      const QString& name,
+      double value,
+      QTreeWidgetItem* parent
+  );
   
 public slots:
   virtual void showContextMenu(const QPoint& gpos);
+
 };
 
 
@@ -60,15 +63,19 @@ class QVectorVariableItem
   arma::mat value_;
     
 protected:
-  void createAISShape();
+  virtual Handle_AIS_InteractiveObject createAIS();
   
 public:
-  QVectorVariableItem(const QString& name, const arma::mat& value, QTreeWidgetItem* parent);
-  
-  void reset(arma::mat value);
+  QVectorVariableItem
+  (
+      const QString& name,
+      const arma::mat& value,
+      QTreeWidgetItem* parent
+  );
   
 public slots:
   virtual void showContextMenu(const QPoint& gpos);
+
 };
 
 

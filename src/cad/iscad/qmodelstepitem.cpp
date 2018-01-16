@@ -24,50 +24,33 @@
 
 
 
+Handle_AIS_InteractiveObject QFeatureItem::createAIS()
+{
+  Handle_AIS_InteractiveObject ais( new AIS_Shape(*smp_) );
+
+  Handle_Standard_Transient owner_container(new PointerTransient(this));
+  ais->SetOwner(owner_container);
+
+  return ais;
+}
+
 
 
 QFeatureItem::QFeatureItem
 (
   const std::string& name, 
   insight::cad::FeaturePtr smp, 
-  QoccViewerContext* context, 
   bool visible,
   QTreeWidgetItem* parent,
   bool is_component
 )
 : QDisplayableModelTreeItem(name, visible, parent),
+  smp_(smp),
   is_component_(is_component)
 {
-  setText(COL_NAME, name_);
-  reset(smp);
 }
 
 
-// void QModelStepItem::run()
-// {
-//   rebuild();
-// }
-// 
-void QFeatureItem::reset(insight::cad::FeaturePtr smp)
-{
-  smp_=smp;
-  rebuild();
-}
-
-void QFeatureItem::rebuild()
-{
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , true
-#endif                      
-  );
-  ais_=new AIS_Shape(*smp_);
-//     Handle_Standard_Transient owner_container(new SolidModelTransient(smp));
-  Handle_Standard_Transient owner_container(new PointerTransient(this));
-  ais_->SetOwner(owner_container);
-  context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
-  updateDisplay();
-}
 
 void QFeatureItem::wireframe()
 {
@@ -131,10 +114,6 @@ void QFeatureItem::exportShape()
   if (!fn.isEmpty()) smp_->saveAs(qPrintable(fn));
 }
 
-void QFeatureItem::insertName()
-{
-  emit insertParserStatementAtCursor(name_);
-}
 
 void QFeatureItem::resetDisplay()
 {

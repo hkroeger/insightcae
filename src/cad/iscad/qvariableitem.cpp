@@ -28,17 +28,17 @@
 using namespace std;
 using namespace boost;
 
-QScalarVariableItem::QScalarVariableItem(const QString& name, double value,
-                                         QTreeWidgetItem* parent)
-: QModelTreeItem(name, parent)
+
+QScalarVariableItem::QScalarVariableItem
+(
+    const QString& name,
+    double value,
+    QTreeWidgetItem* parent
+)
+: QModelTreeItem(name, parent),
+  value_(value)
 {
     setText(COL_VALUE, QString::number(v));
-    reset(v);
-}
-
-void QScalarVariableItem::reset(double v)
-{
-    value_=v;
 }
 
 
@@ -64,69 +64,29 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 
 
 
+Handle_AIS_InteractiveObject QVectorVariableItem::createAIS()
+{
+  TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
+  return Handle_AIS_InteractiveObject(new AIS_Shape(cP));
+}
+
 
 QVectorVariableItem::QVectorVariableItem
 (
  const QString& name,
- const arma::mat& v,
+ const arma::mat& value,
  QTreeWidgetItem* parent
 )
-: QDisplayableModelTreeItem(name, false, parent)
+: QDisplayableModelTreeItem(name, false, parent),
+  value_(value)
 {
     setText(COL_VALUE, QString::fromStdString
          (
              str(format("[%g, %g, %g]") % v(0) % v(1) % v(2))
          )
     );
-    reset(v);
 }
 
-void QVectorVariableItem::createAISShape()
-{
-  TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
-  ais_ = Handle_AIS_Shape(new AIS_Shape(cP));
-}
-
-void QVectorVariableItem::reset(arma::mat val)
-{
-  value_=val;
-//  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
-//#if (OCC_VERSION_MAJOR>=7)
-//                   , false
-//#endif
-//    );
-//  createAISShape();
-//  updateDisplay();
-}
-
-//void QVectorVariableItem::updateDisplay()
-//{
-//  state_.visible = (checkState(COL_VIS)==Qt::Checked);
-  
-//  if (state_.visible)
-//  {
-//    context_->getContext()->Display(ais_
-//#if (OCC_VERSION_MAJOR>=7)
-//                   , false
-//#endif
-//    );
-////     context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-////     context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
-//  }
-//  else
-//  {
-//    context_->getContext()->Erase(ais_
-//#if (OCC_VERSION_MAJOR>=7)
-//                   , false
-//#endif
-//    );
-//  }
-//}
-
-//void QVectorVariableItem::insertName()
-//{
-//  emit insertParserStatementAtCursor(name_);
-//}
 
 void QVectorVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 {

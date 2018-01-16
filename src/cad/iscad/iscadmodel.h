@@ -62,8 +62,6 @@ protected:
 
 //     std::map<std::string, ViewState> checked_modelsteps_, checked_datums_, checked_evaluations_;
 
-    std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
-
     QTimer *bgparseTimer_;
     const int bgparseInterval=1000;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
@@ -87,34 +85,6 @@ protected:
         emit updateTitle(this, filename_, false);
     }
 
-//    template<class PT>
-//    PT* checkGraphicalSelection(QoccViewWidget* aView)
-//    {
-//        if (aView->getContext()->HasDetected())
-//        {
-//            if (aView->getContext()->DetectedInteractive()->HasOwner())
-//            {
-//                Handle_Standard_Transient own=aView->getContext()->DetectedInteractive()->GetOwner();
-//                if (!own.IsNull())
-//                {
-//                    if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
-//#if (OCC_VERSION_MAJOR<7)
-//                        .Access()
-//#else
-//                        .get()
-//#endif
-//                    ))
-//                    {
-//                        if (PT* mi=dynamic_cast<PT*>(smo->getPointer()))
-//                        {
-//                            return mi;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        return NULL;
-//    }
     
 public:
     ISCADModel(QWidget* parent = 0, bool dobgparsing=true);
@@ -132,7 +102,6 @@ public:
 
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
-//     void onModelTreeItemChanged(QTreeWidgetItem * item, int);
 
     /**
      * some text has been selected. Highlight all identical occurrences

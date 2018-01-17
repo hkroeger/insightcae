@@ -68,7 +68,7 @@ public:
   virtual void build();
   
   virtual void write(std::ostream&) const;
-  virtual Handle_AIS_InteractiveObject createAISRepr(const Handle_AIS_InteractiveContext& context) const;
+  virtual Handle_AIS_InteractiveObject createAISRepr() const;
 };
 
 

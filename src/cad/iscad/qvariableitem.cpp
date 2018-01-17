@@ -38,7 +38,7 @@ QScalarVariableItem::QScalarVariableItem
 : QModelTreeItem(name, parent),
   value_(value)
 {
-    setText(COL_VALUE, QString::number(v));
+    setText(COL_VALUE, QString::number(value_));
 }
 
 
@@ -82,7 +82,7 @@ QVectorVariableItem::QVectorVariableItem
 {
     setText(COL_VALUE, QString::fromStdString
          (
-             str(format("[%g, %g, %g]") % v(0) % v(1) % v(2))
+             str(format("[%g, %g, %g]") % value_(0) % value_(1) % value_(2))
          )
     );
 }

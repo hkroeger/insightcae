@@ -171,14 +171,8 @@ bool ISCADModel::saveModelAs()
 
 void ISCADModel::clearDerivedData()
 {
-    context_->getContext()->EraseAll(
-#if (OCC_VERSION_MAJOR>=7)
-                   false
-#endif                        
-    );
-    
-    modeltree_->storeViewStates();
-    modeltree_->clear();
+  clear();
+  emit clearData();
 }
 
 
@@ -388,20 +382,7 @@ void ISCADModel::connectModelTree(QModelTree* mt) const
 }
 
 
-void ISCADModel::onSetClipPlane(QObject* datumplane)
-{
-    insight::cad::Datum* datum = reinterpret_cast<insight::cad::Datum*>(datumplane);
-    gp_Ax3 pl = datum->plane();
-    gp_Pnt p = pl.Location();
-    gp_Dir n = pl.Direction();
-    viewer_->toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
-}
 
-void ISCADModel::onCopyBtnClicked()
-{
-  editor_->textCursor().insertText(notepad_->toPlainText());  
-  notepad_->clear();
-}
 
 
 void ISCADModel::editSketch(QObject* sk_ptr)
@@ -749,4 +730,12 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     model_->connectModelTree(modeltree_);
 
+}
+
+
+
+void ISCADModelEditor::onCopyBtnClicked()
+{
+  model_->textCursor().insertText(notepad_->toPlainText());
+  notepad_->clear();
 }

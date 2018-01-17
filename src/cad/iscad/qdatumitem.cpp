@@ -25,105 +25,15 @@
 #include "AIS_Plane.hxx"
 #include "modelfeature.h"
 
-QDatumItem::QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context, 
-		 const ViewState& state, QTreeWidgetItem* parent)
-: QDisplayableModelTreeItem(name, context, state, parent),
-  model_(model)
+Handle_AIS_InteractiveObject QDatumItem::createAIS()
 {
-    setText(COL_NAME, name_);
-  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
-  reset(smp);
-}
-
-void QDatumItem::reset(insight::cad::DatumPtr smp)
-{
-  smp_=smp;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                
-      );
   ais_=smp_->createAISRepr();
-  
-  if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_
-#if (OCC_VERSION_MAJOR>=7)
-      .get()
-#else
-      .Access()
-#endif                
-  ))
-  {
-    double size=1000;
-    try { 
-#warning fails for empty model. Needs better treatment
-        insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
-        arma::mat bb = mm->modelBndBox();
-        arma::mat diag=bb.col(1)-bb.col(0);
-        size=1.2*arma::norm(diag,2);
-    } 
-    catch (...) 
-    {
-        std::cout<<"Warning: could not determine model size for datum plane display!"<<std::endl;
-    }
-
-    ps_=size;
-  }
-
-  updateDisplay();
 }
 
-void QDatumItem::wireframe()
-{
-  state_.shading=0;
-  updateDisplay();
-}
-
-void QDatumItem::shaded()
-{
-  state_.shading=1;
-  updateDisplay();
-}
-
-void QDatumItem::randomizeColor()
-{
-  state_.randomizeColor();
-  updateDisplay();
-}
-
-void QDatumItem::updateDisplay()
-{
-  state_.visible = (checkState(COL_VIS)==Qt::Checked);
-  
-  if (state_.visible)
-  {
-    context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), false/*, Standard_True*/ );
-    context_->getContext()->SetDisplayMode(ais_, state_.shading, false/*Standard_True */);
-    if (AIS_Plane * pl = dynamic_cast<AIS_Plane*>(ais_
-#if (OCC_VERSION_MAJOR>=7)
-        .get()
-#else
-        .Access()
-#endif                
-    ))
-    {
-      pl->SetSize(ps_);
-    }
-    context_->getContext()->Display(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                        
-    );
-  }
-  else
-  {
-    context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                        
-    );
-  }
-}
-
+QDatumItem::QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent)
+: QDisplayableModelTreeItem(name, true, parent),
+  smp_(smp)
+{}
 
 
 void QDatumItem::showContextMenu(const QPoint& gpos) // this is a slot

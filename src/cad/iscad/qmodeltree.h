@@ -82,7 +82,7 @@ class QDisplayableModelTreeItem
 
 protected:
     Handle_AIS_InteractiveObject ais_;
-    int shadingMode_;
+    AIS_DisplayMode shadingMode_;
     double r_, g_, b_;
 
     virtual Handle_AIS_InteractiveObject createAIS() =0;
@@ -94,23 +94,36 @@ public:
             bool visible,
             QTreeWidgetItem* parent
     );
+    virtual ~QDisplayableModelTreeItem();
 
     bool isVisible() const;
     bool isHidden() const;
 
     Handle_AIS_InteractiveObject ais();
-    inline int shadingMode() const { return shadingMode_; }
+    inline AIS_DisplayMode shadingMode() const { return shadingMode_; }
     inline double red() const { return r_; }
     inline double green() const { return g_; }
     inline double blue() const { return b_; }
     Quantity_Color color() const;
 
+    void setRandomColor();
+
+public slots:
     void show();
     void hide();
+    void wireframe();
+    void shaded();
+    void onlyThisShaded();
+    void randomizeColor();
+    void setResolution();
 
 signals:
     void show(QDisplayableModelTreeItem* di);
     void hide(QDisplayableModelTreeItem* di);
+
+    void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
+    void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
+    void setResolution(QDisplayableModelTreeItem* di, double res);
 };
 
 
@@ -194,7 +207,6 @@ protected:
 public:
     QModelTree(QWidget* parent);
     
-    void clear();
         
 public slots:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
@@ -218,6 +230,7 @@ private slots:
      * if visualization state changed: emit signals for view widget(s)
      */
     void onItemChanged( QTreeWidgetItem * item, int column );
+    void onClear();
 
 public slots:
     void setUniformDisplayMode(const AIS_DisplayMode AM);

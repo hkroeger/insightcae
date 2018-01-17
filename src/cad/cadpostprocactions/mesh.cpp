@@ -62,7 +62,7 @@ Mesh::Mesh
 {}
 
 
-Handle_AIS_InteractiveObject Mesh::createAISRepr(const Handle_AIS_InteractiveContext&) const
+Handle_AIS_InteractiveObject Mesh::createAISRepr() const
 {
   checkForBuildDuringAccess();
   return Handle_AIS_InteractiveObject();
@@ -282,7 +282,7 @@ void SnappyHexMesh::build()
     );
 }
 
-Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr(const Handle_AIS_InteractiveContext&) const
+Handle_AIS_InteractiveObject SnappyHexMesh::createAISRepr() const
 {
   checkForBuildDuringAccess();
   return Handle_AIS_InteractiveObject();

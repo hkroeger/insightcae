@@ -34,21 +34,14 @@ class QEvaluationItem
 : public QDisplayableModelTreeItem
 {
   insight::cad::PostprocActionPtr smp_;
-    
+
+protected:
+  virtual Handle_AIS_InteractiveObject createAIS();
+
 public:
-  QEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context, 
-		 const ViewState& state, QTreeWidgetItem* parent);
-  
-  void reset(insight::cad::PostprocActionPtr smp);
-  void updateDisplay();
-  
+  QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent);
  
 public slots:
-  void wireframe();
-  void shaded();
-  void randomizeColor();
-  void hide();
-  void show();
   void showContextMenu(const QPoint& gpos);
   
 };

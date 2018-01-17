@@ -96,7 +96,7 @@ void Hydrostatics::build()
   cout<<"GM="<<GM<<endl;
 }
 
-Handle_AIS_InteractiveObject Hydrostatics::createAISRepr(const Handle_AIS_InteractiveContext& context) const
+Handle_AIS_InteractiveObject Hydrostatics::createAISRepr() const
 {
   checkForBuildDuringAccess();
   

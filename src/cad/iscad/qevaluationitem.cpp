@@ -22,87 +22,21 @@
 #include <QMenu>
 #include "qoccviewercontext.h"
 
-QEvaluationItem::QEvaluationItem(const std::string& name, insight::cad::PostprocActionPtr smp, QoccViewerContext* context, 
-		const ViewState& state, QTreeWidgetItem* parent)
-: QDisplayableModelTreeItem(name, context, state, parent)
+Handle_AIS_InteractiveObject QEvaluationItem::createAIS()
 {
-    setText(COL_NAME, name_);
-  setCheckState(COL_VIS, state_.visible ? Qt::Checked : Qt::Unchecked);
-  reset(smp);
+  ais_=smp_->createAISRepr();
 }
 
-void QEvaluationItem::reset(insight::cad::PostprocActionPtr smp)
-{
-  smp_=smp;
-  if (!ais_.IsNull()) context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                      
-  );
-  ais_=smp_->createAISRepr(context_->getContext());
-  if (!ais_.IsNull()) 
-  {
-    context_->getContext()->SetMaterial( ais_, Graphic3d_NOM_SATIN, false );
-    context_->getContext()->SetColor( ais_, Quantity_NOC_BLACK, false );
-  }
-  updateDisplay();
-}
 
-void QEvaluationItem::wireframe()
+QEvaluationItem::QEvaluationItem
+(
+    const QString& name,
+    insight::cad::PostprocActionPtr smp,
+    QTreeWidgetItem* parent
+)
+: QDisplayableModelTreeItem(name, false, parent),
+  smp_(smp)
 {
-  state_.shading=0;
-  updateDisplay();
-}
-
-void QEvaluationItem::shaded()
-{
-  state_.shading=1;
-  updateDisplay();
-}
-
-void QEvaluationItem::randomizeColor()
-{
-  state_.randomizeColor();
-  updateDisplay();
-}
-
-void QEvaluationItem::hide()
-{
-  setCheckState(COL_VIS, Qt::Unchecked);
-  updateDisplay();
-}
-
-void QEvaluationItem::show()
-{
-  setCheckState(COL_VIS, Qt::Checked);
-  updateDisplay();
-}
-
-void QEvaluationItem::updateDisplay()
-{
-  state_.visible = (checkState(COL_VIS)==Qt::Checked);
-  
-  if (!ais_.IsNull())
-  {
-    if (state_.visible)
-    {
-      context_->getContext()->Display(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                          
-      );
-      context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-      context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
-    }
-    else
-    {
-      context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , false
-#endif                          
-      );
-    }
-  }
 }
 
 

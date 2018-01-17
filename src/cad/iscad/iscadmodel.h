@@ -153,7 +153,6 @@ protected slots:
     void insertSectionCommentAtCursor();
     void insertFeatureAtCursor();
     void insertComponentNameAtCursor();
-    void onCopyBtnClicked();
     
 //    /**
 //     * display everything shaded
@@ -164,8 +163,7 @@ protected slots:
 //     * display everything in wireframe
 //     */
 //    void allWireframe();
-    
-    void onSetClipPlane(QObject* datumplane);
+
     
 public slots:
 
@@ -234,6 +232,12 @@ signals:
      */
     void openModel(const boost::filesystem::path& modelfile);
 
+    /**
+     * @brief clearData
+     * clear all model data (e.g., before a new script is inserted during file load)
+     */
+    void clearData();
+
 //     // insert new features
 //     void addFeature(const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
 //     void addDatum(const QString& sn, insight::cad::DatumPtr dm);
@@ -265,6 +269,10 @@ public:
     ISCADModelEditor(QWidget* parent = 0);
 
     inline ISCADModel* model() { return model_; }
+
+public slots:
+    void onCopyBtnClicked();
+
 };
 
 

@@ -52,7 +52,7 @@ signals:
   void jump_to(const QString& name);
   void insertParserStatementAtCursor(const QString& statement);
   void setUniformDisplayMode(const AIS_DisplayMode AM);
-  void addEvaluation(std::string sn, insight::cad::PostprocActionPtr em, bool visible);
+  void addEvaluation(const QString& name, insight::cad::PostprocActionPtr em, bool visible);
 
 protected:
   virtual Handle_AIS_InteractiveObject createAIS();
@@ -61,10 +61,7 @@ public:
   QFeatureItem(const QString& name, insight::cad::FeaturePtr smp,
          bool visible, QTreeWidgetItem* parent, bool is_component);
   
-  
-  void updateDisplay();
-  void resetDisplay();
-  
+    
   inline insight::cad::Feature& solidmodel()
   {
     return *smp_;
@@ -72,13 +69,8 @@ public:
   
 public slots:
   void jump();
-  void wireframe();
-  void shaded();
-  void onlyThisShaded();
-  void randomizeColor();
   void showProperties();
   void exportShape();
-  void setResolution();
 
   void showContextMenu(const QPoint& gpos);
 };

@@ -6,14 +6,19 @@
 #include "qoccinternal.h"
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
-
+#include "qdatumitem.h"
 
 
 #include <V3d_AmbientLight.hxx>
 #include <V3d_DirectionalLight.hxx>
 #include <V3d_PositionalLight.hxx>
 #include "Graphic3d_AspectFillArea3d.hxx"
+#include "AIS_Plane.hxx"
+
 #include "pointertransient.h"
+
+#include "occtools.h"
+#include "datum.h"
 
 QoccViewWidget::QoccViewWidget
 ( 
@@ -864,21 +869,100 @@ void QoccViewWidget::displayMessage(const QString& msg)
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
-  Handle_AIS_InteractiveObject ais = di->ais();
-  getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
-  getContext()->SetColor(ais, di->color(), Standard_True );
+  if (di)
+    {
+      Handle_AIS_InteractiveObject ais = di->ais();
+
+      Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ais);
+      if ( !pl.IsNull() )
+        {
+          double size=1000;
+
+          AIS_ListOfInteractive loi;
+          getContext()->DisplayedObjects(loi);
+          for (int j=1; j<loi.Extent(); j++)
+            {
+//              AIS_InteractiveObject o = loi[j];
+
+            }
+
+//          try {
+//      #warning fails for empty model. Needs better treatment
+//              insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
+//              arma::mat bb = mm->modelBndBox();
+//              arma::mat diag=bb.col(1)-bb.col(0);
+//              size=1.2*arma::norm(diag,2);
+//          }
+//          catch (...)
+//          {
+//              std::cout<<"Warning: could not determine model size for datum plane display!"<<std::endl;
+//          }
+        }
+
+      getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
+      getContext()->SetColor(ais, di->color(), Standard_True );
+    }
 }
 
 
 void QoccViewWidget::onErase(QDisplayableModelTreeItem* di)
 {
-  getContext()->Erase
+  if (di)
+    {
+      getContext()->Erase
       (
         di->ais()
 #if (OCC_VERSION_MAJOR>=7)
         , true
 #endif
       );
+    }
+}
+
+
+void QoccViewWidget::onSetDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm)
+{
+  if (di)
+    {
+      getContext()->SetDisplayMode(di->ais(), sm, Standard_True );
+    }
+}
+
+void QoccViewWidget::onSetColor(QDisplayableModelTreeItem* di, Quantity_Color c)
+{
+  if (di)
+    {
+      getContext()->SetColor(di->ais(), c, Standard_True );
+    }
+}
+
+void QoccViewWidget::onSetResolution(QDisplayableModelTreeItem* di, double res)
+{
+  if (di)
+    {
+      getContext()->SetDeviationCoefficient
+          (
+            di->ais(),
+            res
+  #if (OCC_VERSION_MAJOR>=7)
+            , true
+  #endif
+          );
+    }
+}
+
+
+
+void QoccViewWidget::onSetClipPlane(QDisplayableModelTreeItem* datumplane)
+{
+  if (QDatumItem* di = dynamic_cast<QDatumItem*>(datumplane))
+    {
+      insight::cad::DatumPtr datum = di->datum();
+      gp_Ax3 pl = datum->plane();
+      gp_Pnt p = pl.Location();
+      gp_Dir n = pl.Direction();
+      toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
+    }
 }
 
 
@@ -1040,7 +1124,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 	  break;
 	}
     }
-  emit selectionChanged(this);
+  emit graphicalSelectionChanged(getSelectedItem(), this);
 }
 /*!
   \brief	Middle button up event handler.
@@ -1217,7 +1301,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
 #endif
         );
     }
-  emit selectionChanged(this);
+  emit graphicalSelectionChanged(getSelectedItem(), this);
   return pick;
 }
 /*!
@@ -1247,7 +1331,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     }
   if ( pick != AIS_SOP_NothingSelected )
     {
-      emit selectionChanged(this);
+      emit graphicalSelectionChanged(getSelectedItem(), this);
     }
   return pick;
 }

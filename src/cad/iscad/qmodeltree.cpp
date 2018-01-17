@@ -18,6 +18,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <QInputDialog>
+
 #include "qmodeltree.h"
 
 #include "qvariableitem.h"
@@ -59,7 +61,10 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
     setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
 }
 
-
+QDisplayableModelTreeItem::~QDisplayableModelTreeItem()
+{
+  emit hide(this);
+}
 
 
 bool QDisplayableModelTreeItem::isVisible() const
@@ -87,6 +92,13 @@ Quantity_Color QDisplayableModelTreeItem::color() const
   return Quantity_Color(r_, g_, b_, Quantity_TOC_RGB);
 }
 
+void QDisplayableModelTreeItem::setRandomColor()
+{
+  r_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+  g_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+  b_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
+}
+
 void QDisplayableModelTreeItem::show()
 {
   if (ais_.IsNull())
@@ -108,6 +120,36 @@ void QDisplayableModelTreeItem::hide()
   emit hide(this);
 }
 
+void QDisplayableModelTreeItem::wireframe()
+{
+  emit setDisplayMode(this, AIS_WireFrame);
+}
+
+void QDisplayableModelTreeItem::shaded()
+{
+  emit setDisplayMode(this, AIS_Shaded);
+}
+
+void QDisplayableModelTreeItem::onlyThisShaded()
+{
+//  emit setShadingMode(this, AIS_WireFrame);
+}
+
+void QDisplayableModelTreeItem::randomizeColor()
+{
+  setRandomColor();
+  emit setColor(this, color());
+}
+
+void QDisplayableModelTreeItem::setResolution()
+{
+  bool ok;
+  double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
+  if (ok)
+  {
+    emit setResolution(this, res);
+  }
+}
 
 
 
@@ -181,16 +223,6 @@ QModelTree::QModelTree(QWidget* parent)
 
 }
 
-
-void QModelTree::clear()
-{
-    componentfeatures_->takeChildren();
-    scalars_->takeChildren();
-    vectors_->takeChildren();
-    features_->takeChildren();
-    datums_->takeChildren();
-    postprocactions_->takeChildren();
-}
 
 
 void QModelTree::onAddScalar(const QString& name, insight::cad::parser::scalar sv)
@@ -274,6 +306,17 @@ void QModelTree::onItemChanged( QTreeWidgetItem *item, int)
     }
 }
 
+void QModelTree::onClear()
+{
+    componentfeatures_->takeChildren();
+    scalars_->takeChildren();
+    vectors_->takeChildren();
+    features_->takeChildren();
+    datums_->takeChildren();
+    postprocactions_->takeChildren();
+}
+
+
 void QModelTree::setUniformDisplayMode(const AIS_DisplayMode AM)
 {
     for (int i=0; i<features_->childCount(); i++)
@@ -294,7 +337,6 @@ void QModelTree::resetViz()
     {
         if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(features_->child(i)) )
         {
-            qmsi->resetDisplay();
             qmsi->shaded();
         }
     }

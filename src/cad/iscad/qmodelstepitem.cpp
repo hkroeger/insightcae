@@ -38,7 +38,7 @@ Handle_AIS_InteractiveObject QFeatureItem::createAIS()
 
 QFeatureItem::QFeatureItem
 (
-  const std::string& name, 
+  const QString& name,
   insight::cad::FeaturePtr smp, 
   bool visible,
   QTreeWidgetItem* parent,
@@ -50,58 +50,6 @@ QFeatureItem::QFeatureItem
 {
 }
 
-
-
-void QFeatureItem::wireframe()
-{
-  state_.shading=0;
-  updateDisplay();
-}
-
-void QFeatureItem::shaded()
-{
-  state_.shading=1;
-  updateDisplay();
-}
-
-void QFeatureItem::onlyThisShaded()
-{
-//   qDebug()<<"all wireframe"<<endl;
-  
-  emit(setUniformDisplayMode(AIS_WireFrame));
-  shaded();
-}
-
-
-void QFeatureItem::randomizeColor()
-{
-  state_.randomizeColor();
-  updateDisplay();
-}
-
-void QFeatureItem::updateDisplay()
-{
-  state_.visible = (checkState(COL_VIS)==Qt::Checked);
-  
-  if (state_.visible)
-  {
-    context_->getContext()->Display(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , true
-#endif                        
-    );
-    context_->getContext()->SetDisplayMode(ais_, state_.shading, Standard_True );
-    context_->getContext()->SetColor(ais_, Quantity_Color(state_.r, state_.g, state_.b, Quantity_TOC_RGB), Standard_True );
-  }
-  else
-  {
-    context_->getContext()->Erase(ais_
-#if (OCC_VERSION_MAJOR>=7)
-                   , true
-#endif                        
-    );
-  }
-}
 
 void QFeatureItem::exportShape()
 {
@@ -115,41 +63,17 @@ void QFeatureItem::exportShape()
 }
 
 
-void QFeatureItem::resetDisplay()
-{
-    if (is_component_)
-    {
-        show();
-    }
-    else
-    {
-        hide();
-    }
-}
 
 void QFeatureItem::showProperties()
 {
   emit addEvaluation
   (
-    "SolidProperties_"+name_.toStdString(), 
+    "SolidProperties_"+name_,
     insight::cad::PostprocActionPtr(new insight::cad::SolidProperties(smp_)),
     true
   );
 }
 
-void QFeatureItem::setResolution()
-{
-  bool ok;
-  double res=QInputDialog::getDouble(treeWidget(), "Set Resolution", "Resolution:", 0.001, 1e-7, 0.1, 7, &ok);
-  if (ok)
-  {
-    context_->getContext()->SetDeviationCoefficient(ais_, res
-#if (OCC_VERSION_MAJOR>=7)
-                   , true
-#endif                        
-    );
-  }
-}
 
 void QFeatureItem::jump()
 {

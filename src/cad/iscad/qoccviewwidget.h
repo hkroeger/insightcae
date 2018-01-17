@@ -125,6 +125,11 @@ public slots:
 
   void onShow(QDisplayableModelTreeItem* di);
   void onErase(QDisplayableModelTreeItem* di);
+  void onSetDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
+  void onSetColor(QDisplayableModelTreeItem* di, Quantity_Color c);
+  void onSetResolution(QDisplayableModelTreeItem* di, double res);
+
+  void onSetClipPlane(QDisplayableModelTreeItem* datumplane);
 
 protected: // methods
 

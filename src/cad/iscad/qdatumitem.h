@@ -36,21 +36,16 @@ class QDatumItem
   Q_OBJECT
   
   insight::cad::DatumPtr smp_;
-  insight::cad::ModelPtr model_;
-  double ps_;
     
-public:
+protected:
+  virtual Handle_AIS_InteractiveObject createAIS();
 
-  QDatumItem(const std::string& name, insight::cad::DatumPtr smp, insight::cad::ModelPtr model, QoccViewerContext* context, 
-		 const ViewState& state, QTreeWidgetItem* parent);
+public:
+  QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent);
   
-  void reset(insight::cad::DatumPtr smp);
-  void updateDisplay();  
+  inline insight::cad::DatumPtr datum() const { return smp_; }
 
 public slots:
-  void wireframe();
-  void shaded();
-  void randomizeColor();
   void showContextMenu(const QPoint& gpos);
   
 };

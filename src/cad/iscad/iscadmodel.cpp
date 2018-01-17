@@ -382,7 +382,9 @@ void ISCADModel::connectModelTree(QModelTree* mt) const
 }
 
 
-
+void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
+{
+}
 
 
 void ISCADModel::editSketch(QObject* sk_ptr)
@@ -614,6 +616,10 @@ void ISCADModel::showEditorContextMenu(const QPoint& pt)
 }
 
 
+void ISCADModel::insertTextAtCursor(const QString& snippet)
+{
+    textCursor().insertText(snippet);
+}
 
 
 void ISCADModel::setUnsavedState(int, int rem, int ad)

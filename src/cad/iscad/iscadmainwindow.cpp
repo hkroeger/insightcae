@@ -65,33 +65,51 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
     disconnect(this, SLOT(onUpdateClipPlaneMenu()));
     disconnect(this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
         
-//    if (me)
-//    {
-//        connect(act_save_, SIGNAL(triggered()),
-//                me->model(), SLOT(saveModel()));
-//        connect(act_saveas_, SIGNAL(triggered()), model, SLOT(saveModelAs()));
-//        connect(act_rebuild_, SIGNAL(triggered()), model, SLOT(rebuildModel()));
-//        connect(act_rebuild_UTC_, SIGNAL(triggered()), model, SLOT(rebuildModelUpToCursor()));
-//        connect(act_insert_section_comment_, SIGNAL(triggered()), model, SLOT(insertSectionCommentAtCursor()));
-//        connect(act_insert_feat_, SIGNAL(triggered()), model, SLOT(insertFeatureAtCursor()));
-//        connect(act_insert_component_name_, SIGNAL(triggered()), model, SLOT(insertComponentNameAtCursor()));
-//        connect(act_clear_cache_, SIGNAL(triggered()), model, SLOT(clearCache()));
-//        connect(act_fit_all_, SIGNAL(triggered()), model->viewer_, SLOT(fitAll()));
-//        connect(act_toggle_grid_, SIGNAL(triggered()), model->context_, SLOT(toggleGrid()));
-//        connect(act_toggle_clipxy_, SIGNAL(triggered()), model->viewer_, SLOT(toggleClipXY()));
-//        connect(act_toggle_clipyz_, SIGNAL(triggered()), model->viewer_, SLOT(toggleClipYZ()));
-//        connect(act_toggle_clipxz_, SIGNAL(triggered()), model->viewer_, SLOT(toggleClipXZ()));
-//        connect(act_background_color_, SIGNAL(triggered()), model->viewer_, SLOT(background()));
-//        connect(act_display_all_shaded_, SIGNAL(triggered()), model, SLOT(allShaded()));
-//        connect(act_display_all_wire_, SIGNAL(triggered()), model, SLOT(allWireframe()));
-//        connect(act_reset_shading_, SIGNAL(triggered()), model->modeltree_, SLOT(resetViz()));
+    if (me)
+    {
+        connect(act_save_, SIGNAL(triggered()),
+                me->model(), SLOT(saveModel()));
+        connect(act_saveas_, SIGNAL(triggered()),
+                me->model(), SLOT(saveModelAs()));
+        connect(act_rebuild_, SIGNAL(triggered()),
+                me->model(), SLOT(rebuildModel()));
+        connect(act_rebuild_UTC_, SIGNAL(triggered()),
+                me->model(), SLOT(rebuildModelUpToCursor()));
+        connect(act_insert_section_comment_, SIGNAL(triggered()),
+                me->model(), SLOT(insertSectionCommentAtCursor()));
+        connect(act_insert_feat_, SIGNAL(triggered()),
+                me->model(), SLOT(insertFeatureAtCursor()));
+        connect(act_insert_component_name_, SIGNAL(triggered()),
+                me->model(), SLOT(insertComponentNameAtCursor()));
+        connect(act_clear_cache_, SIGNAL(triggered()),
+                me->model(), SLOT(clearCache()));
+
+        connect(act_fit_all_, SIGNAL(triggered()),
+                me->viewer(), SLOT(fitAll()));
+        connect(act_toggle_grid_, SIGNAL(triggered()),
+                me->viewer(), SLOT(toggleGrid()));
+        connect(act_toggle_clipxy_, SIGNAL(triggered()),
+                me->viewer(), SLOT(toggleClipXY()));
+        connect(act_toggle_clipyz_, SIGNAL(triggered()),
+                me->viewer(), SLOT(toggleClipYZ()));
+        connect(act_toggle_clipxz_, SIGNAL(triggered()),
+                me->viewer(), SLOT(toggleClipXZ()));
+        connect(act_background_color_, SIGNAL(triggered()),
+                me->viewer(), SLOT(background()));
+//        connect(act_display_all_shaded_, SIGNAL(triggered()),
+//                model, SLOT(allShaded()));
+//        connect(act_display_all_wire_, SIGNAL(triggered()),
+//                model, SLOT(allWireframe()));
+//        connect(act_reset_shading_, SIGNAL(triggered()),
+//                model->modeltree_, SLOT(resetViz()));
         
-//        model->populateClipPlaneMenu(clipplanemenu_);
-//        connect(model, SIGNAL(updateClipPlaneMenu()), this, SLOT(onUpdateClipPlaneMenu()));
+        me->model()->populateClipPlaneMenu(clipplanemenu_);
+        connect(me->model(), SIGNAL(updateModel()),
+                this, SLOT(onUpdateClipPlaneMenu()));
         
-//        connect(model, SIGNAL(openModel(const boost::filesystem::path&)),
-//                this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
-//    }
+        connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
+                this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
+    }
 }
 
 

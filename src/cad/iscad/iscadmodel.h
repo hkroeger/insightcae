@@ -269,6 +269,8 @@ public:
     ISCADModelEditor(QWidget* parent = 0);
 
     inline ISCADModel* model() { return model_; }
+    inline QoccViewWidget* viewer() { return viewer_; }
+    inline QTextEdit* notepad() { return notepad_; }
 
 public slots:
     void onCopyBtnClicked();

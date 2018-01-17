@@ -225,13 +225,13 @@ QModelTree::QModelTree(QWidget* parent)
 
 
 
-void QModelTree::onAddScalar(const QString& name, insight::cad::parser::scalar sv)
+void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 {
   QScalarVariableItem* old = findItem<QScalarVariableItem>(scalars_, name);
   replaceOrAdd(scalars_, new QScalarVariableItem(name, sv->value(), scalars_), old);
 }
 
-void QModelTree::onAddVector(const QString& name, insight::cad::parser::vector vv)
+void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv)
 {
   QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
   replaceOrAdd(vectors_, new QVectorVariableItem(name, vv->value(), vectors_), old);

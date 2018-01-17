@@ -104,7 +104,7 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
 //                model->modeltree_, SLOT(resetViz()));
         
         me->model()->populateClipPlaneMenu(clipplanemenu_);
-        connect(me->model(), SIGNAL(updateModel()),
+        connect(me->model(), SIGNAL(modelUpdated()),
                 this, SLOT(onUpdateClipPlaneMenu()));
         
         connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
@@ -334,7 +334,8 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     ISCADModelEditor *me = new ISCADModelEditor();
     modelTabs_->addTab(me, "(unnamed)");
     
-    connect(me->model(), SIGNAL(displayStatus(const QString&)), this, SLOT(displayStatusMessage(const QString&)));
+    connect(me->model(), SIGNAL(displayStatusMessage(const QString&)),
+            this, SLOT(displayStatusMessage(const QString&)));
     connect(me->model(), SIGNAL(updateTitle(ISCADModel*, const boost::filesystem::path&, bool)),
             this, SLOT(onUpdateTabTitle(ISCADModel*, const boost::filesystem::path&, bool)));
 

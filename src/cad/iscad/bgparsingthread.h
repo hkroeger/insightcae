@@ -22,9 +22,11 @@
 
 #include <QThread>
 #include <QString>
+#include <QMetaType>
 
 #ifndef Q_MOC_RUN
 #include "cadmodel.h"
+#include "cadtypes.h"
 #include "parser.h"
 #endif
 
@@ -67,8 +69,8 @@ public:
 
 signals:
 
-    void createdVariable    (const QString& sn, insight::cad::parser::scalar sv);
-    void createdVariable    (const QString& sn, insight::cad::parser::vector vv);
+    void createdVariable    (const QString& sn, insight::cad::ScalarPtr sv);
+    void createdVariable    (const QString& sn, insight::cad::VectorPtr vv);
     void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
     void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
     void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em);

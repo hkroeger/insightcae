@@ -46,7 +46,15 @@ class MapDirectory
 : public std::set<std::string>
 {
 public:
+  MapDirectory()
+  {}
+
   MapDirectory(const T& map)
+  {
+    set(map);
+  }
+
+  void set(const T& map)
   {
     transform
         (
@@ -80,6 +88,7 @@ void BGParsingThread::run()
     bool r=false;
 
     std::string reason="Failed: Syntax error";
+    std::cout<<script_;
     try
     {
         r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
@@ -88,6 +97,7 @@ void BGParsingThread::run()
     {
         reason="Expected: "+e.message();
         failloc=e.from_pos();
+        std::cout<<"Error:"<<reason<<std::endl;
         emit scriptError(failloc, QString::fromStdString(reason));
     }
 
@@ -98,21 +108,26 @@ void BGParsingThread::run()
     else
     {
 
+        std::cout<<"Parsing done"<<std::endl;
+
         emit statusMessage("Model parsed successfully.");
 
         if (action_ >= Rebuild)
         {
+            std::cout<<"Building model"<<std::endl;
 
             {
                 // get set with scalar symbols before rebuild (for finding out which have vanished)
-                MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars(oldmodel->scalars());
+                MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars;
+                if (oldmodel) removedScalars.set(oldmodel->scalars());
 
                 insight::cad::Model::ScalarTableContents scalars=model_->scalars();
                 int is=0, ns=scalars.size();
                 BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
                 {
                     emit statusMessage("Building scalar "+QString::fromStdString(v.first));
-                    v.second->value(); // Trigger evaluation
+//                    v.second->value();
+                    std::cout<<v.first<<"="<<v.second->value()<<std::endl; // Trigger evaluation
                     emit statusProgress(is++, ns);
                     emit createdVariable(QString::fromStdString(v.first), v.second);
                     removedScalars.removeIfPresent(v.first);
@@ -126,7 +141,8 @@ void BGParsingThread::run()
 
 
             {
-                MapDirectory<insight::cad::Model::VectorTableContents> removedVectors(oldmodel->vectors());
+                MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
+                if (oldmodel) removedVectors.set(oldmodel->vectors());
 
                 insight::cad::Model::VectorTableContents vectors=model_->vectors();
                 int is=0, ns=vectors.size();
@@ -146,7 +162,8 @@ void BGParsingThread::run()
             }
 
             {
-                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums(oldmodel->datums());
+                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
+                if (oldmodel) removedDatums.set(oldmodel->datums());
 
                 insight::cad::Model::DatumTableContents datums=model_->datums();
                 int is=0, ns=datums.size();
@@ -166,7 +183,8 @@ void BGParsingThread::run()
             }
 
             {
-                MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures(oldmodel->modelsteps());
+                MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures;
+                if (oldmodel) removedFeatures.set(oldmodel->modelsteps());
 
                 insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
                 int is=0, ns=modelsteps.size();
@@ -196,7 +214,8 @@ void BGParsingThread::run()
             }
 
             {
-                MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions(oldmodel->postprocActions());
+                MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions;
+                if (oldmodel) removedPostprocActions.set(oldmodel->postprocActions());
 
                 insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
                 int is=0, ns=postprocActions.size();

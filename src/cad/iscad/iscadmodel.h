@@ -205,6 +205,8 @@ public slots:
 
     void setUnsavedState(int i1=0, int i2=1, int i3=1);
     void unsetUnsavedState();
+
+    void onScriptError(int failpos, QString errorMsg);
     
 signals:
     

@@ -40,27 +40,19 @@
 
 #include <qthread.h>
 
-class SplashScreenThread : public QThread
-{
-  QSplashScreen* sp_;
-  QWidget* win_;
-  
-public:
-  SplashScreenThread ( QSplashScreen* sp, QWidget* win ) 
-  :sp_ ( sp ), 
-   win_ ( win ) 
-  {}
-
-  void run()
-  {
-    QThread::sleep ( 3 );
-    sp_->finish ( win_ );
-  }
-};
-
+Q_DECLARE_METATYPE(insight::cad::ScalarPtr)
+Q_DECLARE_METATYPE(insight::cad::VectorPtr)
+Q_DECLARE_METATYPE(insight::cad::FeaturePtr)
+Q_DECLARE_METATYPE(insight::cad::DatumPtr)
+Q_DECLARE_METATYPE(insight::cad::PostprocActionPtr)
 
 int main ( int argc, char** argv )
 {
+  qRegisterMetaType<insight::cad::ScalarPtr>("insight::cad::ScalarPtr");
+  qRegisterMetaType<insight::cad::VectorPtr>("insight::cad::VectorPtr");
+  qRegisterMetaType<insight::cad::FeaturePtr>("insight::cad::FeaturePtr");
+  qRegisterMetaType<insight::cad::DatumPtr>("insight::cad::DatumPtr");
+  qRegisterMetaType<insight::cad::PostprocActionPtr>("insight::cad::PostprocActionPtr");
 
   namespace po = boost::program_options;
 
@@ -152,6 +144,7 @@ int main ( int argc, char** argv )
       QSplashScreen splash ( pixmap, Qt::WindowStaysOnTopHint|Qt::SplashScreen );
       splash.show();
       splash.showMessage ( "Wait..." );
+      QElapsedTimer splashtime; splashtime.start();
 
       ISCADMainWindow window ( 0, 0, vm.count ( "nolog" ) );
       
@@ -177,12 +170,12 @@ int main ( int argc, char** argv )
 
       window.show();
 
-      app.processEvents();//This is used to accept a click on the screen so that user can cancel the screen
+//      while (splashtime.elapsed() < 3e3)
+//        {
+//            app.processEvents(); //This is used to accept a click on the screen so that user can cancel the screen
+//        }
+      splash.finish(&window);
 
-      SplashScreenThread w ( &splash, &window );
-      w.start(); // splash is shown for 5 seconds
-
-      //     splash.finish(&window);
       window.raise();
 
       return app.exec();

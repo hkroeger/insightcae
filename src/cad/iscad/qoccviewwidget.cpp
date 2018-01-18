@@ -869,8 +869,10 @@ void QoccViewWidget::displayMessage(const QString& msg)
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
+  std::cout<<"call show"<<std::endl;
   if (di)
     {
+      std::cout<<"do show"<<std::endl;
       Handle_AIS_InteractiveObject ais = di->ais();
 
       Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ais);
@@ -899,13 +901,20 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 //          }
         }
 
+      getContext()->Display
+      (
+        ais
+#if (OCC_VERSION_MAJOR>=7)
+        , false
+#endif
+      );
       getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
       getContext()->SetColor(ais, di->color(), Standard_True );
     }
 }
 
 
-void QoccViewWidget::onErase(QDisplayableModelTreeItem* di)
+void QoccViewWidget::onHide(QDisplayableModelTreeItem* di)
 {
   if (di)
     {

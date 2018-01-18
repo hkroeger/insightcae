@@ -27,7 +27,7 @@
 
 Handle_AIS_InteractiveObject QDatumItem::createAIS()
 {
-  ais_=smp_->createAISRepr();
+  return smp_->createAISRepr();
 }
 
 QDatumItem::QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent)

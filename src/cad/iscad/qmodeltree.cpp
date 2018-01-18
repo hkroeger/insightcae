@@ -49,16 +49,17 @@ void QModelTreeItem::insertName()
 
 
 
-
 QDisplayableModelTreeItem::QDisplayableModelTreeItem
 (
   const QString& name,
   bool visible,
   QTreeWidgetItem* parent
 )
-: QModelTreeItem ( name, parent )
+: QModelTreeItem ( name, parent ),
+  shadingMode_(AIS_Shaded)
 {
     setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
+    setRandomColor();
 }
 
 QDisplayableModelTreeItem::~QDisplayableModelTreeItem()
@@ -169,6 +170,20 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
 }
 
 
+void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
+{
+  connect(newf, SIGNAL(show(QDisplayableModelTreeItem*)),
+          this, SIGNAL(show(QDisplayableModelTreeItem*)));
+  connect(newf, SIGNAL(hide(QDisplayableModelTreeItem*)),
+          this, SIGNAL(hide(QDisplayableModelTreeItem*)));
+  connect(newf, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)),
+          this, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)));
+  connect(newf, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)),
+          this, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)));
+  connect(newf, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
+          this, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)));
+}
+
 QModelTree::QModelTree(QWidget* parent)
   : QTreeWidget(parent)
 {
@@ -263,7 +278,9 @@ void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv)
 {
   SignalBlocker b(this);
   QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
-  replaceOrAdd(vectors_, new QVectorVariableItem(name, vv->value(), vectors_), old);
+  QVectorVariableItem* newf = new QVectorVariableItem(name, vv->value(), vectors_);
+  replaceOrAdd(vectors_, newf, old);
+  connectDisplayableItem(newf);
 }
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
@@ -279,32 +296,26 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
   QFeatureItem* old = findItem<QFeatureItem>(cat, name);
   QFeatureItem* newf = new QFeatureItem(name, smp, is_component, cat, is_component);
   replaceOrAdd(cat, newf, old);
-
-  connect(newf, SIGNAL(show(QDisplayableModelTreeItem*)),
-          this, SIGNAL(show(QDisplayableModelTreeItem*)));
-  connect(newf, SIGNAL(hide(QDisplayableModelTreeItem*)),
-          this, SIGNAL(hide(QDisplayableModelTreeItem*)));
-  connect(newf, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)),
-          this, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)));
-  connect(newf, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color c)),
-          this, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color c)));
-  connect(newf, SIGNAL(setResolution(QDisplayableModelTreeItem*, double res)),
-          this, SIGNAL(setResolution(QDisplayableModelTreeItem*, double res)));
-
+  connectDisplayableItem(newf);
 }
+
 
 void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 {
   SignalBlocker b(this);
   QDatumItem* old = findItem<QDatumItem>(datums_, name);
-  replaceOrAdd(datums_, new QDatumItem(name, smp, datums_), old);
+  QDatumItem* newf = new QDatumItem(name, smp, datums_);
+  replaceOrAdd(datums_, newf, old);
+  connectDisplayableItem(newf);
 }
 
 void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp)
 {
   SignalBlocker b(this);
   QEvaluationItem* old = findItem<QEvaluationItem>(postprocactions_, name);
-  replaceOrAdd(postprocactions_, new QEvaluationItem(name, smp, postprocactions_), old);
+  QEvaluationItem* newf = new QEvaluationItem(name, smp, postprocactions_);
+  replaceOrAdd(postprocactions_, newf, old);
+  connectDisplayableItem(newf);
 }
 
 

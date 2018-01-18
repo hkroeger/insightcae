@@ -24,7 +24,7 @@
 
 Handle_AIS_InteractiveObject QEvaluationItem::createAIS()
 {
-  ais_=smp_->createAISRepr();
+  return smp_->createAISRepr();
 }
 
 

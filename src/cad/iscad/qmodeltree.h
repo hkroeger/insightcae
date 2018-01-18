@@ -196,6 +196,7 @@ protected:
 
     void replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi=NULL);
 
+    void connectDisplayableItem(QDisplayableModelTreeItem* i);
 
 public:
     QModelTree(QWidget* parent);

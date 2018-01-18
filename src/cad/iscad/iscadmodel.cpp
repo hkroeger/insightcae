@@ -747,12 +747,12 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             viewer_, SLOT(onShow(QDisplayableModelTreeItem*)));
     connect(modeltree_, SIGNAL(hide(QDisplayableModelTreeItem*)),
             viewer_, SLOT(onHide(QDisplayableModelTreeItem*)));
-    connect(modeltree_, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)),
-            viewer_, SLOT(onSetDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)));
-    connect(modeltree_, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color c)),
-            viewer_, SLOT(onSetColor(QDisplayableModelTreeItem*, Quantity_Color c)));
-    connect(modeltree_, SIGNAL(setResolution(QDisplayableModelTreeItem*, double res)),
-            viewer_, SLOT(onSetResolution(QDisplayableModelTreeItem*, double res)));
+    connect(modeltree_, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)),
+            viewer_, SLOT(onSetDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)));
+    connect(modeltree_, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)),
+            viewer_, SLOT(onSetColor(QDisplayableModelTreeItem*, Quantity_Color)));
+    connect(modeltree_, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
+            viewer_, SLOT(onSetResolution(QDisplayableModelTreeItem*, double)));
 
 }
 

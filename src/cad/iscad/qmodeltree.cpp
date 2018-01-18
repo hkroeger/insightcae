@@ -223,62 +223,108 @@ QModelTree::QModelTree(QWidget* parent)
 
 }
 
+class SignalBlocker
+{
+
+private:
+    QObject *object;
+    bool alreadyBlocked;
+
+public:
+    SignalBlocker(QObject *o)
+      : object(o),
+        alreadyBlocked(object->signalsBlocked())
+    {
+        if (!alreadyBlocked)
+          {
+            object->blockSignals(true);
+          }
+    }
+
+    ~SignalBlocker()
+    {
+        if (!alreadyBlocked)
+          {
+            object->blockSignals(false);
+          }
+    }
+
+};
 
 
 void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 {
+  SignalBlocker b(this);
   QScalarVariableItem* old = findItem<QScalarVariableItem>(scalars_, name);
   replaceOrAdd(scalars_, new QScalarVariableItem(name, sv->value(), scalars_), old);
 }
 
 void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv)
 {
+  SignalBlocker b(this);
   QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
   replaceOrAdd(vectors_, new QVectorVariableItem(name, vv->value(), vectors_), old);
 }
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
 {
-//    ViewState vs;
-//    auto itr = feature_vs_.find(name);
-//    if (itr == feature_vs_.end())
-//    {
-//        vs.visible=is_component;
-//    }
-//    else
-//    {
-//        vs=itr->second;
-//    }
-//    return new QFeatureItem(name, smp, context, vs,
-//                            is_component ? componentfeatures_ : features_,
-//                            is_component);
+  SignalBlocker b(this);
+
+  QTreeWidgetItem* cat;
+  if (is_component)
+    cat=componentfeatures_;
+  else
+    cat=features_;
+
+  QFeatureItem* old = findItem<QFeatureItem>(cat, name);
+  QFeatureItem* newf = new QFeatureItem(name, smp, is_component, cat, is_component);
+  replaceOrAdd(cat, newf, old);
+
+  connect(newf, SIGNAL(show(QDisplayableModelTreeItem*)),
+          this, SIGNAL(show(QDisplayableModelTreeItem*)));
+  connect(newf, SIGNAL(hide(QDisplayableModelTreeItem*)),
+          this, SIGNAL(hide(QDisplayableModelTreeItem*)));
+  connect(newf, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)),
+          this, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode sm)));
+  connect(newf, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color c)),
+          this, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color c)));
+  connect(newf, SIGNAL(setResolution(QDisplayableModelTreeItem*, double res)),
+          this, SIGNAL(setResolution(QDisplayableModelTreeItem*, double res)));
+
 }
 
 void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 {
-//    return new QDatumItem(name, smp, model, context, datum_vs_[name], datums_);
+  SignalBlocker b(this);
+  QDatumItem* old = findItem<QDatumItem>(datums_, name);
+  replaceOrAdd(datums_, new QDatumItem(name, smp, datums_), old);
 }
 
 void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp)
 {
-//    return new QEvaluationItem(name, smp, context, postprocaction_vs_[name], postprocactions_);
+  SignalBlocker b(this);
+  QEvaluationItem* old = findItem<QEvaluationItem>(postprocactions_, name);
+  replaceOrAdd(postprocactions_, new QEvaluationItem(name, smp, postprocactions_), old);
 }
 
 
 void QModelTree::onRemoveScalar      (const QString& sn)
 {
+  SignalBlocker(this);
   if (QScalarVariableItem* item = findItem<QScalarVariableItem>(scalars_, sn))
     scalars_->removeChild(item);
 }
 
 void QModelTree::onRemoveVector      (const QString& sn)
 {
+  SignalBlocker(this);
   if (QVectorVariableItem* item = findItem<QVectorVariableItem>(vectors_, sn))
     vectors_->removeChild(item);
 }
 
 void QModelTree::onRemoveFeature     (const QString& sn)
 {
+  SignalBlocker(this);
   if (QFeatureItem* item = findItem<QFeatureItem>(features_, sn))
     features_->removeChild(item);
   else if (QFeatureItem* item = findItem<QFeatureItem>(componentfeatures_, sn))
@@ -287,12 +333,14 @@ void QModelTree::onRemoveFeature     (const QString& sn)
 
 void QModelTree::onRemoveDatum       (const QString& sn)
 {
+  SignalBlocker(this);
   if (QDatumItem* item = findItem<QDatumItem>(datums_, sn))
     datums_->removeChild(item);
 }
 
 void QModelTree::onRemoveEvaluation  (const QString& sn)
 {
+  SignalBlocker(this);
   if (QEvaluationItem* item = findItem<QEvaluationItem>(postprocactions_, sn))
     postprocactions_->removeChild(item);
 }

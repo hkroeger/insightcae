@@ -66,7 +66,7 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 
 Handle_AIS_InteractiveObject QVectorVariableItem::createAIS()
 {
-  TopoDS_Shape cP=BRepBuilderAPI_MakeVertex(to_Pnt(value_));
+  TopoDS_Shape cP = BRepBuilderAPI_MakeVertex(to_Pnt(value_));
   return Handle_AIS_InteractiveObject(new AIS_Shape(cP));
 }
 

@@ -83,7 +83,7 @@ void BGParsingThread::run()
 
     insight::cad::cache.initRebuild();
 
-    insight::cad::ModelPtr oldmodel = model_;
+    insight::cad::ModelPtr oldmodel = last_rebuilt_model_;
     model_.reset(new insight::cad::Model);
     bool r=false;
 
@@ -233,6 +233,8 @@ void BGParsingThread::run()
                   emit removedEvaluation(QString::fromStdString(sn));
                 }
             }
+
+            last_rebuilt_model_ = model_;
 
             emit statusMessage("Model rebuild successfully finished.");
         }

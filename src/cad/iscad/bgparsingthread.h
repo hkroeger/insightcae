@@ -51,7 +51,7 @@ protected:
     Action action_;
 
 public:
-    insight::cad::ModelPtr model_;
+    insight::cad::ModelPtr last_rebuilt_model_, model_;
     insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
 
     /**

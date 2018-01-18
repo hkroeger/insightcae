@@ -69,7 +69,8 @@ print times
 """
 
 AnimationScene1 = GetAnimationScene()
-AnimationScene1.EndTime = times[-1]
+if (len(times)>0):
+ AnimationScene1.EndTime = times[-1]
 """)
   
   if (appendFile!=""):
@@ -98,7 +99,9 @@ AnimationScene1.EndTime = times[-1]
     f.write("""\
 onlylatesttime=%s
 ftimes=None
-if (onlylatesttime):
+if (len(times)==0):
+ ftimes=[0]
+elif (onlylatesttime):
  ftimes=[times[-1]]
 else:
  ftimes=filter(lambda t: t>=%g and t<=%g, times)

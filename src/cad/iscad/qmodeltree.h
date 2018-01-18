@@ -109,13 +109,13 @@ public:
     void setRandomColor();
 
 public slots:
-    void show();
-    void hide();
-    void wireframe();
-    void shaded();
-    void onlyThisShaded();
-    void randomizeColor();
-    void setResolution();
+    virtual void show();
+    virtual void hide();
+    virtual void wireframe();
+    virtual void shaded();
+    virtual void onlyThisShaded();
+    virtual void randomizeColor();
+    virtual void setResolution();
 
 signals:
     void show(QDisplayableModelTreeItem* di);
@@ -170,14 +170,7 @@ protected:
      * root node for postproc actions
      */
     QTreeWidgetItem *postprocactions_;
-        
-//    std::vector<QTreeWidgetItem*> featurenodes_;
-        
-//    std::map<std::string, ViewState>
-//        vector_vs_,
-//        feature_vs_,
-//        datum_vs_,
-//        postprocaction_vs_;
+
 
     template<class ItemType>
     ItemType* findItem(QTreeWidgetItem *p, const QString& name)
@@ -238,6 +231,16 @@ public slots:
     
 protected slots:
     void showContextMenu(const QPoint &);
+
+signals:
+    // relay signals
+    void show(QDisplayableModelTreeItem* di);
+    void hide(QDisplayableModelTreeItem* di);
+
+    void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
+    void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
+    void setResolution(QDisplayableModelTreeItem* di, double res);
+
 };
 
 

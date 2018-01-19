@@ -77,7 +77,7 @@ QVectorVariableItem::QVectorVariableItem
  const arma::mat& value,
  QTreeWidgetItem* parent
 )
-: QDisplayableModelTreeItem(name, false, parent),
+: QDisplayableModelTreeItem(name, false, AIS_WireFrame, parent),
   value_(value)
 {
     setText(COL_VALUE, QString::fromStdString

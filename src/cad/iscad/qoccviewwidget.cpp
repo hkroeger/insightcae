@@ -37,7 +37,8 @@ QoccViewWidget::QoccViewWidget
     myPrecision		( 0.0001 ),
     myViewPrecision     ( 0.0 ),
     myKeyboardFlags     ( Qt::NoModifier ),
-    myButtonFlags	( Qt::NoButton )
+    myButtonFlags	( Qt::NoButton ),
+    showGrid            ( false )
 {
   myContext = aContext;
   // Needed to generate mouse events
@@ -816,6 +817,28 @@ void QoccViewWidget::toggleClipYZ(void)
     toggleClip( 0,0,0, 1,0,0 );
 }
 
+/*!
+\brief  switch the grid on/off.
+ */
+void QoccViewWidget::toggleGrid  ( void )
+{
+  Aspect_GridType		myGridType= Aspect_GT_Rectangular;
+  Aspect_GridDrawMode		myGridMode=Aspect_GDM_Lines;
+  Quantity_NameOfColor	myGridColor = Quantity_NOC_RED4;
+  Quantity_NameOfColor	myGridTenthColor=Quantity_NOC_GRAY90;
+
+  if (showGrid){
+    showGrid = false;
+    myViewer->DeactivateGrid();
+    myViewer->SetGridEcho( Standard_False );
+  } else {
+    showGrid = true;
+    myViewer->ActivateGrid( Aspect_GT_Rectangular , myGridMode );
+    myViewer->Grid()->SetColors( myGridColor, myGridTenthColor );
+    myViewer->SetGridEcho ( Standard_True );
+  }
+}
+
 void QoccViewWidget::toggleClip(double px, double py, double pz, double nx, double ny, double nz)
 {
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<7))
@@ -869,10 +892,8 @@ void QoccViewWidget::displayMessage(const QString& msg)
 
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
-  std::cout<<"call show"<<std::endl;
   if (di)
     {
-      std::cout<<"do show"<<std::endl;
       Handle_AIS_InteractiveObject ais = di->ais();
 
       Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ais);
@@ -882,23 +903,25 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 
           AIS_ListOfInteractive loi;
           getContext()->DisplayedObjects(loi);
-          for (int j=1; j<loi.Extent(); j++)
+          Bnd_Box bbb;
+          for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
             {
-//              AIS_InteractiveObject o = loi[j];
-
+                Handle_AIS_InteractiveObject o = *i;
+                Handle_AIS_Shape a = Handle_AIS_Shape::DownCast(o);
+                if (!a.IsNull())
+                  {
+                    Bnd_Box bb;
+                    o->BoundingBox(bb);
+                    bbb.Add(bb);
+                  }
             }
+            if (!bbb.IsVoid())
+              {
+                double diag=(bbb.CornerMax().XYZ()-bbb.CornerMin().XYZ()).Modulus();
+                size=1.2*diag;
+              }
 
-//          try {
-//      #warning fails for empty model. Needs better treatment
-//              insight::cad::FeaturePtr mm = insight::cad::ModelFeature::create_model(model_);
-//              arma::mat bb = mm->modelBndBox();
-//              arma::mat diag=bb.col(1)-bb.col(0);
-//              size=1.2*arma::norm(diag,2);
-//          }
-//          catch (...)
-//          {
-//              std::cout<<"Warning: could not determine model size for datum plane display!"<<std::endl;
-//          }
+            pl->SetSize(size, size);
         }
 
       getContext()->Display
@@ -962,16 +985,13 @@ void QoccViewWidget::onSetResolution(QDisplayableModelTreeItem* di, double res)
 
 
 
-void QoccViewWidget::onSetClipPlane(QDisplayableModelTreeItem* datumplane)
+void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 {
-  if (QDatumItem* di = dynamic_cast<QDatumItem*>(datumplane))
-    {
-      insight::cad::DatumPtr datum = di->datum();
-      gp_Ax3 pl = datum->plane();
-      gp_Pnt p = pl.Location();
-      gp_Dir n = pl.Direction();
-      toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
-    }
+    insight::cad::Datum* datum = reinterpret_cast<insight::cad::Datum*>(qdatum);
+    gp_Ax3 pl = datum->plane();
+    gp_Pnt p = pl.Location();
+    gp_Dir n = pl.Direction();
+    toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
 }
 
 

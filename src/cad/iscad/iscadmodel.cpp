@@ -49,12 +49,6 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
   bgparsethread_(),
   skipPostprocActions_(true)
 {
-//    connect(viewer_,
-//            SIGNAL(selectionChanged(QoccViewWidget*)),
-//            this,
-//            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
-//           );
-
     setFontFamily("Monospace");
     setContextMenuPolicy(Qt::CustomContextMenu);
     
@@ -74,6 +68,10 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
 
     connect(&bgparsethread_, SIGNAL(finished()),
             this, SLOT(onBgParseFinished()));
+    connect(&bgparsethread_, SIGNAL(statusMessage(const QString&)),
+            this, SIGNAL(displayStatusMessage(const QString&)));
+    connect(&bgparsethread_, SIGNAL(statusProgress(int, int)),
+            this, SIGNAL(statusProgress(int, int)));
     connect(&bgparsethread_, SIGNAL(scriptError(int,const QString&)),
             this, SLOT(onScriptError(int,const QString&)));
     bgparseTimer_=new QTimer(this);
@@ -313,48 +311,48 @@ void ISCADModel::onBgParseFinished()
 
 
 
-void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu)
+void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* viewer)
 {
     clipplanemenu->clear();
     
-//    if (cur_model_)
-//    {
-//        int added=0;
-//        insight::cad::Model::DatumTableContents datums = cur_model_->datums();
-//        BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
-//        {
-//            insight::cad::DatumPtr d = v.second;
-//            if (d->providesPlanarReference())
-//            {
-//                QAction *act = new QAction( v.first.c_str(), this );
+    if (cur_model_)
+    {
+        int added=0;
+        insight::cad::Model::DatumTableContents datums = cur_model_->datums();
+        BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
+        {
+            insight::cad::DatumPtr d = v.second;
+            if (d->providesPlanarReference())
+            {
+                QAction *act = new QAction( v.first.c_str(), this );
                 
-//                QSignalMapper *signalMapper = new QSignalMapper(this);
-//                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
-//                connect
-//                    (
-//                      signalMapper, SIGNAL(mapped(QObject*)),
-//                      this, SLOT(onSetClipPlane(QObject*))
-//                    );
-//                connect
-//                    (
-//                      act, SIGNAL(triggered()),
-//                      signalMapper, SLOT(map())
-//                    );
-//                clipplanemenu->addAction(act);
+                QSignalMapper *signalMapper = new QSignalMapper(this);
+                signalMapper->setMapping( act, reinterpret_cast<QObject*>(d.get()) );
+                connect
+                    (
+                      signalMapper, SIGNAL(mapped(QObject*)),
+                      viewer, SLOT(onSetClipPlane(QObject*))
+                    );
+                connect
+                    (
+                      act, SIGNAL(triggered()),
+                      signalMapper, SLOT(map())
+                    );
+                clipplanemenu->addAction(act);
                 
-//                added++;
-//            }
-//        }
+                added++;
+            }
+        }
         
-//        if (added)
-//        {
-//            clipplanemenu->setEnabled(true);
-//        }
-//        else
-//        {
-//            clipplanemenu->setDisabled(true);
-//        }
-//    }
+        if (added)
+        {
+            clipplanemenu->setEnabled(true);
+        }
+        else
+        {
+            clipplanemenu->setDisabled(true);
+        }
+    }
 }
 
 
@@ -462,75 +460,6 @@ void ISCADModel::insertComponentNameAtCursor()
 
 
 
-
-//void ISCADModel::addFeature(std::string sn, insight::cad::FeaturePtr sm, bool is_component)
-//{
-//    QFeatureItem* msi=modeltree_->addFeatureItem(sn, sm, context_, is_component);
-
-//    connect
-//    (
-//        msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
-//        editor_, SLOT(insertPlainText(const QString&))
-//    );
-//    connect
-//    (
-//        msi, SIGNAL(jump_to(const QString&)),
-//        this, SLOT(jump_to(const QString&))
-//    );
-//    connect
-//    (
-//        msi, SIGNAL(setUniformDisplayMode(const AIS_DisplayMode)),
-//        modeltree_, SLOT(setUniformDisplayMode(const AIS_DisplayMode))
-//    );
-//    connect
-//    (
-//        msi, SIGNAL(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool)),
-//        this, SLOT(addEvaluation(std::string, insight::cad::PostprocActionPtr, bool))
-//    );
-//}
-
-
-
-
-//void ISCADModel::addDatum(std::string sn, insight::cad::DatumPtr sm)
-//{
-//    modeltree_->addDatumItem(sn, sm, cur_model_, context_);
-//}
-
-
-
-
-//void ISCADModel::addEvaluation(std::string sn, insight::cad::PostprocActionPtr sm, bool visible)
-//{
-//    modeltree_->addEvaluationItem(sn, sm, context_);
-//}
-
-
-
-
-//void ISCADModel::addVariable(std::string sn, insight::cad::parser::scalar sv)
-//{
-//    modeltree_->addScalarVariableItem(sn, sv->value());
-//}
-
-
-
-
-//void ISCADModel::addVariable(std::string sn, insight::cad::parser::vector vv)
-//{
-//    QVectorVariableItem* msi = modeltree_->addVectorVariableItem(sn, vv->value(), context_);
-//    connect
-//    (
-//        msi, SIGNAL(insertParserStatementAtCursor(const QString&)),
-//        editor_, SLOT(insertPlainText(const QString&))
-//    );
-//}
-
-
-
-
-
-
 void ISCADModel::rebuildModel(bool upToCursor)
 {
     if (!bgparsethread_.isRunning())
@@ -542,7 +471,11 @@ void ISCADModel::rebuildModel(bool upToCursor)
             script_content = script_content.substr(0, c.position());
         }
 
-        bgparsethread_.launch( script_content, BGParsingThread::Rebuild );
+        bgparsethread_.launch
+            (
+              script_content,
+              skipPostprocActions_ ? BGParsingThread::Rebuild : BGParsingThread::Post
+            );
 
     }
     else
@@ -561,8 +494,6 @@ void ISCADModel::clearCache()
 {
     insight::cad::cache.clear();
 }
-
-
 
 
 
@@ -624,7 +555,6 @@ void ISCADModel::insertTextAtCursor(const QString& snippet)
 
 void ISCADModel::setUnsavedState(int, int rem, int ad)
 {
-//     std::cerr<<"CHANGED:"<<rem<<" "<<ad<<std::endl;
     if ((rem>0) || (ad>0))
     {
         if (!unsaved_)
@@ -725,21 +655,8 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     connect(toggleSkipPostprocActions, SIGNAL(stateChanged(int)),
             model_, SLOT(toggleSkipPostprocActions(int)));
 
-//    connect(copybtn, SIGNAL(clicked()),
-//            this, SLOT(onCopyBtnClicked()));
-
-//    connect(viewer_,
-//            SIGNAL(selectionChanged(QoccViewWidget*)),
-//            this,
-//            SLOT(onGraphicalSelectionChanged(QoccViewWidget*))
-//           );
-
-//    connect(modeltree_, SIGNAL(itemChanged(QTreeWidgetItem*, int)),
-//            this, SLOT(onModelTreeItemChanged(QTreeWidgetItem*, int)));
-
-//    connect(model_, SIGNAL(selectionChanged()), this, SLOT(onEditorSelectionChanged()));
-//    connect(model_, SIGNAL(customContextMenuRequested(const QPoint&)),
-//            this, SLOT(showEditorContextMenu(const QPoint&)));
+    connect(copybtn, SIGNAL(clicked()),
+            this, SLOT(onCopyBtnClicked()));
 
     model_->connectModelTree(modeltree_);
 

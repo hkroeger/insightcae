@@ -51,7 +51,7 @@ public:
 
 public slots:
 
-  void toggleGrid ( void );
+
   void gridXY   ( void );
   void gridXZ   ( void );
   void gridYZ   ( void );
@@ -68,7 +68,7 @@ private:
 
   Handle(V3d_Viewer)		myViewer;
   Handle(AIS_InteractiveContext)	myContext;
-  bool showGrid;
+
   Aspect_GridType		myGridType;
   Aspect_GridDrawMode		myGridMode;
   Quantity_NameOfColor		myGridColor;

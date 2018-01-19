@@ -25,6 +25,7 @@
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QTabWidget>
+#include <QProgressBar>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
@@ -82,6 +83,8 @@ protected:
         *act_reset_shading_;
 
     QMenu* clipplanemenu_;
+    QProgressBar* progressbar_;
+    QPushButton* bgparsestopbtn_;
 
     void connectMenuToModel(ISCADModelEditor* model);
         
@@ -96,11 +99,12 @@ public slots:
     void activateModel(int tabindex);
     void onUpdateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
     void onCloseModel(int tabindex);
-    void onUpdateClipPlaneMenu();
+    void onUpdateClipPlaneMenu(int errorState=0);
     void onLoadModelFile(const boost::filesystem::path& modelfile);
     
-    void displayStatusMessage(const QString& message);
     void onShowFileTreeContextMenu(const QPoint&);
+
+    void updateProgress(int step, int totalSteps);
 
 public:
     ISCADMainWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0, bool nolog=false);

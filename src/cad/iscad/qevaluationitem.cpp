@@ -34,7 +34,7 @@ QEvaluationItem::QEvaluationItem
     insight::cad::PostprocActionPtr smp,
     QTreeWidgetItem* parent
 )
-: QDisplayableModelTreeItem(name, false, parent),
+: QDisplayableModelTreeItem(name, false, AIS_WireFrame, parent),
   smp_(smp)
 {
 }

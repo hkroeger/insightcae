@@ -38,7 +38,6 @@ QoccViewerContext::QoccViewerContext()
 
   myContext = new AIS_InteractiveContext( myViewer );
 
-  showGrid         = false;
   myGridType       = Aspect_GT_Rectangular;
   myGridMode       = Aspect_GDM_Lines;
   myGridColor      = Quantity_NOC_RED4;
@@ -187,27 +186,7 @@ void QoccViewerContext::gridYZ  ( void )
   myViewer->SetPrivilegedPlane( aPlane );
 }
 
-/*!
-\brief  switch the grid on/off.
- */
-void QoccViewerContext::toggleGrid  ( void )
-{
-  if (showGrid){
-    showGrid = false;
-    if (myGridType == Aspect_GT_Rectangular){
-      myGridType = Aspect_GT_Circular;
-    } else {
-      myGridType = Aspect_GT_Rectangular;
-    }
-    myViewer->DeactivateGrid();
-    myViewer->SetGridEcho( Standard_False );
-  } else {
-    showGrid = true;
-    myViewer->ActivateGrid( myGridType , myGridMode );
-    myViewer->Grid()->SetColors( myGridColor, myGridTenthColor );
-    myViewer->SetGridEcho ( Standard_True );
-  }
-}
+
 
 
 

@@ -92,6 +92,7 @@ public:
     (
             const QString& name,
             bool visible,
+            AIS_DisplayMode dm,
             QTreeWidgetItem* parent
     );
     virtual ~QDisplayableModelTreeItem();
@@ -106,7 +107,9 @@ public:
     inline double blue() const { return b_; }
     Quantity_Color color() const;
 
+    void initDisplay();
     void setRandomColor();
+    void copyDisplayProperties(QDisplayableModelTreeItem* di);
 
 public slots:
     virtual void show();
@@ -194,6 +197,7 @@ protected:
         return found;
     }
 
+    void removeModelItem(QTreeWidgetItem* oldi);
     void replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi=NULL);
 
     void connectDisplayableItem(QDisplayableModelTreeItem* i);

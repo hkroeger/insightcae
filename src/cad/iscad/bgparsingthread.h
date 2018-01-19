@@ -83,7 +83,7 @@ signals:
 
     void scriptError(int failpos, QString errorMsg);
 
-    void statusMessage(QString msg);
+    void statusMessage(const QString& msg);
     void statusProgress(int step, int totalSteps);
 };
 

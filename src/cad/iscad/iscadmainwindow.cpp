@@ -100,12 +100,13 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
 //                model, SLOT(allShaded()));
 //        connect(act_display_all_wire_, SIGNAL(triggered()),
 //                model, SLOT(allWireframe()));
-//        connect(act_reset_shading_, SIGNAL(triggered()),
-//                model->modeltree_, SLOT(resetViz()));
+        connect(act_reset_shading_, SIGNAL(triggered()),
+                me->modeltree(), SLOT(resetViz()));
         
-        me->model()->populateClipPlaneMenu(clipplanemenu_);
-        connect(me->model(), SIGNAL(modelUpdated()),
-                this, SLOT(onUpdateClipPlaneMenu()));
+        me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+
+        connect(me->model(), SIGNAL(modelUpdated(int)),
+                this, SLOT(onUpdateClipPlaneMenu(int)));
         
         connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
                 this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
@@ -159,12 +160,14 @@ void ISCADMainWindow::onCloseModel(int tabindex)
     }
 }
 
-void ISCADMainWindow::onUpdateClipPlaneMenu()
+void ISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
 {
-    ISCADModel *model = static_cast<ISCADModel*>(modelTabs_->currentWidget());
-    if (model)
+  if (errorState==0)
     {
-        model->populateClipPlaneMenu(clipplanemenu_);
+      if (ISCADModelEditor *me = static_cast<ISCADModelEditor*>(modelTabs_->currentWidget()))
+      {
+          me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+      }
     }
 }
 
@@ -223,6 +226,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QList<int> sizes;
     sizes << 50 << 500+350+150;
     spl->setSizes(sizes);
+
+    progressbar_=new QProgressBar;
+    bgparsestopbtn_=new QPushButton("STOP");
+    statusBar()->addPermanentWidget(progressbar_);
+    statusBar()->addPermanentWidget(bgparsestopbtn_);
 
     QMenu *fmenu = menuBar()->addMenu("&File");
     QMenu *mmenu = menuBar()->addMenu("&Model");
@@ -326,7 +334,11 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
 
 
     
-
+void ISCADMainWindow::updateProgress(int step, int totalSteps)
+{
+  progressbar_->setMaximum(totalSteps);
+  progressbar_->setValue(step);
+}
 
 
 ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
@@ -335,7 +347,10 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     modelTabs_->addTab(me, "(unnamed)");
     
     connect(me->model(), SIGNAL(displayStatusMessage(const QString&)),
-            this, SLOT(displayStatusMessage(const QString&)));
+            statusBar(), SLOT(showMessage(const QString&)));
+    connect(me->model(), SIGNAL(statusProgress(int, int)),
+            this, SLOT(updateProgress(int, int)));
+
     connect(me->model(), SIGNAL(updateTitle(ISCADModel*, const boost::filesystem::path&, bool)),
             this, SLOT(onUpdateTabTitle(ISCADModel*, const boost::filesystem::path&, bool)));
 
@@ -360,11 +375,6 @@ ISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents
 void ISCADMainWindow::onFileClicked(const QModelIndex &index)
 {
     insertModel( fileModel_->filePath(index).toStdString() );
-}
-
-void ISCADMainWindow::displayStatusMessage(const QString& message)
-{
-    statusBar()->showMessage(message);
 }
 
 void ISCADMainWindow::onCreateNewModel(const QString& directory)

@@ -53,10 +53,11 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 (
   const QString& name,
   bool visible,
+  AIS_DisplayMode dm,
   QTreeWidgetItem* parent
 )
 : QModelTreeItem ( name, parent ),
-  shadingMode_(AIS_Shaded)
+  shadingMode_(dm)
 {
     setCheckState(COL_VIS, visible ? Qt::Checked : Qt::Unchecked);
     setRandomColor();
@@ -64,7 +65,7 @@ QDisplayableModelTreeItem::QDisplayableModelTreeItem
 
 QDisplayableModelTreeItem::~QDisplayableModelTreeItem()
 {
-  emit hide(this);
+//  emit hide(this); // leads to crash
 }
 
 
@@ -100,35 +101,54 @@ void QDisplayableModelTreeItem::setRandomColor()
   b_=0.5+0.5*( double(rand()) / double(RAND_MAX) );
 }
 
+void QDisplayableModelTreeItem::copyDisplayProperties(QDisplayableModelTreeItem* di)
+{
+  r_ = di->r_;
+  g_ = di->g_;
+  b_ = di->b_;
+  shadingMode_ = di->shadingMode_;
+  setCheckState(COL_VIS, di->checkState(COL_VIS));
+}
+
+void QDisplayableModelTreeItem::initDisplay()
+{
+  if (isVisible())
+    show();
+}
+
+
 void QDisplayableModelTreeItem::show()
 {
+  setCheckState(COL_VIS, Qt::Checked);
   if (ais_.IsNull())
     {
       ais_=createAIS();
     }
-  setCheckState(COL_VIS, Qt::Checked);
   emit show(this);
 }
 
 
 void QDisplayableModelTreeItem::hide()
 {
-  if (ais_.IsNull())
-    {
-      ais_=createAIS();
-    }
   setCheckState(COL_VIS, Qt::Unchecked);
-  emit hide(this);
+  if (!ais_.IsNull())
+    {
+      emit hide(this);
+    }
 }
 
 void QDisplayableModelTreeItem::wireframe()
 {
-  emit setDisplayMode(this, AIS_WireFrame);
+  shadingMode_=AIS_WireFrame;
+  if (isVisible())
+    emit setDisplayMode(this, AIS_WireFrame);
 }
 
 void QDisplayableModelTreeItem::shaded()
 {
-  emit setDisplayMode(this, AIS_Shaded);
+  shadingMode_=AIS_Shaded;
+  if (isVisible())
+    emit setDisplayMode(this, AIS_Shaded);
 }
 
 void QDisplayableModelTreeItem::onlyThisShaded()
@@ -153,6 +173,19 @@ void QDisplayableModelTreeItem::setResolution()
 }
 
 
+void QModelTree::removeModelItem(QTreeWidgetItem* oldi)
+{
+  QTreeWidgetItem *parent = oldi->parent();
+  parent->removeChild(oldi);
+  if (QDisplayableModelTreeItem *i = dynamic_cast<QDisplayableModelTreeItem*>(oldi))
+    {
+      i->hide();
+    }
+  if (QModelTreeItem *i = dynamic_cast<QModelTreeItem*>(oldi))
+    {
+      i->deleteLater();
+    }
+}
 
 void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QTreeWidgetItem* oldi)
 {
@@ -160,7 +193,9 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
     {
       parent = oldi->parent();
       int itemIndex = parent->indexOfChild(oldi);
-      parent->removeChild(oldi);
+
+      removeModelItem(oldi);
+
       parent->insertChild(itemIndex, newi);
     }
   else
@@ -276,46 +311,66 @@ void QModelTree::onAddScalar(const QString& name, insight::cad::ScalarPtr sv)
 
 void QModelTree::onAddVector(const QString& name, insight::cad::VectorPtr vv)
 {
-  SignalBlocker b(this);
-  QVectorVariableItem* old = findItem<QVectorVariableItem>(vectors_, name);
-  QVectorVariableItem* newf = new QVectorVariableItem(name, vv->value(), vectors_);
+  QVectorVariableItem *newf, *old;
+  {
+    SignalBlocker b(this);
+    old = findItem<QVectorVariableItem>(vectors_, name);
+    newf = new QVectorVariableItem(name, vv->value(), vectors_);
+    if (old) newf->copyDisplayProperties(old);
+    connectDisplayableItem(newf);
+  }
   replaceOrAdd(vectors_, newf, old);
-  connectDisplayableItem(newf);
+  newf->initDisplay();
 }
 
 void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp, bool is_component)
 {
-  SignalBlocker b(this);
-
+  QFeatureItem *newf, *old;
   QTreeWidgetItem* cat;
-  if (is_component)
-    cat=componentfeatures_;
-  else
-    cat=features_;
+  {
+    SignalBlocker b(this);
 
-  QFeatureItem* old = findItem<QFeatureItem>(cat, name);
-  QFeatureItem* newf = new QFeatureItem(name, smp, is_component, cat, is_component);
+    if (is_component)
+      cat=componentfeatures_;
+    else
+      cat=features_;
+
+    old = findItem<QFeatureItem>(cat, name);
+    newf = new QFeatureItem(name, smp, is_component, cat, is_component);
+    if (old) newf->copyDisplayProperties(old);
+    connectDisplayableItem(newf);
+  }
   replaceOrAdd(cat, newf, old);
-  connectDisplayableItem(newf);
+  newf->initDisplay();
 }
 
 
 void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
 {
-  SignalBlocker b(this);
-  QDatumItem* old = findItem<QDatumItem>(datums_, name);
-  QDatumItem* newf = new QDatumItem(name, smp, datums_);
+  QDatumItem *old, *newf;
+  {
+    SignalBlocker b(this);
+    old = findItem<QDatumItem>(datums_, name);
+    newf = new QDatumItem(name, smp, datums_);
+    if (old) newf->copyDisplayProperties(old);
+    connectDisplayableItem(newf);
+  }
   replaceOrAdd(datums_, newf, old);
-  connectDisplayableItem(newf);
+  newf->initDisplay();
 }
 
 void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp)
 {
-  SignalBlocker b(this);
-  QEvaluationItem* old = findItem<QEvaluationItem>(postprocactions_, name);
-  QEvaluationItem* newf = new QEvaluationItem(name, smp, postprocactions_);
+  QEvaluationItem *old, *newf;
+  {
+    SignalBlocker b(this);
+    old = findItem<QEvaluationItem>(postprocactions_, name);
+    newf = new QEvaluationItem(name, smp, postprocactions_);
+    if (old) newf->copyDisplayProperties(old);
+    connectDisplayableItem(newf);
+  }
   replaceOrAdd(postprocactions_, newf, old);
-  connectDisplayableItem(newf);
+  newf->initDisplay();
 }
 
 
@@ -323,7 +378,7 @@ void QModelTree::onRemoveScalar      (const QString& sn)
 {
   SignalBlocker(this);
   if (QScalarVariableItem* item = findItem<QScalarVariableItem>(scalars_, sn))
-    scalars_->removeChild(item);
+    removeModelItem(item);;
 }
 
 void QModelTree::onRemoveVector      (const QString& sn)
@@ -337,23 +392,23 @@ void QModelTree::onRemoveFeature     (const QString& sn)
 {
   SignalBlocker(this);
   if (QFeatureItem* item = findItem<QFeatureItem>(features_, sn))
-    features_->removeChild(item);
+    removeModelItem(item);
   else if (QFeatureItem* item = findItem<QFeatureItem>(componentfeatures_, sn))
-    componentfeatures_->removeChild(item);
+    removeModelItem(item);
 }
 
 void QModelTree::onRemoveDatum       (const QString& sn)
 {
   SignalBlocker(this);
   if (QDatumItem* item = findItem<QDatumItem>(datums_, sn))
-    datums_->removeChild(item);
+    removeModelItem(item);
 }
 
 void QModelTree::onRemoveEvaluation  (const QString& sn)
 {
   SignalBlocker(this);
   if (QEvaluationItem* item = findItem<QEvaluationItem>(postprocactions_, sn))
-    postprocactions_->removeChild(item);
+    removeModelItem(item);
 }
 
 void QModelTree::onItemChanged( QTreeWidgetItem *item, int)
@@ -396,6 +451,12 @@ void QModelTree::resetViz()
     {
         if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(features_->child(i)) )
         {
+            qmsi->hide();
+            qmsi->wireframe();
+        }
+        if ( QFeatureItem *qmsi=dynamic_cast<QFeatureItem*>(componentfeatures_->child(i)) )
+        {
+            qmsi->show();
             qmsi->shaded();
         }
     }

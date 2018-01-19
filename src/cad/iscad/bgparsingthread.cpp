@@ -116,19 +116,26 @@ void BGParsingThread::run()
         {
             std::cout<<"Building model"<<std::endl;
 
+            insight::cad::Model::ScalarTableContents scalars=model_->scalars();
+            insight::cad::Model::VectorTableContents vectors=model_->vectors();
+            insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
+            insight::cad::Model::DatumTableContents datums=model_->datums();
+            insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
+
+            int is=0;
+            int istepmax=scalars.size()+vectors.size()+modelsteps.size()+datums.size() -1;
+
             {
                 // get set with scalar symbols before rebuild (for finding out which have vanished)
                 MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars;
                 if (oldmodel) removedScalars.set(oldmodel->scalars());
 
-                insight::cad::Model::ScalarTableContents scalars=model_->scalars();
-                int is=0, ns=scalars.size();
                 BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
                 {
                     emit statusMessage("Building scalar "+QString::fromStdString(v.first));
 //                    v.second->value();
                     std::cout<<v.first<<"="<<v.second->value()<<std::endl; // Trigger evaluation
-                    emit statusProgress(is++, ns);
+                    emit statusProgress(is++, istepmax);
                     emit createdVariable(QString::fromStdString(v.first), v.second);
                     removedScalars.removeIfPresent(v.first);
                 }
@@ -144,13 +151,11 @@ void BGParsingThread::run()
                 MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
                 if (oldmodel) removedVectors.set(oldmodel->vectors());
 
-                insight::cad::Model::VectorTableContents vectors=model_->vectors();
-                int is=0, ns=vectors.size();
                 BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type const& v, vectors)
                 {
                     emit statusMessage("Building vector "+QString::fromStdString(v.first));
                     v.second->value(); // Trigger evaluation
-                    emit statusProgress(is++, ns);
+                    emit statusProgress(is++, istepmax);
                     emit createdVariable(QString::fromStdString(v.first), v.second);
                     removedVectors.removeIfPresent(v.first);
                 }
@@ -162,32 +167,9 @@ void BGParsingThread::run()
             }
 
             {
-                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
-                if (oldmodel) removedDatums.set(oldmodel->datums());
-
-                insight::cad::Model::DatumTableContents datums=model_->datums();
-                int is=0, ns=datums.size();
-                BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
-                {
-                    emit statusMessage("Building datum "+QString::fromStdString(v.first));
-                    v.second->checkForBuildDuringAccess(); // Trigger rebuild
-                    emit statusProgress(is++, ns);
-                    emit createdDatum(QString::fromStdString(v.first), v.second);
-                    removedDatums.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedDatums)
-                {
-                  emit removedDatum(QString::fromStdString(sn));
-                }
-            }
-
-            {
                 MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures;
                 if (oldmodel) removedFeatures.set(oldmodel->modelsteps());
 
-                insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
-                int is=0, ns=modelsteps.size();
                 BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type const& v, modelsteps)
                 {
                     bool is_comp=false;
@@ -200,7 +182,7 @@ void BGParsingThread::run()
                         emit statusMessage("Building feature "+QString::fromStdString(v.first));
                     }
                     v.second->checkForBuildDuringAccess(); // Trigger rebuild
-                    emit statusProgress(is++, ns);
+                    emit statusProgress(is++, istepmax);
                     emit createdFeature(QString::fromStdString(v.first), v.second, is_comp);
 
                     removedFeatures.removeIfPresent(v.first);
@@ -214,16 +196,34 @@ void BGParsingThread::run()
             }
 
             {
+                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
+                if (oldmodel) removedDatums.set(oldmodel->datums());
+
+                BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
+                {
+                    emit statusMessage("Building datum "+QString::fromStdString(v.first));
+                    v.second->checkForBuildDuringAccess(); // Trigger rebuild
+                    emit statusProgress(is++, istepmax);
+                    emit createdDatum(QString::fromStdString(v.first), v.second);
+                    removedDatums.removeIfPresent(v.first);
+                }
+
+                BOOST_FOREACH(const std::string& sn, removedDatums)
+                {
+                  emit removedDatum(QString::fromStdString(sn));
+                }
+            }
+
+            {
                 MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions;
                 if (oldmodel) removedPostprocActions.set(oldmodel->postprocActions());
 
-                insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
                 int is=0, ns=postprocActions.size();
                 BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type const& v, postprocActions)
                 {
                     emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
                     if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
-                    emit statusProgress(is++, ns);
+                    emit statusProgress(is++, ns-1);
                     emit createdEvaluation(QString::fromStdString(v.first), v.second);
                     removedPostprocActions.removeIfPresent(v.first);
                 }

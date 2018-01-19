@@ -116,6 +116,7 @@ public slots:
   void viewReset();
   void setReset();
   
+  void toggleGrid ();
   void toggleClipXY ( void );
   void toggleClipYZ ( void );
   void toggleClipXZ ( void );
@@ -129,7 +130,7 @@ public slots:
   void onSetColor(QDisplayableModelTreeItem* di, Quantity_Color c);
   void onSetResolution(QDisplayableModelTreeItem* di, double res);
 
-  void onSetClipPlane(QDisplayableModelTreeItem* datumplane);
+  void onSetClipPlane(QObject* datumplane);
 
 protected: // methods
 
@@ -187,6 +188,8 @@ private: // members
   Qt::MouseButton		myButtonFlags;
   QCursor			myCrossCursor;
   
+  bool showGrid;
+
 private: // methods
   
   void onLeftButtonDown  ( Qt::KeyboardModifiers nFlags, const QPoint point );

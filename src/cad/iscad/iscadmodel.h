@@ -96,7 +96,7 @@ public:
     /**
      * add all defined planes to the clip plane menu
      */
-    void populateClipPlaneMenu(QMenu* clipplanemenu);
+    void populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* v);
 
     void connectModelTree(QModelTree* mt) const;
 
@@ -214,7 +214,15 @@ signals:
      * user status informations
      */
     void displayStatusMessage(const QString&);
-    
+
+    /**
+     * @brief statusProgress
+     * @param step
+     * @param totalSteps
+     * forwarded from parsing thread
+     */
+    void statusProgress(int step, int totalSteps);
+
     /**
      * change of model file name or save state (asterisk in front of name)
      */
@@ -273,6 +281,7 @@ public:
     inline ISCADModel* model() { return model_; }
     inline QoccViewWidget* viewer() { return viewer_; }
     inline QTextEdit* notepad() { return notepad_; }
+    inline QModelTree* modeltree() { return modeltree_; }
 
 public slots:
     void onCopyBtnClicked();

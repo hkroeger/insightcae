@@ -31,7 +31,7 @@ Handle_AIS_InteractiveObject QDatumItem::createAIS()
 }
 
 QDatumItem::QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent)
-: QDisplayableModelTreeItem(name, true, parent),
+: QDisplayableModelTreeItem(name, true, AIS_WireFrame, parent),
   smp_(smp)
 {}
 

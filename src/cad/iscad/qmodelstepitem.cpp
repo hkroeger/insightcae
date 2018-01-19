@@ -44,7 +44,7 @@ QFeatureItem::QFeatureItem
   QTreeWidgetItem* parent,
   bool is_component
 )
-: QDisplayableModelTreeItem(name, visible, parent),
+: QDisplayableModelTreeItem(name, visible, is_component ? AIS_Shaded : AIS_WireFrame, parent),
   smp_(smp),
   is_component_(is_component)
 {

@@ -252,7 +252,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(p.fluid.nu) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
-  insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
 }
 
 

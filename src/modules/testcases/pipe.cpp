@@ -344,7 +344,7 @@ void PipeBase::createCase
   cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters().set_nu(nu_) ));
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
-  insertTurbulenceModel(cm, p.get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, p.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
 
 }
 

@@ -437,7 +437,7 @@ void FlatPlateBL::createCase(insight::OpenFOAMCase& cm)
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters());
   
-  insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
 }
 
 void FlatPlateBL::evaluateAtSection

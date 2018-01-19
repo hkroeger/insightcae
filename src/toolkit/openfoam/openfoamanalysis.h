@@ -126,7 +126,7 @@ public:
 
 
 turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis::Parameters& params );
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name, const ParameterSet& ps = ParameterSet() );
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps );
 
 }
 

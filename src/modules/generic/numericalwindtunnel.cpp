@@ -181,7 +181,7 @@ void NumericalWindtunnel::createCase(insight::OpenFOAMCase& cm)
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
   
   insertTurbulenceModel(cm, 
-    parameters_.get<SelectionParameter>("fluid/turbulenceModel").selection());
+    parameters_.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
 
 }
 

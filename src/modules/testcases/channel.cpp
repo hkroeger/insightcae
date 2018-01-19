@@ -479,7 +479,7 @@ void ChannelBase::createCase
   
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters().set_roughness_z0(p.operation.y0));
   
-  insertTurbulenceModel(cm, parameters().get<SelectionParameter>("fluid/turbulenceModel").selection());
+  insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
 
 }
 

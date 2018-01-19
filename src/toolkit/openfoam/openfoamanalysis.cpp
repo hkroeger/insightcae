@@ -38,15 +38,20 @@ turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const OpenFOAMAnalysis:
   const OpenFOAMAnalysis::Parameters::fluid_type::turbulenceModel_type& tmp
       = params.fluid.turbulenceModel;
 
-  return insertTurbulenceModel(cm, tmp.selection, tmp.parameters);
+  turbulenceModel* model = turbulenceModel::lookup(tmp.selection, cm, tmp.parameters);
+
+  if (!model)
+    throw insight::Exception("Unrecognized RASModel selection: "+tmp.selection);
+
+  return cm.insert(model);
 }
 
-turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const std::string& name, const ParameterSet& ps )
+turbulenceModel* insertTurbulenceModel(OpenFOAMCase& cm, const SelectableSubsetParameter& ps)
 {
-  turbulenceModel* model = turbulenceModel::lookup(name, cm, ps);
+  turbulenceModel* model = turbulenceModel::lookup(ps.selection(), cm, ps());
   
   if (!model) 
-    throw insight::Exception("Unrecognized RASModel selection: "+name);
+    throw insight::Exception("Unrecognized RASModel selection: "+ps.selection());
   
   return cm.insert(model);
 }

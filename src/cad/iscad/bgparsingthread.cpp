@@ -85,7 +85,6 @@ void BGParsingThread::run()
 
     int failloc=-1;
 
-    insight::cad::cache.initRebuild();
 
     insight::cad::ModelPtr oldmodel = last_rebuilt_model_;
     model_.reset(new insight::cad::Model);
@@ -114,13 +113,11 @@ void BGParsingThread::run()
       else
       {
 
-          std::cout<<"Parsing done"<<std::endl;
-
           emit statusMessage("Model parsed successfully.");
 
           if (action_ >= Rebuild)
           {
-              std::cout<<"Building model"<<std::endl;
+              insight::cad::cache.initRebuild();
 
               insight::cad::Model::ScalarTableContents scalars=model_->scalars();
               insight::cad::Model::VectorTableContents vectors=model_->vectors();
@@ -242,6 +239,8 @@ void BGParsingThread::run()
 
               last_rebuilt_model_ = model_;
 
+              insight::cad::cache.finishRebuild();
+
               emit statusMessage("Model rebuild successfully finished.");
           }
       }
@@ -259,7 +258,6 @@ void BGParsingThread::run()
       emit scriptError(-1, QString(e.GetMessageString()) );
     }
 
-    insight::cad::cache.finishRebuild();
 }
 
 

@@ -34,13 +34,15 @@ class RotatedHelicalSweep
   VectorPtr axis_;
   ScalarPtr P_;
   ScalarPtr revoffset_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   declareType("RotatedHelicalSweep");
   RotatedHelicalSweep();
   RotatedHelicalSweep(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr P, ScalarPtr revoffset=scalarconst(0.0));
   
-  virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

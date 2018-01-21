@@ -42,13 +42,15 @@ class FreeCADModel
 
     FreeCADModel ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "FreeCADModel" );
 
     FreeCADModel ( );
     static FeaturePtr create ( const boost::filesystem::path& filename, const std::string& solidname, FreeCADModelVarList vars=FreeCADModelVarList() );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -40,6 +40,9 @@ class Cutaway
     Cutaway ( FeaturePtr model, VectorPtr p0, VectorPtr n );
     Cutaway ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Cutaway" );
     Cutaway ();
@@ -47,7 +50,6 @@ public:
     static FeaturePtr create ( FeaturePtr model, VectorPtr p0, VectorPtr n );
     static FeaturePtr create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inverted );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

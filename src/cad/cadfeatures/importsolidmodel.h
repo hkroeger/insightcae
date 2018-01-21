@@ -36,13 +36,15 @@ class Import
 
     Import ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Import" );
     Import ();
     
     static FeaturePtr create ( const boost::filesystem::path& filepath/*, ScalarPtr scale=ScalarPtr()*/ );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

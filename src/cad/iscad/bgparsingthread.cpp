@@ -23,6 +23,7 @@
 #include "cadmodel.h"
 #include "datum.h"
 
+#include <thread>
 
 BGParsingThread::BGParsingThread()
 : action_(Parse)
@@ -36,6 +37,7 @@ void BGParsingThread::launch(const std::string& script, Action action)
 {
     script_=script;
     action_=action;
+    std::cout<<"ID1="<<currentThreadId()<<" / "<<std::this_thread::get_id()<<std::endl;
     start();
 }
 
@@ -77,6 +79,8 @@ public:
 
 void BGParsingThread::run()
 {
+    thread_id_=std::this_thread::get_id();
+
     std::istringstream is(script_);
 
     int failloc=-1;
@@ -87,158 +91,179 @@ void BGParsingThread::run()
     model_.reset(new insight::cad::Model);
     bool r=false;
 
-    std::string reason="Failed: Syntax error";
-    std::cout<<script_;
     try
     {
-        r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+      std::string reason="Failed: Syntax error";
+      std::cout<<script_;
+      try
+      {
+          r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
+      }
+      catch (insight::cad::parser::iscadParserException e)
+      {
+          reason="Expected: "+e.message();
+          failloc=e.from_pos();
+          std::cout<<"Error:"<<reason<<std::endl;
+          emit scriptError(failloc, QString::fromStdString(reason));
+      }
+
+      if (!r) // fail if we did not get a full match
+      {
+          emit scriptError(failloc, "Syntax error");
+      }
+      else
+      {
+
+          std::cout<<"Parsing done"<<std::endl;
+
+          emit statusMessage("Model parsed successfully.");
+
+          if (action_ >= Rebuild)
+          {
+              std::cout<<"Building model"<<std::endl;
+
+              insight::cad::Model::ScalarTableContents scalars=model_->scalars();
+              insight::cad::Model::VectorTableContents vectors=model_->vectors();
+              insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
+              insight::cad::Model::DatumTableContents datums=model_->datums();
+              insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
+
+              int is=0;
+              int istepmax=scalars.size()+vectors.size()+modelsteps.size()+datums.size() -1;
+
+              {
+                  // get set with scalar symbols before rebuild (for finding out which have vanished)
+                  MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars;
+                  if (oldmodel) removedScalars.set(oldmodel->scalars());
+
+                  BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
+                  {
+                      emit statusMessage("Building scalar "+QString::fromStdString(v.first));
+  //                    v.second->value();
+                      std::cout<<v.first<<"="<<v.second->value()<<std::endl; // Trigger evaluation
+                      emit statusProgress(is++, istepmax);
+                      emit createdVariable(QString::fromStdString(v.first), v.second);
+                      removedScalars.removeIfPresent(v.first);
+                  }
+
+                  BOOST_FOREACH(const std::string& sn, removedScalars)
+                  {
+                    emit removedScalar(QString::fromStdString(sn));
+                  }
+              }
+
+
+              {
+                  MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
+                  if (oldmodel) removedVectors.set(oldmodel->vectors());
+
+                  BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type const& v, vectors)
+                  {
+                      emit statusMessage("Building vector "+QString::fromStdString(v.first));
+                      v.second->value(); // Trigger evaluation
+                      emit statusProgress(is++, istepmax);
+                      emit createdVariable(QString::fromStdString(v.first), v.second);
+                      removedVectors.removeIfPresent(v.first);
+                  }
+
+                  BOOST_FOREACH(const std::string& sn, removedVectors)
+                  {
+                    emit removedVector(QString::fromStdString(sn));
+                  }
+              }
+
+              {
+                  MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures;
+                  if (oldmodel) removedFeatures.set(oldmodel->modelsteps());
+
+                  BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type const& v, modelsteps)
+                  {
+                      bool is_comp=false;
+                      if (model_->components().find(v.first) != model_->components().end())
+                      {
+                          is_comp=true;
+                          emit statusMessage("Building component "+QString::fromStdString(v.first));
+                      } else
+                      {
+                          emit statusMessage("Building feature "+QString::fromStdString(v.first));
+                      }
+                      v.second->checkForBuildDuringAccess(); // Trigger rebuild
+                      emit statusProgress(is++, istepmax);
+                      emit createdFeature(QString::fromStdString(v.first), v.second, is_comp);
+
+                      removedFeatures.removeIfPresent(v.first);
+                  }
+
+                  BOOST_FOREACH(const std::string& sn, removedFeatures)
+                  {
+                    emit removedFeature(QString::fromStdString(sn));
+                  }
+
+              }
+
+              {
+                  MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
+                  if (oldmodel) removedDatums.set(oldmodel->datums());
+
+                  BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
+                  {
+                      emit statusMessage("Building datum "+QString::fromStdString(v.first));
+                      v.second->checkForBuildDuringAccess(); // Trigger rebuild
+                      emit statusProgress(is++, istepmax);
+                      emit createdDatum(QString::fromStdString(v.first), v.second);
+                      removedDatums.removeIfPresent(v.first);
+                  }
+
+                  BOOST_FOREACH(const std::string& sn, removedDatums)
+                  {
+                    emit removedDatum(QString::fromStdString(sn));
+                  }
+              }
+
+              {
+                  MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions;
+                  if (oldmodel) removedPostprocActions.set(oldmodel->postprocActions());
+
+                  int is=0, ns=postprocActions.size();
+                  BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type const& v, postprocActions)
+                  {
+                      emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
+                      if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
+                      emit statusProgress(is++, ns-1);
+                      emit createdEvaluation(QString::fromStdString(v.first), v.second);
+                      removedPostprocActions.removeIfPresent(v.first);
+                  }
+
+                  BOOST_FOREACH(const std::string& sn, removedPostprocActions)
+                  {
+                    emit removedEvaluation(QString::fromStdString(sn));
+                  }
+              }
+
+              last_rebuilt_model_ = model_;
+
+              emit statusMessage("Model rebuild successfully finished.");
+          }
+      }
     }
-    catch (insight::cad::parser::iscadParserException e)
+    catch (insight::cad::RebuildCancelException e)
     {
-        reason="Expected: "+e.message();
-        failloc=e.from_pos();
-        std::cout<<"Error:"<<reason<<std::endl;
-        emit scriptError(failloc, QString::fromStdString(reason));
+      emit statusMessage("Model rebuild cancelled");
     }
-
-    if (!r) // fail if we did not get a full match
+    catch (insight::Exception e)
     {
-        emit scriptError(failloc, "Syntax error");
+      emit scriptError(-1, QString::fromStdString(e.as_string()) );
     }
-    else
+    catch (Standard_Failure e)
     {
-
-        std::cout<<"Parsing done"<<std::endl;
-
-        emit statusMessage("Model parsed successfully.");
-
-        if (action_ >= Rebuild)
-        {
-            std::cout<<"Building model"<<std::endl;
-
-            insight::cad::Model::ScalarTableContents scalars=model_->scalars();
-            insight::cad::Model::VectorTableContents vectors=model_->vectors();
-            insight::cad::Model::ModelstepTableContents modelsteps=model_->modelsteps();
-            insight::cad::Model::DatumTableContents datums=model_->datums();
-            insight::cad::Model::PostprocActionTableContents postprocActions=model_->postprocActions();
-
-            int is=0;
-            int istepmax=scalars.size()+vectors.size()+modelsteps.size()+datums.size() -1;
-
-            {
-                // get set with scalar symbols before rebuild (for finding out which have vanished)
-                MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars;
-                if (oldmodel) removedScalars.set(oldmodel->scalars());
-
-                BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
-                {
-                    emit statusMessage("Building scalar "+QString::fromStdString(v.first));
-//                    v.second->value();
-                    std::cout<<v.first<<"="<<v.second->value()<<std::endl; // Trigger evaluation
-                    emit statusProgress(is++, istepmax);
-                    emit createdVariable(QString::fromStdString(v.first), v.second);
-                    removedScalars.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedScalars)
-                {
-                  emit removedScalar(QString::fromStdString(sn));
-                }
-            }
-
-
-            {
-                MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
-                if (oldmodel) removedVectors.set(oldmodel->vectors());
-
-                BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type const& v, vectors)
-                {
-                    emit statusMessage("Building vector "+QString::fromStdString(v.first));
-                    v.second->value(); // Trigger evaluation
-                    emit statusProgress(is++, istepmax);
-                    emit createdVariable(QString::fromStdString(v.first), v.second);
-                    removedVectors.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedVectors)
-                {
-                  emit removedVector(QString::fromStdString(sn));
-                }
-            }
-
-            {
-                MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures;
-                if (oldmodel) removedFeatures.set(oldmodel->modelsteps());
-
-                BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type const& v, modelsteps)
-                {
-                    bool is_comp=false;
-                    if (model_->components().find(v.first) != model_->components().end())
-                    {
-                        is_comp=true;
-                        emit statusMessage("Building component "+QString::fromStdString(v.first));
-                    } else
-                    {
-                        emit statusMessage("Building feature "+QString::fromStdString(v.first));
-                    }
-                    v.second->checkForBuildDuringAccess(); // Trigger rebuild
-                    emit statusProgress(is++, istepmax);
-                    emit createdFeature(QString::fromStdString(v.first), v.second, is_comp);
-
-                    removedFeatures.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedFeatures)
-                {
-                  emit removedFeature(QString::fromStdString(sn));
-                }
-
-            }
-
-            {
-                MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
-                if (oldmodel) removedDatums.set(oldmodel->datums());
-
-                BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
-                {
-                    emit statusMessage("Building datum "+QString::fromStdString(v.first));
-                    v.second->checkForBuildDuringAccess(); // Trigger rebuild
-                    emit statusProgress(is++, istepmax);
-                    emit createdDatum(QString::fromStdString(v.first), v.second);
-                    removedDatums.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedDatums)
-                {
-                  emit removedDatum(QString::fromStdString(sn));
-                }
-            }
-
-            {
-                MapDirectory<insight::cad::Model::PostprocActionTableContents> removedPostprocActions;
-                if (oldmodel) removedPostprocActions.set(oldmodel->postprocActions());
-
-                int is=0, ns=postprocActions.size();
-                BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type const& v, postprocActions)
-                {
-                    emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
-                    if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
-                    emit statusProgress(is++, ns-1);
-                    emit createdEvaluation(QString::fromStdString(v.first), v.second);
-                    removedPostprocActions.removeIfPresent(v.first);
-                }
-
-                BOOST_FOREACH(const std::string& sn, removedPostprocActions)
-                {
-                  emit removedEvaluation(QString::fromStdString(sn));
-                }
-            }
-
-            last_rebuilt_model_ = model_;
-
-            emit statusMessage("Model rebuild successfully finished.");
-        }
-
-        insight::cad::cache.finishRebuild();
+      emit scriptError(-1, QString(e.GetMessageString()) );
     }
+
+    insight::cad::cache.finishRebuild();
+}
+
+
+void BGParsingThread::cancelRebuild()
+{
+  insight::cad::Feature::cancelRebuild(thread_id_);
 }

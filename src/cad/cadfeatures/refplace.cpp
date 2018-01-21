@@ -200,6 +200,16 @@ double PointOnAxis::residual(const gp_Trsf& tr) const
 }
 
 
+size_t RefPlace::calcHash() const
+{
+  ParameterListHash p;
+  p+=*m_;
+
+#warning hashes of placement rules missing
+
+  return p.getHash();
+}
+
 
 RefPlace::RefPlace(): DerivedFeature()
 {}

@@ -40,6 +40,9 @@ class FillingFace
     FillingFace ( FeaturePtr e1, FeaturePtr e2 );
     FillingFace ( FeatureSetPtr es1, FeatureSetPtr es2 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "FillingFace" );
     FillingFace ();
@@ -49,7 +52,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

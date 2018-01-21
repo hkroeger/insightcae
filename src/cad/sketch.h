@@ -98,6 +98,9 @@ class Sketch
     double tol=Precision::Confusion() 
   );
 
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   declareType("Sketch");
   Sketch();
@@ -113,7 +116,6 @@ public:
   
   void operator=(const Sketch& o);
   
-  virtual void build();
   
   void executeEditor();
   

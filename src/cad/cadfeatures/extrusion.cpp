@@ -39,6 +39,15 @@ defineType(Extrusion);
 addToFactoryTable(Feature, Extrusion);
 
 
+size_t Extrusion::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*sk_;
+  h+=L_->value();
+  h+=centered_;
+  return h.getHash();
+}
 
 
 Extrusion::Extrusion(): Feature()
@@ -50,11 +59,6 @@ Extrusion::Extrusion(): Feature()
 Extrusion::Extrusion(FeaturePtr sk, VectorPtr L, bool centered)
 : sk_(sk), L_(L), centered_(centered)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*sk_;
-  h+=L_->value();
-  h+=centered_;
 }
 
 

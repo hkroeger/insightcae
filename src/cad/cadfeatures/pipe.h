@@ -39,13 +39,15 @@ class Pipe
 
     Pipe ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Pipe" );
     Pipe ();
 
     static FeaturePtr create ( FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal=VectorPtr(), bool orient=false, bool reapprox_spine=false );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

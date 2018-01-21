@@ -61,7 +61,15 @@ namespace cad
 defineType(Arc);
 addToFactoryTable(Feature, Arc);
 
-
+size_t Arc::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=p0tang_->value();
+  h+=p1_->value();
+  return h.getHash();
+}
 
 Arc::Arc()
 : Feature()
@@ -92,11 +100,6 @@ void Arc::build()
 Arc::Arc(VectorPtr p0, VectorPtr p0tang, VectorPtr p1)
 : p0_(p0), p0tang_(p0tang), p1_(p1)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=p0_->value();
-    h+=p0tang_->value();
-    h+=p1_->value();
 }
 
 
@@ -195,6 +198,16 @@ bool Arc::isSingleOpenWire() const
 defineType(Arc3P);
 addToFactoryTable(Feature, Arc3P);
 
+
+size_t Arc3P::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=pm_->value();
+  h+=p1_->value();
+  return h.getHash();
+}
 
 
 Arc3P::Arc3P()

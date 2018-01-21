@@ -44,6 +44,9 @@ class NacaFourDigit
         ScalarPtr clipte=scalarconst(0) 
     );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Naca4" );
     NacaFourDigit ();
@@ -59,7 +62,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -39,13 +39,15 @@ class Revolution
 
     Revolution ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Revolution" );
     Revolution ();
 
     static FeaturePtr create ( FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered=false );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

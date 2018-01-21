@@ -41,6 +41,14 @@ defineType(BooleanUnion);
 addToFactoryTable(Feature, BooleanUnion);
 
 
+size_t BooleanUnion::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  if (m2_) h+=*m2_;
+  return h.getHash();
+}
 
 
 BooleanUnion::BooleanUnion()
@@ -54,9 +62,6 @@ BooleanUnion::BooleanUnion(FeaturePtr m1)
 : DerivedFeature(m1), 
   m1_(m1)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
     setFeatureSymbolName( "merged("+m1->featureSymbolName()+")" );
 }
 
@@ -68,11 +73,6 @@ BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
   m1_(m1),
   m2_(m2)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=*m2_;
-
     setFeatureSymbolName( "("+m1->featureSymbolName()+" | "+m2->featureSymbolName()+")" );
 }
 

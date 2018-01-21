@@ -45,6 +45,9 @@ class Place
     Place ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );
     Place ( FeaturePtr m, FeaturePtr other );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Place" );
     Place ();
@@ -53,7 +56,6 @@ public:
     static FeaturePtr create ( FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez );
     static FeaturePtr create ( FeaturePtr m, FeaturePtr other );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -35,13 +35,15 @@ class Wire
 
     Wire ( FeatureSetPtr edges );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Wire" );
     Wire ();
 
     static FeaturePtr create ( FeatureSetPtr edges );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

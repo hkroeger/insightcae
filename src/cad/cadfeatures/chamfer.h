@@ -34,13 +34,16 @@ class Chamfer
 
     Chamfer(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
 
+protected:
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("Chamfer");
     Chamfer();
 
     static FeaturePtr create(FeatureSetPtr edges, ScalarPtr l, ScalarPtr angle);
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

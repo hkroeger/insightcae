@@ -45,6 +45,9 @@ protected:
     Compound ( const CompoundFeatureList& m1 );
     Compound ( const CompoundFeatureMap& m1 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Compound" );
     Compound ();
@@ -52,7 +55,6 @@ public:
     static FeaturePtr create( const CompoundFeatureList& m1 );
     static FeaturePtr create_map( const CompoundFeatureMap& m1 );
 
-    virtual void build();
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
 

@@ -31,12 +31,14 @@ class GlueFaces
   FeaturePtr feat_;
   ScalarPtr tol_;
   
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   declareType("GlueFaces");
   GlueFaces();
   GlueFaces(FeaturePtr faces, ScalarPtr tol=scalarconst(1e-7));
   
-  virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };

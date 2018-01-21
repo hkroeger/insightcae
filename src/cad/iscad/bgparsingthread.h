@@ -49,6 +49,7 @@ public:
 protected:
     std::string script_;
     Action action_;
+    std::thread::id thread_id_;
 
 public:
     insight::cad::ModelPtr last_rebuilt_model_, model_;
@@ -66,6 +67,7 @@ public:
     virtual void run();
     void extendActionToRebuild();
     inline Action action() const { return action_; }
+    void cancelRebuild();
 
 signals:
 

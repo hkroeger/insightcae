@@ -48,6 +48,22 @@ defineType(Bar);
 addToFactoryTable(Feature, Bar);
 
 
+size_t Bar::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=p1_->value();
+  h+=*xsec_;
+  h+=vert_->value();
+  h+=ext0_->value();
+  h+=ext1_->value();
+  h+=miterangle0_vert_->value();
+  h+=miterangle1_vert_->value();
+  h+=miterangle0_hor_->value();
+  h+=miterangle1_hor_->value();
+  return h.getHash();
+}
 
 
 void Bar::build()
@@ -214,19 +230,6 @@ Bar::Bar
   miterangle0_hor_(miterangle0_hor),
   miterangle1_hor_(miterangle1_hor)
 {
-  // build the parameter hash
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=*xsec_;
-  h+=vert_->value();
-  h+=ext0_->value();
-  h+=ext1_->value();
-  h+=miterangle0_vert_->value();
-  h+=miterangle1_vert_->value();
-  h+=miterangle0_hor_->value();
-  h+=miterangle1_hor_->value();
 }
 
 
@@ -250,19 +253,6 @@ Bar::Bar
   miterangle0_hor_(boost::fusion::at_c<2>(ext_miterv_miterh0)),
   miterangle1_hor_(boost::fusion::at_c<2>(ext_miterv_miterh1))
 {
-  // build the parameter hash
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=*xsec_;
-  h+=vert_->value();
-  h+=ext0_->value();
-  h+=ext1_->value();
-  h+=miterangle0_vert_->value();
-  h+=miterangle1_vert_->value();
-  h+=miterangle0_hor_->value();
-  h+=miterangle1_hor_->value();
 }
 
 

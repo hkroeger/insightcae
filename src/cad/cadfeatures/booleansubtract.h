@@ -36,13 +36,15 @@ class BooleanSubtract
   
   BooleanSubtract(FeaturePtr m1, FeaturePtr m2);
 
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   declareType("BooleanSubtract");
   
   BooleanSubtract();
   static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
   
-  virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual FeatureCmdInfoList ruleDocumentation() const;

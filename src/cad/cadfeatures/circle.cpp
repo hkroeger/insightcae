@@ -38,6 +38,15 @@ defineType(Circle);
 addToFactoryTable(Feature, Circle);
 
 
+size_t Circle::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=n_->value();
+  h+=D_->value();
+  return h.getHash();
+}
 
 
 Circle::Circle()
@@ -66,11 +75,6 @@ void Circle::build()
 Circle::Circle(VectorPtr p0, VectorPtr n, ScalarPtr D)
 : p0_(p0), n_(n), D_(D)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=p0_->value();
-    h+=n_->value();
-    h+=D_->value();
 }
 
 

@@ -40,6 +40,9 @@ class RegPoly
     RegPoly ( VectorPtr p0, VectorPtr n, ScalarPtr ne, ScalarPtr a,
               VectorPtr ez = matconst ( arma::mat() ) );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "RegPoly" );
     RegPoly ();
@@ -49,7 +52,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

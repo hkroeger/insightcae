@@ -46,6 +46,17 @@ addToFactoryTable(Feature, Thicken);
 
 
 
+size_t Thicken::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*shell_;
+  h+=thickness_->value();
+  h+=tol_->value();
+  return h.getHash();
+}
+
+
 
 Thicken::Thicken(): Feature()
 {}
@@ -55,13 +66,7 @@ Thicken::Thicken(): Feature()
 
 Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 : shell_(shell), thickness_(thickness), tol_(tol)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*shell_;
-    h+=thickness_->value();
-    h+=tol_->value();
-}
+{}
 
 
 

@@ -38,6 +38,15 @@ defineType(LinearPattern);
 addToFactoryTable(Feature, LinearPattern);
 
 
+size_t LinearPattern::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  h+=axis_->value();
+  h+=n_->value();
+  return h.getHash();
+}
 
 
 LinearPattern::LinearPattern(): Compound()
@@ -48,13 +57,7 @@ LinearPattern::LinearPattern(): Compound()
   
 LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
 : m1_(m1), axis_(axis), n_(n)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*m1_;
-  h+=axis_->value();
-  h+=n_->value();
-}
+{}
 
 
 

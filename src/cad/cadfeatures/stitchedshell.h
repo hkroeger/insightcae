@@ -31,13 +31,15 @@ class StitchedShell
 {
   FeatureSetPtr faces_;
   ScalarPtr tol_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   declareType("StitchedShell");
   StitchedShell();
   StitchedShell(FeatureSetPtr faces, ScalarPtr tol=scalarconst(1e-3) );
   
-  virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

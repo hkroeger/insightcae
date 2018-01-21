@@ -38,6 +38,14 @@ defineType(Sphere);
 addToFactoryTable(Feature, Sphere);
 
 
+size_t Sphere::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p_->value();
+  h+=D_->value();
+  return h.getHash();
+}
 
 
 Sphere::Sphere()
@@ -48,12 +56,7 @@ Sphere::Sphere()
   
 Sphere::Sphere(VectorPtr p, ScalarPtr D)
 : p_(p), D_(D)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p_->value();
-  h+=D_->value();
-}
+{}
 
 
 

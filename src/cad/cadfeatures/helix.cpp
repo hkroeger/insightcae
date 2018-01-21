@@ -34,6 +34,19 @@ namespace cad {
 defineType(Helix);
 addToFactoryTable(Feature, Helix);
 
+size_t Helix::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=p1_->value();
+  h+=d_->value();
+  h+=winds_->value();
+  return h.getHash();
+}
+
+
+
 Helix::Helix()
 : Feature()
 {
@@ -43,12 +56,6 @@ Helix::Helix()
 Helix::Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds)
 : p0_(p0), p1_(p1), d_(d), winds_(winds)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
-  h+=d_->value();
-  h+=winds_->value();
 }
 
 void Helix::build()

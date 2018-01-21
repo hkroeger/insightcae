@@ -25,6 +25,16 @@ namespace insight
 {
 namespace cad
 {
+
+std::mutex ASTBase::cancel_mtx_;
+std::set<std::thread::id> ASTBase::cancel_requests_;
+
+void ASTBase::cancelRebuild(std::thread::id thread_id)
+{
+  std::lock_guard<std::mutex> l(cancel_mtx_);
+  cancel_requests_.insert(thread_id);
+}
+
   
 ASTBase::ASTBase()
 : valid_(false),
@@ -38,6 +48,16 @@ ASTBase::~ASTBase()
 
 void ASTBase::checkForBuildDuringAccess() const
 {
+  {
+    std::lock_guard<std::mutex> l(cancel_mtx_);
+    auto i = cancel_requests_.find(std::this_thread::get_id());
+    if ( i != cancel_requests_.end())
+      {
+        cancel_requests_.erase(i);
+        throw RebuildCancelException();
+      }
+  }
+
   boost::mutex m_mutex;
   boost::unique_lock<boost::mutex> lock(m_mutex);
   

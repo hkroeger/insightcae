@@ -38,6 +38,14 @@ defineType(Pyramid);
 addToFactoryTable(Feature, Pyramid);
 
 
+size_t Pyramid::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*base_;
+  h+=ptip_->value();
+  return h.getHash();
+}
 
 
 Pyramid::Pyramid()
@@ -51,12 +59,7 @@ Pyramid::Pyramid(FeaturePtr base, VectorPtr ptip)
 : Feature(),
   base_(base),
   ptip_(ptip)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*base_;
-  h+=ptip_->value();
-}
+{}
 
 
 

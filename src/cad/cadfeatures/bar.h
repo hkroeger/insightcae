@@ -42,6 +42,9 @@ class Bar
   ScalarPtr miterangle0_hor_; 
   ScalarPtr miterangle1_hor_;
 
+  virtual size_t calcHash() const;
+  virtual void build();
+
  /**
    * crate bar between p0 and p1. Cross section's xsec (single face) y-axis will be aligned with vertical direction vert.
    * bar is elongated at p0 by ext0 and at p1 by ext1, respectively.
@@ -94,7 +97,6 @@ public:
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual FeatureCmdInfoList ruleDocumentation() const;
   
-  virtual void build();
 };
 
 

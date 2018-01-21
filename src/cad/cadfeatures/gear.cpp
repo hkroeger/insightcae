@@ -415,6 +415,16 @@ defineType(SpurGear);
 addToFactoryTable(Feature, SpurGear);
 
 
+size_t SpurGear::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=m_->value();
+  h+=z_->value();
+  h+=t_->value();
+  h+=clearance_->value();
+  return h.getHash();
+}
 
 
 SpurGear::SpurGear()
@@ -426,12 +436,6 @@ SpurGear::SpurGear()
 SpurGear::SpurGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
 : m_(m), z_(z), t_(t), clearance_(clearance)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
 }
 
 
@@ -957,6 +961,17 @@ defineType(BevelGear);
 addToFactoryTable(Feature, BevelGear);
 
 
+size_t BevelGear::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=m_->value();
+  h+=z_->value();
+  h+=t_->value();
+  h+=clearance_->value();
+  return h.getHash();
+}
+
 
 
 BevelGear::BevelGear()
@@ -968,12 +983,6 @@ BevelGear::BevelGear()
 BevelGear::BevelGear(ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance)
 : m_(m), z_(z), t_(t), clearance_(clearance)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=m_->value();
-  h+=z_->value();
-  h+=t_->value();
-  h+=clearance_->value();
 }
 
 

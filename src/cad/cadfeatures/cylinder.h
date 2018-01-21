@@ -43,6 +43,9 @@ class Cylinder
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
     Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Cylinder" );
     Cylinder ( );
@@ -50,7 +53,6 @@ public:
     static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
     static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

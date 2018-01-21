@@ -30,13 +30,15 @@ class Split
 {
   FeaturePtr source_;
   FeaturePtr target_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   declareType("Split");
   Split();
   Split(FeaturePtr source, FeaturePtr target);
   
-  virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

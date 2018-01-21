@@ -38,13 +38,15 @@ class Pyramid
 
     Pyramid ( FeaturePtr base, VectorPtr ptip );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Pyramid" );
     Pyramid ();
 
     static FeaturePtr create ( FeaturePtr base, VectorPtr ptip );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -36,12 +36,14 @@ class Sphere
 
     Sphere ( VectorPtr p, ScalarPtr D );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Sphere" );
     Sphere ();
     static FeaturePtr create ( VectorPtr p, ScalarPtr D );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

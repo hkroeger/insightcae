@@ -44,6 +44,9 @@ protected:
     Mirror ( FeaturePtr m1, DatumPtr pl );
     Mirror ( FeaturePtr m1, Mirror::Shortcut s );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
 
     declareType ( "Mirror" );
@@ -52,7 +55,6 @@ public:
     static FeaturePtr create ( FeaturePtr m1, DatumPtr pl );
     static FeaturePtr create_short ( FeaturePtr m1, Mirror::Shortcut s );
 
-    virtual void build();
     
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

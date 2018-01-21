@@ -37,13 +37,15 @@ class Projected
 
     Projected ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Projected" );
     Projected ();
 
     static FeaturePtr create ( FeaturePtr source, FeaturePtr target, VectorPtr dir );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

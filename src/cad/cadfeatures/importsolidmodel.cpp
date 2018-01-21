@@ -39,9 +39,18 @@ defineType(Import);
 addToFactoryTable(Feature, Import);
 
 
+size_t Import::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=filepath_;
+  return h.getHash();
+}
 
 
-Import::Import(): Feature()
+
+Import::Import()
+: Feature()
 {}
 
 
@@ -51,9 +60,6 @@ Import::Import(const filesystem::path& filepath/*, ScalarPtr scale*/)
 : filepath_(filepath)/*,
   scale_(scale)*/
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=filepath_;
 }
 
 

@@ -38,13 +38,15 @@ class CurvePattern
 
     CurvePattern ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "CurvePattern" );
 
     CurvePattern ();
     static FeaturePtr create ( FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

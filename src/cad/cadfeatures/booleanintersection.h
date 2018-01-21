@@ -38,6 +38,9 @@ class BooleanIntersection
   BooleanIntersection(FeaturePtr m1, FeaturePtr m2);
   BooleanIntersection(FeaturePtr m1, DatumPtr m2pl);
 
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   declareType("BooleanIntersection");
   BooleanIntersection();
@@ -45,7 +48,6 @@ public:
   static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
   static FeaturePtr create_plane(FeaturePtr m1, DatumPtr m2pl);
   
-  virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual FeatureCmdInfoList ruleDocumentation() const;

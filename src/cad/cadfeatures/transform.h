@@ -50,6 +50,9 @@ class Transform
     Transform ( FeaturePtr m1, ScalarPtr scale );
     Transform ( FeaturePtr m1, FeaturePtr other );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Transform" );
 
@@ -62,7 +65,6 @@ public:
     static FeaturePtr create_scale ( FeaturePtr m1, ScalarPtr scale );
     static FeaturePtr create_copy ( FeaturePtr m1, FeaturePtr other );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

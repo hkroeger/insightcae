@@ -145,6 +145,9 @@ class RefPlace
     RefPlace ( FeaturePtr m, const gp_Ax2& cs );
     RefPlace ( FeaturePtr m, ConditionList conditions );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "RefPlace" );
     RefPlace ();
@@ -152,7 +155,6 @@ public:
     static FeaturePtr create_fix ( FeaturePtr m, const gp_Ax2& cs );
     static FeaturePtr create ( FeaturePtr m, ConditionList conditions );
 
-    virtual void build();
     
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

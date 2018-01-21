@@ -39,6 +39,18 @@ defineType ( Cylinder );
 addToFactoryTable ( Feature, Cylinder );
 
 
+size_t Cylinder::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p2isAxis_;
+  h+=p1_->value();
+  h+=p2_->value();
+  h+=D_->value();
+  if (Di_) h+=Di_->value();
+  h+=centered_;
+  return h.getHash();
+}
 
 
 Cylinder::Cylinder ( )
@@ -50,13 +62,6 @@ Cylinder::Cylinder ( )
 Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered )
     : p2isAxis_ ( p2isAxis ), p1_ ( p1 ), p2_ ( p2 ), D_ ( D ), centered_ ( centered )
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p2isAxis_;
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D_->value();
-  h+=centered_;
 }
 
 
@@ -65,15 +70,6 @@ Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, boo
 Cylinder::Cylinder ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered )
     : p2isAxis_ ( p2isAxis ), p1_ ( p1 ), p2_ ( p2 ), D_ ( Da ), Di_ ( Di ), centered_ ( centered )
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p2isAxis_;
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=D_->value();
-  if (Di_) h+=Di_->value();
-  h+=centered_;
-
 }
 
 

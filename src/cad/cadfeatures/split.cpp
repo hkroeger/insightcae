@@ -38,6 +38,16 @@ namespace cad {
 defineType(Split);
 addToFactoryTable(Feature, Split);
 
+size_t Split::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*source_;
+  h+=*target_;
+  return h.getHash();
+}
+
+
 Split::Split(): DerivedFeature()
 {}
 
@@ -56,12 +66,7 @@ TopoDS_Shape makeSplit(const Feature& tool, const Feature& target)
 
 Split::Split(FeaturePtr source, FeaturePtr target)
 : DerivedFeature(target), source_(source), target_(target)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*source_;
-  h+=*target_;
-}
+{}
 
 void Split::build()
 {

@@ -37,12 +37,14 @@ class Thicken
 
     Thicken ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Thicken" );
     Thicken ();
     static FeaturePtr create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol=scalarconst ( Precision::Confusion() ) );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

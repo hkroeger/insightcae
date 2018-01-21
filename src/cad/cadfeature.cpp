@@ -153,12 +153,9 @@ namespace cad
 
 
 ParameterListHash::ParameterListHash()
-: model_(0), hash_(0)
+: hash_(0)
 {}
 
-ParameterListHash::ParameterListHash(Feature *m)
-: model_(m), hash_(0)
-{}
 
 
 ParameterListHash::operator size_t ()
@@ -260,6 +257,7 @@ int FreelyIndexedMapOfShape::getMaxIndex() const
 defineType(Feature);
 defineFactoryTableNoArgs(Feature);
 addToFactoryTable(Feature, Feature);
+
 
 
 void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
@@ -401,33 +399,38 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
 }
 
-void Feature::setShapeHash()
+size_t Feature::shapeHash() const
 {
   // create hash from
   // 1. total volume
   // 2. # vertices
   // 3. # faces
   // 4. vertex locations
+
+  size_t hash=0;
   
-  boost::hash_combine(hash_, boost::hash<double>()(modelVolume()));
-  boost::hash_combine(hash_, boost::hash<int>()(vmap_.size()));
-  boost::hash_combine(hash_, boost::hash<int>()(fmap_.size()));
+  boost::hash_combine(hash, boost::hash<double>()(modelVolume()));
+  boost::hash_combine(hash, boost::hash<int>()(vmap_.size()));
+  boost::hash_combine(hash, boost::hash<int>()(fmap_.size()));
 
   FeatureSetData vset=allVerticesSet();
   BOOST_FOREACH(const insight::cad::FeatureID& j, vset)
   {
     boost::hash_combine
     (
-      hash_, 
+      hash,
       boost::hash<arma::mat>()(vertexLocation(j))
     );    
   }
+
+  return hash;
 }
 
-void Feature::calcHash()
+size_t Feature::calcHash() const
 {
-  hash_=0.0;
-  if (valid()) setShapeHash();
+  size_t hash=0.0;
+  if (valid()) hash=shapeHash();
+  return hash;
 }
 
 
@@ -479,7 +482,7 @@ Feature::Feature(const TopoDS_Shape& shape)
   featureSymbolName_("anonymousShape")
 {
   setShape(shape);
-  setShapeHash();
+//  setShapeHash();
   setValid();
 }
 
@@ -498,7 +501,7 @@ Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
   featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
 {
-  ParameterListHash h(this);
+  ParameterListHash h;
   h+=this->type();
   h+=creashapes_->model();
 }
@@ -507,7 +510,7 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
   FeaturePtr f(new Feature());
   f->loadShapeFromFile(filepath);
-  f->setShapeHash();
+//  f->setShapeHash();
   f->setValid();
   f->setFeatureSymbolName("importedFrom_"+filepath.string());
   return f;
@@ -579,6 +582,16 @@ double Feature::mass(double density_ovr, double aw_ovr) const
 //       <<", mf / A = "<<aw<<" / "<<modelSurfaceArea()
 //       <<", m = "<<mtot<<endl;
   return mtot;
+}
+
+void Feature::checkForBuildDuringAccess() const
+{
+  if (hash_==0)
+    {
+      const_cast<size_t&>(hash_)=calcHash();
+    }
+
+  ASTBase::checkForBuildDuringAccess();
 }
 
 void Feature::build()

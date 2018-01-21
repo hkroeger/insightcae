@@ -35,6 +35,10 @@ class Circle
 
     Circle(VectorPtr p0, VectorPtr n, ScalarPtr D);
 
+protected:
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("Circle");
     Circle();
@@ -43,7 +47,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

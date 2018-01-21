@@ -44,6 +44,14 @@ defineType(BooleanIntersection);
 addToFactoryTable(Feature, BooleanIntersection);
 
 
+size_t BooleanIntersection::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  h+=*m2_;
+  return h.getHash();
+}
 
 
 BooleanIntersection::BooleanIntersection()
@@ -57,11 +65,7 @@ BooleanIntersection::BooleanIntersection(FeaturePtr m1, FeaturePtr m2)
     : DerivedFeature(m1),
       m1_(m1),
       m2_(m2)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=*m2_;   
+{ 
     setFeatureSymbolName( "("+m1->featureSymbolName()+" & "+m2->featureSymbolName()+")" );
 }
 

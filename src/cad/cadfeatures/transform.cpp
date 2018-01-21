@@ -41,6 +41,20 @@ addToFactoryTable(Feature, Transform);
 
 
 
+size_t Transform::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  if (trans_) h+=trans_->value();
+  if (rot_) h+=rot_->value();
+  if (rotorg_) h+=rotorg_->value();
+  if (sf_) h+=sf_->value();
+  if (other_) h+=*other_;
+  return h.getHash();
+}
+
+
 
 Transform::Transform()
 : DerivedFeature()
@@ -55,14 +69,7 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sc
   trans_(trans),
   rot_(rot),
   sf_(scale)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=trans_->value();
-    h+=rot_->value();
-    h+=sf_->value();
-}
+{}
 
 
 
@@ -72,13 +79,7 @@ Transform::Transform(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
   m1_(m1),
   rot_(rot),
   rotorg_(rotorg)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=rot_->value();
-    h+=rotorg_->value();
-}
+{}
 
 
 
@@ -87,12 +88,7 @@ Transform::Transform(FeaturePtr m1, VectorPtr trans)
 : DerivedFeature(m1),
   m1_(m1),
   trans_(trans)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=trans_->value();
-}
+{}
 
 
 
@@ -101,12 +97,7 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 : DerivedFeature(m1),
   m1_(m1),
   sf_(sf)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=sf_->value();
-}
+{}
 
 
 
@@ -114,8 +105,7 @@ Transform::Transform(FeaturePtr m1, ScalarPtr sf)
 Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 : DerivedFeature(m1),
   m1_(m1), trsf_(new gp_Trsf(trsf))
-{
-}
+{}
 
 
 
@@ -123,12 +113,7 @@ Transform::Transform(FeaturePtr m1, const gp_Trsf& trsf)
 Transform::Transform(FeaturePtr m1, FeaturePtr other)
 : DerivedFeature(m1),
   m1_(m1), other_(other)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=*other_;
-}
+{}
 
 
 

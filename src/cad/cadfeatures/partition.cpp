@@ -43,6 +43,15 @@ defineType(Partition);
 addToFactoryTable(Feature, Partition);
 
 
+size_t Partition::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  h+=*m2_;
+  return h.getHash();
+}
+
 
 
 Partition::Partition()
@@ -56,12 +65,7 @@ Partition::Partition(FeaturePtr m1, FeaturePtr m2)
 : DerivedFeature(m1),
   m1_(m1),
   m2_(m2)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*m1_;
-  h+=*m2_;
-}
+{}
 
 
 
@@ -77,11 +81,6 @@ FeaturePtr Partition::create(FeaturePtr m1, FeaturePtr m2)
 void Partition::build()
 {
   ExecTimer t("Partition::build() ["+featureSymbolName()+"]");
-
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*m1_;
-  h+=*m2_;
 
   BOPAlgo_Builder bab;
   bab.AddArgument(*m1_);

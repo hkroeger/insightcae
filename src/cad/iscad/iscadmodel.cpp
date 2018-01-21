@@ -576,9 +576,28 @@ void ISCADModel::unsetUnsavedState()
 
 void ISCADModel::onScriptError(int failpos, QString errorMsg)
 {
-  emit displayStatusMessage("Script error: "+errorMsg);
+  if (bgparsethread_.action() < BGParsingThread::Rebuild)
+    {
+      emit displayStatusMessage("Script error: "+errorMsg);
+    }
+  else
+    {
+      QMessageBox::critical
+          (
+            this,
+            "Script Error",
+            errorMsg
+          );
+    }
 }
 
+void ISCADModel::onCancelRebuild()
+{
+  if (bgparsethread_.isRunning())
+    {
+      bgparsethread_.cancelRebuild();
+    }
+}
 
 ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 : QWidget(parent)

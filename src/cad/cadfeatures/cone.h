@@ -38,13 +38,15 @@ class Cone
 
     Cone ( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Cone" );
     
     Cone ();
     static FeaturePtr create( VectorPtr p1, VectorPtr p2, ScalarPtr D1, ScalarPtr D2 );
 
-    virtual void build();
     virtual FeatureCmdInfoList ruleDocumentation() const;
     
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

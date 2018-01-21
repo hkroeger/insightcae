@@ -41,6 +41,15 @@ addToFactoryTable(Feature, Line);
 
 
 
+size_t Line::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=p1_->value();
+  return h.getHash();
+}
+
 
 Line::Line()
 : Feature()
@@ -53,10 +62,6 @@ Line::Line()
 Line::Line(VectorPtr p0, VectorPtr p1)
 : p0_(p0), p1_(p1)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=p1_->value();
 }
 
 

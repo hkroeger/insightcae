@@ -106,12 +106,10 @@ namespace cad
   
 class ParameterListHash
 {
-  Feature* model_;
   size_t hash_;
   
 public:
   ParameterListHash();
-  ParameterListHash(Feature* m);
   
   template<class T>
   void addParameter(const T& p);
@@ -172,6 +170,7 @@ public:
     int FindIndex (const TopoDS_Shape& K)  const;
     int getMaxIndex() const;
 };
+
  
 /**
  * Base class of all CAD modelling features
@@ -253,18 +252,19 @@ protected:
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   
-  void setShapeHash();
+  size_t shapeHash() const;
   
   /**
-   * sets the hash from input parameters
+   * shall set the hash from input parameters
    * (not the shape)
    * has to be computed before build!
    */
-  virtual void calcHash();
+  virtual size_t calcHash() const;
   
   void loadShapeFromFile(const boost::filesystem::path& filepath);
   
- 
+  virtual void build();
+
 public:
   declareType("Feature");
   
@@ -295,7 +295,7 @@ public:
   
   virtual double mass(double density_ovr=-1., double aw_ovr=-1.) const;
   
-  virtual void build();
+  virtual void checkForBuildDuringAccess() const;
     
   inline const DatumPtrMap& providedDatums() const 
     { checkForBuildDuringAccess(); return providedDatums_; }
@@ -483,7 +483,7 @@ void ParameterListHash::addParameter(const T& p)
   boost::hash_combine(hash_, p);
   
   // update
-  if (model_) model_->hash_=hash_;
+//  if (model_) model_->hash_=hash_;
 }
 
 class SingleFaceFeature

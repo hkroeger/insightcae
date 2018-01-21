@@ -37,19 +37,22 @@ namespace cad {
 defineType(StitchedShell);
 addToFactoryTable(Feature, StitchedShell);
 
+size_t StitchedShell::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*faces_;
+  h+=tol_->value();
+  return h.getHash();
+}
+
 StitchedShell::StitchedShell()
 : Feature()
-{
-}
+{}
 
 StitchedShell::StitchedShell(FeatureSetPtr faces, ScalarPtr tol)
 :faces_(faces), tol_(tol)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*faces_;
-    h+=tol_->value();
-}
+{}
 
 void StitchedShell::build()
 {

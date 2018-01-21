@@ -36,13 +36,15 @@ class Fillet
 
     Fillet ( FeatureSetPtr edges, ScalarPtr r );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Fillet" );
     Fillet ();
 
     static FeaturePtr create ( FeatureSetPtr edges, ScalarPtr r );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

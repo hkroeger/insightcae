@@ -45,6 +45,9 @@ class ModelFeature
     ModelFeature ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
     ModelFeature ( ModelPtr model );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "loadmodel" );
 
@@ -53,7 +56,6 @@ public:
     static FeaturePtr create_file ( const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable() );
     static FeaturePtr create_model ( ModelPtr model );
 
-    virtual void build();
     void executeEditor();
 
     std::string modelname() const;

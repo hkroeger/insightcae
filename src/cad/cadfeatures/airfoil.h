@@ -106,6 +106,9 @@ class Airfoil
         bool doEdgeThickening
     ) const;
     
+    virtual size_t calcHash() const;;
+    virtual void build();
+
 public:
     declareType ( "Airfoil" );
     Airfoil ();
@@ -115,7 +118,6 @@ public:
         const std::string& name, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr c, ScalarPtr t, ScalarPtr r_EK, ScalarPtr r_AK
     );
 
-    virtual void build();
     operator const TopoDS_Face& () const;
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

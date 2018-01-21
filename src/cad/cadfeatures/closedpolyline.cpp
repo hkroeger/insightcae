@@ -38,6 +38,16 @@ defineType(ClosedPolyline);
 addToFactoryTable(Feature, ClosedPolyline);
 
 
+size_t ClosedPolyline::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  BOOST_FOREACH(const VectorPtr& p, pts_)
+  {
+      h+=p->value();
+  }
+  return h.getHash();
+}
 
 
 ClosedPolyline::ClosedPolyline()
@@ -49,12 +59,6 @@ ClosedPolyline::ClosedPolyline()
 ClosedPolyline::ClosedPolyline(std::vector<VectorPtr> pts)
 : pts_(pts)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    BOOST_FOREACH(const VectorPtr& p, pts)
-    {
-        h+=p->value();
-    }
 }
 
 

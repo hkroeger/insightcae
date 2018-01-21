@@ -39,6 +39,9 @@ class SpurGear
 
     SpurGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "SpurGear" );
     SpurGear ();
@@ -47,7 +50,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
@@ -64,6 +66,9 @@ class BevelGear
 
     BevelGear ( ScalarPtr m, ScalarPtr z, ScalarPtr t, ScalarPtr clearance );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "BevelGear" );
     BevelGear ();
@@ -72,7 +77,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

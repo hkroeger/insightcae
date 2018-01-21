@@ -36,13 +36,15 @@ class SplineCurve
 
     SplineCurve ( const std::vector<VectorPtr>& pts, VectorPtr tan0, VectorPtr tan1 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "SplineCurve" );
     SplineCurve ();
 
     static FeaturePtr create ( const std::vector<VectorPtr>& pts, VectorPtr tan0 = VectorPtr(), VectorPtr tan1 = VectorPtr() );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

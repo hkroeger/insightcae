@@ -44,6 +44,20 @@ defineType(CoilPath);
 addToFactoryTable(Feature, CoilPath);
 
 
+size_t CoilPath::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=l_->value();
+  h+=dcore_->value();
+  h+=n_->value();
+  h+=d_->value();
+  h+=R_->value();
+  h+=rmin_->value();
+  h+=nl_->value();
+  h+=dr_->value();
+  return h.getHash();
+}
 
 
 CoilPath::CoilPath()
@@ -67,16 +81,6 @@ CoilPath::CoilPath
 )
 : l_(l), dcore_(dcore), n_(n), d_(d), R_(R), rmin_(rmin), nl_(nl), dr_(dr)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=l_->value();
-    h+=dcore_->value();
-    h+=n_->value();
-    h+=d_->value();
-    h+=R_->value();
-    h+=rmin_->value();
-    h+=nl_->value();
-    h+=dr_->value();
 }
 
 
@@ -343,6 +347,19 @@ bool CoilPath::isSingleOpenWire() const
 
 defineType(Coil);
 addToFactoryTable(Feature, Coil);
+
+size_t Coil::calcHash() const
+{
+  ParameterListHash h;
+  h+=p0_->value();
+  h+=b_->value();
+  h+=l_->value();
+  h+=r_->value();
+  h+=d_->value();
+  h+=nv_->value();
+  h+=nr_->value();
+  return h.getHash();
+}
 
 Coil::Coil()
 : Feature()

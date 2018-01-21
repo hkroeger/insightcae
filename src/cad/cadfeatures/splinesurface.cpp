@@ -38,6 +38,20 @@ defineType(SplineSurface);
 addToFactoryTable(Feature, SplineSurface);
 
 
+size_t SplineSurface::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  BOOST_FOREACH(const std::vector<VectorPtr>& ipts, pts_)
+  {
+      BOOST_FOREACH(const VectorPtr& p, ipts)
+      {
+          h+=p->value();
+      }
+  }
+  return h.getHash();
+}
+
 
 
 SplineSurface::SplineSurface()
@@ -48,17 +62,7 @@ SplineSurface::SplineSurface()
 
 SplineSurface::SplineSurface(const std::vector< std::vector<VectorPtr> >& pts)
 : pts_(pts)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  BOOST_FOREACH(const std::vector<VectorPtr>& ipts, pts)
-  {
-      BOOST_FOREACH(const VectorPtr& p, ipts)
-      {
-          h+=p->value();
-      }
-  }
-}
+{}
 
 
 

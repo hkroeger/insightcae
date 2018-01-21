@@ -38,6 +38,16 @@ defineType(Tri);
 addToFactoryTable(Feature, Tri);
 
 
+size_t Tri::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=e1_->value();
+  h+=e2_->value();
+  return h.getHash();
+}
+
 
 
 Tri::Tri()
@@ -48,13 +58,7 @@ Tri::Tri()
 
 Tri::Tri(VectorPtr p0, VectorPtr e1, VectorPtr e2)
 : p0_(p0), e1_(e1), e2_(e2)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=p0_->value();
-    h+=e1_->value();
-    h+=e2_->value();
-}
+{}
 
 
 

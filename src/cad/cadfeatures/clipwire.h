@@ -34,13 +34,16 @@ class ClipWire
 
     ClipWire(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
 
+protected:
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("ClipWire");
     ClipWire();
 
     static FeaturePtr create(FeaturePtr wire, ScalarPtr ls, ScalarPtr le);
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -207,7 +207,9 @@ public slots:
     void unsetUnsavedState();
 
     void onScriptError(int failpos, QString errorMsg);
-    
+
+    void onCancelRebuild();
+
 signals:
     
     /**

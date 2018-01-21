@@ -41,6 +41,17 @@ addToFactoryTable(Feature, Torus);
 
 
 
+size_t Torus::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=axisTimesD_->value();
+  h+=d_->value();
+  return h.getHash();
+}
+
+
 
 Torus::Torus()
 {}
@@ -50,13 +61,7 @@ Torus::Torus()
 
 Torus::Torus(VectorPtr p0, VectorPtr axisTimesD, ScalarPtr d)
 : p0_(p0), axisTimesD_(axisTimesD), d_(d)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=p0_->value();
-    h+=axisTimesD_->value();
-    h+=d_->value();
-}
+{}
 
 
 

@@ -39,6 +39,26 @@ addToFactoryTable(Feature, CircularPattern);
 
 
 
+size_t CircularPattern::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  if (otherpat_)
+    {
+      h+=*otherpat_;
+    }
+  else
+    {
+      h+=p0_->value();
+      h+=axis_->value();
+      h+=n_->value();
+      h+=center_;
+      h+=filterrule_;
+    }
+  return h.getHash();
+}
+
 
 CircularPattern::CircularPattern(): Compound()
 {}
@@ -54,14 +74,6 @@ CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, Sc
   center_(center),
   filterrule_(filterrule)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=p0_->value();
-    h+=axis_->value();
-    h+=n_->value();
-    h+=center_;
-    h+=filterrule_;
 }
 
 
@@ -70,10 +82,6 @@ CircularPattern::CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, Sc
 CircularPattern::CircularPattern(FeaturePtr m1, FeaturePtr otherpat)
 : m1_(m1), otherpat_(otherpat)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*m1_;
-    h+=*otherpat_;
 }
 
 

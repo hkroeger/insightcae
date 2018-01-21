@@ -36,6 +36,19 @@ defineType(Quad);
 addToFactoryTable(Feature, Quad);
 
 
+size_t Quad::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=L_->value();
+  h+=W_->value();
+  if (t_) h+=t_->value();
+  h+=boost::fusion::at_c<0>(center_);
+  h+=boost::fusion::at_c<1>(center_);
+  return h.getHash();
+}
+
 
 
 Quad::Quad()
@@ -46,16 +59,7 @@ Quad::Quad()
 
 Quad::Quad(VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t, QuadCentering center)
 : p0_(p0), L_(L), W_(W), t_(t), center_(center)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=L_->value();
-  h+=W_->value();
-  if (t_) h+=t_->value();
-  h+=boost::fusion::at_c<0>(center_);
-  h+=boost::fusion::at_c<1>(center_);
-}
+{}
 
 
 

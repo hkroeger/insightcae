@@ -42,6 +42,14 @@ defineType(ClipWire);
 addToFactoryTable(Feature, ClipWire);
 
 
+size_t ClipWire::calcHash() const
+{
+  ParameterListHash h;
+  h+=m1_;
+  h+=ls_->value();
+  h+=le_->value();
+  return h.getHash();
+}
 
 
 ClipWire::ClipWire()

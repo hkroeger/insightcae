@@ -45,6 +45,10 @@ class Box
         BoxCentering center=BoxCentering(false, false, false)
     );
 
+protected:
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("Box");
     Box();
@@ -61,7 +65,6 @@ public:
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
 
-    virtual void build();
 };
 
 

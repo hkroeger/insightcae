@@ -34,20 +34,24 @@ namespace cad {
 defineType(Ring);
 addToFactoryTable(Feature, Ring);
 
+size_t Ring::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p1_->value();
+  h+=p2_->value();
+  h+=Da_->value();
+  h+=Di_->value();
+  return h.getHash();
+}
+
 Ring::Ring()
 {}
 
 
 Ring::Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di)
 : p1_(p1), p2_(p2), Da_(Da), Di_(Di)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p1_->value();
-  h+=p2_->value();
-  h+=Da_->value();
-  h+=Di_->value();
-}
+{}
 
 void Ring::build()
 {

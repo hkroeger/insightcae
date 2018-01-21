@@ -37,6 +37,15 @@ defineType(Chamfer);
 addToFactoryTable(Feature, Chamfer);
 
 
+size_t Chamfer::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=edges_;
+  h+=l_;
+  h+=angle_;
+  return h.getHash();
+}
 
 
 Chamfer::Chamfer(): DerivedFeature()

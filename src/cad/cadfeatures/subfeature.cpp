@@ -24,15 +24,19 @@ namespace insight
 namespace cad 
 {
 
+size_t Subfeature::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*basefeat_;
+  h+=subfeatname_;
+  return h.getHash();
+}
+
 Subfeature::Subfeature(FeaturePtr basefeat, const std::string& subfeatname)
 : basefeat_(basefeat),
   subfeatname_(subfeatname)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*basefeat_;
-    h+=subfeatname_;
-}
+{}
 
 
 void Subfeature::build()

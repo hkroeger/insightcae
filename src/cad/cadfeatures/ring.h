@@ -33,13 +33,15 @@ class Ring
   VectorPtr p2_;
   ScalarPtr Da_;
   ScalarPtr Di_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   declareType("Ring");
   Ring();
   Ring(VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di);
   
-  virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

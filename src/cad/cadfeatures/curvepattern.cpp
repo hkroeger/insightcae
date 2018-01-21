@@ -40,6 +40,16 @@ defineType(CurvePattern);
 addToFactoryTable(Feature, CurvePattern);
 
 
+size_t CurvePattern::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  h+=*curve_;
+  h+=delta_->value();
+  h+=n_->value();
+  return h.getHash();
+}
 
 
 CurvePattern::CurvePattern(): Compound()
@@ -51,12 +61,6 @@ CurvePattern::CurvePattern(): Compound()
 CurvePattern::CurvePattern(FeaturePtr m1, FeaturePtr curve, ScalarPtr delta, ScalarPtr n)
 : m1_(m1), curve_(curve), delta_(delta), n_(n)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*m1_;
-  h+=*curve_;
-  h+=delta_->value();
-  h+=n_->value();
 }
 
 

@@ -32,12 +32,14 @@ class ProjectedOutline
   FeaturePtr source_;
   DatumPtr target_;
   
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   declareType("ProjectedOutline");
   ProjectedOutline();
   ProjectedOutline(FeaturePtr source, DatumPtr target);
   
-  virtual void build();
   virtual void insertrule(parser::ISCADParser& ruleset) const;
 };
 

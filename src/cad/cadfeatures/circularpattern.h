@@ -48,6 +48,9 @@ class CircularPattern
     CircularPattern(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     CircularPattern(FeaturePtr m1, FeaturePtr otherpat);
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("CircularPattern");
     CircularPattern();
@@ -55,7 +58,6 @@ public:
     static FeaturePtr create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
     static FeaturePtr create(FeaturePtr m1, FeaturePtr otherpat);
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -42,6 +42,15 @@ namespace cad {
 defineType(GlueFaces);
 addToFactoryTable(Feature, GlueFaces);
 
+size_t GlueFaces::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*feat_;
+  h+=tol_->value();
+  return h.getHash();
+}
+
 GlueFaces::GlueFaces()
 {}
 
@@ -49,10 +58,6 @@ GlueFaces::GlueFaces()
 GlueFaces::GlueFaces(FeaturePtr feat, ScalarPtr tol)
 : feat_(feat), tol_(tol)
 {
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*feat;
-    h+=tol_->value();
 }
 
 void GlueFaces::build()

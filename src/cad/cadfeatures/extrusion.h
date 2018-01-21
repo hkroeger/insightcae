@@ -39,13 +39,15 @@ class Extrusion
 
     Extrusion ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Extrusion" );
     Extrusion ();
 
     static FeaturePtr create ( FeaturePtr sk, VectorPtr L, bool centered=false );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -35,13 +35,15 @@ class Line
 
     Line ( VectorPtr p0, VectorPtr p1 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Line" );
     Line ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

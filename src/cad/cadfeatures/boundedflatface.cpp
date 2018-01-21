@@ -38,6 +38,13 @@ defineType(BoundedFlatFace);
 addToFactoryTable(Feature, BoundedFlatFace);
 
 
+size_t BoundedFlatFace::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=edges_;
+  return h.getHash();
+}
 
 
 BoundedFlatFace::BoundedFlatFace()

@@ -36,20 +36,24 @@ namespace cad {
 defineType(Shoulder);
 addToFactoryTable(Feature, Shoulder);
 
+size_t Shoulder::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=p0_->value();
+  h+=dir_->value();
+  h+=d_->value();
+  h+=Dmax_->value();
+  return h.getHash();
+}
+
 Shoulder::Shoulder()
 {}
 
 
 Shoulder::Shoulder(VectorPtr p0, VectorPtr dir, ScalarPtr d, ScalarPtr Dmax)
 : p0_(p0), dir_(dir), d_(d), Dmax_(Dmax)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=p0_->value();
-  h+=dir_->value();
-  h+=d_->value();
-  h+=Dmax_->value();
-}
+{}
 
 void Shoulder::build()
 {

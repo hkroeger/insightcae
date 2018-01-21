@@ -38,23 +38,25 @@ defineType(Wire);
 addToFactoryTable(Feature, Wire);
 
 
+size_t Wire::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*edges_;
+  return h.getHash();
+}
+
 
 
 Wire::Wire(): Feature()
-{
-
-}
+{}
 
 
 
 
 Wire::Wire(FeatureSetPtr edges)
 : edges_(edges)
-{
-    ParameterListHash h(this);
-    h+=this->type();
-    h+=*edges_;
-}
+{}
 
 
 

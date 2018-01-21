@@ -99,29 +99,45 @@ void Datum::write(ostream& file) const
   file<<providesPlanarReference_<<endl;
 }
 
+void Datum::checkForBuildDuringAccess() const
+{
+  if (hash_==0)
+    {
+      const_cast<size_t&>(hash_)=calcHash();
+    }
+
+  ASTBase::checkForBuildDuringAccess();
+}
+
+
+size_t TransformedDatum::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=*base_;
+  if (translation_)
+    {
+      plh+=translation_->value();
+    }
+  else
+    {
+      for (int i=0; i<3; i++)
+          for (int j=0; j<4; j++)
+              plh+=tr_.Value(i+1, j+1);
+    }
+  return plh.getHash();
+}
+
 TransformedDatum::TransformedDatum(DatumPtr datum, gp_Trsf tr)
 : Datum(datum->providesPointReference(), datum->providesAxisReference(), datum->providesPlanarReference()),
   base_(datum),
   tr_(tr)
-{
-    ParameterListHash plh;
-    plh+=*base_;
-    for (int i=0; i<3; i++)
-        for (int j=0; j<4; j++)
-            plh+=tr_.Value(i+1, j+1);
-    hash_=plh.getHash();
-}
+{}
 
 TransformedDatum::TransformedDatum(DatumPtr datum, VectorPtr translation)
 : Datum(datum->providesPointReference(), datum->providesAxisReference(), datum->providesPlanarReference()),
   base_(datum),
   translation_(translation)
-{
-    ParameterListHash plh;
-    plh+=*base_;
-    plh+=translation_->value();
-    hash_=plh.getHash();
-}
+{}
 
 
 void TransformedDatum::build()
@@ -174,16 +190,21 @@ AIS_InteractiveObject* DatumPoint::createAISRepr(const gp_Trsf& tr) const
   return new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) );
 }
 
+
+size_t ProvidedDatum::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=*feat_;
+  plh+=name_;
+  return plh.getHash();
+}
+
+
 ProvidedDatum::ProvidedDatum(FeaturePtr feat, std::string name)
 : Datum(false, false, false),
   feat_(feat), 
   name_(name)
-{
-    ParameterListHash plh;
-    plh+=*feat_;
-    plh+=name_;
-    hash_=plh.getHash();
-}
+{}
 
 void ProvidedDatum::build()
 {
@@ -222,18 +243,20 @@ AIS_InteractiveObject* ProvidedDatum::createAISRepr(const gp_Trsf& tr) const
 }
 
 
+size_t ExplicitDatumPoint::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=coord_->value();
+  return plh.getHash();
+}
+
 ExplicitDatumPoint::ExplicitDatumPoint(VectorPtr c)
 : coord_(c)
-{
-    ParameterListHash plh;
-    plh+=coord_->value();
-    hash_=plh.getHash();
-}
+{}
 
 
 void ExplicitDatumPoint::build()
 {
-
     p_=to_Pnt(coord_->value());
 }
 
@@ -263,14 +286,18 @@ AIS_InteractiveObject* DatumAxis::createAISRepr(const gp_Trsf& tr) const
   return ais;
 }
 
+
+size_t ExplicitDatumAxis::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=p0_->value();
+  plh+=ex_->value();
+  return plh.getHash();
+}
+
 ExplicitDatumAxis::ExplicitDatumAxis(VectorPtr p0, VectorPtr ex)
 : p0_(p0), ex_(ex)
-{
-    ParameterListHash plh;
-    plh+=p0_->value();
-    plh+=ex_->value();
-    hash_=plh.getHash();
-}
+{}
 
 void ExplicitDatumAxis::build()
 {
@@ -354,36 +381,30 @@ void DatumPlane::build()
   }
 }
 
+size_t DatumPlane::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=n_->value();
+  plh+=p0_->value();
+  if (up_) plh+=up_->value();
+  if (p1_) plh+=p1_->value();
+  if (p2_) plh+=p2_->value();
+  return plh.getHash();
+}
+
   
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni)
 : p0_(p0),
   n_(ni)
-{
-    ParameterListHash plh;
-    plh+=n_->value();
-    plh+=p0_->value();
-    hash_=plh.getHash();
-}
+{}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr ni, VectorPtr up)
 : p0_(p0), n_(ni), up_(up)
-{
-    ParameterListHash plh;
-    plh+=n_->value();
-    plh+=p0_->value();
-    plh+=up_->value();
-    hash_=plh.getHash();    
-}
+{}
 
 DatumPlane::DatumPlane(VectorPtr p0, VectorPtr p1, VectorPtr p2, bool dummy)
 : p0_(p0), p1_(p1), p2_(p2)
-{
-    ParameterListHash plh;
-    plh+=p0_->value();
-    plh+=p1_->value();
-    plh+=p2_->value();
-    hash_=plh.getHash();    
-}
+{}
 
 // DatumPlane::DatumPlane
 // (
@@ -418,14 +439,17 @@ void DatumPlane::write(ostream& file) const
 }
 
 
+size_t XsecPlanePlane::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=*pl1_;
+  plh+=*pl2_;
+  return plh.getHash();
+}
+
 XsecPlanePlane::XsecPlanePlane(ConstDatumPtr pl1, ConstDatumPtr pl2)
 : pl1_(pl1), pl2_(pl2)
-{
-    ParameterListHash plh;
-    plh+=*pl1_;
-    plh+=*pl2_;    
-    hash_=plh.getHash();    
-}
+{}
 
 
 void XsecPlanePlane::build()
@@ -455,15 +479,17 @@ void XsecPlanePlane::build()
 
 
 
+size_t XsecAxisPlane::calcHash() const
+{
+  ParameterListHash plh;
+  plh+=*ax_;
+  plh+=*pl_;
+  return plh.getHash();
+}
+
 XsecAxisPlane::XsecAxisPlane(ConstDatumPtr ax, ConstDatumPtr pl)
 : ax_(ax), pl_(pl)
-{
-    ParameterListHash plh;
-    plh+=*ax_;
-    plh+=*pl_;    
-    hash_=plh.getHash();
-
-}
+{}
 
 void XsecAxisPlane::build()
 {

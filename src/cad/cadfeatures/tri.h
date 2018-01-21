@@ -37,13 +37,15 @@ class Tri
 
     Tri ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Tri" );
     Tri ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr e1, VectorPtr e2 );
 
-    virtual void build();
     operator const TopoDS_Face& () const;
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

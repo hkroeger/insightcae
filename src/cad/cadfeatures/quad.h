@@ -45,6 +45,9 @@ class Quad
 
     Quad ( VectorPtr p0, VectorPtr L, VectorPtr W, ScalarPtr t = ScalarPtr(), QuadCentering center=QuadCentering ( false, false ) );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Quad" );
     Quad ();
@@ -53,7 +56,6 @@ public:
 
     void operator= ( const Quad& o );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

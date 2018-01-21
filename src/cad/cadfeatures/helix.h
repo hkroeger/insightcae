@@ -32,13 +32,15 @@ class Helix
   VectorPtr p1_;
   ScalarPtr d_;
   ScalarPtr winds_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   declareType("Helix");
   Helix();
   Helix(VectorPtr p0, VectorPtr p1, ScalarPtr d, ScalarPtr winds);
   
-  virtual void build();
   
   virtual void insertrule(parser::ISCADParser& ruleset) const;
   virtual bool isSingleEdge() const { return true; };

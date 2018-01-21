@@ -38,6 +38,9 @@ class Arc
     VectorPtr p0tang_;
     VectorPtr p1_;
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
     Arc ( VectorPtr p0, VectorPtr p0tang, VectorPtr p1 );
 
 public:
@@ -53,7 +56,6 @@ public:
     virtual bool isSingleCloseWire() const;
     virtual bool isSingleOpenWire() const;
 
-    virtual void build();
 };
 
     
@@ -65,6 +67,9 @@ class Arc3P
     VectorPtr p0_;
     VectorPtr pm_;
     VectorPtr p1_;
+
+    virtual size_t calcHash() const;
+    virtual void build();
 
     Arc3P ( VectorPtr p0, VectorPtr pm, VectorPtr p1 );
 
@@ -81,7 +86,6 @@ public:
     virtual bool isSingleCloseWire() const;
     virtual bool isSingleOpenWire() const;
 
-    virtual void build();
 };
 
 

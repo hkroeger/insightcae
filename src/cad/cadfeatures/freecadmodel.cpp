@@ -41,6 +41,20 @@ defineType(FreeCADModel);
 addToFactoryTable(Feature, FreeCADModel);
 
 
+size_t FreeCADModel::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=filename_;
+  h+=solidname_;
+  BOOST_FOREACH(const FreeCADModelVar& v, vars_)
+  {
+      h+=boost::fusion::at_c<0>(v);
+      h+=boost::fusion::at_c<1>(v)->value();
+  }
+  return h.getHash();
+}
+
 
 
 FreeCADModel::FreeCADModel()
@@ -60,15 +74,6 @@ FreeCADModel::FreeCADModel
   solidname_(solidname),
   vars_(vars)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=filename_;
-  h+=solidname_;
-  BOOST_FOREACH(const FreeCADModelVar& v, vars)
-  {
-      h+=boost::fusion::at_c<0>(v);
-      h+=boost::fusion::at_c<1>(v)->value();
-  }
 }
 
 

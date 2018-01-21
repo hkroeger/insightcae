@@ -74,8 +74,58 @@ void ModelFeature::copyModelDatums()
 
 
 
+size_t ModelFeature::calcHash() const
+{
+  // build the parameter hash
+  ParameterListHash p;
+  p+=this->type();
+  if (std::string* mn = boost::get<std::string>(&modelinput_))
+    {
+      std::string fname=(*mn)+".iscad";
+      try
+      {
+        // try to incorporate file time stamp etc
+        p+=sharedModelFilePath(fname);
+      }
+      catch (...)
+      {
+        // if file is non-existing, use filename only
+        p+=fname;
+      }
+    }
+  else if (boost::filesystem::path* mp = boost::get<boost::filesystem::path>(&modelinput_))
+    {
+      p+=(*mp);
+    }
 
-ModelFeature::ModelFeature(): Compound()
+  for (ModelVariableTable::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+  {
+    p+=boost::fusion::at_c<0>(*it);
+    auto v=boost::fusion::at_c<1>(*it);
+    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+    {
+        p+=(*fp);
+    }
+    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+    {
+        p+=(*dp);
+    }
+    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+    {
+        p+=(*vp)->value();
+    }
+    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+    {
+        p+=(*sp)->value();
+    }
+  }
+
+  return p.getHash();
+}
+
+
+ModelFeature::ModelFeature()
+: Compound()
 {}
 
 
@@ -84,44 +134,44 @@ ModelFeature::ModelFeature(): Compound()
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
 : modelinput_(modelname), vars_(vars)
 {
-  // build the parameter hash
-  ParameterListHash p(this);
-  p+=this->type();
+//  // build the parameter hash
+//  ParameterListHash p(this);
+//  p+=this->type();
   
-  std::string fname=modelname+".iscad";
-  try 
-  {
-    // try to incorporate file time stamp etc
-    p+=sharedModelFilePath(fname);
-  }
-  catch (...)
-  {
-    // if file is non-existing, use filename only
-    p+=fname;
-  }
+//  std::string fname=modelname+".iscad";
+//  try
+//  {
+//    // try to incorporate file time stamp etc
+//    p+=sharedModelFilePath(fname);
+//  }
+//  catch (...)
+//  {
+//    // if file is non-existing, use filename only
+//    p+=fname;
+//  }
 
-  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
-  {
-    p+=boost::fusion::at_c<0>(*it);
-    auto v=boost::fusion::at_c<1>(*it);
-    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
-    {
-        p+=(*fp);
-    }
-    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
-    {
-        p+=(*dp);
-    }
-    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
-    {
-        p+=(*vp)->value();
-    }
-    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
-    {
-        p+=(*sp)->value();
-    }
+//  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
+//  {
+//    p+=boost::fusion::at_c<0>(*it);
+//    auto v=boost::fusion::at_c<1>(*it);
+//    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+//    {
+//        p+=(*fp);
+//    }
+//    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+//    {
+//        p+=(*dp);
+//    }
+//    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+//    {
+//        p+=(*vp)->value();
+//    }
+//    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+//    {
+//        p+=(*sp)->value();
+//    }
     
-  }
+//  }
 }
 
 
@@ -130,32 +180,32 @@ ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTabl
 ModelFeature::ModelFeature(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
 : modelinput_(modelfile), vars_(vars)
 {
-  // build the parameter hash
-  ParameterListHash p(this);
-  p+=this->type();
-  p+=modelfile;
+//  // build the parameter hash
+//  ParameterListHash p(this);
+//  p+=this->type();
+//  p+=modelfile;
 
-  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
-  {
-    p+=boost::fusion::at_c<0>(*it);
-    auto v=boost::fusion::at_c<1>(*it);
-    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
-    {
-        p+=(*fp);
-    }
-    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
-    {
-        p+=(*dp);
-    }
-    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
-    {
-        p+=(*vp)->value();
-    }
-    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
-    {
-        p+=(*sp)->value();
-    }
-  }
+//  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
+//  {
+//    p+=boost::fusion::at_c<0>(*it);
+//    auto v=boost::fusion::at_c<1>(*it);
+//    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
+//    {
+//        p+=(*fp);
+//    }
+//    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
+//    {
+//        p+=(*dp);
+//    }
+//    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
+//    {
+//        p+=(*vp)->value();
+//    }
+//    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
+//    {
+//        p+=(*sp)->value();
+//    }
+//  }
 }
 
 

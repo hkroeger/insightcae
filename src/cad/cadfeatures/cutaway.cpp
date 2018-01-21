@@ -43,6 +43,23 @@ defineType(Cutaway);
 addToFactoryTable(Feature, Cutaway);
 
 
+size_t Cutaway::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*model_;
+  if (p0_ && n_)
+    {
+      h+=p0_->value();
+      h+=n_->value();
+    }
+  else
+    {
+      h+=*pl_;
+      h+=inverted_;
+    }
+  return h.getHash();
+}
 
 
 Cutaway::Cutaway(): DerivedFeature()
@@ -55,11 +72,6 @@ Cutaway::Cutaway(): DerivedFeature()
 Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
 : DerivedFeature(model), model_(model), p0_(p0), n_(n)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*model_;
-  h+=p0_->value();
-  h+=n_->value();
 }
 
 
@@ -68,11 +80,6 @@ Cutaway::Cutaway(FeaturePtr model, VectorPtr p0, VectorPtr n)
 Cutaway::Cutaway(FeaturePtr model, ConstDatumPtr pl, bool inverted)
 : DerivedFeature(model), model_(model), pl_(pl), inverted_(inverted)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*model_;
-  h+=*pl_;
-  h+=inverted_;
 }
 
 

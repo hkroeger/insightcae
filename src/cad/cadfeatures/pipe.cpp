@@ -42,6 +42,18 @@ defineType(Pipe);
 addToFactoryTable(Feature, Pipe);
 
 
+size_t Pipe::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*spine_;
+  h+=*xsec_;
+  if (fixed_binormal_) h+=fixed_binormal_->value();
+  h+=orient_;
+  h+=reapprox_spine_;
+  return h.getHash();
+}
+
 
 
 Pipe::Pipe(): Feature()
@@ -52,15 +64,7 @@ Pipe::Pipe(): Feature()
 
 Pipe::Pipe(FeaturePtr spine, FeaturePtr xsec, VectorPtr fixed_binormal, bool orient, bool reapprox_spine)
     : spine_(spine), xsec_(xsec), orient_(orient), reapprox_spine_(reapprox_spine), fixed_binormal_(fixed_binormal)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*spine_;
-  h+=*xsec_;
-  if (fixed_binormal_) h+=fixed_binormal_->value();
-  h+=orient_;
-  h+=reapprox_spine_;
-}
+{}
 
 
 

@@ -49,6 +49,9 @@ protected:
     Exploded ( DatumPtr axis, const ExplosionComponentList& m1 );
     Exploded ( DatumPtr axis, FeaturePtr assy );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Exploded" );
     Exploded ();
@@ -56,7 +59,6 @@ public:
     static FeaturePtr create( DatumPtr axis, const ExplosionComponentList& m1 );
     static FeaturePtr create_assy( DatumPtr axis, FeaturePtr assy );
 
-    virtual void build();
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;
 };

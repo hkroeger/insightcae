@@ -84,6 +84,9 @@ class CoilPath
         ScalarPtr dr = ScalarPtr()
     );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "CoilPath" );
 
@@ -100,7 +103,6 @@ public:
         ScalarPtr dr = ScalarPtr()
     );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;    
@@ -135,6 +137,9 @@ class Coil
      */
     ScalarPtr nr_;
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Coil" );
     Coil ();
@@ -149,7 +154,6 @@ public:
         ScalarPtr nr
     );
 
-    virtual void build();
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual bool isSingleEdge() const

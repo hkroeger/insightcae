@@ -41,6 +41,14 @@ defineType(BooleanSubtract);
 addToFactoryTable(Feature, BooleanSubtract);
 
 
+size_t BooleanSubtract::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*m1_;
+  h+=*m2_;
+  return h.getHash();
+}
 
 
 BooleanSubtract::BooleanSubtract()
@@ -55,10 +63,6 @@ BooleanSubtract::BooleanSubtract(FeaturePtr m1, FeaturePtr m2)
   m1_(m1),
   m2_(m2)
 {
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*m1_;
-  h+=*m2_;
   setFeatureSymbolName( "("+m1->featureSymbolName()+" - "+m2->featureSymbolName()+")" );
 }
 

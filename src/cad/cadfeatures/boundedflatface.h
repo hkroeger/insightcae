@@ -38,6 +38,10 @@ private:
     BoundedFlatFace(const std::vector<FeaturePtr>& edges);
     BoundedFlatFace(const std::vector<FeatureSetPtr>& edges);
 
+protected:
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("BoundedFlatFace");
     BoundedFlatFace();
@@ -47,7 +51,6 @@ public:
 
     operator const TopoDS_Face& () const;
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

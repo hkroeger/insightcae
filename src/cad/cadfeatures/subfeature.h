@@ -32,11 +32,13 @@ class Subfeature
 {
   FeaturePtr basefeat_;
   std::string subfeatname_;
+
+  virtual size_t calcHash() const;
+  virtual void build();
   
 public:
   Subfeature(FeaturePtr basefeat, const std::string& subfeatname);  
   
-  virtual void build();
 };
 
 }

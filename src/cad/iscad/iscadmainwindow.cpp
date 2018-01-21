@@ -64,7 +64,8 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
     
     disconnect(this, SLOT(onUpdateClipPlaneMenu()));
     disconnect(this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
-        
+    disconnect(bgparsestopbtn_, SIGNAL(clicked()));
+
     if (me)
     {
         connect(act_save_, SIGNAL(triggered()),
@@ -110,7 +111,10 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
         
         connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
                 this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
-    }
+
+        connect(bgparsestopbtn_, SIGNAL(clicked()),
+                me->model(), SLOT(onCancelRebuild()));
+      }
 }
 
 

@@ -41,6 +41,16 @@ defineType(Compound);
 addToFactoryTable(Feature, Compound);
 
 
+size_t Compound::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  BOOST_FOREACH(const CompoundFeatureMap::value_type& comp, components_)
+  {
+    h+=comp.second;
+  }
+  return h.getHash();
+}
 
 
 Compound::Compound()
@@ -52,12 +62,9 @@ Compound::Compound()
 
 Compound::Compound(const CompoundFeatureList& m1)
 {
-  ParameterListHash h(this);
-  h+=this->type();
   for (size_t i=0; i<m1.size(); i++)
   {
     components_[str( format("component%d") % (i+1) )] = m1[i];
-    h+=m1[i];
   }
 }
 

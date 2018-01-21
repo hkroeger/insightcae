@@ -40,7 +40,20 @@ defineType(Airfoil);
 addToFactoryTable(Feature, Airfoil);
 
 
-
+size_t Airfoil::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=name_;
+  h+=p0_->value();
+  h+=ez_->value();
+  h+=ex_->value();
+  h+=c_->value();
+  h+=t_->value();
+  h+=r_EK_->value();
+  h+=r_AK_->value();
+  return h.getHash();
+}
 
 Airfoil::Airfoil()
 {}
@@ -53,18 +66,7 @@ Airfoil::Airfoil
     const std::string& name, VectorPtr p0, VectorPtr ex, VectorPtr ez, ScalarPtr c, ScalarPtr t, ScalarPtr r_EK, ScalarPtr r_AK
 )
 : name_(name), p0_(p0), ez_(ez), ex_(ex), c_(c), t_(t), r_EK_(r_EK), r_AK_(r_AK)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=name_;
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=c_->value();
-  h+=t_->value();
-  h+=r_EK->value();
-  h+=r_AK->value();
-}
+{}
 
 
 

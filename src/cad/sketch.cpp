@@ -318,6 +318,31 @@ TopoDS_Wire DXFReader::Wire(double tol) const
 defineType(Sketch);
 addToFactoryTable(Feature, Sketch);
 
+size_t Sketch::calcHash() const
+{
+  ParameterListHash p;
+  p+=*pl_;
+  try
+  {
+    // try to incorporate file time stamp etc
+    p+=sharedModelFilePath(fn_.string());
+  }
+  catch (...)
+  {
+    // if file is non-existing, use filename only
+    p+=fn_.string();
+  }
+  p+=ln_;
+  for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
+  {
+    p+=boost::fusion::at_c<0>(*it);
+    p+=boost::fusion::at_c<1>(*it)->value();
+  }
+  p+=tol_;
+  return p.getHash();
+}
+
+
 Sketch::Sketch()
 : Feature()
 {}
@@ -336,27 +361,7 @@ Sketch::Sketch
   ln_(ln),
   vars_(vars),
   tol_(tol)
-{
-  ParameterListHash p(this);
-  p+=*pl_;
-  try 
-  {
-    // try to incorporate file time stamp etc
-    p+=sharedModelFilePath(fn_.string());
-  }
-  catch (...)
-  {
-    // if file is non-existing, use filename only
-    p+=fn_.string();
-  }
-  p+=ln_;
-  for (SketchVarList::const_iterator it=vars_.begin(); it!=vars_.end(); it++)
-  {
-    p+=boost::fusion::at_c<0>(*it);
-    p+=boost::fusion::at_c<1>(*it)->value();
-  }
-  p+=tol_;
-}
+{}
 
 
 

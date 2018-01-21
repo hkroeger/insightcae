@@ -36,6 +36,9 @@ class BooleanUnion
     BooleanUnion(FeaturePtr m1);
     BooleanUnion(FeaturePtr m1, FeaturePtr m2);
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType("BooleanUnion");
     BooleanUnion();
@@ -43,7 +46,6 @@ public:
     static FeaturePtr create(FeaturePtr m1);
     static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
 
-    virtual void build();
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

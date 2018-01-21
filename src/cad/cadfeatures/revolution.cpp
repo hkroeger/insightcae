@@ -37,6 +37,18 @@ defineType(Revolution);
 addToFactoryTable(Feature, Revolution);
 
 
+size_t Revolution::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=*sk_;
+  h+=p0_->value();
+  h+=axis_->value();
+  h+=angle_->value();
+  h+=centered_;
+  return h.getHash();
+}
+
 
 
 Revolution::Revolution(): Feature()
@@ -47,15 +59,7 @@ Revolution::Revolution(): Feature()
 
 Revolution::Revolution(FeaturePtr sk, VectorPtr p0, VectorPtr axis, ScalarPtr angle, bool centered)
 : sk_(sk), p0_(p0), axis_(axis), angle_(angle), centered_(centered)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=*sk_;
-  h+=p0_->value();
-  h+=axis_->value();
-  h+=angle_->value();
-  h+=centered_;
-}
+{}
 
 
 

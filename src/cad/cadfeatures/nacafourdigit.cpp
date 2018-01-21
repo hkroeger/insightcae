@@ -38,6 +38,19 @@ defineType(NacaFourDigit);
 addToFactoryTable(Feature, NacaFourDigit);
 
 
+size_t NacaFourDigit::calcHash() const
+{
+  ParameterListHash h;
+  h+=this->type();
+  h+=code_;
+  h+=p0_->value();
+  h+=ez_->value();
+  h+=ex_->value();
+  h+=tofs_->value();
+  h+=clipte_->value();
+  return h.getHash();
+}
+
 
 
 NacaFourDigit::NacaFourDigit()
@@ -52,16 +65,7 @@ NacaFourDigit::NacaFourDigit
     ScalarPtr tofs, ScalarPtr clipte 
 )
 : code_(code), p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
-{
-  ParameterListHash h(this);
-  h+=this->type();
-  h+=code_;
-  h+=p0_->value();
-  h+=ez_->value();
-  h+=ex_->value();
-  h+=tofs_->value();
-  h+=clipte_->value();
-}
+{}
 
 
 

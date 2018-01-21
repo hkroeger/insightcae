@@ -40,6 +40,9 @@ class Ellipse
 
     Ellipse ( VectorPtr p0, VectorPtr axmaj, VectorPtr axmin );
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
     declareType ( "Ellipse" );
     Ellipse ();
@@ -53,7 +56,6 @@ public:
 //     virtual bool isSingleCloseWire() const;
 //     virtual bool isSingleOpenWire() const;
 
-    virtual void build();
 };
 
 

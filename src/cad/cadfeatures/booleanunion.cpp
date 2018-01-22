@@ -112,7 +112,7 @@ void BooleanUnion::build()
             {
                 throw CADException
                 (
-                    *this,
+                    shared_from_this(),
                     "could not perform fuse operation."
                 );
             }
@@ -146,7 +146,7 @@ void BooleanUnion::build()
                 {
                     throw CADException
                     (
-                        *this,
+                        shared_from_this(),
                         "could not perform merge operation."
                     );
                 }                
@@ -157,7 +157,7 @@ void BooleanUnion::build()
     } 
     else
     {
-        throw CADException(*this, "no valid base feature for fuse operation provided.");
+        throw CADException(shared_from_this(), "no valid base feature for fuse operation provided.");
     }
 }
 

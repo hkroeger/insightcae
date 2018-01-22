@@ -49,7 +49,8 @@ size_t BooleanIntersection::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*m1_;
-  h+=*m2_;
+  if (m2_) h+=*m2_;
+  if (m2pl_) h+=*m2pl_;
   return h.getHash();
 }
 
@@ -113,7 +114,7 @@ void BooleanIntersection::build()
             {
                 throw CADException
                 (
-                    *this,
+                    shared_from_this(),
                     "Could not perform intersection operation."
                 );
             }
@@ -132,7 +133,7 @@ void BooleanIntersection::build()
         if (m2pl_)
         {
             if (!m2pl_->providesPlanarReference())
-                throw CADException(*this, "intersection: given reference does not provide planar reference!");
+                throw CADException(shared_from_this(), "intersection: given reference does not provide planar reference!");
 
             if (m1_->isSingleWire() || m1_->isSingleEdge())
             {
@@ -150,7 +151,7 @@ void BooleanIntersection::build()
 
                     // For debugging only
                     if (!intersection.IsDone() )
-                        throw CADException(*this, "intersection: edge intersection not successful!");
+                        throw CADException(shared_from_this(), "intersection: edge intersection not successful!");
 
                     // Get intersection curve
                     for (int j=1; j<=intersection.NbPoints(); j++)
@@ -173,7 +174,7 @@ void BooleanIntersection::build()
                 {
                     throw CADException
                     (
-                        *this,
+                        shared_from_this(),
                         "could not perform shape/plane intersection operation."
                     );
                 }                
@@ -184,7 +185,7 @@ void BooleanIntersection::build()
             m1_->unsetLeaf();
         }
         else
-            throw CADException(*this, "intersection: tool object undefined!");
+            throw CADException(shared_from_this(), "intersection: tool object undefined!");
     }
 }
 

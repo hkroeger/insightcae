@@ -132,16 +132,37 @@ void SyntaxElementDirectory::addEntry(SyntaxElementLocation location, FeaturePtr
 
 
 
-FeaturePtr SyntaxElementDirectory::findElement(size_t location) const
+FeaturePtr SyntaxElementDirectory::findElement(long location, const boost::filesystem::path& file) const
 {
     BOOST_FOREACH(const value_type& elem, *this)
     {
-        if ( (elem.first.first<=location) && (elem.first.second>=location) )
+      SyntaxElementLocation l=elem.first;
+        if ( (l.second.first<=location) && (l.second.second>=location) )
             return elem.second;
     }
     return FeaturePtr();
 }
 
+
+
+SyntaxElementLocation SyntaxElementDirectory::findElement(ConstFeaturePtr element) const
+{
+  const_iterator it = std::find_if
+      (
+        this->begin(),
+        this->end(),
+        [element](const value_type & t) -> bool
+        {
+      std::cout<<t.first.second.first<<"..."<<t.first.second.second<<std::endl;
+//          std::cout<<t.second->featureSymbolName()<<"<<==>>"<<element->featureSymbolName()<<std::endl;
+          return t.second == element;
+        }
+      );
+  if (it==end())
+    return SyntaxElementLocation("", SyntaxElementPos(-1, -1));
+  else
+    return it->first;
+}
 
 
 
@@ -183,8 +204,9 @@ AddRuleContainerBase::~AddRuleContainerBase()
 
 
 // template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
-ISCADParser::ISCADParser(Model* model)
+ISCADParser::ISCADParser(Model* model, const boost::filesystem::path& filenameinfo)
     : ISCADParser::base_type(r_model),
+      filenameinfo_(filenameinfo),
       syntax_element_locations(new SyntaxElementDirectory()),
       model_(model)
 {
@@ -310,9 +332,10 @@ ISCADParser::ISCADParser(Model* model)
 
 
 
-bool parseISCADModel(std::string::iterator first, std::string::iterator last, Model* model)
+bool parseISCADModel(std::string::iterator first, std::string::iterator last, Model* model,
+                     const boost::filesystem::path& filenameinfo)
 {
-  ISCADParser parser(model);
+  ISCADParser parser(model, filenameinfo);
   skip_grammar skip;
   
   std::cout<<"Parsing started."<<std::endl;
@@ -343,7 +366,7 @@ bool parseISCADModelFile(const boost::filesystem::path& fn, Model* m, int* faill
     }
     
     std::ifstream f(fn.c_str());
-    return parseISCADModelStream(f, m, failloc, sd);
+    return parseISCADModelStream(f, m, failloc, sd, fn);
 }
 
 
@@ -354,7 +377,8 @@ iscadParserException::iscadParserException(const std::string& reason, int from_p
 {
 }
 
-bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd )
+bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::SyntaxElementDirectoryPtr* sd,
+                             const boost::filesystem::path& filenameinfo )
 {
 //   std::string contents_raw;
 //   in.seekg ( 0, std::ios::end );
@@ -378,7 +402,7 @@ bool parseISCADModelStream ( std::istream& in, Model* m, int* failloc, parser::S
   try
     {
 
-      ISCADParser parser ( m );
+      ISCADParser parser ( m, filenameinfo );
       skip_grammar skip;
 
 //   std::cout<<"Parsing started."<<std::endl;

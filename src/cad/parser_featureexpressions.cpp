@@ -107,8 +107,12 @@ void ISCADParser::createFeatureExpressions()
         r_modelstepFunction
         [ ( _val = phx::at_c<2>(qi::_1),
             phx::bind( &SyntaxElementDirectory::addEntry, syntax_element_locations.get(),
-                       phx::construct<SyntaxElementLocation>(phx::at_c<0>(qi::_1), phx::at_c<1>(qi::_1)),
-                       phx::at_c<2>(qi::_1) )
+                       phx::construct<SyntaxElementLocation>(
+                         filenameinfo_,
+                         phx::construct<SyntaxElementPos>(phx::at_c<0>(qi::_1), phx::at_c<1>(qi::_1))
+                       ),
+                       phx::at_c<2>(qi::_1)
+                  )
           ) ]
         |
         model_->modelstepSymbols()[_val=qi::_1 ]

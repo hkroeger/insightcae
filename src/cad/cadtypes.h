@@ -87,8 +87,11 @@ boost::filesystem::path sharedModelFilePath(const std::string& name);
 class CADException
 : public insight::Exception
 {
+  ConstFeaturePtr errorfeat_;
 public:
-    CADException(const Feature& errorfeat, const std::string message);
+    CADException(ConstFeaturePtr errorfeat, const std::string message);
+
+    inline ConstFeaturePtr feature() const { return errorfeat_; }
 };
 
 }

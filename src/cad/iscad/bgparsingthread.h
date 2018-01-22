@@ -83,7 +83,7 @@ signals:
     void removedDatum       (const QString& sn);
     void removedEvaluation  (const QString& sn);
 
-    void scriptError(int failpos, QString errorMsg);
+    void scriptError(long failpos, QString errorMsg, int range);
 
     void statusMessage(const QString& msg);
     void statusProgress(int step, int totalSteps);

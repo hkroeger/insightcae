@@ -83,15 +83,15 @@ void BooleanSubtract::build()
   
   if (!cache.contains(hash()))
   {
-    if (!m1_) throw insight::cad::CADException(*this, "invalid input: base shape" );
-    if (!m2_) throw insight::cad::CADException(*this, "invalid input: tool shape" );
+    if (!m1_) throw insight::cad::CADException(shared_from_this(), "invalid input: base shape" );
+    if (!m2_) throw insight::cad::CADException(shared_from_this(), "invalid input: tool shape" );
     BRepAlgoAPI_Cut cutter(*m1_, *m2_);
     cutter.Build();
     if (!cutter.IsDone())
     {
         throw insight::cad::CADException
         (
-            *this, 
+            shared_from_this(),
             "could not perform cut operation."
         );
     }

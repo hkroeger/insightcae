@@ -93,7 +93,7 @@ void BGParsingThread::run()
     try
     {
       std::string reason="Failed: Syntax error";
-      std::cout<<script_;
+
       try
       {
           r=insight::cad::parseISCADModelStream(is, model_.get(), &failloc, &syn_elem_dir_);
@@ -102,13 +102,12 @@ void BGParsingThread::run()
       {
           reason="Expected: "+e.message();
           failloc=e.from_pos();
-          std::cout<<"Error:"<<reason<<std::endl;
-          emit scriptError(failloc, QString::fromStdString(reason));
+          emit scriptError(failloc, QString::fromStdString(reason), 1);
       }
 
       if (!r) // fail if we did not get a full match
       {
-          emit scriptError(failloc, "Syntax error");
+          emit scriptError(failloc, "Syntax error", 1);
       }
       else
       {
@@ -245,17 +244,20 @@ void BGParsingThread::run()
           }
       }
     }
+    catch (insight::cad::CADException e)
+    {
+      auto loc=syn_elem_dir_->findElement(e.feature());
+      auto fn = loc.first;
+      auto p = loc.second;
+      emit scriptError( p.first, QString::fromStdString(e.as_string()), p.second-p.first);
+    }
     catch (insight::cad::RebuildCancelException e)
     {
       emit statusMessage("Model rebuild cancelled");
     }
     catch (insight::Exception e)
     {
-      emit scriptError(-1, QString::fromStdString(e.as_string()) );
-    }
-    catch (Standard_Failure e)
-    {
-      emit scriptError(-1, QString(e.GetMessageString()) );
+      emit scriptError(-1, QString::fromStdString(e.as_string()), 0 );
     }
 
 }

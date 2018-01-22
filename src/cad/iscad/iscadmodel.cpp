@@ -72,8 +72,8 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
             this, SIGNAL(displayStatusMessage(const QString&)));
     connect(&bgparsethread_, SIGNAL(statusProgress(int, int)),
             this, SIGNAL(statusProgress(int, int)));
-    connect(&bgparsethread_, SIGNAL(scriptError(int,const QString&)),
-            this, SLOT(onScriptError(int,const QString&)));
+    connect(&bgparsethread_, SIGNAL(scriptError(long,const QString&, int)),
+            this, SLOT(onScriptError(long,const QString&, int)));
     bgparseTimer_=new QTimer(this);
     connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
     restartBgParseTimer();
@@ -574,8 +574,21 @@ void ISCADModel::unsetUnsavedState()
 }
 
 
-void ISCADModel::onScriptError(int failpos, QString errorMsg)
+void ISCADModel::onScriptError(long failpos, QString errorMsg, int range)
 {
+  if (failpos>=0)
+    {
+      std::cout<<"moving cursor to "<<failpos<<" (l "<<range<<")"<<std::endl;
+      QTextCursor tmpCursor = textCursor();
+      tmpCursor.setPosition(failpos);
+      tmpCursor.setPosition(failpos+range, QTextCursor::KeepAnchor);
+      setTextCursor(tmpCursor);
+    }
+  else
+    {
+      std::cout<<"no error location info"<<std::endl;
+    }
+
   if (bgparsethread_.action() < BGParsingThread::Rebuild)
     {
       emit displayStatusMessage("Script error: "+errorMsg);

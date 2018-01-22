@@ -41,9 +41,9 @@ size_t Chamfer::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=edges_;
-  h+=l_;
-  h+=angle_;
+  h+=*edges_;
+  h+=l_->value();
+  h+=angle_->value();
   return h.getHash();
 }
 
@@ -78,12 +78,14 @@ void Chamfer::build()
 
     m1.unsetLeaf();
     BRepFilletAPI_MakeChamfer fb(m1);
+
     BOOST_FOREACH(FeatureID f, edges_->data())
     {
         TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;
         TopExp::MapShapesAndAncestors(m1, TopAbs_EDGE, TopAbs_FACE, mapEdgeFace);
         fb.Add(l1, l2, m1.edge(f), TopoDS::Face(mapEdgeFace(f).First()) );
     }
+
     fb.Build();
     setShape(fb.Shape());
 }

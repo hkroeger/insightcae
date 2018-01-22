@@ -40,7 +40,7 @@ addToFactoryTable(Feature, Fillet);
 size_t Fillet::calcHash() const
 {
   ParameterListHash h;
-  h+=edges_;
+  h+=*edges_;
   h+=r_->value();
   return h.getHash();
 }

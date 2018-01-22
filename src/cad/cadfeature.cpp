@@ -273,6 +273,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         TopoDS_Shape s;
         BRepTools::Read(s, filename.c_str(), bb);
         setShape(s);
+        hash_=shapeHash();
     }
     else if ( (ext==".igs") || (ext==".iges") )
     {
@@ -283,6 +284,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         igesReader.TransferRoots();
 
         setShape(igesReader.OneShape());
+        hash_=shapeHash();
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
@@ -293,6 +295,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         TopoDS_Shape res=reader.OneShape();
         
         setShape(res);
+        hash_=shapeHash();
 
         typedef std::map<std::string, FeatureSetPtr> Feats;
         Feats feats;
@@ -428,9 +431,9 @@ size_t Feature::shapeHash() const
 
 size_t Feature::calcHash() const
 {
-  size_t hash=0.0;
-  if (valid()) hash=shapeHash();
-  return hash;
+  ParameterListHash h;
+  h+=creashapes_;
+  return h.getHash();
 }
 
 
@@ -482,7 +485,7 @@ Feature::Feature(const TopoDS_Shape& shape)
   featureSymbolName_("anonymousShape")
 {
   setShape(shape);
-//  setShapeHash();
+  hash_=shapeHash();
   setValid();
 }
 
@@ -586,12 +589,22 @@ double Feature::mass(double density_ovr, double aw_ovr) const
 
 void Feature::checkForBuildDuringAccess() const
 {
-  if (hash_==0)
-    {
-      const_cast<size_t&>(hash_)=calcHash();
-    }
+  if (!valid())
+  {
+    if (hash_==0)
+      {
+        const_cast<size_t&>(hash_)=calcHash();
+      }
 
-  ASTBase::checkForBuildDuringAccess();
+    try
+    {
+      ASTBase::checkForBuildDuringAccess();
+    }
+    catch (Standard_Failure e)
+    {
+      throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
+    }
+  }
 }
 
 void Feature::build()
@@ -1659,8 +1672,10 @@ Feature::operator const TopoDS_Shape& () const
 const TopoDS_Shape& Feature::shape() const
 {
   if (building())
-    throw insight::cad::CADException(*this, "Internal error: recursion during build!");
+    throw insight::cad::CADException(shared_from_this(), "Internal error: recursion during build!");
+
   checkForBuildDuringAccess();
+
   if (visresolution_)
   {
 //     Bnd_Box box;

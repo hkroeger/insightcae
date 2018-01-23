@@ -147,14 +147,14 @@ FeaturePtr SyntaxElementDirectory::findElement(long location, const boost::files
 
 SyntaxElementLocation SyntaxElementDirectory::findElement(ConstFeaturePtr element) const
 {
+  std::cout<<"searching element "<<element->featureSymbolName()<<std::endl;
   const_iterator it = std::find_if
       (
         this->begin(),
         this->end(),
-        [element](const value_type & t) -> bool
+        [&element](const value_type & t) -> bool
         {
-      std::cout<<t.first.second.first<<"..."<<t.first.second.second<<std::endl;
-//          std::cout<<t.second->featureSymbolName()<<"<<==>>"<<element->featureSymbolName()<<std::endl;
+//          std::cout<<t.first.second.first<<" ("<<bool(t.second)<<")..."<<t.first.second.second<<" ("<<bool(element)<<")"<<std::endl;
           return t.second == element;
         }
       );

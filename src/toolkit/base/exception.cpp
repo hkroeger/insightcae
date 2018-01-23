@@ -24,6 +24,13 @@
 #include <sstream>
 #include <cstdlib>
 
+
+#include <execinfo.h> // for backtrace
+#include <dlfcn.h>    // for dladdr
+#include <cxxabi.h>   // for __cxa_demangle
+#include <cstdio>
+#include <cstdlib>
+
 using namespace std;
 
 namespace insight
@@ -41,25 +48,61 @@ Exception::Exception(const std::string& msg, bool strace)
   message_=msg;
   if (strace)
   {
-    int num=10;
-    void *array[num];
-    size_t size;
+    int num_max=30;
+    void *callstack[num_max];
 
     // get void*'s for all entries on the stack
-    size = backtrace(array, num);
+    int nFrames = backtrace(callstack, num_max);
 
     // print out all the frames to stderr
-    char **str=backtrace_symbols(array, size);
+    char **symbols=backtrace_symbols(callstack, nFrames);
 
-    ostringstream oss;
-    for (size_t i=0; i<size; i++)
+    ostringstream trace_buf;
+
+    char buf[1024];
+    for (int i=0; i<nFrames; i++)
     {
-      oss<<str[i]<<endl;
+        Dl_info info;
+        if (dladdr(callstack[i], &info) && info.dli_sname) {
+            char *demangled = NULL;
+            int status = -1;
+            if (info.dli_sname[0] == '_')
+                demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+            snprintf
+                (
+                  buf, sizeof(buf),
+//                  "%-3d %*p %s + %zd\n",
+                  "%-3d %s\n",
+                      i,
+//                      int(2 + sizeof(void*) * 2),
+//                      callstack[i],
+                      (
+                        (status == 0) ?
+                        demangled :
+                        info.dli_sname == 0 ? symbols[i] : info.dli_sname
+                      )/*,
+                      (char *)callstack[i] - (char *)info.dli_saddr*/
+                     );
+            free(demangled);
+        } else {
+            snprintf
+                (
+                  buf, sizeof(buf),
+//                    "%-3d %*p %s\n",
+                    "%-3d %s\n",
+                     i,
+//                     int(2 + sizeof(void*) * 2),
+//                     callstack[i],
+                     symbols[i]
+                );
+        }
+        trace_buf << buf;
+//      trace_buf<<symbols[i]<<endl;
       //free(str[i]);
     }
     //free(str);
 
-    strace_=oss.str();
+    strace_=trace_buf.str();
   }
   else
     strace_="";

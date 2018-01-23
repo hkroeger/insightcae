@@ -156,6 +156,11 @@ ParameterListHash::ParameterListHash()
 : hash_(0)
 {}
 
+size_t ParameterListHash::getHash() const
+{
+  return hash_;
+}
+
 
 
 ParameterListHash::operator size_t ()
@@ -432,7 +437,7 @@ size_t Feature::shapeHash() const
 size_t Feature::calcHash() const
 {
   ParameterListHash h;
-  h+=creashapes_;
+  h+=*creashapes_;
   return h.getHash();
 }
 
@@ -2787,7 +2792,7 @@ void FeatureCache::insert(FeaturePtr p)
 {
   size_t h=p->hash();
   if (find(h)!=end())
-      throw insight::Exception("Internal error: trying to insert existing feature into CAD feature cache!");
+      throw insight::cad::CADException(p, "Internal error: trying to insert existing feature into CAD feature cache!");
   (*this)[h]=p;
   usedDuringRebuild_.insert(h);
 }

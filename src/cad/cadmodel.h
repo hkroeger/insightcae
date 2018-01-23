@@ -39,7 +39,10 @@ namespace insight
 namespace cad 
 {
 
-    
+namespace parser {
+class SyntaxElementDirectory;
+typedef boost::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
+}
     
     
 class Model
@@ -85,6 +88,7 @@ protected:
     ModelTable		models_;
     PostprocActionTable	postprocActions_;
 
+    insight::cad::parser::SyntaxElementDirectoryPtr syn_elem_dir_;
     boost::filesystem::path modelfile_;
 
 

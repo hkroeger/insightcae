@@ -37,7 +37,6 @@ void BGParsingThread::launch(const std::string& script, Action action)
 {
     script_=script;
     action_=action;
-    std::cout<<"ID1="<<currentThreadId()<<" / "<<std::this_thread::get_id()<<std::endl;
     start();
 }
 
@@ -132,7 +131,7 @@ void BGParsingThread::run()
                   MapDirectory<insight::cad::Model::ScalarTableContents> removedScalars;
                   if (oldmodel) removedScalars.set(oldmodel->scalars());
 
-                  BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type const& v, scalars)
+                  BOOST_FOREACH(insight::cad::Model::ScalarTableContents::value_type v, scalars)
                   {
                       emit statusMessage("Building scalar "+QString::fromStdString(v.first));
   //                    v.second->value();
@@ -153,7 +152,7 @@ void BGParsingThread::run()
                   MapDirectory<insight::cad::Model::VectorTableContents> removedVectors;
                   if (oldmodel) removedVectors.set(oldmodel->vectors());
 
-                  BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type const& v, vectors)
+                  BOOST_FOREACH(insight::cad::Model::VectorTableContents::value_type v, vectors)
                   {
                       emit statusMessage("Building vector "+QString::fromStdString(v.first));
                       v.second->value(); // Trigger evaluation
@@ -172,7 +171,7 @@ void BGParsingThread::run()
                   MapDirectory<insight::cad::Model::ModelstepTableContents> removedFeatures;
                   if (oldmodel) removedFeatures.set(oldmodel->modelsteps());
 
-                  BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type const& v, modelsteps)
+                  BOOST_FOREACH(insight::cad::Model::ModelstepTableContents::value_type v, modelsteps)
                   {
                       bool is_comp=false;
                       if (model_->components().find(v.first) != model_->components().end())
@@ -201,7 +200,7 @@ void BGParsingThread::run()
                   MapDirectory<insight::cad::Model::DatumTableContents> removedDatums;
                   if (oldmodel) removedDatums.set(oldmodel->datums());
 
-                  BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
+                  BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type v, datums)
                   {
                       emit statusMessage("Building datum "+QString::fromStdString(v.first));
                       v.second->checkForBuildDuringAccess(); // Trigger rebuild
@@ -221,7 +220,7 @@ void BGParsingThread::run()
                   if (oldmodel) removedPostprocActions.set(oldmodel->postprocActions());
 
                   int is=0, ns=postprocActions.size();
-                  BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type const& v, postprocActions)
+                  BOOST_FOREACH(insight::cad::Model::PostprocActionTableContents::value_type v, postprocActions)
                   {
                       emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
                       if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation

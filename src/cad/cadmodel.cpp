@@ -106,7 +106,7 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
 void Model::build()
 {
     int failloc=-1;
-    if (!parseISCADModelFile(modelfile_, this, &failloc))
+    if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
     {
         throw insight::Exception
         (

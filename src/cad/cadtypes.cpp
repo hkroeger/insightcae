@@ -27,7 +27,8 @@ namespace cad
 {
     
 CADException::CADException(ConstFeaturePtr feat, const std::string message)
-: insight::Exception("In feature "+feat->featureSymbolName()+": "+message)
+: insight::Exception("In feature "+feat->featureSymbolName()+": "+message),
+  errorfeat_(feat)
 {
 }
 

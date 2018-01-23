@@ -393,8 +393,6 @@ FeaturePtr Sketch::create
 void Sketch::build()
 {
     ExecTimer t("Sketch::build() ["+featureSymbolName()+"]");
-
-    auto t_start = std::chrono::high_resolution_clock::now();
     
     if (!cache.contains(hash()))
     {
@@ -527,12 +525,6 @@ void Sketch::build()
     {
         this->operator=(*cache.markAsUsed<Sketch>(hash()));
     }
-    
-    auto t_end = std::chrono::high_resolution_clock::now();
-
-    std::cout << "sketch rebuild done in " 
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
-              << " ms" << std::endl;
 }
 
 

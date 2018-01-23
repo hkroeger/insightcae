@@ -122,7 +122,7 @@ public:
   
   operator size_t ();
 
-  inline size_t getHash() const { return hash_; };
+  size_t getHash() const;
 };
 
 

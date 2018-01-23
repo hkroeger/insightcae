@@ -27,6 +27,13 @@
 
 using namespace boost;
 
+size_t insight::cad::SolidProperties::calcHash() const
+{
+  ParameterListHash h;
+  h+=*model_;
+  return h.getHash();
+}
+
 
 insight::cad::SolidProperties::SolidProperties(insight::cad::FeaturePtr model)
 : model_(model)

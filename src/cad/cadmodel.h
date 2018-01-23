@@ -95,13 +95,15 @@ protected:
     void defaultVariables();
     void copyVariables(const ModelVariableTable& vars);
 
+    virtual size_t calcHash() const;
+    virtual void build();
+
 public:
 
     Model(const ModelVariableTable& vars = ModelVariableTable());
     Model(const std::string& modelname, const ModelVariableTable& vars = ModelVariableTable());
     Model(const boost::filesystem::path& modelfile, const ModelVariableTable& vars = ModelVariableTable());
 
-    virtual void build();
 
     const ScalarTable& 	scalarSymbols() const;
     const VectorTable&	vectorSymbols() const;

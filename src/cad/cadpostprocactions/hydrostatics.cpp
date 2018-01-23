@@ -32,6 +32,18 @@ namespace insight
 {
 namespace cad
 {
+
+size_t Hydrostatics::calcHash() const
+{
+  ParameterListHash h;
+  h+=*hullvolume_;
+  h+=*shipmodel_;
+  h+=psurf_->value();
+  h+=nsurf_->value();
+  h+=elong_->value();
+  h+=evert_->value();
+  return h.getHash();
+}
   
 Hydrostatics::Hydrostatics
 (

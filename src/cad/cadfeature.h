@@ -252,7 +252,12 @@ protected:
   void updateVolProps() const;
   void setShape(const TopoDS_Shape& shape);
   
-  size_t shapeHash() const;
+  /**
+   * @brief calcShapeHash
+   * @return
+   * computes the hash from the shape geometry.
+   */
+  size_t calcShapeHash() const;
   
   /**
    * shall set the hash from input parameters
@@ -280,9 +285,7 @@ public:
   
   inline bool isleaf() const { return isleaf_; }
   inline void unsetLeaf() const { isleaf_=false; }
-  
-  inline size_t hash() const { return hash_; }
-  
+    
   void setFeatureSymbolName( const std::string& name);
   const std::string& featureSymbolName() const;
   

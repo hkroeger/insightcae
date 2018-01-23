@@ -77,16 +77,26 @@ void Import::build()
 {
   ExecTimer t("Import::build() ["+featureSymbolName()+"]");
 
-  boost::filesystem::path fp = filepath_;
-  if (!boost::filesystem::exists(fp))
+  if (!cache.contains(hash()))
   {
-    fp=sharedModelFilePath(filepath_.string());
+    boost::filesystem::path fp = filepath_;
     if (!boost::filesystem::exists(fp))
     {
-      throw insight::Exception("File not found: "+filepath_.string());
+      fp=sharedModelFilePath(filepath_.string());
+      if (!boost::filesystem::exists(fp))
+      {
+        throw insight::Exception("File not found: "+filepath_.string());
+      }
     }
+    loadShapeFromFile(fp);
+
+    cache.insert(shared_from_this());
   }
-  loadShapeFromFile(fp);
+  else
+  {
+      this->operator=(*cache.markAsUsed<Import>(hash()));
+  }
+
 //   if (scale_)
 //   {
 //     gp_Trsf tr0;

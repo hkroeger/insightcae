@@ -46,12 +46,14 @@ class Export
   
   ExportNamedFeatures namedfeats_;
   
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   Export(FeaturePtr model, const boost::filesystem::path& filename, ExportNamedFeatures namedfeats = ExportNamedFeatures() );
   Export(FeaturePtr model, const boost::filesystem::path& filename, ScalarPtr STL_accuracy);
   Export(FeatureSetPtr eMesh_featureSet, const boost::filesystem::path& filename, ScalarPtr eMesh_accuracy, ScalarPtr eMesh_maxlen);
 
-  virtual void build();
   
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;

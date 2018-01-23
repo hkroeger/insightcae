@@ -61,6 +61,8 @@ class SolidProperties
    * max point of BB
    */
   arma::mat bb_pmax_;
+
+  virtual size_t calcHash() const;
   
 public:
   SolidProperties(FeaturePtr model);

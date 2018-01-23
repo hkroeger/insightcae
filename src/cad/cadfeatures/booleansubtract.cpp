@@ -80,7 +80,7 @@ FeaturePtr BooleanSubtract::create(FeaturePtr m1, FeaturePtr m2)
 void BooleanSubtract::build()
 {
   ExecTimer t("BooleanSubtract::build() ["+featureSymbolName()+"]");
-  
+
   if (!cache.contains(hash()))
   {
     if (!m1_) throw insight::cad::CADException(shared_from_this(), "Boolean subtract: invalid base shape" );

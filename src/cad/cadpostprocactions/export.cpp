@@ -24,6 +24,15 @@ namespace insight
 {
 namespace cad 
 {
+
+size_t Export::calcHash() const
+{
+  ParameterListHash h;
+  if (model_) h+=*model_;
+  h+=filename_;
+#warning extend hash!
+  return h.getHash();
+}
   
 Export::Export
 (

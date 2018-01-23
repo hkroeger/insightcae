@@ -278,7 +278,6 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         TopoDS_Shape s;
         BRepTools::Read(s, filename.c_str(), bb);
         setShape(s);
-        hash_=shapeHash();
     }
     else if ( (ext==".igs") || (ext==".iges") )
     {
@@ -289,7 +288,6 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         igesReader.TransferRoots();
 
         setShape(igesReader.OneShape());
-        hash_=shapeHash();
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
@@ -300,7 +298,6 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         TopoDS_Shape res=reader.OneShape();
         
         setShape(res);
-        hash_=shapeHash();
 
         typedef std::map<std::string, FeatureSetPtr> Feats;
         Feats feats;
@@ -407,7 +404,7 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
 }
 
-size_t Feature::shapeHash() const
+size_t Feature::calcShapeHash() const
 {
   // create hash from
   // 1. total volume
@@ -464,19 +461,18 @@ Feature::Feature()
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  hash_(0),
   featureSymbolName_("anonymous_"+type())
 {
 }
 
 Feature::Feature(const Feature& o)
-: isleaf_(true),
+: ASTBase(o),
+  isleaf_(true),
   providedSubshapes_(o.providedSubshapes_),
   providedFeatureSets_(o.providedFeatureSets_),
   providedDatums_(o.providedDatums_),
   density_(o.density_),
   areaWeight_(o.areaWeight_),
-  hash_(o.hash_),
   featureSymbolName_(o.featureSymbolName_)
 {
   setShape(o.shape_);
@@ -486,11 +482,10 @@ Feature::Feature(const TopoDS_Shape& shape)
 : isleaf_(true),
 //   density_(1.0),
 //   areaWeight_(0.0),
-  hash_(0),
   featureSymbolName_("anonymousShape")
 {
   setShape(shape);
-  hash_=shapeHash();
+  hash_=calcShapeHash();
   setValid();
 }
 
@@ -508,11 +503,7 @@ Feature::Feature(const TopoDS_Shape& shape)
 Feature::Feature(FeatureSetPtr creashapes)
 : creashapes_(creashapes),
   featureSymbolName_("subshapesOf_"+creashapes->model()->featureSymbolName())
-{
-  ParameterListHash h;
-  h+=this->type();
-  h+=creashapes_->model();
-}
+{}
 
 FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 {
@@ -527,7 +518,6 @@ FeaturePtr Feature::CreateFromFile(const boost::filesystem::path& filepath)
 Feature::~Feature()
 {
 }
-
 
 void Feature::setFeatureSymbolName( const std::string& name)
 {
@@ -594,21 +584,13 @@ double Feature::mass(double density_ovr, double aw_ovr) const
 
 void Feature::checkForBuildDuringAccess() const
 {
-  if (!valid())
+  try
   {
-    if (hash_==0)
-      {
-        const_cast<size_t&>(hash_)=calcHash();
-      }
-
-    try
-    {
-      ASTBase::checkForBuildDuringAccess();
-    }
-    catch (Standard_Failure e)
-    {
-      throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
-    }
+    ASTBase::checkForBuildDuringAccess();
+  }
+  catch (Standard_Failure e)
+  {
+    throw insight::cad::CADException(shared_from_this(), e.GetMessageString());
   }
 }
 
@@ -701,7 +683,6 @@ Feature& Feature::operator=(const Feature& o)
   visresolution_=o.visresolution_;
   density_=o.density_;
   areaWeight_=o.areaWeight_;
-  hash_=o.hash_;
 
   if (o.valid())
   {

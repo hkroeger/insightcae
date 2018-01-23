@@ -53,6 +53,9 @@ class Mesh
   GroupsDesc solidGroups_;
   NamedVertices namedVertices_;
   
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   Mesh
   (
@@ -68,7 +71,6 @@ public:
     const NamedVertices& namedVertices
   );
   
-  virtual void build();
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;
@@ -93,6 +95,9 @@ class SnappyHexMesh
   GeometrysDesc geometries_;
   EdgeRefineDescs edgerefines_;
   
+  virtual size_t calcHash() const;
+  virtual void build();
+
 public:
   SnappyHexMesh
   (
@@ -104,7 +109,6 @@ public:
     boost::optional<EdgeRefineDescs> edgerefines
   );
   
-  virtual void build();
 
   virtual Handle_AIS_InteractiveObject createAISRepr() const;
   virtual void write(std::ostream& ) const;

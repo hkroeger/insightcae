@@ -34,6 +34,14 @@ namespace insight
 {
 namespace cad
 {
+
+size_t Mesh::calcHash() const
+{
+  ParameterListHash h;
+#warning compute hash
+  return h.getHash();
+}
+
   
 Mesh::Mesh
 (
@@ -137,7 +145,12 @@ void Mesh::build()
 
 
 
-
+size_t SnappyHexMesh::calcHash() const
+{
+  ParameterListHash h;
+#warning compute hash!
+  return h.getHash();
+}
 
 
 SnappyHexMesh::SnappyHexMesh

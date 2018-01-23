@@ -27,6 +27,32 @@ namespace cad
 {
   
     
+size_t DrawingExport::calcHash() const
+{
+  ParameterListHash h;
+  h+=file_;
+  BOOST_FOREACH(const DrawingViewDefinitions& vds, viewdefs_)
+  {
+      h += *boost::fusion::at_c<0>(vds);
+
+      BOOST_FOREACH(const DrawingViewDefinition& vd, boost::fusion::at_c<1>(vds))
+      {
+          h += boost::get<0>(vd);
+          h += boost::get<1>(vd)->value();
+          h += boost::get<2>(vd)->value();
+          h += boost::get<4>(vd);
+          h += boost::get<5>(vd);
+          h += boost::get<6>(vd);
+          AdditionalViews addviews = boost::get<7>(vd);
+          h += boost::fusion::get<0>(addviews);
+          h += boost::fusion::get<1>(addviews);
+          h += boost::fusion::get<2>(addviews);
+          h += boost::fusion::get<3>(addviews);
+          h += boost::fusion::get<4>(addviews);
+      }
+  }
+  return h.getHash();
+}
     
     
 DrawingExport::DrawingExport

@@ -38,13 +38,35 @@ void ASTBase::cancelRebuild(std::thread::id thread_id)
   
 ASTBase::ASTBase()
 : valid_(false),
-  building_(false)
+  building_(false),
+  hash_(0)
 {}
+
+ASTBase::ASTBase(const ASTBase& o)
+: valid_(o.valid_),
+  building_(false),
+  hash_(o.hash_)
+{
+}
 
 
 ASTBase::~ASTBase()
 {}
 
+void ASTBase::setValid()
+{
+  valid_=true;
+}
+
+bool ASTBase::valid() const
+{
+  return valid_;
+}
+
+bool ASTBase::building() const
+{
+  return building_;
+}
 
 void ASTBase::checkForBuildDuringAccess() const
 {
@@ -69,6 +91,14 @@ void ASTBase::checkForBuildDuringAccess() const
     const_cast<ASTBase*>(this)->setValid();
   }
 }
+
+
+size_t ASTBase::hash() const
+{
+  if (hash_==0)
+    hash_=calcHash();
+}
+
 
 }
 }

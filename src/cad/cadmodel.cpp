@@ -71,6 +71,13 @@ void Model::copyVariables(const ModelVariableTable& vars)
 }
 
 
+size_t Model::calcHash() const
+{
+  ParameterListHash h;
+  h+=modelfile_;
+#warning check, if hash is needed
+  return h.getHash();
+}
 
 
 Model::Model(const ModelVariableTable& vars)

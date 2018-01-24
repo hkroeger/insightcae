@@ -112,6 +112,8 @@ Model::Model(const boost::filesystem::path& modelfile, const ModelVariableTable&
 
 void Model::build()
 {
+    ExecTimer t("Model::build() [file "+modelfile_.string()+"]");
+
     int failloc=-1;
     if (!parseISCADModelFile(modelfile_, this, &failloc, &syn_elem_dir_))
     {

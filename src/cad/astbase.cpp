@@ -97,6 +97,7 @@ size_t ASTBase::hash() const
 {
   if (hash_==0)
     hash_=calcHash();
+  return hash_;
 }
 
 

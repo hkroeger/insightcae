@@ -2772,8 +2772,15 @@ void FeatureCache::finishRebuild()
 void FeatureCache::insert(FeaturePtr p)
 {
   size_t h=p->hash();
-  if (find(h)!=end())
-      throw insight::cad::CADException(p, "Internal error: trying to insert existing feature into CAD feature cache!");
+  const_iterator i=find(h);
+  if (i!=end())
+    {
+      std::ostringstream msg;
+      msg<<"Internal error: trying to insert feature into CAD feature cache twice!\n";
+      msg<<"feature to insert: hash="<<h<<" (of type "<<p->type()<<" named \""<<p->featureSymbolName()<<"\")\n";
+      msg<<"present feature: hash="<<i->second->hash()<<" (of type "<<i->second->type()<<" named \""<<i->second->featureSymbolName()<<"\")\n";
+      throw insight::cad::CADException(p, msg.str());
+    }
   (*this)[h]=p;
   usedDuringRebuild_.insert(h);
 }

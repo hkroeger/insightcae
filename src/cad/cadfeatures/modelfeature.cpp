@@ -21,6 +21,7 @@
 #include "cadfeature.h"
 #include "cadmodel.h"
 #include "datum.h"
+#include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 
@@ -104,11 +105,11 @@ size_t ModelFeature::calcHash() const
     auto v=boost::fusion::at_c<1>(*it);
     if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
     {
-        p+=(*fp);
+        p+=*(*fp);
     }
     else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
     {
-        p+=(*dp);
+        p+=*(*dp);
     }
     else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
     {
@@ -133,88 +134,21 @@ ModelFeature::ModelFeature()
 
 ModelFeature::ModelFeature(const std::string& modelname, const ModelVariableTable& vars)
 : modelinput_(modelname), vars_(vars)
-{
-//  // build the parameter hash
-//  ParameterListHash p(this);
-//  p+=this->type();
-  
-//  std::string fname=modelname+".iscad";
-//  try
-//  {
-//    // try to incorporate file time stamp etc
-//    p+=sharedModelFilePath(fname);
-//  }
-//  catch (...)
-//  {
-//    // if file is non-existing, use filename only
-//    p+=fname;
-//  }
-
-//  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
-//  {
-//    p+=boost::fusion::at_c<0>(*it);
-//    auto v=boost::fusion::at_c<1>(*it);
-//    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
-//    {
-//        p+=(*fp);
-//    }
-//    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
-//    {
-//        p+=(*dp);
-//    }
-//    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
-//    {
-//        p+=(*vp)->value();
-//    }
-//    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
-//    {
-//        p+=(*sp)->value();
-//    }
-    
-//  }
-}
+{}
 
 
 
 
 ModelFeature::ModelFeature(const boost::filesystem::path& modelfile, const ModelVariableTable& vars)
 : modelinput_(modelfile), vars_(vars)
-{
-//  // build the parameter hash
-//  ParameterListHash p(this);
-//  p+=this->type();
-//  p+=modelfile;
-
-//  for (ModelVariableTable::const_iterator it=vars.begin(); it!=vars.end(); it++)
-//  {
-//    p+=boost::fusion::at_c<0>(*it);
-//    auto v=boost::fusion::at_c<1>(*it);
-//    if (FeaturePtr* fp = boost::get<FeaturePtr>(&v))
-//    {
-//        p+=(*fp);
-//    }
-//    else if (DatumPtr* dp = boost::get<DatumPtr>(&v))
-//    {
-//        p+=(*dp);
-//    }
-//    else if (VectorPtr* vp = boost::get<VectorPtr>(&v))
-//    {
-//        p+=(*vp)->value();
-//    }
-//    else if (ScalarPtr* sp = boost::get<ScalarPtr>(&v))
-//    {
-//        p+=(*sp)->value();
-//    }
-//  }
-}
+{}
 
 
 
 
 ModelFeature::ModelFeature(ModelPtr model)
 : model_(model)
-{
-}
+{}
 
 
 
@@ -250,6 +184,8 @@ FeaturePtr ModelFeature::create_model(ModelPtr model)
 
 void ModelFeature::build()
 {
+    ExecTimer t("ModelFeature::build() ["+featureSymbolName()+"]");
+
     if (!cache.contains(hash()))
     {
 	if (!model_)

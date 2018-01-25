@@ -42,11 +42,20 @@ QModelTreeItem::QModelTreeItem
 }
 
 
+QModelTree* QModelTreeItem::modelTree() const
+{
+  return dynamic_cast<QModelTree*>(treeWidget());
+}
+
 void QModelTreeItem::insertName()
 {
   emit insertParserStatementAtCursor(name_);
 }
 
+void QModelTreeItem::jumpToName()
+{
+    emit(jumpTo(name_));
+}
 
 
 QDisplayableModelTreeItem::QDisplayableModelTreeItem
@@ -153,7 +162,10 @@ void QDisplayableModelTreeItem::shaded()
 
 void QDisplayableModelTreeItem::onlyThisShaded()
 {
-//  emit setShadingMode(this, AIS_WireFrame);
+  if (QModelTree* mt=modelTree())
+    {
+      mt->onlyOneShaded(this);
+    }
 }
 
 void QDisplayableModelTreeItem::randomizeColor()
@@ -217,6 +229,10 @@ void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
           this, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)));
   connect(newf, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
           this, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)));
+  connect(newf, SIGNAL(insertParserStatementAtCursor(QString)),
+          this, SIGNAL(insertParserStatementAtCursor(QString)));
+  connect(newf, SIGNAL(jumpTo(QString)),
+          this, SIGNAL(jumpTo(QString)));
 }
 
 QModelTree::QModelTree(QWidget* parent)
@@ -461,6 +477,42 @@ void QModelTree::resetViz()
         }
     }
 }
+
+
+void QModelTree::onlyOneShaded(QDisplayableModelTreeItem* si)
+{
+  QTreeWidgetItem *items[]={features_, componentfeatures_};
+  for (int j=0; j<2; j++)
+    {
+      QTreeWidgetItem* pn =items[j];
+      for (int i=0; i<pn->childCount(); i++)
+      {
+          if ( QDisplayableModelTreeItem *qmsi=dynamic_cast<QDisplayableModelTreeItem*>(pn->child(i)) )
+          {
+              if (qmsi==si)
+                {
+                  qmsi->shaded();
+                }
+              else
+                {
+                  qmsi->wireframe();
+                }
+          }
+      }
+    }
+}
+
+void QModelTree::allShaded()
+{
+  setUniformDisplayMode(AIS_Shaded);
+}
+
+void QModelTree::allWireframe()
+{
+  setUniformDisplayMode(AIS_WireFrame);
+}
+
+
 
 void QModelTree::showContextMenu(const QPoint &p)
 {

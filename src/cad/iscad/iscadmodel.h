@@ -77,12 +77,11 @@ protected:
     
 protected:
     void clearDerivedData();
-    virtual void closeEvent(QCloseEvent *event);
 
     inline void setFilename(const boost::filesystem::path& fn)
     {
         filename_=fn;
-        emit updateTitle(this, filename_, false);
+        emit updateTitle(filename_, false);
     }
 
     
@@ -100,6 +99,8 @@ public:
 
     void connectModelTree(QModelTree* mt) const;
 
+    inline bool isUnsaved() const { unsaved_; }
+
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
 
@@ -111,7 +112,7 @@ protected slots:
     /**
      * jump to definition of feature symbol
      */
-    void jump_to(const QString& featurename);
+    void jumpTo(const QString& featurename);
 
     /**
      * switch BG parsing on/off
@@ -228,7 +229,7 @@ signals:
     /**
      * change of model file name or save state (asterisk in front of name)
      */
-    void updateTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void updateTitle(const boost::filesystem::path& filepath, bool isUnSaved);
     
     /**
      * the model has been reevaluated and menu entries etc. may have changed:
@@ -287,7 +288,13 @@ public:
 
 public slots:
     void onCopyBtnClicked();
+    void onUpdateTitle(const boost::filesystem::path& filepath, bool isUnSaved);
 
+protected:
+    virtual void closeEvent(QCloseEvent *event);
+
+signals:
+    void updateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
 };
 
 

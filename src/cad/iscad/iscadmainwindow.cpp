@@ -41,7 +41,7 @@
 
  
 
-void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
+void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor* lme)
 {
     act_load_->disconnect();
     act_save_->disconnect();
@@ -62,9 +62,15 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
     act_display_all_wire_->disconnect();
     act_reset_shading_->disconnect();
     
-    disconnect(this, SLOT(onUpdateClipPlaneMenu()));
-    disconnect(this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
-    disconnect(bgparsestopbtn_, SIGNAL(clicked()));
+    if (lme!=NULL)
+      {
+        disconnect(lme->model(), SIGNAL(modelUpdated(int)),
+                   this, SLOT(onUpdateClipPlaneMenu()));
+        disconnect(lme->model(), SIGNAL(openModel(const boost::filesystem::path&)),
+                   this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
+      }
+
+    bgparsestopbtn_->disconnect(SIGNAL(clicked()));
 
     if (me)
     {
@@ -97,14 +103,17 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
                 me->viewer(), SLOT(toggleClipXZ()));
         connect(act_background_color_, SIGNAL(triggered()),
                 me->viewer(), SLOT(background()));
-//        connect(act_display_all_shaded_, SIGNAL(triggered()),
-//                model, SLOT(allShaded()));
-//        connect(act_display_all_wire_, SIGNAL(triggered()),
-//                model, SLOT(allWireframe()));
+        connect(act_display_all_shaded_, SIGNAL(triggered()),
+                me->modeltree(), SLOT(allShaded()));
+        connect(act_display_all_wire_, SIGNAL(triggered()),
+                me->modeltree(), SLOT(allWireframe()));
         connect(act_reset_shading_, SIGNAL(triggered()),
                 me->modeltree(), SLOT(resetViz()));
         
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+
+        connect(bgparsestopbtn_, SIGNAL(clicked()),
+                me->model(), SLOT(onCancelRebuild()));
 
         connect(me->model(), SIGNAL(modelUpdated(int)),
                 this, SLOT(onUpdateClipPlaneMenu(int)));
@@ -112,8 +121,6 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me)
         connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
                 this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
 
-        connect(bgparsestopbtn_, SIGNAL(clicked()),
-                me->model(), SLOT(onCancelRebuild()));
       }
 }
 
@@ -131,9 +138,13 @@ void ISCADMainWindow::loadModel()
 
 void ISCADMainWindow::activateModel(int tabindex)
 {
-    if (tabindex>=0)
+    if ( (tabindex>=0) && (tabindex!=lastTabIndex_) )
     {
-        connectMenuToModel(static_cast<ISCADModelEditor*>(modelTabs_->widget(tabindex)));
+        ISCADModelEditor* lme=NULL;
+        if (lastTabIndex_>=0) lme=static_cast<ISCADModelEditor*>(modelTabs_->widget(lastTabIndex_));
+
+        connectMenuToModel(static_cast<ISCADModelEditor*>(modelTabs_->widget(tabindex)), lme);
+        lastTabIndex_=tabindex;
     }
 }
 
@@ -142,7 +153,7 @@ void ISCADMainWindow::activateModel(int tabindex)
 // }
 
 
-void ISCADMainWindow::onUpdateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved)
+void ISCADMainWindow::onUpdateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved)
 {
     int i=modelTabs_->indexOf(model);
     if (i>=0)
@@ -182,7 +193,8 @@ void ISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
 
 
 ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool nolog)
-: QMainWindow(parent, flags)
+: QMainWindow(parent, flags),
+  lastTabIndex_(-1)
 {
     
     setWindowIcon(QIcon(":/resources/logo_insight_cae.png"));
@@ -355,8 +367,8 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     connect(me->model(), SIGNAL(statusProgress(int, int)),
             this, SLOT(updateProgress(int, int)));
 
-    connect(me->model(), SIGNAL(updateTitle(ISCADModel*, const boost::filesystem::path&, bool)),
-            this, SLOT(onUpdateTabTitle(ISCADModel*, const boost::filesystem::path&, bool)));
+    connect(me, SIGNAL(updateTabTitle(ISCADModelEditor*, const boost::filesystem::path&, bool)),
+            this, SLOT(onUpdateTabTitle(ISCADModelEditor*, const boost::filesystem::path&, bool)));
 
     return me;
 }

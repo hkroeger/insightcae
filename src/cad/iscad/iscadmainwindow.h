@@ -60,6 +60,7 @@ protected:
     QTreeView* fileTree_;
     QFileSystemModel* fileModel_;
     
+    int lastTabIndex_;
     QTabWidget* modelTabs_;
 
     QAction
@@ -86,7 +87,7 @@ protected:
     QProgressBar* progressbar_;
     QPushButton* bgparsestopbtn_;
 
-    void connectMenuToModel(ISCADModelEditor* model);
+    void connectMenuToModel(ISCADModelEditor* model, ISCADModelEditor* lme=NULL);
         
 protected slots:
     void onFileClicked(const QModelIndex &index);
@@ -97,7 +98,7 @@ public slots:
     void loadModel();
     
     void activateModel(int tabindex);
-    void onUpdateTabTitle(ISCADModel* model, const boost::filesystem::path& filepath, bool isUnSaved);
+    void onUpdateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
     void onCloseModel(int tabindex);
     void onUpdateClipPlaneMenu(int errorState=0);
     void onLoadModelFile(const boost::filesystem::path& modelfile);

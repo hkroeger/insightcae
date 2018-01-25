@@ -40,6 +40,7 @@ class QVectorVariableItem;
 class QFeatureItem;
 class QDatumItem;
 class QEvaluationItem;
+class QModelTree;
 
 
 
@@ -61,12 +62,15 @@ public:
     QModelTreeItem(const QString& name, QTreeWidgetItem* parent);
     
     inline const QString& name() const { return name_; }
+    QModelTree* modelTree() const;
 
 signals:
     void insertParserStatementAtCursor(const QString& statement);
+    void jumpTo(const QString& name);
 
 public slots:
     void insertName();
+    void jumpToName();
 
     virtual void showContextMenu(const QPoint& gpos) =0;
 
@@ -233,6 +237,9 @@ private slots:
 public slots:
     void setUniformDisplayMode(const AIS_DisplayMode AM);
     void resetViz();
+    void onlyOneShaded(QDisplayableModelTreeItem* shaded_item);
+    void allShaded();
+    void allWireframe();
     
 protected slots:
     void showContextMenu(const QPoint &);
@@ -245,6 +252,9 @@ signals:
     void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
     void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
     void setResolution(QDisplayableModelTreeItem* di, double res);
+
+    void insertParserStatementAtCursor(const QString& statement);
+    void jumpTo(const QString& name);
 
 };
 

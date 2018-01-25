@@ -49,9 +49,6 @@ class QFeatureItem
   bool is_component_;
     
 signals:
-  void jump_to(const QString& name);
-  void insertParserStatementAtCursor(const QString& statement);
-  void setUniformDisplayMode(const AIS_DisplayMode AM);
   void addEvaluation(const QString& name, insight::cad::PostprocActionPtr em, bool visible);
 
 protected:
@@ -68,7 +65,6 @@ public:
   }
   
 public slots:
-  void jump();
   void showProperties();
   void exportShape();
 

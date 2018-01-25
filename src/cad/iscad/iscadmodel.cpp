@@ -77,8 +77,11 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
     bgparseTimer_=new QTimer(this);
     connect(bgparseTimer_, SIGNAL(timeout()), this, SLOT(doBgParse()));
     restartBgParseTimer();
-    connect(document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(restartBgParseTimer(int,int,int)));
-    connect(document(), SIGNAL(contentsChange(int,int,int)), this, SLOT(setUnsavedState(int,int,int)));
+
+    connect(document(), SIGNAL(contentsChange(int,int,int)),
+            this, SLOT(restartBgParseTimer(int,int,int)));
+    connect(document(), SIGNAL(contentsChange(int,int,int)),
+            this, SLOT(setUnsavedState(int,int,int)));
 
 }
 
@@ -89,48 +92,6 @@ ISCADModel::~ISCADModel()
     bgparsethread_.wait();
 }
 
-
-void ISCADModel::closeEvent(QCloseEvent *event)
-{
-    QMessageBox::StandardButton resBtn = QMessageBox::Yes;
-
-    if (unsaved_)
-    {
-        resBtn =
-            QMessageBox::question
-            (
-                this,
-                "ISCAD",
-                tr("The editor content is not saved.\nSave now?\n"),
-                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
-                QMessageBox::No
-            );
-
-        if (resBtn == QMessageBox::Cancel)
-        {
-            event->ignore();
-            return;
-        }
-        else
-        {
-            if (resBtn == QMessageBox::Yes)
-            {
-                bool saved = saveModel();
-                if (!saved)
-                {
-                    saved=saveModelAs();
-                }
-                if (!saved)
-                {
-                    event->ignore();
-                    return;
-                }
-            }
-        }
-    }
-    
-    event->accept();
-}
 
 
 bool ISCADModel::saveModel()
@@ -234,7 +195,7 @@ void ISCADModel::onEditorSelectionChanged()
 
 
 
-void ISCADModel::jump_to(const QString& name)
+void ISCADModel::jumpTo(const QString& name)
 {
     highlighter_->setHighlightWord(name);
     highlighter_->rehighlight();
@@ -380,6 +341,12 @@ void ISCADModel::connectModelTree(QModelTree* mt) const
           mt, SLOT(onRemoveDatum(const QString&)));
   connect(&bgparsethread_, SIGNAL(removedEvaluation(const QString&)),
           mt, SLOT(onRemoveEvaluation(const QString&)));
+
+  connect(mt, SIGNAL(jumpTo(QString)),
+          this, SLOT(jumpTo(QString)));
+  connect(mt, SIGNAL(insertParserStatementAtCursor(QString)),
+          this, SLOT(insertTextAtCursor(QString)));
+
 }
 
 
@@ -398,7 +365,6 @@ void ISCADModel::editSketch(QObject* sk_ptr)
 void ISCADModel::editModel(QObject* sk_ptr)
 {
     insight::cad::ModelFeature* sk = reinterpret_cast<insight::cad::ModelFeature*>(sk_ptr);
-//     sk->executeEditor();
     emit openModel(sk->modelfile());
 }
 
@@ -559,7 +525,7 @@ void ISCADModel::setUnsavedState(int, int rem, int ad)
     {
         if (!unsaved_)
         {
-            emit updateTitle(this, filename_, true);
+            emit updateTitle(filename_, true);
             unsaved_=true;
         }
     }
@@ -569,7 +535,7 @@ void ISCADModel::setUnsavedState(int, int rem, int ad)
 
 void ISCADModel::unsetUnsavedState()
 {
-    emit updateTitle(this, filename_, false);
+    emit updateTitle(filename_, false);
     unsaved_=false;
 }
 
@@ -703,6 +669,9 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     connect(modeltree_, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
             viewer_, SLOT(onSetResolution(QDisplayableModelTreeItem*, double)));
 
+    connect(model_, SIGNAL(updateTitle(boost::filesystem::path,bool)),
+            this, SLOT(onUpdateTitle(boost::filesystem::path,bool)));
+
 }
 
 
@@ -711,4 +680,52 @@ void ISCADModelEditor::onCopyBtnClicked()
 {
   model_->textCursor().insertText(notepad_->toPlainText());
   notepad_->clear();
+}
+
+void ISCADModelEditor::onUpdateTitle(const boost::filesystem::path& filepath, bool isUnsaved)
+{
+  emit updateTabTitle(this, filepath, isUnsaved);
+}
+
+
+void ISCADModelEditor::closeEvent(QCloseEvent *event)
+{
+    QMessageBox::StandardButton resBtn = QMessageBox::Yes;
+
+    if (model_->isUnsaved())
+    {
+        resBtn =
+            QMessageBox::question
+            (
+                this,
+                "ISCAD",
+                tr("The editor content is not saved.\nSave now?\n"),
+                QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes,
+                QMessageBox::No
+            );
+
+        if (resBtn == QMessageBox::Cancel)
+        {
+            event->ignore();
+            return;
+        }
+        else
+        {
+            if (resBtn == QMessageBox::Yes)
+            {
+                bool saved = model_->saveModel();
+                if (!saved)
+                {
+                    saved=model_->saveModelAs();
+                }
+                if (!saved)
+                {
+                    event->ignore();
+                    return;
+                }
+            }
+        }
+    }
+
+    event->accept();
 }

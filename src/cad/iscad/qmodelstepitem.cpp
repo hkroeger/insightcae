@@ -75,10 +75,6 @@ void QFeatureItem::showProperties()
 }
 
 
-void QFeatureItem::jump()
-{
-    emit(jump_to(name_));
-}
 
 void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
@@ -86,7 +82,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     QAction *a;
     
     a=new QAction(name_, &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(jump()));
+    connect(a, SIGNAL(triggered()), this, SLOT(jumpToName()));
     myMenu.addAction(a);
     
     myMenu.addSeparator();

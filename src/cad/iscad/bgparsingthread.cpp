@@ -115,6 +115,8 @@ void BGParsingThread::run()
 
           if (action_ >= Rebuild)
           {
+              emit statusMessage("Model parsed successfully, starting rebuild...");
+
               insight::cad::cache.initRebuild();
 
               insight::cad::Model::ScalarTableContents scalars=model_->scalars();
@@ -241,6 +243,10 @@ void BGParsingThread::run()
 
               emit statusMessage("Model rebuild successfully finished.");
           }
+          else
+            {
+              emit statusMessage("Model parsed successfully.");
+            }
       }
     }
     catch (insight::cad::CADException e)

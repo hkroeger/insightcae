@@ -210,6 +210,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
       logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
       connect(logger_, SIGNAL(appendText(const QString&)),
               log_, SLOT(append(const QString&)));
+
     }
     
     spl0->addWidget(log_);
@@ -239,9 +240,17 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     connect(modelTabs_, SIGNAL(currentChanged(int)), this, SLOT(activateModel(int)));
     connect(modelTabs_, SIGNAL(tabCloseRequested(int)), this, SLOT(onCloseModel(int)));
 
-    QList<int> sizes;
-    sizes << 50 << 500+350+150;
-    spl->setSizes(sizes);
+    {
+      QList<int> sizes;
+      sizes << 1500 << 8500;
+      spl->setSizes(sizes);
+    }
+
+    {
+      QList<int> sizes;
+      sizes << 9500 << 500;
+      spl0->setSizes(sizes);
+    }
 
     progressbar_=new QProgressBar;
     bgparsestopbtn_=new QPushButton("STOP");

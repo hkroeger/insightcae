@@ -85,10 +85,10 @@ void ASTBase::checkForBuildDuringAccess() const
   
   if (!valid()) 
   {
-    building_=true;
-    const_cast<ASTBase*>(this)->build();
-    building_=false;
-    const_cast<ASTBase*>(this)->setValid();
+      building_=true;
+      const_cast<ASTBase*>(this)->build();
+      building_=false;
+      const_cast<ASTBase*>(this)->setValid();
   }
 }
 
@@ -96,7 +96,9 @@ void ASTBase::checkForBuildDuringAccess() const
 size_t ASTBase::hash() const
 {
   if (hash_==0)
-    hash_=calcHash();
+    {
+      hash_=calcHash();
+    }
   return hash_;
 }
 

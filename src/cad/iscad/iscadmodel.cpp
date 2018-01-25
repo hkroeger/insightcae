@@ -241,7 +241,6 @@ void ISCADModel::onBgParseFinished()
 {
     if (bgparsethread_.model_)
     {
-        emit displayStatusMessage("Background model parsing finished successfully.");
         cur_model_ = bgparsethread_.model_;
         syn_elem_dir_ = bgparsethread_.syn_elem_dir_;
 
@@ -251,11 +250,7 @@ void ISCADModel::onBgParseFinished()
 
         emit modelUpdated();
     }
-    else
-    {
-         emit displayStatusMessage("Background model parsing failed.");
-    }
-
+    emit statusProgress(1, 1);
 }
 
 
@@ -617,6 +612,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     vbox->addWidget(toggleSkipPostprocActions);
     
     gb->setLayout(vbox);
+//    gb->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum));
     spl2->addWidget(gb);
 
     gb=new QGroupBox("Model Tree");
@@ -639,9 +635,17 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     spl->addWidget(spl2);
     
-    QList<int> sizes;
-    sizes << 500 << 350 << 150;
-    spl->setSizes(sizes);
+    {
+      QList<int> sizes;
+      sizes << 4700 << 3500 << 1700;
+      spl->setSizes(sizes);
+    }
+
+    {
+      QList<int> sizes;
+      sizes << 2000 << 6000 << 2000;
+      spl2->setSizes(sizes);
+    }
 
 
     connect(rebuildBtn, SIGNAL(clicked()),

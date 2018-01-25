@@ -532,7 +532,6 @@ const std::string& Feature::featureSymbolName() const
 
 void Feature::setVisResolution( ScalarPtr r )
 { 
-    checkForBuildDuringAccess();
     visresolution_=r;
 }
 
@@ -586,6 +585,10 @@ void Feature::checkForBuildDuringAccess() const
 {
   try
   {
+    if (!valid())
+      {
+        std::cout<<"trigger rebuild ["<<featureSymbolName()<<"]"<<std::endl;
+      }
     ASTBase::checkForBuildDuringAccess();
   }
   catch (Standard_Failure e)

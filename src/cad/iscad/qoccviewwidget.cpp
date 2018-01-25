@@ -185,9 +185,11 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
 //       }
 //       myViewer->SetDefaultLights();
       
-Handle(V3d_AmbientLight) L1 = new V3d_AmbientLight(myViewer,Quantity_NOC_ANTIQUEWHITE3);
-Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(myViewer,V3d_Zneg,Quantity_NOC_ANTIQUEWHITE3);
-Handle(V3d_DirectionalLight) L3 = new V3d_DirectionalLight(myViewer,V3d_Zpos,Quantity_NOC_ANTIQUEWHITE3);
+Handle(V3d_AmbientLight)     L1 = new V3d_AmbientLight(myViewer, Quantity_NOC_WHITE);
+//Handle(V3d_Light) La = new V3d_PositionalLight(myViewer,10000,-3000,30000,Quantity_NOC_WHITE, 0.8, 0);
+//Handle(V3d_Light) Lb = new V3d_PositionalLight(myViewer,10000,-3000,-30000,Quantity_NOC_WHITE, 0.8, 0);
+//Handle(V3d_Light) Lc = new V3d_PositionalLight(myViewer,-30000,-3000,-10000,Quantity_NOC_WHITE, 0.8, 0);
+Handle(V3d_DirectionalLight) L2 = new V3d_DirectionalLight(myViewer,V3d_XnegYnegZneg, Quantity_NOC_WHITE, true);
 
     //       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));
 //       myView->SetLightOn(new V3d_PositionalLight (myViewer,  10000,-3000,-30000,  Quantity_NOC_ANTIQUEWHITE3, 0.8, 0));

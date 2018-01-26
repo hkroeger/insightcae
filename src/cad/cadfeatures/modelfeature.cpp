@@ -80,7 +80,7 @@ size_t ModelFeature::calcHash() const
   // build the parameter hash
   ParameterListHash p;
   p+=this->type();
-  if (std::string* mn = boost::get<std::string>(&modelinput_))
+  if (const std::string* mn = boost::get<std::string>(&modelinput_))
     {
       std::string fname=(*mn)+".iscad";
       try
@@ -94,7 +94,7 @@ size_t ModelFeature::calcHash() const
         p+=fname;
       }
     }
-  else if (boost::filesystem::path* mp = boost::get<boost::filesystem::path>(&modelinput_))
+  else if (const boost::filesystem::path* mp = boost::get<boost::filesystem::path>(&modelinput_))
     {
       p+=(*mp);
     }
@@ -237,13 +237,13 @@ void ModelFeature::build()
 
 std::string ModelFeature::modelname() const
 {
-    if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+    if (const boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
     {
       std::string fname = boost::filesystem::basename(*fp);
       boost::erase_last(fname, ".iscad");
       return fname;
     } 
-    else if (std::string* mn = boost::get<std::string>(&modelinput_))
+    else if (const std::string* mn = boost::get<std::string>(&modelinput_))
     {
       return *mn;
     } 
@@ -257,11 +257,11 @@ std::string ModelFeature::modelname() const
 
 boost::filesystem::path ModelFeature::modelfile() const
 {
-    if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+    if (const boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
     {
       return boost::filesystem::absolute(*fp);
     } 
-    else if (std::string* mn = boost::get<std::string>(&modelinput_))
+    else if (const std::string* mn = boost::get<std::string>(&modelinput_))
     {
       return boost::filesystem::absolute(sharedModelFilePath(*mn+".iscad"));
     } 

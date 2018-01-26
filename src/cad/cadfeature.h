@@ -533,6 +533,7 @@ public:
 class FeatureCache
 : public std::map<size_t, FeaturePtr>
 {
+
   std::set<size_t> usedDuringRebuild_;
   
 public:

@@ -35,7 +35,7 @@ namespace cad
 class Diameter
 : public DocItem
 {
-  std::string& desc_;
+  std::string desc_;
   std::string varname_;
   VectorPtr p0_, axisTimesD_;
   

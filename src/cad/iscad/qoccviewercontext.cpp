@@ -227,11 +227,11 @@ void QoccViewerContext::gridCirc ( void )
   myViewer->Grid()->SetColors( myGridColor, myGridTenthColor );
 }
 
-void QoccViewerContext::setGridOffset (Quantity_Length offset)
+void QoccViewerContext::setGridOffset (double offset)
 {
-  Quantity_Length radius;
-  Quantity_Length xSize, ySize;
-  Quantity_Length oldOffset;
+  double radius;
+  double xSize, ySize;
+  double oldOffset;
   
   myViewer->CircularGridGraphicValues( radius, oldOffset );
   myViewer->SetCircularGridGraphicValues( radius, offset);

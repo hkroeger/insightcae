@@ -21,6 +21,8 @@
 #ifndef OCC_INCLUDE
 #define OCC_INCLUDE
 
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 #undef Status
 
 #include "Standard_Version.hxx"

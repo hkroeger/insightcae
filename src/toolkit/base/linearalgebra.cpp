@@ -441,7 +441,7 @@ double f_nonlinearMinimizeND(const gsl_vector * p, void * params)
 //   }
 // };
     
-arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol)
+arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, double tol, const arma::mat& steps)
 {
 //   int n=model.numP();
 //   column_vector starting_point(n);
@@ -524,6 +524,12 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
         /* Set initial step sizes to 0.1 */
         ss = gsl_vector_alloc (model.numP());
         gsl_vector_set_all (ss, 0.1);
+
+        if (steps.n_elem!=0)
+          {
+            for (int i=0; i<model.numP(); i++)
+              gsl_vector_set(ss, i, steps(i));
+          }
 
         /* Initialize method and iterate */
         nonlinearMinimizeNDData param(model);

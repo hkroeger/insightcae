@@ -21,6 +21,7 @@
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "gp_Quaternion.hxx"
+#include "base/tools.h"
 
 #include <dlib/optimization.h>
 
@@ -194,7 +195,7 @@ double PointOnAxis::residual(const gp_Trsf& tr) const
     gp_Pnt pt = to_Pnt(p_org_->value()).Transformed(tr);
     gp_Ax1 axtarg=ax_targ_->axis();
     
-    gp_XYZ r = pt.XYZ()-axtarg.Location().XYZ();
+    gp_XYZ r = pt.XYZ() - axtarg.Location().XYZ();
     r -= r.Dot(axtarg.Direction().XYZ())*axtarg.Direction().XYZ();
     return r.SquareModulus();
 }
@@ -255,7 +256,7 @@ typedef dlib::matrix<double,0,1> column_vector;
 
 void RefPlace::build()
 {
-    auto t_start = std::chrono::high_resolution_clock::now();
+    ExecTimer t("RefPlace::build() ["+featureSymbolName()+"]");
 
     if (conditions_.size()<=0)
     {
@@ -265,55 +266,93 @@ void RefPlace::build()
     if (!trsf_)
     {
 
-        class Obj
+//        class Obj
+//        {
+//        public:
+//            mutable int iter=0;
+//            const ConditionList& conditions;
+
+//            Obj(const ConditionList& co) : conditions(co) {}
+	    
+//            double operator()(const column_vector& curplacement) const
+//            {
+//                iter++;
+                
+//                arma::mat x=arma::zeros(7);
+//                for (int i=0; i<7; i++) x(i)=curplacement(i);
+
+//                double Q=0.0;
+//                for (size_t i=0; i<conditions.size(); i++)
+//                {
+//                    Q += conditions[i]->residual(x);
+//                }
+//                return Q;
+//            }
+
+
+//        } obj(conditions_);
+
+        class Obj : public ObjectiveND
         {
         public:
             mutable int iter=0;
             const ConditionList& conditions;
 
-            Obj(const ConditionList& co) : conditions(co) {} ;
-	    
-            double operator()(const column_vector& curplacement) const
+            Obj(const ConditionList& co) : conditions(co) {}
+
+            double operator()(const arma::mat& x) const
             {
                 iter++;
-                
-                arma::mat x=arma::zeros(7);
-                for (int i=0; i<7; i++) x(i)=curplacement(i);
+
+                for (int i=0; i<7; i++)
+                  std::cout<<x(i)<<" ";
+                std::cout<<" /";
 
                 double Q=0.0;
                 for (size_t i=0; i<conditions.size(); i++)
                 {
                     Q += conditions[i]->residual(x);
                 }
+
+                std::cout<<Q<<endl;
                 return Q;
             }
 
+            int numP() const { return 7; }
 
         } obj(conditions_);
+
 
 	int n=7;
 	
     arma::mat x0=arma::zeros(n); //=vector_from_trsf(gp_Trsf());
         
-	column_vector starting_point(n);
-	for (int i=0; i<n; i++) starting_point(i)=x0(i);
-	auto ts_start = std::chrono::high_resolution_clock::now();
-	double r = dlib::find_min_bobyqa(
-	  obj, 
-	  starting_point, 
-	  10,    // number of interpolation points
-	  dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
-	  dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
-	  10,    // initial trust region radius
-	  1e-8,  // stopping trust region radius
-	  100000    // max number of objective function evaluations
-	);
-	auto ts_end = std::chrono::high_resolution_clock::now();
-	std::cout<<"solved placement after "<<obj.iter<<" function calls "
-	   "("<<std::chrono::duration_cast<std::chrono::milliseconds>(ts_end - ts_start).count()<<"ms, residual r="<<r<<")"
-	   "."<<std::endl;
-	arma::mat tp=arma::zeros(n);
-	for (int i=0; i<n; i++) tp(i)=starting_point(i);
+//	column_vector starting_point(n);
+//	for (int i=0; i<n; i++) starting_point(i)=x0(i);
+
+//	double r = dlib::find_min_bobyqa(
+//	  obj,
+//	  starting_point,
+//	  10,    // number of interpolation points
+//	  dlib::uniform_matrix<double>(n,1, -1e100),  // lower bound constraint
+//	  dlib::uniform_matrix<double>(n,1, 1e100),   // upper bound constraint
+//	  10,    // initial trust region radius
+//	  1e-8,  // stopping trust region radius
+//	  100000    // max number of objective function evaluations
+//	);
+
+    arma::mat steps;
+    steps << 1. << 1.<<1.<<1. << 1000<<1000<<1000;
+        arma::mat tp=nonlinearMinimizeND(obj, x0, 1e-6, steps);
+        double r=obj(tp);
+
+	std::cout
+	    <<"solved placement after "<<obj.iter<<" function calls, "
+	      "residual r="<<r<<")."
+	    <<std::endl;
+
+//	arma::mat tp=arma::zeros(n);
+//	for (int i=0; i<n; i++) tp(i)=starting_point(i);
 	
 //        arma::mat tp = nonlinearMinimizeND(obj, x0, 1e-10);
         trsf_.reset( new gp_Trsf(trsf_from_vector(tp)) );
@@ -322,11 +361,6 @@ void RefPlace::build()
     setShape(BRepBuilderAPI_Transform(m_->shape(), *trsf_).Shape());
     copyDatumsTransformed(*m_, *trsf_, "", boost::assign::list_of("origin")("ex")("ez") );
     
-    auto t_end = std::chrono::high_resolution_clock::now();
-    
-    std::cout << "RefPlace rebuild done in " 
-              << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count()
-              << " ms" << std::endl;
 }
 
 

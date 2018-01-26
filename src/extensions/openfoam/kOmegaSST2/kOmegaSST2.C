@@ -590,7 +590,7 @@ void kOmegaSST2::correct()
         }
     }
 
-    omega_.boundaryField().updateCoeffs();
+    UNIOF_BOUNDARY_NONCONST(omega_).updateCoeffs();
 
     volScalarField Frot
     (

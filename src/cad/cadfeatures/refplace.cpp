@@ -342,7 +342,7 @@ void RefPlace::build()
 //	);
 
     arma::mat steps;
-    steps << 1. << 1.<<1.<<1. << 1000<<1000<<1000;
+    steps << 1000.0 << 1000.0 << 1000.0 << 1. << 0.5 << 0.5 << 0.5;
         arma::mat tp=nonlinearMinimizeND(obj, x0, 1e-6, steps);
         double r=obj(tp);
 

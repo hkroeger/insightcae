@@ -1521,6 +1521,32 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer* displayer)
   
 }
 
+
+
+
+arma::mat matchValue(const std::string& vs)
+{
+  boost::regex re_vector ("^\\(([^ ]+) ([^ ]+) ([^ ]+)\\)$");
+  try {
+     arma::mat d;
+     d << lexical_cast<double> ( vs ) ;
+     return d;
+  }
+  catch (...)
+  {
+    boost::match_results<std::string::const_iterator> w;
+    if (!boost::regex_match ( vs, w, re_vector))
+      throw insight::Exception("reported value of patch integral was neither scalar nor vector!");
+    std::cout<<"["<<w[1]<<","<<w[2]<<","<<w[3]<<"]"<<std::endl;
+    arma::mat d;
+    d << lexical_cast<double> ( w[1] )
+      << lexical_cast<double> ( w[2] )
+      << lexical_cast<double> ( w[3] );
+    return d;
+  }
+  return arma::mat();
+}
+
 arma::mat patchIntegrate
 (
   const OpenFOAMCase& cm, 
@@ -1576,10 +1602,12 @@ arma::mat patchIntegrate
         re_area ( "^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$" ),
         re_area4 ( "^ *total area   = (.+)$" )
         ;
+
     
     boost::match_results<std::string::const_iterator> what;
     double time=0;
-    std::vector<double> times, data, areadata;
+    std::vector<double> times, areadata;
+    std::vector<arma::mat> data;
     BOOST_FOREACH ( const std::string& line, output )
     {
       if ( boost::regex_match ( line, what, re_time ) )
@@ -1591,18 +1619,18 @@ arma::mat patchIntegrate
 
       if ( boost::regex_match ( line, what, re_mag_int ) )
         {
-//           cout<<what[1]<<" : "<<what[4]<<endl;
-          data.push_back ( lexical_cast<double> ( what[4] ) );
+           cout<<what[1]<<" : "<<what[4]<<endl;
+           data.push_back(matchValue(what[4]));
         }
       if ( boost::regex_match ( line, what, re_mag_int4 ) )
         {
           cout<<what[1]<<" : "<<what[3]<<endl;
-          data.push_back ( lexical_cast<double> ( what[3] ) );
+          data.push_back(matchValue(what[3]));
         }
       else if ( boost::regex_match ( line, what, re_mag_sum ) )
         {
-//           cout<<what[1]<<" : "<<what[4]<<endl;
-          data.push_back ( lexical_cast<double> ( what[4] ) );
+           cout<<what[1]<<" : "<<what[4]<<endl;
+           data.push_back(matchValue(what[4]));
         }
 
       if ( boost::regex_match ( line, what, re_area ) )
@@ -1620,12 +1648,17 @@ arma::mat patchIntegrate
     if ( ( data.size() !=areadata.size() ) || ( data.size() !=times.size() ) )
       throw insight::Exception ( "Inconsistent information returned by patchIntegrate: number of values not equal to number of areas and number of times." );
 
-    arma::mat res=zeros ( data.size(), 3 );
+    arma::mat res=zeros ( data.size(), 5 );
     for ( int i=0; i<data.size(); i++ )
       {
         res ( i,0 ) =times[i];
-        res ( i,1 ) =data[i];
-        res ( i,2 ) =areadata[i];
+        res ( i,1 ) =areadata[i];
+        res ( i,2 ) =data[i](0);
+        if (data[i].n_cols>1)
+          {
+            res ( i,3 ) =data[i](1);
+            res ( i,4 ) =data[i](2);
+          }
       }
       
 //     cout<<patchName<<endl<<res<<endl;

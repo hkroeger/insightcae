@@ -23,10 +23,21 @@
 #include "base/exception.h"
 #include <string>
 #include <QMessageBox>
+#include <QFile>
+#include <QDebug>
 
 ISCADApplication::ISCADApplication( int &argc, char **argv)
 : QApplication(argc, argv)
-{}
+{
+  QFile file(":/stylesheet.css");
+  if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+  {
+//      qDebug()<<"loading stylesheet";
+      setStyleSheet(file.readAll());
+      file.close();
+  }
+//  else qDebug()<<"invalid stylesheet";
+}
 
 ISCADApplication::~ISCADApplication( )
 {}

@@ -272,6 +272,13 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     casepath_ = boost::filesystem::current_path();
     
     onOFVersionChanged(ui->OFversion->currentText());
+
+    {
+      QList<int> s;
+      s << 5000 << 5000;
+      ui->splitter_2->setSizes(s);
+      ui->splitter_4->setSizes(s);
+    }
 }
 
 

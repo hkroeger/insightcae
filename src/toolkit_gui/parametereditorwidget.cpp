@@ -40,6 +40,12 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
     ptree_->addTopLevelItem(root_);
     
     addWrapperToWidget(parameters_, root_, inputContents_, this);
+
+    {
+      QList<int> l;
+      l << 3300 << 6600;
+      setSizes(l);
+    }
     
     ptree_->expandAll();
     ptree_->resizeColumnToContents(0);

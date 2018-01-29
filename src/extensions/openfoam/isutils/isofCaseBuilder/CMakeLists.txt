@@ -12,7 +12,7 @@ set(isofCaseBuilder_SRCS main.cpp isofcasebuilderwindow.cpp)
 SET(isofCaseBuilder_FORMS isofcasebuilderwindow.ui)
 QT4_WRAP_UI(isofCaseBuilder_FORMS_HEADERS ${isofCaseBuilder_FORMS})
 qt4_automoc(${isofCaseBuilder_SRCS})
-# SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)
+SET(isofCaseBuilder_RCCS isofCaseBuilder.qrc)
 
 add_executable(isofCaseBuilder ${isofCaseBuilder_SRCS} ${isofCaseBuilder_FORMS_HEADERS} ${isofCaseBuilder_RCCS})
 target_link_libraries(isofCaseBuilder toolkit toolkit_gui

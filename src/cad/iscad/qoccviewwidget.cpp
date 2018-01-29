@@ -935,6 +935,8 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
       );
       getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
       getContext()->SetColor(ais, di->color(), Standard_True );
+
+//      getContext()->Activate(ais, AIS_Shape::SelectionMode(TopAbs_VERTEX) );
     }
 }
 

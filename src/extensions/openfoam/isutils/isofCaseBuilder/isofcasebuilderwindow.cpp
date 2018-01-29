@@ -279,6 +279,9 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
       ui->splitter_2->setSizes(s);
       ui->splitter_4->setSizes(s);
     }
+
+    setWindowIcon(QIcon(":/logo_insight_cae.png"));
+    this->setWindowTitle("InsightCAE OpenFOAM Case Builder");
 }
 
 

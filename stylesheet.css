@@ -1,26 +1,53 @@
-QComboBox,QPushButton,QTreeWidget,QListWidget,QTabBar::tab{
+QWidget{
+background-color:#fafafa;
+}
+QComboBox,QPushButton,QToolButton,QTreeWidget,QListWidget,
+QTextEdit,QLineEdit,QTableWidget,QTabBar::tab{
 background-color:white;
 border-radius:5;
 border-width:2px;
 border-style:solid;
-border-color:black;background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 230, 255), stop:1 rgba(255, 255, 255, 255));
-min-width:80px;
+border-color:black;
+}
+
+QPushButton,QComboBox,QToolButton{
+ background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 230, 255), stop:1 rgba(255, 255, 255, 255));
+min-width:70px;
 min-height:25px;
+}
+QPushButton:pressed {
+     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                       stop: 0 #dadbde, stop: 1 #f6f7fa);
 }
 QTreeWidget,QListWidget{
 background-color:white;
 }
-QTabWidget::pane { /* The tab widget frame */
-    border:2px solid black;
-border-radius:5;
+
+QTabWidget::pane { 
+    /*border:2px solid black;*/
+ border:1px solid black;
+ border-radius:3;
 }
 QTabBar::tab{
-border-width:1px;
-border-bottom:0;
+background:qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(230, 230, 230, 255), stop:1 rgba(255, 255, 255, 255));
+border-width:0px;
 border-bottom-left-radius:0;
 border-bottom-right-radius:0;
-padding:5px;
+padding:2px;
 }
+QTabBar::tab:selected {
+ border-width:3px;
+ border-top:0;
+ border-left:0;
+ border-right:0;
+ border-bottom-color:red;
+}
+ /*QTabBar::tab:hover {
+ }*/
 QPushButton{
-  padding:5px;
+  padding:2px;
+}
+QSplitter::handle {
+  background:#fbfbfb;
+  border:2px dotted #fbfbfb;  
 }

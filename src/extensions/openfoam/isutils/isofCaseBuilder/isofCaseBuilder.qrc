@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>../../../../../stylesheet.css</file>
+        <file>../../../../../logo_insight_cae.png</file>
     </qresource>
 </RCC>

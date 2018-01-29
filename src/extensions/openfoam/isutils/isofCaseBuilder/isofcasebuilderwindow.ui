@@ -32,48 +32,59 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>Case Elements</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
+         <widget class="QWidget" name="widget" native="true">
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
             <widget class="QSplitter" name="splitter">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
              </property>
-             <widget class="QTreeWidget" name="available_elements">
-              <property name="rootIsDecorated">
-               <bool>true</bool>
-              </property>
-              <attribute name="headerVisible">
-               <bool>false</bool>
-              </attribute>
-              <column>
-               <property name="text">
-                <string notr="true">1</string>
-               </property>
-              </column>
-             </widget>
-             <widget class="QWidget" name="widget" native="true">
-              <layout class="QHBoxLayout" name="horizontalLayout_2">
-               <item>
-                <widget class="QWidget" name="widget_2" native="true">
-                 <layout class="QVBoxLayout" name="verticalLayout">
-                  <item>
-                   <widget class="QPushButton" name="add_btn">
-                    <property name="text">
-                     <string>&gt;&gt;</string>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
+             <widget class="QWidget" name="widget_2" native="true">
+              <layout class="QGridLayout" name="gridLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Available Case Elements</string>
+                 </property>
                 </widget>
                </item>
-               <item>
+               <item row="1" column="0">
+                <widget class="QTreeWidget" name="available_elements">
+                 <property name="rootIsDecorated">
+                  <bool>true</bool>
+                 </property>
+                 <attribute name="headerVisible">
+                  <bool>false</bool>
+                 </attribute>
+                 <column>
+                  <property name="text">
+                   <string notr="true">1</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="add_btn">
+                 <property name="text">
+                  <string>&gt;&gt;</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+             <widget class="QWidget" name="widget_4" native="true">
+              <layout class="QGridLayout" name="gridLayout_2">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_5">
+                 <property name="text">
+                  <string>Selected Case Elements</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
                 <widget class="QListWidget" name="selected_elements"/>
                </item>
-               <item>
+               <item row="2" column="1">
                 <layout class="QVBoxLayout" name="verticalLayout_10">
                  <item>
                   <widget class="QPushButton" name="up_btn">
@@ -125,7 +136,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>Case Element Parameters</string>
+           <string>Parameters of Selected Case Element</string>
           </property>
          </widget>
         </widget>
@@ -322,6 +333,26 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>available_elements</tabstop>
+  <tabstop>create_btn</tabstop>
+  <tabstop>skipBCswitch</tabstop>
+  <tabstop>save_btn</tabstop>
+  <tabstop>load_btn</tabstop>
+  <tabstop>cancel_btn</tabstop>
+  <tabstop>OFversion</tabstop>
+  <tabstop>saveOFversion</tabstop>
+  <tabstop>up_btn</tabstop>
+  <tabstop>down_btn</tabstop>
+  <tabstop>remove_btn</tabstop>
+  <tabstop>patch_list</tabstop>
+  <tabstop>assign_bc_btn</tabstop>
+  <tabstop>bc_element_list</tabstop>
+  <tabstop>parse_bf_btn</tabstop>
+  <tabstop>add_patch_btn</tabstop>
+  <tabstop>selected_elements</tabstop>
+  <tabstop>BCTab</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

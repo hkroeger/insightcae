@@ -520,8 +520,8 @@ void ISCADModel::setUnsavedState(int, int rem, int ad)
     {
         if (!unsaved_)
         {
-            emit updateTitle(filename_, true);
             unsaved_=true;
+            emit updateTitle(filename_, true);
         }
     }
 }
@@ -530,8 +530,8 @@ void ISCADModel::setUnsavedState(int, int rem, int ad)
 
 void ISCADModel::unsetUnsavedState()
 {
-    emit updateTitle(filename_, false);
-    unsaved_=false;
+  unsaved_=false;
+  emit updateTitle(filename_, false);
 }
 
 

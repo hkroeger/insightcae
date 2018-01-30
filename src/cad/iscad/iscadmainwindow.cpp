@@ -186,6 +186,11 @@ void ISCADMainWindow::onUpdateClipPlaneMenu(int errorState)
     }
 }
 
+void ISCADMainWindow::onNewModel()
+{
+  insertEmptyModel();
+}
+
 void ISCADMainWindow::onLoadModelFile(const boost::filesystem::path& modelfile)
 {
     insertModel(modelfile);
@@ -261,6 +266,12 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QMenu *mmenu = menuBar()->addMenu("&Model");
     QMenu *vmenu = menuBar()->addMenu("&View");
 
+    QAction *act;
+
+    act=new QAction(("&New"), this);
+    fmenu->addAction(act);
+    connect(act, SIGNAL(triggered()), this, SLOT(onNewModel()));
+
     act_load_=new QAction(("&Load"), this);
     fmenu->addAction(act_load_);
     connect(act_load_, SIGNAL(triggered()), this, SLOT(loadModel()));
@@ -271,6 +282,13 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     act_saveas_ = new QAction(("&Save as..."), this);
     fmenu->addAction(act_saveas_);
+
+    fmenu->addSeparator();
+    act =new QAction(("&Quit"), this);
+    act->setShortcut(Qt::AltModifier + Qt::Key_F4);
+    fmenu->addAction(act);
+    connect(act, SIGNAL(triggered()), this, SLOT(close()));
+
 
     act_rebuild_ = new QAction(("&Rebuild model"), this);
     act_rebuild_->setShortcut(Qt::ControlModifier + Qt::Key_Return);
@@ -386,6 +404,7 @@ ISCADModelEditor* ISCADMainWindow::insertModel(const boost::filesystem::path& fi
 {
     ISCADModelEditor* me = insertEmptyModel(bgparsing);
     me->model()->loadFile(file);
+    me->model()->unsetUnsavedState();
     return me;
 }
 
@@ -393,6 +412,7 @@ ISCADModelEditor* ISCADMainWindow::insertModelScript(const std::string& contents
 {
     ISCADModelEditor* me = insertEmptyModel(bgparsing);
     me->model()->setScript(contents);
+    me->model()->unsetUnsavedState();
     return me;
 }
 

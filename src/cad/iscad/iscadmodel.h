@@ -99,7 +99,7 @@ public:
 
     void connectModelTree(QModelTree* mt) const;
 
-    inline bool isUnsaved() const { unsaved_; }
+    inline bool isUnsaved() const { return unsaved_; }
 
 protected slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);

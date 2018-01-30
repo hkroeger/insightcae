@@ -101,6 +101,7 @@ public slots:
     void onUpdateTabTitle(ISCADModelEditor* model, const boost::filesystem::path& filepath, bool isUnSaved);
     void onCloseModel(int tabindex);
     void onUpdateClipPlaneMenu(int errorState=0);
+    void onNewModel();
     void onLoadModelFile(const boost::filesystem::path& modelfile);
     
     void onShowFileTreeContextMenu(const QPoint&);

@@ -101,12 +101,12 @@ void BGParsingThread::run()
       {
           reason="Expected: "+e.message();
           failloc=e.from_pos();
-          emit scriptError(failloc, QString::fromStdString(reason), 1);
+          emit scriptError(action_ >= Rebuild ? failloc : -1, QString::fromStdString(reason), 1);
       }
 
       if (!r) // fail if we did not get a full match
       {
-          emit scriptError(failloc, "Syntax error", 1);
+          emit scriptError(action_ >= Rebuild ? failloc : -1, "Syntax error", 1);
       }
       else
       {

@@ -1,0 +1,42 @@
+
+t4=tan(40*deg);
+ang=15*deg;
+t2=tan(ang);
+
+Dn?=2.2;
+d=TableLookup(ScrewDIN7972Sheetmetal, d, Dn, d, nearest);  # thread out diameter
+k?=TableLookup(ScrewDIN7972Sheetmetal, d, d, k); # kopfhöhe
+t?=TableLookup(ScrewDIN7972Sheetmetal, d, d, t); # schlitztiefe
+n?=TableLookup(ScrewDIN7972Sheetmetal, d, d, n); # schlitzbreite
+d2?=TableLookup(ScrewDIN7972Sheetmetal, d, d, d2); # kopfbreite
+
+L?=10;
+
+di=0.8*d;
+
+head=
+ Revolution(
+  Tri(O, 0.5*d2*EY, (0.5*d2/t4)*EX),
+  O, EX, 2*M_PI)
+;
+
+screw:
+(
+ head-Box(O, 2*d2*EY, n*EZ, t*EX, center xy)
+)
+|Fillet(
+ Chamfer(
+  Cylinder(k*EX, L*EX, di)?edges('maximal(CoG.x)'), 
+ 0.45*di/t2, ang) ? edges('maximal(CoG.x,2)'), 0.25*L)
+;
+
+head_hole=Revolution(
+  Tri(O-(d2/t4)*EX, (d2+0.5*d2)*EY, ((d2+0.5*d2)/t4)*EX),
+  O, EX, 2*M_PI)
+;
+
+tap_hole=
+head_hole|Cylinder(k*EX, L*EX, di);
+
+through_hole=
+head_hole|Cylinder(O, L*EX, 1.1*d);

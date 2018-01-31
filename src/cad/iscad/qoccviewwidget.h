@@ -49,10 +49,11 @@ public:
     CurAction3d_DynamicRotation,
   };
 
-  enum CurrentMode
+  enum CurrentInteractionMode
   {
-    CMode_Normal,
-    CMode_MeasurePoints
+    CIM_Normal,
+    CIM_MeasurePoints,
+    CIM_InsertPointIDs
   };
 
 protected:
@@ -81,6 +82,7 @@ public:
 
   void redraw( bool isPainting = false );
 
+  QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
 
 signals:
@@ -141,6 +143,7 @@ public slots:
   void onSetClipPlane(QObject* datumplane);
 
   void onMeasureDistance();
+  void onSelectPoints();
 
 protected: // methods
 
@@ -200,10 +203,13 @@ private: // members
   
   bool showGrid;
 
-  CurrentMode mode_;
+  CurrentInteractionMode cimode_;
 
   // data for measure points
   insight::cad::VectorPtr measpts_p1_, measpts_p2_;
+
+  // for pointIDs
+  insight::cad::FeatureSetPtr selpts_;
 
 private: // methods
   

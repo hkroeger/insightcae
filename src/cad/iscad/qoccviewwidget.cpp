@@ -548,29 +548,36 @@ void QoccViewWidget::redraw( bool isPainting )
 }
 
 
+QDisplayableModelTreeItem* QoccViewWidget::getOwnerItem(Handle_AIS_InteractiveObject selected)
+{
+  Handle_Standard_Transient own=selected->GetOwner();
+  if (!own.IsNull())
+  {
+      if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
+#if (OCC_VERSION_MAJOR<7)
+              .Access()
+#else
+              .get()
+#endif
+      ))
+      {
+          if (QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(smo->getPointer()))
+          {
+              return mi;
+          }
+      }
+  }
+
+  return NULL;
+}
+
 QDisplayableModelTreeItem* QoccViewWidget::getSelectedItem()
 {
   if (myContext->HasDetected())
   {
       if (myContext->DetectedInteractive()->HasOwner())
       {
-          Handle_Standard_Transient own=myContext->DetectedInteractive()->GetOwner();
-          if (!own.IsNull())
-          {
-              if (PointerTransient *smo=dynamic_cast<PointerTransient*>(own
-#if (OCC_VERSION_MAJOR<7)
-                      .Access()
-#else
-                      .get()
-#endif
-              ))
-              {
-                  if (QDisplayableModelTreeItem* mi=dynamic_cast<QDisplayableModelTreeItem*>(smo->getPointer()))
-                  {
-                      return mi;
-                  }
-              }
-          }
+          return getOwnerItem(myContext->DetectedInteractive());
       }
   }
 
@@ -1033,11 +1040,19 @@ void QoccViewWidget::onMeasureDistance()
 {
   measpts_p1_.reset();
   measpts_p2_.reset();
-  mode_=CMode_MeasurePoints;
+  cimode_=CIM_MeasurePoints;
   getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
   emit sendStatus("Please select first point!");
 }
 
+
+void QoccViewWidget::onSelectPoints()
+{
+  selpts_.reset();
+  cimode_=CIM_InsertPointIDs;
+  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+  emit sendStatus("Please select points and finish with right click!");
+}
 
 /*!
   \brief	This function handles left button down events from the mouse.
@@ -1153,11 +1168,11 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 
 	  myContext->Select(true);
 
-	  if (mode_==CMode_Normal)
+	  if (cimode_==CIM_Normal)
 	    {
 	      emit graphicalSelectionChanged(getSelectedItem(), this);
 	    }
-	  else if (mode_==CMode_MeasurePoints)
+	  else if (cimode_==CIM_MeasurePoints)
 	    {
 	      myContext->InitSelected();
 	      if (myContext->MoreSelected())
@@ -1190,12 +1205,23 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 		    measpts_p1_.reset();
 		    measpts_p2_.reset();
 		    getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
-		    mode_=CMode_Normal;
+		    cimode_=CIM_Normal;
 		  }
 	      }
 
 
 
+            }
+          else if (cimode_==CIM_InsertPointIDs)
+            {
+              myContext->InitSelected();
+              if (myContext->MoreSelected())
+                {
+                  TopoDS_Shape v = myContext->SelectedShape();
+                  if (!selpts_)
+                    {
+                    }
+                }
             }
 
 	  break;

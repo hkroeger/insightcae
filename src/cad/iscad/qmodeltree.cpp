@@ -375,13 +375,13 @@ void QModelTree::onAddDatum(const QString& name, insight::cad::DatumPtr smp)
   newf->initDisplay();
 }
 
-void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp)
+void QModelTree::onAddEvaluation(const QString& name, insight::cad::PostprocActionPtr smp, bool visible)
 {
   QEvaluationItem *old, *newf;
   {
     SignalBlocker b(this);
     old = findItem<QEvaluationItem>(postprocactions_, name);
-    newf = new QEvaluationItem(name, smp, postprocactions_);
+    newf = new QEvaluationItem(name, smp, postprocactions_, visible);
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
   }

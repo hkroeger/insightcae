@@ -402,6 +402,8 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     
     connect(me->model(), SIGNAL(displayStatusMessage(const QString&)),
             statusBar(), SLOT(showMessage(const QString&)));
+    connect(me->viewer(), SIGNAL(sendStatus(const QString&)),
+            statusBar(), SLOT(showMessage(const QString&)));
     connect(me->model(), SIGNAL(statusProgress(int, int)),
             this, SLOT(updateProgress(int, int)));
 

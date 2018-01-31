@@ -3,6 +3,10 @@
  
 #include <QtCore>
 #include <QtGui>
+
+#include "cadtypes.h"
+#include "cadpostprocactions.h"
+
 #include "qoccinternal.h"
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
@@ -20,6 +24,7 @@
 
 #include "occtools.h"
 #include "datum.h"
+
 
 QoccViewWidget::QoccViewWidget
 ( 
@@ -1026,8 +1031,11 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
 
 void QoccViewWidget::onMeasureDistance()
 {
+  measpts_p1_.reset();
+  measpts_p2_.reset();
   mode_=CMode_MeasurePoints;
   getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+  emit sendStatus("Please select first point!");
 }
 
 
@@ -1158,12 +1166,36 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 //		BRepTools::Dump(v, std::cout);
 		gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
 		std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
+
+		if (!measpts_p1_)
+		  {
+		    measpts_p1_=insight::cad::matconst(insight::vec3(p));
+		    emit sendStatus("Please select second point!");
+		  }
+		else if (!measpts_p2_)
+		  {
+		    measpts_p2_=insight::cad::matconst(insight::vec3(p));
+		    emit sendStatus("Measurement is created...");
+
+		    emit addEvaluationToModel
+			(
+			  "distance measurement",
+			  insight::cad::PostprocActionPtr
+			  (
+			    new insight::cad::Distance(measpts_p1_, measpts_p2_)
+			  ),
+			  true
+			);
+
+		    measpts_p1_.reset();
+		    measpts_p2_.reset();
+		    getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+		    mode_=CMode_Normal;
+		  }
 	      }
 
 
 
-              getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
-              mode_=CMode_Normal;
             }
 
 	  break;

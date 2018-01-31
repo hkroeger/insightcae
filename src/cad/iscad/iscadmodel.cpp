@@ -676,6 +676,8 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     connect(model_, SIGNAL(updateTitle(boost::filesystem::path,bool)),
             this, SLOT(onUpdateTitle(boost::filesystem::path,bool)));
 
+    connect(viewer_, SIGNAL(addEvaluationToModel(QString,insight::cad::PostprocActionPtr, bool)),
+            modeltree_, SLOT(onAddEvaluation(QString,insight::cad::PostprocActionPtr, bool)));
 }
 
 

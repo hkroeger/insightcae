@@ -32,9 +32,10 @@ QEvaluationItem::QEvaluationItem
 (
     const QString& name,
     insight::cad::PostprocActionPtr smp,
-    QTreeWidgetItem* parent
+    QTreeWidgetItem* parent,
+    bool visible
 )
-: QDisplayableModelTreeItem(name, false, AIS_WireFrame, parent),
+: QDisplayableModelTreeItem(name, visible, AIS_WireFrame, parent),
   smp_(smp)
 {
 }

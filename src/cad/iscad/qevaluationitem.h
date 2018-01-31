@@ -39,7 +39,7 @@ protected:
   virtual Handle_AIS_InteractiveObject createAIS();
 
 public:
-  QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent);
+  QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent, bool visible=false);
  
 public slots:
   void showContextMenu(const QPoint& gpos);

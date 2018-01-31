@@ -93,6 +93,8 @@ signals:
   //! Just a placeholder for now
   void error ( int errorCode, QString& errorDescription );
 
+  void addEvaluationToModel (const QString& name, insight::cad::PostprocActionPtr smp, bool visible);
+
 protected slots:
   
   void onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer);
@@ -199,6 +201,9 @@ private: // members
   bool showGrid;
 
   CurrentMode mode_;
+
+  // data for measure points
+  insight::cad::VectorPtr measpts_p1_, measpts_p2_;
 
 private: // methods
   

@@ -1,3 +1,4 @@
+ 
 /*
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
@@ -17,16 +18,36 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef INSIGHT_CAD_POSTPROCACTIONS_H
-#define INSIGHT_CAD_POSTPROCACTIONS_H
+#ifndef INSIGHT_CAD_DISTANCEPP_H
+#define INSIGHT_CAD_DISTANCEPP_H
 
+#include "cadtypes.h"
+#include "cadparameters.h"
 #include "cadpostprocaction.h"
 
-#include "drawingexport.h"
-#include "export.h"
-#include "hydrostatics.h"
-#include "mesh.h"
-#include "solidproperties.h"
-#include "pointdistance.h"
+namespace insight {
+namespace cad {
 
-#endif
+class Distance
+: public PostprocAction
+{
+
+  VectorPtr p1_, p2_;
+  double distance_;
+
+  virtual size_t calcHash() const;
+
+public:
+  Distance(VectorPtr p1, VectorPtr p2);
+
+  virtual void build();
+
+  virtual void write(std::ostream&) const;
+  virtual Handle_AIS_InteractiveObject createAISRepr() const;
+};
+
+
+}
+}
+
+#endif // INSIGHT_CAD_DISTANCEPP_H

@@ -215,7 +215,7 @@ public slots:
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv);
     void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
     void onAddDatum      (const QString& name, insight::cad::DatumPtr smp);
-    void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp);
+    void onAddEvaluation (const QString& name, insight::cad::PostprocActionPtr smp, bool visible=false);
 
     void onRemoveScalar      (const QString& sn);
     void onRemoveVector      (const QString& sn);

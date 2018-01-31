@@ -63,7 +63,9 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
     act_reset_shading_->disconnect();
 
     act_measure_distance_->disconnect();
-    
+    act_sel_pts_->disconnect();
+    act_sel_faces_->disconnect();
+
     if (lme!=NULL)
       {
         disconnect(lme->model(), SIGNAL(modelUpdated(int)),
@@ -114,7 +116,13 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
         connect(act_measure_distance_, SIGNAL(triggered()),
                 me->viewer(), SLOT(onMeasureDistance()));
+
+        connect(act_sel_pts_, SIGNAL(triggered()),
+                me->viewer(), SLOT(onSelectPoints()));
         
+        connect(act_sel_faces_, SIGNAL(triggered()),
+                me->viewer(), SLOT(onSelectFaces()));
+
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
         connect(bgparsestopbtn_, SIGNAL(clicked()),
@@ -351,6 +359,12 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_measure_distance_=new QAction("Distance between points", this);
     act_measure_distance_->setShortcut(Qt::ControlModifier + Qt::Key_M);
     msmenu->addAction(act_measure_distance_);
+
+    act_sel_pts_=new QAction("Select vertices", this);
+    msmenu->addAction(act_sel_pts_);
+
+    act_sel_faces_=new QAction("Select faces", this);
+    msmenu->addAction(act_sel_faces_);
 
     QSettings settings;
     restoreGeometry(settings.value("mainWindowGeometry").toByteArray());

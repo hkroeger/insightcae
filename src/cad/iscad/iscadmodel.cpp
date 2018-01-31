@@ -678,6 +678,10 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     connect(viewer_, SIGNAL(addEvaluationToModel(QString,insight::cad::PostprocActionPtr, bool)),
             modeltree_, SLOT(onAddEvaluation(QString,insight::cad::PostprocActionPtr, bool)));
+
+    connect(viewer_, SIGNAL(insertNotebookText(QString)),
+            this, SLOT(onInsertNotebookText(QString)));
+
 }
 
 
@@ -687,6 +691,13 @@ void ISCADModelEditor::onCopyBtnClicked()
   model_->textCursor().insertText(notepad_->toPlainText());
   notepad_->clear();
 }
+
+
+void ISCADModelEditor::onInsertNotebookText(const QString& text)
+{
+  notepad_->insertPlainText(text);
+}
+
 
 void ISCADModelEditor::onUpdateTitle(const boost::filesystem::path& filepath, bool isUnsaved)
 {

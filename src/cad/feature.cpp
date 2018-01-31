@@ -92,6 +92,15 @@ FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id)
     add(id);
 }
 
+FeatureSet::FeatureSet(ConstFeaturePtr m, EntityType shape, const std::vector<FeatureID>& ids)
+: model_(m),
+  shape_(shape),
+  data_(ids.begin(), ids.end())
+{
+  setValid();
+}
+
+
 FeatureSet::FeatureSet
 (
   ConstFeaturePtr m, 

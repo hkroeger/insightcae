@@ -174,7 +174,8 @@ public:
   FeatureSet(ConstFeaturePtr m, EntityType shape);
 
   FeatureSet(ConstFeaturePtr m, EntityType shape, FeatureID id);
-  
+  FeatureSet(ConstFeaturePtr m, EntityType shape, const std::vector<FeatureID>& ids);
+
   /**
    * query an entire feature
    */

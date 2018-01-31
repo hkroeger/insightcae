@@ -82,7 +82,9 @@ protected:
         *act_display_all_shaded_,
         *act_display_all_wire_,
         *act_reset_shading_,
-        *act_measure_distance_
+        *act_measure_distance_,
+        *act_sel_pts_,
+        *act_sel_faces_
     ;
 
     QMenu* clipplanemenu_;

@@ -58,7 +58,11 @@ public:
   QFeatureItem(const QString& name, insight::cad::FeaturePtr smp,
          bool visible, QTreeWidgetItem* parent, bool is_component);
   
-    
+  inline insight::cad::FeaturePtr solidmodelPtr()
+  {
+    return smp_;
+  }
+
   inline insight::cad::Feature& solidmodel()
   {
     return *smp_;

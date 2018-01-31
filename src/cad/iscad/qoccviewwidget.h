@@ -53,7 +53,8 @@ public:
   {
     CIM_Normal,
     CIM_MeasurePoints,
-    CIM_InsertPointIDs
+    CIM_InsertPointIDs,
+    CIM_InsertFaceIDs
   };
 
 protected:
@@ -96,6 +97,8 @@ signals:
   void error ( int errorCode, QString& errorDescription );
 
   void addEvaluationToModel (const QString& name, insight::cad::PostprocActionPtr smp, bool visible);
+
+  void insertNotebookText(const QString& text);
 
 protected slots:
   
@@ -144,6 +147,7 @@ public slots:
 
   void onMeasureDistance();
   void onSelectPoints();
+  void onSelectFaces();
 
 protected: // methods
 

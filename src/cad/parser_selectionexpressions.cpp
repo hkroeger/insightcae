@@ -85,6 +85,12 @@ void ISCADParser::createSelectionExpressions()
               >> lit("vid") >> '=' >> r_scalarExpression
             )
             [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, phx::bind(&insight::cad::Scalar::value, *qi::_2))) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
+              >> lit("vid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Vertex, qi::_2)) ]
         )
         >>
         *(
@@ -148,6 +154,12 @@ void ISCADParser::createSelectionExpressions()
               >> ')'
             )
             [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2, qi::_3)) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
+              >> lit("fid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Face, qi::_2)) ]
             |
             ( r_solidmodel_expression
               >> '?'

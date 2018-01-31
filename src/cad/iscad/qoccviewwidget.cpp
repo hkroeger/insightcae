@@ -45,7 +45,7 @@ QoccViewWidget::QoccViewWidget
     myKeyboardFlags     ( Qt::NoModifier ),
     myButtonFlags	( Qt::NoButton ),
     showGrid            ( false ),
-    mode_               ( CMode_Normal )
+    cimode_             ( CIM_Normal )
 {
   myContext = aContext;
   // Needed to generate mouse events
@@ -1054,6 +1054,15 @@ void QoccViewWidget::onSelectPoints()
   emit sendStatus("Please select points and finish with right click!");
 }
 
+
+void QoccViewWidget::onSelectFaces()
+{
+  selpts_.reset();
+  cimode_=CIM_InsertFaceIDs;
+  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+  emit sendStatus("Please select faces and finish with right click!");
+}
+
 /*!
   \brief	This function handles left button down events from the mouse.
 */
@@ -1218,8 +1227,58 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
               if (myContext->MoreSelected())
                 {
                   TopoDS_Shape v = myContext->SelectedShape();
+                  TopoDS_Vertex vv = TopoDS::Vertex(v);
+                  gp_Pnt vp = BRep_Tool::Pnt(vv);
                   if (!selpts_)
                     {
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                        {
+                          // restrict further selection to current shape
+                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+
+                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Vertex));
+
+                          insight::cad::FeatureID vid = parent->solidmodel().vertexID(v);
+                          selpts_->add(vid);
+                          emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
+                        }
+                    }
+                  else
+                    {
+                      insight::cad::FeatureID vid = selpts_->model()->vertexID(v);
+                      selpts_->add(vid);
+                      emit sendStatus(boost::str(boost::format("Selected vertex %d. Select next vertex, end with right click.")%vid).c_str());
+                    }
+                }
+            }
+          else if (cimode_==CIM_InsertFaceIDs)
+            {
+              myContext->InitSelected();
+              if (myContext->MoreSelected())
+                {
+                  TopoDS_Shape f = myContext->SelectedShape();
+                  TopoDS_Face ff = TopoDS::Face(f);
+                  if (!selpts_)
+                    {
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                        {
+                          // restrict further selection to current shape
+                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_FACE) );
+
+                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Face));
+
+                          insight::cad::FeatureID fid = parent->solidmodel().faceID(f);
+                          selpts_->add(fid);
+                          emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
+                        }
+                    }
+                  else
+                    {
+                      insight::cad::FeatureID fid = selpts_->model()->faceID(f);
+                      selpts_->add(fid);
+                      emit sendStatus(boost::str(boost::format("Selected face %d. Select next face, end with right click.")%fid).c_str());
                     }
                 }
             }
@@ -1297,8 +1356,41 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
     {
       if ( myMode == CurAction3d_Nothing )
 	{
-	  displayContextMenu(point);
-//	  emit popupMenu ( this, point );
+	  if (cimode_==CIM_Normal)
+	    {
+	      displayContextMenu(point);
+	    }
+	  else if (cimode_==CIM_InsertPointIDs)
+	    {
+	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?vid=(";
+	      int j=0;
+	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+		{
+		  text+=QString::number( i );
+		  if (j++ < selpts_->size()-1) text+=",";
+		}
+	      text+=")\n";
+	      emit insertNotebookText(text);
+
+	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+	      cimode_=CIM_Normal;
+	    }
+	  else if (cimode_==CIM_InsertFaceIDs)
+	    {
+	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?fid=(";
+	      int j=0;
+	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+		{
+		  text+=QString::number( i );
+		  if (j++ < selpts_->size()-1) text+=",";
+		}
+	      text+=")\n";
+	      emit insertNotebookText(text);
+
+	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
+	      cimode_=CIM_Normal;
+	    }
+	  //	  emit popupMenu ( this, point );
         }
       else
 	{

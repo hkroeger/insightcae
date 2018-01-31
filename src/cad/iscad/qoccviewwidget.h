@@ -46,7 +46,13 @@ public:
     CurAction3d_WindowZooming, 
     CurAction3d_DynamicPanning,
     CurAction3d_GlobalPanning, 
-    CurAction3d_DynamicRotation 
+    CurAction3d_DynamicRotation,
+  };
+
+  enum CurrentMode
+  {
+    CMode_Normal,
+    CMode_MeasurePoints
   };
 
 protected:
@@ -132,6 +138,8 @@ public slots:
 
   void onSetClipPlane(QObject* datumplane);
 
+  void onMeasureDistance();
+
 protected: // methods
 
   virtual void paintEvent        ( QPaintEvent* e );
@@ -189,6 +197,8 @@ private: // members
   QCursor			myCrossCursor;
   
   bool showGrid;
+
+  CurrentMode mode_;
 
 private: // methods
   

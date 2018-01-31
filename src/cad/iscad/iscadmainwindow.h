@@ -81,7 +81,9 @@ protected:
         *act_background_color_,
         *act_display_all_shaded_,
         *act_display_all_wire_,
-        *act_reset_shading_;
+        *act_reset_shading_,
+        *act_measure_distance_
+    ;
 
     QMenu* clipplanemenu_;
     QProgressBar* progressbar_;

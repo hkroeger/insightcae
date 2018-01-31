@@ -14,6 +14,7 @@
 #include <V3d_PositionalLight.hxx>
 #include "Graphic3d_AspectFillArea3d.hxx"
 #include "AIS_Plane.hxx"
+#include "AIS_Point.hxx"
 
 #include "pointertransient.h"
 
@@ -38,7 +39,8 @@ QoccViewWidget::QoccViewWidget
     myViewPrecision     ( 0.0 ),
     myKeyboardFlags     ( Qt::NoModifier ),
     myButtonFlags	( Qt::NoButton ),
-    showGrid            ( false )
+    showGrid            ( false ),
+    mode_               ( CMode_Normal )
 {
   myContext = aContext;
   // Needed to generate mouse events
@@ -249,6 +251,9 @@ void QoccViewWidget::resizeEvent ( QResizeEvent * /* e */ )
   myViewResized = Standard_True;
 }	
 
+
+
+
 /*!
 \brief	Mouse press event
 \param	e The event data.
@@ -276,6 +281,9 @@ void QoccViewWidget::mousePressEvent( QMouseEvent* e )
     }
 }
 
+
+
+
 /*!
 \brief	Mouse release event
 \param	e The event data.
@@ -298,6 +306,9 @@ void QoccViewWidget::mouseReleaseEvent(QMouseEvent* e)
       onMiddleButtonUp( myKeyboardFlags, e->pos() );
     }
 }
+
+
+
 
 /*!
 \brief	Mouse move event, driven from application message loop
@@ -344,6 +355,9 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
   onMouseMove( e->buttons(), myKeyboardFlags, e->pos(), e->modifiers() );
 }
 
+
+
+
 /*!
   \brief	A leave event is sent to the widget when the mouse cursor leaves
   the widget.
@@ -357,6 +371,7 @@ void QoccViewWidget::leaveEvent ( QEvent* /* e */ )
 }
 
 
+
 void QoccViewWidget::displayContextMenu( const QPoint& p)
 {
   if (QModelTreeItem* mi=dynamic_cast<QModelTreeItem*>(getSelectedItem()))
@@ -365,6 +380,9 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
       mi->showContextMenu(mapToGlobal(p));
   }
 }
+
+
+
 
 /*!
 \brief	The QWheelEvent class contains parameters that describe a wheel event. 
@@ -390,6 +408,9 @@ void QoccViewWidget::wheelEvent ( QWheelEvent* e )
     }
 }
 
+
+
+
 void QoccViewWidget::keyPressEvent(QKeyEvent* e)
 {
 //   std::cout<<e->modifiers()<<std::endl;
@@ -408,6 +429,9 @@ void QoccViewWidget::keyPressEvent(QKeyEvent* e)
     else
       QWidget::keyPressEvent(e);
 }
+
+
+
 
 void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 {
@@ -430,6 +454,7 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 
 
 
+
 void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer)
 {
     // Remove previously displayed sub objects from display
@@ -443,6 +468,7 @@ void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* sele
     if (QFeatureItem* ms = dynamic_cast<QFeatureItem*>(selection))
     {
         insight::cad::Feature& sm=ms->solidmodel();
+
         const insight::cad::Feature::RefPointsList& pts=sm.getDatumPoints();
 
         // reverse storage to detect collocated points
@@ -936,7 +962,6 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
       getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
       getContext()->SetColor(ais, di->color(), Standard_True );
 
-//      getContext()->Activate(ais, AIS_Shape::SelectionMode(TopAbs_VERTEX) );
     }
 }
 
@@ -996,6 +1021,13 @@ void QoccViewWidget::onSetClipPlane(QObject* qdatum)
     gp_Pnt p = pl.Location();
     gp_Dir n = pl.Direction();
     toggleClip( p.X(),p.Y(),p.Z(), n.X(),n.Y(),n.Z() );
+}
+
+
+void QoccViewWidget::onMeasureDistance()
+{
+  mode_=CMode_MeasurePoints;
+  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
 }
 
 
@@ -1110,6 +1142,30 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 	{
 
 	case CurAction3d_Nothing:
+
+	  myContext->Select(true);
+
+	  if (mode_==CMode_Normal)
+	    {
+	      emit graphicalSelectionChanged(getSelectedItem(), this);
+	    }
+	  else if (mode_==CMode_MeasurePoints)
+	    {
+	      myContext->InitSelected();
+	      if (myContext->MoreSelected())
+	      {
+		TopoDS_Shape v = myContext->SelectedShape();
+//		BRepTools::Dump(v, std::cout);
+		gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
+		std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
+	      }
+
+
+
+              getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+              mode_=CMode_Normal;
+            }
+
 	  break;
 
 	case CurAction3d_Picking:
@@ -1157,7 +1213,6 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 	  break;
 	}
     }
-  emit graphicalSelectionChanged(getSelectedItem(), this);
 }
 /*!
   \brief	Middle button up event handler.

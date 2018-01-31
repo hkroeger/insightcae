@@ -61,6 +61,8 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
     act_display_all_shaded_->disconnect();
     act_display_all_wire_->disconnect();
     act_reset_shading_->disconnect();
+
+    act_measure_distance_->disconnect();
     
     if (lme!=NULL)
       {
@@ -109,6 +111,9 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
                 me->modeltree(), SLOT(allWireframe()));
         connect(act_reset_shading_, SIGNAL(triggered()),
                 me->modeltree(), SLOT(resetViz()));
+
+        connect(act_measure_distance_, SIGNAL(triggered()),
+                me->viewer(), SLOT(onMeasureDistance()));
         
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
@@ -265,6 +270,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     QMenu *fmenu = menuBar()->addMenu("&File");
     QMenu *mmenu = menuBar()->addMenu("&Model");
     QMenu *vmenu = menuBar()->addMenu("&View");
+    QMenu *msmenu = menuBar()->addMenu("M&easure");
 
     QAction *act;
 
@@ -340,6 +346,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_reset_shading_ = new QAction(("&Reset shading and visibility"), this);
 //     act->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act_reset_shading_);
+
+
+    act_measure_distance_=new QAction("Distance between points", this);
+    act_measure_distance_->setShortcut(Qt::ControlModifier + Qt::Key_M);
+    msmenu->addAction(act_measure_distance_);
 
     QSettings settings;
     restoreGeometry(settings.value("mainWindowGeometry").toByteArray());

@@ -54,6 +54,7 @@ public:
     CIM_Normal,
     CIM_MeasurePoints,
     CIM_InsertPointIDs,
+    CIM_InsertEdgeIDs,
     CIM_InsertFaceIDs
   };
 
@@ -147,6 +148,7 @@ public slots:
 
   void onMeasureDistance();
   void onSelectPoints();
+  void onSelectEdges();
   void onSelectFaces();
 
 protected: // methods

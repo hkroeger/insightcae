@@ -121,6 +121,12 @@ void ISCADParser::createSelectionExpressions()
             |
             ( r_solidmodel_expression
               >> '?'
+              >> lit("eid") >> '=' >> '(' >> ( qi::int_ % ',' ) >> ')'
+            )
+            [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge, qi::_2)) ]
+            |
+            ( r_solidmodel_expression
+              >> '?'
               >> lit("alledges")
             )
             [ _val = phx::construct<FeatureSetPtr>(phx::new_<FeatureSet>(qi::_1, insight::cad::Edge)) ]

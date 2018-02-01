@@ -84,6 +84,7 @@ protected:
         *act_reset_shading_,
         *act_measure_distance_,
         *act_sel_pts_,
+        *act_sel_edgs_,
         *act_sel_faces_
     ;
 

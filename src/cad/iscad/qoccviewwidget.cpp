@@ -1054,6 +1054,13 @@ void QoccViewWidget::onSelectPoints()
   emit sendStatus("Please select points and finish with right click!");
 }
 
+void QoccViewWidget::onSelectEdges()
+{
+  selpts_.reset();
+  cimode_=CIM_InsertEdgeIDs;
+  getContext()->Activate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
+  emit sendStatus("Please select edges and finish with right click!");
+}
 
 void QoccViewWidget::onSelectFaces()
 {
@@ -1252,6 +1259,35 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                     }
                 }
             }
+          else if (cimode_==CIM_InsertEdgeIDs)
+            {
+              myContext->InitSelected();
+              if (myContext->MoreSelected())
+                {
+                  TopoDS_Shape e = myContext->SelectedShape();
+                  if (!selpts_)
+                    {
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                        {
+                          // restrict further selection to current shape
+                          getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
+                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_EDGE) );
+
+                          selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Edge));
+
+                          insight::cad::FeatureID eid = parent->solidmodel().edgeID(e);
+                          selpts_->add(eid);
+                          emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
+                        }
+                    }
+                  else
+                    {
+                      insight::cad::FeatureID eid = selpts_->model()->edgeID(e);
+                      selpts_->add(eid);
+                      emit sendStatus(boost::str(boost::format("Selected edge %d. Select next edge, end with right click.")%eid).c_str());
+                    }
+                }
+            }
           else if (cimode_==CIM_InsertFaceIDs)
             {
               myContext->InitSelected();
@@ -1373,6 +1409,21 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	      emit insertNotebookText(text);
 
 	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+	      cimode_=CIM_Normal;
+	    }
+	  else if (cimode_==CIM_InsertEdgeIDs)
+	    {
+	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?eid=(";
+	      int j=0;
+	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+		{
+		  text+=QString::number( i );
+		  if (j++ < selpts_->size()-1) text+=",";
+		}
+	      text+=")\n";
+	      emit insertNotebookText(text);
+
+	      getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
 	      cimode_=CIM_Normal;
 	    }
 	  else if (cimode_==CIM_InsertFaceIDs)

@@ -64,6 +64,7 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
     act_measure_distance_->disconnect();
     act_sel_pts_->disconnect();
+    act_sel_edgs_->disconnect();
     act_sel_faces_->disconnect();
 
     if (lme!=NULL)
@@ -119,7 +120,10 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
         connect(act_sel_pts_, SIGNAL(triggered()),
                 me->viewer(), SLOT(onSelectPoints()));
-        
+
+        connect(act_sel_edgs_, SIGNAL(triggered()),
+                me->viewer(), SLOT(onSelectEdges()));
+
         connect(act_sel_faces_, SIGNAL(triggered()),
                 me->viewer(), SLOT(onSelectFaces()));
 
@@ -362,6 +366,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     act_sel_pts_=new QAction("Select vertices", this);
     msmenu->addAction(act_sel_pts_);
+
+    act_sel_edgs_=new QAction("Select edges", this);
+    msmenu->addAction(act_sel_edgs_);
 
     act_sel_faces_=new QAction("Select faces", this);
     msmenu->addAction(act_sel_faces_);

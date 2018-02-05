@@ -27,19 +27,25 @@ namespace insight
 namespace cad 
 {
  
-minimal::minimal(const scalarQuantityComputer& qtc, int rank)
-: maximal(qtc, rank)
+minimal::minimal(const scalarQuantityComputer& qtc, int rank, int lrank)
+: maximal(qtc, rank, lrank)
 {}
 
 void minimal::firstPass(FeatureID feature)
 {
   if (qtc_->isValidForFeature(feature))
-    ranking_[qtc_->evaluate(feature)].insert(feature);
+    {
+      ranking_.push_back(RankEntry(qtc_->evaluate(feature), feature));
+      std::sort( ranking_.begin(), ranking_.end(), [](const RankEntry& e1,const RankEntry& e2) -> bool
+       { return e1.first < e2.first; }
+      );
+    }
+    //    ranking_[qtc_->evaluate(feature)].insert(feature);
 }
 
 FilterPtr minimal::clone() const
 {
-  return FilterPtr(new minimal(*qtc_, rank_));
+  return FilterPtr(new minimal(*qtc_, rank_, lrank_));
 }
 
 }

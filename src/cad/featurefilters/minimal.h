@@ -29,7 +29,7 @@ class minimal
     : public maximal
 {
 public:
-    minimal(const scalarQuantityComputer& qtc, int rank=0);
+    minimal(const scalarQuantityComputer& qtc, int rank=0, int lrank=-1);
     virtual void firstPass(FeatureID feature);
     virtual FilterPtr clone() const;
 };

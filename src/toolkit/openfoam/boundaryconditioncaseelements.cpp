@@ -44,339 +44,6 @@ namespace insight
     
     
     
-    
-FieldData::Parameters FieldData::uniformSteady(double uniformSteadyValue)
-{
-  Parameters::fielddata_uniform_type data;
-  data.values.resize(1);
-  data.values[0].time=0;
-  data.values[0].value=arma::ones(1)*uniformSteadyValue;
-  Parameters p;
-  p.fielddata=data;
-  return p;
-}
-
-
-
-
-FieldData::FieldData(double uniformSteadyValue)
-: p_(Parameters::makeDefault())
-{
-//   Parameters::fielddata_uniform_type data;
-//   data.values.resize(1);
-//   data.values[0].time=0;
-//   data.values[0].value=arma::ones(1)*uniformSteadyValue;
-//   p_.fielddata=data;
-    p_=uniformSteady(uniformSteadyValue);
-}
-
-
-
-
-FieldData::Parameters FieldData::uniformSteady(double uniformSteadyX, double uniformSteadyY, double uniformSteadyZ)
-{
-    return FieldData::uniformSteady(vec3(uniformSteadyX, uniformSteadyY, uniformSteadyZ));
-}
-
-
-
-
-FieldData::Parameters FieldData::uniformSteady(const arma::mat& uniformSteadyValue)
-{
-  Parameters::fielddata_uniform_type data;
-  data.values.resize(1);
-  data.values[0].time=0;
-  data.values[0].value=uniformSteadyValue;
-  Parameters p;
-  p.fielddata=data;
-  return p;
-}
-
-
-
-
-FieldData::FieldData(const arma::mat& uniformSteadyValue)
-: p_(Parameters::makeDefault())
-{
-//   Parameters::fielddata_uniform_type data;
-//   data.values.resize(1);
-//   data.values[0].time=0;
-//   data.values[0].value=uniformSteadyValue;
-//   p_.fielddata=data;
-    p_=uniformSteady(uniformSteadyValue);
-}
-  
-  
-  
-  
-FieldData::FieldData(const ParameterSet& p)
-: p_(p)
-{
-}
-
-
-
-
-OFDictData::data FieldData::sourceEntry() const
-{
-    std::ostringstream os;
-
-    if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) ) //(type=="uniform")
-    {
-        os<<" uniform unsteady";
-
-        BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
-        {
-            os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
-        }
-    }
-
-    else if
-    (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
-    {
-        os<<" linearProfile "
-          <<OFDictData::to_OF(fd->p0)
-          <<" "
-          <<OFDictData::to_OF(fd->ep)
-          ;
-
-        os<<" "
-          <<"unsteady";
-
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
-        {
-            os << " " << inst.time << " " << inst.profile;
-        }
-    }
-
-    else if
-    (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
-    {
-        os<<" radialProfile "
-          <<OFDictData::to_OF(fd->p0)
-          <<" "
-          <<OFDictData::to_OF(fd->ep)
-          ;
-
-        os<<" "
-          <<"unsteady";
-
-        BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
-        {
-            os << " " << inst.time << " " << inst.profile;
-        }
-    }
-
-    else if
-    (const Parameters::fielddata_fittedProfile_type *fd = boost::get<Parameters::fielddata_fittedProfile_type>(&p_.fielddata) )
-    {
-        os<<" fittedProfile "
-          <<OFDictData::to_OF(fd->p0)
-          <<" "
-          <<OFDictData::to_OF(fd->ep)
-          <<" "
-          <<"unsteady";
-
-        BOOST_FOREACH(const Parameters::fielddata_fittedProfile_type::values_default_type& inst, fd->values)
-        {
-            os << " " << inst.time;
-
-            BOOST_FOREACH
-            (
-                const Parameters::fielddata_fittedProfile_type::values_default_type::component_coeffs_default_type& coeffs,
-                inst.component_coeffs
-            )
-            {
-                os << " [";
-                for (size_t cc=0; cc<coeffs.n_elem; cc++)
-                    os<<" "<< str( format("%g") % coeffs[cc] );
-                os<<" ]";
-            }
-        }
-    }
-    else
-    {
-        throw insight::Exception("Unknown field data description type!");
-    }
-
-    return os.str();
-}
-
-
-
-
-void FieldData::setDirichletBC(OFDictData::dict& BC) const
-{
-  BC["type"]=OFDictData::data("extendedFixedValue");
-  BC["source"]=sourceEntry();
-}
-
-
-
-
-double FieldData::representativeValueMag() const
-{
-  if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
-  {
-    double meanv=0.0;
-    int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
-    {
-      meanv+=pow(norm(inst.value, 2), 2);
-      s++;
-    }
-    if (s==0)
-      throw insight::Exception("Invalid data: no time instants prescribed!");
-    meanv/=double(s);
-    return sqrt(meanv);
-  } 
-  else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
-  {
-    double avg=0.0;
-    int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
-    {
-      arma::mat xy;
-      xy.load(inst.profile.c_str(), arma::raw_ascii);
-      arma::mat I=integrate(xy);
-      double avg_inst=0.0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
-      for (int c=0; c<I.n_cols-1; c++)
-      {
-        avg_inst+=pow(I(/*cm.column*/c),2);
-      }
-      avg+=avg_inst;
-      s++;
-    }    
-    if (s==0)
-      throw insight::Exception("Invalid data: no time instants prescribed!");
-    avg/=double(s);
-    return sqrt(avg);
-  }
-  else if (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
-  {
-    double avg=0.0;
-    int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
-    {
-      arma::mat xy;
-      xy.load(inst.profile.c_str(), arma::raw_ascii);
-      arma::mat I=integrate(xy);
-      double avg_inst=0.0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
-      for (int c=0; c<I.n_cols-1; c++)
-      {
-        avg_inst+=pow(I(/*cm.column*/c),2);
-      }
-      avg+=avg_inst;
-      s++;
-    }    
-    if (s==0)
-      throw insight::Exception("Invalid data: no time instants prescribed!");
-    avg/=double(s);
-    return sqrt(avg);
-  }
-  else
-  {
-    throw insight::Exception("not yet implemented!");
-    return 0.0;
-  }
-}
-
-
-
-
-double FieldData::maxValueMag() const
-{
-    double maxv=-DBL_MAX;
-    if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
-    {
-        BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
-        {
-            maxv=std::max(maxv, norm(inst.value, 2));
-        }
-    }
-    else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
-    {
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
-        {
-            arma::mat xy;
-            xy.load(inst.profile.c_str(), arma::raw_ascii);
-            arma::mat mag_inst(arma::zeros(xy.n_rows));
-            int i=0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
-            for (int c=0; c<mag_inst.n_cols-1; c++)
-            {
-                mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
-            }
-            maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
-        }
-    }
-    else if (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
-    {
-        BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
-        {
-            arma::mat xy;
-            xy.load(inst.profile.c_str(), arma::raw_ascii);
-            arma::mat mag_inst(arma::zeros(xy.n_rows));
-            int i=0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
-            for (int c=0; c<mag_inst.n_cols-1; c++)
-            {
-                mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
-            }
-            maxv=std::max(maxv, as_scalar(arma::max(sqrt(mag_inst))));
-        }
-    }
-    else
-    {
-        throw insight::Exception("not yet implemented!");
-        return 0.0;
-    }
-    return maxv;
-}
-
-
-
-
-Parameter* FieldData::defaultParameter(const arma::mat& reasonable_value, const std::string& description)
-{
-  return Parameters::makeDefault().get<SubsetParameter>("fielddata").clone();
-}
-
-
-
-
-void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const
-{
-    if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
-    {
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
-        {
-            arma::mat xy;
-            xy.load(inst.profile.c_str(), arma::raw_ascii);
-
-            int ncmpt=xy.n_cols-1;
-            std::vector<PlotCurve> crvs(ncmpt);
-            for (int i=0; i<ncmpt; i++)
-            {
-                std::string cmptlabel=getOpenFOAMComponentLabel(i, ncmpt);
-                crvs.push_back( PlotCurve(xy.col(0), xy.col(i+1), cmptlabel, boost::str(boost::format("w lp t '${%s}_{%s}$'")%qtylabel%cmptlabel)) );
-            }
-            
-            // Resistance convergence
-            addPlot
-            (
-                results, exepath, boost::str(boost::format("%s_t%g")%name%inst.time),
-                "ordinate", "$"+qtylabel+"$",
-                crvs,
-                descr+str(format(" Used from time instance $t=%g$")%inst.time)
-            );
-
-        }
-    }
-
-}
 
 
 defineType(SimpleBC);
@@ -424,6 +91,31 @@ void SimpleBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         
     }
 }
+
+
+
+
+defineType(SymmetryBC);
+addToFactoryTable(BoundaryCondition, SymmetryBC);
+addToStaticFunctionTable(BoundaryCondition, SymmetryBC, defaultParameters);
+
+
+SymmetryBC::SymmetryBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
+    : SimpleBC ( c, patchName, boundaryDict, "symmetryPlane" )
+{}
+
+
+
+
+defineType(EmptyBC);
+addToFactoryTable(BoundaryCondition, EmptyBC);
+addToStaticFunctionTable(BoundaryCondition, EmptyBC, defaultParameters);
+
+
+EmptyBC::EmptyBC ( OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p )
+    : SimpleBC ( c, patchName, boundaryDict, "empty" )
+{}
+
 
 
 
@@ -801,117 +493,6 @@ void MixingPlaneGGIBC::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 
-namespace multiphaseBC
-{
-    
-defineType(multiphaseBC);
-defineDynamicClass(multiphaseBC);
-// defineFactoryTable(multiphaseBC, LIST(const ParameterSet& ps), LIST(ps));
-// defineStaticFunctionTable(multiphaseBC, defaultParameters, ParameterSet);
-  
-multiphaseBC::~multiphaseBC()
-{
-}
-
-void multiphaseBC::addIntoDictionaries(OFdicts&) const
-{
-}
-
-
-
-defineType(uniformPhases);
-addToFactoryTable(multiphaseBC, uniformPhases);
-addToStaticFunctionTable(multiphaseBC, uniformPhases, defaultParameters);
-
-uniformPhases::uniformPhases(const ParameterSet& ps)
-: p_(ps)
-{}
-
-bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
-{
-    const Parameters::phaseFractions_default_type* pf =NULL;
-    BOOST_FOREACH ( const Parameters::phaseFractions_default_type& c, p_.phaseFractions ) {
-        if ( c.name == fieldname ) {
-            pf=&c;
-            break;
-        }
-    }
-    if
-    (
-//     (f.find(fieldname)!=f.end())
-        ( pf!=NULL )
-        &&
-        ( get<0> ( fieldinfo ) ==scalarField )
-    ) {
-        std::ostringstream entry;
-        entry << "uniform " << pf->fraction;
-//     BC["type"]="fixedValue";
-//     BC["value"]=entry.str();
-        BC["type"]="inletOutlet";
-        BC["inletValue"]=entry.str();
-        BC["value"]=entry.str();
-        return true;
-    } else {
-        return false;
-    }
-
-}
-
-
-uniformPhases::Parameters uniformPhases::mixture( const std::map<std::string, double>& sps )
-{
-    Parameters pf;
-    typedef std::map<std::string, double> MixList;
-    BOOST_FOREACH(const MixList::value_type& sp, sps)
-    {
-        Parameters::phaseFractions_default_type s;
-        s.name=sp.first;
-        s.fraction=sp.second;
-        pf.phaseFractions.push_back(s);
-    }
-    return pf;
-}
-
-
-defineType(uniformWallTiedPhases);
-addToFactoryTable(multiphaseBC, uniformWallTiedPhases);
-addToStaticFunctionTable(multiphaseBC, uniformWallTiedPhases, defaultParameters);
-
-uniformWallTiedPhases::uniformWallTiedPhases(const ParameterSet& ps)
-: uniformPhases(ps)
-{}
-
-bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
-{
-    const Parameters::phaseFractions_default_type* pf =NULL;
-    BOOST_FOREACH ( const Parameters::phaseFractions_default_type& c, p_.phaseFractions ) {
-        if ( c.name == fieldname ) {
-            pf=&c;
-            break;
-        }
-    }
-    if
-    (
-//     (f.find(fieldname)!=f.end())
-        ( pf!=NULL )
-        &&
-        ( get<0> ( fieldinfo ) ==scalarField )
-    ) {
-        std::ostringstream entry;
-        entry << "uniform " << pf->fraction;
-//     BC["type"]="fixedValue";
-//     BC["value"]=entry.str();
-        BC["type"]="fixedValue";
-        BC["value"]=entry.str();
-        return true;
-    } else {
-        return false;
-    }
-
-}
-
-
-}
 
 
 defineType(SuctionInletBC);
@@ -1210,93 +791,6 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
     }
 }
 
-
-
-namespace turbulenceBC
-{
-
-defineType(turbulenceBC);
-// defineFactoryTable(turbulenceBC, LIST(const ParameterSet& ps), LIST(ps));
-// defineStaticFunctionTable(turbulenceBC, defaultParameters, ParameterSet);
-defineDynamicClass(turbulenceBC);
-
- 
-turbulenceBC::~turbulenceBC()
-{
-}
-
-
-
-defineType(uniformIntensityAndLengthScale);
-addToFactoryTable(turbulenceBC, uniformIntensityAndLengthScale);
-addToStaticFunctionTable(turbulenceBC, uniformIntensityAndLengthScale, defaultParameters);
-
-
-uniformIntensityAndLengthScale::uniformIntensityAndLengthScale(const ParameterSet&ps)
-: p_(ps)
-{
-}
-
-
-void uniformIntensityAndLengthScale::setDirichletBC_k(OFDictData::dict& BC, double U) const
-{    
-    double uprime=p_.I*U;
-    double k=max(1e-6, 3.*pow(uprime, 2)/2.);
-//     BC["type"]="fixedValue";
-//     BC["value"]="uniform "+lexical_cast<string>(k);
-    BC["type"]="inletOutlet";
-    BC["inletValue"]="uniform "+lexical_cast<string>(k);
-    BC["value"]="uniform "+lexical_cast<string>(k);
-}
-
-void uniformIntensityAndLengthScale::setDirichletBC_omega(OFDictData::dict& BC, double U) const
-{
-    double uprime=p_.I*U;
-    double k=max(1e-6, 3.*pow(uprime, 2)/2.);
-    double omega=sqrt(k)/p_.l;
-//     BC["type"]=OFDictData::data("fixedValue");
-//     BC["value"]="uniform "+lexical_cast<string>(omega);
-    BC["type"]=OFDictData::data("inletOutlet");
-    BC["inletValue"]="uniform "+lexical_cast<string>(omega);
-    BC["value"]="uniform "+lexical_cast<string>(omega);
-}
-
-void uniformIntensityAndLengthScale::setDirichletBC_epsilon(OFDictData::dict& BC, double U) const
-{
-    double uprime=p_.I*U;
-    double k=3.*pow(uprime, 2)/2.;
-    double epsilon=0.09*pow(k, 1.5)/p_.l;
-//     BC["type"]=OFDictData::data("fixedValue");
-//     BC["value"]="uniform "+lexical_cast<string>(epsilon);
-    BC["type"]=OFDictData::data("inletOutlet");
-    BC["inletValue"]="uniform "+lexical_cast<string>(epsilon);
-    BC["value"]="uniform "+lexical_cast<string>(epsilon);
-}
-
-
-void uniformIntensityAndLengthScale::setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const
-{
-    double nutilda=sqrt(1.5)*p_.I * U * p_.l;
-//     BC["type"]=OFDictData::data("fixedValue");
-//     BC["value"]="uniform "+lexical_cast<string>(nutilda);
-    BC["type"]=OFDictData::data("inletOutlet");
-    BC["inletValue"]="uniform "+lexical_cast<string>(nutilda);
-    BC["value"]="uniform "+lexical_cast<string>(nutilda);
-}
-
-void uniformIntensityAndLengthScale::setDirichletBC_R(OFDictData::dict& BC, double U) const
-{
-    double uprime=p_.I*U;
-//     BC["type"]=OFDictData::data("fixedValue");
-//     BC["value"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
-    BC["type"]=OFDictData::data("inletOutlet");
-    BC["inletValue"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
-    BC["value"]="uniform ("+lexical_cast<string>(uprime/3.)+" 0 0 "+lexical_cast<string>(uprime/3.)+" 0 "+lexical_cast<string>(uprime/3.)+")";
-}
-
-
-
-}
 
 
 
@@ -2140,116 +1634,6 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
 
 
 
-namespace MeshMotionBC
-{
-    
-defineType(MeshMotionBC);
-defineDynamicClass(MeshMotionBC);
-  
-MeshMotionBC::~MeshMotionBC()
-{
-}
-
-
-void MeshMotionBC::addIntoDictionaries(OFdicts&) const
-{}
-
-
-defineType(NoMeshMotion);
-addToFactoryTable(MeshMotionBC, NoMeshMotion);
-addToStaticFunctionTable(MeshMotionBC, NoMeshMotion, defaultParameters);
-
-NoMeshMotion::NoMeshMotion(const ParameterSet& ps)
-{}
-
-bool NoMeshMotion::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
-{
-    if 
-    ( 
-      ((fieldname=="displacement")||(fieldname == "motionU"))
-      && 
-      (get<0>(fieldinfo)==vectorField) 
-    )
-    {
-      BC["type"]=OFDictData::data("fixedValue");
-      BC["value"]=OFDictData::data("uniform (0 0 0)");
-      return true;
-    }
-    else 
-      return false;
-}
-
-NoMeshMotion noMeshMotion;
-
-
-defineType(CAFSIBC);
-addToFactoryTable(MeshMotionBC, CAFSIBC);
-addToStaticFunctionTable(MeshMotionBC, CAFSIBC, defaultParameters);
-
-CAFSIBC::CAFSIBC(const ParameterSet& ps)
-: p_(ps)
-{
-}
-
-
-void CAFSIBC::addIntoDictionaries(OFdicts& dictionaries) const
-{
-  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
-  controlDict.getList("libs").push_back( OFDictData::data("\"libFEMDisplacementBC.so\"") );
-}
-
-bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC) const
-{
-  if (fieldname == "motionU")
-  {
-    BC["prescribeMotionVelocity"] = OFDictData::data(true);
-  }
-  if ( (fieldname == "pointDisplacement") || (fieldname == "motionU") )
-  {
-    BC["type"]= OFDictData::data("FEMDisplacement");
-    BC["FEMCaseDir"]=  OFDictData::data(std::string("\"")+p_.FEMScratchDir.c_str()+"\"");
-    BC["pressureScale"]=  OFDictData::data(p_.pressureScale);
-    BC["minPressure"]=  OFDictData::data(p_.clipPressure);
-    BC["nSmoothIter"]=  OFDictData::data(4);
-    BC["wallCollisionCheck"]=  OFDictData::data(true);
-    if (const Parameters::oldPressure_uniform_type* op = boost::get<Parameters::oldPressure_uniform_type>(&p_.oldPressure) )
-    {
-      std::ostringstream oss;
-      oss<<"uniform "<<op->value;
-      BC["oldPressure"] = OFDictData::data(oss.str());
-    }
-    BC["value"]=OFDictData::data("uniform (0 0 0)");
-    
-    OFDictData::list relaxProfile;
-    
-//     if (p_.relax().which()==0)
-    if ( const Parameters::relax_constant_type *rc = boost::get< Parameters::relax_constant_type>(&p_.relax) )
-    {
-      OFDictData::list cp;
-      cp.push_back(0.0);
-      cp.push_back( boost::get<double>(rc->value) );
-      relaxProfile.push_back( cp );
-    }
-    else if ( const Parameters::relax_profile_type *rp = boost::get< Parameters::relax_profile_type>(&p_.relax) )
-    {
-      BOOST_FOREACH(const Parameters::relax_profile_type::values_default_type& rpi,  rp->values )
-      {
-            OFDictData::list cp;
-            cp.push_back(rpi.time);
-            cp.push_back(rpi.value);
-            relaxProfile.push_back(cp);
-      }
-    }
-    BC["relax"]=  relaxProfile;
-    
-    return true;
-  }
-  return false;
-}
-
-
-
-}
 
 
 
@@ -2278,11 +1662,15 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
     
     multiphaseBC::multiphaseBCPtr phasefractions = 
         multiphaseBC::multiphaseBC::create( ps_.get<SelectableSubsetParameter>("phasefractions") );
-    
+
+    HeatBC::HeatBCPtr heattransfer =
+        HeatBC::HeatBC::create( ps_.get<SelectableSubsetParameter>("heattransfer") );
+
+    MeshMotionBC::MeshMotionBCPtr meshmotion =
+        MeshMotionBC::MeshMotionBC::create( ps_.get<SelectableSubsetParameter>("meshmotion") );
+
     BoundaryCondition::addIntoFieldDictionaries(dictionaries);
     
-    phasefractions->addIntoDictionaries ( dictionaries );
-
     BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
     {
         OFDictData::dict& BC = dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
@@ -2298,11 +1686,9 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
                 double om=norm(p.wallVelocity, 2);
                 BC["axis"]=OFDictData::to_OF(p.wallVelocity/om);
                 BC["omega"]=lexical_cast<string>(om);
-                // 	BC["value"]="uniform (0 0 0)"; //!dont include value, will trigger evaluation
             }
             else
             {
-//                 BC["type"]=OFDictData::data("fixedValue");
                 BC["type"]=OFDictData::data("movingWallVelocity");
                 BC["value"]=OFDictData::data("uniform "+OFDictData::to_OF(p.wallVelocity));
             }
@@ -2314,16 +1700,6 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             BC["type"]=OFDictData::data("zeroGradient");
         }
 
-        // temperature
-        else if (
-            (field.first=="T")
-            &&
-            (get<0>(field.second)==scalarField)
-        )
-        {
-            BC["type"]="zeroGradient";
-        }
-
         // pressure
         else if ( ( (field.first=="p_rgh") || (field.first=="pd") )
                   && (get<0>(field.second)==scalarField) )
@@ -2332,7 +1708,6 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
                 BC["type"]=OFDictData::data("fixedFluxPressure");
             else
                 BC["type"]=OFDictData::data("buoyantPressure");
-//       BC["type"]=OFDictData::data("buoyantPressure");
         }
 
         // turbulence quantities, should be handled by turbulence model
@@ -2345,23 +1720,17 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
             OFcase().get<turbulenceModel>("turbulenceModel")->addIntoFieldDictionary(field.first, field.second, BC, p.roughness_z0);
         }
 
-//         // any other scalar field
-//         else if (get<0>(field.second)==scalarField)
-//         {
-//             BC["type"]=OFDictData::data("zeroGradient");
-//         }
-
         else
         {
-            if (!(
-                MeshMotionBC::MeshMotionBC::create(ps_.get<SelectableSubsetParameter>("meshmotion"))->addIntoFieldDictionary(field.first, field.second,
- BC)
-                ||
-                phasefractions->addIntoFieldDictionary ( field.first, field.second, BC )
-                )
-            )
-                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
+            bool handled = false;
+
+            handled = meshmotion->addIntoFieldDictionary(field.first, field.second, BC) || handled;
+            handled = phasefractions->addIntoFieldDictionary ( field.first, field.second, BC ) || handled;
+            handled = heattransfer->addIntoFieldDictionary ( field.first, field.second, BC ) || handled;
+
+            if (!handled)
             {
+                //throw insight::Exception("Don't know how to handle field \""+field.first+"\" of type "+lexical_cast<std::string>(get<0>(field.second)) );
                 BC["type"]=OFDictData::data("zeroGradient");
             }
         }

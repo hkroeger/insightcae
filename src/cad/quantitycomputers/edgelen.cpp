@@ -54,5 +54,38 @@ QuantityComputer< double >::Ptr edgeLen::clone() const
   return QuantityComputer<double>::Ptr(new edgeLen());
 }
 
+
+
+
+circRadius::circRadius()
+{
+}
+
+circRadius::~circRadius()
+{
+}
+
+double circRadius::evaluate(FeatureID ei)
+{
+  TopoDS_Edge e=model_->edge(ei);
+  if (!e.IsNull() && !BRep_Tool::Degenerated(e))
+    {
+      double p0, p1;
+      GeomAdaptor_Curve adapt(BRep_Tool::Curve(e, p0, p1));
+      if (adapt.GetType()==GeomAbs_Circle)
+        {
+          gp_Circ ic=adapt.Circle();
+          return ic.Radius();
+        }
+    }
+  return 0;
+}
+
+QuantityComputer< double >::Ptr circRadius::clone() const
+{
+  return QuantityComputer<double>::Ptr(new circRadius());
+}
+
+
 }
 }

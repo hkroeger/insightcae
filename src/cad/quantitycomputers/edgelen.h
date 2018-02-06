@@ -38,6 +38,18 @@ public:
     virtual QuantityComputer<double>::Ptr clone() const;
 };
 
+class circRadius
+    : public QuantityComputer<double>
+{
+public:
+    circRadius();
+    virtual ~circRadius();
+
+    virtual double evaluate(FeatureID ei);
+
+    virtual QuantityComputer<double>::Ptr clone() const;
+};
+
 }
 }
 

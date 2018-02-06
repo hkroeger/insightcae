@@ -196,11 +196,17 @@ public:
 	  ( lit("in") >> '(' > r_featureset > ')' ) 
 	    [ qi::_val = phx::construct<FilterPtr>(new_<in>(*qi::_1)) ]
 	  |
-	  ( lit("maximal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
-	    [ qi::_val = phx::construct<FilterPtr>(new_<maximal>(*qi::_1, qi::_2)) ]
+	  ( lit("maximal") >> '(' > r_scalar_qty_expression
+	    >> ( ( ',' > int_ ) | attr(0) )
+	    >> ( ( lit("through") > int_ ) | attr(-1) )
+	    >> ')' )
+	    [ qi::_val = phx::construct<FilterPtr>(new_<maximal>(*qi::_1, qi::_2, qi::_3)) ]
 	  |
-	  ( lit("minimal") >> '(' > r_scalar_qty_expression >> ( ( ',' > int_ ) | attr(0) ) >> ')' ) 
-	    [ qi::_val = phx::construct<FilterPtr>(new_<minimal>(*qi::_1, qi::_2)) ]
+	  ( lit("minimal") >> '(' > r_scalar_qty_expression
+	    >> ( ( ',' > int_ ) | attr(0) )
+	    >> ( ( lit("through") > int_ ) | attr(-1) )
+	    >> ')' )
+	    [ qi::_val = phx::construct<FilterPtr>(new_<minimal>(*qi::_1, qi::_2, qi::_3)) ]
 	  |
 	  ( r_qty_comparison ) 
 	    [ qi::_val = qi::_1 ]
@@ -452,7 +458,10 @@ struct EdgeFeatureFilterExprParser
 	( lit("len") ) 
 	  [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<edgeLen>()) ]
 	|
-	( lit("radialLen") > 
+	( lit("circRadius") )
+	    [ qi::_val = phx::construct<scalarQuantityComputer::Ptr>(new_<circRadius>()) ]
+	|
+	( lit("radialLen") >
 	    '(' > FeatureFilterExprParser<Iterator>::r_mat_qty_expression > //ax
 	    ',' > FeatureFilterExprParser<Iterator>::r_mat_qty_expression >  //p0
 	    ')' ) 

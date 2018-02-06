@@ -29,13 +29,16 @@ namespace cad {
 class maximal
     : public Filter
 {
+public:
+  typedef std::pair<double, FeatureID>  RankEntry;
+
 protected:
-    int rank_;
+    int rank_, lrank_;
     boost::shared_ptr<scalarQuantityComputer> qtc_;
-    std::map<double, std::set<FeatureID> > ranking_;
+    std::vector<RankEntry> ranking_;
 
 public:
-    maximal(const scalarQuantityComputer& qtc, int rank=0);
+    maximal(const scalarQuantityComputer& qtc, int rank=0, int lrank=-1);
     virtual void firstPass(FeatureID feature);
     virtual void initialize(ConstFeaturePtr m);
     virtual bool checkMatch(FeatureID feature) const;

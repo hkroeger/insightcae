@@ -27,9 +27,9 @@ namespace insight
 namespace cad 
 {
   
-maximal::maximal(const scalarQuantityComputer& qtc, int rank)
+maximal::maximal(const scalarQuantityComputer& qtc, int rank, int lrank)
 : qtc_(qtc.clone()),
-  rank_(rank)
+  rank_(rank), lrank_(std::max(rank,lrank))
 {
 }
 
@@ -42,30 +42,35 @@ void maximal::initialize(ConstFeaturePtr m)
 void maximal::firstPass(FeatureID feature)
 {
   if (qtc_->isValidForFeature(feature))
-    ranking_[-qtc_->evaluate(feature)].insert(feature);
+    {
+      ranking_.push_back(RankEntry(-qtc_->evaluate(feature), feature));
+      std::sort( ranking_.begin(), ranking_.end(), [](const RankEntry& e1,const RankEntry& e2) -> bool
+       { return e1.first < e2.first; }
+      );
+    }
 }
 
 bool maximal::checkMatch(FeatureID feature) const
 {
-  int j=0;
-  for (std::map<double, std::set<FeatureID> >::const_iterator i=ranking_.begin(); i!=ranking_.end(); i++)
-  {
-    if ((i->second.find(feature)!=i->second.end())) 
+  int il=ranking_.size()-1;
+  if (il>0)
     {
-      std::cout<<"Feature #"<<feature<<" rank="<<j<<" match="<<(j==rank_)<<std::endl;
+      for (int j=std::max(0, std::min(il, rank_)); j<=std::max(0, std::min(il, lrank_)); j++)
+      {
+          const RankEntry& e = ranking_[j];
+          if (e.second==feature)
+          {
+            std::cout<<"Feature #"<<feature<<" rank="<<j<<" match!"<<std::endl;
+            return true;
+          }
+      }
     }
-    if ((i->second.find(feature)!=i->second.end()) && (j==rank_)) 
-    {
-      return true;
-    }
-    j++;
-  }
   return false;
 }
 
 FilterPtr maximal::clone() const
 {
-  return FilterPtr(new maximal(*qtc_, rank_));
+  return FilterPtr(new maximal(*qtc_, rank_, lrank_));
 }
 
 }

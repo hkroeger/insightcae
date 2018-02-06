@@ -74,6 +74,59 @@ public:
 
 };
 
+
+
+
+class ExternalWallBC
+  : public HeatBC
+{
+
+public:
+#include "boundarycondition_heat__ExternalWallBC__Parameters.h"
+/*
+PARAMETERSET>>> ExternalWallBC Parameters
+
+heatflux = selectablesubset {{
+
+ constant
+ set {
+   q = double 0.0 "[W/m^2] Heat flux per unit area"
+ }
+
+ convective
+ set {
+   h = double 10 "[W/m^2/K] Heat transfer coefficient"
+   Ta = double 300 "[K] Ambient temperature (beyond domain)"
+ }
+
+}} convective "Heat flux specification"
+
+wallLayers = array [
+ set {
+   thickness = double 0.001 "[m] Thickness of layer"
+   kappa = double 1 "[W/m/K] Thermal conductivity of layer"
+ }
+]*1 "Layer composition of external wall"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "ExternalWall" );
+  ExternalWallBC ( const ParameterSet& ps = ParameterSet() );
+
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
+
+  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
+
+};
+
+
+
 typedef boost::shared_ptr<HeatBC> HeatBCPtr;
 
 }

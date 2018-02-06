@@ -682,12 +682,12 @@ void OpenFOAMCase::createOnDisk
     {
         if (!exists(dictpath.parent_path())) 
         {
-        boost::filesystem::create_directories(dictpath.parent_path());
+          boost::filesystem::create_directories(dictpath.parent_path());
         }
         
         {
-        std::ofstream f(dictpath.c_str());
-        i->second->write(dictpath);
+          std::ofstream f(dictpath.c_str());
+          i->second->write(dictpath);
         }
         std::cout<<"CREATED."<<std::endl;
     } else

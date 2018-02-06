@@ -28,6 +28,12 @@
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
+#include "openfoam/fielddata.h"
+#include "openfoam/boundarycondition_heat.h"
+#include "openfoam/boundarycondition_meshmotion.h"
+#include "openfoam/boundarycondition_multiphase.h"
+#include "openfoam/boundarycondition_turbulence.h"
+
 #include <map>
 #include <memory>
 #include "boost/utility.hpp"
@@ -39,143 +45,6 @@ namespace insight
 
 
 
-
-/**
- * Interface which wraps different types of prescribing field data on boundaries.
- * Works together with OpenFOAM class "FieldDataProvider".
- */
-class FieldData
-{
-public:
-
-#include "boundaryconditioncaseelements__FieldData__Parameters.h"
-  
-/*
-PARAMETERSET>>> FieldData Parameters
-
-fielddata=selectablesubset {{
-
- uniform 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "Time instant"
-     value=vector (1 0 0) "Field value"
-    } "Time instant data"
-   ] * 1  "Array of time instants"
- }
-
- linearProfile 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "Time instant"
-     profile=path "profile.dat" "Path to file with tabulated profile for this time instant. Needs to contain one column per component."
-    } "Time instant data"
-   ] * 1  "Array of time instants"
-   
-   
-   p0=vector (0 0 0) "Origin of sampling axis"
-   ep=vector (1 0 0) "Direction of sampling axis"
- }
-
- radialProfile 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "Time instant"
-     profile=path "profile.dat" "Path to file with tabulated profile for this time instant. Needs to contain one column per component."
-    } "Time instant data"
-   ] * 1  "Array of time instants"
-   
-   p0=vector (0 0 0) "Origin of sampling axis"
-   ep=vector (1 0 0) "Direction of sampling axis"
- }
-
- fittedProfile 
- set { 
-   values=array
-   [
-    set {
-     time=double 0 "Time instant"
-     component_coeffs=array
-      [
-       vector (1 1) "Coefficients of profile polynomial"
-      ] * 3 "Sets of polynomial coefficients for each tensor component"
-    } "Time instant data"
-   ] * 1  "Array of time instants"
-   
-   p0=vector (0 0 0) "Origin of sampling axis"
-   ep=vector (1 0 0) "Direction of sampling axis"
- }
-
-}} uniform "Specification of field value"
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-  
-public:
-    
-
-  static Parameters uniformSteady(double uniformSteadyValue);
-  
-  /**
-   * sets all parameters for the most simple type of field data description (uniform, steady scalar value)
-   */
-  FieldData(double uniformSteadyValue);
-  
-  static Parameters uniformSteady(double uniformSteadyX, double uniformSteadyY, double uniformSteadyZ);
-  static Parameters uniformSteady(const arma::mat& uniformSteadyValue);
-
-  /**
-   * sets all parameters for the most simple type of field data description (uniform, steady value)
-   */
-  FieldData(const arma::mat& uniformSteadyValue);
-  
-  /**
-   * takes config from a parameterset
-   */
-  FieldData(const ParameterSet& p);
-  
-  /**
-   * returns according dictionary entry for OF
-   */
-  OFDictData::data sourceEntry() const;
-  
-  void setDirichletBC(OFDictData::dict& BC) const;
-  
-  /**
-   * return some representative (average) value of the prescribed data. 
-   * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
-   */
-  double representativeValueMag() const;
-
-  /**
-   * return the maximum magnitude of the value throughout all precribed times
-   */
-  double maxValueMag() const;
-  
-  /**
-   * returns a proper parameterset for this entity
-   * @reasonable_value: the number of components determines the rank of the field
-   */
-  static Parameter* defaultParameter(const arma::mat& reasonable_value, const std::string& description="Origin of the prescribed value");
-  
-  /**
-   * insert graphs with prescribed profiles into result set (only, if profiles were prescribed, otherwise inserts nothing)
-   * @param results ResultSet to which the data is added
-   * @param name Name of result entry
-   * @param descr Description
-   * @param qtylabel Label (formula symbol) of the quantity. Will be interpreted as latex math expression
-   */
-  void insertGraphsToResultSet(ResultSetPtr results, const boost::filesystem::path& exepath, const std::string& name, const std::string& descr, const std::string& qtylabel) const;
-};
-  
 
 
 
@@ -209,6 +78,32 @@ public:
   virtual void addIntoFieldDictionaries(OFdicts& dictionaries) const;
   
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+};
+
+
+
+
+class SymmetryBC
+: public SimpleBC
+{
+
+public:
+  declareType("SymmetryBC");
+  SymmetryBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
+  static ParameterSet defaultParameters() { return ParameterSet(); }
+};
+
+
+
+
+class EmptyBC
+: public SimpleBC
+{
+
+public:
+  declareType("EmptyBC");
+  EmptyBC(OpenFOAMCase& c, const std::string& patchName, const OFDictData::dict& boundaryDict, const ParameterSet& p = ParameterSet() );
+  static ParameterSet defaultParameters() { return ParameterSet(); }
 };
 
 
@@ -418,155 +313,8 @@ public:
 
 
 
-namespace multiphaseBC
-{
-
-    
-    
-class multiphaseBC;
-
-typedef boost::shared_ptr<multiphaseBC> multiphaseBCPtr;
-  
-class multiphaseBC
-{
-public:    
-    declareType ( "multiphaseBC" );
-    declareDynamicClass(multiphaseBC);
-//     declareFactoryTable ( multiphaseBC, LIST ( const ParameterSet& p ), LIST ( p ) );
-//     declareStaticFunctionTable ( defaultParameters, ParameterSet );
-//     static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter(const std::string& desc);
-//     static multiphaseBCPtr getSelectableSubsetParameter(const SelectableSubsetParameter& ssp);
-//     virtual ParameterSet getParameters() const =0;
-    
-    virtual ~multiphaseBC();
-    
-
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    // return true, if this field was handled, false otherwise
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
-};
 
 
-
-
-class uniformPhases
-    : public multiphaseBC
-{
-public:
-#include "boundaryconditioncaseelements__uniformPhases__Parameters.h"
-/*
-PARAMETERSET>>> uniformPhases Parameters
-
-phaseFractions = array [
-    set {
-    name = string "CO2" "Name of specie"
-    fraction = double 0.5 "Mass fraction of specie"
-} ] *0 "Mass fractions of species"
-
-<<<PARAMETERSET
-*/
-
-protected:
-    Parameters p_;
-
-public:
-    declareType ( "uniformPhases" );
-    uniformPhases ( const ParameterSet& p );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformPhases(ps)); }
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
-    static Parameters mixture( const std::map<std::string, double>& sp);
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-    virtual ParameterSet getParameters() const { return p_; }
-};
-
-class uniformWallTiedPhases
-: public uniformPhases
-{
-public:
-    declareType ( "uniformWallTiedPhases" );
-    uniformWallTiedPhases ( const ParameterSet& p );
-    inline static multiphaseBCPtr create(const ParameterSet& ps) { return multiphaseBCPtr(new uniformWallTiedPhases(ps)); }
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-};
-
-}
-
-
-
-
-
-namespace turbulenceBC
-{
-    
-class turbulenceBC;
-
-typedef boost::shared_ptr<turbulenceBC> turbulenceBCPtr;
-  
-class turbulenceBC
-{
-public:    
-    declareType ( "turbulenceBC" );
-    declareDynamicClass(turbulenceBC);
-//     declareFactoryTable ( turbulenceBC, LIST ( const ParameterSet& p ), LIST ( p ) );
-//     declareStaticFunctionTable ( defaultParameters, ParameterSet );
-//     static std::auto_ptr<SelectableSubsetParameter> createSelectableSubsetParameter(const std::string& desc);
-//     static turbulenceBCPtr getSelectableSubsetParameter(const SelectableSubsetParameter& ssp);
-//     virtual ParameterSet getParameters() const =0;
-
-    virtual ~turbulenceBC();
-    
-//     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    
-    // return true, if this field was handled, false otherwise
-//     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
-    
-    virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const =0;
-    virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const =0;
-    virtual void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const =0;
-    virtual void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const =0;
-    virtual void setDirichletBC_R(OFDictData::dict& BC, double U) const =0;
-};
-
-
-
-
-
-class uniformIntensityAndLengthScale
-: public turbulenceBC
-{
-public:
-#include "boundaryconditioncaseelements__uniformIntensityAndLengthScale__Parameters.h"
-/*
-PARAMETERSET>>> uniformIntensityAndLengthScale Parameters
-
-I = double 0.05 "Fluctuation intensity as fraction of mean velocity"
-l = double 0.1 "Length scale"
-
-<<<PARAMETERSET
-*/
-
-protected:
-    Parameters p_;
-    
-public:
-    declareType("uniformIntensityAndLengthScale");
-    uniformIntensityAndLengthScale(const ParameterSet& ps);
-    inline static turbulenceBCPtr create(const ParameterSet& ps) { return turbulenceBCPtr(new uniformIntensityAndLengthScale(ps)); }
-    
-    static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
-    virtual ParameterSet getParameters() const { return p_; }
-    
-    virtual void setDirichletBC_k(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_omega(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_epsilon(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_nuTilda(OFDictData::dict& BC, double U) const;
-    virtual void setDirichletBC_R(OFDictData::dict& BC, double U) const;
-};
-
-
-
-}
 
 
 
@@ -1012,111 +760,6 @@ public:
 
 
 
-namespace MeshMotionBC
-{
-    
-    
-class MeshMotionBC;
-
-typedef boost::shared_ptr<MeshMotionBC> MeshMotionBCPtr;
-
-  
-class MeshMotionBC
-{
-public:
-    declareType ( "MeshMotionBC" );
-    declareDynamicClass(MeshMotionBC);
-    
-    virtual ~MeshMotionBC();
-
-    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-    virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
-};
-
-
-
-class NoMeshMotion
-  : public MeshMotionBC
-{
-public:
-  declareType ( "NoMeshMotion" );
-  NoMeshMotion ( const ParameterSet& ps = ParameterSet() );
-
-  static ParameterSet defaultParameters()
-  {
-    return ParameterSet();
-  }
-
-  virtual ParameterSet getParameters() const
-  {
-    return ParameterSet();
-  }
-  
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
-
-};
-
-extern NoMeshMotion noMeshMotion;
-
-
-class CAFSIBC
-  : public MeshMotionBC
-{
-public:
-#include "boundaryconditioncaseelements__CAFSIBC__Parameters.h"
-/*
-PARAMETERSET>>> CAFSIBC Parameters
-
-FEMScratchDir = path "" "Directory for data exchange between OF and Code_Aster"
-clipPressure = double -100.0 "Lower pressure limit to consider cavitation"
-pressureScale = double 1e-3 "Pressure scaling value"
-
-oldPressure = selectablesubset {{
-
-    none set {}
-
-    uniform set { value = double 1e5 "inital pressure value" }
-
-}} none "inital pressure in relaxation process"
-
-relax = selectablesubset {{
-
-    constant set { value = double 0.2 "Constant relaxation factor" }
-
-    profile set { values = array [ set {
-    time = double 0 "Time instant"
-    value = double 0.2 "Relaxation factor at this instant"
-    } ]*1 "time/relaxation factor pairs" }
-
-}} constant "Relaxation"
-
-<<<PARAMETERSET
-*/
-
-protected:
-  Parameters p_;
-
-public:
-  declareType ( "CAFSIBC" );
-  CAFSIBC ( const ParameterSet& ps );
-
-  static ParameterSet defaultParameters()
-  {
-    return Parameters::makeDefault();
-  }
-
-  virtual ParameterSet getParameters() const
-  {
-    return p_;
-  }
-
-  virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
-  virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const;
-
-};
-
-
-}
 
 
 
@@ -1128,12 +771,13 @@ public:
 /*
 PARAMETERSET>>> WallBC Parameters
 
-wallVelocity = vector (0 0 0) "Velocity of the wlal surface"
+wallVelocity = vector (0 0 0) "Velocity of the wall surface"
 rotating = bool false "Whether the wall is rotating"
 CofR = vector (0 0 0) "Center of rotation"
 roughness_z0 = double 0 "Wall roughness height"
 meshmotion = dynamicclassconfig "MeshMotionBC::MeshMotionBC" default "NoMeshMotion" "Mesh motion properties at the boundary"
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
+heattransfer = dynamicclassconfig "HeatBC::HeatBC" default "Adiabatic" "Definition of the heat transfer through the wall"
 
 <<<PARAMETERSET
 */

@@ -71,6 +71,95 @@ void cavitatingFoamThermodynamics::addIntoDictionaries(OFdicts& dictionaries) co
 								 p_.rhoMin());
 }
 
+
+
+
+defineType(perfectGasSinglePhaseThermophysicalProperties);
+addToOpenFOAMCaseElementFactoryTable(perfectGasSinglePhaseThermophysicalProperties);
+
+perfectGasSinglePhaseThermophysicalProperties::perfectGasSinglePhaseThermophysicalProperties( OpenFOAMCase& c, const ParameterSet& ps )
+: thermodynamicModel(c),
+  p_(ps)
+{
+}
+
+void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts& dictionaries) const
+{
+
+  OFDictData::dict& thermophysicalProperties=dictionaries.addDictionaryIfNonexistent("constant/thermophysicalProperties");
+
+  enum thermoType { hePsiThermo, heRhoThermo } tht = hePsiThermo;
+  try
+  {
+    const FVNumerics* nce = this->OFcase().get<FVNumerics>("FVNumerics");
+
+    if (const buoyantSimpleFoamNumerics *bsfn = dynamic_cast<const buoyantSimpleFoamNumerics*>(nce))
+      {
+        tht=heRhoThermo;
+      }
+  }
+  catch (...)
+  {
+    insight::Warning("Cannot determine required thermo type! Using default hePsiThermo.");
+  }
+
+  OFDictData::dict tt;
+
+  if (tht==hePsiThermo)
+    {
+      tt["type"]="hePsiThermo";
+      tt["thermo"]="eConst";
+      tt["energy"]="sensibleInternalEnergy";
+    }
+  else if (tht==heRhoThermo)
+    {
+      tt["type"]="heRhoThermo";
+      tt["thermo"]="hConst";
+      tt["energy"]="sensibleEnthalpy";
+    }
+
+  tt["mixture"]="pureMixture";
+  tt["transport"]="const";
+  tt["equationOfState"]="perfectGas";
+  tt["specie"]="specie";
+
+  thermophysicalProperties["thermoType"]=tt;
+
+  const double R=8.3144598;
+  double M = p_.rho*R*p_.Tref/p_.pref;
+
+  OFDictData::dict mixture, mix_sp, mix_td, mix_tr;
+  mix_sp["nMoles"]=1.;
+  mix_sp["molWeight"]=1e3*M;
+
+  if (tht==hePsiThermo)
+    {
+      double cv = R/(p_.kappa-1.) / M;
+      mix_td["Cv"]=cv;
+    }
+  else if (tht==heRhoThermo)
+    {
+      double cp = p_.kappa*R/(p_.kappa-1.) / M;
+      mix_td["Cp"]=cp;
+    }
+
+  mix_td["Hf"]=0.;
+
+  mix_tr["mu"]=p_.nu*p_.rho;
+  mix_tr["Pr"]=p_.Pr;
+
+  mixture["specie"]=mix_sp;
+  mixture["thermodynamics"]=mix_td;
+  mixture["transport"]=mix_tr;
+
+  thermophysicalProperties["mixture"]=mixture;
+}
+
+
+
+
+
+
 detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 (
   OpenFOAMCase& c, 

@@ -558,6 +558,36 @@ public:
 };
 
 
+class buoyantSimpleFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "numericscaseelements__buoyantSimpleFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> buoyantSimpleFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+checkResiduals = bool false "Enable solver stop on residual goal"
+nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+hasCyclics = bool false "Whether the case contains cyclic boundary conditions"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+    void init();
+
+public:
+    declareType ( "buoyantSimpleFoamNumerics" );
+    buoyantSimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
 
 
 class FSIDisplacementExtrapolationNumerics

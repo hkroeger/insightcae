@@ -53,6 +53,11 @@ set(toolkit_SOURCES
     openfoam/openfoamdict.cpp
     openfoam/openfoamtools.cpp
     openfoam/thermophysicalcaseelements.cpp
+    openfoam/fielddata.cpp
+    openfoam/boundarycondition_heat.cpp
+    openfoam/boundarycondition_meshmotion.cpp
+    openfoam/boundarycondition_multiphase.cpp
+    openfoam/boundarycondition_turbulence.cpp
     openfoam/boundaryconditioncaseelements.cpp
     openfoam/blockmesh.cpp
     openfoam/turbulencemodelcaseelements.cpp

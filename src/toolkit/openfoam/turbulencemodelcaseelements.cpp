@@ -407,13 +407,13 @@ void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
   c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0), volField ) );
   if (c.isCompressible())
   {
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
     c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
   }
+
+  if (c.isCompressible() && (c.OFversion()<300))
+    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
   else
-  {
     c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
-  }
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -436,18 +436,22 @@ void kOmegaSST_RASModel::addIntoDictionaries(OFdicts& dictionaries) const
 
 bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC, double roughness_z0) const
 {
-  std::string pref="";
-  if (OFcase().isCompressible()) pref="compressible::";
+  std::string turbpref="", pref="";
+  if (OFcase().isCompressible() )
+    {
+      pref="compressible::";
+      if (OFcase().OFversion()<300) turbpref="compressible::";
+    }
   
   if (fieldname == "k")
   {
-    BC["type"]=OFDictData::data(pref+"kqRWallFunction");
+    BC["type"]=OFDictData::data(turbpref+"kqRWallFunction");
     BC["value"]=OFDictData::data("uniform 1e-10");
     return true;
   }
   else if (fieldname == "omega")
   {
-    BC["type"]=OFDictData::data(pref+"omegaWallFunction");
+    BC["type"]=OFDictData::data(turbpref+"omegaWallFunction");
     BC["Cmu"]=0.09;
     BC["kappa"]=0.41;
     BC["E"]=9.8;
@@ -462,7 +466,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
     {
       if (roughness_z0>0.)
       {
-          BC["type"]="nutURoughWallFunction";
+          BC["type"]=turbpref+"nutURoughWallFunction";
           double Cs=0.5;
           BC["roughnessConstant"]=Cs;
           BC["roughnessHeight"]=roughness_z0*9.793/Cs;
@@ -471,13 +475,13 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
       }
       else
       {
-        BC["type"]=OFDictData::data("nutUWallFunction");
+        BC["type"]=turbpref+"nutUWallFunction";
         BC["value"]=OFDictData::data("uniform 1e-10");
       }
     }
     else
     {
-      BC["type"]=OFDictData::data("nutWallFunction");
+      BC["type"]=turbpref+"nutWallFunction";
       BC["value"]=OFDictData::data("uniform 1e-10");
     }
     return true;
@@ -490,7 +494,7 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
   }
   else if (fieldname == "alphat")
   {
-    BC["type"]=OFDictData::data(pref+"alphatWallFunction");
+    BC["type"]=pref+"alphatWallFunction";
     BC["value"]=OFDictData::data("uniform 1e-10");
     return true;
   }

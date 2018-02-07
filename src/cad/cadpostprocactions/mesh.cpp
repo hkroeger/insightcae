@@ -206,7 +206,7 @@ void SnappyHexMesh::build()
         }
         
         int minlevel=0, maxlevel=0;
-        if (boost::fusion::at_c<2>(geom))
+        if (boost::fusion::at_c<3>(geom))
         {
             const boost::fusion::vector2<ScalarPtr, ScalarPtr>& levels= *boost::fusion::at_c<3>(geom);
             minlevel=boost::fusion::at_c<0>(levels)->value();

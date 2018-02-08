@@ -187,7 +187,7 @@ FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 
 void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
-  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
+//  std::cerr<<"Addd FVN "<<p_.decompWeights<<std::endl;
   // setup structure of dictionaries
   OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
   controlDict["deltaT"]=p_.deltaT;
@@ -407,7 +407,7 @@ addToOpenFOAMCaseElementFactoryTable(MeshingNumerics);
 MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps)
 {
-  std::cerr<<"Constr. MN "<<p_.decompWeights<<std::endl;
+//  std::cerr<<"Constr. MN "<<p_.decompWeights<<std::endl;
 }
 
 

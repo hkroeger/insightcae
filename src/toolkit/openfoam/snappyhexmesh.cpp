@@ -409,8 +409,8 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
   snapCtrls["nRelaxIter"]=5;  
 
   snapCtrls["nFeatureSnapIter"]=10;  
-  snapCtrls["implicitFeatureSnap"]=false;  
-  snapCtrls["explicitFeatureSnap"]=true;  
+  snapCtrls["implicitFeatureSnap"]=true;
+  snapCtrls["explicitFeatureSnap"]=false;
   snapCtrls["multiRegionFeatureSnap"]=false;  
 
 }
@@ -658,6 +658,10 @@ void snappyHexMesh
 
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
+
+  snapCtrls["implicitFeatureSnap"]=p.doImplicitFeatureSnap;
+  snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
+
   setStdCastellatedCtrls(castellatedCtrls);
   if (p.PiM.size()>1)
   {

@@ -49,7 +49,7 @@ class uniformIntensityAndLengthScale
 : public turbulenceBC
 {
 public:
-#include "boundaryconditioncaseelements__uniformIntensityAndLengthScale__Parameters.h"
+#include "boundarycondition_turbulence__uniformIntensityAndLengthScale__Parameters.h"
 /*
 PARAMETERSET>>> uniformIntensityAndLengthScale Parameters
 

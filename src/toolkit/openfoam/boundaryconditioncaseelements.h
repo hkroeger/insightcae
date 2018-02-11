@@ -606,7 +606,7 @@ public:
 PARAMETERSET>>> TurbulentVelocityInletBC Parameters
 
 umean=set {
-#include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+#include "fielddata__FieldData__Parameters.pdl"
 } "Mean velocity specification"
 
 turbulence = selectablesubset {{
@@ -637,11 +637,11 @@ set {
     ) anisotropicVorton "Type of inflow generator"
 
     R=set {
-    #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+    #include "fielddata__FieldData__Parameters.pdl"
     } "Reynolds stresses specification"
 
     L=set {
-    #include "boundaryconditioncaseelements__FieldData__Parameters.pdl"
+    #include "fielddata__FieldData__Parameters.pdl"
     } "Length scale specification"
 
 }

@@ -240,7 +240,7 @@ public:
 
 typedef boost::shared_ptr<Analysis> AnalysisPtr;
 typedef boost::tuple<std::string, AnalysisPtr, ResultSetPtr> AnalysisInstance;
-
+typedef std::vector<AnalysisInstance> AnalysisInstanceList;
 
 
 
@@ -252,7 +252,7 @@ private:
     std::queue<AnalysisInstance> m_queue; // Use STL queue to store data
     boost::mutex m_mutex; // The mutex to synchronise on
     boost::condition_variable m_cond; // The condition to wait for
-    std::vector<AnalysisInstance> processed_;
+    AnalysisInstanceList processed_;
 
 public:
     // Add data to the queue and notify others
@@ -280,7 +280,7 @@ public:
 
     void cancelAll();
 
-    inline const std::vector<AnalysisInstance>& processed() const
+    inline const AnalysisInstanceList& processed() const
     {
         return processed_;
     }

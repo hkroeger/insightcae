@@ -271,14 +271,22 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
   ResultSetPtr results(new ResultSet(parameters(), name_, "Result Summary"));
   
   TabularResult::Table force_data;
-  BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
+  AnalysisInstanceList processed_analyses = queue_.processed();
+  sort(processed_analyses.begin(), processed_analyses.end(),
+       [](const AnalysisInstance& ai1, const AnalysisInstance& ai2) -> bool {
+          return ( get<0>(ai1) < get<0>(ai2) );
+      }
+  );
+
+  Ordering o(1000);
+  BOOST_FOREACH( const AnalysisInstance& ai,  processed_analyses)
   {
     const std::string& n = get<0>(ai);
     const AnalysisPtr& a = get<1>(ai);
     const ResultSetPtr& r = get<2>(ai);
 
-    std::string key=n/*+", "+r->title()+" ("+r->subtitle()+")"*/;
-    results->insert( key, r->clone() );    
+    std::string key=n;
+    results->insert( key, r->clone() ).setOrder(o.next());
   }
   
   return results;

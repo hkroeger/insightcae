@@ -590,6 +590,44 @@ public:
 
 
 
+
+class buoyantPimpleFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "numericscaseelements__buoyantPimpleFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> buoyantPimpleFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+nCorrectors = int 1 "Number of correctors"
+nOuterCorrectors = int 5 "Number of outer correctors"
+maxCo = double 5. "Maximum courant number"
+maxDeltaT = double 1.0 "Maximum time step size"
+
+hasCyclics = bool false "Whether the case contains cyclic boundary conditions"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+    void init();
+
+public:
+    declareType ( "buoyantPimpleFoamNumerics" );
+    buoyantPimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
+
+
 class FSIDisplacementExtrapolationNumerics
 : public FaNumerics
 {

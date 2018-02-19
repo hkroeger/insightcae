@@ -1425,7 +1425,8 @@ void runPvPython
 (
   const OpenFOAMCase& ofc, 
   const boost::filesystem::path& location,
-  const std::vector<std::string> pvpython_commands
+  const std::vector<std::string> pvpython_commands,
+  bool keepScript
 )
 {
   boost::mutex::scoped_lock lock(runPvPython_mtx);
@@ -1448,7 +1449,8 @@ void runPvPython
   }
   args.push_back(tempfile.c_str());
   ofc.executeCommand(location, "pvbatch", args, NULL, 0, &machine);
-  remove(tempfile);
+
+  if (!keepScript) remove(tempfile);
 
 }
 

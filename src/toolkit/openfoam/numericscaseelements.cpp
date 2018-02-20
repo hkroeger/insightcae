@@ -1699,7 +1699,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["\"rho.*\""]=diagonalSolverSetup();
+  solvers["\"rho.*\""]=stdSymmSolverSetup(0, 0);
   solvers["p"]=stdSymmSolverSetup(1e-8, 0.01); //stdSymmSolverSetup(1e-7, 0.01);
   solvers["U"]=stdAsymmSolverSetup(1e-8, 0.1);
   solvers["k"]=stdAsymmSolverSetup(1e-8, 0.1);
@@ -2021,6 +2021,199 @@ ParameterSet buoyantSimpleFoamNumerics::defaultParameters()
 {
     return Parameters::makeDefault();
 }
+
+
+
+
+
+
+defineType(buoyantPimpleFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(buoyantPimpleFoamNumerics);
+
+
+void buoyantPimpleFoamNumerics::init()
+{
+  isCompressible_=true;
+
+  if (OFversion() < 230)
+    throw insight::Exception("buoyantSimpleFoamNumerics currently supports only OF >=230");
+
+  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+}
+
+
+buoyantPimpleFoamNumerics::buoyantPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
+{
+    init();
+}
+
+
+void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  insight::FVNumerics::addIntoDictionaries(dictionaries);
+
+  // ============ setup controlDict ================================
+
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="buoyantPimpleFoam";
+  controlDict["maxCo"]=p_.maxCo;
+  controlDict["maxDeltaT"]=p_.maxDeltaT;
+
+  controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"libleastSquares2.so\"" );
+
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+
+  // ============ setup fvSolution ================================
+
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["\"rho.*\""]=stdSymmSolverSetup(1e-8, 0.01);
+
+  solvers["p_rgh"]=stdSymmSolverSetup(1e-8, 0.01);
+  solvers["U"]=stdAsymmSolverSetup(1e-8, 0.01);
+  solvers["k"]=stdAsymmSolverSetup(1e-8, 0.01);
+  solvers["h"]=stdAsymmSolverSetup(1e-8, 0.01);
+  solvers["omega"]=stdAsymmSolverSetup(1e-12, 0.01, 1);
+  solvers["epsilon"]=stdAsymmSolverSetup(1e-8, 0.01);
+  solvers["nuTilda"]=stdAsymmSolverSetup(1e-8, 0.01);
+
+  solvers["p_rghFinal"]=stdSymmSolverSetup(1e-8, 0.0);
+  solvers["UFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["kFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["hFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["omegaFinal"]=stdAsymmSolverSetup(1e-12, 0.0, 1);
+  solvers["epsilonFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+  solvers["nuTildaFinal"]=stdAsymmSolverSetup(1e-8, 0.0);
+
+
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  if (p_.nOuterCorrectors>1)
+    {
+      if (OFversion()<210)
+      {
+        relax["p_rgh"]=0.3;
+        relax["U"]=0.7;
+        relax["k"]=0.7;
+        relax["R"]=0.7;
+        relax["omega"]=0.7;
+        relax["epsilon"]=0.7;
+        relax["nuTilda"]=0.7;
+      }
+      else
+      {
+        OFDictData::dict fieldRelax, eqnRelax;
+        fieldRelax["p_rgh"]=0.3;
+        eqnRelax["U"]=0.7;
+        eqnRelax["k"]=0.7;
+        eqnRelax["R"]=0.7;
+        eqnRelax["omega"]=0.7;
+        eqnRelax["epsilon"]=0.7;
+        eqnRelax["nuTilda"]=0.7;
+        relax["fields"]=fieldRelax;
+        relax["equations"]=eqnRelax;
+      }
+    }
+
+  // create both: PISO and PIMPLE
+//   if (LES)
+  {
+    OFDictData::dict& PISO=fvSolution.addSubDictIfNonexistent("PISO");
+    PISO["nCorrectors"]=p_.nCorrectors;
+    PISO["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+    PISO["pRefCell"]=0;
+    PISO["pRefValue"]=0.0;
+  }
+//   else
+  {
+    OFDictData::dict& PIMPLE=fvSolution.addSubDictIfNonexistent("PIMPLE");
+    PIMPLE["nCorrectors"]=p_.nCorrectors;
+    PIMPLE["nOuterCorrectors"]=p_.nOuterCorrectors;
+    PIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+    PIMPLE["pRefCell"]=0;
+    PIMPLE["pRefValue"]=0.0;
+    PIMPLE["momentumPredictor"]=false;
+    PIMPLE["rhoMin"]=0.01;
+    PIMPLE["rhoMax"]=100.;
+  }
+
+
+  // ============ setup fvSchemes ================================
+
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="Euler";
+
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+  std::string bgrads="Gauss linear";
+  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
+
+  grad["default"]=bgrads;
+  grad["grad(p_rgh)"]="Gauss linear";
+
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string pref, suf;
+  if (OFversion()>=220) pref="bounded ";
+  suf="localCellLimited "+bgrads+" UBlendingFactor";
+  if (OFversion()>=170)
+  {
+    grad["limitedGrad"]=suf;
+    suf="limitedGrad";
+  }
+  div["default"]="none";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
+  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,K)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,h)"]	=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,omega)"]	=	pref+"Gauss upwind";
+  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
+  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+  div["div(phi,R)"]	=	pref+"Gauss upwind";
+  div["div(R)"]="Gauss linear";
+
+  div["div(((rho*nuEff)*dev(grad(U).T())))"]="Gauss linear"; // kOmegaSST2
+  if (OFversion()>=300)
+  {
+    div["div(((rho*nuEff)*dev2(T(grad(U)))))"]="Gauss linear";
+    div["div(((rho*nu)*dev2(T(grad(U)))))"]="Gauss linear"; // LRR
+  }
+  else
+  {
+    div["div(((rho*nuEff)*dev(T(grad(U)))))"]="Gauss linear";
+  }
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="localLimited UBlendingFactor 1";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p_rgh"]="";
+}
+
+ParameterSet buoyantPimpleFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
 
 
 

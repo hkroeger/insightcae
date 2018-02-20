@@ -1036,7 +1036,7 @@ struct SelectableSubsetParameterParser {
                     <<varname<<".selection() = \""<<sel_name<<"\";\n";
                  if (!emptyset) {
                       os <<
-                      "ParameterSet& "<<seliname<<"_param = "<<name<<"();\n";
+                      "ParameterSet& "<<seliname<<"_param = "<<varname<<"();\n";
                       pd->cppWriteSetStatement ( os, seliname, seliname+"_param", "(*"+seliname+"_static)", thisscope );
                    }
                 os<<"}"<<endl;
@@ -1070,7 +1070,7 @@ struct SelectableSubsetParameterParser {
                  os<<extendtype ( thisscope, pd->cppTypeName ( name+"_"+sel_name ) ) <<" "<<seliname<<"_static;\n";
                  if (!emptyset)
                    {
-                     os<<"const ParameterSet& "<<seliname<<"_param = "<<name<<"();\n";
+                     os<<"const ParameterSet& "<<seliname<<"_param = "<<varname<<"();\n";
                      pd->cppWriteGetStatement ( os, seliname, seliname+"_param", seliname+"_static", thisscope );
                    }
                  os<<staticname<<" = "<<seliname<<"_static;\n";

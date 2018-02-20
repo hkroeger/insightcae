@@ -75,10 +75,9 @@ try:
     
     
     def getLookupTable(arrayName, minV, maxV, component, template):
-        p=copy.copy(template)
+        p=copy.deepcopy(template)
         for i in range(0, len(p['RGBPoints'])/4):
             p['RGBPoints'][4*i]=minV+(maxV-minV)*p['RGBPoints'][4*i]
-        #print p
         return GetLookupTableForArray(arrayName, component, **p)
     
     def displaySolid(obj, opacity=1.0):
@@ -153,7 +152,13 @@ try:
                               )
 	bar.ComponentTitle=""
         GetRenderView().Representations.append(bar)
-        return bar
+        return (bar,obj)
+
+    def hideContour(barobj):
+        bar,obj=barobj
+        GetRenderView().Representations.remove(bar)
+        Hide(obj)
+
     
     
     def extractInterior(cbi):
@@ -163,10 +168,9 @@ try:
         return eb
       
     
-    def extractPatches(cbi, patches):
+    def extractPatchesDerived(cbi, derived, patches):
         case, blockIndices=cbi
-        
-        eb=ExtractBlock(Input=case, PruneOutput=1)
+        eb=ExtractBlock(Input=derived, PruneOutput=1)
         if isinstance(patches, list):
             eb.BlockIndices=[blockIndices[k] for k in patches]
         elif isinstance(patches, str):
@@ -182,7 +186,13 @@ try:
             raise Exception("no valid patch selection given! Specify either a string list or a single regex string")
         
         return eb
-      
+
+
+    def extractPatches(cbi, patches):
+        case, blockIndices=cbi
+        return extractPatchesDerived(cbi, case, patches)
+
+
     def planarSlice(cbi, origin, normal):
       reader,blockindices=cbi
       sl = Slice(Input=reader)
@@ -226,17 +236,23 @@ try:
 	return elev, minZ, maxZ
     
     # @scale: viewport height will be two times the given value!
-    def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None):
+    def setCam(pos, focus=[0,0,0], up=[0,0,1], scale=None, scaleIsHorizontal=False):
         cam = GetActiveCamera()
         cam.ParallelProjectionOn()
         cam.SetViewUp(up)
         cam.SetFocalPoint(focus)
         cam.SetPosition(pos)
         if not scale is None:
-	  cam.SetParallelScale(scale)
+            if not scaleIsHorizontal:
+                cam.SetParallelScale(scale)
+            else:
+                w, h=GetRenderView().ViewSize
+                fac=float(w)/float(h)
+                print w,h,fac
+                cam.SetParallelScale(scale/fac)
 	else:
 	  ResetCamera() # rescales but keeps view direction intact
-        
+
     def prepareSnapshots():
         paraview.simple._DisableFirstRenderCameraReset()
         #active_objects.source.SMProxy.InvokeEvent('UserEvent', 'HideWidget')
@@ -247,6 +263,11 @@ try:
 	RenderView1.LightSwitch = 0
 	# Turn off "Light Kit"
 	RenderView1.UseLight = 1 
+
+    def getBoundingBox(ds):
+        ds.UpdatePipeline()
+        x0, x1, y0, y1, z0, z1 = ds.GetDataInformation().GetBounds()
+        return [x0,y0,z0], [x1,y1,z1]
 
 except ImportError:
     pass

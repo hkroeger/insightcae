@@ -85,6 +85,7 @@ template<
 ResultSetPtr OpenFOAMParameterStudy<BaseAnalysis,var_params>::operator()(ProgressDisplayer* displayer)
 {
     ParameterSet& p = this->parameters_; //Analysis::parameters_;
+
     // generate the mesh in the top level case first
     path dir = this->setupExecutionEnvironment();
     //parameters_.saveToFile(dir/"parameters.ist", type());

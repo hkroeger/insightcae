@@ -540,7 +540,8 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            BC["type"]=OFDictData::data ( "fixedValue" );
+            BC["type"]=OFDictData::data ( "inletOutlet" );
+            BC["inletValue"]="uniform "+lexical_cast<string> ( p.T );
             BC["value"]="uniform "+lexical_cast<string> ( p.T );
         } else if (
             ( ( field.first=="p" ) || ( field.first=="pd" ) || ( field.first=="p_rgh" ) )
@@ -555,10 +556,13 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["psi"]=OFDictData::data ( p.psiName );
             BC["gamma"]=OFDictData::data ( p.gamma );
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
-        } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
+        }
+        else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) )
+          {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.rho ) );
-        } else if
+          }
+        else if
         (
             (
                 ( field.first=="k" ) ||
@@ -570,9 +574,12 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             )
             &&
             ( get<0> ( field.second ) ==scalarField )
-        ) {
+        )
+          {
             BC["type"]=OFDictData::data ( "zeroGradient" );
-        } else {
+          }
+        else
+          {
             if ( ! (
                         MeshMotionBC::noMeshMotion.addIntoFieldDictionary ( field.first, field.second, BC )
                         ||
@@ -582,7 +589,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             {
                 BC["type"]=OFDictData::data ( "zeroGradient" );
             }
-        }
+          }
     }
 }
 

@@ -536,7 +536,8 @@ void runPvPython
 (
   const OpenFOAMCase& ofc, 
   const boost::filesystem::path& location,
-  const std::vector<std::string> pvpython_commands
+  const std::vector<std::string> pvpython_commands,
+  bool keepScript = false
 );
 
 namespace paraview

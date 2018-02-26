@@ -43,6 +43,21 @@ namespace phx   = boost::phoenix;
 namespace insight {
 namespace cad {
 
+bool DXFReader::notFiltered()
+{
+  DL_Attributes attr=getAttributes();
+
+  if (layername_=="")
+    return true;
+  else
+    return (attr.getLayer()==layername_);
+}
+
+std::string DXFReader::curLayerName()
+{
+  return getAttributes().getLayer();
+}
+
 DXFReader::DXFReader(const boost::filesystem::path& filename, const std::string& layername)
 : layername_(layername)
 {
@@ -59,62 +74,47 @@ DXFReader::~DXFReader()
 
 void DXFReader::addArc(const DL_ArcData &a)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
     gp_Pnt cp(a.cx, a.cy, a.cz);
     gp_Circ c = gce_MakeCirc( gp_Ax2(cp, gp_Dir(0,0,1)), a.radius );
     gp_Pnt p0(cp); p0.Translate(gp_Vec(a.radius*::cos(M_PI*a.angle1/180.), a.radius*::sin(M_PI*a.angle1/180.), 0) );
     gp_Pnt p1(cp); p1.Translate(gp_Vec(a.radius*::cos(M_PI*a.angle2/180.), a.radius*::sin(M_PI*a.angle2/180.), 0) );
-//     Standard_Real Alpha1 = ElCLib::Parameter(c, p0);
-//     Standard_Real Alpha2 = ElCLib::Parameter(c, p1);
-//     Handle(Geom_Circle) C = new Geom_Circle(c);
-//     Handle(Geom_TrimmedCurve) arc = new Geom_TrimmedCurve(C, Alpha1, Alpha2, false);
-    cout<<a.cx<<" "<<a.cy<<" "<<a.cz<<endl;
-    cout<<a.radius<<" "<<a.angle1<<" "<<a.angle2<<endl;
-    cout<<p0.X()<<" "<<p0.Y()<<" "<<p0.Z()<<endl;
-    cout<<p1.X()<<" "<<p1.Y()<<" "<<p1.Z()<<endl;
-    cout<<"added arc"<<endl;
-//     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c, BRepBuilderAPI_MakeVertex(p0), BRepBuilderAPI_MakeVertex(p1)).Edge();
     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c, p0, p1).Edge();
-    ls_.Append(e);
+    ls_[curLayerName()].Append(e);
   }
 }
 
 void DXFReader::addLine (const DL_LineData &l)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
     gp_Pnt p0(l.x1, l.y1, l.z1);
     gp_Pnt p1(l.x2, l.y2, l.z2);
-    cout<<"added line"<<endl;
     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(p0, p1).Edge();
-    ls_.Append(e);
+    ls_[curLayerName()].Append(e);
   }
 }
 
 void DXFReader::addPolyline(const DL_PolylineData &pl)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
-    pl_.reset(new Polyline(*this));
+    pl_.reset(new Polyline(*this, curLayerName()));
     pl_->closed=false;
 
     pl_->lp.reset();
 
     if (pl.flags & 1)
     {
-      cout<<"closed polyline!"<<endl;
       pl_->p0.reset();
       pl_->closed=true;
     }
   }
 }
 
-DXFReader::Polyline::Polyline(DXFReader& r)
-: reader(r), lbulge(0.0)
+DXFReader::Polyline::Polyline(DXFReader& r, const std::string& layername)
+: reader(r), layername_(layername), lbulge(0.0)
 {
 }
 
@@ -123,15 +123,12 @@ DXFReader::Polyline::~Polyline()
 {
     if ( closed )
     {
-      cout<<"added closing line "<<endl;
       DL_VertexData pv;
       pv.x=p0->X();
       pv.y=p0->Y();
       pv.z=p0->Z();
       pv.bulge=0;
       reader.addVertex(pv);
-//       TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*lp, *p0).Edge();
-//       reader.ls_.Append(e);
     }
 }
 
@@ -139,8 +136,7 @@ DXFReader::Polyline::~Polyline()
 
 void DXFReader::addVertex(const DL_VertexData &pv)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
     gp_Pnt p(pv.x, pv.y, pv.z);
 
@@ -153,31 +149,22 @@ void DXFReader::addVertex(const DL_VertexData &pv)
       double bulge=pl_->lbulge;
       if (fabs(bulge)<1e-10)
       {
-        cout<<"added polyline line segment"<<endl;
         TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
-        ls_.Append(e);
+        ls_[pl_->layername_].Append(e);
       }
       else
       {
-        cout<<"added polyline arc segment"<<endl;
         gp_XYZ pa(pl_->lp->XYZ());
         gp_XYZ pb(p.XYZ());
         double u=(pb-pa).Modulus();
-// 	double r=u*(b*b+1.0)/4.0/b;
         double i=bulge*u/2.0;
-// 	double a=r-i;
         gp_XYZ er=(pb-pa).Crossed(gp_XYZ(0,0,1)).Normalized();
         gp_XYZ pt( pa + 0.5*(pb-pa) + i*er );
         TopoDS_Edge e=BRepBuilderAPI_MakeEdge(
           GC_MakeArcOfCircle(gp_Pnt(pa), gp_Pnt(pt), gp_Pnt(pb)).Value(),
           gp_Pnt(pa), gp_Pnt(pb)
         ).Edge();
-        std::cout<<"bulge="<<bulge<<" i="<<i<<std::endl
-         <<"["<<pa.X()<<" "<<pa.Y()<<" "<<pa.Z()<<"]"<<std::endl
-         <<"["<<pb.X()<<" "<<pb.Y()<<" "<<pb.Z()<<"]"<<std::endl
-         <<"["<<pt.X()<<" "<<pt.Y()<<" "<<pt.Z()<<"]"<<std::endl;
-// 	TopoDS_Edge e=BRepBuilderAPI_MakeEdge(*pl_->lp, p).Edge();
-        ls_.Append(e);
+        ls_[pl_->layername_].Append(e);
       }
     }
     pl_->lp.reset(new gp_Pnt(p));
@@ -186,12 +173,11 @@ void DXFReader::addVertex(const DL_VertexData &pv)
 }
 
 
+
 void DXFReader::addSpline(const DL_SplineData& sp)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
-    cout<<"addSpline"<<endl;
     spl_deg_=sp.degree;
     spl_nctrl_=sp.nControl;
     spl_nknot_=sp.nKnots;
@@ -202,10 +188,8 @@ void DXFReader::addSpline(const DL_SplineData& sp)
 
 void DXFReader::addKnot(const DL_KnotData& kd)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
-    cout<<"addknot"<<endl;
     splk_.push_back(kd.k);
     if ((splk_.size()==spl_nknot_) && (splp_.size()==spl_nctrl_)) buildSpline();
   }
@@ -213,18 +197,17 @@ void DXFReader::addKnot(const DL_KnotData& kd)
 
 void DXFReader::addControlPoint(const DL_ControlPointData& cp)
 {
-  DL_Attributes attr=getAttributes();
-  if (attr.getLayer()==layername_)
+  if (notFiltered())
   {
-    cout<<"addctrlp"<<endl;
     splp_.push_back(gp_Pnt(cp.x, cp.y, cp.z));
-    if ((splk_.size()==spl_nknot_) && (splp_.size()==spl_nctrl_)) buildSpline();
+
+    if ((splk_.size()==spl_nknot_) && (splp_.size()==spl_nctrl_))
+      buildSpline();
   }
 }
 
 void DXFReader::buildSpline()
 {
-  cout<<"building spline"<<endl;
 
   int np=splp_.size(), nk=splk_.size();
   TColgp_Array1OfPnt poles(1, np);
@@ -232,7 +215,6 @@ void DXFReader::buildSpline()
   int i;
   for(i=0;i<np;++i)
   {
-    cout<<i<<" : "<<splp_[i].X()<<" "<<splp_[i].Y()<<" "<<splp_[i].Z()<<endl;
     poles.SetValue(i+1, splp_[i]);
   }
   for(i=0;i<np;++i)
@@ -266,16 +248,12 @@ void DXFReader::buildSpline()
   TColStd_Array1OfInteger UMult(1, mult.size());
   for(i=0;i<u.size();++i)
   {
-    cout<<i<<" : "<<u[i]<<endl;
     UKnots.SetValue(i+1, u[i]);
   }
   for(i=0;i<mult.size();++i)
   {
-    cout<<i<<" : "<<mult[i]<<endl;
     UMult.SetValue(i+1, mult[i]);
   }
-//   UMult.SetValue(1,degree+1);
-//   UMult.SetValue(nkr,degree+1);
 
   Handle_Geom_BSplineCurve c = new Geom_BSplineCurve
       (
@@ -288,18 +266,31 @@ void DXFReader::buildSpline()
 
 
     TopoDS_Edge e=BRepBuilderAPI_MakeEdge(c).Edge();
-    ls_.Append(e);
+    ls_[curLayerName()].Append(e);
 }
 
 
 
-TopoDS_Wire DXFReader::Wire(double tol) const
+TopoDS_Wire DXFReader::Wire(double tol, const std::string& layername) const
 {
   pl_.reset(); // Finalize
 
+  std::map<std::string, TopTools_ListOfShape>::const_iterator ld;
+  if (layername_!="")
+    {
+      ld=ls_.find(layername_);
+    }
+  else
+    {
+      ld=ls_.find(layername);
+    }
+
+  if (ld==ls_.end())
+    throw insight::Exception("Could not retrieve data for layer!");
+
   ShapeFix_ShapeTolerance sft;
   for (
-    TopTools_ListIteratorOfListOfShape li(ls_);
+    TopTools_ListIteratorOfListOfShape li(ld->second);
     li.More(); li.Next()
   )
   {
@@ -307,13 +298,20 @@ TopoDS_Wire DXFReader::Wire(double tol) const
   }
 
   BRepBuilderAPI_MakeWire wb;
-  wb.Add(ls_);
+  wb.Add(ld->second);
   return wb.Wire();
 }
 
-// TopoDS_Shape Sketch::makeSketch(const Datum& pl, const boost::filesystem::path& fn, const std::string& ln)
-// {
-// }
+std::vector<std::string> DXFReader::layers() const
+{
+  std::vector<std::string> ll;
+  std::transform( ls_.begin(), ls_.end(),
+                  std::back_inserter( ll ),
+                  boost::bind(&std::map<std::string,TopTools_ListOfShape>::value_type::first,_1)
+                  );
+  return ll;
+}
+
 
 }
 }

@@ -21,13 +21,14 @@ class DXFReader
 {
 protected:
   std::string layername_;
-  TopTools_ListOfShape ls_;
+  std::map<std::string, TopTools_ListOfShape> ls_;
 
   struct Polyline
   {
     DXFReader& reader;
+    std::string layername_;
 
-    Polyline(DXFReader&);
+    Polyline(DXFReader&, const std::string&);
     ~Polyline();
 
     bool closed;
@@ -41,8 +42,12 @@ protected:
   std::vector<gp_Pnt> splp_;
   std::vector<double> splk_;
 
+  bool notFiltered();
+  std::string curLayerName();
+
 public:
   DXFReader(const boost::filesystem::path& filename, const std::string& layername="0");
+
   virtual ~DXFReader();
   virtual void addArc(const DL_ArcData &);
   virtual void addLine(const DL_LineData &);
@@ -54,7 +59,8 @@ public:
   virtual void addControlPoint(const DL_ControlPointData&);
   void buildSpline();
 
-  TopoDS_Wire Wire(double tol=Precision::Confusion()) const;
+  TopoDS_Wire Wire(double tol=Precision::Confusion(), const std::string& layername="") const;
+  std::vector<std::string> layers() const;
 };
 
 }

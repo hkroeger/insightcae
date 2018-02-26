@@ -140,7 +140,8 @@ public:
   void writeCircle(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeEllipse(const BRepAdaptor_Curve& c, const std::string& layer);
   void writeDiscrete(const BRepAdaptor_Curve& c, const std::string& layer);
-  
+  void writePolyline(const std::vector<arma::mat>& pts, const std::string& layer, bool isClosed = false);
+
   void writeShapeEdges(const TopoDS_Shape& s, std::string layer="0");
   void writeSection(const TopoDS_Shape& s, HatchGenerator& hgen, std::string layer="0");
   

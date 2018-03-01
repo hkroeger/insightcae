@@ -260,7 +260,11 @@ void ParameterStudy<BaseAnalysis,var_params>::processQueue(insight::ProgressDisp
 }
 
 
-
+struct ai_sort_pred {
+    bool operator()(const AnalysisInstance& ai1, const AnalysisInstance& ai2) {
+         return ( get<0>(ai1) < get<0>(ai2) );
+      }
+};
 
 template<
   class BaseAnalysis,
@@ -273,9 +277,10 @@ insight::ResultSetPtr ParameterStudy<BaseAnalysis,var_params>::evaluateRuns()
   TabularResult::Table force_data;
   AnalysisInstanceList processed_analyses = queue_.processed();
   sort(processed_analyses.begin(), processed_analyses.end(),
-       [](const AnalysisInstance& ai1, const AnalysisInstance& ai2) -> bool {
-          return ( get<0>(ai1) < get<0>(ai2) );
-      }
+       //[&](const AnalysisInstance& ai1, const AnalysisInstance& ai2) -> bool {
+       //   return ( get<0>(ai1) < get<0>(ai2) );
+      //}
+      ai_sort_pred()
   );
 
   Ordering o(1000);

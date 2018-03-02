@@ -9,7 +9,7 @@ List of Contributors
 --------------------
 
 - Hannes Kröger
-- Ivan Shevshuk
+- Ivan Shevchuk
 - Johann Turnow
 
 Features

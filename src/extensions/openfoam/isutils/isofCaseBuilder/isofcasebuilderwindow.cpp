@@ -364,9 +364,10 @@ void isofCaseBuilderWindow::createCase
   
   if (!boost::filesystem::exists(ofc_->boundaryDictPath(casepath_)))
   {
+      if (!skipBCs)
+        QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
+
       skipBCs=true;
-      
-      QMessageBox::warning(this, "Warning", "No boundary dictionary present: skipping BC creation!");
   }
   
   insight::OFDictData::dict boundaryDict;

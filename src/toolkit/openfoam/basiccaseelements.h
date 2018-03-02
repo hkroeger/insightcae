@@ -510,6 +510,62 @@ public:
 
 
 
+
+
+class rigidBodyMotionDynamicMesh
+: public dynamicMesh
+{
+public:
+#include "basiccaseelements__rigidBodyMotionDynamicMesh__Parameters.h"
+/*
+PARAMETERSET>>> rigidBodyMotionDynamicMesh Parameters
+
+bodies = array [
+ set {
+   name = string "movingbody" "Name of the body"
+   centreOfMass = vector (0 0 0) "Location of CoG in global CS"
+   mass = double 1.0 "Mass of body"
+   Ixx = double 1.0 "Inertia Ixx"
+   Iyy = double 1.0 "Inertia Iyy"
+   Izz = double 1.0 "Inertia Izz"
+
+   patches = array [
+    string "bodysurface" "Names of patches comprising the surface of the body"
+   ] *1 "body surface patches"
+
+   innerDistance = double 1.0 "radius around body within which a solid body motion is performed."
+   outerDistance = double 1.0 "radius around body outside which the grid remains fixed."
+
+   translationConstraint = array [ selection (
+    Px Py Pz Pxyz ) Pxyz "Kind of translation constraint"
+   ] *1 "translation constraints"
+
+   rotationConstraint = array [ selection (
+    Rx Ry Rz Rxyz ) Rxyz "Kind of rotation constraint"
+   ] *1 "rotation constraints"
+
+ } ] *1 "moving bodies"
+
+
+<<<PARAMETERSET
+*/
+
+protected:
+    ParameterSet ps_; // need to use dynamic variant; will contain enhancements to above definition
+
+public:
+  declareType ( "rigidBodyMotionDynamicMesh" );
+
+  rigidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet&ps = Parameters::makeDefault() );
+  virtual void addFields( OpenFOAMCase& c ) const;
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+
+  static ParameterSet defaultParameters()
+  {
+      return Parameters::makeDefault();
+  }
+  static std::string category() { return "Dynamic Mesh"; }
+};
 }
 
 

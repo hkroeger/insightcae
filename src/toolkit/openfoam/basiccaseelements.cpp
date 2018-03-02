@@ -562,6 +562,116 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     dynamicMeshDict["solidBodyCoeffs"]=sbc;
 }
 
+
+
+
+defineType(rigidBodyMotionDynamicMesh);
+addToOpenFOAMCaseElementFactoryTable(rigidBodyMotionDynamicMesh);
+
+
+
+rigidBodyMotionDynamicMesh::rigidBodyMotionDynamicMesh( OpenFOAMCase& c, const ParameterSet& ps )
+: dynamicMesh(c),
+  ps_(ps)
+{
+}
+
+void rigidBodyMotionDynamicMesh::addFields( OpenFOAMCase& c ) const
+{
+  c.addField
+  (
+      "pointDisplacement",
+       FieldInfo(vectorField, 	dimLength, 	list_of(0)(0)(0), pointField )
+  );
+}
+
+void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) const
+{
+    Parameters p(ps_);
+
+    OFDictData::dict& dynamicMeshDict
+      = dictionaries.addDictionaryIfNonexistent("constant/dynamicMeshDict");
+
+    dynamicMeshDict["dynamicFvMesh"]="dynamicMotionSolverFvMesh";
+    dynamicMeshDict["solver"]="rigidBodyMotion";
+
+    OFDictData::list libl;
+    libl.push_back("\"librigidBodyMeshMotion.so\"");
+    dynamicMeshDict["motionSolverLibs"]=libl;
+
+    OFDictData::dict rbmc;
+    rbmc["report"]=true;
+
+    OFDictData::dict sc;
+     sc["type"]="Newmark";
+    rbmc["solver"]=sc;
+
+    rbmc["accelerationRelaxation"]=0.4;
+
+    OFDictData::dict bl;
+    BOOST_FOREACH(const Parameters::bodies_default_type& body, p.bodies)
+    {
+      OFDictData::dict bc;
+
+      bc["type"]="rigidBody";
+      bc["parent"]="root";
+      bc["centreOfMass"]=OFDictData::vector3(0,0,0);
+      bc["mass"]=body.mass;
+      bc["inertia"]=boost::str(boost::format("(%g 0 0 %g 0 %g)") % body.Ixx % body.Iyy % body.Izz);
+      bc["transform"]=boost::str(boost::format("(1 0 0 0 1 0 0 0 1) (%g %g %g)")
+                                 % body.centreOfMass(0) % body.centreOfMass(1) % body.centreOfMass(2) );
+
+      OFDictData::list jl;
+      BOOST_FOREACH(const Parameters::bodies_default_type::translationConstraint_default_type& tc,
+                    body.translationConstraint)
+      {
+        std::string code;
+        if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Px) code="Px";
+        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Py) code="Py";
+        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pz) code="Pz";
+        else if (tc==Parameters::bodies_default_type::translationConstraint_default_type::Pxyz) code="Pxyz";
+        else throw insight::Exception("internal error: unhandled value!");
+        OFDictData::dict d;
+         d["type"]=code;
+        jl.push_back(d);
+      }
+      BOOST_FOREACH(const Parameters::bodies_default_type::rotationConstraint_default_type& rc,
+                    body.rotationConstraint)
+      {
+        std::string code;
+        if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rx) code="Rx";
+        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Ry) code="Ry";
+        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rz) code="Rz";
+        else if (rc==Parameters::bodies_default_type::rotationConstraint_default_type::Rxyz) code="Rxyz";
+        else throw insight::Exception("internal error: unhandled value!");
+        OFDictData::dict d;
+         d["type"]=code;
+        jl.push_back(d);
+      }
+      OFDictData::dict jc;
+       jc["type"]="composite";
+       jc["joints"]=jl;
+      bc["joint"]=jc;
+
+      OFDictData::list pl;
+      std::copy(body.patches.begin(), body.patches.end(), std::back_inserter(pl));
+      bc["patches"]=pl;
+
+      bc["innerDistance"]=body.innerDistance;
+      bc["outerDistance"]=body.outerDistance;
+
+      bl[body.name]=bc;
+    }
+    rbmc["bodies"]=bl;
+
+    OFDictData::dict rc;
+     // empty
+    rbmc["restraints"]=rc;
+
+    dynamicMeshDict["rigidBodyMotionCoeffs"]=rbmc;
+}
+
+
 }
 
 

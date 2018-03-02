@@ -104,6 +104,31 @@ public:
 
 
 
+class potentialFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "numericscaseelements__potentialFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> potentialFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "potentialFoamNumerics" );
+    potentialFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
 /**
  * create a setDecomposeParDict
  * @poX,@poY,@poZ: define the preference of coordinate directions for decomposition 

@@ -286,6 +286,82 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 
+defineType(potentialFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(potentialFoamNumerics);
+
+potentialFoamNumerics::potentialFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
+{
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.)(0.)(0.), volField ) );
+}
+
+
+void potentialFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+
+  // ============ setup controlDict ================================
+
+  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+  controlDict["application"]="potentialFoam";
+
+
+  // ============ setup fvSolution ================================
+
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["Phi"]=GAMGPCGSolverSetup(1e-7, 0.01);
+  solvers["p"]=GAMGPCGSolverSetup(1e-7, 0.01);
+
+
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("potentialFlow");
+  SIMPLE["nNonOrthogonalCorrectors"]=10;
+  SIMPLE["pRefCell"]=0;
+  SIMPLE["pRefValue"]=0.0;
+  SIMPLE["PhiRefCell"]=0;
+  SIMPLE["PhiRefValue"]=0.0;
+
+
+  // ============ setup fvSchemes ================================
+
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="steadyState";
+
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+
+  grad["default"]="Gauss linear";
+
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  div["default"]="none";
+  div["div(phi,U)"]	=	"bounded Gauss linear";
+  div["div(div(phi,U))"]	=	"Gauss linear";
+
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear corrected";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="corrected";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p"]="";
+}
+
+ParameterSet potentialFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
 FaNumerics::FaNumerics(OpenFOAMCase& c, const ParameterSet& p)
 : OpenFOAMCaseElement(c, "FaNumerics"), p_(p)
 {

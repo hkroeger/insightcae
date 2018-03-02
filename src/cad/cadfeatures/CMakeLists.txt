@@ -44,6 +44,7 @@ add_sources(insightcad_SOURCES
  helix.cpp
  stitchedshell.cpp
  stitchedsolid.cpp
+ stl.cpp
  sweep.cpp
  thicken.cpp
  transform.cpp

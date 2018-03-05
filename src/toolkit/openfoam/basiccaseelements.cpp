@@ -60,6 +60,128 @@ void gravity::addIntoDictionaries(OFdicts& dictionaries) const
 
 
 
+defineType(mirrorMesh);
+addToOpenFOAMCaseElementFactoryTable(mirrorMesh);
+
+mirrorMesh::mirrorMesh( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, "mirrorMesh"),
+  p_(ps)
+{
+}
+
+void mirrorMesh::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  OFDictData::dict& mmd=dictionaries.addDictionaryIfNonexistent("system/mirrorMeshDict");
+
+  mmd["planeTolerance"]=p_.planeTolerance;
+
+  if (const Parameters::plane_pointAndNormal_type* pn =
+      boost::get<Parameters::plane_pointAndNormal_type>(&p_.plane))
+    {
+      mmd["planeType"]="pointAndNormal";
+      OFDictData::dict d;
+      d["basePoint"]=OFDictData::vector3(pn->p0);
+      d["normalVector"]=OFDictData::vector3(pn->normal);
+      mmd["pointAndNormalDict"]=d;
+    }
+  else if (const Parameters::plane_threePoint_type* pt =
+           boost::get<Parameters::plane_threePoint_type>(&p_.plane))
+    {
+      mmd["planeType"]="embeddedPoints";
+      OFDictData::dict d;
+      d["point1"]=OFDictData::vector3(pt->p0);
+      d["point2"]=OFDictData::vector3(pt->p1);
+      d["point3"]=OFDictData::vector3(pt->p2);
+      mmd["embeddedPointsDict"]=d;
+    }
+  else
+    throw insight::Exception("Internal error: Unhandled selection!");
+}
+
+
+
+
+
+
+defineType(setFieldsConfiguration);
+addToOpenFOAMCaseElementFactoryTable(setFieldsConfiguration);
+
+
+
+setFieldsConfiguration::setFieldsConfiguration( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, "setFieldsConfiguration"),
+  p_(ps)
+{
+}
+
+
+void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
+{
+
+    OFDictData::dict& sFD
+      = dictionaries.addDictionaryIfNonexistent("system/setFieldsDict");
+
+    OFDictData::list dfvs;
+    BOOST_FOREACH(const Parameters::defaultValues_default_type& dfv,p_.defaultValues)
+    {
+      if (const auto * sdfv = boost::get<Parameters::defaultValues_default_scalar_type>(&dfv))
+        {
+          dfvs.push_back(str(format("volScalarFieldValue %s %g\n") % sdfv->name % sdfv->value));
+        }
+      else if (const auto * vdfv = boost::get<Parameters::defaultValues_default_vector_type>(&dfv))
+        {
+          dfvs.push_back(str(format("volVectorFieldValue %s %s\n") % vdfv->name % OFDictData::to_OF(vdfv->value)));
+        }
+      else
+        throw insight::Exception("Internal error: Unhandled selection!");
+    }
+    sFD["defaultFieldValues"]=dfvs;
+
+    OFDictData::list rs;
+    BOOST_FOREACH(const Parameters::regionSelectors_default_type& r, p_.regionSelectors)
+    {
+      if (const auto * box = boost::get<Parameters::regionSelectors_default_box_type>(&r))
+        {
+          OFDictData::list vl;
+          BOOST_FOREACH(const Parameters::regionSelectors_default_box_type::regionValues_default_type& bv, box->regionValues)
+          {
+            if (const auto * s = boost::get<Parameters::regionSelectors_default_box_type::regionValues_default_scalar_type>(&bv))
+              {
+                vl.push_back(str(format("volScalarFieldValue %s %g\n") % s->name % s->value));
+              }
+            else if (const auto * v = boost::get<Parameters::regionSelectors_default_box_type::regionValues_default_vector_type>(&bv))
+              {
+                vl.push_back(str(format("volVectorFieldValue %s %s\n") % v->name % OFDictData::to_OF(v->value)));
+              }
+            else
+              throw insight::Exception("Internal error: Unhandled type selection!");
+
+            OFDictData::dict fs;
+            fs["box"]=str(format("%s %s") % OFDictData::to_OF(box->p0) % OFDictData::to_OF(box->p1) );
+            fs["fieldValues"]=vl;
+
+            if (box->selectcells)
+              {
+                rs.push_back("boxToCell");
+                rs.push_back(fs);
+              }
+
+            if (box->selectfaces)
+              {
+                rs.push_back("boxToFace");
+                rs.push_back(fs);
+              }
+          }
+        }
+      else
+        throw insight::Exception("Internal error: Unhandled region selection!");
+    }
+    sFD["regions"]=rs;
+}
+
+
+
+
 defineType(volumeDrag);
 addToOpenFOAMCaseElementFactoryTable(volumeDrag);
 
@@ -558,6 +680,17 @@ void solidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
         rmc["omega"]=2.*M_PI*rp->rpm/60.;
         sbc["rotatingMotionCoeffs"]=rmc;
     }
+    else if ( Parameters::motion_oscillatingRotating_type* ro = boost::get<Parameters::motion_oscillatingRotating_type>(&p.motion) )
+    {
+        sbc["solidBodyMotionFunction"]="oscillatingRotatingMotion";
+        OFDictData::dict rmc;
+        rmc["origin"]=OFDictData::vector3(ro->origin);
+        rmc["omega"]=ro->omega;
+        rmc["amplitude"]=OFDictData::vector3(ro->amplitude);
+        sbc["oscillatingRotatingMotionCoeffs"]=rmc;
+    }
+    else
+      throw insight::Exception("Internal error: Unhandled selection!");
 
     dynamicMeshDict["solidBodyCoeffs"]=sbc;
 }
@@ -605,6 +738,16 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     OFDictData::dict sc;
      sc["type"]="Newmark";
     rbmc["solver"]=sc;
+
+    if (const Parameters::rho_field_type* rhof = boost::get<Parameters::rho_field_type>(&p.rho))
+      {
+        rbmc["rho"]=rhof->fieldname;
+      }
+    else if (const Parameters::rho_constant_type* rhoc = boost::get<Parameters::rho_constant_type>(&p.rho))
+      {
+        rbmc["rho"]="rhoInf";
+        rbmc["rhoInf"]=rhoc->rhoInf;
+      }
 
     rbmc["accelerationRelaxation"]=0.4;
 

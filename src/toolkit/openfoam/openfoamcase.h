@@ -127,6 +127,7 @@ public:
      * inspects WM_PROJECT_DIR env variable and returns name of currently loaded OFE. Empty string, if none is set
      */
     static std::string detectCurrentOFE();
+    static const OFEnvironment& getCurrent ( );
 
     OFEs();
     ~OFEs();

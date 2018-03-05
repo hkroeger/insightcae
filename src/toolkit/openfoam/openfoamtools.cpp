@@ -2284,7 +2284,8 @@ void extrude2DMesh
   const std::string& sourcePatchName,
   std::string sourcePatchName2,
   bool wedgeInsteadOfPrism,
-  double distance
+  double distance,
+  const arma::mat& offsetTranslation
 )
 {  
   
@@ -2334,7 +2335,7 @@ void extrude2DMesh
   if (!wedgeInsteadOfPrism)
   {
     opt.clear();
-    opt=list_of<std::string>("-translate")(OFDictData::to_OF(vec3(0,0,0.5))).convert_to_container<std::vector<std::string> >();
+    opt=list_of<std::string>("-translate")(OFDictData::to_OF(offsetTranslation)).convert_to_container<std::vector<std::string> >();
     cm.executeCommand(location, "transformPoints", opt);
   }
   else

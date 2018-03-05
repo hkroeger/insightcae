@@ -753,7 +753,8 @@ void extrude2DMesh
   const std::string& sourcePatchName,
   std::string sourcePatchName2="",
   bool wedgeInsteadOfPrism=false,
-  double distance=1.0
+  double distance=1.0,
+  const arma::mat& offsetTranslation=vec3(0,0,0.5)
 );
 
 /**

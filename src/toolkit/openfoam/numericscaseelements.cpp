@@ -1483,7 +1483,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nCorrectors"]=1; //2;  
   SOL["nOuterCorrectors"]=3; //1;
   SOL["nNonOrthogonalCorrectors"]=1;
-  
+
+  SOL["pRefCell"]=0;
+  SOL["pRefValue"]=0.0;
+
   if (p_.implicitPressureCorrection)
   {
     SOL["nCorrectors"]=1;

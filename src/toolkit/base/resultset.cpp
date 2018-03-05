@@ -663,19 +663,31 @@ void TabularResult::writeLatexHeaderCode ( ostream& f ) const
 
 void TabularResult::writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const
 {
+  std::vector<std::vector<int> > colsets;
+  int i=0;
+  std::vector<int> ccolset;
+  for(int c=0; c<headings_.size(); c++)
+  {
+    ccolset.push_back(c);
+    i++;
+    if (i>5) { colsets.push_back(ccolset); ccolset.clear(); i=0; }
+  }
+  if (ccolset.size()>0) colsets.push_back(ccolset);
 
+  BOOST_FOREACH(const std::vector<int>& cols, colsets)
+  {
     f<<
      "\\begin{longtable}{";
-    BOOST_FOREACH ( const std::string& h, headings_ ) {
+    BOOST_FOREACH(int c, cols) {
         f<<"c";
     }
     f<<"}\n";
 
-    for ( std::vector<std::string>::const_iterator i=headings_.begin(); i!=headings_.end(); i++ ) {
-        if ( i!=headings_.begin() ) {
+    for (int i=0; i<cols.size(); i++) {
+        if ( i!=0 ) {
             f<<" & ";
         }
-        f<<*i;
+        f<<headings_[cols[i]];
     }
     f<<
      "\\\\\n"
@@ -686,18 +698,21 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& name, i
         if ( i!=rows_.begin() ) {
             f<<"\\\\\n";
         }
-        for ( std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++ ) {
-            if ( j!=i->begin() ) {
+//        for ( std::vector<double>::const_iterator j=i->begin(); j!=i->end(); j++ ) {
+        for (int j=0; j< cols.size(); j++) {
+            if ( j!=0 ) {
                 f<<" & ";
             }
-            if ( !std::isnan ( *j ) ) {
-                f<<*j;
+            if ( !std::isnan ( (*i)[cols[j]] ) ) {
+                f<<(*i)[cols[j]];
             }
         }
     }
     f<<
-     "\\end{longtable}\n"
-     "\\newpage\n";  // page break algorithm fails after too short "longtable"
+     "\\end{longtable}\n\n"
+//     "\\newpage\n"  // page break algorithm fails after too short "longtable"
+        ;
+  }
 }
 
 

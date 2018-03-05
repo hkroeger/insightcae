@@ -400,7 +400,38 @@ void DXFWriter::writeDiscrete(const BRepAdaptor_Curve& c, const std::string& lay
 
 }
   
-  
+
+void DXFWriter::writePolyline(const std::vector<arma::mat>& pts, const std::string& layer, bool isClosed)
+{
+
+    dxf_.writePolyline
+    (
+          *dw_,
+          DL_PolylineData(
+                   pts.size(),
+                   0, 0,
+                   isClosed
+          ),
+          DL_Attributes(layer, 256, -1, "BYLAYER", 1.)
+    );
+
+    for (int i=0; i<pts.size(); i++)
+    {
+      gp_Pnt p1=to_Pnt(pts[i]);
+
+      // for every vertex in the polyline:
+      dxf_.writeVertex
+      (
+            *dw_,
+            DL_VertexData(
+                  p1.X(), p1.Y(), p1.Z(),
+                  0.0
+            )
+      );
+    }
+
+    dxf_.writePolylineEnd(*dw_);
+}
   
   
 writerDiscrete_HatchLoop::writerDiscrete_HatchLoop(const BRepAdaptor_Curve& c, const std::string& layer, bool reverse)

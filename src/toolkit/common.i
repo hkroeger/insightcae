@@ -129,11 +129,11 @@
      if (PySequence_Check(PySequence_GetItem($input, 0)))
      {
         jLen = PySequence_Length(PySequence_GetItem($input, 0)); 
-        vIn.set_size(iLen);
+        vIn.set_size(iLen, jLen);
      }
      else
      {
-        vIn.set_size(iLen, jLen);
+        vIn.set_size(iLen);
      }
      
      for(unsigned int i = 0; i < iLen; i++) 

@@ -168,6 +168,11 @@ std::string OFEs::detectCurrentOFE()
   return std::string();
 }
 
+const OFEnvironment& OFEs::getCurrent()
+{
+  return get( detectCurrentOFE() );
+}
+
 OFEs::OFEs()
 {
   const char *envvar=getenv("INSIGHT_OFES");

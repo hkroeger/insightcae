@@ -48,6 +48,11 @@ phaseFractions = array [
     set {
     name = string "CO2" "Name of specie"
     fraction = double 0.5 "Mass fraction of specie"
+    handleflowreversal = bool true
+"By default, the BC turns into a Neumann boundary condition, if outflow occurs on this boundary for any reason.
+
+If a dirichlet BC shall remain under all circumstances, uncheck this option. Then a fixedValue-BC will be used instead of inletOutlet."
+
 } ] *0 "Mass fractions of species"
 
 <<<PARAMETERSET

@@ -11,6 +11,7 @@ set(insightcad_SOURCES
   astbase.cpp
   cadpostprocaction.cpp
   dxfwriter.cpp 
+  dxfreader.cpp
   parser.cpp 
   parser_selectionexpressions.cpp
   parser_datumexpressions.cpp

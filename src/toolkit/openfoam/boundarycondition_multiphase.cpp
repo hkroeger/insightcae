@@ -56,11 +56,16 @@ bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const
     ) {
         std::ostringstream entry;
         entry << "uniform " << pf->fraction;
-//     BC["type"]="fixedValue";
-//     BC["value"]=entry.str();
-        BC["type"]="inletOutlet";
-        BC["inletValue"]=entry.str();
-        BC["value"]=entry.str();
+        if (pf->handleflowreversal)
+          {
+            BC["type"]="inletOutlet";
+            BC["inletValue"]=entry.str();
+            BC["value"]=entry.str();
+          } else
+          {
+            BC["type"]="fixedValue";
+            BC["value"]=entry.str();
+          }
         return true;
     } else {
         return false;

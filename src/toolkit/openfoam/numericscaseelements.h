@@ -322,6 +322,45 @@ public:
 
 
 
+class rhoSimpleFoamNumerics
+    : public FVNumerics
+{
+
+public:
+#include "numericscaseelements__rhoSimpleFoamNumerics__Parameters.h"
+
+/*
+PARAMETERSET>>> rhoSimpleFoamNumerics Parameters
+inherits FVNumerics::Parameters
+
+nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
+hasCyclics = bool false "Whether the model contains cyclic boundaries"
+pinternal = double 1e5 "Internal pressure field value"
+Tinternal = double 300 "Internal temperature field value"
+Uinternal = vector (0 0 0) "Internal velocity field value"
+
+rhoMin = double 0.01 "Lower clipping for density"
+rhoMax = double 100. "Upper clipping for density"
+transonic = bool true "Check for transsonic flow"
+
+setup = selection ( accurate stable ) accurate "Select accuratefor second order schemes. In case of stability problems revert to stable."
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "rhoSimpleFoamNumerics" );
+    rhoSimpleFoamNumerics ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+    static ParameterSet defaultParameters();
+};
+
+
+
+
 class potentialFreeSurfaceFoamNumerics
     : public FVNumerics
 {

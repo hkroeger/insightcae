@@ -131,9 +131,23 @@ geometry = set
 
 mesh = set
 {
-    nx = int 10 "# cells in X direction"
-    ny = int 10 "# cells in Y direction"
-    nz = int 10 "# cells in Z direction"
+    resolution = selectablesubset {{
+
+     cubical set {
+        n_max = int 10 "Number of cells along longest side. The other sides are discretized with the same cell size but with adjusted number of cells."
+     }
+
+     cubical_size set {
+        delta = double 0.1 "Uniform cell length."
+     }
+
+     individual set {
+        nx = int 10 "# cells in X direction"
+        ny = int 10 "# cells in Y direction"
+        nz = int 10 "# cells in Z direction"
+     }
+
+    }} cubical "Mesh resolution"
 
     defaultPatchName = string "walls" "name of patch where all patches with empty names are assigned to."
     XpPatchName = string "" "name of patch on forward (+X) side"

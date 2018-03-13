@@ -93,7 +93,11 @@ void perfectGasSinglePhaseThermophysicalProperties::addIntoDictionaries(OFdicts&
   {
     const FVNumerics* nce = this->OFcase().get<FVNumerics>("FVNumerics");
 
-    if (dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) || dynamic_cast<const buoyantPimpleFoamNumerics*>(nce))
+    if (
+        dynamic_cast<const buoyantSimpleFoamNumerics*>(nce) ||
+        dynamic_cast<const buoyantPimpleFoamNumerics*>(nce) ||
+        dynamic_cast<const rhoSimpleFoamNumerics*>(nce)
+        )
       {
         tht=heRhoThermo;
       }

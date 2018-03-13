@@ -250,13 +250,39 @@ void blockMeshDict_Box::create_bmd()
         Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
     }
 
+    int nx, ny, nz;
+    if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+      {
+        double dx=std::max(std::max(p_.geometry.L, p_.geometry.W), p_.geometry.H)/double(cu->n_max);
+        nx=std::ceil(p_.geometry.L/dx);
+        ny=std::ceil(p_.geometry.W/dx);
+        nz=std::ceil(p_.geometry.H/dx);
+      }
+    else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+      {
+        nx=std::ceil(p_.geometry.L/cus->delta);
+        ny=std::ceil(p_.geometry.W/cus->delta);
+        nz=std::ceil(p_.geometry.H/cus->delta);
+      }
+    else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+      {
+        nx=ind->nx;
+        ny=ind->ny;
+        nz=ind->nz;
+      }
+    else
+      {
+        throw insight::Exception("Internal error: unhandled selection.");
+      }
+
+
     Block& bl = this->addBlock
                 (
                     new Block ( P_8 (
                                     pts[0], pts[1], pts[2], pts[3],
                                     pts[4], pts[5], pts[6], pts[7]
                                 ),
-                                p_.mesh.nx, p_.mesh.ny, p_.mesh.nz
+                                nx, ny, nz
                                 )
                 );
     if ( Xp ) {

@@ -517,6 +517,11 @@ void isofCaseBuilderWindow::onSave()
                  );
 
     if ( !fn.isEmpty() ) {
+
+        if (! (fn.endsWith(".iscb")||fn.endsWith(".ISCB")) )
+          {
+            fn+=".iscb";
+          }
         
         boost::filesystem::path file (fn.toStdString());
 
@@ -591,7 +596,6 @@ void isofCaseBuilderWindow::onSave()
 void isofCaseBuilderWindow::onLoad()
 {
     
-    ui->selected_elements->clear();
     
     QString fn = QFileDialog::getOpenFileName
                  (
@@ -602,9 +606,11 @@ void isofCaseBuilderWindow::onLoad()
                  );
 
     if ( !fn.isEmpty() ) {
-                
+
+
         boost::filesystem::path file (fn.toStdString());
 
+        ui->selected_elements->clear();
         loadFile(file);
     }
 }

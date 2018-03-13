@@ -277,9 +277,13 @@ void SnappyHexMesh::build()
     bmd_p.geometry.L=L;
     bmd_p.geometry.W=W;
     bmd_p.geometry.H=H;
-    bmd_p.mesh.nx=nx;
-    bmd_p.mesh.ny=ny;
-    bmd_p.mesh.nz=nz;
+    {
+      bmd::blockMeshDict_Box::Parameters::mesh_type::resolution_individual_type res;
+      res.nx=nx;
+      res.ny=ny;
+      res.nz=nz;
+      bmd_p.mesh.resolution=res;
+    }
     ofc.insert(new bmd::blockMeshDict_Box(ofc, bmd_p));
     
     ofc.createOnDisk(outpath_);

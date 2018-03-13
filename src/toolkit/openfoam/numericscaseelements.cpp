@@ -1068,6 +1068,180 @@ ParameterSet rhoPimpleFoamNumerics::defaultParameters()
 
 
 
+
+
+
+defineType(rhoSimpleFoamNumerics);
+addToOpenFOAMCaseElementFactoryTable(rhoSimpleFoamNumerics);
+
+rhoSimpleFoamNumerics::rhoSimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+: FVNumerics(c, ps),
+  p_(ps)
+{
+  isCompressible_=true;
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	list_of(p_.Tinternal), volField ) );
+  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	list_of(0.0), volField ) );
+}
+
+
+
+void rhoSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  FVNumerics::addIntoDictionaries(dictionaries);
+
+  // ============ setup controlDict ================================
+
+  OFDictData::dict& controlDict=dictionaries.addDictionaryIfNonexistent("system/controlDict");
+  controlDict["application"]="rhoSimpleFoam";
+  controlDict["endTime"]=p_.endTime;
+
+  controlDict.getList("libs").insertNoDuplicate( "\"libnumericsFunctionObjects.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalLimitedSnGrad.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalCellLimitedGrad.so\"" );
+  controlDict.getList("libs").insertNoDuplicate( "\"liblocalBlendedBy.so\"" );
+
+  OFDictData::dict fqmc;
+  fqmc["type"]="faceQualityMarker";
+  controlDict.addSubDictIfNonexistent("functions")["faceQualityMarker"]=fqmc;
+
+  // ============ setup fvSolution ================================
+
+  OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
+
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["rho"]=stdSymmSolverSetup(1e-7, 0.01);
+  if (p_.transonic)
+    {
+      solvers["p"]=stdAsymmSolverSetup(1e-8, 0.01);
+    }
+  else
+    {
+      solvers["p"]=GAMGPCGSolverSetup(1e-8, 0.01);
+    }
+  solvers["U"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["k"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["e"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["h"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["omega"]=smoothSolverSetup(1e-12, 0.1, 1);
+  solvers["epsilon"]=smoothSolverSetup(1e-8, 0.1);
+  solvers["nuTilda"]=smoothSolverSetup(1e-8, 0.1);
+
+  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("SIMPLE");
+  SIMPLE["nNonOrthogonalCorrectors"]=p_.nNonOrthogonalCorrectors;
+  SIMPLE["rhoMin"]=p_.rhoMin;
+  SIMPLE["rhoMax"]=p_.rhoMax;
+  SIMPLE["consistent"]=false;
+  SIMPLE["transonic"]=p_.transonic;
+
+  // ============ setup fvSchemes ================================
+
+
+
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
+
+  OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
+  ddt["default"]="steadyState";
+
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+  std::string bgrads="Gauss linear";
+  if ( (OFversion()>=220) && !(p_.hasCyclics)) bgrads="pointCellsLeastSquares";
+  grad["default"]="cellLimited "+bgrads+" 1";
+  grad["grad(p)"]="Gauss linear";
+//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+
+
+  OFDictData::dict& div=fvSchemes.subDict("divSchemes");
+  std::string pref, suf;
+  if (OFversion()>=220) pref="bounded ";
+  suf="localCellLimited "+bgrads+" UBlendingFactor";
+  if (OFversion()>=170)
+  {
+    grad["limitedGrad"]=suf;
+    suf="limitedGrad";
+  }
+  div["default"]="none"; //pref+"Gauss upwind";
+
+  OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
+  {
+    OFDictData::dict fieldRelax, eqnRelax;
+    fieldRelax["p"]=0.3;
+    fieldRelax["rho"]=0.1;
+    eqnRelax["U"]=0.7;
+    eqnRelax["k"]=0.7;
+    eqnRelax["h"]=0.1;
+    eqnRelax["e"]=0.1;
+    eqnRelax["R"]=0.7;
+    eqnRelax["omega"]=0.7;
+    eqnRelax["epsilon"]=0.7;
+    eqnRelax["nuTilda"]=0.7;
+    relax["fields"]=fieldRelax;
+    relax["equations"]=eqnRelax;
+  }
+
+  if (p_.setup == Parameters::setup_type::accurate)
+    {
+      div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
+      div["div(phi,e)"]	=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,h)"]	=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,K)"]     =       pref+"Gauss linearUpwind "+suf;
+      div["div(phid,p)"]     =       pref+"Gauss linearUpwind "+suf;
+      div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,omega)"]	=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
+    }
+  else if (p_.setup == Parameters::setup_type::stable)
+    {
+      div["div(phi,U)"]	=	pref+"Gauss upwind";
+      div["div(phi,e)"]	=	pref+"Gauss upwind";
+      div["div(phi,h)"]	=	pref+"Gauss upwind";
+      div["div(phi,K)"]     =       pref+"Gauss upwind";
+      div["div(phid,p)"]     =       pref+"Gauss upwind";
+      div["div(phi,k)"]	=	pref+"Gauss upwind";
+      div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+      div["div(phi,omega)"]	=	pref+"Gauss upwind";
+      div["div(phi,nuTilda)"]=	pref+"Gauss upwind";
+    }
+
+  if (OFversion()>=230)
+  {
+    div["div(((rho*nuEff)*dev2(T(grad(U)))))"]="Gauss linear";
+  }
+  else if (OFversion()>=210)
+  {
+    div["div(((rho*nuEff)*dev2(T(grad(U)))))"]="Gauss linear";
+  }
+  else
+  {
+    div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
+  }
+
+  OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
+  laplacian["default"]="Gauss linear localLimited UBlendingFactor 1";
+
+  OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
+  interpolation["default"]="linear";
+//   interpolation["interpolate(U)"]="pointLinear";
+//   interpolation["interpolate(HbyA)"]="pointLinear";
+
+  OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
+  snGrad["default"]="localLimited UBlendingFactor 1";
+
+  OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
+  fluxRequired["default"]="no";
+  fluxRequired["p"]="";
+}
+
+ParameterSet rhoSimpleFoamNumerics::defaultParameters()
+{
+    return Parameters::makeDefault();
+}
+
+
+
+
 defineType(potentialFreeSurfaceFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(potentialFreeSurfaceFoamNumerics);
 

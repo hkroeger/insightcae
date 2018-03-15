@@ -1167,11 +1167,11 @@ void rhoSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   {
     OFDictData::dict fieldRelax, eqnRelax;
     fieldRelax["p"]=0.3;
-    fieldRelax["rho"]=0.1;
+    fieldRelax["rho"]=0.01;
     eqnRelax["U"]=0.7;
     eqnRelax["k"]=0.7;
-    eqnRelax["h"]=0.1;
-    eqnRelax["e"]=0.1;
+    eqnRelax["h"]=0.3;
+    eqnRelax["e"]=0.3;
     eqnRelax["R"]=0.7;
     eqnRelax["omega"]=0.7;
     eqnRelax["epsilon"]=0.7;

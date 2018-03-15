@@ -398,7 +398,7 @@ qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality r
 PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside meshing domain"
 features = array [
  dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature"
-]*1 "Mesh generation features"
+]*0 "Mesh generation features"
 
 doExplicitFeatureSnap = bool false "Disable/Enable snapping of explicit features (eMesh)"
 doImplicitFeatureSnap = bool true "Disable/Enable snapping to implicit features"

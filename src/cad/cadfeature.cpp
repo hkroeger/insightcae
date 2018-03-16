@@ -281,9 +281,13 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
     else if ( (ext==".igs") || (ext==".iges") )
     {
+        IGESControl_Controller::Init();
+        Interface_Static::SetIVal("read.surfacecurve.mode",3);
+
         IGESControl_Reader igesReader;
 
         igesReader = IGESControl_Reader();
+        igesReader.SetReadVisible( true );
         igesReader.ReadFile(filename.c_str());
         igesReader.TransferRoots();
 

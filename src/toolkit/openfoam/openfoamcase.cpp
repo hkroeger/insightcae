@@ -416,7 +416,7 @@ void SolverOutputAnalyzer::update(const string& line)
     boost::regex time_pattern("^Time = (.+)$");
     boost::regex solver_pattern("^(.+): +Solving for (.+), Initial residual = (.+), Final residual = (.+), No Iterations (.+)$");
     boost::regex cont_pattern("^time step continuity errors : sum local = (.+), global = (.+), cumulative = (.+)$");
-    boost::regex force_pattern("^forces (.+) (output|write):$");
+    boost::regex force_pattern("^(extendedForces|forces) (.+) (output|write):$");
     boost::regex sw_pattern("^ *[Ss]um of moments");
     
         if ( boost::regex_search( line, match, sw_pattern, boost::match_default ) && !curforcename_.empty() )
@@ -500,7 +500,7 @@ void SolverOutputAnalyzer::update(const string& line)
                 curforcename_="";
             }
             
-            curforcename_=match[1];
+            curforcename_=match[2];
             curforcesection_=1;
             curforcevalue_=arma::zeros(12);
         }

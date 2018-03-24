@@ -21,6 +21,10 @@
 
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+
+#include "BRepOffsetAPI_MakeFilling.hxx"
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -86,6 +90,7 @@ void BoundedFlatFace::build()
 {
     ShapeFix_Face FixShape;
 
+    TopTools_ListOfShape edgs;
     if
     (
         const std::vector<FeaturePtr>* edgesPtr
@@ -93,8 +98,6 @@ void BoundedFlatFace::build()
     )
     {
         const std::vector<FeaturePtr>& edges=*edgesPtr;
-
-        TopTools_ListOfShape edgs;
 
         int n_ok=0, n_nok=0;
         BOOST_FOREACH(const FeaturePtr& m, edges)
@@ -123,14 +126,6 @@ void BoundedFlatFace::build()
         if (n_nok>0)
             insight::Warning(str(format("Only %d out of %d given edges were valid!") % n_ok % (n_ok+n_nok)));
 
-        BRepBuilderAPI_MakeWire w;
-        w.Add(edgs);
-
-        BRepBuilderAPI_MakeFace fb(w.Wire(), true);
-        if (!fb.IsDone())
-            throw insight::Exception("Failed to generate planar face!");
-
-        FixShape.Init(fb.Face());
     }
     else if
     (
@@ -140,24 +135,34 @@ void BoundedFlatFace::build()
     {
         const std::vector<FeatureSetPtr>& edges=*edgesPtr;
 
-        TopTools_ListOfShape edgs;
         BOOST_FOREACH(const FeatureSetPtr& m, edges)
         {
             BOOST_FOREACH(const FeatureID& fi, m->data())
             {
-                edgs.Append(m->model()->edge(fi));
+                TopoDS_Edge e=m->model()->edge(fi);
+                edgs.Append(e);
             }
         }
-
-        BRepBuilderAPI_MakeWire w;
-        w.Add(edgs);
-
-        BRepBuilderAPI_MakeFace fb(w.Wire(), true);
-        if (!fb.IsDone())
-            throw insight::Exception("Failed to generate planar face!");
-
-        FixShape.Init(fb.Face());
     }
+
+    BRepBuilderAPI_MakeWire w;
+    w.Add(edgs);
+
+    BRepOffsetAPI_MakeFilling fsb;
+    for (TopExp_Explorer ex(w, TopAbs_EDGE); ex.More(); ex.Next())
+    {
+     fsb.Add(TopoDS::Edge(ex.Current()), GeomAbs_C0);
+    }
+ fsb.Build();
+ TopoDS_Face f=TopoDS::Face(fsb.Shape());
+
+
+
+    BRepBuilderAPI_MakeFace fb(BRep_Tool::Surface(f), w.Wire());
+    if (!fb.IsDone())
+        throw insight::Exception("Failed to generate planar face!");
+
+    FixShape.Init(fb.Face());
 
     FixShape.FixOrientation();
     FixShape.FixIntersectingWires();

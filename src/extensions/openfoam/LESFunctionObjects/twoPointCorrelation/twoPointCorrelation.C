@@ -111,7 +111,7 @@ Foam::twoPointCorrelation::twoPointCorrelation
       );
       
       if (
-#if defined(OFplus)
+#if defined(OFplus)||defined(OFdev)
 	propsDictHeader.typeHeaderOk<IOdictionary>()
 #else
 	propsDictHeader.headerOk()

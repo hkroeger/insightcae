@@ -110,14 +110,12 @@ vector cartesian_csys::localVectorToGlobal(const point&, const vector& v) const
 
 point cartesian_csys::globalPointToLocal(const point& p) const
 {
-#warning untested!
   vector r=p-orig_;
   return point(r&ex_, r&ey_, r&ez_);
 }
 
 vector cartesian_csys::globalVectorToLocal(const point& p, const vector& v) const
 {
-#warning untested!
   return vector(v&ex_, v&ey_, v&ez_);
 }
 
@@ -198,20 +196,12 @@ tensor cylindrical_csys::localDirections(const point& p) const
 }
 
 vector cylindrical_csys::localVectorToGlobal(const point& p, const vector& v) const
-{/*
-  vector r=p-orig_;
-  r-=(r&ez_)*ez_;
-  double phi=atan2(r&e3_, r&er_);
-  vector erp=cos(phi)*er_ + sin(phi)*e3_;
-  vector etp=ez_^erp;
-  return v.x()*erp + v.y()*etp + v.z()*ez_;
-  */
+{
   return localDirections(p)&v;
 }
 
 point cylindrical_csys::globalPointToLocal(const point& p) const
 {
-#warning untested!
   vector r=p-orig_;
   scalar z=r&ez_;
   r-=ez_*z;
@@ -220,14 +210,6 @@ point cylindrical_csys::globalPointToLocal(const point& p) const
 
 vector cylindrical_csys::globalVectorToLocal(const point& p, const vector& v) const
 {
-#warning untested!
-  /*vector r=p-orig_;
-  r-=(r&ez_)*ez_;
-  double phi=atan2(r&e3_, r&er_);
-  vector erp=cos(phi)*er_ + sin(phi)*e3_;
-  vector etp=ez_^erp;
-  return vector(v&erp, v&etp, v&ez_);
-  */
   return localDirections(p).T()&v;
 }
 

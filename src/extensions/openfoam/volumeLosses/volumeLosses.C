@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     {
         runTime.setTime(timeDirs[timeI], timeI);
         Info<< "Time = " << runTime.timeName() << endl;
-        fvMesh::readUpdateState state = mesh.readUpdate();
+        /*fvMesh::readUpdateState state = */ mesh.readUpdate();
 
 	IOobject Uheader
 	(

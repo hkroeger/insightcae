@@ -9,7 +9,9 @@ include(OpenFOAMfuncs)
 FIND_FILE(OFdev_BASHRC NAMES etc/bashrc
   HINTS
   $ENV{HOME}/OpenFOAM/OpenFOAM-dev
+  $ENV{HOME}/OpenFOAM/OpenFOAM-5.x-version-5.0
   /opt/OpenFOAM/OpenFOAM-dev
+  /opt/openfoam5
 )
 
 message(STATUS "Found OpenFOAM-dev installation: " ${OFdev_BASHRC})

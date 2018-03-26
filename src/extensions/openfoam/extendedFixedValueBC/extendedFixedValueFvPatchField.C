@@ -74,7 +74,13 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
       //       by re-setting of fvatchfield::updated_ flag. This is
       //       so if first use is in the next time step it retriggers
       //       a new update.
-      this->evaluate(Pstream::blocking);
+      this->evaluate(
+            #if defined(OFdev)
+                      Pstream::commsTypes::blocking
+            #else
+                      Pstream::blocking
+            #endif
+                      );
   }
 }
 

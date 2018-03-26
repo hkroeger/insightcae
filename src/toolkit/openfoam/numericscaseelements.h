@@ -496,6 +496,10 @@ inherits FVNumerics::Parameters
 
 implicitPressureCorrection = bool false "Whether to switch to implicit pressure correction"
 nOuterCorrectors = int 50 "Number of outer correctors"
+alphaSubCycles = int 4 "Number of alpha integration subcycles"
+
+maxCo = double 5 "Maximum courant number"
+maxAlphaCo = double 3 "Maximum courant number at interface"
 
 <<<PARAMETERSET
 */

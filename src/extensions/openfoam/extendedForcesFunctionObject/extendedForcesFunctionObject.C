@@ -30,6 +30,8 @@
 #include "wallFvPatch.H"
 #include "addToRunTimeSelectionTable.H"
 
+#include "uniof.h"
+
 namespace Foam
 {
 
@@ -75,17 +77,26 @@ void extendedForces::createFields()
   );
 }
 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
 extendedForces::extendedForces
 (
     const word& name,
     const Time& time,
-    const dictionary& dict,
+    const dictionary& dict
+#ifndef OFdev
+    ,
     const bool readFields
+    #endif
 )
-: functionObjects::forces(name, time, dict, readFields),
+: functionObjects::forces
+  (
+    name, time, dict
+#ifndef OFdev
+    , readFields
+#endif
+  ),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
@@ -99,25 +110,24 @@ extendedForces::extendedForces
     const word& name,
     const objectRegistry& obr,
     const dictionary& dict
-#ifndef OFplus
+    #if not (defined(OFplus)||defined(OFdev))
     ,
     const bool loadFromFiles
-#endif
-#ifndef OF16ext
+    #endif
+    #if not (defined(OF16ext)||defined(OFdev))
     ,
     const bool readFields
-#endif
+    #endif
 )
 :
-
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
  functionObjects::
 #endif
  forces(name, obr, dict
-#ifndef OFplus
+#if not (defined(OFplus)||defined(OFdev))
       , loadFromFiles
 #endif
-#ifndef OF16ext
+#if not (defined(OF16ext)||defined(OFdev))
 	  , readFields
 #endif
 	),
@@ -126,7 +136,7 @@ extendedForces::extendedForces
   createFields();
 }
 
-#if !(defined(OF16ext)||defined(OFplus))
+#if !(defined(OF16ext)||defined(OFplus)||defined(OFdev))
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -152,7 +162,7 @@ extendedForces::~extendedForces()
 {
 }
 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
 bool
 #else
 void 
@@ -167,7 +177,7 @@ extendedForces::execute()
   initialise();
 #endif
   
-#ifndef OFplus
+#if not (defined(OFplus)||defined(OFdev))
   if (!active_)
   {
       return;
@@ -216,8 +226,8 @@ extendedForces::execute()
         const symmTensorField& devRhoReffb
             = tdevRhoReff().boundaryField()[patchI];
 
-        pressureForce_->boundaryField()[patchI]
-#ifdef OFplus
+        UNIOF_BOUNDARY_NONCONST(*pressureForce_)[patchI]
+#if (defined(OFplus)||defined(OFdev))
         =
 #else
         ==
@@ -226,8 +236,8 @@ extendedForces::execute()
             rho(p)*nfb*(p.boundaryField()[patchI] - pRef)
         );
 
-        viscousForce_->boundaryField()[patchI]
-#ifdef OFplus
+        UNIOF_BOUNDARY_NONCONST(*viscousForce_)[patchI]
+#if (defined(OFplus)||defined(OFdev))
         =
 #else
         ==
@@ -281,29 +291,29 @@ extendedForces::execute()
 
   }
   
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
   return true;
 #endif
 }
 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
 bool
 #else
 void 
 #endif 
 extendedForces::end()
 {
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
   return
 #endif    
   Foam::
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
   functionObjects::
 #endif    
   forces::end();
 }
 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
 bool
 #else
 void 
@@ -314,7 +324,7 @@ extendedForces::write()
 
   forces::write();
   
-#ifndef OFplus
+#if not (defined(OFplus)||defined(OFdev))
   if (!active_)
   {
       return;
@@ -350,7 +360,7 @@ extendedForces::write()
             mkDir(outdir);
 
             // Open new file at start up
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
             maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
             maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
 #else
@@ -360,7 +370,7 @@ extendedForces::write()
     }
     
     if (Pstream::master()) {
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
             << tab << pr_force_
@@ -381,24 +391,24 @@ extendedForces::write()
         }
     maskedForceFile2_()  << endl;
 #else
-    maskedForceFile_() << obr_.time().value() << tab << setw(1) << '('
-        << (pr_force_) << setw(1) << ' '
-        << (vi_force_) << setw(1) << ' '
-        << (po_force_) << setw(3) << ") ("
-        << (pr_moment_) << setw(1) << ' '
-        << (vi_moment_) << setw(1) << ' '
-        << (po_moment_) << setw(1) << ')'
+    maskedForceFile_() << obr_.time().value() << tab << '('
+        << (pr_force_) << ' '
+        << (vi_force_) << ' '
+        << (po_force_) << ") ("
+        << (pr_moment_) << ' '
+        << (vi_moment_) << ' '
+        << (po_moment_) << ')'
         << endl;
 #endif
    }
   }
   
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
   return true;
 #endif
 }
 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
 
 defineTypeNameAndDebug(extendedForces, 0);
 addToRunTimeSelectionTable

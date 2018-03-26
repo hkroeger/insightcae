@@ -23,6 +23,8 @@
 #include "transformField.H"
 #include "transformGeometricField.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -46,47 +48,17 @@ int main(int argc, char *argv[])
     
 #   include "createMesh.H"
     
-    word from_name(
-#if defined(OFdev)||defined(OFplus)
-      args[1]
-#else
-      args.additionalArgs()[0]
-#endif
-    );
-    word to_name(
-#if defined(OFdev)||defined(OFplus)
-      args[3]
-#else
-      args.additionalArgs()[2]
-#endif
-    );
+    word from_name( UNIOF_ADDARG(args,0) );
+    word to_name( UNIOF_ADDARG(args,2) );
 
-    IStringStream from_dim_args(
-#if defined(OFdev)||defined(OFplus)
-      (args[2])
-#else
-      args.additionalArgs()[1]
-#endif
-    );
+    IStringStream from_dim_args( UNIOF_ADDARG(args,1) );
     dimensionSet from_dim(from_dim_args);
 
     dimensionedScalar p0("p0", dimPressure, 1e5);
-    p0.value()=readScalar(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args[4]
-#else
-      args.additionalArgs()[3]
-#endif
-    )());
+    p0.value()=readScalar(IStringStream( UNIOF_ADDARG(args,3) )());
     
     dimensionedScalar rho("rho", dimDensity, 1);
-    rho.value()=readScalar(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args[5]
-#else
-      args.additionalArgs()[4]
-#endif
-    )());
+    rho.value()=readScalar(IStringStream( UNIOF_ADDARG(args,4) )());
     
     dimensionedScalar pclip("pclip", dimPressure, -GREAT);
     if (args.optionFound("pclip"))
@@ -150,13 +122,7 @@ int main(int argc, char *argv[])
 
       forAll(to_p().boundaryField(), pI)
       {
-	  to_p()
-#ifdef OFdev
-	  .boundaryFieldRef()
-#else
-	  .boundaryField()
-#endif
-	  [pI]=max(to_p().boundaryField()[pI], pclip.value());
+          UNIOF_BOUNDARY_NONCONST(to_p())[pI] = max(to_p().boundaryField()[pI], pclip.value());
       }
     }
     else

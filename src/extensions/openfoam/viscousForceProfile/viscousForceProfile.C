@@ -28,6 +28,8 @@
 #include "Tuple2.H"
 #include "token.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -123,13 +125,7 @@ int main(int argc, char *argv[])
 #   include "setRootCase.H"
 #   include "createTime.H"
     
-    vector axis(IStringStream(
-#if defined(OFplus)||defined(OFdev)
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    vector axis(IStringStream( UNIOF_ADDARG(args,0) )());
     axis/=mag(axis);
         
     label n=2;
@@ -174,22 +170,14 @@ int main(int argc, char *argv[])
 	    IOobject::NO_WRITE
 	);
 	
-#if defined(OFplus)
-        if (vfheader.typeHeaderOk<volVectorField>())
-#else
-        if (vfheader.headerOk())
-#endif
+	if (UNIOF_HEADEROK(vfheader,volVectorField) )
 	{
 	  volVectorField vf(vfheader, mesh);
 	  
 	  writeProfile(makeFile(runTime, "viscousForce"), x0, x1, n, sampleProfile(axis, x0, x1, n, vf)());
 	}
 
-#if defined(OFplus)
-        if (vfmeanheader.typeHeaderOk<volVectorField>())
-#else
-        if (vfmeanheader.headerOk())
-#endif
+	if (UNIOF_HEADEROK(vfmeanheader,volVectorField) )
 	{
 	  volVectorField vf(vfmeanheader, mesh);
 	  

@@ -12,4 +12,9 @@ set(OF_LIBS
 set(INCLUDE_DIRS 
 )
 
-setup_exe_target_OF(setProfile "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "toolkit" "")
+set(LIBS
+    toolkit
+    uniof
+)
+
+setup_exe_target_OF(setProfile "${SRC}" "${OF_INCLUDE_DIRS}" "${OF_LIBS}" "${INCLUDE_DIRS}" "${LIBS}" "")

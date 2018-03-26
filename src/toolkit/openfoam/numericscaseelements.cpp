@@ -1579,8 +1579,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["maxAlphaCo"]=3; //0.2;
   if (p_.implicitPressureCorrection)
   {
-    controlDict["maxCo"]=10;
-    controlDict["maxAlphaCo"]=5;
+    controlDict["maxCo"]=p_.maxCo;
+    controlDict["maxAlphaCo"]=p_.maxAlphaCo;
   }
 
   OFDictData::list fol;
@@ -1619,13 +1619,18 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["epsilonFinal"]=smoothSolverSetup(1e-10, 0);
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
-  solvers["\"alpha.*\""]=stdMULESSolverSetup();
-  
+  {
+   OFDictData::dict asd=stdMULESSolverSetup();  
+   asd["nAlphaSubCycles"]=p_.alphaSubCycles;
+   solvers["\"alpha.*\""]=asd;
+  }
+
   double Urelax=1.0 /*0.7*/, prelax=1.0, turbrelax=1.0 /*0.95*/;
   if (p_.implicitPressureCorrection)
   {
     prelax=0.3;
     turbrelax=0.9;
+    Urelax=0.7;
   }
   
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -1650,7 +1655,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   if (OFversion()>=210) solutionScheme="PIMPLE";
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["nAlphaCorr"]=1;
-  SOL["nAlphaSubCycles"]=4;
+  SOL["nAlphaSubCycles"]=p_.alphaSubCycles;
   SOL["cAlpha"]=cAlpha;
   
   SOL["momentumPredictor"]=false; //true;

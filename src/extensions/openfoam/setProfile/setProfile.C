@@ -27,6 +27,8 @@
 #include "Tuple2.H"
 #include "interpolationTable.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -74,39 +76,15 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    word fieldname(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    );
+    word fieldname( UNIOF_ADDARG(args, 0) );
     
-    point p0(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(2)
-#else
-      args.additionalArgs()[1]
-#endif
-    )());
+    point p0(IStringStream( UNIOF_ADDARG(args, 1))());
     
-    vector ey(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(3)
-#else
-      args.additionalArgs()[2]
-#endif
-    )());
+    vector ey(IStringStream( UNIOF_ADDARG(args, 2) )());
     
     ey/=mag(ey);
     
-    vector ex(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(4)
-#else
-      args.additionalArgs()[3]
-#endif
-    )());
+    vector ex(IStringStream( UNIOF_ADDARG(args, 3) )());
     
     ex/=mag(ex);
     
@@ -118,52 +96,25 @@ int main(int argc, char *argv[])
 	    IOobject::MUST_READ,
 	    IOobject::AUTO_WRITE
 	);
-#if not defined(OFplus)
-    if (!header.headerOk())
-    {
-        FatalErrorIn("main")
-         << "Could not find field "<<fieldname<<"!"
-         <<abort(FatalError);
-    }
-#endif
 
-#ifdef OFplus
-    if (header.typeHeaderOk<volScalarField>())
-#else
-    if (header.headerClassName() == volScalarField::typeName)
-#endif
+
+    if (UNIOF_HEADEROK(header, volScalarField))
     {
         volScalarField field(header, mesh);
-        setProfileLinear<scalar>(field, p0, ey, ex, IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(5)
-#else
-      args.additionalArgs()[4]
-#endif
-	)());    
+        setProfileLinear<scalar>(field, p0, ey, ex, IStringStream( UNIOF_ADDARG(args, 4) )());
         field.write();
     }
     else 
-#ifdef OFplus
-      if (header.typeHeaderOk<volVectorField>())
-#else
-      if (header.headerClassName() == volVectorField::typeName)
-#endif
+    if (UNIOF_HEADEROK(header, volVectorField))
     {
         volVectorField field(header, mesh);
-        setProfileLinear<vector>(field, p0, ey, ex, IStringStream(
-#if defined(OFdev)||defined(OFplus)
-	  args.arg(5)
-#else	  
-	  args.additionalArgs()[4]
-#endif
-	)());    
+        setProfileLinear<vector>(field, p0, ey, ex, IStringStream( UNIOF_ADDARG(args, 4) )());
         field.write();
     }
     else
     {
         FatalErrorIn("main")
-         << "Unsupported field type "<<header.headerClassName()<<"!"
+         << "Could not find field "<<fieldname<<" of type scalar or vector!"
          <<abort(FatalError);
     }
     

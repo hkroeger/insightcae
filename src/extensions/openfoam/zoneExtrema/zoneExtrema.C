@@ -28,6 +28,8 @@
 #include "Tuple2.H"
 #include "token.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -48,21 +50,9 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 //#   include "createFvOptions.H"
     
-    word fieldName(IStringStream(
-#if defined(OFplus)||defined(OFdev)
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    word fieldName(IStringStream( UNIOF_ADDARG(args,0) )());
     
-    word cellZoneName(IStringStream(
-#if defined(OFplus)||defined(OFdev)
-      args.arg(2)
-#else
-      args.additionalArgs()[1]
-#endif
-    )());
+    word cellZoneName(IStringStream( UNIOF_ADDARG(args,1) )());
     
 
     forAll(timeDirs, timeI)
@@ -93,11 +83,11 @@ int main(int argc, char *argv[])
 // 	  FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);	
 // 	Info<<fieldheader.headerClassName()<<endl;
 
-#if not defined(OFplus)	
+#if not (defined(OFplus)||defined(OFdev))
 	if (!fieldheader.headerOk())
 #endif
 	  
-#if defined (OFplus)
+#if (defined(OFplus)||defined(OFdev))
 	  if (fieldheader.typeHeaderOk<volVectorField>())
 #else
 	  if (fieldheader.headerClassName()=="volVectorField")

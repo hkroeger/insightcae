@@ -35,6 +35,8 @@
 #include <vector>
 #include "boost/lexical_cast.hpp"
 
+#include "uniof.h"
+
 using namespace std;
 using namespace boost;
 
@@ -50,6 +52,8 @@ label reduced(label l)
   
 autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(const polyPatch& patch)
 {
+  autoPtr<PrimitivePatch<face, List, pointField> > result;
+
   const polyMesh& mesh=patch.boundaryMesh().mesh();
   
   IOobject addrHeader
@@ -60,11 +64,7 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
       IOobject::MUST_READ
   );
   
-#ifdef OFplus
-  if (addrHeader.typeHeaderOk<labelIOList>())
-#else
-  if (addrHeader.headerOk())
-#endif
+  if (UNIOF_HEADEROK(addrHeader, labelIOList))
   {
     // There is a pointProcAddressing file so use it to get labels
     // on the original mesh
@@ -123,19 +123,20 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
 	  allfaces, accessOp<faceList>()
 	);
     
-    return autoPtr<PrimitivePatch<face, List, pointField> >
+    result.reset
     (
       new PrimitivePatch<face, List, pointField>(globalFaces, globalPoints)
     );
   }
   else
   {
-    return autoPtr<PrimitivePatch<face, List, pointField> >
+    result.reset
     (
       new PrimitivePatch<face, List, pointField>(patch.localFaces(), patch.localPoints())
     );
   }
   
+  return result;
 }
 
   

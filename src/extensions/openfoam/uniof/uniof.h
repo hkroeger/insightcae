@@ -42,10 +42,10 @@
 #define UNIOF_WALLDIST_Y(wd) (wd)
 #endif
 
-#if defined(OFplus)
+#if (defined(OFplus)||defined(OFdev))
 #define UNIOF_HEADEROK(ioo,typ) (ioo).typeHeaderOk<typ>()
 #else
-#define UNIOF_HEADEROK(ioo,typ) (ioo).headerOk()
+#define UNIOF_HEADEROK(ioo,typ) ( ((ioo).headerOk()) && ((ioo).headerClassName() == typ::typeName) )
 #endif
 
 #if (defined(OF301) || defined(OFplus)||defined(OFdev))

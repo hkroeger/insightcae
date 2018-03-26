@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 	      IOobject::NO_WRITE
 	  );
 	  
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 	  if (fieldHeader.headerOk())
 #endif
 	  {
@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
 	      extractProfiles<scalar>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else 
 	      
-#if defined(OFplus)
+#if (defined(OFplus)||defined(OFdev))
 	    if (fieldHeader.typeHeaderOk<volVectorField>())
 #else
 	    if (fieldHeader.headerClassName()=="volVectorField")
@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 	      extractProfiles<vector>(mesh, fieldHeader, p0, axis, n, sampleWalls, sampleInterior, samplePatches);
 	    else 
 	      
-#if defined(OFplus)
+#if (defined(OFplus)||defined(OFdev))
 	    if (fieldHeader.typeHeaderOk<volSymmTensorField>())
 #else	      
 	    if (fieldHeader.headerClassName()=="volSymmTensorField")
@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
 	       << "Unhandled field "<<fieldHeader.name()<<" of type "<<fieldHeader.headerClassName()<<endl<<abort(FatalError);
 	       
 	  }
-#if not defined(OFplus)
+#if not (defined(OFplus)||defined(OFdev))
 	  else
 	  {
 	    FatalErrorIn("main")

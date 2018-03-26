@@ -72,9 +72,7 @@ struct writerCircle_HatchLoop
   
   virtual int nsegments() const { return 1; }
   virtual void alignStartWith(const gp_Pnt& p) {};
-#warning garbage!
   virtual gp_Pnt& start() { return p; }
-#warning garbage!
   virtual gp_Pnt& end() { return p; }
 };
 

@@ -28,7 +28,7 @@ namespace Foam
   
 class extendedForces
 : public 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
  functionObjects::
 #endif
  forces
@@ -56,13 +56,16 @@ public:
 
         //- Construct for given objectRegistry and dictionary.
         //  Allow the possibility to load fields from files
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
         extendedForces
         (
             const word& name,
             const Time&,
-            const dictionary&,
+            const dictionary&
+    #ifndef OFdev
+            ,
             const bool readFields = true
+    #endif
         );
 #endif
         
@@ -71,17 +74,17 @@ public:
             const word& name,
             const objectRegistry&,
             const dictionary&
-#ifndef OFplus
+#if not (defined(OFplus)||defined(OFdev))
             ,
             const bool loadFromFiles = false
 #endif
-#ifndef OF16ext
+#if not (defined(OF16ext)||defined(OFdev))
             ,
             const bool readFields = true
 #endif
         );
 
-#if !(defined(OF16ext)||defined(OFplus))
+#if !(defined(OF16ext)||defined(OFplus)||defined(OFdev))
         //- Construct from components
         extendedForces
         (
@@ -101,7 +104,7 @@ public:
     virtual ~extendedForces();  
 
     virtual 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     bool
 #else
     void 
@@ -109,7 +112,7 @@ public:
     execute();
     
     virtual 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     bool
 #else
     void 
@@ -117,7 +120,7 @@ public:
     end();
 
     virtual 
-#ifdef OFplus
+#if (defined(OFplus)||defined(OFdev))
     bool
 #else
     void 

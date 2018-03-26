@@ -241,7 +241,9 @@ void mapLagrangian(const meshToMesh& meshToMeshInterp)
                         );
                         passiveParticle& newP = newPtr();
 
-			scalar fraction = 0;
+#ifdef OF16ext
+                        scalar fraction = 0;
+#endif
                         label faceI = newP.track(iter().position(), 
 #ifdef OF16ext
 						 fraction

@@ -299,28 +299,33 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
     }
     else if ( (ext==".stp") || (ext==".step") )
     {
+        // import STEP
         STEPControl_Reader reader;
-        reader = STEPControl_Reader();
         reader.ReadFile(filename.c_str());
         reader.TransferRoots();
+
         TopoDS_Shape res=reader.OneShape();
         
+        // set shape
         setShape(res);
+
+        // now detect named features
+        //
 
         typedef std::map<std::string, FeatureSetPtr> Feats;
         Feats feats;
 
-        //Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-roots");
         Handle_TColStd_HSequenceOfTransient shapeList = reader.GiveList("xst-model-all");
         reader.TransferList(shapeList);
 
 
+        const Handle_XSControl_WorkSession & theSession = reader.WS();
+        const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
+        const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
+
         for(int i=1; i <= shapeList->Length(); i++)
         {
             Handle_Standard_Transient transient = shapeList->Value(i);
-            const Handle_XSControl_WorkSession & theSession = reader.WS();
-            const Handle_XSControl_TransferReader & aReader = theSession->TransferReader();
-            const Handle_Transfer_TransientProcess & tp = aReader->TransientProcess();
             TopoDS_Shape shape = TransferBRep::ShapeResult(tp, transient);
             if(!shape.IsNull())
             {
@@ -328,13 +333,11 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
                 if(!anEntity.IsNull())
                 {
                     Handle_StepRepr_RepresentationItem entity = Handle_StepRepr_RepresentationItem::DownCast(anEntity);
-
                     if(!entity.IsNull())
                     {
-                        if (!entity->Name()->IsEmpty())
+                        if (!entity->Name()->IsEmpty())  // found named entity
                         {
                             std::string n(entity->Name()->ToCString());
-                            std::cout<<"\""<<n<<"\""<<std::endl;
                             if (shape.ShapeType()==TopAbs_FACE)
                             {
                                 std::vector<FeatureID> ids;
@@ -344,13 +347,12 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
                                     if (f.IsPartner(shape))
                                     {
                                         ids.push_back(faceID(f));
-                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
-
+//                                        std::cout<<"MATCH! face id="<<(ids.back())<<std::endl;
                                     }
                                 }
                                 if (ids.size()==0)
                                 {
-                                    throw insight::Exception("could not identify named face in model! ("+n+")");
+                                    insight::Warning("could not identify named face in model! (face named \""+n+"\")");
                                 }
                                 else
                                 {
@@ -372,13 +374,12 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
                                     if (f.IsPartner(shape))
                                     {
                                         ids.push_back(solidID(f));
-                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
-
+//                                        std::cout<<"MATCH! solid id="<<ids.back()<<std::endl;
                                     }
                                 }
                                 if (ids.size()==0)
                                 {
-                                    throw insight::Exception("could not identify named solid in model! ("+n+")");
+                                    insight::Warning("could not identify named solid in model! (solid named \""+n+"\")");
                                 }
                                 else
                                 {

@@ -4,6 +4,7 @@ project(genericmodules)
 
 set(genericmodules_SOURCES 
   numericalwindtunnel.cpp
+  internalpressureloss.cpp
   filetemplate.cpp 
   convergenceanalysis.cpp
 )

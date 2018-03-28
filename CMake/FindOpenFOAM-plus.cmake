@@ -2,6 +2,8 @@
 # Once done this will define
 #
 # OFplus_FOUND          - system has OpenFOAM-plus installed
+#
+# Note: OFplus is currently compatible with ESI OpenFOAM 1612
 
 include(OpenFOAMfuncs)
 

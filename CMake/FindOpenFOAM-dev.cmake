@@ -2,6 +2,8 @@
 # Once done this will define
 #
 # OFdev_FOUND          - system has OpenFOAM-dev installed
+#
+# Note: OFdev is currently compatible with cfd.direct OpenFOAM 5.x
 
 include(OpenFOAMfuncs)
 

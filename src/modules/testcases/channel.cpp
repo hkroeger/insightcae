@@ -105,6 +105,9 @@ std::string ChannelBase::cyclPrefix() const
   return namePrefix;
 }
 
+
+
+
 void ChannelBase::calcDerivedInputData()
 {
   Parameters p(parameters_);
@@ -216,6 +219,9 @@ void ChannelBase::calcDerivedInputData()
   cout<<"# grading vertical \tgradh="<<gradh_<<endl;
   cout<<"============================================="<<endl;
 }
+
+
+
 
 void ChannelBase::createMesh
 (
@@ -355,6 +361,8 @@ void ChannelBase::createMesh
 }
 
 
+
+
 void ChannelBase::createCase
 (
   OpenFOAMCase& cm
@@ -480,8 +488,10 @@ void ChannelBase::createCase
   cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters().set_roughness_z0(p.operation.y0));
   
   insertTurbulenceModel(cm, parameters().get<SelectableSubsetParameter>("fluid/turbulenceModel"));
-
 }
+
+
+
 
 void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
 {
@@ -498,6 +508,9 @@ void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts
 //   OFDictData::dictFile& controlDict=dicts->addDictionaryIfNonexistent("system/controlDict");
 //   controlDict["maxDeltaT"]=0.5*T_;
 }
+
+
+
 
 void ChannelBase::evaluateAtSection(
   OpenFOAMCase& cm, 
@@ -878,18 +891,18 @@ void ChannelBase::evaluateAtSection(
     
     std::vector<PlotCurve> plotcurves =
       list_of
-       (PlotCurve(axial, 		"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
+       (PlotCurve(axial, 	"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
        (PlotCurve(wallnormal, 	"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
        (PlotCurve(spanwise, 	"Rww", "w l lt 1 lc 3 lw 2 t '$R_{ww}^+$'"))
-       (PlotCurve(cross, 		"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
+       (PlotCurve(cross, 	"Ruv", "w l lt 1 lc 4 lw 2 t '$R_{uv}^+$'"))
        ;
        
     if (includeAllComponentsInCharts)
     {
       std::vector<PlotCurve> pc =
       list_of
-        (PlotCurve(join_rows(yplus, Rxz), 		"Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"))
-        (PlotCurve(join_rows(yplus, Ryz), 		"Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'"))
+        (PlotCurve(join_rows(yplus, Rxz), "Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"))
+        (PlotCurve(join_rows(yplus, Ryz), "Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'"))
         ;
       plotcurves.insert(plotcurves.end(), pc.begin(), pc.end());
     }
@@ -937,29 +950,35 @@ void ChannelBase::evaluateAtSection(
     
     int ck=cd["k"].col;
     
-    arma::mat K= 0.5*( Rxx + Ryy + Rzz );
+    std::vector<PlotCurve> kplots = list_of
+     (PlotCurve( refdata_K, 	"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
+     (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
+     (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
+    ;
+
+    arma::mat kres= 0.5*( Rxx + Ryy + Rzz ) / pow(utau_, 2);
+    {
+      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), kres));
+
+      kplots.push_back(PlotCurve( Kp, 	"TKEresolved", "w l lt 1 dt 1 lc 2 t 'TKE (resolved)'" ));
+      Kp.save( (executionPath()/("Kpresolved_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
+    }
+
     if (cd.find("k")!=cd.end())
     {
-      K+=data.col(ck);
+      arma::mat K=kres + data.col(ck)/pow(utau_, 2);
+      arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
+
+      kplots.push_back(PlotCurve( Kp, 	"TKE", "w l lt -1 lw 2 t 'TKE'" ));
+      Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
     }
-    else
-      cout<<"not adding k"<<endl;
 	  
-    K /= pow(utau_, 2); // K => K+
-    
-    arma::mat Kp(join_rows( (1.-data.col(0)/(0.5*H)), K));
-    Kp.save( (executionPath()/("Kp_vs_ydelta_"+title+".txt")).c_str(), arma::raw_ascii);
     
     addPlot
     (
       section, executionPath(), chart_name,
       "$y_{\\delta}$", "$\\langle k^+ \\rangle$",
-      list_of
-       (PlotCurve( Kp, 			"TKE", "w l lt -1 t 'TKE'" ))
-       (PlotCurve( refdata_K, 		"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
-       (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
-       (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))
-       ,
+      kplots,
      "Wall normal profiles of averaged turbulent kinetic energy ($1/2 R_{ii} + k_{model}$) at x/H=" + str(format("%g")%xByH)
     )
     .setOrder(so.next());

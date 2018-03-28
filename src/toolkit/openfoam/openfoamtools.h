@@ -569,6 +569,9 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
   virtual ~PVScene();
   
   virtual std::string pythonCommands() const =0;
+  virtual std::vector<boost::filesystem::path> createdFiles() const;
+
+  static std::string pvec(const arma::mat& v);
 };
 
 typedef boost::shared_ptr<PVScene> PVScenePtr;
@@ -594,7 +597,7 @@ protected:
   Parameters p_;
 
 public:
-  declareType("custom");
+  declareType("CustomPVScene");
   
   CustomPVScene(const ParameterSet&);
   
@@ -607,14 +610,14 @@ public:
 
 
 
-class CutplanePVScene
+class Cutplane
 : public PVScene
 {
   
 public:
-#include "openfoamtools__CutplanePVScene__Parameters.h"
+#include "openfoamtools__Cutplane__Parameters.h"
 /*
-PARAMETERSET>>> CutplanePVScene Parameters
+PARAMETERSET>>> Cutplane Parameters
 
 inherits insight::paraview::PVScene::Parameters
 
@@ -623,9 +626,6 @@ field = string "" "name of the field to display on the plane"
 
 p0 = vector (0 0 0) "center point of the cut plane"
 normal = vector (0 0 1) "normal vector of the cut plane"
-camera = vector (0 0 1) "location of the view camera (looking on p0)"
-up = vector (0 1 0) "upward direction of the view"
-size = double 1.0 "size of the viewport (in the same units as the data set)"
 
 <<<PARAMETERSET
 */
@@ -633,12 +633,51 @@ protected:
   Parameters p_;
   
 public:
-  declareType("cutplane");
+  declareType("Cutplane");
   
-  CutplanePVScene(const ParameterSet&);
+  Cutplane(const ParameterSet&);
   
   virtual std::string pythonCommands() const;
   
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+  virtual ParameterSet getParameters() const { return p_; }
+};
+
+
+
+
+
+
+
+class IsoView
+: public PVScene
+{
+
+public:
+#include "openfoamtools__IsoView__Parameters.h"
+/*
+PARAMETERSET>>> IsoView Parameters
+
+inherits insight::paraview::PVScene::Parameters
+
+bbmin = vector (-1 -1 -1) "minimum point of bounding box"
+bbmax = vector (1 1 1) "maximum point of bounding box"
+
+filename = path "isoview.png" "Output filename. Different views will be stored at <file path>/<filename stem>_<view>.<file extension>."
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  declareType("IsoView");
+
+  IsoView(const ParameterSet&);
+
+  virtual std::string pythonCommands() const;
+  virtual std::vector<boost::filesystem::path> createdFiles() const;
+
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
 };
@@ -655,7 +694,7 @@ public:
 PARAMETERSET>>> ParaviewVisualization Parameters
 
 scenes = array [
- dynamicclassconfig "paraview::PVScene" default "custom" "Scene configuration"
+ dynamicclassconfig "paraview::PVScene" default "IsoView" "Scene configuration"
  ] *0 "Configuration of scenes"
 
 <<<PARAMETERSET
@@ -678,12 +717,48 @@ scenes = array [
 
 
 
-
-arma::mat patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+class patchIntegrate
+{
+public:
+  patchIntegrate(const OpenFOAMCase& cm, const boost::filesystem::path& location,
 		    const std::string& fieldName, const std::string& patchName,
 		    const std::vector<std::string>& addopts=boost::assign::list_of<std::string>("-latestTime")
-			);
+		);
 
+  /**
+   * @brief t_
+   * time/iteration values for subsequent arrays
+   */
+  arma::mat t_;
+
+  /**
+   * @brief A_vs_t_
+   * area for different times/iterations
+   */
+  arma::mat A_;
+
+  /**
+   * @brief int_vs_t_
+   * integral values for different times/iterations
+   */
+  arma::mat integral_values_;
+
+  size_t n() const;
+};
+
+
+
+
+class patchArea
+{
+public:
+  patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& location,
+            const std::string& patchName);
+
+  double A_;
+  arma::mat n_;
+  arma::mat ctr_;
+};
 
 arma::mat readParaviewCSV(const boost::filesystem::path& file, std::map<std::string, int>* headers);
 std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetemplate, std::map<std::string, int>* headers);

@@ -41,7 +41,7 @@ InternalPressureLoss::InternalPressureLoss(const ParameterSet& ps, const boost::
     "Determination of internal pressure loss by CFD a simulation",
     ps, exepath
   )
-    // default values for derived parameters
+  // default values for derived parameters
 {}
 
 ParameterSet InternalPressureLoss::defaultParameters()
@@ -51,17 +51,65 @@ ParameterSet InternalPressureLoss::defaultParameters()
     return p;
 }
 
+
+#define extendBB(bb, bb2) \
+  for (int i=0; i<3; i++) { \
+   bb(i,0)=std::min(bb(i,0), bb2(i,0)); \
+   bb(i,1)=std::max(bb(i,1), bb2(i,1)); \
+  }
+
+
 void InternalPressureLoss::calcDerivedInputData()
 {
     insight::OpenFOAMAnalysis::calcDerivedInputData();
     Parameters p(parameters_);
     //reportIntermediateParameter("L", L_, "total domain length", "m");
-    
-    using namespace insight::cad;
-    FeaturePtr cadmodel = Feature::CreateFromFile(p.geometry.cadmodel);
-//     cadmodel->build();
 
-    bb_=cadmodel->modelBndBox();
+    inletstlfile_=executionPath()/"constant"/"triSurface"/"inlet.stlb";
+    outletstlfile_=executionPath()/"constant"/"triSurface"/"outlet.stlb";
+    wallstlfile_=executionPath()/"constant"/"triSurface"/"walls.stlb";
+
+    // Analyze geometry
+    // Find:
+    // * Domain BB
+    // * Inlet hydraulic diam.
+    
+    if ( const Parameters::geometry_STEP_type* geom_cad = boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
+      {
+        using namespace insight::cad;
+
+        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel);
+        bb_=cadmodel->modelBndBox();
+
+        if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
+             boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
+          {
+            {
+              FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model);
+              arma::mat bb = inletmodel->modelBndBox();
+              extendBB(bb_, bb);
+            }
+
+            {
+              FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model);
+              arma::mat bb = outletmodel->modelBndBox();
+              extendBB(bb_, bb);
+            }
+          }
+      }
+    else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
+      {
+        bb_ = STLBndBox(OFEs::get(p.run.OFEname), geom_stl->cadmodel);
+        {
+          arma::mat bb = STLBndBox(OFEs::get(p.run.OFEname), geom_stl->inlet);
+          extendBB(bb_, bb);
+        }
+        {
+          arma::mat bb = STLBndBox(OFEs::get(p.run.OFEname), geom_stl->outlet);
+          extendBB(bb_, bb);
+        }
+      }
+
     L_=bb_.col(1)-bb_.col(0);
     nx_=std::max(1, int(ceil(L_(0)/p.mesh.size)));
     ny_=std::max(1, int(ceil(L_(1)/p.mesh.size)));
@@ -70,40 +118,23 @@ void InternalPressureLoss::calcDerivedInputData()
     reportIntermediateParameter("ny", ny_, "initial grid cell numbers in direction y");
     reportIntermediateParameter("nz", nz_, "initial grid cell numbers in direction z");
     
-    auto inletss=cadmodel->providedSubshapes().find(p.geometry.inlet_name);
-    if (inletss==cadmodel->providedSubshapes().end())
-        throw insight::Exception("named face \""+p.geometry.inlet_name+"\" not found in CAD model!");
-    inlet_=inletss->second;
-    inlet_->checkForBuildDuringAccess();
     
-    auto outletss=cadmodel->providedSubshapes().find(p.geometry.outlet_name);
-    if (outletss==cadmodel->providedSubshapes().end())
-        throw insight::Exception("named face \""+p.geometry.outlet_name+"\" not found in CAD model!");
-    outlet_=outletss->second;
-    outlet_->checkForBuildDuringAccess();
     
-    FeatureSetParserArgList args;
-    args.push_back(cadmodel->providedFeatureSet(p.geometry.inlet_name));
-    args.push_back(cadmodel->providedFeatureSet(p.geometry.outlet_name));
-//     args.push_back(FeatureSetPtr(new FeatureSet(cadmodel, Face, "isPlane && minimal(CoG.x)")));
-//     args.push_back(FeatureSetPtr(new FeatureSet(cadmodel, Face, "isPlane && maximal(CoG.x)")));
-//     inlet_.reset(new Feature(boost::get<FeatureSetPtr>(args[0])));
-//     outlet_.reset(new Feature(boost::get<FeatureSetPtr>(args[1])));
-    FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
-    walls_.reset(new Feature(fp));
+//    FeatureSetParserArgList args;
+//    args.push_back(cadmodel->providedFeatureSet(p.geometry.inlet_name));
+//    args.push_back(cadmodel->providedFeatureSet(p.geometry.outlet_name));
+//    FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
+//    walls_.reset(new Feature(fp));
 
 
-    inletstlfile_=executionPath()/"constant"/"triSurface"/"inlet.stlb";
-    outletstlfile_=executionPath()/"constant"/"triSurface"/"outlet.stlb";
-    wallstlfile_=executionPath()/"constant"/"triSurface"/"walls.stlb";
 
-    bbi_=inlet_->modelBndBox();
-    arma::mat Li=bbi_.col(1)-bbi_.col(0);
-    D_=arma::as_scalar(arma::max(Li)); // not yet the real hydraulic diameter, please improve
-    reportIntermediateParameter("D", D_, "hydraulic diameter of inlet", "mm");
+//    bbi_=inlet_->modelBndBox();
+//    arma::mat Li=bbi_.col(1)-bbi_.col(0);
+//    D_=arma::as_scalar(arma::max(Li)); // not yet the real hydraulic diameter, please improve
+//    reportIntermediateParameter("D", D_, "hydraulic diameter of inlet", "mm");
     
-    Ain_=inlet_->modelSurfaceArea();
-    reportIntermediateParameter("Ain", Ain_, "area of inlet", "$mm^2$");
+//    Ain_=inlet_->modelSurfaceArea();
+//    reportIntermediateParameter("Ain", Ain_, "area of inlet", "$mm^2$");
 }
 
 void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
@@ -115,7 +146,7 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
     
     using namespace insight::bmd;
     std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
-    bmd->setScaleFactor(1.0);
+    bmd->setScaleFactor(p.geometryscale);
     bmd->setDefaultPatch("walls", "wall");
 
     double eps=0.01*arma::min(bb_.col(1)-bb_.col(0));
@@ -147,55 +178,108 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
     cm.createOnDisk(executionPath());
     cm.executeCommand(executionPath(), "blockMesh");
 
-    create_directory(wallstlfile_.parent_path());
-    
-    walls_->saveAs(wallstlfile_);
-    inlet_->saveAs(inletstlfile_);
-    outlet_->saveAs(outletstlfile_); 
 
+    create_directory(wallstlfile_.parent_path());
+
+    if ( const Parameters::geometry_STEP_type* geom_cad = boost::get<Parameters::geometry_STEP_type>(&p.geometry) )
+      {
+        using namespace insight::cad;
+
+        FeaturePtr cadmodel = Feature::CreateFromFile(geom_cad->cadmodel);
+
+        if ( const Parameters::geometry_STEP_type::inout_named_surfaces_type* io_name =
+             boost::get<Parameters::geometry_STEP_type::inout_named_surfaces_type>(&geom_cad->inout) )
+          {
+              auto inletss=cadmodel->providedSubshapes().find("face_"+io_name->inlet_name);
+              if (inletss==cadmodel->providedSubshapes().end())
+                  throw insight::Exception("named face \""+io_name->inlet_name+"\" not found in CAD model!");
+
+              FeaturePtr inlet=inletss->second;
+              inlet->checkForBuildDuringAccess();
+
+              auto outletss=cadmodel->providedSubshapes().find("face_"+io_name->outlet_name);
+              if (outletss==cadmodel->providedSubshapes().end())
+                  throw insight::Exception("named face \""+io_name->outlet_name+"\" not found in CAD model!");
+
+              FeaturePtr outlet=outletss->second;
+              outlet->checkForBuildDuringAccess();
+
+              FeatureSetParserArgList args;
+              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->inlet_name));
+              args.push_back(cadmodel->providedFeatureSet("face_"+io_name->outlet_name));
+              FeatureSetPtr fp(new FeatureSet(cadmodel, insight::cad::Face, "!( in(%0) || in(%1) )",  args));
+              FeaturePtr walls(new Feature(fp));
+
+              walls->saveAs(wallstlfile_);
+              inlet->saveAs(inletstlfile_);
+              outlet->saveAs(outletstlfile_);
+          }
+        else if ( const Parameters::geometry_STEP_type::inout_extra_files_type* io_extra =
+             boost::get<Parameters::geometry_STEP_type::inout_extra_files_type>(&geom_cad->inout) )
+          {
+
+            cadmodel->saveAs(wallstlfile_);
+            FeaturePtr inletmodel = Feature::CreateFromFile(io_extra->inlet_model);
+            inletmodel->saveAs(inletstlfile_);
+            FeaturePtr outletmodel = Feature::CreateFromFile(io_extra->outlet_model);
+            outletmodel->saveAs(outletstlfile_);
+          }
+      }
+    else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
+      {
+        copy_file(geom_stl->cadmodel, wallstlfile_, copy_option::overwrite_if_exists);
+        copy_file(geom_stl->inlet, inletstlfile_, copy_option::overwrite_if_exists);
+        copy_file(geom_stl->outlet, outletstlfile_, copy_option::overwrite_if_exists);
+      }
+    
     surfaceFeatureExtract(cm, executionPath(), wallstlfile_.filename().c_str());
     
-//     boost::ptr_vector<snappyHexMeshFeats::Feature> shm_feats;
     snappyHexMeshConfiguration::Parameters shm_cfg;
 
+    arma::mat s = vec3(1,1,1)*p.geometryscale;
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::ExplicitFeatureCurve(snappyHexMeshFeats::ExplicitFeatureCurve::Parameters()
-      .set_level(3)
+      .set_level(p.mesh.maxLevel)
+      .set_scale(s)
       .set_fileName(executionPath()/"constant"/"triSurface"/(wallstlfile_.filename().stem().string()+".eMesh"))
     )));
 
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("walls")
-      .set_minLevel(0)
-      .set_maxLevel(3)
-      .set_nLayers(2)
-      
+      .set_minLevel(p.mesh.minLevel)
+      .set_maxLevel(p.mesh.maxLevel)
+      .set_nLayers(p.mesh.nLayers)
+      .set_scale(s)
+
       .set_fileName(wallstlfile_)
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("inlet")
-      .set_minLevel(0)
-      .set_maxLevel(3)
+      .set_minLevel(p.mesh.minLevel)
+      .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
-      
+      .set_scale(s)
+
       .set_fileName(inletstlfile_)
     )));
     shm_cfg.features.push_back(snappyHexMeshFeats::FeaturePtr(new snappyHexMeshFeats::Geometry(snappyHexMeshFeats::Geometry::Parameters()
       .set_name("outlet")
-      .set_minLevel(0)
-      .set_maxLevel(3)
+      .set_minLevel(p.mesh.minLevel)
+      .set_maxLevel(p.mesh.maxLevel)
       .set_nLayers(0)
+      .set_scale(s)
+
       .set_fileName(outletstlfile_)
     )));
 
 
-    arma::mat bbi=inlet_->modelBndBox();
-    std::cout<<"bbi="<<bbi<<std::endl;
+//    arma::mat bbi=inlet_->modelBndBox();
+//    std::cout<<"bbi="<<bbi<<std::endl;
     
-    arma::mat ctr=0.5*(bbi.col(1)+bbi.col(0));
-    ctr(0)+=eps; // some small distance downstream of inlet ctr
-    std::cout<<"ctr="<<ctr<<std::endl;
+//    arma::mat ctr=0.5*(bbi.col(1)+bbi.col(0));
+//    ctr(0)+=eps; // some small distance downstream of inlet ctr
+//    std::cout<<"ctr="<<ctr<<std::endl;
     
-    shm_cfg.PiM.push_back(ctr);
+    shm_cfg.PiM.push_back(p.mesh.PiM);
     
     snappyHexMesh
     (
@@ -212,8 +296,9 @@ void InternalPressureLoss::createMesh(insight::OpenFOAMCase& cm)
 
     resetMeshToLatestTimestep(cm, executionPath(), true);
       
-    cm.executeCommand(executionPath(), "transformPoints", list_of("-scale")("(1e-3 1e-3 1e-3)") ); // mm => m
+//    cm.executeCommand(executionPath(), "transformPoints", list_of("-scale")("(1e-3 1e-3 1e-3)") ); // mm => m
     cm.executeCommand(executionPath(), "renumberMesh", list_of("-overwrite"));
+
 }
 
 
@@ -221,32 +306,32 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
 {
     Parameters p(parameters_);
     
+    // grid needs to be present
+    patchArea inletprops(OpenFOAMCase(OFEs::get(p.run.OFEname)), executionPath(), "inlet");
+//    double Ain=inletprops.A_;
+    double D=sqrt(inletprops.A_*4./M_PI);
+
     OFDictData::dict boundaryDict;
     cm.parseBoundaryDict(executionPath(), boundaryDict);
     cm.insert(new simpleFoamNumerics(cm));
     cm.insert(new singlePhaseTransportProperties(cm, singlePhaseTransportProperties::Parameters() ));
     
     cm.insert(new PressureOutletBC(cm, "outlet", boundaryDict));
+
     {
-        ParameterSet vp = VelocityInletBC::Parameters::makeDefault().merge(
-            VelocityInletBC::Parameters()
-                .set_velocity( FieldData::uniformSteady(p.operation.Q/(1e-6*Ain_),0,0) )
-            );
-        vp.get<SelectableSubsetParameter>("turbulence").setSelection
-        (
-            "uniformIntensityAndLengthScale", 
-            turbulenceBC::uniformIntensityAndLengthScale::Parameters()
-                .set_I(0.1)
-                .set_l(D_*0.2)
-        );
-        cm.insert(new VelocityInletBC(cm, "inlet", boundaryDict, vp));
+        MassflowBC::Parameters inp;
+        inp.massflow = p.fluid.rho * p.operation.Q;
+        inp.turbulence.reset(new turbulenceBC::uniformIntensityAndLengthScale(
+                              turbulenceBC::uniformIntensityAndLengthScale::Parameters()
+                               .set_I(0.1)
+                               .set_l(D*0.2)
+        ));
+        cm.insert(new MassflowBC(cm, "inlet", boundaryDict, inp));
     }
         
-//       .set_turbulence( uniformIntensityAndLengthScale(0.1, D_*0.2) )
-//     ));
     cm.addRemainingBCs<WallBC>(boundaryDict, WallBC::Parameters() );
     
-    insertTurbulenceModel(cm, parameters_.get<SelectableSubsetParameter>("fluid/turbulenceModel"));
+    insertTurbulenceModel(cm, p);
 }
 
 
@@ -285,16 +370,19 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
 //         );
 //     }
     
-    arma::mat pi=patchIntegrate(cm, executionPath(), "p", "inlet", std::vector<std::string>() ); // time, int p, A
+    patchArea inletprops(cm, executionPath(), "inlet");
+    double D=sqrt(inletprops.A_*4./M_PI);
+
+    patchIntegrate pi(cm, executionPath(), "p", "inlet", std::vector<std::string>() ); // time, int p, A
     
-    arma::mat t=pi.col(0), pmean=pi.col(2)/pi.col(1);
+    arma::mat pmean=pi.integral_values_/pi.A_;
     
     addPlot
     (
       results, executionPath(), "chartPressureDifference",
       "Iteration", "$p/\\rho$",
       list_of<PlotCurve>
-       (PlotCurve(t, pmean, "pmean_vs_iter", "w lp not"))
+       (PlotCurve(pi.t_, pmean, "pmean_vs_iter", "w lp not"))
        ,
       "Plot of pressure difference between inlet and outlet vs. iterations"
     );
@@ -302,123 +390,49 @@ ResultSetPtr InternalPressureLoss::evaluateResults(OpenFOAMCase& cm)
     double delta_p=pmean(pmean.n_rows-1)*p.fluid.rho;
     ptr_map_insert<ScalarResult>(*results) ("delta_p", delta_p, "Pressure difference", "", "Pa");
 
-    std::string init=
-    "cbi=loadOFCase('"+executionPath().string()+"')\n"
-    "prepareSnapshots()\n";
-
     {
-      format pvec("[%g, %g, %g]");
-      std::string filename="wave_above.png";
-      
       double Lmax=1e-3*arma::as_scalar(arma::max(L_));
       arma::mat ctr=1e-3*(bb_.col(1)+bb_.col(0))*0.5;
-      arma::mat ctri=1e-3*(bbi_.col(1)+bbi_.col(0))*0.5;
-      
-      runPvPython
-      (
-	cm, executionPath(), list_of<std::string>
-	(
-	  init+
-	  "import numpy as np\n"
-	  
-	  "eb=extractPatches(cbi, 'wall.*')\n"
-	  //"fl=extractPatches(cbi, 'floor')\n"
-	  "Show(eb)\n"
-	  //"Show(fl)\n"
-// 	  "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.5, 0.75], barorient=0)\n"
-	  "displaySolid(eb, 0.1)\n"
-	  
-	  "st=StreamTracer(Input=cbi[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lmax)+")\n"
-	  "st.SeedType.Center="+str( pvec % (ctri(0)+1e-3*Lmax) % ctri(1) % ctri(2))+"\n"
-	  "st.SeedType.Radius="+lexical_cast<string>(1e-3*0.5*D_)+"\n"
-	  "Show(st)\n"
+      arma::mat ctri=inletprops.ctr_;
 
-	  "setCam("+str( pvec % bb_(0,0) % bb_(1,0) % bb_(2,1))+", "
-	           +str(pvec % ctr(0) % ctr(1) % ctr(2))+", "
-		   "[0,0,1], "
-		   +str(format("%g") % (/*0.33*1e-3*L_*/ 0.5*Lmax))
-		   +")\n"
-	  "WriteImage('streamLinesDiag.png')\n"
+      paraview::ParaviewVisualization::Parameters pvp;
+      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
+        .set_command(
+           "import numpy as np\n"
 
-	  "Hide(st)\n"
-	  "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
-	  "setCam("+str( pvec % bb_(0,0) % bb_(1,0) % bb_(2,1))+", "
-	           +str(pvec % ctr(0) % ctr(1) % ctr(2))+", "
-		   "[0,0,1], "
-		   +str(format("%g") % (/*0.33*1e-3*L_*/ 0.5*Lmax))
-		   +")\n"
-	  "WriteImage('pressureContourDiagInlet.png')\n"
-	  
-	  "setCam("+str( pvec % bb_(0,1) % bb_(1,0) % bb_(2,1))+", "
-	           +str(pvec % ctr(0) % ctr(1) % ctr(2))+", "
-		   "[0,0,1], "
-		   +str(format("%g") % (/*0.33*1e-3*L_*/ 0.5*Lmax))
-		   +")\n"
-	  "WriteImage('pressureContourDiagOutlet.png')\n"
-	  
-	  "setCam("+str( pvec % ctr(0) % ctr(1) % bb_(2,1))+", "
-	           +str(pvec % ctr(0) % ctr(1) % ctr(2))+", "
-		   "[0,1,0], "
-		   +str(format("%g") % (/*0.33*1e-3*L_*/ 0.5*Lmax))
-		   +")\n"
-	  "WriteImage('pressureContourTop.png')\n"
-// 	  "setCam("+str( pvec % (-L_) % (-0.5*L_) % (0.33*L_))+
-// 		    ", ["+str(format("%g")%(0.5*L_))+",0,0], [0,0,1], "
-// 		    +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-// 	  "WriteImage('leftfrontview.png')\n"
-// 
-// 	  "setCam("+str( pvec % (2.*L_) % (0.5*L_) % (0.33*L_))+
-// 		    ", ["+str(format("%g")%(0.5*L_))+",0,0], [0,0,1], "
-// 		    +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-// 	  "WriteImage('rightrearview.png')\n"
-// 	  "setCam("+str( pvec % (2.*L_) % (-0.5*L_) % (0.33*L_))+
-// 		    ", ["+str(format("%g")%(0.5*L_))+",0,0], [0,0,1], "
-// 		    +str(format("%g") % (/*0.33*1e-3*L_*/ 1.0))+")\n"
-// 	  "WriteImage('leftrearview.png')\n"
-	)
-      );
-      results->insert("streamLinesDiag",
-	std::auto_ptr<Image>(new Image
-	(
-	executionPath(), "streamLinesDiag.png", 
-	"Flow streamlines", ""
+           "eb=extractPatches(openfoam_case, 'wall.*')\n"
+           "Show(eb)\n"
+           "displaySolid(eb, 0.1)\n"
+
+           "st=StreamTracer(Input=openfoam_case[0], Vectors=['U'], MaximumStreamlineLength="+lexical_cast<string>(10.*Lmax)+")\n"
+           "st.SeedType.Center="+paraview::PVScene::pvec( ctri + 1e-3*vec3(Lmax,0,0) )+"\n"
+           "st.SeedType.Radius="+lexical_cast<string>(0.5*D)+"\n"
+           "Show(st)\n"
+        )
       )));
-      results->insert("pressureContourDiagInlet",
-	std::auto_ptr<Image>(new Image
-	(
-	executionPath(), "pressureContourDiagInlet.png", 
-	"Pressure contour (view on inlet)", ""
+
+      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
+        .set_bbmin(1e-3*bb_.col(0))
+        .set_bbmax(1e-3*bb_.col(1))
+        .set_filename("streamlines.png")
       )));
-      results->insert("pressureContourDiagOutlet",
-	std::auto_ptr<Image>(new Image
-	(
-	executionPath(), "pressureContourDiagOutlet.png", 
-	"Pressure contour (view on outlet)", ""
+
+      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::CustomPVScene(paraview::CustomPVScene::Parameters()
+        .set_command(
+            "Hide(st)\n"
+            "displayContour(eb, 'p', arrayType='CELL_DATA', barpos=[0.8, 0.25], barorient=1, opacity=1.)\n"
+        )
       )));
-      results->insert("pressureContourTop",
-	std::auto_ptr<Image>(new Image
-	(
-	executionPath(), "pressureContourTop.png", 
-	"Pressure contour (top view)", ""
+
+      pvp.scenes.push_back(paraview::PVScenePtr(new paraview::IsoView(paraview::IsoView::Parameters()
+        .set_bbmin(1e-3*bb_.col(0))
+        .set_bbmax(1e-3*bb_.col(1))
+        .set_filename("pressureContour.png")
       )));
-//       results->insert("contourPressureRightFront",
-// 	std::auto_ptr<Image>(new Image
-// 	(
-// 	executionPath(), "rightfrontview.png", 
-// 	"Pressure distribution on car, view from right side ahead", ""
-//       )));
-//       results->insert("contourPressureLeftRear",
-// 	std::auto_ptr<Image>(new Image
-// 	(
-// 	executionPath(), "leftrearview.png", 
-// 	"Pressure distribution on car, view from left side rear", ""
-//       )));
-//       results->insert("contourPressureRightRear",
-// 	std::auto_ptr<Image>(new Image
-// 	(
-// 	executionPath(), "rightrearview.png", 
-// 	"Pressure distribution on car, view from right side rear", ""
-//       )));
+
+      paraview::ParaviewVisualization pv(pvp, executionPath());
+      ResultSetPtr images = pv();
+      results->insert ( "renderings", images );
     }
     
     return results;

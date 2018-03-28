@@ -35,12 +35,26 @@ public:
 /*
 PARAMETERSET>>> InternalPressureLoss Parameters
 
-geometry=selectablesubset {{
+inherits OpenFOAMAnalysis::Parameters
+
+geometry = selectablesubset {{
 
  STEP set {
       cadmodel          = path 		"cadmodel.stp" 		"CAD model file."
-      inlet_name	= string	"INLET"			"Name of inlet surface in CAD model."
-      outlet_name	= string	"OUTLET"		"Name of outlet surface in CAD model."
+
+      inout = selectablesubset {{
+
+       named_surfaces set {
+         inlet_name	= string	"INLET"			"Name of inlet surface in CAD model."
+         outlet_name	= string	"OUTLET"		"Name of outlet surface in CAD model."
+       }
+
+       extra_files set {
+         inlet_model	= path          "inlet.stp"		"File with inlet surface."
+         outlet_model	= path          "outlet.stp"		"File with outlet surface."
+       }
+
+      }} named_surfaces "Specification of inlet and outlet surfaces"
  }
 
  STL set {
@@ -49,13 +63,17 @@ geometry=selectablesubset {{
       outlet    	= path          "outlet.stlb"		"Triangulated geometry of outlet alone."
  }
 
-}} STEP "Specification of geometry"
+}} STL "Specification of geometry"
+
+geometryscale = double 1e-3     "scaling factor to scale geometry files to meters"
 
 mesh=set
 {
   size		= double	10 		"[mm] Cell size of template mesh."
   minLevel      = int           0               "Minimum refinement level on geometry."
   maxLevel      = int           2               "Maximum refinement level on geometry."
+  nLayers       = int           3               "Number of prism layers"
+  PiM           = vector        (0 0 0)         "Seed point inside flow domain."
 } "Properties of the computational mesh"
 
 operation=set
@@ -74,18 +92,7 @@ fluid=set
 
 protected:
     // derived data
-    insight::cad::FeaturePtr walls_, inlet_, outlet_;
-    arma::mat bb_, bbi_, L_;
-    
-    /**
-     * hydraulic diameter of inlet
-     */
-    double D_;
-    
-    /**
-     * area of inlet boundary
-     */
-    double Ain_;
+    arma::mat bb_, L_;
     
     int nx_, ny_, nz_;
     
@@ -93,7 +100,9 @@ protected:
   
 public:
     declareType("InternalPressureLoss");
+
     InternalPressureLoss(const ParameterSet& ps, const boost::filesystem::path& exepath);
+
     static ParameterSet defaultParameters();
     static std::string category() { return "Generic Analyses"; }
     

@@ -23,7 +23,7 @@
 #include "gp_Quaternion.hxx"
 #include "base/tools.h"
 
-#include <dlib/optimization.h>
+//#include <dlib/optimization.h>
 
 #include "datum.h"
 
@@ -251,7 +251,7 @@ FeaturePtr RefPlace::create ( FeaturePtr m, ConditionList conditions )
 
 
 
-typedef dlib::matrix<double,0,1> column_vector;
+//typedef dlib::matrix<double,0,1> column_vector;
 
 
 void RefPlace::build()

@@ -4,7 +4,7 @@ find_package(OpenCasCade REQUIRED)
 find_package(OpenGL)
 find_package(DXFlib)
 #find_package(GEOM)
-find_package(dlib)
+#find_package(dlib)
 
 
 set(insightcad_SOURCES 
@@ -53,7 +53,7 @@ target_link_libraries(insightcad
  ${OCC_OCAF_LIBRARIES} 
  ${DXFLIB_LIBRARY} 
  #${GEOM_LIBRARIES}
- ${DLIB_LIBRARIES}
+ #${DLIB_LIBRARIES}
  )
 
 ## PROFILING
@@ -65,7 +65,7 @@ target_include_directories(insightcad
   PUBLIC ${OCC_INCLUDE_DIR}
   PUBLIC ${DXFLIB_INCLUDE_DIR}
   #PUBLIC ${GEOM_INCLUDE_DIRS}
-  PUBLIC ${DLIB_INCLUDE_DIR}
+  #PUBLIC ${DLIB_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR} 
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC ${INCLUDE_DIRS}

@@ -80,6 +80,11 @@ THE SOFTWARE.
 #include <boost/mpl/bool.hpp>
 // This is the version of boost which has v3 of the filesystem libraries by default.
 #if BOOST_VERSION >= 104600
+#if ( BOOST_VERSION < 105100 )
+#define BOOST_NO_SCOPED_ENUMS
+#else
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#endif
 #	define GNUPLOT_USE_TMPFILE
 #	include <boost/filesystem.hpp>
 #endif // BOOST_VERSION

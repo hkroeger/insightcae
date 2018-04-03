@@ -105,7 +105,7 @@ else(DPKG_PROGRAM)
      OUTPUT_STRIP_TRAILING_WHITESPACE
    )
    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
-  set(CPACK_RPM_PACKAGE_REQUIRES "/usr/bin/gnuplot,/usr/bin/pdflatex,/usr/bin/convert") #numpy,scipy,matplotlib
+  set(CPACK_RPM_PACKAGE_REQUIRES "/usr/bin/gnuplot-wx,/usr/bin/pdflatex,/usr/bin/convert") #numpy,scipy,matplotlib
   if (INSIGHT_BUILD_OPENFOAM)
     set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES},/usr/bin/pvbatch")
 #   if (INSIGHT_BUILD_CODEASTER)

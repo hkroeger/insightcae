@@ -7,7 +7,12 @@
 # OCC_LIBRARIES      - Link this to use OCC
 # OCC_OCAF_LIBRARIES - Link this to use OCC OCAF framework
 
-find_package(OCE)
+if (NOT INSIGHT_FORCE_OCC)
+ find_package(OCE)
+else()
+ set(OCE_FOUND FALSE)
+endif()
+
 if (OCE_FOUND)
  set(OCC_LIBRARIES ${OCE_LIBRARIES})
  set(OCC_INCLUDE_DIRS ${OCE_INCLUDE_DIR} ${OCE_INCLUDE_DIRS})

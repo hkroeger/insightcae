@@ -27,6 +27,7 @@ OPTION(INSIGHT_BUILD_ISCAD "Build the ISCAD editor (OCE and Qt is required)" ON)
 OPTION(INSIGHT_BUILD_TOOLKIT "Build the Insight toolkit and related tools" ON)
 OPTION(INSIGHT_BUILD_PYTHONBINDINGS "Build python bindings for Insight toolkit and related tools (SWIG is required)" ON)
 OPTION(INSIGHT_BUILD_WEBWORKBENCH "Build the Web-Workbench (Wt is required)" OFF)
+OPTION(INSIGHT_FORCE_OCC "Use OCC, even if OCE is available" OFF)
 option(BUILD_DOCUMENTATION "Use Doxygen to create the documentation (doxygen is required)" OFF)
 
 if (INSIGHT_BUILD_ISCAD AND NOT INSIGHT_BUILD_CAD)

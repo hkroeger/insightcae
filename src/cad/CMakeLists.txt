@@ -1,6 +1,6 @@
 project(insightcad)
 
-find_package(OpenCasCade REQUIRED)
+find_package(OCC REQUIRED)
 find_package(OpenGL)
 find_package(DXFlib)
 #find_package(GEOM)

@@ -63,6 +63,7 @@ add_sources(insightcad_SOURCES
  refplace.cpp
  exploded.cpp
  partition.cpp
+ offset.cpp
  
   GEOMAlgo_Splitter.cxx
   

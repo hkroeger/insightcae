@@ -17,7 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "thicken.h"
+#include "offset.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
 #include "base/tools.h"
@@ -38,15 +38,15 @@ using namespace boost;
 namespace insight {
 namespace cad {
 
-    
-    
-
-defineType(Thicken);
-addToFactoryTable(Feature, Thicken);
 
 
 
-size_t Thicken::calcHash() const
+defineType(Offset);
+addToFactoryTable(Feature, Offset);
+
+
+
+size_t Offset::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
@@ -58,44 +58,41 @@ size_t Thicken::calcHash() const
 
 
 
-Thicken::Thicken(): Feature()
+Offset::Offset(): Feature()
 {}
 
 
 
 
-Thicken::Thicken(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
+Offset::Offset(FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol)
 : shell_(shell), thickness_(thickness), tol_(tol)
 {}
 
 
 
 
-FeaturePtr Thicken::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol )
+FeaturePtr Offset::create ( FeaturePtr shell, ScalarPtr thickness, ScalarPtr tol )
 {
-    return FeaturePtr(new Thicken(shell, thickness, tol));
+    return FeaturePtr(new Offset(shell, thickness, tol));
 }
 
 
 
 
-void Thicken::build()
+void Offset::build()
 {
-  ExecTimer t("Thicken::build() ["+featureSymbolName()+"]");
+  ExecTimer t("Offset::build() ["+featureSymbolName()+"]");
 
   TopTools_ListOfShape ClosingFaces;
-  
+
   TopoDS_Shape s=*shell_;
-  
-  double offs=thickness_->value();
-
-
-//  BRepOffsetAPI_MakeOffsetShape maker(*shell_, offs, Precision::Confusion());
   BRepOffset_MakeOffset maker;
+
+  double offs=thickness_->value();
   maker.Initialize
   (
       s, offs, Precision::Confusion(),
-      BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_True
+      BRepOffset_Skin, Standard_True, Standard_True, GeomAbs_Arc, Standard_False
   );
   for (TopExp_Explorer ex(s, TopAbs_FACE); ex.More(); ex.Next())
   {
@@ -110,30 +107,30 @@ void Thicken::build()
 //     Standard_False,
 //     GeomAbs_Arc
 //   );
-  
-  maker.MakeThickSolid();
-//   maker.MakeOffsetShape();
-  
+
+//  maker.MakeThickSolid();
+  maker.MakeOffsetShape();
+
   setShape(maker.Shape());
 }
 
 
 
 
-void Thicken::insertrule(parser::ISCADParser& ruleset) const
+void Offset::insertrule(parser::ISCADParser& ruleset) const
 {
   ruleset.modelstepFunctionRules.add
   (
-    "Thicken",	
-    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
+    "Offset",
+    typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '(' 
-        >> ruleset.r_solidmodel_expression >> ',' 
-        >> ruleset.r_scalarExpression 
+    ( '('
+        >> ruleset.r_solidmodel_expression >> ','
+        >> ruleset.r_scalarExpression
         >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst ( Precision::Confusion() )) )
-        >> ')' ) 
-      [ qi::_val = phx::bind(&Thicken::create, qi::_1, qi::_2, qi::_3) ]
-      
+        >> ')' )
+      [ qi::_val = phx::bind(&Offset::create, qi::_1, qi::_2, qi::_3) ]
+
     ))
   );
 }
@@ -141,15 +138,15 @@ void Thicken::insertrule(parser::ISCADParser& ruleset) const
 
 
 
-FeatureCmdInfoList Thicken::ruleDocumentation() const
+FeatureCmdInfoList Offset::ruleDocumentation() const
 {
     return boost::assign::list_of
     (
         FeatureCmdInfo
         (
-            "Thicken",
+            "Offset",
             "( <feature:base>, <scalar:t> )",
-            "Creates a solid from a shell feature by adding thickness t."
+            "Creates an offset surface from a shell feature by displacing the surfaces in normal direction by distance t."
         )
     );
 }

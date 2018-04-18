@@ -306,6 +306,129 @@ void blockMeshDict_Box::create_bmd()
 
 }
 
+
+
+
+defineType ( blockMeshDict_Sphere );
+addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Sphere );
+
+
+blockMeshDict_Sphere::blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps )
+    : BlockMeshTemplate ( c ), p_ ( ps )
+{}
+
+
+void blockMeshDict_Sphere::create_bmd()
+{
+//    this->setDefaultPatch(p_.mesh.defaultPatchName);
+/*
+    double al = M_PI/2.;
+
+    arma::mat ex=p_.geometry.ex;
+    arma::mat ez=p_.geometry.ez;
+    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
+
+    double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
+    if (fabs(90.-ang)>1e-3)
+    {
+        arma::mat eznew=arma::cross(ey, ex);
+        insight::Warning(str(format("blockMeshDict_Sphere: supplied vectors ex and ez do not make a right angle (angle is %gdeg). Rectifying ez from (%g, %g, %g) to (%g, %g, %g)!")
+                 % ang % ez(0) % ez(1) % ez(2) % eznew(0) % eznew(1) % eznew(2) )
+        );
+        ez=eznew;
+    }
+
+    std::map<int, Point> pts;
+    pts = boost::assign::map_list_of
+          ( 0, 	p_.geometry.p0 )
+          ( 1, 	p_.geometry.p0 +p_.geometry.L*ex )
+          ( 2, 	p_.geometry.p0 +p_.geometry.L*ex +p_.geometry.W*ey )
+          ( 3, 	p_.geometry.p0 +p_.geometry.W*ey )
+          ( 4, 	p_.geometry.p0 +p_.geometry.H*ez )
+          ( 5, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex )
+          ( 6, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex +p_.geometry.W*ey )
+          ( 7, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.W*ey )
+          .convert_to_container<std::map<int, Point> >()
+          ;
+
+    Patch *Xp=NULL, *Xm=NULL, *Yp=NULL, *Ym=NULL, *Zp=NULL, *Zm=NULL;
+
+    if ( p_.mesh.XpPatchName!="" ) {
+        Xp=&this->addOrDestroyPatch ( p_.mesh.XpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.XmPatchName!="" ) {
+        Xm=&this->addOrDestroyPatch ( p_.mesh.XmPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.YpPatchName!="" ) {
+        Yp=&this->addOrDestroyPatch ( p_.mesh.YpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.YmPatchName!="" ) {
+        Ym=&this->addOrDestroyPatch ( p_.mesh.YmPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.ZpPatchName!="" ) {
+        Zp=&this->addOrDestroyPatch ( p_.mesh.ZpPatchName, new bmd::Patch() );
+    }
+    if ( p_.mesh.ZmPatchName!="" ) {
+        Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
+    }
+
+    int nx, ny, nz;
+    if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
+      {
+        double dx=std::max(std::max(p_.geometry.L, p_.geometry.W), p_.geometry.H)/double(cu->n_max);
+        nx=std::ceil(p_.geometry.L/dx);
+        ny=std::ceil(p_.geometry.W/dx);
+        nz=std::ceil(p_.geometry.H/dx);
+      }
+    else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
+      {
+        nx=std::ceil(p_.geometry.L/cus->delta);
+        ny=std::ceil(p_.geometry.W/cus->delta);
+        nz=std::ceil(p_.geometry.H/cus->delta);
+      }
+    else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
+      {
+        nx=ind->nx;
+        ny=ind->ny;
+        nz=ind->nz;
+      }
+    else
+      {
+        throw insight::Exception("Internal error: unhandled selection.");
+      }
+
+
+    Block& bl = this->addBlock
+                (
+                    new Block ( P_8 (
+                                    pts[0], pts[1], pts[2], pts[3],
+                                    pts[4], pts[5], pts[6], pts[7]
+                                ),
+                                nx, ny, nz
+                                )
+                );
+    if ( Xp ) {
+        Xp->addFace ( bl.face ( "1265" ) );
+    }
+    if ( Xm ) {
+        Xm->addFace ( bl.face ( "0473" ) );
+    }
+    if ( Yp ) {
+        Yp->addFace ( bl.face ( "0154" ) );
+    }
+    if ( Ym ) {
+        Ym->addFace ( bl.face ( "2376" ) );
+    }
+    if ( Zp ) {
+        Zp->addFace ( bl.face ( "4567" ) );
+    }
+    if ( Zm ) {
+        Zm->addFace ( bl.face ( "0321" ) );
+    }
+*/
+}
+
+
 }
 
 }

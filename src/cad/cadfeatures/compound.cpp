@@ -96,21 +96,28 @@ FeaturePtr Compound::create_map( const CompoundFeatureMap& m1 )
     
 void Compound::build()
 {
-    BRep_Builder bb;
-    TopoDS_Compound result;
-    bb.MakeCompound ( result );
+  if (!cache.contains(hash()))
+  {
+      BRep_Builder bb;
+      TopoDS_Compound result;
+      bb.MakeCompound ( result );
 
-    BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ ) {
-        std::string name=c.first;
-        FeaturePtr p=c.second;
+      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ ) {
+          std::string name=c.first;
+          FeaturePtr p=c.second;
 
-        bb.Add ( result, *p );
-        p->unsetLeaf();
-//     copyDatums(*p, name+"_");
+          bb.Add ( result, *p );
+          p->unsetLeaf();
+  //     copyDatums(*p, name+"_");
 
-        providedSubshapes_[c.first]=c.second;
+          providedSubshapes_[c.first]=c.second;
+      }
+      setShape ( result );
     }
-    setShape ( result );
+    else
+    {
+        this->operator=(*cache.markAsUsed<Compound>(hash()));
+    }
 }
 
 

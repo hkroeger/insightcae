@@ -158,7 +158,19 @@ void BoundedFlatFace::build()
       fsb.Add(TopoDS::Edge(ex.Current()), GeomAbs_C0);
      }
      fsb.Build();
-     TopoDS_Face f=TopoDS::Face(fsb.Shape());
+
+     FixShape.Init(TopoDS::Face(fsb.Shape()));
+     FixShape.FixOrientation();
+     FixShape.FixIntersectingWires();
+     FixShape.FixWiresTwoCoincEdges();
+ #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
+     FixShape.FixSmallAreaWire();
+ #endif
+     FixShape.FixMissingSeam();
+     FixShape.FixAddNaturalBound();
+     FixShape.FixPeriodicDegenerated();
+     FixShape.Perform();
+     TopoDS_Face f=FixShape.Face();
 
      BRepBuilderAPI_MakeFace fb2(BRep_Tool::Surface(f), w.Wire());
      if (!fb2.IsDone())

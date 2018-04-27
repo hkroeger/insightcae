@@ -561,7 +561,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 // 	      );
 // 	    }
         }
-        while (status == GSL_CONTINUE && iter < 1000);
+        while (status == GSL_CONTINUE && iter < 10000);
         
         arma::mat res=arma::zeros(model.numP());
         for (int i=0; i<model.numP(); i++)

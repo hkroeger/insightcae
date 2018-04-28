@@ -355,6 +355,8 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
+    connect(newf, SIGNAL(addEvaluation(const QString&, insight::cad::PostprocActionPtr, bool)),
+            this, SLOT(onAddEvaluation(const QString&, insight::cad::PostprocActionPtr, bool)));
   }
   replaceOrAdd(cat, newf, old);
   newf->initDisplay();

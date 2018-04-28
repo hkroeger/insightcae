@@ -104,88 +104,88 @@ void BooleanIntersection::build()
 {
     ExecTimer t("BooleanIntersection::build() ["+featureSymbolName()+"]");
     
-    if (m1_ && m2_)
-    {        
-        if (!cache.contains(hash()))
-        {
-            BRepAlgoAPI_Common intersector(*m1_, *m2_);
-            intersector.Build();
-            if (!intersector.IsDone())
-            {
-                throw CADException
-                (
-                    shared_from_this(),
-                    "Could not perform intersection operation."
-                );
-            }
-            setShape(intersector.Shape());
-            cache.insert(shared_from_this());
-        }
-        else
-        {
-            this->operator=(*cache.markAsUsed<BooleanIntersection>(hash()));
-        }
-        m1_->unsetLeaf();
-        m2_->unsetLeaf();
+    if (!cache.contains(hash()))
+    {
+      if (m1_ && m2_)
+      {
+              BRepAlgoAPI_Common intersector(*m1_, *m2_);
+              intersector.Build();
+              if (!intersector.IsDone())
+              {
+                  throw CADException
+                  (
+                      shared_from_this(),
+                      "Could not perform intersection operation."
+                  );
+              }
+              setShape(intersector.Shape());
+              cache.insert(shared_from_this());
+          m1_->unsetLeaf();
+          m2_->unsetLeaf();
+      }
+      else
+      {
+          if (m2pl_)
+          {
+              if (!m2pl_->providesPlanarReference())
+                  throw CADException(shared_from_this(), "intersection: given reference does not provide planar reference!");
+
+              if (m1_->isSingleWire() || m1_->isSingleEdge())
+              {
+                  TopoDS_Compound res;
+                  BRep_Builder builder;
+                  builder.MakeCompound( res );
+
+                  Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
+                  for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
+                  {
+                      TopoDS_Edge e=TopoDS::Edge(ex.Current());
+                      GeomAPI_IntCS	intersection;
+                      double x0, x1;
+                      intersection.Perform(BRep_Tool::Curve(e, x0, x1), pl);
+
+                      // For debugging only
+                      if (!intersection.IsDone() )
+                          throw CADException(shared_from_this(), "intersection: edge intersection not successful!");
+
+                      // Get intersection curve
+                      for (int j=1; j<=intersection.NbPoints(); j++)
+                      {
+                          builder.Add(res, BRepBuilderAPI_MakeVertex(intersection.Point(j)));;
+                      }
+                  }
+
+                  setShape(res);
+              }
+              else
+              {
+                  BRepAlgoAPI_Section intersector
+                  (
+                      *m1_,
+                      m2pl_->plane()
+                  );
+                  intersector.Build();
+                  if (!intersector.IsDone())
+                  {
+                      throw CADException
+                      (
+                          shared_from_this(),
+                          "could not perform shape/plane intersection operation."
+                      );
+                  }
+                  TopoDS_Shape isecsh = intersector.Shape();
+
+                  setShape(isecsh);
+              }
+              m1_->unsetLeaf();
+          }
+          else
+              throw CADException(shared_from_this(), "intersection: tool object undefined!");
+      }
     }
     else
     {
-        if (m2pl_)
-        {
-            if (!m2pl_->providesPlanarReference())
-                throw CADException(shared_from_this(), "intersection: given reference does not provide planar reference!");
-
-            if (m1_->isSingleWire() || m1_->isSingleEdge())
-            {
-                TopoDS_Compound res;
-                BRep_Builder builder;
-                builder.MakeCompound( res );
-
-                Handle_Geom_Surface pl(new Geom_Plane(m2pl_->plane()));
-                for (TopExp_Explorer ex(*m1_, TopAbs_EDGE); ex.More(); ex.Next())
-                {
-                    TopoDS_Edge e=TopoDS::Edge(ex.Current());
-                    GeomAPI_IntCS	intersection;
-                    double x0, x1;
-                    intersection.Perform(BRep_Tool::Curve(e, x0, x1), pl);
-
-                    // For debugging only
-                    if (!intersection.IsDone() )
-                        throw CADException(shared_from_this(), "intersection: edge intersection not successful!");
-
-                    // Get intersection curve
-                    for (int j=1; j<=intersection.NbPoints(); j++)
-                    {
-                        builder.Add(res, BRepBuilderAPI_MakeVertex(intersection.Point(j)));;
-                    }
-                }
-
-                setShape(res);
-            }
-            else
-            {
-                BRepAlgoAPI_Section intersector
-                (
-                    *m1_,
-                    m2pl_->plane()
-                );
-                intersector.Build();
-                if (!intersector.IsDone())
-                {
-                    throw CADException
-                    (
-                        shared_from_this(),
-                        "could not perform shape/plane intersection operation."
-                    );
-                }                
-                TopoDS_Shape isecsh = intersector.Shape();
-
-                setShape(isecsh);
-            }
-            m1_->unsetLeaf();
-        }
-        else
-            throw CADException(shared_from_this(), "intersection: tool object undefined!");
+        this->operator=(*cache.markAsUsed<BooleanIntersection>(hash()));
     }
 }
 

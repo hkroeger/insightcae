@@ -120,6 +120,30 @@ class OpenWaterCurve(object):
                 c[0] * (J ** c[1]) * (PbyD ** c[2]) * (AeByA0 ** c[3]) * (z ** c[4])
         return KQ
 
+    def KtPolyCoeffs(self, PbyD, AeByA0, z):
+        coeff={}
+        for c in self.ktc:
+            jexp=c[1]
+            if not jexp in coeff:
+                coeff[jexp]=0.0
+            coeff[jexp]+=c[0] * (PbyD ** c[2]) * (AeByA0 ** c[3]) * (z ** c[4])
+        ca=[0.0]*(max(coeff.keys())+1)
+        for i in range(0, len(ca)):
+            ca[len(ca)-1-i]=coeff[i]
+        return ca
+
+    def KqPolyCoeffs(self, PbyD, AeByA0, z):
+        coeff={}
+        for c in self.kqc:
+            jexp=c[1]
+            if not jexp in coeff:
+                coeff[jexp]=0.0
+            coeff[jexp]+=c[0] * (PbyD ** c[2]) * (AeByA0 ** c[3]) * (z ** c[4])
+        ca=[0.0]*(max(coeff.keys())+1)
+        for i in range(0, len(ca)):
+            ca[len(ca)-1-i]=coeff[i]
+        return ca
+
 def getToC():
   return pt.getToC()
 

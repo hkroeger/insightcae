@@ -103,93 +103,82 @@ FeaturePtr Cutaway::create_plane ( FeaturePtr model, ConstDatumPtr pl, bool inve
 
 void Cutaway::build()
 {
-    ExecTimer t("Cutaway::build() ["+featureSymbolName()+"]");
+  ExecTimer t("Cutaway::build() ["+featureSymbolName()+"]");
 
-//   ParameterListHash h(this);
-//   h+=*model_;
-//   h+=p0_->value();
-//   h+=n_->value();
-
-    arma::mat p0, n;
-
-    if ( pl_ ) {
-        if ( !pl_->providesPlanarReference() ) {
-            throw insight::Exception ( "Cutaway: Given datum does not provide a planar reference!" );
-        }
-        gp_Ax3 pl=pl_->plane();
-
-        p0=vec3 ( pl.Location() );
-        n=vec3 ( pl.Direction() );
-        if ( inverted_ ) {
-            n*=-1.;
-        }
-    } else {
-        if ( ( !p0_ ) || ( !n_ ) ) {
-            throw insight::Exception ( "Cutaway: origin and normal direction undefined!" );
-        }
-        p0=p0_->value();
-        n=n_->value();
-    }
-
-//   if (!cache.contains(h))
+  if (!cache.contains(hash()))
     {
 
-        arma::mat bb=model_->modelBndBox ( 0.1 );
-        double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 ), 2 );
-//     std::cout<<"L="<<L<<std::endl;
+      arma::mat p0, n;
 
-        arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
-        if ( norm ( ex,2 ) <1e-8 ) {
-            ex=cross ( n, vec3 ( 0,1,0 ) );
+      if ( pl_ ) {
+          if ( !pl_->providesPlanarReference() ) {
+              throw insight::Exception ( "Cutaway: Given datum does not provide a planar reference!" );
+            }
+          gp_Ax3 pl=pl_->plane();
+
+          p0=vec3 ( pl.Location() );
+          n=vec3 ( pl.Direction() );
+          if ( inverted_ ) {
+              n*=-1.;
+            }
+        } else {
+          if ( ( !p0_ ) || ( !n_ ) ) {
+              throw insight::Exception ( "Cutaway: origin and normal direction undefined!" );
+            }
+          p0=p0_->value();
+          n=n_->value();
         }
-        ex/=norm ( ex,2 );
 
-        arma::mat ey=cross ( n,ex );
-        ey/=norm ( ey,2 );
+      arma::mat bb=model_->modelBndBox ( 0.1 );
+      double L=10.*norm ( bb.col ( 1 )-bb.col ( 0 ), 2 );
 
-//     std::cout<<"Quad"<<std::endl;
+      arma::mat ex=cross ( n, vec3 ( 1,0,0 ) );
+      if ( norm ( ex,2 ) <1e-8 ) {
+          ex=cross ( n, vec3 ( 0,1,0 ) );
+        }
+      ex/=norm ( ex,2 );
+
+      arma::mat ey=cross ( n,ex );
+      ey/=norm ( ey,2 );
+
 #warning Relocate p0 in plane to somewhere nearer to model center!
-        FeaturePtr q=Quad::create
-                     (
-                         matconst ( p0-0.5*L* ( ex+ey ) ),
-                         matconst ( L*ex ),
-                         matconst ( L*ey )
-                     );
-        this->setShape ( q->shape() );
-        //   std::cout<<"Airspace"<<std::endl;
-        TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
+      FeaturePtr q=Quad::create
+          (
+            matconst ( p0-0.5*L* ( ex+ey ) ),
+            matconst ( L*ex ),
+            matconst ( L*ey )
+            );
+      this->setShape ( q->shape() );
+      //   std::cout<<"Airspace"<<std::endl;
+      TopoDS_Shape airspace=BRepPrimAPI_MakePrism ( TopoDS::Face ( q->shape() ), to_Vec ( L*n ) );
 
-        //   SolidModel(airspace).saveAs("airspace.stp");
-        refpoints_["p0"]=p0;
-        refvectors_["n"]=n;
-        providedSubshapes_["AirSpace"]=FeaturePtr ( new Feature ( airspace ) );
+      //   SolidModel(airspace).saveAs("airspace.stp");
+      refpoints_["p0"]=p0;
+      refvectors_["n"]=n;
+      providedSubshapes_["AirSpace"]=FeaturePtr ( new Feature ( airspace ) );
 
-//     std::cout<<"CutSurf"<<std::endl;
-        try {
-            providedSubshapes_["CutSurface"]=
-                BooleanIntersection::create
-                (
-                    model_,
-                    FeaturePtr ( new Feature ( TopoDS::Face ( q->shape() ) ) )
-                );
-        } catch ( ... ) {
-            insight::Warning ( "Could not create cutting surface!" );
-        }
+      try {
+        providedSubshapes_["CutSurface"]=
+            BooleanIntersection::create
+            (
+              model_,
+              FeaturePtr ( new Feature ( TopoDS::Face ( q->shape() ) ) )
+              );
+      } catch ( ... ) {
+        insight::Warning ( "Could not create cutting surface!" );
+      }
 
-//     std::cout<<"Cut"<<std::endl;
-        try {
-            this->setShape ( BRepAlgoAPI_Cut ( model_->shape(), airspace ) );
-        } catch ( ... ) {
-            throw insight::Exception ( "Could not create cut!" );
-        }
+      try {
+        this->setShape ( BRepAlgoAPI_Cut ( model_->shape(), airspace ) );
+      } catch ( ... ) {
+        throw insight::Exception ( "Could not create cut!" );
+      }
 
-//     write(cache.markAsUsed(h));
     }
-//   else
-//   {
-//     read(cache.markAsUsed(h));
-//   }
-
+  else
+    {
+      this->operator=(*cache.markAsUsed<Cutaway>(hash()));
+    }
 }
 
 

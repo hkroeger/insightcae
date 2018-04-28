@@ -98,7 +98,7 @@ public:
     inline static ParameterSet defaultParameters()
     {
         return Parameters::makeDefault();
-    };
+    }
 
     double rCore() const;
 };
@@ -174,7 +174,56 @@ public:
     inline static ParameterSet defaultParameters()
     {
         return Parameters::makeDefault();
-    };
+    }
+};
+
+
+
+
+
+
+/**
+ * A simple spherical mesh
+ */
+
+class blockMeshDict_Sphere
+    : public BlockMeshTemplate
+{
+public:
+#include "blockmesh_templates__blockMeshDict_Sphere__Parameters.h"
+/*
+PARAMETERSET>>> blockMeshDict_Sphere Parameters
+
+geometry = set
+{
+    R = double 1.0 "[m] Radius"
+    center = vector(0 0 0) "[m] Sphere center"
+}
+
+mesh = set
+{
+    n_rad = int 10 "Number of cells in radial direction"
+
+    outerPatchName = string "outer" "name of boundary patch."
+}
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "blockMeshDict_Sphere" );
+
+    blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+
+    virtual void create_bmd();
+
+    inline static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
 };
 
 }

@@ -63,7 +63,7 @@ class QVectorVariableItem
   arma::mat value_;
     
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS();
+  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
   
 public:
   QVectorVariableItem

@@ -20,14 +20,22 @@
 
 #include "cadfeature.h"
 #include "datum.h"
+#include "occtools.h"
+#include "base/boost_include.h"
 
+
+#include "AIS_Point.hxx"
+#include "AIS_Shape.hxx"
 #include "AIS_Plane.hxx"
 #include "AIS_Axis.hxx"
+#include "AIS_MultipleConnectedInteractive.hxx"
 #include "Geom_Axis1Placement.hxx"
 #include "GeomAPI_IntSS.hxx"
 #include "GeomAPI_IntCS.hxx"
 #include "Geom_Line.hxx"
 #include "Geom_Transformation.hxx"
+
+#include "occinclude.h"
 
 namespace insight {
 namespace cad {
@@ -86,7 +94,7 @@ Datum::operator const gp_Ax3 () const
   return plane();
 }
 
-AIS_InteractiveObject* Datum::createAISRepr(const gp_Trsf& tr) const
+Handle_AIS_InteractiveObject Datum::createAISRepr(AIS_InteractiveContext&, const std::string& label, const gp_Trsf& tr) const
 {
   throw insight::Exception("Not implemented: provide AIS_InteractiveObject presentation");
   return NULL;
@@ -166,10 +174,10 @@ gp_Ax3 TransformedDatum::plane() const
     return base_->plane().Transformed(tr_);
 }
 
-AIS_InteractiveObject* TransformedDatum::createAISRepr(const gp_Trsf&) const
+Handle_AIS_InteractiveObject TransformedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf&) const
 {
     checkForBuildDuringAccess();
-    AIS_InteractiveObject* ais = base_->createAISRepr(tr_);
+    Handle_AIS_InteractiveObject ais ( base_->createAISRepr(context, label, tr_) );
     
     return ais;
 }
@@ -185,9 +193,23 @@ gp_Pnt DatumPoint::point() const
   return p_;
 }
 
-AIS_InteractiveObject* DatumPoint::createAISRepr(const gp_Trsf& tr) const
+Handle_AIS_InteractiveObject DatumPoint::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
-  return new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) );
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+  context.Load(ais);
+
+  Handle_AIS_InteractiveObject apoint(new AIS_Shape( BRepBuilderAPI_MakeVertex(point().Transformed(tr)) ));
+  context.Load(apoint);
+  Handle_AIS_InteractiveObject alabel(new InteractiveText
+    (
+      boost::str(boost::format("PT:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+    ));
+  context.Load(alabel);
+
+  ais->Connect(apoint);
+  ais->Connect(alabel);
+
+  return ais;
 }
 
 
@@ -236,10 +258,10 @@ gp_Ax3 ProvidedDatum::plane() const
   return dat_->plane();
 }
 
-AIS_InteractiveObject* ProvidedDatum::createAISRepr(const gp_Trsf& tr) const
+Handle_AIS_InteractiveObject ProvidedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
     checkForBuildDuringAccess();
-    return dat_->createAISRepr(tr);
+    return dat_->createAISRepr(context, label, tr);
 }
 
 
@@ -278,10 +300,24 @@ gp_Ax1 DatumAxis::axis() const
   return ax_;
 }
 
-AIS_InteractiveObject* DatumAxis::createAISRepr(const gp_Trsf& tr) const
+Handle_AIS_InteractiveObject DatumAxis::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  AIS_Axis *ais=new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr))));
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+  context.Load(ais);
+
+  Handle_AIS_InteractiveObject aaxis(new AIS_Axis(Handle_Geom_Axis1Placement(new Geom_Axis1Placement(axis().Transformed(tr)))));
+  context.Load(aaxis);
+
+  Handle_AIS_InteractiveObject alabel(new InteractiveText
+    (
+      boost::str(boost::format("AX:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+    ));
+  context.Load(alabel);
+
+  ais->Connect(aaxis);
+  ais->Connect(alabel);
+
 //   ais->SetWidth(100);
   return ais;
 }
@@ -323,11 +359,24 @@ gp_Ax3 DatumPlaneData::plane() const
 }
 
 // DatumPlane::operator const Handle_AIS_InteractiveObject () const
-AIS_InteractiveObject* DatumPlaneData::createAISRepr(const gp_Trsf& tr) const
+Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
   checkForBuildDuringAccess();
-  AIS_Plane *ais=new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane().Transformed(tr))));
-  ais->SetSize(100);
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+  context.Load(ais);
+
+  Handle_AIS_Plane aplane(new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane().Transformed(tr)))));
+  context.Load(aplane);
+  aplane->SetSize(100);
+  Handle_AIS_InteractiveObject alabel(new InteractiveText
+    (
+      boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())
+    ));
+  context.Load(alabel);
+
+  ais->Connect(aplane);
+  ais->Connect(alabel);
+
   return ais;
 }
 

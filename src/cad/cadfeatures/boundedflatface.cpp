@@ -148,21 +148,42 @@ void BoundedFlatFace::build()
     BRepBuilderAPI_MakeWire w;
     w.Add(edgs);
 
-    BRepOffsetAPI_MakeFilling fsb;
-    for (TopExp_Explorer ex(w, TopAbs_EDGE); ex.More(); ex.Next())
+    BRepBuilderAPI_MakeFace fb1(w.Wire());
+    TopoDS_Face res;
+    if (!fb1.IsDone())
     {
-     fsb.Add(TopoDS::Edge(ex.Current()), GeomAbs_C0);
-    }
- fsb.Build();
- TopoDS_Face f=TopoDS::Face(fsb.Shape());
+     BRepOffsetAPI_MakeFilling fsb;
+     for (TopExp_Explorer ex(w, TopAbs_EDGE); ex.More(); ex.Next())
+     {
+      fsb.Add(TopoDS::Edge(ex.Current()), GeomAbs_C0);
+     }
+     fsb.Build();
 
+     FixShape.Init(TopoDS::Face(fsb.Shape()));
+     FixShape.FixOrientation();
+     FixShape.FixIntersectingWires();
+     FixShape.FixWiresTwoCoincEdges();
+ #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
+     FixShape.FixSmallAreaWire();
+ #endif
+     FixShape.FixMissingSeam();
+     FixShape.FixAddNaturalBound();
+     FixShape.FixPeriodicDegenerated();
+     FixShape.Perform();
+     TopoDS_Face f=FixShape.Face();
 
-
-    BRepBuilderAPI_MakeFace fb(BRep_Tool::Surface(f), w.Wire());
-    if (!fb.IsDone())
+     BRepBuilderAPI_MakeFace fb2(BRep_Tool::Surface(f), w.Wire());
+     if (!fb2.IsDone())
         throw insight::Exception("Failed to generate planar face!");
+     else
+       res=fb2.Face();
+    }
+    else
+    {
+      res=fb1.Face();
+    }
 
-    FixShape.Init(fb.Face());
+    FixShape.Init(res);
 
     FixShape.FixOrientation();
     FixShape.FixIntersectingWires();

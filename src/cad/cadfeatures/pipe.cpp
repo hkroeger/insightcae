@@ -144,6 +144,7 @@ void Pipe::build()
     TopoDS_Shape xsecs=BRepBuilderAPI_Transform(static_cast<TopoDS_Shape>(xsec), tr).Shape();
 
     BRepOffsetAPI_MakePipeShell p(spinew);
+    p.SetTransitionMode(BRepBuilderAPI_RightCorner);
     p.Add(xsecs);
     
     if (fixed_binormal_)

@@ -24,7 +24,7 @@
 
 
 
-Handle_AIS_InteractiveObject QFeatureItem::createAIS()
+Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {
   Handle_AIS_InteractiveObject ais( new AIS_Shape(*smp_) );
 

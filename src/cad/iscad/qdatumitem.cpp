@@ -25,9 +25,9 @@
 #include "AIS_Plane.hxx"
 #include "modelfeature.h"
 
-Handle_AIS_InteractiveObject QDatumItem::createAIS()
+Handle_AIS_InteractiveObject QDatumItem::createAIS(AIS_InteractiveContext& context)
 {
-  return smp_->createAISRepr( name_.toStdString() );
+  return smp_->createAISRepr( context, name_.toStdString() );
 }
 
 QDatumItem::QDatumItem(const QString& name, insight::cad::DatumPtr smp, QTreeWidgetItem* parent)

@@ -18,6 +18,7 @@
  */
 
 #include "qvariableitem.h"
+#include "occtools.h"
 
 #include <string>
 #include <QMenu>
@@ -64,10 +65,25 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
 
 
 
-Handle_AIS_InteractiveObject QVectorVariableItem::createAIS()
+Handle_AIS_InteractiveObject QVectorVariableItem::createAIS(AIS_InteractiveContext& context)
 {
-  TopoDS_Shape cP = BRepBuilderAPI_MakeVertex(to_Pnt(value_));
-  return Handle_AIS_InteractiveObject(new AIS_Shape(cP));
+  gp_Pnt p=to_Pnt(value_);
+
+  Handle_AIS_MultipleConnectedInteractive ais ( new AIS_MultipleConnectedInteractive() );
+  context.Load(ais);
+
+  Handle_AIS_InteractiveObject apoint(new AIS_Shape( BRepBuilderAPI_MakeVertex(p)));
+  context.Load(apoint);
+  Handle_AIS_InteractiveObject alabel(new insight::cad::InteractiveText
+    (
+      boost::str(boost::format("PT:%s") % name_.toStdString()), insight::Vector(p.XYZ())
+    ));
+  context.Load(alabel);
+
+  ais->Connect(apoint);
+  ais->Connect(alabel);
+
+  return ais;
 }
 
 

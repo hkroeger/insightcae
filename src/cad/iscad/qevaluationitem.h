@@ -36,7 +36,7 @@ class QEvaluationItem
   insight::cad::PostprocActionPtr smp_;
 
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS();
+  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
 
 public:
   QEvaluationItem(const QString& name, insight::cad::PostprocActionPtr smp, QTreeWidgetItem* parent, bool visible=false);

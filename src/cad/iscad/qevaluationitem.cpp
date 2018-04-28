@@ -22,7 +22,7 @@
 #include <QMenu>
 #include "qoccviewercontext.h"
 
-Handle_AIS_InteractiveObject QEvaluationItem::createAIS()
+Handle_AIS_InteractiveObject QEvaluationItem::createAIS(AIS_InteractiveContext&)
 {
   return smp_->createAISRepr();
 }

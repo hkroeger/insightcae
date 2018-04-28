@@ -89,11 +89,11 @@ bool QDisplayableModelTreeItem::isHidden() const
     return (checkState(COL_VIS) == Qt::Unchecked);
 }
 
-Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais()
+Handle_AIS_InteractiveObject QDisplayableModelTreeItem::ais(AIS_InteractiveContext& context)
 {
   if (ais_.IsNull())
     {
-      ais_=createAIS();
+      ais_=createAIS(context);
     }
   return ais_;
 }
@@ -129,10 +129,10 @@ void QDisplayableModelTreeItem::initDisplay()
 void QDisplayableModelTreeItem::show()
 {
   setCheckState(COL_VIS, Qt::Checked);
-  if (ais_.IsNull())
-    {
-      ais_=createAIS();
-    }
+//  if (ais_.IsNull())
+//    {
+//      ais_=createAIS(*getContext());
+//    }
   emit show(this);
 }
 

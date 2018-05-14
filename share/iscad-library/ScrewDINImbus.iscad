@@ -10,6 +10,7 @@ s1i=TableLookup(ScrewDIN, Dn, Dn, s1i);
 e1=TableLookup(MetricThread, P, P, e1); # Grundlochüberhang
 hk=0.5*P;
 L=25;
+mult_headhole=1.0;
 
 axis=RefAxis(O, EX);
 
@@ -46,7 +47,7 @@ headhole=
 Cylinder(
  O,
  O-Lhh*EX,
- d1i*1.1
+ d1i*1.1*mult_headhole
 )|throughhole;
 
 dbl=Dn-P;

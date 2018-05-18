@@ -246,7 +246,13 @@ domain = selectablesubset {{
   patchName = string "inlet" "name of patch to integrate"
  }
 
+ faceZone set {
+  faceZoneName = string "inlet" "name of faceZone to integrate"
+ }
+
 }} patch "select domain of integration"
+
+operation = selection ( sum areaIntegrate ) areaIntegrate "operation to execute on data"
 
 <<<PARAMETERSET
 */

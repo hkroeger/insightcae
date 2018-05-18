@@ -373,22 +373,31 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
 
   OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
   fod["functionObjectLibs"]=libl;
-/*
-  if ( const Parameters::domain_wholedomain_type* dt =
-       boost::get<Parameters::domain_wholedomain_type>(&p_.domain) )
+
+  if ( const Parameters::domain_patch_type* dp =
+       boost::get<Parameters::domain_patch_type>(&p_.domain) )
     {
-      fod["regionType"]="all";
+      fod["regionType"]="patch";
+      fod["name"]=dp->patchName;
     }
-  else if ( const Parameters::domain_cellZone_type* dcz =
-       boost::get<Parameters::domain_cellZone_type>(&p_.domain) )
+  else if ( const Parameters::domain_faceZone_type* dcz =
+       boost::get<Parameters::domain_faceZone_type>(&p_.domain) )
     {
-      fod["regionType"]="cellZone";
-      fod["name"]=dcz->cellZoneName;
+      fod["regionType"]="faceZone";
+      fod["name"]=dcz->faceZoneName;
     }
 
   fod["writeFields"]=false;
-  fod["operation"]="volIntegrate";
-*/
+
+  if (p_.operation == Parameters::operation_type::areaIntegrate)
+    {
+      fod["operation"]="areaIntegrate";
+    }
+  else if (p_.operation == Parameters::operation_type::sum)
+    {
+      fod["operation"]="sum";
+    }
+
   OFDictData::list fl; fl.resize(p_.fields.size());
   copy(p_.fields.begin(), p_.fields.end(), fl.begin());
   fod["fields"]=fl;

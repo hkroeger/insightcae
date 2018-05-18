@@ -313,6 +313,90 @@ arma::mat probes::readProbesLocations
   return data;
 }
 
+
+defineType(volumeIntegrate);
+addToOpenFOAMCaseElementFactoryTable(volumeIntegrate);
+
+volumeIntegrate::volumeIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
+{
+}
+
+OFDictData::dict volumeIntegrate::functionObjectDict() const
+{
+  OFDictData::dict fod;
+  fod["type"]="volFieldValue";
+
+  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+
+  if ( const Parameters::domain_wholedomain_type* dt =
+       boost::get<Parameters::domain_wholedomain_type>(&p_.domain) )
+    {
+      fod["regionType"]="all";
+    }
+  else if ( const Parameters::domain_cellZone_type* dcz =
+       boost::get<Parameters::domain_cellZone_type>(&p_.domain) )
+    {
+      fod["regionType"]="cellZone";
+      fod["name"]=dcz->cellZoneName;
+    }
+
+  fod["writeFields"]=false;
+  fod["operation"]="volIntegrate";
+
+  OFDictData::list fl; fl.resize(p_.fields.size());
+  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  fod["fields"]=fl;
+
+  return fod;
+}
+
+
+
+defineType(surfaceIntegrate);
+addToOpenFOAMCaseElementFactoryTable(surfaceIntegrate);
+
+surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
+{
+}
+
+OFDictData::dict surfaceIntegrate::functionObjectDict() const
+{
+  insight::Warning("incomplete implementation");
+
+  OFDictData::dict fod;
+  fod["type"]="surfaceFieldValue";
+
+  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+/*
+  if ( const Parameters::domain_wholedomain_type* dt =
+       boost::get<Parameters::domain_wholedomain_type>(&p_.domain) )
+    {
+      fod["regionType"]="all";
+    }
+  else if ( const Parameters::domain_cellZone_type* dcz =
+       boost::get<Parameters::domain_cellZone_type>(&p_.domain) )
+    {
+      fod["regionType"]="cellZone";
+      fod["name"]=dcz->cellZoneName;
+    }
+
+  fod["writeFields"]=false;
+  fod["operation"]="volIntegrate";
+*/
+  OFDictData::list fl; fl.resize(p_.fields.size());
+  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  fod["fields"]=fl;
+
+  return fod;
+}
+
+
 defineType(cuttingPlane);
 addToOpenFOAMCaseElementFactoryTable(cuttingPlane);
 

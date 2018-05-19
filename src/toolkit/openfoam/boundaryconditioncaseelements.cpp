@@ -1523,6 +1523,13 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 BC["fieldInf"]=OFDictData::data ( p.pressure );
                 BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
             }
+            else if ( const Parameters::behaviour_correctPRGHHydrostaticPressure_type* wt =
+                     boost::get<Parameters::behaviour_correctPRGHHydrostaticPressure_type>(&p.behaviour) )
+            {
+                BC["type"]=OFDictData::data ( "prghTotalPressure" );
+                BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+            }
+
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.rho ) );

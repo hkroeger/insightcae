@@ -705,6 +705,9 @@ behaviour = selectablesubset {{
   kappa = double 1.4 "Specific heat ratio"
   L = double 1 "Reference length"
  }
+
+ correctPRGHHydrostaticPressure
+ set { }
  
 }} uniform "Behaviour of the pressure BC"
 

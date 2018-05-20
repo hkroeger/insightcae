@@ -336,6 +336,10 @@ phiName = string "phi" "Name of flux field"
 psiName = string "none" "Name of compressibility field"
 rhoName = string "none" "Name of density field"
 UName = string "U" "Name of velocity field"
+
+turb_I = double 0.05 "[-] turbulence intensity at inflow"
+turb_L = double 0.1 "[m] turbulent length scale at inflow"
+
 phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "uniformPhases" "Definition of the multiphase mixture composition"
 
 <<<PARAMETERSET
@@ -706,7 +710,7 @@ behaviour = selectablesubset {{
   L = double 1 "Reference length"
  }
 
- correctPRGHHydrostaticPressure
+ removePRGHHydrostaticPressure
  set { }
  
 }} uniform "Behaviour of the pressure BC"

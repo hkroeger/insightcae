@@ -114,7 +114,13 @@ void Thicken::build()
   maker.MakeThickSolid();
 //   maker.MakeOffsetShape();
   
-  setShape(maker.Shape());
+  TopoDS_Shape res=maker.Shape();
+  ShapeFix_Solid FixShape;
+
+  FixShape.Init(TopoDS::Solid(res));
+  FixShape.Perform();
+
+  setShape(FixShape.Solid());
 }
 
 

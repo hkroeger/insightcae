@@ -16,6 +16,8 @@ ctr_loc=O;
 ctr=0.5*w*EX; # mid center of bearing
 ctr_ops=w*EX; # opposite center of bearing
 
+mult_bore_set=1.0;
+
 tr=
 Torus(ctr, 2*rtraj*EX, db);
 
@@ -55,7 +57,7 @@ CircularPattern(
 
 Lbb?=3*Da;
 bore_set=
-Cylinder(ctr_loc, ax Lbb*EX, Da);
+Cylinder(ctr_loc, ax Lbb*EX, mult_bore_set*Da);
 
 ring_i->density=rho;
 ring_o->density=rho;

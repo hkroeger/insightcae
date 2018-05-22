@@ -934,7 +934,7 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
   if (di)
     {
-      Handle_AIS_InteractiveObject ais = di->ais();
+      Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
 
       Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ais);
       if ( !pl.IsNull() )
@@ -984,7 +984,7 @@ void QoccViewWidget::onHide(QDisplayableModelTreeItem* di)
     {
       getContext()->Erase
       (
-        di->ais()
+        di->ais( *getContext() )
 #if (OCC_VERSION_MAJOR>=7)
         , true
 #endif
@@ -997,7 +997,7 @@ void QoccViewWidget::onSetDisplayMode(QDisplayableModelTreeItem* di, AIS_Display
 {
   if (di)
     {
-      getContext()->SetDisplayMode(di->ais(), sm, Standard_True );
+      getContext()->SetDisplayMode(di->ais( *getContext() ), sm, Standard_True );
     }
 }
 
@@ -1005,7 +1005,7 @@ void QoccViewWidget::onSetColor(QDisplayableModelTreeItem* di, Quantity_Color c)
 {
   if (di)
     {
-      getContext()->SetColor(di->ais(), c, Standard_True );
+      getContext()->SetColor(di->ais( *getContext() ), c, Standard_True );
     }
 }
 
@@ -1015,7 +1015,7 @@ void QoccViewWidget::onSetResolution(QDisplayableModelTreeItem* di, double res)
     {
       getContext()->SetDeviationCoefficient
           (
-            di->ais(),
+            di->ais( *getContext() ),
             res
   #if (OCC_VERSION_MAJOR>=7)
             , true
@@ -1242,7 +1242,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
-                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
+                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_VERTEX) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Vertex));
 
@@ -1271,7 +1271,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
-                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_EDGE) );
+                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_EDGE) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Edge));
 
@@ -1301,7 +1301,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
-                          getContext()->Activate( parent->ais(), AIS_Shape::SelectionMode(TopAbs_FACE) );
+                          getContext()->Activate( parent->ais(*getContext()), AIS_Shape::SelectionMode(TopAbs_FACE) );
 
                           selpts_.reset(new insight::cad::FeatureSet(parent->solidmodelPtr(), insight::cad::Face));
 

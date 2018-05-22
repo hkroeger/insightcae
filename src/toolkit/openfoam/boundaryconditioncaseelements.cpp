@@ -562,19 +562,40 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.rho ) );
           }
+        else if ( ( field.first=="k" ) && ( get<0> ( field.second ) ==scalarField ) )
+          {
+            BC["type"]=OFDictData::data ( "turbulentIntensityKineticEnergyInlet" );
+            BC["intensity"]=p.turb_I;
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 0.1 ) );
+          }
+        else if ( ( field.first=="omega" ) && ( get<0> ( field.second ) ==scalarField ) )
+          {
+            BC["type"]=OFDictData::data ( "turbulentMixingLengthFrequencyInlet" );
+            BC["mixingLength"]=p.turb_L;
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 1.0 ) );
+          }
+        else if ( ( field.first=="epsilon" ) && ( get<0> ( field.second ) ==scalarField ) )
+          {
+            BC["type"]=OFDictData::data ( "turbulentMixingLengthDissipationRateInlet" );
+            BC["mixingLength"]=p.turb_L;
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 1.0 ) );
+          }
+        else if ( (
+                    ( field.first=="nut" ) ||
+                    ( field.first=="nuSgs" )
+                   ) && ( get<0> ( field.second ) ==scalarField ) )
+          {
+            BC["type"]=OFDictData::data ( "calculated" );
+            BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( 0.0 ) );
+          }
         else if
-        (
-            (
-                ( field.first=="k" ) ||
-                ( field.first=="epsilon" ) ||
-                ( field.first=="omega" ) ||
-                ( field.first=="nut" ) ||
-                ( field.first=="nuSgs" ) ||
+          (
+              (
                 ( field.first=="nuTilda" )
-            )
-            &&
-            ( get<0> ( field.second ) ==scalarField )
-        )
+              )
+              &&
+              ( get<0> ( field.second ) ==scalarField )
+          )
           {
             BC["type"]=OFDictData::data ( "zeroGradient" );
           }
@@ -1523,6 +1544,13 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                 BC["fieldInf"]=OFDictData::data ( p.pressure );
                 BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
             }
+            else if ( const Parameters::behaviour_removePRGHHydrostaticPressure_type* wt =
+                     boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
+            {
+                BC["type"]=OFDictData::data ( "prghTotalPressure" );
+                BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+            }
+
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );
             BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.rho ) );

@@ -180,6 +180,102 @@ public:
 
 
 /** ===========================================================================
+ * function object front end for volume integrate
+ */
+class volumeIntegrate
+: public outputFilterFunctionObject
+{
+
+public:
+#include "analysiscaseelements__volumeIntegrate__Parameters.h"
+
+/*
+PARAMETERSET>>> volumeIntegrate Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "alpha.phase1" "Name of a field" ]*1 "Names of fields to average over volume"
+domain = selectablesubset {{
+
+ wholedomain set { }
+
+ cellZone set {
+  cellZoneName = string "zone" "name of cellZone to integrate"
+ }
+
+}} wholedomain "select domain of integration"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+    declareType("volumeIntegrate");
+    volumeIntegrate(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+
+    static std::string category() {
+        return "Postprocessing";
+    }
+
+    static ParameterSet defaultParameters() {
+        return Parameters::makeDefault();
+    }
+    virtual OFDictData::dict functionObjectDict() const;
+};
+
+
+/** ===========================================================================
+ * function object front end for surface integrate
+ */
+class surfaceIntegrate
+: public outputFilterFunctionObject
+{
+
+public:
+#include "analysiscaseelements__surfaceIntegrate__Parameters.h"
+
+/*
+PARAMETERSET>>> surfaceIntegrate Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "alpha.phase1" "Name of a field" ]*1 "Names of fields to average over volume"
+domain = selectablesubset {{
+
+ patch set {
+  patchName = string "inlet" "name of patch to integrate"
+ }
+
+ faceZone set {
+  faceZoneName = string "inlet" "name of faceZone to integrate"
+ }
+
+}} patch "select domain of integration"
+
+operation = selection ( sum areaIntegrate ) areaIntegrate "operation to execute on data"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+    declareType("surfaceIntegrate");
+    surfaceIntegrate(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+
+    static std::string category() {
+        return "Postprocessing";
+    }
+
+    static ParameterSet defaultParameters() {
+        return Parameters::makeDefault();
+    }
+    virtual OFDictData::dict functionObjectDict() const;
+};
+
+
+/** ===========================================================================
  * function object front end for live cutting plane sampling during run
  */
 class cuttingPlane

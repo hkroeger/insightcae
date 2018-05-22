@@ -134,6 +134,26 @@ public:
   setFieldOperator* clone() const;
 };
 
+
+class cellToCellOperator
+: public setFieldOperator
+{
+public:
+  CPPX_DEFINE_OPTIONCLASS(Parameters, setFieldOperator::Parameters,
+      ( cellSet, std::string, "cellSet" )
+  )
+
+protected:
+  Parameters p_;
+
+public:
+  cellToCellOperator(Parameters const& p = Parameters() );
+
+  virtual void addIntoDictionary(OFDictData::dict& setFieldDict) const;
+
+  setFieldOperator* clone() const;
+};
+
 inline setFieldOperator* new_clone(const setFieldOperator& op)
 {
   return op.clone();

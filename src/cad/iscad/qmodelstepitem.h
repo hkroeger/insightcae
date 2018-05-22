@@ -52,7 +52,7 @@ signals:
   void addEvaluation(const QString& name, insight::cad::PostprocActionPtr em, bool visible);
 
 protected:
-  virtual Handle_AIS_InteractiveObject createAIS();
+  virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
 
 public:
   QFeatureItem(const QString& name, insight::cad::FeaturePtr smp,

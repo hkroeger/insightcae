@@ -332,6 +332,35 @@ setFieldOperator* boxToCellOperator::clone() const
   return new boxToCellOperator(p_);
 }
 
+
+cellToCellOperator::cellToCellOperator(Parameters const& p )
+: setFieldOperator(p),
+  p_(p)
+{
+}
+
+void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
+{
+  OFDictData::dict opdict;
+  opdict["set"]=p_.cellSet();
+
+  OFDictData::list fve;
+  BOOST_FOREACH(const FieldValueSpec& fvs, p_.fieldValues())
+  {
+    //std::ostringstream line;
+    //line << fvs.get<0>() << " " << fvs.get<1>() ;
+    fve.push_back( fvs );
+  }
+  opdict["fieldValues"]=fve;
+  setFieldDict.getList("regions").push_back( "cellToCell" );
+  setFieldDict.getList("regions").push_back( opdict );
+}
+
+setFieldOperator* cellToCellOperator::clone() const
+{
+  return new cellToCellOperator(p_);
+}
+
 }
 
 void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location, 

@@ -498,6 +498,9 @@ implicitPressureCorrection = bool false "Whether to switch to implicit pressure 
 nOuterCorrectors = int 50 "Number of outer correctors"
 alphaSubCycles = int 4 "Number of alpha integration subcycles"
 
+cAlpha = double 0.25 "[-] Interface compression coefficient"
+icAlpha = double 0.1 "[-] Isotropic interface compression coefficient"
+
 maxCo = double 5 "Maximum courant number"
 maxAlphaCo = double 3 "Maximum courant number at interface"
 
@@ -530,7 +533,7 @@ public:
 
 
 
-OFDictData::dict stdMULESSolverSetup(double tol=1e-8, double reltol=0.0, bool LTS=false);
+OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol=1e-8, double reltol=0.0, bool LTS=false);
 
 
 

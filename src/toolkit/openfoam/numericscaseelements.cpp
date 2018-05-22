@@ -1562,8 +1562,8 @@ interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 }
 
 
-const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
-const double icAlpha=0.1;
+//const double cAlpha=0.25; // use low compression by default, since split of interface at boundaries of refinement zones otherwise
+//const double icAlpha=0.1;
  
 void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 {
@@ -1575,13 +1575,8 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["application"]="interFoam";
 
   controlDict["maxDeltaT"]=1.0;
-  controlDict["maxCo"]=5; //0.4;
-  controlDict["maxAlphaCo"]=3; //0.2;
-  if (p_.implicitPressureCorrection)
-  {
-    controlDict["maxCo"]=p_.maxCo;
-    controlDict["maxAlphaCo"]=p_.maxAlphaCo;
-  }
+  controlDict["maxCo"]=p_.maxCo;
+  controlDict["maxAlphaCo"]=p_.maxAlphaCo;
 
   OFDictData::list fol;
   fol.push_back("\"libnumericsFunctionObjects.so\"");
@@ -1620,7 +1615,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   solvers["nuTildaFinal"]=smoothSolverSetup(1e-10, 0);
 
   {
-   OFDictData::dict asd=stdMULESSolverSetup();  
+   OFDictData::dict asd=stdMULESSolverSetup(p_.cAlpha, p_.icAlpha);
    asd["nAlphaSubCycles"]=p_.alphaSubCycles;
    solvers["\"alpha.*\""]=asd;
   }
@@ -1656,7 +1651,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& SOL=fvSolution.addSubDictIfNonexistent(solutionScheme);
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=p_.alphaSubCycles;
-  SOL["cAlpha"]=cAlpha;
+  SOL["cAlpha"]=p_.cAlpha;
   
   SOL["momentumPredictor"]=false; //true;
   SOL["nCorrectors"]=1; //2;  
@@ -1759,7 +1754,7 @@ ParameterSet interFoamNumerics::defaultParameters()
 }
 
 
-OFDictData::dict stdMULESSolverSetup(double tol, double reltol, bool LTS)
+OFDictData::dict stdMULESSolverSetup(double cAlpha, double icAlpha, double tol, double reltol, bool LTS)
 {
   OFDictData::dict d;
   
@@ -1821,7 +1816,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
   if (OFversion()>=230)
-    solvers["\"alpha.*\""]=stdMULESSolverSetup(1e-8, 0.0, true);
+    solvers["\"alpha.*\""]=stdMULESSolverSetup(0.25, 0.1, 1e-8, 0.0, true);
 
 
   std::string solutionScheme("PIMPLE");
@@ -1831,7 +1826,7 @@ void LTSInterFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   SOL["nNonOrthogonalCorrectors"]=1;
   SOL["nAlphaCorr"]=1;
   SOL["nAlphaSubCycles"]=1;
-  SOL["cAlpha"]=cAlpha;
+  SOL["cAlpha"]=p_.cAlpha;
   SOL["maxAlphaCo"]=maxAlphaCo;
   SOL["maxCo"]=maxCo;
   SOL["rDeltaTSmoothingCoeff"]=0.05;
@@ -1903,7 +1898,7 @@ void interPhaseChangeFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) co
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   
-  OFDictData::dict alphasol = stdMULESSolverSetup(1e-10, 0.0, false);
+  OFDictData::dict alphasol = stdMULESSolverSetup(p_.cAlpha, p_.icAlpha, 1e-10, 0.0, false);
   solvers["\"alpha.*\""]=alphasol;
 
 }

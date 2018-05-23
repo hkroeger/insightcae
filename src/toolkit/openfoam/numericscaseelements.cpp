@@ -1727,9 +1727,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
 
   OFDictData::dict& laplacian=fvSchemes.subDict("laplacianSchemes");
-  laplacian["laplacian(rAUf,pcorr)"]="Gauss linear limited 0.66";
-  laplacian["laplacian((1|A(U)),pcorr)"]="Gauss linear limited 0.66";
-  laplacian["default"]="Gauss linear localLimited UBlendingFactor 0.66";
+  laplacian["laplacian(rAUf,pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p_.snGradLowQualityLimiterReduction );
+  laplacian["laplacian((1|A(U)),pcorr)"] = boost::str(boost::format("Gauss linear limited %g") % p_.snGradLowQualityLimiterReduction );
+  laplacian["default"] = boost::str(boost::format("Gauss linear localLimited UBlendingFactor %g") % p_.snGradLowQualityLimiterReduction );
 
   OFDictData::dict& interpolation=fvSchemes.subDict("interpolationSchemes");
 //   interpolation["interpolate(U)"]="pointLinear";
@@ -1737,7 +1737,7 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   interpolation["default"]="linear"; //"pointLinear"; // OF23x: pointLinear as default creates artifacts at parallel domain borders!
 
   OFDictData::dict& snGrad=fvSchemes.subDict("snGradSchemes");
-  snGrad["default"]="localLimited UBlendingFactor 0.66";
+  snGrad["default"]=boost::str(boost::format("localLimited UBlendingFactor %g") % p_.snGradLowQualityLimiterReduction );
 
   OFDictData::dict& fluxRequired=fvSchemes.subDict("fluxRequired");
   fluxRequired["default"]="no";

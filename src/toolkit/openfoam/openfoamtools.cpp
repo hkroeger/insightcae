@@ -29,6 +29,9 @@
 #include <cmath>
 #include <limits>
 
+#include "vtkSTLReader.h"
+#include "vtkSmartPointer.h"
+
 using namespace std;
 using namespace arma;
 using namespace boost;
@@ -2647,38 +2650,28 @@ void createBaffles
 
 arma::mat STLBndBox
 (
-  const OFEnvironment& ofe,
   const boost::filesystem::path& path
 )
 {
-  std::vector<std::string> output;
-  std::vector<std::string> params = list_of(path.string());
-//  if (ofe.version()>=400)
-//  {
-//      params.push_back("-outputThreshold");
-//      params.push_back("0");
-//  }
-//  OpenFOAMCase(ofe).executeCommand(path.parent_path(), "surfaceCheck", params, &output);
-  OpenFOAMCase(ofe).executeCommand(path.parent_path(), "surfaceBB", params, &output);
+  if (!boost::filesystem::exists(path))
+    throw insight::Exception("file "+path.string()+" does not exist!");
 
-  boost::regex re_bb("^Bounding Box : \\((.+) (.+) (.+)\\) \\((.+) (.+) (.+)\\)$");
-  boost::match_results<std::string::const_iterator> what;
-  
-  BOOST_FOREACH(const std::string& l, output)
-  {
-    if (boost::regex_match(l, what, re_bb))
-    {
-      return join_rows
-      (
-	vec3(lexical_cast<double>(what[1]), lexical_cast<double>(what[2]), lexical_cast<double>(what[3])),
-	vec3(lexical_cast<double>(what[4]), lexical_cast<double>(what[5]), lexical_cast<double>(what[6]))
-      );
-    }
-  }
-  
-  throw insight::Exception("No bounding box information found in output!");
-  return arma::mat();
+  vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
+  stl->SetFileName(path.c_str());
+  stl->Update();
+
+  double bb[6];
+  stl->GetOutput()->GetBounds(bb);
+
+  arma::mat bbm;
+  bbm
+    << bb[0] << bb[1] << arma::endr
+    << bb[2] << bb[3] << arma::endr
+    << bb[4] << bb[5] << arma::endr;
+
+  return bbm;
 }
+
 
 std::pair<arma::mat, arma::mat> zoneExtrema
 (

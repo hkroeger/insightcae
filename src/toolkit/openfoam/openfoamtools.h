@@ -883,7 +883,6 @@ void createBaffles
   */
 arma::mat STLBndBox
 (
-  const OFEnvironment& ofe, 
   const boost::filesystem::path& path
 );
 

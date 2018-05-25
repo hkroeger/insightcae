@@ -504,6 +504,8 @@ icAlpha = double 0.1 "[-] Isotropic interface compression coefficient"
 maxCo = double 5 "Maximum courant number"
 maxAlphaCo = double 3 "Maximum courant number at interface"
 
+snGradLowQualityLimiterReduction = double 0.66 "Reduction of limiter coefficient on low quality faces"
+
 <<<PARAMETERSET
 */
 

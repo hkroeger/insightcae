@@ -73,12 +73,21 @@ IF(INSIGHT_BUILD_PYTHONBINDINGS)
   )
 ENDIF()
 
+find_package(VTK COMPONENTS
+    vtkFiltersCore
+    vtkCommonCore
+    vtkIOImage
+    vtkIOXML
+    vtkImagingCore
+    REQUIRED
+)
+
 file(GLOB_RECURSE toolkit_HEADERS "*.h")
 
-
+include(${VTK_USE_FILE})
 link_directories(${Boost_LIBRARY_DIR})
 add_library(toolkit SHARED ${toolkit_SOURCES})
-target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl)
+target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} dl ${VTK_LIBRARIES})
 
 target_include_directories(toolkit 
   PUBLIC ${PYTHON_INCLUDE_DIR}/python2.7

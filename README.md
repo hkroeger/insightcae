@@ -15,6 +15,7 @@ List of Contributors
 Features
 --------
 
+- analysis workflow automation tools (GUI)
 - script-based, fully parametric CAD
 
     - OpenCASCADE geometry kernel
@@ -22,7 +23,6 @@ Features
 
 - OpenFOAM add-ons (schemes, boundary conditions, models, ...)
 - Pre- & Postprocessing tool (OpenFOAM Case Builder)
-- analysis workflow automation tools (GUI)
 
 Installation
 ------------

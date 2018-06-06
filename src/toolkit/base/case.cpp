@@ -26,20 +26,7 @@ using namespace boost::filesystem;
 namespace insight
 {
   
-TemporaryCaseDir::TemporaryCaseDir(bool keep, const std::string& prefix)
-: keep_(keep)
-{
-  if (getenv("INSIGHT_KEEPTEMPCASEDIR"))
-    keep_=true;
-  dir = unique_path(prefix+"%%%%%%%");
-  create_directories(dir);
-}
 
-TemporaryCaseDir::~TemporaryCaseDir()
-{
-  if (!keep_)
-    remove_all(dir);
-}
 
 
 

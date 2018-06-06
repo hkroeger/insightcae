@@ -852,25 +852,32 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict.addSubDictIfNonexistent("functions")[p_.name]=fod;
 }
   
+
+
+
 CorrelationFunctionModel::CorrelationFunctionModel()
-: B_(1.0), omega_(1.0)
+: A_(1.0), B_(1.0), omega_(1.0), phi_(0.0)
 {}
 
 int CorrelationFunctionModel::numP() const
 {
-  return 2;
+  return 4;
 }
 
 void CorrelationFunctionModel::setParameters(const double* params)
 {
   B_=max(0.1, params[0]);
   omega_=params[1];
+  phi_=params[2];
+  A_=params[3];
 }
 
 void CorrelationFunctionModel::setInitialValues(double* params) const
 {
   params[0]=0.1;
   params[1]=0.1;
+  params[2]=0.0;
+  params[3]=1.0;
 }
 
 arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
@@ -881,13 +888,52 @@ arma::mat CorrelationFunctionModel::weights(const arma::mat& x) const
 arma::mat CorrelationFunctionModel::evaluateObjective(const arma::mat& x) const
 {
   //cout<<B_<<" "<<omega_<<" "<<x.col(0)<<endl;
-  return exp(-B_*x.col(0)) % ( cos(omega_*x.col(0)) );
+  return A_ * exp(-B_*x.col(0)) % ( cos(omega_*x.col(0) -phi_) );
 }
 
 double CorrelationFunctionModel::lengthScale() const
 {
-  return B_ / ( pow(B_, 2)+pow(omega_, 2) );
+  return A_ * ( B_*cos(phi_) + omega_*sin(phi_) ) / ( pow(B_, 2) + pow(omega_, 2) );
 }
+
+
+addToAnalysisFactoryTable(ComputeLengthScale);
+
+ComputeLengthScale::ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath )
+  : Analysis("Length Scale", "Compute the length scale from autocorrelation functions", ps, exepath),
+    p_(ps)
+{
+}
+
+ResultSetPtr ComputeLengthScale::operator()(ProgressDisplayer* displayer)
+{
+  setupExecutionEnvironment();
+  ResultSetPtr results(new ResultSet(parameters_, name_, description_));
+
+  CorrelationFunctionModel m;
+  nonlinearRegression(p_.R_vs_x.col(1), p_.R_vs_x.col(0), m);
+
+  arma::mat x = arma::linspace(0., max(p_.R_vs_x.col(0)), 100);
+  arma::mat regressiondata
+  (
+      arma::join_rows ( x, m.evaluateObjective(x) )
+  );
+
+  results->insert( "L", new ScalarResult(m.lengthScale(), "Length scale", "", "m") );
+  addPlot
+  (
+      results, executionPath(), "chartACF",
+      "x", "$\\langle R \\rangle$",
+      list_of<PlotCurve>
+        (PlotCurve(p_.R_vs_x, "raw", "w p lt 1 t 'ACF'"))
+        (PlotCurve(regressiondata, "fit", "w l lt 2 t 'fit'"))
+        ,
+      "two-point correlation function"
+  );
+
+  return results;
+}
+
 
 template<>
 const char * LinearTPCArray::cmptNames[] = 

@@ -228,14 +228,28 @@ void AnalysisForm::onCreateReport()
   QString fn = QFileDialog::getSaveFileName
   (
       this, 
-    "Save Latex Report", 
+    "Save Report",
     QString(executionPathParameter_().c_str()), 
-    "LaTeX file (*.tex)"
+    "PDF file (*.pdf)|LaTeX file (*.tex)"
   );
   if (!fn.isEmpty())
   {
     boost::filesystem::path outpath=fn.toStdString();
-    results_->writeLatexFile( outpath );
+    std::string ext=outpath.extension().string();
+
+    if (boost::algorithm::to_lower_copy(ext)==".tex")
+      {
+        results_->writeLatexFile( outpath );
+      }
+    else if (boost::algorithm::to_lower_copy(ext)==".pdf")
+      {
+        results_->generatePDF( outpath );
+      }
+    else
+      {
+        QMessageBox::critical(this, "Error!", "Unknown file format: "+fn);
+        return;
+      }
 
     QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
   }

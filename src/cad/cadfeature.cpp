@@ -1372,9 +1372,9 @@ void Feature::saveAs
 	 }
 	 else
 	 {
-	    throw insight::Exception
+	    insight::Warning
 	    (
-	      "Feature set item not found in model"
+	      boost::str(boost::format("Feature set face#%d not found in model")%id)
 	    );
 	 }
 // 	 StepShape_SetName<Handle_StepShape_AdvancedFace> (r, reader, aFace, "My Face", i++);

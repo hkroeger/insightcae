@@ -1,0 +1,11 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Type=Application
+MimeType=application/insight-iscad;
+Categories=Engineering;Science;Graphics;VectorGraphics;Construction;2DGraphics;
+Name=InsightCAE CAD Editor
+Name[de]=InsightCAE CAD-Editor
+Comment=A script-based CAD editor
+Comment[de]=Ein skriptbasierter CAD-Editor
+Exec=/bin/bash -lc 'iscad %f'
+Icon=application-insight-iscad

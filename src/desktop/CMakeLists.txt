@@ -20,7 +20,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         INSTALL (FILES mime/${MIME_FILE} DESTINATION ${INSIGHT_DESKTOP_DIR})
         INSTALL (FILES ${DESKTOP_FILE} DESTINATION ${INSIGHT_DESKTOP_DIR})
         INSTALL(CODE "
-          execute_process(COMMAND ${XDG-ICON-RESOURCE_EXECUTABLE} install --size 256 --context mimetypes ${INSIGHT_PIXMAPS_DIR}/${ICON_FILE}
+          execute_process(COMMAND ${XDG-ICON-RESOURCE_EXECUTABLE} install --size 256 --context mimetypes ${INSIGHT_PIXMAPS_DIR}/${ICON_FILE})
           execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${INSIGHT_DESKTOP_DIR}/${MIME_FILE})
           execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${INSIGHT_DESKTOP_DIR}/${DESKTOP_FILE})
           execute_process(COMMAND ${XDG-MIME_EXECUTABLE} default ${INSIGHT_DESKTOP_DIR}/${DESKTOP_FILE} ${MIME_TYPE})

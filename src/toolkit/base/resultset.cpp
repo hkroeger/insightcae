@@ -21,6 +21,7 @@
 
 #include "resultset.h"
 #include "base/latextools.h"
+#include "base/tools.h"
 
 #include <fstream>
 
@@ -1121,6 +1122,24 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
             i->second->exportDataToFile ( i->first, outdir );
         }
     }
+}
+
+void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
+{
+  TemporaryCaseDir gendir;
+  std::string stem = file.filename().stem().string();
+  boost::filesystem::path outpath = gendir.dir / (stem+".tex");
+  writeLatexFile( outpath );
+
+  for (int i=0; i<2; i++)
+  {
+      if ( ::system( str( format("cd \"%s\" && pdflatex \"%s\"") % gendir.dir.string() % outpath.filename().string() ).c_str() ))
+      {
+          throw insight::Exception("TeX input file was written but could not execute pdflatex successfully.");
+      }
+  }
+
+  boost::filesystem::copy_file( gendir.dir/ (stem+".pdf"), file, copy_option::overwrite_if_exists );
 }
 
 

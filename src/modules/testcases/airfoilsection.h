@@ -38,10 +38,11 @@ public:
 /*
 PARAMETERSET>>> AirfoilSection Parameters
 
+inherits OpenFOAMAnalysis::Parameters
+
 geometry = set
 {
 
- c         = double 1.0 "[m] chord length\n \\includegraphics[width=\\linewidth]{testcases/airfoilsection_sketches_L}"
  alpha     = double 0.0 "[deg] angle of attack\n \\includegraphics[width=\\linewidth]{testcases/airfoilsection_sketches_alpha}"
  
  LinByc    = double 1.0 "[-] Upstream extent of the channel.
@@ -97,6 +98,9 @@ fluid = set
 
 
   std::string in_, out_, up_, down_, fb_, foil_;
+  arma::mat contour_;
+  double c_;
+
 public:
   declareType("Airfoil 2D");
   
@@ -105,6 +109,8 @@ public:
   static insight::ParameterSet defaultParameters();
   
   static std::string category() { return "Generic Analyses"; }
+
+  virtual void calcDerivedInputData();
 
   virtual void createCase(insight::OpenFOAMCase& cm);
   virtual void createMesh(insight::OpenFOAMCase& cm);

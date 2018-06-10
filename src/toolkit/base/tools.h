@@ -25,6 +25,16 @@
 namespace insight
 {
   
+struct TemporaryCaseDir
+{
+  bool keep_;
+  boost::filesystem::path dir;
+
+  TemporaryCaseDir(bool keep=false, const std::string& prefix="");
+  ~TemporaryCaseDir();
+};
+
+
 class SharedPathList 
 : public std::vector<boost::filesystem::path>
 {

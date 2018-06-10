@@ -58,22 +58,70 @@ AirfoilSection::AirfoilSection(const ParameterSet& ps, const boost::filesystem::
 
 insight::ParameterSet AirfoilSection::defaultParameters()
 {
-  ParameterSet p(OpenFOAMAnalysis::defaultParameters());
-  p.extend(Parameters::makeDefault().entries());
-  return p;  
+  return Parameters::makeDefault();
 }
 
 
+void AirfoilSection::calcDerivedInputData()
+{
+  Parameters p(parameters_);
 
+  if (!boost::filesystem::exists(p.geometry.foilfile))
+    throw insight::Exception("Foil data file does not exist: "+p.geometry.foilfile.string());
+
+  std::cout<<"Reading foil from "<<p.geometry.foilfile.string()<<std::endl;
+  {
+    std::string data;
+    std::string ext = p.geometry.foilfile.extension().string();
+
+    int lnr=0;
+
+    {
+      std::ifstream f(p.geometry.foilfile.c_str());
+      if (ext==".dat") // xflr 5
+        {
+          std::string foil_name;
+          getline(f, foil_name);
+          lnr++;
+        }
+
+      std::string line;
+      while (getline(f, line))
+        {
+          lnr++;
+
+          std::istringstream l(line);
+          double x, y;
+          l >> x >> y;
+          if (l.fail()) throw insight::Exception(boost::str(boost::format("Error in foil file %s:%d: could not read x and y from \"%s\"!")
+                                                            % p.geometry.foilfile.c_str() % lnr % line));
+          data += boost::str(boost::format("%g %g\n") % x % y);
+        }
+
+      std::cout<<"DATA="<<data<<std::endl;
+      std::istringstream is(data);
+      contour_.load(is, arma::auto_detect);
+    }
+  }
+
+  double x0=arma::min(contour_.col(0));
+  c_=arma::max(contour_.col(0)) - x0;
+
+  contour_.col(0) -= x0;
+
+  // check if last pt equal to first
+  if ( arma::norm(contour_.row(0)-contour_.row(contour_.n_rows-1)) < 1e-10 )
+    {
+      contour_.shed_row(contour_.n_rows-1);
+    }
+
+  reportIntermediateParameter("c", c_, "[m] Chord length", "m");
+}
 
 void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 {
   Parameters p(parameters_);
 
-  arma::mat contour;
-  contour.load(p.geometry.foilfile.string(), arma::auto_detect);
-//   cout<<contour<<endl;
-  
   path dir = executionPath();
     
   cm.insert(new MeshingNumerics(cm));
@@ -83,19 +131,19 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   bmd->setScaleFactor(1.0);
   bmd->setDefaultPatch("walls", "wall");
   
-  double delta=p.geometry.c/double(p.mesh.nc);
+  double delta=c_/double(p.mesh.nc);
   
   std::map<int, Point> pts;
   double z0=0, h=delta;
   pts = boost::assign::map_list_of   
-      (0, 	vec3(-(p.geometry.LinByc+0.5)*p.geometry.c, -p.geometry.HByc*p.geometry.c, z0))
-      (1, 	vec3((p.geometry.LoutByc+0.5)*p.geometry.c, -p.geometry.HByc*p.geometry.c, z0))
-      (2, 	vec3((p.geometry.LoutByc+0.5)*p.geometry.c, p.geometry.HByc*p.geometry.c, z0))
-      (3, 	vec3(-(p.geometry.LinByc+0.5)*p.geometry.c, p.geometry.HByc*p.geometry.c, z0))
+      (0, 	vec3(-(p.geometry.LinByc+0.5)*c_, -p.geometry.HByc*c_, z0))
+      (1, 	vec3((p.geometry.LoutByc+0.5)*c_, -p.geometry.HByc*c_, z0))
+      (2, 	vec3((p.geometry.LoutByc+0.5)*c_, p.geometry.HByc*c_, z0))
+      (3, 	vec3(-(p.geometry.LinByc+0.5)*c_, p.geometry.HByc*c_, z0))
       .convert_to_container<std::map<int, Point> >()
   ;
   
-  arma::mat PiM=vec3(-(p.geometry.LinByc+0.4)*p.geometry.c, 0.01*p.geometry.c, z0+0.0001*h);
+  arma::mat PiM=vec3(-(p.geometry.LinByc+0.4)*c_, 0.01*c_, z0+0.0001*h);
   
   int nx=(pts[1][0]-pts[0][0])/delta;
   int ny=(pts[2][1]-pts[1][1])/delta;
@@ -135,7 +183,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   
   path targ_path(dir/"constant"/"triSurface"/"foil.stl");
   create_directories(targ_path.parent_path());
-  STLExtruder(contour, 0, z0+2.0, targ_path);
+  STLExtruder(contour_, 0, z0+2.0, targ_path);
   
   cm.executeCommand(dir, "blockMesh");  
 
@@ -155,7 +203,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
     .set_nLayers(p.mesh.nlayer)
     
     .set_fileName(targ_path)
-    .set_scale(vec3(p.geometry.c, p.geometry.c, 1))
+    .set_scale(vec3(c_, c_, 1))
     .set_rollPitchYaw(vec3(0,0,-p.geometry.alpha))
   )));
   
@@ -163,7 +211,7 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
     .set_name(foil_)
     .set_mode( snappyHexMeshFeats::NearSurfaceRefinement::Parameters::distance )
     .set_level(p.mesh.lmfoil)
-    .set_dist(0.1*p.geometry.c)
+    .set_dist(0.1*c_)
   )));
 
   shm_cfg.PiM.push_back(PiM);
@@ -266,7 +314,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
   
   arma::mat f_vs_iter=forces::readForces(cm, executionPath(), "foilForces");
   
-  double Aref=1.*p.geometry.c, Re=p.geometry.c*p.operation.vinf/p.fluid.nu;
+  double Aref=1.*c_, Re=c_*p.operation.vinf/p.fluid.nu;
   
   ptr_map_insert<ScalarResult>(*results) 
     ("Aref", Aref, "Reference area", "", "$m^2$");
@@ -342,7 +390,7 @@ insight::ResultSetPtr AirfoilSection::evaluateResults(insight::OpenFOAMCase& cm)
 "Show(streamTracerWithCustomSource1)\n"
 "streamTracerWithCustomSource1Display = GetDisplayProperties(streamTracerWithCustomSource1, view=GetActiveView())\n"
 "ColorBy(streamTracerWithCustomSource1Display, None)\n"
-"setCam(["+lexical_cast<std::string>(0.5*p.geometry.c)+",0,1], ["+lexical_cast<std::string>(0.5*p.geometry.c)+",0,0], [0,1,0], "+lexical_cast<std::string>(p.geometry.c)+")\n"
+"setCam(["+lexical_cast<std::string>(0.5*c_)+",0,1], ["+lexical_cast<std::string>(0.5*c_)+",0,0], [0,1,0], "+lexical_cast<std::string>(c_)+")\n"
   
 	"WriteImage('"+fname+"')\n"
     )

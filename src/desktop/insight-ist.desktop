@@ -1,0 +1,11 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Type=Application
+MimeType=application/insight-ist;
+Categories=Engineering;Science;Construction;
+Name=InsightCAE Workbench
+Comment=A frontend for running InsightCAE analysis workflows
+Comment[de]=Ein Frontend zur Ausführung von InsightCAE Simulationsworkflows
+Exec=bash -lc 'workbench %f'
+Icon=application-insight-ist
+

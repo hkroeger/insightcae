@@ -652,6 +652,7 @@ public:
 
     virtual void exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const;
     virtual void writeLatexFile ( const boost::filesystem::path& file ) const;
+    virtual void generatePDF ( const boost::filesystem::path& file ) const;
 
     /**
      * append the contents of this element to the given xml node

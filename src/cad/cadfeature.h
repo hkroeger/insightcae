@@ -413,7 +413,7 @@ public:
       = std::vector<boost::fusion::vector2<std::string, FeatureSetPtr> >()
   ) const;
   
-  void exportSTL(const boost::filesystem::path& filename, double abstol) const;
+  void exportSTL(const boost::filesystem::path& filename, double abstol=5e-5, bool binary=true) const;
   static void exportEMesh(const boost::filesystem::path& filename, const FeatureSet& fs, double abstol=1e-3, double maxlen=1e10);
   
   operator const TopoDS_Shape& () const;

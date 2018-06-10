@@ -124,7 +124,12 @@ public:
   {
     return this->get<VectorParameter> ( name ) ();
   }
-  
+
+  inline arma::mat& getMatrix ( const std::string& name )
+  {
+    return this->get<MatrixParameter> ( name ) ();
+  }
+
   inline boost::filesystem::path& getPath ( const std::string& name )
   {
     return this->get<PathParameter> ( name ) ();
@@ -159,7 +164,13 @@ public:
     this->get<VectorParameter> ( name ) () = v;
     return *this;
   }
-  
+
+  inline ParameterSet& setMatrix ( const std::string& name, const arma::mat& m )
+  {
+    this->get<MatrixParameter> ( name ) () = m;
+    return *this;
+  }
+
   inline ParameterSet& setPath ( const std::string& name, const boost::filesystem::path& fp)
   {
     this->get<PathParameter> ( name ) () = fp;

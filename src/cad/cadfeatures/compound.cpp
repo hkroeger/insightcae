@@ -102,17 +102,32 @@ void Compound::build()
       TopoDS_Compound result;
       bb.MakeCompound ( result );
 
-      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ ) {
+      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ )
+      {
           std::string name=c.first;
           FeaturePtr p=c.second;
 
           bb.Add ( result, *p );
           p->unsetLeaf();
-  //     copyDatums(*p, name+"_");
 
           providedSubshapes_[c.first]=c.second;
       }
+
       setShape ( result );
+
+      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ )
+      {
+        std::string name=c.first;
+        FeaturePtr p=c.second;
+
+        FeatureSetParserArgList args;
+        args.push_back(FeatureSetPtr(new FeatureSet(p, Face)));
+
+        FeatureSetPtr f(new FeatureSet(shared_from_this(), Face, "isIdentical(%0)", args));
+        providedFeatureSets_[name] = f;
+
+        std::cout<<"added: "<<name<<(*f)<<std::endl;
+      }
     }
     else
     {

@@ -23,6 +23,7 @@
 
 #include "basiccaseelements.h"
 #include "base/resultset.h"
+#include "base/analysis.h"
 
 namespace insight {
 
@@ -468,7 +469,7 @@ class CorrelationFunctionModel
 : public RegressionModel
 {
 public:
-  double B_, omega_;
+  double A_, B_, omega_, phi_;
   
   CorrelationFunctionModel();
   virtual int numP() const;
@@ -481,6 +482,33 @@ public:
 };
 
 
+
+class ComputeLengthScale
+: public Analysis
+{
+public:
+#include "analysiscaseelements__ComputeLengthScale__Parameters.h"
+
+/*
+PARAMETERSET>>> ComputeLengthScale Parameters
+
+R_vs_x = matrix 10x2 "autocorrelation function: first column contains coordinate and second column the normalized autocorrelation values."
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType("ComputeLengthScale");
+  ComputeLengthScale(const ParameterSet& ps, const boost::filesystem::path& exepath );
+
+  virtual ResultSetPtr operator()(ProgressDisplayer* displayer=NULL);
+
+  static std::string category() { return "General Postprocessing"; }
+  static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
+};
 
 
 

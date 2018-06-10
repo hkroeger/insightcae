@@ -131,14 +131,18 @@ void ISCADParser::createPostProcExpressions()
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
                     phx::construct<PostprocActionPtr>(new_<Export>(qi::_2, qi::_1, qi::_3))) ]
         |
-        ( lit("exportSTL") >> '(' >> r_path >> ',' >> r_scalarExpression >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
+        ( (lit("exportSTL")|lit("STL")) >> '('
+                            >> r_path
+                            >> ( (',' >> r_scalarExpression)|qi::attr(ScalarPtr()) )
+                            >> ( (',' >> lit("ascii") >> qi::attr(false) )|qi::attr(true) )
+                          >> ')' >> lit("<<") >> r_solidmodel_expression >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<Export>(qi::_3, qi::_1, qi::_2))) ]
+                    phx::construct<PostprocActionPtr>(new_<ExportSTL>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
         |
         ( lit("exportEMesh") >> '(' >> r_path >> ',' >> r_scalarExpression >> ',' >> r_scalarExpression >> ')'
           >> lit("<<") >> r_edgeFeaturesExpression >> ';' )
         [ phx::bind(&Model::addPostprocActionUnnamed, model_,
-                    phx::construct<PostprocActionPtr>(new_<Export>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
+                    phx::construct<PostprocActionPtr>(new_<ExportEMesh>(qi::_4, qi::_1, qi::_2, qi::_3))) ]
         |
 
         /** \page iscad_postprocessing_gmsh gmsh: Create a tringular mesh using gmsh

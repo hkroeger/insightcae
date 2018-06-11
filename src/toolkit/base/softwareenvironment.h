@@ -113,11 +113,11 @@ public:
       
       if (argv.size()>1)
       {
-	p_in.open(argv[0], argv);
+        p_in.open(argv[0], argv, redi::pstreams::pstdout|redi::pstreams::pstderr);
       }
       else
       {
-	p_in.open(argv[0]);
+        p_in.open(argv[0], redi::pstreams::pstdout|redi::pstreams::pstderr);
       }
       
       if (!p_in.is_open())

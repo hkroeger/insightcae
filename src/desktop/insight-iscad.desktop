@@ -2,7 +2,7 @@
 [Desktop Entry]
 Type=Application
 MimeType=application/insight-iscad;
-Categories=Engineering;Science;Graphics;VectorGraphics;Construction;2DGraphics;
+Categories=Education;Engineering
 Name=InsightCAE CAD Editor
 Name[de]=InsightCAE CAD-Editor
 Comment=A script-based CAD editor

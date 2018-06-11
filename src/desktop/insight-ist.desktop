@@ -1,5 +1,5 @@
 [Desktop Entry]
-Version=1.0
+Version=1.1
 Type=Application
 MimeType=application/insight-ist;
 Categories=Education;Engineering;
@@ -8,6 +8,7 @@ Comment=A frontend for running InsightCAE analysis workflows
 Comment[de]=Ein Frontend zur Ausführung von InsightCAE Simulationsworkflows
 Exec=bash -lc "workbench %f"
 Icon=application-insight-ist
+Terminal=no
 Actions=terminal;evaluation;
 
 [Desktop Action terminal]

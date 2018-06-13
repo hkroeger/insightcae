@@ -62,7 +62,7 @@ void SoftwareEnvironment::executeCommand
   std::string line;
   while (std::getline(p_in, line))
   {
-    cout<<">> "<<line<<endl;
+    cout<<line<<endl;
     if (output) output->push_back(line);
   }
   p_in.close();

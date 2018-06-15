@@ -366,7 +366,7 @@ surfaceIntegrate::surfaceIntegrate(OpenFOAMCase& c,  const ParameterSet& ps )
 
 OFDictData::dict surfaceIntegrate::functionObjectDict() const
 {
-  insight::Warning("incomplete implementation");
+//  insight::Warning("incomplete implementation");
 
   OFDictData::dict fod;
   fod["type"]="surfaceFieldValue";

@@ -1024,6 +1024,8 @@ bool checkIfReconstructLatestTimestepNeeded
   const boost::filesystem::path& location
 );
 
+void exportEMesh(const std::vector<arma::mat>& pts, const boost::filesystem::path& filename);
+
 }
 
 #endif // OPENFOAMTOOLS_H

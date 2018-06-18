@@ -3227,4 +3227,35 @@ bool checkIfReconstructLatestTimestepNeeded
   return false;
 }
 
+
+
+void exportEMesh(const std::vector<arma::mat>& points, const boost::filesystem::path& filename)
+{
+  std::ofstream f(filename.c_str());
+  f<<"FoamFile {"<<endl
+   <<" version     2.0;"<<endl
+   <<" format      ascii;"<<endl
+   <<" class       featureEdgeMesh;"<<endl
+   <<" location    \"\";"<<endl
+   <<" object      "<<filename.filename().string()<<";"<<endl
+   <<"}"<<endl;
+
+  f<<points.size()<<endl
+   <<"("<<endl;
+  BOOST_FOREACH(const arma::mat& p, points)
+  {
+    f<<OFDictData::to_OF(p)<<endl;
+  }
+  f<<")"<<endl;
+
+  f<<(points.size()-1)<<endl
+   <<"("<<endl;
+  for (size_t i=1; i<points.size(); i++)
+  {
+    f<<"("<<(i-1)<<" "<<i<<")"<<endl;
+  }
+  f<<")"<<endl;
+}
+
+
 }

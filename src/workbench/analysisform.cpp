@@ -30,6 +30,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTemporaryFile>
+#include <QScrollBar>
 #include "email.h"
 
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
@@ -65,7 +66,7 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     QWidget* lower = new QWidget;
     QHBoxLayout* hbl = new QHBoxLayout(lower);
     progdisp_=new GraphProgressDisplayer;
-    log_=new QTextEdit;
+    log_=new QPlainTextEdit;
     spl->addWidget(progdisp_);
     spl->addWidget(lower); //log_);
     hbl->addWidget(log_);
@@ -75,15 +76,21 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     connect(save_log_btn_, SIGNAL(clicked()), this, SLOT(saveLog()));
     send_log_btn_=new QPushButton("Email...");
     connect(send_log_btn_, SIGNAL(clicked()), this, SLOT(sendLog()));
+    clear_log_btn_=new QPushButton("Clear");
+    connect(clear_log_btn_, SIGNAL(clicked()), this, SLOT(clearLog()));
+    auto_scroll_down_btn_=new QPushButton("Auto Scroll");
+    connect(auto_scroll_down_btn_, SIGNAL(clicked()), this, SLOT(autoScrollLog()));
     vbl->addWidget(save_log_btn_);
     vbl->addWidget(send_log_btn_);
-    
+    vbl->addWidget(clear_log_btn_);
+    vbl->addWidget(auto_scroll_down_btn_);
+
     ui->runTabLayout->addWidget(spl);
     
     cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+    connect(cout_log_, SIGNAL(appendText(const QString&)), log_, SLOT(appendPlainText(const QString&)));
     cerr_log_ = new Q_DebugStream(std::cerr);
-    connect(cerr_log_, SIGNAL(appendText(const QString&)), log_, SLOT(append(const QString&)));
+    connect(cerr_log_, SIGNAL(appendText(const QString&)), log_, SLOT(appendPlainText(const QString&)));
 
     this->setWindowTitle(analysisName_.c_str());
     connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
@@ -295,4 +302,15 @@ void AnalysisForm::sendLog()
     e.setSubject("Analysis Log");
     e.addAttachment(QFileInfo(f).canonicalFilePath());
     e.openInDefaultProgram();
+}
+
+
+void AnalysisForm::clearLog()
+{
+  log_->clear();
+}
+
+void AnalysisForm::autoScrollLog()
+{
+  log_->verticalScrollBar()->setValue( log_->verticalScrollBar()->maximum() );
 }

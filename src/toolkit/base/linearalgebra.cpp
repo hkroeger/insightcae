@@ -669,8 +669,8 @@ void Interpolator::initialize(const arma::mat& xy_us, bool force_linear)
             gsl_spline_init (&spline[i], xy.colptr(0), xy.colptr(i+1), nrows);
         }
 
-        first=xy.row(0);
-        last=xy.row(xy.n_rows-1);
+        first_=xy.row(0);
+        last_=xy.row(xy.n_rows-1);
     }
     catch (...)
     {
@@ -732,8 +732,8 @@ double Interpolator::y(double x, int col, OutOfBounds* outOfBounds) const
     throw insight::Exception(str(format("requested value interpolation in data column %d while there are only %d columns!")
 			    % col % spline.size()));
     
-  if (x<first(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_SMALL; return first(col+1); }
-  if (x>last(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return last(col+1); }
+  if (x<first_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_SMALL; return first_(col+1); }
+  if (x>last_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return last_(col+1); }
   if (outOfBounds) *outOfBounds=IP_INBOUND;
 
   double v=gsl_spline_eval (&(spline[col]), x, &(*acc));
@@ -746,8 +746,8 @@ double Interpolator::dydx(double x, int col, OutOfBounds* outOfBounds) const
     throw insight::Exception(str(format("requested derivative interpolation in data column %d while there are only %d columns!")
 			    % col % spline.size()));
     
-  if (x<first(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_SMALL; return dydx(first(0), col); }
-  if (x>last(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return dydx(last(0), col); }
+  if (x<first_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_SMALL; return dydx(first_(0), col); }
+  if (x>last_(0)) { if (outOfBounds) *outOfBounds=IP_OUTBOUND_LARGE; return dydx(last_(0), col); }
   if (outOfBounds) *outOfBounds=IP_INBOUND;
 
   double v=gsl_spline_eval_deriv (&(spline[col]), x, &(*acc));

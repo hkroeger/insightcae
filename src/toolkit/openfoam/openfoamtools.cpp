@@ -3229,7 +3229,7 @@ bool checkIfReconstructLatestTimestepNeeded
 
 
 
-void exportEMesh(const std::vector<arma::mat>& points, const boost::filesystem::path& filename)
+void exportEMesh(const EMeshPtsList &points, const boost::filesystem::path& filename)
 {
   std::ofstream f(filename.c_str());
   f<<"FoamFile {"<<endl
@@ -3257,5 +3257,46 @@ void exportEMesh(const std::vector<arma::mat>& points, const boost::filesystem::
   f<<")"<<endl;
 }
 
+
+void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::path& filename)
+{
+  std::ofstream f(filename.c_str());
+  f<<"FoamFile {"<<endl
+   <<" version     2.0;"<<endl
+   <<" format      ascii;"<<endl
+   <<" class       featureEdgeMesh;"<<endl
+   <<" location    \"\";"<<endl
+   <<" object      "<<filename.filename().string()<<";"<<endl
+   <<"}"<<endl;
+
+  int npts=0;
+  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  {
+    npts+=points.size();
+  }
+  f<<npts<<endl
+   <<"("<<endl;
+  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  {
+    BOOST_FOREACH(const arma::mat& p, points)
+    {
+      f<<OFDictData::to_OF(p)<<endl;
+    }
+  }
+  f<<")"<<endl;
+
+  f<<(npts-pts.size())<<endl
+   <<"("<<endl;
+  int ofs=0;
+  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  {
+    for (size_t i=1; i<points.size(); i++)
+    {
+      f<<"("<<(ofs+i-1)<<" "<<(ofs+i)<<")"<<endl;
+    }
+    ofs+=points.size();
+  }
+  f<<")"<<endl;
+}
 
 }

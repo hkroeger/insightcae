@@ -73,10 +73,8 @@ data=np.array([
 #   )
 
 dataavg=np.asarray(itk.movingAverage(
-  [
-     [ data[i,0] ] + list(np.average(data[i/2:i,1:], axis=0))
-     for i in range(1,len(data))
-   ]
+   [ [data[i,j] for j in range(0, len(data[0])-1)] for i in range(0, len(data)-1)] ,
+   0.33
    ));
 
 app = wx.PySimpleApp()
@@ -91,6 +89,7 @@ if len(headings) != ncols:
 for i in range(1, ncols):
   ax = plotter.add(heads[i-1]).gca()
   ax.grid(True)
+  ax.plot([data[0,0],data[-1,0]], [0.,0.], label=None) # include zero
   ax.plot(data[:,0], data[:,i], 'k--')
   ax.plot(dataavg[:,0], dataavg[:,i], 'k-')
 

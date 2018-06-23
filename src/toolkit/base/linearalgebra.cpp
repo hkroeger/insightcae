@@ -600,7 +600,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
   if (timeProfs.n_cols<2)
     throw insight::Exception("movingAverage: only dataset with "
       +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
-  
+
   if (timeProfs.n_rows>1)
   {
     int n_raw=timeProfs.n_rows;
@@ -645,6 +645,8 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
             I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
           result(i, j)=//mean(ccol);
               I/(xcol.max()-xcol.min());
+
+          if (i==n_avg-1) std::cout<<j<<" >> "<<result(i, j)<<" "<<ccol.min()<<" "<<ccol.max()<<std::endl;
         }
     }
     

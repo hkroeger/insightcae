@@ -33,6 +33,7 @@
 #include "base/parameterstudy.h"
 #include "base/case.h"
 #include "base/caseelement.h"
+#include "base/linearalgebra.h"
 
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamdict.h"
@@ -81,6 +82,7 @@ using namespace insight::bmd;
 %include "base/parameterstudy.h"
 %include "base/case.h"
 %include "base/caseelement.h"
+%include "base/linearalgebra.h"
 
 %include "openfoam/openfoamcase.h"
 %include "openfoam/openfoamdict.h"

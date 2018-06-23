@@ -594,8 +594,11 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
-  if (first_col_is_time && timeProfs.n_cols<2)
-    throw insight::Exception("movingAverage: first column specified as time but only dataset with "
+  if (!first_col_is_time)
+    throw insight::Exception("Internal error: moving Average unsupported!");
+
+  if (timeProfs.n_cols<2)
+    throw insight::Exception("movingAverage: only dataset with "
       +lexical_cast<std::string>(timeProfs.n_cols)+" columns given. There is no data to average.");
   
   if (timeProfs.n_rows>1)
@@ -629,11 +632,19 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 //	result(ri,0)=timeProfs(i, 0); // copy time
         result(i,0)=x;
       }
-      arma::mat selrows=timeProfs.rows( timeProfs.col(0)>=from && timeProfs.col(0)<=to );
+      arma::uvec indices = arma::find( timeProfs.col(0)>=from && timeProfs.col(0)<=to );
+      arma::mat selrows=timeProfs.rows( indices );
+      if (i==n_avg-1) std::cout<<"sel rows="<<selrows<<std::endl;
+      arma::mat xcol=selrows.col(0);
       for (int j=j0; j<timeProfs.n_cols; j++)
         {
 //          result(ri, j)=mean(timeProfs.rows(from, to).col(j));
-          result(i, j)=mean(selrows.col(j));
+          arma::mat ccol=selrows.col(j);
+          double I=0;
+          for (int k=1; k<xcol.n_rows; k++)
+            I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
+          result(i, j)=//mean(ccol);
+              I/(xcol.max()-xcol.min());
         }
     }
     

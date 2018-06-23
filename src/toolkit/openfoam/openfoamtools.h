@@ -1025,8 +1025,10 @@ bool checkIfReconstructLatestTimestepNeeded
 );
 
 typedef std::vector<arma::mat> EMeshPtsList;
+typedef std::vector<EMeshPtsList> EMeshPtsListList;
+
 void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filename);
-void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::path& filename);
+void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 
 }
 

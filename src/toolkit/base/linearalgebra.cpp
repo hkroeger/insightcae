@@ -609,11 +609,13 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 //    int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );
       double window=fraction*dx_raw;
 //    int window_ofs=window;
-    double window_ofs=window;
-    if (centerwindow) window_ofs=window/2.0;
     double avgdx=dx_raw/double(timeProfs.n_rows);
 //    int n_avg=n_raw-window;
     int n_avg=std::min(n_raw, std::max(2, int((dx_raw-window)/avgdx) ));
+    window=n_avg*avgdx;
+
+    double window_ofs=window;
+    if (centerwindow) window_ofs=window/2.0;
 
     arma::mat result=zeros(n_avg, timeProfs.n_cols);
     

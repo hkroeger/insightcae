@@ -13,6 +13,8 @@ import matplotlib as mpl
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as Canvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 
+import Insight.toolkit as itk
+
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -63,12 +65,17 @@ data=np.array([
   ])
 
 # moving average
-dataavg=np.asarray(
-   [
-     [ data[i,0] ] + list(np.average(data[i/2:i,1:], axis=0))
-     for i in range(1,len(data))
-   ]
-   )
+#dataavg=np.asarray(
+#   [
+#     [ data[i,0] ] + list(np.average(data[i/2:i,1:], axis=0))
+#     for i in range(1,len(data))
+#   ]
+#   )
+
+dataavg=np.asarray(itk.movingAverage(
+   [ [data[i,j] for j in range(0, len(data[0])-1)] for i in range(0, len(data)-1)] ,
+   0.33
+   ));
 
 app = wx.PySimpleApp()
 frame = wx.Frame(None, -1, 'Plotter')
@@ -82,6 +89,7 @@ if len(headings) != ncols:
 for i in range(1, ncols):
   ax = plotter.add(heads[i-1]).gca()
   ax.grid(True)
+  ax.plot([data[0,0],data[-1,0]], [0.,0.], label=None) # include zero
   ax.plot(data[:,0], data[:,i], 'k--')
   ax.plot(dataavg[:,0], dataavg[:,i], 'k-')
 

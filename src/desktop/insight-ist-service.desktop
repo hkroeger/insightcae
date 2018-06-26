@@ -9,12 +9,12 @@ X-KDE-Submenu=InsightCAE Analysis
 
 [Desktop Action terminal]
 Name=Run analysis in terminal
-Name[de]="Analyse im Terminal starten"
+Name[de]=Analyse im Terminal starten
 Icon=application-insight-ist
 Exec=xterm -geometry 135x65 -e bash -lc "analyze %f; read -n 1 -s -r -p 'Execution finished: Press any key to close terminal'"
 
 [Desktop Action evaluation]
 Name=OpenFOAM-Analysis: run evaluation only in terminal
-Name[de]="OpenFOAM-Simulation: Nur Auswertung im Terminal ausführen"
+Name[de]=OpenFOAM-Simulation: Nur Auswertung im Terminal ausführen
 Icon=application-insight-ist
 Exec=xterm -geometry 135x65 -e bash -lc "analyze --bool run/evaluateonly:1 %f; read -n 1 -s -r -p 'Execution finished: Press any key to close terminal'"

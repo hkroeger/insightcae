@@ -32,6 +32,7 @@
 #include <QMetaType>
 #include <QTreeWidget>
 #include <QPushButton>
+#include <QPlainTextEdit>
 
 #include "boost/shared_ptr.hpp"
 
@@ -99,9 +100,9 @@ protected:
   ParameterEditorWidget* peditor_;
   
   Q_DebugStream *cout_log_, *cerr_log_;
-  QTextEdit *log_;
+  QPlainTextEdit *log_;
   
-  QPushButton *save_log_btn_, *send_log_btn_;
+  QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -123,6 +124,8 @@ private slots:
   
   void saveLog();
   void sendLog();
+  void clearLog();
+  void autoScrollLog();
 
 signals:
   void apply();

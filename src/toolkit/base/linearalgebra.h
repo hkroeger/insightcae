@@ -185,7 +185,7 @@ public:
   } OutOfBounds;
 
 private:
-  arma::mat xy_, first, last;
+  arma::mat xy_, first_, last_;
   boost::shared_ptr<gsl_interp_accel> acc;
   boost::ptr_vector<gsl_spline> spline ;
   
@@ -237,7 +237,11 @@ public:
   arma::mat xy(const arma::mat& x, OutOfBounds* outOfBounds=NULL) const;
   
   inline const arma::mat& rawdata() const { return xy_; }
-  
+  inline const arma::mat& first() const { return first_; }
+  inline const arma::mat& last() const { return last_; }
+  inline double firstX() const { return first_(0); }
+  inline double lastX() const { return last_(0); }
+
   inline int ncol() const { return spline.size(); }
 };
 

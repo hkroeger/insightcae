@@ -307,7 +307,21 @@ public:
     virtual ResultElementPtr clone() const;
 };
 
+#ifdef SWIG
+%template(vectorNumericalResult) NumericalResult<arma::mat>;
+#endif
 
+class VectorResult
+    : public NumericalResult<arma::mat>
+{
+public:
+    declareType ( "VectorResult" );
+
+    VectorResult ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
+    VectorResult ( const arma::mat& value, const std::string& shortDesc, const std::string& longDesc, const std::string& unit );
+    virtual void writeLatexCode ( std::ostream& f, const std::string& name, int level, const boost::filesystem::path& outputfilepath ) const;
+    virtual ResultElementPtr clone() const;
+};
 
 
 class TabularResult

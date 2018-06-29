@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
         {
             for (int i=0; i<2; i++)
             {
-                if ( ::system( str( format("cd %s && pdflatex \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
+                if ( ::system( str( format("cd %s && pdflatex -interaction=batchmode \"%s\"") % exedir.string() % outpath.string() ).c_str() ))
                 {
                     Warning("TeX input file was written but could not execute pdflatex successfully.");
                     break;

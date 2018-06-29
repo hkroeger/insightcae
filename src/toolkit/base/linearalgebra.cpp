@@ -26,8 +26,7 @@
 #include "boost/tuple/tuple.hpp"
 #include "boost/format.hpp"
 #include "base/exception.h"
-#include "gsl/gsl_multimin.h"
-#include "gsl/gsl_integration.h"
+
 // #include "minpack.h"
 // #include <dlib/optimization.h>
 

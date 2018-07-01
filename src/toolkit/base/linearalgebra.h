@@ -260,15 +260,18 @@ double functor_int (double x, void * params) {
   return (*p)(x);
 }
 
+/**
+ * computes the definite integral over f from a to b numerically
+ */
 template<class F>
-double integrate(F ipol, double a, double b)
+double integrate(F f, double a, double b)
 {
   gsl_integration_workspace * w
     = gsl_integration_workspace_alloc (1000);
 
   double result, error;
 
-  F* p=&ipol;
+  F* p=&f;
   gsl_function FUNC;
   FUNC.function = &functor_int<F>;
   FUNC.params = p;
@@ -277,6 +280,37 @@ double integrate(F ipol, double a, double b)
   (
     &FUNC,
     a, b,
+    0, 1e-5, 1000,
+    w, &result, &error
+  );
+  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
+
+  gsl_integration_workspace_free (w);
+
+  return result;
+}
+
+
+/**
+ * computes the semi-indefinite integral over f from a to infinity numerically
+ */
+template<class F>
+double integrate_indef(F f, double a=0)
+{
+  gsl_integration_workspace * w
+    = gsl_integration_workspace_alloc (1000);
+
+  double result, error;
+
+  F* p=&f;
+  gsl_function FUNC;
+  FUNC.function = &functor_int<F>;
+  FUNC.params = p;
+
+  gsl_integration_qagiu
+  (
+    &FUNC,
+    a,
     0, 1e-5, 1000,
     w, &result, &error
   );

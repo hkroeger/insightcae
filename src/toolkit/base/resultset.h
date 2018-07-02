@@ -615,6 +615,9 @@ public:
 };
 
 
+typedef boost::shared_ptr<ResultSection> ResultSectionPtr;
+
+
 class ResultSet
     :
     public ResultElementCollection,

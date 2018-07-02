@@ -1520,7 +1520,7 @@ void Chart::generatePlotImage ( const path& imagepath ) const
             "mv "+bn+".tex "+ ( tmp.dir/ ( bn+".tex" ) ).string()+"; "
             "mv "+bn+"-inc.eps "+ ( tmp.dir/ ( bn+"-inc.eps" ) ).string()+"; "
             "cd "+tmp.dir.string()+"; "
-            "pdflatex -shell-escape "+bn+".tex; "
+            "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
             "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
         ).c_str() );
 }

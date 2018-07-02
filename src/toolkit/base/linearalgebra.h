@@ -26,6 +26,8 @@
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
+#include "gsl/gsl_multimin.h"
+#include "gsl/gsl_integration.h"
 
 #include "boost/shared_ptr.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
@@ -249,6 +251,75 @@ arma::mat integrate(const arma::mat& xy);
 
 double integrate(const Interpolator& ipol, double a, double b, int comp);
 arma::mat integrate(const Interpolator& ipol, double a, double b);
+
+
+
+template<class F>
+double functor_int (double x, void * params) {
+  F* p = static_cast<F *>(params);
+  return (*p)(x);
+}
+
+/**
+ * computes the definite integral over f from a to b numerically
+ */
+template<class F>
+double integrate(F f, double a, double b)
+{
+  gsl_integration_workspace * w
+    = gsl_integration_workspace_alloc (1000);
+
+  double result, error;
+
+  F* p=&f;
+  gsl_function FUNC;
+  FUNC.function = &functor_int<F>;
+  FUNC.params = p;
+
+  gsl_integration_qags
+  (
+    &FUNC,
+    a, b,
+    0, 1e-5, 1000,
+    w, &result, &error
+  );
+  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
+
+  gsl_integration_workspace_free (w);
+
+  return result;
+}
+
+
+/**
+ * computes the semi-indefinite integral over f from a to infinity numerically
+ */
+template<class F>
+double integrate_indef(F f, double a=0)
+{
+  gsl_integration_workspace * w
+    = gsl_integration_workspace_alloc (1000);
+
+  double result, error;
+
+  F* p=&f;
+  gsl_function FUNC;
+  FUNC.function = &functor_int<F>;
+  FUNC.params = p;
+
+  gsl_integration_qagiu
+  (
+    &FUNC,
+    a,
+    0, 1e-5, 1000,
+    w, &result, &error
+  );
+  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
+
+  gsl_integration_workspace_free (w);
+
+  return result;
+}
 
 struct compareArmaMat 
 {

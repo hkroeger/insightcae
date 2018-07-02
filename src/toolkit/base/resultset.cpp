@@ -1158,14 +1158,23 @@ void ResultSet::writeLatexFile ( const boost::filesystem::path& file ) const
 
 void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 {
-  TemporaryCaseDir gendir;
   std::string stem = file.filename().stem().string();
+
+  {
+      path outdir ( file.parent_path() / ( "report_data_"+stem ) );
+      create_directory ( outdir );
+      for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
+          i->second->exportDataToFile ( i->first, outdir );
+      }
+  }
+
+  TemporaryCaseDir gendir;
   boost::filesystem::path outpath = gendir.dir / (stem+".tex");
   writeLatexFile( outpath );
 
   for (int i=0; i<2; i++)
   {
-      if ( ::system( str( format("cd \"%s\" && pdflatex -interaction=nonstopmode \"%s\"") % gendir.dir.string() % outpath.filename().string() ).c_str() ))
+      if ( ::system( str( format("cd \"%s\" && pdflatex -interaction=batchmode \"%s\"") % gendir.dir.string() % outpath.filename().string() ).c_str() ))
       {
           throw insight::Exception("TeX input file was written but could not execute pdflatex successfully.");
       }
@@ -1173,13 +1182,6 @@ void ResultSet::generatePDF ( const boost::filesystem::path& file ) const
 
   boost::filesystem::copy_file( gendir.dir/ (stem+".pdf"), file, copy_option::overwrite_if_exists );
 
-  {
-      path outdir ( gendir.dir / ( "report_data_"+stem ) );
-      create_directory ( outdir );
-      for ( ResultSet::const_iterator i=begin(); i!=end(); i++ ) {
-          i->second->exportDataToFile ( i->first, outdir );
-      }
-  }
 }
 
 
@@ -1518,7 +1520,7 @@ void Chart::generatePlotImage ( const path& imagepath ) const
             "mv "+bn+".tex "+ ( tmp.dir/ ( bn+".tex" ) ).string()+"; "
             "mv "+bn+"-inc.eps "+ ( tmp.dir/ ( bn+"-inc.eps" ) ).string()+"; "
             "cd "+tmp.dir.string()+"; "
-            "pdflatex -shell-escape "+bn+".tex; "
+            "pdflatex -interaction=batchmode -shell-escape "+bn+".tex; "
             "convert -density 600 "+bn+".pdf "+absolute ( imagepath ).string()
         ).c_str() );
 }

@@ -21,6 +21,11 @@
 #define TOOLS_H
 
 #include "base/boost_include.h"
+#include "base/linearalgebra.h"
+
+class vtkPolyData;
+class vtkCellArray;
+
 
 namespace insight
 {
@@ -56,6 +61,37 @@ class ExecTimer
 public:
     ExecTimer(const std::string& name);
 };
+
+
+
+class LineMesh_to_OrderedPointTable
+        : public std::vector<arma::mat>
+{
+    void calcConnectionInfo(vtkCellArray* lines);
+
+public:
+    typedef std::vector<int> idList;
+    typedef std::map<int,idList> idListMap;
+
+    idListMap pointCells_, cellPoints_;
+    std::set<int> endPoints_;
+
+    LineMesh_to_OrderedPointTable(vtkPolyData* pd);
+
+    inline int nEndpoints() const { return endPoints_.size(); }
+
+    void printSummary(std::ostream&, vtkPolyData* pd=NULL) const;
+
+    /**
+     * @brief txyz
+     * convert point list into a single matrix
+     * @return
+     * matrix with first column: distance coordinate,
+     * cols 2,3,4: x, y, z
+     */
+    arma::mat txyz() const;
+};
+
 
 }
 

@@ -41,6 +41,7 @@ set(toolkit_SOURCES
     base/vtktools.cpp
     base/caseelement.cpp
     base/case.cpp
+    base/units.cpp
     
     openfoam/blockmesh_templates.cpp
     openfoam/analysiscaseelements.cpp

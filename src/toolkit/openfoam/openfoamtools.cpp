@@ -1170,6 +1170,12 @@ void mapFields
 {
   std::string execname="mapFields";
 
+  if (!boost::filesystem::exists(source/"system"/"controlDict"))
+      throw insight::Exception("Source case for field mapping does not exist or does not contain a controlDict: "+source.string());
+
+  if (!boost::filesystem::exists(target/"system"/"controlDict"))
+      throw insight::Exception("Target case for field mapping does not exist or does not contain a controlDict: "+target.string());
+
   path mfdPath=target / "system" / "mapFieldsDict";
   if (!exists(mfdPath))
   {

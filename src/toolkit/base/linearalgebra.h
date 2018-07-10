@@ -283,11 +283,29 @@ double integrate(F f, double a, double b)
     0, 1e-5, 1000,
     w, &result, &error
   );
-  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
+//  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
 
   gsl_integration_workspace_free (w);
 
   return result;
+}
+
+
+/**
+ * computes the definite integral over f from a to b numerically using trapez rule
+ */
+template<class F>
+double integrate_trpz(F f, double a, double b, int n=20)
+{
+  double res=0.;
+
+  double dx=(b-a)/double(n-1);
+  for (int i=0; i<n; i++)
+  {
+      double x = a+ dx*(double(i)+0.5);
+      res+=f(x)*dx;
+  }
+  return res;
 }
 
 
@@ -314,7 +332,7 @@ double integrate_indef(F f, double a=0)
     0, 1e-5, 1000,
     w, &result, &error
   );
-  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
+//  std::cout<<"integration residual = "<<error<<" (result="<<result<<")"<<std::endl;
 
   gsl_integration_workspace_free (w);
 

@@ -625,7 +625,7 @@ Parameter* ArrayParameter::clone () const
   ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex());
   for (int i=0; i<size(); i++)
   {
-    np->appendValue(value_[i]);
+    np->appendValue( *(value_[i]) );
   }
   return np;
 }
@@ -639,7 +639,7 @@ rapidxml::xml_node<>* ArrayParameter::appendToNode(const std::string& name, rapi
   defaultValue_->appendToNode("default", doc, *child, inputfilepath);
   for (int i=0; i<size(); i++)
   {
-    value_[i].appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
+    value_[i]->appendToNode(boost::lexical_cast<std::string>(i), doc, *child, inputfilepath);
   }
   return child;
 }
@@ -649,6 +649,9 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
 {
   using namespace rapidxml;
   xml_node<>* child = findNode(node, name);
+
+  std::vector<std::pair<double, ParameterPtr> > readvalues;
+
   if (child)
   {
     value_.clear();
@@ -657,18 +660,28 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
       std::string name(e->first_attribute("name")->value());
       if (name=="default")
       {
-// 	cout<<"reading default value"<<endl;
-// 	defaultValue_.reset(Parameter::lookup(e->name(), ""));
-	defaultValue_->readFromNode( name, doc, *child, inputfilepath );
+        defaultValue_->readFromNode( name, doc, *child, inputfilepath );
       }
       else
       {
-	int i=boost::lexical_cast<int>(name);
-// 	cout<<"Reading element i="<<i<<endl;
-	if (value_.size()<i+1) value_.resize(i+1, defaultValue_.get());
-// 	cout<<"now at size="<<size()<<endl;
-	value_[i].readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
+        int i=boost::lexical_cast<int>(name);
+        ParameterPtr p(defaultValue_->clone());
+        p->readFromNode( boost::lexical_cast<std::string>(i), doc, *child, inputfilepath );
+
+        readvalues.push_back( decltype(readvalues)::value_type(i, p) );
       }
+    }
+
+    sort(readvalues.begin(), readvalues.end(),
+         [](const decltype(readvalues)::value_type& v1, const decltype(readvalues)::value_type& v2)
+            {
+                return v1.first < v2.first;
+            }
+    );
+
+    BOOST_FOREACH(const auto& v, readvalues)
+    {
+        value_.push_back(v.second);
     }
   }
 }

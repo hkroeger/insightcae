@@ -428,11 +428,11 @@ class ArrayParameter
     : public Parameter
 {
 public:
-    typedef boost::ptr_vector<Parameter> value_type;
+    typedef std::vector<ParameterPtr> value_type;
 
 protected:
-    boost::shared_ptr<Parameter> defaultValue_;
-    boost::ptr_vector<Parameter> value_;
+    ParameterPtr defaultValue_;
+    std::vector<ParameterPtr> value_;
 
 public:
     declareType ( "array" );
@@ -451,19 +451,19 @@ public:
     }
     inline void appendValue ( const Parameter& np )
     {
-        value_.push_back ( np.clone() );
+        value_.push_back ( ParameterPtr( np.clone() ) );
     }
     inline void appendEmpty()
     {
-        value_.push_back ( defaultValue_->clone() );
+        value_.push_back ( ParameterPtr( defaultValue_->clone() ) );
     }
     inline Parameter& operator[] ( int i )
     {
-        return value_[i];
+        return *(value_[i]);
     }
     inline const Parameter& operator[] ( int i ) const
     {
-        return value_[i];
+        return *(value_[i]);
     }
     inline int size() const
     {

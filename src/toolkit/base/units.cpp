@@ -5,6 +5,13 @@
 namespace SI
 {
 
+double microns=1e-6;
+double mm=1e-3;
+double cm=0.01;
+double m=1.;
+double km=1e3;
+
+
 double rad=1.;
 double deg=M_PI/180.;
 

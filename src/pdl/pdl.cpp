@@ -469,6 +469,93 @@ struct VectorParameterParser
 
 
 
+struct DoubleRangeParameterParser
+{
+  struct Data
+  : public ParserDataBase
+  {
+    std::vector<double> value;
+
+    Data(const std::vector<double>& v, const std::string& d)
+    : ParserDataBase(d), value(v)
+    {}
+
+    virtual void cppAddHeader(std::set<std::string>& headers) const
+    {
+      headers.insert("<set>");
+    };
+
+    virtual std::string cppType(const std::string&) const
+    {
+      return "std::set<double>";
+    }
+
+    virtual std::string cppParamType(const std::string& name) const { return "insight::DoubleRangeParameter"; };
+
+    virtual std::string cppValueRep(const std::string& name) const
+    {
+      std::ostringstream os;
+      os<<"boost::assign::list_of";
+      for (int i=0; i<value.size(); i++)
+      {
+        os<<"("<<value[i]<<")";
+      }
+      os<<".convert_to_container<std::set<double> >()";
+      return os.str();
+    }
+
+    /**
+     * write the code to
+     * transfer the values form the static c++ struct into the dynamic parameter set
+     */
+    virtual void cppWriteSetStatement
+    (
+        std::ostream& os,
+        const std::string& name,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string& typepref
+    ) const
+    {
+        os<<varname<<".values() = "<<staticname<<";"<<endl;
+    }
+
+    /**
+     * write the code to
+     * transfer values from the dynamic parameter set into the static c++ data structure
+     */
+    virtual void cppWriteGetStatement
+    (
+        std::ostream& os,
+        const std::string& name,
+        const std::string& varname,
+        const std::string& staticname,
+        const std::string& typepref
+    ) const
+    {
+        os<<staticname<<" = "<<varname<<".values();"<<endl;
+    }
+
+  };
+
+
+  template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
+  inline static void insertrule(PDLParserRuleset<Iterator,Skipper>& ruleset)
+  {
+    ruleset.parameterDataRules.add
+    (
+      "doubleRange",
+      typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
+    ( "(" >> *double_ >> ")" >> ruleset.r_description_string )
+    [ qi::_val = phx::construct<ParserDataBase::Ptr>(
+           new_<Data>(qi::_1, qi::_2)
+          ) ]
+      ))
+    );
+  }
+};
+
+
 
 struct IntParameterParser
 {
@@ -1525,6 +1612,7 @@ public:
     IncludedSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectionParameterParser::insertrule<Iterator, Skipper>(rules);
     ArrayParameterParser::insertrule<Iterator, Skipper>(rules);
+    DoubleRangeParameterParser::insertrule<Iterator, Skipper>(rules);
     SelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     DynamicClassSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);
     DynamicClassParametersSelectableSubsetParameterParser::insertrule<Iterator, Skipper>(rules);

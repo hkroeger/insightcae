@@ -4,12 +4,20 @@
 namespace SI
 {
 
+// mass
+
+extern double ton;
+extern double kg;
+extern double gram;
+extern double lb;
+
 // length
 extern double microns;
 extern double mm;
 extern double cm;
 extern double m;
 extern double km;
+extern double in;
 
 // time
 extern double sec;

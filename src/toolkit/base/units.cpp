@@ -5,6 +5,19 @@
 namespace SI
 {
 
+double ton=1e3;
+double kg=1.;
+double gram=1e-3;
+double lb=0.45359237;
+
+double microns=1e-6;
+double mm=1e-3;
+double cm=0.01;
+double m=1.;
+double km=1e3;
+double in=0.0254;
+
+
 double rad=1.;
 double deg=M_PI/180.;
 

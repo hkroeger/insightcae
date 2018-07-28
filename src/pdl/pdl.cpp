@@ -504,10 +504,6 @@ struct DoubleRangeParameterParser
       return os.str();
     }
 
-    /**
-     * write the code to
-     * transfer the values form the static c++ struct into the dynamic parameter set
-     */
     virtual void cppWriteSetStatement
     (
         std::ostream& os,
@@ -520,10 +516,6 @@ struct DoubleRangeParameterParser
         os<<varname<<".values() = "<<staticname<<";"<<endl;
     }
 
-    /**
-     * write the code to
-     * transfer values from the dynamic parameter set into the static c++ data structure
-     */
     virtual void cppWriteGetStatement
     (
         std::ostream& os,

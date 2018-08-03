@@ -67,6 +67,7 @@ class consistentCurveSet
 
     // Private Member Functions
 
+#ifdef CONSISTENTCURVESAMPLESET_V1
         //- Sample till hits boundary. Called with singleParticle at position
         //  inbetween sampleCoords_[sampleI] and sampleCoords_[sampleI+1].
         //  Returns false if end of samples reached.
@@ -86,6 +87,7 @@ class consistentCurveSet
             DynamicList<label>& samplingFaces,
             DynamicList<scalar>& samplingCurveDist
         ) const;
+#endif
 
         //- Samples all point in sampleCoords_
         //  samplingSegments contains segmentNo for each sample.

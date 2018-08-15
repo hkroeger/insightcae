@@ -59,10 +59,11 @@ lines=[l for l in lines_org if not l.strip().startswith('#')]
 #headings=lines[0].lstrip(' #').split()
 headings=[]
 
-data=np.array([
+data_raw=[
    map(float, line.replace('(', '').replace(')', '').replace(',', ' ').replace(';', ' ').replace('  ', ' ').split()) 
    for line in lines[1+opts.skip:]
-  ])
+  ]
+data=np.array(data_raw)
 
 # moving average
 #dataavg=np.asarray(
@@ -72,10 +73,9 @@ data=np.array([
 #   ]
 #   )
 
-dataavg=np.asarray(itk.movingAverage(
-   [ [data[i,j] for j in range(0, len(data[0])-1)] for i in range(0, len(data)-1)] ,
-   0.33
-   ));
+#print "data=", data
+
+dataavg=np.asarray(itk.movingAverage( data_raw, 0.33 ));
 
 app = wx.PySimpleApp()
 frame = wx.Frame(None, -1, 'Plotter')

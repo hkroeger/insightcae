@@ -594,7 +594,7 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
   if (!first_col_is_time)
-    throw insight::Exception("Internal error: moving Average unsupported!");
+    throw insight::Exception("Internal error: moving average without time column is currently unsupported!");
 
   if (timeProfs.n_cols<2)
     throw insight::Exception("movingAverage: only dataset with "
@@ -603,57 +603,83 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
   if (timeProfs.n_rows>1)
   {
     int n_raw=timeProfs.n_rows;
+
     double x0=timeProfs.col(0).min();
-      double dx_raw=timeProfs.col(0).max()-x0;
-//    int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );
-      double window=fraction*dx_raw;
-//    int window_ofs=window;
-    double avgdx=dx_raw/double(timeProfs.n_rows);
-//    int n_avg=n_raw-window;
+    double dx_raw=timeProfs.col(0).max()-x0;
+
+//    std::cout<<"mvg avg: range ["<<x0<<":"<<timeProfs.col(0).max()<<"]"<<std::endl;
+
+    double window=fraction*dx_raw;
+    double avgdx=dx_raw/double(n_raw);
+
+    // number of averages to compute
     int n_avg=std::min(n_raw, std::max(2, int((dx_raw-window)/avgdx) ));
-    window=n_avg*avgdx;
+//    window=n_avg*avgdx;
 
     double window_ofs=window;
-    if (centerwindow) window_ofs=window/2.0;
+    if (centerwindow)
+    {
+        window_ofs=window/2.0;
+    }
 
     arma::mat result=zeros(n_avg, timeProfs.n_cols);
     
-//    for (int i=window_ofs; i<n_avg+window_ofs; i++)
     for (int i=0; i<n_avg; i++)
     {
-        double x=x0+window_ofs+double(i)*avgdx;
-//      int ri=i-window_ofs;
-//      int from=i-window_ofs, to=from+window;
-        double from=x-window_ofs, to=from+window;
-//       cout<<i<<" "<<n_avg<<" "<<n_raw<<" "<<from<<" "<<to<<endl;
-      int j0=0;
-      if (first_col_is_time)
-      {
-	j0=1;
-//	result(ri,0)=timeProfs(i, 0); // copy time
-        result(i,0)=x;
-      }
-      arma::uvec indices = arma::find( timeProfs.col(0)>=from && timeProfs.col(0)<=to );
-      arma::mat selrows=timeProfs.rows( indices );
-      if (i==n_avg-1) std::cout<<"sel rows="<<selrows<<std::endl;
-      arma::mat xcol=selrows.col(0);
-      for (int j=j0; j<timeProfs.n_cols; j++)
-        {
-//          result(ri, j)=mean(timeProfs.rows(from, to).col(j));
-          arma::mat ccol=selrows.col(j);
-          double I=0;
-          for (int k=1; k<xcol.n_rows; k++)
-            I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
-          result(i, j)=//mean(ccol);
-              I/(xcol.max()-xcol.min());
+        double x = x0 + window_ofs + double(i)*avgdx;
 
-          if (i==n_avg-1) std::cout<<j<<" >> "<<result(i, j)<<" "<<ccol.min()<<" "<<ccol.max()<<std::endl;
+        double from = x - window_ofs, to = from + window;
+
+//        std::cout<<"avg from "<<from<<" to "<<to<<std::endl;
+
+        int j0=0;
+        if (first_col_is_time)
+        {
+            j0=1;
+            result(i,0)=x;
+        }
+        arma::uvec indices = arma::find( timeProfs.col(0)>=from && timeProfs.col(0)<=to );
+        arma::mat selrows=timeProfs.rows( indices );
+        if (selrows.n_rows==0) // nothing selected: take the closest row
+        {
+            indices = arma::sort_index(arma::mat(pow(timeProfs.col(0) - 0.5*(from+to), 2)));
+            selrows=timeProfs.row( indices(0) );
+        }
+//        if (i==n_avg-1) std::cout<<"sel rows="<<selrows<<std::endl;
+
+        if (selrows.n_rows==1)
+        {
+            for (int j=j0; j<timeProfs.n_cols; j++)
+            {
+               result(i, j) = arma::as_scalar(selrows.col(j));
+            }
+        }
+        else
+        {
+
+            arma::mat xcol=selrows.col(0);
+            for (int j=j0; j<timeProfs.n_cols; j++)
+            {
+              arma::mat ccol=selrows.col(j);
+              double I=0;
+              for (int k=1; k<xcol.n_rows; k++)
+              {
+                I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
+              }
+              result(i, j) = I/(xcol.max()-xcol.min());
+
+//              if (i==n_avg-1)
+//              {
+//                  std::cout<<j<<" >> "<<result(i, j)<<" "<<ccol.min()<<" "<<ccol.max()<<std::endl;
+//              }
+            }
         }
     }
     
     return result;
     
-  } else 
+  }
+  else
   {
     return timeProfs;
   }

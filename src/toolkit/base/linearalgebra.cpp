@@ -603,8 +603,8 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
   if (timeProfs.n_rows>1)
   {
     int n_raw=timeProfs.n_rows;
-    double x0=timeProfs.col(0).min();
-      double dx_raw=timeProfs.col(0).max()-x0;
+    double x0=arma::min(timeProfs.col(0));
+      double dx_raw=arma::max(timeProfs.col(0))-x0;
 //    int window=std::min(n_raw, std::max(2, int( double(n_raw)*fraction )) );
       double window=fraction*dx_raw;
 //    int window_ofs=window;

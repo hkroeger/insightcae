@@ -367,7 +367,7 @@ Handle_AIS_InteractiveObject DatumPlaneData::createAISRepr(AIS_InteractiveContex
 
   Handle_AIS_Plane aplane(new AIS_Plane(Handle_Geom_Plane(new Geom_Plane(plane().Transformed(tr)))));
   context.Load(aplane);
-  aplane->SetSize(100);
+
   Handle_AIS_InteractiveObject alabel(new InteractiveText
     (
       boost::str(boost::format("PL:%s") % label), insight::Vector(point().Transformed(tr).XYZ())

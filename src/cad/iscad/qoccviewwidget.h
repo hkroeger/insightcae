@@ -5,6 +5,7 @@
 #include <QtCore>
 #include <QtGui>
 #include "qocc.h"
+#include "AIS_Plane.hxx"
 #include <QtOpenGL/QGLWidget>
 
 #include "qmodelstepitem.h"
@@ -138,6 +139,10 @@ public slots:
   
   void displayMessage(const QString& msg);
 
+  Bnd_Box sceneBoundingBox() const;
+  bool updatePlaneSize(const Handle_AIS_InteractiveObject& ppl, double size);
+  void updatePlanesSizes();
+
   void onShow(QDisplayableModelTreeItem* di);
   void onHide(QDisplayableModelTreeItem* di);
   void onSetDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
@@ -167,7 +172,7 @@ protected: // methods
   void displayContextMenu( const QPoint& p);
   
 private: // members
-  
+
 #ifdef WNT
   Handle_WNT_Window		myWindow;
 #else

@@ -148,6 +148,9 @@ ExecTimer::ExecTimer(const std::string& name)
 }
 
 
+ExecTimer::~ExecTimer()
+{}
+
 
 
 

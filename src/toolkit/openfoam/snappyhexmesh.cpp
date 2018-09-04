@@ -409,9 +409,9 @@ void setStdSnapCtrls(OFDictData::dict& snapCtrls)
   snapCtrls["nSmoothPatch"]=3;
   snapCtrls["tolerance"]=4.0;
   snapCtrls["nSolveIter"]=30;
-  snapCtrls["nRelaxIter"]=5;  
+  snapCtrls["nRelaxIter"]=15;  
 
-  snapCtrls["nFeatureSnapIter"]=10;  
+  snapCtrls["nFeatureSnapIter"]=15;  
   snapCtrls["implicitFeatureSnap"]=true;
   snapCtrls["explicitFeatureSnap"]=false;
   snapCtrls["multiRegionFeatureSnap"]=false;  
@@ -478,7 +478,7 @@ void setRelaxedQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
 
-  qualityCtrls["minTetQuality"]= -1; //1e-40;  
+  qualityCtrls["minTetQuality"]= 1e-40;  
 }
 
 void setDisabledQualityCtrls(OFDictData::dict& qualityCtrls)
@@ -519,7 +519,7 @@ void setNoQualityCtrls(OFDictData::dict& qualityCtrls)
   qualityCtrls["nSmoothScale"]=4;  
   qualityCtrls["errorReduction"]=0.75;  
 
-  qualityCtrls["minTetQuality"]=-1e30;  
+  qualityCtrls["minTetQuality"]=-1;  
 }
 
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer)

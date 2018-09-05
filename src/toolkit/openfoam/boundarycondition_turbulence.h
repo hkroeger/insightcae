@@ -41,7 +41,7 @@ public:
 };
 
 
-typedef boost::shared_ptr<turbulenceBC> turbulenceBCPtr;
+typedef std::shared_ptr<turbulenceBC> turbulenceBCPtr;
 
 
 

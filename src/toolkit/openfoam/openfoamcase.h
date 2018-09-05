@@ -169,7 +169,7 @@ public:
 };
 
 
-typedef boost::shared_ptr<OpenFOAMCaseElement> OpenFOAMCaseElementPtr;
+typedef std::shared_ptr<OpenFOAMCaseElement> OpenFOAMCaseElementPtr;
 
 
 
@@ -356,20 +356,20 @@ public:
 
     bool isCompressible() const;
 
-    boost::shared_ptr<OFdicts> createDictionaries() const;
+    std::shared_ptr<OFdicts> createDictionaries() const;
     void modifyMeshOnDisk ( const boost::filesystem::path& location ) const;
     void modifyCaseOnDisk ( const boost::filesystem::path& location ) const;
 
     virtual void createOnDisk 
     ( 
         const boost::filesystem::path& location, 
-        boost::shared_ptr<OFdicts> dictionaries, 
-        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+        std::shared_ptr<OFdicts> dictionaries, 
+        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
     virtual void createOnDisk 
     ( 
         const boost::filesystem::path& location, 
-        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
 
     virtual bool meshPresentOnDisk ( const boost::filesystem::path& location ) const;

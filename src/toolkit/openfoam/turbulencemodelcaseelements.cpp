@@ -185,11 +185,11 @@ addToOpenFOAMCaseElementFactoryTable(Smagorinsky_LESModel);
 
 void Smagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({ 1e-10 }), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
   
 
@@ -242,11 +242,11 @@ addToOpenFOAMCaseElementFactoryTable(oneEqEddy_LESModel);
 
 void oneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
   
 
@@ -293,11 +293,11 @@ addToOpenFOAMCaseElementFactoryTable(dynOneEqEddy_LESModel);
 
 void dynOneEqEddy_LESModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
   
 
@@ -349,11 +349,11 @@ addToOpenFOAMCaseElementFactoryTable(dynSmagorinsky_LESModel);
 
 void dynSmagorinsky_LESModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
 dynSmagorinsky_LESModel::dynSmagorinsky_LESModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -403,17 +403,17 @@ addToOpenFOAMCaseElementFactoryTable(kOmegaSST_RASModel);
 
 void kOmegaSST_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	list_of(1.0), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
+  c.addField("omega", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 0, -1), 	FieldValue({1.0}), volField ) );
   if (c.isCompressible())
   {
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
   }
 
   if (c.isCompressible() && (c.OFversion()<300))
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
 kOmegaSST_RASModel::kOmegaSST_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -504,16 +504,16 @@ bool kOmegaSST_RASModel::addIntoFieldDictionary(const std::string& fieldname, co
 
 void kEpsilonBase_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	list_of(10.0), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
+  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	FieldValue({10.0}), volField ) );
   if (c.isCompressible())
   {
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
 }
 
@@ -606,15 +606,15 @@ addToOpenFOAMCaseElementFactoryTable(SpalartAllmaras_RASModel);
 
 void SpalartAllmaras_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("nuTilda", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+  c.addField("nuTilda", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   if (c.isCompressible())
   {
-    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
-    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	list_of(1e-10), volField ) );
+    c.addField("mut", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
+    c.addField("alphat", 	FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({1e-10}), volField ) );
   }
   else
   {
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   }
 }
 
@@ -674,9 +674,9 @@ addToOpenFOAMCaseElementFactoryTable(LEMOSHybrid_RASModel);
 
 void LEMOSHybrid_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
-  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
-  c.addField("UAvgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	list_of(0)(0)(0), volField ) );
+  c.addField("kSgs", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
+  c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
+  c.addField("UAvgHyb", 	FieldInfo(vectorField, 	dimVelocity, 	FieldValue({0,0,0}), volField ) );
 }
 
 LEMOSHybrid_RASModel::LEMOSHybrid_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -913,10 +913,10 @@ addToOpenFOAMCaseElementFactoryTable(LRR_RASModel);
 
 void LRR_RASModel::addFields( OpenFOAMCase& c ) const
 {
-  c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 			list_of(1e-10), volField ) );
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 				list_of(1e-10), volField ) );
-  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	list_of(10.0), volField ) );
-  c.addField("R", 	FieldInfo(symmTensorField, OFDictData::dimension(0, 2, -2), 	list_of(1e-10)(1e-10)(1e-10)(1e-10)(1e-10)(1e-10), volField ) );
+  c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 			FieldValue({1e-10}), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 				FieldValue({1e-10}), volField ) );
+  c.addField("epsilon", 	FieldInfo(scalarField, 	OFDictData::dimension(0, 2, -3), 	FieldValue({10.0}), volField ) );
+  c.addField("R", 	FieldInfo(symmTensorField, OFDictData::dimension(0, 2, -2), 	FieldValue({1e-10,1e-10,1e-10,1e-10,1e-10,1e-10}), volField ) );
 }
 
 LRR_RASModel::LRR_RASModel(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1008,11 +1008,11 @@ addToOpenFOAMCaseElementFactoryTable(WALE_LESModel);
 
 void WALE_LESModel::addFields(OpenFOAMCase& c) const
 {
-  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	list_of(1e-10), volField ) );
+  c.addField("k", 	FieldInfo(scalarField, 	dimKinEnergy, 	FieldValue({1e-10}), volField ) );
   if (c.OFversion()>=300)
-    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nut", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
   else
-    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	list_of(1e-10), volField ) );
+    c.addField("nuSgs", 	FieldInfo(scalarField, 	dimKinViscosity, 	FieldValue({1e-10}), volField ) );
 }
 
 WALE_LESModel::WALE_LESModel(OpenFOAMCase& c, const ParameterSet&)

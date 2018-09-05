@@ -31,8 +31,8 @@ class approximatelyEqual
     : public Filter
 {
 protected:
-    boost::shared_ptr<QuantityComputer<T> > qtc1_;
-    boost::shared_ptr<QuantityComputer<T> > qtc2_;
+    std::shared_ptr<QuantityComputer<T> > qtc1_;
+    std::shared_ptr<QuantityComputer<T> > qtc2_;
     double tol_;
 
 public:

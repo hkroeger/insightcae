@@ -51,7 +51,7 @@ public:
     Cylinder ( );
 
     static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2isAxis, bool centered );
-    static FeaturePtr create ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
+    static FeaturePtr create_hollow ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered );
 
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

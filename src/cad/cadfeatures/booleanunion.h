@@ -43,7 +43,7 @@ public:
     declareType("BooleanUnion");
     BooleanUnion();
 
-    static FeaturePtr create(FeaturePtr m1);
+    static FeaturePtr create_single(FeaturePtr m1);
     static FeaturePtr create(FeaturePtr m1, FeaturePtr m2);
 
 

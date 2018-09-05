@@ -29,11 +29,11 @@ class edgeRadialLen
     : public QuantityComputer<double>
 {
 protected:
-    boost::shared_ptr<matQuantityComputer > ax_;
-    boost::shared_ptr<matQuantityComputer > p0_;
+    std::shared_ptr<matQuantityComputer > ax_;
+    std::shared_ptr<matQuantityComputer > p0_;
     
 public:
-    edgeRadialLen(const boost::shared_ptr<matQuantityComputer >& ax, const boost::shared_ptr<matQuantityComputer >& p0);
+    edgeRadialLen(const std::shared_ptr<matQuantityComputer >& ax, const std::shared_ptr<matQuantityComputer >& p0);
     virtual ~edgeRadialLen();
 
     virtual double evaluate(FeatureID ei);

@@ -124,7 +124,7 @@ public:
      */
     virtual ParameterPtr convertIntoParameter() const;
 
-    virtual boost::shared_ptr<ResultElement> clone() const =0;
+    virtual std::shared_ptr<ResultElement> clone() const =0;
 };
 
 
@@ -143,7 +143,7 @@ public:
 
 
 //typedef std::auto_ptr<ResultElement> ResultElementPtr;
-typedef boost::shared_ptr<ResultElement> ResultElementPtr;
+typedef std::shared_ptr<ResultElement> ResultElementPtr;
 
 
 
@@ -536,7 +536,7 @@ public:
 
 };
 
-typedef boost::shared_ptr<ResultElementCollection> ResultElementCollectionPtr;
+typedef std::shared_ptr<ResultElementCollection> ResultElementCollectionPtr;
 
 
 
@@ -566,9 +566,9 @@ T& ResultElementCollection::get ( const std::string& name )
         }
       else
         {
-          boost::shared_ptr<T> pt
+          std::shared_ptr<T> pt
           ( 
-            boost::dynamic_pointer_cast<T>( i->second ) 
+            std::dynamic_pointer_cast<T>( i->second )
           );
           if ( pt )
           {
@@ -611,11 +611,11 @@ public:
         rapidxml::xml_node<>& node
     ) const;
 
-    virtual boost::shared_ptr<ResultElement> clone() const;
+    virtual std::shared_ptr<ResultElement> clone() const;
 };
 
 
-typedef boost::shared_ptr<ResultSection> ResultSectionPtr;
+typedef std::shared_ptr<ResultSection> ResultSectionPtr;
 
 
 class ResultSet
@@ -692,7 +692,7 @@ public:
 
 
 
-typedef boost::shared_ptr<ResultSet> ResultSetPtr;
+typedef std::shared_ptr<ResultSet> ResultSetPtr;
 
 
 
@@ -770,7 +770,7 @@ typedef std::vector<PlotCurve> PlotCurveList;
 
 insight::ResultElement& addPlot
 (
-    boost::shared_ptr<ResultElementCollection> results,
+    std::shared_ptr<ResultElementCollection> results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,
@@ -845,7 +845,7 @@ typedef std::vector<PlotCurve> PlotFieldList;
 
 void addContourPlot
 (
-    boost::shared_ptr<ResultElementCollection> results,
+    std::shared_ptr<ResultElementCollection> results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,

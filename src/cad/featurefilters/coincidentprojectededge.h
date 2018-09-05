@@ -36,7 +36,7 @@ protected:
     
     arma::mat samplePts_;
     
-//     boost::shared_ptr<std::ofstream> dbgfile_;
+//     std::shared_ptr<std::ofstream> dbgfile_;
 
 public:
     coincidentProjectedEdge

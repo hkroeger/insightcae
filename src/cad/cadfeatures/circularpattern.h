@@ -56,7 +56,7 @@ public:
     CircularPattern();
 
     static FeaturePtr create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, ScalarPtr n, bool center=false, const std::string& filterrule="");
-    static FeaturePtr create(FeaturePtr m1, FeaturePtr otherpat);
+    static FeaturePtr create_other(FeaturePtr m1, FeaturePtr otherpat);
 
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;

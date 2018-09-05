@@ -103,9 +103,9 @@ private:
     
 protected:
     boost::filesystem::path casepath_;
-    boost::shared_ptr<insight::OpenFOAMCase> ofc_;
+    std::shared_ptr<insight::OpenFOAMCase> ofc_;
     insight::ParameterSet parameters_;
-    boost::shared_ptr<insight::FVNumerics> numerics_;
+    std::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
   
     void fillCaseElementList();
@@ -118,7 +118,7 @@ public:
     void createCase
     (
         bool skipBCs=false, 
-        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
     
 public slots:

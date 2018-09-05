@@ -48,7 +48,7 @@ class ParameterSet
 {
 
 public:
-  typedef boost::shared_ptr<ParameterSet> Ptr;
+  typedef std::shared_ptr<ParameterSet> Ptr;
   typedef boost::tuple<std::string, Parameter*> SingleEntry;
   typedef std::vector< boost::tuple<std::string, Parameter*> > EntryList;
 
@@ -259,7 +259,7 @@ public:
 
 
 
-typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
+typedef std::shared_ptr<ParameterSet> ParameterSetPtr;
 
 #define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
 #define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
@@ -272,14 +272,14 @@ typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 
 class SubsetParameter
   : public Parameter,
-    public ParameterSet //boost::shared_ptr<ParameterSet>
+    public ParameterSet //std::shared_ptr<ParameterSet>
 {
 public:
-  typedef boost::shared_ptr<SubsetParameter> Ptr;
+  typedef std::shared_ptr<SubsetParameter> Ptr;
   typedef ParameterSet value_type;
 
 // protected:
-//   boost::shared_ptr<ParameterSet> value_;
+//   std::shared_ptr<ParameterSet> value_;
 
 public:
   declareType ( "subset" );

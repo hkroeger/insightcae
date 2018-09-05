@@ -1606,7 +1606,7 @@ Feature::View Feature::createView
         TopoDS_Shape HalfSpace = BRepPrimAPI_MakeHalfSpace(Face,refPnt).Solid();
 
         TopoDS_Compound dispshapes;
-        boost::shared_ptr<TopTools_ListOfShape> xsecs(new TopTools_ListOfShape);
+        std::shared_ptr<TopTools_ListOfShape> xsecs(new TopTools_ListOfShape);
         BRep_Builder builder1;
         builder1.MakeCompound( dispshapes );
         int i=-1, j=0;
@@ -2348,7 +2348,7 @@ void Feature::write(std::ostream& f) const
 //     f<<endl;
 //   }
 
-//   typedef std::map<std::string, boost::shared_ptr<Datum> > DatumMap;
+//   typedef std::map<std::string, std::shared_ptr<Datum> > DatumMap;
 //   f<<providedDatums_.size()<<endl;
 //   BOOST_FOREACH(const DatumMap::value_type& i, providedDatums_)
 //   {
@@ -2402,7 +2402,7 @@ gp_Trsf Feature::transformation() const
   return gp_Trsf();
 }
 
-Mass_CoG_Inertia compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
+Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr, double aw_ovr)
 {
   double m=0.0;
   arma::mat cog=vec3(0,0,0);
@@ -2491,7 +2491,7 @@ void Feature::read(std::istream& f)
 //     f<<endl;
 //   }
 
-//   typedef std::map<std::string, boost::shared_ptr<Datum> > DatumMap;
+//   typedef std::map<std::string, std::shared_ptr<Datum> > DatumMap;
 //   int n;
 // 
 //   f>>n;

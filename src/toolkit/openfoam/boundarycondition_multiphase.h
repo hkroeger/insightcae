@@ -31,7 +31,7 @@ public:
     virtual bool addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const =0;
 };
 
-typedef boost::shared_ptr<multiphaseBC> multiphaseBCPtr;
+typedef std::shared_ptr<multiphaseBC> multiphaseBCPtr;
 
 
 

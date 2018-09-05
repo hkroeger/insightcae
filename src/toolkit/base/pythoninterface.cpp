@@ -25,7 +25,11 @@
 
 
 #include "boost/python.hpp"
+#if (BOOST_VERSION>016500)
+#include "boost/python/numpy.hpp"
+#else
 #include "boost/python/numeric.hpp"
+#endif
 
 
 

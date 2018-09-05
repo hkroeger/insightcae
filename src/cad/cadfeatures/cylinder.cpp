@@ -83,7 +83,7 @@ FeaturePtr Cylinder::create ( VectorPtr p1, VectorPtr p2, ScalarPtr D, bool p2is
 
 
 
-FeaturePtr Cylinder::create ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered )
+FeaturePtr Cylinder::create_hollow ( VectorPtr p1, VectorPtr p2, ScalarPtr Da, ScalarPtr Di, bool p2isAxis, bool centered )
 {
     return FeaturePtr ( new Cylinder ( p1, p2, Da, Di, p2isAxis, centered ) );
 }
@@ -170,7 +170,7 @@ void Cylinder::insertrule ( parser::ISCADParser& ruleset ) const
                       >> ( ( ',' >> ruleset.r_scalarExpression ) | qi::attr ( ScalarPtr() ) )
                       >> ( ( ',' >> qi::lit ( "centered" ) >> qi::attr ( true ) ) | qi::attr ( false ) )
                       >> ')' )
-                    [ qi::_val = phx::bind ( &Cylinder::create, qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
+                    [ qi::_val = phx::bind ( &Cylinder::create_hollow, qi::_1, qi::_3, qi::_4, qi::_5, qi::_2, qi::_6 ) ]
 
                 ) )
     );

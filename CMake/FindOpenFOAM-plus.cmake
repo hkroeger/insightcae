@@ -32,7 +32,7 @@ IF(OFplus_BASHRC)
   set(OFplus_CXX_FLAGS "${OFplus_CXX_FLAGS} -DOFplus")
   set(OFplus_LIBSRC_DIR "${OFplus_DIR}/src")
   set(OFplus_LIB_DIR "${OFplus_DIR}/platforms/${OFplus_WM_OPTIONS}/lib")
-  
+ 
   string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKLIBSO ${OFplus_LINKLIBSO_full})
   string(REGEX REPLACE "^[^ ]+" "" OFplus_LINKEXE ${OFplus_LINKEXE_full})
 

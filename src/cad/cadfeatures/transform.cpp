@@ -126,7 +126,7 @@ FeaturePtr Transform::create(FeaturePtr m1, VectorPtr trans, VectorPtr rot, Scal
 
 
 
-FeaturePtr Transform::create(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
+FeaturePtr Transform::create_rotate(FeaturePtr m1, VectorPtr rot, VectorPtr rotorg)
 {
     return FeaturePtr(new Transform(m1, rot, rotorg));    
 }
@@ -304,7 +304,7 @@ void Transform::insertrule(parser::ISCADParser& ruleset) const
       > ruleset.r_vectorExpression > ',' 
       > ruleset.r_vectorExpression 
       > ')' ) 
-      [ qi::_val = phx::bind(&Transform::create, qi::_1, qi::_2, qi::_3) ]
+      [ qi::_val = phx::bind(&Transform::create_rotate, qi::_1, qi::_2, qi::_3) ]
       
     ))
   );

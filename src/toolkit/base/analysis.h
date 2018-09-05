@@ -44,7 +44,7 @@ class ProgressDisplayer;
 
 
 
-typedef boost::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
+typedef std::shared_ptr<ProgressDisplayer> ProgressDisplayerPtr;
 typedef std::map<std::string, double> ProgressVariableList;
 typedef std::pair<double, ProgressVariableList> ProgressState;  
 
@@ -114,7 +114,7 @@ public:
 
 
 
-typedef boost::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
+typedef std::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
 
 #define addToAnalysisFactoryTable(DerivedClass) \
  defineType(DerivedClass); \
@@ -238,7 +238,7 @@ public:
 
 
 
-typedef boost::shared_ptr<Analysis> AnalysisPtr;
+typedef std::shared_ptr<Analysis> AnalysisPtr;
 typedef boost::tuple<std::string, AnalysisPtr, ResultSetPtr> AnalysisInstance;
 typedef std::vector<AnalysisInstance> AnalysisInstanceList;
 

@@ -121,12 +121,12 @@ void OpenFOAMAnalysis::calcDerivedInputData()
 {
 }
 
-void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   dicts=cm.createDictionaries();
 }
 
-void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
     Parameters p(parameters_);
   
@@ -148,7 +148,7 @@ void OpenFOAMAnalysis::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OF
   }
 }
 
-void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void OpenFOAMAnalysis::writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   cm.createOnDisk(executionPath(), dicts);
   cm.modifyCaseOnDisk(executionPath());
@@ -239,7 +239,7 @@ void OpenFOAMAnalysis::initializeSolverRun(OpenFOAMCase& cm)
   }
 }
 
-void OpenFOAMAnalysis::installConvergenceAnalysis(boost::shared_ptr<ConvergenceAnalysisDisplayer> cc)
+void OpenFOAMAnalysis::installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc)
 {
   convergenceAnalysis_.push_back(cc);
 }
@@ -335,7 +335,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
     if (evaluateonly)
         cout<< "Parameter \"run/evaluateonly\" is set: SKIPPING SOLVER RUN AND PROCEEDING WITH EVALUATION!" <<endl;
 
-    boost::shared_ptr<OpenFOAMCase> meshCase;
+    std::shared_ptr<OpenFOAMCase> meshCase;
     bool meshcreated=false;
     if (!evaluateonly)
     {
@@ -361,7 +361,7 @@ void OpenFOAMAnalysis::createCaseOnDisk(OpenFOAMCase& runCase)
     }
 
     createCase(runCase);
-    boost::shared_ptr<OFdicts> dicts;
+    std::shared_ptr<OFdicts> dicts;
     createDictsInMemory(runCase, dicts);
     applyCustomOptions(runCase, dicts);
 

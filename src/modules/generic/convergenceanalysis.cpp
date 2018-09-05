@@ -52,7 +52,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
     }
 
   ResultSetPtr results ( new ResultSet ( parameters(), name_, "Result Report" ) );
-//   boost::shared_ptr<ResultSection> section
+//   std::shared_ptr<ResultSection> section
 //   (
 //     new ResultSection
 //     (
@@ -247,7 +247,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
       .setOrder ( so.next() );
 
       {
-        boost::shared_ptr<ResultSection> subsection
+        std::shared_ptr<ResultSection> subsection
         (
           new ResultSection
           (
@@ -279,7 +279,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
       }
 
       {
-        boost::shared_ptr<ResultSection> subsection
+        std::shared_ptr<ResultSection> subsection
         (
           new ResultSection
           (

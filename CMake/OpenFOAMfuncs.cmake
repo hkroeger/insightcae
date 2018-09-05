@@ -11,7 +11,7 @@ endmacro()
 
 macro(detectEnvVar prefix varname outvarname)
  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${${prefix}_BASHRC} print-${varname} OUTPUT_VARIABLE ${prefix}_${outvarname})
- #message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
+ message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
 endmacro()
 
 macro(detectEnvVars prefix)

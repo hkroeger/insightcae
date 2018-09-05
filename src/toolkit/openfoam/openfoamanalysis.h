@@ -71,7 +71,7 @@ protected:
     bool stopFlag_;
     ResultSetPtr derivedInputData_;
     
-    std::vector<boost::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
+    std::vector<std::shared_ptr<ConvergenceAnalysisDisplayer> > convergenceAnalysis_;
 
 public:
     OpenFOAMAnalysis
@@ -93,14 +93,14 @@ public:
     virtual void createMesh(OpenFOAMCase& cm) =0;
     virtual void createCase(OpenFOAMCase& cm) =0;
     
-    virtual void createDictsInMemory(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+    virtual void createDictsInMemory(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
     /**
      * Customize dictionaries before they get written to disk
      */
-    virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+    virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
-    virtual void writeDictsToDisk(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+    virtual void writeDictsToDisk(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
     
     /**
      * Do modifications to the case when it has been created on disk
@@ -110,7 +110,7 @@ public:
     virtual void mapFromOther(OpenFOAMCase& cm, const boost::filesystem::path& mapFromPath, bool is_parallel);
     virtual void initializeSolverRun(OpenFOAMCase& cm);
     
-    virtual void installConvergenceAnalysis(boost::shared_ptr<ConvergenceAnalysisDisplayer> cc);
+    virtual void installConvergenceAnalysis(std::shared_ptr<ConvergenceAnalysisDisplayer> cc);
     virtual void runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm);
     virtual void finalizeSolverRun(OpenFOAMCase& cm);
     

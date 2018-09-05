@@ -78,7 +78,7 @@ public:
     SyntaxElementLocation findElement(ConstFeaturePtr element) const;
 };
 
-typedef boost::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
+typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
 
 
 // template <typename Iterator>
@@ -122,15 +122,15 @@ struct AddRuleContainerBase
 {
     virtual ~AddRuleContainerBase();
 };
-// typedef boost::shared_ptr<AddRuleContainerBase> AddRuleContainerBasePtr;
+// typedef std::shared_ptr<AddRuleContainerBase> AddRuleContainerBasePtr;
 
 template <class Rule>
 struct AddRuleContainer
 : public AddRuleContainerBase,
-  public boost::shared_ptr<Rule>
+  public std::shared_ptr<Rule>
 {
     AddRuleContainer(Rule* r)
-    : boost::shared_ptr<Rule>(r)
+    : std::shared_ptr<Rule>(r)
     {}
 };
 
@@ -153,7 +153,7 @@ struct ISCADParser
     SyntaxElementDirectoryPtr syntax_element_locations;
 
     typedef qi::rule<std::string::iterator, FeaturePtr(), skip_grammar> ModelstepRule;
-    typedef boost::shared_ptr<ModelstepRule> ModelstepRulePtr;
+    typedef std::shared_ptr<ModelstepRule> ModelstepRulePtr;
 
     Model* model_;
 

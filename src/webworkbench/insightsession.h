@@ -24,7 +24,7 @@ public:
     insight::ParameterSet parameters_;
 };
 
-typedef boost::shared_ptr<Session> SessionPtr;
+typedef std::shared_ptr<Session> SessionPtr;
 
 }
 }

@@ -683,7 +683,7 @@ void PipeCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
   OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void PipeCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "evaluation", inittime);
@@ -943,7 +943,7 @@ void PipeInflow::applyCustomPreprocessing(OpenFOAMCase& cm)
   OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void PipeInflow::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   const ParameterSet& p=parameters_;
   PSDBL(p, "evaluation", inittime);

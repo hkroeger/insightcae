@@ -55,7 +55,7 @@ public:
 
 };
 
-typedef boost::shared_ptr<InterpolatedCurve> InterpolatedCurvePtr;
+typedef std::shared_ptr<InterpolatedCurve> InterpolatedCurvePtr;
 
 typedef boost::tuple<std::vector<double>, InterpolatedCurvePtr,InterpolatedCurvePtr> FoilShape;
 

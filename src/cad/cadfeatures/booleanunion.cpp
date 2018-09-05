@@ -79,7 +79,7 @@ BooleanUnion::BooleanUnion(FeaturePtr m1, FeaturePtr m2)
 
 
 
-FeaturePtr BooleanUnion::create(FeaturePtr m1)
+FeaturePtr BooleanUnion::create_single(FeaturePtr m1)
 {
     return FeaturePtr(new BooleanUnion(m1));
 }
@@ -187,7 +187,7 @@ void BooleanUnion::insertrule(parser::ISCADParser& ruleset) const
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule( 
 
     ( '(' >> ruleset.r_solidmodel_expression >> ')' ) 
-      [ qi::_val = phx::bind(&BooleanUnion::create, qi::_1) ]
+      [ qi::_val = phx::bind(&BooleanUnion::create_single, qi::_1) ]
       
     ))
   );

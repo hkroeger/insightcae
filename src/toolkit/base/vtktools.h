@@ -102,7 +102,7 @@ public:
     virtual void writeGeometryToLegacyFile(std::ostream& os) const;
 };
 
-typedef boost::shared_ptr<vtkModel2d> vtkModel2dPtr;
+typedef std::shared_ptr<vtkModel2d> vtkModel2dPtr;
 
 }
 

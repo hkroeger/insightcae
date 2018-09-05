@@ -100,7 +100,7 @@ FeaturePtr Place::create(FeaturePtr m, VectorPtr p0, VectorPtr ex, VectorPtr ez)
 
 
 
-FeaturePtr Place::create(FeaturePtr m, FeaturePtr other)
+FeaturePtr Place::create_other(FeaturePtr m, FeaturePtr other)
 {
     return FeaturePtr(new Place(m, other));
 }
@@ -166,7 +166,7 @@ void Place::insertrule(parser::ISCADParser& ruleset) const
        >> ruleset.r_solidmodel_expression >> ',' 
        >> ruleset.r_solidmodel_expression 
        >> ')' ) 
-      [ qi::_val = phx::bind(&Place::create, qi::_1, qi::_2) ]
+      [ qi::_val = phx::bind(&Place::create_other, qi::_1, qi::_2) ]
       
     ))
   );

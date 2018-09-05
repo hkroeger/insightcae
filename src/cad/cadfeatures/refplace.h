@@ -127,7 +127,7 @@ public:
 
 
 
-typedef boost::shared_ptr<Condition> ConditionPtr;
+typedef std::shared_ptr<Condition> ConditionPtr;
 typedef std::vector<ConditionPtr> ConditionList;
 
 
@@ -140,7 +140,7 @@ class RefPlace
 
     ConditionList conditions_;
 
-    boost::shared_ptr<gp_Trsf> trsf_;
+    std::shared_ptr<gp_Trsf> trsf_;
 
     RefPlace ( FeaturePtr m, const gp_Ax2& cs );
     RefPlace ( FeaturePtr m, ConditionList conditions );

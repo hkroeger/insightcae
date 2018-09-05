@@ -293,7 +293,7 @@ potentialFoamNumerics::potentialFoamNumerics(OpenFOAMCase& c, const ParameterSet
 : FVNumerics(c, ps),
   p_(ps)
 {
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.)(0.)(0.), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0., 0., 0.}), volField ) );
 }
 
 
@@ -517,7 +517,7 @@ simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps),
   p_(ps)
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
 
@@ -669,7 +669,7 @@ pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
 : FVNumerics(c, ps),
   p_(ps)
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
 }
 
@@ -870,10 +870,10 @@ rhoPimpleFoamNumerics::rhoPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet
   p_(ps)
 {
   isCompressible_=true;
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({p_.pinternal}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	list_of(p_.Tinternal), volField ) );
-  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	list_of(0.0), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({0.0}), volField ) );
 }
 
 
@@ -1079,10 +1079,10 @@ rhoSimpleFoamNumerics::rhoSimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet
   p_(ps)
 {
   isCompressible_=true;
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(p_.pinternal), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({p_.pinternal}), volField ) );
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		std::vector<double>(p_.Uinternal.begin(), p_.Uinternal.end()), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	list_of(p_.Tinternal), volField ) );
-  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	list_of(0.0), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature, 	FieldValue({p_.Tinternal}), volField ) );
+  OFcase().addField("alphat", FieldInfo(scalarField, 	dimDynViscosity, 	FieldValue({0.0}), volField ) );
 }
 
 
@@ -1250,9 +1250,9 @@ potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase&
 : FVNumerics(c, ps),
   p_(ps)
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	list_of(0.0), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({0.0}), volField ) );
+  OFcase().addField("p_gh", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({0.0}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
   
   if (OFversion()<230)
     throw insight::Exception("solver potentialFreeSurfaceFoam not available in selected OpenFOAM version!");
@@ -1454,9 +1454,9 @@ cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const ParameterS
 : FVNumerics(c, ps),
   p_(ps)
 {
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		list_of(p_.pamb), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		list_of(p_.rhoamb), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		FieldValue({p_.pamb}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
+  OFcase().addField("rho", FieldInfo(scalarField, 	dimDensity, 		FieldValue({p_.rhoamb}), volField ) );
 }
 
  
@@ -1547,11 +1547,11 @@ void interFoamNumerics::init()
     alphaname_="alpha.phase1";
   
   // create pressure field to enable mapping from single phase cases
-  OFcase().addField("p", 		FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
+  OFcase().addField("p", 		FieldInfo(scalarField, 	dimPressure, 	FieldValue({0.0}), 		volField ) );
   
-  OFcase().addField(pname_, 	FieldInfo(scalarField, 	dimPressure, 	list_of(0.0), 		volField ) );
-  OFcase().addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless, 	list_of(0.0),		volField ) );
+  OFcase().addField(pname_, 	FieldInfo(scalarField, 	dimPressure, 	FieldValue({0.0}), 		volField ) );
+  OFcase().addField("U", 		FieldInfo(vectorField, 	dimVelocity, 	FieldValue({0.0,0.0,0.0}), volField ) );
+  OFcase().addField(alphaname_,	FieldInfo(scalarField, dimless, 	FieldValue({0.0}),		volField ) );
 }
 
 interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
@@ -1922,9 +1922,9 @@ void reactingFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::Exception("reactingFoamNumerics currently supports only OF >=230");
   
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	list_of(1e5), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 	FieldValue({1e5}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0,0.0,0.0}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
 }
 
 
@@ -2122,10 +2122,10 @@ void buoyantSimpleFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::Exception("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
-  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
 }
 
 
@@ -2291,10 +2291,10 @@ void buoyantPimpleFoamNumerics::init()
   if (OFversion() < 230)
     throw insight::Exception("buoyantSimpleFoamNumerics currently supports only OF >=230");
 
-  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
-  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            list_of(1e5), volField ) );
-  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), volField ) );
-  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		list_of(300.0), volField ) );
+  OFcase().addField("p_rgh", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
+  OFcase().addField("p", FieldInfo(scalarField, 	dimPressure,            FieldValue({1e5}), volField ) );
+  OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), volField ) );
+  OFcase().addField("T", FieldInfo(scalarField, 	dimTemperature,		FieldValue({300.0}), volField ) );
 }
 
 
@@ -2518,7 +2518,7 @@ addToOpenFOAMCaseElementFactoryTable(magneticFoamNumerics);
 
 void magneticFoamNumerics::init()
 {
-  OFcase().addField("psi", FieldInfo(scalarField, 	dimCurrent, 	list_of(0.0), volField ) );
+  OFcase().addField("psi", FieldInfo(scalarField, 	dimCurrent, 	FieldValue({0.0}), volField ) );
 }
 
 magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)

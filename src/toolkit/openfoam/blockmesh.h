@@ -517,7 +517,7 @@ public:
   static std::string category() { return "Meshing"; }
 };
 
-typedef boost::shared_ptr<blockMesh> blockMeshPtr;
+typedef std::shared_ptr<blockMesh> blockMeshPtr;
 
 }
 

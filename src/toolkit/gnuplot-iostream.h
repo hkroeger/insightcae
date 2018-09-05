@@ -1636,7 +1636,7 @@ private:
 
 	std::string make_tmpfile() {
 #ifdef GNUPLOT_USE_TMPFILE
-		boost::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
+		std::shared_ptr<GnuplotTmpfile> tmp_file(new GnuplotTmpfile());
 		// The file will be removed once the pointer is removed from the
 		// tmp_files container.
 		tmp_files.push_back(tmp_file);
@@ -1813,7 +1813,7 @@ private:
 private:
 	GnuplotFeedback *feedback;
 #ifdef GNUPLOT_USE_TMPFILE
-	std::vector<boost::shared_ptr<GnuplotTmpfile> > tmp_files;
+	std::vector<std::shared_ptr<GnuplotTmpfile> > tmp_files;
 #else
 	// just a placeholder
 	std::vector<int> tmp_files;

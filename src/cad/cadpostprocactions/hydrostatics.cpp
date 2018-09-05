@@ -64,7 +64,7 @@ void Hydrostatics::build()
 {
   elat_=arma::cross(nsurf_->value(), elong_->value());
   
-  boost::shared_ptr<Cutaway> submerged_volume = boost::dynamic_pointer_cast<Cutaway,Feature>( Cutaway::create(hullvolume_, psurf_, nsurf_) );
+  std::shared_ptr<Cutaway> submerged_volume = std::dynamic_pointer_cast<Cutaway,Feature>( Cutaway::create(hullvolume_, psurf_, nsurf_) );
   submerged_volume->checkForBuildDuringAccess();
   V_=submerged_volume->modelVolume();
   cout<<"displacement V="<<V_<<endl;

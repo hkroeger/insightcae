@@ -28,7 +28,7 @@ namespace insight
 namespace cad 
 {
 
-edgeRadialLen::edgeRadialLen(const boost::shared_ptr<matQuantityComputer >& ax, const boost::shared_ptr<matQuantityComputer >& p0)
+edgeRadialLen::edgeRadialLen(const std::shared_ptr<matQuantityComputer >& ax, const std::shared_ptr<matQuantityComputer >& p0)
 : ax_(ax), p0_(p0)
 {
 }

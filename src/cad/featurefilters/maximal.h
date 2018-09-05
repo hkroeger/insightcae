@@ -34,7 +34,7 @@ public:
 
 protected:
     int rank_, lrank_;
-    boost::shared_ptr<scalarQuantityComputer> qtc_;
+    std::shared_ptr<scalarQuantityComputer> qtc_;
     std::vector<RankEntry> ranking_;
 
 public:

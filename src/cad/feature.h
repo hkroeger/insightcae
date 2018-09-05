@@ -96,7 +96,7 @@ template<class T>
 class QuantityComputer
 {
 public:
-    typedef boost::shared_ptr<QuantityComputer<T> > Ptr;
+    typedef std::shared_ptr<QuantityComputer<T> > Ptr;
 
 protected:
     ConstFeaturePtr model_;
@@ -135,8 +135,8 @@ public:
 
 typedef QuantityComputer<double> scalarQuantityComputer;
 typedef QuantityComputer<arma::mat> matQuantityComputer;
-typedef boost::shared_ptr<scalarQuantityComputer> scalarQuantityComputerPtr;
-typedef boost::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
+typedef std::shared_ptr<scalarQuantityComputer> scalarQuantityComputerPtr;
+typedef std::shared_ptr<matQuantityComputer> matQuantityComputerPtr;
 
 
 

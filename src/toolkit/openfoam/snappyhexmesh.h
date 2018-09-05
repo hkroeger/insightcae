@@ -78,7 +78,7 @@ namespace snappyHexMeshFeats
 
 class Feature;
 
-typedef boost::shared_ptr<Feature> FeaturePtr;
+typedef std::shared_ptr<Feature> FeaturePtr;
     
 
 
@@ -429,7 +429,7 @@ public:
 
 // namespace snappyHexMeshOpts
 // {
-//   typedef boost::shared_ptr<OFDictData::dict> DictPtr;
+//   typedef std::shared_ptr<OFDictData::dict> DictPtr;
 //   
 //   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
 //     (doCastellatedMesh, bool, true)

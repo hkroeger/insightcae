@@ -312,7 +312,7 @@ PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
 
 void PassiveScalar::addFields( OpenFOAMCase& c ) const
 {
-  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	list_of(0.0), volField ) );
+  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
 }
 
 
@@ -595,7 +595,7 @@ velocityTetFEMMotionSolver::velocityTetFEMMotionSolver(OpenFOAMCase& c)
 : dynamicMesh(c),
   tetFemNumerics_(c)
 {
-  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		list_of(0.0)(0.0)(0.0), tetField ) );
+  c.addField("motionU", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0.0, 0.0, 0.0}), tetField ) );
 }
 
 void velocityTetFEMMotionSolver::addIntoDictionaries(OFdicts& dictionaries) const
@@ -714,7 +714,7 @@ void rigidBodyMotionDynamicMesh::addFields( OpenFOAMCase& c ) const
   c.addField
   (
       "pointDisplacement",
-       FieldInfo(vectorField, 	dimLength, 	list_of(0)(0)(0), pointField )
+       FieldInfo(vectorField, 	dimLength, 	FieldValue({0, 0, 0}), pointField )
   );
 }
 

@@ -9,7 +9,9 @@ RULES         = \$(WM_DIR)/rules/\$(WM_ARCH)\$(WM_COMPILER)
 BIN           = \$(WM_DIR)/bin/\$(WM_ARCH)\$(WM_COMPILER)
 include \$(GENERAL_RULES)/general
 include \$(RULES)/general
-include \$(RULES)/\$(WM_LINK_LANGUAGE)
+ifneq (\$(strip \$(WM_LINK_LANGUAGE)),)
+sinclude \$(RULES)/\$(WM_LINK_LANGUAGE)
+endif
 sinclude \$(GENERAL_RULES)/mplib\$(WM_MPLIB)
 sinclude \$(RULES)/mplib\$(WM_MPLIB)
 print-%:

@@ -127,7 +127,7 @@ public:
 
 
 
-typedef boost::shared_ptr<Parameter> ParameterPtr;
+typedef std::shared_ptr<Parameter> ParameterPtr;
 
 
 

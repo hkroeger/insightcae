@@ -42,7 +42,7 @@ class Transform
     ScalarPtr sf_;
     FeaturePtr other_;
 
-    boost::shared_ptr<gp_Trsf> trsf_;
+    std::shared_ptr<gp_Trsf> trsf_;
 
     Transform ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
     Transform ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
@@ -60,7 +60,7 @@ public:
     Transform ( FeaturePtr m1, const gp_Trsf& trsf );
 
     static FeaturePtr create ( FeaturePtr m1, VectorPtr trans, VectorPtr rot, ScalarPtr sf );
-    static FeaturePtr create ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
+    static FeaturePtr create_rotate ( FeaturePtr m1, VectorPtr rot, VectorPtr rotorg );
     static FeaturePtr create_translate ( FeaturePtr m1, VectorPtr trans );
     static FeaturePtr create_scale ( FeaturePtr m1, ScalarPtr scale );
     static FeaturePtr create_copy ( FeaturePtr m1, FeaturePtr other );

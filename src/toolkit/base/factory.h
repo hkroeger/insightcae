@@ -219,14 +219,14 @@ static struct add##specT##To##baseT##Name##FunctionTable \
 #define declareDynamicClass(baseT) \
     declareFactoryTable ( baseT, LIST ( const ParameterSet& p ), LIST ( p ) ); \
     declareStaticFunctionTable ( defaultParameters, ParameterSet ); \
-    static boost::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp ); \
+    static std::shared_ptr<baseT> create ( const SelectableSubsetParameter& ssp ); \
     virtual ParameterSet getParameters() const =0; 
     
 #define defineDynamicClass(baseT) \
     defineFactoryTable(baseT, LIST(const ParameterSet& ps), LIST(ps));\
     defineStaticFunctionTable(baseT, defaultParameters, ParameterSet);\
-    boost::shared_ptr<baseT> baseT::create(const SelectableSubsetParameter& ssp) \
-    { return boost::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); }
+    std::shared_ptr<baseT> baseT::create(const SelectableSubsetParameter& ssp) \
+    { return std::shared_ptr<baseT>( lookup(ssp.selection(), ssp()) ); }
 
 }
 

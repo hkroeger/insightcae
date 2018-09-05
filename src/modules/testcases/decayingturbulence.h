@@ -74,7 +74,7 @@ public:
     virtual void createMesh(insight::OpenFOAMCase& cm);
     
     virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
-    virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+    virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
 };
 
 }

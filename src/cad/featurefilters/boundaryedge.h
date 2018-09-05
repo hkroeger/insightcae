@@ -31,7 +31,7 @@ class boundaryEdge
     : public Filter
 {
 protected:
-  mutable boost::shared_ptr<ShapeAnalysis_FreeBounds> safb_;
+  mutable std::shared_ptr<ShapeAnalysis_FreeBounds> safb_;
 
 public:
     boundaryEdge();

@@ -36,7 +36,7 @@ License
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
-#if not (defined(OFdev)||defined(OFplus))
+#if not (defined(OFdev)||defined(OFplus)||defined(OFesi1806))
 namespace Foam
 {
 defineTypeNameAndDebug(writeData, 0);
@@ -77,7 +77,7 @@ Foam::writeData::writeData
     const bool loadFromFiles
 )
 :
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     functionObject(name),
 #endif
     name_(name),
@@ -102,7 +102,7 @@ Foam::writeData::~writeData()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -118,13 +118,13 @@ Foam::writeData::read(const dictionary& dict)
     {
         abortFile_.expand();
     }
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return true;
 #endif
 }
 
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -166,7 +166,7 @@ Foam::writeData::execute()
 	    << endl;
 #endif
     }
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return true;
 #endif    
 }
@@ -185,14 +185,14 @@ void Foam::writeData::movePoints(const polyMesh& mesh)
 
 
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
 #endif
 Foam::writeData::end()
 {
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return false;
 #endif    //removeFile();
 }
@@ -204,7 +204,7 @@ void Foam::writeData::timeSet()
 }
 
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 bool
 #else
 void 
@@ -212,7 +212,7 @@ void
 Foam::writeData::write()
 {
     // Do nothing - only valid on execute
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     return false;
 #endif
 }

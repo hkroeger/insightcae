@@ -50,6 +50,8 @@ Description
 #include "cellSet.H"
 #include "meshCutter.H"
 
+#include "uniof.h"
+
 using namespace Foam;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -73,21 +75,9 @@ int main(int argc, char *argv[])
 //     const word patchName = args[1];
 //     const scalar dist  = args.argRead<scalar>(2);
 //     const bool overwrite = args.optionFound("overwrite");
-    word patchName(
-#if (defined(OFplus)||defined(OFdev))
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    );
+    word patchName( UNIOF_ADDARG(args, 0) );
 
-    scalarList dists(IStringStream(
-#if (defined(OFplus)||defined(OFdev))
-      args.arg(2)
-#else
-      args.additionalArgs()[1]
-#endif
-    )());
+    scalarList dists(IStringStream( UNIOF_ADDARG(args, 1) )());
     bool overwrite = args.optionFound("overwrite");
 
     label patchID = mesh.boundaryMesh().findPatchID(patchName);

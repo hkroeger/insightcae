@@ -25,7 +25,7 @@ License
 
 #include "writeDataFunctionObject.H"
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 #include "addToRunTimeSelectionTable.H"
 #include "Time.H"
 #endif
@@ -34,7 +34,7 @@ License
 
 namespace Foam
 {
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     defineTypeNameAndDebug(writeDataFunctionObject, 0);
 #else
     defineNamedTemplateTypeNameAndDebug(writeDataFunctionObject, 0);

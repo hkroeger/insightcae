@@ -44,7 +44,7 @@ Description
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
 #define TWOPHASEMIXTURE twoPhaseMixture
 
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #define TWOPHASEMIXTURE immiscibleIncompressibleTwoPhaseMixture
 
@@ -53,7 +53,7 @@ Description
 #define TWOPHASEMIXTURE incompressibleTwoPhaseMixture
 #endif
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #include "turbulentFluidThermoModel.H"
 #define INCOMPRESSIBLERASMODEL incompressible::turbulenceModel

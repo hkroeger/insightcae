@@ -38,7 +38,7 @@ Description
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 
-#if defined(OF301)||defined(OFplus)||defined(OFdev)
+#if defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #else
 #include "RASModel.H"

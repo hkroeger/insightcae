@@ -42,11 +42,7 @@
 #include "primitiveMeshTools.H"
 #endif
 
-#ifdef OF16ext
-#define LABELULIST unallocLabelList
-#else
-#define LABELULIST labelUList
-#endif
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -76,13 +72,7 @@ inline void markFace(label fI, surfaceScalarField& UBlendingFactor, scalar value
     const polyPatch& patch=mesh.boundaryMesh()[pI];
 //       Info<<pI<<" "<<patch.start()<<" "<<fI<<endl;
     
-    fvsPatchField<scalar>& UBFp = UBlendingFactor
-#if defined(OFdev)||defined(OFplus)
-    .boundaryFieldRef()
-#else
-    .boundaryField()
-#endif
-    [pI];
+    fvsPatchField<scalar>& UBFp = UNIOF_BOUNDARY_NONCONST(UBlendingFactor)[pI];
     
     if (!isA<emptyFvPatch>(mesh.boundary()[pI]))
       UBFp[fI-patch.start()]=1.0;
@@ -133,16 +123,10 @@ surfaceMax2
         )
     );
     
-    GeometricField<Type, fvPatchField, volMesh>& vf = 
-#if defined(OFplus)||defined(OFdev)
-    tvf.ref()
-#else
-    tvf()
-#endif
-    ;
+    GeometricField<Type, fvPatchField, volMesh>& vf = UNIOF_TMP_NONCONST(tvf);
 
-    const LABELULIST& owner = mesh.owner();
-    const LABELULIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const Field<Type>& issf = ssf;
 
@@ -154,7 +138,7 @@ surfaceMax2
 
     forAll(mesh.boundary(), patchi)
     {
-        const LABELULIST& pFaceCells =
+        const UNIOF_LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
         const fvsPatchField<Type>& pssf = ssf.boundaryField()[patchi];
@@ -200,16 +184,10 @@ surfaceMax3
         )
     );
     
-    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = 
-#if defined(OFplus)||defined(OFdev)
-    tsf.ref()
-#else
-    tsf()
-#endif
-    ;
+    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = UNIOF_TMP_NONCONST(tsf);
 
-    const LABELULIST& owner = mesh.owner();
-    const LABELULIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     forAll(sf, facei)
     {
@@ -218,16 +196,10 @@ surfaceMax3
 
     forAll(mesh.boundary(), patchi)
     {
-        const LABELULIST& pFaceCells =
+        const UNIOF_LABELULIST& pFaceCells =
             mesh.boundary()[patchi].faceCells();
 
-        fvsPatchField<Type>& pssf = sf
-#if defined(OFdev)||defined(OFplus)
-	  .boundaryFieldRef()
-#else
-	  .boundaryField()
-#endif
-	[patchi];
+        fvsPatchField<Type>& pssf = UNIOF_BOUNDARY_NONCONST(sf)[patchi];
 
         forAll(mesh.boundary()[patchi], facei)
         {
@@ -564,7 +536,7 @@ Foam::faceQualityMarkerFunctionObject::faceQualityMarkerFunctionObject
         sets_=wordList(dict.lookup("sets"));
     }
     
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     start();
 #endif
 }
@@ -617,7 +589,7 @@ bool Foam::faceQualityMarkerFunctionObject::start()
 
 bool Foam::faceQualityMarkerFunctionObject::execute
 (
-#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus))
+#if !(defined(OF16ext) || defined(OFdev)||defined(OFplus)||defined(OFesi1806))
   bool
 #endif
 )

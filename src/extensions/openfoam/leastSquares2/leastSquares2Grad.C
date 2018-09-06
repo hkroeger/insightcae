@@ -31,12 +31,8 @@ License
 #include "surfaceMesh.H"
 #include "GeometricField.H"
 #include "zeroGradientFvPatchField.H"
+#include "uniof.h"
 
-#if defined(OFplus)
-#define UNALLOCLABELLIST labelList
-#else
-#define UNALLOCLABELLIST unallocLabelList
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -105,8 +101,8 @@ leastSquares2Grad<Type>::
     const surfaceVectorField& ownLs = lsv.pVectors();
     const surfaceVectorField& neiLs = lsv.nVectors();
 
-    const UNALLOCLABELLIST& own = mesh.owner();
-    const UNALLOCLABELLIST& nei = mesh.neighbour();
+    const UNIOF_LABELULIST& own = mesh.owner();
+    const UNIOF_LABELULIST& nei = mesh.neighbour();
 
     forAll(own, facei)
     {
@@ -124,7 +120,7 @@ leastSquares2Grad<Type>::
     {
         const fvsPatchVectorField& patchOwnLs = ownLs.boundaryField()[patchi];
 
-        const UNALLOCLABELLIST& faceCells =
+        const UNIOF_LABELULIST& faceCells =
             lsGrad.boundaryField()[patchi].patch().faceCells();
 
         if (vsf.boundaryField()[patchi].coupled())

@@ -82,7 +82,7 @@ SourceFiles
 #include "RASModel.H"
 #include "wallDist.H"
 
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 #include "IncompressibleTurbulenceModel.H"
 #include "incompressible/transportModel/transportModel.H"
 #include "eddyViscosity.H"
@@ -94,12 +94,12 @@ SourceFiles
 namespace Foam
 {
   
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 typedef IncompressibleTurbulenceModel<transportModel> transportModelIncompressibleTurbulenceModel;                                                                  
 typedef eddyViscosity<RASModel<transportModelIncompressibleTurbulenceModel> > RAStransportModelIncompressibleTurbulenceModel;
 #endif
 
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 namespace incompressible
 {
 #endif
@@ -113,7 +113,7 @@ namespace RASModels
 
 class kOmegaSST2
 :
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     public RAStransportModelIncompressibleTurbulenceModel
 #else
     public RASModel
@@ -155,7 +155,7 @@ class kOmegaSST2
 #endif
         //- Wall distance field
         //  Note: different to wall distance in parent RASModel
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	const volScalarField& y_;
 #else
         wallDist y_;
@@ -233,7 +233,7 @@ public:
         //- Construct from components
         kOmegaSST2
         (
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             const alphaField& alpha,
             const rhoField& rho,
             const volVectorField& U,
@@ -371,7 +371,7 @@ public:
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 } // namespace incompressible
 #endif
 } // End namespace Foam

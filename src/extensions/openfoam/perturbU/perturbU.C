@@ -45,6 +45,8 @@ Description
 #include "wallDist.H"
 #include "cuttingPlane.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
@@ -69,21 +71,9 @@ int main(int argc, char *argv[])
 //     nh.rename("grad(y)");
 //     nh.write();
     
-    scalar Retau=readScalar(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    scalar Retau=readScalar(IStringStream( UNIOF_ADDARG(args, 0) )());
     
-    vector Ubar=vector(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(2)
-#else
-      args.additionalArgs()[1]
-#endif
-    )());
+    vector Ubar=vector(IStringStream( UNIOF_ADDARG(args, 1) )());
     
     vector nflow=Ubar/mag(Ubar);
     
@@ -116,7 +106,13 @@ int main(int argc, char *argv[])
 #else
     cuttingPlane cpl(plane(center, nflow), mesh, false);
 #endif
-    vector Ub=gAverage(cpl.sample(U));
+    vector Ub=gAverage(
+            #if defined(OFesi1806)
+                vectorField(U, cpl.meshCells())
+            #else
+                cpl.sample(U)
+            #endif
+                );
     scalar mUb=mag(Ub);
     scalar fluc=mag(gAverage( sqr(U - dimensionedVector("", dimVelocity, Ub))() ));
     Info<<"mean flow="<<Ub<<", mean fluctuation magnitude="<<fluc<<endl;
@@ -171,7 +167,13 @@ int main(int argc, char *argv[])
     forAll(centres, celli)
     {
         // add a small (+/-20%) random component to enhance symetry breaking
-        scalar deviation=1.0 + 0.2*perturbation.GaussNormal();
+        scalar deviation=1.0 + 0.2*
+        #if defined(OFesi1806)
+                perturbation.GaussNormal<scalar>()
+        #else
+                perturbation.GaussNormal()
+        #endif
+                ;
 
         const vector& cCentre = centres[celli];
 

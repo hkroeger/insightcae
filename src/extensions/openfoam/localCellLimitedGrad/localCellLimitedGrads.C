@@ -28,7 +28,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 namespace Foam
 {
 namespace fv
@@ -37,7 +37,7 @@ namespace fv
   
     makeFvGradScheme(localCellLimitedGrad)
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 }
 }
 #endif
@@ -103,7 +103,7 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const volScalarField::Boundary&
 #else
     const volScalarField::GeometricBoundaryField& 
@@ -293,7 +293,7 @@ calcGrad
         minVsf[nei] = min(minVsf[nei], vsfOwn);
     }
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const volVectorField::Boundary&
 #else
     const volVectorField::GeometricBoundaryField& 

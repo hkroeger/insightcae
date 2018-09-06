@@ -33,11 +33,6 @@
 #endif
 #include "boost/filesystem.hpp"
 
-#if defined(OFplus)||defined(OFdev)
-#define ACCESSTMP(x) (x).ref()
-#else
-#define ACCESSTMP(x) (x)()
-#endif
 
 using namespace boost;
 using namespace insight;
@@ -262,7 +257,7 @@ template<class T>
 tmp<Field<T> > uniformField<T>::atInstant(int i, const pointField& target) const
 {
   tmp<Field<T> > res(new Field<T>(target.size()));
-  ACCESSTMP(res)=values_[i];
+  UNIOF_TMP_NONCONST(res)=values_[i];
   return res;
 }
 
@@ -292,7 +287,13 @@ void nonuniformField<T>::appendInstant(Istream& is)
 template<class T>
 void nonuniformField<T>::writeInstant(int i, Ostream& os) const
 {
-  values_[i].UList<T>::writeEntry(os);
+  values_[i].UList<T>::
+        #if defined(OFesi1806)
+          writeList
+        #else
+          writeEntry
+        #endif
+          (os);
 }
 
   
@@ -374,7 +375,7 @@ tmp<Field<T> > linearProfile<T>::atInstant(int idx, const pointField& target) co
   }
   
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=ACCESSTMP(resPtr);
+  Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
 
 //   vector ey = - (ex_ ^ ez_);
 //   tensor tt(ex_, ey, ez_);
@@ -478,7 +479,7 @@ tmp<Field<T> > radialProfile<T>::atInstant(int idx, const pointField& target) co
   }
 
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=ACCESSTMP(resPtr);
+  Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
   
 
   forAll(target, pi)
@@ -592,7 +593,7 @@ template<class T>
 tmp<Field<T> > fittedProfile<T>::atInstant(int idx, const pointField& target) const
 {
   tmp<Field<T> > resPtr(new Field<T>(target.size(), pTraits<T>::zero));
-  Field<T>& res=ACCESSTMP(resPtr);  
+  Field<T>& res=UNIOF_TMP_NONCONST(resPtr);
 
   forAll(target, pi)
   {

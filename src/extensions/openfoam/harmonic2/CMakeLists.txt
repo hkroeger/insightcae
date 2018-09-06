@@ -21,6 +21,7 @@ set(INCLUDE_DIRS
 )
 
 set(LIBS 
+   uniof
 )
 
 #set(OF_VERSIONS OF21x OF22x OF22eng OF23x)

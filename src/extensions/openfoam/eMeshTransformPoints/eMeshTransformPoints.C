@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         // Convert to radians
         v *= M_PI/180.0;
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
         quaternion R(quaternion::rotationSequence::XYZ, v);
 #else
         quaternion R(v.x(), v.y(), v.z());

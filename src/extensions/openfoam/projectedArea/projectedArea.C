@@ -24,6 +24,8 @@
 #include "transformGeometricField.H"
 #include "wordReList.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -58,23 +60,11 @@ int main(int argc, char *argv[])
 	wordReList
 #endif
 	(
-	  IStringStream(
-#if defined(OFplus)||defined(OFdev)
-	    args.arg(1)
-#else
-	    args.additionalArgs()[0]
-#endif
-	  )()
+      IStringStream( UNIOF_ADDARG(args, 0) )()
 	)
       )
     );
-    vector dir(IStringStream(
-#if defined(OFplus)||defined(OFdev)
-      args.arg(2)
-#else
-      args.additionalArgs()[1]
-#endif
-    )());
+    vector dir(IStringStream( UNIOF_ADDARG(args, 1) )());
 
     forAll(timeDirs, timeI)
     {

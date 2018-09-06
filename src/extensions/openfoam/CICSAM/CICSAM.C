@@ -30,13 +30,10 @@ License
 #include "surfaceFields.H"
 #include "upwind.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-#if defined(OFplus)
-#define UNALLOCLABELLIST labelList
-#else
-#define UNALLOCLABELLIST unallocLabelList
-#endif
 
 Foam::scalar Foam::CICSAM::limiter
 (
@@ -204,11 +201,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
             dimless
         )
     );
-    surfaceScalarField& lim = tLimiter
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    surfaceScalarField& lim = UNIOF_TMP_NONCONST(tLimiter);
 
     volVectorField gradc = fvc::grad(phi);
 
@@ -221,18 +214,12 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const UNALLOCLABELLIST& owner = mesh.owner();
-    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
-    scalarField& pLim = lim
-#if defined(OFdev)||defined(OFplus)
-      .ref().field()
-#else
-      .internalField()
-#endif
-      ;
+    scalarField& pLim = UNIOF_INTERNALFIELD_NONCONST(lim);
 
     forAll(pLim, faceI)
     {
@@ -252,18 +239,13 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::limiter
         );
     }
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
-      bLim = lim
-#if defined(OFdev)||defined(OFplus)
-	.boundaryFieldRef()
-#else
-	.boundaryField()
-#endif
-      ;
+      bLim = UNIOF_BOUNDARY_NONCONST(lim);
+
 //     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
     forAll(bLim, patchi)
     {
@@ -331,11 +313,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
     (
         new surfaceScalarField(mesh.surfaceInterpolation::weights())
     );
-    surfaceScalarField& weightingFactors = tWeightingFactors
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    surfaceScalarField& weightingFactors = UNIOF_TMP_NONCONST(tWeightingFactors);
 
 //     scalarField& weights = weightingFactors.internalField();
 
@@ -351,18 +329,12 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const UNALLOCLABELLIST& owner = mesh.owner();
-    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
-    scalarField& w = weightingFactors
-#if defined(OFdev)||defined(OFplus)
-    .ref().field()
-#else
-    .internalField()
-#endif
-    ;
+    scalarField& w = UNIOF_INTERNALFIELD_NONCONST(weightingFactors);
 
     forAll(w, faceI)
     {
@@ -382,19 +354,12 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAM::weights
         );
     }
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
-     bWeights =
-        weightingFactors
-#if defined(OFdev)||defined(OFplus)
-	  .boundaryFieldRef()
-#else
-	  .boundaryField()
-#endif
-	  ;
+     bWeights = UNIOF_BOUNDARY_NONCONST(weightingFactors);
 
 //     surfaceScalarField::GeometricBoundaryField& bCof = Cof.boundaryField();
 

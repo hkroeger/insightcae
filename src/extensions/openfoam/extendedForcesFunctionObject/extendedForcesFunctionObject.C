@@ -21,7 +21,7 @@
 #include "fvCFD.H"
 #include "extendedForcesFunctionObject.H"
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 #include "functionObject.H"
 #else
 #include "OutputFilterFunctionObject.H"
@@ -77,7 +77,7 @@ void extendedForces::createFields()
   );
 }
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 //- Construct for given objectRegistry and dictionary.
 //  Allow the possibility to load fields from files
 extendedForces::extendedForces
@@ -85,7 +85,7 @@ extendedForces::extendedForces
     const word& name,
     const Time& time,
     const dictionary& dict
-#ifndef OFdev
+#if not (defined(OFdev)||defined(OFesi1806))
     ,
     const bool readFields
     #endif
@@ -93,7 +93,7 @@ extendedForces::extendedForces
 : functionObjects::forces
   (
     name, time, dict
-#ifndef OFdev
+#if not (defined(OFdev)||defined(OFesi1806))
     , readFields
 #endif
   ),
@@ -110,24 +110,24 @@ extendedForces::extendedForces
     const word& name,
     const objectRegistry& obr,
     const dictionary& dict
-    #if not (defined(OFplus)||defined(OFdev))
+    #if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
     ,
     const bool loadFromFiles
     #endif
-    #if not (defined(OF16ext)||defined(OFdev))
+    #if not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
     ,
     const bool readFields
     #endif
 )
 :
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
  functionObjects::
 #endif
  forces(name, obr, dict
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
       , loadFromFiles
 #endif
-#if not (defined(OF16ext)||defined(OFdev))
+#if not (defined(OF16ext)||defined(OFdev)||defined(OFesi1806))
 	  , readFields
 #endif
 	),
@@ -136,7 +136,7 @@ extendedForces::extendedForces
   createFields();
 }
 
-#if !(defined(OF16ext)||defined(OFplus)||defined(OFdev))
+#if !(defined(OF16ext)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 //- Construct from components
 extendedForces::extendedForces
 (
@@ -162,7 +162,7 @@ extendedForces::~extendedForces()
 {
 }
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 bool
 #else
 void 
@@ -177,7 +177,7 @@ extendedForces::execute()
   initialise();
 #endif
   
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   if (!active_)
   {
       return;
@@ -227,7 +227,7 @@ extendedForces::execute()
             = tdevRhoReff().boundaryField()[patchI];
 
         UNIOF_BOUNDARY_NONCONST(*pressureForce_)[patchI]
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
         =
 #else
         ==
@@ -237,7 +237,7 @@ extendedForces::execute()
         );
 
         UNIOF_BOUNDARY_NONCONST(*viscousForce_)[patchI]
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
         =
 #else
         ==
@@ -291,29 +291,29 @@ extendedForces::execute()
 
   }
   
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   return true;
 #endif
 }
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 bool
 #else
 void 
 #endif 
 extendedForces::end()
 {
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   return
 #endif    
   Foam::
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   functionObjects::
 #endif    
   forces::end();
 }
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 bool
 #else
 void 
@@ -324,7 +324,7 @@ extendedForces::write()
 
   forces::write();
   
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   if (!active_)
   {
       return;
@@ -360,7 +360,7 @@ extendedForces::write()
             mkDir(outdir);
 
             // Open new file at start up
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
             maskedForceFile_.reset(new OFstream(outdir/"force.dat"));
             maskedForceFile2_.reset(new OFstream(outdir/"moment.dat"));
 #else
@@ -370,7 +370,7 @@ extendedForces::write()
     }
     
     if (Pstream::master()) {
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
     maskedForceFile_() << obr_.time().value()
             << tab << (pr_force_+vi_force_)
             << tab << pr_force_
@@ -403,12 +403,12 @@ extendedForces::write()
    }
   }
   
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
   return true;
 #endif
 }
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 
 defineTypeNameAndDebug(extendedForces, 0);
 addToRunTimeSelectionTable

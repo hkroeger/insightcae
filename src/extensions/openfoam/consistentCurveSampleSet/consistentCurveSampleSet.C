@@ -47,7 +47,7 @@ namespace Foam
     defineTypeNameAndDebug(consistentCurveSet, 0);
     addToRunTimeSelectionTable(sampledSet, consistentCurveSet, word);
     
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const scalar consistentCurveSet::tol = 1e-3;
 #endif
 }

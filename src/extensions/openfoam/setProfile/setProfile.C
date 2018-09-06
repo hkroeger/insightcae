@@ -44,7 +44,13 @@ void setProfileLinear
 )
 {
     List<Tuple2<scalar, T> > data(ascii_data);
-    interpolationTable<T> ip(data, interpolationTable<T>::CLAMP, "no_filename");
+    interpolationTable<T> ip(data,
+                         #if defined(OFesi1806)
+                             bounds::repeatableBounding::CLAMP
+                         #else
+                             interpolationTable<T>::CLAMP
+                         #endif
+                             , "no_filename");
     
     vector ez=ex^ey;
     ez/=mag(ez);

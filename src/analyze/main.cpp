@@ -271,6 +271,11 @@ int main(int argc, char *argv[])
         }
 //         analysis->setParameters(parameters);
 
+        std::cout<<std::string(80, '=')+'\n';
+        std::cout<<"Applied Parameters for this run"<<std::endl;
+        std::cout<<parameters;
+        std::cout<<std::string(80, '=')+"\n\n";
+
         AnalysisPtr analysis ( insight::Analysis::lookup(analysisName, parameters, exedir) );        
         
         // run analysis

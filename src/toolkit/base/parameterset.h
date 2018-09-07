@@ -243,6 +243,7 @@ public:
 
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual ParameterSet* cloneParameterSet() const;
 
@@ -256,6 +257,8 @@ public:
 
 };
 
+
+std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
 
 
 
@@ -304,6 +307,7 @@ public:
   }
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual Parameter* clone () const;
 
@@ -372,6 +376,7 @@ public:
   void setSelection(const key_type& key, const ParameterSet& ps);
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual Parameter* clone () const;
 

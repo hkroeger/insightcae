@@ -103,6 +103,7 @@ public:
      * LaTeX representation of the parameter value
      */
     virtual std::string latexRepresentation() const =0;
+    virtual std::string plainTextRepresentation(int indent=0) const =0;
 
     virtual rapidxml::xml_node<>* appendToNode
     (
@@ -199,6 +200,12 @@ public:
     {
         return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
+
+    virtual std::string plainTextRepresentation(int indent=0) const
+    {
+        return SimpleLatex( valueToString ( value_ ) ).toPlainText();
+    }
+
 
     virtual Parameter* clone() const
     {
@@ -356,6 +363,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone() const;
 
@@ -410,6 +418,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     DoubleParameter* toDoubleParameter ( RangeList::const_iterator i ) const;
 
@@ -475,6 +484,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone () const;
 
@@ -506,6 +516,7 @@ public:
     const arma::mat& operator() () const;
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone () const;
 

@@ -51,7 +51,7 @@
 #if (defined(OF301) || defined(OFplus)||defined(OFdev))
 #define UNIOF_ADDARG(args,j) (args).arg((j)+1)
 #elif defined(OFesi1806)
-#define UNIOF_ADDARG(args,j) (args).args()[j]
+#define UNIOF_ADDARG(args,j) (args).args()[j+1]
 #else
 #define UNIOF_ADDARG(args,j) (args).additionalArgs()[j]
 #endif

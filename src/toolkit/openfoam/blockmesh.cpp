@@ -1094,7 +1094,13 @@ void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
   PointMap pts(allPoints_);
   numberVertices(pts);
   
-  OFDictData::dict& blockMeshDict=dictionaries.addDictionaryIfNonexistent("constant/polyMesh/blockMeshDict");
+  std::string bmdLoc="constant/polyMesh/blockMeshDict";
+  if (OFversion()>=500)
+  {
+      bmdLoc="system/blockMeshDict";
+  }
+  OFDictData::dict& blockMeshDict=dictionaries.addDictionaryIfNonexistent(bmdLoc);
+
   blockMeshDict["convertToMeters"]=scaleFactor_;
   
   OFDictData::dict def;

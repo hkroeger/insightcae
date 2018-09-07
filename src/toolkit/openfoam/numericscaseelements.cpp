@@ -235,7 +235,14 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   controlDict["writeFormat"]=wfk;
   
   controlDict["writePrecision"]=8;
-  controlDict["writeCompression"]="compressed";
+  if (OFversion()>=600)
+  {
+    controlDict["writeCompression"]="on";
+  }
+  else
+  {
+    controlDict["writeCompression"]="compressed";
+  }
   controlDict["timeFormat"]="general";
   controlDict["timePrecision"]=6;
   controlDict["runTimeModifiable"]=true;
@@ -495,7 +502,14 @@ void MeshingNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
   controlDict["writeFormat"]="ascii";
-  controlDict["writeCompression"]="compressed";
+  if (OFversion()>=600)
+  {
+    controlDict["writeCompression"]="on";
+  }
+  else
+  {
+    controlDict["writeCompression"]="compressed";
+  }
   controlDict["application"]="none";
   controlDict["endTime"]=1000.0;
   controlDict["deltaT"]=1.0;

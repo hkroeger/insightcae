@@ -258,8 +258,9 @@ public:
 };
 
 
+#ifndef SWIG
 std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
-
+#endif
 
 
 typedef std::shared_ptr<ParameterSet> ParameterSetPtr;

@@ -1613,6 +1613,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
   solvers["pcorr"]=stdSymmSolverSetup(1e-7, 0.01);
+  if (OFversion()>=600)
+  {
+    solvers["pcorrFinal"]=stdSymmSolverSetup(1e-7, 0.01);
+  }
   solvers[pname_]=GAMGPCGSolverSetup(1e-7, 0.01);
   solvers[pname_+"Final"]=GAMGPCGSolverSetup(1e-7, 0.0);
   

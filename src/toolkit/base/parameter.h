@@ -231,7 +231,7 @@ public:
     virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath )
     {
-        std::cout<<"Reading simple "<<name<< std::endl;
+//        std::cout<<"Reading simple "<<name<< std::endl;
         using namespace rapidxml;
         xml_node<>* child = findNode ( node, name );
         if ( child ) {

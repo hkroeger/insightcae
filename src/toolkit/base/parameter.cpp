@@ -353,10 +353,10 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
 	  abspath=boost::filesystem::canonical(abspath);
   #endif
     }
-    cout<<"path="<<abspath<<endl;
+//    cout<<"path="<<abspath<<endl;
     value_=abspath;
   }
-  std::cout<<"done."<<std::endl;
+//  std::cout<<"done."<<std::endl;
 }
 
 

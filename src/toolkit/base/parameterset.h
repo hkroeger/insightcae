@@ -226,7 +226,7 @@ public:
         std::string prefix = copy_range<std::string> ( *make_split_iterator ( key, first_finder ( "/" ) ) );
         std::string remain = key;
         erase_head ( remain, prefix.size()+1 );
-        std::cout<<prefix<<" >> "<<remain<<std::endl;
+//        std::cout<<prefix<<" >> "<<remain<<std::endl;
         return this->getSubset ( prefix ).replace ( remain, newp );
       }
     else

@@ -22,27 +22,27 @@
 #define UNIOF_H
 
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #define UNIOF_TMP_NONCONST(x) (x).ref()
 #else
 #define UNIOF_TMP_NONCONST(x) (x)()
 #endif
 
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #define UNIOF_BOUNDARY_NONCONST(x) (x).boundaryFieldRef()
 #else
 #define UNIOF_BOUNDARY_NONCONST(x) (x).boundaryField()
 #endif
 
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #define UNIOF_WALLDIST_Y(wd) (wd).y()
 #else
 #define UNIOF_WALLDIST_Y(wd) (wd)
 #endif
 
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 #define UNIOF_HEADEROK(ioo,typ) (ioo).typeHeaderOk<typ>()
 #else
 #define UNIOF_HEADEROK(ioo,typ) ( ((ioo).headerOk()) && ((ioo).headerClassName() == typ::typeName) )
@@ -50,35 +50,42 @@
 
 #if (defined(OF301) || defined(OFplus)||defined(OFdev))
 #define UNIOF_ADDARG(args,j) (args).arg((j)+1)
+#elif defined(OFesi1806)
+#define UNIOF_ADDARG(args,j) (args).args()[j+1]
 #else
 #define UNIOF_ADDARG(args,j) (args).additionalArgs()[j]
 #endif
 
-#if (defined(OF23x)||defined(OF301)||defined(OFplus)||defined(OFdev))
+#if (defined(OF23x)||defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 #define UNIOF_ADDOPT(aa,name,typ,desc) aa::addOption(name,typ,desc)
 #else
 #define UNIOF_ADDOPT(aa,name,typ,desc) aa::validOptions.insert(name,desc)
 #endif
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFesi1806)
+#define UNIOF_OPTION(aa, optname) aa.options()[optname]
+#else
+#define UNIOF_OPTION(aa, optname) aa.option(optname)
+#endif
+
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #define UNIOF_INTERNALFIELD(f) f.primitiveField()
 #else
 #define UNIOF_INTERNALFIELD(f) f.internalField()
 #endif
 
 
-#if defined(OFplus)||defined(OFdev)
-#define UNIOF_DIMINTERNALFIELD(f) f.internalField()
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#define UNIOF_DIMINTERNALFIELD(f) (f).internalField()
 #else
-#define UNIOF_DIMINTERNALFIELD(f) f.dimensionedInternalField()
+#define UNIOF_DIMINTERNALFIELD(f) (f).dimensionedInternalField()
 #endif
 
-#if defined(OFplus)||defined(OFdev)
-#define UNIOF_INTERNALFIELD_NONCONST(f) f.ref().field()
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
+#define UNIOF_INTERNALFIELD_NONCONST(f) (f).ref().field()
 #else
-#define UNIOF_INTERNALFIELD_NONCONST(f) f.internalField()
+#define UNIOF_INTERNALFIELD_NONCONST(f) (f).internalField()
 #endif
-
 
 #if defined(OF16ext)
 #define UNIOF_LABELULIST unallocLabelList

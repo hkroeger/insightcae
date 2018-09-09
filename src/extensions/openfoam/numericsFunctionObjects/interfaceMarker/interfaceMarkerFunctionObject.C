@@ -39,11 +39,7 @@
 #include "primitiveMeshTools.H"
 #endif
 
-#ifdef OF16ext
-#define LABELULIST unallocLabelList
-#else
-#define LABELULIST labelUList
-#endif
+
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -156,7 +152,7 @@ bool Foam::interfaceMarkerFunctionObject::start()
 
 bool Foam::interfaceMarkerFunctionObject::execute
 (
-#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus))
+#if not (defined(OF16ext)||defined(OFdev)||defined(OFplus)||defined(OFesi1806))
   bool
 #endif
 )

@@ -270,7 +270,7 @@ int main ( int argc, char** argv )
         
             if ( vm.count ( "batch" ) )
             {
-                boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
+                std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles;
                 
                 if ( vm.count ( "write-only" ) )
                 {

@@ -79,12 +79,12 @@ void ISCADParser::createFeatureExpressions()
         -( lit("*") >> r_scalarExpression [ _val = phx::bind(&Transform::create_scale, qi::_val, qi::_1) ] )
         >>
         *(
-            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, _val, qi::_1) ] )
+            ('|' >> r_solidmodel_primary [ _val = phx::bind(&BooleanUnion::create, qi::_val, qi::_1) ] )
             |
             ('&' >> (
-                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create, _val, qi::_1) ]
+                 r_solidmodel_primary [ _val = phx::bind(&BooleanIntersection::create, qi::_val, qi::_1) ]
                  |
-                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create_plane, _val, qi::_1) ]
+                 r_datumExpression [ _val = phx::bind(&BooleanIntersection::create_plane, qi::_val, qi::_1) ]
              )
             )
         )

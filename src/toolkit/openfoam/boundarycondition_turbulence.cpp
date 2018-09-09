@@ -68,7 +68,7 @@ void uniformIntensityAndLengthScale::setDirichletBC_epsilon(OFDictData::dict& BC
 {
     double uprime=p_.I*U;
     double k=3.*pow(uprime, 2)/2.;
-    double epsilon=0.09*pow(k, 1.5)/p_.l;
+    double epsilon=pow(0.09, 3./4.)*pow(k, 1.5)/p_.l;
 //     BC["type"]=OFDictData::data("fixedValue");
 //     BC["value"]="uniform "+lexical_cast<string>(epsilon);
     BC["type"]=OFDictData::data("inletOutlet");

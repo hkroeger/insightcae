@@ -36,7 +36,7 @@ class OPERATED_QTC_NAME \
 : public QuantityComputer<T> \
 { \
 protected: \
-  boost::shared_ptr<QuantityComputer<T> > qtc_; \
+  std::shared_ptr<QuantityComputer<T> > qtc_; \
 public:\
   OPERATED_QTC_NAME(const QuantityComputer<T>& qtc) \
   : qtc_(qtc.clone())\
@@ -68,7 +68,7 @@ class OPERATED_QTC_NAME \
 : public QuantityComputer<RETURN_T> \
 { \
 protected: \
-  boost::shared_ptr<QuantityComputer<T> > qtc_; \
+  std::shared_ptr<QuantityComputer<T> > qtc_; \
 public:\
   OPERATED_QTC_NAME(const QuantityComputer<T>& qtc) \
   : qtc_(qtc.clone())\
@@ -100,8 +100,8 @@ class OPERATED_QTC_NAME \
 : public QuantityComputer< typename RESULT_T<T1,T2>::type > \
 { \
 protected: \
-  boost::shared_ptr<QuantityComputer<T1> > qtc1_; \
-  boost::shared_ptr<QuantityComputer<T2> > qtc2_; \
+  std::shared_ptr<QuantityComputer<T1> > qtc1_; \
+  std::shared_ptr<QuantityComputer<T2> > qtc2_; \
 public:\
   OPERATED_QTC_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2) \
   : qtc1_(qtc1.clone()), qtc2_(qtc2.clone())\

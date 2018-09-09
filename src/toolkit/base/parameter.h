@@ -103,6 +103,7 @@ public:
      * LaTeX representation of the parameter value
      */
     virtual std::string latexRepresentation() const =0;
+    virtual std::string plainTextRepresentation(int indent=0) const =0;
 
     virtual rapidxml::xml_node<>* appendToNode
     (
@@ -127,7 +128,7 @@ public:
 
 
 
-typedef boost::shared_ptr<Parameter> ParameterPtr;
+typedef std::shared_ptr<Parameter> ParameterPtr;
 
 
 
@@ -200,6 +201,12 @@ public:
         return SimpleLatex( valueToString ( value_ ) ).toLaTeX();
     }
 
+    virtual std::string plainTextRepresentation(int indent=0) const
+    {
+        return SimpleLatex( valueToString ( value_ ) ).toPlainText();
+    }
+
+
     virtual Parameter* clone() const
     {
         return new SimpleParameter<T, N> ( value_, description_.simpleLatex() );
@@ -224,7 +231,7 @@ public:
     virtual void readFromNode ( const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
                                 boost::filesystem::path inputfilepath )
     {
-        std::cout<<"Reading simple "<<name<< std::endl;
+//        std::cout<<"Reading simple "<<name<< std::endl;
         using namespace rapidxml;
         xml_node<>* child = findNode ( node, name );
         if ( child ) {
@@ -356,6 +363,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone() const;
 
@@ -410,6 +418,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     DoubleParameter* toDoubleParameter ( RangeList::const_iterator i ) const;
 
@@ -475,6 +484,7 @@ public:
     }
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone () const;
 
@@ -506,6 +516,7 @@ public:
     const arma::mat& operator() () const;
 
     virtual std::string latexRepresentation() const;
+    virtual std::string plainTextRepresentation(int indent=0) const;
 
     virtual Parameter* clone () const;
 

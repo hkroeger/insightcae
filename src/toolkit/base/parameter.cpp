@@ -353,10 +353,10 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
 	  abspath=boost::filesystem::canonical(abspath);
   #endif
     }
-    cout<<"path="<<abspath<<endl;
+//    cout<<"path="<<abspath<<endl;
     value_=abspath;
   }
-  std::cout<<"done."<<std::endl;
+//  std::cout<<"done."<<std::endl;
 }
 
 
@@ -380,6 +380,14 @@ std::string DirectoryParameter::latexRepresentation() const
       + SimpleLatex( boost::lexical_cast<std::string>(boost::filesystem::absolute(value_)) ).toLaTeX()
       + "}";
 }
+
+//std::string DirectoryParameter::plainTextRepresentation(int indent) const
+//{
+//    return std::string(indent, ' ')
+//      + "\""
+//      + SimpleLatex( boost::lexical_cast<std::string>(boost::filesystem::absolute(value_)) ).toPlainText()
+//      + "\"\n";
+//}
 
 Parameter* DirectoryParameter::clone() const
 {
@@ -450,6 +458,11 @@ const SelectionParameter::ItemList& SelectionParameter::items() const
 std::string SelectionParameter::latexRepresentation() const
 {
   return SimpleLatex(items_[value_]).toLaTeX();
+}
+
+std::string SelectionParameter::plainTextRepresentation(int indent) const
+{
+  return SimpleLatex(items_[value_]).toPlainText();
 }
 
 Parameter* SelectionParameter::clone() const
@@ -546,6 +559,17 @@ std::string DoubleRangeParameter::latexRepresentation() const
   return oss.str();
 }
 
+std::string DoubleRangeParameter::plainTextRepresentation(int indent) const
+{
+  std::ostringstream oss;
+  oss << *values_.begin();
+  for ( RangeList::const_iterator i=(++values_.begin()); i!=values_.end(); i++ )
+  {
+    oss<<"; "<<*i;
+  }
+  return std::string(indent, ' ') + oss.str() + '\n';
+}
+
 DoubleParameter* DoubleRangeParameter::toDoubleParameter(RangeList::const_iterator i) const
 {
   return new DoubleParameter(*i, "realized from range iterator");
@@ -619,7 +643,12 @@ std::string ArrayParameter::latexRepresentation() const
 {
   return std::string();
 }
-  
+
+std::string ArrayParameter::plainTextRepresentation(int indent) const
+{
+  return std::string();
+}
+
 Parameter* ArrayParameter::clone () const
 {
   ArrayParameter* np=new ArrayParameter(*defaultValue_, 0, description_.simpleLatex());
@@ -737,6 +766,25 @@ string MatrixParameter::latexRepresentation() const
   }
   oss<<"\\end{tabular}"<<endl;
   
+  return oss.str();
+}
+
+
+string MatrixParameter::plainTextRepresentation(int indent) const
+{
+  std::ostringstream oss;
+
+  for (int i=0;i<value_.n_rows; i++)
+  {
+    oss<<string(indent, ' ')<<i<<": ";
+    for (int j=0;j<value_.n_cols; j++)
+    {
+      oss<<value_(i,j);
+      if (j<value_.n_cols-1) oss<<", ";
+    }
+    oss<<"\n"<<endl;
+  }
+
   return oss.str();
 }
 

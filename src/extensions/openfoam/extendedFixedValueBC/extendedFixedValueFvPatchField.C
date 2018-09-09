@@ -75,7 +75,7 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
       //       so if first use is in the next time step it retriggers
       //       a new update.
       this->evaluate(
-            #if defined(OFdev)
+            #if defined(OFdev)||defined(OFesi1806)
                       Pstream::commsTypes::blocking
             #else
                       Pstream::blocking

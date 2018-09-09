@@ -496,7 +496,7 @@ void Foam::totalPressureLossFvPatchScalarField::updateCoeffs
                "definition of total pressure." << nl
             << "    Set the unused variable(s) to 'none'.\n"
             << "    on patch " << this->patch().name()
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
             << " of field " << this->internalField().name()
             << " in file " << this->internalField().objectPath()
 #else
@@ -523,8 +523,8 @@ void Foam::totalPressureLossFvPatchScalarField::updateCoeffs()
 void Foam::totalPressureLossFvPatchScalarField::write(Ostream& os) const
 {
     fvPatchScalarField::write(os);
-    writeEntryIfDifferent<word>(os, "U", "U", UName_);
-    writeEntryIfDifferent<word>(os, "phi", "phi", phiName_);
+    os.writeKeyword("U") << UName_ << token::END_STATEMENT << nl;
+    os.writeKeyword("phi") << phiName_ << token::END_STATEMENT << nl;
     os.writeKeyword("rho") << rhoName_ << token::END_STATEMENT << nl;
     os.writeKeyword("psi") << psiName_ << token::END_STATEMENT << nl;
     os.writeKeyword("gamma") << gamma_ << token::END_STATEMENT << nl;

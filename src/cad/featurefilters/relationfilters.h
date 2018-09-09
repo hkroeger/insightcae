@@ -35,8 +35,8 @@ class RELATION_QTY_FILTER_NAME\
 : public Filter\
 {\
 protected:\
-  boost::shared_ptr<QuantityComputer<T1> > qtc1_;\
-  boost::shared_ptr<QuantityComputer<T2> > qtc2_;\
+  std::shared_ptr<QuantityComputer<T1> > qtc1_;\
+  std::shared_ptr<QuantityComputer<T2> > qtc2_;\
   \
 public:\
   RELATION_QTY_FILTER_NAME(const QuantityComputer<T1>& qtc1, const QuantityComputer<T2>& qtc2)\

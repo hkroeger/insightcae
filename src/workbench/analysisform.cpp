@@ -37,7 +37,7 @@ int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
 
 
-AnalysisWorker::AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis)
+AnalysisWorker::AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis)
 : analysis_(analysis)
 {}
 

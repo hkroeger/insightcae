@@ -83,11 +83,11 @@ int main(int argc, char *argv[])
 // 	  FatalErrorIn("main") << "Could not read field "<<fieldName<<abort(FatalError);	
 // 	Info<<fieldheader.headerClassName()<<endl;
 
-#if not (defined(OFplus)||defined(OFdev))
+#if not (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 	if (!fieldheader.headerOk())
 #endif
 	  
-#if (defined(OFplus)||defined(OFdev))
+#if (defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 	  if (fieldheader.typeHeaderOk<volVectorField>())
 #else
 	  if (fieldheader.headerClassName()=="volVectorField")

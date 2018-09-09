@@ -95,7 +95,7 @@ FeaturePtr CircularPattern::create(FeaturePtr m1, VectorPtr p0, VectorPtr axis, 
 
 
 
-FeaturePtr CircularPattern::create(FeaturePtr m1, FeaturePtr otherpat)
+FeaturePtr CircularPattern::create_other(FeaturePtr m1, FeaturePtr otherpat)
 {
     return FeaturePtr(new CircularPattern(m1, otherpat));
 }
@@ -201,7 +201,7 @@ void CircularPattern::insertrule(parser::ISCADParser& ruleset) const
       '(' >> 
           ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression 
         >> ')' 
-      ) [ qi::_val = phx::bind(&CircularPattern::create, qi::_1, qi::_2) ]
+      ) [ qi::_val = phx::bind(&CircularPattern::create_other, qi::_1, qi::_2) ]
     ))
   );
 }

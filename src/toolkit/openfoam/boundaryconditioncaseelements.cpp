@@ -654,8 +654,15 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
             BC["type"]=OFDictData::data ( "flowRateInletVelocity" );
-            BC["rho"]=p.rhoName;
-            BC["massFlowRate"]=p.massflow;
+            if (const auto *mf = boost::get<Parameters::flowrate_massflow_type>(&p.flowrate))
+            {
+                BC["rho"]=p.rhoName;
+                BC["massFlowRate"]=mf->value;
+            }
+            else if (const auto *vf = boost::get<Parameters::flowrate_volumetric_type>(&p.flowrate))
+            {
+                BC["volumetricFlowRate"]=vf->value;
+            }
             BC["value"]=OFDictData::data ( "uniform ( 0 0 0 )" );
         } else if (
             ( field.first=="T" )

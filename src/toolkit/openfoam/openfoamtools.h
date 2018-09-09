@@ -594,7 +594,7 @@ imagename = string "" "Image name. Will be used as filename. If blank, the view 
   static std::string pvec(const arma::mat& v);
 };
 
-typedef boost::shared_ptr<PVScene> PVScenePtr;
+typedef std::shared_ptr<PVScene> PVScenePtr;
 
 
 

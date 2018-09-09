@@ -146,7 +146,7 @@ class ParserDataBase
 {
     
 public:
-    typedef boost::shared_ptr<ParserDataBase> Ptr;
+    typedef std::shared_ptr<ParserDataBase> Ptr;
 
     std::string description;
 
@@ -273,7 +273,7 @@ template <typename Iterator, typename Skipper = skip_grammar<Iterator> >
 struct PDLParserRuleset
 {
     typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
-    typedef boost::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
+    typedef std::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
     qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_description_string;
     qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
@@ -1200,7 +1200,7 @@ struct DynamicClassSelectableSubsetParameterParser {
         virtual std::string cppType ( const std::string& name ) const
         {
             std::ostringstream os;
-            os << "boost::shared_ptr<"<<base_type<<">";
+            os << "std::shared_ptr<"<<base_type<<">";
             return os.str();
         }
         virtual std::string cppValueRep ( const std::string& name ) const

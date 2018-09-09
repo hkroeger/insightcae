@@ -24,6 +24,7 @@
 #include "transformGeometricField.H"
 #include "fixedGradientFvPatchFields.H"
 
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -40,13 +41,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
 
 //     scalar D=readScalar(IStringStream(args.additionalArgs()[0])());
-    IStringStream Ubulk_args(
-#if defined(OFdev)||defined(OFplus)
-      args[1]
-#else
-      args.additionalArgs()[0]
-#endif
-    );    
+    IStringStream Ubulk_args( UNIOF_ADDARG(args, 0) );
     vector Ubulk(Ubulk_args);
     point center(0, 0, 0);
 

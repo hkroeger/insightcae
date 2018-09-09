@@ -283,7 +283,7 @@ FeaturePtr Bar::create
 
 
 
-FeaturePtr Bar::create
+FeaturePtr Bar::create_condensed
 (
     VectorPtr p0, VectorPtr p1,
     FeaturePtr xsec, VectorPtr vert,
@@ -382,7 +382,7 @@ void Bar::insertrule(parser::ISCADParser& ruleset) const
                       >> ruleset.r_solidmodel_expression >> ',' // 5
                       >> ruleset.r_vectorExpression >> // 6
                       ')' )
-                    [ qi::_val = phx::bind(&Bar::create, 
+                    [ qi::_val = phx::bind(&Bar::create_condensed,
                                      qi::_1, qi::_3,
                                      qi::_5, qi::_6,
                                      qi::_2, qi::_4

@@ -172,6 +172,20 @@ std::string ParameterSet::latexRepresentation() const
   return result;
 }
 
+std::string ParameterSet::plainTextRepresentation(int indent) const
+{
+    std::string result="";
+    if (size()>0)
+    {
+      for(const_iterator i=begin(); i!=end(); i++)
+      {
+        result+=std::string(indent, ' ') + (i->first) + " = " + i->second->plainTextRepresentation(indent) + '\n';
+      }
+    }
+    return result;
+}
+
+
 ParameterSet* ParameterSet::cloneParameterSet() const
 {
   ParameterSet *np=new ParameterSet;
@@ -264,6 +278,14 @@ std::string ParameterSet::readFromFile(const boost::filesystem::path& file)
   return analysisName;
 }
 
+
+std::ostream& operator<<(std::ostream& os, const ParameterSet& ps)
+{
+    os << ps.plainTextRepresentation(0);
+    return os;
+}
+
+
 defineType(SubsetParameter);
 addToFactoryTable(Parameter, SubsetParameter);
 
@@ -293,6 +315,10 @@ std::string SubsetParameter::latexRepresentation() const
   return ParameterSet::latexRepresentation();
 }
 
+std::string SubsetParameter::plainTextRepresentation(int indent) const
+{
+  return "\n" + ParameterSet::plainTextRepresentation(indent+1);
+}
 
 Parameter* SubsetParameter::clone() const
 {
@@ -356,6 +382,19 @@ std::string SelectableSubsetParameter::latexRepresentation() const
   std::ostringstream os;
   os<<"selected as ``"<<SimpleLatex(selection_).toLaTeX()<<"''\\\\"<<endl;
   os<<operator()().latexRepresentation();
+  return os.str();
+}
+
+std::string SelectableSubsetParameter::plainTextRepresentation(int indent) const
+{
+//  return "(Not implemented)";
+  std::ostringstream os;
+  os<<"selected as \""<<SimpleLatex(selection_).toPlainText()<<"\"";
+  if (operator()().size()>0)
+  {
+      os<<": \n";
+      os<<operator()().plainTextRepresentation(indent+1);
+  }
   return os.str();
 }
 

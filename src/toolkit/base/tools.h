@@ -60,6 +60,8 @@ class ExecTimer
 {
 public:
     ExecTimer(const std::string& name);
+
+    ~ExecTimer();
 };
 
 

@@ -23,7 +23,11 @@
 
 #include "Python.h"
 #include "boost/python.hpp"
+#if BOOST_VERSION > 106500
+#include "boost/python/numpy.hpp"
+#else
 #include "boost/python/numeric.hpp"
+#endif
 
 using namespace std;
 using namespace boost;

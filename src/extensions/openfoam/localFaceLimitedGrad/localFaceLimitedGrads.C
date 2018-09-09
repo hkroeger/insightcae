@@ -28,7 +28,7 @@
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 namespace Foam
 {
 namespace fv
@@ -37,7 +37,7 @@ namespace fv
   
     makeFvGradScheme(localFaceLimitedGrad)
 
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 }
 }
 #endif
@@ -76,14 +76,10 @@ calcGrad
 //         return tGrad;
 //     }
 
-    volVectorField& g = tGrad
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    volVectorField& g = UNIOF_TMP_NONCONST(tGrad);
 
-    const LABELULIST& owner = mesh.owner();
-    const LABELULIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const volVectorField& C = mesh.C();
     const surfaceVectorField& Cf = mesh.Cf();
@@ -124,7 +120,7 @@ calcGrad
         );
     }
 
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     const volScalarField::Boundary& 
 #else
     const volScalarField::GeometricBoundaryField& 
@@ -135,7 +131,7 @@ calcGrad
     {
         const fvPatchScalarField& psf = bsf[patchi];
 
-        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
+        const UNIOF_LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
         if (psf.coupled())
@@ -196,12 +192,8 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-#if defined(OFplus)||defined(OFdev)
-    g.ref().field()
-#else
-    g.internalField()
-#endif
-      *= limiter;
+    UNIOF_INTERNALFIELD_NONCONST(g)  *= limiter;
+
     g.correctBoundaryConditions();
     gaussGrad<scalar>::correctBoundaryConditions(vsf, g);
 
@@ -240,14 +232,10 @@ calcGrad
 //         return tGrad;
 //     }
 
-    volTensorField& g = tGrad
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    volTensorField& g = UNIOF_TMP_NONCONST(tGrad);
 
-    const LABELULIST& owner = mesh.owner();
-    const LABELULIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const volVectorField& C = mesh.C();
     const surfaceVectorField& Cf = mesh.Cf();
@@ -302,7 +290,7 @@ calcGrad
         );
     }
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     const volVectorField::Boundary&
 #else
     const volVectorField::GeometricBoundaryField&
@@ -313,7 +301,7 @@ calcGrad
     {
         const fvPatchVectorField& psf = bvf[patchi];
 
-        const LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
+        const UNIOF_LABELULIST& pOwner = mesh.boundary()[patchi].faceCells();
         const vectorField& pCf = Cf.boundaryField()[patchi];
 
         if (psf.coupled())
@@ -384,13 +372,7 @@ calcGrad
             << " average: " << gAverage(limiter) << endl;
     }
 
-    g
-#if defined(OFdev)||defined(OFplus)
-      .ref().field()
-#else
-      .internalField() 
-#endif 
-      *= limiter;
+    UNIOF_INTERNALFIELD_NONCONST(g) *= limiter;
     g.correctBoundaryConditions();
     gaussGrad<vector>::correctBoundaryConditions(vvf, g);
 

@@ -35,11 +35,13 @@ License
 #include "addToRunTimeSelectionTable.H"
 #include "wallFvPatch.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 namespace incompressible
 {
 #endif
@@ -181,14 +183,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::patchTypeFaceWeighting() const
 		    const gF& f
 		      (
 		       mesh.objectRegistry::lookupObject<gF>
-		       (this->
-#if defined(OFdev)||defined(OFplus)
-		        internalField()
-#else
-		        dimensionedInternalField()
-#endif
-		       .name())
-		       );
+               ( UNIOF_DIMINTERNALFIELD(*this).name()) );
 				
 		    if 
 		      ( 
@@ -348,7 +343,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 
       const kOmegaSST2& rasModel 
 	= db().lookupObject<kOmegaSST2>(
-#if defined(OF301)||defined(OFplus)||defined(OFdev)
+#if defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 	"turbulenceProperties"
 #else
 	"RASProperties"
@@ -366,13 +361,7 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 
       volScalarField& omega = const_cast<volScalarField&>
 	(db().lookupObject<volScalarField>
-	 (
-#if defined(OFplus)||defined(OFdev)
-	      internalField()
-#else
-	      dimensionedInternalField()
-#endif      
-	   .name()));
+     ( UNIOF_DIMINTERNALFIELD(*this).name()) );
 
 //       const scalarField& k = db().lookupObject<volScalarField>(kName_);
 
@@ -543,11 +532,11 @@ void hybridOmegaWallFunction2FvPatchScalarField::updateCoeffs()
 void hybridOmegaWallFunction2FvPatchScalarField::write(Ostream& os) const
 {
     fixedInternalValueFvPatchField<scalar>::write(os);
-    writeEntryIfDifferent<word>(os, "U", "U", UName_);
-    writeEntryIfDifferent<word>(os, "k", "k", kName_);
-    writeEntryIfDifferent<word>(os, "G", "RASModel::G", GName_);
-    writeEntryIfDifferent<word>(os, "nu", "nu", nuName_);
-    writeEntryIfDifferent<word>(os, "nut", "nut", nutName_);
+    os.writeKeyword("U") <<  UName_<< token::END_STATEMENT << nl;
+    os.writeKeyword("k") << kName_<< token::END_STATEMENT << nl;
+    os.writeKeyword("G") << GName_<< token::END_STATEMENT << nl;
+    os.writeKeyword("nu") << nuName_<< token::END_STATEMENT << nl;
+    os.writeKeyword("nut") << nutName_<< token::END_STATEMENT << nl;
     os.writeKeyword("Cmu") << Cmu_ << token::END_STATEMENT << nl;
     os.writeKeyword("kappa") << kappa_ << token::END_STATEMENT << nl;
     os.writeKeyword("E") << E_ << token::END_STATEMENT << nl;
@@ -567,7 +556,7 @@ makePatchTypeField
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OF301)||defined(OFplus)||defined(OFdev))
+#if not (defined(OF301)||defined(OFplus)||defined(OFdev)||defined(OFesi1806))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

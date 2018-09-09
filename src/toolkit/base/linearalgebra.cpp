@@ -604,8 +604,8 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
   {
     int n_raw=timeProfs.n_rows;
 
-    double x0=timeProfs.col(0).min();
-    double dx_raw=timeProfs.col(0).max()-x0;
+    double x0=arma::min(timeProfs.col(0));
+    double dx_raw=arma::max(timeProfs.col(0))-x0;
 
 //    std::cout<<"mvg avg: range ["<<x0<<":"<<timeProfs.col(0).max()<<"]"<<std::endl;
 

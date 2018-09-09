@@ -84,7 +84,7 @@ public:
     ScalarPtr miterangle0_hor, ScalarPtr miterangle1_hor
   );
 
-  static FeaturePtr create
+  static FeaturePtr create_condensed
   (
     VectorPtr p0, VectorPtr p1, 
     FeaturePtr xsec, VectorPtr vert,

@@ -202,7 +202,7 @@ void DecayingTurbulence::applyCustomPreprocessing(OpenFOAMCase& cm)
   OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void DecayingTurbulence::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   OpenFOAMAnalysis::applyCustomOptions(cm, dicts);
   

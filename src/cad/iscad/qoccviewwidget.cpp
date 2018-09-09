@@ -930,39 +930,85 @@ void QoccViewWidget::displayMessage(const QString& msg)
 }
 
 
+Bnd_Box QoccViewWidget::sceneBoundingBox() const
+{
+    AIS_ListOfInteractive loi;
+    myContext->DisplayedObjects(loi);
+
+    Bnd_Box bbb;
+    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
+      {
+          Handle_AIS_InteractiveObject o = *i;
+          Handle_AIS_Shape a = Handle_AIS_Shape::DownCast(o);
+          if (!a.IsNull())
+            {
+              Bnd_Box bb;
+              o->BoundingBox(bb);
+              bbb.Add(bb);
+            }
+      }
+
+    return bbb;
+}
+
+bool QoccViewWidget::updatePlaneSize(const Handle_AIS_InteractiveObject& ppl, double size)
+{
+
+    bool changed=false;
+    Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ppl);
+    if (!pl.IsNull())
+    {
+//        double x, y;
+//        pl->Size(x, y);
+//        std::cout<<"PLANE! "<<x<<" "<<y<<std::endl;
+//        std::cout<<"size="<<size<<std::endl;
+        pl->SetSize(size, size);
+//        pl->SetToUpdate();
+        pl->Redisplay(true);
+        changed=true;
+    }
+
+    const PrsMgr_ListOfPresentableObjects& children = ppl->Children();
+    if (children.Extent()>0)
+    {
+//        std::cout<<"checking "<<children.Extent()<<" children"<<std::endl;
+        for (PrsMgr_ListOfPresentableObjects::const_iterator i=children.begin(); i!=children.end(); i++)
+        {
+    //        Handle_AIS_InteractiveObject pplc = Handle_AIS_InteractiveObject::DownCast(*i);
+    //        if (!pplc.IsNull()) updatePlaneSize(pplc, size);
+            Handle_AIS_ConnectedInteractive pplc2 = Handle_AIS_ConnectedInteractive::DownCast(*i);
+            if (!pplc2.IsNull()) changed|=updatePlaneSize(pplc2->ConnectedTo(), size);
+        }
+    }
+
+    return changed;
+}
+
+void QoccViewWidget::updatePlanesSizes()
+{
+    Bnd_Box scenebb = sceneBoundingBox();
+
+    double size=1000;
+    if (!scenebb.IsVoid())
+    {
+        double diag=(scenebb.CornerMax().XYZ()-scenebb.CornerMin().XYZ()).Modulus();
+        size=1.2*diag;
+    }
+
+    AIS_ListOfInteractive loi;
+    getContext()->DisplayedObjects(loi);
+    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
+    {
+        Handle_AIS_InteractiveObject o=*i;
+        updatePlaneSize(o, size);
+    }
+}
+
 void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
 {
   if (di)
     {
       Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
-
-      Handle_AIS_Plane pl = Handle_AIS_Plane::DownCast(ais);
-      if ( !pl.IsNull() )
-        {
-          double size=1000;
-
-          AIS_ListOfInteractive loi;
-          getContext()->DisplayedObjects(loi);
-          Bnd_Box bbb;
-          for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
-            {
-                Handle_AIS_InteractiveObject o = *i;
-                Handle_AIS_Shape a = Handle_AIS_Shape::DownCast(o);
-                if (!a.IsNull())
-                  {
-                    Bnd_Box bb;
-                    o->BoundingBox(bb);
-                    bbb.Add(bb);
-                  }
-            }
-            if (!bbb.IsVoid())
-              {
-                double diag=(bbb.CornerMax().XYZ()-bbb.CornerMin().XYZ()).Modulus();
-                size=1.2*diag;
-              }
-
-            pl->SetSize(size, size);
-        }
 
       getContext()->Display
       (
@@ -974,6 +1020,7 @@ void QoccViewWidget::onShow(QDisplayableModelTreeItem* di)
       getContext()->SetDisplayMode(ais, di->shadingMode(), Standard_False );
       getContext()->SetColor(ais, di->color(), Standard_True );
 
+      updatePlanesSizes();
     }
 }
 
@@ -982,9 +1029,11 @@ void QoccViewWidget::onHide(QDisplayableModelTreeItem* di)
 {
   if (di)
     {
+      Handle_AIS_InteractiveObject ais = di->ais( *getContext() );
+
       getContext()->Erase
       (
-        di->ais( *getContext() )
+        ais
 #if (OCC_VERSION_MAJOR>=7)
         , true
 #endif

@@ -41,7 +41,7 @@ namespace cad
 
 namespace parser {
 class SyntaxElementDirectory;
-typedef boost::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
+typedef std::shared_ptr<SyntaxElementDirectory> SyntaxElementDirectoryPtr;
 }
     
     

@@ -25,6 +25,7 @@
 #include "base/analysis.h"
 #include "base/resultset.h"
 #include "parametereditorwidget.h"
+#include "boost/shared_ptr.hpp"
 #endif
 
 #include <QMdiSubWindow>
@@ -34,7 +35,6 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 
-#include "boost/shared_ptr.hpp"
 
 #include "graphprogressdisplayer.h"
 
@@ -62,10 +62,10 @@ class AnalysisWorker
   Q_OBJECT
   QThread workerThread_;
   
-  boost::shared_ptr<insight::Analysis> analysis_;
+  std::shared_ptr<insight::Analysis> analysis_;
   
 public:
-  AnalysisWorker(const boost::shared_ptr<insight::Analysis>& analysis);
+  AnalysisWorker(const std::shared_ptr<insight::Analysis>& analysis);
   
 public slots:
   void doWork(insight::ProgressDisplayer* pd=NULL);
@@ -87,7 +87,7 @@ protected:
   std::string analysisName_;
   insight::ParameterSet parameters_;
   
-  boost::shared_ptr<insight::Analysis> analysis_;  
+  std::shared_ptr<insight::Analysis> analysis_;  
   insight::ResultSetPtr results_;
   
   GraphProgressDisplayer *progdisp_;

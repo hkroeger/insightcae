@@ -320,7 +320,8 @@ void InternalPressureLoss::createCase(insight::OpenFOAMCase& cm)
 
     {
         MassflowBC::Parameters inp;
-        inp.massflow = p.fluid.rho * p.operation.Q;
+        MassflowBC::Parameters::flowrate_massflow_type mf = { p.fluid.rho * p.operation.Q };
+        inp.flowrate = mf;
         inp.turbulence.reset(new turbulenceBC::uniformIntensityAndLengthScale(
                               turbulenceBC::uniformIntensityAndLengthScale::Parameters()
                                .set_I(0.1)

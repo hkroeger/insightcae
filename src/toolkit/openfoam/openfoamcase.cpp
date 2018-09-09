@@ -575,9 +575,9 @@ bool OpenFOAMCase::isCompressible() const
   return findUniqueElement<FVNumerics>().isCompressible();
 }
 
-boost::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
+std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {
-  boost::shared_ptr<OFdicts> dictionaries(new OFdicts);
+  std::shared_ptr<OFdicts> dictionaries(new OFdicts);
 
   // populate fields list
   createFieldListIfRequired();
@@ -649,10 +649,10 @@ void OpenFOAMCase::modifyCaseOnDisk(const boost::filesystem::path& location) con
 void OpenFOAMCase::createOnDisk
 (
     const boost::filesystem::path& location, 
-    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
 )
 {
-  boost::shared_ptr<OFdicts> dictionaries=createDictionaries();
+  std::shared_ptr<OFdicts> dictionaries=createDictionaries();
   createOnDisk(location, dictionaries, restrictToFiles);
 }
 
@@ -660,8 +660,8 @@ void OpenFOAMCase::createOnDisk
 void OpenFOAMCase::createOnDisk
 (
     const boost::filesystem::path& location, 
-    boost::shared_ptr<OFdicts> dictionaries, 
-    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+    std::shared_ptr<OFdicts> dictionaries, 
+    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
 )
 {
   boost::filesystem::path basepath(location);

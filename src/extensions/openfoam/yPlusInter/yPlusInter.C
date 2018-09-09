@@ -24,13 +24,13 @@
 
 #if defined(OF16ext) or defined(OF21x)
 #include "incompressible/incompressibleTwoPhaseMixture/twoPhaseMixture.H"
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "immiscibleIncompressibleTwoPhaseMixture.H"
 #else
 #include "incompressible/incompressibleTwoPhaseMixture/incompressibleTwoPhaseMixture.H"
 #endif
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 #include "turbulentTransportModel.H"
 #include "nutWallFunctionFvPatchScalarField.H"
 #else
@@ -60,7 +60,7 @@ void calcIncompressibleYPlus
     typedef 
 #if defined(OF16ext) or defined(OF21x)
     incompressible::RASModels::nutWallFunctionFvPatchScalarField
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     nutWallFunctionFvPatchScalarField
 #else
     incompressible::nutWallFunctionFvPatchScalarField
@@ -71,21 +71,21 @@ void calcIncompressibleYPlus
 
 #if defined(OF16ext) or defined(OF21x)
     twoPhaseMixture 
-#elif defined(OF301) || defined(OFplus)||defined(OFdev)
+#elif defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     immiscibleIncompressibleTwoPhaseMixture
 #else
     incompressibleTwoPhaseMixture
 #endif
     laminarTransport(U, phi);
 
-#if defined(OF301) || defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
     autoPtr<incompressible::turbulenceModel>
 #else
     autoPtr<incompressible::RASModel>
 #endif
     RASModel
     (
-#if defined(OF301) || defined(OFplus)||defined(OFdev)
+#if defined(OF301) || defined(OFplus)||defined(OFdev)||defined(OFesi1806)
       incompressible::turbulenceModel::New
 #else
         incompressible::RASModel::New
@@ -93,7 +93,7 @@ void calcIncompressibleYPlus
         (U, phi, laminarTransport)
     );
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     const volScalarField::Boundary
 #else
     const volScalarField::GeometricBoundaryField 
@@ -240,7 +240,11 @@ int main(int argc, char *argv[])
         if (timeI == 0 || state != fvMesh::UNCHANGED)
         {
             Info<< "Calculating wall distance\n" << endl;
-            wallDist y(mesh, true);
+            wallDist y(mesh
+           #if not (defined(OFesi1806))
+                       , true
+           #endif
+                       );
             Info<< "Writing wall distance to field " << y.name() << nl << endl;
             y.write();
         }

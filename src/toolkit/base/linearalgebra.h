@@ -188,7 +188,7 @@ public:
 
 private:
   arma::mat xy_, first_, last_;
-  boost::shared_ptr<gsl_interp_accel> acc;
+  std::shared_ptr<gsl_interp_accel> acc;
   boost::ptr_vector<gsl_spline> spline ;
   
 //   Interpolator(const Interpolator&);

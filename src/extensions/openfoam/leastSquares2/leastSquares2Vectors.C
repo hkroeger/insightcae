@@ -29,11 +29,6 @@ License
 #include "mapPolyMesh.H"
 #include "uniof.h"
 
-#if defined(OFplus)
-#define UNALLOCLABELLIST labelList
-#else
-#define UNALLOCLABELLIST unallocLabelList
-#endif
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -421,8 +416,8 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
     surfaceVectorField& lsN = *nVectorsPtr_;
 
     // Set local references to mesh data
-    const UNALLOCLABELLIST& owner = mesh().owner();
-    const UNALLOCLABELLIST& neighbour = mesh().neighbour();
+    const UNIOF_LABELULIST& owner = mesh().owner();
+    const UNIOF_LABELULIST& neighbour = mesh().neighbour();
 
     const volVectorField& C = mesh().C();
     const surfaceScalarField& w = mesh().weights();
@@ -453,7 +448,7 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
 //         const fvsPatchScalarField& pMagSf = magSf.boundaryField()[patchi];
 
         const fvPatch& p = pw.patch();
-        const UNALLOCLABELLIST& faceCells = p.patch().faceCells();
+        const UNIOF_LABELULIST& faceCells = p.patch().faceCells();
 
         // Build the d-vectors
 
@@ -531,7 +526,7 @@ void Foam::leastSquares2Vectors::makeLeastSquaresVectors() const
 //         const fvsPatchScalarField& pMagSf = magSf.boundaryField()[patchi];
 
         const fvPatch& p = pw.patch();
-        const UNALLOCLABELLIST& faceCells = p.faceCells();
+        const UNIOF_LABELULIST& faceCells = p.faceCells();
 
         // Build the d-vectors
         // Better version of d-vectors: Zeljko Tukovic, 25/Apr/2010

@@ -176,7 +176,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
   OFDictData::dict td;
   readOpenFOAMDict(tf, td);
   
-  c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	list_of(0.0), volField ) );
+  c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
   BOOST_FOREACH(const OFDictData::dict::value_type e, td)
   {
     std::string specie = e.first;
@@ -185,7 +185,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
 
     defaultComposition_[specie]=v;
 
-    c.addField(specie, FieldInfo(scalarField, 	dimless, 	list_of(v), volField ) );
+    c.addField(specie, FieldInfo(scalarField, 	dimless, 	FieldValue({v}), volField ) );
   }
 }
 

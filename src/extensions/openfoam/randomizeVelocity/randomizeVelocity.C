@@ -27,6 +27,7 @@
 #include "Random.H"
 #include "simpleFilter.H"
 
+#include "uniof.h"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -41,13 +42,7 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
    
-   scalar RMS=readScalar(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-    args.arg(1)
-#else
-    args.additionalArgs()[0]
-#endif
-  )());
+   scalar RMS=readScalar(IStringStream( UNIOF_ADDARG(args, 0) )());
 
   Info << "Reading field U\n" << endl;
   volVectorField U
@@ -66,7 +61,13 @@ int main(int argc, char *argv[])
   Random rg(1);
   volVectorField fluctuations=0.0*U;
   forAll(fluctuations, ci)
-    fluctuations[ci]=(rg.vector01()-0.5*vector::one)*RMS;
+    fluctuations[ci]=(
+            #if defined(OFesi1806)
+              rg.sample01<vector>()
+            #else
+              rg.vector01()
+            #endif
+              -0.5*vector::one)*RMS;
   
   simpleFilter filter(mesh);
   for (int i=0; i<10; i++)

@@ -31,7 +31,7 @@
 #ifndef Q_MOC_RUN
 #include <boost/spirit/include/qi.hpp>
 #include "boost/functional/hash.hpp"
-#include "boost/enable_shared_from_this.hpp"
+//#include "boost/enable_shared_from_this.hpp"
 #endif
 
 #include "base/linearalgebra.h"
@@ -177,7 +177,7 @@ public:
  */
 class Feature
 : public ASTBase,
-  public boost::enable_shared_from_this<Feature>
+  public std::enable_shared_from_this<Feature>
 {
   
   friend class ParameterListHash;
@@ -186,12 +186,12 @@ public:
   declareFactoryTableNoArgs(Feature); 
 
   
-//   typedef boost::shared_ptr<Feature> Ptr;
+//   typedef std::shared_ptr<Feature> Ptr;
   
   struct View
   {
     TopoDS_Shape visibleEdges, hiddenEdges;
-    boost::shared_ptr<TopTools_ListOfShape> crossSections;
+    std::shared_ptr<TopTools_ListOfShape> crossSections;
     /**
      * 2D size of projection
      */
@@ -215,7 +215,7 @@ protected :
   // needs to be unset, if this shape is used as a tool to create another shape
   mutable bool isleaf_;
   
-  mutable boost::shared_ptr<GProp_GProps> volprops_;
+  mutable std::shared_ptr<GProp_GProps> volprops_;
   
 private:
   // the shape
@@ -474,7 +474,7 @@ public:
 
 typedef boost::fusion::vector3<double, arma::mat, arma::mat> Mass_CoG_Inertia;
 
-Mass_CoG_Inertia compoundProps(const std::vector<boost::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
+Mass_CoG_Inertia compoundProps(const std::vector<std::shared_ptr<Feature> >& feats, double density_ovr=-1., double aw_ovr=-1.);
 
 arma::mat rotTrsf(const gp_Trsf& tr);
 arma::mat transTrsf(const gp_Trsf& tr);
@@ -547,7 +547,7 @@ public:
   bool contains(size_t hash) const;
   
   template<class T>
-  boost::shared_ptr<T> markAsUsed(size_t hash)
+  std::shared_ptr<T> markAsUsed(size_t hash)
   {
     iterator i=this->find(hash);
     
@@ -557,9 +557,9 @@ public:
 	"requested entry in CAD feature cache is not found!"
       );
     
-    boost::shared_ptr<T> cp
+    std::shared_ptr<T> cp
     ( 
-      boost::dynamic_pointer_cast<T>( i->second ) 
+      std::dynamic_pointer_cast<T>( i->second )
     );
     
     if (!cp) 

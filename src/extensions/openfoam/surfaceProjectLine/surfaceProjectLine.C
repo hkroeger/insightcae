@@ -46,13 +46,13 @@ int main(int argc, char *argv[])
     triSurface surf1(surfFileName);
     
             // Calculate bb without constructing local point numbering.
-        treeBoundBox bb;
+//        treeBoundBox bb;
         label nPoints;
 	
 	PackedBoolList pointIsUsed(surf1.points().size());
 
     nPoints = 0;
-    bb = treeBoundBox::invertedBox;
+    treeBoundBox bb(treeBoundBox::invertedBox);
 
     forAll(surf1, triI)
     {

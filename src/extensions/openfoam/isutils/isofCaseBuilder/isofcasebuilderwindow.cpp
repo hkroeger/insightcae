@@ -344,7 +344,7 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 void isofCaseBuilderWindow::createCase 
 (
     bool skipBCs,
-    const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
+    const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles
 )
 {
   recreateOFCase ( ui->OFversion->currentText() );

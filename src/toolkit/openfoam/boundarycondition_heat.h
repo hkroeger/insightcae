@@ -127,7 +127,7 @@ public:
 
 
 
-typedef boost::shared_ptr<HeatBC> HeatBCPtr;
+typedef std::shared_ptr<HeatBC> HeatBCPtr;
 
 }
 

@@ -43,13 +43,10 @@ SourceFiles
 #include "volFields.H"
 #include "surfaceFields.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#if defined(OFplus)
-#define UNALLOCLABELLIST labelList
-#else
-#define UNALLOCLABELLIST unallocLabelList
-#endif
 
 namespace Foam
 {
@@ -130,24 +127,14 @@ public:
                 )
             );
 
-            surfaceScalarField& w = tw
-#if defined(OFplus)||defined(OFdev)
-	    .ref
-#endif
-            ();
+            surfaceScalarField& w = UNIOF_TMP_NONCONST(tw);
 
-            const UNALLOCLABELLIST& owner = this->mesh().owner();
-            const UNALLOCLABELLIST& neighbour = this->mesh().neighbour();
+            const UNIOF_LABELULIST& owner = this->mesh().owner();
+            const UNIOF_LABELULIST& neighbour = this->mesh().neighbour();
 
             scalarField magPhi = mag(phi);
 
-            scalarField& wIn = w
-#if defined(OFdev)||defined(OFplus)
-	    .ref().field()
-#else
-            .internalField()
-#endif
-	    ;
+            scalarField& wIn = UNIOF_INTERNALFIELD_NONCONST(w);
 
             // Calculate internal weights using field magnitude
             forAll (owner, faceI)
@@ -170,13 +157,7 @@ public:
 
             forAll (phi.boundaryField(), pi)
             {
-                fvsPatchScalarField& wp = w
-#if defined(OFdev)||defined(OFplus)
-                .boundaryFieldRef()
-#else
-                .boundaryField()
-#endif
-		[pi];
+                fvsPatchScalarField& wp = UNIOF_BOUNDARY_NONCONST(w)[pi];
 
                 const fvPatchField<Type>& patchPhi = phi.boundaryField()[pi];
 

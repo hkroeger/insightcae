@@ -30,7 +30,7 @@ License
 #include "fixedInternalValueFvPatchFields.H"
 #include "gaussConvectionScheme.H"
 
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 #include "backwardsCompatibilityWallFunctions.H"
 #else
 #include "bound.H"
@@ -42,7 +42,7 @@ License
 
 namespace Foam
 {
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 namespace incompressible
 {
 #endif
@@ -52,7 +52,7 @@ namespace RASModels
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 defineTypeNameAndDebug(kOmegaSST2, 0);
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 addToRunTimeSelectionTable
 (
     RAStransportModelIncompressibleTurbulenceModel,
@@ -136,7 +136,7 @@ void kOmegaSST2::correctNut()
 
 kOmegaSST2::kOmegaSST2
 (
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
      const alphaField& alpha,
     const rhoField& rho,
     const volVectorField& U,
@@ -159,7 +159,7 @@ kOmegaSST2::kOmegaSST2
 :
 #if defined(OF16ext)
     RASModel(typeName, U, phi, lamTransportModel),
-#elif defined(OF301) || defined(OFplus) || defined(OFdev)
+#elif defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     RAStransportModelIncompressibleTurbulenceModel
     (
       type,
@@ -326,7 +326,7 @@ kOmegaSST2::kOmegaSST2
     omegaSmall_("omegaSmall", omegaMin_.dimensions(), SMALL),
 #endif
 
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     y_(wallDist::New(this->mesh_).y()),
 #else
     y_(mesh_),
@@ -339,14 +339,14 @@ kOmegaSST2::kOmegaSST2
             "k",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateK("k", mesh_)
@@ -359,14 +359,14 @@ kOmegaSST2::kOmegaSST2
             "omega",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateOmega("omega", mesh_)
@@ -379,14 +379,14 @@ kOmegaSST2::kOmegaSST2
             "nut",
             runTime_.timeName(),
             mesh_,
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
             IOobject::MUST_READ,
 #else
             IOobject::NO_READ,
 #endif
             IOobject::AUTO_WRITE
         ),
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 	mesh_
 #else
         autoCreateNut("nut", mesh_)
@@ -431,7 +431,7 @@ kOmegaSST2::kOmegaSST2
 //     nut_.correctBoundaryConditions();
 
     //correct();
-#if defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
     printCoeffs("kOmegaSST2");
 #else
     printCoeffs();
@@ -554,7 +554,7 @@ void kOmegaSST2::correct()
         return;
     }
 
-#if not (defined(OF301) || defined (OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined (OFplus) || defined(OFdev)||defined(OFesi1806))
     if (mesh_.changing())
     {
         y_.correct();
@@ -729,7 +729,7 @@ void kOmegaSST2::correct()
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace RASModels
-#if not (defined(OF301) || defined(OFplus) || defined(OFdev))
+#if not (defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806))
 } // End namespace incompressible
 #endif
 } // End namespace Foam

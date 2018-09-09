@@ -493,7 +493,7 @@ void ChannelBase::createCase
 
 
 
-void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void ChannelBase::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   Parameters p(parameters_);
   
@@ -533,7 +533,7 @@ void ChannelBase::evaluateAtSection(
   bool isfirstslice=false;
   if (xByH<=1e-3) isfirstslice=true;
 
-  boost::shared_ptr<ResultSection> section
+  std::shared_ptr<ResultSection> section
   (
     new ResultSection
     (
@@ -1274,7 +1274,7 @@ void ChannelCyclic::applyCustomPreprocessing(OpenFOAMCase& cm)
   OpenFOAMAnalysis::applyCustomPreprocessing(cm);
 }
 
-void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts)
+void ChannelCyclic::applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts)
 {
   const ParameterSet& p=parameters_;
 

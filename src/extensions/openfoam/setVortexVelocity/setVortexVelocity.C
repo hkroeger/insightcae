@@ -24,7 +24,7 @@
 #include "transformGeometricField.H"
 #include "fixedGradientFvPatchFields.H"
 
-
+#include "uniof.h"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -39,21 +39,9 @@ int main(int argc, char *argv[])
 #   include "createTime.H"
 #   include "createMesh.H"
 
-    scalar Gamma=readScalar(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args[1]
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    scalar Gamma=readScalar(IStringStream( UNIOF_ADDARG(args, 0) )());
     
-    IStringStream center_args(
-#if defined(OFdev)||defined(OFplus)
-      args[2]
-#else
-      args.additionalArgs()[1]
-#endif
-    );
+    IStringStream center_args( UNIOF_ADDARG(args, 1) );
     point center(center_args);
     
     Info << "Reading field p\n" << endl;
@@ -98,12 +86,7 @@ int main(int argc, char *argv[])
 		new fixedGradientFvPatchScalarField
 		(
 		    mesh.boundary()[patchI],
-		    p.
-#if defined(OFdev)||defined(OFplus)
-		    internalField()
-#else
-		    dimensionedInternalField()
-#endif
+            UNIOF_DIMINTERNALFIELD(p)
 		)
 	    );
 	    newpPatchFields[patchI] == p.boundaryField()[patchI];
@@ -141,30 +124,21 @@ int main(int argc, char *argv[])
     forAll(mesh.boundary(), patchI)
     {
       const fvPatch& patch = mesh.boundary()[patchI];
-#if defined(OFdev)||defined(OFplus)
-      fvPatchVectorField& Up = U.boundaryFieldRef()[patchI];
-#else
-      fvPatchVectorField& Up = U.boundaryField()[patchI];
-#endif
+
+      fvPatchVectorField& Up = UNIOF_BOUNDARY_NONCONST(U)[patchI];
       
-// #if defined(OFplus)
-//       fvPatchScalarField& pp = pNew.ref().boundaryField()[patchI];
-#if defined(OFdev)||defined(OFplus)
-      fvPatchScalarField& pp = pNew.ref().boundaryFieldRef()[patchI];
-#else
-      fvPatchScalarField& pp = pNew().boundaryField()[patchI];
-#endif
+      fvPatchScalarField& pp = UNIOF_BOUNDARY_NONCONST(UNIOF_TMP_NONCONST(pNew))[patchI];
       if (Up.fixesValue())
       {
-	vectorField r=(patch.Cf() - center);
-	r-=axis*(r&axis);
-	vectorField er = r/(mag(r)+SMALL);
-	
-	vectorField etan=axis ^ er;
-	Up == etan * Gamma / (2.0*M_PI*mag(r));
-      
-	fixedGradientFvPatchScalarField& ppfg = static_cast<fixedGradientFvPatchScalarField&>(pp);
-	ppfg.gradient() = -patch.nf() & (er*( sqr(Gamma / 2. / M_PI) / pow(mag(r),3)) );
+        vectorField r=(patch.Cf() - center);
+        r-=axis*(r&axis);
+        vectorField er = r/(mag(r)+SMALL);
+
+        vectorField etan=axis ^ er;
+        Up == etan * Gamma / (2.0*M_PI*mag(r));
+
+        fixedGradientFvPatchScalarField& ppfg = static_cast<fixedGradientFvPatchScalarField&>(pp);
+        ppfg.gradient() = -patch.nf() & (er*( sqr(Gamma / 2. / M_PI) / pow(mag(r),3)) );
       }
     }
     

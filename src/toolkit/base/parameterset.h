@@ -48,7 +48,7 @@ class ParameterSet
 {
 
 public:
-  typedef boost::shared_ptr<ParameterSet> Ptr;
+  typedef std::shared_ptr<ParameterSet> Ptr;
   typedef boost::tuple<std::string, Parameter*> SingleEntry;
   typedef std::vector< boost::tuple<std::string, Parameter*> > EntryList;
 
@@ -226,7 +226,7 @@ public:
         std::string prefix = copy_range<std::string> ( *make_split_iterator ( key, first_finder ( "/" ) ) );
         std::string remain = key;
         erase_head ( remain, prefix.size()+1 );
-        std::cout<<prefix<<" >> "<<remain<<std::endl;
+//        std::cout<<prefix<<" >> "<<remain<<std::endl;
         return this->getSubset ( prefix ).replace ( remain, newp );
       }
     else
@@ -243,6 +243,7 @@ public:
 
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual ParameterSet* cloneParameterSet() const;
 
@@ -257,9 +258,12 @@ public:
 };
 
 
+#ifndef SWIG
+std::ostream& operator<<(std::ostream& os, const ParameterSet& ps);
+#endif
 
 
-typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
+typedef std::shared_ptr<ParameterSet> ParameterSetPtr;
 
 #define PSINT(p, subdict, key) int key = p[subdict].getInt(#key);
 #define PSDBL(p, subdict, key) double key = p[subdict].getDouble(#key);
@@ -272,14 +276,14 @@ typedef boost::shared_ptr<ParameterSet> ParameterSetPtr;
 
 class SubsetParameter
   : public Parameter,
-    public ParameterSet //boost::shared_ptr<ParameterSet>
+    public ParameterSet //std::shared_ptr<ParameterSet>
 {
 public:
-  typedef boost::shared_ptr<SubsetParameter> Ptr;
+  typedef std::shared_ptr<SubsetParameter> Ptr;
   typedef ParameterSet value_type;
 
 // protected:
-//   boost::shared_ptr<ParameterSet> value_;
+//   std::shared_ptr<ParameterSet> value_;
 
 public:
   declareType ( "subset" );
@@ -304,6 +308,7 @@ public:
   }
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual Parameter* clone () const;
 
@@ -372,6 +377,7 @@ public:
   void setSelection(const key_type& key, const ParameterSet& ps);
 
   virtual std::string latexRepresentation() const;
+  virtual std::string plainTextRepresentation(int indent=0) const;
 
   virtual Parameter* clone () const;
 

@@ -30,13 +30,10 @@ License
 #include "surfaceFields.H"
 #include "upwind.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-#if defined(OFplus)
-#define UNALLOCLABELLIST labelList
-#else
-#define UNALLOCLABELLIST unallocLabelList
-#endif
 
 Foam::scalar Foam::CICSAMDC::weight
 (
@@ -164,11 +161,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
             vf.dimensions()
         )
     );
-    surfaceScalarField& corr = tcorr
-#if defined(OFplus)||defined(OFdev)
-    .ref
-#endif
-    ();
+    surfaceScalarField& corr = UNIOF_TMP_NONCONST(tcorr);
 
     volVectorField gradc = fvc::grad(vf);
 
@@ -181,18 +174,12 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
 
     const surfaceScalarField& CDweights = mesh.surfaceInterpolation::weights();
 
-    const UNALLOCLABELLIST& owner = mesh.owner();
-    const UNALLOCLABELLIST& neighbour = mesh.neighbour();
+    const UNIOF_LABELULIST& owner = mesh.owner();
+    const UNIOF_LABELULIST& neighbour = mesh.neighbour();
 
     const vectorField& C = mesh.C();
 
-    scalarField& corrIn = corr
-#if defined(OFdev)||defined(OFplus)
-      .ref().field()
-#else
-      .internalField()
-#endif
-      ;
+    scalarField& corrIn = UNIOF_INTERNALFIELD_NONCONST(corr);
 
     scalar w;
 
@@ -216,18 +203,12 @@ Foam::tmp<Foam::surfaceScalarField> Foam::CICSAMDC::correction
         corrIn[faceI] = w*vf[own] + (1 - w)*vf[nei];
     }
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     surfaceScalarField::Boundary& 
 #else
     surfaceScalarField::GeometricBoundaryField& 
 #endif
-      bCorr = corr
-#if defined(OFdev)||defined(OFplus)
-	.boundaryFieldRef()
-#else
-	.boundaryField()
-#endif
-	;
+      bCorr = UNIOF_BOUNDARY_NONCONST(corr);
 
 //#if defined(OFdev)||defined(OFplus)
 //    surfaceScalarField::Boundary&

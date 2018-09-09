@@ -23,6 +23,8 @@
 #include "transformField.H"
 #include "transformGeometricField.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 using namespace Foam;
@@ -62,13 +64,7 @@ int main(int argc, char *argv[])
 
     word patch
 	(
-	  IStringStream(
-#if (defined(OFplus)||defined(OFdev))
-	    args.arg(1)
-#else
-	    args.additionalArgs()[0]
-#endif
-	  )()
+      IStringStream( UNIOF_ADDARG(args, 0) )()
 	);
 	
     label pI=mesh.boundaryMesh().findPatchID(patch);
@@ -78,13 +74,7 @@ int main(int argc, char *argv[])
       <<"patch not found: "<<patch<<endl<<abort(FatalError);
     }
       
-    scalar Afrac=readScalar(IStringStream(
-#if (defined(OFplus)||defined(OFdev))
-	    args.arg(2)
-#else
-	    args.additionalArgs()[1]
-#endif
-    )());
+    scalar Afrac=readScalar(IStringStream( UNIOF_ADDARG(args, 1) )());
 
     forAll(timeDirs, timeI)
     {

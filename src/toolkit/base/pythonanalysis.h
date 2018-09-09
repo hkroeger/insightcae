@@ -58,7 +58,7 @@ public:
     
     std::string category() const;
   };
-  typedef boost::shared_ptr<PythonAnalysisFactory> PythonAnalysisFactoryPtr;
+  typedef std::shared_ptr<PythonAnalysisFactory> PythonAnalysisFactoryPtr;
   
   static std::set<PythonAnalysisFactoryPtr> pythonAnalysisFactories_;
 

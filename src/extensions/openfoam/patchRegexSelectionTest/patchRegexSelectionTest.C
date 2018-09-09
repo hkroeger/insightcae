@@ -2,6 +2,8 @@
 #include "fvCFD.H"
 #include "wordReList.H"
 
+#include "uniof.h"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])
@@ -13,13 +15,7 @@ int main(int argc, char *argv[])
 #   include "createMesh.H"
    
     
-    wordReList patchRegex(IStringStream(
-#if defined(OFdev)||defined(OFplus)
-      args.arg(1)
-#else
-      args.additionalArgs()[0]
-#endif
-    )());
+    wordReList patchRegex(IStringStream( UNIOF_ADDARG(args, 0) )());
 
     labelHashSet ids=mesh.boundaryMesh().patchSet(patchRegex);
     

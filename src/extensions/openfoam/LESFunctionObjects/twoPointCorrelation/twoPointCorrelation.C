@@ -40,7 +40,7 @@ using namespace Foam;
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
 #define RTYPE bool
 #define RET return true;
 #else
@@ -56,11 +56,11 @@ Foam::twoPointCorrelation::twoPointCorrelation
     const bool loadFromFiles
 )
     :
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     functionObject(name),
 #endif
     name_(name),
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     obr_
     (
         refCast<const Time>(obr).lookupObject<objectRegistry>
@@ -111,7 +111,7 @@ Foam::twoPointCorrelation::twoPointCorrelation
       );
       
       if (
-#if defined(OFplus)||defined(OFdev)
+#if defined(OFplus)||defined(OFdev)||defined(OFesi1806)
 	propsDictHeader.typeHeaderOk<IOdictionary>()
 #else
 	propsDictHeader.headerOk()
@@ -135,7 +135,13 @@ Foam::twoPointCorrelation::twoPointCorrelation
 		    label num=readLabel(is); // overread list size
 		    if (num!=np_)
 		      FatalErrorIn("read") << "number of sampling points does not match" <<abort(FatalError);
-		    correlationCoeffs_.reset(new tensorField(readList<tensor>(is)));
+            correlationCoeffs_.reset(new tensorField(
+                             #ifdef OFesi1806
+                                         is
+                             #else
+                                         readList<tensor>(is)
+                             #endif
+                                         ));
 		  }
 		  Pout<<correlationCoeffs_()<<endl;
 	      }
@@ -162,7 +168,7 @@ RTYPE Foam::twoPointCorrelation::read(const dictionary& dict)
         dictionary csysDict(dict.subDict("csys"));
         csys_=coordinateSystem::New
               (
-#if defined(OF23x) || defined(OF301) || defined(OFplus) || defined(OFdev)
+#if defined(OF23x) || defined(OF301) || defined(OFplus) || defined(OFdev)||defined(OFesi1806)
 		  obr_,
 #else
                   word(csysDict.lookup("type")),
@@ -664,7 +670,7 @@ void Foam::twoPointCorrelation::timeSet()
 
 namespace Foam
 {
-#if defined(OFdev)||defined(OFplus)
+#if defined(OFdev)||defined(OFplus)||defined(OFesi1806)
     defineTypeNameAndDebug(twoPointCorrelation, 0);
 
     addToRunTimeSelectionTable

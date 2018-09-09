@@ -31,6 +31,8 @@
 
 #include "vectorspacebase.h"
 
+#include "uniof.h"
+
 namespace Foam 
 {
 

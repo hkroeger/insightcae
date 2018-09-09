@@ -111,7 +111,7 @@ public:
     virtual void createOnDisk
     (
         const boost::filesystem::path& location, 
-        const boost::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = boost::shared_ptr<std::vector<boost::filesystem::path> >()
+        const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     ) =0;
     
 //    virtual void run() =0;

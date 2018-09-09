@@ -71,7 +71,7 @@ autoPtr<PrimitivePatch<face, List, pointField> > globalPatch::createGlobalPatch(
     labelIOList gpi(addrHeader);
   
     typedef Tuple2<point,label> piTuple;
-    typedef HashTable<piTuple,label> pointHashTable;
+    typedef HashTable<piTuple,label,Hash<label> > pointHashTable;
     
     pointHashTable usedGlobalPts;
     forAll(patch.localPoints(), lpI)

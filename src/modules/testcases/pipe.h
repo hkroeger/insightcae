@@ -164,7 +164,7 @@ public:
     OpenFOAMCase& cm
   );
 
-  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
   
 };
@@ -202,7 +202,7 @@ public:
 
   ResultSetPtr evaluateResults(OpenFOAMCase& cm);
 
-  virtual void applyCustomOptions(OpenFOAMCase& cm, boost::shared_ptr<OFdicts>& dicts);
+  virtual void applyCustomOptions(OpenFOAMCase& cm, std::shared_ptr<OFdicts>& dicts);
   virtual void applyCustomPreprocessing(OpenFOAMCase& cm);
   
 };

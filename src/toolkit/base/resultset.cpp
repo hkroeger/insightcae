@@ -221,7 +221,7 @@ void ResultElementCollection::writeLatexCodeOfElements
     const boost::filesystem::path& outputfilepath
 ) const
 {
-    std::vector<value_type> items;
+    std::vector<std::pair<key_type,mapped_type> > items;
 
 //   std::transform
 //   (
@@ -235,18 +235,18 @@ void ResultElementCollection::writeLatexCodeOfElements
     (
         begin(),
         end(),
-    [&items] ( const value_type& p ) {
-        items.push_back ( p );
-    }
+        [&items] ( const value_type& p ) {
+            items.push_back ( p );
+        }
     );
 
     std::sort
     (
         items.begin(),
         items.end(),
-    [] ( const value_type &left, const value_type &right ) {
-        return left.second->order() < right.second->order();
-    }
+        [] ( const value_type &left, const value_type &right ) {
+              return left.second->order() < right.second->order();
+          }
     );
 
     BOOST_FOREACH ( const value_type& re, items ) {
@@ -372,14 +372,14 @@ xml_node< char >* ResultSection::appendToNode ( const string& name, xml_document
 }
 
 
-boost::shared_ptr< ResultElement > ResultSection::clone() const
+std::shared_ptr< ResultElement > ResultSection::clone() const
 {
-    boost::shared_ptr<ResultSection> res( new ResultSection ( sectionName_ ) );
+    std::shared_ptr<ResultSection> res( new ResultSection ( sectionName_ ) );
     BOOST_FOREACH ( const value_type& re, *this ) {
         ( *res ) [re.first] = re.second->clone();
     }
     res->setOrder ( order() );
-    return boost::dynamic_pointer_cast<ResultElement>( res );
+    return std::dynamic_pointer_cast<ResultElement>( res );
 }
 
 
@@ -1406,7 +1406,7 @@ std::string PlotCurve::title() const
 
 insight::ResultElement& addPlot
 (
-    boost::shared_ptr<ResultElementCollection> results,
+    std::shared_ptr<ResultElementCollection> results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,
@@ -1654,7 +1654,7 @@ PlotField::PlotField ( const arma::mat& xy, const std::string& plotcmd )
 
 void addContourPlot
 (
-    boost::shared_ptr<ResultElementCollection> results,
+    std::shared_ptr<ResultElementCollection> results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
     const std::string& xlabel,

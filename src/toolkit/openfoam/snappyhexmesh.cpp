@@ -623,6 +623,22 @@ void snappyHexMeshConfiguration::modifyCaseOnDisk ( const OpenFOAMCase& cm, cons
 }
 
 
+void reconstructParMesh
+(
+  const OpenFOAMCase& ofc,
+  const boost::filesystem::path& location
+)
+{
+    int np=readDecomposeParDict(location);
+    bool is_parallel = (np>1);
+
+
+    if (is_parallel)
+    {
+      ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
+      ofc.removeProcessorDirectories(location);
+    }
+}
 
 void snappyHexMesh
 (
@@ -768,10 +784,15 @@ void snappyHexMesh
     }
   }
   
-  if (is_parallel && (!keepdecomposedafterfinish) )
+//  if (is_parallel && (!keepdecomposedafterfinish) )
+//  {
+//    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
+//    ofc.removeProcessorDirectories(location);
+//  }
+
+  if (!keepdecomposedafterfinish)
   {
-    ofc.executeCommand(location, "reconstructParMesh", list_of<string>("-constant") );
-    ofc.removeProcessorDirectories(location);
+    reconstructParMesh(ofc, location);
   }
   
   

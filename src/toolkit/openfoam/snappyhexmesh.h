@@ -454,6 +454,12 @@ void setNoQualityCtrls(OFDictData::dict& qualityCtrls);
 
 double computeFinalLayerThickness(double totalLayerThickness, double expRatio, int nlayer);
 
+void reconstructParMesh
+(
+  const OpenFOAMCase& ofc,
+  const boost::filesystem::path& location
+);
+
 void snappyHexMesh
 (
   const OpenFOAMCase& ofc, 

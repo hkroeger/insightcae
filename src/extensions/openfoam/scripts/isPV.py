@@ -112,6 +112,10 @@ for curtime in ftimes:
   
   RenderAllViews()
   
+  # bug in PV4.4: parallel projection is not restored from state file
+  for view in GetRenderViews():
+   view.CameraParallelProjection = 1
+
   %s
   
   layouts=GetLayouts()

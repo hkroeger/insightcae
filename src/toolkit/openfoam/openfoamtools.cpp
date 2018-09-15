@@ -1768,7 +1768,7 @@ patchIntegrate::patchIntegrate
         re_mag_int ( "^ *Integral of (.+) over area magnitude of patch (.+)\\[(.+)\\] = (.+)$" ),
         re_mag_int4 ( "^ *areaIntegrate\\((.+)\\) of (.+) = (.+)$" ),
         re_area ( "^ *Area magnitude of patch (.+)\\[(.+)\\] = (.+)$" ),
-        re_area4 ( "^ *total area   = (.+)$" )
+        re_area4 ( "^ *total area *= (.+)$" )
         ;
 
     

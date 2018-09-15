@@ -78,6 +78,7 @@ string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
 set(PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 if(DPKG_PROGRAM)
+
   SET(CPACK_GENERATOR "DEB")
   set (CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
   execute_process(
@@ -85,6 +86,20 @@ if(DPKG_PROGRAM)
     OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  execute_process(
+    COMMAND lsb_release -rs
+    OUTPUT_VARIABLE CPACK_DEBIAN_SYSTEM_DISTRIBUTION_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  execute_process(
+    COMMAND bash -c "lsb_release -as 2>/dev/null|sed -n '1p'|tr -d '\n'|tr '[:lower:][:upper:]' '[:lower:][:lower:]'"
+    OUTPUT_VARIABLE CPACK_DEBIAN_SYSTEM_DISTRIBUTION_NAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  set(PACKAGE_VERSION ${PACKAGE_VERSION}~${CPACK_DEBIAN_SYSTEM_DISTRIBUTION_NAME}${CPACK_DEBIAN_SYSTEM_DISTRIBUTION_VERSION})
+  message(STATUS "Package version: ${PACKAGE_VERSION}")
+
   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "gnuplot,python-numpy,python-scipy,python-matplotlib,texlive-base,texlive-latex-extra,imagemagick,texlive-fonts-recommended,texlive-font-utils,xdg-utils")
   if (INSIGHT_BUILD_OPENFOAM)
@@ -99,7 +114,9 @@ if(DPKG_PROGRAM)
   if (INSIGHT_BUILD_CAD)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS},libdxflib (>=3.7.5)")
   endif()
+
 else(DPKG_PROGRAM)
+
  if(EXISTS /etc/redhat-release)
    SET(CPACK_GENERATOR "RPM")
    execute_process(
@@ -122,6 +139,7 @@ else(DPKG_PROGRAM)
 #    set(CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES}, libdxflib >=3.7.5")
 #  endif()
  endif()
+
 endif(DPKG_PROGRAM)
 
 add_subdirectory(src/desktop)

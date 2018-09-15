@@ -21,6 +21,7 @@
 #define STL_H
 
 #include "cadfeature.h"
+#include "MeshVS_Mesh.hxx"
 
 namespace insight {
 namespace cad {
@@ -36,6 +37,8 @@ class STL
         const boost::filesystem::path& fname
     );
 
+    Handle(MeshVS_Mesh) mesh_;
+
 protected:
     virtual size_t calcHash() const;
     virtual void build();
@@ -48,6 +51,8 @@ public:
     (
         const boost::filesystem::path& fname
     );
+
+    virtual Handle_AIS_InteractiveObject buildVisualization() const;
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

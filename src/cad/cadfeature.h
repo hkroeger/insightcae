@@ -418,6 +418,8 @@ public:
   
   operator const TopoDS_Shape& () const;
   const TopoDS_Shape& shape() const;
+
+  virtual Handle_AIS_InteractiveObject buildVisualization() const;
   
   View createView
   (

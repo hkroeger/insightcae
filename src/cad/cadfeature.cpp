@@ -1569,6 +1569,12 @@ const TopoDS_Shape& Feature::shape() const
 }
 
 
+Handle_AIS_InteractiveObject Feature::buildVisualization() const
+{
+    return Handle_AIS_InteractiveObject( new AIS_Shape(shape()) );
+}
+
+
 Feature::View Feature::createView
 (
     const arma::mat p0,

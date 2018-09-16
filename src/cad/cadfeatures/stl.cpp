@@ -38,7 +38,13 @@
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <TopoDS_Wire.hxx>
-
+#include <MeshVS_Drawer.hxx>
+#include <MeshVS_MeshPrsBuilder.hxx>
+#include <MeshVS_DrawerAttribute.hxx>
+#include <Graphic3d_MaterialAspect.hxx>
+#include <XSDRAWSTLVRML_DataSource.hxx>
+#include <AIS_ColoredShape.hxx>
+#include <TColStd_HPackedMapOfInteger.hxx>
 
 #include "base/tools.h"
 #include "base/boost_include.h"
@@ -96,76 +102,50 @@ FeaturePtr STL::create
 
 
 
+Handle_AIS_InteractiveObject STL::buildVisualization() const
+{
+    checkForBuildDuringAccess();
+    return Handle_AIS_InteractiveObject::DownCast(mesh_);
+}
 
 void STL::build()
 {
   ExecTimer t("STL::build() ["+featureSymbolName()+"]");
 
 
-  Handle(Poly_Triangulation) aMesh = RWStl::ReadFile (fname_.c_str());
-  if (aMesh.IsNull())
+  Handle(Poly_Triangulation) aSTLMesh = RWStl::ReadFile (fname_.c_str());
+  if (aSTLMesh.IsNull())
   {
     return Standard_False;
   }
 
-  TopoDS_Vertex aTriVertexes[3];
-  TopoDS_Face aFace;
-  TopoDS_Wire aWire;
-  BRepBuilderAPI_Sewing aSewingTool;
-  aSewingTool.Init (1.0e-06, Standard_True);
+  mesh_= new MeshVS_Mesh;
+  Handle(MeshVS_DataSource) M( new XSDRAWSTLVRML_DataSource ( aSTLMesh) );
+  mesh_->SetDataSource(M);
 
-  TopoDS_Compound aComp;
-  BRep_Builder BuildTool;
-  BuildTool.MakeCompound (aComp);
+  Handle_MeshVS_MeshPrsBuilder Prs( new MeshVS_MeshPrsBuilder(mesh_) );
+  mesh_->AddBuilder(Prs, Standard_True );//False -> No selection
 
-  const TColgp_Array1OfPnt& aNodes = aMesh->Nodes();
-  const Poly_Array1OfTriangle& aTriangles = aMesh->Triangles();
-  for (Standard_Integer aTriIdx  = aTriangles.Lower();
-                        aTriIdx <= aTriangles.Upper();
-                      ++aTriIdx)
-  {
-    const Poly_Triangle& aTriangle = aTriangles(aTriIdx);
+  mesh_->GetDrawer()->SetColor( MeshVS_DA_EdgeColor, Quantity_NOC_BLACK );
 
-    Standard_Integer anId[3];
-    aTriangle.Get(anId[0], anId[1], anId[2]);
+//  Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+//  Standard_Integer aLen = aSTLMesh->Nodes().Length();
+//  for ( Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++ )
+//    aNodes->ChangeMap().Add( anIndex );
+//  mesh_->SetHiddenNodes( aNodes );
+//  mesh_->SetSelectableNodes ( aNodes );
 
-    const gp_Pnt& aPnt1 = aNodes (anId[0]);
-    const gp_Pnt& aPnt2 = aNodes (anId[1]);
-    const gp_Pnt& aPnt3 = aNodes (anId[2]);
-    if ((!(aPnt1.IsEqual (aPnt2, 0.0)))
-     && (!(aPnt1.IsEqual (aPnt3, 0.0))))
-    {
-      aTriVertexes[0] = BRepBuilderAPI_MakeVertex (aPnt1);
-      aTriVertexes[1] = BRepBuilderAPI_MakeVertex (aPnt2);
-      aTriVertexes[2] = BRepBuilderAPI_MakeVertex (aPnt3);
+  mesh_->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
+  mesh_->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_True);
+  mesh_->GetDrawer()->SetBoolean ( MeshVS_DA_Reflection, Standard_True );
+  mesh_->GetDrawer()->SetBoolean ( MeshVS_DA_SmoothShading, Standard_True);
+  mesh_->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 
-      aWire = BRepBuilderAPI_MakePolygon (aTriVertexes[0], aTriVertexes[1], aTriVertexes[2], Standard_True);
-      if (!aWire.IsNull())
-      {
-        aFace = BRepBuilderAPI_MakeFace (aWire);
-        if (!aFace.IsNull())
-        {
-          BuildTool.Add (aComp, aFace);
-        }
-      }
-    }
-  }
+  mesh_->SetColor(Quantity_NOC_BLACK);
+  mesh_->SetDisplayMode( MeshVS_DMF_Shading ); // Mode as defaut
+  mesh_->SetHilightMode( MeshVS_DMF_WireFrame ); // Wireframe as default hilight mode
 
-
-//  aSewingTool.Load( aComp );
-//  aSewingTool.Perform();
-//  aShape = aSewingTool.SewedShape();
-//  if ( aShape.IsNull() )
-//    aShape = aComp;
-
-
-/* v1
-  TopoDS_Shape aShape;
-
-  StlAPI::Read(aShape, fname_.c_str());
-  */
-
-  setShape(aComp);
+  setShape( TopoDS_Compound() );
 }
 
 

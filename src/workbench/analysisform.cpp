@@ -161,6 +161,10 @@ void AnalysisForm::removeMenu()
         menu_actions_->removeAction(act_kill_); act_kill_->deleteLater();
 
         QAction *ma;
+        ma = menu_results_->menuAction();
+        mainMenu_->removeAction(ma);
+        menu_results_->deleteLater();
+
         ma = menu_parameters_->menuAction();
         mainMenu_->removeAction(ma);
         menu_parameters_->deleteLater();

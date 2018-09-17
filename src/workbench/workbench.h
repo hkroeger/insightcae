@@ -62,7 +62,6 @@ public:
    protected:
        QMenuBar* mainMenu_ =NULL;
    public:
-       virtual ~WidgetWithDynamicMenuEntries() { removeMenu(); }
        virtual void insertMenu(QMenuBar* mainMenu) { mainMenu_=mainMenu; }
        virtual void removeMenu() { mainMenu_=NULL; }
    };

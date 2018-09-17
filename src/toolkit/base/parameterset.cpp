@@ -215,12 +215,13 @@ void ParameterSet::readFromNode(rapidxml::xml_document<>& doc, rapidxml::xml_nod
   }
 }
 
-void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
+
+void ParameterSet::saveToStream(std::ostream& os, const boost::filesystem::path& parent_path, std::string analysisName ) const
 {
 //   std::cout<<"Writing parameterset to file "<<file<<std::endl;
-  
+
   xml_document<> doc;
-  
+
   // xml declaration
   xml_node<>* decl = doc.allocate_node(node_declaration);
   decl->append_attribute(doc.allocate_attribute("version", "1.0"));
@@ -229,26 +230,30 @@ void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string a
 
   xml_node<> *rootnode = doc.allocate_node(node_element, "root");
   doc.append_node(rootnode);
-  
+
   if (analysisName != "")
   {
     xml_node<> *analysisnamenode = doc.allocate_node(node_element, "analysis");
     rootnode->append_node(analysisnamenode);
     analysisnamenode->append_attribute(doc.allocate_attribute
     (
-      "name", 
+      "name",
       doc.allocate_string(analysisName.c_str())
     ));
   }
 
-  appendToNode(doc, *rootnode, file.parent_path());
-  
-  {
+  appendToNode(doc, *rootnode, parent_path);
+
+  os << doc;
+}
+
+void ParameterSet::saveToFile(const boost::filesystem::path& file, std::string analysisName ) const
+{
     std::ofstream f(file.c_str());
-    f << doc << std::endl;
+    saveToStream(f, file.parent_path(), analysisName);
+    f << std::endl;
     f << std::flush;
     f.close();
-  }
 }
 
 std::string ParameterSet::readFromFile(const boost::filesystem::path& file)

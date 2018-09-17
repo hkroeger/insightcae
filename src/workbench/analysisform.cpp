@@ -33,6 +33,8 @@
 #include <QScrollBar>
 #include "email.h"
 
+#include "ui_xml_display.h"
+
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
 
@@ -96,11 +98,6 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
     connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
 
-    connect(ui->saveParamBtn, SIGNAL(clicked()), this, SLOT(onSaveParameters()));
-    connect(ui->loadParamBtn, SIGNAL(clicked()), this, SLOT(onLoadParameters()));
-
-    connect(ui->createReportBtn, SIGNAL(clicked()), this, SLOT(onCreateReport()));
-
 
     peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
     ui->inputTabLayout->addWidget(peditor_);
@@ -120,6 +117,65 @@ AnalysisForm::~AnalysisForm()
     workerThread_.quit();
     workerThread_.wait();
     delete ui;
+}
+
+void AnalysisForm::insertMenu(QMenuBar* mainMenu)
+{
+//    qDebug()<<"insertMenu";
+    workbench::WidgetWithDynamicMenuEntries::insertMenu(mainMenu);
+
+    menu_parameters_=mainMenu_->addMenu("&Parameters");
+
+    menu_parameters_->addAction( act_save_as_=new QAction("&Save parameter set as...", menu_parameters_) );
+    connect( act_save_as_, SIGNAL(activated()), this, SLOT(onSaveParameters()) );
+    menu_parameters_->addAction( act_merge_=new QAction("&Merge other parameter set into current...", menu_parameters_) );
+    connect( act_merge_, SIGNAL(activated()), this, SLOT(onLoadParameters()) );
+    menu_parameters_->addAction( act_param_show_=new QAction("&Show in XML format", menu_parameters_) );
+    connect( act_param_show_, SIGNAL(activated()), this, SLOT(onShowParameterXML()) );
+
+
+    menu_actions_=mainMenu_->addMenu("&Actions");
+
+    menu_actions_->addAction( act_run_=new QAction("&Run Analysis", menu_actions_) );
+    connect( act_run_, SIGNAL(activated()), this, SLOT(onRunAnalysis()) );
+    menu_actions_->addAction( act_kill_=new QAction("&Stop Analysis", menu_actions_) );
+    connect( act_kill_, SIGNAL(activated()), this, SLOT(onKillAnalysis()) );
+
+    menu_results_=mainMenu_->addMenu("&Results");
+
+    menu_results_->addAction( act_save_rpt_=new QAction("Create &report...", menu_results_) );
+    connect( act_save_rpt_, SIGNAL(activated()), this, SLOT(onCreateReport()) );
+
+}
+
+void AnalysisForm::removeMenu()
+{
+    if (mainMenu_)
+    {
+//        qDebug()<<"removeMenu";
+        menu_parameters_->removeAction(act_save_as_); act_save_as_->deleteLater();
+        menu_parameters_->removeAction(act_merge_); act_merge_->deleteLater();
+        menu_parameters_->removeAction(act_param_show_); act_param_show_->deleteLater();
+
+        menu_actions_->removeAction(act_run_); act_run_->deleteLater();
+        menu_actions_->removeAction(act_kill_); act_kill_->deleteLater();
+
+        QAction *ma;
+        ma = menu_parameters_->menuAction();
+        mainMenu_->removeAction(ma);
+        menu_parameters_->deleteLater();
+
+        ma = menu_actions_->menuAction();
+        mainMenu_->removeAction(ma);
+        menu_actions_->deleteLater();
+    }
+    workbench::WidgetWithDynamicMenuEntries::removeMenu();
+}
+
+void AnalysisForm::closeEvent(QCloseEvent * event)
+{
+    QMdiSubWindow::closeEvent(event);
+    if (event->isAccepted()) removeMenu();
 }
 
 void AnalysisForm::onSaveParameters()
@@ -142,6 +198,21 @@ void AnalysisForm::onLoadParameters()
     parameters_.readFromFile(fn.toStdString());
     emit update();
   }
+}
+
+void AnalysisForm::onShowParameterXML()
+{
+    QDialog *widget = new QDialog(this);
+    Ui::XML_Display ui;
+    ui.setupUi(widget);
+
+    emit apply(); // apply all changes into parameter set
+    boost::filesystem::path exePath = executionPathParameter_();
+    std::ostringstream os;
+    parameters_.saveToStream(os, exePath, analysisName_);
+    ui.textDisplay->setText(QString::fromStdString(os.str()));
+
+    widget->exec();
 }
 
 void AnalysisForm::onRunAnalysis()

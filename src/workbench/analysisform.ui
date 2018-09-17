@@ -34,19 +34,6 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QWidget" name="widget_3" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QPushButton" name="createReportBtn">
-            <property name="text">
-             <string>Create Report...</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
         <widget class="QScrollArea" name="scrollArea_2">
          <property name="widgetResizable">
           <bool>true</bool>
@@ -56,8 +43,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>636</width>
-            <height>342</height>
+            <width>692</width>
+            <height>380</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -108,20 +95,6 @@
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QPushButton" name="saveParamBtn">
-       <property name="text">
-        <string>Save parameters...</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="loadParamBtn">
-       <property name="text">
-        <string>Merge parameters...</string>
-       </property>
-      </widget>
-     </item>
      <item>
       <widget class="QPushButton" name="runBtn">
        <property name="text">

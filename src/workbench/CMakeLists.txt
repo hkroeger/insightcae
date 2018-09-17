@@ -9,7 +9,7 @@ set(CMAKE_AUTORCC ON)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
 
 set(workbench_SRCS resultelementwrapper.cpp graphprogressdisplayer.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
-SET(workbench_FORMS newanalysisdlg.ui analysisform.ui)
+SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
 QT4_WRAP_UI(workbench_FORMS_HEADERS ${workbench_FORMS})
 qt4_automoc(${workbench_SRCS})
 SET(workbench_RCCS workbench.qrc)

@@ -25,6 +25,7 @@
 #include <QtGui/QMdiArea>
 
 #include <QApplication>
+#include <QMenuBar>
 
 class WorkbenchApplication
 : public QApplication
@@ -53,7 +54,21 @@ class workbench
 Q_OBJECT
 private:
   QMdiArea *mdiArea_;
-  
+
+public:
+
+   class WidgetWithDynamicMenuEntries
+   {
+   protected:
+       QMenuBar* mainMenu_ =NULL;
+   public:
+       virtual ~WidgetWithDynamicMenuEntries() { removeMenu(); }
+       virtual void insertMenu(QMenuBar* mainMenu) { mainMenu_=mainMenu; }
+       virtual void removeMenu() { mainMenu_=NULL; }
+   };
+
+   WidgetWithDynamicMenuEntries *lastActive_ =0;
+
 public:
     workbench();
     virtual ~workbench();
@@ -63,6 +78,9 @@ public:
 private slots:
     void newAnalysis();
     void onOpenAnalysis();
+
+private slots:
+    void onSubWindowActivated( QMdiSubWindow * window );
 };
 
 #endif // workbench_H

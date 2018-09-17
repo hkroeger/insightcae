@@ -35,7 +35,7 @@
 #include <QPushButton>
 #include <QPlainTextEdit>
 
-
+#include "workbench.h"
 #include "graphprogressdisplayer.h"
 
 #include "qdebugstream.h"
@@ -79,7 +79,8 @@ signals:
 
 
 class AnalysisForm
-: public QMdiSubWindow
+: public QMdiSubWindow,
+  public workbench::WidgetWithDynamicMenuEntries
 {
   Q_OBJECT
   
@@ -103,6 +104,11 @@ protected:
   QPlainTextEdit *log_;
   
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
+
+  QMenu *menu_parameters_=0, *menu_actions_=0, *menu_results_=0;
+  QAction *act_param_show_=0, *act_save_=0, *act_save_as_=0, *act_merge_=0;
+  QAction *act_run_=0, *act_kill_=0;
+  QAction *act_save_rpt_=0;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -113,7 +119,13 @@ public:
   inline insight::DirectoryParameter& executionPathParameter() { return executionPathParameter_; }
   
   inline void forceUpdate() { emit update(); }
-    
+
+  virtual void insertMenu(QMenuBar* mainMenu);
+  virtual void removeMenu();
+
+protected:
+  virtual void	closeEvent ( QCloseEvent * event );
+
 private slots:
   void onSaveParameters();
   void onLoadParameters();
@@ -126,6 +138,7 @@ private slots:
   void sendLog();
   void clearLog();
   void autoScrollLog();
+  void onShowParameterXML();
 
 signals:
   void apply();

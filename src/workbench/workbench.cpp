@@ -107,6 +107,8 @@ workbench::workbench()
     
     mdiArea_ = new QMdiArea(this);
     setCentralWidget( mdiArea_ );
+    connect(mdiArea_, SIGNAL(subWindowActivated(QMdiSubWindow *)),
+            this, SLOT(onSubWindowActivated(QMdiSubWindow *)));
     
     QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
 
@@ -172,6 +174,28 @@ void workbench::openAnalysis(const QString& fn)
   form->executionPathParameter()()=dir;
   form->forceUpdate();
   form->showMaximized();
+}
+
+
+void workbench::onSubWindowActivated( QMdiSubWindow * window )
+{
+    if (lastActive_)
+    {
+        qDebug()<<"remove menu";
+        lastActive_->removeMenu();
+    }
+
+    if (WidgetWithDynamicMenuEntries* newactive = dynamic_cast<WidgetWithDynamicMenuEntries*>(window))
+    {
+        qDebug()<<"insert menu";
+        newactive->insertMenu(menuBar());
+        lastActive_=newactive;
+    }
+    else
+    {
+        qDebug()<<"removed last menu";
+        lastActive_=NULL;
+    }
 }
 
 //#include "workbench.moc"

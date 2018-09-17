@@ -418,11 +418,11 @@ void AnalysisLibraryLoader::addLibrary(const boost::filesystem::path& location)
     void *handle = dlopen ( location.c_str(), RTLD_NOW|RTLD_GLOBAL /*RTLD_LAZY|RTLD_NODELETE*/ );
     if ( !handle ) 
     {
-        std::cout<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
+        std::cerr<<"Could not load module library "<<location<<": " << dlerror() << std::endl;
     } else 
     {
+//        std::cout<<"Loaded module library "<<location << std::endl;
         handles_.push_back ( handle );
-//                                     std::cout<<itr->path() <<": Loaded module library "<<location << std::endl;
     }
 }
 

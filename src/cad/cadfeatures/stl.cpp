@@ -42,7 +42,7 @@
 #include <MeshVS_MeshPrsBuilder.hxx>
 #include <MeshVS_DrawerAttribute.hxx>
 #include <Graphic3d_MaterialAspect.hxx>
-#include <XSDRAWSTLVRML_DataSource.hxx>
+#include <STL_DataSource.hxx>
 #include <AIS_ColoredShape.hxx>
 #include <TColStd_HPackedMapOfInteger.hxx>
 
@@ -120,7 +120,7 @@ void STL::build()
   }
 
   mesh_= new MeshVS_Mesh;
-  Handle(MeshVS_DataSource) M( new XSDRAWSTLVRML_DataSource ( aSTLMesh) );
+  Handle(MeshVS_DataSource) M( new STL_DataSource ( aSTLMesh) );
   mesh_->SetDataSource(M);
 
   Handle_MeshVS_MeshPrsBuilder Prs( new MeshVS_MeshPrsBuilder(mesh_) );

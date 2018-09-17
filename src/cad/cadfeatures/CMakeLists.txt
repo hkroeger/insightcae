@@ -46,7 +46,10 @@ add_sources(insightcad_SOURCES
  spiral.cpp
  stitchedshell.cpp
  stitchedsolid.cpp
+
  stl.cpp
+ STL_DataSource.cxx
+
  sweep.cpp
  thicken.cpp
  transform.cpp

@@ -21,7 +21,7 @@ else()
 message(STATUS "OCE not found, looking for OpenCASCADE")
  find_package(OpenCASCADE)
  set(OCC_FOUND ${OpenCASCADE_FOUND})
- set(OCC_LIBRARIES ${OpenCASCADE_LIBRARIES})
+ set(OCC_LIBRARIES ${OpenCASCADE_FoundationClasses_LIBRARIES} ${OpenCASCADE_ModelingData_LIBRARIES} ${OpenCASCADE_ModelingAlgorithms_LIBRARIES} ${OpenCASCADE_Visualization_LIBRARIES} ${OpenCASCADE_DataExchange_LIBRARIES} ${OpenCASCADE_ApplicationFramework_LIBRARIES})
  set(OCC_INCLUDE_DIRS ${OpenCASCADE_INCLUDE_DIR})
  set(OCC_INCLUDE_DIR ${OpenCASCADE_INCLUDE_DIR})
  

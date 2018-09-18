@@ -638,7 +638,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
             j0=1;
             result(i,0)=x;
         }
-        arma::uvec indices = arma::find( timeProfs.col(0)>=from && timeProfs.col(0)<=to );
+        arma::uvec indices = arma::find( (timeProfs.col(0)>=from) && (timeProfs.col(0)<=to) );
         arma::mat selrows=timeProfs.rows( indices );
         if (selrows.n_rows==0) // nothing selected: take the closest row
         {

@@ -791,6 +791,7 @@ void TabularResult::exportDataToFile ( const string& name, const path& outputdir
         sep="";
         BOOST_FOREACH ( const double& v, r ) {
             f<<sep<<v;
+            sep=";";
         }
         f<<endl;
     }

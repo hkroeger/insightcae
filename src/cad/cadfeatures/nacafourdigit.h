@@ -32,6 +32,9 @@ class NacaFourDigit
     : public SingleFaceFeature
 {
     std::string code_;
+    // alt:
+    ScalarPtr tc_, m_, p_;
+
     VectorPtr p0_;
     VectorPtr ez_;
     VectorPtr ex_;
@@ -42,6 +45,13 @@ class NacaFourDigit
         const std::string& code, VectorPtr p0, VectorPtr ex, VectorPtr ez, 
         ScalarPtr tofs=scalarconst(0), 
         ScalarPtr clipte=scalarconst(0) 
+    );
+    NacaFourDigit
+    (
+        ScalarPtr tc, ScalarPtr m, ScalarPtr p,
+        VectorPtr p0, VectorPtr ex, VectorPtr ez,
+        ScalarPtr tofs=scalarconst(0),
+        ScalarPtr clipte=scalarconst(0)
     );
 
     virtual size_t calcHash() const;
@@ -57,7 +67,14 @@ public:
         ScalarPtr tofs=scalarconst(0),
         ScalarPtr clipte=scalarconst(0) 
     );
-    
+    static FeaturePtr create_values
+    (
+        ScalarPtr tc, ScalarPtr m, ScalarPtr p,
+        VectorPtr p0, VectorPtr ex, VectorPtr ez,
+        ScalarPtr tofs=scalarconst(0),
+        ScalarPtr clipte=scalarconst(0)
+    );
+
     void calcProfile(double xc, double tc, double m, double p, double& t, double& yc, double& dycdx) const;
 
     operator const TopoDS_Face& () const;

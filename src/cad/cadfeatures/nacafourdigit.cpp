@@ -42,7 +42,16 @@ size_t NacaFourDigit::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  h+=code_;
+  if (tc_)
+  {
+      h+=tc_->value();
+      h+=m_->value();
+      h+=p_->value();
+  }
+  else
+  {
+    h+=code_;
+  }
   h+=p0_->value();
   h+=ez_->value();
   h+=ex_->value();
@@ -67,8 +76,16 @@ NacaFourDigit::NacaFourDigit
 : code_(code), p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
 {}
 
-
-
+NacaFourDigit::NacaFourDigit
+(
+    ScalarPtr tc, ScalarPtr m, ScalarPtr p,
+    VectorPtr p0, VectorPtr ex, VectorPtr ez,
+    ScalarPtr tofs,
+    ScalarPtr clipte
+)
+: tc_(tc), m_(m), p_(p),
+  p0_(p0), ez_(ez), ex_(ex), tofs_(tofs), clipte_(clipte)
+{}
 
 FeaturePtr NacaFourDigit::create
 (
@@ -78,6 +95,18 @@ FeaturePtr NacaFourDigit::create
 {
     return FeaturePtr(new NacaFourDigit(code, p0, ex, ez, tofs, clipte));
 }
+
+FeaturePtr NacaFourDigit::create_values
+(
+    ScalarPtr tc, ScalarPtr m, ScalarPtr p,
+    VectorPtr p0, VectorPtr ex, VectorPtr ez,
+    ScalarPtr tofs,
+    ScalarPtr clipte
+)
+{
+    return FeaturePtr(new NacaFourDigit(tc, m, p, p0, ex, ez, tofs, clipte));
+}
+
 
 
 void NacaFourDigit::calcProfile(double xc, double tc, double m, double p, double& t, double& yc, double& dycdx) const
@@ -111,19 +140,29 @@ void NacaFourDigit::build()
   double tofs=tofs_->value();
   double clipte=clipte_->value();
     
-  if (code_.size()!=4)
+  if (tc_)
   {
-    throw insight::Exception("Invalid NACA code! (was "+code_+")");
+      tc=tc_->value();
+      m=m_->value();
+      p=p_->value();
   }
   else
   {
-    int t100=atoi(code_.substr(2, 2).c_str());
-    tc=double(t100)/100.;
-    int m100=atoi(code_.substr(0, 1).c_str());
-    m=double(m100)/100.;
-    int p10=atoi(code_.substr(1, 1).c_str());
-    p=double(p10)/10.;
+      if (code_.size()!=4)
+      {
+        throw insight::Exception("Invalid NACA code! (was "+code_+")");
+      }
+      else
+      {
+        int t100=atoi(code_.substr(2, 2).c_str());
+        tc=double(t100)/100.;
+        int m100=atoi(code_.substr(0, 1).c_str());
+        m=double(m100)/100.;
+        int p10=atoi(code_.substr(1, 1).c_str());
+        p=double(p10)/10.;
+      }
   }
+
   arma::mat ex=ex_->value();
   arma::mat ez=ez_->value();
   
@@ -248,6 +287,13 @@ void NacaFourDigit::insertrule(parser::ISCADParser& ruleset) const
            >> ')' ) 
 	[ qi::_val = phx::bind(&NacaFourDigit::create, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6) ]
       
+    |
+      ( '('  >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ',' >> ruleset.r_scalarExpression >> ','
+             >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression
+             >> ( (',' >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             >> ( (',' >> qi::lit("clipte") >> ruleset.r_scalarExpression) | qi::attr(scalarconst(0.0)) )
+             >> ')' )
+      [ qi::_val = phx::bind(&NacaFourDigit::create_values, qi::_1, qi::_2, qi::_3, qi::_4, qi::_5, qi::_6, qi::_7, qi::_7) ]
     ))
   );
 }

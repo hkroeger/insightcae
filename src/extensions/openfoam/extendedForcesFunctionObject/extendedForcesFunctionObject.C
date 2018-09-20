@@ -100,6 +100,8 @@ extendedForces::extendedForces
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
   createFields();
+  if (maskFieldName_!="")
+   Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
 }
 #endif
 
@@ -133,6 +135,8 @@ extendedForces::extendedForces
 	),
   maskFieldName_(dict.lookupOrDefault<word>("maskField", ""))
 {
+  if (maskFieldName_!="")
+   Info<<name<<": Masking force integration with field "<<maskFieldName_<<endl;
   createFields();
 }
 

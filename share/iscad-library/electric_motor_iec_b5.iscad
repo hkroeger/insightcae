@@ -1,0 +1,40 @@
+# http://www.elektromotoren.de/pdf/Abmessungen_IEC-Normmotoren.pdf
+# für größe 250M
+L=910;
+T=6;
+AC=510;
+
+D=60;
+E=140;
+N=450;
+P=550;
+AD=427; # wellenmitte => anschlusskastendeckel
+
+F=18; # passfederbreite
+GA=64;
+S=16; # schraubenloch
+
+t=5*T;
+
+shaft:
+Cylinder(O, ax E*EX, D);
+
+housing1=
+Cylinder(O, ax -T*EX, N)
+|Cylinder(O -T*EX, ax -t*EX, P)
+|Cylinder(O -(T+t)*EX, ax -0.1*L*EX, 0.7*P)
+|Cylinder(O -(T+t+0.1*L)*EX, ax -(L-E)*EX, AC)
+|Box(O -0.5*(L-E)*EX, 0.33*(L-E)*EX, 0.5*AC*EY, AD*EZ, center xy)
+;
+
+screw1=
+Place(
+ loadmodel(ScrewDINHexa, Dn=S, L=4*S),
+ 0.25*(N+P)*EZ +(T+t)*EX, -EX, EZ
+);
+
+screws:
+CircularPattern( screw1, O, EX*360*deg/8, 8);
+
+housing:
+housing1-CircularPattern(screw1.blindhole, screws);

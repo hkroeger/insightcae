@@ -35,7 +35,13 @@ class LinearPattern
     VectorPtr axis_;
     ScalarPtr n_;
 
+    /**
+     * pointer to another linear pattern feature, from which the parameters shall be copied
+     */
+    FeaturePtr otherpat_;
+
     LinearPattern ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
+    LinearPattern ( FeaturePtr m1, FeaturePtr otherpat );
 
     virtual size_t calcHash() const;
     virtual void build();
@@ -45,7 +51,7 @@ public:
     LinearPattern ();
 
     static FeaturePtr create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n );
-
+    static FeaturePtr create_other(FeaturePtr m1, FeaturePtr otherpat);
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

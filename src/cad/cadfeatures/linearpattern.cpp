@@ -43,8 +43,15 @@ size_t LinearPattern::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*m1_;
-  h+=axis_->value();
-  h+=n_->value();
+  if (otherpat_)
+    {
+      h+=*otherpat_;
+    }
+  else
+  {
+      h+=axis_->value();
+      h+=n_->value();
+  }
   return h.getHash();
 }
 
@@ -60,6 +67,10 @@ LinearPattern::LinearPattern(FeaturePtr m1, VectorPtr axis, ScalarPtr n)
 {}
 
 
+LinearPattern::LinearPattern(FeaturePtr m1, FeaturePtr otherpat)
+: m1_(m1), otherpat_(otherpat)
+{}
+
 
 
 FeaturePtr LinearPattern::create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n )
@@ -67,6 +78,11 @@ FeaturePtr LinearPattern::create ( FeaturePtr m1, VectorPtr axis, ScalarPtr n )
     return FeaturePtr(new LinearPattern(m1, axis, n));
 }
 
+
+FeaturePtr LinearPattern::create_other(FeaturePtr m1, FeaturePtr otherpat)
+{
+    return FeaturePtr(new LinearPattern(m1, otherpat));
+}
 
 
 
@@ -76,10 +92,22 @@ void LinearPattern::build()
 //   TopoDS_Compound result;
 //   bb.MakeCompound(result);
 
-    double delta_x=norm ( axis_->value(), 2 );
-    gp_Vec ax ( to_Vec ( axis_->value() /delta_x ) );
-
-    int n=round ( n_->value() );
+    double delta_x;
+    int n;
+    arma::mat ax0;
+    if (otherpat_)
+    {
+        n=otherpat_->getDatumScalar("n");
+        delta_x=otherpat_->getDatumScalar("delta_x");
+        ax0=otherpat_->getDatumVector("axis");
+    }
+    else
+    {
+        delta_x=norm ( axis_->value(), 2 );
+        ax0= axis_->value() /delta_x;
+        n=round ( n_->value() );
+    }
+    gp_Vec ax ( to_Vec (ax0) );
 
     int j=0;
     CompoundFeatureMap instances;
@@ -92,6 +120,11 @@ void LinearPattern::build()
         components_[str ( format ( "component%d" ) % ( j+1 ) )] = FeaturePtr ( new Transform ( m1_, tr ) );
         j++;
     }
+
+    refvalues_["n"]=n;
+    refvalues_["delta_x"]=delta_x;
+    refvectors_["axis"]=ax0;
+    providedSubshapes_["basefeat"]=m1_;
 
     m1_->unsetLeaf();
     Compound::build();
@@ -113,7 +146,13 @@ void LinearPattern::insertrule(parser::ISCADParser& ruleset) const
       ',' >> ruleset.r_vectorExpression >> 
       ',' >> ruleset.r_scalarExpression >> ')' ) 
       [ qi::_val = phx::bind(&LinearPattern::create, qi::_1, qi::_2, qi::_3) ]
-      
+    |
+    (
+     '(' >>
+       ruleset.r_solidmodel_expression >> ',' >> ruleset.r_solidmodel_expression
+      >> ')'
+    ) [ qi::_val = phx::bind(&LinearPattern::create_other, qi::_1, qi::_2) ]
+
     ))
   );
 }

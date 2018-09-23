@@ -53,6 +53,12 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
     act_insert_component_name_->disconnect();
     act_clear_cache_->disconnect();
     act_fit_all_->disconnect();
+    act_view_plusx_->disconnect();
+    act_view_minusx_->disconnect();
+    act_view_plusy_->disconnect();
+    act_view_minusy_->disconnect();
+    act_view_plusz_->disconnect();
+    act_view_minusz_->disconnect();
     act_toggle_grid_->disconnect();
     act_toggle_clipxy_->disconnect();
     act_toggle_clipyz_->disconnect();
@@ -98,6 +104,20 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
         connect(act_fit_all_, SIGNAL(triggered()),
                 me->viewer(), SLOT(fitAll()));
+
+        connect(act_view_plusx_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewRight()));
+        connect(act_view_minusx_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewLeft()));
+        connect(act_view_plusy_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewBack()));
+        connect(act_view_minusy_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewFront()));
+        connect(act_view_plusz_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewTop()));
+        connect(act_view_minusz_, SIGNAL(triggered()),
+                me->viewer(), SLOT(viewBottom()));
+
         connect(act_toggle_grid_, SIGNAL(triggered()),
                 me->viewer(), SLOT(toggleGrid()));
         connect(act_toggle_clipxy_, SIGNAL(triggered()),
@@ -336,6 +356,23 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_fit_all_ = new QAction(("Fit &all"), this);
     act_fit_all_->setShortcut(Qt::ControlModifier + Qt::Key_A);
     vmenu->addAction(act_fit_all_);
+
+    QMenu* directionmenu=vmenu->addMenu("Standard views");
+    directionmenu->addAction( act_view_plusx_ = new QAction(("+X"), this) );
+    act_view_plusx_->setShortcut(Qt::ControlModifier + Qt::Key_X);
+    directionmenu->addAction( act_view_minusx_ = new QAction(("-X"), this) );
+    act_view_minusx_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_X);
+
+    directionmenu->addAction( act_view_plusy_ = new QAction(("+Y"), this) );
+    act_view_plusy_->setShortcut(Qt::ControlModifier + Qt::Key_Y);
+    directionmenu->addAction( act_view_minusy_ = new QAction(("-Y"), this) );
+    act_view_minusy_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Y);
+
+    directionmenu->addAction( act_view_plusz_ = new QAction(("+Z"), this) );
+    act_view_plusz_->setShortcut(Qt::ControlModifier + Qt::Key_Z);
+    directionmenu->addAction( act_view_minusz_ = new QAction(("-Z"), this) );
+    act_view_minusz_->setShortcut(Qt::ControlModifier + Qt::ShiftModifier + Qt::Key_Z);
+
     act_toggle_grid_ = new QAction(("Toggle &grid"), this);
     vmenu->addAction(act_toggle_grid_);
     

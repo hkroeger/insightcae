@@ -181,19 +181,19 @@ void workbench::onSubWindowActivated( QMdiSubWindow * window )
 {
     if (lastActive_)
     {
-        qDebug()<<"remove menu";
+//        qDebug()<<"remove menu";
         lastActive_->removeMenu();
     }
 
     if (WidgetWithDynamicMenuEntries* newactive = dynamic_cast<WidgetWithDynamicMenuEntries*>(window))
     {
-        qDebug()<<"insert menu";
+//        qDebug()<<"insert menu";
         newactive->insertMenu(menuBar());
         lastActive_=newactive;
     }
     else
     {
-        qDebug()<<"removed last menu";
+//        qDebug()<<"removed last menu";
         lastActive_=NULL;
     }
 }

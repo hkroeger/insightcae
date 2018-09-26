@@ -932,7 +932,7 @@ struct IncludedSubsetParameterParser
         virtual std::string cppParamType(const std::string& name) const 
         {
             return "insight::SubsetParameter";
-        };
+        }
         
         virtual void cppWriteCreateStatement
         (

@@ -19,8 +19,12 @@
 
 #include "qmodelstepitem.h"
 
-#include "iscadmainwindow.h"
+#include "pointertransient.h"
 #include "cadpostprocactions.h"
+
+#include <QFileDialog>
+#include <QMenu>
+#include <QAction>
 
 
 

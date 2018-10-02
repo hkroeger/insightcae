@@ -38,17 +38,16 @@
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <TopoDS_Wire.hxx>
-#include <MeshVS_Drawer.hxx>
-#include <MeshVS_MeshPrsBuilder.hxx>
-#include <MeshVS_DrawerAttribute.hxx>
 #include <Graphic3d_MaterialAspect.hxx>
-#include <STL_DataSource.hxx>
 #include <AIS_ColoredShape.hxx>
 #include <TColStd_HPackedMapOfInteger.hxx>
+#include <Geom_SphericalSurface.hxx>
 
 #include "base/tools.h"
 #include "base/boost_include.h"
 #include <boost/spirit/include/qi.hpp>
+
+#include "transform.h"
 
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
@@ -90,6 +89,13 @@ STL::STL
 {
 }
 
+STL::STL(const boost::filesystem::path& fname, const gp_Trsf& trsf)
+    : fname_(fname), trsf_(new gp_Trsf(trsf))
+{}
+
+STL::STL(const boost::filesystem::path& fname, FeaturePtr other_trsf)
+    : fname_(fname), other_trsf_(other_trsf)
+{}
 
 
 FeaturePtr STL::create
@@ -100,52 +106,71 @@ FeaturePtr STL::create
     return FeaturePtr(new STL(fname));
 }
 
-
-
-Handle_AIS_InteractiveObject STL::buildVisualization() const
+FeaturePtr STL::create_trsf
+(
+    const boost::filesystem::path& fname,
+    gp_Trsf trsf
+)
 {
-    checkForBuildDuringAccess();
-    return Handle_AIS_InteractiveObject::DownCast(mesh_);
+    return FeaturePtr(new STL(fname, trsf));
 }
+
+FeaturePtr STL::create_other
+(
+    const boost::filesystem::path& fname,
+    FeaturePtr other_trsf
+)
+{
+    return FeaturePtr(new STL(fname, other_trsf));
+}
+
+
+//Handle_AIS_InteractiveObject STL::buildVisualization() const
+//{
+//    checkForBuildDuringAccess();
+//    return Handle_AIS_InteractiveObject::DownCast(mesh_);
+//}
+
 
 void STL::build()
 {
   ExecTimer t("STL::build() ["+featureSymbolName()+"]");
 
-
   Handle(Poly_Triangulation) aSTLMesh = RWStl::ReadFile (fname_.c_str());
-  if (aSTLMesh.IsNull())
+
+  if (trsf_ || other_trsf_)
   {
-    return Standard_False;
+      gp_Trsf tr;
+      if (trsf_)
+      {
+          tr = *trsf_;
+      }
+      else if (other_trsf_)
+      {
+          tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
+      }
+
+      for (int i=1; i<=aSTLMesh->NbNodes();i++)
+      {
+        aSTLMesh->ChangeNode(i).Transform(tr);
+      }
   }
 
-  mesh_= new MeshVS_Mesh;
-  Handle(MeshVS_DataSource) M( new STL_DataSource ( aSTLMesh) );
-  mesh_->SetDataSource(M);
+  Bnd_Box bb;
+  for (int i=1; i<=aSTLMesh->NbNodes();i++)
+  {
+      bb.Add(aSTLMesh->Node(i));
+  }
+  double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
+  gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-  Handle_MeshVS_MeshPrsBuilder Prs( new MeshVS_MeshPrsBuilder(mesh_) );
-  mesh_->AddBuilder(Prs, Standard_True );//False -> No selection
+  TopoDS_Face aFace;
+  BRep_Builder aB;
+//  aB.MakeFace(aFace, aSTLMesh);
+  aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
+  aB.UpdateFace(aFace, aSTLMesh);
 
-  mesh_->GetDrawer()->SetColor( MeshVS_DA_EdgeColor, Quantity_NOC_BLACK );
-
-//  Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
-//  Standard_Integer aLen = aSTLMesh->Nodes().Length();
-//  for ( Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++ )
-//    aNodes->ChangeMap().Add( anIndex );
-//  mesh_->SetHiddenNodes( aNodes );
-//  mesh_->SetSelectableNodes ( aNodes );
-
-  mesh_->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
-  mesh_->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_True);
-  mesh_->GetDrawer()->SetBoolean ( MeshVS_DA_Reflection, Standard_True );
-  mesh_->GetDrawer()->SetBoolean ( MeshVS_DA_SmoothShading, Standard_True);
-  mesh_->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
-
-  mesh_->SetColor(Quantity_NOC_BLACK);
-  mesh_->SetDisplayMode( MeshVS_DMF_Shading ); // Mode as defaut
-  mesh_->SetHilightMode( MeshVS_DMF_WireFrame ); // Wireframe as default hilight mode
-
-  setShape( TopoDS_Compound() );
+  setShape( aFace );
 }
 
 
@@ -158,9 +183,9 @@ void STL::insertrule(parser::ISCADParser& ruleset) const
     "STL",
     typename parser::ISCADParser::ModelstepRulePtr(new typename parser::ISCADParser::ModelstepRule(
 
-    ( '('
-        >> ruleset.r_path >> ')' )
-      [ qi::_val = phx::bind(&STL::create, qi::_1) ]
+     ( '(' >> ruleset.r_path >> ')' ) [ qi::_val = phx::bind(&STL::create, qi::_1) ]
+     |
+     ( '(' >> ruleset.r_path >> ',' >> ruleset.r_solidmodel_expression >> ')' ) [ qi::_val = phx::bind(&STL::create_other, qi::_1, qi::_2) ]
 
     ))
   );
@@ -176,9 +201,10 @@ FeatureCmdInfoList STL::ruleDocumentation() const
         (
             "STL",
 
-            "( <path:filename> )",
+            "( <path:filename> [, <feature:other transform feature> ] )",
 
-            "Import a triangulated surface for display."
+            "Import a triangulated surface for display. The result can only be used for display, no operations can be performed on it."
+            "Transformations can be reused from other transform features. The name of another transformed feature can be provided optionally."
         )
     );
 }

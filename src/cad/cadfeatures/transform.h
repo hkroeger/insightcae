@@ -71,6 +71,8 @@ public:
 
     virtual bool isTransformationFeature() const;
     virtual gp_Trsf transformation() const;
+
+    static gp_Trsf calcTrsfFromOtherTransformFeature(FeaturePtr other);
 };
 
 

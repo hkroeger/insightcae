@@ -65,5 +65,6 @@
 #include "wire.h"
 #include "modelfeature.h"
 #include "subfeature.h"
+#include "stl.h"
 
 #endif

@@ -174,10 +174,10 @@ gp_Ax3 TransformedDatum::plane() const
     return base_->plane().Transformed(tr_);
 }
 
-Handle_AIS_InteractiveObject TransformedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf&) const
+Handle_AIS_InteractiveObject TransformedDatum::createAISRepr(AIS_InteractiveContext& context, const std::string& label, const gp_Trsf& tr) const
 {
     checkForBuildDuringAccess();
-    Handle_AIS_InteractiveObject ais ( base_->createAISRepr(context, label, tr_) );
+    Handle_AIS_InteractiveObject ais ( base_->createAISRepr(context, label, tr_*tr) );
     
     return ais;
 }

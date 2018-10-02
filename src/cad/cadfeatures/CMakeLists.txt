@@ -48,7 +48,6 @@ add_sources(insightcad_SOURCES
  stitchedsolid.cpp
 
  stl.cpp
- STL_DataSource.cxx
 
  sweep.cpp
  thicken.cpp

@@ -32,10 +32,13 @@ class STL
 {
     boost::filesystem::path fname_;
 
-    STL
-    (
-        const boost::filesystem::path& fname
-    );
+    std::shared_ptr<gp_Trsf> trsf_;
+    //or
+    FeaturePtr other_trsf_;
+
+    STL(const boost::filesystem::path& fname);
+    STL(const boost::filesystem::path& fname, const gp_Trsf& trsf);
+    STL(const boost::filesystem::path& fname, FeaturePtr other_trsf);
 
     Handle(MeshVS_Mesh) mesh_;
 
@@ -51,8 +54,18 @@ public:
     (
         const boost::filesystem::path& fname
     );
+    static FeaturePtr create_trsf
+    (
+        const boost::filesystem::path& fname,
+        gp_Trsf trsf
+    );
+    static FeaturePtr create_other
+    (
+        const boost::filesystem::path& fname,
+        FeaturePtr other_trsf
+    );
 
-    virtual Handle_AIS_InteractiveObject buildVisualization() const;
+//    virtual Handle_AIS_InteractiveObject buildVisualization() const;
 
     virtual void insertrule(parser::ISCADParser& ruleset) const;
     virtual FeatureCmdInfoList ruleDocumentation() const;

@@ -156,32 +156,40 @@ FeaturePtr Transform::create_copy(FeaturePtr m1, FeaturePtr other)
 }
 
 
+gp_Trsf Transform::calcTrsfFromOtherTransformFeature(FeaturePtr other)
+{
+    gp_Trsf tr0, tr1, tr2;
 
+    tr0.SetScaleFactor(other->getDatumScalar("scaleFactor"));
+
+    tr1.SetTranslation(to_Vec(other->getDatumVector("translation")));
+
+    arma::mat rot=other->getDatumVector("rotation");
+    double phi=norm(rot, 2);
+    if (phi>1e-10)
+    {
+        gp_Vec axis=to_Vec(rot);
+        axis.Normalize();
+        gp_Pnt rorg=to_Pnt(other->getDatumPoint("rotationOrigin"));
+        tr2.SetRotation(gp_Ax1(rorg, axis), phi);
+    }
+
+    return tr2.Multiplied(tr1).Multiplied(tr0);
+}
 
 void Transform::build()
 {
-    gp_Trsf tr0, tr1, tr2;
 
     if (!trsf_)
     {
         if (other_)
         {
-            tr0.SetScaleFactor(other_->getDatumScalar("scaleFactor"));
-            
-            tr1.SetTranslation(to_Vec(other_->getDatumVector("translation")));
-            
-            arma::mat rot=other_->getDatumVector("rotation");
-            double phi=norm(rot, 2);
-            if (phi>1e-10)
-            {
-                gp_Vec axis=to_Vec(rot);
-                axis.Normalize();
-                gp_Pnt rorg=to_Pnt(other_->getDatumPoint("rotationOrigin"));
-                tr2.SetRotation(gp_Ax1(rorg, axis), phi);
-            }
+            trsf_.reset(new gp_Trsf(calcTrsfFromOtherTransformFeature(other_)));
         }
         else
         {
+            gp_Trsf tr0, tr1, tr2;
+
             if (sf_)
             {
                 tr0.SetScaleFactor(*sf_);
@@ -228,9 +236,9 @@ void Transform::build()
                 refpoints_["rotationOrigin"]=vec3(0,0,0);
                 refvectors_["rotation"]=vec3(0,0,0);
             }
+            trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
         }
         
-        trsf_.reset(new gp_Trsf(tr2.Multiplied(tr1).Multiplied(tr0)));
     }
 
     setShape(BRepBuilderAPI_Transform(*m1_, *trsf_).Shape());

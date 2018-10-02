@@ -456,7 +456,9 @@ void ISCADMainWindow::updateProgress(int step, int totalSteps)
 ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
 {
     ISCADModelEditor *me = new ISCADModelEditor();
-    modelTabs_->addTab(me, "(unnamed)");
+
+    int idx = modelTabs_->addTab(me, "(unnamed)");
+    modelTabs_->setCurrentIndex(idx);
     
     connect(me->model(), SIGNAL(displayStatusMessage(const QString&)),
             statusBar(), SLOT(showMessage(const QString&)));

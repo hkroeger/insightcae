@@ -4,6 +4,9 @@
 namespace SI
 {
 
+// the units below represent the conversion factor from the unit under consideration into the corresponding SI standard unit
+// e.g.:   <length in meters> = <length in millimeters> * SI:mm;  (i.e. SI:mm == 1e-3)
+
 // mass
 
 extern double ton;

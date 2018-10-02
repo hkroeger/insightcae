@@ -21,18 +21,51 @@
 #include "parametereditorwidget.h"
 #include "parameterwrapper.h"
 
+
+
 #include <QSplitter>
 
 
-ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidget *parent)
+ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidget *parent,
+                                             insight::ParameterSet_ValidatorPtr vali,
+                                             insight::ParameterSet_VisualizerPtr viz)
 : QSplitter(Qt::Horizontal, parent),
-  parameters_(pset)
+  parameters_(pset),
+  vali_(vali),
+  viz_(viz)
 {
     ptree_=new QTreeWidget(this);
     addWidget(ptree_);
     inputContents_=new QWidget(this);
     addWidget(inputContents_);
-    
+
+    if (viz_)
+    {
+        context_=new QoccViewerContext;
+        viewer_=new QoccViewWidget(context_->getContext(), this);
+        addWidget(viewer_);
+        modeltree_=new QModelTree(this);
+        addWidget(modeltree_);
+
+        connect(modeltree_, SIGNAL(show(QDisplayableModelTreeItem*)),
+                viewer_, SLOT(onShow(QDisplayableModelTreeItem*)));
+        connect(modeltree_, SIGNAL(hide(QDisplayableModelTreeItem*)),
+                viewer_, SLOT(onHide(QDisplayableModelTreeItem*)));
+        connect(modeltree_, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)),
+                viewer_, SLOT(onSetDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)));
+        connect(modeltree_, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)),
+                viewer_, SLOT(onSetColor(QDisplayableModelTreeItem*, Quantity_Color)));
+        connect(modeltree_, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
+                viewer_, SLOT(onSetResolution(QDisplayableModelTreeItem*, double)));
+
+    }
+    else
+    {
+        context_=NULL;
+        viewer_=NULL;
+        modeltree_=NULL;
+    }
+
     root_=new QTreeWidgetItem(0);
     root_->setText(0, "Parameters");
     ptree_->setColumnCount(2);
@@ -44,6 +77,10 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
     {
       QList<int> l;
       l << 3300 << 6600;
+      if (viz_)
+      {
+        l << 6600 << 0;
+      }
       setSizes(l);
     }
     
@@ -62,6 +99,22 @@ void ParameterEditorWidget::onApply()
 void ParameterEditorWidget::onUpdate()
 {
     emit update();
+}
+
+void ParameterEditorWidget::onUpdateVisualization()
+{
+    qDebug()<<"onUpdateVisualization";
+    if (viz_)
+    {
+        qDebug()<<"exec update viz";
+        viz_->update(parameters_);
+        viz_->updateVisualizationElements(viewer_, modeltree_);
+    }
+}
+
+
+void ParameterEditorWidget::onCheckValidity()
+{
 }
 
 void ParameterEditorWidget::insertParameter(const QString& name, insight::Parameter& parameter)

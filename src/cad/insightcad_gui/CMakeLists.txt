@@ -29,7 +29,7 @@ qt4_automoc(${insightcad_gui_SRCS})
 
 add_library(insightcad_gui SHARED ${insightcad_gui_SRCS})
 target_link_libraries(insightcad_gui insightcad ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
-  ${Boost_LIBRARIES} toolkit toolkit_gui
+  ${Boost_LIBRARIES} toolkit
   Qt4::QtCore Qt4::QtGui Qt4::QtWebKit
   ${QWT_LIBRARY} ${QWT_LIBRARIES}
   ${DXFLIB_LIBRARIES}

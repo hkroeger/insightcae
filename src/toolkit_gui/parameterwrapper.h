@@ -84,6 +84,9 @@ public slots:
     virtual void onSelectionChanged();
     virtual void onSelection();
     virtual void onDestruction();
+
+signals:
+  void parameterSetChanged();
 };
 
 class IntParameterWrapper

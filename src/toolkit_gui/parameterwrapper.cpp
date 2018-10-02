@@ -65,6 +65,8 @@ void addWrapperToWidget
         if ( superform ) {
             QObject::connect ( superform, SIGNAL ( apply() ), wrapper, SLOT ( onApply() ) );
             QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
+            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onUpdateVisualization() ) );
+            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onCheckValidity() ) );
         }
     }
 }
@@ -205,6 +207,7 @@ void IntParameterWrapper::onApply()
   {
     param()()=le_->text().toInt();
     setText(1, QString::number(param()()));
+    emit parameterSetChanged();
   }
 }
 
@@ -279,6 +282,7 @@ void DoubleParameterWrapper::onApply()
   {
     param()()=le_->text().toDouble();
     setText(1, QString::number(param()()));
+    emit parameterSetChanged();
   }
 }
 
@@ -354,6 +358,7 @@ void VectorParameterWrapper::onApply()
   {
     insight::stringToValue(le_->text().toStdString(), param()());
     setText(1, QString(insight::valueToString(param()()).c_str()));
+    emit parameterSetChanged();
   }
 }
 
@@ -427,6 +432,7 @@ void StringParameterWrapper::onApply()
   {
     param()()=le_->text().toStdString();
     setText(1, param()().c_str());
+    emit parameterSetChanged();
   }
 }
 
@@ -503,6 +509,7 @@ void BoolParameterWrapper::onApply()
   {
     param()() = (cb_->checkState() == Qt::Checked);
     setText(1, param()() ? "true" : "false");
+    emit parameterSetChanged();
   }
 }
 
@@ -597,6 +604,7 @@ void PathParameterWrapper::onApply()
   {
     param()()=le_->text().toStdString();
     setText(1, param()().c_str());
+    emit parameterSetChanged();
   }
 }
 
@@ -706,6 +714,7 @@ void MatrixParameterWrapper::onApply()
   if (widgetsDisplayed_)
   {
     param()()=arma::mat(le_->text().toStdString());
+    emit parameterSetChanged();
   }
 }
 
@@ -815,6 +824,7 @@ void SelectionParameterWrapper::onApply()
   {
     param()()=selBox_->currentIndex();
     setText(1, param().selection().c_str());
+    emit parameterSetChanged();
   }
 }
 
@@ -1008,6 +1018,7 @@ void ArrayParameterWrapper::onRemove(int i)
   emit(apply());
   param().eraseValue(i);
   rebuildWrappers();
+  emit parameterSetChanged();
 }
 
 void ArrayParameterWrapper::onAppendEmpty()
@@ -1015,6 +1026,7 @@ void ArrayParameterWrapper::onAppendEmpty()
   emit(apply());
   param().appendEmpty();
   rebuildWrappers();
+  emit parameterSetChanged();
 }
 
 void ArrayParameterWrapper::onApply()
@@ -1107,6 +1119,7 @@ void DoubleRangeParameterWrapper::onAddSingle()
   {
     param().insertValue(v);
     rebuildList();
+    emit parameterSetChanged();
   }
 }
 
@@ -1123,6 +1136,7 @@ void DoubleRangeParameterWrapper::onAddRange()
     {
       double x=x0+(x1-x0)*double(i)/double(num-1);
       param().insertValue(x);
+      emit parameterSetChanged();
     }
     rebuildList();
   }
@@ -1132,6 +1146,7 @@ void DoubleRangeParameterWrapper::onClear()
 {
   param().values().clear();
   rebuildList();
+  emit parameterSetChanged();
 }
 
 void DoubleRangeParameterWrapper::onApply()
@@ -1212,6 +1227,7 @@ void SelectableSubsetParameterWrapper::onApply()
     param().selection()=selBox_->currentText().toStdString();
     insertSubset();
     setText(1, param().selection().c_str());
+    emit parameterSetChanged();
   }
   emit(apply());
 }

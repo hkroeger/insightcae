@@ -176,14 +176,29 @@ defineFactoryTable
       const boost::filesystem::path& exePath
   ),
   LIST(ps, exePath)
-);
-defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet);
-defineStaticFunctionTable(Analysis, category, std::string);
+)
+
+defineStaticFunctionTable(Analysis, defaultParameters, ParameterSet)
+defineStaticFunctionTable(Analysis, category, std::string)
+defineStaticFunctionTable(Analysis, validator, ParameterSet_ValidatorPtr)
+defineStaticFunctionTable(Analysis, visualizer, ParameterSet_VisualizerPtr)
+
 
 std::string Analysis::category()
 {
     return "Uncategorized";
 }
+
+ParameterSet_ValidatorPtr Analysis::validator()
+{
+    return ParameterSet_ValidatorPtr();
+}
+
+ParameterSet_VisualizerPtr Analysis::visualizer()
+{
+    return ParameterSet_VisualizerPtr();
+}
+
 
 void Analysis::extendSharedSearchPath ( const std::string& name )
 {

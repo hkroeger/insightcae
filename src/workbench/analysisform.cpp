@@ -98,8 +98,20 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
     connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
 
+    insight::ParameterSet_VisualizerPtr viz;
+    insight::ParameterSet_ValidatorPtr vali;
 
-    peditor_=new ParameterEditorWidget(parameters_, ui->inputTab);
+    try {
+        viz = insight::Analysis::visualizer(analysisName_);
+    } catch (insight::Exception e)
+    { /* ignore, if non-existent */ }
+
+    try {
+        vali = insight::Analysis::validator(analysisName_);
+    } catch (insight::Exception e)
+    { /* ignore, if non-existent */ }
+
+    peditor_=new ParameterEditorWidget(parameters_, ui->inputTab, vali, viz);
     ui->inputTabLayout->addWidget(peditor_);
     peditor_->insertParameter("execution directory", executionPathParameter_);
     QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));

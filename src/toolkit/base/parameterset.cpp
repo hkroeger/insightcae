@@ -448,5 +448,47 @@ void SelectableSubsetParameter::readFromNode(const std::string& name, rapidxml::
   }
 }
 
+
+
+ParameterSet_Validator::~ParameterSet_Validator()
+{}
+
+void ParameterSet_Validator::update(const ParameterSet& ps)
+{
+    errors_.clear();
+    warnings_.clear();
+    ps_=ps;
+}
+
+bool ParameterSet_Validator::isValid() const
+{
+    return (warnings_.size()==0) && (errors_.size()==0);
+}
+
+const ParameterSet_Validator::WarningList& ParameterSet_Validator::ParameterSet_Validator::warnings() const
+{
+    return warnings_;
+}
+
+const ParameterSet_Validator::ErrorList& ParameterSet_Validator::ParameterSet_Validator::errors() const
+{
+    return errors_;
+}
+
+
+
+
+ParameterSet_Visualizer::~ParameterSet_Visualizer()
+{}
+
+void ParameterSet_Visualizer::update(const ParameterSet& ps)
+{
+    ps_=ps;
+}
+
+void ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget*, QModelTree*) const
+{
+}
+
 }
 

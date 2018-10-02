@@ -114,6 +114,8 @@ public:
 
 
 
+
+
 typedef std::shared_ptr<ConvergenceAnalysisDisplayer> ConvergenceAnalysisDisplayerPtr;
 
 #define addToAnalysisFactoryTable(DerivedClass) \
@@ -139,11 +141,12 @@ public:
             const boost::filesystem::path& exePath
         ),
         LIST(ps, exePath)
-    );
+    )
     
-    declareStaticFunctionTable(defaultParameters, ParameterSet);
-    declareStaticFunctionTable(category, std::string);
-
+    declareStaticFunctionTable(defaultParameters, ParameterSet)
+    declareStaticFunctionTable(category, std::string)
+    declareStaticFunctionTable(validator, ParameterSet_ValidatorPtr)
+    declareStaticFunctionTable(visualizer, ParameterSet_VisualizerPtr)
 
 protected:
     std::string name_;
@@ -171,6 +174,9 @@ public:
     declareType ( "Analysis" );
     
     static std::string category();
+
+    static ParameterSet_ValidatorPtr validator();
+    static ParameterSet_VisualizerPtr visualizer();
 
     /**
      * create analysis from components.

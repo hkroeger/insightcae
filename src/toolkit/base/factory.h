@@ -178,13 +178,17 @@ static struct add##specT##To##baseT##FactoryTable \
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
- baseT::Name##FunctionTable* baseT::Name##Functions_; \
+ baseT::Name##FunctionTable* baseT::Name##Functions_ =NULL; \
  ReturnT baseT::Name(const std::string& key) \
  { \
+   if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
     throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " +#baseT); \
   return i->second(); \
+  } else  {\
+    throw insight::Exception(std::string("Static function table of type ") +#baseT+"is empty!"); \
+  }\
  }
  
  

@@ -37,6 +37,10 @@
 #include <vector>
 #include <iostream>
 
+class QoccViewWidget;
+class QModelTree;
+
+
 namespace insight {
   
   
@@ -486,6 +490,66 @@ ParameterSet& ParameterSet::setSelectableSubset(const std::string& key, const ty
       }
   }
 
+
+
+
+  class ParameterSet_Validator
+  {
+  public:
+      typedef std::map<std::string, std::string> WarningList;
+      typedef std::map<std::string, std::string> ErrorList;
+
+  protected:
+      ParameterSet ps_;
+
+
+      WarningList warnings_;
+      ErrorList errors_;
+
+  public:
+      virtual ~ParameterSet_Validator();
+
+      /**
+       * @brief update
+       * @param ps
+       * checks a parameter set (needs to be customized by derivation for that)
+       * Stores a copy of the parameter set and updates the warnings and errors list.
+       * Needs to be called first in derived classes.
+       */
+      virtual void update(const ParameterSet& ps);
+
+      virtual bool isValid() const;
+      virtual const WarningList& warnings() const;
+      virtual const ErrorList& errors() const;
+  };
+
+
+  typedef std::shared_ptr<ParameterSet_Validator> ParameterSet_ValidatorPtr;
+
+
+
+
+
+
+  class ParameterSet_Visualizer
+  {
+  protected:
+      ParameterSet ps_;
+
+  public:
+      virtual ~ParameterSet_Visualizer();
+
+      /**
+       * @brief update
+       * @param ps
+       * computes visualization features (from insight::cad) for several parameters.
+       */
+      virtual void update(const ParameterSet& ps);
+
+      virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+  };
+
+  typedef std::shared_ptr<ParameterSet_Visualizer> ParameterSet_VisualizerPtr;
 
 }
 

@@ -19,7 +19,7 @@ qt4_automoc(${toolkit_gui_SRCS})
 #SET(toolkit_gui_RCCS toolkit_gui.qrc)
 
 add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_FORMS_HEADERS} ${toolkit_gui_RCCS})
-target_link_libraries(toolkit_gui ${Boost_LIBRARIES} toolkit 
+target_link_libraries(toolkit_gui ${Boost_LIBRARIES} toolkit insightcad_gui
  Qt4::QtCore Qt4::QtGui Qt4::QtWebKit
  ${QWT_LIBRARY} ${QWT_LIBRARIES}
  )

@@ -157,7 +157,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
 
 
 
- #define MCOMP
+// #define MCOMP
 
 void CoilPath::build()
 {

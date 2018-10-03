@@ -40,7 +40,6 @@ class STL
     STL(const boost::filesystem::path& fname, const gp_Trsf& trsf);
     STL(const boost::filesystem::path& fname, FeaturePtr other_trsf);
 
-    Handle(MeshVS_Mesh) mesh_;
 
 protected:
     virtual size_t calcHash() const;

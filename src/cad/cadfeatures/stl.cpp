@@ -70,7 +70,10 @@ addToFactoryTable(Feature, STL);
 size_t STL::calcHash() const
 {
   ParameterListHash h;
+  h+=this->type();
   h+=fname_;
+  if (trsf_) h+=*trsf_;
+  if (other_trsf_) h+=*other_trsf_;
   return h.getHash();
 }
 
@@ -81,21 +84,25 @@ STL::STL()
 
 
 
-STL::STL
-(
-  const boost::filesystem::path& fname
-)
-: fname_(fname)
-{
-}
+STL::STL(const boost::filesystem::path& fname)
+    : fname_(fname)
+{}
+
+
+
 
 STL::STL(const boost::filesystem::path& fname, const gp_Trsf& trsf)
     : fname_(fname), trsf_(new gp_Trsf(trsf))
 {}
 
+
+
+
 STL::STL(const boost::filesystem::path& fname, FeaturePtr other_trsf)
     : fname_(fname), other_trsf_(other_trsf)
 {}
+
+
 
 
 FeaturePtr STL::create
@@ -106,6 +113,9 @@ FeaturePtr STL::create
     return FeaturePtr(new STL(fname));
 }
 
+
+
+
 FeaturePtr STL::create_trsf
 (
     const boost::filesystem::path& fname,
@@ -114,6 +124,9 @@ FeaturePtr STL::create_trsf
 {
     return FeaturePtr(new STL(fname, trsf));
 }
+
+
+
 
 FeaturePtr STL::create_other
 (
@@ -125,52 +138,56 @@ FeaturePtr STL::create_other
 }
 
 
-//Handle_AIS_InteractiveObject STL::buildVisualization() const
-//{
-//    checkForBuildDuringAccess();
-//    return Handle_AIS_InteractiveObject::DownCast(mesh_);
-//}
 
 
 void STL::build()
 {
-  ExecTimer t("STL::build() ["+featureSymbolName()+"]");
+    ExecTimer t("STL::build() ["+featureSymbolName()+"]");
 
-  Handle(Poly_Triangulation) aSTLMesh = RWStl::ReadFile (fname_.c_str());
+    if (!cache.contains(hash()))
+    {
+        Handle(Poly_Triangulation) aSTLMesh = RWStl::ReadFile (fname_.c_str());
 
-  if (trsf_ || other_trsf_)
-  {
-      gp_Trsf tr;
-      if (trsf_)
-      {
-          tr = *trsf_;
-      }
-      else if (other_trsf_)
-      {
-          tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
-      }
+        if (trsf_ || other_trsf_)
+        {
+            gp_Trsf tr;
+            if (trsf_)
+            {
+                tr = *trsf_;
+            }
+            else if (other_trsf_)
+            {
+                tr = Transform::calcTrsfFromOtherTransformFeature(other_trsf_);
+            }
 
-      for (int i=1; i<=aSTLMesh->NbNodes();i++)
-      {
-        aSTLMesh->ChangeNode(i).Transform(tr);
-      }
-  }
+            for (int i=1; i<=aSTLMesh->NbNodes();i++)
+            {
+                aSTLMesh->ChangeNode(i).Transform(tr);
+            }
+        }
 
-  Bnd_Box bb;
-  for (int i=1; i<=aSTLMesh->NbNodes();i++)
-  {
-      bb.Add(aSTLMesh->Node(i));
-  }
-  double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
-  gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
+        Bnd_Box bb;
+        for (int i=1; i<=aSTLMesh->NbNodes();i++)
+        {
+            bb.Add(aSTLMesh->Node(i));
+        }
+        double r=bb.CornerMax().Distance(bb.CornerMin()) /2.;
+        gp_Pnt ctr(0.5*(bb.CornerMin().XYZ()+bb.CornerMax().XYZ()));
 
-  TopoDS_Face aFace;
-  BRep_Builder aB;
-//  aB.MakeFace(aFace, aSTLMesh);
-  aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
-  aB.UpdateFace(aFace, aSTLMesh);
+        TopoDS_Face aFace;
+        BRep_Builder aB;
+        //  aB.MakeFace(aFace, aSTLMesh);
+        aB.MakeFace(aFace, Handle_Geom_Surface(new Geom_SphericalSurface(gp_Sphere(gp_Ax3(ctr, gp::DZ()), r))), Precision::Confusion());
+        aB.UpdateFace(aFace, aSTLMesh);
 
-  setShape( aFace );
+        setShape( aFace );
+
+        cache.insert(shared_from_this());
+    }
+    else
+    {
+        this->operator=(*cache.markAsUsed<STL>(hash()));
+    }
 }
 
 

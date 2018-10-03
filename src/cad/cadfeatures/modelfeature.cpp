@@ -188,19 +188,20 @@ void ModelFeature::build()
 
     if (!cache.contains(hash()))
     {
-	if (!model_)
-	{
-	  if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
-	  {
-	    model_.reset(new Model(*fp, vars_));
-	  } else if (std::string* mn = boost::get<std::string>(&modelinput_))
-	  {
-	    model_.reset(new Model(*mn, vars_));
-	  } else
-	  {
-	    throw insight::Exception("ModelFeature: Model input unspecified!");
-	  }
-	}
+        if (!model_)
+        {
+          if (boost::filesystem::path* fp = boost::get<boost::filesystem::path>(&modelinput_))
+          {
+            model_.reset(new Model(*fp, vars_));
+          } else if (std::string* mn = boost::get<std::string>(&modelinput_))
+          {
+            model_.reset(new Model(*mn, vars_));
+          } else
+          {
+            throw insight::Exception("ModelFeature: Model input unspecified!");
+          }
+        }
+
         model_->checkForBuildDuringAccess();
 
         BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())

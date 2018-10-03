@@ -106,23 +106,20 @@ FeaturePtr CoilPath::create
 
 Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, double R1, double R2, gp_Pnt pc, gp_Vec el, double rmin )
 {
-//    std::vector<Handle_Geom_Curve> ocrvs;
     TopTools_ListOfShape ocrvs;
-//    double dist=p1.Distance(p2);
     gp_Vec eel = gp_Vec(p2.XYZ()-p1.XYZ()).Normalized(); // direction vector p1 => p2
+
+    double distp=p1.Distance(p2);
 
     gp_Pnt pe1(p1.Translated(eel*rmin + n1*rmin));
     gp_Pnt pe2(p2.Translated(-eel*rmin + n1*rmin));
     double dist=pe1.Distance(pe2);
     
-//    ocrvs.push_back(GC_MakeArcOfCircle ( p1, n1, pe1 ).Value());
     ocrvs.Append(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle ( p1, n1, pe1 ).Value()));
-    if (dist>/*2.*rmin*/Precision::Confusion())
+    if (dist>Precision::Confusion())
     {
-//        ocrvs.push_back(GC_MakeSegment(pe1, pe2).Value());
         ocrvs.Append(BRepBuilderAPI_MakeEdge(GC_MakeSegment(pe1, pe2).Value()));
     }
-//    ocrvs.push_back(GC_MakeArcOfCircle ( p2, n1, pe2 ).Value()->Reversed());
     ocrvs.Append(BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle ( p2, n1, pe2 ).Value()->Reversed()));
 
     BRepBuilderAPI_MakeWire wiremaker;
@@ -136,31 +133,22 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
         throw insight::Exception("Discretization of arc failed!");
     }
 
-//    int n=10;
-    TColgp_Array1OfPnt pts ( 1, /*ocrvs.size()*n - (ocrvs.size()-1)*/ipts.NbPoints() );
+    TColgp_Array1OfPnt pts ( 1, ipts.NbPoints() );
     
-//    int j=1;
-//    for (int l=0; l<ocrvs.size(); l++)
-//    {
-//        const Handle_Geom_Curve& ocrv = ocrvs[l];
-        for ( int i=1; i<=/*n*/ipts.NbPoints(); i++ ) {
-//             if ( ! ((l>0)&&(l<ocrvs.size()-1)&&((i==0)||(i==n-1))) ) {
-//            if ( ! ((l>0)&&((i==0))) ) {
-//                double c = ( double ( i ) /double ( n-1 ) ) * ( ocrv->LastParameter() - ocrv->FirstParameter() ) + ocrv->FirstParameter();
-//                gp_Pnt p=ocrv->Value ( c );
-                gp_Pnt p=adapt.Value(ipts.Parameter(i));
-                 
-                double x=eel.XYZ().Dot(p.XYZ()-p1.XYZ())/dist; // project on connection line
-                double Rcur=x*R2+(1.-x)*R1;
-                
-                gp_Pnt p0cur ( pc.XYZ() + ( ( p.XYZ()-pc.XYZ() ).Dot ( el.XYZ() ) *el.XYZ() ) );
-                gp_Pnt pproj ( p0cur.XYZ() + ( p.XYZ()-p0cur.XYZ() ).Normalized() *Rcur );
-                pts.SetValue ( /*j++*/i, pproj );
-                
-//                 std::cerr<<"j="<<j<<":"<<pproj.X()<<" "<<pproj.Y()<<" "<<pproj.Z()<<std::endl;
-//            }
-        }
-//    }
+    for ( int i=1; i<=ipts.NbPoints(); i++ )
+    {
+            gp_Pnt p=adapt.Value(ipts.Parameter(i));
+//            pts.SetValue ( i, p );
+
+            double x = eel.XYZ().Dot( p.XYZ()-p1.XYZ() )/distp; // project on connection line
+            double Rcur = x*R2 + (1.-x)*R1;
+//            std::cout<<Rcur<<" "<<x<<" "<<R1<<" "<<R2<<" "<<distp<<std::endl;
+
+            gp_Pnt p0cur ( pc.XYZ() + ( ( p.XYZ()-pc.XYZ() ).Dot(el.XYZ()) *el.XYZ() ) );
+            gp_Pnt pproj ( p0cur.XYZ() + ( p.XYZ()-p0cur.XYZ() ).Normalized() *Rcur );
+            pts.SetValue ( i, pproj );
+
+    }
     
     GeomAPI_PointsToBSpline ipol ( pts, 2, 3 );
     return Handle_Geom_TrimmedCurve ( new Geom_TrimmedCurve ( ipol.Curve(), ipol.Curve()->FirstParameter(), ipol.Curve()->LastParameter() ) );
@@ -169,7 +157,7 @@ Handle_Geom_TrimmedCurve MakeArc_Projected ( gp_Pnt p1, gp_Vec n1, gp_Pnt p2, do
 
 
 
-// #define MCOMP
+ #define MCOMP
 
 void CoilPath::build()
 {
@@ -266,10 +254,12 @@ void CoilPath::build()
             if ( (j==0) && (k==0) ) {
                 refpoints_["p0"]=ps_p;
             } else {
-                INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p ), to_Vec ( -el ), to_Pnt ( l_ps_n ), curR, l_R, to_Pnt ( pc ), to_Vec ( el ), rminc-0.5*d ) ) );
+                INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p ), to_Vec ( -el ), to_Pnt ( l_ps_n ),
+                                                                            curR, l_R, to_Pnt ( pc ), to_Vec ( el ), rminc-0.5*d ) ) );
             }
 
-            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p+L ), to_Vec ( el ), to_Pnt ( ps_n+L ), curR, curR, to_Pnt ( pc ), to_Vec ( el ), rminc ) ) );
+            INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( MakeArc_Projected ( to_Pnt ( ps_p+L ), to_Vec ( el ), to_Pnt ( ps_n+L ),
+                                                                        curR, curR, to_Pnt ( pc ), to_Vec ( el ), rminc ) ) );
 
             INS_ADDWIRE ( BRepBuilderAPI_MakeEdge ( GC_MakeSegment ( to_Pnt ( ps_n+L ), to_Pnt ( ps_n ) ).Value() ).Edge() );
 

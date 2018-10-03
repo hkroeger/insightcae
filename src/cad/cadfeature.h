@@ -76,6 +76,11 @@ template<> struct hash<gp_Pnt>
   std::size_t operator()(const gp_Pnt& v) const;
 };
 
+template<> struct hash<gp_Trsf>
+{
+  std::size_t operator()(const gp_Trsf& v) const;
+};
+
 template<> struct hash<insight::cad::Datum>
 {
   std::size_t operator()(const insight::cad::Datum& m) const;

@@ -116,6 +116,22 @@ std::size_t hash<gp_Pnt>::operator()(const gp_Pnt& v) const
   return h;
 }
 
+
+std::size_t hash<gp_Trsf>::operator()(const gp_Trsf& t) const
+{
+  std::hash<double> dh;
+  size_t h=0;
+  for (int c=1; c<=4; c++)
+  {
+      for (int r=1; r<=3; r++)
+      {
+          boost::hash_combine(h, dh(t.Value(r, c)));
+      }
+  }
+  boost::hash_combine(h, dh(t.ScaleFactor()));
+  return h;
+}
+
 std::size_t hash<insight::cad::Datum>::operator()(const insight::cad::Datum& m) const
 {
   return m.hash();

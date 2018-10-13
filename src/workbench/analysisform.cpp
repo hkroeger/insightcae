@@ -133,29 +133,34 @@ AnalysisForm::~AnalysisForm()
 
 void AnalysisForm::insertMenu(QMenuBar* mainMenu)
 {
-//    qDebug()<<"insertMenu";
+    qDebug()<<"insertMenu";
     workbench::WidgetWithDynamicMenuEntries::insertMenu(mainMenu);
 
     menu_parameters_=mainMenu_->addMenu("&Parameters");
-
-    menu_parameters_->addAction( act_save_as_=new QAction("&Save parameter set as...", menu_parameters_) );
+    if (!act_save_as_) act_save_as_=new QAction("&Save parameter set as...", this);
+    menu_parameters_->addAction( act_save_as_ );
     connect( act_save_as_, SIGNAL(activated()), this, SLOT(onSaveParameters()) );
-    menu_parameters_->addAction( act_merge_=new QAction("&Merge other parameter set into current...", menu_parameters_) );
+    if (!act_merge_) act_merge_=new QAction("&Merge other parameter set into current...", this);
+    menu_parameters_->addAction( act_merge_ );
     connect( act_merge_, SIGNAL(activated()), this, SLOT(onLoadParameters()) );
-    menu_parameters_->addAction( act_param_show_=new QAction("&Show in XML format", menu_parameters_) );
+    if (!act_param_show_) act_param_show_=new QAction("&Show in XML format", this);
+    menu_parameters_->addAction( act_param_show_ );
     connect( act_param_show_, SIGNAL(activated()), this, SLOT(onShowParameterXML()) );
 
 
     menu_actions_=mainMenu_->addMenu("&Actions");
 
-    menu_actions_->addAction( act_run_=new QAction("&Run Analysis", menu_actions_) );
+    if (!act_run_) act_run_=new QAction("&Run Analysis", this);
+    menu_actions_->addAction( act_run_ );
     connect( act_run_, SIGNAL(activated()), this, SLOT(onRunAnalysis()) );
-    menu_actions_->addAction( act_kill_=new QAction("&Stop Analysis", menu_actions_) );
+    if (!act_kill_) act_kill_=new QAction("&Stop Analysis", this);
+    menu_actions_->addAction( act_kill_ );
     connect( act_kill_, SIGNAL(activated()), this, SLOT(onKillAnalysis()) );
 
     menu_results_=mainMenu_->addMenu("&Results");
 
-    menu_results_->addAction( act_save_rpt_=new QAction("Create &report...", menu_results_) );
+    if (!act_save_rpt_) act_save_rpt_=new QAction("Create &report...", this);
+    menu_results_->addAction( act_save_rpt_ );
     connect( act_save_rpt_, SIGNAL(activated()), this, SLOT(onCreateReport()) );
 
 }
@@ -164,26 +169,29 @@ void AnalysisForm::removeMenu()
 {
     if (mainMenu_)
     {
-//        qDebug()<<"removeMenu";
-        menu_parameters_->removeAction(act_save_as_); act_save_as_->deleteLater();
-        menu_parameters_->removeAction(act_merge_); act_merge_->deleteLater();
-        menu_parameters_->removeAction(act_param_show_); act_param_show_->deleteLater();
+        qDebug()<<"removeMenu";
+        menu_parameters_->removeAction(act_save_as_); act_save_as_->disconnect(); //act_save_as_->deleteLater();
+        menu_parameters_->removeAction(act_merge_); act_merge_->disconnect(); //act_merge_->deleteLater();
+        menu_parameters_->removeAction(act_param_show_); act_param_show_->disconnect(); //act_param_show_->deleteLater();
 
-        menu_actions_->removeAction(act_run_); act_run_->deleteLater();
-        menu_actions_->removeAction(act_kill_); act_kill_->deleteLater();
+        menu_actions_->removeAction(act_run_); act_run_->disconnect(); //act_run_->deleteLater();
+        menu_actions_->removeAction(act_kill_); act_kill_->disconnect(); //act_kill_->deleteLater();
 
         QAction *ma;
         ma = menu_results_->menuAction();
+        ma->disconnect();
         mainMenu_->removeAction(ma);
-        menu_results_->deleteLater();
+        //menu_results_->deleteLater();
 
         ma = menu_parameters_->menuAction();
+        ma->disconnect();
         mainMenu_->removeAction(ma);
-        menu_parameters_->deleteLater();
+        //menu_parameters_->deleteLater();
 
         ma = menu_actions_->menuAction();
+        ma->disconnect();
         mainMenu_->removeAction(ma);
-        menu_actions_->deleteLater();
+        //menu_actions_->deleteLater();
     }
     workbench::WidgetWithDynamicMenuEntries::removeMenu();
 }

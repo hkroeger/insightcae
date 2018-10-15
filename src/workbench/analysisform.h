@@ -105,10 +105,11 @@ protected:
   
   QPushButton *save_log_btn_, *send_log_btn_, *clear_log_btn_, *auto_scroll_down_btn_;
 
-  QMenu *menu_parameters_=0, *menu_actions_=0, *menu_results_=0;
+  QMenu *menu_parameters_=0, *menu_actions_=0, *menu_results_=0, *menu_tools_=0, *menu_tools_of_=0;
   QAction *act_param_show_=0, *act_save_=0, *act_save_as_=0, *act_merge_=0;
   QAction *act_run_=0, *act_kill_=0;
   QAction *act_save_rpt_=0;
+  QAction *act_tool_of_paraview_=0;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -133,7 +134,9 @@ private slots:
   void onKillAnalysis();
   void onResultReady(insight::ResultSetPtr);
   void onCreateReport();
-  
+
+  void onStartPV();
+
   void saveLog();
   void sendLog();
   void clearLog();

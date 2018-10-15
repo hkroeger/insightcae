@@ -19,6 +19,7 @@
  */
 
 #ifndef Q_MOC_RUN
+#include "base/boost_include.h"
 #include "base/resultset.h"
 #endif
 
@@ -34,6 +35,8 @@
 #include "email.h"
 
 #include "ui_xml_display.h"
+
+#include <cstdlib>
 
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
@@ -163,6 +166,11 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
     menu_results_->addAction( act_save_rpt_ );
     connect( act_save_rpt_, SIGNAL(activated()), this, SLOT(onCreateReport()) );
 
+    menu_tools_=mainMenu_->addMenu("&Tools");
+    menu_tools_of_=menu_tools_->addMenu("&OpenFOAM");
+    if (!act_tool_of_paraview_) act_tool_of_paraview_=new QAction("Start ParaView in execution directory", this);
+    menu_tools_of_->addAction( act_tool_of_paraview_ );
+    connect( act_tool_of_paraview_, SIGNAL(activated()), this, SLOT(onStartPV()) );
 }
 
 void AnalysisForm::removeMenu()
@@ -170,12 +178,14 @@ void AnalysisForm::removeMenu()
     if (mainMenu_)
     {
         qDebug()<<"removeMenu";
-        menu_parameters_->removeAction(act_save_as_); act_save_as_->disconnect(); //act_save_as_->deleteLater();
-        menu_parameters_->removeAction(act_merge_); act_merge_->disconnect(); //act_merge_->deleteLater();
-        menu_parameters_->removeAction(act_param_show_); act_param_show_->disconnect(); //act_param_show_->deleteLater();
+        menu_parameters_->removeAction(act_save_as_); act_save_as_->disconnect();
+        menu_parameters_->removeAction(act_merge_); act_merge_->disconnect();
+        menu_parameters_->removeAction(act_param_show_); act_param_show_->disconnect();
 
-        menu_actions_->removeAction(act_run_); act_run_->disconnect(); //act_run_->deleteLater();
-        menu_actions_->removeAction(act_kill_); act_kill_->disconnect(); //act_kill_->deleteLater();
+        menu_actions_->removeAction(act_run_); act_run_->disconnect();
+        menu_actions_->removeAction(act_kill_); act_kill_->disconnect();
+
+        menu_tools_of_->removeAction(act_tool_of_paraview_); act_tool_of_paraview_->disconnect();
 
         QAction *ma;
         ma = menu_results_->menuAction();
@@ -192,6 +202,14 @@ void AnalysisForm::removeMenu()
         ma->disconnect();
         mainMenu_->removeAction(ma);
         //menu_actions_->deleteLater();
+
+        ma = menu_tools_of_->menuAction();
+        ma->disconnect();
+        menu_tools_->removeAction(ma);
+
+        ma = menu_tools_->menuAction();
+        ma->disconnect();
+        mainMenu_->removeAction(ma);
     }
     workbench::WidgetWithDynamicMenuEntries::removeMenu();
 }
@@ -355,6 +373,15 @@ void AnalysisForm::onCreateReport()
 
     QMessageBox::information(this, "Done!", QString("The report has been created as\n")+outpath.c_str());
   }
+}
+
+void AnalysisForm::onStartPV()
+{
+  emit apply(); // apply all changes into parameter set
+  boost::filesystem::path exePath = executionPathParameter_();
+  ::system( boost::str( boost::format
+        ("cd %s; isPV.py &" ) % exePath.string()
+   ).c_str() );
 }
 
 void AnalysisForm::saveLog()

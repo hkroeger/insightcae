@@ -43,9 +43,9 @@ void Q_DebugStream::registerQDebugMessageHandler()
 }
 
 
-void Q_DebugStream::myQDebugMessageHandler ( QtMsgType, const char *msg )
+void Q_DebugStream::myQDebugMessageHandler ( QtMsgType, const QMessageLogContext&, const QString& msg )
 {
-  std::cout << msg;
+  std::cout << msg.toStdString();
 }
 
 void Q_DebugStream::sendCurLine()

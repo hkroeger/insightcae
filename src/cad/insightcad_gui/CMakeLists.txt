@@ -39,7 +39,7 @@ target_link_libraries(insightcad_gui
   ${OCC_LIBRARIES} ${OCC_OCAF_LIBRARIES} ${OPENGL_LIBRARIES}
   ${Boost_LIBRARIES}
   Qt5::Widgets
-  ${QWT_LIBRARY} ${QWT_LIBRARIES}
+ # ${QWT_LIBRARY} ${QWT_LIBRARIES}
   ${DXFLIB_LIBRARIES}
   )
 

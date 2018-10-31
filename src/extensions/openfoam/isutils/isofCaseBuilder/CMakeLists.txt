@@ -5,7 +5,6 @@ SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qwt REQUIRED)
 
 set(isofCaseBuilder_SRCS
     main.cpp
@@ -21,7 +20,6 @@ target_link_libraries(isofCaseBuilder
 )
 target_include_directories(isofCaseBuilder
   PUBLIC ${QT_INCLUDES}
-  PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}

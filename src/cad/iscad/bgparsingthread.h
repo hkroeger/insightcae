@@ -75,7 +75,7 @@ signals:
     void createdVariable    (const QString& sn, insight::cad::VectorPtr vv);
     void createdFeature     (const QString& sn, insight::cad::FeaturePtr sm, bool is_component);
     void createdDatum       (const QString& sn, insight::cad::DatumPtr dm);
-    void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em);
+    void createdEvaluation  (const QString& sn, insight::cad::PostprocActionPtr em, bool visible);
 
     void removedScalar      (const QString& sn);
     void removedVector      (const QString& sn);
@@ -85,7 +85,7 @@ signals:
 
     void scriptError(long failpos, QString errorMsg, int range);
 
-    void statusMessage(const QString& msg);
+    void statusMessage(const QString& msg, double timeout=0);
     void statusProgress(int step, int totalSteps);
 };
 

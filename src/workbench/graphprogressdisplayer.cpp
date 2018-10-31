@@ -100,7 +100,7 @@ GraphProgressDisplayer::GraphProgressDisplayer(QWidget* parent)
   grid->attach(this);
   
   QTimer *timer=new QTimer;
-  connect(timer, SIGNAL(timeout()), this, SLOT(checkForUpdate()));
+  connect(timer, &QTimer::timeout, this, &GraphProgressDisplayer::checkForUpdate);
   timer->setInterval(500);
   timer->start();
 }

@@ -65,14 +65,14 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
         }
     }
     
-    connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &InsertFeatureDlg::accept);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &InsertFeatureDlg::reject);
     
-    connect(ui->featureCmdList, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
+    connect(ui->featureCmdList, &QListWidget::itemSelectionChanged, this, &InsertFeatureDlg::onItemSelectionChanged);
     
-    connect(ui->isIntermediateStep, SIGNAL(clicked()), this, SLOT(onIsIntermediateStepActivated()));
-    connect(ui->isFinalComponent, SIGNAL(clicked()), this, SLOT(onIsFinalComponentActivated()));
-    connect(ui->onlyFeatureCommand, SIGNAL(clicked()), this, SLOT(onOnlyFeatureCommandActivated()));
+    connect(ui->isIntermediateStep, &QRadioButton::clicked, this, &InsertFeatureDlg::onIsIntermediateStepActivated);
+    connect(ui->isFinalComponent, &QRadioButton::clicked, this, &InsertFeatureDlg::onIsFinalComponentActivated);
+    connect(ui->onlyFeatureCommand, &QRadioButton::clicked, this, &InsertFeatureDlg::onOnlyFeatureCommandActivated);
 }
 
 void InsertFeatureDlg::onItemSelectionChanged ()

@@ -98,8 +98,8 @@ QoccViewWidget::QoccViewWidget
 
   connect
       (
-        this, SIGNAL(graphicalSelectionChanged(QDisplayableModelTreeItem*,QoccViewWidget*)),
-        this, SLOT(onGraphicalSelectionChanged(QDisplayableModelTreeItem*,QoccViewWidget*))
+        this, &QoccViewWidget::graphicalSelectionChanged,
+        this, &QoccViewWidget::onGraphicalSelectionChanged
       );
 }
 
@@ -1958,8 +1958,8 @@ OCCViewScreenshots::OCCViewScreenshots(Handle_AIS_InteractiveContext& context, Q
   QPushButton *okBtn = new QPushButton("screen shot");
   h->addWidget(okBtn);
 
-  connect(okBtn,SIGNAL(clicked()),this,SLOT(screenShot()),Qt::DirectConnection);
-  connect(closeBtn,SIGNAL(clicked()),this,SLOT(accept()),Qt::DirectConnection);
+  connect(okBtn, &QPushButton::clicked, this, &OCCViewScreenshots::screenShot);
+  connect(closeBtn, &QPushButton::clicked, this, &OCCViewScreenshots::accept);
 }
 
 void OCCViewScreenshots::screenShot()

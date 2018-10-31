@@ -86,51 +86,51 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     QAction *a;
     
     a=new QAction(name_, &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(jumpToName()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::jumpToName);
     myMenu.addAction(a);
     
     myMenu.addSeparator();
     
     a=new QAction("Insert name", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::insertName);
     myMenu.addAction(a);
     
     myMenu.addSeparator();
 
     a=new QAction("Show", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(show()));
+    connect(a, &QAction::triggered, this, QOverload<>::of(&QFeatureItem::show));
     myMenu.addAction(a);
 
     a=new QAction("Hide", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(hide()));
+    connect(a, &QAction::triggered, this, QOverload<>::of(&QFeatureItem::hide));
     myMenu.addAction(a);
     
     a=new QAction("Shaded", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::shaded);
     myMenu.addAction(a);
     
     a=new QAction("Only this shaded", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(onlyThisShaded()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::onlyThisShaded);
     myMenu.addAction(a);
     
     a=new QAction("Wireframe", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::wireframe);
     myMenu.addAction(a);
     
     a=new QAction("Randomize Color", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::randomizeColor);
     myMenu.addAction(a);
 
     a=new QAction("Show Properties", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(showProperties()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::showProperties);
     myMenu.addAction(a);
     
     a=new QAction("Set Resolution...", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(setResolution()));
+    connect(a, &QAction::triggered, this, QOverload<>::of(&QFeatureItem::setResolution));
     myMenu.addAction(a);
     
     a=new QAction("Export...", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(exportShape()));
+    connect(a, &QAction::triggered, this, &QFeatureItem::exportShape);
     myMenu.addAction(a);
 
     myMenu.exec(gpos);

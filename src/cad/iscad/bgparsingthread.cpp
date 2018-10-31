@@ -227,7 +227,7 @@ void BGParsingThread::run()
                       emit statusMessage("Building postproc action "+QString::fromStdString(v.first));
                       if (action_ >= Post) v.second->checkForBuildDuringAccess(); // Trigger evaluation
                       emit statusProgress(is++, ns-1);
-                      emit createdEvaluation(QString::fromStdString(v.first), v.second);
+                      emit createdEvaluation(QString::fromStdString(v.first), v.second, false);
                       removedPostprocActions.removeIfPresent(v.first);
                   }
 

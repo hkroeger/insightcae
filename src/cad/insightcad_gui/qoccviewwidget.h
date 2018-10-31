@@ -98,7 +98,7 @@ signals:
   void graphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer);
   void mouseMoved   ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
   void pointClicked ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
-  void sendStatus   ( const QString aMessage );
+  void sendStatus   ( const QString aMessage, double timeout=0 );
   //! Just a placeholder for now
   void error ( int errorCode, QString& errorDescription );
 

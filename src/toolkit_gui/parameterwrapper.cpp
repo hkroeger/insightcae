@@ -61,8 +61,8 @@ void addWrapperToWidget
                 parentnode, i->first.c_str(), *i->second, detaileditwidget, superform
             );
 
-        QObject::connect ( parentnode->treeWidget(), SIGNAL ( itemSelectionChanged() ),
-                           wrapper, SLOT ( onSelectionChanged() ) );
+        QObject::connect ( parentnode->treeWidget(), &QTreeWidget::itemSelectionChanged,
+                           wrapper, &ParameterWrapper::onSelectionChanged );
 // 	vlayout->addWidget(wrapper);
         if ( superform ) {
             QObject::connect ( superform, SIGNAL ( apply() ), wrapper, SLOT ( onApply() ) );
@@ -187,15 +187,15 @@ void IntParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, &QLineEdit::destroyed, this, &IntParameterWrapper::onDestruction);
   le_->setText(QString::number(param()()));
   le_->setValidator(new QIntValidator());
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::returnPressed, this, &IntParameterWrapper::onApply);
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &IntParameterWrapper::onApply);
   layout->addWidget(apply);
   
   layout->addStretch();
@@ -251,16 +251,16 @@ void DoubleParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, &QLineEdit::destroyed, this, &DoubleParameterWrapper::onDestruction);
   le_->setText(QString::number(param()()));
   le_->setValidator(new QDoubleValidator());
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::returnPressed, this, &DoubleParameterWrapper::onApply);
   layout2->addWidget(le_);
   
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &DoubleParameterWrapper::onApply);
   layout->addWidget(apply);
   
   layout->addStretch();
@@ -327,14 +327,14 @@ void VectorParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(le_, &QLineEdit::destroyed, this, &VectorParameterWrapper::onDestruction);
   le_->setText(QString(insight::valueToString(param()()).c_str()));
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::returnPressed, this, &VectorParameterWrapper::onApply);
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &VectorParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -405,13 +405,13 @@ void StringParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::destroyed, this, &StringParameterWrapper::onDestruction);
+  connect(le_, &QLineEdit::returnPressed, this, &StringParameterWrapper::onApply);
   layout2->addWidget(le_);
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &StringParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -476,7 +476,7 @@ void BoolParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   cb_=new QCheckBox(detaileditwidget_);
-  connect(cb_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(cb_, &QCheckBox::destroyed, this, &BoolParameterWrapper::onDestruction);
   if (param()())
     cb_->setCheckState(Qt::Checked);
   else
@@ -485,7 +485,7 @@ void BoolParameterWrapper::createWidgets()
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &BoolParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -559,8 +559,8 @@ void PathParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::destroyed, this, &PathParameterWrapper::onDestruction);
+  connect(le_, &QLineEdit::returnPressed, this, &PathParameterWrapper::onApply);
   le_->setText(param()().c_str());
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
@@ -568,7 +568,7 @@ void PathParameterWrapper::createWidgets()
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &PathParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -586,8 +586,8 @@ void PathParameterWrapper::createWidgets()
 //   updateTooltip();
 //   detaileditwidget_->setLayout(layout);
   
-  connect(le_, SIGNAL(textChanged(QString)), this, SLOT(onDataEntered()));
-  connect(dlgBtn_, SIGNAL(clicked(bool)), this, SLOT(openSelectionDialog()));
+  connect(le_, &QLineEdit::textChanged, this, &PathParameterWrapper::onDataEntered);
+  connect(dlgBtn_, &QPushButton::clicked, this, &PathParameterWrapper::openSelectionDialog);
 }
 
 void PathParameterWrapper::updateTooltip()
@@ -680,8 +680,8 @@ void MatrixParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Value:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   le_=new QLineEdit(detaileditwidget_);
-  connect(le_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
-  connect(le_, SIGNAL(returnPressed()), this, SLOT(onApply()));
+  connect(le_, &QLineEdit::destroyed, this, &MatrixParameterWrapper::onDestruction);
+  connect(le_, &QLineEdit::returnPressed, this, &MatrixParameterWrapper::onApply);
   le_->setText(mat2Str(param()()));
   layout2->addWidget(le_);
   dlgBtn_=new QPushButton("...", detaileditwidget_);
@@ -689,7 +689,7 @@ void MatrixParameterWrapper::createWidgets()
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &MatrixParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -706,7 +706,7 @@ void MatrixParameterWrapper::createWidgets()
 //   layout->addWidget(dlgBtn_);
 //   detaileditwidget_->setLayout(layout);
   
-  connect(dlgBtn_, SIGNAL(clicked(bool)), this, SLOT(openSelectionDialog()));
+  connect(dlgBtn_, &QPushButton::clicked, this, &MatrixParameterWrapper::openSelectionDialog);
 }
 
 
@@ -791,7 +791,7 @@ void SelectionParameterWrapper::createWidgets()
   QLabel *promptLabel = new QLabel("Selection:", detaileditwidget_);
   layout2->addWidget(promptLabel);
   selBox_=new QComboBox(detaileditwidget_);
-  connect(selBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(selBox_, &QComboBox::destroyed, this, &SelectionParameterWrapper::onDestruction);
   BOOST_FOREACH( const std::string& s, param().items() )
   {
     selBox_->addItem(s.c_str());
@@ -801,7 +801,7 @@ void SelectionParameterWrapper::createWidgets()
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &SelectionParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -870,7 +870,7 @@ void SubsetParameterWrapper::createWidgets()
 
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
-  connect(detaileditwidget_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(detaileditwidget_, &QWidget::destroyed, this, &SubsetParameterWrapper::onDestruction);
   
 //   QHBoxLayout *layout=new QHBoxLayout(detaileditwidget_);
 //   QGroupBox *nameLabel = new QGroupBox(name_, detaileditwidget_);
@@ -907,9 +907,9 @@ void ArrayParameterWrapper::addWrapper(int i)
       this, "["+QString::number(i)+"]", pp, detaileditwidget_, superform_
     );
 
-  QObject::connect(treeWidget(), SIGNAL(itemSelectionChanged()), wrapper, SLOT(onSelectionChanged()));
-  QObject::connect(this, SIGNAL(apply()), wrapper, SLOT(onApply()));
-  QObject::connect(this, SIGNAL(update()), wrapper, SLOT(onUpdate()));  
+  QObject::connect(treeWidget(), &QTreeWidget::itemSelectionChanged, wrapper, &ParameterWrapper::onSelectionChanged);
+  QObject::connect(this, &ArrayParameterWrapper::apply, wrapper, &ParameterWrapper::onApply);
+  QObject::connect(this, &ArrayParameterWrapper::update, wrapper, &ParameterWrapper::onUpdate);
 }
 
 void ArrayParameterWrapper::rebuildWrappers()
@@ -933,10 +933,8 @@ ArrayParameterWrapper::ArrayParameterWrapper(QTreeWidgetItem* parent, const QStr
   setText(1, "array");
   connect
   (
-    treeWidget(),
-    SIGNAL(customContextMenuRequested(const QPoint &)),
-    this,
-    SLOT(showContextMenuForWidget(const QPoint &))
+    treeWidget(), &QTreeWidget::customContextMenuRequested,
+    this, &ArrayParameterWrapper::showContextMenuForWidget
   );
   
   rebuildWrappers();
@@ -1003,7 +1001,7 @@ void ArrayParameterWrapper::createWidgets()
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   QPushButton *addbtn=new QPushButton("+ Add new", detaileditwidget_);
-  connect(addbtn, SIGNAL(clicked()), this, SLOT(onAppendEmpty()));
+  connect(addbtn, &QPushButton::clicked, this, &ArrayParameterWrapper::onAppendEmpty);
   layout2->addWidget(addbtn);
   
 //   connect(map_, SIGNAL(mapped(int)), detaileditwidget_, SLOT(onRemove(int)));
@@ -1075,7 +1073,7 @@ void DoubleRangeParameterWrapper::createWidgets()
 
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   lBox_=new QListWidget(detaileditwidget_);
-  connect(lBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(lBox_, &QListWidget::destroyed, this, &DoubleRangeParameterWrapper::onDestruction);
   rebuildList();
   layout2->addWidget(lBox_);
   
@@ -1083,19 +1081,19 @@ void DoubleRangeParameterWrapper::createWidgets()
   
   QPushButton *addbtn=new QPushButton("Add...", detaileditwidget_);
   sublayout->addWidget(addbtn);
-  connect(addbtn, SIGNAL(clicked()), this, SLOT(onAddSingle()));
+  connect(addbtn, &QPushButton::clicked, this, &DoubleRangeParameterWrapper::onAddSingle);
   QPushButton *addrangebtn=new QPushButton("Add Range...", detaileditwidget_);
   sublayout->addWidget(addrangebtn);
-  connect(addrangebtn, SIGNAL(clicked()), this, SLOT(onAddRange()));
+  connect(addrangebtn, &QPushButton::clicked, this, &DoubleRangeParameterWrapper::onAddRange);
   QPushButton *clearbtn=new QPushButton("Clear", detaileditwidget_);
   sublayout->addWidget(clearbtn);
-  connect(clearbtn, SIGNAL(clicked()), this, SLOT(onClear()));
+  connect(clearbtn, &QPushButton::clicked, this, &DoubleRangeParameterWrapper::onClear);
   layout2->addLayout(sublayout);
   
   layout->addLayout(layout2);
   
   QPushButton* apply=new QPushButton("&Apply", detaileditwidget_);
-  connect(apply, SIGNAL(pressed()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::pressed, this, &DoubleRangeParameterWrapper::onApply);
   layout->addWidget(apply);
 
   layout->addStretch();
@@ -1189,7 +1187,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   QHBoxLayout *layout2=new QHBoxLayout(detaileditwidget_);
   layout2->addWidget(new QLabel("Selection:", detaileditwidget_));
   selBox_=new QComboBox(detaileditwidget_);
-  connect(selBox_, SIGNAL(destroyed(void)), this, SLOT(onDestruction(void)));
+  connect(selBox_, &QComboBox::destroyed, this, &SelectableSubsetParameterWrapper::onDestruction);
   BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
   {
 //     std::cout<<"inserted text:"<<pair.first<<std::endl;
@@ -1205,7 +1203,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
 
-  connect(apply, SIGNAL(clicked()), this, SLOT(onApply()));
+  connect(apply, &QPushButton::clicked, this, &SelectableSubsetParameterWrapper::onApply);
 //   connect(selBox_, SIGNAL(currentIndexChanged(const QString&)), 
 // 	  this, SLOT(onCurrentIndexChanged(const QString&)));
 }

@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <QtGlobal>
 #include <QInputDialog>
 
 #include "qmodeltree.h"
@@ -219,20 +220,20 @@ void QModelTree::replaceOrAdd(QTreeWidgetItem *parent, QTreeWidgetItem *newi, QT
 
 void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
 {
-  connect(newf, SIGNAL(show(QDisplayableModelTreeItem*)),
-          this, SIGNAL(show(QDisplayableModelTreeItem*)));
-  connect(newf, SIGNAL(hide(QDisplayableModelTreeItem*)),
-          this, SIGNAL(hide(QDisplayableModelTreeItem*)));
-  connect(newf, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)),
-          this, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)));
-  connect(newf, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)),
-          this, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)));
-  connect(newf, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
-          this, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)));
-  connect(newf, SIGNAL(insertParserStatementAtCursor(QString)),
-          this, SIGNAL(insertParserStatementAtCursor(QString)));
-  connect(newf, SIGNAL(jumpTo(QString)),
-          this, SIGNAL(jumpTo(QString)));
+  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::show),
+          this, &QModelTree::show);
+  connect(newf, QOverload<QDisplayableModelTreeItem*>::of(&QDisplayableModelTreeItem::hide),
+          this, &QModelTree::hide);
+  connect(newf, &QDisplayableModelTreeItem::setDisplayMode,
+          this, &QModelTree::setDisplayMode);
+  connect(newf, &QDisplayableModelTreeItem::setColor,
+          this, &QModelTree::setColor);
+  connect(newf, QOverload<QDisplayableModelTreeItem*,double>::of(&QDisplayableModelTreeItem::setResolution),
+          this, &QModelTree::setResolution);
+  connect(newf, &QDisplayableModelTreeItem::insertParserStatementAtCursor,
+          this, &QModelTree::insertParserStatementAtCursor);
+  connect(newf, &QDisplayableModelTreeItem::jumpTo,
+          this, &QModelTree::jumpTo);
 }
 
 QModelTree::QModelTree(QWidget* parent)
@@ -246,15 +247,15 @@ QModelTree::QModelTree(QWidget* parent)
   // handle right clicks
   connect
       (
-        this, SIGNAL(customContextMenuRequested(const QPoint &)),
-        this, SLOT(showContextMenu(const QPoint &))
+        this, &QModelTree::customContextMenuRequested,
+        this, &QModelTree::showContextMenu
         );
 
   // handle visible/hide checkbox changes
   connect
       (
-        this, SIGNAL(itemChanged(QTreeWidgetItem*,int)),
-        this, SLOT(onItemChanged(QTreeWidgetItem*,int))
+        this, &QModelTree::itemChanged,
+        this, &QModelTree::onItemChanged
         );
     
     int COL_NAME=QModelTreeItem::COL_NAME;
@@ -355,8 +356,8 @@ void QModelTree::onAddFeature(const QString& name, insight::cad::FeaturePtr smp,
     newf = new QFeatureItem(name, smp, is_component, cat, is_component);
     if (old) newf->copyDisplayProperties(old);
     connectDisplayableItem(newf);
-    connect(newf, SIGNAL(addEvaluation(const QString&, insight::cad::PostprocActionPtr, bool)),
-            this, SLOT(onAddEvaluation(const QString&, insight::cad::PostprocActionPtr, bool)));
+    connect(newf, &QFeatureItem::addEvaluation,
+            this, &QModelTree::onAddEvaluation);
   }
   replaceOrAdd(cat, newf, old);
   newf->initDisplay();

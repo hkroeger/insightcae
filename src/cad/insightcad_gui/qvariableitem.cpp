@@ -57,7 +57,7 @@ void QScalarVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
     
     a=new QAction("Insert name", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(insertName()));
+    connect(a, &QAction::triggered, this, &QScalarVariableItem::insertName);
     myMenu.addAction(a);
     
     myMenu.exec(gpos);
@@ -116,8 +116,8 @@ void QVectorVariableItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
     
     a=new QAction("Insert name", &myMenu);
-    connect(a, SIGNAL(triggered()),
-            this, SLOT(insertName()));
+    connect(a, &QAction::triggered,
+            this, &QVectorVariableItem::insertName);
     myMenu.addAction(a);
 
     myMenu.exec(gpos);

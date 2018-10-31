@@ -46,16 +46,16 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
         modeltree_=new QModelTree(this);
         addWidget(modeltree_);
 
-        connect(modeltree_, SIGNAL(show(QDisplayableModelTreeItem*)),
-                viewer_, SLOT(onShow(QDisplayableModelTreeItem*)));
-        connect(modeltree_, SIGNAL(hide(QDisplayableModelTreeItem*)),
-                viewer_, SLOT(onHide(QDisplayableModelTreeItem*)));
-        connect(modeltree_, SIGNAL(setDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)),
-                viewer_, SLOT(onSetDisplayMode(QDisplayableModelTreeItem*, AIS_DisplayMode)));
-        connect(modeltree_, SIGNAL(setColor(QDisplayableModelTreeItem*, Quantity_Color)),
-                viewer_, SLOT(onSetColor(QDisplayableModelTreeItem*, Quantity_Color)));
-        connect(modeltree_, SIGNAL(setResolution(QDisplayableModelTreeItem*, double)),
-                viewer_, SLOT(onSetResolution(QDisplayableModelTreeItem*, double)));
+        connect(modeltree_, &QModelTree::show/*(QDisplayableModelTreeItem*)*/,
+                viewer_, &QoccViewWidget::onShow);
+        connect(modeltree_, &QModelTree::hide/*(QDisplayableModelTreeItem*)*/,
+                viewer_, &QoccViewWidget::onHide);
+        connect(modeltree_, &QModelTree::setDisplayMode/*(QDisplayableModelTreeItem*, AIS_DisplayMode)*/,
+                viewer_, &QoccViewWidget::onSetDisplayMode);
+        connect(modeltree_, &QModelTree::setColor/*(QDisplayableModelTreeItem*, Quantity_Color)*/,
+                viewer_, &QoccViewWidget::onSetColor);
+        connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
+                viewer_, &QoccViewWidget::onSetResolution);
 
     }
     else
@@ -128,8 +128,8 @@ void ParameterEditorWidget::insertParameter(const QString& name, insight::Parame
         this
     );
      
-  QObject::connect(ptree_, SIGNAL(itemSelectionChanged()), dp, SLOT(onSelectionChanged()));
+  QObject::connect(ptree_, &QTreeWidget::itemSelectionChanged, dp, &DirectoryParameterWrapper::onSelectionChanged);
   
-  QObject::connect(this, SIGNAL(apply()), dp, SLOT(onApply()));
-  QObject::connect(this, SIGNAL(update()), dp, SLOT(onUpdate()));
+  QObject::connect(this, &ParameterEditorWidget::apply, dp, &DirectoryParameterWrapper::onApply);
+  QObject::connect(this, &ParameterEditorWidget::update, dp, &DirectoryParameterWrapper::onUpdate);
 }

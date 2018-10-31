@@ -223,8 +223,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
     connect
     (
-      ui->OFversion, SIGNAL(currentIndexChanged(const QString &)), 
-      this, SLOT(onOFVersionChanged(const QString &))
+      ui->OFversion, QOverload<const QString&>::of(&QComboBox::currentIndexChanged),
+      this, &isofCaseBuilderWindow::onOFVersionChanged
     );
     
     fillCaseElementList();
@@ -244,29 +244,29 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     
     QObject::connect 
     ( 
-        ui->selected_elements, SIGNAL ( itemSelectionChanged() ),
-        this, SLOT ( onItemSelectionChanged() ) 
+        ui->selected_elements, &QListWidget::itemSelectionChanged,
+        this, &isofCaseBuilderWindow::onItemSelectionChanged
     );
     
-    connect(ui->add_btn, SIGNAL(clicked()), this, SLOT(onAddElement()));
-    connect(ui->remove_btn, SIGNAL(clicked()), this, SLOT(onRemoveElement()));
-    connect(ui->up_btn, SIGNAL(clicked()), this, SLOT(onMoveElementUp()));
-    connect(ui->down_btn, SIGNAL(clicked()), this, SLOT(onMoveElementDown()));
+    connect(ui->add_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onAddElement);
+    connect(ui->remove_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onRemoveElement);
+    connect(ui->up_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementUp);
+    connect(ui->down_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementDown);
 
-    connect(ui->create_btn, SIGNAL(clicked()), this, SLOT(accept()));
-    connect(ui->cancel_btn, SIGNAL(clicked()), this, SLOT(reject()));
+    connect(ui->create_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::accept);
+    connect(ui->cancel_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::reject);
 
-    connect(ui->save_btn, SIGNAL(clicked()), this, SLOT(onSave()));
-    connect(ui->load_btn, SIGNAL(clicked()), this, SLOT(onLoad()));
+    connect(ui->save_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onSave);
+    connect(ui->load_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onLoad);
 
-    connect(ui->parse_bf_btn, SIGNAL(clicked()), this, SLOT(onParseBF()));
-    connect(ui->add_patch_btn, SIGNAL(clicked()), this, SLOT(onAddPatchManually()));
-    connect(ui->assign_bc_btn, SIGNAL(clicked()), this, SLOT(onAssignBC()));
+    connect(ui->parse_bf_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onParseBF);
+    connect(ui->add_patch_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onAddPatchManually);
+    connect(ui->assign_bc_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onAssignBC);
     
     QObject::connect 
     ( 
-        ui->patch_list, SIGNAL ( itemSelectionChanged() ),
-        this, SLOT ( onPatchSelectionChanged() ) 
+        ui->patch_list, &QListWidget::itemSelectionChanged,
+        this, &isofCaseBuilderWindow::onPatchSelectionChanged
     );
     
     casepath_ = boost::filesystem::current_path();
@@ -311,8 +311,8 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
       xml_node<> *OFEnode = rootnode->first_node("OFE");
       if (OFEnode)
       {
-	std::string name = OFEnode->first_attribute("name")->value();
-	ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
+        std::string name = OFEnode->first_attribute("name")->value();
+        ui->OFversion->setCurrentIndex(ui->OFversion->findText(name.c_str()));
       }
     }
     

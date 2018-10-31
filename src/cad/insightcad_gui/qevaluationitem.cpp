@@ -56,15 +56,15 @@ void QEvaluationItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
     
     a=new QAction("Shaded", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    connect(a, &QAction::triggered, this, &QEvaluationItem::shaded);
     myMenu.addAction(a);
     
     a=new QAction("Wireframe", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    connect(a, &QAction::triggered, this, &QEvaluationItem::wireframe);
     myMenu.addAction(a);
     
     a=new QAction("Randomize Color", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    connect(a, &QAction::triggered, this, &QEvaluationItem::randomizeColor);
     myMenu.addAction(a);
 
     myMenu.exec(gpos);

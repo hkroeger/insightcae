@@ -106,7 +106,7 @@ public:
 
     inline bool isUnsaved() const { return unsaved_; }
 
-protected slots:
+public slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
 
     /**
@@ -221,7 +221,7 @@ signals:
     /**
      * user status informations
      */
-    void displayStatusMessage(const QString&);
+    void displayStatusMessage(const QString&, double timeout=0);
 
     /**
      * @brief statusProgress

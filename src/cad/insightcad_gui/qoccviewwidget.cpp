@@ -1,18 +1,16 @@
+
+
+
+
 #include <cmath>
 #include <iostream>
- 
+
+#define QT_NO_OPENGL
 #include <QtCore>
 #include <QtGui>
 
-#include "cadtypes.h"
-#include "cadpostprocactions.h"
 
 #include "qoccinternal.h"
-#include "qoccviewwidget.h"
-#include "qmodeltree.h"
-#include "qdatumitem.h"
-
-
 #include <V3d_AmbientLight.hxx>
 #include <V3d_DirectionalLight.hxx>
 #include <V3d_PositionalLight.hxx>
@@ -20,11 +18,25 @@
 #include "AIS_Plane.hxx"
 #include "AIS_Point.hxx"
 
+#include "occtools.h"
 #include "pointertransient.h"
 
-#include "occtools.h"
+
+#include "cadtypes.h"
+#include "cadpostprocactions.h"
+
+#include "qoccviewwidget.h"
+#include "qmodeltree.h"
+#include "qdatumitem.h"
 #include "datum.h"
 
+
+
+#include <QColorDialog>
+#include <QFileDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QPushButton>
 
 QoccViewWidget::QoccViewWidget
 ( 
@@ -77,12 +89,12 @@ QoccViewWidget::QoccViewWidget
   
   // Create a rubber band box for later mouse activity
   myRubberBand = new QRubberBand( QRubberBand::Rectangle, this );
-  if (myRubberBand)
-    {
-      // If you don't set a style, QRubberBand doesn't work properly
-      // take this line out if you don't believe me.
-      myRubberBand->setStyle( (QStyle*) new QPlastiqueStyle() );
-    }
+//  if (myRubberBand)
+//    {
+//      // If you don't set a style, QRubberBand doesn't work properly
+//      // take this line out if you don't believe me.
+//      myRubberBand->setStyle( (QStyle*) new QPlastiqueStyle() );
+//    }
 
   connect
       (
@@ -789,9 +801,9 @@ void QoccViewWidget::hiddenLineOff()
 {
   if(!myView.IsNull())
     {
-      QApplication::setOverrideCursor( Qt::WaitCursor );
+      QGuiApplication::setOverrideCursor( Qt::WaitCursor );
       myView->SetComputedMode( Standard_False );
-      QApplication::restoreOverrideCursor();
+      QGuiApplication::restoreOverrideCursor();
     }
 }
 
@@ -799,9 +811,9 @@ void QoccViewWidget::hiddenLineOn()
 {
   if(!myView.IsNull())
     {
-      QApplication::setOverrideCursor( Qt::WaitCursor );
+      QGuiApplication::setOverrideCursor( Qt::WaitCursor );
       myView->SetComputedMode( Standard_True );
-      QApplication::restoreOverrideCursor();
+      QGuiApplication::restoreOverrideCursor();
     }
 }
 
@@ -1962,7 +1974,7 @@ void OCCViewScreenshots::screenShot()
   files.append(fileName.absoluteFilePath());
   cout << "Exporting screenshot to: " << fileName.absoluteFilePath().toStdString() << endl;
   char fName[fileName.absoluteFilePath().length()+10];
-  strcpy(fName, fileName.absoluteFilePath().toAscii().data());
+  strcpy(fName, fileName.absoluteFilePath().toStdString().c_str());
   const Handle_V3d_View& myView = occWidget_->getView();
   myView->Dump(fName);
 }

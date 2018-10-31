@@ -23,7 +23,7 @@
 #include <QDir>
 #include <QSplashScreen>
 #include <QDialog>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include <QMessageBox>
 
 #ifndef Q_MOC_RUN

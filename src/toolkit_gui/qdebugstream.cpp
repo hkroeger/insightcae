@@ -39,7 +39,7 @@ Q_DebugStream::~Q_DebugStream()
 
 void Q_DebugStream::registerQDebugMessageHandler()
 {
-  qInstallMsgHandler ( myQDebugMessageHandler );
+  qInstallMessageHandler ( myQDebugMessageHandler );
 }
 
 

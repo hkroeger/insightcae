@@ -28,6 +28,8 @@
 #include "qoccviewwidget.h"
 #include "qmodeltree.h"
 
+#undef None
+#undef Bool
 #include <QWidget>
 #include <QSplitter>
 #include <QTreeWidget>

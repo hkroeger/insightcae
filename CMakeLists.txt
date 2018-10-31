@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
 
 enable_language (C)
 enable_language (CXX)
@@ -735,7 +735,7 @@ endmacro()
 macro (add_PDL TARGETNAME HEADERS)
   foreach (_hdr ${HEADERS})
     get_filename_component(BN ${_hdr} NAME_WE)
-    message(STATUS ${_hdr} ${BN})
+    #message(STATUS ${_hdr} ${BN})
     list (APPEND ${TARGETNAME}_TIMESTAMPS ${BN}_pdl.timestamp)
     ADD_CUSTOM_COMMAND( OUTPUT ${BN}_pdl.timestamp
 			COMMAND ${CMAKE_SOURCE_DIR}/gen-sets.py "${_hdr}" "${CMAKE_BINARY_DIR}/bin/pdl"

@@ -31,6 +31,7 @@
 #include "base/boost_include.h"
 
 #include <QSignalMapper>
+#include <QStatusBar>
 
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"

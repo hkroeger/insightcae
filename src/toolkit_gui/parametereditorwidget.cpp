@@ -22,7 +22,6 @@
 #include "parameterwrapper.h"
 
 
-
 #include <QSplitter>
 
 

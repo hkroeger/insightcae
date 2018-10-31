@@ -56,6 +56,8 @@
 #include <Xw_Window.hxx>
 #endif
 #undef Opposite
+#undef Bool
+#undef None
 
 #ifdef QOCC_STATIC
 #define QOCC_DECLSPEC

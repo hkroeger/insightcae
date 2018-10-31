@@ -1,15 +1,19 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+
 #include "clear_occ_macros.h"
+#define QT_NO_OPENGL
 #include <QtCore>
 #include <QtGui>
+#include <QDialog>
+//#include <QtOpenGL/QGLWidget>
+
+
 #include "qocc.h"
 #include "AIS_Plane.hxx"
-#include <QtOpenGL/QGLWidget>
 
 #include "qmodelstepitem.h"
-
 
 class QDisplayableModelTreeItem;
 
@@ -81,7 +85,7 @@ public:
 
   //Overrides
   QPaintEngine* paintEngine() const;
-  QToolBar*	  myToolBar;
+  //QToolBar*	  myToolBar;
 
   void redraw( bool isPainting = false );
 

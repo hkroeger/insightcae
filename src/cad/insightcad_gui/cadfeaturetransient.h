@@ -21,9 +21,11 @@
 #ifndef INSIGHT_CAD_CADFEATURETRANSIENT_H
 #define INSIGHT_CAD_CADFEATURETRANSIENT_H
 
+#ifndef Q_MOC_RUN
 #include "cadfeature.h"
 #if (OCC_VERSION_MAJOR<7)
 #include "Standard_Transient_proto.hxx"
+#endif
 #endif
 
 namespace insight {

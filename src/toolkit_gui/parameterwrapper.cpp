@@ -22,6 +22,8 @@
 
 #include <typeinfo>
 
+#undef None
+#undef Bool
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -30,7 +32,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QInputDialog>
-#include <QWebView>
+#include <QtWebKitWidgets/QWebView>
 
 #ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"

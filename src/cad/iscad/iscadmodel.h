@@ -25,6 +25,11 @@
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QTabWidget>
+#include <QSplitter>
+#include <QMenu>
+#include <QMenuBar>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"

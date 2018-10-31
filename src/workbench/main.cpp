@@ -22,7 +22,7 @@
 #include <QLocale>
 #include <QDir>
 #include <QSplashScreen>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include "base/boost_include.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>

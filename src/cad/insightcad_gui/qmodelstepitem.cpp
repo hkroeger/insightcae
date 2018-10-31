@@ -1,4 +1,5 @@
 /*
+ *
  * This file is part of Insight CAE, a workbench for Computer-Aided Engineering
  * Copyright (C) 2014  Hannes Kroeger <hannes@kroegeronline.net>
  *
@@ -17,16 +18,15 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "qmodelstepitem.h"
-
-#include "pointertransient.h"
-#include "cadpostprocactions.h"
-
 #include <QFileDialog>
 #include <QMenu>
 #include <QAction>
 
-
+#ifndef Q_MOC_RUN
+#include "qmodelstepitem.h"
+#include "pointertransient.h"
+#include "cadpostprocactions.h"
+#endif
 
 Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
 {

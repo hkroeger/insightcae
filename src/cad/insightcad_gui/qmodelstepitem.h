@@ -20,6 +20,8 @@
 #ifndef QMODELSTEPITEM_H
 #define QMODELSTEPITEM_H
 
+#undef Bool
+
 #include <QThread>
 #include <QListWidgetItem>
 

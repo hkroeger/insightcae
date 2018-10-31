@@ -26,6 +26,13 @@
 #include <QFileSystemModel>
 #include <QTabWidget>
 #include <QProgressBar>
+#include <QAction>
+#include <QPushButton>
+#include <QSplitter>
+#include <QMenu>
+#include <QMenuBar>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"

@@ -30,6 +30,11 @@
 #include "base/boost_include.h"
 
 #include <QSignalMapper>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGroupBox>
+#include <QPushButton>
+#include <QCheckBox>
 
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"

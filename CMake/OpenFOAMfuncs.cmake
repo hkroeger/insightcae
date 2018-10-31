@@ -11,7 +11,7 @@ endmacro()
 
 macro(detectEnvVar prefix varname outvarname)
  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/getOFCfgVar ${${prefix}_BASHRC} print-${varname} OUTPUT_VARIABLE ${prefix}_${outvarname})
- message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
+ #message(STATUS "Detected value of env var " ${varname} "=" ${${prefix}_${outvarname}})
 endmacro()
 
 macro(detectEnvVars prefix)
@@ -22,7 +22,7 @@ endmacro()
 
 macro(detectDepLib prefix fromlib pattern)
  execute_process(COMMAND ${CMAKE_SOURCE_DIR}/CMake/findInDepLibs ${${prefix}_BASHRC} ${fromlib} "${pattern}" OUTPUT_VARIABLE addlibs)
- message(STATUS "detected for ${pattern} in dependencies of ${fromlib}: " ${addlibs})
+ #message(STATUS "detected for ${pattern} in dependencies of ${fromlib}: " ${addlibs})
  LIST(APPEND ${prefix}_LIBRARIES "${addlibs}")
 endmacro()
 

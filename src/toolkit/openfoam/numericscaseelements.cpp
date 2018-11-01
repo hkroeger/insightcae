@@ -1713,6 +1713,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   grad["grad(p_rgh)"]="Gauss linear";
   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   grad["grad("+alphaname_+")"]="localFaceLimited "+bgrads+" UBlendingFactor";
+  grad["grad(omega)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
+  grad["grad(epsilon)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
+  grad["grad(k)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -1726,10 +1729,10 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss linear"; //interfaceCompression";
-  div["div(phi,k)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,k)"]		= "Gauss linearUpwind grad(k)";
 //   div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
-  div["div(phi,epsilon)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]		= "Gauss upwind";
+  div["div(phi,epsilon)"]	= "Gauss linearUpwind grad(epsilon)";
+  div["div(phi,omega)"]		= "Gauss linearUpwind grad(omega)";
   div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
   div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
   div["div(R)"]			= "Gauss linear";

@@ -34,7 +34,7 @@ public:
     static void registerQDebugMessageHandler();
     
 private:
-    static void myQDebugMessageHandler(QtMsgType, const char *msg);
+    static void myQDebugMessageHandler(QtMsgType, const QMessageLogContext&, const QString& msg);
     void sendCurLine();
 
 protected:

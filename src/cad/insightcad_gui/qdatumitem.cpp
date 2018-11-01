@@ -48,15 +48,15 @@ void QDatumItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
     
     a=new QAction("Shaded", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(shaded()));
+    connect(a, &QAction::triggered, this, &QDatumItem::shaded);
     myMenu.addAction(a);
     
     a=new QAction("Wireframe", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(wireframe()));
+    connect(a, &QAction::triggered, this, &QDatumItem::wireframe);
     myMenu.addAction(a);
     
     a=new QAction("Randomize Color", &myMenu);
-    connect(a, SIGNAL(triggered()), this, SLOT(randomizeColor()));
+    connect(a, &QAction::triggered, this, &QDatumItem::randomizeColor);
     myMenu.addAction(a);
 
     myMenu.exec(gpos);

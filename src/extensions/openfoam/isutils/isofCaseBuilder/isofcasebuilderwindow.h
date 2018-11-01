@@ -21,13 +21,15 @@
 #ifndef ISOFCREATENUMERICSWINDOW_H
 #define ISOFCREATENUMERICSWINDOW_H
 
-
+#include <QtGui>
+#include <QWidget>
 #include <QListWidgetItem>
 
 #ifndef Q_MOC_RUN
 #include "openfoam/numericscaseelements.h"
 #include "openfoam/openfoamcase.h"
 #endif
+
 #include "parametereditorwidget.h"
 
 

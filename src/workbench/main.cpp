@@ -22,7 +22,7 @@
 #include <QLocale>
 #include <QDir>
 #include <QSplashScreen>
-#include <QtGui/QApplication>
+#include <QApplication>
 #include "base/boost_include.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -43,7 +43,7 @@ using namespace std;
 class I : public QThread
 {
     QSplashScreen* sp_;
-    QWidget win_;
+    QWidget* win_;
     
 public:
     I(QSplashScreen* sp, QWidget* win) :sp_(sp), win_(win) 
@@ -52,7 +52,7 @@ public:
     void run() 
     {
         QThread::sleep(3);
-        sp_->finish(&win_);
+        sp_->finish(win_);
     }
 };
 

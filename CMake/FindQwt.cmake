@@ -81,12 +81,12 @@
 
 
    find_library ( QWT_LIBRARY
-     NAMES qwt qwt-qt3 qwt-qt4 qwt-qt5
+     NAMES qwt-qt5
      HINTS ENV LD_LIBRARY_PATH
    )
 
    set ( QWT_LIBRARIES ${QWT_LIBRARY} )
-
+   message(STATUS "QWT-LIB: " ${QWT_LIBRARIES})
 
    # try to guess root dir from include dir
    if ( QWT_INCLUDE_DIR )

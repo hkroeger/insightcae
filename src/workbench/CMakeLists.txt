@@ -1,23 +1,33 @@
 project(workbench)
 
-find_package(Qt4 COMPONENTS QtCore QtGui QtWebKit REQUIRED)
-find_package(Qwt REQUIRED)
-
 set(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+
+find_package(Qt5Widgets CONFIG REQUIRED)
+find_package(Qwt REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR} ${QWT_INCLUDE_DIR})
 
 set(workbench_SRCS resultelementwrapper.cpp graphprogressdisplayer.cpp analysisform.cpp newanalysisdlg.cpp workbench.cpp main.cpp)
 SET(workbench_FORMS newanalysisdlg.ui analysisform.ui xml_display.ui)
-QT4_WRAP_UI(workbench_FORMS_HEADERS ${workbench_FORMS})
-qt4_automoc(${workbench_SRCS})
 SET(workbench_RCCS workbench.qrc)
 
-add_executable(workbench ${workbench_SRCS} ${workbench_FORMS_HEADERS} ${workbench_RCCS})
-target_link_libraries(workbench ${Boost_LIBRARIES} toolkit toolkit_gui
- Qt4::QtCore Qt4::QtGui Qt4::QtWebKit
+add_executable(workbench ${workbench_SRCS} ${workbench_FORMS} ${workbench_RCCS})
+
+target_link_libraries(workbench
+ toolkit toolkit_gui
+ Qt5::Widgets
+ ${Boost_LIBRARIES}
  ${QWT_LIBRARY} ${QWT_LIBRARIES}
- )
+)
+
+target_include_directories(workbench
+  PUBLIC ${QT_INCLUDES}
+  PUBLIC ${QWT_INCLUDE_DIR}
+  PUBLIC ${Boost_INCLUDE_DIR}
+  PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 install(TARGETS workbench RUNTIME DESTINATION bin)

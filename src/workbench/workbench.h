@@ -21,8 +21,8 @@
 #ifndef workbench_H
 #define workbench_H
 
-#include <QtGui/QMainWindow>
-#include <QtGui/QMdiArea>
+#include <QMainWindow>
+#include <QMdiArea>
 
 #include <QApplication>
 #include <QMenuBar>

@@ -31,6 +31,7 @@
 #include "base/boost_include.h"
 
 #include <QSignalMapper>
+#include <QStatusBar>
 
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"
@@ -85,78 +86,78 @@ void ISCADMainWindow::connectMenuToModel(ISCADModelEditor* me, ISCADModelEditor*
 
     if (me)
     {
-        connect(act_save_, SIGNAL(triggered()),
-                me->model(), SLOT(saveModel()));
-        connect(act_saveas_, SIGNAL(triggered()),
-                me->model(), SLOT(saveModelAs()));
-        connect(act_rebuild_, SIGNAL(triggered()),
-                me->model(), SLOT(rebuildModel()));
-        connect(act_rebuild_UTC_, SIGNAL(triggered()),
-                me->model(), SLOT(rebuildModelUpToCursor()));
-        connect(act_insert_section_comment_, SIGNAL(triggered()),
-                me->model(), SLOT(insertSectionCommentAtCursor()));
-        connect(act_insert_feat_, SIGNAL(triggered()),
-                me->model(), SLOT(insertFeatureAtCursor()));
-        connect(act_insert_component_name_, SIGNAL(triggered()),
-                me->model(), SLOT(insertComponentNameAtCursor()));
-        connect(act_clear_cache_, SIGNAL(triggered()),
-                me->model(), SLOT(clearCache()));
+        connect(act_save_, &QAction::triggered,
+                me->model(), &ISCADModel::saveModel);
+        connect(act_saveas_, &QAction::triggered,
+                me->model(), &ISCADModel::saveModelAs);
+        connect(act_rebuild_, &QAction::triggered,
+                me->model(), &ISCADModel::rebuildModel);
+        connect(act_rebuild_UTC_, &QAction::triggered,
+                me->model(), &ISCADModel::rebuildModelUpToCursor);
+        connect(act_insert_section_comment_, &QAction::triggered,
+                me->model(), &ISCADModel::insertSectionCommentAtCursor);
+        connect(act_insert_feat_, &QAction::triggered,
+                me->model(), &ISCADModel::insertFeatureAtCursor);
+        connect(act_insert_component_name_, &QAction::triggered,
+                me->model(), &ISCADModel::insertComponentNameAtCursor);
+        connect(act_clear_cache_, &QAction::triggered,
+                me->model(), &ISCADModel::clearCache);
 
-        connect(act_fit_all_, SIGNAL(triggered()),
-                me->viewer(), SLOT(fitAll()));
+        connect(act_fit_all_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::fitAll);
 
-        connect(act_view_plusx_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewRight()));
-        connect(act_view_minusx_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewLeft()));
-        connect(act_view_plusy_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewBack()));
-        connect(act_view_minusy_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewFront()));
-        connect(act_view_plusz_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewTop()));
-        connect(act_view_minusz_, SIGNAL(triggered()),
-                me->viewer(), SLOT(viewBottom()));
+        connect(act_view_plusx_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewRight);
+        connect(act_view_minusx_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewLeft);
+        connect(act_view_plusy_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewBack);
+        connect(act_view_minusy_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewFront);
+        connect(act_view_plusz_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewTop);
+        connect(act_view_minusz_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::viewBottom);
 
-        connect(act_toggle_grid_, SIGNAL(triggered()),
-                me->viewer(), SLOT(toggleGrid()));
-        connect(act_toggle_clipxy_, SIGNAL(triggered()),
-                me->viewer(), SLOT(toggleClipXY()));
-        connect(act_toggle_clipyz_, SIGNAL(triggered()),
-                me->viewer(), SLOT(toggleClipYZ()));
-        connect(act_toggle_clipxz_, SIGNAL(triggered()),
-                me->viewer(), SLOT(toggleClipXZ()));
-        connect(act_background_color_, SIGNAL(triggered()),
-                me->viewer(), SLOT(background()));
-        connect(act_display_all_shaded_, SIGNAL(triggered()),
-                me->modeltree(), SLOT(allShaded()));
-        connect(act_display_all_wire_, SIGNAL(triggered()),
-                me->modeltree(), SLOT(allWireframe()));
-        connect(act_reset_shading_, SIGNAL(triggered()),
-                me->modeltree(), SLOT(resetViz()));
+        connect(act_toggle_grid_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::toggleGrid);
+        connect(act_toggle_clipxy_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::toggleClipXY);
+        connect(act_toggle_clipyz_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::toggleClipYZ);
+        connect(act_toggle_clipxz_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::toggleClipXZ);
+        connect(act_background_color_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::background);
+        connect(act_display_all_shaded_, &QAction::triggered,
+                me->modeltree(), &QModelTree::allShaded);
+        connect(act_display_all_wire_, &QAction::triggered,
+                me->modeltree(), &QModelTree::allWireframe);
+        connect(act_reset_shading_, &QAction::triggered,
+                me->modeltree(), &QModelTree::resetViz);
 
-        connect(act_measure_distance_, SIGNAL(triggered()),
-                me->viewer(), SLOT(onMeasureDistance()));
+        connect(act_measure_distance_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::onMeasureDistance);
 
-        connect(act_sel_pts_, SIGNAL(triggered()),
-                me->viewer(), SLOT(onSelectPoints()));
+        connect(act_sel_pts_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::onSelectPoints);
 
-        connect(act_sel_edgs_, SIGNAL(triggered()),
-                me->viewer(), SLOT(onSelectEdges()));
+        connect(act_sel_edgs_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::onSelectEdges);
 
-        connect(act_sel_faces_, SIGNAL(triggered()),
-                me->viewer(), SLOT(onSelectFaces()));
+        connect(act_sel_faces_, &QAction::triggered,
+                me->viewer(), &QoccViewWidget::onSelectFaces);
 
         me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
 
-        connect(bgparsestopbtn_, SIGNAL(clicked()),
-                me->model(), SLOT(onCancelRebuild()));
+        connect(bgparsestopbtn_, &QPushButton::clicked,
+                me->model(), &ISCADModel::onCancelRebuild);
 
-        connect(me->model(), SIGNAL(modelUpdated(int)),
-                this, SLOT(onUpdateClipPlaneMenu(int)));
+        connect(me->model(), &ISCADModel::modelUpdated,
+                this, &ISCADMainWindow::onUpdateClipPlaneMenu);
         
-        connect(me->model(), SIGNAL(openModel(const boost::filesystem::path&)),
-                this, SLOT(onLoadModelFile(const boost::filesystem::path&)));
+        connect(me->model(), &ISCADModel::openModel,
+                this, &ISCADMainWindow::onLoadModelFile);
 
       }
 }
@@ -250,8 +251,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     if (!nolog)
     {
       logger_=new Q_DebugStream(std::cout); // ceases to work with multithreaded bg parsing
-      connect(logger_, SIGNAL(appendText(const QString&)),
-              log_, SLOT(append(const QString&)));
+      connect(logger_, &Q_DebugStream::appendText,
+              log_, &QTextEdit::append);
 
     }
     
@@ -270,17 +271,17 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     fileTree_->expandAll();
     for (int i = 1; i < fileModel_->columnCount(); ++i)
         fileTree_->hideColumn(i);
-    connect(fileTree_, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(onFileClicked(const QModelIndex &)));
+    connect(fileTree_, &QTreeView::doubleClicked, this, &ISCADMainWindow::onFileClicked);
     fileTree_->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(fileTree_, SIGNAL(customContextMenuRequested(QPoint)),
-            this, SLOT(onShowFileTreeContextMenu(QPoint)));
+    connect(fileTree_, &QTreeView::customContextMenuRequested,
+            this, &ISCADMainWindow::onShowFileTreeContextMenu);
     spl->addWidget(fileTree_);
     
     modelTabs_=new QTabWidget;
     modelTabs_->setTabsClosable(true);
     spl->addWidget(modelTabs_);
-    connect(modelTabs_, SIGNAL(currentChanged(int)), this, SLOT(activateModel(int)));
-    connect(modelTabs_, SIGNAL(tabCloseRequested(int)), this, SLOT(onCloseModel(int)));
+    connect(modelTabs_, &QTabWidget::currentChanged, this, &ISCADMainWindow::activateModel);
+    connect(modelTabs_, &QTabWidget::tabCloseRequested, this, &ISCADMainWindow::onCloseModel);
 
     {
       QList<int> sizes;
@@ -308,11 +309,11 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
 
     act=new QAction(("&New"), this);
     fmenu->addAction(act);
-    connect(act, SIGNAL(triggered()), this, SLOT(onNewModel()));
+    connect(act, &QAction::triggered, this, &ISCADMainWindow::onNewModel);
 
     act_load_=new QAction(("&Load"), this);
     fmenu->addAction(act_load_);
-    connect(act_load_, SIGNAL(triggered()), this, SLOT(loadModel()));
+    connect(act_load_, &QAction::triggered, this, &ISCADMainWindow::loadModel);
 
     act_save_ = new QAction(("&Save"), this);
     act_save_->setShortcut(Qt::ControlModifier + Qt::Key_S);
@@ -325,7 +326,7 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act =new QAction(("&Quit"), this);
     act->setShortcut(Qt::AltModifier + Qt::Key_F4);
     fmenu->addAction(act);
-    connect(act, SIGNAL(triggered()), this, SLOT(close()));
+    connect(act, &QAction::triggered, this, &ISCADMainWindow::close);
 
 
     act_rebuild_ = new QAction(("&Rebuild model"), this);
@@ -460,15 +461,15 @@ ISCADModelEditor* ISCADMainWindow::insertEmptyModel(bool bgparsing)
     int idx = modelTabs_->addTab(me, "(unnamed)");
     modelTabs_->setCurrentIndex(idx);
     
-    connect(me->model(), SIGNAL(displayStatusMessage(const QString&)),
-            statusBar(), SLOT(showMessage(const QString&)));
-    connect(me->viewer(), SIGNAL(sendStatus(const QString&)),
-            statusBar(), SLOT(showMessage(const QString&)));
-    connect(me->model(), SIGNAL(statusProgress(int, int)),
-            this, SLOT(updateProgress(int, int)));
+    connect(me->model(), &ISCADModel::displayStatusMessage,
+            statusBar(), &QStatusBar::showMessage);
+    connect(me->viewer(), &QoccViewWidget::sendStatus,
+            statusBar(), &QStatusBar::showMessage);
+    connect(me->model(), &ISCADModel::statusProgress,
+            this, &ISCADMainWindow::updateProgress);
 
-    connect(me, SIGNAL(updateTabTitle(ISCADModelEditor*, const boost::filesystem::path&, bool)),
-            this, SLOT(onUpdateTabTitle(ISCADModelEditor*, const boost::filesystem::path&, bool)));
+    connect(me, &ISCADModelEditor::updateTabTitle,
+            this, &ISCADMainWindow::onUpdateTabTitle);
 
     return me;
 }
@@ -546,25 +547,27 @@ void ISCADMainWindow::onShowFileTreeContextMenu(const QPoint& p)
     
     a=new QAction("Create new file...", &myMenu);
     mapper = new QSignalMapper(a) ;
-    connect(a, SIGNAL(triggered()), mapper, SLOT(map())) ;
+    connect(a, &QAction::triggered,
+            mapper, QOverload<>::of(&QSignalMapper::map)) ;
     QString dir;
     if (fi.isDir())
         dir=fi.absoluteFilePath();
     else
         dir=fi.absolutePath();
     mapper->setMapping(a, dir);
-    connect(mapper, SIGNAL(mapped(const QString &)),
-            this, SLOT(onCreateNewModel(const QString&)));
+    connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
+            this, &ISCADMainWindow::onCreateNewModel);
     myMenu.addAction(a);
 
     if (!fi.isDir())
     {
         a=new QAction("Delete file "+fi.baseName(), &myMenu);
         mapper = new QSignalMapper(a) ;
-        connect(a, SIGNAL(triggered()), mapper, SLOT(map())) ;
+        connect(a, &QAction::triggered,
+                mapper, QOverload<>::of(&QSignalMapper::map) );
         mapper->setMapping(a, fi.absoluteFilePath());
-        connect(mapper, SIGNAL(mapped(const QString &)),
-                this, SLOT(onDeleteModel(const QString&)));
+        connect(mapper, QOverload<const QString&>::of(&QSignalMapper::mapped),
+                this, &ISCADMainWindow::onDeleteModel);
         myMenu.addAction(a);
     }
 

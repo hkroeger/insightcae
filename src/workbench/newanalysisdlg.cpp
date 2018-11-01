@@ -42,8 +42,8 @@ newAnalysisDlg::newAnalysisDlg(QWidget* parent)
 
   this->setWindowTitle("Create New Analysis");
   
-  connect(this->ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-  connect(this->ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+  connect(this->ui->buttonBox, &QDialogButtonBox::accepted, this, &newAnalysisDlg::accept);
+  connect(this->ui->buttonBox, &QDialogButtonBox::rejected, this, &newAnalysisDlg::reject);
   
   fillAnalysisList();
 }

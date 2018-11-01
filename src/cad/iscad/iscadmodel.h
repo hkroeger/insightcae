@@ -25,6 +25,11 @@
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QTabWidget>
+#include <QSplitter>
+#include <QMenu>
+#include <QMenuBar>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "qoccviewercontext.h"
 #include "qoccviewwidget.h"
@@ -101,7 +106,7 @@ public:
 
     inline bool isUnsaved() const { return unsaved_; }
 
-protected slots:
+public slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);
 
     /**
@@ -216,7 +221,7 @@ signals:
     /**
      * user status informations
      */
-    void displayStatusMessage(const QString&);
+    void displayStatusMessage(const QString&, double timeout=0);
 
     /**
      * @brief statusProgress

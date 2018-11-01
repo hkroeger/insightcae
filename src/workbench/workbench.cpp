@@ -20,10 +20,10 @@
 
 #include "workbench.h"
 
-#include <QtGui/QLabel>
-#include <QtGui/QMenu>
-#include <QtGui/QMenuBar>
-#include <QtGui/QAction>
+#include <QLabel>
+#include <QMenu>
+#include <QMenuBar>
+#include <QAction>
 #include <QMessageBox>
 #include <QFileDialog>
 
@@ -37,7 +37,8 @@
 WorkbenchApplication::WorkbenchApplication(int &argc, char **argv)
 : QApplication(argc, argv)
 {
-  connect(this, SIGNAL(exceptionOcurred(QString, QString)), this, SLOT(displayExceptionNotification(QString, QString)));
+  connect(this, &WorkbenchApplication::exceptionOcurred,
+          this, &WorkbenchApplication::displayExceptionNotification);
 }
 
 WorkbenchApplication::~WorkbenchApplication()
@@ -107,19 +108,19 @@ workbench::workbench()
     
     mdiArea_ = new QMdiArea(this);
     setCentralWidget( mdiArea_ );
-    connect(mdiArea_, SIGNAL(subWindowActivated(QMdiSubWindow *)),
-            this, SLOT(onSubWindowActivated(QMdiSubWindow *)));
+    connect(mdiArea_, &QMdiArea::subWindowActivated,
+            this, &workbench::onSubWindowActivated);
     
     QMenu *analysisMenu = menuBar()->addMenu( "&Analysis" );
 
     QAction* a = new QAction("New...", this); 
     a->setShortcut(Qt::ControlModifier + Qt::Key_N);
-    connect(a, SIGNAL(triggered()), SLOT(newAnalysis()) );
+    connect(a, &QAction::triggered, this, &workbench::newAnalysis );
     analysisMenu->addAction( a );
     
     a = new QAction("Open...", this); 
     a->setShortcut(Qt::ControlModifier + Qt::Key_O);
-    connect(a, SIGNAL(triggered()), SLOT(onOpenAnalysis()) );
+    connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
     analysisMenu->addAction( a );
 }
 

@@ -78,13 +78,13 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     QVBoxLayout* vbl=new QVBoxLayout;
     hbl->addLayout(vbl);
     save_log_btn_=new QPushButton("Save...");
-    connect(save_log_btn_, SIGNAL(clicked()), this, SLOT(saveLog()));
+    connect(save_log_btn_, &QPushButton::clicked, this, &AnalysisForm::saveLog);
     send_log_btn_=new QPushButton("Email...");
-    connect(send_log_btn_, SIGNAL(clicked()), this, SLOT(sendLog()));
+    connect(send_log_btn_, &QPushButton::clicked, this, &AnalysisForm::sendLog);
     clear_log_btn_=new QPushButton("Clear");
-    connect(clear_log_btn_, SIGNAL(clicked()), this, SLOT(clearLog()));
+    connect(clear_log_btn_, &QPushButton::clicked, this, &AnalysisForm::clearLog);
     auto_scroll_down_btn_=new QPushButton("Auto Scroll");
-    connect(auto_scroll_down_btn_, SIGNAL(clicked()), this, SLOT(autoScrollLog()));
+    connect(auto_scroll_down_btn_, &QPushButton::clicked, this, &AnalysisForm::autoScrollLog);
     vbl->addWidget(save_log_btn_);
     vbl->addWidget(send_log_btn_);
     vbl->addWidget(clear_log_btn_);
@@ -93,13 +93,13 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     ui->runTabLayout->addWidget(spl);
     
     cout_log_ = new Q_DebugStream(std::cout);
-    connect(cout_log_, SIGNAL(appendText(const QString&)), log_, SLOT(appendPlainText(const QString&)));
+    connect(cout_log_, &Q_DebugStream::appendText, log_, &QPlainTextEdit::appendPlainText);
     cerr_log_ = new Q_DebugStream(std::cerr);
-    connect(cerr_log_, SIGNAL(appendText(const QString&)), log_, SLOT(appendPlainText(const QString&)));
+    connect(cerr_log_, &Q_DebugStream::appendText, log_, &QPlainTextEdit::appendPlainText);
 
     this->setWindowTitle(analysisName_.c_str());
-    connect(ui->runBtn, SIGNAL(clicked()), this, SLOT(onRunAnalysis()));
-    connect(ui->killBtn, SIGNAL(clicked()), this, SLOT(onKillAnalysis()));
+    connect(ui->runBtn, &QPushButton::clicked, this, &AnalysisForm::onRunAnalysis);
+    connect(ui->killBtn, &QPushButton::clicked, this, &AnalysisForm::onKillAnalysis);
 
     insight::ParameterSet_VisualizerPtr viz;
     insight::ParameterSet_ValidatorPtr vali;
@@ -117,8 +117,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     peditor_=new ParameterEditorWidget(parameters_, ui->inputTab, vali, viz);
     ui->inputTabLayout->addWidget(peditor_);
     peditor_->insertParameter("execution directory", executionPathParameter_);
-    QObject::connect(this, SIGNAL(apply()), peditor_, SLOT(onApply()));
-    QObject::connect(this, SIGNAL(update()), peditor_, SLOT(onUpdate()));
+    QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
+    QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
 
     rtroot_=new QTreeWidgetItem(0);
     rtroot_->setText(0, "Results");
@@ -142,35 +142,35 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
     menu_parameters_=mainMenu_->addMenu("&Parameters");
     if (!act_save_as_) act_save_as_=new QAction("&Save parameter set as...", this);
     menu_parameters_->addAction( act_save_as_ );
-    connect( act_save_as_, SIGNAL(activated()), this, SLOT(onSaveParameters()) );
+    connect( act_save_as_, &QAction::triggered, this, &AnalysisForm::onSaveParameters );
     if (!act_merge_) act_merge_=new QAction("&Merge other parameter set into current...", this);
     menu_parameters_->addAction( act_merge_ );
-    connect( act_merge_, SIGNAL(activated()), this, SLOT(onLoadParameters()) );
+    connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
     if (!act_param_show_) act_param_show_=new QAction("&Show in XML format", this);
     menu_parameters_->addAction( act_param_show_ );
-    connect( act_param_show_, SIGNAL(activated()), this, SLOT(onShowParameterXML()) );
+    connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
 
 
     menu_actions_=mainMenu_->addMenu("&Actions");
 
     if (!act_run_) act_run_=new QAction("&Run Analysis", this);
     menu_actions_->addAction( act_run_ );
-    connect( act_run_, SIGNAL(activated()), this, SLOT(onRunAnalysis()) );
+    connect( act_run_, &QAction::triggered, this, &AnalysisForm::onRunAnalysis );
     if (!act_kill_) act_kill_=new QAction("&Stop Analysis", this);
     menu_actions_->addAction( act_kill_ );
-    connect( act_kill_, SIGNAL(activated()), this, SLOT(onKillAnalysis()) );
+    connect( act_kill_, &QAction::triggered, this, &AnalysisForm::onKillAnalysis );
 
     menu_results_=mainMenu_->addMenu("&Results");
 
     if (!act_save_rpt_) act_save_rpt_=new QAction("Create &report...", this);
     menu_results_->addAction( act_save_rpt_ );
-    connect( act_save_rpt_, SIGNAL(activated()), this, SLOT(onCreateReport()) );
+    connect( act_save_rpt_, &QAction::triggered, this, &AnalysisForm::onCreateReport );
 
     menu_tools_=mainMenu_->addMenu("&Tools");
     menu_tools_of_=menu_tools_->addMenu("&OpenFOAM");
     if (!act_tool_of_paraview_) act_tool_of_paraview_=new QAction("Start ParaView in execution directory", this);
     menu_tools_of_->addAction( act_tool_of_paraview_ );
-    connect( act_tool_of_paraview_, SIGNAL(activated()), this, SLOT(onStartPV()) );
+    connect( act_tool_of_paraview_, &QAction::triggered, this, &AnalysisForm::onStartPV );
 }
 
 void AnalysisForm::removeMenu()
@@ -295,12 +295,15 @@ void AnalysisForm::onRunAnalysis()
         AnalysisWorker *worker = new AnalysisWorker(analysis_);
         worker->moveToThread(&workerThread_);
         
-        connect(this, SIGNAL(runAnalysis(insight::ProgressDisplayer*)),
-                worker, SLOT(doWork(insight::ProgressDisplayer*)));
-        connect(worker, SIGNAL(resultReady(insight::ResultSetPtr)), this, SLOT(onResultReady(insight::ResultSetPtr)));
-        
-        connect(worker, SIGNAL(finished()), &workerThread_, SLOT(quit()));
-        connect(&workerThread_, SIGNAL(finished()), worker, SLOT(deleteLater()));
+        connect(this, &AnalysisForm::runAnalysis,
+                worker, &AnalysisWorker::doWork);
+        connect(worker, &AnalysisWorker::resultReady,
+                this, &AnalysisForm::onResultReady);
+        connect(worker, &AnalysisWorker::finished,
+                &workerThread_, &QThread::quit);
+        connect(&workerThread_, &QThread::finished,
+                worker, &AnalysisWorker::deleteLater);
+
         workerThread_.start();
 
         ui->tabWidget->setCurrentWidget(ui->runTab);

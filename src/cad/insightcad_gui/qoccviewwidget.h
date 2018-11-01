@@ -1,15 +1,19 @@
 #ifndef QOCCVIEWWIDGET_H
 #define QOCCVIEWWIDGET_H
 
+
 #include "clear_occ_macros.h"
+#define QT_NO_OPENGL
 #include <QtCore>
 #include <QtGui>
+#include <QDialog>
+//#include <QtOpenGL/QGLWidget>
+
+
 #include "qocc.h"
 #include "AIS_Plane.hxx"
-#include <QtOpenGL/QGLWidget>
 
 #include "qmodelstepitem.h"
-
 
 class QDisplayableModelTreeItem;
 
@@ -81,7 +85,7 @@ public:
 
   //Overrides
   QPaintEngine* paintEngine() const;
-  QToolBar*	  myToolBar;
+  //QToolBar*	  myToolBar;
 
   void redraw( bool isPainting = false );
 
@@ -94,7 +98,7 @@ signals:
   void graphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer);
   void mouseMoved   ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
   void pointClicked ( V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z );
-  void sendStatus   ( const QString aMessage );
+  void sendStatus   ( const QString aMessage, double timeout=0 );
   //! Just a placeholder for now
   void error ( int errorCode, QString& errorDescription );
 

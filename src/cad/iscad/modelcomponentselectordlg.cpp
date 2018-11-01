@@ -146,8 +146,8 @@ ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPt
         addSymbols( *ms.second, curnode, ms.first );
     }
     
-    connect(ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
-    connect(ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &ModelComponentSelectorDlg::accept);
+    connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ModelComponentSelectorDlg::reject);
 }
 
 std::string ModelComponentSelectorDlg::selected() const

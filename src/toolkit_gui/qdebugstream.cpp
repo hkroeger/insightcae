@@ -39,13 +39,13 @@ Q_DebugStream::~Q_DebugStream()
 
 void Q_DebugStream::registerQDebugMessageHandler()
 {
-  qInstallMsgHandler ( myQDebugMessageHandler );
+  qInstallMessageHandler ( myQDebugMessageHandler );
 }
 
 
-void Q_DebugStream::myQDebugMessageHandler ( QtMsgType, const char *msg )
+void Q_DebugStream::myQDebugMessageHandler ( QtMsgType, const QMessageLogContext&, const QString& msg )
 {
-  std::cout << msg;
+  std::cout << msg.toStdString();
 }
 
 void Q_DebugStream::sendCurLine()

@@ -22,7 +22,10 @@
 #define QOCCVIEWERCONTEXT_H
 
 #include <QtCore>
+
+#ifndef Q_MOC_RUN
 #include "qocc.h"
+#endif
 
 class QOCC_DECLSPEC QoccViewerContext : public QObject
 {

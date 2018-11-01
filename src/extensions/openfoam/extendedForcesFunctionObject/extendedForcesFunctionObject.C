@@ -353,7 +353,7 @@ extendedForces::write()
             {
                 // Put in undecomposed case (Note: gives problems for
                 // distributed data running)
-                outdir = obr_.path()/".."/"postProcessing"/(name()+"_masked")/startTimeName;
+                outdir = mesh.time().path()/".."/"postProcessing"/(name()+"_masked")/startTimeName;
             }
             else
             {

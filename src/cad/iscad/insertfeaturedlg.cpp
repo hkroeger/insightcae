@@ -49,6 +49,9 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
 {
     ui = new Ui::InsertFeatureDlg;
     ui->setupUi(this);
+
+    featureCmdHelp_ = new QWebEngineView(this);
+    ui->featureCmdHelp_layout->addWidget(featureCmdHelp_);
     
     for 
     (
@@ -86,7 +89,7 @@ void InsertFeatureDlg::onItemSelectionChanged ()
             +
             "<p>"+e->documentation()+"</p>"
             ;
-        ui->featureCmdHelp->setHtml(help);
+        featureCmdHelp_->setHtml(help);
     }
 }
 

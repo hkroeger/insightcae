@@ -46,7 +46,7 @@ target_link_libraries(iscad
   ${DXFLIB_LIBRARIES}
   )
 
-target_include_directories(workbench
+target_include_directories(iscad
   PUBLIC ${QT_INCLUDES}
   PUBLIC ${QWT_INCLUDE_DIR}
   PUBLIC ${Boost_INCLUDE_DIR}

@@ -4,9 +4,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5WebKit CONFIG REQUIRED)
-find_package(Qt5WebKitWidgets CONFIG REQUIRED)
-find_package(Qt5WebView CONFIG REQUIRED)
+find_package(Qt5WebEngineWidgets CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
     parameterwrapper.cpp 
@@ -20,7 +18,7 @@ add_library(toolkit_gui SHARED ${toolkit_gui_SRCS})
 
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui
- Qt5::Widgets Qt5::WebView Qt5::WebKit Qt5::WebKitWidgets
+ Qt5::Widgets Qt5::WebEngineWidgets
  ${Boost_LIBRARIES}
  )
 

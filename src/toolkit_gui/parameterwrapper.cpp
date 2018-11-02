@@ -32,8 +32,9 @@
 #include <QGroupBox>
 #include <QFileDialog>
 #include <QInputDialog>
-#include <QWebEngineView>
 #include <QTextEdit>
+
+#include "helpwidget.h"
 
 #ifndef Q_MOC_RUN
 #include "boost/foreach.hpp"
@@ -73,6 +74,7 @@ void addWrapperToWidget
         }
     }
 }
+
 
 
 defineType(ParameterWrapper);
@@ -179,8 +181,8 @@ void IntParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -243,8 +245,8 @@ void DoubleParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -319,8 +321,8 @@ void VectorParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -397,8 +399,8 @@ void StringParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -468,8 +470,8 @@ void BoolParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -551,8 +553,8 @@ void PathParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -672,8 +674,8 @@ void MatrixParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -783,8 +785,8 @@ void SelectionParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -860,8 +862,8 @@ void SubsetParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
   
@@ -995,8 +997,8 @@ void ArrayParameterWrapper::createWidgets()
   QFont f=label->font(); f.setBold(true); label->setFont(f);
   layout->addWidget(label);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -1064,8 +1066,8 @@ void DoubleRangeParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
   
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
 
@@ -1180,8 +1182,8 @@ void SelectableSubsetParameterWrapper::createWidgets()
   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
   layout->addWidget(nameLabel);
 
-  QWebEngineView *shortDescLabel =
-    new QWebEngineView( detaileditwidget_ );
+  HelpWidget *shortDescLabel =
+    new HelpWidget( detaileditwidget_ );
   shortDescLabel->setHtml( param().description().toHTML().c_str() );
   layout->addWidget(shortDescLabel);
   

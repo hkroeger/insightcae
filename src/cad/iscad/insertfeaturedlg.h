@@ -25,7 +25,8 @@
 
 #include <QDialog>
 #include <QListWidgetItem>
-#include <QWebEngineView>
+
+#include "helpwidget.h"
 
 namespace Ui
 {
@@ -39,7 +40,7 @@ class InsertFeatureDlg
     
 public:
     QString insert_string_;
-    QWebEngineView* featureCmdHelp_;
+    HelpWidget* featureCmdHelp_;
 
     InsertFeatureDlg(QWidget* parent);
     

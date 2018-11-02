@@ -50,7 +50,7 @@ InsertFeatureDlg::InsertFeatureDlg(QWidget* parent)
     ui = new Ui::InsertFeatureDlg;
     ui->setupUi(this);
 
-    featureCmdHelp_ = new QWebEngineView(this);
+    featureCmdHelp_ = new HelpWidget(this);
     ui->featureCmdHelp_layout->addWidget(featureCmdHelp_);
     
     for 

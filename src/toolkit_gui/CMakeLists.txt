@@ -4,7 +4,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
-find_package(Qt5WebEngineWidgets CONFIG REQUIRED)
+#find_package(Qt5WebEngineWidgets CONFIG REQUIRED)
 
 set(toolkit_gui_SRCS 
     parameterwrapper.cpp 
@@ -12,13 +12,14 @@ set(toolkit_gui_SRCS
     qdebugstream.cpp
     email.cpp
     mimetypemanager.cpp
+    helpwidget.cpp
 )
 
 add_library(toolkit_gui SHARED ${toolkit_gui_SRCS})
 
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui
- Qt5::Widgets Qt5::WebEngineWidgets
+ Qt5::Widgets #Qt5::WebEngineWidgets
  ${Boost_LIBRARIES}
  )
 

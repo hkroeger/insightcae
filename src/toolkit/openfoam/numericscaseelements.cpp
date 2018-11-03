@@ -1713,9 +1713,9 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 //   grad["grad(p_rgh)"]="Gauss linear";
   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   grad["grad("+alphaname_+")"]="localFaceLimited "+bgrads+" UBlendingFactor";
-  grad["grad(omega)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
-  grad["grad(epsilon)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
-  grad["grad(k)"]="localFaceLimited pointCellsLeastSquares UBlendingFactor";
+  grad["grad(omega)"]="cellLimited pointCellsLeastSquares 1";
+  grad["grad(epsilon)"]="cellLimited pointCellsLeastSquares 1";
+  grad["grad(k)"]="cellLimited pointCellsLeastSquares 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;

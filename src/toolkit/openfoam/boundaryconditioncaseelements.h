@@ -488,6 +488,7 @@ phasefractions = dynamicclassconfig "multiphaseBC::multiphaseBC" default "unifor
 
 protected:
     ParameterSet ps_;
+    boost::filesystem::path casedir_;
 
 public:
     declareType("VelocityInletBC");
@@ -497,11 +498,12 @@ public:
         OpenFOAMCase& c,
         const std::string& patchName,
         const OFDictData::dict& boundaryDict,
-        const ParameterSet& p = Parameters::makeDefault()
+        const ParameterSet& p = Parameters::makeDefault(),
+        const boost::filesystem::path& casedir = "."
     );
 
-    virtual void setField_U ( OFDictData::dict& BC ) const;
     virtual void setField_p ( OFDictData::dict& BC ) const;
+    virtual void setField_U ( OFDictData::dict& BC ) const;
     virtual void addIntoFieldDictionaries ( OFdicts& dictionaries ) const;
 
     static ParameterSet defaultParameters()
@@ -670,8 +672,8 @@ public:
         const ParameterSet& p = Parameters::makeDefault()
     );
 
-    virtual void setField_U ( OFDictData::dict& BC ) const;
     virtual void setField_p ( OFDictData::dict& BC ) const;
+    virtual void setField_U ( OFDictData::dict& BC ) const;
     virtual void setField_k ( OFDictData::dict& BC ) const;
     virtual void setField_epsilon ( OFDictData::dict& BC ) const;
     virtual void setField_omega ( OFDictData::dict& BC ) const;

@@ -318,7 +318,7 @@ void FlatPlateBL::createInflowBC(insight::OpenFOAMCase& cm, const OFDictData::di
       
     inflow_velocity.velocity.fielddata=umean_data;
     
-    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, inflow_velocity));
+    cm.insert(new VelocityInletBC(cm, in_, boundaryDict, inflow_velocity, executionPath()));
   }
 }
 

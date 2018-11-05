@@ -70,7 +70,7 @@ bool FixedTemperatureBC::addIntoFieldDictionary(const string& fieldname, const F
       (get<0>(fieldinfo)==scalarField)
     )
     {
-      FieldData(p_.T).setDirichletBC(BC);
+      FieldData(p_.T, ".").setDirichletBC(BC);
       return true;
     }
     else

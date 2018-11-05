@@ -623,7 +623,10 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   grad["default"]=bgrads;
   grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
-    
+  grad["grad(omega)"]="cellLimited pointCellsLeastSquares 1";
+  grad["grad(epsilon)"]="cellLimited pointCellsLeastSquares 1";
+  grad["grad(k)"]="cellLimited pointCellsLeastSquares 1";
+
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
@@ -635,10 +638,14 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
   div["default"]="none"; //pref+"Gauss upwind";
   div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
-  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]	=	pref+"Gauss upwind";
   div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+
+  div["div(phi,k)"]		= "Gauss linearUpwind grad(k)";
+  div["div(phi,epsilon)"]	= "Gauss linearUpwind grad(epsilon)";
+  div["div(phi,omega)"]		= "Gauss linearUpwind grad(omega)";
+//  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
+//  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+//  div["div(phi,omega)"]	=	pref+"Gauss upwind";
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
       

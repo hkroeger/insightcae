@@ -88,6 +88,21 @@ fielddata=selectablesubset {{
 protected:
   Parameters p_;
 
+  double representativeValueMag_, maxValueMag_;
+
+  void calcValues(const boost::filesystem::path& casedir);
+
+  /**
+   * return some representative (average) value of the prescribed data.
+   * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
+   */
+  double calcRepresentativeValueMag(const boost::filesystem::path& casedir) const;
+
+  /**
+   * return the maximum magnitude of the value throughout all precribed times
+   */
+  double calcMaxValueMag(const boost::filesystem::path& casedir) const;
+
 public:
 
 
@@ -109,7 +124,7 @@ public:
   /**
    * takes config from a parameterset
    */
-  FieldData(const ParameterSet& p);
+  FieldData(const ParameterSet& p, const boost::filesystem::path& casedir);
 
   /**
    * returns according dictionary entry for OF
@@ -122,12 +137,12 @@ public:
    * return some representative (average) value of the prescribed data.
    * Required e.g. for deriving turbulence qtys when velocity distributions are prescribed.
    */
-  double representativeValueMag() const;
+  inline double representativeValueMag() const { return representativeValueMag_; }
 
   /**
    * return the maximum magnitude of the value throughout all precribed times
    */
-  double maxValueMag() const;
+  inline double maxValueMag() const { return maxValueMag_; }
 
   /**
    * returns a proper parameterset for this entity

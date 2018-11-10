@@ -644,12 +644,18 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
     pl.push_back(lo);
   }
   fod["patches"]=pl;
-  fod["pName"]=p_.pName;
-  fod["UName"]=p_.UName;
   if (OFversion()>=400)
-    fod["rho"]=p_.rhoName;
+    {
+      fod["p"]=p_.pName;
+      fod["U"]=p_.UName;
+      fod["rho"]=p_.rhoName;
+    }
   else
-    fod["rhoName"]=p_.rhoName;
+    {
+      fod["pName"]=p_.pName;
+      fod["UName"]=p_.UName;
+      fod["rhoName"]=p_.rhoName;
+    }
   fod["rhoInf"]=p_.rhoInf;
   
   fod["CofR"]=OFDictData::vector3(p_.CofR);

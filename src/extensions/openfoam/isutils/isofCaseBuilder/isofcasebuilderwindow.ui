@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>isofCaseBuilderWindow</class>
- <widget class="QDialog" name="isofCaseBuilderWindow">
+ <widget class="QWidget" name="isofCaseBuilderWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -289,13 +289,6 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="cancel_btn">
-        <property name="text">
-         <string>Cancel</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>OF version:</string>
@@ -339,7 +332,6 @@
   <tabstop>skipBCswitch</tabstop>
   <tabstop>save_btn</tabstop>
   <tabstop>load_btn</tabstop>
-  <tabstop>cancel_btn</tabstop>
   <tabstop>OFversion</tabstop>
   <tabstop>saveOFversion</tabstop>
   <tabstop>up_btn</tabstop>

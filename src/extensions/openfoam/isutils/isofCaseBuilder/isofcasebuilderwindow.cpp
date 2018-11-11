@@ -201,11 +201,13 @@ void isofCaseBuilderWindow::fillCaseElementList()
 
 
 isofCaseBuilderWindow::isofCaseBuilderWindow()
-: QDialog(), ped_(NULL), bc_ped_(NULL)
+: QMainWindow(), ped_(NULL), bc_ped_(NULL)
 {
+    QWidget *cw=new QWidget(this);
+    setCentralWidget(cw);
     // setup layout
     ui = new Ui::isofCaseBuilderWindow;
-    ui->setupUi(this);
+    ui->setupUi(cw);
     pe_layout_ = new QHBoxLayout(ui->parameter_editor);
     bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
     
@@ -253,8 +255,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     connect(ui->up_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementUp);
     connect(ui->down_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onMoveElementDown);
 
-    connect(ui->create_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::accept);
-    connect(ui->cancel_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::reject);
+    connect(ui->create_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onCreate);
 
     connect(ui->save_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onSave);
     connect(ui->load_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onLoad);
@@ -464,45 +465,6 @@ void isofCaseBuilderWindow::onMoveElementDown()
 }
 
 
-void isofCaseBuilderWindow::done(int r)
-{
-  if ( r == QDialog::Accepted)
-  {
-      if (ui->selected_elements->count() > 0)
-      {
-            
-            if 
-            (
-                QMessageBox::question
-                (
-                    this, 
-                    "Confirm", 
-                    str(format("Press OK to write the selected configuration into current directory %d!")
-                        % casepath_).c_str(),
-                    QMessageBox::Ok|QMessageBox::Cancel
-                ) 
-                == 
-                QMessageBox::Ok
-            )
-            {
-                bool skipBCs = ui->skipBCswitch->isChecked();
-                createCase(skipBCs);
-            }
-            else
-            {
-                return;
-            }
-        }
-        else
-        {
-            return;
-        }
-  }
-  
-  QDialog::done(r);
-}
-
-
 
 
 void isofCaseBuilderWindow::onSave()
@@ -663,6 +625,32 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
         
     //     ParameterSet emptyps;
     //     numerics_.reset(insight::FVNumerics::lookup(num_name, FVNumericsParameters(*ofc_, emptyps)));
+    }
+}
+
+
+void isofCaseBuilderWindow::onCreate()
+{
+  if (ui->selected_elements->count() > 0)
+  {
+
+        if
+        (
+            QMessageBox::question
+            (
+                this,
+                "Confirm",
+                str(format("Press OK to write the selected configuration into current directory %d!")
+                    % casepath_).c_str(),
+                QMessageBox::Ok|QMessageBox::Cancel
+            )
+            ==
+            QMessageBox::Ok
+        )
+        {
+            bool skipBCs = ui->skipBCswitch->isChecked();
+            createCase(skipBCs);
+        }
     }
 }
 

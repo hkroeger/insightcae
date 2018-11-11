@@ -23,6 +23,7 @@
 
 #include <QtGui>
 #include <QWidget>
+#include <QMainWindow>
 #include <QListWidgetItem>
 
 #ifndef Q_MOC_RUN
@@ -95,7 +96,7 @@ class isofCaseBuilderWindow;
 
 
 class isofCaseBuilderWindow
-: public QDialog
+: public QMainWindow
 {
      Q_OBJECT
      
@@ -125,7 +126,6 @@ public:
     
 public slots:
     void onItemSelectionChanged();
-    virtual void done(int r);
     
     void onAddElement();
     void onRemoveElement();
@@ -138,6 +138,7 @@ public slots:
     void onAddPatchManually();
     void onAssignBC();
     void onPatchSelectionChanged();
+    void onCreate();
     
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);

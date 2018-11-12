@@ -29,6 +29,8 @@
 
 #include "uniof.h"
 
+#include "base/vtktools.h"
+
 using namespace Foam;
 
 void findBndFaces(const fvMesh& mesh, const cellSet& cells, labelList& res, scalarField& normal_direction)
@@ -166,6 +168,54 @@ tmp<Field<T> > pick_gf(const GeometricField<T, fvsPatchField, surfaceMesh>& data
   return tres;
 }
 
+
+void createVTKGeometry
+(
+    const fvMesh& mesh,
+    const labelList& faces,
+    insight::vtk::vtkModel2d& vtk
+)
+{
+  std::map<label, label> locPtIndex; // global pointindex => local index
+
+  //create entry for each used pt
+  forAll(faces, i)
+  {
+    label fi=faces[i];
+    const face& f = mesh.faces()[fi];
+    forAll(f, j) locPtIndex[f[j]]=-1;
+  }
+
+  // locally number pt
+  label k=0;
+  for (auto& j: locPtIndex) j.second=k++;
+
+  //insert into vtk
+  double x[k], y[k], z[k];
+  k=0;
+  for (const auto& j: locPtIndex)
+    {
+      x[k]=mesh.points()[j.first].x();
+      y[k]=mesh.points()[j.first].y();
+      z[k]=mesh.points()[j.first].z();
+      k++;
+    }
+  vtk.setPoints(k, x, y, z);
+
+  // insert faces with renumbered vertices
+  forAll(faces, i)
+  {
+    label fi=faces[i];
+    const face& f = mesh.faces()[fi];
+    int ci[f.size()];
+    forAll(f, j)
+    {
+      ci[j]=locPtIndex[f[j]];
+    }
+    vtk.appendPolygon(f.size(), ci);
+  }
+}
+
 int main(int argc, char *argv[])
 {
     timeSelector::addOptions();
@@ -180,13 +230,13 @@ int main(int argc, char *argv[])
 
 
     word cellSetName(IStringStream(UNIOF_ADDARG(args,0))());
-    scalar rho = readScalar(IStringStream(UNIOF_ADDARG(args,1))());
+    scalar rhoInf = readScalar(IStringStream(UNIOF_ADDARG(args,1))());
 
     forAll(timeDirs, timeI)
     {
         runTime.setTime(timeDirs[timeI], timeI);
         Info<< "Time = " << runTime.timeName() << endl;
-        /*fvMesh::readUpdateState state = */ mesh.readUpdate();
+        mesh.readUpdate();
 
 	IOobject Uheader
 	(
@@ -212,6 +262,14 @@ int main(int argc, char *argv[])
 	    IOobject::MUST_READ,
 	    IOobject::NO_WRITE
 	);
+	IOobject rhoheader
+	(
+	    "rho",
+	    runTime.timeName(),
+	    mesh,
+	    IOobject::MUST_READ,
+	    IOobject::NO_WRITE
+	);
 
 	if (UNIOF_HEADEROK(Uheader,volVectorField) && UNIOF_HEADEROK(pheader,volScalarField) && UNIOF_HEADEROK(phiheader,surfaceScalarField))
 	{
@@ -227,14 +285,90 @@ int main(int argc, char *argv[])
 	  volScalarField p(pheader, mesh);
 	  surfaceScalarField phi(phiheader, mesh);
 
+	  autoPtr<volScalarField> rho;
+	  if (UNIOF_HEADEROK(rhoheader,volScalarField))
+	    {
+	      rho.reset(new volScalarField(rhoheader, mesh));
+	    }
+	  else
+	    {
+	      Info<<"Using rhoInf="<<rhoInf<<endl;
+
+	      rho.reset(
+		    new volScalarField
+		    (
+		      IOobject
+		      (
+			"rho",
+			runTime.timeName(),
+			mesh,
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		      ),
+		      mesh,
+		      dimensionedScalar("", dimDensity, rhoInf)
+		    )
+	      );
+	    }
+
 	  vectorField Sf=pick_gf(mesh.Sf(), bndfaces, &norm_dir);
 	  scalarField phif=pick_gf(phi, bndfaces, &norm_dir);
 	  vectorField Uf=pick_gf(fvc::interpolate(U)(), bndfaces);
+	  scalarField rhof=pick_gf(fvc::interpolate(rho())(), bndfaces);
 	  scalarField pf=pick_gf(fvc::interpolate(p)(), bndfaces);
+	  if (p.dimensions()==dimPressure/dimDensity)
+	    {
+	      Info<<"Converting pressure."<<endl;
+	      pf*=rhof;
+	    }
+
+	  {
+	    vectorField Cf=pick_gf(mesh.Cf(), bndfaces);
+
+	    insight::vtk::vtkModel2d vtk;
+	    createVTKGeometry(mesh, bndfaces, vtk);
+	    vtk.appendCellVectorField(
+		   "Cf",
+		   Cf.component(0)().cdata(),
+		   Cf.component(1)().cdata(),
+		   Cf.component(2)().cdata()
+		  );
+	    vtk.appendCellVectorField(
+		   "Sf",
+		   Sf.component(0)().cdata(),
+		   Sf.component(1)().cdata(),
+		   Sf.component(2)().cdata()
+		  );
+	    vtk.appendCellVectorField(
+		   "Uf",
+		   Uf.component(0)().cdata(),
+		   Uf.component(1)().cdata(),
+		   Uf.component(2)().cdata()
+		  );
+	    vtk.appendCellScalarField(
+		   "p",
+		   pf.cdata()
+		  );
+	    vtk.appendCellScalarField(
+		   "phi",
+		   phif.cdata()
+		  );
+	    vtk.createLegacyFile
+		(
+		  IOobject
+		  (
+		    cellSetName+"_visualization.vtk",
+		    runTime.timeName(),
+		    runTime,
+		    IOobject::NO_READ,
+		    IOobject::NO_WRITE
+		  ).objectPath()
+		);
+	  }
 
 	  vector F=gSum(
 
-		rho* ( phif*Uf + pf*Sf )
+		rhof*phif*Uf + pf*Sf
 
 		);
 

@@ -127,21 +127,44 @@ void findBndFaces(const fvMesh& mesh, const cellSet& cells, labelList& res, scal
 
 }
 
+//template<class T>
+//tmp<Field<T> > pick(const List<T>& data, const labelList& idxs, const scalarField* mult=NULL)
+//{
+//  tmp<Field<T> > tres(new Field<T>(idxs.size(), pTraits<T>::zero));
+//  Field<T>& res = UNIOF_TMP_NONCONST(tres);
+
+//  forAll(idxs, i)
+//  {
+//      res[i] = data[idxs[i]];
+
+//      if (mult!=NULL) res[i] *= (*mult)[i];
+//  }
+//  return tres;
+//}
+
 template<class T>
-tmp<Field<T> > pick(const List<T>& list, const labelList& idxs, const scalarField* mult=NULL)
+tmp<Field<T> > pick_gf(const GeometricField<T, fvsPatchField, surfaceMesh>& data, const labelList& idxs, const scalarField* mult=NULL)
 {
   tmp<Field<T> > tres(new Field<T>(idxs.size(), pTraits<T>::zero));
   Field<T>& res = UNIOF_TMP_NONCONST(tres);
 
   forAll(idxs, i)
   {
-      res[i]=list[idxs[i]];
-      if (mult) res[i]*=(*mult)[i];
+      label fi=idxs[i];
+
+      if (fi<data.mesh().nInternalFaces())
+      {
+        res[i] = data[idxs[i]];
+      } else
+      {
+        label pi=data.mesh().boundaryMesh().whichPatch(fi);
+        res[i] = data.boundaryField()[pi][fi-data.mesh().boundaryMesh()[pi].start()];
+      }
+
+      if (mult!=NULL) res[i] *= (*mult)[i];
   }
   return tres;
 }
-
-
 
 int main(int argc, char *argv[])
 {
@@ -198,14 +221,16 @@ int main(int argc, char *argv[])
 	  scalarField norm_dir;
 	  findBndFaces(mesh, cells, bndfaces, norm_dir);
 
+//	  Info<<bndfaces<<norm_dir<<endl;
+
 	  volVectorField U(Uheader, mesh);
 	  volScalarField p(pheader, mesh);
 	  surfaceScalarField phi(phiheader, mesh);
 
-	  vectorField Sf=pick(Sf, bndfaces, &norm_dir);
-	  vectorField Uf=pick(fvc::interpolate(U)(), bndfaces);
-	  scalarField pf=pick(fvc::interpolate(p)(), bndfaces);
-	  scalarField phif=pick(phi, bndfaces, &norm_dir);
+	  vectorField Sf=pick_gf(mesh.Sf(), bndfaces, &norm_dir);
+	  scalarField phif=pick_gf(phi, bndfaces, &norm_dir);
+	  vectorField Uf=pick_gf(fvc::interpolate(U)(), bndfaces);
+	  scalarField pf=pick_gf(fvc::interpolate(p)(), bndfaces);
 
 	  vector F=gSum(
 

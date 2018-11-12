@@ -74,8 +74,16 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
 {
   OFDictData::dict fod=functionObjectDict();
   fod["enabled"]=true;
-  fod["outputControl"]=p_.outputControl;
-  fod["outputInterval"]=p_.outputInterval;
+  if (OFversion()>=400)
+    {
+      fod["writeControl"]=p_.outputControl;
+      fod["writeInterval"]=p_.outputInterval;
+    }
+  else
+    {
+      fod["outputControl"]=p_.outputControl;
+      fod["outputInterval"]=p_.outputInterval;
+    }
   fod["timeStart"]=p_.timeStart;
   
   OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");

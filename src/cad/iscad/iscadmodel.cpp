@@ -188,9 +188,8 @@ void ISCADModel::setScript(const std::string& contents)
 
 void ISCADModel::onEditorSelectionChanged()
 {
-    QTextDocument *doc = document();
     QString word=textCursor().selectedText();
-    if (!(word.contains('|')||word.contains('*')))
+    if ( !( word.contains('|') || word.contains('*') ) )
     {
         highlighter_->setHighlightWord(word);
         highlighter_->rehighlight();

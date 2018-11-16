@@ -23,6 +23,7 @@ if (INSIGHT_BUILD_WORKBENCH)
  add_subdirectory(isutils/isofCaseBuilder)
  add_subdirectory(isutils/isofManageFunctionObject)
  add_subdirectory(isutils/isofCleanupParallelRuns)
+ add_subdirectory(isutils/isofPlotTabular)
 endif()
 
 add_subdirectory(kOmegaHe)

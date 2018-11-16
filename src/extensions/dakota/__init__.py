@@ -27,7 +27,9 @@ class Parameter:
   def __call__(self):
     import importlib
     module = importlib.import_module('__builtin__')
-    cls = getattr(module, self.ptype)
+    pytype=self.ptype
+    if pytype=="double": pytype="float"
+    cls = getattr(module, pytype)
     return cls(self.pval)
     
   def __str__(self):

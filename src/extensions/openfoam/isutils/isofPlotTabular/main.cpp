@@ -1,5 +1,6 @@
 
 #include <QApplication>
+#include "plotwidget.h"
 #include "isofplottabularwindow.h"
 
 #include <boost/program_options/options_description.hpp>
@@ -10,6 +11,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+  qRegisterMetaType<arma::mat>();
+
   typedef std::vector<std::string> StringList;
 
   namespace po = boost::program_options;

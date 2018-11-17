@@ -27,6 +27,7 @@ public:
 
 public Q_SLOTS:
     void onUpdate();
+    void onTabChanged(int);
 };
 
 #endif // ISOFPLOTTABULARWINDOW_H

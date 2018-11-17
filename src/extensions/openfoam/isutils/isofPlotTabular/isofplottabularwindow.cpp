@@ -1,4 +1,5 @@
 
+#include <QDoubleSpinBox>
 
 #include "isofplottabularwindow.h"
 #include "plotwidget.h"
@@ -51,7 +52,7 @@ void IsofPlotTabularWindow::onUpdate()
       vector<string> strs;
       boost::split(strs, line, is_any_of(" "));
 
-      for (const auto& s: strs) std::cout<<s<<" >> "; std::cout<<std::endl;
+//      for (const auto& s: strs) std::cout<<s<<" >> "; std::cout<<std::endl;
 
       vector<double> vals;
       transform(strs.begin(), strs.end(), std::back_inserter(vals),
@@ -91,9 +92,13 @@ void IsofPlotTabularWindow::onUpdate()
     // add new tabs, if required
     for (int j=ui->graphs->count(); j<n_cols; j++)
     {
-      ui->graphs->addTab(new PlotWidget(this),
+      PlotWidget* pw=new PlotWidget(this);
+      ui->graphs->addTab(pw,
                          QString::fromStdString(str(format("Col %d")%j))
                          );
+      connect(ui->doubleSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+              pw, &PlotWidget::onChangeX0);
+
     }
 
     for (int j=1; j<fd[0].size(); j++)
@@ -101,7 +106,24 @@ void IsofPlotTabularWindow::onUpdate()
       PlotWidget *p = dynamic_cast<PlotWidget*>(ui->graphs->widget(j-1));
       p->setData(data_.col(0), data_.col(j));
     }
+
+    if (ui->graphs->count()!=0)
+    {
+      if (PlotWidget *pw = dynamic_cast<PlotWidget*>(ui->graphs->currentWidget()))
+      {
+        pw->onShow();
+      }
+    }
   }
 
+  connect(ui->graphs, &QTabWidget::currentChanged, this, &IsofPlotTabularWindow::onTabChanged);
+}
 
+void IsofPlotTabularWindow::onTabChanged(int ct)
+{
+  if (PlotWidget* pw = dynamic_cast<PlotWidget*>(ui->graphs->widget(ct)))
+  {
+    qDebug()<<"ct="<<ct;
+    pw->onShow();
+  }
 }

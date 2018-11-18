@@ -22,6 +22,7 @@
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/snappyhexmesh.h"
+#include "openfoam/paraview.h"
 
 #include "cadfeature.h"
 

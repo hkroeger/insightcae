@@ -34,7 +34,7 @@ class PlotWidget : public QWidget
   Q_OBJECT
 
   arma::mat rawdata_;
-  MeanComputer *mc_;
+  MeanComputer *mc_=NULL;
 
 public:
   explicit PlotWidget(QWidget *parent = 0);

@@ -43,6 +43,10 @@ PlotWidget::PlotWidget(QWidget *parent) :
 
 PlotWidget::~PlotWidget()
 {
+  if (mc_)
+  {
+    if (mc_->isRunning()) mc_->terminate();
+  }
   delete ui;
 }
 

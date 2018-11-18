@@ -12,6 +12,9 @@ using namespace std;
 int main(int argc, char *argv[])
 {
   qRegisterMetaType<arma::mat>();
+  qputenv("QT_STYLE_OVERRIDE", 0);
+
+  QApplication app(argc, argv);
 
   typedef std::vector<std::string> StringList;
 
@@ -53,8 +56,6 @@ int main(int argc, char *argv[])
           <<std::endl<<std::endl;
       exit(-1);
   }
-
-  QApplication app(argc, argv);
 
   IsofPlotTabularWindow window(fn);
   window.show();

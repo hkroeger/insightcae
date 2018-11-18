@@ -14,7 +14,7 @@ PlotWidget::PlotWidget(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  QVBoxLayout *layout=new QVBoxLayout(this);
+  QVBoxLayout *layout=new QVBoxLayout(ui->plotcanvas);
   ui->plotcanvas->setLayout(layout);
 
   plot_=new QwtPlot(this);

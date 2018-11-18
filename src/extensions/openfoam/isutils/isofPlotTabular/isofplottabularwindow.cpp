@@ -19,6 +19,9 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const boost::filesystem::path& file
   ui=new Ui_MainWindow;
   ui->setupUi(this);
 
+  setWindowTitle( "PlotTabularData: CWD "+QString::fromStdString( boost::filesystem::current_path().string() )
+                  +", displaying "+ QString::fromStdString( file.string() ) );
+
   connect(ui->updateBtn, &QPushButton::clicked,
           this, &IsofPlotTabularWindow::onUpdate);
 
@@ -126,7 +129,7 @@ void IsofPlotTabularWindow::onTabChanged(int ct)
 {
   if (PlotWidget* pw = dynamic_cast<PlotWidget*>(ui->graphs->widget(ct)))
   {
-    qDebug()<<"ct="<<ct;
+//    qDebug()<<"ct="<<ct;
     pw->onShow();
   }
 }

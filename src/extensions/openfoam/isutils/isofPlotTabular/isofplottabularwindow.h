@@ -26,7 +26,7 @@ public:
     IsofPlotTabularWindow(const boost::filesystem::path& file);
 
 public Q_SLOTS:
-    void onUpdate();
+    void onUpdate(bool checked=false);
     void onTabChanged(int);
 };
 

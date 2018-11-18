@@ -19,11 +19,14 @@ IsofPlotTabularWindow::IsofPlotTabularWindow(const boost::filesystem::path& file
   ui=new Ui_MainWindow;
   ui->setupUi(this);
 
+  connect(ui->updateBtn, &QPushButton::clicked,
+          this, &IsofPlotTabularWindow::onUpdate);
+
   onUpdate();
 }
 
 
-void IsofPlotTabularWindow::onUpdate()
+void IsofPlotTabularWindow::onUpdate(bool)
 {
   ifstream f(file_.c_str());
 

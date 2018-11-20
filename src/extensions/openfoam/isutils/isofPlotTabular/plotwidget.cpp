@@ -39,6 +39,9 @@ PlotWidget::PlotWidget(QWidget *parent) :
   connect(ui->include_0_sw, &QCheckBox::toggled,
           this, &PlotWidget::onToggleY0);
 
+  connect(ui->avg_fraction, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+          this, &PlotWidget::onMeanAvgFractionChange);
+
 }
 
 PlotWidget::~PlotWidget()
@@ -69,21 +72,27 @@ void PlotWidget::onShow()
 {
   if (mean_crv_->data()->size()==0)
   {
-    ui->info->setText("Computing moving average of raw data...");
-    mc_=new MeanComputer(this, rawdata_);
-    connect(mc_, &MeanComputer::resultReady, this, &PlotWidget::onMeanDataReady);
-    mc_->start();
+    onMeanAvgFractionChange();
   }
 }
 
-MeanComputer::MeanComputer(QObject* p, const arma::mat& rd)
+void PlotWidget::onMeanAvgFractionChange(double)
+{
+  ui->info->setText("Computing moving average of raw data...");
+  mc_=new MeanComputer( this, rawdata_, ui->avg_fraction->value() );
+  connect(mc_, &MeanComputer::resultReady, this, &PlotWidget::onMeanDataReady);
+  mc_->start();
+}
+
+MeanComputer::MeanComputer(QObject* p, const arma::mat& rd, double frac)
   : QThread(p),
-    rawdata_(rd)
+    rawdata_(rd),
+    frac_(frac)
 {}
 
 void MeanComputer::run()
 {
-  emit resultReady( insight::movingAverage(rawdata_, 0.25) );
+  emit resultReady( insight::movingAverage(rawdata_, frac_) );
 }
 
 void PlotWidget::onMeanDataReady(arma::mat avg)

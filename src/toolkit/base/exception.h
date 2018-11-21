@@ -24,9 +24,26 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 
 namespace insight {
   
+class CurrentExceptionContext
+{
+  std::string desc_;
+
+public:
+  CurrentExceptionContext(const std::string& desc);
+  ~CurrentExceptionContext();
+
+  inline operator std::string() const
+  {
+    return desc_;
+  }
+
+};
+
+
 class Exception;
   
 std::ostream& operator<<(std::ostream& os, const Exception& ex);
@@ -34,6 +51,7 @@ std::ostream& operator<<(std::ostream& os, const Exception& ex);
 class Exception
 {
   std::string message_;
+  std::vector<std::string> context_;
   std::string strace_;
   
 public:
@@ -49,6 +67,18 @@ public:
     
     friend std::ostream& operator<<(std::ostream& os, const Exception& ex);
 };
+
+
+std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
+
+class ExceptionContext
+: public std::vector<CurrentExceptionContext*>
+{
+public:
+  void snapshot(std::vector<std::string>& context);
+};
+
+extern thread_local ExceptionContext exceptionContext;
 
 void Warning(const std::string& msg);
 

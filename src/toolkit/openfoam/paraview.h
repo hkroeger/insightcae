@@ -28,7 +28,7 @@ public:
 
 public:
 
-#include "openfoamtools__PVScene__Parameters.h"
+#include "paraview__PVScene__Parameters.h"
 /*
 PARAMETERSET>>> PVScene Parameters
 
@@ -57,7 +57,7 @@ class CustomPVScene
 {
 
 public:
-#include "openfoamtools__CustomPVScene__Parameters.h"
+#include "paraview__CustomPVScene__Parameters.h"
 /*
 PARAMETERSET>>> CustomPVScene Parameters
 
@@ -89,7 +89,7 @@ class Cutplane
 {
 
 public:
-#include "openfoamtools__Cutplane__Parameters.h"
+#include "paraview__Cutplane__Parameters.h"
 /*
 PARAMETERSET>>> Cutplane Parameters
 
@@ -128,7 +128,7 @@ class IsoView
 {
 
 public:
-#include "openfoamtools__IsoView__Parameters.h"
+#include "paraview__IsoView__Parameters.h"
 /*
 PARAMETERSET>>> IsoView Parameters
 
@@ -163,7 +163,7 @@ class ParaviewVisualization
 : public Analysis
 {
 public:
-#include "openfoamtools__ParaviewVisualization__Parameters.h"
+#include "paraview__ParaviewVisualization__Parameters.h"
 /*
 PARAMETERSET>>> ParaviewVisualization Parameters
 

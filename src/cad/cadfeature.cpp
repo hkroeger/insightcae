@@ -79,6 +79,9 @@
 #include "TColStd_SequenceOfTransient.hxx"
 #include "TColStd_HSequenceOfTransient.hxx"
 
+#include "BRepBuilderAPI_Copy.hxx"
+
+
 namespace qi = boost::spirit::qi;
 namespace repo = boost::spirit::repository;
 namespace phx   = boost::phoenix;
@@ -1446,22 +1449,23 @@ void Feature::saveAs
 
 void Feature::exportSTL(const boost::filesystem::path& filename, double abstol, bool binary) const
 {
-  TopoDS_Shape os=shape();
-  
-  ShapeFix_ShapeTolerance sf;
-  sf.SetTolerance(os, abstol);
-  
-  BRepMesh_IncrementalMesh binc(os, abstol);
-  
-  StlAPI_Writer stlwriter;
+  BRepBuilderAPI_Copy aCopy( shape(), Standard_False );
+  TopoDS_Shape os=aCopy.Shape();
 
+  StlAPI_Writer stlwriter;
   stlwriter.ASCIIMode() = !binary; //false;
+
 #if ((OCC_VERSION_MAJOR<7)&&(OCC_VERSION_MINOR<9))
-#warning control STL tolerance in newer OCC versions!
   stlwriter.RelativeMode()=false;
   stlwriter.SetDeflection(abstol);
+#else
+  BRepTools::Clean( os );
+//  ShapeFix_ShapeTolerance sf;
+//  sf.SetTolerance(os, abstol);
+  BRepMesh_IncrementalMesh binc(os, abstol);
 #endif
-  stlwriter.Write(shape(), filename.c_str());
+
+  stlwriter.Write(os, filename.c_str());
 }
 
 

@@ -188,12 +188,24 @@ void ISCADModel::setScript(const std::string& contents)
 
 void ISCADModel::onEditorSelectionChanged()
 {
+    disconnect
+    (
+      this, &ISCADModel::selectionChanged,
+      this, &ISCADModel::onEditorSelectionChanged
+    );
+
     QString word=textCursor().selectedText();
     if ( !( word.contains('|') || word.contains('*') ) )
     {
         highlighter_->setHighlightWord(word);
         highlighter_->rehighlight();
     }
+
+    connect
+    (
+      this, &ISCADModel::selectionChanged,
+      this, &ISCADModel::onEditorSelectionChanged
+    );
 }
 
 

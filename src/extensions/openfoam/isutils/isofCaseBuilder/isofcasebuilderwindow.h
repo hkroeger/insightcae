@@ -106,12 +106,17 @@ private:
     
 protected:
     boost::filesystem::path casepath_;
+
+    boost::filesystem::path current_config_file_;
+    bool config_is_modified_=false;
+
     std::shared_ptr<insight::OpenFOAMCase> ofc_;
     insight::ParameterSet parameters_;
     std::shared_ptr<insight::FVNumerics> numerics_;
     ParameterEditorWidget *ped_, *bc_ped_;
   
     void fillCaseElementList();
+    void updateTitle();
     
 public:
     isofCaseBuilderWindow();
@@ -132,13 +137,18 @@ public slots:
     void onMoveElementUp();
     void onMoveElementDown();
     
+    void onSaveAs();
     void onSave();
     void onLoad();
     void onParseBF();
     void onAddPatchManually();
     void onAssignBC();
     void onPatchSelectionChanged();
+
+    void onCleanCase();
     void onCreate();
+
+    void onConfigModification();
     
     void onOFVersionChanged(const QString & ofename);
     void recreateOFCase(const QString & ofename);

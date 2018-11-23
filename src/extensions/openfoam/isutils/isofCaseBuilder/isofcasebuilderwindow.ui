@@ -261,13 +261,6 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <widget class="QPushButton" name="create_btn">
-        <property name="text">
-         <string>Create...</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QCheckBox" name="skipBCswitch">
         <property name="text">
          <string>Skip BCs</string>
@@ -275,16 +268,16 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="save_btn">
+       <widget class="QPushButton" name="create_btn">
         <property name="text">
-         <string>Save config...</string>
+         <string>Create case...</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="load_btn">
+       <widget class="QPushButton" name="clean_btn">
         <property name="text">
-         <string>Load config...</string>
+         <string>Clean case...</string>
         </property>
        </widget>
       </item>
@@ -329,9 +322,6 @@
  <tabstops>
   <tabstop>available_elements</tabstop>
   <tabstop>create_btn</tabstop>
-  <tabstop>skipBCswitch</tabstop>
-  <tabstop>save_btn</tabstop>
-  <tabstop>load_btn</tabstop>
   <tabstop>OFversion</tabstop>
   <tabstop>saveOFversion</tabstop>
   <tabstop>up_btn</tabstop>

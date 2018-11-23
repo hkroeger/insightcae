@@ -3108,4 +3108,37 @@ void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::
   f<<")"<<endl;
 }
 
+std::vector<path> cleanCase
+(
+  const OpenFOAMCase& cm,
+  const path& location,
+  bool executeDeletion
+)
+{
+  std::vector<path> cands;
+
+  std::vector<path> to_test = { "system", "constant", "postProcessing", "VTK" };
+  for (const auto& tt: to_test)
+  {
+    if (exists(location/tt)) cands.push_back(location/tt);
+  }
+
+  TimeDirectoryList tdl = listTimeDirectories(location);
+  for (const auto& td: tdl)
+  {
+    cands.push_back(td.second);
+  }
+
+  if (executeDeletion)
+  {
+    for (const auto& c: cands)
+    {
+      std::cout<<"DELETING: "<<c<<std::endl;
+      remove_all(c);
+    }
+  }
+
+  return cands;
+}
+
 }

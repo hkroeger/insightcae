@@ -43,6 +43,8 @@
 #include "base/tools.h"
 #include "boost/spirit/include/classic.hpp"
 
+#include "parametereditorwidget.h"
+
 using namespace boost;
 
 
@@ -71,6 +73,8 @@ void addWrapperToWidget
             QObject::connect ( superform, SIGNAL ( update() ), wrapper, SLOT ( onUpdate() ) );
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onUpdateVisualization() ) );
             QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ), superform, SLOT ( onCheckValidity() ) );
+            QObject::connect ( wrapper, SIGNAL ( parameterSetChanged() ),
+                               superform,  SIGNAL ( parameterSetChanged() ) );
         }
     }
 }

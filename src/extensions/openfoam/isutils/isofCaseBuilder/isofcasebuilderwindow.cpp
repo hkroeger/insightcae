@@ -22,12 +22,14 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QMenuBar>
+#include <QMenu>
 
 #include "isofcasebuilderwindow.h"
 
 #ifndef Q_MOC_RUN
 #include "openfoam/boundaryconditioncaseelements.h"
-
+#include "openfoam/openfoamtools.h"
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"
 #endif
@@ -205,9 +207,27 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 {
     QWidget *cw=new QWidget(this);
     setCentralWidget(cw);
+
     // setup layout
     ui = new Ui::isofCaseBuilderWindow;
     ui->setupUi(cw);
+
+    auto *m = new QMenu("&File", this);
+    menuBar()->addMenu(m);
+    QAction *a;
+    a = new QAction("Load configuration...", m);
+    connect(a, &QAction::triggered,
+            this, &isofCaseBuilderWindow::onLoad);
+    m->addAction(a);
+    a = new QAction("Save configuration", m);
+    connect(a, &QAction::triggered,
+            this, &isofCaseBuilderWindow::onSave);
+    m->addAction(a);
+    a = new QAction("Save configuration as...", m);
+    connect(a, &QAction::triggered,
+            this, &isofCaseBuilderWindow::onSaveAs);
+    m->addAction(a);
+
     pe_layout_ = new QHBoxLayout(ui->parameter_editor);
     bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
     
@@ -257,8 +277,8 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
 
     connect(ui->create_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onCreate);
 
-    connect(ui->save_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onSave);
-    connect(ui->load_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onLoad);
+    connect(ui->clean_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onCleanCase);
+//    connect(ui->load_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onLoad);
 
     connect(ui->parse_bf_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onParseBF);
     connect(ui->add_patch_btn, &QPushButton::clicked, this, &isofCaseBuilderWindow::onAddPatchManually);
@@ -282,7 +302,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     }
 
     setWindowIcon(QIcon(":/logo_insight_cae.png"));
-    this->setWindowTitle("InsightCAE OpenFOAM Case Builder");
+    updateTitle();
 }
 
 
@@ -339,6 +359,10 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
 	      }
       }
     }
+
+    current_config_file_=file;
+    config_is_modified_=false;
+    updateTitle();
 }
 
 
@@ -397,6 +421,11 @@ void isofCaseBuilderWindow::createCase
   if ( !restrictToFiles ) ofc_->modifyCaseOnDisk ( casepath_ );
 }
 
+void isofCaseBuilderWindow::onConfigModification()
+{
+  config_is_modified_=true;
+  updateTitle();
+}
 
 void isofCaseBuilderWindow::onItemSelectionChanged()
 {
@@ -405,6 +434,8 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
     {
         if (ped_) ped_->deleteLater();
         ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor);
+        connect(ped_, &ParameterEditorWidget::parameterSetChanged,
+                this, &isofCaseBuilderWindow::onConfigModification);
         pe_layout_->addWidget(ped_);
     //     ui->parameter_editor->setCentralWidget(ped_);
         
@@ -465,9 +496,21 @@ void isofCaseBuilderWindow::onMoveElementDown()
 }
 
 
+void isofCaseBuilderWindow::updateTitle()
+{
+  QString title="InsightCAE OpenFOAM Case Builder";
+  if (!current_config_file_.empty())
+  {
+    title+=QString(": ")+current_config_file_.c_str();
+  }
+  if (config_is_modified_)
+  {
+    title+="*";
+  }
+  this->setWindowTitle(title);
+}
 
-
-void isofCaseBuilderWindow::onSave()
+void isofCaseBuilderWindow::onSaveAs()
 {
     
     QString fn = QFileDialog::getSaveFileName
@@ -480,76 +523,94 @@ void isofCaseBuilderWindow::onSave()
 
     if ( !fn.isEmpty() ) {
 
-        if (! (fn.endsWith(".iscb")||fn.endsWith(".ISCB")) )
-          {
-            fn+=".iscb";
-          }
-        
-        boost::filesystem::path file (fn.toStdString());
-
-        xml_document<> doc;
-
-        // xml declaration
-        xml_node<>* decl = doc.allocate_node ( node_declaration );
-        decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
-        decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
-        doc.append_node ( decl );
-
-        xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
-        doc.append_node ( rootnode );
-
-	if (ui->saveOFversion->checkState()==Qt::Checked)
-	{
-	  xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
-	  OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
-	  rootnode->append_node ( OFEnode );
-	}
-
-        // insert selected case elements
-        for (int i=0; i < ui->selected_elements->count(); i++)
+      if (! (fn.endsWith(".iscb")||fn.endsWith(".ISCB")) )
         {
-            InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
-            if (elem)
-            {
-                xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
-                elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
-                rootnode->append_node ( elemnode );
-                
-                elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
-            }
+          fn+=".iscb";
         }
-        
-        if (ui->patch_list->count())
-        {
-            // insert configured patches
-            xml_node<> *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
-            rootnode->append_node ( BCnode );
-        
-            xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
-            DefaultPatch *dp = dynamic_cast<DefaultPatch*>(ui->patch_list->item(0));
-            if (!dp)
-            {
-                throw insight::Exception("Internal error: expected default patch config node!");
-            }
-            dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
-            BCnode->append_node ( unassignedBCnode );
-            
-            for (int i=1; i < ui->patch_list->count(); i++)
-            {
-                xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
-                Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
-                p->appendToNode(doc, *patchnode, file.parent_path());
-                BCnode->append_node ( patchnode );
-            }
-        }
-        
-        {
-            std::ofstream f ( file.c_str() );
-            f << doc << std::endl;
-            f << std::flush;
-            f.close();
-        }
+
+      current_config_file_=fn.toStdString();
+      onSave();
     }
+}
+
+void isofCaseBuilderWindow::onSave()
+{
+
+  if (current_config_file_.empty())
+  {
+    onSaveAs();
+  }
+  else
+  {
+        
+      boost::filesystem::path file = current_config_file_;
+
+      xml_document<> doc;
+
+      // xml declaration
+      xml_node<>* decl = doc.allocate_node ( node_declaration );
+      decl->append_attribute ( doc.allocate_attribute ( "version", "1.0" ) );
+      decl->append_attribute ( doc.allocate_attribute ( "encoding", "utf-8" ) );
+      doc.append_node ( decl );
+
+      xml_node<> *rootnode = doc.allocate_node ( node_element, "root" );
+      doc.append_node ( rootnode );
+
+      if (ui->saveOFversion->checkState()==Qt::Checked)
+      {
+        xml_node<> *OFEnode = doc.allocate_node ( node_element, "OFE" );
+        OFEnode->append_attribute(doc.allocate_attribute("name", ui->OFversion->currentText().toStdString().c_str()));
+        rootnode->append_node ( OFEnode );
+      }
+
+      // insert selected case elements
+      for (int i=0; i < ui->selected_elements->count(); i++)
+      {
+          InsertedCaseElement* elem = dynamic_cast<InsertedCaseElement*>(ui->selected_elements->item(i));
+          if (elem)
+          {
+              xml_node<> *elemnode = doc.allocate_node ( node_element, "OpenFOAMCaseElement" );
+              elemnode->append_attribute(doc.allocate_attribute("type", elem->type_name().c_str()));
+              rootnode->append_node ( elemnode );
+
+              elem->parameters().appendToNode(doc, *elemnode, file.parent_path());
+          }
+      }
+
+      if (ui->patch_list->count())
+      {
+          // insert configured patches
+          xml_node<> *BCnode = doc.allocate_node ( node_element, "BoundaryConditions" );
+          rootnode->append_node ( BCnode );
+
+          xml_node<> *unassignedBCnode = doc.allocate_node ( node_element, "UnassignedPatches" );
+          DefaultPatch *dp = dynamic_cast<DefaultPatch*>(ui->patch_list->item(0));
+          if (!dp)
+          {
+              throw insight::Exception("Internal error: expected default patch config node!");
+          }
+          dp->appendToNode(doc, *unassignedBCnode, file.parent_path());
+          BCnode->append_node ( unassignedBCnode );
+
+          for (int i=1; i < ui->patch_list->count(); i++)
+          {
+              xml_node<> *patchnode = doc.allocate_node ( node_element, "Patch" );
+              Patch *p = dynamic_cast<Patch*>(ui->patch_list->item(i));
+              p->appendToNode(doc, *patchnode, file.parent_path());
+              BCnode->append_node ( patchnode );
+          }
+      }
+
+      {
+          std::ofstream f ( file.c_str() );
+          f << doc << std::endl;
+          f << std::flush;
+          f.close();
+      }
+
+      config_is_modified_=false;
+      updateTitle();
+  }
 }
 
 
@@ -557,21 +618,36 @@ void isofCaseBuilderWindow::onSave()
 
 void isofCaseBuilderWindow::onLoad()
 {
-    
+    if (config_is_modified_)
+    {
+      auto res=QMessageBox::warning(this,
+                           "Modifications",
+                           "The configuration has been modified. "
+                           "Changes will be lost after loading a new configuration. "
+                           "Do you wish to save it first?",
+                           QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                 );
+      if (res==QMessageBox::Yes)
+      {
+        onSave();
+      }
+      else if (res==QMessageBox::Cancel)
+      {
+        return;
+      }
+    }
     
     QString fn = QFileDialog::getOpenFileName
                  (
                      this,
-                     "Save Parameters",
+                     "Load Parameters",
                      "",
                      "Insight Case Builder Parameter File (*.iscb)"
                  );
 
-    if ( !fn.isEmpty() ) {
-
-
+    if ( !fn.isEmpty() )
+    {
         boost::filesystem::path file (fn.toStdString());
-
         ui->selected_elements->clear();
         loadFile(file);
     }
@@ -628,9 +704,45 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
     }
 }
 
+void isofCaseBuilderWindow::onCleanCase()
+{
+  recreateOFCase(ui->OFversion->currentText());
+  std::vector<boost::filesystem::path> cands = insight::cleanCase(*ofc_, casepath_, false);
+  QMessageBox msg;
+  msg.addButton(QMessageBox::Yes);
+  msg.addButton(QMessageBox::No);
+  msg.addButton(QMessageBox::Cancel);
+  msg.setText("The following files and directories will be deleted. Please confirm!");
+  QString list;
+  for (const auto & c: cands)
+    list+=QString(c.c_str())+"\n";
+  msg.setDetailedText(list);
+  if (msg.exec() == QMessageBox::Yes)
+  {
+    insight::cleanCase(*ofc_, casepath_, true);
+  }
+}
 
 void isofCaseBuilderWindow::onCreate()
 {
+  if (config_is_modified_)
+  {
+    auto res=QMessageBox::question(this,
+                          "Config modifications",
+                          "The configuration has not been saved. "
+                          "Do you wish to save the configuration?",
+                          QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                          );
+    if (res==QMessageBox::Yes)
+    {
+      onSave();
+    }
+    else if (res==QMessageBox::Cancel)
+    {
+      return;
+    }
+  }
+
   if (ui->selected_elements->count() > 0)
   {
 

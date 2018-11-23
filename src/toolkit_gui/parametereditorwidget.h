@@ -73,6 +73,7 @@ public slots:
 signals:
     void apply();
     void update();
+    void parameterSetChanged();
 };
 
 

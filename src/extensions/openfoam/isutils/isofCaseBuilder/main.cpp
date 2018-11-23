@@ -177,6 +177,7 @@ int main ( int argc, char** argv )
                     exit(-1);
                 }
                 window.loadFile ( fn, vm.count ( "skipbcs" ) );
+
             }
             
             if (vm.count("bool"))

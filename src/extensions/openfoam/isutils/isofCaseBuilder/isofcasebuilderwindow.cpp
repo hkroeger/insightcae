@@ -710,7 +710,7 @@ void isofCaseBuilderWindow::onCleanCase()
 
   insight::OpenFOAMCaseDirs files(*ofc_, casepath_);
 
-  std::vector<boost::filesystem::path> cands = files.caseFilesAndDirs();
+  std::set<boost::filesystem::path> cands = files.caseFilesAndDirs();
   QMessageBox msg;
   msg.addButton(QMessageBox::Yes);
   msg.addButton(QMessageBox::No);
@@ -718,7 +718,7 @@ void isofCaseBuilderWindow::onCleanCase()
   msg.setText("The following files and directories will be deleted. Please confirm!");
   QString list;
   for (const auto & c: cands)
-    list+=QString(c.c_str())+"\n";
+    list+=QString(c.filename().c_str())+"\n";
   msg.setDetailedText(list);
   if (msg.exec() == QMessageBox::Yes)
   {

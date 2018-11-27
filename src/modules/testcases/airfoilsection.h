@@ -92,6 +92,15 @@ fluid = set
 
 } "Parameters of the fluid"
 
+run=set
+{
+ residual       = double 1e-5
+ "The required relative change in forces for considering the solution as converged.
+
+Basis is the moving average of the forces over the last half of the acquired samples.
+The maximum relative change between the last 15 average values needs to stay below this limit."
+
+} "Execution parameters"
 
 <<<PARAMETERSET
 */  

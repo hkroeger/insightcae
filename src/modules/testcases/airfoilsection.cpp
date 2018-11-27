@@ -248,16 +248,26 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
   cm.parseBoundaryDict(dir, boundaryDict);
 
   cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
+    .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)
   )); 
   
+  std::string force_fo_name("foilForces");
+
   cm.insert(new forces(cm, forces::Parameters()
-    .set_name("foilForces")
+    .set_name(force_fo_name)
     .set_patches( list_of("\""+foil_+".*\"") )
     .set_rhoInf(p.fluid.rho)
     .set_CofR(vec3(0,0,0))
     ));  
+
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fpx", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fvx", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fpy", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_fvy", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_mpz", p.run.residual)));
+  installConvergenceAnalysis(ConvergenceAnalysisDisplayerPtr(new ConvergenceAnalysisDisplayer(force_fo_name+"_mvz", p.run.residual)));
 
 //   cm.insert(new minMaxSurfacePressure(cm, minMaxSurfacePressure::Parameters()
 //       .set_name("minPressure")

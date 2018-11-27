@@ -855,21 +855,31 @@ void exportEMesh(const EMeshPtsList& pts, const boost::filesystem::path& filenam
 void exportEMesh(const EMeshPtsListList& pts, const boost::filesystem::path& filename);
 
 
-/**
- * @brief cleanCase
- * Removes all remainings of an OpenFOAM case (constant, system, processor*, postProcessing) from location.
- * Return a list with all directories and files, which have been deleted.
- * @param cm
- * @param location
- * @param executeDeletion
- * If this flag is set to false, the candidate list is returned, but the deletion is not executed.
- */
-std::vector<boost::filesystem::path> cleanCase
-(
-  const OpenFOAMCase& cm,
-  const boost::filesystem::path& location,
-  bool executeDeletion = true
-);
+class OpenFOAMCaseDirs
+{
+
+  boost::filesystem::path location_;
+  std::vector<boost::filesystem::path> sysDirs_, postDirs_, timeDirs_, procDirs_;
+
+public:
+  OpenFOAMCaseDirs
+  (
+    const OpenFOAMCase& cm,
+    const boost::filesystem::path& location
+  );
+
+  std::vector<boost::filesystem::path> caseFilesAndDirs();
+
+
+  void packCase(const boost::filesystem::path& archive_file);
+
+  /**
+   * @brief cleanCase
+   * Removes all remainings of an OpenFOAM case (constant, system, processor*, postProcessing) from location.
+   * Return a list with all directories and files, which have been deleted.
+   */
+  void cleanCase();
+};
 
 }
 

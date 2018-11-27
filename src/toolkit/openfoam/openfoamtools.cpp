@@ -24,6 +24,7 @@
 #include "base/linearalgebra.h"
 #include "base/boost_include.h"
 #include "openfoam/snappyhexmesh.h"
+#include "boost/regex.hpp"
 
 #include <map>
 #include <cmath>
@@ -3108,37 +3109,87 @@ void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::
   f<<")"<<endl;
 }
 
-std::vector<path> cleanCase
-(
-  const OpenFOAMCase& cm,
-  const path& location,
-  bool executeDeletion
-)
-{
-  std::vector<path> cands;
 
-  std::vector<path> to_test = { "system", "constant", "postProcessing", "VTK" };
+OpenFOAMCaseDirs::OpenFOAMCaseDirs
+(
+    const OpenFOAMCase&,
+    const path& location
+)
+  : location_(location)
+{
+  if (!exists(location))
+    throw insight::Exception("OpenFOAM case location does not exist: "+location.string());
+
+  std::vector<path> to_test;
+
+  to_test = { "system", "constant" };
   for (const auto& tt: to_test)
   {
-    if (exists(location/tt)) cands.push_back(location/tt);
+    if (exists(location/tt)) sysDirs_.push_back(location/tt);
+  }
+
+  to_test = { "postProcessing", "VTK" };
+  for (const auto& tt: to_test)
+  {
+    if (exists(location/tt)) postDirs_.push_back(location/tt);
   }
 
   TimeDirectoryList tdl = listTimeDirectories(location);
   for (const auto& td: tdl)
   {
-    cands.push_back(td.second);
+    timeDirs_.push_back(td.second);
   }
 
-  if (executeDeletion)
+  directory_iterator end_itr; // default construction yields past-the-end
+  const boost::regex filter( "processor[0-9]+" );
+  for ( directory_iterator i( location ); i != end_itr; i++ )
+      {
+          if ( is_directory(i->status()) )
+          {
+              std::string fn=i->path().filename().string();
+              boost::smatch what;
+              if ( boost::regex_match( i->path().filename().string(), what, filter ) )
+                {
+                  procDirs_.push_back(i->path());
+                }
+          }
+      }
+}
+
+
+std::vector<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs()
+{
+  std::vector<boost::filesystem::path> all_cands;
+  std::copy( sysDirs_.begin(), sysDirs_.end(), std::back_inserter(all_cands) );
+  std::copy( postDirs_.begin(), postDirs_.end(), std::back_inserter(all_cands) );
+  std::copy( timeDirs_.begin(), timeDirs_.end(), std::back_inserter(all_cands) );
+  std::copy( procDirs_.begin(), procDirs_.end(), std::back_inserter(all_cands) );
+  return all_cands;
+}
+
+void OpenFOAMCaseDirs::packCase(const boost::filesystem::path& archive_file)
+{
+  std::string cmd;
+  cmd+="cd "+location_.string()+";";
+  cmd+="tar czf "+archive_file.string();
+  for (const auto& c: sysDirs_) cmd+=" "+make_relative(location_, c).string();
+  for (const auto& c: postDirs_) cmd+=" "+make_relative(location_, c).string();
+  for (const auto& c: timeDirs_) cmd+=" "+make_relative(location_, c).string();
+
+  if (::system(cmd.c_str()) != 0)
+    throw insight::Exception("Could not pack OpenFOAM case files.\n"
+                             "Command was \""+cmd+"\"");
+}
+
+void OpenFOAMCaseDirs::cleanCase()
+{
+
+  auto cands = caseFilesAndDirs();
+  for (const auto& c: cands)
   {
-    for (const auto& c: cands)
-    {
-      std::cout<<"DELETING: "<<c<<std::endl;
-      remove_all(c);
-    }
+    std::cout<<"DELETING: "<<c<<std::endl;
+    remove_all(c);
   }
-
-  return cands;
 }
 
 }

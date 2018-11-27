@@ -707,7 +707,10 @@ void isofCaseBuilderWindow::onPatchSelectionChanged()
 void isofCaseBuilderWindow::onCleanCase()
 {
   recreateOFCase(ui->OFversion->currentText());
-  std::vector<boost::filesystem::path> cands = insight::cleanCase(*ofc_, casepath_, false);
+
+  insight::OpenFOAMCaseDirs files(*ofc_, casepath_);
+
+  std::vector<boost::filesystem::path> cands = files.caseFilesAndDirs();
   QMessageBox msg;
   msg.addButton(QMessageBox::Yes);
   msg.addButton(QMessageBox::No);
@@ -719,7 +722,7 @@ void isofCaseBuilderWindow::onCleanCase()
   msg.setDetailedText(list);
   if (msg.exec() == QMessageBox::Yes)
   {
-    insight::cleanCase(*ofc_, casepath_, true);
+    files.cleanCase();
   }
 }
 

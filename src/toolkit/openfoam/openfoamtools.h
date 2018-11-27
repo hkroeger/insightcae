@@ -859,7 +859,11 @@ class OpenFOAMCaseDirs
 {
 
   boost::filesystem::path location_;
-  std::vector<boost::filesystem::path> sysDirs_, postDirs_, timeDirs_, procDirs_;
+  std::set<boost::filesystem::path> sysDirs_, postDirs_, procDirs_;
+  std::vector<boost::filesystem::path> timeDirs_;
+
+public:
+  enum TimeDirOpt { All, OnlyFirst, OnlyLast, OnlyFirstAndLast, ExceptFirst };
 
 public:
   OpenFOAMCaseDirs
@@ -868,17 +872,32 @@ public:
     const boost::filesystem::path& location
   );
 
-  std::vector<boost::filesystem::path> caseFilesAndDirs();
+  std::set<boost::filesystem::path> timeDirs( TimeDirOpt td = TimeDirOpt::All );
 
+  std::set<boost::filesystem::path> caseFilesAndDirs
+  (
+      TimeDirOpt td = TimeDirOpt::All,
+      bool cleanProc=true,
+      bool cleanTimes=true,
+      bool cleanPost=true,
+      bool cleanSys=true
+  );
 
-  void packCase(const boost::filesystem::path& archive_file);
+  void packCase(const boost::filesystem::path& archive_file, TimeDirOpt td = TimeDirOpt::All);
 
   /**
    * @brief cleanCase
    * Removes all remainings of an OpenFOAM case (constant, system, processor*, postProcessing) from location.
    * Return a list with all directories and files, which have been deleted.
    */
-  void cleanCase();
+  void cleanCase
+  (
+      TimeDirOpt td = TimeDirOpt::All,
+      bool cleanProc=true,
+      bool cleanTimes=true,
+      bool cleanPost=true,
+      bool cleanSys=true
+  );
 };
 
 }

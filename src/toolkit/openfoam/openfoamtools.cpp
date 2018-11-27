@@ -3125,13 +3125,13 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
   to_test = { "system", "constant" };
   for (const auto& tt: to_test)
   {
-    if (exists(location/tt)) sysDirs_.push_back(location/tt);
+    if (exists(location/tt)) sysDirs_.insert(location/tt);
   }
 
   to_test = { "postProcessing", "VTK" };
   for (const auto& tt: to_test)
   {
-    if (exists(location/tt)) postDirs_.push_back(location/tt);
+    if (exists(location/tt)) postDirs_.insert(location/tt);
   }
 
   TimeDirectoryList tdl = listTimeDirectories(location);
@@ -3150,41 +3150,101 @@ OpenFOAMCaseDirs::OpenFOAMCaseDirs
               boost::smatch what;
               if ( boost::regex_match( i->path().filename().string(), what, filter ) )
                 {
-                  procDirs_.push_back(i->path());
+                  procDirs_.insert(i->path());
                 }
           }
       }
 }
 
-
-std::vector<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs()
+std::set<boost::filesystem::path> OpenFOAMCaseDirs::timeDirs( OpenFOAMCaseDirs::TimeDirOpt td )
 {
-  std::vector<boost::filesystem::path> all_cands;
-  std::copy( sysDirs_.begin(), sysDirs_.end(), std::back_inserter(all_cands) );
-  std::copy( postDirs_.begin(), postDirs_.end(), std::back_inserter(all_cands) );
-  std::copy( timeDirs_.begin(), timeDirs_.end(), std::back_inserter(all_cands) );
-  std::copy( procDirs_.begin(), procDirs_.end(), std::back_inserter(all_cands) );
+  std::set<boost::filesystem::path> tds;
+
+  if (td==TimeDirOpt::All)
+  {
+    std::copy( timeDirs_.begin(), timeDirs_.end(), std::inserter(tds, tds.begin()) );
+  }
+
+  if ( td==TimeDirOpt::OnlyFirst || td==TimeDirOpt::OnlyFirstAndLast )
+  {
+    if (timeDirs_.size()>0) tds.insert(timeDirs_.front());
+  }
+
+  if (td==TimeDirOpt::OnlyLast || td==TimeDirOpt::OnlyFirstAndLast )
+  {
+    if (timeDirs_.size()>0)
+    {
+      if (timeDirs_.back().filename().string()!="0")
+        tds.insert(timeDirs_.back());
+    }
+  }
+
+  if (td==TimeDirOpt::ExceptFirst)
+  {
+    if (timeDirs_.size()>1)
+    {
+      std::copy( timeDirs_.begin()+1, timeDirs_.end(), std::inserter(tds, tds.begin()) );
+    }
+  }
+
+
+  return tds;
+}
+
+std::set<boost::filesystem::path> OpenFOAMCaseDirs::caseFilesAndDirs
+(
+    OpenFOAMCaseDirs::TimeDirOpt td,
+    bool cleanProc,
+    bool cleanTimes,
+    bool cleanPost,
+    bool cleanSys
+)
+{
+  std::set<boost::filesystem::path> all_cands;
+
+  if (cleanSys) std::copy( sysDirs_.begin(), sysDirs_.end(), std::inserter(all_cands, all_cands.begin()) );
+
+  if (cleanPost) std::copy( postDirs_.begin(), postDirs_.end(), std::inserter(all_cands, all_cands.begin()) );
+
+  if (cleanTimes)
+  {
+    auto tds = timeDirs(td);
+    std::copy( tds.begin(), tds.end(), std::inserter(all_cands, all_cands.begin()) );
+  }
+
+  if (cleanProc) std::copy( procDirs_.begin(), procDirs_.end(), std::inserter(all_cands, all_cands.begin()) );
+
   return all_cands;
 }
 
-void OpenFOAMCaseDirs::packCase(const boost::filesystem::path& archive_file)
+void OpenFOAMCaseDirs::packCase(const boost::filesystem::path& archive_file,OpenFOAMCaseDirs::TimeDirOpt td)
 {
   std::string cmd;
   cmd+="cd "+location_.string()+";";
   cmd+="tar czf "+archive_file.string();
   for (const auto& c: sysDirs_) cmd+=" "+make_relative(location_, c).string();
   for (const auto& c: postDirs_) cmd+=" "+make_relative(location_, c).string();
-  for (const auto& c: timeDirs_) cmd+=" "+make_relative(location_, c).string();
+
+  auto tds = timeDirs(td);
+  for (const auto& c: tds) cmd+=" "+make_relative(location_, c).string();
 
   if (::system(cmd.c_str()) != 0)
     throw insight::Exception("Could not pack OpenFOAM case files.\n"
                              "Command was \""+cmd+"\"");
 }
 
-void OpenFOAMCaseDirs::cleanCase()
+void OpenFOAMCaseDirs::cleanCase
+(
+    OpenFOAMCaseDirs::TimeDirOpt td,
+    bool cleanProc,
+    bool cleanTimes,
+    bool cleanPost,
+    bool cleanSys
+)
 {
 
-  auto cands = caseFilesAndDirs();
+  auto cands = caseFilesAndDirs(td, cleanProc, cleanTimes, cleanPost, cleanSys);
+
   for (const auto& c: cands)
   {
     std::cout<<"DELETING: "<<c<<std::endl;

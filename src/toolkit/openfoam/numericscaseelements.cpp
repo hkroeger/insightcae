@@ -438,6 +438,7 @@ OFDictData::dict GAMGSolverSetup(double tol, double reltol)
 {
   OFDictData::dict d;
   d["solver"]="GAMG";
+  d["minIter"]=1;
   d["tolerance"]=tol;
   d["relTol"]=reltol;
   d["smoother"]="DICGaussSeidel";
@@ -456,6 +457,7 @@ OFDictData::dict GAMGPCGSolverSetup(double tol, double reltol)
   d["solver"]="PCG";
   d["tolerance"]=tol;
   d["relTol"]=reltol;
+  d["minIter"]=1;
   OFDictData::dict pd;
   pd["preconditioner"]="GAMG";
   pd["smoother"]="DICGaussSeidel";

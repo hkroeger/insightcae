@@ -9,6 +9,8 @@
 #include "boost/algorithm/string/trim.hpp"
 #include <boost/algorithm/string.hpp>
 
+#include "base/qt5_helper.h"
+
 using namespace std;
 using namespace boost;
 

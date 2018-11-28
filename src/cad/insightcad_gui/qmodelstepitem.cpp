@@ -22,6 +22,8 @@
 #include <QMenu>
 #include <QAction>
 
+#include "base/qt5_helper.h"
+
 #ifndef Q_MOC_RUN
 #include "qmodelstepitem.h"
 #include "pointertransient.h"

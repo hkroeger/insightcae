@@ -5,6 +5,8 @@
 
 #include "base/boost_include.h"
 
+#include "base/qt5_helper.h"
+
 using namespace std;
 using namespace boost;
 

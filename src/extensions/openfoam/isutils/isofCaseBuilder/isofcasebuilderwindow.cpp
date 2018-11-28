@@ -34,6 +34,8 @@
 #include "rapidxml/rapidxml_print.hpp"
 #endif
 
+#include "base/qt5_helper.h"
+
 using namespace insight;
 using namespace boost;
 using namespace rapidxml;

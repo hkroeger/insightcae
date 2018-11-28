@@ -21,6 +21,7 @@
 #include <QtGlobal>
 #include <QInputDialog>
 
+#include "base/qt5_helper.h"
 #include "qmodeltree.h"
 
 #include "qvariableitem.h"

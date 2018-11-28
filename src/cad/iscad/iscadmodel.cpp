@@ -36,6 +36,8 @@
 #include <QPushButton>
 #include <QCheckBox>
 
+#include "base/qt5_helper.h"
+
 #include "modelfeature.h"
 #include "modelcomponentselectordlg.h"
 #include "insertfeaturedlg.h"

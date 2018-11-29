@@ -47,7 +47,7 @@ size_t Exploded::calcHash() const
   ParameterListHash h;
   h+=this->type();
   h+=*axis_;
-  BOOST_FOREACH(const ExplosionComponent&ec, components_)
+  for (const ExplosionComponent&ec: components_)
   {
       h+=*boost::fusion::at_c<0>(ec);
       h+=int(boost::fusion::at_c<1>(ec));
@@ -126,7 +126,7 @@ void Exploded::build()
       
       typedef boost::tuple<ExplosionComponent,double,double,double> Loc;
       std::vector<Loc> axialOrdered;
-      BOOST_FOREACH ( const ExplosionComponentList::value_type& c, components_ ) 
+      for ( const ExplosionComponentList::value_type& c: components_ )
       {
 	arma::mat cog=boost::fusion::at_c<0>(c)->modelCoG();
 	arma::mat bb=boost::fusion::at_c<0>(c)->modelBndBox();

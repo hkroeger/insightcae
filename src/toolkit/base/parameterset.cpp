@@ -57,7 +57,7 @@ ParameterSet::~ParameterSet()
 ParameterSet::EntryList ParameterSet::entries() const
 {
   EntryList alle;
-  BOOST_FOREACH( const_iterator::value_type e, *this)
+  for ( const_iterator::value_type e: *this)
   {
     alle.push_back(SingleEntry(e->first, e->second->clone()));
   }
@@ -66,7 +66,7 @@ ParameterSet::EntryList ParameterSet::entries() const
 
 void ParameterSet::extend(const EntryList& entries)
 {
-  BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
+  for ( const ParameterSet::SingleEntry& i: entries )
   {
     std::string key(boost::get<0>(i));
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
@@ -89,7 +89,7 @@ void ParameterSet::extend(const EntryList& entries)
 ParameterSet& ParameterSet::merge(const ParameterSet& p)
 {
   EntryList entries=p.entries();
-  BOOST_FOREACH( const ParameterSet::SingleEntry& i, entries )
+  for ( const ParameterSet::SingleEntry& i: entries )
   {
     std::string key(boost::get<0>(i));
     SubsetParameter *p = dynamic_cast<SubsetParameter*>( boost::get<1>(i) );
@@ -363,7 +363,7 @@ SelectableSubsetParameter::SelectableSubsetParameter(const key_type& defaultSele
 : Parameter(description),
   selection_(defaultSelection)
 {
-  BOOST_FOREACH( const SelectableSubsetParameter::SingleSubset& i, defaultValue )
+  for ( const SelectableSubsetParameter::SingleSubset& i: defaultValue )
   {
     std::string key(boost::get<0>(i));
     value_.insert(key, boost::get<1>(i)); // take ownership of objects in given list!

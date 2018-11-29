@@ -196,7 +196,7 @@ PythonAnalysisLoader::PythonAnalysisLoader()
 {
 
     SharedPathList paths;
-    BOOST_FOREACH ( const path& p, /*SharedPathList::searchPathList*/paths ) {
+    for ( const path& p: /*SharedPathList::searchPathList*/paths ) {
         if ( exists(p) && is_directory ( p ) ) {
 	  
             path pydir ( p );

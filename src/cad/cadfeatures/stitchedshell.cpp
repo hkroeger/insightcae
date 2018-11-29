@@ -64,7 +64,7 @@ void StitchedShell::build()
 //   BRep_Builder aBuilder;
 //   aBuilder.MakeCompound(aRes);
 
-  BOOST_FOREACH(const FeatureID& fi, faces_->data())
+  for (const FeatureID& fi: faces_->data())
   {
     sew.Add(faces_->model()->face(fi));
 //     aBuilder.Add(aRes, bladeFace_[s]);

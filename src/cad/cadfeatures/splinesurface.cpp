@@ -42,9 +42,9 @@ size_t SplineSurface::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  BOOST_FOREACH(const std::vector<VectorPtr>& ipts, pts_)
+  for (const std::vector<VectorPtr>& ipts: pts_)
   {
-      BOOST_FOREACH(const VectorPtr& p, ipts)
+      for (const VectorPtr& p: ipts)
       {
           h+=p->value();
       }

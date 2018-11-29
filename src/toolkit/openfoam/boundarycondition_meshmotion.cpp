@@ -111,7 +111,7 @@ bool CAFSIBC::addIntoFieldDictionary(const string& fieldname, const FieldInfo& f
     }
     else if ( const Parameters::relax_profile_type *rp = boost::get< Parameters::relax_profile_type>(&p_.relax) )
     {
-      BOOST_FOREACH(const Parameters::relax_profile_type::values_default_type& rpi,  rp->values )
+      for (const Parameters::relax_profile_type::values_default_type& rpi: rp->values )
       {
             OFDictData::list cp;
             cp.push_back(rpi.time);

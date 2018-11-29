@@ -48,7 +48,7 @@ size_t SplineCurve::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  BOOST_FOREACH(const VectorPtr& p, pts_)
+  for (const VectorPtr& p: pts_)
   {
       h+=p->value();
   }

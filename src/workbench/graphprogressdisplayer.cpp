@@ -37,7 +37,7 @@ using namespace insight;
 void GraphProgressDisplayer::reset()
 {
   typedef std::map<std::string, QwtPlotCurve*> CurveList;
-  BOOST_FOREACH( CurveList::value_type& i, curve_)
+  for ( CurveList::value_type& i: curve_)
   {
     delete i.second;
   }
@@ -56,7 +56,7 @@ void GraphProgressDisplayer::update(const insight::ProgressState& pi)
   double iter=pi.first;
   const ProgressVariableList& pvl=pi.second;
   
-  BOOST_FOREACH( const ProgressVariableList::value_type& i, pvl)
+  for ( const ProgressVariableList::value_type& i: pvl)
   {
     const std::string& name = i.first;
     
@@ -116,7 +116,7 @@ void GraphProgressDisplayer::checkForUpdate()
     if (needsRedraw_)
     {
         needsRedraw_=false;
-        BOOST_FOREACH( const ArrayList::value_type& i, progressX_ )
+        for ( const ArrayList::value_type& i: progressX_ )
         {
             const std::string& name=i.first;
 

@@ -87,10 +87,7 @@ void Spring::build()
           ).Value()
       )
   );
-//   BOOST_FOREACH(const FeatureID& fi, edges)
-//   {
-//     wb.Add(edges.model().edge(fi));
-//   }
+
   setShape(wb.Wire());
 }
 

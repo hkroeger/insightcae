@@ -708,7 +708,7 @@ void ArrayParameter::readFromNode(const std::string& name, rapidxml::xml_documen
             }
     );
 
-    BOOST_FOREACH(const auto& v, readvalues)
+    for (const auto& v: readvalues)
     {
         value_.push_back(v.second);
     }

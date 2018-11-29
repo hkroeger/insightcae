@@ -62,7 +62,7 @@ void coincidentProjectedEdge::firstPass(FeatureID feature)
   {
     double tol=tol_->evaluate(feature);
     
-    BOOST_FOREACH(FeatureID f, f_.data())
+    for (FeatureID f: f_.data())
     {    
       TopoDS_Edge e=TopoDS::Edge(f_.model()->edge(f));
       BRepAdaptor_Curve ac(e);

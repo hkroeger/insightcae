@@ -72,7 +72,7 @@ void Fillet::build()
     const Feature& m1=* ( edges_->model() );
     m1.unsetLeaf();
     BRepFilletAPI_MakeFillet fb ( m1 );
-    BOOST_FOREACH ( FeatureID f, edges_->data() ) {
+    for ( FeatureID f: edges_->data() ) {
         fb.Add ( r_->value(), m1.edge ( f ) );
     }
     fb.Build();

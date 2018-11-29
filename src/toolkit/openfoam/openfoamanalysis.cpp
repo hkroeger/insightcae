@@ -251,7 +251,7 @@ void OpenFOAMAnalysis::runSolver(ProgressDisplayer* displayer, OpenFOAMCase& cm)
   if (displayer) cpd.add(displayer);
   cpd.add(&conv);
   
-  BOOST_FOREACH(decltype(convergenceAnalysis_)::value_type& ca, convergenceAnalysis_)
+  for (decltype(convergenceAnalysis_)::value_type& ca: convergenceAnalysis_)
   {
     conv.add(ca.get());
   }

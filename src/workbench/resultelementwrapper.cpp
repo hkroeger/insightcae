@@ -201,7 +201,7 @@ TabularResultWrapper::TabularResultWrapper(QTreeWidgetItem* tree, const QString&
   le_=new QTableWidget(res().rows().size(), res().headings().size()/*, this*/);
   
   QStringList headers;
-  BOOST_FOREACH(const std::string& h, res().headings() )
+  for (const std::string& h: res().headings() )
   {
     headers << QString(h.c_str());
   }
@@ -303,7 +303,7 @@ void addWrapperToWidget ( insight::ResultElementCollection& rset, QTreeWidgetIte
     }
     );
 
-    BOOST_FOREACH ( const insight::ResultElementCollection::value_type& i, items ) {
+    for ( const insight::ResultElementCollection::value_type& i: items ) {
         try {
             ResultElementWrapper *wrapper =
                 ResultElementWrapper::lookup

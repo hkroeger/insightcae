@@ -118,7 +118,7 @@ DXFWriter::DXFWriter
   dxf_.writeLayer(*dw_, DL_LayerData("ANNOTATIONS", 0), DL_Attributes(std::string(""), DL_Codes::black, 35, "CONTINUOUS", 1) );
   dxf_.writeLayer(*dw_, DL_LayerData("0", 0), DL_Attributes(std::string(""), DL_Codes::black, 50, "CONTINUOUS", 1) );
 //   dxf_.writeLayer(*dw_, DL_LayerData("0_HL", 0), DL_Attributes(std::string(""), DL_Codes::l_gray, 35, "CONTINUOUS", 1) );
-  BOOST_FOREACH(const LayerDefinition& ld, layers)
+  for (const LayerDefinition& ld: layers)
   {
     DL_LayerData ldata(boost::get<0>(ld), 0);
     DL_Attributes lattr=boost::get<1>(ld);
@@ -686,7 +686,7 @@ void DXFWriter::writeSection(const TopoDS_Shape& shape, HatchGenerator& hgen, st
             
 	    // start loop:
 	    int nsegs=0;
-	    BOOST_FOREACH(const hatchLoopWriter& w, segments)
+	    for (const hatchLoopWriter& w: segments)
 	    {
 		nsegs+=w.nsegments();
 	    }
@@ -743,7 +743,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
      vislayername=name+"_3_CONT" \
      ;
 
-    BOOST_FOREACH(const Feature::Views::value_type& v, views)
+    for (const Feature::Views::value_type& v: views)
     {
         DEF_LAYERNAMES(v.first);
         
@@ -770,7 +770,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
 
     dxf.dw().sectionBlocks();
     HatchGenerator hgen;
-    BOOST_FOREACH(const Feature::Views::value_type& v, views)
+    for (const Feature::Views::value_type& v: views)
     {
         std::string blockname=v.first;
         DEF_LAYERNAMES(v.first);
@@ -798,7 +798,7 @@ void DXFWriter::writeViews(const boost::filesystem::path& file, const Feature::V
 
     dxf.dw().sectionEntities();
     
-    BOOST_FOREACH(const Feature::Views::value_type& v, views)
+    for (const Feature::Views::value_type& v: views)
     {
         std::string blockname=v.first;
         DEF_LAYERNAMES(v.first);

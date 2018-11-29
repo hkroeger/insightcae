@@ -79,7 +79,7 @@ void Chamfer::build()
     m1.unsetLeaf();
     BRepFilletAPI_MakeChamfer fb(m1);
 
-    BOOST_FOREACH(FeatureID f, edges_->data())
+    for (FeatureID f: edges_->data())
     {
         TopoDS_Edge e = m1.edge(f);
         TopTools_IndexedDataMapOfShapeListOfShape mapEdgeFace;

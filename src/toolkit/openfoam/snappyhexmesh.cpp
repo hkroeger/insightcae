@@ -121,7 +121,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   if (p_.regionRefinements.size()>0)
   {
     OFDictData::dict rrd;
-    BOOST_FOREACH(const Parameters::regionRefinements_default_type& rr, p_.regionRefinements)
+    for (const Parameters::regionRefinements_default_type& rr: p_.regionRefinements)
     {
       OFDictData::dict ld;
       OFDictData::list rrl;
@@ -138,7 +138,7 @@ void Geometry::addIntoDictionary(OFDictData::dict& sHMDict) const
   OFDictData::dict layerdict;
   layerdict["nSurfaceLayers"]=p_.nLayers;
   sHMDict.subDict("addLayersControls").subDict("layers")["\""+p_.name+".*\""]=layerdict;
-  BOOST_FOREACH(const Parameters::regionRefinements_default_type& rr, p_.regionRefinements)
+  for (const Parameters::regionRefinements_default_type& rr: p_.regionRefinements)
   {
    OFDictData::dict layerdict;
    layerdict["nSurfaceLayers"]=0;
@@ -571,7 +571,7 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
-    BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+    for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
         PiM.push_back(OFDictData::vector3(pim));
     }
@@ -604,10 +604,8 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
     setNoQualityCtrls(qualityCtrls);
   }
 
-//   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
-  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::features_default_type& feat, p.features)
+  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p.features)
   {
-//       feat->modifyFiles(ofc, location);
       feat->addIntoDictionary(sHMDict);
   }
   
@@ -615,10 +613,9 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
 
 void snappyHexMeshConfiguration::modifyCaseOnDisk ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const
 {
-  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::features_default_type& feat, p_.features)
+  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p_.features)
   {
       feat->modifyFiles(cm, location);
-//       feat->addIntoDictionary(sHMDict);
   }
 }
 
@@ -685,7 +682,7 @@ void snappyHexMesh
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;
-    BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim, p.PiM)
+    for (const snappyHexMeshConfiguration::Parameters::PiM_default_type& pim: p.PiM)
     {
         PiM.push_back(OFDictData::vector3(pim));
     }
@@ -718,8 +715,7 @@ void snappyHexMesh
     setNoQualityCtrls(qualityCtrls);
   }
 
-//   BOOST_FOREACH( const snappyHexMeshFeats::Feature& feat, ops)
-  BOOST_FOREACH(const snappyHexMeshConfiguration::Parameters::features_default_type& feat, p.features)
+  for (const snappyHexMeshConfiguration::Parameters::features_default_type& feat: p.features)
   {
       feat->modifyFiles(ofc, location);
       feat->addIntoDictionary(sHMDict);
@@ -757,7 +753,7 @@ void snappyHexMesh
   boost::regex re_extrudedfaces("^Extruding ([0-9]+) out of ([0-9]+) faces.*");
   boost::match_results<std::string::const_iterator> what;
   int exfaces=-1, totalfaces=-1;
-  BOOST_FOREACH(const std::string& line, output)
+  for (const std::string& line: output)
   {
     if (boost::regex_match(line, what, re_extrudedfaces))
     {

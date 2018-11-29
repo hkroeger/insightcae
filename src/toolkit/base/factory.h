@@ -112,7 +112,7 @@ static std::vector<std::string> factoryToC();
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   BOOST_FOREACH(const FactoryTable::value_type& e, *factories_) \
+   for (const FactoryTable::value_type& e: *factories_) \
    { toc.push_back(e.first); } \
    return toc; \
  }
@@ -132,7 +132,7 @@ static std::vector<std::string> factoryToC();
  std::vector<std::string> baseT::factoryToC() \
  { \
    std::vector<std::string> toc; \
-   BOOST_FOREACH(const FactoryTable::value_type& e, *factories_) \
+   for (const FactoryTable::value_type& e: *factories_) \
    { toc.push_back(e.first); } \
    return toc; \
  }

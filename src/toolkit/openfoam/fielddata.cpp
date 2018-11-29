@@ -108,7 +108,7 @@ OFDictData::data FieldData::sourceEntry() const
     {
         os<<" uniform unsteady";
 
-        BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
         {
             os << " " << inst.time << " " << OFDictData::to_OF(inst.value);
         }
@@ -126,7 +126,7 @@ OFDictData::data FieldData::sourceEntry() const
         os<<" "
           <<"unsteady";
 
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
         {
             os << " " << inst.time << " " << inst.profile;
         }
@@ -144,7 +144,7 @@ OFDictData::data FieldData::sourceEntry() const
         os<<" "
           <<"unsteady";
 
-        BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_radialProfile_type::values_default_type& inst: fd->values)
         {
             os << " " << inst.time << " " << inst.profile;
         }
@@ -160,13 +160,13 @@ OFDictData::data FieldData::sourceEntry() const
           <<" "
           <<"unsteady";
 
-        BOOST_FOREACH(const Parameters::fielddata_fittedProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_fittedProfile_type::values_default_type& inst: fd->values)
         {
             os << " " << inst.time;
 
-            BOOST_FOREACH
+            for
             (
-                const Parameters::fielddata_fittedProfile_type::values_default_type::component_coeffs_default_type& coeffs,
+                const Parameters::fielddata_fittedProfile_type::values_default_type::component_coeffs_default_type& coeffs:
                 inst.component_coeffs
             )
             {
@@ -209,7 +209,7 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
   {
     double meanv=0.0;
     int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
+    for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
     {
       meanv+=pow(norm(inst.value, 2), 2);
       s++;
@@ -223,13 +223,12 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
   {
     double avg=0.0;
     int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+    for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
     {
       arma::mat xy;
       xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
       for (int c=0; c<I.n_cols-1; c++)
       {
         avg_inst+=pow(I(/*cm.column*/c),2);
@@ -246,13 +245,12 @@ double FieldData::calcRepresentativeValueMag(const boost::filesystem::path& case
   {
     double avg=0.0;
     int s=0;
-    BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
+    for (const Parameters::fielddata_radialProfile_type::values_default_type& inst: fd->values)
     {
       arma::mat xy;
       xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
       arma::mat I=integrate(xy);
       double avg_inst=0.0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
       for (int c=0; c<I.n_cols-1; c++)
       {
         avg_inst+=pow(I(/*cm.column*/c),2);
@@ -280,20 +278,19 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
     double maxv=-DBL_MAX;
     if (const Parameters::fielddata_uniform_type *fd = boost::get<Parameters::fielddata_uniform_type>(&p_.fielddata) )
     {
-        BOOST_FOREACH(const Parameters::fielddata_uniform_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_uniform_type::values_default_type& inst: fd->values)
         {
             maxv=std::max(maxv, norm(inst.value, 2));
         }
     }
     else if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
     {
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
         {
             arma::mat xy;
             xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             int i=0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
             for (int c=0; c<mag_inst.n_cols-1; c++)
             {
                 mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
@@ -303,13 +300,12 @@ double FieldData::calcMaxValueMag(const boost::filesystem::path& casedir) const
     }
     else if (const Parameters::fielddata_radialProfile_type *fd = boost::get<Parameters::fielddata_radialProfile_type>(&p_.fielddata) )
     {
-        BOOST_FOREACH(const Parameters::fielddata_radialProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_radialProfile_type::values_default_type& inst: fd->values)
         {
             arma::mat xy;
             xy.load( completed_path(casedir, inst.profile).c_str(), arma::raw_ascii);
             arma::mat mag_inst(arma::zeros(xy.n_rows));
             int i=0;
-//       BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::cmap_default_type& cm, fd->cmap)
             for (int c=0; c<mag_inst.n_cols-1; c++)
             {
                 mag_inst(i++) += pow(xy(i, 1+c/*cm.column*/),2);
@@ -340,7 +336,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
 {
     if (const Parameters::fielddata_linearProfile_type *fd = boost::get<Parameters::fielddata_linearProfile_type>(&p_.fielddata) )
     {
-        BOOST_FOREACH(const Parameters::fielddata_linearProfile_type::values_default_type& inst, fd->values)
+        for (const Parameters::fielddata_linearProfile_type::values_default_type& inst: fd->values)
         {
             arma::mat xy;
             xy.load( completed_path(exepath, inst.profile).c_str(), arma::raw_ascii);

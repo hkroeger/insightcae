@@ -293,7 +293,7 @@ void ISCADModel::populateClipPlaneMenu(QMenu* clipplanemenu, QoccViewWidget* vie
     {
         int added=0;
         insight::cad::Model::DatumTableContents datums = cur_model_->datums();
-        BOOST_FOREACH(insight::cad::Model::DatumTableContents::value_type const& v, datums)
+        for (insight::cad::Model::DatumTableContents::value_type const& v: datums)
         {
             insight::cad::DatumPtr d = v.second;
             if (d->providesPlanarReference())

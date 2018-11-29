@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
         if (vm.count("libs"))
         {
             StringList libs=vm["libs"].as<StringList>();
-            BOOST_FOREACH(const string& l, libs)
+            for (const string& l: libs)
             {
                 if (!boost::filesystem::exists(l))
                 {
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
             boost::filesystem::path f(vm["list"].as<std::string>());
             ResultElementCollection r;
             r.readFromFile(f);
-            BOOST_FOREACH(ResultElementCollection::value_type& rel, r)
+            for (ResultElementCollection::value_type& rel: r)
             {
                 std::cout<<rel.first<<std::endl;
             }

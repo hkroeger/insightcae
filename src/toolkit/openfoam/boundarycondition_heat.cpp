@@ -117,7 +117,7 @@ bool ExternalWallBC::addIntoFieldDictionary(const string& fieldname, const Field
           }
 
         OFDictData::list tL, kL;
-        BOOST_FOREACH(const Parameters::wallLayers_default_type& layer, p_.wallLayers)
+        for (const Parameters::wallLayers_default_type& layer: p_.wallLayers)
         {
           tL.push_back(layer.thickness);
           kL.push_back(layer.kappa);

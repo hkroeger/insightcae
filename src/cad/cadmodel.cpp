@@ -48,7 +48,7 @@ void Model::defaultVariables()
 
 void Model::copyVariables(const ModelVariableTable& vars)
 {
-    BOOST_FOREACH(const ModelVariableTable::value_type& s, vars)
+    for (const ModelVariableTable::value_type& s: vars)
     {
         const std::string& name=boost::fusion::at_c<0>(s);
         if ( const ScalarPtr* sv = boost::get<ScalarPtr>( &boost::fusion::at_c<1>(s) ) )

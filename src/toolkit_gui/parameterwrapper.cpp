@@ -799,7 +799,7 @@ void SelectionParameterWrapper::createWidgets()
   layout2->addWidget(promptLabel);
   selBox_=new QComboBox(detaileditwidget_);
   connect(selBox_, &QComboBox::destroyed, this, &SelectionParameterWrapper::onDestruction);
-  BOOST_FOREACH( const std::string& s, param().items() )
+  for ( const std::string& s: param().items() )
   {
     selBox_->addItem(s.c_str());
   }
@@ -814,17 +814,6 @@ void SelectionParameterWrapper::createWidgets()
   layout->addStretch();
   detaileditwidget_->setLayout(layout);
 
-//   QHBoxLayout *layout=new QHBoxLayout(detaileditwidget_);
-//   QLabel *nameLabel = new QLabel(name_, detaileditwidget_);
-//   QFont f=nameLabel->font(); f.setBold(true); nameLabel->setFont(f);
-//   layout->addWidget(nameLabel);
-//   selBox_=new QComboBox(detaileditwidget_);
-//   BOOST_FOREACH( const std::string& s, param().items() )
-//   {
-//     selBox_->addItem(s.c_str());
-//   }
-//   layout->addWidget(selBox_);
-//   detaileditwidget_->setLayout(layout);
 }
 
 void SelectionParameterWrapper::onApply()
@@ -1195,7 +1184,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   layout2->addWidget(new QLabel("Selection:", detaileditwidget_));
   selBox_=new QComboBox(detaileditwidget_);
   connect(selBox_, &QComboBox::destroyed, this, &SelectableSubsetParameterWrapper::onDestruction);
-  BOOST_FOREACH( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair, param().items() )
+  for ( const insight::SelectableSubsetParameter::ItemList::const_iterator::value_type& pair: param().items() )
   {
 //     std::cout<<"inserted text:"<<pair.first<<std::endl;
     selBox_->addItem(pair.first.c_str());
@@ -1211,8 +1200,7 @@ void SelectableSubsetParameterWrapper::createWidgets()
   detaileditwidget_->setLayout(layout);
 
   connect(apply, &QPushButton::clicked, this, &SelectableSubsetParameterWrapper::onApply);
-//   connect(selBox_, SIGNAL(currentIndexChanged(const QString&)), 
-// 	  this, SLOT(onCurrentIndexChanged(const QString&)));
+
 }
 
 void SelectableSubsetParameterWrapper::insertSubset()

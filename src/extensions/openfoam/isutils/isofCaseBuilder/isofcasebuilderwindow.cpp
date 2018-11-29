@@ -234,7 +234,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
     
     // populate list of available OF versions
-    BOOST_FOREACH(const insight::OFEs::value_type& ofe, insight::OFEs::list)
+    for (const insight::OFEs::value_type& ofe: insight::OFEs::list)
     {
       ui->OFversion->addItem(ofe.first.c_str());
     }
@@ -662,7 +662,7 @@ void isofCaseBuilderWindow::onParseBF()
     ofc_->parseBoundaryDict(casepath_, boundaryDict);
     ui->patch_list->clear();
     new DefaultPatch(ui->patch_list);
-    BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+    for (const OFDictData::dict::value_type& bde: boundaryDict)
     {
 //         unhandledPatches.insert(bde.first);
         new Patch(ui->patch_list, bde.first);

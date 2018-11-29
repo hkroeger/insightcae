@@ -475,7 +475,7 @@ void QoccViewWidget::keyReleaseEvent(QKeyEvent* e)
 void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer)
 {
     // Remove previously displayed sub objects from display
-    BOOST_FOREACH(Handle_AIS_InteractiveObject& o, additionalDisplayObjectsForSelection_)
+    for (Handle_AIS_InteractiveObject& o: additionalDisplayObjectsForSelection_)
     {
         getContext()->Erase(o, false);
     }
@@ -491,7 +491,7 @@ void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* sele
         // reverse storage to detect collocated points
         typedef std::map<arma::mat, std::string, insight::compareArmaMat> trpts;
         trpts rpts;
-        BOOST_FOREACH(const insight::cad::Feature::RefPointsList::value_type& p, pts)
+        for (const insight::cad::Feature::RefPointsList::value_type& p: pts)
         {
             const std::string& name=p.first;
             const arma::mat& xyz=p.second;
@@ -508,7 +508,7 @@ void QoccViewWidget::onGraphicalSelectionChanged(QDisplayableModelTreeItem* sele
             }
         }
 
-        BOOST_FOREACH(const trpts::value_type& p, rpts)
+        for (const trpts::value_type& p: rpts)
         {
             const std::string& name=p.second;
             const arma::mat& xyz=p.first;
@@ -1461,7 +1461,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	    {
 	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?vid=(";
 	      int j=0;
-	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+	      for (insight::cad::FeatureID i: selpts_->data())
 		{
 		  text+=QString::number( i );
 		  if (j++ < selpts_->size()-1) text+=",";
@@ -1476,7 +1476,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	    {
 	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?eid=(";
 	      int j=0;
-	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+	      for (insight::cad::FeatureID i: selpts_->data())
 		{
 		  text+=QString::number( i );
 		  if (j++ < selpts_->size()-1) text+=",";
@@ -1491,7 +1491,7 @@ void QoccViewWidget::onRightButtonUp(  Qt::KeyboardModifiers, const QPoint point
 	    {
 	      QString text = QString::fromStdString(selpts_->model()->featureSymbolName()) +"?fid=(";
 	      int j=0;
-	      BOOST_FOREACH(insight::cad::FeatureID i, selpts_->data())
+	      for (insight::cad::FeatureID i: selpts_->data())
 		{
 		  text+=QString::number( i );
 		  if (j++ < selpts_->size()-1) text+=",";

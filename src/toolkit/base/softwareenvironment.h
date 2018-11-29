@@ -82,7 +82,7 @@ public:
             argv.insert(argv.begin(), "bash");
             // keep only a selected set of environment variables
             std::vector<std::string> keepvars = boost::assign::list_of("DISPLAY")("HOME")("USER")("SHELL")("INSIGHT_BINDIR")("INSIGHT_LIBDIR")("INSIGHT_OFES");
-            BOOST_FOREACH(const std::string& varname, keepvars)
+            for (const std::string& varname: keepvars)
             {
                 if (char* varvalue=getenv(varname.c_str()))
                 {
@@ -106,7 +106,7 @@ public:
       }
       
       std::ostringstream dbgs;
-      BOOST_FOREACH(const std::string& a, argv) 
+      for (const std::string& a: argv)
 	dbgs<<a<<" ";
 	
       std::cout<<dbgs.str()<<std::endl;

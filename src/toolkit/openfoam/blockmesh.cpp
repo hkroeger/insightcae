@@ -131,7 +131,7 @@ Block* Block::transformed(const arma::mat& tm, bool inv) const
 {
   PointList p2;
   std::cout<<"#corners="<<corners_.size()<<std::endl;
-  BOOST_FOREACH( const Point& p, corners_ )
+  for ( const Point& p: corners_ )
   {
     p2 += tm*p;
   }
@@ -193,7 +193,7 @@ void Block::swapGrad()
   {
     if (gl->size()>0)
     {
-      BOOST_FOREACH( double& g, *gl )
+      for ( double& g: *gl )
       {
 	g = 1./g;
       }
@@ -669,7 +669,7 @@ std::vector<OFDictData::data> SplineEdge::bmdEntry(const PointMap& allPoints, in
   l.push_back( OFDictData::data(allPoints.find(c1_)->second) );
   
   OFDictData::list pl;
-  BOOST_FOREACH( const Point& pt, intermediatepoints_ )
+  for ( const Point& pt: intermediatepoints_ )
   {
     OFDictData::list ppl;
     ppl += OFDictData::data(pt[0]), OFDictData::data(pt[1]), OFDictData::data(pt[2]);
@@ -684,7 +684,7 @@ Edge* SplineEdge::transformed(const arma::mat& tm) const
 {
   PointList pl;
   pl+=tm*c0_;
-  BOOST_FOREACH(const Point& p, intermediatepoints_)
+  for (const Point& p: intermediatepoints_)
   {
     pl+=tm*p;
   }
@@ -742,7 +742,7 @@ void Patch::clear()
 Patch* Patch::transformed(const arma::mat& tm, bool inv) const
 {
   std::auto_ptr<Patch> np(new Patch(typ_));
-  BOOST_FOREACH( const PointList& pl, faces_)
+  for ( const PointList& pl: faces_)
   {
     PointList npl;
     if (inv)

@@ -85,7 +85,7 @@ void FarFieldBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);

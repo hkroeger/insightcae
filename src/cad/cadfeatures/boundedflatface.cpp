@@ -100,7 +100,7 @@ void BoundedFlatFace::build()
         const std::vector<FeaturePtr>& edges=*edgesPtr;
 
         int n_ok=0, n_nok=0;
-        BOOST_FOREACH(const FeaturePtr& m, edges)
+        for (const FeaturePtr& m: edges)
         {
             if (m->isSingleEdge())
             {
@@ -135,9 +135,9 @@ void BoundedFlatFace::build()
     {
         const std::vector<FeatureSetPtr>& edges=*edgesPtr;
 
-        BOOST_FOREACH(const FeatureSetPtr& m, edges)
+        for (const FeatureSetPtr& m: edges)
         {
-            BOOST_FOREACH(const FeatureID& fi, m->data())
+            for (const FeatureID& fi: m->data())
             {
                 TopoDS_Edge e=m->model()->edge(fi);
                 edgs.Append(e);

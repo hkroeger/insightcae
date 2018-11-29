@@ -65,7 +65,7 @@ void CombinedProgressDisplayer::add ( ProgressDisplayer* d )
 void CombinedProgressDisplayer::update ( const ProgressState& pi )
 {
     int j=0;
-    BOOST_FOREACH ( ProgressDisplayer* d, displayers_ ) {
+    for ( ProgressDisplayer* d: displayers_ ) {
 //     std::cout<<"exec #"<<(j++)<<std::endl;
         d->update ( pi );
     }
@@ -80,7 +80,7 @@ bool CombinedProgressDisplayer::stopRun() const
         stop=true;
     }
 
-    BOOST_FOREACH ( const ProgressDisplayer* d, displayers_ ) {
+    for ( const ProgressDisplayer* d: displayers_ ) {
         if ( op_==AND ) {
             stop = stop && d->stopRun();
         } else if ( op_==OR ) {
@@ -98,7 +98,7 @@ void TextProgressDisplayer::update ( const ProgressState& pi )
     double iter=pi.first;
     const ProgressVariableList& pvl=pi.second;
 
-    BOOST_FOREACH ( const ProgressVariableList::value_type& i, pvl ) {
+    for ( const ProgressVariableList::value_type& i: pvl ) {
         const std::string& name = i.first;
         double value = i.second;
 
@@ -304,7 +304,7 @@ CollectingProgressDisplayer::CollectingProgressDisplayer ( const std::string& id
 void CollectingProgressDisplayer::update ( const ProgressState& pi )
 {
     double maxv=-1e10;
-    BOOST_FOREACH ( const ProgressVariableList::value_type v, pi.second ) {
+    for ( const ProgressVariableList::value_type v: pi.second ) {
         if ( v.second > maxv ) {
             maxv=v.second;
         }
@@ -388,7 +388,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
 
     SharedPathList paths;
-    BOOST_FOREACH ( const path& p, /*SharedPathList::searchPathList*/paths ) {
+    for ( const path& p: /*SharedPathList::searchPathList*/paths ) {
         if ( exists(p) && is_directory ( p ) ) {
             path userconfigdir ( p );
             userconfigdir /= "modules.d";
@@ -423,7 +423,7 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 
 AnalysisLibraryLoader::~AnalysisLibraryLoader()
 {
-    BOOST_FOREACH ( void *handle, handles_ ) {
+    for ( void *handle: handles_ ) {
         //dlclose(handle);
     }
 }

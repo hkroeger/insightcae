@@ -119,7 +119,7 @@ OFEs OFEs::list;
 std::vector<std::string> OFEs::all()
 {
     std::vector<std::string> entries;
-    BOOST_FOREACH(const value_type& vr, OFEs::list)
+    for (const value_type& vr: OFEs::list)
     {
 //         std::cout<<vr.first<<std::endl;
         entries.push_back(vr.first);
@@ -147,7 +147,7 @@ std::string OFEs::detectCurrentOFE()
   {
     return std::string();
   }
-  BOOST_FOREACH(const OFEs::value_type& ofe, list)
+  for (const OFEs::value_type& ofe: list)
   {
     std::vector<std::string> output;
     OpenFOAMCase(*ofe.second).executeCommand(".", "echo $WM_PROJECT_DIR", std::vector<std::string>(), &output);
@@ -184,7 +184,7 @@ OFEs::OFEs()
   std::string cfgvar(envvar);
   std::vector<std::string> ofestrs;
   boost::split(ofestrs, cfgvar, boost::is_any_of(":"));
-  BOOST_FOREACH(const std::string& ofe, ofestrs)
+  for (const std::string& ofe: ofestrs)
   {
     std::vector<std::string> strs;
     boost::split(strs, ofe, boost::is_any_of("@#"));
@@ -293,7 +293,7 @@ void BoundaryCondition::addOptionsToBoundaryDict(OFDictData::dict& bndDict) cons
 
 void BoundaryCondition::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second);
     OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent("boundaryField");
@@ -583,19 +583,19 @@ std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
   createFieldListIfRequired();
   
   // create field dictionaries first
-  BOOST_FOREACH( const FieldList::value_type& i, fields_)
+  for ( const FieldList::value_type& i: fields_)
   {
     OFDictData::dictFile& field = dictionaries->addFieldIfNonexistent("0/"+i.first, i.second);
     
     const dimensionSet& dimset=boost::fusion::get<1>(i.second);
     std::ostringstream dimss; 
     //dimss << dimset;
-    dimss <<"[ "; BOOST_FOREACH(int c, dimset) dimss <<c<<" "; dimss<<"]";
+    dimss <<"[ "; for (int c: dimset) dimss <<c<<" "; dimss<<"]";
     field["dimensions"] = OFDictData::data( dimss.str() );
     
     std::string vstr="";
     const FieldValue& val = boost::fusion::get<2>(i.second);
-    BOOST_FOREACH( const double& v, val)
+    for ( const double& v: val)
     {
       vstr+=" "+lexical_cast<std::string>(v);
     }
@@ -677,7 +677,7 @@ void OpenFOAMCase::createOnDisk
     if (restrictToFiles)
     {
         ok_to_create=false;
-        BOOST_FOREACH(boost::filesystem::path fp, *restrictToFiles)
+        for (boost::filesystem::path fp: *restrictToFiles)
         {
             if ( dictpath == fp ) ok_to_create=true;
         }
@@ -875,7 +875,7 @@ std::vector< string > OpenFOAMCase::fieldNames() const
 {
     createFieldListIfRequired();
   std::vector<std::string> fns;
-  BOOST_FOREACH(const FieldList::value_type& v, fields_)
+  for (const FieldList::value_type& v: fields_)
   {
     fns.push_back(v.first);
   }
@@ -942,33 +942,6 @@ void OpenFOAMCase::parseBoundaryDict(const boost::filesystem::path& location, OF
       throw insight::Exception("Failed to parse boundary dict "+dictpath.string());
 }
 
-/*
-void OpenFOAMCase::addRemainingBCs(OFDictData::dict& boundaryDict, const std::string& className)
-{
-  typedef std::set<std::string> StringSet;
-  StringSet unhandledPatches;
-  BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
-  {
-    unhandledPatches.insert(bde.first);
-  }
-  
-  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
-       i!=elements_.end(); i++)
-       {
-	 const BoundaryCondition *e= dynamic_cast<const BoundaryCondition*>(&(*i));
-	 if (e)
-	 {
-	   StringSet::iterator i=unhandledPatches.find(e->patchName());
-	   if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
-	 }
-       }
-       
-  for (StringSet::const_iterator i=unhandledPatches.begin(); i!=unhandledPatches.end(); i++)
-  {
-    insert(new SimpleBC(*this, *i, boundaryDict, className));  
-  }
-}
-*/
 
 std::string OpenFOAMCase::cmdString
 (
@@ -986,7 +959,7 @@ const
     "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSIGHT_LIBDIR/$WM_PROJECT-$WM_PROJECT_VERSION;"
     "cd \""+boost::filesystem::absolute(location).string()+"\";"
     + cmd;
-  BOOST_FOREACH(std::string& arg, argv)
+  for (std::string& arg: argv)
   {
     shellcmd+=" \""+arg+"\"";
   }
@@ -1065,7 +1038,7 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
 {
   typedef std::set<std::string> StringSet;
   StringSet unhandledPatches;
-  BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+  for (const OFDictData::dict::value_type& bde: boundaryDict)
   {
     unhandledPatches.insert(bde.first);
   }
@@ -1074,7 +1047,7 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
       i!=elements_.end(); i++)
       {
 	const OpenFOAMCaseElement* e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
-	BOOST_FOREACH(const OFDictData::dict::value_type& bde, boundaryDict)
+	for (const OFDictData::dict::value_type& bde: boundaryDict)
 	{
 	  std::string pn(bde.first);
 	  
@@ -1084,15 +1057,7 @@ std::set<std::string> OpenFOAMCase::getUnhandledPatches(OFDictData::dict& bounda
 	    if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
 	  }
 	}
-	
-	/*
-	const BoundaryCondition *e= dynamic_cast<const BoundaryCondition*>(&(*i));
-	if (e)
-	{
-	  StringSet::iterator i=unhandledPatches.find(e->patchName());
-	  if (i!=unhandledPatches.end()) unhandledPatches.erase(i);
-	}
-	*/
+
       }
       
    return unhandledPatches;

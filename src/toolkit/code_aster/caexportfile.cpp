@@ -53,7 +53,7 @@ void CAExportFile::writeFile(const boost::filesystem::path& location)
   <<"A tpmax " << t_max_ << "\n"
   <<"F comm " << commFile_.c_str() << " D  1\n";
   
-  BOOST_FOREACH(const FileList::value_type& item, mmedFiles_)
+  for (const FileList::value_type& item: mmedFiles_)
   {
     f << "F mmed " << item.second.c_str() << " D  " << item.first << "\n";
   }

@@ -42,7 +42,7 @@ size_t StitchedSolid::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  BOOST_FOREACH(const FeaturePtr& f, faces_)
+  for (const FeaturePtr& f: faces_)
   {
       h+=*f;
   }
@@ -69,7 +69,7 @@ void StitchedSolid::build()
 //   BRep_Builder aBuilder;
 //   aBuilder.MakeCompound(aRes);
 
-  BOOST_FOREACH(const FeaturePtr& m, faces_)
+  for (const FeaturePtr& m: faces_)
   {
     sew.Add(*m);
 //     aBuilder.Add(aRes, bladeFace_[s]);

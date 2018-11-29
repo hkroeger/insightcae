@@ -193,12 +193,12 @@ void GmshCase::doMeshing
   
   f<<"Merge \""<< absolute(geomFile).string() <<"\";\n";
 
-  BOOST_FOREACH(const std::string& o, options_)
+  for (const std::string& o: options_)
   {
     f<<o<<endl;
   }
 
-  BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedVertices_)
+  for (const NamedFeatureSet::value_type& ne: namedVertices_)
   {
     if (ne.first!="") {
     f<<"Physical Point(\""<< ne.first <<"\") = {";
@@ -211,7 +211,7 @@ void GmshCase::doMeshing
     }
   }
   
-  BOOST_FOREACH(const NamedFeatureSet::value_type& ne, namedEdges_)
+  for (const NamedFeatureSet::value_type& ne: namedEdges_)
   {
     if (ne.first!="") {
     f<<"Physical Line(\""<< ne.first <<"\") = {";
@@ -224,7 +224,7 @@ void GmshCase::doMeshing
     }
   }
   
-  BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedFaces_)
+  for (const NamedFeatureSet::value_type& nf: namedFaces_)
   {
     if (nf.first!="") {
     f<<"Physical Surface(\""<< nf.first <<"\") = {";
@@ -238,7 +238,7 @@ void GmshCase::doMeshing
   }
 
 //   f<<"Physical Volume(\"" << vname << "\") = {1};\n";
-  BOOST_FOREACH(const NamedFeatureSet::value_type& nf, namedSolids_)
+  for (const NamedFeatureSet::value_type& nf: namedSolids_)
   {
     if (nf.first!="") {
     f<<"Physical Volume(\""<< nf.first <<"\") = {";

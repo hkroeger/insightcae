@@ -82,7 +82,7 @@ void vtkModel::appendPointTensorField(const string& name, const double xx[], con
 void vtkModel::writeGeometryToLegacyFile(std::ostream& os) const
 {
   os << "POINTS "<<pts_.size()<<" float"<<endl;
-  BOOST_FOREACH(const arma::mat& p, pts_)
+  for (const arma::mat& p: pts_)
   {
     os << p(0)<<" "<<p(1)<<" "<<p(2)<<endl;
   }  
@@ -141,16 +141,16 @@ void vtkModel2d::appendCellTensorField(const std::string& name,
 void vtkModel::writeDataToLegacyFile(std::ostream& os) const
 {
   os<<"POINT_DATA "<<pts_.size()<<endl;
-  BOOST_FOREACH(const ScalarFieldList::value_type& sf, pointScalarFields_)
+  for (const ScalarFieldList::value_type& sf: pointScalarFields_)
   {
     os<<"SCALARS "<<sf.first<<" float 1"<<endl;
     os<<"LOOKUP_TABLE default"<<endl;
-    BOOST_FOREACH(const double& v, sf.second)
+    for (const double& v: sf.second)
     {
       os<<v<<endl;
     }
   }
-  BOOST_FOREACH(const VectorFieldList::value_type& sf, pointVectorFields_)
+  for (const VectorFieldList::value_type& sf: pointVectorFields_)
   {
 //     cout<<sf.first<<endl;
     if (pts_.size()>0)
@@ -160,7 +160,7 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
       {
 	// vector 
 	os<<"VECTORS "<<sf.first<<" float"<<endl;
-	BOOST_FOREACH(const arma::mat& v, sf.second)
+	for (const arma::mat& v: sf.second)
 	{
 	  os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
 	}
@@ -169,7 +169,7 @@ void vtkModel::writeDataToLegacyFile(std::ostream& os) const
       {
 	// tensor
 	os<<"TENSORS "<<sf.first<<" float"<<endl;
-	BOOST_FOREACH(const arma::mat& v, sf.second)
+	for (const arma::mat& v: sf.second)
 	{
 	  os<<v(0,0)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
 	  os<<v(1,0)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
@@ -185,16 +185,16 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
   vtkModel::writeDataToLegacyFile(os);
   
   os<<"CELL_DATA "<<poly_.size()<<endl;
-  BOOST_FOREACH(const ScalarFieldList::value_type& sf, cellScalarFields_)
+  for (const ScalarFieldList::value_type& sf: cellScalarFields_)
   {
     os<<"SCALARS "<<sf.first<<" float 1"<<endl;
     os<<"LOOKUP_TABLE default"<<endl;
-    BOOST_FOREACH(const double& v, sf.second)
+    for (const double& v: sf.second)
     {
       os<<v<<endl;
     }
   }
-  BOOST_FOREACH(const VectorFieldList::value_type& sf, cellVectorFields_)
+  for (const VectorFieldList::value_type& sf: cellVectorFields_)
   {
     if (poly_.size()>0)
     {
@@ -202,7 +202,7 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
       if ( (fe.n_rows==3) && (fe.n_cols==1) )
       {
 	os<<"VECTORS "<<sf.first<<" float"<<endl;
-	BOOST_FOREACH(const arma::mat& v, sf.second)
+	for (const arma::mat& v: sf.second)
 	{
 	  os<<v(0)<<" "<<v(1)<<" "<<v(2)<<endl;
 	}
@@ -211,7 +211,7 @@ void vtkModel2d::writeDataToLegacyFile(std::ostream& os) const
       {
 	// tensor
 	os<<"TENSORS "<<sf.first<<" float"<<endl;
-	BOOST_FOREACH(const arma::mat& v, sf.second)
+	for (const arma::mat& v: sf.second)
 	{
 	  os<<v(0,0)<<" "<<v(0,1)<<" "<<v(0,2)<<endl;
 	  os<<v(1,0)<<" "<<v(1,1)<<" "<<v(1,2)<<endl;
@@ -248,7 +248,7 @@ void vtkModel2d::appendPolygon(int nc, const int ci[])
 int vtkModel2d::nPolyPts() const
 {
   int n=0;
-  BOOST_FOREACH(const Polygon& p, poly_)
+  for (const Polygon& p: poly_)
   {
     n+=p.size()+1;
   }
@@ -261,10 +261,10 @@ void vtkModel2d::writeGeometryToLegacyFile(std::ostream& os) const
   vtkModel::writeGeometryToLegacyFile(os);
   
   os<<"POLYGONS "<<poly_.size()<<" "<<nPolyPts()<<endl;
-  BOOST_FOREACH(const Polygon& p, poly_)
+  for (const Polygon& p: poly_)
   {
     os<<p.size();
-    BOOST_FOREACH(const int& i, p)
+    for (const int& i: p)
     {
       os<<" "<<i;
     }

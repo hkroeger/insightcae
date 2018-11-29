@@ -249,7 +249,7 @@ void ResultElementCollection::writeLatexCodeOfElements
           }
     );
 
-    BOOST_FOREACH ( const value_type& re, items ) {
+    for ( const value_type& re: items ) {
         const ResultElement* r = & ( *re.second );
 
 //         std::cout<<re.first<<" order="<<re.second->order() <<std::endl;
@@ -331,7 +331,7 @@ void ResultSection::writeLatexCode ( ostream& f, const string& name, int level, 
 
 void ResultSection::writeLatexHeaderCode ( ostream& f ) const
 {
-    BOOST_FOREACH ( const value_type& i, *this ) {
+    for ( const value_type& i: *this ) {
         i.second->writeLatexHeaderCode ( f );
     }
 }
@@ -344,7 +344,7 @@ void ResultSection::exportDataToFile ( const string& name, const path& outputdir
         boost::filesystem::create_directories ( subdir );
     }
 
-    BOOST_FOREACH ( const value_type& re, *this ) {
+    for ( const value_type& re: *this ) {
         re.second->exportDataToFile ( re.first, subdir );
     }
 }
@@ -375,7 +375,7 @@ xml_node< char >* ResultSection::appendToNode ( const string& name, xml_document
 std::shared_ptr< ResultElement > ResultSection::clone() const
 {
     std::shared_ptr<ResultSection> res( new ResultSection ( sectionName_ ) );
-    BOOST_FOREACH ( const value_type& re, *this ) {
+    for ( const value_type& re: *this ) {
         ( *res ) [re.first] = re.second->clone();
     }
     res->setOrder ( order() );
@@ -617,7 +617,7 @@ void TabularResult::setCellByName ( TabularResult::Row& r, const string& colname
     if ( ii==headings_.end() ) {
         std::ostringstream msg;
         msg<<"Tried to write into column "+colname+" but this does not exist! Existing columns are:"<<endl;
-        BOOST_FOREACH ( const std::string& n, headings_ ) {
+        for ( const std::string& n: headings_ ) {
             msg<<n<<endl;
         }
         insight::Exception ( msg.str() );
@@ -633,7 +633,7 @@ arma::mat TabularResult::getColByName ( const string& colname ) const
     if ( ii==headings_.end() ) {
         std::ostringstream msg;
         msg<<"Tried to get column "+colname+" but this does not exist! Existing columns are:"<<endl;
-        BOOST_FOREACH ( const std::string& n, headings_ ) {
+        for ( const std::string& n: headings_ ) {
             msg<<n<<endl;
         }
         insight::Exception ( msg.str() );
@@ -648,9 +648,9 @@ arma::mat TabularResult::toMat() const
     arma::mat res;
     res.resize ( rows_.size(), rows_[0].size() );
     int i=0;
-    BOOST_FOREACH ( const std::vector<double>& row, rows_ ) {
+    for ( const std::vector<double>& row: rows_ ) {
         int j=0;
-        BOOST_FOREACH ( double v, row ) {
+        for ( double v: row ) {
 //             cout<<"res("<<i<<","<<j<<")="<<v<<endl;
             res ( i, j++ ) =v;
         }
@@ -663,13 +663,13 @@ arma::mat TabularResult::toMat() const
 void TabularResult::writeGnuplotData ( std::ostream& f ) const
 {
     f<<"#";
-    BOOST_FOREACH ( const std::string& head, headings_ ) {
+    for ( const std::string& head: headings_ ) {
         f<<" \""<<head<<"\"";
     }
     f<<std::endl;
 
-    BOOST_FOREACH ( const std::vector<double>& row, rows_ ) {
-        BOOST_FOREACH ( double v, row ) {
+    for ( const std::vector<double>& row: rows_ ) {
+        for ( double v: row ) {
             f<<" "<<v;
         }
         f<<std::endl;
@@ -707,11 +707,11 @@ void TabularResult::writeLatexCode ( std::ostream& f, const std::string& name, i
   }
   if (ccolset.size()>0) colsets.push_back(ccolset);
 
-  BOOST_FOREACH(const std::vector<int>& cols, colsets)
+  for (const std::vector<int>& cols: colsets)
   {
     f<<
      "\\begin{longtable}{";
-    BOOST_FOREACH(int c, cols) {
+    for (int c: cols) {
         f<<"c";
     }
     f<<"}\n";
@@ -781,15 +781,15 @@ void TabularResult::exportDataToFile ( const string& name, const path& outputdir
     std::ofstream f ( fname.c_str() );
 
     std::string sep="";
-    BOOST_FOREACH ( const std::string& h, headings_ ) {
+    for ( const std::string& h: headings_ ) {
         f<<sep<<"\""<<h<<"\"";
         sep=";";
     }
     f<<endl;
 
-    BOOST_FOREACH ( const Row& r, rows_ ) {
+    for ( const Row& r: rows_ ) {
         sep="";
-        BOOST_FOREACH ( const double& v, r ) {
+        for ( const double& v: r ) {
             f<<sep<<v;
             sep=";";
         }
@@ -1254,7 +1254,7 @@ void ResultElementCollection::readFromFile ( const boost::filesystem::path& file
 ParameterSetPtr ResultSet::convertIntoParameterSet() const
 {
     ParameterSetPtr ps ( new ParameterSet() );
-    BOOST_FOREACH ( const_iterator::value_type rp, *this ) {
+    for ( const_iterator::value_type rp: *this ) {
         ParameterPtr p=rp.second->convertIntoParameter();
         if ( p ) {
             std::string key=rp.first;
@@ -1498,7 +1498,7 @@ void Chart::generatePlotImage ( const path& imagepath ) const
         gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
         if ( plc_.size() >0 ) {
             gp<<"plot 0 not lt -1";
-            BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+            for ( const PlotCurve& pc: plc_ ) {
                 if ( !pc.plotcmd_.empty() ) {
                     if ( pc.xy_.n_rows>0 ) {
                         gp<<", '-' "<<pc.plotcmd_;
@@ -1508,7 +1508,7 @@ void Chart::generatePlotImage ( const path& imagepath ) const
                 }
             }
             gp<<endl;
-            BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+            for ( const PlotCurve& pc: plc_ ) {
                 if ( pc.xy_.n_rows>0 ) {
                     gp.send1d ( pc.xy_ );
                 }
@@ -1554,7 +1554,7 @@ void Chart::writeLatexCode ( std::ostream& f, const std::string& name, int level
 void Chart::exportDataToFile ( const std::string& name, const boost::filesystem::path& outputdirectory ) const
 {
     int curveID=0;
-    BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+    for ( const PlotCurve& pc: plc_ ) {
         std::string suf=pc.plaintextlabel();
         replace_all ( suf, "/", "_" );
         if ( suf=="" ) {
@@ -1595,7 +1595,7 @@ rapidxml::xml_node<>* Chart::appendToNode
                                   doc.allocate_string ( xlabel_.c_str() )
                               ) );
 
-    BOOST_FOREACH ( const PlotCurve& pc, plc_ ) {
+    for ( const PlotCurve& pc: plc_ ) {
         xml_node<> *pcnode = doc.allocate_node
                              (
                                  node_element,
@@ -1679,11 +1679,11 @@ void addContourPlot
         gp<<addinit<<";";
         gp<<"set xlabel '"<<xlabel<<"'; set ylabel '"<<ylabel<<"'; set grid; ";
         gp<<"splot ";
-        BOOST_FOREACH ( const PlotCurve& pc, plc ) {
+        for ( const PlotCurve& pc: plc ) {
             gp<<"'-' "<<pc.plotcmd_;
         }
         gp<<endl;
-        BOOST_FOREACH ( const PlotCurve& pc, plc ) {
+        for ( const PlotCurve& pc: plc ) {
             gp.send ( pc.xy_ );
         }
     }

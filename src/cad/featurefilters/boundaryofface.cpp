@@ -39,7 +39,7 @@ bool boundaryOfFace::checkMatch(FeatureID feature) const
 {
   TopoDS_Edge thisedg = model_->edge(feature);
   
-  BOOST_FOREACH(FeatureID fi, faces_.data())
+  for (FeatureID fi: faces_.data())
   {
     TopoDS_Face f=faces_.model()->face(fi);
     for(TopExp_Explorer ex2(f, TopAbs_EDGE); ex2.More(); ex2.Next())

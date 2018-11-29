@@ -84,38 +84,38 @@ void Mesh::build()
 {
   GmshCase c(*model_, L_[0]->value(), L_[1]->value());
   if (!quad_) c.setLinear();
-  BOOST_FOREACH(const GroupDesc& gd, vertexGroups_)
+  for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameVertices(gname, *gfs);
   }
-  BOOST_FOREACH(const GroupDesc& gd, edgeGroups_)
+  for (const GroupDesc& gd: edgeGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameEdges(gname, *gfs);
   }
-  BOOST_FOREACH(const GroupDesc& gd, faceGroups_)
+  for (const GroupDesc& gd: faceGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameFaces(gname, *gfs);
   }
-  BOOST_FOREACH(const GroupDesc& gd, solidGroups_)
+  for (const GroupDesc& gd: solidGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const FeatureSetPtr& gfs=boost::fusion::at_c<1>(gd);
     c.nameSolids(gname, *gfs);
   }
-  BOOST_FOREACH(const NamedVertex& gd, namedVertices_)
+  for (const NamedVertex& gd: namedVertices_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     const arma::mat& loc=boost::fusion::at_c<1>(gd)->value();
     c.addSingleNamedVertex(gname, loc);
   }
   
-  BOOST_FOREACH(const GroupDesc& gd, vertexGroups_)
+  for (const GroupDesc& gd: vertexGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
@@ -124,7 +124,7 @@ void Mesh::build()
       c.setVertexLen(gname, (*gs)->value());
     }
   }
-  BOOST_FOREACH(const GroupDesc& gd, edgeGroups_)
+  for (const GroupDesc& gd: edgeGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
@@ -132,7 +132,7 @@ void Mesh::build()
       c.setEdgeLen(gname, (*gs)->value());
     }
   }
-  BOOST_FOREACH(const GroupDesc& gd, faceGroups_)
+  for (const GroupDesc& gd: faceGroups_)
   {
     const std::string& gname=boost::fusion::at_c<0>(gd);
     if (boost::optional<ScalarPtr> gs=boost::fusion::at_c<2>(gd))
@@ -182,7 +182,7 @@ void SnappyHexMesh::build()
     arma::mat pmin = vec3(1e10, 1e10, 1e10);
     arma::mat pmax = vec3(-1e10, -1e10, -1e10);
     
-    BOOST_FOREACH(const GeometryDesc& geom, geometries_)
+    for (const GeometryDesc& geom: geometries_)
     {
         const FeaturePtr geo = boost::fusion::at_c<0>(geom);
         const std::string& name = boost::fusion::at_c<1>(geom);
@@ -231,7 +231,7 @@ void SnappyHexMesh::build()
         )));
     }
     
-    BOOST_FOREACH(const EdgeRefineDesc& edgref, edgerefines_)
+    for (const EdgeRefineDesc& edgref: edgerefines_)
     {
         const std::string& name = boost::fusion::at_c<0>(edgref);
         FeatureSetPtr fsp = boost::fusion::at_c<1>(edgref);

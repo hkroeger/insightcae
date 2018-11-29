@@ -772,8 +772,8 @@ initEvaluate
 	  filePtr_.reset(fptr);
 	  filePtr_() <<"#";
 	  int i=1;
-	  BOOST_FOREACH(
-	    const std::string& key, 
+	  for (
+	    const std::string& key:
 	    boost::assign::list_of<std::string>
 	    ("time")
 	    ("omega")

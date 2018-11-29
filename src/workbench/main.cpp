@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     if (vm.count("libs"))
     {
         StringList libs=vm["libs"].as<StringList>();
-        BOOST_FOREACH(const string& l, libs)
+        for (const string& l: libs)
         {
             if (!boost::filesystem::exists(l))
             {

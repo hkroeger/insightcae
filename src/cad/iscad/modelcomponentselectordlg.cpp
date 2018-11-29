@@ -28,7 +28,7 @@
 
 void addScalarSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent, const std::string& basename)
 {
-    BOOST_FOREACH(const insight::cad::Feature::RefValuesList::value_type& v, feat.getDatumScalars())
+    for (const insight::cad::Feature::RefValuesList::value_type& v: feat.getDatumScalars())
     {
         std::string thisname=basename+"$"+v.first;
         QStringList sl; sl << v.first.c_str() << thisname.c_str();
@@ -49,7 +49,7 @@ void addScalarSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent
 void addPointSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent, const std::string& basename)
 {
     QBrush fb(Qt::darkGray);
-    BOOST_FOREACH(const insight::cad::Feature::RefPointsList::value_type& p, feat.getDatumPoints())
+    for (const insight::cad::Feature::RefPointsList::value_type& p: feat.getDatumPoints())
     {
         std::string thisname=basename+"@"+p.first;
         QStringList sl; sl << p.first.c_str() << thisname.c_str();
@@ -62,7 +62,7 @@ void addPointSymbols(const insight::cad::Feature& feat, QTreeWidgetItem* parent,
         curnode->setForeground(0, fb);
         curnode->setForeground(1, fb);
     }
-    BOOST_FOREACH(const insight::cad::Feature::RefVectorsList::value_type& v, feat.getDatumVectors())
+    for (const insight::cad::Feature::RefVectorsList::value_type& v: feat.getDatumVectors())
     {
         std::string thisname=basename+"^"+v.first;
         QStringList sl; sl << v.first.c_str() << thisname.c_str();
@@ -94,7 +94,7 @@ void addModelsteps
     std::set<std::string> components = std::set<std::string>()
 )
 {
-    BOOST_FOREACH(const insight::cad::SubfeatureMap::value_type& ms, feat.providedSubshapes())
+    for (const insight::cad::SubfeatureMap::value_type& ms: feat.providedSubshapes())
     {
         insight::cad::FeaturePtr fp = ms.second;
         std::string thisname=basename+"."+ms.first;
@@ -124,7 +124,7 @@ ModelComponentSelectorDlg::ModelComponentSelectorDlg(const insight::cad::ModelPt
     ui = new Ui::ModelComponentSelectorDlg;
     ui->setupUi(this);
     
-    BOOST_FOREACH(const insight::cad::Model::ModelstepTableContents::value_type& ms, m->modelsteps())
+    for (const insight::cad::Model::ModelstepTableContents::value_type& ms: m->modelsteps())
     {
         std::cerr<<"adding "<<ms.first<<std::endl;
         QStringList sl; sl << ms.first.c_str() <<  ms.first.c_str();

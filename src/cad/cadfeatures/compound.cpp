@@ -45,7 +45,7 @@ size_t Compound::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  BOOST_FOREACH(const CompoundFeatureMap::value_type& comp, components_)
+  for (const CompoundFeatureMap::value_type& comp: components_)
   {
     h+=comp.second;
   }
@@ -102,7 +102,7 @@ void Compound::build()
       TopoDS_Compound result;
       bb.MakeCompound ( result );
 
-      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ )
+      for ( const CompoundFeatureMap::value_type& c: components_ )
       {
           std::string name=c.first;
           FeaturePtr p=c.second;
@@ -115,7 +115,7 @@ void Compound::build()
 
       setShape ( result );
 
-      BOOST_FOREACH ( const CompoundFeatureMap::value_type& c, components_ )
+      for ( const CompoundFeatureMap::value_type& c: components_ )
       {
         std::string name=c.first;
         FeaturePtr p=c.second;
@@ -176,7 +176,7 @@ double Compound::mass(double density_ovr, double aw_ovr) const
 {
     checkForBuildDuringAccess();
     std::vector<FeaturePtr> sfs;
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+    for (const CompoundFeatureMap::value_type& c: components_)
     {
         sfs.push_back(c.second);
     }
@@ -187,7 +187,7 @@ double Compound::mass(double density_ovr, double aw_ovr) const
     std::cout<<"Compound mass map:"<<std::endl;
     std::cout<<"=================="<<std::endl;
     double m=0.0;
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+    for (const CompoundFeatureMap::value_type& c: components_)
     {
         double mc = c.second->mass(density_ovr, aw_ovr);
         m += mc;
@@ -206,7 +206,7 @@ arma::mat Compound::modelCoG(double density_ovr) const
 {
     checkForBuildDuringAccess();
     std::vector<FeaturePtr> sfs;
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+    for (const CompoundFeatureMap::value_type& c: components_)
     {
         sfs.push_back(c.second);
     }
@@ -224,7 +224,7 @@ arma::mat Compound::modelInertia(double density_ovr) const
 {
     checkForBuildDuringAccess();
     std::vector<FeaturePtr> sfs;
-    BOOST_FOREACH(const CompoundFeatureMap::value_type& c, components_)
+    for (const CompoundFeatureMap::value_type& c: components_)
     {
         sfs.push_back(c.second);
     }

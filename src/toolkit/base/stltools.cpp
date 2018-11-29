@@ -65,7 +65,7 @@ void STLExtruder::writeTris(const boost::filesystem::path& outputfilepath)
   std::string name="patch0"; //outputfilepath.stem().string();
   f<<"solid "<<name<<std::endl;
   
-  BOOST_FOREACH(const tri& t, tris_)
+  for (const tri& t: tris_)
   {
     arma::mat n=t.normal();
     f<<"facet normal "<<n[0]<<" "<<n[1]<<" "<<n[2]<<endl;

@@ -177,7 +177,7 @@ detailedGasReactionThermodynamics::detailedGasReactionThermodynamics
   readOpenFOAMDict(tf, td);
   
   c.addField("Ydefault", FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
-  BOOST_FOREACH(const OFDictData::dict::value_type e, td)
+  for (const OFDictData::dict::value_type e: td)
   {
     std::string specie = e.first;
     double v=0.0;

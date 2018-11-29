@@ -122,7 +122,7 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
       = dictionaries.addDictionaryIfNonexistent("system/setFieldsDict");
 
     OFDictData::list dfvs;
-    BOOST_FOREACH(const Parameters::defaultValues_default_type& dfv,p_.defaultValues)
+    for (const Parameters::defaultValues_default_type& dfv: p_.defaultValues)
     {
       if (const auto * sdfv = boost::get<Parameters::defaultValues_default_scalar_type>(&dfv))
         {
@@ -138,12 +138,12 @@ void setFieldsConfiguration::addIntoDictionaries(OFdicts& dictionaries) const
     sFD["defaultFieldValues"]=dfvs;
 
     OFDictData::list rs;
-    BOOST_FOREACH(const Parameters::regionSelectors_default_type& r, p_.regionSelectors)
+    for (const Parameters::regionSelectors_default_type& r: p_.regionSelectors)
     {
       if (const auto * box = boost::get<Parameters::regionSelectors_default_box_type>(&r))
         {
           OFDictData::list vl;
-          BOOST_FOREACH(const Parameters::regionSelectors_default_box_type::regionValues_default_type& bv, box->regionValues)
+          for (const Parameters::regionSelectors_default_box_type::regionValues_default_type& bv: box->regionValues)
           {
             if (const auto * s = boost::get<Parameters::regionSelectors_default_box_type::regionValues_default_scalar_type>(&bv))
               {
@@ -752,7 +752,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
     rbmc["accelerationRelaxation"]=0.4;
 
     OFDictData::dict bl;
-    BOOST_FOREACH(const Parameters::bodies_default_type& body, p.bodies)
+    for (const Parameters::bodies_default_type& body: p.bodies)
     {
       OFDictData::dict bc;
 
@@ -765,7 +765,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
                                  % body.centreOfMass(0) % body.centreOfMass(1) % body.centreOfMass(2) );
 
       OFDictData::list jl;
-      BOOST_FOREACH(const Parameters::bodies_default_type::translationConstraint_default_type& tc,
+      for (const Parameters::bodies_default_type::translationConstraint_default_type& tc:
                     body.translationConstraint)
       {
         std::string code;
@@ -778,7 +778,7 @@ void rigidBodyMotionDynamicMesh::addIntoDictionaries(OFdicts& dictionaries) cons
          d["type"]=code;
         jl.push_back(d);
       }
-      BOOST_FOREACH(const Parameters::bodies_default_type::rotationConstraint_default_type& rc,
+      for (const Parameters::bodies_default_type::rotationConstraint_default_type& rc:
                     body.rotationConstraint)
       {
         std::string code;

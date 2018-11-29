@@ -771,11 +771,7 @@ insight::ResultSetPtr FlatPlateBL::evaluateResults(insight::OpenFOAMCase& cm)
     );
   }
   
-  BOOST_FOREACH
-  (
-    const FlatPlateBL::Parameters::eval_type::bc_extractsections_type::value_type& es, 
-    p.eval.bc_extractsections
-  )
+  for (const auto& es: p.eval.bc_extractsections)
   {
     evaluateAtSection
     (

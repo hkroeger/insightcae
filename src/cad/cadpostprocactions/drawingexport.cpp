@@ -31,11 +31,11 @@ size_t DrawingExport::calcHash() const
 {
   ParameterListHash h;
   h+=file_;
-  BOOST_FOREACH(const DrawingViewDefinitions& vds, viewdefs_)
+  for (const DrawingViewDefinitions& vds: viewdefs_)
   {
       h += *boost::fusion::at_c<0>(vds);
 
-      BOOST_FOREACH(const DrawingViewDefinition& vd, boost::fusion::at_c<1>(vds))
+      for (const DrawingViewDefinition& vd: boost::fusion::at_c<1>(vds))
       {
           h += boost::get<0>(vd);
           h += boost::get<1>(vd)->value();
@@ -70,11 +70,11 @@ DrawingExport::DrawingExport
 void DrawingExport::build()
 {
     Feature::Views views;
-    BOOST_FOREACH(const DrawingViewDefinitions& vds, viewdefs_)
+    for (const DrawingViewDefinitions& vds: viewdefs_)
     {
         FeaturePtr model_=boost::fusion::at_c<0>(vds);
 
-        BOOST_FOREACH(const DrawingViewDefinition& vd, boost::fusion::at_c<1>(vds))
+        for (const DrawingViewDefinition& vd: boost::fusion::at_c<1>(vds))
         {
             std::string name = boost::get<0>(vd);
             arma::mat p0 = boost::get<1>(vd)->value();

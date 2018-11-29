@@ -128,7 +128,7 @@ void setSet(const OpenFOAMCase& ofc, const boost::filesystem::path& location, co
   if ((ofc.OFversion()>=220) && (listTimeDirectories(location).size()==0)) opts.push_back("-constant");
   std::string machine=""; // problems, if job is put into queue system
   ofc.forkCommand(proc, location, "setSet", opts, &machine);
-  BOOST_FOREACH(const std::string& line, cmds)
+  for (const std::string& line: cmds)
   {
     proc << line << endl;
   }
@@ -161,7 +161,7 @@ void copyPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
   }
   if (purify)
   {
-    BOOST_FOREACH(const std::string& fname, files)
+    for (const std::string& fname: files)
     {
       path gzname(fname.c_str()); gzname=(gzname.string()+".gz");
       if (exists(source/gzname)) 
@@ -236,7 +236,7 @@ void linkPolyMesh(const boost::filesystem::path& from, const boost::filesystem::
       throw insight::Exception("Essential mesh file "+fname+" not present in "+source.c_str());
   }
 
-  BOOST_FOREACH(const std::string& fname, 
+  for (const std::string& fname:
 		list_of<std::string>/*("boundary")*/("faces")("neighbour")("owner")("points")
 		.convert_to_container<std::vector<std::string> >())
   {
@@ -291,7 +291,7 @@ void fieldToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) cons
   opdict["max"]=p_.max();
 
   OFDictData::list fve;
-  BOOST_FOREACH(const FieldValueSpec& fvs, p_.fieldValues())
+  for (const FieldValueSpec& fvs: p_.fieldValues())
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -320,7 +320,7 @@ void boxToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
   opdict["box"]=OFDictData::to_OF(p_.min()) + OFDictData::to_OF(p_.max());
 
   OFDictData::list fve;
-  BOOST_FOREACH(const FieldValueSpec& fvs, p_.fieldValues())
+  for (const FieldValueSpec& fvs: p_.fieldValues())
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -349,7 +349,7 @@ void cellToCellOperator::addIntoDictionary(OFDictData::dict& setFieldDict) const
   opdict["set"]=p_.cellSet();
 
   OFDictData::list fve;
-  BOOST_FOREACH(const FieldValueSpec& fvs, p_.fieldValues())
+  for (const FieldValueSpec& fvs: p_.fieldValues())
   {
     //std::ostringstream line;
     //line << fvs.get<0>() << " " << fvs.get<1>() ;
@@ -376,13 +376,13 @@ void setFields(const OpenFOAMCase& ofc, const boost::filesystem::path& location,
   OFDictData::dictFile setFieldsDict;
   
   OFDictData::list& dvl = setFieldsDict.addListIfNonexistent("defaultFieldValues");
-  BOOST_FOREACH( const FieldValueSpec& dv, defaultValues)
+  for ( const FieldValueSpec& dv: defaultValues)
   {
     dvl.push_back( dv );
   }
   
   setFieldsDict.addListIfNonexistent("regions");  
-  BOOST_FOREACH( const setFieldOperator& op, ops)
+  for ( const setFieldOperator& op: ops)
   {
     op.addIntoDictionary(setFieldsDict);
   }
@@ -462,7 +462,7 @@ void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData
   else
     suffixes.push_back("");
   
-  BOOST_FOREACH(const std::string& suf, suffixes)
+  for (const std::string& suf: suffixes)
   {
     OFDictData::dict opdict;
     opdict["name"]=p_.name()+suf;
@@ -527,7 +527,7 @@ void createPatch(const OpenFOAMCase& ofc,
   else
     createPatchDict.addListIfNonexistent("patches");  
   
-  BOOST_FOREACH( const createPatchOperator& op, ops)
+  for ( const createPatchOperator& op: ops)
   {
     op.addIntoDictionary(ofc, createPatchDict);
   }
@@ -615,7 +615,7 @@ arma::mat line::readSamples
   boost::filesystem::path timedir=tdl.rbegin()->second;
   if (!time.empty())
   {
-    BOOST_FOREACH(TimeDirectoryList::value_type& tde, tdl)
+    for (TimeDirectoryList::value_type& tde: tdl)
     {
       if (tde.second.filename().string()==time)
       {
@@ -783,7 +783,7 @@ void circumferentialAveragedUniformLine::addIntoDictionary(const OpenFOAMCase& o
 {
   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
-  BOOST_FOREACH(const line& l, lines_)
+  for (const line& l: lines_)
   {
     l.addIntoDictionary(ofc, sampleDict);
   }
@@ -810,7 +810,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
   ColumnDescription cd;
   int i=0, num_valid=0;
   bool cd_set=false;
-  BOOST_FOREACH(const line& l, lines_)
+  for (const line& l: lines_)
   {
     arma::mat datai = l.readSamples(ofc, location, &cd, time);
     arma::mat Ri=rotMatrix(i++, p_.angularOffset).t();
@@ -821,7 +821,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
       {
 	std::ofstream f( (p_.name+"_circularinstance_colheader.txt").c_str() );
 	f<<"#";
-	BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+	for (const ColumnDescription::value_type& fn: cd)
 	{
 	  ColumnInfo ci=fn.second;
 	  if (ci.ncmpt==0)
@@ -844,7 +844,7 @@ arma::mat circumferentialAveragedUniformLine::readSamples
 
       num_valid++;
       
-      BOOST_FOREACH(const ColumnDescription::value_type& fn, cd)
+      for (const ColumnDescription::value_type& fn: cd)
       {
 	ColumnInfo ci=fn.second;
   //       cout<<fn.first<<": c="<<ci.col<<" ncmpt="<<ci.ncmpt<<endl;
@@ -946,7 +946,7 @@ void linearAveragedPolyLine::addIntoDictionary(const OpenFOAMCase& ofc, OFDictDa
 {
 //   OFDictData::list& l=sampleDict.addListIfNonexistent("sets");
   
-  BOOST_FOREACH(const line& l, lines_)
+  for (const line& l: lines_)
   {
     l.addIntoDictionary(ofc, sampleDict);
   }
@@ -970,7 +970,7 @@ arma::mat linearAveragedPolyLine::readSamples
   
   ColumnDescription cd;
   int valid_lines=0;
-  BOOST_FOREACH(const line& l, lines_)
+  for (const line& l: lines_)
   {
     arma::mat ds=l.readSamples(ofc, location, &cd, time);
     if (ds.n_rows>0)
@@ -1082,7 +1082,7 @@ void sample(const OpenFOAMCase& ofc,
   sampleDict["sets"] = OFDictData::list();
   sampleDict["surfaces"] = OFDictData::list();
     
-  BOOST_FOREACH( const set& s, sets)
+  for ( const set& s: sets)
   {
     s.addIntoDictionary(ofc, sampleDict);
   }
@@ -1214,7 +1214,7 @@ void mapFields
   {
     std::ostringstream os;
     os<<"(";
-    BOOST_FOREACH(const std::string& fn, fields)
+    for (const std::string& fn: fields)
     {
       os<<" "<<fn;
     }
@@ -1291,7 +1291,7 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
             if (!ignoremissing) remove_all(location/"constant"/"polyMesh");
             copyPolyMesh(lastTime, location/"constant", true, ignoremissing, include_zones);
             
-            BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+            for (const TimeDirectoryList::value_type& td: times)
             {
             remove_all(td.second);
             }
@@ -1317,7 +1317,7 @@ void resetMeshToLatestTimestep(const OpenFOAMCase& c, const boost::filesystem::p
                         if (!ignoremissing) remove_all(curploc/"constant"/"polyMesh");
                         copyPolyMesh(lastTime, curploc/"constant", true, ignoremissing, include_zones);
                         
-                        BOOST_FOREACH(const TimeDirectoryList::value_type& td, times)
+                        for (const TimeDirectoryList::value_type& td: times)
                         {
                             remove_all(td.second);
                         }
@@ -1480,7 +1480,7 @@ void runPvPython
   {
     std::ofstream tf(tempfile.c_str());
     tf << "from Insight.Paraview import *" << endl;
-    BOOST_FOREACH(const std::string& cmd, pvpython_commands)
+    for (const std::string& cmd: pvpython_commands)
     {
       tf << cmd;
     }
@@ -1534,7 +1534,7 @@ patchIntegrate::patchIntegrate
   cm.parseBoundaryDict ( location, boundaryDict );
 
   std::vector<std::string> patches;
-  BOOST_FOREACH ( const OFDictData::dict::value_type& de, boundaryDict )
+  for ( const OFDictData::dict::value_type& de: boundaryDict )
   {
     if ( regex_match ( de.first, pat ) )
       {
@@ -1545,7 +1545,7 @@ patchIntegrate::patchIntegrate
 
   int ncomp=1;
   arma::mat result;
-  BOOST_FOREACH ( const std::string& patchName, patches )
+  for ( const std::string& patchName: patches )
   {
     std::vector<std::string> opts;
     copy ( addopts.begin(), addopts.end(), back_inserter ( opts ) );
@@ -1580,7 +1580,7 @@ patchIntegrate::patchIntegrate
     double time=0;
     std::vector<double> times, areadata;
     std::vector<arma::mat> data;
-    BOOST_FOREACH ( const std::string& line, output )
+    for ( const std::string& line: output )
     {
       if ( boost::regex_match ( line, what, re_time ) )
         {
@@ -1678,7 +1678,7 @@ patchArea::patchArea(const OpenFOAMCase& cm, const boost::filesystem::path& loca
 
 
   boost::match_results<std::string::const_iterator> what;
-  BOOST_FOREACH ( const std::string& line, output )
+  for ( const std::string& line: output )
   {
     if ( boost::regex_match ( line, what, re_total ) )
       {
@@ -1743,7 +1743,7 @@ typedef std::map<std::string, int> ColumnDescription;
 bool equal_columns(const ColumnDescription& c1, const ColumnDescription& c2)
 {
   bool ok = (c1.size()==c2.size());
-  BOOST_FOREACH(const ColumnDescription::value_type& c1e, c1)
+  for (const ColumnDescription::value_type& c1e: c1)
   {
 //     cout<<"col="<<c1e.first<<" ("<<c1e.second<<") >>> ";
     ColumnDescription::const_iterator i2=c2.find(c1e.first);
@@ -1787,7 +1787,7 @@ std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetempl
 	  if (alldata.size()==0)
 	  {
 	    // insert all cols
-	    BOOST_FOREACH(const ColumnDescription::value_type& cd, thisheaders)
+	    for (const ColumnDescription::value_type& cd: thisheaders)
 	    {
 	      alldata[cd.first].push_back(r.col(cd.second));
 	    }
@@ -1795,8 +1795,8 @@ std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetempl
 	  else
 	  {
 	    std::set<std::string> vc;
-	    BOOST_FOREACH(const AllData::value_type& adt, alldata) vc.insert(adt.first);
-	    BOOST_FOREACH(const ColumnDescription::value_type& cdt, thisheaders)
+	    for (const AllData::value_type& adt: alldata) vc.insert(adt.first);
+	    for (const ColumnDescription::value_type& cdt: thisheaders)
 	    {
 	      AllData::iterator j=alldata.find(cdt.first); // try to find each column of this CSV in alldata
 	      if (j!=alldata.end()) // if present, append
@@ -1807,7 +1807,7 @@ std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetempl
 	      }
 	    }
 	    // remove all cols, that are not present
-	    BOOST_FOREACH(const std::string& vci, vc)
+	    for (const std::string& vci: vc)
 	    {
 // 	      cout<<"Remove "<<vci<<endl;
 	      alldata.erase(alldata.find(vci));
@@ -1841,17 +1841,17 @@ std::vector<arma::mat> readParaviewCSVs(const boost::filesystem::path& filetempl
   if (headers)
   {
     int j=0;
-    BOOST_FOREACH(const AllData::value_type& cv, alldata)
+    for (const AllData::value_type& cv: alldata)
     {
       (*headers)[cv.first]=j++;
     }
   }
   
-  BOOST_FOREACH(const AllData::value_type& cv, alldata)
+  for (const AllData::value_type& cv: alldata)
   {
     const std::vector< arma::mat>& profs=cv.second;
     int k=0;
-    BOOST_FOREACH(const arma::mat& col, profs)
+    for (const arma::mat& col: profs)
     {
       arma::mat& cumprof=result[k++];
       if (cumprof.n_cols==0) 
@@ -1971,7 +1971,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
   typedef std::vector<MeshQualityInfo> MQInfoList;
   MQInfoList mqinfos;
   MeshQualityInfo curmq;
-  BOOST_FOREACH(const std::string& line, output)
+  for (const std::string& line: output)
   {
     if (boost::regex_match(line, what, re_time))
     {
@@ -2068,7 +2068,7 @@ void meshQualityReport(const OpenFOAMCase& cm, const boost::filesystem::path& lo
   }
   if (curmq.time!="") mqinfos.push_back(curmq);
   
-  BOOST_FOREACH(const MeshQualityInfo& mq, mqinfos)
+  for (const MeshQualityInfo& mq: mqinfos)
   {
     results->insert
     (
@@ -2124,9 +2124,9 @@ void currentNumericalSettingsReport
 )
 {
   double order=990;
-  BOOST_FOREACH
+  for
   (
-    const boost::filesystem::path& dictname, 
+    const boost::filesystem::path& dictname:
     list_of<boost::filesystem::path> 
       ("system/controlDict")("system/fvSchemes")("system/fvSchemes")
       ("constant/RASProperties")("constant/LESProperties")
@@ -2210,7 +2210,7 @@ arma::mat projectedArea
 {
   std::vector<std::string> opts;
   std::string pl="( ";
-  BOOST_FOREACH(const std::string& pn, patches)
+  for (const std::string& pn: patches)
   {
     pl+=pn+" ";
   }
@@ -2224,7 +2224,7 @@ arma::mat projectedArea
 
   std::vector<double> t, A;
   boost::regex re_area("^Projected area at time (.+) = (.+)$");
-  BOOST_FOREACH(const std::string & line, output)
+  for (const std::string & line: output)
   {
     boost::match_results<std::string::const_iterator> what;
     if (boost::regex_match(line, what, re_area))
@@ -2256,7 +2256,7 @@ arma::mat minPatchPressure
 
   std::vector<double> t, minp;
   boost::regex re("^Minimum pressure at t=(.+) pmin=(.+)$");
-  BOOST_FOREACH(const std::string & line, output)
+  for (const std::string & line: output)
   {
     boost::match_results<std::string::const_iterator> what;
     if (boost::regex_match(line, what, re))
@@ -2505,7 +2505,7 @@ std::pair<arma::mat, arma::mat> zoneExtrema
   
   arma::mat mi, ma;
   
-  BOOST_FOREACH(const std::string& l, output)
+  for (const std::string& l: output)
   {
     if (boost::regex_match(l, what, re_vec))
     {
@@ -2590,7 +2590,7 @@ void createPrismLayers
       .set_doSnap(false)
       .set_doAddLayers(true)
   ;
-  BOOST_FOREACH(const PatchLayers::value_type& pl, nLayers)
+  for (const PatchLayers::value_type& pl: nLayers)
   {
 //     shm_feats.push_back(new snappyHexMeshFeats::PatchLayers(snappyHexMeshFeats::PatchLayers::Parameters()
       shm_cfg.features.push_back( snappyHexMeshFeats::FeaturePtr( new snappyHexMeshFeats::PatchLayers( snappyHexMeshFeats::PatchLayers::Parameters()
@@ -2664,7 +2664,7 @@ arma::mat surfaceProjectLine
   boost::regex re_res("curve = \\((.*)\\)$");
   boost::match_results<std::string::const_iterator> what;
   
-  BOOST_FOREACH(const std::string& l, output)
+  for (const std::string& l: output)
   {
     if (boost::regex_match(l, what, re_res))
     {
@@ -2672,7 +2672,7 @@ arma::mat surfaceProjectLine
       std::vector<std::string> pairs;
       std::string matched(what[1]);
       boost::split(pairs, matched, boost::is_any_of(","));
-      BOOST_FOREACH(const std::string& p, pairs)
+      for (const std::string& p: pairs)
       {
 	std::istringstream is(p);
 	double x, r;
@@ -2724,7 +2724,7 @@ std::vector<boost::filesystem::path> searchOFCasesBelow(const boost::filesystem:
 {
   std::vector<boost::filesystem::path> cds, cases;
   find_files(basepath, "controlDict", cds);
-  BOOST_FOREACH(const boost::filesystem::path& cd, cds)
+  for (const boost::filesystem::path& cd: cds)
   {
     if ( boost::filesystem::basename(cd.parent_path()) == "system" )
     {
@@ -2797,7 +2797,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
   results->introduction() = description_;
   Ordering so;
   
-  BOOST_FOREACH(const std::string& fieldname, p.fields)
+  for (const std::string& fieldname: p.fields)
   {
     int c=cd[fieldname].col;
     int ncmpt=cd[fieldname].ncmpt;
@@ -2846,7 +2846,7 @@ std::vector<std::string> patchList
   
   const boost::regex filter( include );
   
-  BOOST_FOREACH(const OFDictData::dict::value_type& patch, boundaryDict)
+  for (const OFDictData::dict::value_type& patch: boundaryDict)
   {
       std::string patchname = patch.first;
       
@@ -2854,7 +2854,7 @@ std::vector<std::string> patchList
       if (boost::regex_match( patchname, what, filter ))
       {
           bool excl=false;
-          BOOST_FOREACH(std::string expat, exclude)
+          for (std::string expat: exclude)
           {
               std::cout<<" ++ include patch "<<patchname<<" because of regex_rule "<<include<<std::endl;
               if (expat[0]=='\"')
@@ -3052,7 +3052,7 @@ void exportEMesh(const EMeshPtsList &points, const boost::filesystem::path& file
 
   f<<points.size()<<endl
    <<"("<<endl;
-  BOOST_FOREACH(const arma::mat& p, points)
+  for (const arma::mat& p: points)
   {
     f<<OFDictData::to_OF(p)<<endl;
   }
@@ -3080,15 +3080,15 @@ void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::
    <<"}"<<endl;
 
   int npts=0;
-  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  for (const EMeshPtsList& points: pts)
   {
     npts+=points.size();
   }
   f<<npts<<endl
    <<"("<<endl;
-  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  for (const EMeshPtsList& points: pts)
   {
-    BOOST_FOREACH(const arma::mat& p, points)
+    for (const arma::mat& p: points)
     {
       f<<OFDictData::to_OF(p)<<endl;
     }
@@ -3098,7 +3098,7 @@ void exportEMesh(const std::vector<EMeshPtsList>& pts, const boost::filesystem::
   f<<(npts-pts.size())<<endl
    <<"("<<endl;
   int ofs=0;
-  BOOST_FOREACH(const EMeshPtsList& points, pts)
+  for (const EMeshPtsList& points: pts)
   {
     for (size_t i=1; i<points.size(); i++)
     {

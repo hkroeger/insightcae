@@ -43,7 +43,7 @@ bool coincident<Edge>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  BOOST_FOREACH(int f, f_.data())
+  for (int f: f_.data())
   {
     TopoDS_Edge e1=TopoDS::Edge(model_->edge(feature));
     TopoDS_Edge e2=TopoDS::Edge(f_.model()->edge(f));
@@ -64,7 +64,7 @@ bool coincident<Face>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-  BOOST_FOREACH(int f, f_.data())
+  for (int f: f_.data())
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
     TopoDS_Face e2=TopoDS::Face(f_.model()->face(f));

@@ -427,7 +427,7 @@ ResultSetPtr NumericalWindtunnel::evaluateResults(OpenFOAMCase& cm)
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(executionPath(), boundaryDict);
   std::string carPatchName;
-  BOOST_FOREACH(const OFDictData::dict::value_type& de, boundaryDict)
+  for (const OFDictData::dict::value_type& de: boundaryDict)
   {
     if (starts_with(de.first, "object"))
     {

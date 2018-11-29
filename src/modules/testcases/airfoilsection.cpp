@@ -507,26 +507,6 @@ void AirfoilSectionPolar::evaluateCombinedResults(ResultSetPtr& results)
     "Minimum pressure vs. lift coefficient"
   );
 
-//   std::vector<PlotCurve> curves;
-//   int i=0;
-//   BOOST_FOREACH( const AnalysisInstance& ai, queue_.processed() )
-//   {
-//     const std::string& n = get<0>(ai);
-//     const PropellerAnalysis& a = dynamic_cast<PropellerAnalysis&>(*get<1>(ai));
-//     const ResultSetPtr& r = get<2>(ai);
-//     
-//     curves.push_back(PlotCurve(a.sigmaVsX(a.p()), str( format(" w l lt 1 lc %d t '%s'") % i % n ) ));
-//     
-//     i++;
-//   }
-//   
-//   addPlot
-//   (
-//     results, executionPath(), "chartSigmaVsX",
-//     "x", "sigma",
-//     curves,
-//     "Cavitation number vs. radius"
-//   );
 }
 
 

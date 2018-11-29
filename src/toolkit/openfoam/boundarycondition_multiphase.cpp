@@ -41,7 +41,7 @@ uniformPhases::uniformPhases(const ParameterSet& ps)
 bool uniformPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
     const Parameters::phaseFractions_default_type* pf =NULL;
-    BOOST_FOREACH ( const Parameters::phaseFractions_default_type& c, p_.phaseFractions ) {
+    for ( const Parameters::phaseFractions_default_type& c: p_.phaseFractions ) {
         if ( c.name == fieldname ) {
             pf=&c;
             break;
@@ -78,7 +78,7 @@ uniformPhases::Parameters uniformPhases::mixture( const std::map<std::string, do
 {
     Parameters pf;
     typedef std::map<std::string, double> MixList;
-    BOOST_FOREACH(const MixList::value_type& sp, sps)
+    for (const MixList::value_type& sp: sps)
     {
         Parameters::phaseFractions_default_type s;
         s.name=sp.first;
@@ -102,7 +102,7 @@ uniformWallTiedPhases::uniformWallTiedPhases(const ParameterSet& ps)
 bool uniformWallTiedPhases::addIntoFieldDictionary ( const std::string& fieldname, const FieldInfo& fieldinfo, OFDictData::dict& BC ) const
 {
     const Parameters::phaseFractions_default_type* pf =NULL;
-    BOOST_FOREACH ( const Parameters::phaseFractions_default_type& c, p_.phaseFractions ) {
+    for ( const Parameters::phaseFractions_default_type& c: p_.phaseFractions ) {
         if ( c.name == fieldname ) {
             pf=&c;
             break;

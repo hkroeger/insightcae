@@ -58,7 +58,7 @@ bool isPartOfSolid<Face>::checkMatch(FeatureID feature) const
 {
   bool match=false;
   
-//   BOOST_FOREACH(int f, f_)
+//   for (int f: f_)
   {
     TopoDS_Face e1=TopoDS::Face(model_->face(feature));
     match |= isPartOf(s_, e1);

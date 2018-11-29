@@ -119,7 +119,7 @@ int main ( int argc, char** argv )
       if ( success )
         {
           auto postprocActions=model->postprocActions();
-          BOOST_FOREACH ( decltype ( postprocActions ) ::value_type const& v, postprocActions )
+          for ( decltype ( postprocActions ) ::value_type const& v: postprocActions )
           {
             cout << "Executing " << v.first << endl;
             v.second->execute();

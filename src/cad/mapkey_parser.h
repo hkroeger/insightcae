@@ -91,41 +91,43 @@ namespace mapkey_parser
         bool parse(Iterator& first, Iterator const& last, Context&, Skipper const& skipper, Attribute& attr) const
         {
 	  if (!map_)
+	  {
 	    throw insight::Exception("Attempt to use unallocated map parser wrapper!");
+	  }
 	  
-            boost::spirit::qi::skip_over(first, last, skipper);
-	    
-	    Iterator cur=first, match=first;
-	    bool matched=false;
-// 	    cur++;
-	    while (cur!=last)
-	    {
-	      std::string key(first, cur);
+	  boost::spirit::qi::skip_over(first, last, skipper);
 
-	      typename std::map<std::string, T>::const_iterator it=map_->find(key);
-	      if (it!=map_->end())
-	      {
+	  Iterator cur=first, match=first;
+	  bool matched=false;
+// 	    cur++;
+	  while (cur!=last)
+	  {
+	    std::string key(first, cur);
+
+	    typename std::map<std::string, T>::const_iterator it=map_->find(key);
+	    if (it!=map_->end())
+	    {
 //   		  std::cout<<"MATCH=>"<<key<<"<"<<std::endl;
-		  match=cur;
-		  matched=true;
-	      }
+		match=cur;
+		matched=true;
+	    }
 //  	      else std::cout<<"NOK=>"<<key<<"<"<<std::endl;
-	      cur++;
-	    }
-	    
-	    if (matched)
-	    {
-	      std::string key(first, match);
-	      boost::spirit::traits::assign_to(std::string(first, match), attr);
-	      first=match;
+	    cur++;
+	  }
+
+	  if (matched)
+	  {
+	    std::string key(first, match);
+	    boost::spirit::traits::assign_to(std::string(first, match), attr);
+	    first=match;
 //  	      std::cout<<"OK! >"<<key<<"<"<<std::endl;
-	      return true;
-	    }
-	    else
-	    {
+	    return true;
+	  }
+	  else
+	  {
 // 	      std::cout<<"NOK!"<<std::endl;
-	      return false;
-	    }
+	    return false;
+	  }
         }
         
  

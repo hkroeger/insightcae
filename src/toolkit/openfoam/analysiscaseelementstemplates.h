@@ -84,11 +84,11 @@ void TPCArray<TPC,TypeName>::addIntoDictionaries(OFdicts& dictionaries) const
     using namespace boost::assign;
     using namespace boost::fusion;
 
-    BOOST_FOREACH(const TPC& tpc, tpc_tan_)
+    for (const TPC& tpc: tpc_tan_)
     {
         tpc.addIntoDictionaries(dictionaries);
     }
-    BOOST_FOREACH(const TPC& tpc, tpc_ax_)
+    for (const TPC& tpc: tpc_ax_)
     {
         tpc.addIntoDictionaries(dictionaries);
     }
@@ -151,7 +151,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
     // For reach component: setup plot data first
     PlotCurveList tpc_curves[nk] /*, tpc_regression_curves[nk],*/;
     int ir=0;
-    BOOST_FOREACH(const TPC& tpc, tpcarray)
+    for (const TPC& tpc: tpcarray)
     {
         boost::ptr_vector<arma::mat> res=twoPointCorrelation::readCorrelations(cm, location, tpc.name());
         if (res[0].n_rows<1)
@@ -231,7 +231,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
     {
         PlotCurveList L_diag_curves;
         std::vector<double> ks=list_of<double>(0)(4)(8);
-        BOOST_FOREACH(int k, ks)
+        for (int k: ks)
         {
             L_diag_curves.push_back
             (
@@ -258,7 +258,7 @@ void TPCArray<TPC,TypeName>::evaluateSingle
         PlotCurveList L_offdiag_curves;
         std::vector<double> ks=list_of<double>(1)(2)(3)(5)(6)(7);
 
-        BOOST_FOREACH(int k, ks)
+        for (int k: ks)
         {
             L_offdiag_curves.push_back
             (

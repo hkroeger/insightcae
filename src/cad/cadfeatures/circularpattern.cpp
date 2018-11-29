@@ -150,7 +150,7 @@ void CircularPattern::build()
         bool ok=true;
         try
         {
-            BOOST_FOREACH(const std::string& r, rules)
+            for (const std::string& r: rules)
             {
                 if (boost::lexical_cast<int>(r)==(i+1)) ok=false;
             }

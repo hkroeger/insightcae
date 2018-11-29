@@ -87,7 +87,7 @@ std::vector<int> combinefactors
   
   // get initial number which was factored
   double totprod=1.0;
-  BOOST_FOREACH(int f, facs) totprod*=double(f);
+  for (int f: facs) totprod*=double(f);
   
   double potot=std::get<0>(po)+std::get<1>(po)+std::get<2>(po);
   std::vector<double> pof = list_of 

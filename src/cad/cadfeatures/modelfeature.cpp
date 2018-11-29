@@ -49,14 +49,14 @@ addToFactoryTable(Feature, ModelFeature);
 void ModelFeature::copyModelDatums()
 {
   auto scalars=model_->scalars();
-  BOOST_FOREACH(decltype(scalars)::value_type const& v, scalars)
+  for (decltype(scalars)::value_type const& v: scalars)
   {
     if (refvalues_.find(v.first)!=refvalues_.end())
       throw insight::Exception("datum value "+v.first+" already present!");
     refvalues_[v.first]=v.second->value();
   }
   auto vectors=model_->vectors();
-  BOOST_FOREACH(decltype(vectors)::value_type const& p, vectors)
+  for (decltype(vectors)::value_type const& p: vectors)
   {
     if (refpoints_.find(p.first)!=refpoints_.end())
       throw insight::Exception("datum point "+p.first+" already present!");
@@ -64,7 +64,7 @@ void ModelFeature::copyModelDatums()
   }
 
   auto datums=model_->datums();
-  BOOST_FOREACH(decltype(datums)::value_type const& d, datums)
+  for (decltype(datums)::value_type const& d: datums)
   {
     if (providedDatums_.find(d.first)!=providedDatums_.end())
       throw insight::Exception("datum "+d.first+" already present!");
@@ -204,13 +204,13 @@ void ModelFeature::build()
 
         model_->checkForBuildDuringAccess();
 
-        BOOST_FOREACH(const Model::ComponentSet::value_type& c, model_->components())
+        for (const Model::ComponentSet::value_type& c: model_->components())
         {
             components_[c]=model_->lookupModelstep(c);
         }
 
         auto modelsteps=model_->modelsteps();
-        BOOST_FOREACH(decltype(modelsteps)::value_type const& c, modelsteps)
+        for (decltype(modelsteps)::value_type const& c: modelsteps)
         {
             std::string name=c.first;
             // Compound::build copies the components. Here, the rest is copied.

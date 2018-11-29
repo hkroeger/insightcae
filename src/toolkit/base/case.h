@@ -59,7 +59,7 @@ public:
     {
       boost::regex re_name(name);
       T* res=NULL;
-      BOOST_FOREACH(CaseElement& el, elements_)
+      for (CaseElement& el: elements_)
       {
         if ( boost::regex_match(el.name(), re_name) )
         {
@@ -75,7 +75,7 @@ public:
     {
       boost::regex re_name(name);
       const T* res=NULL;
-      BOOST_FOREACH(const CaseElement& el, elements_)
+      for (const CaseElement& el: elements_)
       {
         if ( boost::regex_match(el.name(), re_name) )
         {

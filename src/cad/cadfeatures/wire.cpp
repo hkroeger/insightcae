@@ -71,7 +71,7 @@ FeaturePtr Wire::create(FeatureSetPtr edges)
 void Wire::build()
 {
     TopTools_ListOfShape ee;
-    BOOST_FOREACH ( const FeatureID& fi, edges_->data() ) {
+    for ( const FeatureID& fi: edges_->data() ) {
         ee.Append ( edges_->model()->edge ( fi ) );
     }
     BRepBuilderAPI_MakeWire wb;

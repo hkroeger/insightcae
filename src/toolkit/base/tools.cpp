@@ -81,7 +81,7 @@ SharedPathList::SharedPathList()
   {
     std::vector<string> globals;
     split(globals, var_globalshareddir, is_any_of(":"));
-    BOOST_FOREACH(const string& s, globals) push_back(s);
+    for (const string& s: globals) push_back(s);
   }
   else
   {
@@ -184,20 +184,6 @@ void LineMesh_to_OrderedPointTable::calcConnectionInfo(vtkCellArray* lines)
         if (pc.size()==1) endPoints_.insert(i);
     }
 
-//    std::cout<<"pointCells\n";
-//    BOOST_FOREACH(const idListMap::value_type& v, pointCells_)
-//    {
-//        std::cout<<v.first<<" : ";
-//        BOOST_FOREACH(const int& i, v.second) std::cout<<i<<" ";
-//        std::cout<<std::endl;
-//    }
-//    std::cout<<"cellPoints\n";
-//    BOOST_FOREACH(const idListMap::value_type& v, cellPoints_)
-//    {
-//        std::cout<<v.first<<" : ";
-//        BOOST_FOREACH(const int& i, v.second) std::cout<<i<<" ";
-//        std::cout<<std::endl;
-//    }
 }
 
 
@@ -242,12 +228,9 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
     calcConnectionInfo(lines);
     printSummary(std::cout, pd);
 
-//    BOOST_FOREACH(int k, endPoints_)
-//            std::cout<<"end "<<k<<std::endl;
-
     typedef std::map<int,int> AddLinesList;
     AddLinesList addLines;
-    BOOST_FOREACH(int i, endPoints_)
+    for (int i: endPoints_)
     {
         double p1[3];
         pd->GetPoint(i, p1);
@@ -255,7 +238,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
         double ldist=1e100;
         int lj=-1;
 
-        BOOST_FOREACH(int j, endPoints_)
+        for (int j: endPoints_)
         {
             if (i!=j)
             {
@@ -284,7 +267,7 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
         }
     }
 
-    BOOST_FOREACH(const AddLinesList::value_type& al, addLines)
+    for (const AddLinesList::value_type& al: addLines)
     {
         vtkIdType eps[2];
         eps[0]=al.first;
@@ -294,10 +277,6 @@ LineMesh_to_OrderedPointTable::LineMesh_to_OrderedPointTable(vtkPolyData* pd)
 
     lines = pd->GetLines();
     calcConnectionInfo(lines);
-
-//    BOOST_FOREACH(int k, endPoints_)
-//            std::cout<<"end "<<k<<std::endl;
-
 
     int id_p0=0;
     if (endPoints_.size()>0)
@@ -347,7 +326,7 @@ void LineMesh_to_OrderedPointTable::printSummary(std::ostream& os, vtkPolyData* 
 {
     os<<"# points : "<<size()<<std::endl;
     os<<"# endpoints : "<<endPoints_.size()<<std::endl;
-    BOOST_FOREACH(int i, endPoints_)
+    for (int i: endPoints_)
     {
         os<<"   "<<i;
         if (pd)

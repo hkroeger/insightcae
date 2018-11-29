@@ -77,7 +77,7 @@ void SimpleBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
@@ -169,7 +169,7 @@ void CyclicPairBC::addIntoDictionaries(OFdicts& dictionaries) const
 
 void CyclicPairBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
 {
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dictFile& fieldDict=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second );
         OFDictData::dict& boundaryField=fieldDict.addSubDictIfNonexistent ( "boundaryField" );
 
@@ -268,7 +268,7 @@ void GGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -336,7 +336,7 @@ void CyclicGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -385,7 +385,7 @@ void OverlapGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -452,7 +452,7 @@ void MixingPlaneGGIBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 {
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -529,7 +529,7 @@ void SuctionInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         
     phasefractions->addIntoDictionaries ( dictionaries );
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
@@ -649,7 +649,7 @@ void MassflowBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     phasefractions->addIntoDictionaries ( dictionaries );
 
     double velocity=1.0; // required for turbulence quantities. No better idea yet...
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
@@ -772,7 +772,7 @@ void MappedVelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) c
         
     phasefractions->addIntoDictionaries ( dictionaries );
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
@@ -875,7 +875,7 @@ void VelocityInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries) const
     BoundaryCondition::addIntoFieldDictionaries ( dictionaries );
     phasefractions->addIntoDictionaries ( dictionaries );
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
         if ( ( field.first=="U" ) && ( get<0> ( field.second ) ==vectorField ) ) {
@@ -1002,7 +1002,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     arma::mat TKE = arma::zeros ( np );
     arma::mat epsilon = arma::zeros ( np );
     int j=0;
-    BOOST_FOREACH ( const Parameters::data_default_type& pt, p.data ) {
+    for ( const Parameters::data_default_type& pt: p.data ) {
         ptdat.row ( j ) =pt.point;
         velocity.row ( j ) =pt.velocity;
         TKE ( j ) =pt.k;
@@ -1019,7 +1019,7 @@ void ExptDataInletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
     ptsdict["a"]=pts;
 
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
 
@@ -1339,7 +1339,7 @@ void TurbulentVelocityInletBC::addIntoFieldDictionaries(OFdicts& dictionaries) c
   phasefractions->addIntoDictionaries ( dictionaries );  
 //   p_.phasefractions()->addIntoDictionaries(dictionaries);
   
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -1508,7 +1508,7 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
         controlDict.getList ( "libs" ).push_back ( OFDictData::data ( "\"libfixedMeanValueBC.so\"" ) );
     }
 
-    BOOST_FOREACH ( const FieldList::value_type& field, OFcase().fields() ) {
+    for ( const FieldList::value_type& field: OFcase().fields() ) {
         OFDictData::dict& BC=dictionaries.addFieldIfNonexistent ( "0/"+field.first, field.second )
                              .subDict ( "boundaryField" ).subDict ( patchName_ );
 
@@ -1608,7 +1608,7 @@ void PotentialFreeSurfaceBC::addIntoFieldDictionaries(OFdicts& dictionaries) con
   BoundaryCondition::addIntoFieldDictionaries(dictionaries);
   //p_.phasefractions()->addIntoDictionaries(dictionaries);
 
-  BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+  for (const FieldList::value_type& field: OFcase().fields())
   {
     OFDictData::dict& BC=dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
       .subDict("boundaryField").subDict(patchName_);
@@ -1715,7 +1715,7 @@ void WallBC::addIntoFieldDictionaries(OFdicts& dictionaries) const
 
     BoundaryCondition::addIntoFieldDictionaries(dictionaries);
     
-    BOOST_FOREACH(const FieldList::value_type& field, OFcase().fields())
+    for (const FieldList::value_type& field: OFcase().fields())
     {
         OFDictData::dict& BC = dictionaries.addFieldIfNonexistent("0/"+field.first, field.second)
                                .subDict("boundaryField").subDict(patchName_);

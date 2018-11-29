@@ -101,7 +101,7 @@ struct dict
     if (i==this->end())
     {
         std::string keys=" ";
-        BOOST_FOREACH(const value_type& it, *this) { keys+=it.first+" "; }
+        for (const value_type& it: *this) { keys+=it.first+" "; }
         throw Exception("key "+key+" not found! Available keys:"+keys);
     }
     if (T *d = boost::get<T>(&i->second))
@@ -120,7 +120,7 @@ struct dict
     if (i==this->end())
     {
         std::string keys=" ";
-        BOOST_FOREACH(const value_type& it, *this) { keys+=it.first+" "; }
+        for (const value_type& it: *this) { keys+=it.first+" "; }
         throw Exception("key "+key+" not found! Available: "+keys);
     }
     if (const T *d = boost::get<T>(&i->second))

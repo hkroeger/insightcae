@@ -41,7 +41,7 @@ bool faceAdjacentToFaces::checkMatch(FeatureID feature) const
   for(TopExp_Explorer ex(f, TopAbs_EDGE); ex.More(); ex.Next())
   {
     TopoDS_Edge e=TopoDS::Edge(ex.Current());
-    BOOST_FOREACH(FeatureID fi, faces_.data())
+    for (FeatureID fi: faces_.data())
     {
       bool valid=true;
       if (model_==faces_.model())

@@ -118,7 +118,7 @@ OFDictData::dict fieldAveraging::functionObjectDict() const
   fod["enabled"]=true;
   
   OFDictData::list fl;
-  BOOST_FOREACH(const std::string& fln, p_.fields)
+  for (const std::string& fln: p_.fields)
   {
     fl.push_back(fln);
     OFDictData::dict cod;
@@ -152,7 +152,7 @@ OFDictData::dict probes::functionObjectDict() const
   fod["functionObjectLibs"]=libl;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const arma::mat& lo, p_.probeLocations)
+  for (const arma::mat& lo: p_.probeLocations)
   {
     pl.push_back(OFDictData::vector3(lo));
   }
@@ -205,7 +205,7 @@ arma::cube probes::readProbes
   
   // find all time directories
   TimeDirectoryList tdl=listTimeDirectories ( fp );
-  BOOST_FOREACH ( const TimeDirectoryList::value_type& td, tdl )
+  for ( const TimeDirectoryList::value_type& td: tdl )
   {
     boost::filesystem::path ffp = td.second/fieldName;
 
@@ -276,12 +276,12 @@ arma::cube probes::readProbes
 
   arma::cube data = arma::zeros(ninstants, npts+1, ncmpt);
   int i=0;
-  BOOST_FOREACH(const History::value_type& instant, sample_history)
+  for (const History::value_type& instant: sample_history)
   {
     int j=0;
     for (int k=0; k<ncmpt; k++) data(i, 0, k)=instant.first;
         
-    BOOST_FOREACH(const Instant::value_type& sample, instant.second)
+    for (const Instant::value_type& sample: instant.second)
     {
         for (int k=0; k<ncmpt; k++) data(i, j+1, k)=sample(k);
         j+=1;
@@ -533,7 +533,7 @@ boost::ptr_vector<arma::mat> twoPointCorrelation::readCorrelations(const OpenFOA
   
   TimeDirectoryList tdl=listTimeDirectories(fp);
   
-  BOOST_FOREACH(const TimeDirectoryList::value_type& td, tdl)
+  for (const TimeDirectoryList::value_type& td: tdl)
   {
     std::ifstream f( (td.second/"twoPointCorrelation.dat").c_str());
     while (!f.eof())
@@ -647,7 +647,7 @@ void forces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const std::string& lo, p_.patches)
+  for (const std::string& lo: p_.patches)
   {
     pl.push_back(lo);
   }
@@ -707,7 +707,7 @@ arma::mat readForcesLine(std::istream& f, int nc_expected, bool& skip)
   row.set_size ( 1, strs.size() );
 
   int k=0;
-  BOOST_FOREACH ( const string& e, strs )
+  for ( const string& e: strs )
   {
     row ( 0, k++ ) =lexical_cast<double> ( e );
   }
@@ -731,7 +731,7 @@ arma::mat forces::readForces ( const OpenFOAMCase& c, const boost::filesystem::p
   if ( c.OFversion() >=230 ) ncexp=19;
   if ( c.OFversion() >=300 ) ncexp=10;
 
-  BOOST_FOREACH ( const TimeDirectoryList::value_type& td, tdl )
+  for ( const TimeDirectoryList::value_type& td: tdl )
   {
     std::ifstream f, f2;
     if ( c.OFversion() >=300 )
@@ -844,7 +844,7 @@ void extendedForces::addIntoDictionaries(OFdicts& dictionaries) const
   fod["outputInterval"]=p_.outputInterval;
   
   OFDictData::list pl;
-  BOOST_FOREACH(const std::string& lo, p_.patches)
+  for (const std::string& lo: p_.patches)
   {
     pl.push_back(lo);
   }

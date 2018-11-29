@@ -692,7 +692,7 @@ struct SelectionParameterParser
       std::ostringstream os;
       os<<"enum "<<cppTypeName(name)<<"\n{"<<endl;
       std::string comma="";
-      BOOST_FOREACH(const std::string& s, selections)
+      for (const std::string& s: selections)
       {
 	os<<comma<<s<<endl;
 	comma=",";
@@ -711,7 +711,7 @@ struct SelectionParameterParser
 //       os<<cppParamType(name)<<"& "<<s_fq_name <<" = *value;"<<endl;
       os<<"{"<<endl;
       os<<"insight::SelectionParameter::ItemList items;"<<endl;
-      BOOST_FOREACH(const std::string& s, selections)
+      for (const std::string& s: selections)
       {
 	os<<"items.push_back(\""<<s<<"\");"<<endl;
       }
@@ -767,7 +767,7 @@ struct SubsetParameterParser
 
         virtual void cppAddHeader(std::set< std::string >& headers) const
         {
-            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            for (const ParameterSetEntry& pe: value)
             {
                 pe.second->cppAddHeader(headers);
             }
@@ -782,7 +782,7 @@ struct SubsetParameterParser
         {
             std::ostringstream os;
             os<<"struct "<<cppTypeName(name)<<"\n{"<<endl;
-            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            for (const ParameterSetEntry& pe: value)
             {
                 pe.second->writeCppHeader(os, pe.first);
             }
@@ -821,7 +821,7 @@ struct SubsetParameterParser
         {
             os<<"std::auto_ptr< "<<cppParamType(name)<<" > "<<name<<"(new "<<cppParamType(name)<<"(\""<<description<<"\")); "<<endl;
             os<<"{"<<endl;
-            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            for (const ParameterSetEntry& pe: value)
             {
                 pe.second->cppWriteInsertStatement
                 (
@@ -845,7 +845,7 @@ struct SubsetParameterParser
         ) const
         {
             std::string myscope=extendtype(thisscope, cppTypeName(name));
-            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            for (const ParameterSetEntry& pe: value)
             {
                 std::string subname=pe.first;
                 os<<"{\n";
@@ -871,7 +871,7 @@ struct SubsetParameterParser
         ) const
         {
             std::string myscope=extendtype(thisscope, cppTypeName(name));
-            BOOST_FOREACH(const ParameterSetEntry& pe, value)
+            for (const ParameterSetEntry& pe: value)
             {
                 std::string subname=pe.first;
                 os<<"{"<<endl;
@@ -1022,7 +1022,7 @@ struct SelectableSubsetParameterParser {
         virtual void cppAddHeader ( std::set<std::string>& headers ) const
         {
             headers.insert ( "<boost/variant.hpp>" );
-            BOOST_FOREACH ( const SubsetData& pe, value ) {
+            for ( const SubsetData& pe: value ) {
                 boost::fusion::get<1> ( pe )->cppAddHeader ( headers );
             }
         };
@@ -1032,7 +1032,7 @@ struct SelectableSubsetParameterParser {
             std::ostringstream os;
             os<<"boost::variant<";
             std::string comma="";
-            BOOST_FOREACH ( const SubsetData& pe, value ) {
+            for ( const SubsetData& pe: value ) {
                 os<<comma<< ( name+"_"+boost::fusion::get<0> ( pe )+"_type" );
                 comma=",";
             }
@@ -1047,7 +1047,7 @@ struct SelectableSubsetParameterParser {
         virtual std::string cppTypeDecl ( const std::string& name ) const
         {
             std::ostringstream os;
-            BOOST_FOREACH ( const SubsetData& pe, value ) {
+            for ( const SubsetData& pe: value ) {
                 std::string tname= ( name+"_"+boost::fusion::get<0> ( pe ) );
                 ParserDataBase::Ptr pd=boost::fusion::get<1> ( pe );
                 os<<pd->cppTypeDecl ( tname ) <<endl;
@@ -1068,7 +1068,7 @@ struct SelectableSubsetParameterParser {
             os<<"std::auto_ptr< "<<cppParamType ( name ) <<" > "<<name<<";"<<endl;
             os<<"{"<<endl;
             os<<"insight::SelectableSubsetParameter::SubsetList "<<name<<"_selection;"<<endl;
-            BOOST_FOREACH ( const SubsetData& sd, value ) {
+            for ( const SubsetData& sd: value ) {
                 const std::string& sel_name=boost::fusion::get<0> ( sd );
                 SubsetParameterParser::Data* pd
                     = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
@@ -1098,7 +1098,7 @@ struct SelectableSubsetParameterParser {
 
             os<<"{"<<endl;
 
-            BOOST_FOREACH ( const SubsetData& sd, value ) {
+            for ( const SubsetData& sd: value ) {
                 const std::string& sel_name=boost::fusion::get<0> ( sd );
                 SubsetParameterParser::Data* pd
                     = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
@@ -1135,7 +1135,7 @@ struct SelectableSubsetParameterParser {
 
             os<<"{"<<endl;
 
-            BOOST_FOREACH ( const SubsetData& sd, value ) {
+            for ( const SubsetData& sd: value ) {
                 const std::string& sel_name=boost::fusion::get<0> ( sd );
                 SubsetParameterParser::Data* pd
                     = dynamic_cast<SubsetParameterParser::Data*>(boost::fusion::get<1>(sd).get()); // should be a set
@@ -1686,11 +1686,11 @@ int main ( int argc, char *argv[] )
           {
             std::ofstream f ( bname+"_headers.h" );
             std::set<std::string> headers;
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               pe.second->cppAddHeader ( headers );
             }
-            BOOST_FOREACH ( const std::string& h, headers )
+            for ( const std::string& h: headers )
             {
               f<<"#include "<<h<<endl;
             }
@@ -1706,7 +1706,7 @@ int main ( int argc, char *argv[] )
             f<<"{"<<endl;
 
             // declare variables and types
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               pe.second->writeCppHeader ( f, pe.first );
             }
@@ -1741,7 +1741,7 @@ int main ( int argc, char *argv[] )
               {
                 f<<" "<<base_type_name<<"::set(p);"<<endl;
               }
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               std::string subname=pe.first;
               f<<"{"<<endl;
@@ -1762,7 +1762,7 @@ int main ( int argc, char *argv[] )
               {
                 f<<" "<<base_type_name<<"::get(p);"<<endl;
               }
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               std::string subname=pe.first;
               f<<"{"<<endl;
@@ -1777,7 +1777,7 @@ int main ( int argc, char *argv[] )
             f<<"}"<<endl;
 
             // set_variable initialization function
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               std::string subname=pe.first;
 
@@ -1795,7 +1795,7 @@ int main ( int argc, char *argv[] )
               {
                 f<<" p="<<base_type_name<<"::makeDefault();"<<endl;
               }
-            BOOST_FOREACH ( const ParameterSetEntry& pe, result )
+            for ( const ParameterSetEntry& pe: result )
             {
               pe.second->cppWriteInsertStatement
                   (

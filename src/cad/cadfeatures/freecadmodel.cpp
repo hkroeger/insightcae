@@ -47,7 +47,7 @@ size_t FreeCADModel::calcHash() const
   h+=this->type();
   h+=filename_;
   h+=solidname_;
-  BOOST_FOREACH(const FreeCADModelVar& v, vars_)
+  for (const FreeCADModelVar& v: vars_)
   {
       h+=boost::fusion::at_c<0>(v);
       h+=boost::fusion::at_c<1>(v)->value();

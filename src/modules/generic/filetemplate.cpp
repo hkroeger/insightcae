@@ -59,7 +59,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
     
     // build replacement cmd for sed
     std::string replacecmd;
-    BOOST_FOREACH(Parameters::numerical_default_type& ne, p.numerical)
+    for (Parameters::numerical_default_type& ne: p.numerical)
     {
       if (replacecmd.size()>0) replacecmd+=";";
       
@@ -69,7 +69,7 @@ ResultSetPtr FileTemplate::operator()(ProgressDisplayer* displayer)
     std::cout<<"replacecmd="<<replacecmd<<std::endl;
     
     // apply sed to all files except scripts
-    BOOST_FOREACH(std::string fn, filelist)
+    for (std::string fn: filelist)
     {
       if (boost::filesystem::is_regular_file(dir/fn))
       {

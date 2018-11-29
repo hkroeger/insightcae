@@ -75,7 +75,7 @@ void SoftwareEnvironment::executeCommand
   {
     std::ostringstream os;
     os << cmd;
-    BOOST_FOREACH( const std::string& s, argv )
+    for ( const std::string& s: argv )
     {
       os<<" "<<s;
     }
@@ -113,7 +113,7 @@ void SoftwareEnvironment::forkCommand
   
   cout<<"argv=( ";
   int k=0;
-  BOOST_FOREACH(const std::string& a, argv) cout<<(++k)<<":"<<a<<" ";
+  for (const std::string& a: argv) cout<<(++k)<<":"<<a<<" ";
   cout<<")"<<endl;
   
   if (argv.size()>1)

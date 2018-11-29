@@ -154,7 +154,7 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
      "prepareSnapshots()\n"
     ;
 
-    BOOST_FOREACH(PVScenePtr scn, p.scenes)
+    for (PVScenePtr scn: p.scenes)
     {
         pvscript += scn->pythonCommands();
     }
@@ -186,13 +186,13 @@ ResultSetPtr ParaviewVisualization::operator()(ProgressDisplayer*)
     ResultSetPtr results(new ResultSet(parameters_, "Paraview renderings", ""));
 
     std::vector<boost::filesystem::path> files;
-    BOOST_FOREACH(PVScenePtr scn, p.scenes)
+    for (PVScenePtr scn: p.scenes)
     {
         std::vector<boost::filesystem::path> af=scn->createdFiles();
         std::copy(af.begin(), af.end(), std::back_inserter(files));
     }
 
-    BOOST_FOREACH(boost::filesystem::path f, files)
+    for (boost::filesystem::path f: files)
     {
       results->insert(f.filename().stem().string(),
         std::auto_ptr<Image>(new Image

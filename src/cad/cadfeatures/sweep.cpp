@@ -46,7 +46,7 @@ size_t Sweep::calcHash() const
 {
   ParameterListHash h;
   h+=this->type();
-  BOOST_FOREACH(const FeaturePtr& f, secs_)
+  for (const FeaturePtr& f: secs_)
   {
       h+=*f;
   }
@@ -96,7 +96,7 @@ void Sweep::build()
 
     BRepOffsetAPI_ThruSections sb ( create_solid );
 
-    BOOST_FOREACH ( const FeaturePtr& skp, secs_ ) {
+    for ( const FeaturePtr& skp: secs_ ) {
         TopoDS_Wire cursec;
         TopoDS_Shape cs=*skp;
         if ( cs.ShapeType() ==TopAbs_FACE ) {

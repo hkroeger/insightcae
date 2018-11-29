@@ -55,7 +55,7 @@ double insight::cad::CumulativeEdgeLength::value() const
 {
     double L=0;
     FeatureSetData ae = model_->allEdgesSet();
-    BOOST_FOREACH(const FeatureID& i, ae)
+    for (const FeatureID& i: ae)
     {
         L+=edgeLength(model_->edge(i));
     }

@@ -85,7 +85,7 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
     }
     {
 //         insight::SharedPathList spl;
-        BOOST_FOREACH(const path& p, insight::SharedPathList::searchPathList)
+	for (const path& p: insight::SharedPathList::searchPathList)
 	{
 	  if (boost::filesystem::is_directory(p/"iscad-library"))
 	    paths.push_back(p/"iscad-library");
@@ -95,7 +95,7 @@ boost::filesystem::path sharedModelFilePath(const std::string& name)
     }
     paths.push_back(".");
 
-    BOOST_FOREACH(const boost::filesystem::path& ps, paths)
+    for (const boost::filesystem::path& ps: paths)
     {
         path p(ps/name);
         if (exists(p))
@@ -134,7 +134,7 @@ void SyntaxElementDirectory::addEntry(SyntaxElementLocation location, FeaturePtr
 
 FeaturePtr SyntaxElementDirectory::findElement(long location, const boost::filesystem::path& file) const
 {
-    BOOST_FOREACH(const value_type& elem, *this)
+    for (const value_type& elem: *this)
     {
       SyntaxElementLocation l=elem.first;
         if ( (l.second.first<=location) && (l.second.second>=location) )

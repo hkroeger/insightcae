@@ -494,7 +494,7 @@ template<class T>
 const T& findSet(const boost::ptr_vector<sampleOps::set>& sets, const std::string& name)
 {
   const T* ptr=NULL;
-  BOOST_FOREACH(const set& s, sets)
+  for (const set& s: sets)
   {
     if (s.name()==name)
     {

@@ -639,23 +639,13 @@ void PipeCyclic::createCase
 )
 {  
   const ParameterSet& p=parameters_;
-  // create local variables from ParameterSet
-  PSDBL(p, "geometry", D);
-  PSDBL(p, "geometry", L);
-  PSDBL(p, "operation", Re_tau);
-  PSINT(p, "fluid", turbulenceModel);
-  
-  PSDBL(p, "evaluation", inittime);
-  PSDBL(p, "evaluation", meantime);
   
   path dir = executionPath();
 
   OFDictData::dict boundaryDict;
   cm.parseBoundaryDict(dir, boundaryDict);
 
-  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters()
-        .set_hasCyclics(true)
-  ));
+  cm.insert(new pimpleFoamNumerics(cm, pimpleFoamNumerics::Parameters() ));
       
   cm.insert(new CyclicPairBC(cm, cyclPrefix(), boundaryDict));
   

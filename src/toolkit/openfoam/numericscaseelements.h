@@ -88,15 +88,19 @@ decompositionMethod = selection ( simple hierarchical metis scotch ) scotch "Par
 protected:
     Parameters p_;
     bool isCompressible_;
+    std::string pName_;
 
 public:
-    FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps );
+    FVNumerics ( OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName );
     virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
 
     inline bool isCompressible() const
     {
         return isCompressible_;
     }
+
+    std::string lqGradSchemeIfPossible() const;
+    void insertStandardGradientConfig(OFdicts& dictionaries) const;
     
     static std::string category() { return "Numerics"; }
 };
@@ -226,7 +230,6 @@ PARAMETERSET>>> simpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
 checkResiduals = bool true "Whether to check residuals during run"
-hasCyclics = bool false "Whether the model contains cyclic boundaries"
 pinternal = double 0.0 "Internal pressure field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
@@ -264,7 +267,6 @@ maxCo = double 0.45 "Maximum courant number"
 maxDeltaT = double 1.0 "Maximum time step size"
 forceLES = bool false "Whether to enforce LES numerics"
 LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
-hasCyclics = bool false "Whether the model contains cyclic boundaries"
 pinternal = double 0.0 "Internal pressure field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
 
@@ -301,7 +303,6 @@ maxCo = double 0.45 "Maximum courant number"
 maxDeltaT = double 1.0 "Maximum time step size"
 forceLES = bool false "Whether to enforce LES numerics"
 LESfilteredConvection = bool false "Whether to use filtered linear convection schemes instead of linear when using LES"
-hasCyclics = bool false "Whether the model contains cyclic boundaries"
 pinternal = double 1e5 "Internal pressure field value"
 Tinternal = double 300 "Internal temperature field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
@@ -334,7 +335,6 @@ PARAMETERSET>>> rhoSimpleFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
 nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-hasCyclics = bool false "Whether the model contains cyclic boundaries"
 pinternal = double 1e5 "Internal pressure field value"
 Tinternal = double 300 "Internal temperature field value"
 Uinternal = vector (0 0 0) "Internal velocity field value"
@@ -644,7 +644,6 @@ inherits FVNumerics::Parameters
 
 checkResiduals = bool false "Enable solver stop on residual goal"
 nNonOrthogonalCorrectors = int 0 "Number of non-orthogonal correctors"
-hasCyclics = bool false "Whether the case contains cyclic boundary conditions"
 
 <<<PARAMETERSET
 */
@@ -681,7 +680,6 @@ nOuterCorrectors = int 5 "Number of outer correctors"
 maxCo = double 5. "Maximum courant number"
 maxDeltaT = double 1.0 "Maximum time step size"
 
-hasCyclics = bool false "Whether the case contains cyclic boundary conditions"
 
 <<<PARAMETERSET
 */

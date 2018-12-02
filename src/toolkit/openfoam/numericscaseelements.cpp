@@ -103,11 +103,11 @@ std::vector<int> combinefactors
   });
   
   std::vector<int> nf(3);
-  int j=0;
+  size_t j=0;
   
-  for (int i=0; i<3; i++)
+  for (size_t i=0; i<3; i++)
   {
-    int dir_idx=pof_sorti[i];
+    size_t dir_idx=pof_sorti[i];
     double req_frac=pof[dir_idx];
     int cf=facs[j++];
     while (j<facs.size()-(2-i) && (cf>=0.0) && ( (log(cf)/log(totprod)) < req_frac) )
@@ -178,10 +178,11 @@ void setDecomposeParDict
 
 defineType(FVNumerics);
 
-FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps)
+FVNumerics::FVNumerics(OpenFOAMCase& c, const ParameterSet& ps, const std::string& pName)
 : OpenFOAMCaseElement(c, "FVNumerics"),
   p_(ps),
-  isCompressible_(false)
+  isCompressible_(false),
+  pName_(pName)
 {
 }
 
@@ -290,14 +291,37 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   );
 }
 
+std::string FVNumerics::lqGradSchemeIfPossible() const
+{
+  if ( (OFversion()<220) || OFcase().hasCyclicBC() )
+    return "Gauss linear";
+  else
+    return "pointCellsLeastSquares";
+}
 
+void FVNumerics::insertStandardGradientConfig(OFdicts& dictionaries) const
+{
+  OFDictData::dict& fvSchemes=dictionaries.lookupDict("system/fvSchemes");
 
+  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+  std::string bgrads=lqGradSchemeIfPossible();
+  grad["default"]=bgrads;
+  grad["grad("+pName_+")"]="Gauss linear";
+
+  grad["limitedGrad"]="cellMDLimited "+bgrads+" 1";
+
+  grad["grad(omega)"]="cellLimited "+bgrads+" 1";
+  grad["grad(epsilon)"]="cellLimited "+bgrads+" 1";
+  grad["grad(k)"]="cellLimited "+bgrads+" 1";
+  grad["grad(nuTilda)"]="cellLimited "+bgrads+" 1";
+}
 
 defineType(potentialFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(potentialFoamNumerics);
 
 potentialFoamNumerics::potentialFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   OFcase().addField("U", FieldInfo(vectorField, 	dimVelocity, 		FieldValue({0., 0., 0.}), volField ) );
@@ -490,7 +514,7 @@ defineType(MeshingNumerics);
 addToOpenFOAMCaseElementFactoryTable(MeshingNumerics);
 
 MeshingNumerics::MeshingNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps)
+: FVNumerics(c, ps, "p")
 {
 //  std::cerr<<"Constr. MN "<<p_.decompWeights<<std::endl;
 }
@@ -530,7 +554,7 @@ defineType(simpleFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(simpleFoamNumerics);
 
 simpleFoamNumerics::simpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
@@ -616,39 +640,20 @@ void simpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="steadyState";
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  
-//   std::string bgrads="leastSquares2"; 
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
-  
-  grad["default"]=bgrads;
-  grad["grad(p)"]="Gauss linear";
-//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
-  grad["grad(omega)"]="cellLimited pointCellsLeastSquares 1";
-  grad["grad(epsilon)"]="cellLimited pointCellsLeastSquares 1";
-  grad["grad(k)"]="cellLimited pointCellsLeastSquares 1";
+  insertStandardGradientConfig(dictionaries);
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  suf="localCellLimited "+bgrads+" UBlendingFactor";
-  if (OFversion()>=170)
-  {
-    grad["limitedGrad"]=suf;
-    suf="limitedGrad";
-  }
-  div["default"]="none"; //pref+"Gauss upwind";
-  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
-  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
 
+  div["default"]="none";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
+
+  div["div(phi,nuTilda)"]       = "Gauss linearUpwind grad(nuTilda)";
   div["div(phi,k)"]		= "Gauss linearUpwind grad(k)";
   div["div(phi,epsilon)"]	= "Gauss linearUpwind grad(epsilon)";
   div["div(phi,omega)"]		= "Gauss linearUpwind grad(omega)";
-//  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-//  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
-//  div["div(phi,omega)"]	=	pref+"Gauss upwind";
-  div["div(phi,R)"]	=	pref+"Gauss upwind";
+  div["div(phi,R)"]             = "Gauss upwind";
   div["div(R)"]="Gauss linear";
       
   div["div((nuEff*dev(grad(U).T())))"]="Gauss linear"; // kOmegaSST2
@@ -689,7 +694,7 @@ defineType(pimpleFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(pimpleFoamNumerics);
 
 pimpleFoamNumerics::pimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({p_.pinternal}), volField ) );
@@ -781,12 +786,12 @@ void pimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   {
     ddt["default"]="Euler";
   }
-  
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !(p_.hasCyclics)) bgrads="pointCellsLeastSquares";
-  grad["default"]="cellLimited "+bgrads+" 1";
-  grad["grad(p)"]="Gauss linear";
+
+  insertStandardGradientConfig(dictionaries);
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+//  grad["default"]="cellLimited "+lqGradSchemeIfPossible()+" 1";
+//  grad["grad(p)"]="Gauss linear";
 //   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
@@ -889,7 +894,7 @@ defineType(rhoPimpleFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(rhoPimpleFoamNumerics);
 
 rhoPimpleFoamNumerics::rhoPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   isCompressible_=true;
@@ -986,12 +991,13 @@ void rhoPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
     ddt["default"]="Euler";
   }
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !(p_.hasCyclics)) bgrads="pointCellsLeastSquares";
-  grad["default"]="cellLimited "+bgrads+" 1";
-  grad["grad(p)"]="Gauss linear";
-//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+//  grad["default"]="cellLimited "+lqGradSchemeIfPossible()+" 1";
+//  grad["grad(p)"]="Gauss linear";
+////   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+
+  insertStandardGradientConfig(dictionaries);
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -1098,7 +1104,7 @@ defineType(rhoSimpleFoamNumerics);
 addToOpenFOAMCaseElementFactoryTable(rhoSimpleFoamNumerics);
 
 rhoSimpleFoamNumerics::rhoSimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   isCompressible_=true;
@@ -1167,23 +1173,18 @@ void rhoSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="steadyState";
 
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !(p_.hasCyclics)) bgrads="pointCellsLeastSquares";
-  grad["default"]="cellLimited "+bgrads+" 1";
-  grad["grad(p)"]="Gauss linear";
-//   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+  insertStandardGradientConfig(dictionaries);
+
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+
+//  grad["default"]="cellLimited "+lqGradSchemeIfPossible()+" 1";
+//  grad["grad(p)"]="Gauss linear";
+////   grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
 
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string pref, suf;
   if (OFversion()>=220) pref="bounded ";
-  suf="localCellLimited "+bgrads+" UBlendingFactor";
-  if (OFversion()>=170)
-  {
-    grad["limitedGrad"]=suf;
-    suf="limitedGrad";
-  }
   div["default"]="none"; //pref+"Gauss upwind";
 
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
@@ -1205,15 +1206,15 @@ void rhoSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
 
   if (p_.setup == Parameters::setup_type::accurate)
     {
-      div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
-      div["div(phi,e)"]	=	pref+"Gauss linearUpwind "+suf;
-      div["div(phi,h)"]	=	pref+"Gauss linearUpwind "+suf;
-      div["div(phi,K)"]     =       pref+"Gauss linearUpwind "+suf;
-      div["div(phid,p)"]     =       pref+"Gauss linearUpwind "+suf;
-      div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-      div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind "+suf;
-      div["div(phi,omega)"]	=	pref+"Gauss linearUpwind "+suf;
-      div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
+      div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
+      div["div(phi,e)"]	=	pref+"Gauss linearUpwind limitedGrad";
+      div["div(phi,h)"]	=	pref+"Gauss linearUpwind limitedGrad";
+      div["div(phi,K)"]     =       pref+"Gauss linearUpwind limitedGrad";
+      div["div(phid,p)"]     =       pref+"Gauss linearUpwind limitedGrad";
+      div["div(phi,k)"]	=	pref+"Gauss linearUpwind grad(k)";
+      div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind grad(epsilon)";
+      div["div(phi,omega)"]	=	pref+"Gauss linearUpwind grad(omega)";
+      div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind grad(nuTilda)";
     }
   else if (p_.setup == Parameters::setup_type::stable)
     {
@@ -1270,7 +1271,7 @@ addToOpenFOAMCaseElementFactoryTable(potentialFreeSurfaceFoamNumerics);
 
 
 potentialFreeSurfaceFoamNumerics::potentialFreeSurfaceFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p_gh"),
   p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimKinPressure, 	FieldValue({0.0}), volField ) );
@@ -1335,11 +1336,11 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="Euler";
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  grad["default"]=bgrads;
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  grad["default"]=lqGradSchemeIfPossible();
+//  grad["grad(U)"]="cellMDLimited "+lqGradSchemeIfPossible()+" 1";
+
+  insertStandardGradientConfig(dictionaries);
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
@@ -1373,10 +1374,11 @@ void potentialFreeSurfaceFoamNumerics::addIntoDictionaries(OFdicts& dictionaries
   }
   
 
-  div["div(phi,U)"]="Gauss localBlendedBy UBlendingFactor linearUpwind grad(U) limitedLinearV 1";
+//  div["div(phi,U)"]="Gauss localBlendedBy UBlendingFactor linearUpwind limitedGrad limitedLinearV 1";
+  div["div(phi,U)"]="Gauss linearUpwind limitedGrad";
   div["div(phi,k)"]="Gauss linearUpwind grad(k)";
   div["div(phi,epsilon)"]="Gauss linearUpwind grad(epsilon)";
-  div["div(phi,omega)"]="Gauss upwind";
+  div["div(phi,omega)"]="Gauss linearUpwind grad(omega)";
   div["div(phi,nuTilda)"]="Gauss linearUpwind grad(nuTilda)";
   div["div((nuEff*dev(grad(U).T())))"]="Gauss linear";
 
@@ -1474,7 +1476,7 @@ addToOpenFOAMCaseElementFactoryTable(cavitatingFoamNumerics);
 
 
 cavitatingFoamNumerics::cavitatingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
   OFcase().addField("p", FieldInfo(scalarField, 	dimPressure, 		FieldValue({p_.pamb}), volField ) );
@@ -1519,11 +1521,12 @@ void cavitatingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="Euler";
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  grad["default"]=bgrads;
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  std::string bgrads="Gauss linear";
+//  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+//  grad["default"]=bgrads;
+//  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+  insertStandardGradientConfig(dictionaries);
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["default"]="Gauss upwind";
@@ -1578,7 +1581,7 @@ void interFoamNumerics::init()
 }
 
 interFoamNumerics::interFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p_rgh"),
   p_(ps)
 {
     init();
@@ -1714,36 +1717,38 @@ void interFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   
-//   std::string bgrads="leastSquares2"; 
-  std::string bgrads="Gauss linear";
- // if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+////   std::string bgrads="leastSquares2";
+//  std::string bgrads="Gauss linear";
+// // if (OFversion()>=220) bgrads="pointCellsLeastSquares";
   
-  grad["default"]=bgrads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
-//   grad["grad(p_rgh)"]="Gauss linear";
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
-  grad["grad("+alphaname_+")"]="localFaceLimited "+bgrads+" UBlendingFactor";
-  grad["grad(omega)"]="cellLimited pointCellsLeastSquares 1";
-  grad["grad(epsilon)"]="cellLimited pointCellsLeastSquares 1";
-  grad["grad(k)"]="cellLimited pointCellsLeastSquares 1";
+//  grad["default"]=bgrads; //"faceLimited leastSquares 1"; // plain limiter gives artifacts ("schlieren") near (above and below) waterline
+////   grad["grad(p_rgh)"]="Gauss linear";
+//  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+//  grad["grad(omega)"]="cellLimited pointCellsLeastSquares 1";
+//  grad["grad(epsilon)"]="cellLimited pointCellsLeastSquares 1";
+//  grad["grad(k)"]="cellLimited pointCellsLeastSquares 1";
+
+  insertStandardGradientConfig(dictionaries);
+
+  grad["grad("+alphaname_+")"]="localFaceLimited "+lqGradSchemeIfPossible()+" UBlendingFactor";
   
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
-  if (OFversion()==160) 
-    suf=bgrads;
-  else 
-    suf="grad(U)";
-  div["div(rho*phi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
-  div["div(rhoPhi,U)"]		= "Gauss linearUpwindV "+suf; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
+//  if (OFversion()==160)
+//    suf=bgrads;
+//  else
+//    suf="grad(U)";
+  div["div(rho*phi,U)"]		= "Gauss linearUpwindV limitedGrad"; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind";
+  div["div(rhoPhi,U)"]		= "Gauss linearUpwindV limitedGrad"; //localBlendedBy interfaceBlendingFactor linearUpwindV "+suf+" upwind"; // for interPhaseChangeFoam
 //   div["div(phi,alpha)"]		= "Gauss localBlendedBy UBlendingFactor upwind vanLeer";
 //   div["div(phirb,alpha)"]	= "Gauss localBlendedBy UBlendingFactor upwind linear"; //interfaceCompression";
   div["div(phi,alpha)"]		= "Gauss vanLeer";
   div["div(phirb,alpha)"]	= "Gauss linear"; //interfaceCompression";
   div["div(phi,k)"]		= "Gauss linearUpwind grad(k)";
-//   div["div(phi,k)"]		= "Gauss localBlendedBy UBlendingFactor upwind linearUpwind "+suf;
   div["div(phi,epsilon)"]	= "Gauss linearUpwind grad(epsilon)";
   div["div(phi,omega)"]		= "Gauss linearUpwind grad(omega)";
-  div["div(phi,nuTilda)"]	= "Gauss linearUpwind "+suf;
-  div["div(phi,R)"]		= "Gauss linearUpwind "+suf;
+  div["div(phi,nuTilda)"]	= "Gauss linearUpwind grad(nuTilda)";
+  div["div(phi,R)"]		= "Gauss linearUpwind limitedGrad";
   div["div(R)"]			= "Gauss linear";
   if (OFversion()>=300)
   {
@@ -1959,7 +1964,7 @@ void reactingFoamNumerics::init()
 
 
 reactingFoamNumerics::reactingFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p"),
   p_(ps)
 {
     init();
@@ -2030,12 +2035,13 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
     ddt["default"]="Euler";
   
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
-  std::string bgrads="Gauss linear";
-  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  grad["default"]=bgrads;
-  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
-  
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  std::string bgrads="Gauss linear";
+//  if (OFversion()>=220) bgrads="pointCellsLeastSquares";
+//  grad["default"]=bgrads;
+//  grad["grad(U)"]="cellMDLimited "+bgrads+" 1";
+  insertStandardGradientConfig(dictionaries);
+
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   std::string suf;
   div["default"]="Gauss linear";
@@ -2081,7 +2087,7 @@ void reactingFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   }
   else
   {
-    div["div(phi,U)"]="Gauss linearUpwindV grad(U)";
+    div["div(phi,U)"]="Gauss linearUpwindV limitedGrad";
     div["div(phid,p)"]="Gauss limitedLinear 1";
     div["div(phi,k)"]="Gauss limitedLinear 1";
     div["div(phi,Yi_h)"]="Gauss limitedLinear 1";
@@ -2160,7 +2166,7 @@ void buoyantSimpleFoamNumerics::init()
 
 
 buoyantSimpleFoamNumerics::buoyantSimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p_rgh"),
   p_(ps)
 {
     init();
@@ -2247,31 +2253,32 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="steadyState";
 
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
+//  std::string bgrads="Gauss linear";
+//  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
 
-  grad["default"]=bgrads;
-  grad["grad(p_rgh)"]="Gauss linear";
+//  grad["default"]=bgrads;
+//  grad["grad(p_rgh)"]="Gauss linear";
+  insertStandardGradientConfig(dictionaries);
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-  std::string pref, suf;
+  std::string pref;
   if (OFversion()>=220) pref="bounded ";
-  suf="localCellLimited "+bgrads+" UBlendingFactor";
-  if (OFversion()>=170)
-  {
-    grad["limitedGrad"]=suf;
-    suf="limitedGrad";
-  }
+//  suf="localCellLimited "+bgrads+" UBlendingFactor";
+//  if (OFversion()>=170)
+//  {
+//    grad["limitedGrad"]=suf;
+//    suf="limitedGrad";
+//  }
   div["default"]="none";
-  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
-  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,K)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,h)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]	=	pref+"Gauss upwind";
-  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
+  div["div(phi,k)"]	=	pref+"Gauss linearUpwind grad(k)";
+  div["div(phi,K)"]	=	pref+"Gauss linearUpwind limitedGrad";
+  div["div(phi,h)"]	=	pref+"Gauss linearUpwind limitedGrad";
+  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind grad(omega)";
+  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind grad(nuTilda)";
+  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind grad(epsilon)";
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
 
@@ -2329,7 +2336,7 @@ void buoyantPimpleFoamNumerics::init()
 
 
 buoyantPimpleFoamNumerics::buoyantPimpleFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, "p_rgh"),
   p_(ps)
 {
     init();
@@ -2439,31 +2446,26 @@ void buoyantPimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& ddt=fvSchemes.subDict("ddtSchemes");
   ddt["default"]="Euler";
 
-  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
+//  OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
 
-  std::string bgrads="Gauss linear";
-  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
+//  std::string bgrads="Gauss linear";
+//  if ( (OFversion()>=220) && !p_.hasCyclics ) bgrads="pointCellsLeastSquares";
 
-  grad["default"]=bgrads;
-  grad["grad(p_rgh)"]="Gauss linear";
+//  grad["default"]=bgrads;
+//  grad["grad(p_rgh)"]="Gauss linear";
+  insertStandardGradientConfig(dictionaries);
 
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
-  std::string pref, suf;
+  std::string pref;
   if (OFversion()>=220) pref="bounded ";
-  suf="localCellLimited "+bgrads+" UBlendingFactor";
-  if (OFversion()>=170)
-  {
-    grad["limitedGrad"]=suf;
-    suf="limitedGrad";
-  }
   div["default"]="none";
-  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV "+suf;
-  div["div(phi,k)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,K)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,h)"]	=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,omega)"]	=	pref+"Gauss upwind";
-  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind "+suf;
-  div["div(phi,epsilon)"]=	pref+"Gauss upwind";
+  div["div(phi,U)"]	=	pref+"Gauss linearUpwindV limitedGrad";
+  div["div(phi,K)"]	=	pref+"Gauss linearUpwind limitedGrad";
+  div["div(phi,k)"]	=	pref+"Gauss linearUpwind grad(k)";
+  div["div(phi,h)"]	=	pref+"Gauss linearUpwind limitedGrad";
+  div["div(phi,omega)"]	=	pref+"Gauss linearUpwind grad(omega)";
+  div["div(phi,nuTilda)"]=	pref+"Gauss linearUpwind grad(nuTilda)";
+  div["div(phi,epsilon)"]=	pref+"Gauss linearUpwind grad(epsilon)";
   div["div(phi,R)"]	=	pref+"Gauss upwind";
   div["div(R)"]="Gauss linear";
 
@@ -2552,7 +2554,7 @@ void magneticFoamNumerics::init()
 }
 
 magneticFoamNumerics::magneticFoamNumerics(OpenFOAMCase& c, const ParameterSet& ps)
-: FVNumerics(c, ps),
+: FVNumerics(c, ps, ""),
   p_(ps)
 {
   init();
@@ -2634,9 +2636,7 @@ void magneticFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   
   OFDictData::dict& grad=fvSchemes.subDict("gradSchemes");
   
-  std::string bgrads="Gauss linear";
-//   if (OFversion()>=220) bgrads="pointCellsLeastSquares";
-  grad["default"]=bgrads;
+  grad["default"]="Gauss linear";
     
   OFDictData::dict& div=fvSchemes.subDict("divSchemes");
   div["default"]="none";

@@ -388,7 +388,6 @@ void ChannelBase::createCase
   {
     cm.insert(new simpleFoamNumerics(cm, simpleFoamNumerics::Parameters()
       .set_checkResiduals(false) // don't stop earlier since averaging should be completed
-      .set_hasCyclics(true)
       .set_Uinternal(vec3(Ubulk_,0,0))
       .set_decompositionMethod(FVNumerics::Parameters::decompositionMethod_type::hierarchical)
       .set_endTime(end_)
@@ -403,7 +402,6 @@ void ChannelBase::createCase
       .set_LESfilteredConvection(p.run.filteredconvection)
       .set_maxDeltaT(0.25*T_)
       .set_Uinternal(vec3(Ubulk_,0,0))
-      .set_hasCyclics(true)
       .set_writeControl(FVNumerics::Parameters::writeControl_type::adjustableRunTime)
       .set_writeInterval(0.25*T_)
       .set_endTime( end_ )

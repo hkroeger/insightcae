@@ -225,6 +225,7 @@ public:
     }
 
     virtual bool providesBCsForPatch ( const std::string& patchName ) const;
+
 };
 
 
@@ -437,38 +438,44 @@ public:
     }
 
     template<class T>
-    const T& findUniqueElement() const
+    std::set<T *> findElements()
     {
-        const T* the_e = NULL;
-
-        bool found=false;
-        for ( boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
-                i!=elements_.end(); i++ ) {
-            const T *e= dynamic_cast<const T*> ( & ( *i ) );
-            if ( e ) {
-                if ( found ) {
-                    throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): Multiple elements of requested type "+T::typeName+" in queried OpenFOAM case!" );
-                }
-                the_e=e;
-                found=true;
+        std::set<T *> es;
+        for (auto& i: elements_)
+        {
+            if (T *e = dynamic_cast<T*>( &i ))
+            {
+                es.insert(e);
             }
         }
-        if ( !found ) {
-            throw insight::Exception ( "OpenFOAMCase::findUniqueElement(): No element of requested type "+T::typeName+" in queried OpenFOAM case found !" );
-        }
-
-        return *the_e;
+        return es;
     }
 
     template<class T>
     T& getUniqueElement()
     {
-        return const_cast<T&> ( findUniqueElement<T>() );
+        std::set<T*> es = const_cast<OpenFOAMCase*>(this)->findElements<T>();
+        if (es.size()>1)
+        {
+            throw insight::Exception ( "OpenFOAMCase::getUniqueElement(): Multiple elements of requested type "+T::typeName+" in queried OpenFOAM case!" );
+        }
+        if (es.size()==0) {
+            throw insight::Exception ( "OpenFOAMCase::getUniqueElement(): No element of requested type "+T::typeName+" in queried OpenFOAM case found !" );
+        }
+        return **(es.begin());
+    }
+
+    template<class T>
+    const T& findUniqueElement() const
+    {
+        return const_cast<const T&> ( const_cast<OpenFOAMCase*>(this)->getUniqueElement<T>() );
     }
 
     void setFromXML(const std::string& xml, const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");
     void loadFromFile(const boost::filesystem::path& file, bool skipOFE=true, bool skipBCs=false, const boost::filesystem::path& casepath="");
     
+
+    virtual bool hasCyclicBC() const;
 
 };
 

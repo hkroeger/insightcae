@@ -388,6 +388,7 @@ bool BoundaryCondition::providesBCsForPatch(const std::string& patchName) const
 
 
 
+
 defineType(turbulenceModel);
 defineFactoryTable(turbulenceModel, LIST(OpenFOAMCase& ofc, const ParameterSet& ps), LIST(ofc, ps));
 
@@ -574,6 +575,13 @@ bool OpenFOAMCase::isCompressible() const
 {
   return findUniqueElement<FVNumerics>().isCompressible();
 }
+
+bool OpenFOAMCase::hasCyclicBC() const
+{
+  std::set<CyclicPairBC*> cyclics = const_cast<OpenFOAMCase*>(this)->findElements<CyclicPairBC>();
+  return (cyclics.size()>0);
+}
+
 
 std::shared_ptr<OFdicts> OpenFOAMCase::createDictionaries() const
 {

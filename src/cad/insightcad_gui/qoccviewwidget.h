@@ -63,8 +63,16 @@ public:
     CIM_InsertFaceIDs
   };
 
+  struct FocusObject
+  {
+    Handle_AIS_InteractiveObject ais;
+    bool was_visible;
+  };
+
 protected:
   std::vector<Handle_AIS_InteractiveObject> additionalDisplayObjectsForSelection_;
+
+  std::shared_ptr<FocusObject> focussedObject;
 
 public:
 
@@ -92,7 +100,7 @@ public:
   QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
 
-signals:
+Q_SIGNALS:
 
   void initialized();
   void graphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer);
@@ -106,11 +114,11 @@ signals:
 
   void insertNotebookText(const QString& text);
 
-protected slots:
+protected Q_SLOTS:
   
   void onGraphicalSelectionChanged(QDisplayableModelTreeItem* selection, QoccViewWidget* viewer);
 
-public slots:
+public Q_SLOTS:
   
   void idle();
   void fitExtents();
@@ -159,6 +167,9 @@ public slots:
   void onSelectPoints();
   void onSelectEdges();
   void onSelectFaces();
+
+  void onFocus(Handle_AIS_InteractiveObject di);
+  void onUnfocus();
 
 protected: // methods
 

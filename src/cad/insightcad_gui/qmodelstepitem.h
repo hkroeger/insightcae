@@ -50,7 +50,7 @@ class QFeatureItem
   insight::cad::FeaturePtr smp_;
   bool is_component_;
     
-signals:
+Q_SIGNALS:
   void addEvaluation(const QString& name, insight::cad::PostprocActionPtr em, bool visible);
 
 protected:
@@ -70,7 +70,7 @@ public:
     return *smp_;
   }
   
-public slots:
+public Q_SLOTS:
   void showProperties();
   void exportShape();
 

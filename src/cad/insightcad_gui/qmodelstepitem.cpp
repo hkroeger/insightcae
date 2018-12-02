@@ -92,6 +92,71 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addAction(a);
     
     myMenu.addSeparator();
+
+    bool someSubMenu=false, someHoverDisplay=false;
+    if (smp_->getDatumScalars().size()>0)
+    {
+      someSubMenu=true;
+      QMenu *sm = new QMenu("Scalar Symbols");
+      myMenu.addMenu(sm);
+      for (auto i: smp_->getDatumScalars())
+      {
+        QAction *a = new QAction( QString::fromStdString(i.first) );
+        sm->addAction(a);
+      }
+    }
+    if (smp_->getDatumPoints().size()>0)
+    {
+      someSubMenu=true;
+      QMenu *sm = new QMenu("Point Symbols");
+      myMenu.addMenu(sm);
+      for (auto i: smp_->getDatumPoints())
+      {
+        QAction *a = new QAction( QString::fromStdString(i.first) );
+        sm->addAction(a);
+        connect(a, &QAction::hovered,
+                [=]() {
+          gp_Pnt p=to_Pnt(i.second);
+          focus(Handle_AIS_InteractiveObject(new AIS_Shape( BRepBuilderAPI_MakeVertex(p))));
+        });
+        someHoverDisplay=true;
+      }
+    }
+    if (smp_->getDatumVectors().size()>0)
+    {
+      someSubMenu=true;
+      QMenu *sm = new QMenu("Vector Symbols");
+      myMenu.addMenu(sm);
+      for (auto i: smp_->getDatumVectors())
+      {
+        QAction *a = new QAction( QString::fromStdString(i.first) );
+        sm->addAction(a);
+      }
+    }
+    if (smp_->providedSubshapes().size()>0)
+    {
+      someSubMenu=true;
+      QMenu *sm = new QMenu("Subshapes");
+      myMenu.addMenu(sm);
+      for (auto i: smp_->providedSubshapes())
+      {
+        QAction *a = new QAction( QString::fromStdString(i.first) );
+        sm->addAction(a);
+        connect(a, &QAction::hovered,
+                [=]() {
+          focus(i.second->buildVisualization());
+        });
+        someHoverDisplay=true;
+      }
+    }
+
+    if (someHoverDisplay)
+    {
+      connect(&myMenu, &QMenu::aboutToHide,
+            this, &QFeatureItem::unfocus);
+    }
+
+    if (someSubMenu) myMenu.addSeparator();
     
     a=new QAction("Insert name", &myMenu);
     connect(a, &QAction::triggered, this, &QFeatureItem::insertName);

@@ -1131,6 +1131,56 @@ void QoccViewWidget::onSelectFaces()
   emit sendStatus("Please select faces and finish with right click!");
 }
 
+
+void QoccViewWidget::onUnfocus()
+{
+  if (focussedObject)
+  {
+    if (!focussedObject->was_visible)
+    {
+      getContext()->Erase
+      (
+        focussedObject->ais
+#if (OCC_VERSION_MAJOR>=7)
+        , true
+#endif
+      );
+    }
+    focussedObject.reset();
+  }
+}
+
+void QoccViewWidget::onFocus(Handle_AIS_InteractiveObject ais)
+{
+  if (focussedObject)
+    if (focussedObject->ais == ais) return;
+
+  onUnfocus();
+
+  AIS_DisplayStatus s = getContext()->DisplayStatus(ais);
+
+  focussedObject.reset(new FocusObject);
+  FocusObject& co = *focussedObject;
+
+  co.ais=ais;
+  co.was_visible = (s==AIS_DS_Displayed);
+
+  if (!co.was_visible)
+  {
+    getContext()->Display
+    (
+      ais
+#if (OCC_VERSION_MAJOR>=7)
+      , false
+#endif
+    );
+    getContext()->SetDisplayMode(ais, AIS_Shaded, Standard_False );
+    getContext()->SetColor(ais, Quantity_NOC_RED, Standard_True );
+  }
+
+//  getContext()->Hilight(ais, true);
+}
+
 /*!
   \brief	This function handles left button down events from the mouse.
 */

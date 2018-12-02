@@ -690,6 +690,10 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             viewer_, &QoccViewWidget::onSetColor);
     connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
             viewer_, &QoccViewWidget::onSetResolution);
+    connect(modeltree_, &QModelTree::focus,
+            viewer_, &QoccViewWidget::onFocus);
+    connect(modeltree_, &QModelTree::unfocus,
+            viewer_, &QoccViewWidget::onUnfocus);
 
     connect(model_, &ISCADModel::updateTitle,
             this, &ISCADModelEditor::onUpdateTitle);

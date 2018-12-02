@@ -235,6 +235,10 @@ void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
           this, &QModelTree::insertParserStatementAtCursor);
   connect(newf, &QDisplayableModelTreeItem::jumpTo,
           this, &QModelTree::jumpTo);
+  connect(newf, &QDisplayableModelTreeItem::focus,
+          this, &QModelTree::focus);
+  connect(newf, &QDisplayableModelTreeItem::unfocus,
+          this, &QModelTree::unfocus);
 }
 
 QModelTree::QModelTree(QWidget* parent)

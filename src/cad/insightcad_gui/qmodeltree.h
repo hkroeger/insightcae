@@ -115,7 +115,7 @@ public:
     void setRandomColor();
     void copyDisplayProperties(QDisplayableModelTreeItem* di);
 
-public slots:
+public Q_SLOTS:
     virtual void show();
     virtual void hide();
     virtual void wireframe();
@@ -124,13 +124,16 @@ public slots:
     virtual void randomizeColor();
     virtual void setResolution();
 
-signals:
+Q_SIGNALS:
     void show(QDisplayableModelTreeItem* di);
     void hide(QDisplayableModelTreeItem* di);
 
     void setDisplayMode(QDisplayableModelTreeItem* di, AIS_DisplayMode sm);
     void setColor(QDisplayableModelTreeItem* di, Quantity_Color c);
     void setResolution(QDisplayableModelTreeItem* di, double res);
+
+    void focus(Handle_AIS_InteractiveObject ais);
+    void unfocus();
 };
 
 
@@ -234,17 +237,17 @@ private slots:
     void onItemChanged( QTreeWidgetItem * item, int column );
     void onClear();
 
-public slots:
+public Q_SLOTS:
     void setUniformDisplayMode(const AIS_DisplayMode AM);
     void resetViz();
     void onlyOneShaded(QDisplayableModelTreeItem* shaded_item);
     void allShaded();
     void allWireframe();
     
-protected slots:
+protected Q_SLOTS:
     void showContextMenu(const QPoint &);
 
-signals:
+Q_SIGNALS:
     // relay signals
     void show(QDisplayableModelTreeItem* di);
     void hide(QDisplayableModelTreeItem* di);
@@ -256,6 +259,8 @@ signals:
     void insertParserStatementAtCursor(const QString& statement);
     void jumpTo(const QString& name);
 
+    void focus(Handle_AIS_InteractiveObject ais);
+    void unfocus();
 };
 
 

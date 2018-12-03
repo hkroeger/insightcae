@@ -168,8 +168,9 @@ public Q_SLOTS:
   void onSelectEdges();
   void onSelectFaces();
 
-  void onFocus(Handle_AIS_InteractiveObject di);
   void onUnfocus();
+  void doUnfocus(bool newFocusIntended = false);
+  void onFocus(Handle_AIS_InteractiveObject di);
 
 protected: // methods
 

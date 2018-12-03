@@ -28,6 +28,8 @@
 #include "qmodelstepitem.h"
 #include "pointertransient.h"
 #include "cadpostprocactions.h"
+
+#include "AIS_Point.hxx"
 #endif
 
 Handle_AIS_InteractiveObject QFeatureItem::createAIS(AIS_InteractiveContext&)
@@ -131,7 +133,12 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
         connect(a, &QAction::hovered,
                 [=]() {
           gp_Pnt p=to_Pnt(i.second);
-          focus(Handle_AIS_InteractiveObject(new AIS_Shape( BRepBuilderAPI_MakeVertex(p))));
+          Handle_AIS_Point ip(new AIS_Point(
+             Handle_Geom_Point(new Geom_CartesianPoint(p) )
+                                               ));
+          ip->SetMarker(Aspect_TOM_O_PLUS);
+          ip->SetWidth(5);
+          focus(ip);
         });
         someHoverDisplay=true;
       }

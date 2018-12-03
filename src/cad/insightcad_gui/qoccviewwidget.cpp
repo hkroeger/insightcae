@@ -1134,6 +1134,11 @@ void QoccViewWidget::onSelectFaces()
 
 void QoccViewWidget::onUnfocus()
 {
+  doUnfocus();
+}
+
+void QoccViewWidget::doUnfocus(bool newFocusIntended)
+{
   if (focussedObject)
   {
     if (!focussedObject->was_visible)
@@ -1142,10 +1147,23 @@ void QoccViewWidget::onUnfocus()
       (
         focussedObject->ais
 #if (OCC_VERSION_MAJOR>=7)
-        , true
+        , false
 #endif
       );
     }
+
+    // make everything else transparent
+    AIS_ListOfInteractive loi;
+    getContext()->DisplayedObjects(loi);
+    for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
+    {
+        Handle_AIS_InteractiveObject o=*i;
+        if (o!=focussedObject->ais)
+          getContext()->SetTransparency(o, 0, false);
+    }
+
+    if (!newFocusIntended) getContext()->UpdateCurrentViewer();
+
     focussedObject.reset();
   }
 }
@@ -1155,9 +1173,19 @@ void QoccViewWidget::onFocus(Handle_AIS_InteractiveObject ais)
   if (focussedObject)
     if (focussedObject->ais == ais) return;
 
-  onUnfocus();
+  doUnfocus(true);
 
   AIS_DisplayStatus s = getContext()->DisplayStatus(ais);
+
+  // make everything else transparent
+  AIS_ListOfInteractive loi;
+  getContext()->DisplayedObjects(loi);
+  for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
+  {
+      Handle_AIS_InteractiveObject o=*i;
+      if (o!=ais)
+        getContext()->SetTransparency(o, 0.9, false);
+  }
 
   focussedObject.reset(new FocusObject);
   FocusObject& co = *focussedObject;
@@ -1174,11 +1202,11 @@ void QoccViewWidget::onFocus(Handle_AIS_InteractiveObject ais)
       , false
 #endif
     );
-    getContext()->SetDisplayMode(ais, AIS_Shaded, Standard_False );
-    getContext()->SetColor(ais, Quantity_NOC_RED, Standard_True );
+    getContext()->SetDisplayMode(ais, AIS_Shaded, false );
+    getContext()->SetColor(ais, Quantity_NOC_RED, false );
   }
 
-//  getContext()->Hilight(ais, true);
+  getContext()->UpdateCurrentViewer();
 }
 
 /*!

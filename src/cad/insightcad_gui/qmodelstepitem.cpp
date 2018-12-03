@@ -87,10 +87,14 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     QMenu myMenu;
     QAction *a;
     
-    a=new QAction(name_, &myMenu);
+    a=new QAction(name_+": Jump to Def.", &myMenu);
     connect(a, &QAction::triggered, this, &QFeatureItem::jumpToName);
     myMenu.addAction(a);
-    
+
+    a=new QAction("Insert name", &myMenu);
+    connect(a, &QAction::triggered, this, &QFeatureItem::insertName);
+    myMenu.addAction(a);
+
     myMenu.addSeparator();
 
     bool someSubMenu=false, someHoverDisplay=false;
@@ -101,8 +105,13 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       myMenu.addMenu(sm);
       for (auto i: smp_->getDatumScalars())
       {
-        QAction *a = new QAction( QString::fromStdString(i.first) );
+        QAction *a = new QAction( QString::fromStdString(
+                                    boost::str(boost::format("%s = %g") % i.first % i.second)
+                                    ) );
         sm->addAction(a);
+        connect(a, &QAction::triggered, [=]() {
+            insertIntoNotebook( name_+"$"+QString::fromStdString(i.first) );
+          });
       }
     }
     if (smp_->getDatumPoints().size()>0)
@@ -112,8 +121,13 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       myMenu.addMenu(sm);
       for (auto i: smp_->getDatumPoints())
       {
-        QAction *a = new QAction( QString::fromStdString(i.first) );
+        QAction *a = new QAction( QString::fromStdString(
+                                    boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
+                                    ) );
         sm->addAction(a);
+        connect(a, &QAction::triggered, [=]() {
+            insertIntoNotebook( name_+"@"+QString::fromStdString(i.first) );
+          });
         connect(a, &QAction::hovered,
                 [=]() {
           gp_Pnt p=to_Pnt(i.second);
@@ -129,8 +143,13 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       myMenu.addMenu(sm);
       for (auto i: smp_->getDatumVectors())
       {
-        QAction *a = new QAction( QString::fromStdString(i.first) );
+        QAction *a = new QAction( QString::fromStdString(
+                                    boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
+                                    ) );
         sm->addAction(a);
+        connect(a, &QAction::triggered, [=]() {
+            insertIntoNotebook( name_+"^"+QString::fromStdString(i.first) );
+          });
       }
     }
     if (smp_->providedSubshapes().size()>0)
@@ -142,6 +161,9 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       {
         QAction *a = new QAction( QString::fromStdString(i.first) );
         sm->addAction(a);
+        connect(a, &QAction::triggered, [=]() {
+            insertIntoNotebook( name_+"."+QString::fromStdString(i.first) );
+          });
         connect(a, &QAction::hovered,
                 [=]() {
           focus(i.second->buildVisualization());
@@ -158,12 +180,6 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
 
     if (someSubMenu) myMenu.addSeparator();
     
-    a=new QAction("Insert name", &myMenu);
-    connect(a, &QAction::triggered, this, &QFeatureItem::insertName);
-    myMenu.addAction(a);
-    
-    myMenu.addSeparator();
-
     a=new QAction("Show", &myMenu);
     connect(a, &QAction::triggered, this, QOverload<>::of(&QFeatureItem::show));
     myMenu.addAction(a);
@@ -187,6 +203,8 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     a=new QAction("Randomize Color", &myMenu);
     connect(a, &QAction::triggered, this, &QFeatureItem::randomizeColor);
     myMenu.addAction(a);
+
+    myMenu.addSeparator();
 
     a=new QAction("Show Properties", &myMenu);
     connect(a, &QAction::triggered, this, &QFeatureItem::showProperties);

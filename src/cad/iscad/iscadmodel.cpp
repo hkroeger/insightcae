@@ -646,8 +646,12 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     notepad_=new QTextEdit;
 
     vbox->addWidget(notepad_);
+    QHBoxLayout *ll=new QHBoxLayout;
     QPushButton* copybtn=new QPushButton("<< Copy to cursor <<");
-    vbox->addWidget(copybtn);
+    ll->addWidget(copybtn);
+    QPushButton* clearbtn=new QPushButton("Clear");
+    ll->addWidget(clearbtn);
+    vbox->addLayout(ll);
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
@@ -677,6 +681,8 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     connect(copybtn, &QPushButton::clicked,
             this, &ISCADModelEditor::onCopyBtnClicked);
+    connect(clearbtn, &QPushButton::clicked,
+            notepad_, &QTextEdit::clear);
 
     model_->connectModelTree(modeltree_);
 
@@ -694,6 +700,8 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
             viewer_, &QoccViewWidget::onFocus);
     connect(modeltree_, &QModelTree::unfocus,
             viewer_, &QoccViewWidget::onUnfocus);
+    connect(modeltree_, &QModelTree::insertIntoNotebook,
+            this, &ISCADModelEditor::onInsertNotebookText);
 
     connect(model_, &ISCADModel::updateTitle,
             this, &ISCADModelEditor::onUpdateTitle);
@@ -703,7 +711,6 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     connect(viewer_, &QoccViewWidget::insertNotebookText,
             this, &ISCADModelEditor::onInsertNotebookText);
-
 }
 
 

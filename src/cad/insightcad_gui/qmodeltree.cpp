@@ -239,6 +239,8 @@ void QModelTree::connectDisplayableItem(QDisplayableModelTreeItem* newf)
           this, &QModelTree::focus);
   connect(newf, &QDisplayableModelTreeItem::unfocus,
           this, &QModelTree::unfocus);
+  connect(newf, &QDisplayableModelTreeItem::insertIntoNotebook,
+          this, &QModelTree::insertIntoNotebook);
 }
 
 QModelTree::QModelTree(QWidget* parent)

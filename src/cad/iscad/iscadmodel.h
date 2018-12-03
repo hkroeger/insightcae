@@ -171,7 +171,7 @@ public slots:
 //    void allWireframe();
 
     
-public slots:
+public Q_SLOTS:
 
     /**
      * save model under the file name from which is was loaded
@@ -216,7 +216,7 @@ public slots:
 
     void onCancelRebuild();
 
-signals:
+Q_SIGNALS:
     
     /**
      * user status informations
@@ -291,7 +291,7 @@ public:
     inline QTextEdit* notepad() { return notepad_; }
     inline QModelTree* modeltree() { return modeltree_; }
 
-public slots:
+public Q_SLOTS:
     void onCopyBtnClicked();
     void onUpdateTitle(const boost::filesystem::path& filepath, bool isUnSaved);
     void onInsertNotebookText(const QString& text);

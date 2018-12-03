@@ -64,11 +64,12 @@ public:
     inline const QString& name() const { return name_; }
     QModelTree* modelTree() const;
 
-signals:
+Q_SIGNALS:
     void insertParserStatementAtCursor(const QString& statement);
+    void insertIntoNotebook(const QString& statement);
     void jumpTo(const QString& name);
 
-public slots:
+public Q_SLOTS:
     void insertName();
     void jumpToName();
 
@@ -257,6 +258,7 @@ Q_SIGNALS:
     void setResolution(QDisplayableModelTreeItem* di, double res);
 
     void insertParserStatementAtCursor(const QString& statement);
+    void insertIntoNotebook(const QString& statement);
     void jumpTo(const QString& name);
 
     void focus(Handle_AIS_InteractiveObject ais);

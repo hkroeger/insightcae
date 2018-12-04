@@ -900,6 +900,8 @@ public:
   );
 };
 
+void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out);
+
 }
 
 #endif // OPENFOAMTOOLS_H

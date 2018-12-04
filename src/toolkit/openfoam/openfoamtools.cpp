@@ -3252,4 +3252,10 @@ void OpenFOAMCaseDirs::cleanCase
   }
 }
 
+
+void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out)
+{
+}
+
+
 }

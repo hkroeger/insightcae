@@ -109,7 +109,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       {
         QAction *a = new QAction( QString::fromStdString(
                                     boost::str(boost::format("%s = %g") % i.first % i.second)
-                                    ) );
+                                    ), &myMenu );
         sm->addAction(a);
         connect(a, &QAction::triggered, [=]() {
             insertIntoNotebook( name_+"$"+QString::fromStdString(i.first) );
@@ -125,7 +125,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       {
         QAction *a = new QAction( QString::fromStdString(
                                     boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
-                                    ) );
+                                    ), &myMenu );
         sm->addAction(a);
         connect(a, &QAction::triggered, [=]() {
             insertIntoNotebook( name_+"@"+QString::fromStdString(i.first) );
@@ -152,7 +152,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       {
         QAction *a = new QAction( QString::fromStdString(
                                     boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
-                                    ) );
+                                    ), &myMenu );
         sm->addAction(a);
         connect(a, &QAction::triggered, [=]() {
             insertIntoNotebook( name_+"^"+QString::fromStdString(i.first) );
@@ -166,7 +166,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
       myMenu.addMenu(sm);
       for (auto i: smp_->providedSubshapes())
       {
-        QAction *a = new QAction( QString::fromStdString(i.first) );
+        QAction *a = new QAction( QString::fromStdString(i.first), &myMenu );
         sm->addAction(a);
         connect(a, &QAction::triggered, [=]() {
             insertIntoNotebook( name_+"."+QString::fromStdString(i.first) );

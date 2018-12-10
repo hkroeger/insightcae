@@ -32,6 +32,9 @@
 
 #include "vtkSTLReader.h"
 #include "vtkSmartPointer.h"
+#include "vtkPolyData.h"
+#include "vtkPolyDataReader.h"
+#include "vtkCellData.h"
 
 using namespace std;
 using namespace arma;
@@ -476,7 +479,7 @@ void createCyclicOperator::addIntoDictionary(const OpenFOAMCase& ofc, OFDictData
     }
     if (suf=="_half1" || suf=="")
     {
-      int osize=pl.size();
+      size_t osize=pl.size();
       pl.resize(osize+p_.patches_half1().size());
       std::copy(p_.patches_half1().begin(), p_.patches_half1().end(), pl.begin()+osize);
       if (suf!="") opdict["set"]=p_.set_half1();
@@ -3255,6 +3258,27 @@ void OpenFOAMCaseDirs::cleanCase
 
 void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::string& fieldname, std::ostream& out)
 {
+  vtkSmartPointer<vtkPolyDataReader> in = vtkPolyDataReader::New();
+  in->SetFileName(vtkfile.c_str());
+  in->Update();
+
+  if(in->IsFilePolyData())
+  {
+    vtkPolyData* pd = in->GetOutput();
+    vtkDataArray* da = pd->GetCellData()->GetArray(fieldname.c_str());
+    out << da->GetNumberOfTuples() << "\n(\n";
+    vtkIdType ncells=da->GetNumberOfTuples();
+    vtkIdType nc=da->GetNumberOfComponents();
+    for (vtkIdType i=0; i<ncells; i++)
+    {
+      if (nc>1) out<<" (";
+      double *cd = da->GetTuple(i);
+      for (vtkIdType j=0; j<nc; j++) out<<" "<<cd[j];
+      if (nc>1) out<<" )";
+      out<<'\n';
+    }
+    out << ")\n";
+  }
 }
 
 

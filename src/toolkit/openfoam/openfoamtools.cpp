@@ -3260,15 +3260,38 @@ void VTKFieldToOpenFOAMField(const boost::filesystem::path& vtkfile, const std::
 {
   vtkSmartPointer<vtkPolyDataReader> in = vtkPolyDataReader::New();
   in->SetFileName(vtkfile.c_str());
+  in->ReadAllScalarsOn();
+  in->ReadAllVectorsOn();
+  in->ReadAllTensorsOn();
   in->Update();
 
   if(in->IsFilePolyData())
   {
     vtkPolyData* pd = in->GetOutput();
+
+    if (!pd)
+      throw insight::Exception("Error reading VTK file "+vtkfile.string());
+
     vtkDataArray* da = pd->GetCellData()->GetArray(fieldname.c_str());
-    out << da->GetNumberOfTuples() << "\n(\n";
+
+    if (!da)
+    {
+      int na=pd->GetCellData()->GetNumberOfArrays();
+      std::ostringstream m;
+      m<<"Error accessing cell field \""<<fieldname<<"\" in file "<<vtkfile.string()<<"!\n";
+      m<<"Available arrays: (";
+      for (int k=0; k<na; k++)
+      {
+        m<<" "<<pd->GetCellData()->GetArrayName(k);
+      }
+      m<<" )";
+      throw insight::Exception(m.str());
+    }
+
     vtkIdType ncells=da->GetNumberOfTuples();
     vtkIdType nc=da->GetNumberOfComponents();
+
+    out << ncells << "\n(\n";
     for (vtkIdType i=0; i<ncells; i++)
     {
       if (nc>1) out<<" (";

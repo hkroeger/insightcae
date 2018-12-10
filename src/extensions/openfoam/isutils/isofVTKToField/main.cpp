@@ -53,17 +53,23 @@ int main(int argc, char* argv[])
 //  }
 
 
-  std::ostream* os = &std::cout;
-  if (vm.count("out")>0)
+  try
   {
-    os=new std::ofstream(vm["out"].as<std::string>().c_str());
+    std::ostream* os = &std::cout;
+    if (vm.count("out")>0)
+    {
+      os=new std::ofstream(vm["out"].as<std::string>().c_str());
+    }
+    insight::VTKFieldToOpenFOAMField(
+        vm["vtk"].as<std::string>(),
+        vm["field"].as<std::string>(),
+        *os
+     );
+    if (os!=&std::cout) delete os;
   }
-  insight::VTKFieldToOpenFOAMField(
-      vm["vtk"].as<std::string>(),
-      vm["field"].as<std::string>(),
-      *os
-   );
-  if (os!=&std::cout) delete os;
-
+  catch (insight::Exception e)
+  {
+    cerr << "Error occurred:\n" << e << endl;
+  }
 }
 

@@ -32,6 +32,9 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <QApplication>
+#include "of_clean_case.h"
+
 using namespace std;
 using namespace insight;
 using namespace boost;
@@ -86,10 +89,11 @@ int main(int argc, char *argv[])
 
     try
     {
-        OpenFOAMCase cm( OFEs::getCurrent() );
+        OpenFOAMCase cm( OFEs::getCurrentOrPreferred() );
         insight::OpenFOAMCaseDirs cf(cm, location);
 
-        if (vm.count("pack"))
+        bool pack=vm.count("pack");
+        if (pack)
         {
             bf::path archive_file;
 
@@ -120,14 +124,28 @@ int main(int argc, char *argv[])
           cto=insight::OpenFOAMCaseDirs::TimeDirOpt::ExceptFirst;
         }
 
-        cf.cleanCase
-            (
-              cto,
-              (vm.count("clean-proc")>0)||(vm.count("clean-all")>0),
-              (vm.count("clean-timesteps")>0)||(vm.count("clean-all")>0),
-              (vm.count("clean-post")>0)||(vm.count("clean-all")>0),
-              (vm.count("clean-all")>0)
-            );
+        bool cleanproc=(vm.count("clean-proc")>0)||(vm.count("clean-all")>0);
+        bool cleantimes=(vm.count("clean-timesteps")>0)||(vm.count("clean-all")>0);
+        bool cleanpost=(vm.count("clean-post")>0)||(vm.count("clean-all")>0);
+        bool cleanall=(vm.count("clean-all")>0);
+
+        if (cleanproc||cleantimes||cleanpost||cleanall)
+        {
+          cf.cleanCase
+              (
+                cto,
+                cleanproc,
+                cleantimes,
+                cleanpost,
+                cleanall
+              );
+        }
+        else if (!pack)
+        {
+          QApplication app(argc, argv);
+          OFCleanCaseDialog dlg(cm, ".");
+          dlg.exec();
+        }
 
     }
     catch (insight::Exception e)

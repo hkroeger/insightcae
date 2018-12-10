@@ -1,6 +1,7 @@
 project(toolkit_gui)
 
 set(CMAKE_AUTOMOC ON)
+SET(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets CONFIG REQUIRED)
@@ -13,9 +14,14 @@ set(toolkit_gui_SRCS
     email.cpp
     mimetypemanager.cpp
     helpwidget.cpp
+    of_clean_case.cpp
 )
 
-add_library(toolkit_gui SHARED ${toolkit_gui_SRCS})
+SET(toolkit_gui_FORMS
+    of_clean_case.ui
+)
+
+add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_FORMS})
 
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui

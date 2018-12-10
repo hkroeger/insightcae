@@ -173,6 +173,18 @@ const OFEnvironment& OFEs::getCurrent()
   return get( detectCurrentOFE() );
 }
 
+const OFEnvironment& OFEs::getCurrentOrPreferred()
+{
+  try {
+    return get( detectCurrentOFE() );
+  }
+  catch (insight::Exception e)
+  {
+    return get("OFesi1806");
+  }
+}
+
+
 OFEs::OFEs()
 {
   const char *envvar=getenv("INSIGHT_OFES");

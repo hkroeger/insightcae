@@ -128,6 +128,7 @@ public:
      */
     static std::string detectCurrentOFE();
     static const OFEnvironment& getCurrent ( );
+    static const OFEnvironment& getCurrentOrPreferred();
 
     OFEs();
     ~OFEs();

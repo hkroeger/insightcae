@@ -38,6 +38,8 @@
 
 #include <cstdlib>
 
+#include "of_clean_case.h"
+
 int metaid1=qRegisterMetaType<insight::ParameterSet>("insight::ParameterSet");
 int metaid2=qRegisterMetaType<insight::ResultSetPtr>("insight::ResultSetPtr");
 
@@ -171,6 +173,9 @@ void AnalysisForm::insertMenu(QMenuBar* mainMenu)
     if (!act_tool_of_paraview_) act_tool_of_paraview_=new QAction("Start ParaView in execution directory", this);
     menu_tools_of_->addAction( act_tool_of_paraview_ );
     connect( act_tool_of_paraview_, &QAction::triggered, this, &AnalysisForm::onStartPV );
+    if (!act_tool_of_clean_) act_tool_of_clean_=new QAction("Clean OpenFOAM case...", this);
+    menu_tools_of_->addAction( act_tool_of_clean_ );
+    connect( act_tool_of_clean_, &QAction::triggered, this, &AnalysisForm::onCleanOFC );
 }
 
 void AnalysisForm::removeMenu()
@@ -186,6 +191,7 @@ void AnalysisForm::removeMenu()
         menu_actions_->removeAction(act_kill_); act_kill_->disconnect();
 
         menu_tools_of_->removeAction(act_tool_of_paraview_); act_tool_of_paraview_->disconnect();
+        menu_tools_of_->removeAction(act_tool_of_clean_); act_tool_of_clean_->disconnect();
 
         QAction *ma;
         ma = menu_results_->menuAction();
@@ -386,6 +392,13 @@ void AnalysisForm::onStartPV()
         ("cd %s; isPV.py &" ) % exePath.string()
    ).c_str() );
 }
+
+void AnalysisForm::onCleanOFC()
+{
+//  OFCleanCaseDialog dlg(this);
+//  dlg.exec();
+}
+
 
 void AnalysisForm::saveLog()
 {

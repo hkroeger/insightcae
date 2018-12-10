@@ -42,7 +42,6 @@
 
 
 
-
 namespace Ui
 {
 class AnalysisForm;
@@ -109,7 +108,7 @@ protected:
   QAction *act_param_show_=0, *act_save_=0, *act_save_as_=0, *act_merge_=0;
   QAction *act_run_=0, *act_kill_=0;
   QAction *act_save_rpt_=0;
-  QAction *act_tool_of_paraview_=0;
+  QAction *act_tool_of_paraview_=0, *act_tool_of_clean_=0;
   
 public:
   AnalysisForm(QWidget* parent, const std::string& analysisName);
@@ -127,7 +126,7 @@ public:
 protected:
   virtual void	closeEvent ( QCloseEvent * event );
 
-private slots:
+private Q_SLOTS:
   void onSaveParameters();
   void onLoadParameters();
   void onRunAnalysis();
@@ -136,6 +135,7 @@ private slots:
   void onCreateReport();
 
   void onStartPV();
+  void onCleanOFC();
 
   void saveLog();
   void sendLog();

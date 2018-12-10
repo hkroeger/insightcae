@@ -170,14 +170,18 @@ std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen)
 {
   std::ostringstream os;
   os <<"(";
-  size_t n1=std::max(vals.size(), maxlen-2);
+
+  size_t n1=std::min(vals.size(), maxlen-2);
+
   for (size_t i=0; i<n1; i++)
     os<<" "<<vals[i];
+
   if (n1<vals.size())
     {
       os << " .... "<<vals.back();
     }
-  os<<")";
+
+  os<<" )";
   return os.str();
 }
 

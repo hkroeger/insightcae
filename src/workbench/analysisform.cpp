@@ -190,6 +190,8 @@ void AnalysisForm::removeMenu()
         menu_actions_->removeAction(act_run_); act_run_->disconnect();
         menu_actions_->removeAction(act_kill_); act_kill_->disconnect();
 
+        menu_results_->removeAction(act_save_rpt_); act_save_rpt_->disconnect();
+
         menu_tools_of_->removeAction(act_tool_of_paraview_); act_tool_of_paraview_->disconnect();
         menu_tools_of_->removeAction(act_tool_of_clean_); act_tool_of_clean_->disconnect();
 
@@ -230,7 +232,13 @@ void AnalysisForm::onSaveParameters()
 {
 //   emit apply();
 
-  QString fn = QFileDialog::getSaveFileName(this, "Save Parameters", QString(), "Insight parameter sets (*.ist)");
+  QString fn = QFileDialog::getSaveFileName
+      (
+        this,
+        "Save Parameters",
+        QString(),
+        "Insight parameter sets (*.ist)"
+      );
   if (!fn.isEmpty())
   {
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
@@ -344,6 +352,9 @@ void AnalysisForm::onResultReady(insight::ResultSetPtr results)
   ui->tabWidget->setCurrentWidget(ui->outputTab);
 
   QMessageBox::information(this, "Finished!", "The analysis has finished");
+
+  workerThread_.quit();
+  workerThread_.wait();
 }
 
 void AnalysisForm::onCreateReport()
@@ -359,8 +370,9 @@ void AnalysisForm::onCreateReport()
       this, 
     "Save Report",
     QString(executionPathParameter_().c_str()), 
-    "PDF file (*.pdf)|LaTeX file (*.tex)"
+    "PDF file (*.pdf);;LaTeX file (*.tex)"
   );
+
   if (!fn.isEmpty())
   {
     boost::filesystem::path outpath=fn.toStdString();
@@ -395,8 +407,19 @@ void AnalysisForm::onStartPV()
 
 void AnalysisForm::onCleanOFC()
 {
-//  OFCleanCaseDialog dlg(this);
-//  dlg.exec();
+  const insight::OFEnvironment* ofc = nullptr;
+  if (parameters_.contains("run/OFEname"))
+  {
+    std::string ofename=parameters_.getString("run/OFEname");
+    ofc=&(insight::OFEs::get(ofename));
+  }
+  else
+  {
+    ofc=&(insight::OFEs::getCurrentOrPreferred());
+  }
+
+  OFCleanCaseDialog dlg(*ofc, executionPathParameter_(), this);
+  dlg.exec();
 }
 
 

@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QDialog>
+#include <QTimer>
 
 #include "base/boost_include.h"
 #include "openfoam/openfoamcase.h"
@@ -24,6 +25,8 @@ class OFCleanCaseForm
     const insight::OpenFOAMCase& ofc_;
     boost::filesystem::path location_;
     std::shared_ptr<insight::OpenFOAMCaseDirs> cf_;
+
+    QTimer *t_;
 
 public:
     OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::filesystem::path& location, QWidget* parent=NULL);

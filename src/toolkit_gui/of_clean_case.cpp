@@ -14,6 +14,13 @@ OFCleanCaseForm::OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::
   ui=new Ui::OFCleanCaseForm();
   ui->setupUi(this);
 
+  t_=new QTimer(this);
+  t_->setSingleShot(true);
+  connect(t_, &QTimer::timeout,
+          [=]() { emit statusMessage(""); });
+
+  ui->dirname->setText(QString::fromStdString(location_.string()));
+
   connect(ui->cb_clean_times, &QCheckBox::toggled,
           [=](bool checked) {
            ui->cb_keep_first->setDisabled(!checked);
@@ -63,7 +70,7 @@ OFCleanCaseForm::OFCleanCaseForm(const insight::OpenFOAMCase& ofc, const boost::
 insight::OpenFOAMCaseDirs::TimeDirOpt OFCleanCaseForm::timeStepSelection()
 {
   insight::OpenFOAMCaseDirs::TimeDirOpt cto = insight::OpenFOAMCaseDirs::TimeDirOpt::All;
-  if (ui->cb_keep_first->isChecked())
+  if (ui->cb_keep_first->isChecked() && ui->cb_keep_first->isEnabled())
   {
     cto=insight::OpenFOAMCaseDirs::TimeDirOpt::ExceptFirst;
   }
@@ -105,6 +112,8 @@ void OFCleanCaseForm::executeDeletion()
 {
   if (!cf_)
     cf_.reset(new insight::OpenFOAMCaseDirs(ofc_, location_));
+
+  t_->stop();
 
   if (ui->cb_pack->isChecked())
   {
@@ -149,6 +158,10 @@ void OFCleanCaseForm::executeDeletion()
       );
 
   emit statusMessage("Cleanup finished.");
+
+  updateCandidateList();
+
+  t_->start(2000);
 }
 
 

@@ -1,0 +1,170 @@
+
+#include "snappyhexmesh_gui.h"
+#include "openfoam/openfoamtools.h"
+
+#include "cadfeatures.h"
+#include "qoccviewwidget.h"
+#include "qmodeltree.h"
+
+#include "datum.h"
+
+#include "base/boost_include.h"
+#include "base/units.h"
+
+using namespace std;
+using namespace boost;
+
+namespace insight
+{
+
+
+ParameterSet_VisualizerPtr snappyHexMeshConfiguration_visualizer()
+{
+    return ParameterSet_VisualizerPtr( new snappyHexMeshConfiguration_ParameterSet_Visualizer );
+}
+
+addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, snappyHexMeshConfiguration, visualizer, snappyHexMeshConfiguration_visualizer);
+
+
+void snappyHexMeshConfiguration_ParameterSet_Visualizer::update(const ParameterSet& ps)
+{
+    ParameterSet_Visualizer::update(ps);
+}
+
+void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+{
+
+    Parameters p(ps_);
+
+    cad::cache.initRebuild();
+
+    for (const auto& feat: p.features)
+    {
+      if ( const auto* geo = dynamic_cast<snappyHexMeshFeats::Geometry*>(feat.get()) )
+      {
+        const auto& gp = geo->parameters();
+
+        if (boost::filesystem::exists(gp.fileName))
+        {
+                gp_Trsf trans;
+                trans.SetTranslation(to_Vec(gp.translate));
+
+                gp_Trsf scale;
+                scale.SetScale(gp::Origin(), gp.scale[0]);
+
+                mt->onAddFeature( "geometry:"+QString::fromStdString(gp.name),
+                          cad::STL::create_trsf(gp.fileName, trans*scale),
+                          true );
+        }
+      }
+    }
+
+    {
+      int i=-1;
+      for (const auto& pt: p.PiM)
+      {
+          i++;
+
+          mt->onAddDatum( QString::fromStdString(str(format("PiM %d")%i)), cad::DatumPtr(
+                              new cad::ExplicitDatumPoint(cad::matconst(pt))
+                              ) );
+      }
+    }
+
+
+//    double xBow, xStern, zKeel; // always in mm
+
+//    if (Parameters::geometry_type::size_fixed_type* fixed
+//                 = boost::get<Parameters::geometry_type::size_fixed_type>(&p.geometry.size) )
+//    {
+//      xBow = fixed->xBow;
+//      xStern = fixed->xStern;
+//      zKeel = fixed->zKeel;
+
+//      mt->onAddDatum( "xBow", cad::DatumPtr(
+//                          new cad::DatumPlane(cad::vec3const((xBow-xStern)*SI::mm,0,0), cad::vec3const(1,0,0))
+//                          ) );
+//      mt->onAddDatum( "xStern", cad::DatumPtr(
+//                          new cad::DatumPlane(cad::vec3const(0,0,0), cad::vec3const(-1,0,0))
+//                          ) );
+//    }
+
+//    if (boost::filesystem::exists(p.geometry.hullfile))
+//    {
+
+//        if (const Parameters::geometry_type::size_detect_type* detect
+//                = boost::get<Parameters::geometry_type::size_detect_type>(&p.geometry.size) )
+//        {
+//          arma::mat bb=STLBndBox(p.geometry.hullfile);
+//          xBow = bb(0,1); // max x
+//          xStern = bb(0,0); // min x
+//          zKeel = bb(2,0);
+//          if (p.geometry.hullfile_units == Parameters::geometry_type::hullfile_units_type::meters)
+//          {
+//              xBow /= SI::mm; // max x
+//              xStern /= SI::mm; // min x
+//              zKeel /= SI::mm;
+//          }
+//          mt->onAddDatum( "xBow", cad::DatumPtr(
+//                              new cad::DatumPlane(cad::vec3const((xBow-xStern)*SI::mm,0,0), cad::vec3const(1,0,0))
+//                              ) );
+//          mt->onAddDatum( "xStern", cad::DatumPtr(
+//                              new cad::DatumPlane(cad::vec3const(0,0,0), cad::vec3const(-1,0,0))
+//                              ) );
+//        }
+
+//        gp_Trsf trans;
+////        if (p.geometry.hullfile_units == Parameters::geometry_type::hullfile_units_type::millimeters)
+////        {
+////            trans.SetTranslation(gp_Vec(-xStern, 0, -zKeel/*-p.geometry.hWater*/));
+////        }
+////        else
+////        {
+//            trans.SetTranslation(gp_Vec(-xStern*SI::mm, 0, -zKeel*SI::mm/*-p.geometry.hWater*/));
+////        }
+
+//        gp_Trsf scale;
+//        if (p.geometry.hullfile_units == Parameters::geometry_type::hullfile_units_type::millimeters)
+//        {
+//            scale.SetScale(gp::Origin(), SI::mm);
+//        }
+
+
+//        mt->onAddFeature( "geometry/hullfile",
+//                          cad::STL::create_trsf(p.geometry.hullfile, trans*scale),
+//                          true );
+//    }
+
+
+//    mt->onAddDatum( "geometry/hWater", cad::DatumPtr(
+//                        new cad::DatumPlane(cad::vec3const(0.5*(xBow-xStern)*SI::mm,0,p.geometry.hWater*SI::mm), cad::vec3const(0,0,1))
+//                        ) );
+
+
+
+
+//    int i=0;
+//    BOOST_FOREACH(const Parameters::geometry_type::fins_default_type& fin, p.geometry.fins)
+//    {
+//        PDStripFin f(fin);
+
+//        mt->onAddFeature
+//        (
+//            QString::fromStdString(boost::str(boost::format("fin %d")%i)),
+//            cad::Cylinder::create
+//                    (
+//                      cad::matconst( f.startPoint() ),
+//                      cad::matconst( f.endPoint() ),
+//                      cad::scalarconst( 1. ),
+//                      false, false
+//                    ),
+//            true
+//        );
+
+//        i++;
+//    }
+
+    insight::cad::cache.finishRebuild();
+}
+
+}

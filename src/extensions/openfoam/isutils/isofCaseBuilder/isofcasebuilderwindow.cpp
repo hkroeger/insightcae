@@ -435,7 +435,21 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
     if (cur)
     {
         if (ped_) ped_->deleteLater();
-        ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor);
+
+        insight::ParameterSet_VisualizerPtr viz;
+        insight::ParameterSet_ValidatorPtr vali;
+
+        try {
+            viz = insight::OpenFOAMCaseElement::visualizer(cur->type_name());
+        } catch (insight::Exception e)
+        { /* ignore, if non-existent */ }
+
+        try {
+            vali = insight::OpenFOAMCaseElement::validator(cur->type_name());
+        } catch (insight::Exception e)
+        { /* ignore, if non-existent */ }
+
+        ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor, vali, viz);
         connect(ped_, &ParameterEditorWidget::parameterSetChanged,
                 this, &isofCaseBuilderWindow::onConfigModification);
         pe_layout_->addWidget(ped_);

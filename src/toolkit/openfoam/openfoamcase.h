@@ -150,6 +150,8 @@ public:
     declareFactoryTable ( OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ) );
     declareStaticFunctionTable ( defaultParameters, ParameterSet );
     declareStaticFunctionTable ( category, std::string );
+    declareStaticFunctionTable (validator, ParameterSet_ValidatorPtr)
+    declareStaticFunctionTable (visualizer, ParameterSet_VisualizerPtr)
     declareType ( "OpenFOAMCaseElement" );
 
     OpenFOAMCaseElement ( OpenFOAMCase& c, const std::string& name );
@@ -166,7 +168,9 @@ public:
 
     virtual bool providesBCsForPatch ( const std::string& patchName ) const;
     
-    static std::string category() { return "Uncategorized"; }
+    static std::string category();
+    static ParameterSet_ValidatorPtr validator();
+    static ParameterSet_VisualizerPtr visualizer();
 };
 
 

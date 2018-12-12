@@ -140,6 +140,7 @@ public:
   Geometry(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
+  inline const Parameters& parameters() const { return p_; }
   
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   virtual void modifyFiles(const OpenFOAMCase& ofc, 
@@ -175,7 +176,8 @@ public:
   PatchLayers(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
-  
+  inline const Parameters& parameters() const { return p_; }
+
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
 };
 
@@ -207,7 +209,8 @@ public:
   ExplicitFeatureCurve(const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
-  
+  inline const Parameters& parameters() const { return p_; }
+
   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
   virtual void modifyFiles(const OpenFOAMCase& ofc, 
 		  const boost::filesystem::path& location) const;
@@ -239,6 +242,7 @@ public:
   declareType ( "RefinementRegion" );
   RefinementRegion ( const ParameterSet& ps = Parameters::makeDefault() );
 
+  inline const Parameters& parameters() const { return p_; }
 
   /**
    * create entry into geometry subdict.
@@ -280,6 +284,7 @@ public:
   {
     return p_;
   }
+  inline const Parameters& parameters() const { return p_; }
 
   virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
 };
@@ -315,6 +320,7 @@ public:
   RefinementGeometry( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
+  inline const Parameters& parameters() const { return p_; }
 
   virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
 //   virtual void addIntoDictionary(OFDictData::dict& sHMDict) const;
@@ -334,6 +340,7 @@ public:
     NearSurfaceRefinement( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
+  inline const Parameters& parameters() const { return p_; }
 
   virtual bool setGeometrySubdict(OFDictData::dict& d, std::string& entryTitle) const;
 };
@@ -367,6 +374,7 @@ public:
   NearTemplatePatchRefinement ( const ParameterSet& ps = Parameters::makeDefault() );
   static ParameterSet defaultParameters() { return Parameters::makeDefault(); }
   virtual ParameterSet getParameters() const { return p_; }
+  inline const Parameters& parameters() const { return p_; }
 
   virtual void modifyFiles ( const OpenFOAMCase& ofc,
                              const boost::filesystem::path& location ) const;

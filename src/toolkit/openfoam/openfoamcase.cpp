@@ -231,6 +231,8 @@ defineType(OpenFOAMCaseElement);
 defineFactoryTable(OpenFOAMCaseElement, LIST ( OpenFOAMCase& c, const ParameterSet& ps ), LIST ( c, ps ));
 defineStaticFunctionTable(OpenFOAMCaseElement, defaultParameters, ParameterSet);
 defineStaticFunctionTable(OpenFOAMCaseElement, category, std::string);
+defineStaticFunctionTable(OpenFOAMCaseElement, validator, ParameterSet_ValidatorPtr);
+defineStaticFunctionTable(OpenFOAMCaseElement, visualizer, ParameterSet_VisualizerPtr);
 
 
 int OpenFOAMCaseElement::OFversion() const 
@@ -238,11 +240,11 @@ int OpenFOAMCaseElement::OFversion() const
   return OFcase().OFversion();
 }
 
-void OpenFOAMCaseElement::modifyMeshOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
+void OpenFOAMCaseElement::modifyMeshOnDisk(const OpenFOAMCase&, const boost::filesystem::path&) const
 {
 }
 
-void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase& cm, const boost::filesystem::path& location) const
+void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase&, const boost::filesystem::path&) const
 {
 }
 
@@ -263,7 +265,19 @@ bool OpenFOAMCaseElement::providesBCsForPatch(const std::string& patchName) cons
 }
 
 
+std::string OpenFOAMCaseElement::category()
+{ return "Uncategorized"; }
 
+
+ParameterSet_ValidatorPtr OpenFOAMCaseElement::validator()
+{
+  return ParameterSet_ValidatorPtr();
+}
+
+ParameterSet_VisualizerPtr OpenFOAMCaseElement::visualizer()
+{
+  return ParameterSet_VisualizerPtr();
+}
 
 defineType(BoundaryCondition);
 defineFactoryTable

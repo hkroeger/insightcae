@@ -209,6 +209,20 @@ static struct add##specT##To##baseT##Name##FunctionTable \
 } v_add##specT##To##baseT##Name##FunctionTable;
 
 
+#define addStandaloneFunctionToStaticFunctionTable(baseT, specT, Name, FuncName) \
+static struct add##specT##To##baseT##Name##FunctionTable \
+{\
+  add##specT##To##baseT##Name##FunctionTable()\
+  {\
+    if (!baseT::Name##Functions_) \
+    {\
+     baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
+    } \
+    std::string key(specT::typeName); \
+    (*baseT::Name##Functions_)[key]=&(FuncName);\
+  }\
+} v_add##specT##To##baseT##Name##FunctionTable;
+
 
 
 /**

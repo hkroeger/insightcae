@@ -103,7 +103,7 @@ class isofCaseBuilderWindow
 private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
-    
+
 protected:
     boost::filesystem::path casepath_;
 

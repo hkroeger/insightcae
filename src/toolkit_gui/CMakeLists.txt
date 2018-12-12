@@ -15,6 +15,7 @@ set(toolkit_gui_SRCS
     mimetypemanager.cpp
     helpwidget.cpp
     of_clean_case.cpp
+    snappyhexmesh_gui.cpp
 )
 
 SET(toolkit_gui_FORMS

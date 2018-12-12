@@ -213,8 +213,9 @@ protected:
 public:
     QModelTree(QWidget* parent);
     
-        
-public slots:
+    void focusOutEvent(QFocusEvent *event);
+
+public Q_SLOTS:
     void onAddScalar     (const QString& name, insight::cad::ScalarPtr sv);
     void onAddVector     (const QString& name, insight::cad::VectorPtr vv);
     void onAddFeature    (const QString& name, insight::cad::FeaturePtr smp, bool is_component);
@@ -228,7 +229,7 @@ public slots:
     void onRemoveEvaluation  (const QString& sn);
 
 
-private slots:
+private Q_SLOTS:
     /**
      * @brief onItemChanged
      * @param item
@@ -236,6 +237,7 @@ private slots:
      * if visualization state changed: emit signals for view widget(s)
      */
     void onItemChanged( QTreeWidgetItem * item, int column );
+    void onItemSelectionChanged();
     void onClear();
 
 public Q_SLOTS:

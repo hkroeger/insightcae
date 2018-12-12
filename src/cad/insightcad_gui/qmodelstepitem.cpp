@@ -83,10 +83,116 @@ void QFeatureItem::showProperties()
 }
 
 
+void QFeatureItem::addSymbolsToSubmenu(const QString& name, QMenu *menu, insight::cad::FeaturePtr feat, bool *someSubMenu, bool *someHoverDisplay)
+{
+  if (feat->getDatumScalars().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Scalar Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumScalars())
+    {
+      QAction *a = new QAction( QString::fromStdString(
+                                  boost::str(boost::format("%s to Notepad (= %g)") % i.first % i.second)
+                                  ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, [=]() {
+          insertIntoNotebook( name+"$"+QString::fromStdString(i.first) );
+        });
+    }
+  }
+  if (feat->getDatumPoints().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Point Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumPoints())
+    {
+      QAction *a = new QAction( QString::fromStdString(
+                                  boost::str(boost::format("%s to Notepad (= [%g %g %g])") % i.first % i.second(0) % i.second(1) % i.second(2))
+                                  ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, [=]() {
+          insertIntoNotebook( name+"@"+QString::fromStdString(i.first) );
+        });
+      connect(a, &QAction::hovered,
+              [=]() {
+        gp_Pnt p=to_Pnt(i.second);
+        Handle_AIS_Point ip(new AIS_Point(
+           Handle_Geom_Point(new Geom_CartesianPoint(p) )
+                                             ));
+        ip->SetMarker(Aspect_TOM_O_PLUS);
+        ip->SetWidth(5);
+        focus(ip);
+      });
+      if (someHoverDisplay) *someHoverDisplay=true;
+    }
+  }
+  if (feat->getDatumVectors().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Vector Symbols");
+    menu->addMenu(sm);
+    for (auto i: feat->getDatumVectors())
+    {
+      QAction *a = new QAction( QString::fromStdString(
+                                  boost::str(boost::format("%s to Notepad (= [%g %g %g])") % i.first % i.second(0) % i.second(1) % i.second(2))
+                                  ), menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, [=]() {
+          insertIntoNotebook( name+"^"+QString::fromStdString(i.first) );
+        });
+    }
+  }
+  if (feat->providedSubshapes().size()>0)
+  {
+    if (someSubMenu) *someSubMenu=true;
+    QMenu *sm = new QMenu("Subshapes");
+    menu->addMenu(sm);
+    for (auto i: feat->providedSubshapes())
+    {
+      QString subname=QString::fromStdString(i.first);
+
+      QAction *a = new QAction(
+            subname + " to Notepad",
+            menu );
+      sm->addAction(a);
+      connect(a, &QAction::triggered, [=]() {
+          insertIntoNotebook( name+"."+QString::fromStdString(i.first) );
+        });
+      connect(a, &QAction::hovered,
+              [=]() {
+        focus(i.second->buildVisualization());
+//          contextMenu->setStyleSheet( "QMenu { background-color: rgba(0,0,0,0%); }" );
+      });
+
+      bool someEntries=false;
+      QMenu* submenu=new QMenu(QString::fromStdString(i.first));
+
+      addSymbolsToSubmenu(name+"."+subname, submenu, i.second, &someEntries);
+      if (someEntries)
+      {
+        sm->addMenu(submenu);
+      }
+      else
+      {
+        delete submenu;
+      }
+
+      if (someHoverDisplay) *someHoverDisplay=true;
+    }
+  }
+}
+
 
 void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
 {
-    QMenu myMenu;
+    std::shared_ptr<QMenu> contextMenu(new QMenu);
+    QMenu& myMenu = *contextMenu;
+//    myMenu.setStyleSheet("background:transparent;");
+//    myMenu.setWindowOpacity(0.5);
+//    myMenu.setAttribute(Qt::WA_TranslucentBackground);
+//    myMenu.setWindowFlags( myMenu.windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint );
     QAction *a;
     
     a=new QAction(name_+": Jump to Def.", &myMenu);
@@ -100,84 +206,7 @@ void QFeatureItem::showContextMenu(const QPoint& gpos) // this is a slot
     myMenu.addSeparator();
 
     bool someSubMenu=false, someHoverDisplay=false;
-    if (smp_->getDatumScalars().size()>0)
-    {
-      someSubMenu=true;
-      QMenu *sm = new QMenu("Scalar Symbols");
-      myMenu.addMenu(sm);
-      for (auto i: smp_->getDatumScalars())
-      {
-        QAction *a = new QAction( QString::fromStdString(
-                                    boost::str(boost::format("%s = %g") % i.first % i.second)
-                                    ), &myMenu );
-        sm->addAction(a);
-        connect(a, &QAction::triggered, [=]() {
-            insertIntoNotebook( name_+"$"+QString::fromStdString(i.first) );
-          });
-      }
-    }
-    if (smp_->getDatumPoints().size()>0)
-    {
-      someSubMenu=true;
-      QMenu *sm = new QMenu("Point Symbols");
-      myMenu.addMenu(sm);
-      for (auto i: smp_->getDatumPoints())
-      {
-        QAction *a = new QAction( QString::fromStdString(
-                                    boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
-                                    ), &myMenu );
-        sm->addAction(a);
-        connect(a, &QAction::triggered, [=]() {
-            insertIntoNotebook( name_+"@"+QString::fromStdString(i.first) );
-          });
-        connect(a, &QAction::hovered,
-                [=]() {
-          gp_Pnt p=to_Pnt(i.second);
-          Handle_AIS_Point ip(new AIS_Point(
-             Handle_Geom_Point(new Geom_CartesianPoint(p) )
-                                               ));
-          ip->SetMarker(Aspect_TOM_O_PLUS);
-          ip->SetWidth(5);
-          focus(ip);
-        });
-        someHoverDisplay=true;
-      }
-    }
-    if (smp_->getDatumVectors().size()>0)
-    {
-      someSubMenu=true;
-      QMenu *sm = new QMenu("Vector Symbols");
-      myMenu.addMenu(sm);
-      for (auto i: smp_->getDatumVectors())
-      {
-        QAction *a = new QAction( QString::fromStdString(
-                                    boost::str(boost::format("%s = [%g %g %g]") % i.first % i.second(0) % i.second(1) % i.second(2))
-                                    ), &myMenu );
-        sm->addAction(a);
-        connect(a, &QAction::triggered, [=]() {
-            insertIntoNotebook( name_+"^"+QString::fromStdString(i.first) );
-          });
-      }
-    }
-    if (smp_->providedSubshapes().size()>0)
-    {
-      someSubMenu=true;
-      QMenu *sm = new QMenu("Subshapes");
-      myMenu.addMenu(sm);
-      for (auto i: smp_->providedSubshapes())
-      {
-        QAction *a = new QAction( QString::fromStdString(i.first), &myMenu );
-        sm->addAction(a);
-        connect(a, &QAction::triggered, [=]() {
-            insertIntoNotebook( name_+"."+QString::fromStdString(i.first) );
-          });
-        connect(a, &QAction::hovered,
-                [=]() {
-          focus(i.second->buildVisualization());
-        });
-        someHoverDisplay=true;
-      }
-    }
+    addSymbolsToSubmenu(name_, &myMenu, smp_, &someSubMenu, &someHoverDisplay);
 
     if (someHoverDisplay)
     {

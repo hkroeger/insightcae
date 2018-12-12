@@ -8,6 +8,8 @@
 #define QT_NO_OPENGL
 #include <QtCore>
 #include <QtGui>
+#include <QMenu>
+#include <QAction>
 
 
 #include "qoccinternal.h"
@@ -66,8 +68,9 @@ QoccViewWidget::QoccViewWidget
   // Avoid Qt background clears to improve resizing speed,
   // along with a couple of other attributes
   setAutoFillBackground( false );				
-  setAttribute( Qt::WA_NoSystemBackground );	
-  
+  setAttribute( Qt::WA_NoSystemBackground );
+//  setWindowFlags( windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint );
+
   // This next attribute seems to be the secret of allowing OCC on Win32
   // to "own" the window, even though its only supposed to work on X11.
   setAttribute( Qt::WA_PaintOnScreen );
@@ -395,6 +398,103 @@ void QoccViewWidget::displayContextMenu( const QPoint& p)
   {
       // an item exists under the requested position
       mi->showContextMenu(mapToGlobal(p));
+  }
+  else
+  {
+    // display view menu
+    QMenu vmenu;
+    QAction *a;
+
+    a = new QAction(("Fit &all"), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::fitAll);
+
+
+    QMenu* directionmenu=vmenu.addMenu("Standard views");
+    directionmenu->addAction( a = new QAction(("+X"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewRight);
+    directionmenu->addAction( a = new QAction(("-X"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewLeft);
+
+    directionmenu->addAction( a = new QAction(("+Y"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewBack);
+    directionmenu->addAction( a = new QAction(("-Y"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewFront);
+
+    directionmenu->addAction( a = new QAction(("+Z"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewTop);
+    directionmenu->addAction( a = new QAction(("-Z"), this) );
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::viewBottom);
+
+    a = new QAction(("Toggle &grid"), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::toggleGrid);
+
+    a = new QAction(("Toggle clip plane (&XY)"), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::toggleClipXY);
+    a = new QAction(("Toggle clip plane (&YZ)"), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::toggleClipYZ);
+    a = new QAction(("Toggle clip plane (X&Z)"), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::toggleClipXZ);
+
+    a = new QAction(("Change background color..."), this);
+    vmenu.addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::background);
+//    a = new QAction(("Display all &shaded"), this);
+//    vmenu.addAction(a);
+//    connect(a, &QAction::triggered,
+//            this, &QModelTree::allShaded);
+//    a = new QAction(("Display all &wireframe"), this);
+//    vmenu.addAction(a);
+//    connect(a, &QAction::triggered,
+//            this, &QModelTree::allWireframe);
+//    vmenu.addAction(a);
+//    a = new QAction(("&Reset shading and visibility"), this);
+//    connect(a, &QAction::triggered,
+//            me->modeltree(), &QModelTree::resetViz);
+
+//    QMenu *clipplanemenu_=vmenu.addMenu("Clip at datum plane");
+//    me->model()->populateClipPlaneMenu(clipplanemenu_, me->viewer());
+
+
+    QMenu *msmenu=vmenu.addMenu("Measure");
+
+    a=new QAction("Distance between points", this);
+    msmenu->addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::onMeasureDistance);
+
+    a=new QAction("Select vertices", this);
+    msmenu->addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::onSelectPoints);
+
+    a=new QAction("Select edges", this);
+    msmenu->addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::onSelectEdges);
+
+    a=new QAction("Select faces", this);
+    msmenu->addAction(a);
+    connect(a, &QAction::triggered,
+            this, &QoccViewWidget::onSelectFaces);
+
+    vmenu.exec(mapToGlobal(p));
   }
 }
 

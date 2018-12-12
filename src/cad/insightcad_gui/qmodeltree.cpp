@@ -265,6 +265,12 @@ QModelTree::QModelTree(QWidget* parent)
         this, &QModelTree::onItemChanged
         );
     
+  connect
+      (
+        this, &QModelTree::itemSelectionChanged,
+        this, &QModelTree::onItemSelectionChanged
+        );
+
     int COL_NAME=QModelTreeItem::COL_NAME;
     componentfeatures_ = new QTreeWidgetItem( this, QStringList() << "Components" << ""  << "" );
     { QFont f=componentfeatures_->font(COL_NAME); f.setBold(true); componentfeatures_->setFont(COL_NAME, f); }
@@ -444,6 +450,20 @@ void QModelTree::onItemChanged( QTreeWidgetItem *item, int)
         if (msi->isVisible()) msi->show();
         if (msi->isHidden()) msi->hide();
     }
+}
+
+void QModelTree::onItemSelectionChanged()
+{
+  QTreeWidgetItem *item = currentItem();
+  if (auto * m = dynamic_cast<QFeatureItem*>(item))
+  {
+    emit focus(m->solidmodel().buildVisualization());
+  }
+}
+
+void QModelTree::focusOutEvent(QFocusEvent *event)
+{
+  emit unfocus();
 }
 
 void QModelTree::onClear()

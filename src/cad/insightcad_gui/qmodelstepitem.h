@@ -55,6 +55,7 @@ Q_SIGNALS:
 
 protected:
   virtual Handle_AIS_InteractiveObject createAIS(AIS_InteractiveContext& context);
+  void addSymbolsToSubmenu(const QString& name, QMenu *menu, insight::cad::FeaturePtr feat, bool *someSubMenu=NULL, bool *someHoverDisplay=NULL);
 
 public:
   QFeatureItem(const QString& name, insight::cad::FeaturePtr smp,

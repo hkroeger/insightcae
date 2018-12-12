@@ -429,7 +429,7 @@ void AnalysisForm::saveLog()
         this, 
         "Save Log to file",
         "",
-        "*.txt"
+        "Log file (*.txt)"
     );
     
     if (!fn.isEmpty())

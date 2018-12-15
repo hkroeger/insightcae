@@ -8,6 +8,8 @@ find_package(Qt5Widgets CONFIG REQUIRED)
 
 set(isofCaseBuilder_SRCS
     main.cpp
+    insertedcaseelement.cpp
+    patch.cpp
     isofcasebuilderwindow.cpp
 )
 SET(isofCaseBuilder_FORMS isofcasebuilderwindow.ui)

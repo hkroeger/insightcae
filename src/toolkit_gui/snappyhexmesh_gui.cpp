@@ -56,6 +56,44 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElem
                           cad::STL::create_trsf(gp.fileName, trans*scale),
                           true );
         }
+      } else if ( const auto* refbox = dynamic_cast<snappyHexMeshFeats::RefinementBox*>(feat.get()) )
+      {
+        const auto& gp = refbox->parameters();
+        arma::mat l=gp.max-gp.min;
+        mt->onAddFeature( "refinement:"+QString::fromStdString(gp.name),
+                          cad::Box::create(
+                            cad::matconst(gp.min),
+                            cad::vec3const(l(0),0,0),
+                            cad::vec3const(0,l(1),0),
+                            cad::vec3const(0,0,l(2))
+                          ),
+                  true );
+
+      } else if ( const auto* refsph = dynamic_cast<snappyHexMeshFeats::RefinementSphere*>(feat.get()) )
+      {
+        const auto& gp = refsph->parameters();
+        mt->onAddFeature( "refinement:"+QString::fromStdString(gp.name),
+                          cad::Sphere::create(
+                             cad::matconst(gp.center),
+                             cad::scalarconst(2.*gp.radius)
+                            ), true );
+      } else if ( const auto* refgeo = dynamic_cast<snappyHexMeshFeats::RefinementGeometry*>(feat.get()) )
+      {
+        const auto& rgp = refgeo->parameters();
+        const auto& gp = rgp.geometry;
+
+        if (boost::filesystem::exists(gp.fileName))
+        {
+                gp_Trsf trans;
+                trans.SetTranslation(to_Vec(gp.translate));
+
+                gp_Trsf scale;
+                scale.SetScale(gp::Origin(), gp.scale[0]);
+
+                mt->onAddFeature( "refinement:"+QString::fromStdString(rgp.name),
+                          cad::STL::create_trsf(gp.fileName, trans*scale),
+                          true );
+        }
       }
     }
 
@@ -70,6 +108,7 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElem
                               ) );
       }
     }
+
 
 
 //    double xBow, xStern, zKeel; // always in mm

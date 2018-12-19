@@ -16,6 +16,7 @@ set(toolkit_gui_SRCS
     helpwidget.cpp
     of_clean_case.cpp
     snappyhexmesh_gui.cpp
+    blockmesh_gui.cpp
 )
 
 SET(toolkit_gui_FORMS

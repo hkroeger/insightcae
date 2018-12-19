@@ -170,7 +170,8 @@ void workbench::openAnalysis(const QString& fn)
   }
   
   AnalysisForm *form= new AnalysisForm(mdiArea_, analysisName);
-  form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
+  //form->parameters().readFromNode(doc, *rootnode, fp.parent_path());
+  form->loadParameters(fp);
   boost::filesystem::path dir=boost::filesystem::path(fn.toStdString()).parent_path();
   form->executionPathParameter()()=dir;
   form->forceUpdate();

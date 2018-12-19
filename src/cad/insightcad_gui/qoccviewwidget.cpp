@@ -42,8 +42,8 @@
 
 QoccViewWidget::QoccViewWidget
 ( 
+ QWidget *parent,
  const Handle_AIS_InteractiveContext& aContext, 
- QWidget *parent, 
  Qt::WindowFlags f 
 )
   : QWidget( parent, f | Qt::MSWindowsOwnDC ),
@@ -61,7 +61,15 @@ QoccViewWidget::QoccViewWidget
     showGrid            ( false ),
     cimode_             ( CIM_Normal )
 {
-  myContext = aContext;
+  if (!aContext.IsNull())
+  {
+    myContext_ = aContext;
+  }
+  else
+  {
+    myContextObj_ = new QoccViewerContext(this);
+    myContext_ = myContextObj_->getContext();
+  }
   // Needed to generate mouse events
   setMouseTracking( true );
   
@@ -127,11 +135,13 @@ QoccViewWidget::~QoccViewWidget()
 \param	aContext Handle to the AIS Interactive Context managing the view
 \return	nothing
 */
-void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext)
+void QoccViewWidget::initializeOCC(/*const Handle_AIS_InteractiveContext& aContext*/)
 {
   Aspect_RenderingContext rc = 0;
-  myContext = aContext;
-  myViewer  = myContext->CurrentViewer();
+
+//  myContext = aContext;
+
+  myViewer  = myContext_->CurrentViewer();
   myView    = myViewer->CreateView();
   
   int windowHandle = (int) winId();
@@ -152,7 +162,7 @@ void QoccViewWidget::initializeOCC(const Handle_AIS_InteractiveContext& aContext
   myWindow = new Xw_Window
     (
 #if ((OCC_VERSION_MAJOR>=7)||(OCC_VERSION_MINOR>=6))
-      myContext->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
+      myContext_->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle
 #else
      Handle_Graphic3d_GraphicDevice::DownCast( myContext->CurrentViewer()->Device() ),
      (int) hi, (int) lo, Xw_WQ_SAMEQUALITY, Quantity_NOC_BLACK 
@@ -250,7 +260,7 @@ void QoccViewWidget::paintEvent ( QPaintEvent * /* e */)
     {
       if ( winId() )
 	{
-	  initializeOCC( myContext );
+	  initializeOCC( /*myContext*/ );
 	}
     }
   if ( !myViewer.IsNull() )
@@ -340,7 +350,7 @@ void QoccViewWidget::mouseMoveEvent(QMouseEvent* e)
   
   myCurrentPoint = e->pos();
   //Check if the grid is active and that we're snapping to it
-  if( myContext->CurrentViewer()->Grid()->IsActive() && myGridSnap )
+  if( myContext_->CurrentViewer()->Grid()->IsActive() && myGridSnap )
     {
       myView->ConvertToGrid
 	( 
@@ -685,17 +695,31 @@ QDisplayableModelTreeItem* QoccViewWidget::getOwnerItem(Handle_AIS_InteractiveOb
 
 QDisplayableModelTreeItem* QoccViewWidget::getSelectedItem()
 {
-  if (myContext->HasDetected())
+  if (myContext_->HasDetected())
   {
-      if (myContext->DetectedInteractive()->HasOwner())
+      if (myContext_->DetectedInteractive()->HasOwner())
       {
-          return getOwnerItem(myContext->DetectedInteractive());
+          return getOwnerItem(myContext_->DetectedInteractive());
       }
   }
 
   return NULL;
 }
 
+
+void QoccViewWidget::connectModelTree(QModelTree* mt) const
+{
+  connect(mt, &QModelTree::show,
+          this, &QoccViewWidget::onShow);
+  connect(mt, &QModelTree::hide,
+          this, &QoccViewWidget::onHide);
+  connect(mt, &QModelTree::setDisplayMode,
+          this, &QoccViewWidget::onSetDisplayMode);
+  connect(mt, &QModelTree::setColor,
+          this, &QoccViewWidget::onSetColor);
+  connect(mt, &QModelTree::setResolution,
+          this, &QoccViewWidget::onSetResolution);
+}
 
 /*!
 \brief	Just fits the current window
@@ -1045,7 +1069,7 @@ void QoccViewWidget::displayMessage(const QString& msg)
 Bnd_Box QoccViewWidget::sceneBoundingBox() const
 {
     AIS_ListOfInteractive loi;
-    myContext->DisplayedObjects(loi);
+    myContext_->DisplayedObjects(loi);
 
     Bnd_Box bbb;
     for (AIS_ListOfInteractive::const_iterator i=loi.cbegin(); i!=loi.cend(); i++)
@@ -1421,7 +1445,7 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 
 	case CurAction3d_Nothing:
 
-	  myContext->Select(true);
+	  myContext_->Select(true);
 
 	  if (cimode_==CIM_Normal)
 	    {
@@ -1429,10 +1453,10 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
 	    }
 	  else if (cimode_==CIM_MeasurePoints)
 	    {
-	      myContext->InitSelected();
-	      if (myContext->MoreSelected())
+	      myContext_->InitSelected();
+	      if (myContext_->MoreSelected())
 	      {
-		TopoDS_Shape v = myContext->SelectedShape();
+		TopoDS_Shape v = myContext_->SelectedShape();
 //		BRepTools::Dump(v, std::cout);
 		gp_Pnt p =BRep_Tool::Pnt(TopoDS::Vertex(v));
 		std::cout<< p.X() <<" "<<p.Y()<< " " << p.Z()<<std::endl;
@@ -1469,15 +1493,15 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
             }
           else if (cimode_==CIM_InsertPointIDs)
             {
-              myContext->InitSelected();
-              if (myContext->MoreSelected())
+              myContext_->InitSelected();
+              if (myContext_->MoreSelected())
                 {
-                  TopoDS_Shape v = myContext->SelectedShape();
+                  TopoDS_Shape v = myContext_->SelectedShape();
                   TopoDS_Vertex vv = TopoDS::Vertex(v);
                   gp_Pnt vp = BRep_Tool::Pnt(vv);
                   if (!selpts_)
                     {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_VERTEX) );
@@ -1500,13 +1524,13 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
             }
           else if (cimode_==CIM_InsertEdgeIDs)
             {
-              myContext->InitSelected();
-              if (myContext->MoreSelected())
+              myContext_->InitSelected();
+              if (myContext_->MoreSelected())
                 {
-                  TopoDS_Shape e = myContext->SelectedShape();
+                  TopoDS_Shape e = myContext_->SelectedShape();
                   if (!selpts_)
                     {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_EDGE) );
@@ -1529,14 +1553,14 @@ void QoccViewWidget::onLeftButtonUp(  Qt::KeyboardModifiers nFlags, const QPoint
             }
           else if (cimode_==CIM_InsertFaceIDs)
             {
-              myContext->InitSelected();
-              if (myContext->MoreSelected())
+              myContext_->InitSelected();
+              if (myContext_->MoreSelected())
                 {
-                  TopoDS_Shape f = myContext->SelectedShape();
+                  TopoDS_Shape f = myContext_->SelectedShape();
                   TopoDS_Face ff = TopoDS::Face(f);
                   if (!selpts_)
                     {
-                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext->SelectedInteractive())))
+                      if (QFeatureItem *parent=dynamic_cast<QFeatureItem*>(getOwnerItem(myContext_->SelectedInteractive())))
                         {
                           // restrict further selection to current shape
                           getContext()->Deactivate( AIS_Shape::SelectionMode(TopAbs_FACE) );
@@ -1787,7 +1811,7 @@ void QoccViewWidget::onMouseMove( Qt::MouseButtons buttons,
 AIS_StatusOfDetection QoccViewWidget::moveEvent( QPoint point )
 {
   AIS_StatusOfDetection status;
-  status = myContext->MoveTo( point.x(), point.y(), myView 
+  status = myContext_->MoveTo( point.x(), point.y(), myView
 #if (OCC_VERSION_MAJOR>=7)
    , true
 #endif
@@ -1807,7 +1831,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
   AIS_StatusOfPick pick = AIS_SOP_NothingSelected;
   if (multi)
     {
-      pick = myContext->ShiftSelect( std::min (startPoint.x(), endPoint.x()),
+      pick = myContext_->ShiftSelect( std::min (startPoint.x(), endPoint.x()),
 				     std::min (startPoint.y(), endPoint.y()),
 				     std::max (startPoint.x(), endPoint.x()),
 				     std::max (startPoint.y(), endPoint.y()),
@@ -1819,7 +1843,7 @@ AIS_StatusOfPick QoccViewWidget::dragEvent( const QPoint startPoint, const QPoin
     }
   else
     {
-      pick = myContext->Select( std::min (startPoint.x(), endPoint.x()),
+      pick = myContext_->Select( std::min (startPoint.x(), endPoint.x()),
 				std::min (startPoint.y(), endPoint.y()),
 				std::max (startPoint.x(), endPoint.x()),
 				std::max (startPoint.y(), endPoint.y()),
@@ -1843,7 +1867,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
 
   if (multi)
     {
-      pick = myContext->ShiftSelect(
+      pick = myContext_->ShiftSelect(
 #if (OCC_VERSION_MAJOR>=7)
                     true
 #endif          
@@ -1851,7 +1875,7 @@ AIS_StatusOfPick QoccViewWidget::inputEvent( bool multi )
     }
   else
     {
-      pick = myContext->Select(
+      pick = myContext_->Select(
 #if (OCC_VERSION_MAJOR>=7)
                     true
 #endif                    
@@ -2121,7 +2145,7 @@ OCCViewScreenshots::OCCViewScreenshots(Handle_AIS_InteractiveContext& context, Q
   //setModal(false);
   resize(1000,500);
 
-  occWidget_ = new QoccViewWidget(context,this);
+  occWidget_ = new QoccViewWidget(this, context);
   occWidget_->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
 
   l->addWidget(occWidget_);

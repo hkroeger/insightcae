@@ -78,16 +78,16 @@ public:
 
   QoccViewWidget
     (
-     const Handle_AIS_InteractiveContext& aContext = NULL, 
-     QWidget *parent = NULL, 
+     QWidget *parent,
+     const Handle_AIS_InteractiveContext& aContext = Handle_AIS_InteractiveContext(),
      Qt::WindowFlags wflags = 0 
     );
   
   ~QoccViewWidget();
   
-  void initializeOCC(const Handle_AIS_InteractiveContext& aContext = NULL);
+  void initializeOCC(/*const Handle_AIS_InteractiveContext& aContext = NULL*/);
 
-  inline Handle_AIS_InteractiveContext&	getContext( void ) { return myContext; }
+  inline Handle_AIS_InteractiveContext&	getContext( void ) { return myContext_; }
   inline const Handle_V3d_View& getView( void )    { return myView; }
   inline const Handle_V3d_View& getOccView( void )    { return myView; }
 
@@ -99,6 +99,8 @@ public:
 
   QDisplayableModelTreeItem* getOwnerItem(Handle_AIS_InteractiveObject selected);
   QDisplayableModelTreeItem* getSelectedItem();
+
+  void connectModelTree(QModelTree* mt) const;
 
 Q_SIGNALS:
 
@@ -195,7 +197,8 @@ private: // members
   Handle_Xw_Window		myWindow;
 #endif // WNT
   
-  Handle_AIS_InteractiveContext   myContext;
+  QoccViewerContext *myContextObj_=nullptr;
+  Handle_AIS_InteractiveContext   myContext_;
   Handle_V3d_View                 myView;
   Handle_V3d_Viewer               myViewer;
 

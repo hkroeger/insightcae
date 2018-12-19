@@ -121,6 +121,8 @@ AnalysisForm::AnalysisForm(QWidget* parent, const std::string& analysisName)
     peditor_->insertParameter("execution directory", executionPathParameter_);
     QObject::connect(this, &AnalysisForm::apply, peditor_, &ParameterEditorWidget::onApply);
     QObject::connect(this, &AnalysisForm::update, peditor_, &ParameterEditorWidget::onUpdate);
+    connect(peditor_, &ParameterEditorWidget::parameterSetChanged,
+            this, &AnalysisForm::onConfigModification);
 
     rtroot_=new QTreeWidgetItem(0);
     rtroot_->setText(0, "Results");
@@ -138,16 +140,24 @@ AnalysisForm::~AnalysisForm()
 
 void AnalysisForm::insertMenu(QMenuBar* mainMenu)
 {
-    qDebug()<<"insertMenu";
     workbench::WidgetWithDynamicMenuEntries::insertMenu(mainMenu);
 
     menu_parameters_=mainMenu_->addMenu("&Parameters");
+
+    if (!act_save_) act_save_=new QAction("&Save parameter set", this);
+    menu_parameters_->addAction( act_save_ );
+    connect( act_save_, &QAction::triggered,
+             this, &AnalysisForm::onSaveParameters );
+
     if (!act_save_as_) act_save_as_=new QAction("&Save parameter set as...", this);
     menu_parameters_->addAction( act_save_as_ );
-    connect( act_save_as_, &QAction::triggered, this, &AnalysisForm::onSaveParameters );
+    connect( act_save_as_, &QAction::triggered,
+             this, &AnalysisForm::onSaveParametersAs );
+
     if (!act_merge_) act_merge_=new QAction("&Merge other parameter set into current...", this);
     menu_parameters_->addAction( act_merge_ );
     connect( act_merge_, &QAction::triggered, this, &AnalysisForm::onLoadParameters );
+
     if (!act_param_show_) act_param_show_=new QAction("&Show in XML format", this);
     menu_parameters_->addAction( act_param_show_ );
     connect( act_param_show_, &QAction::triggered, this, &AnalysisForm::onShowParameterXML );
@@ -182,7 +192,7 @@ void AnalysisForm::removeMenu()
 {
     if (mainMenu_)
     {
-        qDebug()<<"removeMenu";
+        menu_parameters_->removeAction(act_save_); act_save_->disconnect();
         menu_parameters_->removeAction(act_save_as_); act_save_as_->disconnect();
         menu_parameters_->removeAction(act_merge_); act_merge_->disconnect();
         menu_parameters_->removeAction(act_param_show_); act_param_show_->disconnect();
@@ -222,13 +232,65 @@ void AnalysisForm::removeMenu()
     workbench::WidgetWithDynamicMenuEntries::removeMenu();
 }
 
+
+
 void AnalysisForm::closeEvent(QCloseEvent * event)
 {
-    QMdiSubWindow::closeEvent(event);
-    if (event->isAccepted()) removeMenu();
+    if (is_modified_)
+    {
+      auto answer=QMessageBox::question(this, "Parameters unsaved",
+                                        "The current parameters have been modified without saving.\n"
+                                        "Do you wish to save them before closing?",
+                                        QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+      if (answer==QMessageBox::Yes)
+      {
+        bool cancelled=false;
+        saveParameters(&cancelled);
+        if (cancelled) event->ignore();
+      }
+      else if (answer==QMessageBox::Cancel)
+      {
+        event->ignore();
+      }
+    }
+
+    if (event->isAccepted())
+    {
+      QMdiSubWindow::closeEvent(event);
+    }
+
+    if (event->isAccepted())
+    {
+      removeMenu();
+    }
 }
 
+
 void AnalysisForm::onSaveParameters()
+{
+  saveParameters();
+}
+
+
+void AnalysisForm::saveParameters(bool *cancelled)
+{
+  if (ist_file_.empty())
+  {
+    saveParametersAs(cancelled);
+  }
+  else
+  {
+    parameters_.saveToFile(ist_file_, analysisName_);
+    is_modified_=false;
+  }
+}
+
+void AnalysisForm::onSaveParametersAs()
+{
+  saveParametersAs();
+}
+
+void AnalysisForm::saveParametersAs(bool *cancelled)
 {
 //   emit apply();
 
@@ -239,19 +301,47 @@ void AnalysisForm::onSaveParameters()
         QString(),
         "Insight parameter sets (*.ist)"
       );
+
   if (!fn.isEmpty())
   {
 //     parameters_.saveToFile(fn.toStdString(), analysis_->type());
-    parameters_.saveToFile(fn.toStdString(), analysisName_);
+    ist_file_=fn.toStdString();
+    saveParameters(cancelled);
+    if (cancelled) *cancelled=false;
   }
+  else
+  {
+    if (cancelled) *cancelled=true;
+  }
+}
+
+void AnalysisForm::loadParameters(const boost::filesystem::path& fp)
+{
+  ist_file_=fp;
+  parameters_.readFromFile(fp);
 }
 
 void AnalysisForm::onLoadParameters()
 {
+  if (is_modified_)
+  {
+    auto answer = QMessageBox::question(this, "Parameters unsaved", "The current parameter set is unsaved and will be overwritten.\n"
+                                                  "Do you wish to save them before continue?",
+                      QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel);
+    if (answer == QMessageBox::Yes)
+    {
+      onSaveParameters();
+    }
+    else if (answer == QMessageBox::Cancel)
+    {
+      return;
+    }
+  }
+
   QString fn = QFileDialog::getOpenFileName(this, "Open Parameters", QString(), "Insight parameter sets (*.ist)");
   if (!fn.isEmpty())
   {
-    parameters_.readFromFile(fn.toStdString());
+    loadParameters(fn.toStdString());
     emit update();
   }
 }
@@ -270,6 +360,12 @@ void AnalysisForm::onShowParameterXML()
 
     widget->exec();
 }
+
+void AnalysisForm::onConfigModification()
+{
+  is_modified_=true;
+}
+
 
 void AnalysisForm::onRunAnalysis()
 {

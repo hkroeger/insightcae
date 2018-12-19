@@ -63,6 +63,10 @@ private:
     Ui::isofCaseBuilderWindow* ui;
     QHBoxLayout *pe_layout_, *bc_pe_layout_;
 
+    QoccViewerContext* context_;
+    QoccViewWidget* viewer_;
+    QModelTree* modeltree_;
+
 protected:
     boost::filesystem::path casepath_;
 

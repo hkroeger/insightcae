@@ -27,7 +27,9 @@
 
 ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidget *parent,
                                              insight::ParameterSet_ValidatorPtr vali,
-                                             insight::ParameterSet_VisualizerPtr viz)
+                                             insight::ParameterSet_VisualizerPtr viz,
+                                             QoccViewWidget *viewwidget,
+                                             QModelTree *modeltree)
 : QSplitter(Qt::Horizontal, parent),
   parameters_(pset),
   vali_(vali),
@@ -40,29 +42,36 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
 
     if (viz_)
     {
-        context_=new QoccViewerContext;
-        viewer_=new QoccViewWidget(context_->getContext(), this);
-        addWidget(viewer_);
-        modeltree_=new QModelTree(this);
-        addWidget(modeltree_);
+        if (!viewwidget)
+        {
+          QoccViewerContext *context=new QoccViewerContext(this);
+          viewer_=new QoccViewWidget(this, context->getContext());
+          addWidget(viewer_);
+        }
+        else
+        {
+          viewer_=viewwidget;
+        }
 
-        connect(modeltree_, &QModelTree::show/*(QDisplayableModelTreeItem*)*/,
-                viewer_, &QoccViewWidget::onShow);
-        connect(modeltree_, &QModelTree::hide/*(QDisplayableModelTreeItem*)*/,
-                viewer_, &QoccViewWidget::onHide);
-        connect(modeltree_, &QModelTree::setDisplayMode/*(QDisplayableModelTreeItem*, AIS_DisplayMode)*/,
-                viewer_, &QoccViewWidget::onSetDisplayMode);
-        connect(modeltree_, &QModelTree::setColor/*(QDisplayableModelTreeItem*, Quantity_Color)*/,
-                viewer_, &QoccViewWidget::onSetColor);
-        connect(modeltree_, &QModelTree::setResolution/*(QDisplayableModelTreeItem*, double)*/,
-                viewer_, &QoccViewWidget::onSetResolution);
+        if (!modeltree)
+        {
+          modeltree_=new QModelTree(this);
+          addWidget(modeltree_);
+        }
+        else
+        {
+          modeltree_=modeltree;
+        }
 
+        if ( (!viewwidget) || (!modeltree) ) // one of them was created here
+        {
+          viewer_->connectModelTree(modeltree_);
+        }
     }
     else
     {
-        context_=NULL;
-        viewer_=NULL;
-        modeltree_=NULL;
+        viewer_ = nullptr;
+        modeltree_ = nullptr;
     }
 
     root_=new QTreeWidgetItem(0);
@@ -76,7 +85,7 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
     {
       QList<int> l;
       l << 3300 << 6600;
-      if (viz_)
+      if (viz_ && !viewwidget && !modeltree)
       {
         l << 6600 << 0;
       }
@@ -87,6 +96,9 @@ ParameterEditorWidget::ParameterEditorWidget(insight::ParameterSet& pset, QWidge
     ptree_->resizeColumnToContents(0);
     ptree_->resizeColumnToContents(1);
     ptree_->setContextMenuPolicy(Qt::CustomContextMenu);
+
+    onCheckValidity();
+    onUpdateVisualization();
 
 }
 

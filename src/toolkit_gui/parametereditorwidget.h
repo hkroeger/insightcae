@@ -44,7 +44,7 @@ protected:
     QTreeWidget *ptree_;
     QWidget *inputContents_;
 
-    QoccViewerContext* context_;
+//    QoccViewerContext* context_;
     QoccViewWidget* viewer_;
     QModelTree* modeltree_;
 
@@ -58,7 +58,9 @@ protected:
 public:
     ParameterEditorWidget(insight::ParameterSet& pset, QWidget* parent,
                           insight::ParameterSet_ValidatorPtr vali = insight::ParameterSet_ValidatorPtr(),
-                          insight::ParameterSet_VisualizerPtr viz = insight::ParameterSet_VisualizerPtr()
+                          insight::ParameterSet_VisualizerPtr viz = insight::ParameterSet_VisualizerPtr(),
+                          QoccViewWidget *viewwidget = nullptr,
+                          QModelTree *modeltree = nullptr
                           );
     
     void insertParameter(const QString& name, insight::Parameter& parameter);

@@ -292,6 +292,42 @@ public:
 
 
 
+class RefinementSphere
+  : public RefinementRegion
+{
+public:
+#include "snappyhexmesh__RefinementSphere__Parameters.h"
+/*
+PARAMETERSET>>> RefinementSphere Parameters
+inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+
+center = vector (0 0 0) "Center of the refinement sphere"
+radius = double 1 "Radius of the refinement region"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "RefinementSphere" );
+  RefinementSphere ( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters()
+  {
+    return Parameters::makeDefault();
+  }
+  virtual ParameterSet getParameters() const
+  {
+    return p_;
+  }
+  inline const Parameters& parameters() const { return p_; }
+
+  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+};
+
+
+
 
 class RefinementGeometry
 : public RefinementRegion

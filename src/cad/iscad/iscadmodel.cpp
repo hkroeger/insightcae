@@ -599,7 +599,7 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     layout->addWidget(spl);
 
     context_=new QoccViewerContext;
-    viewer_=new QoccViewWidget(context_->getContext(), spl);
+    viewer_=new QoccViewWidget(spl, context_->getContext());
     spl->addWidget(viewer_);
     
     model_=new ISCADModel(spl);

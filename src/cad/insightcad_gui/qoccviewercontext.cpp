@@ -23,7 +23,8 @@
 
 #include <qnamespace.h>
 
-QoccViewerContext::QoccViewerContext()
+QoccViewerContext::QoccViewerContext(QObject* parent)
+  : QObject(parent)
 {
   // Create the OCC Viewers
   TCollection_ExtendedString a3DName("Visual3D");
@@ -52,7 +53,6 @@ QoccViewerContext::QoccViewerContext()
   setGridOffset (0.0);
   gridXY();
   gridOff();
-
 }
 
 

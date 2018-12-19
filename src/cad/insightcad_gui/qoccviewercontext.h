@@ -27,14 +27,14 @@
 #include "qocc.h"
 #endif
 
-class QOCC_DECLSPEC QoccViewerContext : public QObject
+class QOCC_DECLSPEC QoccViewerContext
+: public QObject
 {
-
   Q_OBJECT
 
 public:
 
-  QoccViewerContext();
+  QoccViewerContext(QObject* parent = nullptr);
   ~QoccViewerContext();
 
   Handle_V3d_Viewer&              getViewer();
@@ -52,9 +52,7 @@ public:
 
   void setGridOffset (double offset);
 
-public slots:
-
-
+public Q_SLOTS:
   void gridXY   ( void );
   void gridXZ   ( void );
   void gridYZ   ( void );
@@ -63,14 +61,13 @@ public slots:
   void gridRect ( void );
   void gridCirc ( void );
   
-signals:
-
+Q_SIGNALS:
   void error (int errorCode, QString& errorDescription);
 
 private:
 
-  Handle(V3d_Viewer)		myViewer;
-  Handle(AIS_InteractiveContext)	myContext;
+  Handle_V3d_Viewer		myViewer;
+  Handle_AIS_InteractiveContext myContext;
 
   Aspect_GridType		myGridType;
   Aspect_GridDrawMode		myGridMode;

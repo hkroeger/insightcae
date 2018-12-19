@@ -289,6 +289,26 @@ bool RefinementBox::setGeometrySubdict(OFDictData::dict& d, std::string&) const
 
 
 
+defineType(RefinementSphere);
+addToFactoryTable(Feature, RefinementSphere);
+addToStaticFunctionTable(Feature, RefinementSphere, defaultParameters);
+
+RefinementSphere::RefinementSphere(const ParameterSet& ps)
+: RefinementRegion(ps),
+  p_(ps)
+{
+}
+
+bool RefinementSphere::setGeometrySubdict(OFDictData::dict& d, std::string&) const
+{
+  d["type"]="searchableSphere";
+  d["centre"]=OFDictData::to_OF(p_.center);
+  d["radius"]=p_.radius;
+  return true;
+}
+
+
+
 defineType(RefinementGeometry);
 addToFactoryTable(Feature, RefinementGeometry);
 addToStaticFunctionTable(Feature, RefinementGeometry, defaultParameters);

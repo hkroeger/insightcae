@@ -108,14 +108,13 @@ void isofCaseBuilderWindow::fillCaseElementList()
 
 
 isofCaseBuilderWindow::isofCaseBuilderWindow()
-: QMainWindow(), ped_(NULL), bc_ped_(NULL)
+: QMainWindow(), ped_(nullptr), bc_ped_(nullptr)
 {
-    QWidget *cw=new QWidget(this);
-    setCentralWidget(cw);
-
     // setup layout
     ui = new Ui::isofCaseBuilderWindow;
-    ui->setupUi(cw);
+    ui->setupUi(this);
+
+    ui->occview->connectModelTree(ui->modeltree);
 
     auto *m = new QMenu("&File", this);
     menuBar()->addMenu(m);
@@ -137,7 +136,7 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     bc_pe_layout_ = new QHBoxLayout(ui->bc_parameter_editor);
     
     // populate list of available OF versions
-    for (const insight::OFEs::value_type& ofe: insight::OFEs::list)
+    for (insight::OFEs::value_type ofe: insight::OFEs::list)
     {
       ui->OFversion->addItem(ofe.first.c_str());
     }
@@ -352,7 +351,9 @@ void isofCaseBuilderWindow::onItemSelectionChanged()
         } catch (insight::Exception e)
         { /* ignore, if non-existent */ }
 
-        ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor, vali, viz);
+        ped_ = new ParameterEditorWidget(cur->parameters(), ui->parameter_editor,
+                                         vali, viz,
+                                         ui->occview, ui->modeltree);
         connect(ped_, &ParameterEditorWidget::parameterSetChanged,
                 this, &isofCaseBuilderWindow::onConfigModification);
         pe_layout_->addWidget(ped_);

@@ -322,14 +322,17 @@ void Feature::loadShapeFromFile(const boost::filesystem::path& filename)
         STEPControl_Reader reader;
         reader.ReadFile(filename.c_str());
         reader.TransferRoots();
+        cout<<"STEP transferred"<<endl;
 
         TopoDS_Shape res=reader.OneShape();
-        
+        cout<<"=> one shape"<<endl;
+
         // set shape
         setShape(res);
 
         // now detect named features
         //
+        cout<<"detecting names"<<endl;
 
         typedef std::map<std::string, FeatureSetPtr> Feats;
         Feats feats;

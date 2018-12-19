@@ -21,7 +21,8 @@
 #include "datum.h"
 #include "vectorfeatureprop.h"
 
-
+#include "gce_MakeCirc.hxx"
+#include "GeomAPI_ExtremaCurveCurve.hxx"
 
 
 insight::cad::PointFeatureProp::PointFeatureProp
@@ -96,12 +97,46 @@ arma::mat insight::cad::CircleEdgeCenterCoords::value() const
   
   TopLoc_Location tl;
   double c0, c1;
-  GeomAdaptor_Curve adapt(BRep_Tool::Curve(pfs_->model()->edge(i), tl, c0, c1));
-  if (adapt.GetType()!=GeomAbs_Circle)
-    throw insight::Exception("selected edge is not a  circle! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
-  
-  gp_Circ icyl=adapt.Circle();
-  gp_Pnt p0=icyl.Location();
+  Handle_Geom_Curve curve(BRep_Tool::Curve(pfs_->model()->edge(i), tl, c0, c1));
+  GeomAdaptor_Curve adapt(curve);
+
+  gp_Pnt p0;
+  if (adapt.GetType()==GeomAbs_Circle)
+  {
+    gp_Circ icyl=adapt.Circle();
+    p0=icyl.Location();
+  } else if (adapt.GetType()==GeomAbs_BSplineCurve)
+  {
+    double u0=adapt.FirstParameter();
+    double u1=0.9*adapt.LastParameter();
+    double um=0.5*(u0+u1);
+    gp_Pnt p1=adapt.Value(u0), p2=adapt.Value(um), p3=adapt.Value(u1);
+    gp_Circ ic = gce_MakeCirc(p1, p2, p3);
+    double Lref=std::max( std::max(p1.Distance(p2), p2.Distance(p3)), p1.Distance(p3) );
+
+    // check
+    GeomAPI_ExtremaCurveCurve ec(
+          curve,
+          Handle_Geom_Curve(new Geom_Circle(ic))
+          );
+
+    double max_dist=0.0;
+    for (int i=1; i<=ec.NbExtrema(); i++)
+    {
+      max_dist=std::max(ec.Distance(i), max_dist);
+    }
+    if (max_dist>0.1*Lref)
+    {
+      throw insight::Exception(boost::str(boost::format
+         ("selected edge is a BSplineCurve and possibly not circular! (max. distance=%g)") % max_dist
+       ));
+    }
+
+    p0=ic.Location();
+  }
+  else
+    throw insight::Exception("selected edge is not a circle or BSplineCurve! (instead is of type "+boost::lexical_cast<std::string>(adapt.GetType())+")");
+
   return vec3(p0.X(), p0.Y(), p0.Z());
 }
 

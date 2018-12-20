@@ -92,6 +92,7 @@ add_library(toolkit SHARED ${toolkit_SOURCES})
 target_link_libraries(toolkit ${PYTHON_LIBRARIES} ${Boost_LIBRARIES} ${ARMADILLO_LIBRARY} ${GSL_LIBRARIES} ${VTK_LIBRARIES})
 
 target_include_directories(toolkit 
+  PUBLIC ${VTK_INCLUDE_DIRS}
   PUBLIC ${PYTHON_INCLUDE_DIR}/python2.7
   PUBLIC ${Boost_INCLUDE_DIR}
   PUBLIC ${ARMADILLO_INCLUDE_DIRS}

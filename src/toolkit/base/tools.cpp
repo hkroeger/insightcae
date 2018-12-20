@@ -377,4 +377,53 @@ arma::mat LineMesh_to_OrderedPointTable::txyz() const
 
 
 
+
+vtkSmartPointer<vtkPolyDataAlgorithm>
+readSTL
+(
+  const boost::filesystem::path& path,
+  const vtk_TransformerList& trsf
+)
+{
+  CurrentExceptionContext ce("Reading STL file using VTK reader");
+
+  if (!boost::filesystem::exists(path))
+    throw insight::Exception("file "+path.string()+" does not exist!");
+
+  vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
+  stl->SetFileName(path.c_str());
+
+  std::vector<vtkSmartPointer<vtkPolyDataAlgorithm> > imr;
+  vtkSmartPointer<vtkPolyDataAlgorithm> i0=stl;
+  for (const auto& t: trsf)
+  {
+    imr.push_back(vtkSmartPointer<vtkPolyDataAlgorithm>( t->apply_VTK_Transform(i0) ));
+    i0=imr.back();
+  }
+
+  return i0;
+}
+
+
+arma::mat STLBndBox
+(
+  vtkSmartPointer<vtkPolyDataAlgorithm> in
+)
+{
+
+  double bb[6];
+  in->Update();
+  in->GetOutput()->GetBounds(bb);
+
+  arma::mat bbm;
+  bbm
+    << bb[0] << bb[1] << arma::endr
+    << bb[2] << bb[3] << arma::endr
+    << bb[4] << bb[5] << arma::endr;
+
+  return bbm;
+}
+
+
+
 }

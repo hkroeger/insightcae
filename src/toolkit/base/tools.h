@@ -20,11 +20,14 @@
 #ifndef TOOLS_H
 #define TOOLS_H
 
-#include "base/boost_include.h"
-#include "base/linearalgebra.h"
-
 class vtkPolyData;
 class vtkCellArray;
+
+#include "vtkSmartPointer.h"
+#include "vtkPolyDataAlgorithm.h"
+
+#include "base/boost_include.h"
+#include "base/linearalgebra.h"
 
 
 namespace insight
@@ -93,6 +96,36 @@ public:
      */
     arma::mat txyz() const;
 };
+
+
+
+
+
+
+class vtk_Transformer
+{
+public:
+  virtual vtkSmartPointer<vtkPolyDataAlgorithm> apply_VTK_Transform(vtkSmartPointer<vtkPolyDataAlgorithm> in) =0;
+};
+
+typedef vtk_Transformer* vtk_TransformerPtr;
+typedef std::vector<vtk_TransformerPtr> vtk_TransformerList;
+
+
+vtkSmartPointer<vtkPolyDataAlgorithm>
+readSTL
+(
+  const boost::filesystem::path& path,
+  const vtk_TransformerList& trsf = vtk_TransformerList()
+);
+/**
+  * return bounding box of model
+  * first col: min point
+  * second col: max point
+  */
+arma::mat STLBndBox(
+  vtkSmartPointer<vtkPolyDataAlgorithm> stl_data_Set
+);
 
 
 }

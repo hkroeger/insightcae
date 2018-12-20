@@ -35,6 +35,7 @@
 #include "vtkPolyData.h"
 #include "vtkPolyDataReader.h"
 #include "vtkCellData.h"
+#include "vtkPolyData.h"
 
 using namespace std;
 using namespace arma;
@@ -2461,29 +2462,6 @@ void createBaffles
   cm.executeCommand(location, "createBaffles", opt);
 }
 
-arma::mat STLBndBox
-(
-  const boost::filesystem::path& path
-)
-{
-  if (!boost::filesystem::exists(path))
-    throw insight::Exception("file "+path.string()+" does not exist!");
-
-  vtkSmartPointer<vtkSTLReader> stl = vtkSmartPointer<vtkSTLReader>::New();
-  stl->SetFileName(path.c_str());
-  stl->Update();
-
-  double bb[6];
-  stl->GetOutput()->GetBounds(bb);
-
-  arma::mat bbm;
-  bbm
-    << bb[0] << bb[1] << arma::endr
-    << bb[2] << bb[3] << arma::endr
-    << bb[4] << bb[5] << arma::endr;
-
-  return bbm;
-}
 
 
 std::pair<arma::mat, arma::mat> zoneExtrema

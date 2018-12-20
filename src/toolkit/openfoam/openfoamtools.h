@@ -32,6 +32,8 @@
 #include "openfoam/openfoamcase.h"
 #include "progrock/cppx/collections/options_boosted.h"
 
+
+
 namespace insight
 {
   
@@ -699,16 +701,6 @@ void createBaffles
   const std::string& faceZoneName
 );
 
-
-/**
-  * return bounding box of model
-  * first col: min point
-  * second col: max point
-  */
-arma::mat STLBndBox
-(
-  const boost::filesystem::path& path
-);
 
 /**
  * return extrema in specified zone

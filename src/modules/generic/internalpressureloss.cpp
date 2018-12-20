@@ -100,13 +100,13 @@ void InternalPressureLoss::calcDerivedInputData()
       }
     else if ( const Parameters::geometry_STL_type* geom_stl = boost::get<Parameters::geometry_STL_type>(&p.geometry) )
       {
-        bb_ = STLBndBox(geom_stl->cadmodel);
+        bb_ = STLBndBox(readSTL(geom_stl->cadmodel));
         {
-          arma::mat bb = STLBndBox(geom_stl->inlet);
+          arma::mat bb = STLBndBox(readSTL(geom_stl->inlet));
           extendBB(bb_, bb);
         }
         {
-          arma::mat bb = STLBndBox(geom_stl->outlet);
+          arma::mat bb = STLBndBox(readSTL(geom_stl->outlet));
           extendBB(bb_, bb);
         }
       }

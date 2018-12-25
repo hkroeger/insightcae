@@ -109,7 +109,7 @@ arma::mat rotated( const arma::mat&p, double theta, const arma::mat& axis, const
 std::string toStr(const arma::mat& v3)
 {
   std::string s="";
-  for (int i=0; i<3; i++)
+  for (arma::uword i=0; i<3; i++)
     s+=" "+lexical_cast<std::string>(v3(i));
   return s+" ";
 }
@@ -121,18 +121,18 @@ arma::mat linearRegression(const arma::mat& y, const arma::mat& x)
 
 arma::mat polynomialRegression(const arma::mat& y, const arma::mat& x, int maxorder, int minorder)
 {
-  arma::mat xx(x.n_rows, maxorder-minorder);
-  for (int i=0; i<maxorder-minorder; i++)
-    xx.col(i)=pow(x, minorder+i);
+  arma::mat xx(x.n_rows, arma::uword(maxorder-minorder) );
+  for (arma::uword i=0; i<arma::uword(maxorder-minorder); i++)
+    xx.col(i)=pow(x, arma::uword(minorder)+i);
   return linearRegression(y, xx);
 }
 
 double evalPolynomial(double x, const arma::mat& coeffs)
 {
   double y=0;
-  for (int k=0; k<coeffs.n_elem; k++)
+  for (arma::uword k=0; k<coeffs.n_elem; k++)
   {
-    int p=coeffs.n_elem-k-1;
+    arma::uword p=coeffs.n_elem-k-1;
     y+=coeffs(k)*pow(x,p);
   }
   return y;
@@ -157,7 +157,7 @@ RegressionModel::~RegressionModel()
 {
 }
 
-void RegressionModel::getParameters(double* params) const
+void RegressionModel::getParameters(double*) const
 {
   throw insight::Exception("not implemented!");
 }
@@ -171,7 +171,7 @@ double RegressionModel::computeQuality(const arma::mat& y, const arma::mat& x) c
 {
   double q=0.0;
   arma::mat w=weights(x);
-  for (int r=0; r<y.n_rows; r++)
+  for (arma::uword r=0; r<y.n_rows; r++)
   {
     q +=  w(r) * pow(norm( y.row(r) - evaluateObjective(x.row(r)), 2 ), 2);
   }
@@ -593,6 +593,13 @@ arma::mat nonlinearMinimizeND(const ObjectiveND& model, const arma::mat& x0, dou
 
 arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_col_is_time, bool centerwindow)
 {
+  std::ostringstream msg;
+  msg<<"Computing moving average for "
+       "t="<<valueList_to_string(timeProfs.col(0))<<" and "
+       "y="<<valueList_to_string(timeProfs.cols(1,timeProfs.n_cols-1))<<
+       " with fraction="<<fraction<<", first_col_is_time="<<first_col_is_time<<" and centerwindow="<<centerwindow;
+  CurrentExceptionContext ce(msg.str());
+
   if (!first_col_is_time)
     throw insight::Exception("Internal error: moving average without time column is currently unsupported!");
 
@@ -602,7 +609,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
   if (timeProfs.n_rows>1)
   {
-    int n_raw=timeProfs.n_rows;
+    arma::uword n_raw=timeProfs.n_rows;
 
     double x0=arma::min(timeProfs.col(0));
     double dx_raw=arma::max(timeProfs.col(0))-x0;
@@ -613,7 +620,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
     double avgdx=dx_raw/double(n_raw);
 
     // number of averages to compute
-    int n_avg=std::min(n_raw, std::max(2, int((dx_raw-window)/avgdx) ));
+    arma::uword n_avg=std::min(n_raw, std::max(arma::uword(2), arma::uword((dx_raw-window)/avgdx) ));
 //    window=n_avg*avgdx;
 
     double window_ofs=window;
@@ -624,7 +631,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
     arma::mat result=zeros(n_avg, timeProfs.n_cols);
     
-    for (int i=0; i<n_avg; i++)
+    for (arma::uword i=0; i<n_avg; i++)
     {
         double x = x0 + window_ofs + double(i)*avgdx;
 
@@ -632,7 +639,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
 //        std::cout<<"avg from "<<from<<" to "<<to<<std::endl;
 
-        int j0=0;
+        arma::uword j0=0;
         if (first_col_is_time)
         {
             j0=1;
@@ -649,7 +656,7 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
 
         if (selrows.n_rows==1)
         {
-            for (int j=j0; j<timeProfs.n_cols; j++)
+            for (arma::uword j=j0; j<timeProfs.n_cols; j++)
             {
                result(i, j) = arma::as_scalar(selrows.col(j));
             }
@@ -658,11 +665,11 @@ arma::mat movingAverage(const arma::mat& timeProfs, double fraction, bool first_
         {
 
             arma::mat xcol=selrows.col(0);
-            for (int j=j0; j<timeProfs.n_cols; j++)
+            for (arma::uword j=j0; j<timeProfs.n_cols; j++)
             {
               arma::mat ccol=selrows.col(j);
               double I=0;
-              for (int k=1; k<xcol.n_rows; k++)
+              for (arma::uword k=1; k<xcol.n_rows; k++)
               {
                 I+=0.5*(ccol(k)+ccol(k-1))*(xcol(k)-xcol(k-1));
               }

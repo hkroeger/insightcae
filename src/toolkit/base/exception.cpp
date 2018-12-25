@@ -171,19 +171,46 @@ std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen)
   std::ostringstream os;
   os <<"(";
 
-  size_t n1=std::min(vals.size(), maxlen-2);
+  if (vals.size()>0)
+  {
+    size_t n1=std::min(vals.size(), maxlen-2);
 
-  for (size_t i=0; i<n1; i++)
-    os<<" "<<vals[i];
+    for (size_t i=0; i<n1; i++)
+      os<<" "<<vals[i];
 
-  if (n1<vals.size())
-    {
-      os << " .... "<<vals.back();
-    }
+    if (n1<vals.size())
+      {
+        os << " .... "<<vals.back();
+      }
+  }
+  os<<" )";
+  return os.str();
+}
+
+
+std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen)
+{
+  std::ostringstream os;
+  os <<"(";
+
+  arma::uword nr=vals.n_rows;
+  if (nr>0)
+  {
+    size_t n1=std::min(nr, maxlen-2);
+
+    for (size_t i=0; i<n1; i++)
+      os<<" "<<vals.row(i);
+
+    if (n1<vals.size())
+      {
+        os << " .... "<<vals.row(nr-1);
+      }
+  }
 
   os<<" )";
   return os.str();
 }
+
 
 void Warning(const std::string& msg)
 {

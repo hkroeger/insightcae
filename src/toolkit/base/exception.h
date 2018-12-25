@@ -25,6 +25,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <armadillo>
 
 namespace insight {
   
@@ -70,6 +71,7 @@ public:
 
 
 std::string valueList_to_string(const std::vector<double>& vals, size_t maxlen=5);
+std::string valueList_to_string(const arma::mat& vals, arma::uword maxlen=5);
 
 class ExceptionContext
 : public std::vector<CurrentExceptionContext*>

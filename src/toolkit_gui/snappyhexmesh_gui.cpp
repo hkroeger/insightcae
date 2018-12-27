@@ -49,11 +49,20 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElem
                 gp_Trsf trans;
                 trans.SetTranslation(to_Vec(gp.translate));
 
+                gp_Trsf t2a;
+                t2a.SetRotation(gp::OX(), gp.rollPitchYaw(0)*SI::deg);
+                gp_Trsf t2b;
+                t2b.SetRotation(gp::OY(), gp.rollPitchYaw(1)*SI::deg);
+                gp_Trsf t2c;
+                t2c.SetRotation(gp::OZ(), gp.rollPitchYaw(2)*SI::deg);
+
                 gp_Trsf scale;
                 scale.SetScale(gp::Origin(), gp.scale[0]);
 
-                mt->onAddFeature( "geometry:"+QString::fromStdString(gp.name),
-                          cad::STL::create_trsf(gp.fileName, trans*scale),
+                mt->onAddFeature(
+                      "geometry:"+QString::fromStdString(gp.name),
+                      cad::STL::create_trsf(gp.fileName,
+                                            scale*t2c*t2b*t2a*trans),
                           true );
         }
       } else if ( const auto* refbox = dynamic_cast<snappyHexMeshFeats::RefinementBox*>(feat.get()) )

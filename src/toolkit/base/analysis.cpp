@@ -388,34 +388,44 @@ AnalysisLibraryLoader::AnalysisLibraryLoader()
 {
 
     SharedPathList paths;
-    for ( const path& p: /*SharedPathList::searchPathList*/paths ) {
-        if ( exists(p) && is_directory ( p ) ) {
+    for ( const path& p: /*SharedPathList::searchPathList*/paths )
+    {
+        if ( exists(p) && is_directory ( p ) )
+        {
             path userconfigdir ( p );
             userconfigdir /= "modules.d";
 
-            if ( exists(userconfigdir) ) { if ( is_directory ( userconfigdir ) ) {
+            if ( exists(userconfigdir) )
+            {
+              if ( is_directory ( userconfigdir ) )
+              {
                 directory_iterator end_itr; // default construction yields past-the-end
                 for ( directory_iterator itr ( userconfigdir );
                         itr != end_itr;
-                        ++itr ) {
-                    if ( is_regular_file ( itr->status() ) ) {
-                        if ( itr->path().extension() == ".module" ) {
+                        ++itr )
+                {
+                    if ( is_regular_file ( itr->status() ) )
+                    {
+                        if ( itr->path().extension() == ".module" )
+                        {
                             std::ifstream f ( itr->path().c_str() );
                             std::string type;
                             path location;
                             f>>type>>location;
                             //cout<<itr->path()<<": type="<<type<<" location="<<location<<endl;
 
-                            if ( type=="library" ) {
+                            if ( type=="library" )
+                            {
                                 addLibrary(location);
                             }
-
                         }
                     }
                 }
-            }}
-
-        } else {
+              }
+            }
+        }
+        else
+        {
             //cout<<"Not existing: "<<p<<endl;
         }
     }

@@ -56,6 +56,7 @@ add_sources(insightcad_SOURCES
  tri.cpp
  wire.cpp
  modelfeature.cpp
+ maxsurfacecurvature.cpp
  subfeature.cpp
  nacafourdigit.cpp
  coil.cpp

@@ -320,7 +320,15 @@ void writeOpenFOAMBoundaryDict(std::ostream& out, const OFDictData::dictFile& d)
     out << d.size() << endl
 	<< "(" << endl;
 	
-    
+    for (const auto& j: ord)
+    {
+      auto i=d.find(j.second);
+      out<< i->first << "\n" << i->second;
+//       const OFDictData::data* o=&(i->second);
+      //if (!boost::get<OFDictData::dict>(o)) out<<";";
+      out << "\n";
+    }
+
     out << ")" << endl;
 }
 

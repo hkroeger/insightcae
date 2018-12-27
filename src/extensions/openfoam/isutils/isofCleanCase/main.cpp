@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     ("help,h", "produce help message")
 
     ("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
+    ("case-dir,l", po::value<std::string>(), "case location")
 
     ("pack,p", "pack case into archive before any cleanup")
     ("pack-file", po::value<std::string>(), "name of archive")
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
     boost::filesystem::path location=".";
     if (vm.count("case-dir"))
     {
-        location = vm["case-dir"].as<StringList>()[0];
+        location = vm["case-dir"].as<std::string>();
     }
 
 

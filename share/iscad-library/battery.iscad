@@ -1,0 +1,11 @@
+IEC_R?=20;
+D=TableLookup(battery_sizes, IEC_R, IEC_R, D);
+L=TableLookup(battery_sizes, IEC_R, IEC_R, L);
+
+battery:
+Cylinder(O, 1*EX, 0.5*D)
+|
+Cylinder(1*EX, L*EX, D);
+
+p_plus=RefPt(O);
+p_minus=RefPt(L*EX);

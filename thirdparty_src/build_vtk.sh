@@ -5,8 +5,7 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-#tar xzf TARBALLS/VTK-6.3.0.tar.gz && 
-cd VTK-6.3.0 && (
+tar xzf TARBALLS/VTK-6.3.0.tar.gz && cd VTK-6.3.0 && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

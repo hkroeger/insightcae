@@ -5,7 +5,7 @@ if [ ! -d TARBALLS ]; then
  exit -1
 fi
 
-tar xzf TARBALLS/armadillo-4.650.4.tar.gz && cd  armadillo-4.650.4 && (
+tar xJf TARBALLS/armadillo-8.400.1.tar.xz && cd  armadillo-8.400.1 && (
 
  INSTALLDIR=$(cd ../..; pwd)/thirdparty
 

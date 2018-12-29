@@ -101,7 +101,7 @@ static std::vector<std::string> factoryToC();
 
 
 #define defineFactoryTable(baseT, argList, parList) \
- baseT::FactoryTable* baseT::factories_; \
+ baseT::FactoryTable* baseT::factories_=nullptr; \
  baseT* baseT::lookup(const std::string& key , argList) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -121,7 +121,7 @@ static std::vector<std::string> factoryToC();
  
  
 #define defineFactoryTableNoArgs(baseT) \
- baseT::FactoryTable* baseT::factories_; \
+ baseT::FactoryTable* baseT::factories_=nullptr; \
  baseT* baseT::lookup(const std::string& key) \
  { \
    baseT::FactoryTable::const_iterator i = baseT::factories_->find(key); \
@@ -178,16 +178,16 @@ static struct add##specT##To##baseT##FactoryTable \
  
 
 #define defineStaticFunctionTable(baseT, Name, ReturnT) \
- baseT::Name##FunctionTable* baseT::Name##Functions_ =NULL; \
+ baseT::Name##FunctionTable* baseT::Name##Functions_ =nullptr; \
  ReturnT baseT::Name(const std::string& key) \
  { \
    if (baseT::Name##Functions_) { \
    baseT::Name##FunctionTable::const_iterator i = baseT::Name##Functions_->find(key); \
   if (i==baseT::Name##Functions_->end()) \
-    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " +#baseT); \
+    throw insight::Exception("Could not lookup static function #Name for class "+key+" in table of type " #baseT); \
   return i->second(); \
   } else  {\
-    throw insight::Exception(std::string("Static function table of type ") +#baseT+"is empty!"); \
+    throw insight::Exception("Static function table of type " #baseT "is empty!"); \
   }\
  }
  
@@ -203,7 +203,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     {\
      baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
     } \
-    std::string key(specT::typeName); \
+    std::string key(specT::typeName_()); \
     (*baseT::Name##Functions_)[key]=&(specT::Name);\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable;
@@ -218,7 +218,7 @@ static struct add##specT##To##baseT##Name##FunctionTable \
     {\
      baseT::Name##Functions_=new baseT::Name##FunctionTable(); \
     } \
-    std::string key(specT::typeName); \
+    std::string key(specT::typeName_()); \
     (*baseT::Name##Functions_)[key]=&(FuncName);\
   }\
 } v_add##specT##To##baseT##Name##FunctionTable;

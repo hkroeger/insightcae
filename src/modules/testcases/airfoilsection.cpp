@@ -124,7 +124,9 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
 
   path dir = executionPath();
     
-  cm.insert(new MeshingNumerics(cm));
+  cm.insert(new MeshingNumerics(cm, MeshingNumerics::Parameters()
+    .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
+  ));
   
   using namespace insight::bmd;
   std::auto_ptr<blockMesh> bmd(new blockMesh(cm));
@@ -251,6 +253,7 @@ void AirfoilSection::createCase(insight::OpenFOAMCase& cm)
     .set_checkResiduals(false)
     .set_purgeWrite(2)
     .set_endTime(5000)
+    .set_np(p.OpenFOAMAnalysis::Parameters::run.np)
   )); 
   
   std::string force_fo_name("foilForces");

@@ -292,6 +292,43 @@ public:
 
 
 
+class RefinementCylinder
+  : public RefinementRegion
+{
+public:
+#include "snappyhexmesh__RefinementCylinder__Parameters.h"
+/*
+PARAMETERSET>>> RefinementCylinder Parameters
+inherits insight::snappyHexMeshFeats::RefinementRegion::Parameters
+
+point1 = vector (0 0 0) "Base point of the refinement cylinder"
+point2 = vector (1 0 0) "Tip point of the refinement cylinder"
+radius = double 1 "Radius of the refinement region"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType ( "RefinementCylinder" );
+  RefinementCylinder ( const ParameterSet& ps = Parameters::makeDefault() );
+  static ParameterSet defaultParameters()
+  {
+    return Parameters::makeDefault();
+  }
+  virtual ParameterSet getParameters() const
+  {
+    return p_;
+  }
+  inline const Parameters& parameters() const { return p_; }
+
+  virtual bool setGeometrySubdict ( OFDictData::dict& d, std::string& entryTitle ) const;
+};
+
+
+
 class RefinementSphere
   : public RefinementRegion
 {

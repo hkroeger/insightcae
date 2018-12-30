@@ -78,6 +78,16 @@ void snappyHexMeshConfiguration_ParameterSet_Visualizer::updateVisualizationElem
                           ),
                   true );
 
+      } else if ( const auto* refcyl = dynamic_cast<snappyHexMeshFeats::RefinementCylinder*>(feat.get()) )
+      {
+        const auto& gp = refcyl->parameters();
+        mt->onAddFeature( "refinement:"+QString::fromStdString(gp.name),
+                          cad::Cylinder::create(
+                             cad::matconst(gp.point1),
+                             cad::matconst(gp.point2),
+                             cad::scalarconst(2.*gp.radius),
+                             false, false
+                            ), true );
       } else if ( const auto* refsph = dynamic_cast<snappyHexMeshFeats::RefinementSphere*>(feat.get()) )
       {
         const auto& gp = refsph->parameters();

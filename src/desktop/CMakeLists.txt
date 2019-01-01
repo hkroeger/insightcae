@@ -59,6 +59,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     endmacro()
 
     XDG_INSTALL(application-insight-ist.png insight-ist.xml application/insight-ist insight-ist.desktop)
+    XDG_INSTALL(application-insight-ist.png insight-foam.xml application/insight-foam insight-foam.desktop)
     INSTALL_KDE_SERVICEMENU(insight-ist-service.desktop)
 
     XDG_INSTALL(application-insight-iscad.png insight-iscad.xml application/insight-iscad insight-iscad.desktop)

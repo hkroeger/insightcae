@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+X-KDE-Submenu=Insight
+MimeType=application/insight-ist;
+Actions=remoteshell;remotepv
+
+[Desktop Action remoteshell]
+Exec=bash -lc 'isRemoteShell.sh'
+Icon=utilities-terminal
+Name=Shell in Remote Directory
+Name[de]=Shell auf entfernter Maschine ausführen
+
+[Desktop Action remotepv]
+Exec=bash -lc 'isPVRemote.sh'
+Icon=utilities-terminal
+Name=Paraview Server/Client

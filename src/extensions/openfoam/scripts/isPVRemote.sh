@@ -3,9 +3,9 @@
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 SERVER=localhost
 
-if [ -e meta.ofc ]; then
+if [ -e meta.foam ]; then
 read SERVER DIR << EOF
-$(cat meta.ofc|tr ':' ' ')
+$(cat meta.foam|tr ':' ' ')
 EOF
 fi
 

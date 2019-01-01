@@ -35,35 +35,38 @@ int main(int argc, char *argv[])
 //     timeSelector::addOptions();
 
     argList::validArgs.append("from_name");
-    argList::validArgs.append("from_dim");
     argList::validArgs.append("to_name");
     argList::validArgs.append("p0");
     argList::validArgs.append("rho");
-    argList::validOptions.insert("pclip", "real pressure for clipping");
+    argList::validOptions.insert("pclip", "real pressure lower threshold");
+    argList::validOptions.insert("pclip_upper", "real pressure upper threshold");
+    argList::validOptions.insert("from_dim", "ignore dimension of the source field and use this instead");
 
 #   include "setRootCase.H"
 #   include "createTime.H"
     
-    instantList timeDirs = timeSelector::select0(runTime, args);
+//    instantList timeDirs = timeSelector::select0(runTime, args);
     
 #   include "createMesh.H"
     
     word from_name( UNIOF_ADDARG(args,0) );
-    word to_name( UNIOF_ADDARG(args,2) );
+    word to_name( UNIOF_ADDARG(args,1) );
 
-    IStringStream from_dim_args( UNIOF_ADDARG(args,1) );
-    dimensionSet from_dim(from_dim_args);
 
     dimensionedScalar p0("p0", dimPressure, 1e5);
-    p0.value()=readScalar(IStringStream( UNIOF_ADDARG(args,3) )());
+    p0.value()=readScalar(IStringStream( UNIOF_ADDARG(args,2) )());
     
     dimensionedScalar rho("rho", dimDensity, 1);
-    rho.value()=readScalar(IStringStream( UNIOF_ADDARG(args,4) )());
+    rho.value()=readScalar(IStringStream( UNIOF_ADDARG(args,3) )());
     
-    dimensionedScalar pclip("pclip", dimPressure, -GREAT);
+    dimensionedScalar pclip("pclip", dimPressure, 0.0);
     if (args.optionFound("pclip"))
       pclip.value()=readScalar(IStringStream(args.options()["pclip"])());
-    
+
+    dimensionedScalar pclip_upper("pclip_upper", dimPressure, GREAT);
+    if (args.optionFound("pclip_upper"))
+      pclip_upper.value()=readScalar(IStringStream(args.options()["pclip_upper"])());
+
     Info<< "Time = " << runTime.timeName() << endl;
 
     Info << "Reading field "<<from_name<<"\n" << endl;
@@ -82,9 +85,15 @@ int main(int argc, char *argv[])
 	  mesh
       )
     );
-    
-    from_p->dimensions().reset(from_dim);
-    
+
+
+    if (args.optionFound("from_dim"))
+    {
+      dimensionSet from_dim(IStringStream(args.options()["from_dim"])());
+      from_p->dimensions().reset(from_dim);
+    }
+    const dimensionSet& from_dim=from_p->dimensions();
+
     autoPtr<volScalarField> to_p
     (
       new volScalarField
@@ -112,17 +121,13 @@ int main(int argc, char *argv[])
     else if ( from_dim == dimensionSet(0, 2, -2, 0, 0) )
     {
       Info<<"Converting values into real pressure values."<<endl;
+
       // need to be converted into real pressure
-      /*
-      to_p()=from_p()*rho;
-      to_p()+=p0;
-      to_p()=max(pclip, to_p());
-*/
-       to_p()=max(pclip, from_p()*rho+p0);
+      to_p()=max(pclip, min(pclip_upper, from_p()*rho+p0));
 
       forAll(to_p().boundaryField(), pI)
       {
-          UNIOF_BOUNDARY_NONCONST(to_p())[pI] = max(to_p().boundaryField()[pI], pclip.value());
+          UNIOF_BOUNDARY_NONCONST(to_p())[pI] = max(min(to_p().boundaryField()[pI], pclip_upper.value()), pclip.value());
       }
     }
     else

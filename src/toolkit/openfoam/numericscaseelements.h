@@ -494,6 +494,10 @@ public:
 PARAMETERSET>>> interFoamNumerics Parameters
 inherits FVNumerics::Parameters
 
+alphainternal = double 0.0 "Internal phase fraction field value"
+pinternal = double 0.0 "Internal pressure field value"
+Uinternal = vector (0 0 0) "Internal velocity field value"
+
 implicitPressureCorrection = bool false "Whether to switch to implicit pressure correction"
 nOuterCorrectors = int 50 "Number of outer correctors"
 alphaSubCycles = int 4 "Number of alpha integration subcycles"
@@ -565,7 +569,6 @@ PARAMETERSET>>> interPhaseChangeFoamNumerics Parameters
 inherits interFoamNumerics::Parameters
 
 solverName = string "interPhaseChangeFoam" "Name of the solver to use"
-pamb = double 1e5 "Ambient pressure"
 
 <<<PARAMETERSET
 */

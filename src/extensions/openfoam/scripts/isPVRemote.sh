@@ -29,10 +29,18 @@ $(ssh $SERVER isPVFindPort.sh|tail -n 1)
 EOF
 
 if [ "$LABEL" != "PORT" ]; then
- echo expected "PORT", got "$LABEL"
+ echo While determining remote port: expected "PORT", got "$LABEL"
 fi
 
-ssh -L$PORT:localhost:$PORT $SERVER "cd $DIR ; pvserver --server-port=$PORT" &
+read LABEL LOCALPORT << EOF
+$(isPVFindPort.sh|tail -n 1)
+EOF
+
+if [ "$LABEL" != "PORT" ]; then
+ echo While determining local port: expected "PORT", got "$LABEL"
+fi
+
+ssh -L$LOCALPORT:localhost:$PORT $SERVER "cd $DIR ; pvserver --server-port=$PORT" &
 sleep 1
 
-paraview --server-url=cs://localhost:$PORT --data=$DIR/system/controlDict
+paraview --server-url=cs://localhost:$LOCALPORT --data=$DIR/system/controlDict

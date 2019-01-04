@@ -26,6 +26,7 @@ if (INSIGHT_BUILD_WORKBENCH)
  add_subdirectory(isutils/isofCleanCase)
  add_subdirectory(isutils/isofRenamePatches)
  add_subdirectory(isutils/isofVTKToField)
+ add_subdirectory(isutils/isofExecutionManager)
 endif()
 
 add_subdirectory(kOmegaHe)

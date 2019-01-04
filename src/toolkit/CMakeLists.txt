@@ -64,6 +64,7 @@ set(toolkit_SOURCES
     openfoam/turbulencemodelcaseelements.cpp
     openfoam/electromagneticscaseelements.cpp
     openfoam/paraview.cpp
+    openfoam/remoteexecution.cpp
     
     code_aster/caexportfile.cpp
     code_aster/codeasterrun.cpp

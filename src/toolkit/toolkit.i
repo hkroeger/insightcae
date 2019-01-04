@@ -42,6 +42,7 @@
 #include "openfoam/openfoamanalysis.h"
 #include "openfoam/blockmesh.h"
 #include "openfoam/blockmesh_templates.h"
+#include "openfoam/remoteexecution.h"
 
 #include "code_aster/caexportfile.h"
 #include "code_aster/codeasterrun.h"
@@ -91,6 +92,7 @@ using namespace insight::bmd;
 %include "openfoam/analysiscaseelements.h"
 %include "openfoam/openfoamanalysis.h"
 //%include "openfoam/blockmesh.h"
+%include "openfoam/remoteexecution.h"
 
 %rename(Cylinder_Parameters) Cylinder::Parameters;
 

@@ -43,6 +43,8 @@ alias ${shortcut}=\"source insight.bashrc.${shortcut}\"
   create_script("insight.bashrc.${shortcut}"
 "source ${${prefix}_BASHRC}
 
+export CURRENT_OFE=$BASH_SOURCE
+export CURRENT_OFE_FILE=$(basename $CURRENT_OFE)
 foamClean=$WM_PROJECT_DIR/bin/foamCleanPath
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${${prefix}_INSIGHT_LIB}
 #- Clean LD_LIBRARY_PATH

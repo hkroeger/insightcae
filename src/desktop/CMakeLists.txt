@@ -12,11 +12,32 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     find_program(XDG-MIME_EXECUTABLE xdg-mime)
     find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
     find_program(XDG-ICON-RESOURCE_EXECUTABLE xdg-icon-resource)
+    find_program(DESKTOP-FILE-INSTALL_EXECUTABLE desktop-file-install)
 
     if (INSIGHT_BUILD_INSTALLDESKTOP)
         add_custom_target(desktop_integration ALL)
     endif()
 
+    macro(XDG_INSTALL_MIME ICON_FILE MIME_FILE MIME_TYPE)
+        # Copy pixmap
+        INSTALL (FILES ${ICON_FILE} DESTINATION ${INSIGHT_PIXMAPS_DIR})
+        INSTALL (FILES mime/${MIME_FILE} DESTINATION ${INSIGHT_DESKTOP_DIR})
+
+        INSTALL(CODE "
+          execute_process(COMMAND ${XDG-ICON-RESOURCE_EXECUTABLE} install --size 256 --context mimetypes ${INSIGHT_PIXMAPS_DIR}/${ICON_FILE})
+          execute_process(COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${INSIGHT_DESKTOP_DIR}/${MIME_FILE})
+          "
+        )
+
+        if (INSIGHT_BUILD_INSTALLDESKTOP)
+            add_custom_command(
+                TARGET desktop_integration PRE_BUILD
+                 COMMENT "Installing desktop integration in user space"
+                 COMMAND ${XDG-ICON-RESOURCE_EXECUTABLE} install --size 256 --context mimetypes ${CMAKE_CURRENT_LIST_DIR}/${ICON_FILE}
+                 COMMAND ${XDG-MIME_EXECUTABLE} install --novendor ${CMAKE_CURRENT_LIST_DIR}/mime/${MIME_FILE}
+                )
+        endif()
+    endmacro()
 
     macro(XDG_INSTALL ICON_FILE MIME_FILE MIME_TYPE DESKTOP_FILE)
         # Copy pixmap
@@ -52,15 +73,17 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             add_custom_command(
                 TARGET desktop_integration PRE_BUILD
                  COMMENT "Installing desktop integration in user space"
-                 COMMAND ${CMAKE_COMMAND} -E make_directory ${INSIGHT_USER_SERVICEMENUS_DIR}
-                 COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/${DESKTOP_FILE} ${INSIGHT_USER_SERVICEMENUS_DIR}
+                 #COMMAND ${CMAKE_COMMAND} -E make_directory ${INSIGHT_USER_SERVICEMENUS_DIR}
+                 #COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/${DESKTOP_FILE} ${INSIGHT_USER_SERVICEMENUS_DIR}
+                 COMMAND ${DESKTOP-FILE-INSTALL_EXECUTABLE} --dir=${INSIGHT_USER_SERVICEMENUS_DIR} ${CMAKE_CURRENT_LIST_DIR}/${DESKTOP_FILE}
                 )
         endif()
     endmacro()
 
     XDG_INSTALL(application-insight-ist.png insight-ist.xml application/insight-ist insight-ist.desktop)
-    XDG_INSTALL(application-insight-ist.png insight-foam.xml application/insight-foam insight-foam.desktop)
-    INSTALL_KDE_SERVICEMENU(insight-ist-service.desktop)
+    XDG_INSTALL_MIME(application-insight-ist.png insight-foam.xml application/insight-foam)
+    #INSTALL_KDE_SERVICEMENU(insight-ist-service.desktop)
+    #INSTALL_KDE_SERVICEMENU(insight-foam.desktop)
 
     XDG_INSTALL(application-insight-iscad.png insight-iscad.xml application/insight-iscad insight-iscad.desktop)
 endif()

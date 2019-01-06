@@ -3,11 +3,16 @@
 
 #include <QMainWindow>
 
+#include "base/boost_include.h"
+#include "openfoam/remoteexecution.h"
+
 namespace Ui {
   class MainWindow;
 }
 
-class MainWindow : public QMainWindow
+class MainWindow
+: public QMainWindow,
+  public insight::RemoteExecutionConfig
 {
   Q_OBJECT
 
@@ -17,6 +22,8 @@ public:
 
 public Q_SLOTS:
     void onSelectRemoteDir();
+    void syncLocalToRemote();
+    void syncRemoteToLocal();
 
 private:
   Ui::MainWindow *ui;

@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>29</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuRemote">
@@ -29,12 +29,30 @@
     </property>
     <addaction name="actionSelect_Remote_Directory"/>
    </widget>
+   <widget class="QMenu" name="menuSync">
+    <property name="title">
+     <string>Sync</string>
+    </property>
+    <addaction name="action_syncLocalToRemote"/>
+    <addaction name="action_syncRemoteToLocal"/>
+   </widget>
    <addaction name="menuRemote"/>
+   <addaction name="menuSync"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Remote_Directory">
    <property name="text">
     <string>Select Remote Directory...</string>
+   </property>
+  </action>
+  <action name="action_syncLocalToRemote">
+   <property name="text">
+    <string>Local =&gt; Remote</string>
+   </property>
+  </action>
+  <action name="action_syncRemoteToLocal">
+   <property name="text">
+    <string>Remote =&gt; Local</string>
    </property>
   </action>
  </widget>

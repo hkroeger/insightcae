@@ -8,11 +8,14 @@ namespace insight
 
 class RemoteExecutionConfig
 {
+protected:
     std::string server_;
     boost::filesystem::path localDir_, remoteDir_;
 
+    void execRemoteCmd(const std::string& cmd);
+
 public:
-    RemoteExecutionConfig(const boost::filesystem::path& location);
+    RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true);
 
     const std::string& server() const;
     const boost::filesystem::path& localDir() const;
@@ -21,7 +24,11 @@ public:
     void syncToRemote();
     void syncToLocal();
 
-    void executeRemote(const std::string& command);
+    void queueRemoteCommand(const std::string& command);
+    void waitRemoteQueueFinished();
+
+    void cancelRemoteCommands();
+    void removeRemoteDir();
 };
 
 }

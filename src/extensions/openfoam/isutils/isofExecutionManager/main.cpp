@@ -48,19 +48,28 @@ int main(int argc, char *argv[])
 
     namespace po = boost::program_options;
 
-//    typedef std::vector<string> StringList;
+    typedef std::vector<string> StringList;
+
+    StringList cmds;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
     desc.add_options()
     ("help,h", "produce help message")
 
-    ("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
-    ("case-dir,l", po::value<std::string>(), "case location")
+    //("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
+     ("case-dir,d", po::value<std::string>(), "case location")
+     ("sync-remote,r", "sync current case to remote location")
+     ("sync-local,l", "sync from remote location to current case")
+     ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
+     ("command,q", po::value<StringList>(&cmds), "add this command to remote execution queue")
+     ("wait,w", "wait for command queue completion")
+     ("cancel,c", "cancel remote commands (remove all from queue)")
+     ("clean,x", "remove the remote case directory from server")
     ;
 
     po::positional_options_description p;
-    p.add("case-dir", -1);
+    p.add("command", -1);
 
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
@@ -79,13 +88,60 @@ int main(int argc, char *argv[])
         location = vm["case-dir"].as<std::string>();
     }
 
+    bool include_processor=false;
+    if (vm.count("include-processor-dirs")>0)
+        include_processor=true;
 
     try
     {
+        if (
+                vm.count("sync-remote")==0
+                &&
+                vm.count("sync-local")==0
+                &&
+                vm.count("command")==0
+                &&
+                vm.count("wait")==0
+                &&
+                vm.count("clean")==0
+                &&
+                vm.count("cancel")==0
+                )
+        {
           QApplication app(argc, argv);
           MainWindow w;
           w.show();
           return app.exec();
+        }
+        else
+        {
+            insight::RemoteExecutionConfig re(location);
+
+            if(vm.count("cancel"))
+                re.cancelRemoteCommands();
+
+            if (vm.count("sync-remote"))
+                re.syncToRemote();
+
+            if (vm.count("command"))
+            {
+//                StringList cmds=vm["command"].as<StringList>();
+
+                for (const auto& c: cmds)
+                {
+                    re.queueRemoteCommand(c);
+                }
+            }
+
+            if (vm.count("wait"))
+                re.waitRemoteQueueFinished();
+
+            if(vm.count("sync-local"))
+                re.syncToLocal();
+
+            if(vm.count("clean"))
+                re.removeRemoteDir();
+        }
     }
     catch (insight::Exception e)
     {

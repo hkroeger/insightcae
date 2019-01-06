@@ -2,12 +2,38 @@
 
 #include <cstdlib>
 #include "base/exception.h"
+#include "openfoam/openfoamcase.h"
 
 namespace insight
 {
 
 
-RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location)
+void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
+{
+    std::ostringstream cmd;
+
+    cmd << "ssh " << server_ << " \"";
+     cmd << "export TS_SOCKET="<<(remoteDir_/"tsp.socket")<<";";
+
+     try {
+         const OFEnvironment& cofe = OFEs::getCurrent();
+         cmd << "source " << cofe.bashrc().filename() << ";";
+     } catch (insight::Exception e) {
+         // ignore, don't load OF config remotely
+     }
+
+     cmd << "cd "<<remoteDir_<<" && (";
+     cmd << command;
+    cmd << ")\"";
+
+    std::cout<<cmd.str()<<std::endl;
+    if (! ( std::system(cmd.str().c_str()) == 0 ))
+    {
+        throw insight::Exception("Could not execute command on server "+server_+": \""+cmd.str()+"\"");
+    }
+}
+
+RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig)
   : localDir_(location)
 {
   boost::filesystem::path metafile = location/"meta.foam";
@@ -16,7 +42,8 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 
   if (!boost::filesystem::exists(metafile))
   {
-    throw insight::Exception("There is no remote execution configuration file present!");
+      if (needConfig)
+          throw insight::Exception("There is no remote execution configuration file present!");
   }
   else {
     std::ifstream f(metafile.c_str());
@@ -31,6 +58,8 @@ RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& loca
 
     server_=pair[0];
     remoteDir_=pair[1];
+
+    std::cout<<"configured "<<server_<<":"<<remoteDir_<<std::endl;
   }
 }
 
@@ -52,20 +81,42 @@ const boost::filesystem::path& RemoteExecutionConfig::remoteDir() const
 
 void RemoteExecutionConfig::syncToRemote()
 {
+    std::ostringstream cmd;
+
+    cmd << "rsync -avz --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
+
+    std::system(cmd.str().c_str());
 }
 
 void RemoteExecutionConfig::syncToLocal()
 {
+    std::ostringstream cmd;
+
+    cmd << "rsync -avz --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' \""<<server_<<":"<<remoteDir_.string()<<"/*\" .";
+
+    std::system(cmd.str().c_str());
 }
 
-void RemoteExecutionConfig::executeRemote(const std::string& command)
+void RemoteExecutionConfig::queueRemoteCommand(const std::string& command)
 {
-  std::ostringstream cmd;
-  cmd << "ssh " << server_;
-  if (! ( std::system(cmd.str().c_str()) == 0 ))
-  {
-      throw insight::Exception("Could not execute command on server "+server_+": \""+cmd.str()+"\"");
-  }
+  execRemoteCmd("tsp -d " + command);
+}
+
+
+void RemoteExecutionConfig::waitRemoteQueueFinished()
+{
+    execRemoteCmd("tsp -c");
+}
+
+void RemoteExecutionConfig::cancelRemoteCommands()
+{
+    execRemoteCmd("tsp -C; tsp -k; tsp -K");
+}
+
+void RemoteExecutionConfig::removeRemoteDir()
+{
+    execRemoteCmd("tsp -C; tsp -k; tsp -K");
+    execRemoteCmd("rm -r *; cd ..; rmdir "+remoteDir_.string());
 }
 
 }

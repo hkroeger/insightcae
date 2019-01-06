@@ -25,6 +25,8 @@ struct ServerInfo
 extern std::vector<ServerInfo> servers;
 
 
+
+
 class MountRemote
 {
     bfs_path mountpoint_;
@@ -33,6 +35,9 @@ public:
     MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir);
     ~MountRemote();
 };
+
+
+
 
 class RemoteDirSelector : public QDialog
 {
@@ -58,5 +63,8 @@ private Q_SLOTS:
 private:
   Ui::RemoteDirSelector *ui;
 };
+
+
+
 
 #endif // REMOTEDIRSELECTOR_H

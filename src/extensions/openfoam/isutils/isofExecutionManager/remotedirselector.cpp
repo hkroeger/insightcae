@@ -7,6 +7,8 @@
 #include <QDebug>
 #include <QInputDialog>
 
+
+
 ServerInfo::ServerInfo(
             std::string serverName,
             bfs_path defaultDir
@@ -14,11 +16,14 @@ ServerInfo::ServerInfo(
     : serverName_(serverName), defaultDir_(defaultDir)
 {}
 
+
 std::vector<ServerInfo> servers = boost::assign::list_of
         (ServerInfo("titanp", "/beegfs/hk354/SCRATCH"))
         (ServerInfo("eremit", "/home/hk354/SCRATCH"))
         (ServerInfo("einsiedel", "/home/hk354/SCRATCH"))
         ;
+
+
 
 MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, const bfs_path& remotedir)
     : mountpoint_(mountpoint)
@@ -34,6 +39,9 @@ MountRemote::~MountRemote()
     std::string cmd="fusermount -u \""+mountpoint_.string()+"\"";
     std::system(cmd.c_str());
 }
+
+
+
 
 RemoteDirSelector::RemoteDirSelector(QWidget *parent) :
   QDialog(parent),

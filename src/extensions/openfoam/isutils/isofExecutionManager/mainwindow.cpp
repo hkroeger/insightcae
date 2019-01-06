@@ -11,11 +11,14 @@
 
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow(parent),
+  insight::RemoteExecutionConfig(".", false),
   ui(new Ui::MainWindow)
 {
   ui->setupUi(this);
 
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
+  connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
+  connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
 }
 
 MainWindow::~MainWindow()
@@ -25,12 +28,23 @@ MainWindow::~MainWindow()
 
 void MainWindow::onSelectRemoteDir()
 {
-
-//  std::system("sshfs
   RemoteDirSelector dlg(this);
   if (dlg.exec() == QDialog::Accepted)
   {
-      std::cout<<dlg.selectedServer()<<":"<<dlg.selectedRemoteDir().string();
+      server_=dlg.selectedServer();
+      remoteDir_=dlg.selectedRemoteDir();
+
+      std::ofstream cfg("meta.foam");
+      cfg << server_ << ":" << remoteDir_.string();
   }
 }
 
+void MainWindow::syncLocalToRemote()
+{
+    syncToRemote();
+}
+
+void MainWindow::syncRemoteToLocal()
+{
+    syncToLocal();
+}

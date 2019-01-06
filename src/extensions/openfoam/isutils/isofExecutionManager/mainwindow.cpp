@@ -9,6 +9,15 @@
 
 #include <QDebug>
 
+void MainWindow::updateGUI()
+{
+    if (isValid())
+    {
+        ui->server->setText(server_.c_str());
+        ui->remoteDir->setText(remoteDir_.c_str());
+    }
+}
+
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow(parent),
   insight::RemoteExecutionConfig(".", false),
@@ -19,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent) :
   connect(ui->actionSelect_Remote_Directory, &QAction::triggered, this, &MainWindow::onSelectRemoteDir);
   connect(ui->action_syncLocalToRemote, &QAction::triggered, this, &MainWindow::syncLocalToRemote);
   connect(ui->action_syncRemoteToLocal, &QAction::triggered, this, &MainWindow::syncRemoteToLocal);
+
+  updateGUI();
 }
 
 MainWindow::~MainWindow()
@@ -36,6 +47,8 @@ void MainWindow::onSelectRemoteDir()
 
       std::ofstream cfg("meta.foam");
       cfg << server_ << ":" << remoteDir_.string();
+
+      updateGUI();
   }
 }
 

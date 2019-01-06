@@ -13,6 +13,7 @@ protected:
     boost::filesystem::path localDir_, remoteDir_;
 
     void execRemoteCmd(const std::string& cmd);
+    bool isValid() const;
 
 public:
     RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true);

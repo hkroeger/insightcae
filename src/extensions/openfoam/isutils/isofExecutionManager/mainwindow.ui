@@ -6,20 +6,196 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>884</width>
+    <height>1131</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_7">
+    <item>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="title">
+       <string>Remote</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QLabel" name="label">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Server:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="server">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>(unset)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLabel" name="label_2">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Directory:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="remoteDir">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>(unset)</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Local</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeView" name="local_files"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="sync_to_remote">
+          <property name="text">
+           <string>&gt;&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="sync_to_local">
+          <property name="text">
+           <string>&lt;&lt;</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="text">
+           <string>Remote</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeView" name="remote_files"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Command queue</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTableView" name="commands"/>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Log</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPlainTextEdit" name="log"/>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>884</width>
      <height>26</height>
     </rect>
    </property>
@@ -27,6 +203,7 @@
     <property name="title">
      <string>Remote</string>
     </property>
+    <addaction name="actionSet_local_directory"/>
     <addaction name="actionSelect_Remote_Directory"/>
    </widget>
    <widget class="QMenu" name="menuSync">
@@ -36,8 +213,17 @@
     <addaction name="action_syncLocalToRemote"/>
     <addaction name="action_syncRemoteToLocal"/>
    </widget>
+   <widget class="QMenu" name="menuCommands">
+    <property name="title">
+     <string>Commands</string>
+    </property>
+    <addaction name="actionCommand_into_queue"/>
+    <addaction name="actionCancel_queue"/>
+    <addaction name="actionRemove_remote_directory"/>
+   </widget>
    <addaction name="menuRemote"/>
    <addaction name="menuSync"/>
+   <addaction name="menuCommands"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionSelect_Remote_Directory">
@@ -53,6 +239,26 @@
   <action name="action_syncRemoteToLocal">
    <property name="text">
     <string>Remote =&gt; Local</string>
+   </property>
+  </action>
+  <action name="actionCommand_into_queue">
+   <property name="text">
+    <string>Command into queue...</string>
+   </property>
+  </action>
+  <action name="actionCancel_queue">
+   <property name="text">
+    <string>Cancel queue</string>
+   </property>
+  </action>
+  <action name="actionRemove_remote_directory">
+   <property name="text">
+    <string>Remove remote directory</string>
+   </property>
+  </action>
+  <action name="actionSet_local_directory">
+   <property name="text">
+    <string>Set local directory...</string>
    </property>
   </action>
  </widget>

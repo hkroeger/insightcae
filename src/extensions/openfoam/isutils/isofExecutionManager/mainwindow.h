@@ -16,6 +16,9 @@ class MainWindow
 {
   Q_OBJECT
 
+protected:
+    void updateGUI();
+
 public:
   explicit MainWindow(QWidget *parent = nullptr);
   ~MainWindow();

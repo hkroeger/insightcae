@@ -33,6 +33,11 @@ void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
     }
 }
 
+bool RemoteExecutionConfig::isValid() const
+{
+    return (!server_.empty())&&(!remoteDir_.empty());
+}
+
 RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig)
   : localDir_(location)
 {
@@ -83,7 +88,7 @@ void RemoteExecutionConfig::syncToRemote()
 {
     std::ostringstream cmd;
 
-    cmd << "rsync -avz --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
+    cmd << "rsync -avz --delete --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
 
     std::system(cmd.str().c_str());
 }

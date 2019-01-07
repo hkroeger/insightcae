@@ -40,7 +40,7 @@ if [ "$LABEL" != "PORT" ]; then
  echo While determining local port: expected "PORT", got "$LABEL"
 fi
 
-ssh -L$LOCALPORT:localhost:$PORT $SERVER "cd $DIR ; pvserver --server-port=$PORT" &
+ssh -L$LOCALPORT:localhost:$PORT $SERVER "cd $DIR ; pvserver --use-offscreen-rendering --server-port=$PORT" &
 sleep 1
 
 paraview --server-url=cs://localhost:$LOCALPORT --data=$DIR/system/controlDict

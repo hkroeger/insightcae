@@ -110,7 +110,7 @@ void RemoteExecutionConfig::queueRemoteCommand(const std::string& command)
 
 void RemoteExecutionConfig::waitRemoteQueueFinished()
 {
-    execRemoteCmd("tsp -c");
+    execRemoteCmd("while tsp -c; do tsp -C; done");
 }
 
 void RemoteExecutionConfig::cancelRemoteCommands()

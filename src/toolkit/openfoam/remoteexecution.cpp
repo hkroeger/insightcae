@@ -92,7 +92,7 @@ void RemoteExecutionConfig::syncToRemote()
 {
     std::ostringstream cmd;
 
-    cmd << "rsync -avz --delete --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
+    cmd << "rsync -avz --delete --exclude 'processor*' --exclude '*.foam' --exclude 'postProcessing' --exclude '*.socket' . \""<<server_<<":"<<remoteDir_.string()<<"\"";
 
     std::system(cmd.str().c_str());
 }

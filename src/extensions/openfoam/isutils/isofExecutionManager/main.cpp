@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     typedef std::vector<string> StringList;
 
-    StringList cmds;
+    StringList cmds, icmds;
 
     // Declare the supported options.
     po::options_description desc("Allowed options");
@@ -58,12 +58,15 @@ int main(int argc, char *argv[])
     ("help,h", "produce help message")
 
     //("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
+     ("meta-file,m", po::value<std::string>(), "use the specified remote execution config file instead of \"meta.foam\"")
      ("case-dir,d", po::value<std::string>(), "case location")
      ("sync-remote,r", "sync current case to remote location")
      ("sync-local,l", "sync from remote location to current case")
      ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
-     ("command,q", po::value<StringList>(&cmds), "add this command to remote execution queue")
+     ("command,q", po::value<StringList>(&cmds), "add this command to remote execution queue (will be executed after the previous command has finished successfully)")
+     ("immediate-command,i", po::value<StringList>(&icmds), "add this command to remote execution queue (execute in parallel without waiting for the previous command)")
      ("wait,w", "wait for command queue completion")
+     ("wait-last,W", "wait for the last added command to finish")
      ("cancel,c", "cancel remote commands (remove all from queue)")
      ("clean,x", "remove the remote case directory from server")
     ;
@@ -92,6 +95,10 @@ int main(int argc, char *argv[])
     if (vm.count("include-processor-dirs")>0)
         include_processor=true;
 
+    bfs_path mf="";
+    if (vm.count("meta-file"))
+        mf=vm["meta-file"].as<std::string>();
+
     try
     {
         if (
@@ -101,7 +108,11 @@ int main(int argc, char *argv[])
                 &&
                 vm.count("command")==0
                 &&
+                vm.count("immediate-command")==0
+                &&
                 vm.count("wait")==0
+                &&
+                vm.count("wait-last")==0
                 &&
                 vm.count("clean")==0
                 &&
@@ -115,7 +126,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            insight::RemoteExecutionConfig re(location);
+            insight::RemoteExecutionConfig re(location, true, mf);
 
             if(vm.count("cancel"))
                 re.cancelRemoteCommands();
@@ -125,16 +136,25 @@ int main(int argc, char *argv[])
 
             if (vm.count("command"))
             {
-//                StringList cmds=vm["command"].as<StringList>();
-
                 for (const auto& c: cmds)
                 {
                     re.queueRemoteCommand(c);
                 }
             }
 
+            if (vm.count("immediate-command"))
+            {
+                for (const auto& c: icmds)
+                {
+                    re.queueRemoteCommand(c, false);
+                }
+            }
+
             if (vm.count("wait"))
                 re.waitRemoteQueueFinished();
+
+            if (vm.count("wait-last"))
+                re.waitLastCommandFinished();
 
             if(vm.count("sync-local"))
                 re.syncToLocal();

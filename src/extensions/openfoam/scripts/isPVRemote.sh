@@ -2,23 +2,28 @@
 
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 SERVER=localhost
+META=meta.foam
 
-if [ -e meta.foam ]; then
-read SERVER DIR << EOF
-$(cat meta.foam|tr ':' ' ')
-EOF
-fi
-
-while getopts "h?s" opt; do
+while getopts "h?m:" opt; do
     case "$opt" in
     h|\?)
-        echo "-s: server address"
+        echo "-m: meta file name"
         exit 0
         ;;
-    s)  SERVER=s
+    m)  META=$OPTARG
         ;;
     esac
 done
+
+if [ -e $META ]; then
+read SERVER DIR << EOF
+$(cat $META|tr ':' ' ')
+EOF
+echo "connecting to $DIR on $SERVER (read from $META)"
+else
+ echo "Remote exec config file $META not found!"
+ exit -1
+fi
 
 #OBJ=${@:$OPTIND:1}
 #TOOL=${@:$OPTIND+1:1}

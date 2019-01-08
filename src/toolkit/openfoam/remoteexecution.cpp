@@ -38,28 +38,32 @@ bool RemoteExecutionConfig::isValid() const
     return (!server_.empty())&&(!remoteDir_.empty());
 }
 
-RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig)
+RemoteExecutionConfig::RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig, const bfs_path& meta_file)
   : localDir_(location)
 {
-  boost::filesystem::path metafile = location/"meta.foam";
+  if (meta_file.empty()) {
+      meta_file_ = location/"meta.foam";
+  } else {
+      meta_file_ = meta_file;
+  }
 
-  CurrentExceptionContext ce("reading configuration for remote execution in  directory "+location.string()+" from file "+metafile.string());
+  CurrentExceptionContext ce("reading configuration for remote execution in  directory "+location.string()+" from file "+meta_file_.string());
 
-  if (!boost::filesystem::exists(metafile))
+  if (!boost::filesystem::exists(meta_file_))
   {
       if (needConfig)
           throw insight::Exception("There is no remote execution configuration file present!");
   }
   else {
-    std::ifstream f(metafile.c_str());
+    std::ifstream f(meta_file_.c_str());
     std::string line;
     if (!getline(f, line))
-      throw insight::Exception("Could not read first line from file "+metafile.string());
+      throw insight::Exception("Could not read first line from file "+meta_file_.string());
 
     std::vector<std::string> pair;
     boost::split(pair, line, boost::is_any_of(":"));
     if (pair.size()!=2)
-      throw insight::Exception("Error reading "+metafile.string()+": expected <server>:<remote directory>, got "+line);
+      throw insight::Exception("Error reading "+meta_file_.string()+": expected <server>:<remote directory>, got "+line);
 
     server_=pair[0];
     remoteDir_=pair[1];
@@ -102,15 +106,23 @@ void RemoteExecutionConfig::syncToLocal()
     std::system(cmd.str().c_str());
 }
 
-void RemoteExecutionConfig::queueRemoteCommand(const std::string& command)
+void RemoteExecutionConfig::queueRemoteCommand(const std::string& command, bool waitForPreviousFinished)
 {
-  execRemoteCmd("tsp -d " + command);
+  if (waitForPreviousFinished)
+      execRemoteCmd("tsp -d " + command);
+  else
+      execRemoteCmd("tsp " + command);
 }
 
 
 void RemoteExecutionConfig::waitRemoteQueueFinished()
 {
     execRemoteCmd("while tsp -c; do tsp -C; done");
+}
+
+void RemoteExecutionConfig::waitLastCommandFinished()
+{
+    execRemoteCmd("tsp -t");
 }
 
 void RemoteExecutionConfig::cancelRemoteCommands()

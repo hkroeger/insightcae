@@ -79,14 +79,30 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::updateVisualizationElements
 
     insight::cad::cache.initRebuild();
 
+    arma::mat ex=p.geometry.ex;
+    arma::mat er=p.geometry.er;
+    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, er);
+    double Lc=p.geometry.D*p.mesh.core_fraction;
+//    double al = M_PI/2.;
+//    double lc = ::cos ( al/2. ) *Lc;
+
+    auto cyl=cad::Cylinder::create(
+          cad::matconst(p.geometry.p0),
+          cad::matconst(ex * p.geometry.L),
+          cad::scalarconst( p.geometry.D ),
+      true,
+      false
+    );
+
+    auto core=cad::Box::create(
+          cad::matconst(p.geometry.p0),
+          cad::matconst(ex * p.geometry.L),
+          cad::matconst(Lc*ey), cad::matconst(Lc*er),
+          cad::BoxCentering(false, true, true)
+          );
+
     mt->onAddFeature( "blockMeshDict_Cylinder",
-                        cad::Cylinder::create(
-                          cad::matconst(p.geometry.p0),
-                          cad::matconst(p.geometry.ex * p.geometry.L),
-                          cad::scalarconst( p.geometry.D ),
-                          true,
-                          false
-                        ),
+                        cad::Compound::create(cad::CompoundFeatureList({cyl, core})),
                         true );
 
     insight::cad::cache.finishRebuild();

@@ -7,22 +7,36 @@ META=meta.foam
 while getopts "h?m:" opt; do
     case "$opt" in
     h|\?)
-        echo "-m: meta file name"
+        echo "Usage $0 [-m] [<meta file name>]"
+        echo "-m <file name>: meta file name"
         exit 0
         ;;
     m)  META=$OPTARG
         ;;
     esac
 done
+shift $((OPTIND-1))
+
+if [ -e "$1" ]; then
+ META=$1
+fi
 
 if [ -e $META ]; then
-read SERVER DIR << EOF
+
+ cd $(dirname $META)
+ META=$(basename $META)
+
+ read SERVER DIR << EOF
 $(cat $META|tr ':' ' ')
 EOF
-echo "connecting to $DIR on $SERVER (read from $META)"
+
+ echo "connecting to $DIR on $SERVER (read from $META)"
+
 else
+
  echo "Remote exec config file $META not found!"
  exit -1
+
 fi
 
 #OBJ=${@:$OPTIND:1}

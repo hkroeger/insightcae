@@ -57,6 +57,7 @@ PointList P_4(const PointList& pts, int p1, int p2, int p3, int p4);
 PointList P_8(const Point& p1, const Point& p2, const Point& p3, const Point& p4,
 	      const Point& p5, const Point& p6, const Point& p7, const Point& p8);
 
+OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints);
 
 class Patch
 {
@@ -81,6 +82,8 @@ public:
   void clear();
   
   Patch* transformed(const arma::mat& tm, bool inv=false) const;
+
+  inline const FaceList& faces() const { return faces_; }
 
   std::vector<OFDictData::data> 
   bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
@@ -286,6 +289,17 @@ public:
       const Point& c0, const Point& c1, 
       Point startPoint=vec3(0,0,0),
       arma::mat axis=vec3(0,0,1)
+    );
+};
+
+class CircularEdge_Center
+: public ArcEdge
+{
+public:
+    CircularEdge_Center
+    (
+      const Point& c0, const Point& c1,
+      const Point& center
     );
 };
 
@@ -512,6 +526,7 @@ public:
   
   void removePatch(const std::string& name);
   
+  OFDictData::dict& getBlockMeshDict(insight::OFdicts& dictionaries) const;
   virtual void addIntoDictionaries(insight::OFdicts& dictionaries) const;
   
   static std::string category() { return "Meshing"; }

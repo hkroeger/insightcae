@@ -21,6 +21,8 @@
 #include "base/boost_include.h"
 #include "blockmesh_templates.h"
 
+#include "base/units.h"
+
 using namespace boost;
 using namespace boost::assign;
 
@@ -309,6 +311,8 @@ void blockMeshDict_Box::create_bmd()
 
 
 
+
+
 defineType ( blockMeshDict_Sphere );
 addToOpenFOAMCaseElementFactoryTable (blockMeshDict_Sphere );
 
@@ -320,13 +324,13 @@ blockMeshDict_Sphere::blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet
 
 void blockMeshDict_Sphere::create_bmd()
 {
-//    this->setDefaultPatch(p_.mesh.defaultPatchName);
-/*
-    double al = M_PI/2.;
+//    this->setDefaultPatch(p_.mesh.outerPatchName);
 
-    arma::mat ex=p_.geometry.ex;
-    arma::mat ez=p_.geometry.ez;
+    arma::mat ex=p_.geometry.ex; ex/=arma::norm(ex, 2);
+    arma::mat ez=p_.geometry.ez; ez/=arma::norm(ez, 2);
     arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
+
+    std::cout<<ex<<ey<<ez<<p_.geometry.D<<std::endl;
 
     double ang = ::acos(arma::norm_dot(ex, ez))*180./M_PI;
     if (fabs(90.-ang)>1e-3)
@@ -338,94 +342,176 @@ void blockMeshDict_Sphere::create_bmd()
         ez=eznew;
     }
 
-    std::map<int, Point> pts;
-    pts = boost::assign::map_list_of
-          ( 0, 	p_.geometry.p0 )
-          ( 1, 	p_.geometry.p0 +p_.geometry.L*ex )
-          ( 2, 	p_.geometry.p0 +p_.geometry.L*ex +p_.geometry.W*ey )
-          ( 3, 	p_.geometry.p0 +p_.geometry.W*ey )
-          ( 4, 	p_.geometry.p0 +p_.geometry.H*ez )
-          ( 5, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex )
-          ( 6, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.L*ex +p_.geometry.W*ey )
-          ( 7, 	p_.geometry.p0 +p_.geometry.H*ez +p_.geometry.W*ey )
-          .convert_to_container<std::map<int, Point> >()
-          ;
+    int nu=std::max(1, p_.mesh.n_u/4);
+    double Lc=p_.geometry.core_fraction*p_.geometry.D;
+    double Lr=0.5 *( p_.geometry.D - Lc*std::sqrt(2.) );
+    double du=Lc/double(nu);
 
-    Patch *Xp=NULL, *Xm=NULL, *Yp=NULL, *Ym=NULL, *Zp=NULL, *Zm=NULL;
-
-    if ( p_.mesh.XpPatchName!="" ) {
-        Xp=&this->addOrDestroyPatch ( p_.mesh.XpPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.XmPatchName!="" ) {
-        Xm=&this->addOrDestroyPatch ( p_.mesh.XmPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.YpPatchName!="" ) {
-        Yp=&this->addOrDestroyPatch ( p_.mesh.YpPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.YmPatchName!="" ) {
-        Ym=&this->addOrDestroyPatch ( p_.mesh.YmPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.ZpPatchName!="" ) {
-        Zp=&this->addOrDestroyPatch ( p_.mesh.ZpPatchName, new bmd::Patch() );
-    }
-    if ( p_.mesh.ZmPatchName!="" ) {
-        Zm=&this->addOrDestroyPatch ( p_.mesh.ZmPatchName, new bmd::Patch() );
-    }
-
-    int nx, ny, nz;
-    if (const auto* cu = boost::get<Parameters::mesh_type::resolution_cubical_type>(&p_.mesh.resolution))
-      {
-        double dx=std::max(std::max(p_.geometry.L, p_.geometry.W), p_.geometry.H)/double(cu->n_max);
-        nx=std::ceil(p_.geometry.L/dx);
-        ny=std::ceil(p_.geometry.W/dx);
-        nz=std::ceil(p_.geometry.H/dx);
-      }
-    else if (const auto* cus = boost::get<Parameters::mesh_type::resolution_cubical_size_type>(&p_.mesh.resolution))
-      {
-        nx=std::ceil(p_.geometry.L/cus->delta);
-        ny=std::ceil(p_.geometry.W/cus->delta);
-        nz=std::ceil(p_.geometry.H/cus->delta);
-      }
-    else if (const auto* ind = boost::get<Parameters::mesh_type::resolution_individual_type>(&p_.mesh.resolution))
-      {
-        nx=ind->nx;
-        ny=ind->ny;
-        nz=ind->nz;
-      }
-    else
-      {
-        throw insight::Exception("Internal error: unhandled selection.");
-      }
+    GradingAnalyzer ga(p_.mesh.grad_r);
+    int nr = ga.calc_n(du, Lr);
 
 
-    Block& bl = this->addBlock
+    arma::mat c = p_.geometry.center;
+    // core
+    this->addBlock
                 (
                     new Block ( P_8 (
-                                    pts[0], pts[1], pts[2], pts[3],
-                                    pts[4], pts[5], pts[6], pts[7]
-                                ),
-                                nx, ny, nz
-                                )
+          c + 0.5*Lc*(-ex-ey-ez), c + 0.5*Lc*(-ex+ey-ez), c + 0.5*Lc*(-ex+ey+ez), c + 0.5*Lc*(-ex-ey+ez),
+          c + 0.5*Lc*(+ex-ey-ez), c + 0.5*Lc*(+ex+ey-ez), c + 0.5*Lc*(+ex+ey+ez), c + 0.5*Lc*(+ex-ey+ez)
+                    ),
+                  nu, nu, nu
+                  )
                 );
-    if ( Xp ) {
-        Xp->addFace ( bl.face ( "1265" ) );
+
+    const double R=0.5*p_.geometry.D;
+    auto op = [&](double theta, double phi) -> arma::mat {
+        return c + R*(ez*std::cos(theta) + ex*std::sin(theta)*std::cos(phi) + ey*std::sin(theta)*std::sin(phi));
+      };
+
+    // outer blocks
+
+    outer_ = &this->addOrDestroyPatch ( p_.mesh.outerPatchName, new bmd::Patch() );
+
+    double theta1=p_.mesh.theta_trans*SI::deg, theta2=180*SI::deg-theta1;
+    // -X
+    {
+      auto bpts = P_8 (
+      op(theta2, 225*SI::deg), op(theta2, 135*SI::deg), op(theta1, 135*SI::deg), op(theta1, 225*SI::deg),
+      c + 0.5*Lc*(-ex -ey -ez), c + 0.5*Lc*(-ex +ey -ez), c + 0.5*Lc*(-ex +ey +ez), c + 0.5*Lc*(-ex -ey +ez)
+      );
+      Block& bl = this->addBlock(
+          new Block ( bpts,
+           nu, nu, nr,
+           { 1, 1, 1./p_.mesh.grad_r }
+          )
+      );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[1], bpts[2], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[3], c ) );
+
+      outer_->addFace(bl.face("0321"));
     }
-    if ( Xm ) {
-        Xm->addFace ( bl.face ( "0473" ) );
+
+
+    // +X
+    {
+      auto bpts = P_8 (
+      op(theta2, 315*SI::deg), op(theta2, 45*SI::deg), op(theta1, 45*SI::deg), op(theta1, 315*SI::deg),
+      c + 0.5*Lc*(ex -ey -ez), c + 0.5*Lc*(ex +ey -ez), c + 0.5*Lc*(ex +ey +ez), c + 0.5*Lc*(ex -ey +ez)
+      );
+      Block& bl =this->addBlock
+                (
+                    new Block ( bpts,
+                      nu, nu, nr,
+                      { 1, 1, 1./p_.mesh.grad_r },
+                      "", true
+                  )
+                );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[1], bpts[2], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[3], c ) );
+      outer_->addFace(bl.face("0321"));
     }
-    if ( Yp ) {
-        Yp->addFace ( bl.face ( "0154" ) );
+
+    // -Y
+    {
+      auto bpts = P_8 (
+      op(theta2, 225*SI::deg), op(theta2, 315*SI::deg), op(theta1, 315*SI::deg), op(theta1, 225*SI::deg),
+      c + 0.5*Lc*(-ey -ex -ez), c + 0.5*Lc*(-ey +ex -ez), c + 0.5*Lc*(-ey +ex +ez), c + 0.5*Lc*(-ey -ex +ez)
+      );
+      Block& bl =this->addBlock
+                (
+                    new Block ( bpts,
+                      nu, nu, nr,
+                      { 1, 1, 1./p_.mesh.grad_r },
+                      "", true
+                  )
+                );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
+      outer_->addFace(bl.face("0321"));
     }
-    if ( Ym ) {
-        Ym->addFace ( bl.face ( "2376" ) );
+
+    // +Y
+    {
+      auto bpts = P_8 (
+       op(theta2, 135*SI::deg), op(theta2, 45*SI::deg), op(theta1, 45*SI::deg), op(theta1, 135*SI::deg),
+       c + 0.5*Lc*(+ey -ex -ez), c + 0.5*Lc*(+ey +ex -ez), c + 0.5*Lc*(+ey +ex +ez), c + 0.5*Lc*(+ey -ex +ez)
+      );
+      Block& bl =this->addBlock
+                (
+                    new Block ( bpts,
+                      nu, nu, nr,
+                      { 1, 1, 1./p_.mesh.grad_r }/*,
+                      "", true*/
+                  )
+                );
+      this->addEdge ( new CircularEdge_Center ( bpts[0], bpts[1], c ) );
+      this->addEdge ( new CircularEdge_Center ( bpts[2], bpts[3], c ) );
+      outer_->addFace(bl.face("0321"));
     }
-    if ( Zp ) {
-        Zp->addFace ( bl.face ( "4567" ) );
+
+
+    // -Z
+    {
+      auto bpts = P_8 (
+      op(theta2, 225*SI::deg), op(theta2, 315*SI::deg), op(theta2, 45*SI::deg), op(theta2, 135*SI::deg),
+      c + 0.5*Lc*(-ez -ex -ey), c + 0.5*Lc*(-ez +ex -ey), c + 0.5*Lc*(-ez +ex +ey), c + 0.5*Lc*(-ez -ex +ey)
+      );
+      Block& bl =this->addBlock
+                (
+                    new Block ( bpts,
+                      nu, nu, nr,
+                      { 1, 1, 1./p_.mesh.grad_r }
+                  )
+                );
+      outer_->addFace(bl.face("0321"));
     }
-    if ( Zm ) {
-        Zm->addFace ( bl.face ( "0321" ) );
+
+    // +Z
+    {
+      auto bpts = P_8 (
+       op(theta1, 225*SI::deg), op(theta1, 315*SI::deg), op(theta1, 45*SI::deg), op(theta1, 135*SI::deg),
+       c + 0.5*Lc*(+ez -ex -ey), c + 0.5*Lc*(+ez +ex -ey), c + 0.5*Lc*(+ez +ex +ey), c + 0.5*Lc*(+ez -ex +ey)
+      );
+      Block& bl =this->addBlock
+                (
+                    new Block ( bpts,
+                      nu, nu, nr,
+                      { 1, 1, 1./p_.mesh.grad_r },
+                                "", true
+                  )
+                );
+      outer_->addFace(bl.face("0321"));
     }
-*/
+}
+
+void blockMeshDict_Sphere::addIntoDictionaries ( OFdicts& dictionaries ) const
+{
+    BlockMeshTemplate::addIntoDictionaries(dictionaries);
+
+    OFDictData::dict& bmd = getBlockMeshDict(dictionaries);
+
+    OFDictData::dict geom;
+    OFDictData::dict sphere;
+    sphere["type"]="searchableSphere";
+    sphere["centre"]=OFDictData::vector3(p_.geometry.center);
+    sphere["radius"]=p_.geometry.D*0.5;
+    geom["sphere"]=sphere;
+    bmd["geometry"]=geom;
+
+    OFDictData::list pfaces;
+    PointMap pts(allPoints_);
+    numberVertices(pts);
+    for (const auto& f: outer_->faces())
+      {
+        pfaces.push_back("project");
+        pfaces.push_back( bmdEntry(f, pts) );
+        pfaces.push_back("sphere");
+      }
+    bmd["faces"]=pfaces;
 }
 
 

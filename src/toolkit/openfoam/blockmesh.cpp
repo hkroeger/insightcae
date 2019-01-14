@@ -618,6 +618,24 @@ CircularEdge::CircularEdge
 }
 
 
+CircularEdge_Center::CircularEdge_Center
+(
+  const Point& c0, const Point& c1,
+  const Point& center
+)
+: ArcEdge(c0, c1, vec3(0,0,0))
+{
+  double radius=arma::norm(c0-center, 2);
+  double r2=arma::norm(c1-center, 2);
+  if (fabs(radius-r2)>1e-6)
+    throw insight::Exception("The two points on the circular edge do not have the same distance from the center!");
+  arma::mat axis = arma::cross(c0, c1);
+
+  arma::mat mp=0.5*(c0+c1);
+  arma::mat rm=mp-center; rm/=arma::norm(rm, 2);
+  midpoint_=center+rm*radius;
+}
+
 /*
 class GenArcEdge
 : public ArcEdge
@@ -762,6 +780,16 @@ Patch* Patch::transformed(const arma::mat& tm, bool inv) const
     np->addFace(npl);
   }
   return np.release();
+}
+
+OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints)
+{
+  OFDictData::list res;
+  for (const auto& p: pts)
+    {
+      res.push_back( allPoints.find(p)->second );
+    }
+  return res;
 }
 
 
@@ -1089,17 +1117,22 @@ void blockMesh::numberVertices(PointMap& pts) const
        }
 }
 
-void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
+OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) const
 {
-  PointMap pts(allPoints_);
-  numberVertices(pts);
-  
   std::string bmdLoc="constant/polyMesh/blockMeshDict";
   if (OFversion()>=500)
   {
       bmdLoc="system/blockMeshDict";
   }
-  OFDictData::dict& blockMeshDict=dictionaries.addDictionaryIfNonexistent(bmdLoc);
+  return dictionaries.addDictionaryIfNonexistent(bmdLoc);
+}
+
+void blockMesh::addIntoDictionaries(insight::OFdicts& dictionaries) const
+{
+  PointMap pts(allPoints_);
+  numberVertices(pts);
+  
+  OFDictData::dict& blockMeshDict=getBlockMeshDict(dictionaries);
 
   blockMeshDict["convertToMeters"]=scaleFactor_;
   

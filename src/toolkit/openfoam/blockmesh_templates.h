@@ -196,13 +196,21 @@ PARAMETERSET>>> blockMeshDict_Sphere Parameters
 
 geometry = set
 {
-    R = double 1.0 "[m] Radius"
+    D = double 1.0 "[m] Sphere diameter"
     center = vector(0 0 0) "[m] Sphere center"
+
+    core_fraction = double 0.2 "Edge length of the core block"
+
+    ex = vector (1 0 0) "X-Direction (first edge direction of core block)"
+    ez = vector (0 0 1) "Z-Direction (second edge direction of core block)"
 }
 
 mesh = set
 {
-    n_rad = int 10 "Number of cells in radial direction"
+    grad_r = double 1 "Grading towards outer boundary (ratio of outer cell length to inner cell length)"
+    n_u = int 10 "Number of cells in circumferential direction"
+
+    theta_trans = double 50 "latitude of the block border"
 
     outerPatchName = string "outer" "name of boundary patch."
 }
@@ -213,12 +221,14 @@ mesh = set
 protected:
     Parameters p_;
 
+    Patch* outer_;
 public:
     declareType ( "blockMeshDict_Sphere" );
 
     blockMeshDict_Sphere ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
 
     virtual void create_bmd();
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
 
     inline static ParameterSet defaultParameters()
     {

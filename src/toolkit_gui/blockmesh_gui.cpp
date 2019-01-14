@@ -111,5 +111,51 @@ void blockMeshDict_Cylinder_ParameterSet_Visualizer::updateVisualizationElements
 
 
 
+
+ParameterSet_VisualizerPtr blockMeshDict_Sphere_visualizer()
+{
+    return ParameterSet_VisualizerPtr( new blockMeshDict_Sphere_ParameterSet_Visualizer );
+}
+
+addStandaloneFunctionToStaticFunctionTable(OpenFOAMCaseElement, blockMeshDict_Sphere, visualizer, blockMeshDict_Sphere_visualizer);
+
+
+void blockMeshDict_Sphere_ParameterSet_Visualizer::update(const ParameterSet& ps)
+{
+    ParameterSet_Visualizer::update(ps);
+}
+
+void blockMeshDict_Sphere_ParameterSet_Visualizer::updateVisualizationElements(QoccViewWidget* vw, QModelTree* mt) const
+{
+
+    Parameters p(ps_);
+
+    insight::cad::cache.initRebuild();
+
+    arma::mat ex=p.geometry.ex;
+    arma::mat ez=p.geometry.ez;
+    arma::mat ey=BlockMeshTemplate::correct_trihedron(ex, ez);
+    double Lc=p.geometry.D*p.geometry.core_fraction;
+
+    auto sph=cad::Sphere::create(
+          cad::matconst(p.geometry.center),
+          cad::scalarconst( p.geometry.D )
+    );
+
+    auto core=cad::Box::create(
+          cad::matconst(p.geometry.center),
+          cad::matconst(Lc*ex), cad::matconst(Lc*ey), cad::matconst(Lc*ez),
+          cad::BoxCentering(true, true, true)
+          );
+
+    mt->onAddFeature( "blockMeshDict_Sphere",
+                        cad::Compound::create(cad::CompoundFeatureList({sph, core})),
+                        true );
+
+    insight::cad::cache.finishRebuild();
+}
+
+
+
 }
 }

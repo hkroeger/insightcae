@@ -48,6 +48,24 @@ public:
 
 
 
+
+class blockMeshDict_Sphere_ParameterSet_Visualizer
+ : public ParameterSet_Visualizer
+{
+public:
+    typedef blockMeshDict_Sphere::Parameters Parameters;
+    typedef std::map<std::string, cad::FeaturePtr> ItemList;
+
+protected:
+    ItemList items_;
+
+public:
+    virtual void update(const ParameterSet& ps);
+    virtual void updateVisualizationElements(QoccViewWidget*, QModelTree*) const;
+};
+
+
+
 }
 }
 

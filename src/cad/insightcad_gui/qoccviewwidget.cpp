@@ -721,6 +721,14 @@ void QoccViewWidget::connectModelTree(QModelTree* mt) const
           this, &QoccViewWidget::onSetResolution);
 }
 
+QSize QoccViewWidget::sizeHint() const
+{
+  QSize s;
+  s.setWidth(1024);
+  s.setHeight(768);
+  return s;
+}
+
 /*!
 \brief	Just fits the current window
 		This function just fits the current objects to the window, without

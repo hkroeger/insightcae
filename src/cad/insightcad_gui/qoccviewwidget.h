@@ -102,6 +102,8 @@ public:
 
   void connectModelTree(QModelTree* mt) const;
 
+  virtual QSize	sizeHint() const;
+
 Q_SIGNALS:
 
   void initialized();

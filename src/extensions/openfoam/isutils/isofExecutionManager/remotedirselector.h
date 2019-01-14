@@ -11,20 +11,6 @@ namespace Ui {
 }
 
 
-struct ServerInfo
-{
-    std::string serverName_;
-    bfs_path defaultDir_;
-
-    ServerInfo(
-                std::string serverName,
-                bfs_path defaultDir
-            );
-};
-
-extern std::vector<ServerInfo> servers;
-
-
 
 
 class MountRemote

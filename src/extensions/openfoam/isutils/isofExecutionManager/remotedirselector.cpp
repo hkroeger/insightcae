@@ -2,26 +2,12 @@
 #include "ui_remotedirselector.h"
 
 #include "base/exception.h"
+#include "openfoam/remoteexecution.h"
 #include <cstdlib>
 
 #include <QDebug>
 #include <QInputDialog>
 
-
-
-ServerInfo::ServerInfo(
-            std::string serverName,
-            bfs_path defaultDir
-        )
-    : serverName_(serverName), defaultDir_(defaultDir)
-{}
-
-
-std::vector<ServerInfo> servers = boost::assign::list_of
-        (ServerInfo("titanp", "/beegfs/hk354/SCRATCH"))
-        (ServerInfo("eremit", "/home/hk354/SCRATCH"))
-        (ServerInfo("einsiedel", "/home/hk354/SCRATCH"))
-        ;
 
 
 
@@ -49,8 +35,8 @@ RemoteDirSelector::RemoteDirSelector(QWidget *parent) :
 {
   ui->setupUi(this);
 
-  for (const auto& s: servers)
-    ui->server->addItem(s.serverName_.c_str());
+  for (const auto& s: insight::remoteServers)
+    ui->server->addItem( /*s.serverName_.c_str()*/ s.first.c_str() );
 
   mountpoint_ = boost::filesystem::unique_path( boost::filesystem::temp_directory_path()/"remote-%%%%-%%%%-%%%%-%%%%" );
   boost::filesystem::create_directories(mountpoint_);
@@ -79,7 +65,7 @@ RemoteDirSelector::~RemoteDirSelector()
 
 std::string RemoteDirSelector::selectedServer()
 {
-    return ui->server->currentText().toStdString();
+    return insight::remoteServers[ui->server->currentText().toStdString()].serverName_;
 }
 
 
@@ -94,7 +80,7 @@ bfs_path RemoteDirSelector::selectedRemoteDir()
 void RemoteDirSelector::serverChanged(const QString& name)
 {
     mount_.reset();
-    mount_.reset(new MountRemote(mountpoint_, name.toStdString(), "/"));
+    mount_.reset(new MountRemote(mountpoint_, insight::remoteServers[name.toStdString()].serverName_, "/"));
 
     QString mp=QString::fromStdString(boost::filesystem::absolute(mountpoint_).string());
     qDebug()<<mp;
@@ -104,13 +90,15 @@ void RemoteDirSelector::serverChanged(const QString& name)
     qDebug()<<idx;
     ui->directory->setRootIndex(idx);
 
-    auto i=std::find_if(servers.begin(), servers.end(),
-                        [&](const ServerInfo& s)
-                         { return s.serverName_==name.toStdString(); }
-    );
-    if (i!=servers.end())
+//    auto i=std::find_if(insight::remoteServers.begin(),
+//                        insight::remoteServers.end(),
+//                        [&](const insight::RemoteServerInfo& s)
+//                         { return s.serverName_==name.toStdString(); }
+//    );
+    auto i = insight::remoteServers.find(name.toStdString());
+    if (i!=insight::remoteServers.end())
     {
-        auto ci = fs_model_->index( (mountpoint_/i->defaultDir_).c_str() );
+        auto ci = fs_model_->index( (mountpoint_/i->second.defaultDir_).c_str() );
         ui->directory->setCurrentIndex(ci);
     }
 

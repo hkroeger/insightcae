@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
      ("case-dir,d", po::value<std::string>(), "case location")
      ("sync-remote,r", "sync current case to remote location")
      ("sync-local,l", "sync from remote location to current case")
+     ("skip-timesteps,t", "exclude time steps while syncing to local directory\nBeware: during a subsequent sync-to-remote, the skipped time steps will be deleted!")
      ("include-processor-dirs,p", "if this flag is set, processor directories will be tranferred as well")
      ("command,q", po::value<StringList>(&cmds), "add this command to remote execution queue (will be executed after the previous command has finished successfully)")
      ("immediate-command,i", po::value<StringList>(&icmds), "add this command to remote execution queue (execute in parallel without waiting for the previous command)")
@@ -69,6 +70,7 @@ int main(int argc, char *argv[])
      ("wait-last,W", "wait for the last added command to finish")
      ("cancel,c", "cancel remote commands (remove all from queue)")
      ("clean,x", "remove the remote case directory from server")
+     ("list-remote,D", "list remote directory contents")
     ;
 
     po::positional_options_description p;
@@ -101,67 +103,88 @@ int main(int argc, char *argv[])
 
     try
     {
-        if (
-                vm.count("sync-remote")==0
-                &&
-                vm.count("sync-local")==0
-                &&
-                vm.count("command")==0
-                &&
-                vm.count("immediate-command")==0
-                &&
-                vm.count("wait")==0
-                &&
-                vm.count("wait-last")==0
-                &&
-                vm.count("clean")==0
-                &&
-                vm.count("cancel")==0
-                )
+      bool anything_done=false;
+
+        {
+            insight::RemoteExecutionConfig re(location, false, mf);
+
+            if (re.isValid())
+              {
+
+                if(vm.count("list-remote"))
+                  {
+                    auto files=re.remoteLS();
+                    for (const auto&f: files)
+                      {
+                        std::cout<<f<<std::endl;
+                      }
+                    anything_done=true;
+                  }
+
+                if(vm.count("cancel"))
+                  {
+                    re.cancelRemoteCommands();
+                    anything_done=true;
+                  }
+
+                if (vm.count("sync-remote"))
+                  {
+                    re.syncToRemote();
+                    anything_done=true;
+                  }
+
+                if (vm.count("command"))
+                {
+                    for (const auto& c: cmds)
+                    {
+                        re.queueRemoteCommand(c);
+                        anything_done=true;
+                    }
+                }
+
+                if (vm.count("immediate-command"))
+                {
+                    for (const auto& c: icmds)
+                    {
+                        re.queueRemoteCommand(c, false);
+                        anything_done=true;
+                    }
+                }
+
+                if (vm.count("wait"))
+                  {
+                    re.waitRemoteQueueFinished();
+                    anything_done=true;
+                  }
+
+                if (vm.count("wait-last"))
+                  {
+                    re.waitLastCommandFinished();
+                    anything_done=true;
+                  }
+
+                if(vm.count("sync-local"))
+                  {
+                    re.syncToLocal( (vm.count("skip-timesteps")>0) );
+                    anything_done=true;
+                  }
+
+                if(vm.count("clean"))
+                  {
+                    re.removeRemoteDir();
+                    anything_done=true;
+                  }
+              }
+        }
+
+      if (!anything_done)
         {
           QApplication app(argc, argv);
           MainWindow w;
           w.show();
           return app.exec();
         }
-        else
-        {
-            insight::RemoteExecutionConfig re(location, true, mf);
 
-            if(vm.count("cancel"))
-                re.cancelRemoteCommands();
-
-            if (vm.count("sync-remote"))
-                re.syncToRemote();
-
-            if (vm.count("command"))
-            {
-                for (const auto& c: cmds)
-                {
-                    re.queueRemoteCommand(c);
-                }
-            }
-
-            if (vm.count("immediate-command"))
-            {
-                for (const auto& c: icmds)
-                {
-                    re.queueRemoteCommand(c, false);
-                }
-            }
-
-            if (vm.count("wait"))
-                re.waitRemoteQueueFinished();
-
-            if (vm.count("wait-last"))
-                re.waitLastCommandFinished();
-
-            if(vm.count("sync-local"))
-                re.syncToLocal();
-
-            if(vm.count("clean"))
-                re.removeRemoteDir();
-        }
     }
     catch (insight::Exception e)
     {

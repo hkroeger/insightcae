@@ -16,23 +16,29 @@
   <property name="styleSheet">
    <string notr="true"/>
   </property>
-  <widget class="QWidget" name="">
-   <property name="geometry">
-    <rect>
-     <x>9</x>
-     <y>9</y>
-     <width>920</width>
-     <height>371</height>
-    </rect>
-   </property>
+  <widget class="QWidget" name="widget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QSplitter" name="splitter_5">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QoccViewWidget" name="occview" native="true"/>
-      <widget class="QModelTree" name="modeltree" native="true"/>
+      <widget class="QoccViewWidget" name="occview" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+      <widget class="QModelTree" name="modeltree" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
       <widget class="QTabWidget" name="BCTab">
        <property name="currentIndex">
         <number>0</number>
@@ -145,7 +151,7 @@
            </widget>
            <widget class="QGroupBox" name="parameter_editor">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>

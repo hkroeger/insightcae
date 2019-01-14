@@ -198,12 +198,18 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     
     onOFVersionChanged(ui->OFversion->currentText());
 
-    {
-      QList<int> s;
-      s << 5000 << 5000;
-      ui->splitter_2->setSizes(s);
-      ui->splitter_4->setSizes(s);
-    }
+    // global splitter
+    ui->splitter_5->setStretchFactor(0, 3);
+    ui->splitter_5->setStretchFactor(1, 0);
+    ui->splitter_5->setStretchFactor(2, 1);
+
+    // case element splitter
+    ui->splitter_2->setStretchFactor(0, 1);
+    ui->splitter_2->setStretchFactor(1, 1);
+
+    // BC tab splitter
+    ui->splitter_4->setStretchFactor(0, 1);
+    ui->splitter_4->setStretchFactor(1, 1);
 
     setWindowIcon(QIcon(":/logo_insight_cae.png"));
     updateTitle();

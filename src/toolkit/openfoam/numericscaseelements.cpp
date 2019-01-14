@@ -264,12 +264,27 @@ void FVNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.addDictionaryIfNonexistent("system/fvSolution");
   fvSolution.addSubDictIfNonexistent("solvers");
   fvSolution.addSubDictIfNonexistent("relaxationFactors");
-  
+
+  // potentialFoam config
+  OFDictData::dict& solvers=fvSolution.subDict("solvers");
+  solvers["Phi"]=stdSymmSolverSetup(1e-7, 0.01);
+
+  OFDictData::dict& PF=fvSolution.addSubDictIfNonexistent("potentialFlow");
+  PF["nNonOrthogonalCorrectors"]=10;
+  PF["pRefCell"]=0;
+  PF["pRefValue"]=0.0;
+  PF["PhiRefCell"]=0;
+  PF["PhiRefValue"]=0.0;
+
   OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
   fvSchemes.addSubDictIfNonexistent("ddtSchemes");
   fvSchemes.addSubDictIfNonexistent("gradSchemes");
   fvSchemes.addSubDictIfNonexistent("divSchemes");
-  fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
+  OFDictData::dict& laplacian=fvSchemes.addSubDictIfNonexistent("laplacianSchemes");
+
+  // potentialFoam
+  laplacian["laplacian(1,Phi)"]="Gauss linear limited 0.66";
+
   fvSchemes.addSubDictIfNonexistent("interpolationSchemes");
   fvSchemes.addSubDictIfNonexistent("snGradSchemes");
   fvSchemes.addSubDictIfNonexistent("fluxRequired");
@@ -343,16 +358,16 @@ void potentialFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
 
   OFDictData::dict& solvers=fvSolution.subDict("solvers");
-  solvers["Phi"]=GAMGPCGSolverSetup(1e-7, 0.01);
+//  solvers["Phi"]=GAMGPCGSolverSetup(1e-7, 0.01);
   solvers["p"]=GAMGPCGSolverSetup(1e-7, 0.01);
 
 
-  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("potentialFlow");
-  SIMPLE["nNonOrthogonalCorrectors"]=10;
-  SIMPLE["pRefCell"]=0;
-  SIMPLE["pRefValue"]=0.0;
-  SIMPLE["PhiRefCell"]=0;
-  SIMPLE["PhiRefValue"]=0.0;
+//  OFDictData::dict& SIMPLE=fvSolution.addSubDictIfNonexistent("potentialFlow");
+//  SIMPLE["nNonOrthogonalCorrectors"]=10;
+//  SIMPLE["pRefCell"]=0;
+//  SIMPLE["pRefValue"]=0.0;
+//  SIMPLE["PhiRefCell"]=0;
+//  SIMPLE["PhiRefValue"]=0.0;
 
 
   // ============ setup fvSchemes ================================

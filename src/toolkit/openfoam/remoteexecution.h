@@ -6,6 +6,25 @@
 namespace insight
 {
 
+
+struct RemoteServerInfo
+{
+    std::string serverName_;
+    bfs_path defaultDir_;
+};
+
+
+class RemoteServerList
+    : public std::map<std::string, RemoteServerInfo>
+{
+public:
+  RemoteServerList();
+};
+
+
+extern RemoteServerList remoteServers;
+
+
 class RemoteExecutionConfig
 {
 protected:
@@ -14,7 +33,6 @@ protected:
     boost::filesystem::path localDir_, remoteDir_;
 
     void execRemoteCmd(const std::string& cmd);
-    bool isValid() const;
 
 public:
     RemoteExecutionConfig(const boost::filesystem::path& location, bool needConfig=true, const bfs_path& meta_file="");
@@ -23,8 +41,10 @@ public:
     const boost::filesystem::path& localDir() const;
     const boost::filesystem::path& remoteDir() const;
 
+    std::vector<bfs_path> remoteLS() const;
+
     void syncToRemote();
-    void syncToLocal();
+    void syncToLocal(bool skipTimeSteps=false);
 
     void queueRemoteCommand(const std::string& command, bool waitForPreviousFinished=true);
     void waitRemoteQueueFinished();
@@ -32,6 +52,8 @@ public:
 
     void cancelRemoteCommands();
     void removeRemoteDir();
+
+    bool isValid() const;
 };
 
 }

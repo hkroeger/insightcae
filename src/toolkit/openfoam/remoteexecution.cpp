@@ -2,10 +2,68 @@
 
 #include <cstdlib>
 #include "base/exception.h"
+#include "base/tools.h"
 #include "openfoam/openfoamcase.h"
+#include "pstreams/pstream.h"
+
+#include <regex>
+
+using namespace std;
+using namespace boost;
 
 namespace insight
 {
+
+
+RemoteServerList::RemoteServerList()
+{
+  SharedPathList paths;
+  for ( const bfs_path& p: paths )
+  {
+      if ( exists(p) && is_directory ( p ) )
+      {
+          bfs_path serverlist = bfs_path(p) / "remoteservers.list";
+
+          if ( exists(serverlist) )
+          {
+              std::string line;
+              std::ifstream f(serverlist.c_str());
+              bool anything_read=false;
+              int i=0;
+              while (getline(f, line))
+                {
+                  i++;
+
+                  std::regex pat("([^ ]+) *= *([^ ]+):([^ ]+)");
+                  std::smatch m;
+                  std::regex_match(line, m, pat);
+                  if (m.size()!=4)
+                    {
+                      insight::Warning(boost::str(
+                               boost::format("invalid remote server config in line %d of file %s (content: \"%s\"). Ignored")
+                                                 % i % serverlist.string() % line
+                                                 ));
+                    }
+                  else
+                    {
+                      RemoteServerInfo s;
+                      std::string key= m[1];
+                      s.serverName_ = m[2];
+                      s.defaultDir_ = m[3];
+                      (*this)[key]=s;
+                      anything_read=true;
+                    }
+                }
+
+              if (!anything_read)
+                insight::Warning("Could not read valid data from "+serverlist.string());
+            }
+        }
+    }
+}
+
+
+RemoteServerList remoteServers;
 
 
 void RemoteExecutionConfig::execRemoteCmd(const std::string& command)
@@ -88,6 +146,40 @@ const boost::filesystem::path& RemoteExecutionConfig::remoteDir() const
 }
 
 
+std::vector<bfs_path> RemoteExecutionConfig::remoteLS() const
+{
+  std::vector<bfs_path> res;
+
+  redi::ipstream p_in;
+
+  p_in.open("ssh", { "ssh", server(), "ls", remoteDir().string() } );
+
+  if (!p_in.is_open())
+  {
+    throw insight::Exception("RemoteExecutionConfig::remoteLS: Failed to launch directory listing subprocess!");
+  }
+
+  std::string line;
+  while (std::getline(p_in.out(), line))
+  {
+    cout<<line<<endl;
+    res.push_back(line);
+  }
+  while (std::getline(p_in.err(), line))
+  {
+    cerr<<"ERR: "<<line<<endl;
+  }
+  p_in.close();
+
+  if (p_in.rdbuf()->status()!=0)
+  {
+    throw insight::Exception("RemoteExecutionConfig::remoteLS: command failed with nonzero return code.");
+  }
+
+  return res;
+}
+
+
 void RemoteExecutionConfig::syncToRemote()
 {
     std::ostringstream cmd;
@@ -97,11 +189,31 @@ void RemoteExecutionConfig::syncToRemote()
     std::system(cmd.str().c_str());
 }
 
-void RemoteExecutionConfig::syncToLocal()
+void RemoteExecutionConfig::syncToLocal(bool skipTimeSteps)
 {
     std::ostringstream cmd;
 
-    cmd << "rsync -avz --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' \""<<server_<<":"<<remoteDir_.string()<<"/*\" .";
+    cmd << "rsync -avz";
+
+    if (skipTimeSteps)
+      {
+        auto files = remoteLS();
+
+        // remove non-numbers
+        files.erase(remove_if(files.begin(), files.end(),
+                [&](const bfs_path& f)
+                {
+                  try { lexical_cast<double>(f.c_str()); return false; }
+                  catch (...) { return true; }
+                }), files.end());
+
+        for (const auto& f: files)
+          {
+            cmd<<" --exclude '"<<f.c_str()<<"'";
+          }
+      }
+
+    cmd<<" --exclude 'processor*' --exclude '*.foam' --exclude '*.socket' \""<<server_<<":"<<remoteDir_.string()<<"/*\" .";
 
     std::system(cmd.str().c_str());
 }

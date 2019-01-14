@@ -56,8 +56,14 @@ ISCADModel::ISCADModel(QWidget* parent, bool dobgparsing)
   bgparsethread_(),
   skipPostprocActions_(true)
 {
-    setFontFamily("Monospace");
+    setFontFamily("Courier New");
     setContextMenuPolicy(Qt::CustomContextMenu);
+
+    QFontMetrics fm(this->font());
+    sizehint_=QSize(
+          3*fm.width("abcdefghijklmnopqrstuvwxyz_-+*"),
+          fm.height()
+        );
     
     connect
         (
@@ -363,6 +369,12 @@ void ISCADModel::connectModelTree(QModelTree* mt) const
 }
 
 
+QSize ISCADModel::sizeHint() const
+{
+  return sizehint_;
+}
+
+
 void ISCADModel::onGraphicalSelectionChanged(QoccViewWidget* aView)
 {
 }
@@ -600,17 +612,22 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
 
     context_=new QoccViewerContext;
     viewer_=new QoccViewWidget(spl, context_->getContext());
+    viewer_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     spl->addWidget(viewer_);
     
     model_=new ISCADModel(spl);
+    model_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     spl->addWidget(model_);
 
     QSplitter* spl2=new QSplitter(Qt::Vertical, spl);
+    spl2->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     QGroupBox *gb;
     QVBoxLayout *vbox;
 
 
     gb=new QGroupBox("Controls");
+    gb->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+
     vbox = new QVBoxLayout;
     QWidget*shw=new QWidget;
     QHBoxLayout *shbox = new QHBoxLayout;
@@ -630,10 +647,10 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     vbox->addWidget(toggleSkipPostprocActions);
     
     gb->setLayout(vbox);
-//    gb->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum));
     spl2->addWidget(gb);
 
     gb=new QGroupBox("Model Tree");
+    gb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     vbox = new QVBoxLayout;
     modeltree_=new QModelTree(gb);
     modeltree_->setMinimumHeight(20);
@@ -655,19 +672,27 @@ ISCADModelEditor::ISCADModelEditor(QWidget* parent)
     gb->setLayout(vbox);
     spl2->addWidget(gb);
 
-    spl->addWidget(spl2);
-    
-    {
-      QList<int> sizes;
-      sizes << 4700 << 3500 << 1700;
-      spl->setSizes(sizes);
-    }
+    spl2->setStretchFactor(0,0);
+    spl2->setStretchFactor(1,4);
+    spl2->setStretchFactor(2,0);
 
-    {
-      QList<int> sizes;
-      sizes << 2000 << 6000 << 2000;
-      spl2->setSizes(sizes);
-    }
+    spl->addWidget(spl2);
+
+    spl->setStretchFactor(0,4);
+    spl->setStretchFactor(1,3);
+    spl->setStretchFactor(2,0);
+
+//    {
+//      QList<int> sizes;
+//      sizes << 4700 << 3500 << 1700;
+//      spl->setSizes(sizes);
+//    }
+
+//    {
+//      QList<int> sizes;
+//      sizes << 2000 << 6000 << 2000;
+//      spl2->setSizes(sizes);
+//    }
 
 
     connect(rebuildBtn, &QPushButton::clicked,

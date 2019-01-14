@@ -79,6 +79,8 @@ protected:
     
     bool skipPostprocActions_;
 
+    QSize sizehint_;
+
     
 protected:
     void clearDerivedData();
@@ -105,6 +107,8 @@ public:
     void connectModelTree(QModelTree* mt) const;
 
     inline bool isUnsaved() const { return unsaved_; }
+
+    virtual QSize sizeHint() const;
 
 public slots:
     void onGraphicalSelectionChanged(QoccViewWidget* aView);

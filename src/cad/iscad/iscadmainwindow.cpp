@@ -263,6 +263,8 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     fileModel_ = new QFileSystemModel;
     fileTree_=new QTreeView;
     fileTree_->setModel( fileModel_ );
+
+    fileTree_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     QStringList filter;
     filter << "*.iscad";
     fileModel_->setNameFilters( filter );
@@ -279,22 +281,27 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     spl->addWidget(fileTree_);
     
     modelTabs_=new QTabWidget;
+    modelTabs_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     modelTabs_->setTabsClosable(true);
     spl->addWidget(modelTabs_);
     connect(modelTabs_, &QTabWidget::currentChanged, this, &ISCADMainWindow::activateModel);
     connect(modelTabs_, &QTabWidget::tabCloseRequested, this, &ISCADMainWindow::onCloseModel);
 
-    {
-      QList<int> sizes;
-      sizes << 1500 << 8500;
-      spl->setSizes(sizes);
-    }
+//    {
+//      QList<int> sizes;
+//      sizes << 1500 << 8500;
+//      spl->setSizes(sizes);
+//    }
+    spl->setStretchFactor(0,0);
+    spl->setStretchFactor(1,1);
 
-    {
-      QList<int> sizes;
-      sizes << 9500 << 500;
-      spl0->setSizes(sizes);
-    }
+//    {
+//      QList<int> sizes;
+//      sizes << 9500 << 500;
+//      spl0->setSizes(sizes);
+//    }
+    spl0->setStretchFactor(0, 5);
+    spl0->setStretchFactor(1, 0);
 
     progressbar_=new QProgressBar;
     bgparsestopbtn_=new QPushButton("STOP");

@@ -212,6 +212,94 @@ void volumeDrag::addIntoDictionaries(OFdicts& dictionaries) const
 }
 
 
+
+
+defineType(fixedValueConstraint);
+addToOpenFOAMCaseElementFactoryTable(fixedValueConstraint);
+
+fixedValueConstraint::fixedValueConstraint( OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, ""),
+  p_(ps)
+{
+  name_="fixedValueConstraint"+p_.name;
+}
+
+void fixedValueConstraint::addIntoDictionaries ( OFdicts& dictionaries ) const
+{
+//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
+
+  OFDictData::dict cd;
+  cd["active"]=true;
+  cd["selectionMode"]="cellZone";
+  cd["cellZone"]=p_.zoneName;
+  OFDictData::dict fvd;
+
+  if (const auto* cs = boost::get<Parameters::value_scalar_type>(&p_.value))
+  {
+    cd["type"]="scalarFixedValueConstraint";
+    fvd[p_.fieldName]=cs->value;
+  }
+  else if (const auto* cs = boost::get<Parameters::value_vector_type>(&p_.value))
+  {
+    cd["type"]="vectorFixedValueConstraint";
+    fvd[p_.fieldName]=OFDictData::vector3(cs->value);
+  }
+
+  cd["fieldValues"]=fvd;
+
+  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  fvOptions[p_.name]=cd;
+}
+
+
+
+
+defineType(source);
+addToOpenFOAMCaseElementFactoryTable(source);
+
+source::source( OpenFOAMCase& c, const ParameterSet& ps)
+: OpenFOAMCaseElement(c, ""),
+  p_(ps)
+{
+  name_="source"+p_.name;
+}
+
+void source::addIntoDictionaries ( OFdicts& dictionaries ) const
+{
+//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
+
+  OFDictData::dict cd;
+  cd["active"]=true;
+  cd["selectionMode"]="cellZone";
+  cd["cellZone"]=p_.zoneName;
+  cd["volumeMode"]= p_.volumeMode == Parameters::specific ? "specific" : "absolute";
+
+  OFDictData::dict ijr;
+  if (const auto* cs = boost::get<Parameters::value_scalar_type>(&p_.value))
+  {
+    cd["type"]="scalarSemiImplicitSource";
+    OFDictData::list vals;
+    vals.push_back( cs->value_const );
+    vals.push_back( cs->value_lin );
+    ijr[p_.fieldName]=vals;
+  }
+  else if (const auto* cs = boost::get<Parameters::value_vector_type>(&p_.value))
+  {
+    cd["type"]="vectorSemiImplicitSource";
+    OFDictData::list vals;
+    vals.push_back( OFDictData::vector3(cs->value_const) );
+    vals.push_back( OFDictData::vector3(cs->value_lin) );
+    ijr[p_.fieldName]=vals;
+  }
+
+  cd["injectionRateSuSp"]=ijr;
+
+  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+  fvOptions[p_.name]=cd;
+}
+
   
 transportModel::transportModel(OpenFOAMCase& c)
 : OpenFOAMCaseElement(c, "transportModel")
@@ -312,7 +400,7 @@ PassiveScalar::PassiveScalar( OpenFOAMCase& c, const ParameterSet& ps )
 
 void PassiveScalar::addFields( OpenFOAMCase& c ) const
 {
-  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	FieldValue({0.0}), volField ) );
+  c.addField(p_.fieldname, 	FieldInfo(scalarField, 	dimless, 	FieldValue({p_.internal}), volField ) );
 }
 
 
@@ -858,6 +946,67 @@ void porousZone::addIntoDictionaries(OFdicts& dictionaries) const
 
 }
 
+
+
+
+
+
+defineType(customDictEntries);
+addToOpenFOAMCaseElementFactoryTable(customDictEntries);
+
+customDictEntries::customDictEntries( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, ""),
+  p_(ps)
+{
+    name_="customDictEntries";
+}
+
+OFDictData::dict& getOrCreateSubDict(OFDictData::dict& d, std::string path)
+{
+  if (path.empty())
+    {
+      return d;
+    }
+  else
+    {
+      auto i = path.find('/');
+      if (i==string::npos)
+        {
+          return d.addSubDictIfNonexistent(path);
+        }
+      else
+        {
+          string k = path.substr(0, i);
+          string p = path.substr(i+1);
+          return getOrCreateSubDict( d.addSubDictIfNonexistent(k), p );
+        }
+    }
+}
+
+void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
+{
+  for (const auto& e: p_.entries)
+    {
+      OFDictData::dict& dict
+        = dictionaries.addDictionaryIfNonexistent(e.dict);
+
+      string path, key;
+      auto i = e.path.rfind('/');
+      if (i==string::npos)
+        {
+          path="";
+          key=e.path;
+        }
+      else
+        {
+          path = path.substr(0, i);
+          key = path.substr(i+1);
+        }
+
+      OFDictData::dict& parent = getOrCreateSubDict(dict, path);
+      parent[key]=e.value;
+    }
+}
 
 
 

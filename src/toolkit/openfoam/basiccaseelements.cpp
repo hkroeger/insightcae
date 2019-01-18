@@ -999,8 +999,8 @@ void customDictEntries::addIntoDictionaries(OFdicts& dictionaries) const
         }
       else
         {
-          path = path.substr(0, i);
-          key = path.substr(i+1);
+          path = e.path.substr(0, i);
+          key = e.path.substr(i+1);
         }
 
       OFDictData::dict& parent = getOrCreateSubDict(dict, path);

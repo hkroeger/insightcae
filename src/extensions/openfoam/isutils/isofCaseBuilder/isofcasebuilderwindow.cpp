@@ -294,6 +294,8 @@ void isofCaseBuilderWindow::createCase
           cur->insertElement ( *ofc_ );
         }
     }
+
+  ofc_->modifyFilesOnDiskBeforeDictCreation( casepath_ );
     
   // insert BCs
   

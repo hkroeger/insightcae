@@ -240,6 +240,10 @@ int OpenFOAMCaseElement::OFversion() const
   return OFcase().OFversion();
 }
 
+void OpenFOAMCaseElement::modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase&, const boost::filesystem::path& ) const
+{
+}
+
 void OpenFOAMCaseElement::modifyMeshOnDisk(const OpenFOAMCase&, const boost::filesystem::path&) const
 {
 }
@@ -249,7 +253,7 @@ void OpenFOAMCaseElement::modifyCaseOnDisk(const OpenFOAMCase&, const boost::fil
 }
 
 
-void OpenFOAMCaseElement::addFields( OpenFOAMCase& c ) const
+void OpenFOAMCaseElement::addFields( OpenFOAMCase& ) const
 {
 }
 
@@ -259,7 +263,7 @@ OpenFOAMCaseElement::OpenFOAMCaseElement(OpenFOAMCase& c, const std::string& nam
 {
 }
 
-bool OpenFOAMCaseElement::providesBCsForPatch(const std::string& patchName) const
+bool OpenFOAMCaseElement::providesBCsForPatch(const std::string&) const
 {
   return false;
 }
@@ -606,6 +610,20 @@ bool OpenFOAMCase::hasCyclicBC() const
 {
   std::set<CyclicPairBC*> cyclics = const_cast<OpenFOAMCase*>(this)->findElements<CyclicPairBC>();
   return (cyclics.size()>0);
+}
+
+
+void OpenFOAMCase::modifyFilesOnDiskBeforeDictCreation ( const boost::filesystem::path& location ) const
+{
+  for (boost::ptr_vector<CaseElement>::const_iterator i=elements_.begin();
+      i!=elements_.end(); i++)
+  {
+    const OpenFOAMCaseElement *e= dynamic_cast<const OpenFOAMCaseElement*>(&(*i));
+    if (e)
+    {
+      e->modifyFilesOnDiskBeforeDictCreation(*this, location);
+    }
+  }
 }
 
 

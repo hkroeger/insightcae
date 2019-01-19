@@ -836,6 +836,7 @@ public:
 
 
 
+
 class customDictEntries
 : public OpenFOAMCaseElement
 {
@@ -862,6 +863,43 @@ public:
   declareType("customDictEntries");
   customDictEntries(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
   virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+
+  static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+
+  static std::string category() { return "Custom"; }
+};
+
+
+
+class copyFiles
+: public OpenFOAMCaseElement
+{
+
+public:
+#include "basiccaseelements__copyFiles__Parameters.h"
+
+/*
+PARAMETERSET>>> copyFiles Parameters
+
+files = array [ set {
+ source = path "" "File or directory which shall be copied into the case."
+ target = string "constant/polyMesh" "Target location (relative to case directory)"
+} ] *0 "Array of copy file operations"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+  declareType("copyFiles");
+  copyFiles(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+  virtual void addIntoDictionaries(OFdicts& dictionaries) const;
+  virtual void modifyFilesOnDiskBeforeDictCreation ( const OpenFOAMCase& cm, const boost::filesystem::path& location ) const;
 
   static ParameterSet defaultParameters()
     {

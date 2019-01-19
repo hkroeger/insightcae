@@ -414,6 +414,37 @@ OFDictData::dict surfaceIntegrate::functionObjectDict() const
 }
 
 
+
+defineType(fieldMinMax);
+addToOpenFOAMCaseElementFactoryTable(fieldMinMax);
+
+fieldMinMax::fieldMinMax(OpenFOAMCase& c,  const ParameterSet& ps )
+: outputFilterFunctionObject(c, ps),
+  p_(ps)
+{
+}
+
+OFDictData::dict fieldMinMax::functionObjectDict() const
+{
+//  insight::Warning("incomplete implementation");
+
+  OFDictData::dict fod;
+  fod["type"]="fieldMinMax";
+
+  OFDictData::list libl; libl.push_back("\"libfieldFunctionObjects.so\"");
+  fod["functionObjectLibs"]=libl;
+
+  fod["writeFields"]=false;
+
+
+  OFDictData::list fl; fl.resize(p_.fields.size());
+  copy(p_.fields.begin(), p_.fields.end(), fl.begin());
+  fod["fields"]=fl;
+
+  return fod;
+}
+
+
 defineType(cuttingPlane);
 addToOpenFOAMCaseElementFactoryTable(cuttingPlane);
 

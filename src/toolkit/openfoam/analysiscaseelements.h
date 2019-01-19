@@ -276,6 +276,49 @@ public:
 };
 
 
+
+
+
+
+
+/** ===========================================================================
+ * function object front end for volume integrate
+ */
+class fieldMinMax
+: public outputFilterFunctionObject
+{
+
+public:
+#include "analysiscaseelements__fieldMinMax__Parameters.h"
+
+/*
+PARAMETERSET>>> fieldMinMax Parameters
+inherits outputFilterFunctionObject::Parameters
+
+fields = array [ string "U" "Name of a field" ]*1 "Names of fields for which minima and maxima will be reported"
+
+<<<PARAMETERSET
+*/
+
+protected:
+  Parameters p_;
+
+public:
+    declareType("fieldMinMax");
+    fieldMinMax(OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+
+    virtual OFDictData::dict functionObjectDict() const;
+
+    static std::string category() {
+        return "Postprocessing";
+    }
+
+    static ParameterSet defaultParameters() {
+        return Parameters::makeDefault();
+    }
+};
+
+
 /** ===========================================================================
  * function object front end for live cutting plane sampling during run
  */

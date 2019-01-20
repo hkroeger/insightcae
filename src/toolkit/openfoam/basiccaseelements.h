@@ -359,6 +359,8 @@ PARAMETERSET>>> PassiveScalar Parameters
 
 fieldname = string "F" "Name of the passive scalar field"
 internal = double 0.0 "Default internal value"
+underrelax = double 1.0 "Underrelaxation factor"
+bounded01 = bool true "If enabled, a 01 bounded scheme will be used for interpolation."
 
 <<<PARAMETERSET
 */

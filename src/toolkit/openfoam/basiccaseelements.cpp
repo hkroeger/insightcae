@@ -424,12 +424,37 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     
     OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
     OFDictData::dict& divSchemes = fvSchemes.addSubDictIfNonexistent("divSchemes");
-    divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
+
+    if (p_.underrelax < 1.)
+      {
+        if (p_.bounded01)
+          divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
+        else
+          divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear 1";
+      }
+    else
+      {
+        OFDictData::dict& gradSchemes = fvSchemes.addSubDictIfNonexistent("gradSchemes");
+
+        divSchemes["div(phi,"+p_.fieldname+")"]="Gauss linearUpwind grad("+p_.fieldname+")";
+        gradSchemes["grad(T)"]="cellLimited Gauss linear 1";
+      }
+
 
     OFDictData::dict& fvSolution=dictionaries.lookupDict("system/fvSolution");
     OFDictData::dict& solvers=fvSolution.subDict("solvers");
     solvers[p_.fieldname]=smoothSolverSetup(1e-6, 0.);
 
+    OFDictData::dict& relax=fvSolution.addSubDictIfNonexistent("relaxationFactors");
+    if (OFversion()<210)
+    {
+      relax[p_.fieldname]=p_.underrelax;
+    }
+    else
+    {
+      OFDictData::dict& eqnRelax=relax.addSubDictIfNonexistent("equations");
+      eqnRelax[p_.fieldname]=p_.underrelax;
+    }
 }
 
 

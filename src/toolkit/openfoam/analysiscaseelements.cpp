@@ -92,8 +92,8 @@ void outputFilterFunctionObject::addIntoDictionaries(OFdicts& dictionaries) cons
 
 void outputFilterFunctionObject::evaluate
 (
-  OpenFOAMCase& cm, const boost::filesystem::path& location, ResultSetPtr& results, 
-  const std::string& shortDescription
+  OpenFOAMCase& , const boost::filesystem::path& , ResultSetPtr& ,
+  const std::string&
 ) const
 {
 }

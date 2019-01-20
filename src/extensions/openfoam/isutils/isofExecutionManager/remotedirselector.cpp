@@ -22,7 +22,7 @@ MountRemote::MountRemote(const bfs_path& mountpoint, const std::string& server, 
 
 MountRemote::~MountRemote()
 {
-    std::string cmd="fusermount -u \""+mountpoint_.string()+"\"";
+    std::string cmd="fusermount -z -u \""+mountpoint_.string()+"\"";
     std::system(cmd.c_str());
 }
 

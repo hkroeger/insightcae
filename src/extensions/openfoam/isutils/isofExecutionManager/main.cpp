@@ -34,6 +34,7 @@
 
 #include <QApplication>
 #include "mainwindow.h"
+#include "remotedirselector.h"
 
 using namespace std;
 using namespace insight;
@@ -60,6 +61,8 @@ int main(int argc, char *argv[])
     //("ofe,o", po::value<std::string>(), "use specified OpenFOAM environment instead of detected")
      ("meta-file,m", po::value<std::string>(), "use the specified remote execution config file instead of \"meta.foam\"")
      ("case-dir,d", po::value<std::string>(), "case location")
+     ("create-remote-temp", po::value<std::string>(), "create a unique remote directory name on the specified server and store in meta file. This will be skipped, if config exists already, except if -f is given.")
+     ("force-create-remote-temp,f", "force creation, if config exists already.")
      ("sync-remote,r", "sync current case to remote location")
      ("sync-local,l", "sync from remote location to current case")
      ("skip-timesteps,t", "exclude time steps while syncing to local directory\nBeware: during a subsequent sync-to-remote, the skipped time steps will be deleted!")
@@ -100,6 +103,52 @@ int main(int argc, char *argv[])
     bfs_path mf="";
     if (vm.count("meta-file"))
         mf=vm["meta-file"].as<std::string>();
+
+    if (vm.count("create-remote-temp"))
+      {
+        bf::path meta=mf;
+        if (meta.empty()) meta="meta.foam";
+
+        if (bf::exists(meta)&&(!vm.count("force-create-remote-temp")))
+          {
+            insight::Warning("remote config exists already: creation of temporary remote directory will be skipped.");
+          }
+        else
+          {
+
+            string server=vm["create-remote-temp"].as<std::string>();
+
+            auto i = insight::remoteServers.find(server);
+            if (i==insight::remoteServers.end())
+              {
+                throw insight::Exception("Remote server \""+server+"\" not found in configuration!");
+              }
+
+            bf::path absloc=bf::canonical(bf::absolute(location));
+            string casedirname = absloc.filename().string();
+
+            bf::path mountpoint = boost::filesystem::unique_path( boost::filesystem::temp_directory_path()/"remote-%%%%-%%%%-%%%%-%%%%" );
+            boost::filesystem::create_directories(mountpoint);
+
+            bf::path remote_dir;
+            {
+             MountRemote m(mountpoint, i->second.serverName_, i->second.defaultDir_);
+
+             bf::path target_dir = boost::filesystem::unique_path( mountpoint/("isofexecution-"+casedirname+"-%%%%%%%%") );
+
+             remote_dir =
+                 i->second.defaultDir_ / boost::filesystem::make_relative(mountpoint, target_dir);
+
+             boost::filesystem::create_directories(target_dir);
+            }
+            boost::filesystem::remove(mountpoint);
+
+            std::cout << remote_dir << std::endl;
+
+            std::ofstream cfg(meta.c_str());
+            cfg << i->second.serverName_ << ":" << remote_dir.string();
+          }
+      }
 
     try
     {

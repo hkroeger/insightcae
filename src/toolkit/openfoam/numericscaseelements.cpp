@@ -2224,11 +2224,11 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   OFDictData::dict& relax=fvSolution.subDict("relaxationFactors");
   if (OFversion()<210)
   {
-    relax["p_rgh"]=0.3;
+    relax["p_rgh"]=0.7;
     relax["rho"]=0.9;
-    relax["U"]=0.7;
+    relax["U"]=0.2;
     relax["k"]=0.7;
-    relax["h"]=0.7;
+    relax["h"]=0.2;
     relax["R"]=0.7;
     relax["omega"]=0.7;
     relax["epsilon"]=0.7;
@@ -2237,11 +2237,11 @@ void buoyantSimpleFoamNumerics::addIntoDictionaries(OFdicts& dictionaries) const
   else
   {
     OFDictData::dict fieldRelax, eqnRelax;
-    fieldRelax["p_rgh"]=0.3;
+    fieldRelax["p_rgh"]=0.7;
     fieldRelax["rho"]=0.9;
-    eqnRelax["U"]=0.7;
+    eqnRelax["U"]=0.2;
     eqnRelax["k"]=0.7;
-    eqnRelax["h"]=0.7;
+    eqnRelax["h"]=0.2;
     eqnRelax["R"]=0.7;
     eqnRelax["omega"]=0.7;
     eqnRelax["epsilon"]=0.7;

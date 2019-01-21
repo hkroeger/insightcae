@@ -731,7 +731,7 @@ void OpenFOAMCase::createOnDisk
         ok_to_create=false;
         for (boost::filesystem::path fp: *restrictToFiles)
         {
-            if ( dictpath == fp ) ok_to_create=true;
+            if ( boost::filesystem::equivalent(dictpath, fp) ) ok_to_create=true;
         }
     }
     

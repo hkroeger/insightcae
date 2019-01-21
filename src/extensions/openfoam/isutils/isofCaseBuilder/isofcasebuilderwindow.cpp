@@ -295,7 +295,8 @@ void isofCaseBuilderWindow::createCase
         }
     }
 
-  ofc_->modifyFilesOnDiskBeforeDictCreation( casepath_ );
+  if (!restrictToFiles)
+    ofc_->modifyFilesOnDiskBeforeDictCreation( casepath_ );
     
   // insert BCs
   

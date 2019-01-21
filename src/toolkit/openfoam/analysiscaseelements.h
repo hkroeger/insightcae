@@ -194,7 +194,7 @@ public:
 PARAMETERSET>>> volumeIntegrate Parameters
 inherits outputFilterFunctionObject::Parameters
 
-fields = array [ string "alpha.phase1" "Name of a field" ]*1 "Names of fields to average over volume"
+fields = array [ string "alpha.phase1" "Name of a field" ]*1 "Names of fields to process over volume"
 domain = selectablesubset {{
 
  wholedomain set { }
@@ -204,6 +204,8 @@ domain = selectablesubset {{
  }
 
 }} wholedomain "select domain of integration"
+
+operation = selection ( sum sumMag average volAverage volIntegrate min max CoV) volIntegrate "operation to execute on data"
 
 <<<PARAMETERSET
 */

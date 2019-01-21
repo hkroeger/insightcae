@@ -352,7 +352,24 @@ OFDictData::dict volumeIntegrate::functionObjectDict() const
     }
 
   fod["writeFields"]=false;
-  fod["operation"]="volIntegrate";
+  string op;
+  if (p_.operation == Parameters::volIntegrate)
+    op="volIntegrate";
+  else if (p_.operation == Parameters::sum)
+    op="sum";
+  else if (p_.operation == Parameters::sumMag)
+    op="sumMag";
+  else if (p_.operation == Parameters::average)
+    op="average";
+  else if (p_.operation == Parameters::volAverage)
+    op="volAverage";
+  else if (p_.operation == Parameters::min)
+    op="min";
+  else if (p_.operation == Parameters::max)
+    op="max";
+  else if (p_.operation == Parameters::CoV)
+    op="CoV";
+  fod["operation"]=op;
 
   OFDictData::list fl; fl.resize(p_.fields.size());
   copy(p_.fields.begin(), p_.fields.end(), fl.begin());

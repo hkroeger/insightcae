@@ -37,6 +37,34 @@ using namespace boost::fusion;
 namespace insight
 {
 
+
+cellSetOption_Selection::cellSetOption_Selection(const Parameters& p)
+  : p_(p)
+{}
+
+
+void cellSetOption_Selection::insertSelection(OFDictData::dict& d)
+{
+  if (const auto* all = boost::get<Parameters::selection_all_type>(&p_.selection))
+    {
+      d["selectionMode"]="all";
+    }
+  else if (const auto* cz = boost::get<Parameters::selection_cellZone_type>(&p_.selection))
+    {
+      d["selectionMode"]="cellZone";
+      d["cellZone"]=cz->zoneName;
+    }
+  else if (const auto* cs = boost::get<Parameters::selection_cellSet_type>(&p_.selection))
+    {
+      d["selectionMode"]="cellSet";
+      d["cellSet"]=cs->setName;
+    }
+  else
+    {
+      throw insight::Exception("Internal error: unhandled selection");
+    }
+}
+
     
     
     
@@ -425,19 +453,26 @@ void PassiveScalar::addIntoDictionaries(OFdicts& dictionaries) const
     OFDictData::dict& fvSchemes=dictionaries.addDictionaryIfNonexistent("system/fvSchemes");
     OFDictData::dict& divSchemes = fvSchemes.addSubDictIfNonexistent("divSchemes");
 
-    if (p_.underrelax < 1.)
+    if (const auto* fo = boost::get<Parameters::scheme_firstorder_type>(&p_.scheme))
       {
-        if (p_.bounded01)
-          divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
-        else
-          divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear 1";
+        divSchemes["div(phi,"+p_.fieldname+")"]="Gauss upwind";
       }
-    else
+    else if (const auto* so = boost::get<Parameters::scheme_secondorder_type>(&p_.scheme))
       {
-        OFDictData::dict& gradSchemes = fvSchemes.addSubDictIfNonexistent("gradSchemes");
+        if (p_.underrelax < 1.)
+          {
+            OFDictData::dict& gradSchemes = fvSchemes.addSubDictIfNonexistent("gradSchemes");
 
-        divSchemes["div(phi,"+p_.fieldname+")"]="Gauss linearUpwind grad("+p_.fieldname+")";
-        gradSchemes["grad(T)"]="cellLimited Gauss linear 1";
+            divSchemes["div(phi,"+p_.fieldname+")"]="Gauss linearUpwind grad("+p_.fieldname+")";
+            gradSchemes["grad(T)"]="cellLimited Gauss linear 1";
+          }
+        else
+          {
+            if (so->bounded01)
+              divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear01 1";
+            else
+              divSchemes["div(phi,"+p_.fieldname+")"]="Gauss limitedLinear 1";
+          }
       }
 
 
@@ -968,6 +1003,59 @@ void porousZone::addIntoDictionaries(OFdicts& dictionaries) const
   pc["DarcyForchheimerCoeffs"]=dfc;
 
   porosityProperties[p_.name]=pc;
+
+}
+
+
+
+
+
+defineType(limitQuantities);
+addToOpenFOAMCaseElementFactoryTable(limitQuantities);
+
+limitQuantities::limitQuantities( OpenFOAMCase& c, const ParameterSet& ps )
+: OpenFOAMCaseElement(c, ""),
+  p_(ps)
+{
+    name_="limitQuantities"+p_.name;
+}
+
+void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
+{
+//  OFDictData::dict& controlDict=dictionaries.lookupDict("system/controlDict");
+//  controlDict.getList("libs").insertNoDuplicate( "\"libvolumeDragfvOption.so\"" );
+  OFDictData::dict& fvOptions=dictionaries.addDictionaryIfNonexistent("system/fvOptions");
+
+  cellSetOption_Selection sel(p_.cells);
+
+  if (const auto* limT = boost::get<Parameters::limitTemperature_limit_type>(&p_.limitTemperature))
+    {
+      OFDictData::dict cdT;
+      cdT["type"]="limitTemperature";
+      cdT["active"]=true;
+
+      OFDictData::dict c;
+      sel.insertSelection(c);
+      c["min"]=limT->min;
+      c["max"]=limT->max;
+      cdT["limitTemperatureCoeffs"]=c;
+
+      fvOptions[p_.name+"_temp"]=cdT;
+    }
+
+  if (const auto* limU = boost::get<Parameters::limitVelocity_limit_type>(&p_.limitVelocity))
+    {
+      OFDictData::dict cdU;
+      cdU["type"]="limitVelocity";
+      cdU["active"]=true;
+
+      OFDictData::dict c;
+      sel.insertSelection(c);
+      c["max"]=limU->max;
+      cdU["limitVelocityCoeffs"]=c;
+
+      fvOptions[p_.name+"_vel"]=cdU;
+    }
 
 }
 

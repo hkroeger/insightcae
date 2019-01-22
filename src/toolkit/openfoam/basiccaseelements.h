@@ -35,6 +35,34 @@
 namespace insight 
 {
 
+class cellSetOption_Selection
+{
+public:
+#include "basiccaseelements__cellSetOption_Selection__Parameters.h"
+/*
+PARAMETERSET>>> cellSetOption_Selection Parameters
+
+selection = selectablesubset {{
+ all set {}
+ cellZone set {
+  zoneName = string "zone" "Name of the cell zone"
+ }
+ cellSet set {
+  setName = string "set" "Name of the cell set"
+ }
+}} all "Selection of cells"
+
+<<<PARAMETERSET
+*/
+protected:
+  Parameters p_;
+
+public:
+  cellSetOption_Selection(const Parameters& p);
+
+  void insertSelection(OFDictData::dict& d);
+};
+
 
 class gravity
     : public OpenFOAMCaseElement
@@ -359,8 +387,15 @@ PARAMETERSET>>> PassiveScalar Parameters
 
 fieldname = string "F" "Name of the passive scalar field"
 internal = double 0.0 "Default internal value"
+
 underrelax = double 1.0 "Underrelaxation factor"
-bounded01 = bool true "If enabled, a 01 bounded scheme will be used for interpolation."
+
+scheme = selectablesubset {{
+ firstorder set {}
+ secondorder set {
+   bounded01 = bool true "If enabled, a 01 bounded scheme will be used for interpolation."
+ }
+}} secondorder "Accuracy/stability trade off"
 
 <<<PARAMETERSET
 */
@@ -835,6 +870,55 @@ public:
     static std::string category() { return "Body Force"; }
 };
 
+
+
+
+
+class limitQuantities
+    : public OpenFOAMCaseElement
+{
+
+public:
+#include "basiccaseelements__limitQuantities__Parameters.h"
+/*
+PARAMETERSET>>> limitQuantities Parameters
+
+name = string "limitQty" "Name prefix of the fvOptions"
+
+cells = includedset "cellSetOption_Selection::Parameters" "selection of the cells, inside which the quantities are limited"
+
+limitTemperature = selectablesubset {{
+ none set {}
+ limit set {
+  min = double 0 "lower limit of temperature to enforce"
+  max = double 1e10 "upper limit of temperature to enforce"
+ }
+}} limit "Type of temperature limit"
+
+limitVelocity = selectablesubset {{
+ none set {}
+ limit set {
+  max = double 1e10 "upper limit of velocity magnitude"
+ }
+}} limit "Type of temperature limit"
+
+<<<PARAMETERSET
+*/
+
+protected:
+    Parameters p_;
+
+public:
+    declareType ( "limitQuantities" );
+    limitQuantities ( OpenFOAMCase& c, const ParameterSet& ps = Parameters::makeDefault() );
+    virtual void addIntoDictionaries ( OFdicts& dictionaries ) const;
+
+    static ParameterSet defaultParameters()
+    {
+        return Parameters::makeDefault();
+    }
+    static std::string category() { return "Tweaks"; }
+};
 
 
 

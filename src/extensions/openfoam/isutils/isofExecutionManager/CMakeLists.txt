@@ -14,5 +14,11 @@ set(isofExecutionManager_SOURCES
 
 add_executable(isofExecutionManager ${isofExecutionManager_SOURCES})
 target_link_libraries(isofExecutionManager ${Boost_LIBRARIES} toolkit Qt5::Widgets toolkit_gui)
+target_include_directories(isofExecutionManager
+  PUBLIC ${QT_INCLUDES}
+  PUBLIC ${Boost_INCLUDE_DIR}
+  PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 install(TARGETS isofExecutionManager RUNTIME DESTINATION bin)

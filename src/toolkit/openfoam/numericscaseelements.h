@@ -82,6 +82,20 @@ endTime = double 1000.0 "Maximum end time of simulation"
 
 decompositionMethod = selection ( simple hierarchical metis scotch ) scotch "Parallel decomposition method"
 
+mapFieldsConfig = selectablesubset {{
+ none set {}
+ map set {
+  patchMap = array [ set {
+     targetPatch = string "lid" "Name of patch in target mesh"
+     sourcePatch = string "movingWall" "Name of patch in source mesh"
+  }] *0 "Pairs of patches for mapping"
+
+  cuttingPatches = array [
+    string "fixedWalls" "Name of patch in target mesh"
+  ] *0 "Patches whose values shall be interpolated from source interior"
+ }
+}} map "Mapfield configuration"
+
 <<<PARAMETERSET
 */
 

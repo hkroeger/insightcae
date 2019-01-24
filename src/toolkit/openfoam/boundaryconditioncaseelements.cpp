@@ -1532,33 +1532,41 @@ void PressureOutletBC::addIntoFieldDictionaries ( OFdicts& dictionaries ) const
             &&
             ( get<0> ( field.second ) ==scalarField )
         ) {
-            if ( boost::get<Parameters::behaviour_uniform_type>(&p.behaviour) ) 
-            {
-                BC["type"]=OFDictData::data ( "fixedValue" );
-                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );                
-            } 
-            else if ( boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour) ) 
-            {
-                BC["type"]=OFDictData::data ( "fixedMeanValue" );
-                BC["meanValue"]=OFDictData::data ( p.pressure );
+            if ( (field.first=="p") && (OFcase().hasField("pd")||OFcase().hasField("p_rgh")))
+              {
+                BC["type"]=OFDictData::data ( "calculated" );
                 BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
-            } 
-            else if ( const Parameters::behaviour_waveTransmissive_type* wt = 
-                 boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) ) 
-            {
-                BC["type"]="waveTransmissive";
-                BC["psi"]="thermo:psi";
-                BC["gamma"]=wt->kappa;
-                BC["lInf"]=wt->L;
-                BC["fieldInf"]=OFDictData::data ( p.pressure );
-                BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
-            }
-            else if ( const Parameters::behaviour_removePRGHHydrostaticPressure_type* wt =
-                     boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
-            {
-                BC["type"]=OFDictData::data ( "prghTotalPressure" );
-                BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
-            }
+              }
+            else
+              {
+                if ( boost::get<Parameters::behaviour_uniform_type>(&p.behaviour) )
+                {
+                    BC["type"]=OFDictData::data ( "fixedValue" );
+                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                }
+                else if ( boost::get<Parameters::behaviour_fixMeanValue_type>(&p.behaviour) )
+                {
+                    BC["type"]=OFDictData::data ( "fixedMeanValue" );
+                    BC["meanValue"]=OFDictData::data ( p.pressure );
+                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                }
+                else if ( const Parameters::behaviour_waveTransmissive_type* wt =
+                     boost::get<Parameters::behaviour_waveTransmissive_type>(&p.behaviour) )
+                {
+                    BC["type"]="waveTransmissive";
+                    BC["psi"]="thermo:psi";
+                    BC["gamma"]=wt->kappa;
+                    BC["lInf"]=wt->L;
+                    BC["fieldInf"]=OFDictData::data ( p.pressure );
+                    BC["value"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                }
+                else if ( const Parameters::behaviour_removePRGHHydrostaticPressure_type* wt =
+                         boost::get<Parameters::behaviour_removePRGHHydrostaticPressure_type>(&p.behaviour) )
+                {
+                    BC["type"]=OFDictData::data ( "prghTotalPressure" );
+                    BC["p0"]=OFDictData::data ( "uniform "+lexical_cast<std::string> ( p.pressure ) );
+                }
+              }
 
         } else if ( ( field.first=="rho" ) && ( get<0> ( field.second ) ==scalarField ) ) {
             BC["type"]=OFDictData::data ( "fixedValue" );

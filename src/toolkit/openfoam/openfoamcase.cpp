@@ -934,6 +934,11 @@ std::vector< string > OpenFOAMCase::fieldNames() const
   return fns;
 }
 
+bool OpenFOAMCase::hasField(const std::string& fname ) const
+{
+  createFieldListIfRequired();
+  return fields_.find ( fname ) != fields_.end();
+}
 
 void OpenFOAMCase::createFieldListIfRequired() const
 {

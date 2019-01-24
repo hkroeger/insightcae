@@ -438,6 +438,8 @@ public:
 
     std::vector<std::string> fieldNames() const;
 
+    bool hasField(const std::string& fname ) const;
+
     inline FieldInfo& field ( const std::string& fname )
     {
         createFieldListIfRequired();

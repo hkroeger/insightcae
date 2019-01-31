@@ -33,11 +33,15 @@
 #include "progrock/cppx/collections/options_boosted.h"
 
 
+#ifdef SWIG
+%template(TimeDirectoryList) std::map<double, boost::filesystem::path>;
+#endif
 
 namespace insight
 {
   
 typedef std::map<double, boost::filesystem::path> TimeDirectoryList;
+
 
 TimeDirectoryList listTimeDirectories(const boost::filesystem::path& dir);
 
@@ -675,7 +679,8 @@ void extrude2DMesh
   std::string sourcePatchName2="",
   bool wedgeInsteadOfPrism=false,
   double distance=1.0,
-  const arma::mat& offsetTranslation=vec3(0,0,0.5)
+  const arma::mat& offsetTranslation=vec3(0,0,0.5),
+  const arma::mat& fixedDirection = arma::mat()
 );
 
 /**

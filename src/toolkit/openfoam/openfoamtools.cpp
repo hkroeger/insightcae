@@ -2313,7 +2313,8 @@ void extrude2DMesh
   std::string sourcePatchName2,
   bool wedgeInsteadOfPrism,
   double distance,
-  const arma::mat& offsetTranslation
+  const arma::mat& offsetTranslation,
+  const arma::mat& fixedDirection
 )
 {  
   
@@ -2339,10 +2340,19 @@ void extrude2DMesh
   }
   else
   {
-    extrDict["extrudeModel"]="linearNormal";
     OFDictData::dict lnc;
     lnc["thickness"]=distance;
-    extrDict["linearNormalCoeffs"]=lnc;
+    if (fixedDirection.n_elem==3)
+      {
+        extrDict["extrudeModel"]="linearDirection";
+        lnc["direction"]=OFDictData::vector3(fixedDirection);
+        extrDict["linearDirectionCoeffs"]=lnc;
+      }
+    else
+      {
+        extrDict["extrudeModel"]="linearNormal";
+        extrDict["linearNormalCoeffs"]=lnc;
+      }
   }
 
 

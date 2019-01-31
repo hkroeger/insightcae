@@ -233,7 +233,9 @@ void AirfoilSection::createMesh(insight::OpenFOAMCase& cm)
   extrude2DMesh
   (
     cm, dir,
-    fb_
+    fb_,
+    "", false, 1.0,
+    vec3(0,0,0.5), vec3(0,0,1)
   );
 }
 

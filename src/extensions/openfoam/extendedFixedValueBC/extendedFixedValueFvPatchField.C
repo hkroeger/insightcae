@@ -64,6 +64,7 @@ extendedFixedValueFvPatchField<Type>::extendedFixedValueFvPatchField
     fixedValueFvPatchField<Type>(p, iF),
     vp_(FieldDataProvider<Type>::New(dict.lookup("source")))
 {
+#warning need to set sensible value here for potentialFoam to work...
   if (dict.found("value"))
   {
       fvPatchField<Type>::operator==(Field<Type>("value", dict, p.size()));

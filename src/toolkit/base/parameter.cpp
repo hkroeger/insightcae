@@ -192,7 +192,23 @@ rapidxml::xml_node<>* Parameter::appendToNode(const std::string& name, rapidxml:
       "name", 
       doc.allocate_string(name.c_str()))
     );
+
     return child;
+}
+
+bool Parameter::isPacked() const
+{
+  return false;
+}
+
+void Parameter::pack()
+{
+    // do nothing by default
+}
+
+void Parameter::unpack()
+{
+    // do nothing by default
 }
 
 
@@ -235,38 +251,6 @@ char PathName[] = "pathbase";
 
 
 
-defineType(PathParameter);
-addToFactoryTable(Parameter, PathParameter);
-
-PathParameter::PathParameter(const string& description)
-: SimpleParameter<boost::filesystem::path, PathName>(description)
-{
-}
-
-PathParameter::PathParameter(const path& value, const string& description)
-: SimpleParameter<boost::filesystem::path, PathName>(value, description)
-{
-}
-
-bool PathParameter::isPacked() const
-{
-  return false;
-}
-
-void PathParameter::pack()
-{
-}
-
-void PathParameter::unpack()
-{
-}
-
-Parameter* PathParameter::clone() const
-{
-    return new PathParameter(value_, description_.simpleLatex());
-}
-
-
 
   
 template<> defineType(DoubleParameter);
@@ -302,7 +286,39 @@ rapidxml::xml_node<> *Parameter::findNode(rapidxml::xml_node<>& father, const st
   return NULL;
 }
 
-template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode
+
+defineType(PathParameter);
+addToFactoryTable(Parameter, PathParameter);
+
+PathParameter::PathParameter(const string& description)
+: SimpleParameter<boost::filesystem::path, PathName>(description)
+{
+}
+
+PathParameter::PathParameter(const path& value, const string& description)
+: SimpleParameter<boost::filesystem::path, PathName>(value, description)
+{
+}
+
+bool PathParameter::isPacked() const
+{
+  return !(file_content_.empty());
+}
+
+void PathParameter::pack()
+{
+}
+
+void PathParameter::unpack()
+{
+}
+
+Parameter* PathParameter::clone() const
+{
+    return new PathParameter(value_, description_.simpleLatex());
+}
+
+rapidxml::xml_node<>* PathParameter::appendToNode
 (
   const std::string& name, 
   rapidxml::xml_document<>& doc, 
@@ -323,11 +339,20 @@ template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathNa
       "value", 
       doc.allocate_string(relpath.c_str())
     ));
+
+    if (isPacked())
+    {
+        child->append_attribute(doc.allocate_attribute
+        (
+          "content",
+          doc.allocate_string(file_content_.c_str()))
+        );
+    }
     return child;
   
 }
 
-template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
+void PathParameter::readFromNode
 (
   const std::string& name, 
   rapidxml::xml_document<>& doc, 
@@ -344,7 +369,7 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
     {
       if (abspath.is_relative())
       {
-	abspath = boost::filesystem::absolute(inputfilepath / abspath);
+        abspath = boost::filesystem::absolute(inputfilepath / abspath);
       }
   #if BOOST_VERSION < 104800
   #warning Conversion into canonical paths disabled!
@@ -355,6 +380,12 @@ template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode
     }
 //    cout<<"path="<<abspath<<endl;
     value_=abspath;
+
+    if (auto* a = child->first_attribute("content"))
+    {
+        file_content_ = a->value();
+    }
+
   }
 //  std::cout<<"done."<<std::endl;
 }

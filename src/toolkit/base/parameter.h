@@ -123,6 +123,10 @@ public:
 
     rapidxml::xml_node<> *findNode ( rapidxml::xml_node<>& father, const std::string& name );
     virtual Parameter* clone() const =0;
+
+    virtual bool isPacked() const;
+    virtual void pack();
+    virtual void unpack();
 };
 
 
@@ -264,7 +268,9 @@ typedef SimpleParameter<std::string, StringName> StringParameter;
 class PathParameter
     : public SimpleParameter<boost::filesystem::path, PathName>
 {
+    // store content of file, if packed
     std::string file_content_;
+
 public:
     declareType ( "path" );
 
@@ -277,11 +283,11 @@ public:
 
     virtual Parameter* clone() const;
 
-//   virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-//     boost::filesystem::path inputfilepath) const;
-//
-//   virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
-//     boost::filesystem::path inputfilepath);
+    virtual rapidxml::xml_node<>* appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+     boost::filesystem::path inputfilepath) const;
+
+    virtual void readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+     boost::filesystem::path inputfilepath);
 };
 
 
@@ -299,11 +305,11 @@ public:
 
 
 
-template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-    boost::filesystem::path inputfilepath) const;
+//template<> rapidxml::xml_node<>* SimpleParameter<boost::filesystem::path, PathName>::appendToNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+//    boost::filesystem::path inputfilepath) const;
 
-template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node, 
-  boost::filesystem::path inputfilepath);
+//template<> void SimpleParameter<boost::filesystem::path, PathName>::readFromNode(const std::string& name, rapidxml::xml_document<>& doc, rapidxml::xml_node<>& node,
+//  boost::filesystem::path inputfilepath);
 
 
 

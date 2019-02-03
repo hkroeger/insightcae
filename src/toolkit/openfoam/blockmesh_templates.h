@@ -63,9 +63,9 @@ geometry = set
 {
     D = double 1.0 "[m] Diameter"
     L = double 1.0 "[m] Length"
-    p0 = vector(0 0 0) "[m] Center point"
-    ex = vector(0 0 1) "[m] Axial direction"
-    er = vector(1 0 0) "[m] Radial direction"
+    p0 = vector (0 0 0) "[m] Center point of base surface"
+    ex = vector (0 0 1) "[m] Axial direction"
+    er = vector (1 0 0) "[m] Radial direction"
 }
 
 mesh = set
@@ -102,6 +102,9 @@ public:
 
     double rCore() const;
 };
+
+
+
 
 
 

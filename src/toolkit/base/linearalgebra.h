@@ -344,7 +344,10 @@ struct compareArmaMat
   bool operator()(const arma::mat& v1, const arma::mat& v2) const;
 };
 
-
+struct CoordinateSystem
+{
+  arma::mat origin, ex, ey, ez;
+};
 //typedef std::map<arma::mat, int, CompMat> SortedMatMap;
 
 }

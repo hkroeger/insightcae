@@ -16,14 +16,19 @@ set(toolkit_gui_SRCS
     helpwidget.cpp
     of_clean_case.cpp
     snappyhexmesh_gui.cpp
+    blockmesh_curvedcylinder.cpp
+    blockmesh_tubemesh.cpp
     blockmesh_gui.cpp
 )
+
+file(GLOB_RECURSE toolkit_gui_HEADERS "*.h")
 
 SET(toolkit_gui_FORMS
     of_clean_case.ui
 )
 
 add_library(toolkit_gui SHARED ${toolkit_gui_SRCS} ${toolkit_gui_FORMS})
+add_PDL(toolkit_gui "${toolkit_gui_HEADERS}")
 
 target_link_libraries(toolkit_gui
  toolkit insightcad_gui

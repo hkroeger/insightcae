@@ -82,11 +82,13 @@ public:
   void clear();
   
   Patch* transformed(const arma::mat& tm, bool inv=false) const;
+  virtual Patch* clone() const;
 
   inline const FaceList& faces() const { return faces_; }
 
   std::vector<OFDictData::data> 
   bmdEntry(const PointMap& allPoints, const std::string& name, int OFversion) const;
+
 };
 
 class GradingAnalyzer
@@ -146,6 +148,7 @@ public:
   bmdEntry(const PointMap& allPoints, int OFversion) const;
 
   Block* transformed(const arma::mat& tm, bool inv=false) const;
+  virtual Block* clone() const;
   
   inline int nCells() const
   {
@@ -234,13 +237,18 @@ protected:
 public:
   Edge(const Point& c0, const Point& c1);
   virtual ~Edge();
-  
+
+  bool connectsPoints(const Point& c0, const Point& c1) const;
+  inline const Point& c0() const { return c0_; }
+  inline const Point& c1() const { return c1_; }
+
   virtual std::vector<OFDictData::data>
   bmdEntry(const PointMap& allPoints, int OFversion) const =0;
 
   virtual void registerPoints(blockMesh& bmd) const;
   
   virtual Edge* transformed(const arma::mat& tm) const =0;
+  virtual Edge* clone() const =0;
 
 };
 
@@ -256,6 +264,7 @@ public:
   virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
   virtual Edge* transformed(const arma::mat& tm) const;
+  virtual Edge* clone() const;
 };
 
 
@@ -277,6 +286,7 @@ public:
     virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
     virtual Edge* transformed(const arma::mat& tm) const;
+    virtual Edge* clone() const;
 };
 
 
@@ -350,6 +360,7 @@ public:
   virtual std::vector<OFDictData::data> bmdEntry(const PointMap& allPoints, int OFversion) const;
 
   virtual Edge* transformed(const arma::mat& tm) const;
+  virtual Edge* clone() const;
 };
 
 /*
@@ -461,6 +472,8 @@ protected:
   
 public:
   blockMesh(OpenFOAMCase& c);
+
+  void copy(const blockMesh& other);
   
   void setScaleFactor(double sf);
   void setDefaultPatch(const std::string& name, std::string type="patch");
@@ -501,6 +514,8 @@ public:
     allPatches_.insert(key, patch); 
     return *patch; 
   }
+
+  bool hasEdgeBetween(const Point& p1, const Point& p2) const;
   
   /**
    * Add the given patch, if none with the same name is present.

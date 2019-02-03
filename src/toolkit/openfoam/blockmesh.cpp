@@ -145,6 +145,18 @@ Block* Block::transformed(const arma::mat& tm, bool inv) const
   );
 }
 
+Block* Block::clone() const
+{
+  return new Block
+  (
+    corners_,
+    resolution_[0], resolution_[1], resolution_[2],
+    grading_,
+    zone_,
+    false
+  );
+}
+
 void Block::registerPoints(blockMesh& bmd) const
 {
   for (PointList::const_iterator i=corners_.begin();
@@ -528,6 +540,15 @@ Edge::Edge(const Point& c0, const Point& c1)
 Edge::~Edge()
 {}
 
+bool Edge::connectsPoints(const Point& c0, const Point& c1) const
+{
+  return (
+      ( ( arma::norm(c0 - c0_, 2) < SMALL ) && ( arma::norm(c1 - c1_, 2) < SMALL ) )
+      ||
+      ( ( arma::norm(c1 - c0_, 2) < SMALL ) && ( arma::norm(c0 - c1_, 2) < SMALL ) )
+     );
+}
+
 void Edge::registerPoints(blockMesh& bmd) const
 {
   bmd.addPoint(c0_);
@@ -565,7 +586,10 @@ Edge* ArcEdge::transformed(const arma::mat& tm) const
   return new ArcEdge(tm*c0_, tm*c1_, tm*midpoint_);
 }
 
-
+Edge* ArcEdge::clone() const
+{
+  return new ArcEdge(c0_, c1_, midpoint_);
+}
 
 EllipseEdge::EllipseEdge
 (
@@ -599,6 +623,10 @@ Edge* EllipseEdge::transformed(const arma::mat& tm) const
   throw insight::Exception("Not implemented!");
 }
 
+Edge* EllipseEdge::clone() const
+{
+  return new EllipseEdge(c0_, c1_, center_, ex_);
+}
 
 
 CircularEdge::CircularEdge
@@ -710,6 +738,15 @@ Edge* SplineEdge::transformed(const arma::mat& tm) const
   return new SplineEdge(pl, splinekeyword_);
 }
 
+Edge* SplineEdge::clone() const
+{
+  PointList pts;
+  pts.push_back(c0_);
+  copy(intermediatepoints_.begin(), intermediatepoints_.end(), std::back_inserter(pts));
+  pts.push_back(c1_);
+  return new SplineEdge(pts, splinekeyword_);
+}
+
 /*
 def splineEdgeAlongCurve(curve, p0, p1, 
                          start0=0.5, start1=0.5, 
@@ -781,6 +818,15 @@ Patch* Patch::transformed(const arma::mat& tm, bool inv) const
   }
   return np.release();
 }
+
+Patch* Patch::clone() const
+{
+  std::auto_ptr<Patch> p(new Patch(typ_));
+  for (const auto&f: faces_)
+    p->addFace(f);
+  return p.release();
+}
+
 
 OFDictData::list bmdEntry(const PointList& pts, const PointMap& allPoints)
 {
@@ -1086,6 +1132,31 @@ blockMesh::blockMesh(OpenFOAMCase& c)
 {
 }
 
+void blockMesh::copy(const blockMesh& other)
+{
+  for (const auto& b: other.allBlocks_)
+    {
+      this->addBlock( b.clone() );
+    }
+  for (const auto& e: other.allEdges_)
+    {
+      if (!hasEdgeBetween(e.c0(), e.c1()))
+        this->addEdge(e.clone());
+    }
+  for (const auto p: other.allPatches_)
+    {
+      auto pp=allPatches_.find(p.first);
+      if (pp!=allPatches_.end())
+        {
+          pp->second->appendPatch(*p.second);
+        }
+      else
+        {
+          this->addPatch(p.first, p.second->clone());
+        }
+    }
+}
+
 void blockMesh::setScaleFactor(double sf)
 {
   scaleFactor_=sf;
@@ -1115,6 +1186,16 @@ void blockMesh::numberVertices(PointMap& pts) const
        {
 	 i->second = idx++;
        }
+}
+
+bool blockMesh::hasEdgeBetween(const Point& p1, const Point& p2) const
+{
+  for (const auto& e: allEdges_)
+    {
+      if (e.connectsPoints(p1, p2))
+        return true;
+    }
+  return false;
 }
 
 OFDictData::dict& blockMesh::getBlockMeshDict(insight::OFdicts& dictionaries) const

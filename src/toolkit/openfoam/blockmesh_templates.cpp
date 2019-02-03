@@ -52,8 +52,9 @@ void BlockMeshTemplate::addIntoDictionaries ( OFdicts& dictionaries ) const
 
 arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
 {
+  std::cout<<ex<<ez<<std::endl;
     ex /= arma::norm(ex, 2);    
-    ez/= arma::norm(ez,2);
+    ez /= arma::norm(ez, 2);
     
     arma::mat ey = -arma::cross(ex, ez);
     double mey=arma::norm(ey,2);
@@ -65,9 +66,12 @@ arma::mat BlockMeshTemplate::correct_trihedron(arma::mat& ex, arma::mat &ez)
                  % ex(0) % ex(1) % ex(2) % ez(0) % ez(1) % ez(2) )
         );
     }
-    ey/=mey;
+    ey /= mey;
+    std::cout<<"Corrected CS :\n EX = "<<ex<<"\n EY = "<<ey<<"\n EZ = "<<ez<<std::endl;
     return ey;
 }
+
+
 
 
 defineType ( blockMeshDict_Cylinder );
@@ -95,7 +99,7 @@ void blockMeshDict_Cylinder::create_bmd()
     std::map<int, Point> pts;
     pts = boost::assign::map_list_of
           ( 1, 	0.5*p_.geometry.D*ey )
-          ( 0, 	::cos ( al/2. ) *Lc*ey )
+          ( 0, 	/*::cos ( al/2. ) **/Lc*ey )
           .convert_to_container<std::map<int, Point> >()
           ;
     arma::mat vL=p_.geometry.L*ex;
@@ -184,6 +188,8 @@ double blockMeshDict_Cylinder::rCore() const
 {
     return p_.geometry.D*p_.mesh.core_fraction;
 }
+
+
 
 
 

@@ -14,6 +14,9 @@ parser.add_option("-r", "--loadscript", dest="loadscript", metavar='FILE', defau
 parser.add_option("-b", "--batch", dest="batch",
 		  action='store_true',
                   help="load specified state file, search first in current dir then in insight shared dir")
+parser.add_option("-p", "--parallel", dest="parallel",
+                action='store_true',
+                help="enforce parallel projection in batch mode")
 parser.add_option("-c", "--rescale", dest="rescale",
 		  action='store_true',
                   help="automatically rescale all contour plots to data range (within each time step)")
@@ -96,7 +99,7 @@ if (len(times)>0):
       input.UpdatePipeline() #make sure range is up-to-date
       rep.RescaleTransferFunctionToDataRange(False)
 """
-    f.write("""\
+    f.write(("""\
 onlylatesttime=%s
 ftimes=None
 if (len(times)==0):
@@ -111,11 +114,12 @@ for curtime in ftimes:
   #RescaleTransferFunctionToDataRange(False)
   
   RenderAllViews()
-  
+""" + ("""
   # bug in PV4.4: parallel projection is not restored from state file
   for view in GetRenderViews():
    view.CameraParallelProjection = 1
-
+""" if opts.parallel else "") +
+"""
   %s
   
   layouts=GetLayouts()
@@ -128,7 +132,7 @@ for curtime in ftimes:
       fname+="_latesttime.png"
     print "Writing", fname
     SaveScreenshot(fname, layout=layouts[l], magnification=1, quality=100)
-"""%(
+""")%(
   "True" if opts.onlylatesttime else "False",
   opts.fromt, opts.tot, rescalesnippet, casename))
   else:

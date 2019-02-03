@@ -902,6 +902,13 @@ limitVelocity = selectablesubset {{
  }
 }} limit "Type of temperature limit"
 
+limitFields = array [ set {
+ fieldName = string "p_rgh" "Name of field to limit"
+ type = selection (scalar vector symmTensor tensor) Scalar "Type of field"
+ min = double -1e10 "Minimum value (magnitude for non-scalar fields)"
+ max = double 1e10 "Maximum value (magnitude for non-scalar fields)"
+} ] *0 "Fields to limit"
+
 <<<PARAMETERSET
 */
 

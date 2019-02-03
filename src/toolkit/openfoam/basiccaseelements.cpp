@@ -1057,6 +1057,30 @@ void limitQuantities::addIntoDictionaries(OFdicts& dictionaries) const
       fvOptions[p_.name+"_vel"]=cdU;
     }
 
+  for (const auto& i: p_.limitFields)
+    {
+      string type;
+      switch (i.type)
+        {
+         case Parameters::limitFields_default_type::scalar:
+           type="scalarlimitFields";
+          break;
+        }
+
+      OFDictData::dict cd;
+      cd["type"]=type;
+      cd["active"]=true;
+
+      OFDictData::dict c;
+      sel.insertSelection(c);
+      c["fieldName"]=i.fieldName;
+      c["max"]=i.max;
+      c["min"]=i.min;
+      cd[type+"Coeffs"]=c;
+
+      fvOptions[p_.name+"_"+i.fieldName]=cd;
+    }
+
 }
 
 

@@ -47,6 +47,7 @@ size_t Line::calcHash() const
   h+=this->type();
   h+=p0_->value();
   h+=p1_->value();
+  h+=second_is_dir_;
   return h.getHash();
 }
 
@@ -59,8 +60,9 @@ Line::Line()
 
 
 
-Line::Line(VectorPtr p0, VectorPtr p1)
-: p0_(p0), p1_(p1)
+Line::Line(VectorPtr p0, VectorPtr p1, bool second_is_dir)
+: p0_(p0), p1_(p1),
+  second_is_dir_(second_is_dir)
 {
 }
 
@@ -68,21 +70,32 @@ Line::Line(VectorPtr p0, VectorPtr p1)
 
 FeaturePtr Line::create ( VectorPtr p0, VectorPtr p1 )
 {
-    return FeaturePtr(new Line(p0, p1));
+    return FeaturePtr(new Line(p0, p1, false));
 }
 
+FeaturePtr Line::create_dir ( VectorPtr p0, VectorPtr p1 )
+{
+    return FeaturePtr(new Line(p0, p1, true));
+}
 
 
 
 void Line::build()
 {
-  refpoints_["p0"]=p0_->value();  
-  refpoints_["p1"]=p1_->value();
+  arma::mat p0=p0_->value();
+  arma::mat p1;
+  if (second_is_dir_)
+    p1=p0+p1_->value();
+  else
+    p1=p1_->value();
+
+  refpoints_["p0"]=p0;
+  refpoints_["p1"]=p1;
 //   refvalues_["L"]=arma::norm(p1-p0, 2);
-  refvectors_["ex"]=(p1_->value() - p0_->value())/arma::norm(p1_->value() - p0_->value(), 2);
+  refvectors_["ex"]=(p1 - p0)/arma::norm(p1 - p0, 2);
   
   setShape(BRepBuilderAPI_MakeEdge(
-      GC_MakeSegment(to_Pnt(p0_->value()), to_Pnt(p1_->value())).Value()
+      GC_MakeSegment(to_Pnt(p0), to_Pnt(p1)).Value()
   ));
 }
 
@@ -98,7 +111,9 @@ void Line::insertrule(parser::ISCADParser& ruleset) const
 
     ( '(' >> ruleset.r_vectorExpression >> ',' >> ruleset.r_vectorExpression >> ')' ) 
 	[ qi::_val = phx::bind(&Line::create, qi::_1, qi::_2) ]
-      
+    ||
+    ( '(' >> ruleset.r_vectorExpression >> ',' >> (qi::lit("dir")|qi::lit("direction")) >> ruleset.r_vectorExpression >> ')' )
+         [ qi::_val = phx::bind(&Line::create_dir, qi::_1, qi::_2) ]
     ))
   );
 }

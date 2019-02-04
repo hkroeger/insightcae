@@ -32,8 +32,9 @@ class Line
     : public Feature
 {
     VectorPtr p0_, p1_;
+    bool second_is_dir_;
 
-    Line ( VectorPtr p0, VectorPtr p1 );
+    Line ( VectorPtr p0, VectorPtr p1, bool second_is_dir=false );
 
     virtual size_t calcHash() const;
     virtual void build();
@@ -43,6 +44,7 @@ public:
     Line ();
 
     static FeaturePtr create ( VectorPtr p0, VectorPtr p1 );
+    static FeaturePtr create_dir ( VectorPtr p0, VectorPtr dir );
 
 
     virtual void insertrule ( parser::ISCADParser& ruleset ) const;

@@ -55,6 +55,7 @@ add_sources(insightcad_SOURCES
  transform.cpp
  tri.cpp
  wire.cpp
+ wirefillet.cpp
  modelfeature.cpp
  maxsurfacecurvature.cpp
  subfeature.cpp

@@ -76,17 +76,23 @@ void WireFillet::build()
     TopoDS_Wire w = m1.asSingleWire();
 
     std::vector<TopoDS_Edge> edgs;
+    std::vector<gp_Pnt> new_start, new_end;
     for ( BRepTools_WireExplorer wx(w); wx.More(); wx.Next() )
       {
-        edgs.push_back(wx.Current());
+        TopoDS_Edge e=wx.Current();
+        edgs.push_back(e);
+        new_start.push_back(BRep_Tool::Pnt(TopExp::FirstVertex(e, true)));
+        new_end.push_back(BRep_Tool::Pnt(TopExp::LastVertex(e, true)));
       }
 
     double R=r_->value();
 
-    TopoDS_Compound res;
-    BRep_Builder b;
-    b.MakeCompound(res);
-    b.Add(res, w);
+//    TopoDS_Compound res;
+//    BRep_Builder b;
+//    b.MakeCompound(res);
+//    b.Add(res, w);
+
+    TopTools_ListOfShape we;
 
     for (size_t i=1; i<edgs.size(); i++)
       {
@@ -141,12 +147,30 @@ void WireFillet::build()
 
                 auto c = GC_MakeArcOfCircle(p1, pm, p2).Value();
 
-                b.Add(res, BRepBuilderAPI_MakeEdge(c));
+                new_end[i-1]=p1;
+                new_start[i]=p2;
+//                b.Add(res, BRepBuilderAPI_MakeEdge(c));
+                we.Append(BRepBuilderAPI_MakeEdge(c));
               }
           }
       }
 
-    setShape ( res );
+    for (size_t i=1; i<edgs.size(); i++)
+      {
+        double u1, u2;
+        Handle_Geom_Curve crv = BRep_Tool::Curve(edgs[i], u1, u2);
+//        b.Add(res, BRepBuilderAPI_MakeEdge(crv, new_start[i], new_end[i]));
+        we.Append(BRepBuilderAPI_MakeEdge(crv, new_start[i], new_end[i]));
+      }
+
+    BRepBuilderAPI_MakeWire wb;
+    wb.Add ( we );
+
+    ShapeFix_Wire wf;
+    wf.Load(wb.Wire());
+    wf.Perform();
+
+    setShape ( wf.Wire() );
 }
 
 

@@ -155,7 +155,7 @@ void WireFillet::build()
           }
       }
 
-    for (size_t i=1; i<edgs.size(); i++)
+    for (size_t i=0; i<edgs.size(); i++)
       {
         double u1, u2;
         Handle_Geom_Curve crv = BRep_Tool::Curve(edgs[i], u1, u2);

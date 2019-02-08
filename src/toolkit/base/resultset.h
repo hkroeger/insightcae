@@ -802,7 +802,18 @@ insight::ResultElement& addPlot
     const std::string& watermarktext = ""
 );
 
-
+insight::ResultElement& addPolarPlot
+(
+    std::shared_ptr<ResultElementCollection> results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& philabel,
+    const std::string& rlabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit = "",
+    const std::string& watermarktext = ""
+);
 
 
 
@@ -845,6 +856,29 @@ public:
     ) const;
 
     virtual ResultElementPtr clone() const;
+};
+
+
+
+
+class PolarChart
+  : public Chart
+{
+public:
+ declareType ( "PolarChart" );
+ PolarChart ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
+ PolarChart
+ (
+     const std::string& philabel,
+     const std::string& rlabel,
+     const PlotCurveList& plc,
+     const std::string& shortDesc, const std::string& longDesc,
+     const std::string& addinit = ""
+ );
+
+ virtual void gnuplotCommand(gnuplotio::Gnuplot&) const;
+
+ virtual ResultElementPtr clone() const;
 };
 
 

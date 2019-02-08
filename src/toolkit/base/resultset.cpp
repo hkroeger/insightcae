@@ -1439,6 +1439,41 @@ insight::ResultElement& addPlot
 
 
 
+
+insight::ResultElement& addPolarPlot
+(
+    std::shared_ptr<ResultElementCollection> results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& philabel,
+    const std::string& rlabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    const std::string& addinit,
+    const std::string& watermarktext
+)
+{
+    std::string precmd=addinit+";";
+    if ( watermarktext!="" ) {
+        precmd+=
+          "set label "
+          "'"+SimpleLatex( watermarktext ).toLaTeX()+"'"
+          " center at screen 0.5, 0.5 tc rgb\"#cccccc\" rotate by 30 font \",24\";"
+          ;
+    }
+
+    return results->insert ( resultelementname,
+                             new PolarChart
+                             (
+                                 philabel, rlabel, plc,
+                                 shortDescription, "",
+                                 precmd
+                             ) );
+}
+
+
+
+
 defineType(Chart);
 addToFactoryTable(ResultElement, Chart);
 
@@ -1474,13 +1509,21 @@ void Chart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
  gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
  if ( plc_.size() >0 )
  {
-     gp<<"plot 0 not lt -1";
+  gp<<"plot ";
+  bool is_first=true;
+
+  if (plc_.include_zero)
+  {
+     gp<<"0 not lt -1";
+     is_first=false;
+  }
      for ( const PlotCurve& pc: plc_ ) {
          if ( !pc.plotcmd_.empty() ) {
+             if (!is_first) { gp << ","; is_first=false; }
              if ( pc.xy_.n_rows>0 ) {
-                 gp<<", '-' "<<pc.plotcmd_;
+                 gp<<"'-' "<<pc.plotcmd_;
              } else {
-                 gp<<", "<<pc.plotcmd_;
+                 gp<<pc.plotcmd_;
              }
          }
      }
@@ -1646,6 +1689,94 @@ ResultElementPtr Chart::clone() const
     return res;
 }
 
+
+
+
+
+defineType(PolarChart);
+addToFactoryTable(ResultElement, PolarChart);
+
+
+
+PolarChart::PolarChart(const std::string& shortdesc, const std::string& longdesc, const std::string& unit)
+: Chart(shortdesc, longdesc, unit)
+{}
+
+
+
+PolarChart::PolarChart
+(
+  const std::string& philabel,
+  const std::string& rlabel,
+  const PlotCurveList& plc,
+  const std::string& shortDesc, const std::string& longDesc,
+  const std::string& addinit
+)
+: Chart(philabel, rlabel, plc, shortDesc, longDesc, addinit)
+{}
+
+
+void PolarChart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
+{
+ gp<<addinit_<<";";
+ gp<<"unset border;"
+     " set polar;"
+     " set grid polar 60.*pi/180.;"
+     " set trange [0:2.*pi];"
+     " set key rmargin;"
+     " set size square;"
+     " unset xtics;"
+     " unset ytics;"
+     ;
+
+ double rmax=0.;
+ for ( const PlotCurve& pc: plc_ ) {
+  rmax=std::max(rmax, pc.xy().col(1).max());
+ }
+
+ gp<<"set_label(x, text) = sprintf(\"set label '%s' at ("<<rmax<<"*1.05*cos(%f)), ("<<rmax<<"*1.05*sin(%f)) center\", text, x, x);"
+ <<"eval set_label(0, \"$0^\\\\circ$\");"
+ <<"eval set_label(60.*pi/180., \"$60^\\\\circ$\");"
+ <<"eval set_label(120.*pi/180., \"$120^\\\\circ$\");"
+ <<"eval set_label(180.*pi/180., \"$180^\\\\circ$\");"
+ <<"eval set_label(240.*pi/180., \"$240^\\\\circ$\");"
+ <<"eval set_label(300.*pi/180., \"$300^\\\\circ$\");";
+
+ //gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; ";
+
+ if ( plc_.size() >0 )
+ {
+  gp<<"plot ";
+  bool is_first=true;
+
+  for ( const PlotCurve& pc: plc_ ) {
+   if ( !pc.plotcmd_.empty() ) {
+    if (!is_first) { gp << ","; is_first=false; }
+    if ( pc.xy_.n_rows>0 ) {
+     gp<<"'-' "<<pc.plotcmd_;
+    } else {
+     gp<<pc.plotcmd_;
+    }
+   }
+  }
+  gp<<endl;
+  for ( const PlotCurve& pc: plc_ ) {
+   if ( pc.xy_.n_rows>0 ) {
+    gp.send1d ( pc.xy_ );
+   }
+  }
+ }
+}
+
+
+
+
+ResultElementPtr PolarChart::clone() const
+{
+    ResultElementPtr res ( new PolarChart ( xlabel_, ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), addinit_ ) );
+    res->setOrder ( order() );
+    return res;
+}
 
 
 

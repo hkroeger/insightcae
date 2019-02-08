@@ -7,6 +7,7 @@
 %shared_ptr(insight::Image);
 %shared_ptr(insight::Comment);
 %shared_ptr(insight::Chart);
+%shared_ptr(insight::PolarChart);
 %shared_ptr(insight::ScalarResult);
 %shared_ptr(insight::VectorResult);
 %shared_ptr(insight::NumericalResult<double> );

@@ -342,7 +342,7 @@ void FieldData::insertGraphsToResultSet(ResultSetPtr results, const boost::files
             xy.load( completed_path(exepath, inst.profile).c_str(), arma::raw_ascii);
 
             int ncmpt=xy.n_cols-1;
-            std::vector<PlotCurve> crvs(ncmpt);
+            PlotCurveList crvs(ncmpt);
             for (int i=0; i<ncmpt; i++)
             {
                 std::string cmptlabel=getOpenFOAMComponentLabel(i, ncmpt);

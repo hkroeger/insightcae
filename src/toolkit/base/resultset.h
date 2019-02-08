@@ -31,6 +31,11 @@
 #include "base/boost_include.h"
 #include "boost/gil/gil_all.hpp"
 
+
+namespace gnuplotio {
+ class Gnuplot;
+}
+
 namespace insight 
 {
   
@@ -763,7 +768,23 @@ struct PlotCurve {
 
 
 
-typedef std::vector<PlotCurve> PlotCurveList;
+struct PlotCurveList : public std::vector<PlotCurve>
+{
+ PlotCurveList()
+  : std::vector<PlotCurve>()
+ {}
+
+ PlotCurveList(size_t n)
+  : std::vector<PlotCurve>(n)
+ {}
+
+ template<class It>
+ PlotCurveList(It begin, It end)
+  : std::vector<PlotCurve>(begin, end)
+ {}
+
+ bool include_zero=true;
+};
 
 
 
@@ -780,6 +801,7 @@ insight::ResultElement& addPlot
     const std::string& addinit = "",
     const std::string& watermarktext = ""
 );
+
 
 
 
@@ -805,6 +827,7 @@ public:
         const std::string& addinit = ""
     );
 
+    virtual void gnuplotCommand(gnuplotio::Gnuplot&) const;
     virtual void generatePlotImage ( const boost::filesystem::path& imagepath ) const;
 
     virtual void writeLatexHeaderCode ( std::ostream& f ) const;

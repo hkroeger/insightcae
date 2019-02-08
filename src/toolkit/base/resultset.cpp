@@ -29,11 +29,12 @@
 #include <algorithm>
 #include "boost/bind.hpp"
 
-#include "gnuplot-iostream.h"
 
 #include "case.h"
 
 #include "rapidxml/rapidxml_print.hpp"
+
+#include "gnuplot-iostream.h"
 
 using namespace std;
 using namespace boost;
@@ -1467,6 +1468,32 @@ Chart::Chart
 }
 
 
+void Chart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
+{
+ gp<<addinit_<<";";
+ gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
+ if ( plc_.size() >0 )
+ {
+     gp<<"plot 0 not lt -1";
+     for ( const PlotCurve& pc: plc_ ) {
+         if ( !pc.plotcmd_.empty() ) {
+             if ( pc.xy_.n_rows>0 ) {
+                 gp<<", '-' "<<pc.plotcmd_;
+             } else {
+                 gp<<", "<<pc.plotcmd_;
+             }
+         }
+     }
+     gp<<endl;
+     for ( const PlotCurve& pc: plc_ ) {
+         if ( pc.xy_.n_rows>0 ) {
+             gp.send1d ( pc.xy_ );
+         }
+     }
+ }
+}
+
+
 
 void Chart::generatePlotImage ( const path& imagepath ) const
 {
@@ -1494,26 +1521,8 @@ void Chart::generatePlotImage ( const path& imagepath ) const
         	"set linetype  9 lc rgb '#DAA520' lw 1;"
         	"set linetype cycle  9;";
         */
-        gp<<addinit_<<";";
-        gp<<"set xlabel '"<<xlabel_<<"'; set ylabel '"<<ylabel_<<"'; set grid; ";
-        if ( plc_.size() >0 ) {
-            gp<<"plot 0 not lt -1";
-            for ( const PlotCurve& pc: plc_ ) {
-                if ( !pc.plotcmd_.empty() ) {
-                    if ( pc.xy_.n_rows>0 ) {
-                        gp<<", '-' "<<pc.plotcmd_;
-                    } else {
-                        gp<<", "<<pc.plotcmd_;
-                    }
-                }
-            }
-            gp<<endl;
-            for ( const PlotCurve& pc: plc_ ) {
-                if ( pc.xy_.n_rows>0 ) {
-                    gp.send1d ( pc.xy_ );
-                }
-            }
-        }
+
+       gnuplotCommand(gp);
     }
 
     ::system (

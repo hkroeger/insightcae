@@ -101,7 +101,7 @@ ResultSetPtr ConvergenceAnalysis::operator()(ProgressDisplayer* displayer)
   S3=p.solutions[0].S // coarsest
      ;
 
-  std::vector<PlotCurve> plotcrvs;
+  PlotCurveList plotcrvs;
 
   {
     arma::mat x=vec3 ( p.solutions[2].deltax, p.solutions[1].deltax, p.solutions[0].deltax );

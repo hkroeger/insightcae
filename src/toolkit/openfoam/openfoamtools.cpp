@@ -2793,7 +2793,7 @@ ResultSetPtr HomogeneousAveragedProfile::operator()(ProgressDisplayer* displayer
     int c=cd[fieldname].col;
     int ncmpt=cd[fieldname].ncmpt;
     
-    std::vector<PlotCurve> crvs;
+    PlotCurveList crvs;
     for (int i=0; i<ncmpt; i++)
     {
       

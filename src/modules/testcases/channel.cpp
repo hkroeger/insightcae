@@ -700,7 +700,7 @@ void ChannelBase::evaluateAtSection(
     wallnormal.save( (executionPath()/("umeanwallnormal_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     spanwise.save( (executionPath()/("umeanspanwise_vs_yp_"+title+".txt")).c_str(), arma::raw_ascii);
     
-    std::vector<PlotCurve> plotcurves = list_of
+    PlotCurveList plotcurves = list_of
       (PlotCurve(axial, 		"U", "w l lt 1 lc -1 lw 2 t '$U^+$'"))
       (PlotCurve(wallnormal, 	"V", "w l lt 1 lc 1 lw 2 t '$V^+$'"))
       (PlotCurve(spanwise, 		"W", "w l lt 1 lc 3 lw 2 t '$W^+$'"))
@@ -708,7 +708,7 @@ void ChannelBase::evaluateAtSection(
       
     if (includeRefDataInCharts)
     {
-      std::vector<PlotCurve> pc = list_of
+      PlotCurveList pc = list_of
         (PlotCurve(refdata_umean180,	"UMKM180", "w l lt 2 lc -1 t '$U_{ref}^+(Re_{\\tau}=180)$'"))
         (PlotCurve(refdata_wmean180, 	"WMKM180", "w l lt 2 lc 3 t '$W_{ref}^+(Re_{\\tau}=180)$'"))
         (PlotCurve(refdata_umean395, 	"UMKM395", "w l lt 4 lc -1 t '$U_{ref}^+(Re_{\\tau}=395)$'"))
@@ -887,7 +887,7 @@ void ChannelBase::evaluateAtSection(
     spanwise.save( 	( executionPath()/( "Rspanwise_vs_yp_"		+title+".txt") ).c_str(), arma::raw_ascii);
     
     
-    std::vector<PlotCurve> plotcurves =
+    PlotCurveList plotcurves =
       list_of
        (PlotCurve(axial, 	"Ruu", "w l lt 1 lc -1 lw 2 t '$R_{uu}^+$'"))
        (PlotCurve(wallnormal, 	"Rvv", "w l lt 1 lc 1 lw 2 t '$R_{vv}^+$'"))
@@ -897,7 +897,7 @@ void ChannelBase::evaluateAtSection(
        
     if (includeAllComponentsInCharts)
     {
-      std::vector<PlotCurve> pc =
+      PlotCurveList pc =
       list_of
         (PlotCurve(join_rows(yplus, Rxz), "Ruw", "w l lt 1 lc 5 t '$R_{uw}^+$'"))
         (PlotCurve(join_rows(yplus, Ryz), "Rvw", "w l lt 1 lc 5 t '$R_{vw}^+$'"))
@@ -907,7 +907,7 @@ void ChannelBase::evaluateAtSection(
        
     if (includeRefDataInCharts)
     {
-      std::vector<PlotCurve> pc =
+      PlotCurveList pc =
       list_of
         (PlotCurve(refdata_Ruu, 	"RuuMKM180", "w l lt 2 dt 2 lc -1 t '$R_{uu,ref}^+(Re_{\\tau}=180)$'"))
         (PlotCurve(refdata_Rvv, 	"RvvMKM180", "w l lt 2 dt 2 lc 1 t '$R_{vv,ref}^+(Re_{\\tau}=180)$'"))
@@ -948,7 +948,7 @@ void ChannelBase::evaluateAtSection(
     
     int ck=cd["k"].col;
     
-    std::vector<PlotCurve> kplots = list_of
+    PlotCurveList kplots = list_of
      (PlotCurve( refdata_K, 	"TKEMKM180", "u 1:2 w l lt 1 dt 2 lc 1 t 'DNS ($Re_{\\tau}=180$, MKM)'" ))
      (PlotCurve( refdata_K395, 	"TKEMKM395", "u 1:2 w l lt 2 dt 2 lc 1 t 'DNS ($Re_{\\tau}=395$, MKM)'" ))
      (PlotCurve( refdata_K590, 	"TKEMKM590", "u 1:2 w l lt 3 dt 2 lc 1 t 'DNS ($Re_{\\tau}=590$, MKM)'" ))

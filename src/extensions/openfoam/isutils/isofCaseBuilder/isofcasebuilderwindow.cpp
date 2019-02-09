@@ -29,7 +29,7 @@
 #include "insertedcaseelement.h"
 
 #ifndef Q_MOC_RUN
-#include "openfoam/boundaryconditioncaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamtools.h"
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_print.hpp"

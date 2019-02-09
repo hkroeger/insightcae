@@ -1,5 +1,5 @@
 
-#include "openfoam/boundarycondition_heat.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
 
 using namespace std;
 using namespace boost;

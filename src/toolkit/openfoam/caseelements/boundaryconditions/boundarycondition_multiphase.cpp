@@ -1,5 +1,5 @@
 
-#include "openfoam/boundarycondition_multiphase.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
 
 using namespace std;
 using namespace boost;

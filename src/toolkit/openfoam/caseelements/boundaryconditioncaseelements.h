@@ -22,17 +22,17 @@
 #ifndef INSIGHT_BOUNDARYCONDITIONCASEELEMENTS_H
 #define INSIGHT_BOUNDARYCONDITIONCASEELEMENTS_H
 
-#include "openfoam/numericscaseelements.h"
+#include "openfoam/caseelements/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "base/resultset.h"
 #include "openfoam/openfoamcase.h"
 
 #include "openfoam/fielddata.h"
-#include "openfoam/boundarycondition_heat.h"
-#include "openfoam/boundarycondition_meshmotion.h"
-#include "openfoam/boundarycondition_multiphase.h"
-#include "openfoam/boundarycondition_turbulence.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_heat.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_multiphase.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_turbulence.h"
 
 #include <map>
 #include <memory>

@@ -22,7 +22,7 @@
 #ifndef INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 #define INSIGHT_TURBULENCEMODELCASEELEMENTS_H
 
-#include "openfoam/numericscaseelements.h"
+#include "openfoam/caseelements/numericscaseelements.h"
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"

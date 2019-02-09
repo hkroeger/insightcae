@@ -19,9 +19,9 @@
  */
 
 
-#include "boundaryconditioncaseelements.h"
-#include "openfoam/basiccaseelements.h"
-#include "openfoam/turbulencemodelcaseelements.h"
+#include "openfoam/caseelements/boundaryconditioncaseelements.h"
+#include "openfoam/caseelements/basiccaseelements.h"
+#include "openfoam/caseelements/turbulencemodelcaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 

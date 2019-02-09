@@ -1,4 +1,4 @@
-#include "openfoam/boundarycondition_meshmotion.h"
+#include "openfoam/caseelements/boundaryconditions/boundarycondition_meshmotion.h"
 
 
 #include <string>

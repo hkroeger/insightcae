@@ -24,7 +24,7 @@
 #include "base/linearalgebra.h"
 #include "base/parameterset.h"
 #include "openfoam/openfoamcase.h"
-#include "openfoam/boundaryconditioncaseelements.h"
+#include "openfoam/caseelements/boundaryconditioncaseelements.h"
 
 #include <map>
 #include "boost/utility.hpp"

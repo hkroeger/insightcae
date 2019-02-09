@@ -18,7 +18,7 @@
  *
  */
 
-#include "analysiscaseelements.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"
 

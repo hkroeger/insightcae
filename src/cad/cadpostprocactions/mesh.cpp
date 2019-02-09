@@ -28,7 +28,7 @@
 #include "openfoam/snappyhexmesh.h"
 
 #include "openfoam/blockmesh_templates.h"
-#include "openfoam/numericscaseelements.h"
+#include "openfoam/caseelements/numericscaseelements.h"
 
 namespace insight
 {

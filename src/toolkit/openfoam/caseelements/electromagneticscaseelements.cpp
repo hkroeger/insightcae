@@ -18,7 +18,6 @@
  *
  */
 
-#include "openfoam/electromagneticscaseelements.h"
 #include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamcase.h"
 #include "openfoam/openfoamtools.h"

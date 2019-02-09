@@ -19,8 +19,7 @@
 
 #include "ercoftac_squaresection180degreebend.h"
 
-#include "openfoam/numericscaseelements.h"
-#include "openfoam/boundaryconditioncaseelements.h"
+#include "openfoam/openfoamcaseelements.h"
 #include "openfoam/openfoamtools.h"
 #include "openfoam/blockmesh.h"
 

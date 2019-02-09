@@ -22,7 +22,7 @@
 #include "base/boost_include.h"
 #include "base/exception.h"
 #include "base/linearalgebra.h"
-#include "openfoam/analysiscaseelements.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>

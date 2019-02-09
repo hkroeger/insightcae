@@ -21,11 +21,12 @@
 #ifndef OPENFOAMCASEELEMENTS_H
 #define OPENFOAMCASEELEMENTS_H
 
-#include "openfoam/numericscaseelements.h"
-#include "openfoam/basiccaseelements.h"
-#include "openfoam/turbulencemodelcaseelements.h"
-#include "openfoam/boundaryconditioncaseelements.h"
-#include "openfoam/analysiscaseelements.h"
-#include "openfoam/thermophysicalcaseelements.h"
+#include "openfoam/caseelements/numericscaseelements.h"
+#include "openfoam/caseelements/basiccaseelements.h"
+#include "openfoam/caseelements/turbulencemodelcaseelements.h"
+#include "openfoam/caseelements/boundaryconditioncaseelements.h"
+#include "openfoam/caseelements/analysiscaseelements.h"
+#include "openfoam/caseelements/thermophysicalcaseelements.h"
+#include "openfoam/caseelements/electromagneticscaseelements.h"
 
 #endif

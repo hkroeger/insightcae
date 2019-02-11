@@ -1445,10 +1445,10 @@ insight::ResultElement& addPolarPlot
     std::shared_ptr<ResultElementCollection> results,
     const boost::filesystem::path& workdir,
     const std::string& resultelementname,
-    const std::string& philabel,
     const std::string& rlabel,
     const PlotCurveList& plc,
     const std::string& shortDescription,
+    double phi_unit,
     const std::string& addinit,
     const std::string& watermarktext
 )
@@ -1465,8 +1465,9 @@ insight::ResultElement& addPolarPlot
     return results->insert ( resultelementname,
                              new PolarChart
                              (
-                                 philabel, rlabel, plc,
+                                 rlabel, plc,
                                  shortDescription, "",
+                                 phi_unit,
                                  precmd
                              ) );
 }
@@ -1514,25 +1515,35 @@ void Chart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
 
   if (plc_.include_zero)
   {
-     gp<<"0 not lt -1";
-     is_first=false;
+   gp<<"0 not lt -1";
+   is_first=false;
   }
-     for ( const PlotCurve& pc: plc_ ) {
-         if ( !pc.plotcmd_.empty() ) {
-             if (!is_first) { gp << ","; is_first=false; }
-             if ( pc.xy_.n_rows>0 ) {
-                 gp<<"'-' "<<pc.plotcmd_;
-             } else {
-                 gp<<pc.plotcmd_;
-             }
-         }
-     }
-     gp<<endl;
-     for ( const PlotCurve& pc: plc_ ) {
-         if ( pc.xy_.n_rows>0 ) {
-             gp.send1d ( pc.xy_ );
-         }
-     }
+
+  for ( const PlotCurve& pc: plc_ )
+  {
+   if ( !pc.plotcmd_.empty() )
+   {
+    if (!is_first) { gp << ","; is_first=false; }
+    if ( pc.xy_.n_rows>0 )
+    {
+     gp<<"'-' "<<pc.plotcmd_;
+    } else
+    {
+     gp<<pc.plotcmd_;
+    }
+   }
+  }
+
+  gp<<endl;
+
+  for ( const PlotCurve& pc: plc_ )
+  {
+   if ( pc.xy_.n_rows>0 )
+   {
+    gp.send1d ( pc.xy_ );
+   }
+  }
+
  }
 }
 
@@ -1706,13 +1717,14 @@ PolarChart::PolarChart(const std::string& shortdesc, const std::string& longdesc
 
 PolarChart::PolarChart
 (
-  const std::string& philabel,
   const std::string& rlabel,
   const PlotCurveList& plc,
   const std::string& shortDesc, const std::string& longDesc,
+  double phi_unit,
   const std::string& addinit
 )
-: Chart(philabel, rlabel, plc, shortDesc, longDesc, addinit)
+: Chart("", rlabel, plc, shortDesc, longDesc, addinit),
+  phi_unit_(phi_unit)
 {}
 
 
@@ -1735,7 +1747,7 @@ void PolarChart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
  }
 
  gp<<"set_label(x, text) = sprintf(\"set label '%s' at ("<<rmax<<"*1.05*cos(%f)), ("<<rmax<<"*1.05*sin(%f)) center\", text, x, x);"
- <<"eval set_label(0, \"$0^\\\\circ$\");"
+  <<"eval set_label(0, \"$0^\\\\circ$\");"
  <<"eval set_label(60.*pi/180., \"$60^\\\\circ$\");"
  <<"eval set_label(120.*pi/180., \"$120^\\\\circ$\");"
  <<"eval set_label(180.*pi/180., \"$180^\\\\circ$\");"
@@ -1749,22 +1761,41 @@ void PolarChart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
   gp<<"plot ";
   bool is_first=true;
 
-  for ( const PlotCurve& pc: plc_ ) {
-   if ( !pc.plotcmd_.empty() ) {
-    if (!is_first) { gp << ","; is_first=false; }
-    if ( pc.xy_.n_rows>0 ) {
+  for ( const PlotCurve& pc: plc_ )
+  {
+   if ( !pc.plotcmd_.empty() )
+   {
+
+    if (!is_first)
+    {
+     gp << ",";
+    }
+    else is_first=false;
+
+    if ( pc.xy_.n_rows>0 )
+    {
      gp<<"'-' "<<pc.plotcmd_;
-    } else {
+    }
+    else
+    {
      gp<<pc.plotcmd_;
     }
+
    }
   }
+
   gp<<endl;
-  for ( const PlotCurve& pc: plc_ ) {
-   if ( pc.xy_.n_rows>0 ) {
-    gp.send1d ( pc.xy_ );
+
+  for ( const PlotCurve& pc: plc_ )
+  {
+   if ( pc.xy_.n_rows>0 )
+   {
+    arma::mat xy = pc.xy_;
+    xy.col(0) *= phi_unit_;
+    gp.send1d ( xy );
    }
   }
+
  }
 }
 
@@ -1773,7 +1804,7 @@ void PolarChart::gnuplotCommand(gnuplotio::Gnuplot& gp) const
 
 ResultElementPtr PolarChart::clone() const
 {
-    ResultElementPtr res ( new PolarChart ( xlabel_, ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), addinit_ ) );
+    ResultElementPtr res ( new PolarChart ( ylabel_, plc_, shortDescription().simpleLatex(), longDescription().simpleLatex(), phi_unit_, addinit_ ) );
     res->setOrder ( order() );
     return res;
 }

@@ -22,6 +22,7 @@
 #ifndef INSIGHT_RESULTSET_H
 #define INSIGHT_RESULTSET_H
 
+#include "base/units.h"
 #include "base/parameterset.h"
 #include "base/linearalgebra.h"
 
@@ -802,18 +803,6 @@ insight::ResultElement& addPlot
     const std::string& watermarktext = ""
 );
 
-insight::ResultElement& addPolarPlot
-(
-    std::shared_ptr<ResultElementCollection> results,
-    const boost::filesystem::path& workdir,
-    const std::string& resultelementname,
-    const std::string& philabel,
-    const std::string& rlabel,
-    const PlotCurveList& plc,
-    const std::string& shortDescription,
-    const std::string& addinit = "",
-    const std::string& watermarktext = ""
-);
 
 
 
@@ -859,20 +848,34 @@ public:
 };
 
 
+insight::ResultElement& addPolarPlot
+(
+    std::shared_ptr<ResultElementCollection> results,
+    const boost::filesystem::path& workdir,
+    const std::string& resultelementname,
+    const std::string& rlabel,
+    const PlotCurveList& plc,
+    const std::string& shortDescription,
+    double phi_unit = SI::rad,
+    const std::string& addinit = "",
+    const std::string& watermarktext = ""
+);
 
 
 class PolarChart
   : public Chart
 {
+ double phi_unit_;
 public:
  declareType ( "PolarChart" );
  PolarChart ( const std::string& shortdesc, const std::string& longdesc, const std::string& unit );
  PolarChart
  (
-     const std::string& philabel,
      const std::string& rlabel,
      const PlotCurveList& plc,
-     const std::string& shortDesc, const std::string& longDesc,
+     const std::string& shortDesc,
+     const std::string& longDesc,
+     double phi_unit = SI::rad,
      const std::string& addinit = ""
  );
 

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.1
+Type=Application
+MimeType=application/insight-iscb;
+Categories=Education;Engineering;
+Name=InsightCAE Case Builder
+Comment=A tool to build OpenFOAM cases
+Comment[de]=Ein Werkzeug, um OpenFOAM-Berechnungsfälle zu erstellen
+Exec=bash -lc "isofCaseBuilder %f"
+Icon=application-insight-iscb
+Terminal=no

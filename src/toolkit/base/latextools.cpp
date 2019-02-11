@@ -143,6 +143,7 @@ struct LaTeXReplacements
     simple_replacements_.add("_", "\\_");
     simple_replacements_.add("#", "\\#");
     simple_replacements_.add("&", "\\&");
+    simple_replacements_.add("\\%", "\\%");
     simple_replacements_.add("%", "\\%");
     simple_replacements_.add("[", "{[}");
     simple_replacements_.add("]", "{]}");

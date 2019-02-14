@@ -621,7 +621,7 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
     {
         PiM.push_back(OFDictData::vector3(pim));
     }
-    castellatedCtrls["locationInMesh"]=PiM;
+    castellatedCtrls["locationsInMesh"]=PiM;
   }
   else if (p.PiM.size()==1)
   {
@@ -732,7 +732,7 @@ void snappyHexMesh
     {
         PiM.push_back(OFDictData::vector3(pim));
     }
-    castellatedCtrls["locationInMesh"]=PiM;
+    castellatedCtrls["locationsInMesh"]=PiM;
   }
   else if (p.PiM.size()==1)
   {

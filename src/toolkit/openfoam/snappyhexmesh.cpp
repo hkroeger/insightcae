@@ -612,7 +612,11 @@ void snappyHexMeshConfiguration::addIntoDictionaries(OFdicts& dictionaries) cons
 
   //  populate with defaults
   setStdSnapCtrls(snapCtrls);
+  snapCtrls["implicitFeatureSnap"]=p.doImplicitFeatureSnap;
+  snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
+
   setStdCastellatedCtrls(castellatedCtrls);
+  castellatedCtrls["allowFreeStandingZoneFaces"]=p.allowFreeStandingZoneFaces;
   
   if (p.PiM.size()>1)
   {
@@ -725,6 +729,8 @@ void snappyHexMesh
   snapCtrls["explicitFeatureSnap"]=p.doExplicitFeatureSnap;
 
   setStdCastellatedCtrls(castellatedCtrls);
+  castellatedCtrls["allowFreeStandingZoneFaces"]=p.allowFreeStandingZoneFaces;
+
   if (p.PiM.size()>1)
   {
     OFDictData::list PiM;

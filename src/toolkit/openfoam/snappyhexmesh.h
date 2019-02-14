@@ -37,12 +37,6 @@ namespace insight {
 class ExternalGeometryFile
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//       ( fileName, boost::filesystem::path, "" )
-//       ( scale, arma::mat, vec3(1,1,1) )
-//       ( translate, arma::mat, vec3(0,0,0) )
-//       ( rollPitchYaw, arma::mat, vec3(0,0,0) )
-//   )
 #include "snappyhexmesh__ExternalGeometryFile__Parameters.h"
 /*
 PARAMETERSET>>> ExternalGeometryFile Parameters
@@ -102,17 +96,6 @@ class Geometry
   public ExternalGeometryFile
 {
 public:
-//   typedef boost::tuple<std::string,int,int> RegionRefinement;
-//   typedef std::vector<RegionRefinement> RegionRefinementList;
-  
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, ExternalGeometryFile::Parameters,
-//       ( name, std::string, "" )
-//       ( minLevel, int, 0 )
-//       ( maxLevel, int, 4 )
-//       ( nLayers, int, 2 )
-//       ( regionRefinements, RegionRefinementList, RegionRefinementList() )
-//       ( zoneName, std::string, "" )
-//   )
 #include "snappyhexmesh__Geometry__Parameters.h"
 /*
 PARAMETERSET>>> Geometry Parameters
@@ -154,10 +137,6 @@ class PatchLayers
 : public Feature
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//       ( name, std::string, "" )
-//       ( nLayers, int, 2 )
-//   )
 #include "snappyhexmesh__PatchLayers__Parameters.h"
 /*
 PARAMETERSET>>> PatchLayers Parameters
@@ -370,9 +349,6 @@ class RefinementGeometry
 : public RefinementRegion
 {
 public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
-//       ( fileName, boost::filesystem::path, "" )
-//   )
 #include "snappyhexmesh__RefinementGeometry__Parameters.h"
 /*
 PARAMETERSET>>> RefinementGeometry Parameters
@@ -424,10 +400,6 @@ public:
 class NearTemplatePatchRefinement
   : public RefinementRegion
 {
-// public:
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, RefinementRegion::Parameters,
-//       ( fileName, std::string, "" )
-//   )
 public:
 #include "snappyhexmesh__NearTemplatePatchRefinement__Parameters.h"
 /*
@@ -475,14 +447,19 @@ erlayer = double 1.3 "Expansion ratio of layers"
 relativeSizes = bool true "Whether tlayer specifies relative thickness (absolute thickness if set to false)"
 nLayerIter= int 10 "Maximum number of layer iterations"
 stopOnBadPrismLayer = bool false "Whether to stop of too few layers get extruded"
+
 qualityCtrls = selection ( standard relaxed disabled ) relaxed "Select quality requirements"
+
 PiM = array [ vector (0 0 0) "point inside mesh" ]*0 "One or more points inside meshing domain"
+
 features = array [
  dynamicclassconfig "insight::snappyHexMeshFeats::Feature" default "Geometry" "SnappyHexMesh feature"
 ]*0 "Mesh generation features"
 
 doExplicitFeatureSnap = bool false "Disable/Enable snapping of explicit features (eMesh)"
 doImplicitFeatureSnap = bool true "Disable/Enable snapping to implicit features"
+
+allowFreeStandingZoneFaces = bool true "allowFreeStandingZoneFaces"
     
 <<<PARAMETERSET
 */
@@ -507,23 +484,6 @@ public:
 
 
 
-
-// namespace snappyHexMeshOpts
-// {
-//   typedef std::shared_ptr<OFDictData::dict> DictPtr;
-//   
-//   CPPX_DEFINE_OPTIONCLASS(Parameters, CPPX_OPTIONS_NO_BASE,
-//     (doCastellatedMesh, bool, true)
-//     (doSnap, bool, true)
-//     (doAddLayers, bool, true)
-//     (tlayer, double, 0.5)
-//     (erlayer, double, 1.3)
-//     (relativeSizes, bool, true)
-//     (nLayerIter, int, 10 )
-//     (stopOnBadPrismLayer, bool, false)
-//     (qualityCtrls, DictPtr, DictPtr() )
-//   )
-// };
 
 void setStdCastellatedCtrls(OFDictData::dict& castellatedCtrls);
 void setStdSnapCtrls(OFDictData::dict& snapCtrls);

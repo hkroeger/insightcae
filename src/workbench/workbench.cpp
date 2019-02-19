@@ -122,6 +122,8 @@ workbench::workbench()
     a->setShortcut(Qt::ControlModifier + Qt::Key_O);
     connect(a, &QAction::triggered, this, &workbench::onOpenAnalysis );
     analysisMenu->addAction( a );
+
+    readSettings();
 }
 
 workbench::~workbench()
@@ -176,6 +178,22 @@ void workbench::openAnalysis(const QString& fn)
   form->executionPathParameter()()=dir;
   form->forceUpdate();
   form->showMaximized();
+}
+
+
+void workbench::closeEvent(QCloseEvent *event)
+{
+    QSettings settings("silentdynamics", "workbench");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    QMainWindow::closeEvent(event);
+}
+
+void workbench::readSettings()
+{
+    QSettings settings("silentdynamics", "workbench");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
 }
 
 

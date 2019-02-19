@@ -73,7 +73,9 @@ public:
     virtual ~workbench();
 
     void openAnalysis(const QString& fn);
-    
+    void closeEvent(QCloseEvent *event);
+    void readSettings();
+
 private slots:
     void newAnalysis();
     void onOpenAnalysis();

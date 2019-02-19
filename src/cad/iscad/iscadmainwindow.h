@@ -134,7 +134,8 @@ public:
     ISCADModelEditor* insertModel(const boost::filesystem::path& file, bool bgparsing=true);
     ISCADModelEditor* insertModelScript(const std::string& contents, bool bgparsing=true);
     virtual void closeEvent(QCloseEvent *event);
-   
+    void readSettings();
+
 signals:
     void fileSelectionChanged(const boost::filesystem::path& file);
 

@@ -91,6 +91,9 @@ public:
         bool skipBCs=false, 
         const std::shared_ptr<std::vector<boost::filesystem::path> > restrictToFiles = std::shared_ptr<std::vector<boost::filesystem::path> >()
     );
+
+    void closeEvent(QCloseEvent *event);
+    void readSettings();
     
 public slots:
     void onItemSelectionChanged();

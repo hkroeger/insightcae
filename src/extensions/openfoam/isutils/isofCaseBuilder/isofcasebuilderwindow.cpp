@@ -212,6 +212,9 @@ isofCaseBuilderWindow::isofCaseBuilderWindow()
     ui->splitter_4->setStretchFactor(1, 1);
 
     setWindowIcon(QIcon(":/logo_insight_cae.png"));
+
+    readSettings();
+
     updateTitle();
 }
 
@@ -274,6 +277,24 @@ void isofCaseBuilderWindow::loadFile(const boost::filesystem::path& file, bool s
     config_is_modified_=false;
     updateTitle();
 }
+
+
+
+void isofCaseBuilderWindow::closeEvent(QCloseEvent *event)
+{
+    QSettings settings("silentdynamics", "isofCaseBuilder");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+    QMainWindow::closeEvent(event);
+}
+
+void isofCaseBuilderWindow::readSettings()
+{
+    QSettings settings("silentdynamics", "isofCaseBuilder");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
+}
+
 
 
 void isofCaseBuilderWindow::createCase 

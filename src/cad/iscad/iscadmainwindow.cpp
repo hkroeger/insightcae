@@ -419,9 +419,9 @@ ISCADMainWindow::ISCADMainWindow(QWidget* parent, Qt::WindowFlags flags, bool no
     act_sel_faces_=new QAction("Select faces", this);
     msmenu->addAction(act_sel_faces_);
 
-    QSettings settings;
-    restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
-    restoreState(settings.value("mainWindowState").toByteArray());
+    QSettings settings("silentdynamics", "iscad");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
 
  
 }
@@ -446,9 +446,9 @@ void ISCADMainWindow::closeEvent(QCloseEvent *event)
     
     if (event->isAccepted())
     {
-        QSettings settings;
-        settings.setValue("mainWindowGeometry", saveGeometry());
-        settings.setValue("mainWindowState", saveState());
+        QSettings settings("silentdynamics", "iscad");
+        settings.setValue("geometry", saveGeometry());
+        settings.setValue("windowState", saveState());
     }
 }
 

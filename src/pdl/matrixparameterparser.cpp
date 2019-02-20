@@ -23,7 +23,17 @@ std::string MatrixParameterParser::Data::cppParamType(const std::string& ) const
 
 std::string MatrixParameterParser::Data::cppValueRep(const std::string& ) const
 {
-  return "#error";
+  std::ostringstream os;
+  os<<"arma::mat(boost::assign::list_of";
+  for (size_t i=0; i<value.n_rows; i++)
+  {
+    for (size_t j=0; j<value.n_cols; j++)
+    {
+      os<<"("<<value(i,j)<<")";
+    }
+  }
+  os<<".convert_to_container<std::vector<double> >().data(), "<<value.n_rows<<", "<<value.n_cols<<")";
+  return os.str();
 }
 
 void MatrixParameterParser::Data::cppWriteCreateStatement

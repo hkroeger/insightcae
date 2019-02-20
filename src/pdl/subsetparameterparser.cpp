@@ -33,7 +33,6 @@ std::string SubsetParameterParser::Data::cppTypeDecl(const std::string& name) co
     }
 
     // default constructor
-#warning need to set default values here!
     os << structname << "()\n";
     if (value.size()>0)
     {

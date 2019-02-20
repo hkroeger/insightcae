@@ -13,7 +13,12 @@ struct IncludedSubsetParameterParser
     {
         std::string value;
 
-        Data(const std::string& v, const std::string& d);
+        typedef boost::fusion::vector3<std::string, std::string, std::string> DefaultModification;
+        typedef std::vector<DefaultModification> DefaultValueModifications;
+
+        DefaultValueModifications default_value_modifications;
+
+        Data(const std::string& v, const std::string& d, const DefaultValueModifications& defmod);
 
         virtual std::string cppType(const std::string&) const;
 
@@ -63,8 +68,17 @@ struct IncludedSubsetParameterParser
             "includedset",
             typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRulePtr(
                       new typename PDLParserRuleset<Iterator,Skipper>::ParameterDataRule(
-                        ( ruleset.r_string >> ruleset.r_description_string )
-                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2)) ]
+                        (ruleset.r_string >> ruleset.r_description_string >>
+                         (
+                           (qi::lit("modifyDefaults") >> '{' >>
+                            *(
+                              ruleset.r_identifier >> ruleset.r_path
+                                >> '=' >> ruleset.r_up_to_semicolon
+                             )
+                           >> '}')
+                           |qi::attr(Data::DefaultValueModifications())
+                          ) )
+                        [ qi::_val = phx::construct<ParserDataBase::Ptr>(phx::new_<Data>(qi::_1, qi::_2, qi::_3)) ]
                     ))
         );
     }

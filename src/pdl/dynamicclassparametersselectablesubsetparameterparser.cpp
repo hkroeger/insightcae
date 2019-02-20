@@ -6,11 +6,11 @@ DynamicClassParametersSelectableSubsetParameterParser::Data::Data ( const std::s
     : ParserDataBase ( d ), base_type( base ), default_sel_(default_sel)
 {}
 
-void DynamicClassParametersSelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>& headers ) const
+void DynamicClassParametersSelectableSubsetParameterParser::Data::cppAddHeader ( std::set<std::string>&  ) const
 {
 }
 
-std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppType ( const std::string& name ) const
+std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppType ( const std::string&  ) const
 {
     std::ostringstream os;
     os << "ParameterSet";
@@ -23,13 +23,13 @@ std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppType
 }
 
 
-std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppValueRep ( const std::string& name ) const
+std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  ) const
 {
-    return "#error";
+  return "{ \""+default_sel_+"\", "+base_type+"::defaultParameters(\""+default_sel_+"\") }";
 }
 
 
-std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppParamType ( const std::string& name ) const
+std::string DynamicClassParametersSelectableSubsetParameterParser::Data::cppParamType ( const std::string&  ) const
 {
     return "insight::SelectableSubsetParameter";
 };
@@ -59,10 +59,10 @@ void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteCreate
 void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteSetStatement
 (
     std::ostream& os,
-    const std::string& name,
+    const std::string& ,
     const std::string& varname,
     const std::string& staticname,
-    const std::string& thisscope
+    const std::string&
 ) const
 {
     os<<"{\n"
@@ -74,10 +74,10 @@ void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteSetSta
 void DynamicClassParametersSelectableSubsetParameterParser::Data::cppWriteGetStatement
 (
     std::ostream& os,
-    const std::string& name,
+    const std::string& ,
     const std::string& varname,
     const std::string& staticname,
-    const std::string& thisscope
+    const std::string&
 ) const
 {
 

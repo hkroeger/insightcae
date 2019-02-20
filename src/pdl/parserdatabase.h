@@ -136,13 +136,9 @@ public:
     virtual void cppAddHeader(std::set<std::string>&) const;
 
     virtual std::string cppParamType(const std::string& name) const =0;
-
     virtual std::string cppType(const std::string& name) const =0;
-
     virtual std::string cppValueRep(const std::string& name) const =0;
-
     virtual std::string cppTypeName(const std::string& name) const;
-
     virtual std::string cppTypeDecl(const std::string& name) const;
 
     virtual void writeCppHeader(std::ostream& os, const std::string& name) const;
@@ -209,7 +205,7 @@ struct PDLParserRuleset
     typedef qi::rule<Iterator, ParserDataBase::Ptr(), Skipper> ParameterDataRule;
     typedef std::shared_ptr<ParameterDataRule> ParameterDataRulePtr;
 
-    qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_description_string;
+    qi::rule<Iterator, std::string(), Skipper> r_identifier, r_string, r_path, r_description_string, r_up_to_semicolon;
     qi::rule<Iterator, ParameterSetData(), Skipper> r_parameterset;
     qi::rule<Iterator, ParameterSetEntry(), Skipper> r_parametersetentry;
 

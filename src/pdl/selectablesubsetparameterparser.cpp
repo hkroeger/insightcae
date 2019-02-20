@@ -28,9 +28,9 @@ std::string SelectableSubsetParameterParser::Data::cppType ( const std::string& 
     return os.str();
 }
 
-std::string SelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  ) const
+std::string SelectableSubsetParameterParser::Data::cppValueRep ( const std::string&  name) const
 {
-    return "#error";
+    return name + "_" + default_sel+"_type()";
 }
 
 std::string SelectableSubsetParameterParser::Data::cppTypeDecl ( const std::string& name ) const
